@@ -9,8 +9,10 @@
 #include <thread>
 #include <vector>
 
+#include "TracyBadVersion.hpp"
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracyImGui.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracyTexture.hpp"
 #include "TracyUserData.hpp"
@@ -28,7 +30,7 @@ namespace tracy
 struct MemoryPage;
 struct QueueItem;
 class FileRead;
-class TextEditor;
+class SourceView;
 struct ZoneTimeData;
 
 class View
@@ -59,6 +61,7 @@ public:
     {
         bool visible = true;
         bool showFull = true;
+        bool ghost = false;
         int offset = 0;
         int height = 0;
     };
@@ -70,16 +73,32 @@ public:
     };
 
     using SetTitleCallback = void(*)( const char* );
+    using GetWindowCallback = void*(*)();
 
-    View( ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb ) {}
-    View( const char* addr, int port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
-    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
+    View( void(*cbMainThread)(std::function<void()>), ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr ) : View( cbMainThread, "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb, gwcb ) {}
+    View( void(*cbMainThread)(std::function<void()>), const char* addr, int port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
+    View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
     ~View();
 
     static bool Draw();
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
-    void SetTextEditorFile( const char* fileName, int line );
+    void ViewSource( const char* fileName, int line );
+    void ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr );
+    bool ViewDispatch( const char* fileName, int line, uint64_t symAddr );
+
+    bool ReconnectRequested() const { return m_reconnectRequested; }
+    std::string GetAddress() const { return m_worker.GetAddr(); }
+    int GetPort() const { return m_worker.GetPort(); }
+
+    const char* SourceSubstitution( const char* srcFile ) const;
+
+    void ShowSampleParents( uint64_t symAddr ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; }
+    const ViewData& GetViewData() const { return m_vd; }
+
+
+    bool m_showRanges = false;
+    Range m_statRange;
 
 private:
     enum class Namespace : uint8_t
@@ -103,22 +122,26 @@ private:
         uint64_t mem;
     };
 
-    void InitTextEditor();
+    void InitTextEditor( ImFont* font );
 
     const char* ShortenNamespace( const char* name ) const;
 
     void DrawHelpMarker( const char* desc ) const;
 
-    void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text );
-
     bool DrawImpl();
     void DrawNotificationArea();
     bool DrawConnection();
     void DrawFrames();
-    bool DrawZoneFramesHeader();
-    bool DrawZoneFrames( const FrameData& frames );
+    void DrawZoneFramesHeader();
+    void DrawZoneFrames( const FrameData& frames );
     void DrawZones();
     void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset );
+    void DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset );
+#ifndef TRACY_NO_STATISTICS
+    int DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+#endif
     int DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
     template<typename Adapter, typename V>
     int DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
@@ -137,6 +160,7 @@ private:
     int DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
     void DrawOptions();
     void DrawMessages();
+    void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
     void DrawStatistics();
     void DrawMemory();
@@ -146,12 +170,14 @@ private:
     void DrawMemoryAllocWindow();
     void DrawInfo();
     void DrawTextEditor();
-    void DrawGoToFrame();
     void DrawLockInfoWindow();
     void DrawPlayback();
     void DrawCpuDataWindow();
     void DrawSelectedAnnotation();
     void DrawAnnotationList();
+    void DrawSampleParents();
+    void DrawRanges();
+    void DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id );
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
 
@@ -170,6 +196,7 @@ private:
     template<typename Adapter, typename V>
     void DrawGpuInfoChildren( const V& children, int64_t ztime );
 
+    void HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w );
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
     uint32_t GetThreadColor( uint64_t thread, int depth );
@@ -179,7 +206,6 @@ private:
     uint32_t GetZoneColor( const GpuEvent& ev );
     uint32_t GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetRawZoneColor( const GpuEvent& ev );
-    uint32_t HighlightColor( uint32_t color );
     uint32_t GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneHighlight( const GpuEvent& ev );
     float GetZoneThickness( const ZoneEvent& ev );
@@ -221,14 +247,16 @@ private:
     const char* GetPlotName( const PlotData* plot ) const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, bool tooltip = true );
-    void DrawCallstackCalls( uint32_t callstack, uint8_t limit ) const;
+    void DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const;
     void SetViewToLastFrames();
     int64_t GetZoneChildTime( const ZoneEvent& zone );
     int64_t GetZoneChildTime( const GpuEvent& zone );
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
+    int64_t GetZoneChildTimeFastClamped( const ZoneEvent& zone, uint64_t t0, uint64_t t1 );
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
+    const char* GetThreadContextData( uint64_t thread, bool& local, bool& untracked, const char*& program );
 
     tracy_force_inline void CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
     tracy_force_inline void CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
@@ -276,10 +304,13 @@ private:
         return it->second;
     }
 
+    void AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset );
+
     Worker m_worker;
     std::string m_filename;
     bool m_staticView;
     bool m_pause;
+    DecayValue<bool> m_forceConnectionPopup = false;
 
     ViewData m_vd;
 
@@ -304,12 +335,17 @@ private:
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;
-    ImGuiTextFilter m_statisticsFilter;
+    bool m_showMessageImages = false;
     int m_visibleMessages = 0;
+    size_t m_prevMessages = 0;
+    Vector<uint32_t> m_msgList;
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;
     Annotation* m_selectedAnnotation = nullptr;
+    bool m_reactToCrash = false;
+
+    ImGuiTextFilter m_statisticsFilter;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -325,7 +361,6 @@ private:
     bool m_showInfo = false;
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
-    bool m_goToFrame = false;
     bool m_showAnnotationList = false;
 
     enum class CpuDataSortBy
@@ -340,9 +375,16 @@ private:
     CpuDataSortBy m_cpuDataSort = CpuDataSortBy::Pid;
 
     int m_statSort = 0;
-    bool m_statSelf = false;
-    bool m_showCallstackFrameAddress = false;
+    bool m_statSelf = true;
+    bool m_statSampleTime = true;
+    int m_statMode = 0;
+    int m_statSampleLocation = 2;
+    bool m_statHideUnknown = true;
+    bool m_showAllSymbols = false;
+    int m_showCallstackFrameAddress = 0;
     bool m_showUnknownFrames = true;
+    bool m_statSeparateInlines = false;
+    bool m_statShowAddress = false;
     bool m_groupChildrenLocations = false;
     bool m_allocTimeRelativeToZone = true;
     bool m_ctxSwitchTimeRelativeToZone = true;
@@ -352,6 +394,7 @@ private:
     Namespace m_namespace = Namespace::Short;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
+    BuzzAnim<int> m_sampleParentBuzzAnim;
     BuzzAnim<int> m_callstackTreeBuzzAnim;
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
@@ -362,10 +405,9 @@ private:
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
 
-    std::unique_ptr<TextEditor> m_textEditor;
-    const char* m_textEditorFile;
-    ImFont* m_textEditorFont;
-    bool m_textEditorWhitespace = true;
+    std::unique_ptr<SourceView> m_sourceView;
+    const char* m_sourceViewFile;
+    bool m_uarchSet = false;
 
     ImFont* m_smallFont;
     ImFont* m_bigFont;
@@ -373,6 +415,7 @@ private:
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;
     bool m_titleSet = false;
+    GetWindowCallback m_gwcb;
 
     float m_notificationTime = 0;
     std::string m_notificationText;
@@ -397,12 +440,27 @@ private:
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
 
+    void* m_frameTextureConn = nullptr;
+    const void* m_frameTextureConnPtr = nullptr;
+
     std::vector<std::unique_ptr<Annotation>> m_annotations;
     UserData m_userData;
 
+    bool m_reconnectRequested = false;
+    int m_firstFrame = 10;
+    float m_yDelta;
+
+    std::vector<SourceRegex> m_sourceSubstitutions;
+    bool m_sourceRegexValid = true;
+
+    RangeSlim m_setRangePopup;
+    bool m_setRangePopupOpen = false;
+
+    void(*m_cbMainThread)(std::function<void()>);
+
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
-        enum class GroupBy : int { Thread, UserText, Callstack, Parent, NoGrouping };
+        enum class GroupBy : int { Thread, UserText, ZoneName, Callstack, Parent, NoGrouping };
         enum class SortBy : int { Order, Count, Time, Mtpc };
         enum class TableSortBy : int { Starttime, Runtime, Name };
 
@@ -447,8 +505,8 @@ private:
         int minBinVal = 1;
         int64_t tmin, tmax;
         bool showZoneInFrames = false;
-        bool limitRange = false;
-        int64_t rangeMin, rangeMax;
+        Range range;
+        RangeSlim rangeSlim;
 
         struct
         {
@@ -503,7 +561,7 @@ private:
         void ShowZone( int16_t srcloc, const char* name )
         {
             show = true;
-            limitRange = false;
+            range.active = false;
             Reset();
             match.emplace_back( srcloc );
             strcpy( pattern, name );
@@ -513,9 +571,9 @@ private:
         {
             assert( limitMin <= limitMax );
             show = true;
-            limitRange = true;
-            rangeMin = limitMin;
-            rangeMax = limitMax;
+            range.active = true;
+            range.min = limitMin;
+            range.max = limitMax;
             Reset();
             match.emplace_back( srcloc );
             strcpy( pattern, name );
@@ -631,6 +689,11 @@ private:
         const ZoneEvent* dataValidFor = nullptr;
         float fztime;
     } m_timeDist;
+
+    struct {
+        uint64_t symAddr = 0;
+        int sel;
+    } m_sampleParents;
 };
 
 }

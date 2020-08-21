@@ -9,8 +9,8 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-enum : uint32_t { ProtocolVersion = 25 };
-enum : uint32_t { BroadcastVersion = 0 };
+enum : uint32_t { ProtocolVersion = 40 };
+enum : uint32_t { BroadcastVersion = 1 };
 
 using lz4sz_t = uint32_t;
 
@@ -36,6 +36,7 @@ enum { WelcomeMessageHostInfoSize = 1024 };
 
 #pragma pack( 1 )
 
+// Must increase left query space after handling!
 enum ServerQuery : uint8_t
 {
     ServerQueryTerminate,
@@ -47,16 +48,30 @@ enum ServerQuery : uint8_t
     ServerQueryFrameName,
     ServerQueryDisconnect,
     ServerQueryExternalName,
-    ServerQueryParameter
+    ServerQueryParameter,
+    ServerQuerySymbol,
+    ServerQuerySymbolCode,
+    ServerQueryCodeLocation
 };
 
 struct ServerQueryPacket
 {
     ServerQuery type;
     uint64_t ptr;
+    uint32_t extra;
 };
 
 enum { ServerQueryPacketSize = sizeof( ServerQueryPacket ) };
+
+
+enum CpuArchitecture : uint8_t
+{
+    CpuArchUnknown,
+    CpuArchX86,
+    CpuArchX64,
+    CpuArchArm32,
+    CpuArchArm64
+};
 
 
 struct WelcomeMessage
@@ -68,8 +83,13 @@ struct WelcomeMessage
     uint64_t resolution;
     uint64_t epoch;
     uint64_t pid;
+    int64_t samplingPeriod;
     uint8_t onDemand;
     uint8_t isApple;
+    uint8_t cpuArch;
+    uint8_t codeTransfer;
+    char cpuManufacturer[12];
+    uint32_t cpuId;
     char programName[WelcomeMessageProgramNameSize];
     char hostInfo[WelcomeMessageHostInfoSize];
 };
@@ -90,6 +110,7 @@ struct BroadcastMessage
 {
     uint32_t broadcastVersion;
     uint32_t protocolVersion;
+    uint32_t listenPort;
     uint32_t activeTime;        // in seconds
     char programName[WelcomeMessageProgramNameSize];
 };
