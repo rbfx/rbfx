@@ -30,7 +30,7 @@ namespace Urho3D
 FileDialogResult OpenDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath)
 {
     nfdchar_t* output = nullptr;
-    auto result = NFD_OpenDialog(filterList.c_str(), defaultPath.c_str(), &output);
+    auto result = NFD_OpenDialog(filterList.c_str(), defaultPath.c_str(), &output, nullptr);
     if (output != nullptr)
     {
         outPath = output;
@@ -55,7 +55,7 @@ FileDialogResult OpenDialogMultiple(const ea::string& filterList, const ea::stri
 FileDialogResult SaveDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath)
 {
     nfdchar_t* output = nullptr;
-    auto result = NFD_SaveDialog(filterList.c_str(), defaultPath.c_str(), &output);
+    auto result = NFD_SaveDialog(filterList.c_str(), defaultPath.c_str(), &output, nullptr);
     if (output != nullptr)
     {
         outPath = output;
