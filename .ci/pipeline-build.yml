@@ -114,7 +114,7 @@ jobs:
         displayName: 'Add Repositories'
       - template: cmake.yml
       - bash: |
-          sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev ninja-build $(EXTRA_PACKAGES)
+          sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev libtbb-dev ninja-build $(EXTRA_PACKAGES)
           sudo update-alternatives --install /usr/bin/cc cc /usr/bin/$(CC) 100
           sudo update-alternatives --set cc /usr/bin/$(CC)
           sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/$(CXX) 100

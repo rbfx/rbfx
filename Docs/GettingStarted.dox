@@ -33,6 +33,8 @@ Although all required third-party libraries are included as source code, there a
     - libreadline6-dev (Debian-based) or readline-devel (Redhat-based) for easy editing of command lines in interactive standalone host tools, e.g. isql and lua interpreter.
     - libts-dev (Debian-based) or tslib-devel (RedHat-based) for resistive, single-touch touchscreen input for embedded Linux device, e.g. Pandora and Wiz. Modern multi-touch touchscreen does not need this.
     - libudev-dev (Debian-based) or systemd-devel (Redhat-based) for input device hot-plugging.
+    - libuuid-dev (Debian-based) for uuid generation functions.
+    - libtbb-dev (Debian-based) for parallel algorithms used by profiler.
   + HTTPS support (optional).
     - libssl-dev (Debian-based)
     - openssl (OS X using homebrew)
