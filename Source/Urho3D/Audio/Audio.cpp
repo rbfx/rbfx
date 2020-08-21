@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Scene/Node.h"
 #include "../Audio/Audio.h"
 #include "../Audio/Sound.h"
 #include "../Audio/SoundListener.h"
@@ -43,6 +44,7 @@
 #ifdef URHO3D_USE_OPENAL
 #include <AL/al.h>
 #include <AL/alc.h>
+#include <AL/alext.h>
 #endif
 
 namespace Urho3D
@@ -132,9 +134,20 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
         URHO3D_LOGERROR("Could not create OpenAL device");
         return false;
     }
+
+    ALint attribs[4] = { 0 };
+
+    if(alcIsExtensionPresent(aldevice, "ALC_EXT_EFX") == AL_FALSE)
+    {
+        URHO3D_LOGERROR("Could not load OpenAL effects extension.");
+        return false;
+    }
+
+    attribs[0] = ALC_MAX_AUXILIARY_SENDS; 
+       attribs[1] = 4;
     
     ALCcontext *alcontext;
-    alcontext = alcCreateContext(aldevice, NULL);
+    alcontext = alcCreateContext(aldevice, attribs);
     if(!alcontext)
     {
         URHO3D_LOGERROR("Could not create OpenAL context");
@@ -148,7 +161,8 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     }
     
     isInitialized_ = true;
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+    // We disable attenuation as we implement it using gain
+    alDistanceModel(AL_NONE);
     URHO3D_LOGINFO("OpenAL context created");
     
 #else
@@ -442,6 +456,20 @@ void Audio::Release()
 void Audio::UpdateInternal(float timeStep)
 {
     URHO3D_PROFILE("UpdateAudio");
+
+#ifdef URHO3D_USE_OPENAL
+    // Update the listener position if any
+    if(listener_)
+    {
+        Vector3 pos = listener_->GetNode()->GetPosition();
+        alListener3f(AL_POSITION, pos.x_, pos.y_, -pos.z_);
+        Vector3 at = listener_->GetNode()->GetWorldDirection();
+        Vector3 up = listener_->GetNode()->GetWorldUp();
+        float orientation[6] = {at.x_, at.y_, -at.z_, up.x_, up.y_, -up.z_};
+        alListenerfv(AL_ORIENTATION, orientation);
+    }
+
+#endif
 
     // Update in reverse order, because sound sources might remove themselves
     for (unsigned i = soundSources_.size() - 1; i < soundSources_.size(); --i)
