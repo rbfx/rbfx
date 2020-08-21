@@ -22,19 +22,31 @@
 namespace tracy
 {
 
+struct CallstackSymbolData
+{
+    const char* file;
+    uint32_t line;
+    bool needFree;
+};
+
 struct CallstackEntry
 {
     const char* name;
     const char* file;
     uint32_t line;
+    uint32_t symLen;
+    uint64_t symAddr;
 };
 
 struct CallstackEntryData
 {
     const CallstackEntry* data;
     uint8_t size;
+    const char* imageName;
 };
 
+CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );
+CallstackSymbolData DecodeCodeAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
 void InitCallstack();

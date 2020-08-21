@@ -25,6 +25,7 @@
 
 #include "Tabs/Tab.h"
 #include <memory>
+#include <functional>
 
 namespace tracy { struct View; }
 
@@ -38,11 +39,16 @@ public:
     explicit ProfilerTab(Context* context);
 
     bool RenderWindowContent() override;
+    void RunOnMainThread(std::function<void()> cb);
 #if URHO3D_PROFILING
     std::unique_ptr<tracy::View> view_;
 #endif
     ea::string connectTo_{"127.0.0.1"};
     int port_ = 8086;
+    /// Mutex for pendingCallbacks_.
+    Mutex callbacksLock_;
+    /// Callbacks that are pending to run on main thread.
+    ea::vector<std::function<void()>> pendingCallbacks_;
 };
 
 }

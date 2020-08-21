@@ -12,6 +12,7 @@
 #include "TracyVector.hpp"
 #include "tracy_robin_hood.h"
 #include "../common/TracyForceInline.hpp"
+#include "../common/TracyQueue.hpp"
 
 namespace tracy
 {
@@ -42,6 +43,22 @@ struct StringRef
         };
         uint8_t __data;
     };
+};
+
+struct StringRefHasher
+{
+    size_t operator()( const StringRef& key ) const
+    {
+        return charutil::hash( (const char*)&key, sizeof( StringRef ) );
+    }
+};
+
+struct StringRefComparator
+{
+    bool operator()( const StringRef& lhs, const StringRef& rhs ) const
+    {
+        return memcmp( &lhs, &rhs, sizeof( StringRef ) ) == 0;
+    }
 };
 
 class StringIdx
@@ -76,13 +93,6 @@ public:
 private:
     uint8_t m_idx[3];
 };
-
-struct __StringIdxOld
-{
-    uint32_t idx    : 31;
-    uint32_t active : 1;
-};
-
 
 class Int24
 {
@@ -135,7 +145,7 @@ public:
         memcpy( &hi, m_val+4, 2 );
         uint32_t lo;
         memcpy( &lo, m_val, 4 );
-        return ( int64_t( hi ) << 32 ) | lo;
+        return ( int64_t( uint64_t( hi ) << 32 ) ) | lo;
     }
 
     tracy_force_inline bool IsNonNegative() const
@@ -200,6 +210,43 @@ struct ZoneExtra
 };
 
 enum { ZoneExtraSize = sizeof( ZoneExtra ) };
+
+
+// This union exploits the fact that the current implementations of x64 and arm64 do not provide
+// full 64 bit address space. The high bits must be bit-extended, so 0x80... is an invalid pointer.
+// This allows using the highest bit as a selector between a native pointer and a table index here.
+union CallstackFrameId
+{
+    struct
+    {
+        uint64_t idx : 62;
+        uint64_t sel : 1;
+        uint64_t custom : 1;
+    };
+    uint64_t data;
+};
+
+enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
+
+static tracy_force_inline bool operator==( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) { return lhs.data == rhs.data; }
+
+
+struct SampleData
+{
+    Int48 time;
+    Int24 callstack;
+};
+
+enum { SampleDataSize = sizeof( SampleData ) };
+
+
+struct SampleDataRange
+{
+    Int48 time;
+    CallstackFrameId ip;
+};
+
+enum { SampleDataRangeSize = sizeof( SampleDataRange ) };
 
 
 struct LockEvent
@@ -292,7 +339,7 @@ struct MemEvent
     tracy_force_inline void SetThreadFree( uint16_t thread ) { memcpy( &_time_thread_free, &thread, 2 ); }
 
     tracy_force_inline void SetTimeThreadAlloc( int64_t time, uint16_t thread ) { time <<= 16; time |= thread; memcpy( &_time_thread_alloc, &time, 8 ); }
-    tracy_force_inline void SetTimeThreadFree( int64_t time, uint16_t thread ) { time <<= 16; time |= thread; memcpy( &_time_thread_free, &time, 8 ); }
+    tracy_force_inline void SetTimeThreadFree( int64_t time, uint16_t thread ) { uint64_t t; memcpy( &t, &time, 8 ); t <<= 16; t |= thread; memcpy( &_time_thread_free, &t, 8 ); }
 
     uint64_t _ptr_csalloc1;
     uint64_t _size_csalloc2;
@@ -305,37 +352,49 @@ enum { MemEventSize = sizeof( MemEvent ) };
 static_assert( std::is_standard_layout<MemEvent>::value, "MemEvent is not standard layout" );
 
 
-struct CallstackFrame
+struct CallstackFrameBasic
 {
     StringIdx name;
     StringIdx file;
     uint32_t line;
 };
 
+struct CallstackFrame : public CallstackFrameBasic
+{
+    uint64_t symAddr;
+};
+
+struct SymbolData : public CallstackFrameBasic
+{
+    StringIdx imageName;
+    StringIdx callFile;
+    uint32_t callLine;
+    uint8_t isInline;
+    Int24 size;
+};
+
+enum { CallstackFrameBasicSize = sizeof( CallstackFrameBasic ) };
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };
+enum { SymbolDataSize = sizeof( SymbolData ) };
+
+
+struct SymbolLocation
+{
+    uint64_t addr;
+    uint32_t len;
+};
+
+enum { SymbolLocationSize = sizeof( SymbolLocation ) };
+
 
 struct CallstackFrameData
 {
     short_ptr<CallstackFrame> data;
     uint8_t size;
+    StringIdx imageName;
 };
 
 enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };
-
-// This union exploits the fact that the current implementations of x64 and arm64 do not provide
-// full 64 bit address space. The high bits must be bit-extended, so 0x80... is an invalid pointer.
-// This allows using the highest bit as a selector between a native pointer and a table index here.
-union CallstackFrameId
-{
-    struct
-    {
-        uint64_t idx : 63;
-        uint64_t sel : 1;
-    };
-    uint64_t data;
-};
-
-enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
 
 
 struct CallstackFrameTree
@@ -382,6 +441,9 @@ struct ContextSwitchData
     tracy_force_inline int64_t WakeupVal() const { return _wakeup.Val(); }
     tracy_force_inline void SetWakeup( int64_t wakeup ) { assert( wakeup < (int64_t)( 1ull << 47 ) ); _wakeup.SetVal( wakeup ); }
 
+    tracy_force_inline void SetStartCpu( int64_t start, uint8_t cpu ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_cpu = ( uint64_t( start ) << 16 ) | cpu; }
+    tracy_force_inline void SetEndReasonState( int64_t end, int8_t reason, int8_t state ) { assert( end < (int64_t)( 1ull << 47 ) ); _end_reason_state = ( uint64_t( end ) << 16 ) | ( uint64_t( reason ) << 8 ) | uint8_t( state ); }
+
     uint64_t _start_cpu;
     uint64_t _end_reason_state;
     Int48 _wakeup;
@@ -399,6 +461,8 @@ struct ContextSwitchCpu
     tracy_force_inline bool IsEndValid() const { return _end.IsNonNegative(); }
     tracy_force_inline uint16_t Thread() const { return uint16_t( _start_thread ); }
     tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
+
+    tracy_force_inline void SetStartThread( int64_t start, uint16_t thread ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_thread = ( uint64_t( start ) << 16 ) | thread; }
 
     uint64_t _start_thread;
     Int48 _end;
@@ -455,6 +519,28 @@ struct FrameEvent
 
 enum { FrameEventSize = sizeof( FrameEvent ) };
 
+
+struct FrameImage
+{
+    short_ptr<const char> ptr;
+    uint32_t csz;
+    uint16_t w, h;
+    uint32_t frameRef;
+    uint8_t flip;
+};
+
+enum { FrameImageSize = sizeof( FrameImage ) };
+
+
+struct GhostZone
+{
+    Int48 start, end;
+    Int24 frame;
+    int32_t child;
+};
+
+enum { GhostZoneSize = sizeof( GhostZone ) };
+
 #pragma pack()
 
 
@@ -469,7 +555,10 @@ struct ThreadData
     Vector<uint32_t> zoneIdStack;
 #ifndef TRACY_NO_STATISTICS
     Vector<int64_t> childTimeStack;
+    Vector<GhostZone> ghostZones;
+    uint64_t ghostIdx;
 #endif
+    Vector<SampleData> samples;
 };
 
 struct GpuCtxThreadData
@@ -483,13 +572,20 @@ struct GpuCtxData
     int64_t timeDiff;
     uint64_t thread;
     uint64_t count;
-    uint8_t accuracyBits;
     float period;
+    GpuContextType type;
+    bool hasPeriod;
+    bool hasCalibration;
+    int64_t calibratedGpuTime;
+    int64_t calibratedCpuTime;
+    double calibrationMod;
     unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
     short_ptr<GpuEvent> query[64*1024];
 };
 
 enum { GpuCtxDataSize = sizeof( GpuCtxData ) };
+
+enum class LockType : uint8_t;
 
 struct LockMap
 {
@@ -499,6 +595,7 @@ struct LockMap
         int64_t end = std::numeric_limits<int64_t>::min();
     };
 
+    StringIdx customName;
     int16_t srcloc;
     Vector<LockEventPtr> timeline;
     unordered_flat_map<uint64_t, uint8_t> threadMap;
@@ -592,16 +689,6 @@ struct SourceLocationComparator
     }
 };
 
-struct FrameImage
-{
-    short_ptr<const char> ptr;
-    uint32_t csz;
-    uint16_t w, h;
-    uint32_t frameRef;
-    uint8_t flip;
-};
-
-enum { FrameImageSize = sizeof( FrameImage ) };
 
 struct ContextSwitch
 {
@@ -631,6 +718,15 @@ struct Parameter
     bool isBool;
     int32_t val;
 };
+
+
+struct SymbolStats
+{
+    uint32_t incl, excl;
+    unordered_flat_map<uint32_t, uint32_t> parents;
+};
+
+enum { SymbolStatsSize = sizeof( SymbolStats ) };
 
 }
 
