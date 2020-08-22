@@ -118,6 +118,7 @@ SoundSource::SoundSource(Context* context) :
     panning_(0.0f),
     sendFinishedEvent_(false),
     autoRemove_(REMOVE_DISABLED),
+    paused_(false),
 
 #ifndef URHO3D_USE_OPENAL
     position_(nullptr),
@@ -141,6 +142,8 @@ SoundSource::SoundSource(Context* context) :
         alSource3f(alsource_, AL_POSITION, 0.0f, 0.0f, 0.0f); _ALERROR();
         alSource3f(alsource_, AL_VELOCITY, 0.0f, 0.0f, 0.0f); _ALERROR();
         alSourcei(alsource_, AL_LOOPING, AL_FALSE); _ALERROR();
+        // This is useful for 2D sources so panning can be implemented
+        alSourcei(alsource_, AL_SOURCE_RELATIVE, AL_TRUE); _ALERROR();
     }
 #endif
 
@@ -306,6 +309,33 @@ void SoundSource::Stop()
     MarkNetworkUpdate();
 }
 
+void SoundSource::Pause() 
+{
+#ifdef URHO3D_USE_OPENAL
+    alSourcePause(alsource_);
+#else
+
+#endif 
+
+    paused_ = true;
+
+}
+
+void SoundSource::Resume() 
+{
+#ifdef URHO3D_USE_OPENAL
+    int status;
+    alGetSourcei(alsource_, AL_SOURCE_STATE, &status);
+    if(status == AL_PAUSED)
+    {
+        alSourcePlay(alsource_);
+    }
+#else
+#endif    
+
+    paused_ = false;
+}
+
 void SoundSource::SetSoundType(const ea::string& type)
 {
     if (type == SOUND_MASTER)
@@ -340,6 +370,10 @@ void SoundSource::SetAttenuation(float attenuation)
 void SoundSource::SetPanning(float panning)
 {
     panning_ = Clamp(panning, -1.0f, 1.0f);
+#ifdef URHO3D_USE_OPENAL
+    // Only makes sense for 2D sources
+    alSource3f(alsource_, AL_POSITION, panning, 0.0f, 0.0f);
+#endif
     MarkNetworkUpdate();
 }
 
@@ -354,9 +388,20 @@ bool SoundSource::IsPlaying() const
 #ifdef URHO3D_USE_OPENAL
     int val;
     alGetSourcei(alsource_, AL_SOURCE_STATE, &val);
-    return val == AL_PLAYING;
+    return val == AL_PLAYING || val == AL_PAUSED;
 #else
     return (sound_ || soundStream_) && position_ != nullptr;
+#endif
+}
+
+bool SoundSource::IsSoundPlaying() const
+{
+#ifdef URHO3D_USE_OPENAL
+    int val;
+    alGetSourcei(alsource_, AL_SOURCE_STATE, &val);
+    return val == AL_PLAYING;
+#else
+    return (sound_ || soundStream_) && position_ != nullptr && paused_ == false;
 #endif
 }
 

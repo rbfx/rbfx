@@ -56,12 +56,11 @@ SoundSource3D::SoundSource3D(Context* context) :
     outerAngle_(DEFAULT_ANGLE),
     rolloffFactor_(DEFAULT_ROLLOFF)
 {
-    // Start from zero volume until attenuation properly calculated
 #ifdef URHO3D_USE_OPENAL
-    alSourcef(alsource_, AL_ROLLOFF_FACTOR, -rolloffFactor_);
-    alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
-    alSourcef(alsource_, AL_REFERENCE_DISTANCE, nearDistance_);
+    // 3D sources are defined in world position
+    alSourcei(alsource_, AL_SOURCE_RELATIVE, AL_FALSE); _ALERROR();
 #else
+    // Start from zero volume until attenuation properly calculated
     attenuation_ = 0.0f;
 #endif
 }
