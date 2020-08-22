@@ -265,21 +265,38 @@ void Audio::SetMasterGain(const ea::string& type, float gain)
 
 void Audio::PauseSoundType(const ea::string& type)
 {
-#ifdef URHO3D_USE_OPENAL
 
-#else
+#ifndef URHO3D_USE_OPENAL
     MutexLock lock(audioMutex_);
 #endif
+
+    for (auto i = soundSources_.begin(); i != soundSources_.end(); ++i)
+    {
+        auto* ip = (*i);
+        if(ip->GetSoundType() == type)
+        {
+            ip->Pause();
+        }
+    }
+
     pausedSoundTypes_.insert(type);
 }
 
 void Audio::ResumeSoundType(const ea::string& type)
 {
-#ifdef URHO3D_USE_OPENAL
 
-#else
+#ifndef URHO3D_USE_OPENAL
     MutexLock lock(audioMutex_);
 #endif
+
+    for (auto i = soundSources_.begin(); i != soundSources_.end(); ++i)
+    {
+        auto* ip = (*i);
+        if(ip->GetSoundType() == type)
+        {
+            ip->Resume();
+        }
+    }
     pausedSoundTypes_.erase(type);
     // Update sound sources before resuming playback to make sure 3D positions are up to date
     // Done under mutex to ensure no mixing happens before we are ready
@@ -402,12 +419,8 @@ void Audio::MixOutput(void* dest, unsigned samples)
         {
             SoundSource* source = *i;
 
-            // Check for pause if necessary
-            if (!pausedSoundTypes_.empty())
-            {
-                if (pausedSoundTypes_.contains(source->GetSoundType()))
-                    continue;
-            }
+            if(source->IsPaused())
+                continue;
 
             source->Mix(clipPtr, workSamples, mixRate_, stereo_, interpolation_);
         }
@@ -468,7 +481,6 @@ void Audio::UpdateInternal(float timeStep)
         float orientation[6] = {at.x_, at.y_, -at.z_, up.x_, up.y_, -up.z_};
         alListenerfv(AL_ORIENTATION, orientation);
     }
-
 #endif
 
     // Update in reverse order, because sound sources might remove themselves
