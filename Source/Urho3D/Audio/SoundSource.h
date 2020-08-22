@@ -62,6 +62,12 @@ public:
     void Play(SoundStream* stream);
     /// Stop playback.
     void Stop();
+    /// Pause playback
+    /// It will only be resumed after calling Resume() or if 
+    /// Audio->ResumeAudioType(...) is called with the matching sound type
+    void Pause();
+    /// Resume playback
+    void Resume();
     /// Set sound type, determines the master gain group.
     void SetSoundType(const ea::string& type);
     /// Set frequency.
@@ -104,8 +110,15 @@ public:
     /// Return automatic removal mode on sound playback completion.
     AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
 
-    /// Return whether is playing.
+    /// Returns whether the source has a sound loaded and in progress.
+    /// Note: This function returns true even if the sound is paused
     bool IsPlaying() const;
+
+    /// Returns wether the source is actually playing sound
+    bool IsSoundPlaying() const;
+
+    /// Returns wether the audio is paused.
+    bool IsPaused() const { return paused_; };
 
     /// Update the sound source. Perform subclass specific operations. Called by Audio.
     virtual void Update(float timeStep);
@@ -149,6 +162,8 @@ protected:
     bool sendFinishedEvent_;
     /// Automatic removal mode.
     AutoRemoveMode autoRemove_;
+    /// Is the audio paused (either by Pause() or Audio's subsystem pause sound type)
+    bool paused_;
 
 #ifdef URHO3D_USE_OPENAL
     uint32_t alsource_;
