@@ -56,6 +56,10 @@ jobs:
           BUILD_SHARED_LIBS: ON
           MSBUILD: ON
           CMAKE_GENERATE_ARGS: "-G \"Visual Studio 15 2017 Win64\" -DURHO3D_GRAPHICS_API=D3D11"
+        shared-msvc-d3d11-x86:
+          BUILD_SHARED_LIBS: ON
+          MSBUILD: ON
+          CMAKE_GENERATE_ARGS: "-G \"Visual Studio 15 2017\" -DURHO3D_GRAPHICS_API=D3D11"
         static-mingw-d3d9:
           BUILD_SHARED_LIBS: OFF
           CMAKE_GENERATE_ARGS: -G "MinGW Makefiles" -DURHO3D_GRAPHICS_API=D3D9 -DURHO3D_PROFILING=OFF
