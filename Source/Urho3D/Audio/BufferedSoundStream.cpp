@@ -36,7 +36,7 @@ BufferedSoundStream::BufferedSoundStream() :
 
 BufferedSoundStream::~BufferedSoundStream() = default;
 
-unsigned BufferedSoundStream::GetData(signed char* dest, unsigned numBytes)
+unsigned BufferedSoundStream::GetData(audio_t* dest, unsigned numBytes)
 {
     MutexLock lock(bufferMutex_);
 

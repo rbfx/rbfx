@@ -166,8 +166,15 @@ protected:
     bool paused_;
 
 #ifdef URHO3D_USE_OPENAL
+    // Choose reasonable values to avoid audio lag and prevent
+    // too much data from being loaded at once
+    static constexpr int OPENAL_STREAM_BUFFERS = 10;
+    static constexpr float STREAM_WANTED_SECONDS = 0.01f;
     uint32_t alsource_;
     uint32_t albuffer_;
+    uint32_t alstreamBuffers_[OPENAL_STREAM_BUFFERS];
+    int targetBuffer_;
+    bool streamFinished_;
 #endif
 
 private:
@@ -179,7 +186,12 @@ private:
     void StopLockless();
     /// Set new playback position without locking the audio mutex. Called internally.
     void SetPlayPositionLockless(audio_t* pos);
-#ifndef URHO3D_USE_OPENAL
+
+#ifdef URHO3D_USE_OPENAL
+    void UpdateStream();
+    void LoadBuffer();
+    audio_t* buffer;
+#else
     /// Mix mono sample to mono buffer.
     void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix mono sample to stereo buffer.
@@ -198,6 +210,11 @@ private:
     void MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Advance playback pointer without producing audible output.
     void MixZeroVolume(Sound* sound, unsigned samples, int mixRate);
+    
+    /// Decode buffer.
+    SharedPtr<Sound> streamBuffer_;
+    /// Unused stream bytes from previous frame.
+    int unusedStreamSize_;
 #endif
     /// Advance playback pointer to simulate audio playback in headless mode.
     void MixNull(float timeStep);
@@ -215,10 +232,6 @@ private:
     /// Playback time position.
     volatile float timePosition_;
 
-    /// Decode buffer.
-    SharedPtr<Sound> streamBuffer_;
-    /// Unused stream bytes from previous frame.
-    int unusedStreamSize_;
 };
 
 }
