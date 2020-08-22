@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Container/RefCounted.h"
+#include "../Audio/AudioDefs.h"
 
 namespace Urho3D
 {
@@ -40,7 +41,7 @@ public:
     virtual bool Seek(unsigned sample_number);
 
     /// Produce sound data into destination. Return number of bytes produced. Called by SoundSource from the mixing thread.
-    virtual unsigned GetData(signed char* dest, unsigned numBytes) = 0;
+    virtual unsigned GetData(audio_t* dest, unsigned numBytes) = 0;
 
     /// Set sound data format.
     void SetFormat(unsigned frequency, bool sixteenBit, bool stereo);
