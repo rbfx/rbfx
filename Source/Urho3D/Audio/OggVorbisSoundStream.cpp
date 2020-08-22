@@ -69,7 +69,7 @@ bool OggVorbisSoundStream::Seek(unsigned sample_number)
     return stb_vorbis_seek(vorbis, sample_number) == 1;
 }
 
-unsigned OggVorbisSoundStream::GetData(signed char* dest, unsigned numBytes)
+unsigned OggVorbisSoundStream::GetData(audio_t* dest, unsigned numBytes)
 {
     if (!decoder_)
         return 0;

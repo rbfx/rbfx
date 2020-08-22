@@ -118,15 +118,18 @@ SoundSource::SoundSource(Context* context) :
     panning_(0.0f),
     sendFinishedEvent_(false),
     autoRemove_(REMOVE_DISABLED),
-    paused_(false),
 
 #ifndef URHO3D_USE_OPENAL
     position_(nullptr),
     fractPosition_(0),
     timePosition_(0.0f),
+    unusedStreamSize_(0),
+#else
+    targetBuffer_(0),
+    streamFinished_(false),
 #endif
 
-    unusedStreamSize_(0)
+    paused_(false)
 {
     audio_ = GetSubsystem<Audio>();
 
@@ -388,7 +391,7 @@ bool SoundSource::IsPlaying() const
 #ifdef URHO3D_USE_OPENAL
     int val;
     alGetSourcei(alsource_, AL_SOURCE_STATE, &val);
-    return val == AL_PLAYING || val == AL_PAUSED;
+    return val != AL_STOPPED;
 #else
     return (sound_ || soundStream_) && position_ != nullptr;
 #endif
@@ -444,6 +447,10 @@ void SoundSource::Update(float timeStep)
     {
         // Manual OpenAL attenuation
         alSourcef(alsource_, AL_GAIN, gain_ * masterGain_ * attenuation_);
+        if(soundStream_)
+        {
+            UpdateStream();
+        }
     }
 #else
     if (!audio_->IsInitialized())
@@ -596,7 +603,9 @@ void SoundSource::SetSoundAttr(const ResourceRef& value)
     {
         // When changing the sound and not playing, free previous sound stream and stream buffer (if any)
         soundStream_.Reset();
+#ifndef URHO3D_USE_OPENAL
         streamBuffer_.Reset();
+#endif
         sound_ = newSound;
     }
 }
@@ -639,41 +648,46 @@ int SoundSource::GetPositionAttr() const
 
 #ifdef URHO3D_USE_OPENAL
 
+static ALenum GetALSoundFormat(Sound* sound)
+{
+    if(sound->IsSixteenBit() && sound->IsStereo())
+    {
+        return AL_FORMAT_STEREO16;
+    }
+    else if(sound->IsSixteenBit())
+    {
+        return AL_FORMAT_MONO16;
+    }
+    else if(sound->IsStereo())
+    {
+        return AL_FORMAT_STEREO8;
+    }
+    else
+    {
+        return AL_FORMAT_MONO8;	
+    }
+}
+
 void SoundSource::PlayLockless(Sound* sound)
 {
     if (sound)
     {
-        
-        if(sound->IsLooped())
-        {	
-            alSourcei(alsource_, AL_LOOPING, AL_TRUE);	
-        }
-        else
-        {
-            alSourcei(alsource_, AL_LOOPING, AL_FALSE);
-        }
+        StopLockless();
 
         if (!sound->IsCompressed())
         {
-            // We simply load the full sound into a buffer and pass it to OpenAl
-            alGenBuffers(1, &albuffer_);
-            ALenum format;
-            if(sound->IsSixteenBit() && sound->IsStereo())
-            {
-                format = AL_FORMAT_STEREO16;
-            }
-            else if(sound->IsSixteenBit())
-            {
-                format = AL_FORMAT_MONO16;
-            }
-            else if(sound->IsStereo())
-            {
-                format = AL_FORMAT_STEREO8;
+            if(sound->IsLooped())
+            {	
+                alSourcei(alsource_, AL_LOOPING, AL_TRUE);	
             }
             else
             {
-                format = AL_FORMAT_MONO8;	
+                alSourcei(alsource_, AL_LOOPING, AL_FALSE);
             }
+
+            // We simply load the full sound into a buffer and pass it to OpenAl
+            alGenBuffers(1, &albuffer_);
+            ALenum format = GetALSoundFormat(sound);
             alBufferData(albuffer_, format, sound->GetStart(), sound->GetDataSize(), sound->GetIntFrequency());
             alSourcei(alsource_, AL_BUFFER, albuffer_);
             alSourcePlay(alsource_);
@@ -683,8 +697,10 @@ void SoundSource::PlayLockless(Sound* sound)
         else
         {
             // Compressed sound start
-            PlayLockless(sound->GetDecoderStream());
+            // Looping is manually implemented for streams
+            alSourcei(alsource_, AL_LOOPING, AL_FALSE);
             sound_ = sound;
+            PlayLockless(sound->GetDecoderStream());
             return;
         }
     }
@@ -696,21 +712,25 @@ void SoundSource::PlayLockless(Sound* sound)
 
 void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
 {
-    // Reset the time position in any case
-
     if (stream)
     {
-        // Setup the stream buffer
-        unsigned sampleSize = stream->GetSampleSize();
-        unsigned streamBufferSize = sampleSize * stream->GetIntFrequency() * STREAM_BUFFER_LENGTH / 1000;
-
-        streamBuffer_ = context_->CreateObject<Sound>();
-        streamBuffer_->SetSize(streamBufferSize);
-        streamBuffer_->SetFormat(stream->GetIntFrequency(), stream->IsSixteenBit(), stream->IsStereo());
-        streamBuffer_->SetLooped(true);
-
         soundStream_ = stream;
-        unusedStreamSize_ = 0;
+        soundStream_->SetStopAtEnd(!sound_->IsLooped());
+        streamFinished_ = false;
+        targetBuffer_ = 0; 
+        // Streaming uses multi buffering
+
+        buffer = (audio_t*)malloc(STREAM_WANTED_SECONDS * sizeof(audio_t) * frequency_ * soundStream_->GetSampleSize()); 
+
+        // We load all buffers initially
+        alGenBuffers(OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+        for(int i = 0; i < OPENAL_STREAM_BUFFERS; i++)
+        {
+            LoadBuffer();
+        }
+        alSourceQueueBuffers(alsource_, OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+        alSourcePlay(alsource_);
+
         return;
     }
 
@@ -718,6 +738,63 @@ void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
     StopLockless();
 }
 
+void SoundSource::UpdateStream() 
+{
+    int status;
+    alGetSourcei(alsource_, AL_SOURCE_STATE, &status);
+
+    int processed;
+    // Prevent audio from stopping on the case of lag
+    if(status == AL_STOPPED && !streamFinished_)
+    {
+        processed = OPENAL_STREAM_BUFFERS;
+    }
+    else
+    {
+        alGetSourcei(alsource_, AL_BUFFERS_PROCESSED, &processed);
+    }
+
+    for(int i = 0; i < processed; i++)
+    {
+        uint32_t unqueued;
+        alSourceUnqueueBuffers(alsource_, 1, &unqueued);
+        LoadBuffer();
+        if(streamFinished_)
+        {
+            break;
+        }
+        alSourceQueueBuffers(alsource_, 1, &unqueued);
+    }
+
+    if(status == AL_STOPPED && !streamFinished_)
+    {
+        alSourcePlay(alsource_);
+    }
+}   
+
+void SoundSource::LoadBuffer() 
+{
+    uint32_t target = alstreamBuffers_[targetBuffer_];
+    int needed = STREAM_WANTED_SECONDS * sizeof(audio_t) * frequency_ * soundStream_->GetSampleSize();
+    int produced = soundStream_->GetData(buffer, needed);
+   
+    // Fill empty space with 0s to avoid trash data
+    // Only happens on non-looping streams
+    if (produced < needed)
+    {
+        memset(buffer + produced, 0, (size_t)(needed - produced));
+        streamFinished_ = true;
+    }
+    
+    // Load the audio to OpenAL
+    alBufferData(target, GetALSoundFormat(sound_), buffer, needed, sound_->GetIntFrequency());
+
+    targetBuffer_++;
+    if(targetBuffer_ >= OPENAL_STREAM_BUFFERS)
+    {
+        targetBuffer_ = 0;
+    }
+}
 
 #else
 
@@ -794,14 +871,33 @@ void SoundSource::StopLockless()
 {
 #ifdef URHO3D_USE_OPENAL
     alSourceStop(alsource_);
+    if(soundStream_)
+    {
+        int queued;
+        alGetSourcei(alsource_, AL_BUFFERS_QUEUED, &queued);
+        // Unqueue all buffers
+        for(int i = 0; i < queued; i++)
+        {
+            uint32_t _;
+            alSourceUnqueueBuffers(alsource_, 1, &_);
+        }
+        alDeleteBuffers(OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+        free(buffer);
+    }
+    else if(sound_)
+    {
+        alDeleteBuffers(1, &albuffer_);
+    }
 #else
     position_ = nullptr;
     timePosition_ = 0.0f;
 #endif
-
     // Free the sound stream and decode buffer if a stream was playing
     soundStream_.Reset();
+    sound_.Reset();
+#ifndef URHO3D_USE_OPENAL
     streamBuffer_.Reset();
+#endif
 }
 
 void SoundSource::SetPlayPositionLockless(audio_t* pos)
@@ -827,6 +923,7 @@ void SoundSource::SetPlayPositionLockless(audio_t* pos)
     timePosition_ = ((float)(int)(size_t)(pos - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
 #endif
 }
+
 
 #ifndef URHO3D_USE_OPENAL
 
