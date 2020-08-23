@@ -18,7 +18,7 @@ void VS(float4 iPos : POSITION,
     #ifdef VERTEXCOLOR
         float4 iColor : COLOR0,
     #endif
-    #if defined(LIGHTMAP) || defined(AO)
+    #if defined(LIGHTMAP)
         float2 iTexCoord2 : TEXCOORD1,
     #endif
     #if (defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE)) && !defined(BILLBOARD) && !defined(DIRBILLBOARD)
@@ -53,7 +53,7 @@ void VS(float4 iPos : POSITION,
     #endif
     out float3 oNormal : TEXCOORD1,
     out float4 oWorldPos : TEXCOORD2,
-    #if defined(LIGHTMAP) || defined(AO)
+    #if defined(LIGHTMAP)
         out float2 oTexCoord2 : TEXCOORD4,
     #endif
     out float3 oVertexLight : TEXCOORD5,
@@ -110,7 +110,7 @@ void VS(float4 iPos : POSITION,
     #endif
 
     // Ambient & per-vertex lighting
-    #if defined(LIGHTMAP) || defined(AO)
+    #if defined(LIGHTMAP)
         // If using lightmap, disregard zone ambient light
         // If using AO, calculate ambient in the PS
         oVertexLight = float3(0.0, 0.0, 0.0);
@@ -159,7 +159,7 @@ void PS(
     #endif
     float3 iNormal : TEXCOORD1,
     float4 iWorldPos : TEXCOORD2,
-    #if defined(LIGHTMAP) || defined(AO)
+    #if defined(LIGHTMAP)
         float2 iTexCoord2 : TEXCOORD4,
     #endif
     float3 iVertexLight : TEXCOORD5,
@@ -321,9 +321,11 @@ void PS(
     #else
         // Ambient & per-vertex lighting
         float3 finalColor = iVertexLight * diffColor.rgb;
+        float3 ambientOcclusion = float3(1.0, 1.0, 1.0);
         #ifdef AO
             // If using AO, the vertex light ambient is black, calculate occluded ambient here
-            finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * cAmbientColor.rgb * diffColor.rgb;
+            ambientOcclusion = Sample2D(EmissiveMap, iTexCoord.xy).rgb;
+            finalColor += ambientOcclusion * cAmbientColor.rgb * diffColor.rgb;
         #endif
 
         #ifdef MATERIAL
@@ -342,8 +344,7 @@ void PS(
 
         #ifdef IBL
             const float3 iblColor = ImageBasedLighting(reflection, normal, toCamera, diffColor, specColor, roughness, cubeColor);
-            const float gamma = 0;
-            finalColor += iblColor;
+            finalColor += iblColor * ambientOcclusion;
         #endif
 
         #ifdef ENVCUBEMAP
