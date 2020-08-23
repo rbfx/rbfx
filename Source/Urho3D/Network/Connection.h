@@ -107,6 +107,14 @@ enum ObserverPositionSendMode
     OPSM_POSITION_ROTATION
 };
 
+/// Packet types for outgoing buffers. Outgoing messages are grouped by their type
+enum PacketType {
+    PT_UNRELIABLE_UNORDERED,
+    PT_UNRELIABLE_ORDERED,
+    PT_RELIABLE_UNORDERED,
+    PT_RELIABLE_ORDERED
+};
+
 /// %Connection to a remote network host.
 class URHO3D_API Connection : public Object
 {
@@ -123,6 +131,8 @@ public:
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
+    /// Get packet type based on the message parameters
+    PacketType GetPacketType(bool reliable, bool inOrder);
     /// Send a message.
     void SendMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID = 0);
     /// Send a message.
@@ -155,17 +165,20 @@ public:
     void SendRemoteEvents();
     /// Send package files to client. Called by network.
     void SendPackages();
+    /// Send out buffered messages by their type
+    void SendBuffer(PacketType type);
+    /// Send out all buffered messages
+    void SendAllBuffers();
     /// Process pending latest data for nodes and components.
     void ProcessPendingLatestData();
     /// Process a message from the server or client. Called by Network.
-    bool ProcessMessage(int msgID, MemoryBuffer& msg);
+    bool ProcessMessage(int msgID, MemoryBuffer& buffer);
     /// Ban this connections IP address.
     void Ban();
     /// Return the RakNet address/guid.
     const SLNet::AddressOrGUID& GetAddressOrGUID() const { return *address_; }
     /// Set the the RakNet address/guid.
     void SetAddressOrGUID(const SLNet::AddressOrGUID& addr);
-
     /// Return client identity.
     VariantMap& GetIdentity() { return identity_; }
 
@@ -236,6 +249,8 @@ public:
 
     /// Set network simulation parameters. Called by Network.
     void ConfigureNetworkSimulator(int latencyMs, float packetLoss);
+    /// Buffered packet size limit, when reached, packet is sent out immediately
+    void SetPacketSizeLimit(int limit);
 
     /// Current controls.
     Controls controls_;
@@ -271,6 +286,8 @@ private:
     void ProcessExistingNode(Node* node, NodeReplicationState& nodeState);
     /// Process a SyncPackagesInfo message from server.
     void ProcessPackageInfo(int msgID, MemoryBuffer& msg);
+    /// Process unknown message. All unknown messages are forwarded as an events
+    void ProcessUnknownMessage(int msgID, MemoryBuffer& msg);
     /// Check a package list received from server and initiate package downloads as necessary. Return true on success, or false if failed to initialze downloads (cache dir not set).
     bool RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg);
     /// Initiate a package download.
@@ -334,6 +351,10 @@ private:
     Timer packetCounterTimer_;
     /// Last heard timer, resets when new packet is incoming.
     Timer lastHeardTimer_;
+    /// Outgoing packet buffer which can contain multiple messages
+    ea::unordered_map<int, VectorBuffer> outgoingBuffer_;
+    /// Outgoing packet size limit
+    int packedMessageLimit_;
 };
 
 }

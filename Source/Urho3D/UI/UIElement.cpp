@@ -1638,6 +1638,13 @@ void UIElement::GetChildren(ea::vector<UIElement*>& dest, bool recursive) const
         GetChildrenRecursive(dest);
 }
 
+ea::vector<UIElement*> UIElement::GetChildren(bool recursive) const
+{
+    ea::vector<UIElement*> dest;
+    GetChildren(dest, recursive);
+    return dest;
+}
+
 unsigned UIElement::GetNumChildren(bool recursive) const
 {
     if (!recursive)
