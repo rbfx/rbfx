@@ -30,10 +30,8 @@
 #include "../Graphics/DebugRenderer.h"
 #include "../Scene/Node.h"
 
-#ifdef URHO3D_USE_OPENAL
 #include <AL/al.h>
 #include <AL/alc.h>
-#endif
 
 namespace Urho3D
 {
@@ -56,13 +54,10 @@ SoundSource3D::SoundSource3D(Context* context) :
     outerAngle_(DEFAULT_ANGLE),
     rolloffFactor_(DEFAULT_ROLLOFF)
 {
-#ifdef URHO3D_USE_OPENAL
     // 3D sources are defined in world position
     alSourcei(alsource_, AL_SOURCE_RELATIVE, AL_FALSE); _ALERROR();
-#else
     // Start from zero volume until attenuation properly calculated
     attenuation_ = 0.0f;
-#endif
 }
 
 void SoundSource3D::RegisterObject(Context* context)
@@ -108,9 +103,7 @@ void SoundSource3D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 void SoundSource3D::Update(float timeStep)
 {
     Vector3 pos = node_->GetPosition();
-#ifdef URHO3D_USE_OPENAL
     alSource3f(alsource_, AL_POSITION, pos.x_, pos.y_, -pos.z_);	
-#endif
     CalculateAttenuation();
     SoundSource::Update(timeStep);
 }
@@ -120,7 +113,6 @@ void SoundSource3D::SetDistanceAttenuation(float nearDistance, float farDistance
     nearDistance_ = Max(nearDistance, 0.0f);
     farDistance_ = Max(farDistance, 0.0f);
     rolloffFactor_ = Max(rolloffFactor, MIN_ROLLOFF);
-    // TODO: near distance? It's not possible to set it seems
     MarkNetworkUpdate();
 }
 
@@ -134,9 +126,6 @@ void SoundSource3D::SetAngleAttenuation(float innerAngle, float outerAngle)
 void SoundSource3D::SetFarDistance(float distance)
 {
     farDistance_ = Max(distance, 0.0f);
-#ifdef URHO3D_USE_OPENAL
-    alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
-#endif
     MarkNetworkUpdate();
 }
 
@@ -161,9 +150,6 @@ void SoundSource3D::SetOuterAngle(float angle)
 void SoundSource3D::SetRolloffFactor(float factor)
 {
     rolloffFactor_ = Max(factor, MIN_ROLLOFF);
-#ifdef URHO3D_USE_OPENAL
-    alSourcef(alsource_, AL_ROLLOFF_FACTOR, factor);
-#endif
     MarkNetworkUpdate();
 }
 
@@ -190,9 +176,6 @@ void SoundSource3D::CalculateAttenuation()
                 attenuation_ = powf(1.0f - Clamp(distance - nearDistance_, 0.0f, interval) / interval, rolloffFactor_);
             else
                 attenuation_ = distance <= nearDistance_ ? 1.0f : 0.0f;
-
-            // Panning
-            panning_ = relativePos.Normalized().x_;
 
             // Angle attenuation
             if (innerAngle_ < DEFAULT_ANGLE && outerAngle_ > 0.0f)

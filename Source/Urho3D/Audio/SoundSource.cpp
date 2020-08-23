@@ -35,76 +35,11 @@
 
 #include "../DebugNew.h"
 
-#ifdef URHO3D_USE_OPENAL
-
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#endif
-
 namespace Urho3D
 {
-
-#ifndef URHO3D_USE_OPENAL
-#define INC_POS_LOOPED() \
-    pos += intAdd; \
-    fractPos += fractAdd; \
-    if (fractPos > 65535) \
-    { \
-        fractPos &= 65535; \
-        ++pos; \
-    } \
-    while (pos >= end) \
-        pos -= (end - repeat); \
-
-#define INC_POS_ONESHOT() \
-    pos += intAdd; \
-    fractPos += fractAdd; \
-    if (fractPos > 65535) \
-    { \
-        fractPos &= 65535; \
-        ++pos; \
-    } \
-    if (pos >= end) \
-    { \
-        pos = 0; \
-        break; \
-    } \
-
-#define INC_POS_STEREO_LOOPED() \
-    pos += ((unsigned)intAdd << 1u); \
-    fractPos += fractAdd; \
-    if (fractPos > 65535) \
-    { \
-        fractPos &= 65535; \
-        pos += 2; \
-    } \
-    while (pos >= end) \
-        pos -= (end - repeat); \
-
-#define INC_POS_STEREO_ONESHOT() \
-    pos += ((unsigned)intAdd << 1u); \
-    fractPos += fractAdd; \
-    if (fractPos > 65535) \
-    { \
-        fractPos &= 65535; \
-        pos += 2; \
-    } \
-    if (pos >= end) \
-    { \
-        pos = 0; \
-        break; \
-    } \
-
-#define GET_IP_SAMPLE() (((((int)pos[1] - (int)pos[0]) * fractPos) / 65536) + (int)pos[0])
-
-#define GET_IP_SAMPLE_LEFT() (((((int)pos[2] - (int)pos[0]) * fractPos) / 65536) + (int)pos[0])
-
-#define GET_IP_SAMPLE_RIGHT() (((((int)pos[3] - (int)pos[1]) * fractPos) / 65536) + (int)pos[1])
-
-static const int STREAM_SAFETY_SAMPLES = 4;
-
-#endif
 
 extern const char* AUDIO_CATEGORY;
 
@@ -122,24 +57,15 @@ SoundSource::SoundSource(Context* context) :
     autoRemove_(REMOVE_DISABLED),
     position_(nullptr),
     timePosition_(0.0f),
-
-#ifndef URHO3D_USE_OPENAL
-    fractPosition_(0),
-    unusedStreamSize_(0),
-#else
     targetBuffer_(0),
     consumedBuffers_(0),
     streamFinished_(false),
-#endif
-
     paused_(false)
 {
     audio_ = GetSubsystem<Audio>();
 
     if (audio_)
         audio_->AddSoundSource(this);
-
-#ifdef URHO3D_USE_OPENAL
 
     if(audio_->IsInitialized())
     {
@@ -152,8 +78,6 @@ SoundSource::SoundSource(Context* context) :
         // This is useful for 2D sources so panning can be implemented
         alSourcei(alsource_, AL_SOURCE_RELATIVE, AL_TRUE); _ALERROR();
     }
-
-#endif
 
     UpdateMasterGain();
 }
@@ -200,9 +124,7 @@ void SoundSource::Seek(float seekTime)
         // Ogg format
         if (soundStream_->Seek((unsigned)(seekTime * soundStream_->GetFrequency())))
         {
-#ifdef URHO3D_USE_OPENAL
             consumedBuffers_ = (int)ceil(seekTime / STREAM_WANTED_SECONDS);
-#endif
             timePosition_ = seekTime;
         }
     }
@@ -218,18 +140,7 @@ void SoundSource::Play(Sound* sound)
     if (frequency_ == 0.0f && sound)
         SetFrequency(sound->GetFrequency());
 
-    // If sound source is currently playing, have to lock the audio mutex
-#ifdef URHO3D_USE_OPENAL
     PlayLockless(sound);
-#else
-    if (position_)
-    {
-        MutexLock lock(audio_->GetMutex());
-        PlayLockless(sound);
-    }
-    else
-        PlayLockless(sound);
-#endif
 
     // Forget the Sound & Is Playing attribute previous values so that they will be sent again, triggering
     // the sound correctly on network clients even after the initial playback
@@ -280,24 +191,9 @@ void SoundSource::Play(SoundStream* stream)
 
     SharedPtr<SoundStream> streamPtr(stream);
 
-    // If sound source is currently playing, have to lock the audio mutex. When stream playback is explicitly
-    // requested, clear the existing sound if any
-#ifdef URHO3D_USE_OPENAL
+    // When stream playback is explicitly requested, clear the existing sound if any
     sound_.Reset();
     PlayLockless(streamPtr);
-#else 
-    if (position_)
-    {
-        MutexLock lock(audio_->GetMutex());
-        sound_.Reset();
-        PlayLockless(streamPtr);
-    }
-    else
-    {
-        sound_.Reset();
-        PlayLockless(streamPtr);
-    }
-#endif
 
     // Stream playback is not supported for network replication, no need to mark network dirty
 }
@@ -307,43 +203,24 @@ void SoundSource::Stop()
     if (!audio_)
         return;
 
-    // If sound source is currently playing, have to lock the audio mutex
-#ifdef URHO3D_USE_OPENAL
     StopLockless();
-#else
-    if (position_)
-    {
-        MutexLock lock(audio_->GetMutex());
-        StopLockless();
-    }
-    else
-        StopLockless();
-#endif
-
     MarkNetworkUpdate();
 }
 
 void SoundSource::Pause() 
 {
-#ifdef URHO3D_USE_OPENAL
     alSourcePause(alsource_);
-#endif
-
     paused_ = true;
-
 }
 
 void SoundSource::Resume() 
 {
-#ifdef URHO3D_USE_OPENAL
     int status;
     alGetSourcei(alsource_, AL_SOURCE_STATE, &status);
     if(status == AL_PAUSED)
     {
         alSourcePlay(alsource_);
     }
-#endif
-
     paused_ = false;
 }
 
@@ -381,11 +258,7 @@ void SoundSource::SetAttenuation(float attenuation)
 void SoundSource::SetPanning(float panning)
 {
     panning_ = Clamp(panning, -1.0f, 1.0f);
-
-#ifdef URHO3D_USE_OPENAL
-    // Only makes sense for 2D sources
     alSource3f(alsource_, AL_POSITION, panning_, 0.0f, 0.0f);
-#endif
 
     MarkNetworkUpdate();
 }
@@ -398,7 +271,6 @@ void SoundSource::SetAutoRemoveMode(AutoRemoveMode mode)
 
 bool SoundSource::IsPlaying() const
 {
-#ifdef URHO3D_USE_OPENAL
     if(audio_->IsInitialized())
     {
         int val;
@@ -409,14 +281,10 @@ bool SoundSource::IsPlaying() const
     {
         return (sound_ || soundStream_) && position_ != nullptr;
     }
-#else
-    return (sound_ || soundStream_) && position_ != nullptr;
-#endif
 }
 
 bool SoundSource::IsSoundPlaying() const
 {
-#ifdef URHO3D_USE_OPENAL
     if(audio_->IsInitialized())
     {
         int val;
@@ -427,9 +295,6 @@ bool SoundSource::IsSoundPlaying() const
     {
         return (sound_ || soundStream_) && position_ != nullptr && paused_ == false;
     }
-#else
-    return (sound_ || soundStream_) && position_ != nullptr && paused_ == false;
-#endif
 }
 
 void SoundSource::SetPlayPosition(audio_t* pos)
@@ -438,16 +303,11 @@ void SoundSource::SetPlayPosition(audio_t* pos)
     if (!audio_ || !sound_ || soundStream_)
         return;
 
-#ifndef URHO3D_USE_OPENAL
-    MutexLock lock(audio_->GetMutex());
-#endif
-
     SetPlayPositionLockless(pos);
 }
 
 volatile audio_t* SoundSource::GetPlayPosition() const
 {
-#ifdef URHO3D_USE_OPENAL
     if(!audio_->IsInitialized())
     {
         return position_;
@@ -465,14 +325,10 @@ volatile audio_t* SoundSource::GetPlayPosition() const
             return sound_->GetStart() + byte;
         }
     }
-#else
-    return position_;
-#endif
 }
 
 float SoundSource::GetTimePosition() const
 {
-#ifdef URHO3D_USE_OPENAL
     if(!audio_->IsInitialized())
     {
         return timePosition_;
@@ -491,33 +347,21 @@ float SoundSource::GetTimePosition() const
             return time;
         }
     }
-#else 
-    return timePosition_;
-#endif
 }
 
 int SoundSource::GetPositionAttr() const
 {
-#ifdef URHO3D_USE_OPENAL
     if(sound_)
         return (int)(GetPlayPosition() - sound_->GetStart());
     else
         return 0;
 
-#else
-    if (sound_ && position_)
-        return (int)(GetPlayPosition() - sound_->GetStart());
-    else
-        return 0;
-#endif
 }
 
-#ifdef URHO3D_USE_OPENAL
 int SoundSource::GetStreamBufferSize() const
 {
     return STREAM_WANTED_SECONDS * sizeof(audio_t) * frequency_ * soundStream_->GetSampleSize();
 }
-#endif
 
 void SoundSource::Update(float timeStep)
 {
@@ -525,7 +369,6 @@ void SoundSource::Update(float timeStep)
         return;
 
     // If there is no actual audio output, perform fake mixing into a nonexistent buffer to check stopping/looping
-#ifdef URHO3D_USE_OPENAL
     if(!audio_->IsInitialized())
     {
         MixNull(timeStep);
@@ -539,21 +382,12 @@ void SoundSource::Update(float timeStep)
             UpdateStream();
         }
     }
-#else
-    if (!audio_->IsInitialized())
-        MixNull(timeStep);
-#endif
-
-    // Free the stream if playback has stopped
-#ifdef URHO3D_USE_OPENAL
-    if (soundStream_ && !IsPlaying())
-        StopLockless();
-#else
-    if (soundStream_ && !position_)
-        StopLockless();
-#endif
 
     bool playing = IsPlaying();
+
+    // Free the stream if playback has stopped
+    if (soundStream_ && !playing)
+        StopLockless();
 
     if (!playing && sendFinishedEvent_ && node_ != nullptr)
     {
@@ -577,103 +411,6 @@ void SoundSource::Update(float timeStep)
     }
 }
 
-#ifndef URHO3D_USE_OPENAL
-void SoundSource::Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation)
-{
-    if (!position_ || (!sound_ && !soundStream_) || (!IsEnabledEffective() && node_ != nullptr))
-        return;
-
-    int streamFilledSize, outBytes;
-
-    if (soundStream_ && streamBuffer_)
-    {
-        int streamBufferSize = streamBuffer_->GetDataSize();
-        // Calculate how many bytes of stream sound data is needed
-        auto neededSize = (int)((float)samples * frequency_ / (float)mixRate);
-        // Add a little safety buffer. Subtract previous unused data
-        neededSize += STREAM_SAFETY_SAMPLES;
-        neededSize *= soundStream_->GetSampleSize();
-        neededSize -= unusedStreamSize_;
-        neededSize = Clamp(neededSize, 0, streamBufferSize - unusedStreamSize_);
-
-        // Always start play position at the beginning of the stream buffer
-        position_ = streamBuffer_->GetStart();
-
-        // Request new data from the stream
-        signed char* destination = streamBuffer_->GetStart() + unusedStreamSize_;
-        outBytes = neededSize ? soundStream_->GetData(destination, (unsigned)neededSize) : 0;
-        destination += outBytes;
-        // Zero-fill rest if stream did not produce enough data
-        if (outBytes < neededSize)
-            memset(destination, 0, (size_t)(neededSize - outBytes));
-
-        // Calculate amount of total bytes of data in stream buffer now, to know how much went unused after mixing
-        streamFilledSize = neededSize + unusedStreamSize_;
-    }
-
-    // If streaming, play the stream buffer. Otherwise play the original sound
-    Sound* sound = soundStream_ ? streamBuffer_ : sound_;
-    if (!sound)
-        return;
-
-    // Choose the correct mixing routine
-    if (!sound->IsStereo())
-    {
-        if (interpolation)
-        {
-            if (stereo)
-                MixMonoToStereoIP(sound, dest, samples, mixRate);
-            else
-                MixMonoToMonoIP(sound, dest, samples, mixRate);
-        }
-        else
-        {
-            if (stereo)
-                MixMonoToStereo(sound, dest, samples, mixRate);
-            else
-                MixMonoToMono(sound, dest, samples, mixRate);
-        }
-    }
-    else
-    {
-        if (interpolation)
-        {
-            if (stereo)
-                MixStereoToStereoIP(sound, dest, samples, mixRate);
-            else
-                MixStereoToMonoIP(sound, dest, samples, mixRate);
-        }
-        else
-        {
-            if (stereo)
-                MixStereoToStereo(sound, dest, samples, mixRate);
-            else
-                MixStereoToMono(sound, dest, samples, mixRate);
-        }
-    }
-
-    // Update the time position. In stream mode, copy unused data back to the beginning of the stream buffer
-    if (soundStream_)
-    {
-        timePosition_ += ((float)samples / (float)mixRate) * frequency_ / soundStream_->GetFrequency();
-
-        unusedStreamSize_ = Max(streamFilledSize - (int)(size_t)(position_ - streamBuffer_->GetStart()), 0);
-        if (unusedStreamSize_)
-            memcpy(streamBuffer_->GetStart(), (const void*)position_, (size_t)unusedStreamSize_);
-
-        // If stream did not produce any data, stop if applicable
-        if (!outBytes && soundStream_->GetStopAtEnd())
-        {
-            position_ = nullptr;
-            return;
-        }
-    }
-    else if (sound_)
-        timePosition_ = ((float)(int)(size_t)(position_ - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
-}
-
-#endif
-
 void SoundSource::UpdateMasterGain()
 {
     if (audio_)
@@ -690,9 +427,6 @@ void SoundSource::SetSoundAttr(const ResourceRef& value)
     {
         // When changing the sound and not playing, free previous sound stream and stream buffer (if any)
         soundStream_.Reset();
-#ifndef URHO3D_USE_OPENAL
-        streamBuffer_.Reset();
-#endif
         sound_ = newSound;
     }
 }
@@ -719,8 +453,6 @@ ResourceRef SoundSource::GetSoundAttr() const
     return GetResourceRef(sound_, Sound::GetTypeStatic());
 }
 
-
-#ifdef URHO3D_USE_OPENAL
 
 static ALenum GetALSoundFormat(Sound* sound)
 {
@@ -749,6 +481,7 @@ void SoundSource::PlayLockless(Sound* sound)
     if (sound)
     {
         StopLockless();
+        sound_ = sound;
 
         if (!sound->IsCompressed())
         {
@@ -769,13 +502,11 @@ void SoundSource::PlayLockless(Sound* sound)
                 alBufferData(albuffer_, format, sound->GetStart(), sound->GetDataSize(), sound->GetIntFrequency());
                 alSourcei(alsource_, AL_BUFFER, albuffer_);
                 alSourcePlay(alsource_);
-                sound_ = sound;
                 return;
             }
             else
             {
                 position_ = sound->GetStart();
-                sound_ = sound;
                 return;
             }
         }
@@ -785,14 +516,10 @@ void SoundSource::PlayLockless(Sound* sound)
             {
                 // Looping is manually implemented for streams
                 alSourcei(alsource_, AL_LOOPING, AL_FALSE);
-                sound_ = sound;
-                PlayLockless(sound->GetDecoderStream());
-                return;
             }
-            else
-            {
 
-            }
+            PlayLockless(sound->GetDecoderStream());
+            return;
         }
     }
 
@@ -809,18 +536,27 @@ void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
         soundStream_->SetStopAtEnd(!sound_->IsLooped());
         streamFinished_ = false;
         targetBuffer_ = 0; 
-        // Streaming uses multi buffering
 
-        buffer = (audio_t*)malloc(GetStreamBufferSize()); 
-
-        // We load all buffers initially
-        alGenBuffers(OPENAL_STREAM_BUFFERS, alstreamBuffers_);
-        for(int i = 0; i < OPENAL_STREAM_BUFFERS; i++)
+        if(audio_->IsInitialized())
         {
-            LoadBuffer();
+            // Streaming uses multi buffering
+
+            buffer = (audio_t*)malloc(GetStreamBufferSize()); 
+
+            // We load all buffers initially
+            alGenBuffers(OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+            for(int i = 0; i < OPENAL_STREAM_BUFFERS; i++)
+            {
+                LoadBuffer();
+            }
+            alSourceQueueBuffers(alsource_, OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+            alSourcePlay(alsource_);
         }
-        alSourceQueueBuffers(alsource_, OPENAL_STREAM_BUFFERS, alstreamBuffers_);
-        alSourcePlay(alsource_);
+        else
+        {
+            position_ = sound_->GetStart();
+            timePosition_ = 0.0f;
+        }
 
         return;
     }
@@ -888,80 +624,8 @@ void SoundSource::LoadBuffer()
     }
 }
 
-#else
-
-void SoundSource::PlayLockless(Sound* sound)
-{
-    // Reset the time position in any case
-    timePosition_ = 0.0f;
-
-    if (sound)
-    {
-        if (!sound->IsCompressed())
-        {
-            // Uncompressed sound start
-            signed char* start = sound->GetStart();
-            if (start)
-            {
-                // Free existing stream & stream buffer if any
-                soundStream_.Reset();
-                streamBuffer_.Reset();
-                sound_ = sound;
-                position_ = start;
-                fractPosition_ = 0;
-                sendFinishedEvent_ = true;
-                return;
-            }
-        }
-        else
-        {
-            // Compressed sound start
-            PlayLockless(sound->GetDecoderStream());
-            sound_ = sound;
-            return;
-        }
-    }
-
-    // If sound pointer is null or if sound has no data, stop playback
-    StopLockless();
-    sound_.Reset();
-}
-
-void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
-{
-    // Reset the time position in any case
-    timePosition_ = 0.0f;
-
-    if (stream)
-    {
-        // Setup the stream buffer
-        unsigned sampleSize = stream->GetSampleSize();
-        unsigned streamBufferSize = sampleSize * stream->GetIntFrequency() * STREAM_BUFFER_LENGTH / 1000;
-
-        streamBuffer_ = context_->CreateObject<Sound>();
-        streamBuffer_->SetSize(streamBufferSize);
-        streamBuffer_->SetFormat(stream->GetIntFrequency(), stream->IsSixteenBit(), stream->IsStereo());
-        streamBuffer_->SetLooped(true);
-
-        soundStream_ = stream;
-        unusedStreamSize_ = 0;
-        position_ = streamBuffer_->GetStart();
-        fractPosition_ = 0;
-        sendFinishedEvent_ = true;
-        return;
-    }
-
-    // If stream pointer is null, stop playback
-    StopLockless();
-}
-
-#endif
-
-
-
 void SoundSource::StopLockless()
 {
-#ifdef URHO3D_USE_OPENAL
     alSourceStop(alsource_);
     if(soundStream_)
     {
@@ -980,16 +644,9 @@ void SoundSource::StopLockless()
     {
         alDeleteBuffers(1, &albuffer_);
     }
-#else
-    position_ = nullptr;
-    timePosition_ = 0.0f;
-#endif
     // Free the sound stream and decode buffer if a stream was playing
     soundStream_.Reset();
     sound_.Reset();
-#ifndef URHO3D_USE_OPENAL
-    streamBuffer_.Reset();
-#endif
 }
 
 void SoundSource::SetPlayPositionLockless(audio_t* pos)
@@ -1007,677 +664,12 @@ void SoundSource::SetPlayPositionLockless(audio_t* pos)
     if (pos > end)
         pos = end;
 
-#ifdef URHO3D_USE_OPENAL
     ALint rel_pos = pos - start;
     alSourcei(alsource_, AL_BYTE_OFFSET, rel_pos);
-#else
     position_ = pos;
     timePosition_ = ((float)(int)(size_t)(pos - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
-#endif
 }
 
-
-#ifndef URHO3D_USE_OPENAL
-
-void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto vol = RoundToInt(256.0f * totalGain);
-    if (!vol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + (*pos * vol) / 256;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + (*pos * vol) / 256;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + *pos * vol;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + *pos * vol;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto leftVol = (int)((-panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
-    auto rightVol = (int)((panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
-    if (!leftVol && !rightVol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + (*pos * leftVol) / 256;
-                ++dest;
-                *dest = *dest + (*pos * rightVol) / 256;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + (*pos * leftVol) / 256;
-                ++dest;
-                *dest = *dest + (*pos * rightVol) / 256;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + *pos * leftVol;
-                ++dest;
-                *dest = *dest + *pos * rightVol;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + *pos * leftVol;
-                ++dest;
-                *dest = *dest + *pos * rightVol;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto vol = RoundToInt(256.0f * totalGain);
-    if (!vol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + (GET_IP_SAMPLE() * vol) / 256;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + (GET_IP_SAMPLE() * vol) / 256;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + GET_IP_SAMPLE() * vol;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + GET_IP_SAMPLE() * vol;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto leftVol = (int)((-panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
-    auto rightVol = (int)((panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
-    if (!leftVol && !rightVol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                int s = GET_IP_SAMPLE();
-                *dest = *dest + (s * leftVol) / 256;
-                ++dest;
-                *dest = *dest + (s * rightVol) / 256;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                int s = GET_IP_SAMPLE();
-                *dest = *dest + (s * leftVol) / 256;
-                ++dest;
-                *dest = *dest + (s * rightVol) / 256;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                int s = GET_IP_SAMPLE();
-                *dest = *dest + s * leftVol;
-                ++dest;
-                *dest = *dest + s * rightVol;
-                ++dest;
-                INC_POS_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                int s = GET_IP_SAMPLE();
-                *dest = *dest + s * leftVol;
-                ++dest;
-                *dest = *dest + s * rightVol;
-                ++dest;
-                INC_POS_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto vol = RoundToInt(256.0f * totalGain);
-    if (!vol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                int s = ((int)pos[0] + (int)pos[1]) / 2;
-                *dest = *dest + (s * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                int s = ((int)pos[0] + (int)pos[1]) / 2;
-                *dest = *dest + (s * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                int s = ((int)pos[0] + (int)pos[1]) / 2;
-                *dest = *dest + s * vol;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                int s = ((int)pos[0] + (int)pos[1]) / 2;
-                *dest = *dest + s * vol;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto vol = RoundToInt(256.0f * totalGain);
-    if (!vol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + (pos[0] * vol) / 256;
-                ++dest;
-                *dest = *dest + (pos[1] * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + (pos[0] * vol) / 256;
-                ++dest;
-                *dest = *dest + (pos[1] * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + pos[0] * vol;
-                ++dest;
-                *dest = *dest + pos[1] * vol;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + pos[0] * vol;
-                ++dest;
-                *dest = *dest + pos[1] * vol;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto vol = RoundToInt(256.0f * totalGain);
-    if (!vol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                int s = (GET_IP_SAMPLE_LEFT() + GET_IP_SAMPLE_RIGHT()) / 2;
-                *dest = *dest + (s * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                int s = (GET_IP_SAMPLE_LEFT() + GET_IP_SAMPLE_RIGHT()) / 2;
-                *dest = *dest + (s * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                int s = (GET_IP_SAMPLE_LEFT() + GET_IP_SAMPLE_RIGHT()) / 2;
-                *dest = *dest + s * vol;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                int s = (GET_IP_SAMPLE_LEFT() + GET_IP_SAMPLE_RIGHT()) / 2;
-                *dest = *dest + s * vol;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
-{
-    float totalGain = masterGain_ * attenuation_ * gain_;
-    auto vol = RoundToInt(256.0f * totalGain);
-    if (!vol)
-    {
-        MixZeroVolume(sound, samples, mixRate);
-        return;
-    }
-
-    float add = frequency_ / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    int fractPos = fractPosition_;
-
-    if (sound->IsSixteenBit())
-    {
-        auto* pos = (short*)position_;
-        auto* end = (short*)sound->GetEnd();
-        auto* repeat = (short*)sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + (GET_IP_SAMPLE_LEFT() * vol) / 256;
-                ++dest;
-                *dest = *dest + (GET_IP_SAMPLE_RIGHT() * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = (signed char*)pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + (GET_IP_SAMPLE_LEFT() * vol) / 256;
-                ++dest;
-                *dest = *dest + (GET_IP_SAMPLE_RIGHT() * vol) / 256;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = (signed char*)pos;
-        }
-    }
-    else
-    {
-        auto* pos = (signed char*)position_;
-        signed char* end = sound->GetEnd();
-        signed char* repeat = sound->GetRepeat();
-
-        if (sound->IsLooped())
-        {
-            while (samples--)
-            {
-                *dest = *dest + GET_IP_SAMPLE_LEFT() * vol;
-                ++dest;
-                *dest = *dest + GET_IP_SAMPLE_RIGHT() * vol;
-                ++dest;
-                INC_POS_STEREO_LOOPED();
-            }
-            position_ = pos;
-        }
-        else
-        {
-            while (samples--)
-            {
-                *dest = *dest + GET_IP_SAMPLE_LEFT() * vol;
-                ++dest;
-                *dest = *dest + GET_IP_SAMPLE_RIGHT() * vol;
-                ++dest;
-                INC_POS_STEREO_ONESHOT();
-            }
-            position_ = pos;
-        }
-    }
-
-    fractPosition_ = fractPos;
-}
-
-void SoundSource::MixZeroVolume(Sound* sound, unsigned samples, int mixRate)
-{
-    float add = frequency_ * (float)samples / (float)mixRate;
-    auto intAdd = (int)add;
-    auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
-    unsigned sampleSize = sound->GetSampleSize();
-
-    fractPosition_ += fractAdd;
-    if (fractPosition_ > 65535)
-    {
-        fractPosition_ &= 65535;
-        position_ += sampleSize;
-    }
-    position_ += intAdd * sampleSize;
-
-    if (position_ > sound->GetEnd())
-    {
-        if (sound->IsLooped())
-        {
-            while (position_ >= sound->GetEnd())
-            {
-                position_ -= (sound->GetEnd() - sound->GetRepeat());
-            }
-        }
-        else
-            position_ = nullptr;
-    }
-}
-
-#endif
 
 void SoundSource::MixNull(float timeStep)
 {
