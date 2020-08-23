@@ -22,19 +22,13 @@
 
 #pragma once
 
-#define URHO3D_USE_OPENAL
-
 #include "../Container/Str.h"
 
 namespace Urho3D
 {
 
-#ifdef URHO3D_USE_OPENAL
-    using audio_t = unsigned char;
-    void _ALERROR();
-#else
-    using audio_t = signed char;
-#endif
+using audio_t = unsigned char;
+void _ALERROR();
 
 // SoundSource type defaults
 static const ea::string SOUND_MASTER = "Master";

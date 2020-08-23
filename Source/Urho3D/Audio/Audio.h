@@ -70,29 +70,11 @@ public:
     /// Stop any sound source playing a certain sound clip.
     void StopSound(Sound* sound);
 
-#ifndef URHO3D_USE_OPENAL
-    /// Return byte size of one sample.
-    unsigned GetSampleSize() const { return sampleSize_; }
-
-    /// Return mixing rate.
-    int GetMixRate() const { return mixRate_; }
-
-    /// Return whether output is interpolated.
-    bool GetInterpolation() const { return interpolation_; }
-
-    /// Return whether output is stereo.
-    bool IsStereo() const { return stereo_; }
-#endif
-
     /// Return whether audio is being output.
     bool IsPlaying() const { return playing_; }
 
     /// Return whether an audio stream has been reserved.
-#ifdef URHO3D_USE_OPENAL
     bool IsInitialized() const { return isInitialized_; }
-#else 
-    bool IsInitialized() const { return deviceID_ != 0; }
-#endif
 
     /// Return master gain for a specific sound source type. Unknown sound types will return full gain (1).
     float GetMasterGain(const ea::string& type) const;
@@ -114,14 +96,6 @@ public:
     /// Remove a sound source. Called by SoundSource.
     void RemoveSoundSource(SoundSource* soundSource);
 
-#ifndef URHO3D_USE_OPENAL
-    /// Return audio thread mutex.
-    Mutex& GetMutex() { return audioMutex_; }
-    
-    /// Mix sound sources into the buffer.
-    void MixOutput(void* dest, unsigned samples);
-#endif
-
     /// Return sound type specific gain multiplied by master gain.
     float GetSoundSourceMasterGain(StringHash typeHash) const;
 
@@ -133,26 +107,7 @@ private:
     /// Actually update sound sources with the specific timestep. Called internally.
     void UpdateInternal(float timeStep);
 
-#ifdef URHO3D_USE_OPENAL
     bool isInitialized_;
-#else
-    /// Audio thread mutex.
-    Mutex audioMutex_;
-    /// Clipping buffer for mixing.
-    ea::unique_ptr<int[]> clipBuffer_;
-    /// SDL audio device ID.
-    unsigned deviceID_{};
-    /// Sample size.
-    unsigned sampleSize_{};
-    /// Clip buffer size in samples.
-    unsigned fragmentSize_{};
-    /// Mixing rate.
-    int mixRate_{};
-    /// Mixing interpolation flag.
-    bool interpolation_{};
-    /// Stereo flag.
-    bool stereo_{};
-#endif
     /// Playing flag.
     bool playing_{};
     /// Master gain by sound source type.

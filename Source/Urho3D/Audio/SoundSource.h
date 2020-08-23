@@ -77,6 +77,7 @@ public:
     /// Set attenuation. 1.0 is unaltered. Used for distance attenuated playback.
     void SetAttenuation(float attenuation);
     /// Set stereo panning. -1.0 is full left and 1.0 is full right.
+    /// Only implemented for 2D sources. 3D sources will ignore panning
     void SetPanning(float panning);
     /// Set to remove either the sound source component or its owner node from the scene automatically on sound playback completion. Disabled by default.
     void SetAutoRemoveMode(AutoRemoveMode mode);
@@ -105,6 +106,7 @@ public:
     float GetAttenuation() const { return attenuation_; }
 
     /// Return stereo panning.
+    /// Only implemented for 2D sources. 3D sources will ignore panning
     float GetPanning() const { return panning_; }
 
     /// Return automatic removal mode on sound playback completion.
@@ -165,7 +167,6 @@ protected:
     /// Is the audio paused (either by Pause() or Audio's subsystem pause sound type)
     bool paused_;
 
-#ifdef URHO3D_USE_OPENAL
     // Choose reasonable values to avoid audio lag and prevent
     // too much data from being loaded at once
     static constexpr int OPENAL_STREAM_BUFFERS = 10;
@@ -179,8 +180,6 @@ protected:
 
     int GetStreamBufferSize() const; 
 
-#endif
-
 private:
     /// Play a sound without locking the audio mutex. Called internally.
     void PlayLockless(Sound* sound);
@@ -191,35 +190,9 @@ private:
     /// Set new playback position without locking the audio mutex. Called internally.
     void SetPlayPositionLockless(audio_t* pos);
 
-#ifdef URHO3D_USE_OPENAL
     void UpdateStream();
     void LoadBuffer();
     audio_t* buffer;
-#else
-    /// Mix mono sample to mono buffer.
-    void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Mix mono sample to stereo buffer.
-    void MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Mix mono sample to mono buffer interpolated.
-    void MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Mix mono sample to stereo buffer interpolated.
-    void MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Mix stereo sample to mono buffer.
-    void MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Mix stereo sample to stereo buffer.
-    void MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Mix stereo sample to mono buffer interpolated.
-    void MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Mix stereo sample to stereo buffer interpolated.
-    void MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
-    /// Advance playback pointer without producing audible output.
-    void MixZeroVolume(Sound* sound, unsigned samples, int mixRate);
-    
-    /// Decode buffer.
-    SharedPtr<Sound> streamBuffer_;
-    /// Unused stream bytes from previous frame.
-    int unusedStreamSize_;
-#endif
     /// Advance playback pointer to simulate audio playback in headless mode.
     void MixNull(float timeStep);
 
@@ -228,21 +201,11 @@ private:
     /// Sound stream that is being played.
     SharedPtr<SoundStream> soundStream_;
 
-#ifdef URHO3D_USE_OPENAL
     // These are used by the null playback
     /// Playback position.
     audio_t* position_;
     /// Playback time position.
     float timePosition_;
-#else
-    /// Playback position.
-    volatile audio_t* position_;
-    /// Playback fractional position.
-    volatile int fractPosition_;
-    /// Playback time position.
-    volatile float timePosition_;
-#endif
-
 };
 
 }
