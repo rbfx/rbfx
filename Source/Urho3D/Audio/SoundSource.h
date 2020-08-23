@@ -81,14 +81,9 @@ public:
     void SetPanning(float panning);
     /// Set to remove either the sound source component or its owner node from the scene automatically on sound playback completion. Disabled by default.
     void SetAutoRemoveMode(AutoRemoveMode mode);
-    /// Set new playback position.
-    void SetPlayPosition(audio_t* pos);
 
     /// Return sound.
     Sound* GetSound() const { return sound_; }
-
-    /// Return playback position.  
-    volatile audio_t* GetPlayPosition() const;
 
     /// Return sound type, determines the master gain group.
     ea::string GetSoundType() const { return soundType_; }
@@ -170,7 +165,8 @@ protected:
     // Choose reasonable values to avoid audio lag and prevent
     // too much data from being loaded at once
     static constexpr int OPENAL_STREAM_BUFFERS = 10;
-    static constexpr float STREAM_WANTED_SECONDS = 0.01f;
+    static constexpr float STREAM_WANTED_SECONDS = 0.05f;
+    
     uint32_t alsource_;
     uint32_t albuffer_;
     uint32_t alstreamBuffers_[OPENAL_STREAM_BUFFERS];
@@ -179,18 +175,19 @@ protected:
     int consumedBuffers_;
 
     int GetStreamBufferSize() const; 
+    int GetStreamSampleCount() const;
 
 private:
-    /// Play a sound without locking the audio mutex. Called internally.
-    void PlayLockless(Sound* sound);
-    /// Play a sound stream without locking the audio mutex. Called internally.
-    void PlayLockless(const SharedPtr<SoundStream>& stream);
-    /// Stop sound without locking the audio mutex. Called internally.
-    void StopLockless();
-    /// Set new playback position without locking the audio mutex. Called internally.
-    void SetPlayPositionLockless(audio_t* pos);
+    /// Play a sound. Called internally.
+    void PlayInternal(Sound* sound);
+    /// Play a sound stream. Called internally.
+    void PlayInternal(const SharedPtr<SoundStream>& stream);
+    /// Stop sound. Called internally.
+    void StopInternal();
+    /// Set new playback position. Called internally.
+    void SetPlayPosition(int pos);
 
-    void UpdateStream();
+    void UpdateStream(bool reload = false);
     void LoadBuffer();
     audio_t* buffer;
     /// Advance playback pointer to simulate audio playback in headless mode.
@@ -202,8 +199,7 @@ private:
     SharedPtr<SoundStream> soundStream_;
 
     // These are used by the null playback
-    /// Playback position.
-    audio_t* position_;
+    int position_;
     /// Playback time position.
     float timePosition_;
 };

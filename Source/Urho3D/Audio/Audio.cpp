@@ -43,7 +43,6 @@
 
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <AL/alext.h>
 
 namespace Urho3D
 {
@@ -127,11 +126,8 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
         return false;
     }
 
-    attribs[0] = ALC_MAX_AUXILIARY_SENDS; 
-       attribs[1] = 4;
-    
     ALCcontext *alcontext;
-    alcontext = alcCreateContext(aldevice, attribs);
+    alcontext = alcCreateContext(aldevice, nullptr);
     if(!alcontext)
     {
         URHO3D_LOGERROR("Could not create OpenAL context");
@@ -304,7 +300,6 @@ void Audio::Release()
 
     if(IsInitialized())
     {
-        URHO3D_LOGINFO("Releasing OpenAL");
         ALCcontext* context = alcGetCurrentContext();
         ALCdevice* device = alcGetContextsDevice(context);
         alcMakeContextCurrent(nullptr);
