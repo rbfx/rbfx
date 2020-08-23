@@ -300,15 +300,6 @@ void Network::HandleMessage(const SLNet::AddressOrGUID& source, int packetID, in
         MemoryBuffer msg(data, (unsigned)numBytes);
         if (connection->ProcessMessage((int)msgID, msg))
             return;
-
-        // If message was not handled internally, forward as an event
-        using namespace NetworkMessage;
-
-        VariantMap& eventData = GetEventDataMap();
-        eventData[P_CONNECTION] = connection;
-        eventData[P_MESSAGEID] = (int)msgID;
-        eventData[P_DATA].SetBuffer(msg.GetData(), msg.GetSize());
-        connection->SendEvent(E_NETWORKMESSAGE, eventData);
     }
     else
         URHO3D_LOGWARNING("Discarding message from unknown MessageConnection " + ea::string(source.ToString()));
@@ -877,7 +868,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
         else
         {
             MemoryBuffer buffer(packet->data + dataStart, packet->length - dataStart);
-            bool processed = serverConnection_->ProcessMessage(messageID, buffer);
+            bool processed = serverConnection_ && serverConnection_->ProcessMessage(messageID, buffer);
             if (!processed)
             {
                 HandleMessage(packet->systemAddress, 0, messageID, (const char*)(packet->data + dataStart), packet->length - dataStart);
@@ -958,6 +949,7 @@ void Network::PostUpdate(float timeStep)
                     i->second->SendServerUpdate();
                     i->second->SendRemoteEvents();
                     i->second->SendPackages();
+                    i->second->SendAllBuffers();
                 }
             }
         }
@@ -967,6 +959,7 @@ void Network::PostUpdate(float timeStep)
             // Send the client update
             serverConnection_->SendClientUpdate();
             serverConnection_->SendRemoteEvents();
+            serverConnection_->SendAllBuffers();
         }
 
         // Notify that the update was sent
