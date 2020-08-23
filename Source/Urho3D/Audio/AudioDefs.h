@@ -31,6 +31,7 @@ namespace Urho3D
 
 #ifdef URHO3D_USE_OPENAL
     using audio_t = unsigned char;
+    void _ALERROR();
 #else
     using audio_t = signed char;
 #endif
@@ -42,6 +43,5 @@ static const ea::string SOUND_AMBIENT = "Ambient";
 static const ea::string SOUND_VOICE = "Voice";
 static const ea::string SOUND_MUSIC = "Music";
 
-void _ALERROR();
 
 }
