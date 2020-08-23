@@ -55,7 +55,7 @@ SoundSource::SoundSource(Context* context) :
     panning_(0.0f),
     sendFinishedEvent_(false),
     autoRemove_(REMOVE_DISABLED),
-    position_(nullptr),
+    position_(-1),
     timePosition_(0.0f),
     targetBuffer_(0),
     consumedBuffers_(0),
@@ -106,29 +106,9 @@ void SoundSource::RegisterObject(Context* context)
 
 void SoundSource::Seek(float seekTime)
 {
-    // Ignore buffered sound stream
-    if (!audio_ || !sound_ || (soundStream_ && !sound_->IsCompressed()))
-        return;
-
     // Set to valid range
     seekTime = Clamp(seekTime, 0.0f, sound_->GetLength());
-
-
-    if (!soundStream_)
-    {
-        // Raw or wav format
-        SetPositionAttr((int)(seekTime * (sound_->GetSampleSize() * sound_->GetFrequency())));
-    }
-    else
-    {
-        // Ogg format
-        if (soundStream_->Seek((unsigned)(seekTime * soundStream_->GetFrequency())))
-        {
-            consumedBuffers_ = (int)ceil(seekTime / STREAM_WANTED_SECONDS);
-            timePosition_ = seekTime;
-        }
-    }
-
+    SetPositionAttr((int)(seekTime * (sound_->GetFrequency())));
 }
 
 void SoundSource::Play(Sound* sound)
@@ -140,7 +120,7 @@ void SoundSource::Play(Sound* sound)
     if (frequency_ == 0.0f && sound)
         SetFrequency(sound->GetFrequency());
 
-    PlayLockless(sound);
+    PlayInternal(sound);
 
     // Forget the Sound & Is Playing attribute previous values so that they will be sent again, triggering
     // the sound correctly on network clients even after the initial playback
@@ -193,7 +173,7 @@ void SoundSource::Play(SoundStream* stream)
 
     // When stream playback is explicitly requested, clear the existing sound if any
     sound_.Reset();
-    PlayLockless(streamPtr);
+    PlayInternal(streamPtr);
 
     // Stream playback is not supported for network replication, no need to mark network dirty
 }
@@ -203,7 +183,7 @@ void SoundSource::Stop()
     if (!audio_)
         return;
 
-    StopLockless();
+    StopInternal();
     MarkNetworkUpdate();
 }
 
@@ -279,7 +259,7 @@ bool SoundSource::IsPlaying() const
     }
     else
     {
-        return (sound_ || soundStream_) && position_ != nullptr;
+        return (sound_ || soundStream_) && position_ != -1;
     }
 }
 
@@ -293,39 +273,10 @@ bool SoundSource::IsSoundPlaying() const
     }
     else
     {
-        return (sound_ || soundStream_) && position_ != nullptr && paused_ == false;
+        return (sound_ || soundStream_) && position_ != -1 && paused_ == false;
     }
 }
 
-void SoundSource::SetPlayPosition(audio_t* pos)
-{
-    // Setting play position on a stream is not supported
-    if (!audio_ || !sound_ || soundStream_)
-        return;
-
-    SetPlayPositionLockless(pos);
-}
-
-volatile audio_t* SoundSource::GetPlayPosition() const
-{
-    if(!audio_->IsInitialized())
-    {
-        return position_;
-    }
-    else
-    {
-        if(soundStream_)
-        {
-
-        }
-        else
-        {
-            int byte;
-            alGetSourcei(alsource_, AL_BYTE_OFFSET, &byte);
-            return sound_->GetStart() + byte;
-        }
-    }
-}
 
 float SoundSource::GetTimePosition() const
 {
@@ -351,16 +302,38 @@ float SoundSource::GetTimePosition() const
 
 int SoundSource::GetPositionAttr() const
 {
-    if(sound_)
-        return (int)(GetPlayPosition() - sound_->GetStart());
+    if(!audio_->IsInitialized())
+    {
+        return position_;
+    }
     else
-        return 0;
+    {
+        if(soundStream_)
+        {
 
+        }
+        else if(sound_)
+        {
+            int byte;
+            alGetSourcei(alsource_, AL_BYTE_OFFSET, &byte);
+            return byte;
+        }
+        else
+        {
+            return 0;
+        }
+        
+    }
 }
 
 int SoundSource::GetStreamBufferSize() const
 {
     return STREAM_WANTED_SECONDS * sizeof(audio_t) * frequency_ * soundStream_->GetSampleSize();
+}
+
+int SoundSource::GetStreamSampleCount() const 
+{
+    return STREAM_WANTED_SECONDS * frequency_;
 }
 
 void SoundSource::Update(float timeStep)
@@ -387,7 +360,7 @@ void SoundSource::Update(float timeStep)
 
     // Free the stream if playback has stopped
     if (soundStream_ && !playing)
-        StopLockless();
+        StopInternal();
 
     if (!playing && sendFinishedEvent_ && node_ != nullptr)
     {
@@ -422,7 +395,7 @@ void SoundSource::SetSoundAttr(const ResourceRef& value)
     auto* cache = GetSubsystem<ResourceCache>();
     auto* newSound = cache->GetResource<Sound>(value.name_);
     if (IsPlaying())
-        Play(newSound);
+        PlayInternal(newSound);
     else
     {
         // When changing the sound and not playing, free previous sound stream and stream buffer (if any)
@@ -436,7 +409,7 @@ void SoundSource::SetPlayingAttr(bool value)
     if (value)
     {
         if (!IsPlaying())
-            Play(sound_.Get());
+            PlayInternal(sound_.Get());
     }
     else
         Stop();
@@ -445,7 +418,7 @@ void SoundSource::SetPlayingAttr(bool value)
 void SoundSource::SetPositionAttr(int value)
 {
     if (sound_)
-        SetPlayPosition(sound_->GetStart() + value);
+        SetPlayPosition(value);
 }
 
 ResourceRef SoundSource::GetSoundAttr() const
@@ -474,13 +447,13 @@ static ALenum GetALSoundFormat(Sound* sound)
     }
 }
 
-void SoundSource::PlayLockless(Sound* sound)
+void SoundSource::PlayInternal(Sound* sound)
 {
     timePosition_ = 0.0f;
 
     if (sound)
     {
-        StopLockless();
+        StopInternal();
         sound_ = sound;
 
         if (!sound->IsCompressed())
@@ -506,7 +479,7 @@ void SoundSource::PlayLockless(Sound* sound)
             }
             else
             {
-                position_ = sound->GetStart();
+                position_ = 0;
                 return;
             }
         }
@@ -518,17 +491,17 @@ void SoundSource::PlayLockless(Sound* sound)
                 alSourcei(alsource_, AL_LOOPING, AL_FALSE);
             }
 
-            PlayLockless(sound->GetDecoderStream());
+            PlayInternal(sound->GetDecoderStream());
             return;
         }
     }
 
     // If sound pointer is null or if sound has no data, stop playback
-    StopLockless();
+    StopInternal();
     sound_.Reset();
 }
 
-void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
+void SoundSource::PlayInternal(const SharedPtr<SoundStream>& stream)
 {
     if (stream)
     {
@@ -543,18 +516,13 @@ void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
 
             buffer = (audio_t*)malloc(GetStreamBufferSize()); 
 
-            // We load all buffers initially
             alGenBuffers(OPENAL_STREAM_BUFFERS, alstreamBuffers_);
-            for(int i = 0; i < OPENAL_STREAM_BUFFERS; i++)
-            {
-                LoadBuffer();
-            }
-            alSourceQueueBuffers(alsource_, OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+            UpdateStream(true);
             alSourcePlay(alsource_);
         }
         else
         {
-            position_ = sound_->GetStart();
+            position_ = 0;
             timePosition_ = 0.0f;
         }
 
@@ -562,42 +530,79 @@ void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
     }
 
     // If stream pointer is null, stop playback
-    StopLockless();
+    StopInternal();
 }
 
-void SoundSource::UpdateStream() 
+void SoundSource::UpdateStream(bool reload) 
 {
-    int status;
-    alGetSourcei(alsource_, AL_SOURCE_STATE, &status);
-
-    int processed;
-    // Prevent audio from stopping on the case of lag
-    if(status == AL_STOPPED && !streamFinished_)
+    if(reload)
     {
-        processed = OPENAL_STREAM_BUFFERS;
+        // Unqueue all buffers. This stops audio.
+        alSourceStop(alsource_);
+
+        int queued;
+        alGetSourcei(alsource_, AL_BUFFERS_QUEUED, &queued);
+        for(int i = 0; i < queued; i++)
+        {
+            uint32_t _;
+            alSourceUnqueueBuffers(alsource_, 1, &_);
+        }
+       
+        targetBuffer_ = 0;
+        for(int i = 0; i < OPENAL_STREAM_BUFFERS; i++)
+        {
+            LoadBuffer();
+        }
+        alSourceQueueBuffers(alsource_, OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+
+        alSourcePlay(alsource_);
+
     }
     else
     {
-        alGetSourcei(alsource_, AL_BUFFERS_PROCESSED, &processed);
-        consumedBuffers_ += processed;
-    }
+        int status;
+        alGetSourcei(alsource_, AL_SOURCE_STATE, &status);
 
-    for(int i = 0; i < processed; i++)
-    {
-        uint32_t unqueued;
-        alSourceUnqueueBuffers(alsource_, 1, &unqueued);
-        LoadBuffer();
-        if(streamFinished_)
+        int processed;
+        // Prevent audio from stopping on the case of lag
+        if(status == AL_STOPPED && !streamFinished_)
         {
-            break;
+            processed = OPENAL_STREAM_BUFFERS;
         }
-        alSourceQueueBuffers(alsource_, 1, &unqueued);
-    }
+        else
+        {
+            alGetSourcei(alsource_, AL_BUFFERS_PROCESSED, &processed);
+            consumedBuffers_ += processed;
 
-    if(status == AL_STOPPED && !streamFinished_)
-    {
-        alSourcePlay(alsource_);
+            // Looping timekeeping
+            if(sound_->IsLooped())
+            {
+                int total_buffers = ceil(sound_->GetLength() / STREAM_WANTED_SECONDS);
+                if(consumedBuffers_ >= total_buffers)
+                {
+                    consumedBuffers_ = 0;
+                }
+            }
+        }
+
+        for(int i = 0; i < processed; i++)
+        {
+            uint32_t unqueued;
+            alSourceUnqueueBuffers(alsource_, 1, &unqueued);
+            LoadBuffer();
+            if(streamFinished_)
+            {
+                break;
+            }
+            alSourceQueueBuffers(alsource_, 1, &unqueued);
+        }
+
+        if(status == AL_STOPPED && !streamFinished_)
+        {
+            alSourcePlay(alsource_);
+        }
     }
+    
 }   
 
 void SoundSource::LoadBuffer() 
@@ -624,7 +629,7 @@ void SoundSource::LoadBuffer()
     }
 }
 
-void SoundSource::StopLockless()
+void SoundSource::StopInternal()
 {
     alSourceStop(alsource_);
     if(soundStream_)
@@ -649,31 +654,47 @@ void SoundSource::StopLockless()
     sound_.Reset();
 }
 
-void SoundSource::SetPlayPositionLockless(audio_t* pos)
+void SoundSource::SetPlayPosition(int pos)
 {
-    // Setting position on a stream is not supported
-    if (!sound_ || soundStream_)
+    // Ignore buffered sound stream
+    if (!audio_ || !sound_ || (soundStream_ && !sound_->IsCompressed()))
         return;
-
-    audio_t* start = sound_->GetStart();
-    audio_t* end = sound_->GetEnd();
-    if (pos < start)
-        pos = start;
-    if (sound_->IsSixteenBit() && (pos - start) & 1u)
+        
+    if (pos < 0)
+        pos = 0;
+    if (sound_->IsSixteenBit() && (pos) & 1u)
         ++pos;
-    if (pos > end)
-        pos = end;
 
-    ALint rel_pos = pos - start;
-    alSourcei(alsource_, AL_BYTE_OFFSET, rel_pos);
+    if(soundStream_)
+    {
+        int end = (int)ceil(sound_->GetLength() * sound_->GetFrequency());
+        if(pos > end)
+            pos = end;
+        if (soundStream_->Seek(pos))
+        {
+            // We must also reload all buffers, otherwise a delay will occur
+            UpdateStream(true);
+            consumedBuffers_ = (int)ceil(pos / GetStreamSampleCount());
+        } 
+    }
+    else
+    {
+        int end = sound_->GetEnd() - sound_->GetStart();
+        if (pos > end)
+            pos = end;
+        
+        alSourcei(alsource_, AL_SAMPLE_OFFSET, pos);
+    }
+    
     position_ = pos;
-    timePosition_ = ((float)(int)(size_t)(pos - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
+    timePosition_ = ((float)(int)(size_t)(pos) / (sound_->GetSampleSize() * sound_->GetFrequency()));
+
 }
 
 
 void SoundSource::MixNull(float timeStep)
 {
-    if (!position_ || !sound_ || !IsEnabledEffective())
+    if (position_ == -1 || !sound_ || !IsEnabledEffective())
         return;
 
     // Advance only the time position
@@ -689,7 +710,7 @@ void SoundSource::MixNull(float timeStep)
     {
         if (timePosition_ >= sound_->GetLength())
         {
-            position_ = nullptr;
+            position_ = -1;
             timePosition_ = 0.0f;
         }
     }
