@@ -185,6 +185,20 @@ void SceneReplication::CreateUI()
     // Hide until connected
     instructionsText_->SetVisible(false);
 
+    packetsIn_ = ui->GetRoot()->CreateChild<Text>();
+    packetsIn_->SetText("Packets in : 0");
+    packetsIn_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
+    packetsIn_->SetHorizontalAlignment(HA_LEFT);
+    packetsIn_->SetVerticalAlignment(VA_CENTER);
+    packetsIn_->SetPosition(10, -10);
+
+    packetsOut_ = ui->GetRoot()->CreateChild<Text>();
+    packetsOut_->SetText("Packets out: 0");
+    packetsOut_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
+    packetsOut_->SetHorizontalAlignment(HA_LEFT);
+    packetsOut_->SetVerticalAlignment(VA_CENTER);
+    packetsOut_->SetPosition(10, 10);
+
     buttonContainer_ = root->CreateChild<UIElement>();
     buttonContainer_->SetFixedSize(500, 20);
     buttonContainer_->SetPosition(20, 20);
@@ -342,6 +356,26 @@ void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventD
 {
     // We only rotate the camera according to mouse movement since last frame, so do not need the time step
     MoveCamera();
+
+    if (packetCounterTimer_.GetMSec(false) > 1000 && GetSubsystem<Network>()->GetServerConnection())
+    {
+        packetsIn_->SetText("Packets  in: " + ea::to_string(GetSubsystem<Network>()->GetServerConnection()->GetPacketsInPerSec()));
+        packetsOut_->SetText("Packets out: " + ea::to_string(GetSubsystem<Network>()->GetServerConnection()->GetPacketsOutPerSec()));
+        packetCounterTimer_.Reset();
+    }
+    if (packetCounterTimer_.GetMSec(false) > 1000 && GetSubsystem<Network>()->GetClientConnections().size())
+    {
+        int packetsIn = 0;
+        int packetsOut = 0;
+        auto connections = GetSubsystem<Network>()->GetClientConnections();
+        for (auto it = connections.begin(); it != connections.end(); ++it ) {
+            packetsIn += (*it)->GetPacketsInPerSec();
+            packetsOut += (*it)->GetPacketsOutPerSec();
+        }
+        packetsIn_->SetText("Packets  in: " + ea::to_string(packetsIn));
+        packetsOut_->SetText("Packets out: " + ea::to_string(packetsOut));
+        packetCounterTimer_.Reset();
+    }
 }
 
 void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& eventData)
