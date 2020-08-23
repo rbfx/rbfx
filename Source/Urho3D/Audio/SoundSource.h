@@ -86,8 +86,8 @@ public:
     /// Return sound.
     Sound* GetSound() const { return sound_; }
 
-    /// Return playback position.
-    volatile audio_t* GetPlayPosition() const { return position_; }
+    /// Return playback position.  
+    volatile audio_t* GetPlayPosition() const;
 
     /// Return sound type, determines the master gain group.
     ea::string GetSoundType() const { return soundType_; }
@@ -175,6 +175,10 @@ protected:
     uint32_t alstreamBuffers_[OPENAL_STREAM_BUFFERS];
     int targetBuffer_;
     bool streamFinished_;
+    int consumedBuffers_;
+
+    int GetStreamBufferSize() const; 
+
 #endif
 
 private:
@@ -224,13 +228,20 @@ private:
     /// Sound stream that is being played.
     SharedPtr<SoundStream> soundStream_;
 
-    // These are only used on OpenAL by the null mixer
+#ifdef URHO3D_USE_OPENAL
+    // These are used by the null playback
+    /// Playback position.
+    audio_t* position_;
+    /// Playback time position.
+    float timePosition_;
+#else
     /// Playback position.
     volatile audio_t* position_;
     /// Playback fractional position.
     volatile int fractPosition_;
     /// Playback time position.
     volatile float timePosition_;
+#endif
 
 };
 

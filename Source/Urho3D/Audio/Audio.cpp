@@ -220,7 +220,7 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
 
 void Audio::Update(float timeStep)
 {
-    if (!playing_)
+    if (!playing_ && IsInitialized())
         return;
 
     UpdateInternal(timeStep);
