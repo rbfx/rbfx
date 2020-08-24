@@ -19,9 +19,9 @@
 #pragma once
 
 #if _WIN32
-#   if BOX2D_EXPORTS || URHO3D_EXPORTS
+#   if BOX2D_EXPORTS
 #       define BOX2D_API __declspec(dllexport)
-#   elif BOX2D_IMPORTS || URHO3D_IMPORTS
+#   elif BOX2D_IMPORTS
 #       define BOX2D_API __declspec(dllimport)
 #	else
 #		define BOX2D_API

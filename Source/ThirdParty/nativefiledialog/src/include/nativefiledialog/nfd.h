@@ -11,14 +11,14 @@
 #define _NFD_H
 
 #if _WIN32
-#   if NFD_EXPORTS || URHO3D_EXPORTS
+#   if NFD_EXPORTS
 #       define NFD_API __declspec(dllexport)
-#   elif _IMPORTS || URHO3D_IMPORTS
+#   elif NDF_IMPORTS
 #       define NFD_API __declspec(dllimport)
 #	else
 #		define NFD_API
 #   endif
-#elif _EXPORTS || _IMPORTS
+#elif NDF_EXPORTS || NDF_IMPORTS
 #   define NFD_API __attribute__((visibility("default")))
 #else
 #   define NFD_API

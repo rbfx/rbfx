@@ -68,7 +68,7 @@ target_include_directories(ImGui SYSTEM
 )
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(ImGui PRIVATE -DIMGUI_EXPORTS -DURHO3D_EXPORTS)
+    target_compile_definitions(ImGui PRIVATE -DIMGUI_EXPORTS PUBLIC -DIMGUI_IMPORTS)
 endif ()
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
