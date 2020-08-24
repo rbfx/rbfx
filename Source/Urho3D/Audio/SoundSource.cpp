@@ -477,24 +477,28 @@ ResourceRef SoundSource::GetSoundAttr() const
 }
 
 
+static ALenum GetALSoundFormat(SoundStream* sound)
+{
+    if(sound->IsSixteenBit() && sound->IsStereo())
+        return AL_FORMAT_STEREO16;
+    else if(sound->IsSixteenBit())
+        return AL_FORMAT_MONO16;
+    else if(sound->IsStereo())
+        return AL_FORMAT_STEREO8;
+    else
+        return AL_FORMAT_MONO8;	
+}
+
 static ALenum GetALSoundFormat(Sound* sound)
 {
     if(sound->IsSixteenBit() && sound->IsStereo())
-    {
         return AL_FORMAT_STEREO16;
-    }
     else if(sound->IsSixteenBit())
-    {
         return AL_FORMAT_MONO16;
-    }
     else if(sound->IsStereo())
-    {
         return AL_FORMAT_STEREO8;
-    }
     else
-    {
         return AL_FORMAT_MONO8;	
-    }
 }
 
 void SoundSource::PlayInternal(Sound* sound)
@@ -556,7 +560,10 @@ void SoundSource::PlayInternal(const SharedPtr<SoundStream>& stream)
     if (stream)
     {
         soundStream_ = stream;
-        soundStream_->SetStopAtEnd(!sound_->IsLooped());
+        if(sound_)
+        {
+            soundStream_->SetStopAtEnd(!sound_->IsLooped());
+        }
         streamFinished_ = false;
         targetBuffer_ = 0; 
 
@@ -602,11 +609,14 @@ void SoundSource::UpdateStream(bool reload)
         }
        
         targetBuffer_ = 0;
+        int loaded = 0;
         for(int i = 0; i < OPENAL_STREAM_BUFFERS; i++)
         {
-            LoadBuffer();
+            if(!LoadBuffer())  
+                break; 
+            loaded++;
         }
-        alSourceQueueBuffers(alsource_, OPENAL_STREAM_BUFFERS, alstreamBuffers_);
+        alSourceQueueBuffers(alsource_, loaded, alstreamBuffers_);
 
         alSourcePlay(alsource_);
 
@@ -616,6 +626,24 @@ void SoundSource::UpdateStream(bool reload)
         int status;
         alGetSourcei(alsource_, AL_SOURCE_STATE, &status);
 
+
+        // Buffered sound streams may not have loaded all data
+        if (!sound_ || (soundStream_ && !sound_->IsCompressed()))
+        {
+            int queued;
+            alGetSourcei(alsource_, AL_BUFFERS_QUEUED, &queued);
+
+            if(queued < OPENAL_STREAM_BUFFERS)
+            {
+                for(int i = 0; i < OPENAL_STREAM_BUFFERS - queued; i++)
+                {
+                    if(!LoadBuffer())
+                        break;
+                }
+                alSourceQueueBuffers(alsource_, OPENAL_STREAM_BUFFERS - queued, &alstreamBuffers_[queued]);
+            }
+        }
+        
         int processed;
         // Prevent audio from stopping on the case of lag
         if(status == AL_STOPPED && !streamFinished_)
@@ -628,7 +656,7 @@ void SoundSource::UpdateStream(bool reload)
             consumedBuffers_ += processed;
 
             // Looping timekeeping
-            if(sound_->IsLooped())
+            if(sound_ && sound_->IsLooped())
             {
                 int total_buffers = ceil(sound_->GetLength() / STREAM_WANTED_SECONDS);
                 if(consumedBuffers_ >= total_buffers)
@@ -639,10 +667,14 @@ void SoundSource::UpdateStream(bool reload)
         }
 
         for(int i = 0; i < processed; i++)
-        {
+        {    
             uint32_t unqueued;
             alSourceUnqueueBuffers(alsource_, 1, &unqueued);
-            LoadBuffer();
+            if(!LoadBuffer())
+            {
+                alSourceQueueBuffers(alsource_, 1, &unqueued);
+                break;
+            }
             if(streamFinished_)
             {
                 break;
@@ -659,7 +691,7 @@ void SoundSource::UpdateStream(bool reload)
     
 }   
 
-void SoundSource::LoadBuffer() 
+bool SoundSource::LoadBuffer() 
 {
     uint32_t target = alstreamBuffers_[targetBuffer_];
     int needed = GetStreamBufferSize();
@@ -669,19 +701,26 @@ void SoundSource::LoadBuffer()
     // Only happens on non-looping streams
     if (produced < needed - 1)
     {
+        // Ignore buffered sound streams as they may not have generated
+        // all sound just yet
+        // TODO: Improve this? This could be a custom sound source
+        if (!sound_ || (soundStream_ && !sound_->IsCompressed()))
+            return false;
+
         memset(buffer_ + produced, 0, (size_t)(needed - produced));
-        URHO3D_LOGERROR("Finished! needed={} produced={}", needed, produced);
         streamFinished_ = true;
     }
     
     // Load the audio to OpenAL
-    alBufferData(target, GetALSoundFormat(sound_), buffer_, needed, sound_->GetIntFrequency());
+    alBufferData(target, GetALSoundFormat(soundStream_), buffer_, needed, soundStream_->GetIntFrequency());
 
     targetBuffer_++;
     if(targetBuffer_ >= OPENAL_STREAM_BUFFERS)
     {
         targetBuffer_ = 0;
     }
+
+    return true;
 }
 
 void SoundSource::StopInternal()
