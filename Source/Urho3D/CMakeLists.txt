@@ -152,6 +152,13 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
+if (URHO3D_USE_OPENAL)
+    find_package(OpenAL REQUIRED)
+    target_include_directories(Urho3D PRIVATE ${OPENAL_INCLUDE_DIR})
+else ()
+    set (OPENAL_LIBRARY MojoAL)
+endif ()
+
 # Link dependencies
 set (THIRD_PARTY_DEPENDENCIES
     FreeType
@@ -184,6 +191,7 @@ set (THIRD_PARTY_DEPENDENCIES
     ETCPACK
     xatlas
     embree
+    ${OPENAL_LIBRARY}
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)

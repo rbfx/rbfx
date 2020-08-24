@@ -103,6 +103,7 @@ _option2(URHO3D_PROFILING         "Profiler support enabled"                    
 _option2(URHO3D_PROFILING_SYSTRACE "Profiler systrace support enabled"                    OFF                  "URHO3D_PROFILING"              OFF)
 _option(URHO3D_SYSTEMUI           "Build SystemUI subsystem"                              ${URHO3D_ENABLE_ALL})
 _option(URHO3D_URHO2D             "2D subsystem enabled"                                  ${URHO3D_ENABLE_ALL})
+_option(URHO3D_USE_OPENAL         "Use OpenAL sound library."                             OFF)
 
 # Features
 _option2(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS"             OFF)
