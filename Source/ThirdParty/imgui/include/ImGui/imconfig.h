@@ -20,9 +20,9 @@
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows
 #if _WIN32
-#   if IMGUI_EXPORTS || URHO3D_EXPORTS
+#   if IMGUI_EXPORTS
 #       define IMGUI_API __declspec(dllexport)
-#   elif IMGUI_IMPORTS || URHO3D_IMPORTS
+#   elif IMGUI_IMPORTS
 #       define IMGUI_API __declspec(dllimport)
 #    else
 #       define IMGUI_API

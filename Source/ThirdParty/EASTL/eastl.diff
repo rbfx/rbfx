@@ -221,7 +221,7 @@ diff -ur EASTL-master/include/EASTL/internal/config.h EASTL/include/EASTL/intern
 -		#if defined(_MSC_VER)
 -			#define EASTL_API      __declspec(dllimport)
 +		#if defined(_WIN32)
-+			#if defined(EASTL_EXPORTS) || defined(URHO3D_EXPORTS)
++			#if defined(EASTL_EXPORTS)
 +				#define EASTL_API      __declspec(dllexport)
 +			#else
 +				#define EASTL_API      __declspec(dllimport)
@@ -236,7 +236,7 @@ diff -ur EASTL-master/include/EASTL/internal/config.h EASTL/include/EASTL/intern
 -		#if defined(_MSC_VER)
 -			#define EASTL_EASTDC_API      __declspec(dllimport)
 +		#if defined(_WIN32)
-+			#if defined(EASTL_EXPORTS) || defined(URHO3D_EXPORTS)
++			#if defined(EASTL_EXPORTS)
 +				#define EASTL_EASTDC_API      __declspec(dllexport)
 +			#else
 +				#define EASTL_EASTDC_API      __declspec(dllimport)
@@ -1017,7 +1017,7 @@ diff -ur EASTL-master/test/packages/EAStdC/include/EAStdC/internal/Config.h EAST
 -			#define EASTDC_API      __declspec(dllimport)
 +	#if EASTDC_DLL
 +		#if defined(_WIN32)
-+			#if defined(EASTDC_EXPORTS) || defined(URHO3D_EXPORTS)
++			#if defined(EASTDC_EXPORTS)
 +				#define EASTDC_API      __declspec(dllexport)
 +			#else
 +				#define EASTDC_API      __declspec(dllimport)
@@ -1095,7 +1095,7 @@ diff -ur EASTL-master/test/packages/EAThread/include/eathread/internal/config.h 
 -		#if defined(_MSC_VER)
 +	#if EATHREAD_DLL
 +		#if defined(_WIN32)
-+			#if defined(EATHREAD_EXPORTS) || defined(URHO3D_EXPORTS)    // Urho3D
++			#if defined(EATHREAD_EXPORTS)
 +				#define EATHREADLIB_API      __declspec(dllexport)
 +			#else
 +				#define EATHREADLIB_API      __declspec(dllimport)

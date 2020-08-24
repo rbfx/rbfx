@@ -290,7 +290,7 @@ namespace eastl
 #ifndef EASTL_API // If the build file hasn't already defined this to be dllexport...
 	#if EASTL_DLL
 		#if defined(_WIN32)
-			#if defined(EASTL_EXPORTS) || defined(URHO3D_EXPORTS)
+			#if defined(EASTL_EXPORTS)
 				#define EASTL_API      __declspec(dllexport)
 			#else
 				#define EASTL_API      __declspec(dllimport)
@@ -321,7 +321,7 @@ namespace eastl
 #ifndef EASTL_EASTDC_API
 	#if EASTL_DLL
 		#if defined(_WIN32)
-			#if defined(EASTL_EXPORTS) || defined(URHO3D_EXPORTS)
+			#if defined(EASTL_EXPORTS)
 				#define EASTL_EASTDC_API      __declspec(dllexport)
 			#else
 				#define EASTL_EASTDC_API      __declspec(dllimport)

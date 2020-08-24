@@ -71,7 +71,7 @@ endif ()
 target_compile_definitions(Civetweb PRIVATE -DHAVE_POLL=1)
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS)
+    target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS PUBLIC -DCIVETWEB_DLL_IMPORTS)
 endif ()
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

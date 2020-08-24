@@ -200,12 +200,10 @@ typedef _W64 int ptrdiff_t;
 #ifdef GLEW_STATIC
 #  define GLEWAPI extern
 #else
-#  if GLEW_BUILD || URHO3D_EXPORTS
+#  if GLEW_BUILD
 #    define GLEWAPI extern __declspec(dllexport)
-#  elif defined(URHO3D_IMPORTS)
-#    define GLEWAPI extern __declspec(dllimport)
 #  else
-#    define GLEWAPI extern
+#    define GLEWAPI extern __declspec(dllimport)
 #  endif
 #endif
 
