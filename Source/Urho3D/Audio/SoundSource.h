@@ -193,7 +193,7 @@ private:
     void SetPlayPosition(int pos);
 
     void UpdateStream(bool reload = false);
-    void LoadBuffer();
+    bool LoadBuffer();
     audio_t* buffer_;
     /// Advance playback pointer to simulate audio playback in headless mode.
     void MixNull(float timeStep);
