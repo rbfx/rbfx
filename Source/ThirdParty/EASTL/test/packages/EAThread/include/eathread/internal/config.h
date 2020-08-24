@@ -337,7 +337,7 @@ EA_RESTORE_VC_WARNING()
 #ifndef EATHREADLIB_API // If the build file hasn't already defined this to be dllexport...
 	#if EATHREAD_DLL
 		#if defined(_WIN32)
-			#if defined(EATHREAD_EXPORTS) || defined(URHO3D_EXPORTS)    // Urho3D
+			#if defined(EATHREAD_EXPORTS)
 				#define EATHREADLIB_API      __declspec(dllexport)
 			#else
 				#define EATHREADLIB_API      __declspec(dllimport)
