@@ -72,6 +72,8 @@ public:
     void SetSoundType(const ea::string& type);
     /// Set frequency.
     void SetFrequency(float frequency);
+    /// Set pitch (relative speed).
+    void SetPitch(float pitch);
     /// Set gain. 0.0 is silence, 1.0 is full volume.
     void SetGain(float gain);
     /// Set attenuation. 1.0 is unaltered. Used for distance attenuated playback.
@@ -93,6 +95,9 @@ public:
 
     /// Return frequency.
     float GetFrequency() const { return frequency_; }
+
+    /// Return pitch.
+    float GetPitch() const;
 
     /// Return gain.
     float GetGain() const { return gain_; }
@@ -189,7 +194,7 @@ private:
 
     void UpdateStream(bool reload = false);
     void LoadBuffer();
-    audio_t* buffer;
+    audio_t* buffer_;
     /// Advance playback pointer to simulate audio playback in headless mode.
     void MixNull(float timeStep);
 
