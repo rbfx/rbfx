@@ -151,7 +151,7 @@
 #ifndef EASTDC_API // If the build file hasn't already defined this to be dllexport...
 	#if EASTDC_DLL
 		#if defined(_WIN32)
-			#if defined(EASTDC_EXPORTS) || defined(URHO3D_EXPORTS)
+			#if defined(EASTDC_EXPORTS)
 				#define EASTDC_API      __declspec(dllexport)
 			#else
 				#define EASTDC_API      __declspec(dllimport)
