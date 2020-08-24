@@ -169,8 +169,8 @@ protected:
 
     // Choose reasonable values to avoid audio lag and prevent
     // too much data from being loaded at once
-    static constexpr int OPENAL_STREAM_BUFFERS = 10;
-    static constexpr float STREAM_WANTED_SECONDS = 0.05f;
+    static constexpr int OPENAL_STREAM_BUFFERS = 5;
+    static constexpr float STREAM_WANTED_SECONDS = 0.1f;
     
     uint32_t alsource_;
     uint32_t albuffer_;

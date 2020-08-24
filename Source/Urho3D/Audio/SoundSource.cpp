@@ -107,6 +107,9 @@ void SoundSource::RegisterObject(Context* context)
 void SoundSource::Seek(float seekTime)
 {
     // Set to valid range
+    if(!sound_)
+        return;
+
     seekTime = Clamp(seekTime, 0.0f, sound_->GetLength());
     SetPositionAttr((int)(seekTime * (sound_->GetFrequency())));
 }
@@ -234,11 +237,6 @@ void SoundSource::SetFrequency(float frequency)
         }
         
         alSourcef(alsource_, AL_PITCH, pitch);
-        // If it's a stream we need to resize the buffer
-        if(soundStream_ && buffer_)
-        {
-            buffer_ = (audio_t*)realloc(buffer_, GetStreamBufferSize()); 
-        } 
     }
     MarkNetworkUpdate();
 }
@@ -328,7 +326,7 @@ float SoundSource::GetTimePosition() const
         
         if(soundStream_)
         {
-            return time + consumedBuffers_ * STREAM_WANTED_SECONDS * GetPitch(); 
+            return time + consumedBuffers_ * STREAM_WANTED_SECONDS; 
         }
         else
         {
@@ -380,12 +378,12 @@ int SoundSource::GetPositionAttr() const
 
 int SoundSource::GetStreamBufferSize() const
 {
-    return STREAM_WANTED_SECONDS * sizeof(audio_t) * frequency_ * soundStream_->GetSampleSize();
+    return Max(STREAM_WANTED_SECONDS * sizeof(audio_t) * soundStream_->GetFrequency() * soundStream_->GetSampleSize(), 1);
 }
 
 int SoundSource::GetStreamSampleCount() const 
 {
-    return STREAM_WANTED_SECONDS * frequency_;
+    return Max(STREAM_WANTED_SECONDS * soundStream_->GetFrequency(), 1);
 }
 
 void SoundSource::Update(float timeStep)
@@ -564,6 +562,10 @@ void SoundSource::PlayInternal(const SharedPtr<SoundStream>& stream)
 
         if(audio_->IsInitialized())
         {
+            // Streams require a buffer that depends on frequency
+            if(frequency_ == 0.0f)
+                frequency_ = soundStream_->GetFrequency();
+
             // Streaming uses multi buffering
             buffer_ = (audio_t*)malloc(GetStreamBufferSize()); 
 
@@ -628,7 +630,7 @@ void SoundSource::UpdateStream(bool reload)
             // Looping timekeeping
             if(sound_->IsLooped())
             {
-                int total_buffers = ceil(sound_->GetLength() / (STREAM_WANTED_SECONDS * GetPitch()));
+                int total_buffers = ceil(sound_->GetLength() / STREAM_WANTED_SECONDS);
                 if(consumedBuffers_ >= total_buffers)
                 {
                     consumedBuffers_ = 0;
@@ -651,6 +653,7 @@ void SoundSource::UpdateStream(bool reload)
         if(status == AL_STOPPED && !streamFinished_)
         {
             alSourcePlay(alsource_);
+            consumedBuffers_ += OPENAL_STREAM_BUFFERS;
         }
     }
     
@@ -664,9 +667,10 @@ void SoundSource::LoadBuffer()
    
     // Fill empty space with 0s to avoid trash data
     // Only happens on non-looping streams
-    if (produced < needed)
+    if (produced < needed - 1)
     {
         memset(buffer_ + produced, 0, (size_t)(needed - produced));
+        URHO3D_LOGERROR("Finished! needed={} produced={}", needed, produced);
         streamFinished_ = true;
     }
     
