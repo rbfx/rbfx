@@ -116,11 +116,12 @@ void SoundSource::Play(Sound* sound)
     if (!audio_)
         return;
 
+
+    PlayInternal(sound);
+    
     // If no frequency set yet, set from the sound's default
     if (frequency_ == 0.0f && sound)
         SetFrequency(sound->GetFrequency());
-
-    PlayInternal(sound);
 
     // Forget the Sound & Is Playing attribute previous values so that they will be sent again, triggering
     // the sound correctly on network clients even after the initial playback
@@ -141,23 +142,23 @@ void SoundSource::Play(Sound* sound)
 
 void SoundSource::Play(Sound* sound, float frequency)
 {
-    SetFrequency(frequency);
     Play(sound);
+    SetFrequency(frequency);
 }
 
 void SoundSource::Play(Sound* sound, float frequency, float gain)
 {
-    SetFrequency(frequency);
     SetGain(gain);
     Play(sound);
+    SetFrequency(frequency);
 }
 
 void SoundSource::Play(Sound* sound, float frequency, float gain, float panning)
 {
-    SetFrequency(frequency);
     SetGain(gain);
     SetPanning(panning);
     Play(sound);
+    SetFrequency(frequency);
 }
 
 void SoundSource::Play(SoundStream* stream)
@@ -165,15 +166,16 @@ void SoundSource::Play(SoundStream* stream)
     if (!audio_)
         return;
 
-    // If no frequency set yet, set from the stream's default
-    if (frequency_ == 0.0f && stream)
-        SetFrequency(stream->GetFrequency());
 
     SharedPtr<SoundStream> streamPtr(stream);
 
     // When stream playback is explicitly requested, clear the existing sound if any
     sound_.Reset();
     PlayInternal(streamPtr);
+    
+    // If no frequency set yet, set from the stream's default
+    if (frequency_ == 0.0f && stream)
+        SetFrequency(stream->GetFrequency());
 
     // Stream playback is not supported for network replication, no need to mark network dirty
 }
@@ -218,8 +220,40 @@ void SoundSource::SetSoundType(const ea::string& type)
 
 void SoundSource::SetFrequency(float frequency)
 {
-    frequency_ = Clamp(frequency, 0.0f, 535232.0f);
+    frequency_ = Max(frequency, 0.0f);
+    if(audio_->IsInitialized())
+    {
+        float pitch;
+        if(sound_)
+        {
+            pitch = frequency_ / sound_->GetFrequency();
+        }
+        else if(soundStream_)
+        {
+            pitch = frequency_ / soundStream_->GetFrequency();
+        }
+        
+        alSourcef(alsource_, AL_PITCH, pitch);
+        // If it's a stream we need to resize the buffer
+        if(soundStream_ && buffer_)
+        {
+            buffer_ = (audio_t*)realloc(buffer_, GetStreamBufferSize()); 
+        } 
+    }
     MarkNetworkUpdate();
+}
+
+void SoundSource::SetPitch(float pitch) 
+{
+    if(sound_)
+    {
+        SetFrequency(sound_->GetFrequency() * pitch);
+    }   
+    else if(soundStream_)
+    {
+        SetFrequency(soundStream_->GetFrequency() * pitch);
+    }
+     
 }
 
 void SoundSource::SetGain(float gain)
@@ -280,6 +314,9 @@ bool SoundSource::IsSoundPlaying() const
 
 float SoundSource::GetTimePosition() const
 {
+    if(!sound_)
+        return 0.0f;
+
     if(!audio_->IsInitialized())
     {
         return timePosition_;
@@ -291,7 +328,7 @@ float SoundSource::GetTimePosition() const
         
         if(soundStream_)
         {
-            return time + consumedBuffers_ * STREAM_WANTED_SECONDS; 
+            return time + consumedBuffers_ * STREAM_WANTED_SECONDS * GetPitch(); 
         }
         else
         {
@@ -300,28 +337,43 @@ float SoundSource::GetTimePosition() const
     }
 }
 
+float SoundSource::GetPitch() const
+{
+    if(sound_)
+    {
+        return frequency_ / sound_->GetFrequency();
+    }
+    else if(soundStream_)
+    {
+        return frequency_ / soundStream_->GetFrequency();
+    }
+
+    return 0.0f;
+}
+
 int SoundSource::GetPositionAttr() const
 {
+    if(!sound_)
+        return 0;
+
     if(!audio_->IsInitialized())
     {
         return position_;
     }
     else
     {
+        int sample;
+        alGetSourcei(alsource_, AL_SAMPLE_OFFSET, &sample);
+
         if(soundStream_)
         {
-
-        }
-        else if(sound_)
-        {
-            int byte;
-            alGetSourcei(alsource_, AL_BYTE_OFFSET, &byte);
-            return byte;
+            return sample + consumedBuffers_ * GetStreamSampleCount();
         }
         else
         {
-            return 0;
+            return sample;
         }
+        
         
     }
 }
@@ -513,8 +565,7 @@ void SoundSource::PlayInternal(const SharedPtr<SoundStream>& stream)
         if(audio_->IsInitialized())
         {
             // Streaming uses multi buffering
-
-            buffer = (audio_t*)malloc(GetStreamBufferSize()); 
+            buffer_ = (audio_t*)malloc(GetStreamBufferSize()); 
 
             alGenBuffers(OPENAL_STREAM_BUFFERS, alstreamBuffers_);
             UpdateStream(true);
@@ -577,7 +628,7 @@ void SoundSource::UpdateStream(bool reload)
             // Looping timekeeping
             if(sound_->IsLooped())
             {
-                int total_buffers = ceil(sound_->GetLength() / STREAM_WANTED_SECONDS);
+                int total_buffers = ceil(sound_->GetLength() / (STREAM_WANTED_SECONDS * GetPitch()));
                 if(consumedBuffers_ >= total_buffers)
                 {
                     consumedBuffers_ = 0;
@@ -609,18 +660,18 @@ void SoundSource::LoadBuffer()
 {
     uint32_t target = alstreamBuffers_[targetBuffer_];
     int needed = GetStreamBufferSize();
-    int produced = soundStream_->GetData(buffer, needed);
+    int produced = soundStream_->GetData(buffer_, needed);
    
     // Fill empty space with 0s to avoid trash data
     // Only happens on non-looping streams
     if (produced < needed)
     {
-        memset(buffer + produced, 0, (size_t)(needed - produced));
+        memset(buffer_ + produced, 0, (size_t)(needed - produced));
         streamFinished_ = true;
     }
     
     // Load the audio to OpenAL
-    alBufferData(target, GetALSoundFormat(sound_), buffer, needed, sound_->GetIntFrequency());
+    alBufferData(target, GetALSoundFormat(sound_), buffer_, needed, sound_->GetIntFrequency());
 
     targetBuffer_++;
     if(targetBuffer_ >= OPENAL_STREAM_BUFFERS)
@@ -643,7 +694,8 @@ void SoundSource::StopInternal()
             alSourceUnqueueBuffers(alsource_, 1, &_);
         }
         alDeleteBuffers(OPENAL_STREAM_BUFFERS, alstreamBuffers_);
-        free(buffer);
+        free(buffer_);
+        buffer_ = nullptr;
     }
     else if(sound_)
     {
@@ -662,6 +714,7 @@ void SoundSource::SetPlayPosition(int pos)
         
     if (pos < 0)
         pos = 0;
+
     if (sound_->IsSixteenBit() && (pos) & 1u)
         ++pos;
 
@@ -670,24 +723,31 @@ void SoundSource::SetPlayPosition(int pos)
         int end = (int)ceil(sound_->GetLength() * sound_->GetFrequency());
         if(pos > end)
             pos = end;
-        if (soundStream_->Seek(pos))
+
+        if(audio_->IsInitialized())
         {
-            // We must also reload all buffers, otherwise a delay will occur
-            UpdateStream(true);
-            consumedBuffers_ = (int)ceil(pos / GetStreamSampleCount());
-        } 
+            if (soundStream_->Seek(pos))
+            {
+                // We must also reload all buffers, otherwise a delay will occur
+                UpdateStream(true);
+                consumedBuffers_ = (int)ceil(pos / GetStreamSampleCount());
+            }
+        }
     }
     else
     {
         int end = sound_->GetEnd() - sound_->GetStart();
         if (pos > end)
             pos = end;
-        
-        alSourcei(alsource_, AL_SAMPLE_OFFSET, pos);
+
+        if(audio_->IsInitialized())
+        {
+            alSourcei(alsource_, AL_SAMPLE_OFFSET, pos);
+        }
     }
     
     position_ = pos;
-    timePosition_ = ((float)(int)(size_t)(pos) / (sound_->GetSampleSize() * sound_->GetFrequency()));
+    timePosition_ = ((float)(int)(size_t)(pos) / (sound_->GetFrequency()));
 
 }
 
