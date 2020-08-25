@@ -1435,9 +1435,17 @@ static ALfloat calculate_distance_attenuation(const ALCcontext *ctx, const ALsou
     return 1.0f;
 }
 
-// tatjam: Improved stereo panning
+// rbfx: Improved stereo panning
 static float get_stereo_gain(float radians)
 {
+    // This is a hand-tweaked function that tries to match
+    // the expected output from a 3D source rotating around the 
+    // listener. It never reaches 0 volume to simulate HRTF effects
+    // but it doesn't implement any fancy filtering, just a rough
+    // approximation.
+    // The curve can be seen here: https://www.desmos.com/calculator/kgqxwcuwuk
+    // TODO: Use a more correct and easier to compute curve
+
     #define SQRT2_DIV2 0.7071067812f  /* sqrt(2.0) / 2.0 ... */
     
     if(radians > 0.0f && radians < M_PI)
@@ -1488,7 +1496,7 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
     ALfloat position[3];
     #endif
 
-    // tatjam: Removed the spatialize check here to prevent stereo audio 
+    // rbfx: Removed the spatialize check here to prevent stereo audio 
     //  from being disabled
 
     #ifdef __SSE__
@@ -1522,7 +1530,7 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
     #endif
     }
 
-    // tatjam: The spatialize check is done here instead
+    // rbfx: The spatialize check is done here instead
     if(spatialize)
     {
         /* AL SPEC: ""1. Distance attenuation is calculated first, including
@@ -1560,21 +1568,44 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
        constraints." */
     gain *= ctx->listener.gain;
 
-    // tatjam: New stereo panning
+    // rbfx: New stereo panning
     // As we only implement stereo panning we simply calculate the angle
     // between the listener forward vector and the source, the later projected
     // onto the plane defined by the listener up vector
     // This removes the vertical spatial dimension, but it doesn't matter
     // as we don't implement HRTF
-    const __m128 at_sse = _mm_load_ps(at);
-    const __m128 up_sse = _mm_load_ps(up);
-    float d = dotproduct_sse(position_sse, up_sse);
-    const __m128 projected = _mm_sub_ps(position_sse, _mm_mul_ps(_mm_set1_ps(d), up_sse)); 
-    const __m128 cross = xyzzy_sse(projected, at_sse);
-    float dot1 = dotproduct_sse(cross, up_sse);
-    float dot2 = dotproduct_sse(position_sse, at_sse);
-    // This returns the angle from -PI to PI
-    radians = SDL_atan2f(dot1, dot2); 
+    #ifdef __SSE__
+    if(has_sse) {
+        const __m128 at_sse = _mm_load_ps(at);
+        const __m128 up_sse = _mm_load_ps(up);
+        float d = dotproduct_sse(position_sse, up_sse);
+        const __m128 projected = _mm_sub_ps(position_sse, _mm_mul_ps(_mm_set1_ps(d), up_sse)); 
+        const __m128 cross = xyzzy_sse(projected, at_sse);
+        float dot1 = dotproduct_sse(cross, up_sse);
+        float dot2 = dotproduct_sse(position_sse, at_sse);
+        // This returns the angle from -PI to PI
+        radians = SDL_atan2f(dot1, dot2); 
+    } else
+    #elif defined (__ARM_NEON__)
+    if(has_neon) {
+
+    } else 
+    #endif
+
+    #if NEED_SCALAR_FALLBACK
+    {
+        ALfloat projected[3];
+        ALfloat cross[3];
+        ALfloat d = dotproduct(position, up);
+        projected[0] = position[0] - d * up[0];
+        projected[1] = position[1] - d * up[1];
+        projected[2] = position[2] - d * up[2];
+        xyzzy(cross, projected, at);
+        float dot1 = dotproduct(cross, up);
+        float dot2 = dotproduct(position, at);
+        radians = SDL_atan2f(dot1, dot2);
+    }
+    #endif
     if(radians < 0.0f)
     {
         radians = 2.0f*M_PI+radians;
