@@ -1588,7 +1588,14 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
     } else
     #elif defined (__ARM_NEON__)
     if(has_neon) {
-
+        const float32x4_t at_neon = vld1q_f32(at);
+        const float32x4_t up_neon = vld1q_f322(up);
+        float d = dotproduct_neon(position_neon, up_neon);
+        const float32x4_t projected = vsubq_f32(position_neon, vmulq_f32(vdupq_n_f32(d), up_neon));
+        const float32x4_t cross = xyzzy_neon(projected, at_neon);
+        float dot1 = dotproduct_neon(cross, up_neon);
+        float dot2 = dotproduct_neon(position_neon, at_neon);
+        radians = SDL_atan2f(dot1, dot2);
     } else 
     #endif
 
