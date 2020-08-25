@@ -1435,6 +1435,34 @@ static ALfloat calculate_distance_attenuation(const ALCcontext *ctx, const ALsou
     return 1.0f;
 }
 
+// tatjam: Improved stereo panning
+static float get_stereo_gain(float radians)
+{
+    #define SQRT2_DIV2 0.7071067812f  /* sqrt(2.0) / 2.0 ... */
+    
+    if(radians > 0.0f && radians < M_PI)
+    {
+        float cosv, sinv;
+        calculate_sincos(radians * 0.5f, &sinv, &cosv);
+        return 0.8f * SQRT2_DIV2 * (cosv + sinv) + 0.1414f;
+    }
+    else if(radians >= M_PI && radians < 1.5f * M_PI)
+    {
+        float mult = SDL_sqrtf(2.0f) / (1.8f * M_PI + 1.68f);
+        float term = 1.8f * radians + 1.68f;
+        float cosv, sinv;
+        calculate_sincos(term, &sinv, &cosv);
+        return mult * (cosv + sinv) + 0.444f;
+    }
+    else
+    {
+        float term = 0.5688f * radians + 1.47f;
+        float cosv, sinv;
+        calculate_sincos(-term, &sinv, &cosv);
+        return SQRT2_DIV2 * (cosv - sinv) + 1.1456f;
+    }
+}
+
 static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, float *gains)
 {
     /* rolloff==0.0f makes all distance models result in 1.0f,
@@ -1460,14 +1488,8 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
     ALfloat position[3];
     #endif
 
-    /* this goes through the steps the AL spec dictates for gain and distance attenuation... */
-
-    if (!spatialize) {
-        /* simpler path through the same AL spec details if not spatializing. */
-        gain = SDL_min(SDL_max(src->gain, src->min_gain), src->max_gain) * ctx->listener.gain;
-        gains[0] = gains[1] = gain;  /* no spatialization, but AL_GAIN (etc) is still applied. */
-        return;
-    }
+    // tatjam: Removed the spatialize check here to prevent stereo audio 
+    //  from being disabled
 
     #ifdef __SSE__
     if (has_sse) {
@@ -1500,10 +1522,19 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
     #endif
     }
 
-    /* AL SPEC: ""1. Distance attenuation is calculated first, including
-       minimum (AL_REFERENCE_DISTANCE) and maximum (AL_MAX_DISTANCE)
-       thresholds." */
-    gain = calculate_distance_attenuation(ctx, src, distance);
+    // tatjam: The spatialize check is done here instead
+    if(spatialize)
+    {
+        /* AL SPEC: ""1. Distance attenuation is calculated first, including
+            minimum (AL_REFERENCE_DISTANCE) and maximum (AL_MAX_DISTANCE)
+            thresholds." */
+        gain = calculate_distance_attenuation(ctx, src, distance);
+    }
+    else
+    {
+        gain = 1.0f;
+    }
+    
 
     /* AL SPEC: "2. The result is then multiplied by source gain (AL_GAIN)." */
     gain *= src->gain;
@@ -1529,151 +1560,28 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
        constraints." */
     gain *= ctx->listener.gain;
 
-    /* now figure out positioning. Since we're aiming for stereo, we just
-       need a simple panning effect. We're going to do what's called
-       "constant power panning," as explained...
-
-       https://dsp.stackexchange.com/questions/21691/algorithm-to-pan-audio
-
-       Naturally, we'll need to know the angle between where our listener
-       is facing and where the source is to make that work...
-
-       https://www.youtube.com/watch?v=S_568VZWFJo
-
-       ...but to do that, we need to rotate so we have the correct side of
-       the listener, which isn't just a point in space, but has a definite
-       direction it is facing. More or less, this is what gluLookAt deals
-       with...
-
-       http://www.songho.ca/opengl/gl_camera.html
-
-       ...although I messed with the algorithm until it did what I wanted.
-
-       XYZZY!! https://en.wikipedia.org/wiki/Cross_product#Mnemonic
-    */
-
-    #ifdef __SSE__ /* (the math is explained in the scalar version.) */
-    if (has_sse) {
-        const __m128 at_sse = _mm_load_ps(at);
-        const __m128 U_sse = normalize_sse(xyzzy_sse(at_sse, _mm_load_ps(up)));
-        const __m128 V_sse = xyzzy_sse(at_sse, U_sse);
-        const __m128 N_sse = normalize_sse(at_sse);
-        const __m128 rotated_sse = {
-            dotproduct_sse(position_sse, U_sse),
-            -dotproduct_sse(position_sse, V_sse),
-            -dotproduct_sse(position_sse, N_sse),
-            0.0f
-        };
-
-        const ALfloat mags = magnitude_sse(at_sse) * magnitude_sse(rotated_sse);
-        radians = (mags == 0.0f) ? 0.0f : SDL_acosf(dotproduct_sse(at_sse, rotated_sse) / mags);
-        if (_mm_comilt_ss(rotated_sse, _mm_setzero_ps())) {
-            radians = -radians;
-        }
-    } else
-    #endif
-
-    #ifdef __ARM_NEON__  /* (the math is explained in the scalar version.) */
-    if (has_neon) {
-        const float32x4_t at_neon = vld1q_f32(at);
-        const float32x4_t U_neon = normalize_neon(xyzzy_neon(at_neon, vld1q_f32(up)));
-        const float32x4_t V_neon = xyzzy_neon(at_neon, U_neon);
-        const float32x4_t N_neon = normalize_neon(at_neon);
-        const float32x4_t rotated_neon = {
-            dotproduct_neon(position_neon, U_neon),
-            -dotproduct_neon(position_neon, V_neon),
-            -dotproduct_neon(position_neon, N_neon),
-            0.0f
-        };
-
-        const ALfloat mags = magnitude_neon(at_neon) * magnitude_neon(rotated_neon);
-        radians = (mags == 0.0f) ? 0.0f : SDL_acosf(dotproduct_neon(at_neon, rotated_neon) / mags);
-        if (rotated_neon[0] < 0.0f) {
-            radians = -radians;
-        }
-    } else
-    #endif
-
+    // tatjam: New stereo panning
+    // As we only implement stereo panning we simply calculate the angle
+    // between the listener forward vector and the source, the later projected
+    // onto the plane defined by the listener up vector
+    // This removes the vertical spatial dimension, but it doesn't matter
+    // as we don't implement HRTF
+    const __m128 at_sse = _mm_load_ps(at);
+    const __m128 up_sse = _mm_load_ps(up);
+    float d = dotproduct_sse(position_sse, up_sse);
+    const __m128 projected = _mm_sub_ps(position_sse, _mm_mul_ps(_mm_set1_ps(d), up_sse)); 
+    const __m128 cross = xyzzy_sse(projected, at_sse);
+    float dot1 = dotproduct_sse(cross, up_sse);
+    float dot2 = dotproduct_sse(position_sse, at_sse);
+    // This returns the angle from -PI to PI
+    radians = SDL_atan2f(dot1, dot2); 
+    if(radians < 0.0f)
     {
-    #if NEED_SCALAR_FALLBACK
-        ALfloat U[3];
-        ALfloat V[3];
-        ALfloat N[3];
-        ALfloat rotated[3];
-        ALfloat mags;
-
-        xyzzy(U, at, up);
-        normalize(U);
-        xyzzy(V, at, U);
-        SDL_memcpy(N, at, sizeof (N));
-        normalize(N);
-
-        /* we don't need the bottom row of the gluLookAt matrix, since we don't
-           translate. (Matrix * Vector) is just filling in each element of the
-           output vector with the dot product of a row of the matrix and the
-           vector. I made some of these negative to make it work for my purposes,
-           but that's not what GLU does here.
-
-           (This says gluLookAt is left-handed, so maybe that's part of it?)
-            https://stackoverflow.com/questions/25933581/how-u-v-n-camera-coordinate-system-explained-with-opengl
-         */
-        rotated[0] = dotproduct(position, U);
-        rotated[1] = -dotproduct(position, V);
-        rotated[2] = -dotproduct(position, N);
-
-        /* At this point, we have rotated vector and we can calculate the angle
-           from 0 (directly in front of where the listener is facing) to 180
-           degrees (directly behind) ... */
-
-        mags = magnitude(at) * magnitude(rotated);
-        radians = (mags == 0.0f) ? 0.0f : SDL_acosf(dotproduct(at, rotated) / mags);
-        /* and we already have what we need to decide if those degrees are on the
-           listener's left or right...
-           https://gamedev.stackexchange.com/questions/43897/determining-if-something-is-on-the-right-or-left-side-of-an-object
-           ...we already did this dot product: it's in rotated[0]. */
-
-        /* make it negative to the left, positive to the right. */
-        if (rotated[0] < 0.0f) {
-            radians = -radians;
-        }
-    #endif
+        radians = 2.0f*M_PI+radians;
     }
-
-    /* here comes the Constant Power Panning magic... */
-    #define SQRT2_DIV2 0.7071067812f  /* sqrt(2.0) / 2.0 ... */
-
-    /* this might be a terrible idea, which is totally my own doing here,
-      but here you go: Constant Power Panning only works from -45 to 45
-      degrees in front of the listener. So we split this into 4 quadrants.
-      - from -45 to 45: standard panning.
-      - from 45 to 135: pan full right.
-      - from 135 to 225: flip angle so it works like standard panning.
-      - from 225 to -45: pan full left. */
-
-    #define RADIANS_45_DEGREES 0.7853981634f
-    #define RADIANS_135_DEGREES 2.3561944902f
-    if ((radians >= -RADIANS_45_DEGREES) && (radians <= RADIANS_45_DEGREES)) {
-        ALfloat sine, cosine;
-        calculate_sincos(radians, &sine, &cosine);
-        gains[0] = (SQRT2_DIV2 * (cosine - sine));
-        gains[1] = (SQRT2_DIV2 * (cosine + sine));
-    } else if ((radians >= RADIANS_45_DEGREES) && (radians <= RADIANS_135_DEGREES)) {
-        gains[0] = 0.0f;
-        gains[1] = 1.0f;
-    } else if ((radians >= -RADIANS_135_DEGREES) && (radians <= -RADIANS_45_DEGREES)) {
-        gains[0] = 1.0f;
-        gains[1] = 0.0f;
-    } else if (radians < 0.0f) {  /* back left */
-        ALfloat sine, cosine;
-        calculate_sincos((ALfloat) -(radians + M_PI), &sine, &cosine);
-        gains[0] = (SQRT2_DIV2 * (cosine - sine));
-        gains[1] = (SQRT2_DIV2 * (cosine + sine));
-    } else { /* back right */
-        ALfloat sine, cosine;
-        calculate_sincos((ALfloat) -(radians - M_PI), &sine, &cosine);
-        gains[0] = (SQRT2_DIV2 * (cosine - sine));
-        gains[1] = (SQRT2_DIV2 * (cosine + sine));
-    }
+    
+    gains[1] = get_stereo_gain(radians);
+    gains[0] = get_stereo_gain(2.0f * M_PI - radians);
 
     /* apply distance attenuation and gain to positioning. */
     gains[0] *= gain;

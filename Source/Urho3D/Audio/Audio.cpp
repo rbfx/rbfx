@@ -120,12 +120,6 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
 
     ALint attribs[4] = { 0 };
 
-    if(alcIsExtensionPresent(aldevice, "ALC_EXT_EFX") == AL_FALSE)
-    {
-        URHO3D_LOGERROR("Could not load OpenAL effects extension.");
-        return false;
-    }
-
     ALCcontext *alcontext;
     alcontext = alcCreateContext(aldevice, nullptr);
     if(!alcontext)
