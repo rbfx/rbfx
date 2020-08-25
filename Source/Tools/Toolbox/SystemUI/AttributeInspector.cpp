@@ -648,6 +648,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
         return false;
 
     ui::IdScope itemId(item);
+    bool modifiedAny = false;
 
     for (const AttributeInfo& info: *attributes)
     {
@@ -817,10 +818,11 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             args[P_NEWVALUE] = modification.current_;
             args[P_REASON] = (unsigned)modifiedReason;
             eventSender->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, args);
-            return true;
+            modifiedAny |= true;    // Should not early-return because it would not render entire attribute list and cause
+                                    // flickering and unintended scrolling of attribute list.
         }
     }
-    return false;
+    return modifiedAny;
 }
 
 }
