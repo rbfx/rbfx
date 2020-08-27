@@ -207,7 +207,7 @@ void ImGui_ImplDX9_RenderDrawData(ImDrawData* draw_data)
                 const LPDIRECT3DTEXTURE9 texture = (LPDIRECT3DTEXTURE9)pcmd->TextureId;
                 g_pd3dDevice->SetTexture(0, texture);
                 g_pd3dDevice->SetScissorRect(&r);
-                g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, pcmd->VtxOffset + global_vtx_offset, 0, (UINT)cmd_list->VtxBuffer.Size, pcmd->IdxOffset + global_idx_offset, pcmd->ElemCount/3);
+                g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, pcmd->VtxOffset + global_vtx_offset, 0, (UINT)cmd_list->VtxBuffer.Size, pcmd->IdxOffset + global_idx_offset, pcmd->ElemCount / 3);
             }
         }
         global_idx_offset += cmd_list->IdxBuffer.Size;
@@ -269,7 +269,7 @@ static bool ImGui_ImplDX9_CreateFontsTexture()
     if (g_FontTexture->LockRect(0, &tex_locked_rect, NULL, 0) != D3D_OK)
         return false;
     for (int y = 0; y < height; y++)
-        memcpy((unsigned char *)tex_locked_rect.pBits + tex_locked_rect.Pitch * y, pixels + (width * bytes_per_pixel) * y, (width * bytes_per_pixel));
+        memcpy((unsigned char*)tex_locked_rect.pBits + tex_locked_rect.Pitch * y, pixels + (width * bytes_per_pixel) * y, (width * bytes_per_pixel));
     g_FontTexture->UnlockRect(0);
 
     // Store our identifier
@@ -408,7 +408,8 @@ static void ImGui_ImplDX9_SwapBuffers(ImGuiViewport* viewport, void*)
 {
     ImGuiViewportDataDx9* data = (ImGuiViewportDataDx9*)viewport->RendererUserData;
     HRESULT hr = data->SwapChain->Present(NULL, NULL, data->d3dpp.hDeviceWindow, NULL, NULL);
-    IM_ASSERT(hr == D3D_OK);
+    // Let main application handle D3DERR_DEVICELOST by resetting the device.
+    IM_ASSERT(hr == D3D_OK || hr == D3DERR_DEVICELOST);
 }
 
 static void ImGui_ImplDX9_InitPlatformInterface()
