@@ -35,8 +35,8 @@
 
 #include "../DebugNew.h"
 
-#include <AL/al.h>
-#include <AL/alc.h>
+#include <al.h>
+#include <alc.h>
 
 namespace Urho3D
 {
