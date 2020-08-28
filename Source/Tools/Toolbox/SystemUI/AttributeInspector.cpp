@@ -155,7 +155,6 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
     int intMin = std::numeric_limits<int>::min();
     int intMax = std::numeric_limits<int>::max();
     const float floatStep = 0.01f;
-    const float power = 3.0f;
     const ImGuiStyle& style = ui::GetStyle();
 
     // FIXME: string_view is used as zero-terminated C string. Fix this when https://github.com/ocornut/imgui/pull/3038 is merged. Until then do not use string slices with attribute inspector!
@@ -240,7 +239,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
         case VAR_FLOAT:
         {
             auto v = value.GetFloat();
-            modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             if (modified)
                 value = v;
             break;
@@ -250,9 +249,9 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             auto& v = value.GetVector2();
             const char* formats[] = {"X=%.3f", "Y=%.3f"};
             if (showHelperLabels)
-                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 2, floatStep, &floatMin, &floatMax, formats, power);
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 2, floatStep, &floatMin, &floatMax, formats, ImGuiSliderFlags_Logarithmic);
             else
-                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 2, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 2, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             break;
         }
         case VAR_VECTOR3:
@@ -260,9 +259,9 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             auto& v = value.GetVector3();
             const char* formats[] = {"X=%.3f", "Y=%.3f", "Z=%.3f"};
             if (showHelperLabels)
-                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 3, floatStep, &floatMin, &floatMax, formats, power);
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 3, floatStep, &floatMin, &floatMax, formats, ImGuiSliderFlags_Logarithmic);
             else
-                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 3, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             break;
         }
         case VAR_VECTOR4:
@@ -270,9 +269,9 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             auto& v = value.GetVector4();
             const char* formats[] = {"X=%.3f", "Y=%.3f", "Z=%.3f", "W=%.3f"};
             if (showHelperLabels)
-                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 4, floatStep, &floatMin, &floatMax, formats, power);
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 4, floatStep, &floatMin, &floatMax, formats, ImGuiSliderFlags_Logarithmic);
             else
-                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             break;
         }
         case VAR_QUATERNION:
@@ -282,9 +281,9 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             angles = anglesInitial = rotation.EulerAngles();
             const char* formats[] = {"P=%.3f", "Y=%.3f", "R=%.3f"};
             if (showHelperLabels)
-                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, formats, power);
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, formats, ImGuiSliderFlags_Logarithmic);
             else
-                modified |= ui::DragScalarN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             if (modified)
             {
                 // FIXME: This is most likely wrong.
@@ -460,15 +459,15 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             ui::BeginGroup();
             if (showHelperLabels)
             {
-                modified |= ui::DragScalarFormatsN("###m0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 3, floatStep, &floatMin, &floatMax, formats[0], power);
-                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 3, floatStep, &floatMin, &floatMax, formats[0], power);
-                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 3, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###m0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 3, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 3, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 3, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
             }
             else
             {
-                modified |= ui::DragScalarN("###m0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
-                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
-                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###m0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 3, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 3, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 3, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             }
             ui::EndGroup();
             break;
@@ -484,15 +483,15 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             ui::BeginGroup();
             if (showHelperLabels)
             {
-                modified |= ui::DragScalarFormatsN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
-                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
-                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
             }
             else
             {
-                modified |= ui::DragScalarN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
-                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
-                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             }
             ui::EndGroup();
             break;
@@ -509,17 +508,17 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             ui::BeginGroup();
             if (showHelperLabels)
             {
-                modified |= ui::DragScalarFormatsN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
-                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
-                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
-                modified |= ui::DragScalarFormatsN("###mm3", ImGuiDataType_Float, const_cast<float*>(&v.m30_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarFormatsN("###mm3", ImGuiDataType_Float, const_cast<float*>(&v.m30_), 4, floatStep, &floatMin, &floatMax, formats[0], ImGuiSliderFlags_Logarithmic);
             }
             else
             {
-                modified |= ui::DragScalarN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
-                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
-                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
-                modified |= ui::DragScalarN("###mm3", ImGuiDataType_Float, const_cast<float*>(&v.m30_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
+                modified |= ui::DragScalarN("###mm3", ImGuiDataType_Float, const_cast<float*>(&v.m30_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             }
             ui::EndGroup();
             break;
@@ -527,7 +526,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
         case VAR_DOUBLE:
         {
             auto v = value.GetDouble();
-            modified |= ui::DragScalar("", ImGuiDataType_Double, &v, floatStep, &doubleMin, &doubleMax, "%.3f", power);
+            modified |= ui::DragScalar("", ImGuiDataType_Double, &v, floatStep, &doubleMin, &doubleMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             if (modified)
                 value = v;
             break;
@@ -596,9 +595,9 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             auto& v = value.GetRect();
             const char* formats[] = {"MinX=%.3f", "MinY=%.3f", "MaxX=%.3f", "MaxY=%.3f"};
             if (showHelperLabels)
-                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.min_.x_), 4, floatStep, &floatMin, &floatMax, formats, power);
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.min_.x_), 4, floatStep, &floatMin, &floatMax, formats, ImGuiSliderFlags_Logarithmic);
             else
-                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.min_.x_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.min_.x_), 4, floatStep, &floatMin, &floatMax, "%.3f", ImGuiSliderFlags_Logarithmic);
             break;
         }
         case VAR_INTVECTOR3:
