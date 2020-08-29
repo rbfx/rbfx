@@ -117,6 +117,8 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
         URHO3D_LOGERROR("Could not create OpenAL device");
         return false;
     }
+    
+    const ALchar* deviceName = alcGetString(aldevice, ALC_DEVICE_SPECIFIER);
 
     ALint attribs[4] = { 0 };
 
@@ -137,7 +139,7 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     isInitialized_ = true;
     // We disable attenuation as we implement it using gain
     alDistanceModel(AL_NONE);
-    URHO3D_LOGINFO("OpenAL context created");
+    URHO3D_LOGINFO("OpenAL context created in device {}", deviceName);
     
     return Play();
 }
