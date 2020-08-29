@@ -23,6 +23,9 @@
 #include "AL/alc.h"
 #include "SDL.h"
 
+
+#undef __SSE__
+
 #ifdef __SSE__  /* if you are on x86 or x86-64, we assume you have SSE1 by now. */
 #define NEED_SCALAR_FALLBACK 0
 #elif (defined(__ARM_ARCH) && (__ARM_ARCH >= 8))  /* ARMv8 always has NEON. */
@@ -1163,10 +1166,35 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
 
     /* you can legally queue or set a NULL buffer. */
     if (buffer && buffer->data && (buffer->len > 0)) {
-        const float *data = buffer->data + (src->offset / sizeof (float));
+        // rbfx: Pitching code is here
+        const float *datao = buffer->data + (src->offset / sizeof (float));
         const int bufferframesize = (int) (buffer->channels * sizeof (float));
         const int deviceframesize = ctx->device->framesize;
         const int framesneeded = *len / deviceframesize;
+
+        float* data;
+
+        if(src->pitch != 1.0f)
+        {
+            // We must resample the data, sadly this is a heavy
+            // perfomance hit TODO: Optimize
+            data = malloc(sizeof(float) * framesneeded);
+            // We manually load the pitched data
+            float r = 0;
+            int fr = 0;
+            for(int i = 0; i < framesneeded; i++)
+            {
+                int rpos = round(r);
+                data[i] = datao[rpos];
+                r += src->pitch;
+                fr = rpos;
+            }
+        }
+        else
+        {
+            data = datao;
+        }
+        
 
         SDL_assert(src->offset < buffer->len);
 
@@ -1198,7 +1226,7 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
             const int framesavail = (buffer->len - src->offset) / bufferframesize;
             const int mixframes = SDL_min(framesneeded, framesavail);
             mix_buffer(buffer, src->panning, data, *stream, mixframes);
-            src->offset += mixframes * bufferframesize;
+            src->offset += mixframes * bufferframesize * src->pitch;
             *len -= mixframes * deviceframesize;
             *stream += mixframes * ctx->device->channels;
         }
@@ -1620,8 +1648,6 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
     {
         radians = 2.0f*M_PI+radians;
     }
-    
-    printf("radians = %f\n", radians);
 
     gains[1] = get_stereo_gain(radians);
     gains[0] = get_stereo_gain(2.0f * M_PI - radians);
