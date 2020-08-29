@@ -101,7 +101,6 @@ _option2(URHO3D_NETWORK           "Networking subsystem enabled"                
 _option(URHO3D_PHYSICS            "Physics subsystem enabled"                             ${URHO3D_ENABLE_ALL})
 _option2(URHO3D_PROFILING         "Profiler support enabled"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 _option(URHO3D_SYSTEMUI           "Build SystemUI subsystem"                              ${URHO3D_ENABLE_ALL})
-_option2(URHO3D_SYSTEMUI_VIEWPORTS "Use native viewports in supported applications"       ON                   "URHO3D_SYSTEMUI"               OFF)
 _option(URHO3D_URHO2D             "2D subsystem enabled"                                  ${URHO3D_ENABLE_ALL})
 
 # Features
@@ -181,3 +180,6 @@ endif ()
 if (ANDROID)
     set (SDL_CPUINFO ON)
 endif ()
+
+# At the end because it depends on URHO3D_SYSTEMUI which is may be off, but implicitly enabled if URHO3D_TOOLS is enabled.
+_option2(URHO3D_SYSTEMUI_VIEWPORTS "Use native viewports in supported applications" ON "URHO3D_SYSTEMUI" OFF)
