@@ -203,15 +203,6 @@ bool Sound::LoadWav(Deserializer& source)
     SetFormat(header.frequency_, header.bits_ == 16, header.channels_ == 2);
     source.Read(data_.get(), length);
 
-    // Convert 8-bit audio to signed
-    #ifndef URHO3D_USE_OPENAL
-    if (!sixteenBit_)
-    {
-        for (unsigned i = 0; i < length; ++i)
-            data_[i] -= 128;
-    }
-    #endif
-
     return true;
 }
 
