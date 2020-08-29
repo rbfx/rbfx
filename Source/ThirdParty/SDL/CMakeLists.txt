@@ -1604,7 +1604,7 @@ target_include_directories (SDL SYSTEM
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
            ${INCLUDE_DIRS}
 )
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0"))
     # Fix multiple definition of `WAYLAND_*' with GCC 10, because -fno-common is a new default.
     target_compile_options(SDL PRIVATE -fcommon)
 endif ()
