@@ -111,6 +111,9 @@ void SystemUI::PlatformInitialize()
 
 void SystemUI::PlatformShutdown()
 {
+    ImGuiIO& io = ui::GetIO();
+    referencedTextures_.clear();
+    ClearPerScreenFonts();
 #if URHO3D_OPENGL
     ImGui_ImplOpenGL3_DestroyDeviceObjects();
 #elif URHO3D_D3D11
@@ -177,7 +180,6 @@ void SystemUI::OnInputEnd(VariantMap& args)
     ImGuiIO& io = ui::GetIO();
     Graphics* graphics = GetSubsystem<Graphics>();
     Input* input = GetSubsystem<Input>();
-    referencedTextures_.push_back(fontTexture_);
     if (graphics && graphics->IsInitialized())
     {
 #if URHO3D_OPENGL
@@ -305,31 +307,58 @@ ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const char
 void SystemUI::ReallocateFontTexture()
 {
     ImGuiIO& io = ui::GetIO();
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+
+    // Store main atlas, imgui expects it.
+    io.Fonts->TexID = AllocateFontTexture(io.Fonts);
+
+#if URHO3D_SYSTEMUI_VIEWPORTS
+    // Initialize per-screen font atlases.
+    ClearPerScreenFonts();
+    io.AllFonts.push_back(io.Fonts);
+    for (ImGuiPlatformMonitor& monitor : platform_io.Monitors)
+    {
+        if (monitor.DpiScale == 1.0f)
+            continue; // io.Fonts has default scale.
+        ImFontAtlas* atlas = new ImFontAtlas();
+        io.Fonts->CloneInto(atlas, monitor.DpiScale);
+        io.AllFonts.push_back(atlas);
+        atlas->TexID = AllocateFontTexture(atlas);
+    }
+#endif
+}
+
+void SystemUI::ClearPerScreenFonts()
+{
+    ImGuiIO& io = ui::GetIO();
+    fontTextures_.clear();
+    for (int i = 1; i < io.AllFonts.Size; i++) // First atlas (which is io.Fonts) is not deleted because it is handled separately by library itself.
+        delete io.AllFonts[i];
+    io.AllFonts.clear();
+}
+
+ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
+{
     // Create font texture.
     unsigned char* pixels;
     int width, height;
-    io.Fonts->ClearTexData();
+    atlas->ClearTexData();
 
-    ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    ImGuiFreeType::BuildFontAtlas(atlas, ImGuiFreeType::ForceAutoHint);
+    atlas->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-    if (!fontTexture_)
-    {
-        fontTexture_ = context_->CreateObject<Texture2D>();
-        fontTexture_->SetNumLevels(1);
-        fontTexture_->SetFilterMode(FILTER_BILINEAR);
-    }
+    SharedPtr<Texture2D> fontTexture = context_->CreateObject<Texture2D>();
+    fontTexture->SetNumLevels(1);
+    fontTexture->SetFilterMode(FILTER_BILINEAR);
+    fontTexture->SetSize(width, height, Graphics::GetRGBAFormat());
+    fontTexture->SetData(0, 0, 0, width, height, pixels);
+    fontTextures_.push_back(fontTexture);
 
-    if (fontTexture_->GetWidth() != width || fontTexture_->GetHeight() != height)
-        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
-
-    fontTexture_->SetData(0, 0, 0, width, height, pixels);
-
-    // Store our identifier
+    // Store return texture identifier
 #if URHO3D_D3D11
-    io.Fonts->TexID = fontTexture_->GetShaderResourceView();
+    return fontTexture->GetShaderResourceView();
 #else
-    io.Fonts->TexID = fontTexture_->GetGPUObject();
+    return fontTexture->GetGPUObject();
 #endif
 }
 
@@ -353,18 +382,6 @@ bool SystemUI::IsAnyItemActive() const
 bool SystemUI::IsAnyItemHovered() const
 {
     return ui::IsAnyItemHovered() || ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
-}
-
-void SystemUI::Start()
-{
-    ImGuiIO& io = ui::GetIO();
-    if (io.Fonts->Fonts.empty())
-    {
-        io.Fonts->AddFontDefault();
-        ReallocateFontTexture();
-    }
-    Graphics* graphics = context_->GetGraphics();
-    io.DisplaySize = {static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight())};
 }
 
 int ToImGui(MouseButton button)

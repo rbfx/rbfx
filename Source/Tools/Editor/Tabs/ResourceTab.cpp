@@ -679,6 +679,7 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
         }
         return value;
     };
+    ImGuiContext& g = *GImGui;
     ui::PushID(path.c_str());
     CachedDirs* value = getCachedDirs(ui::GetCurrentWindow()->IDStack.back(), path);
     bool openContextMenu = false;
@@ -704,7 +705,7 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
         {
             const ImGuiStyle& style = ui::GetStyle();
             ui::SameLine();
-            ui::PushStyleVar(ImGuiStyleVar_FramePadding, {style.FramePadding.x, 0});    // Make sure text starts rendering at the same position
+            ui::PushStyleVar(ImGuiStyleVar_FramePadding, {g.StyleTemplate.FramePadding.x, 0});    // Make sure text starts rendering at the same position
             expireCache |= !RenderRenameWidget();
             ui::PopStyleVar();
         }
