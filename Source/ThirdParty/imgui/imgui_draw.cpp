@@ -402,6 +402,8 @@ void ImDrawList::_ResetForNewFrame()
     _Path.resize(0);
     _Splitter.Clear();
     CmdBuffer.push_back(ImDrawCmd());
+    _FringeScale = 1.0f;
+    _FringeScaleInv = 1.0f;
 }
 
 void ImDrawList::_ClearFreeMemory()
@@ -677,12 +679,12 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
 
     const ImVec2 opaque_uv = _Data->TexUvWhitePixel;
     const int count = closed ? points_count : points_count - 1; // The number of line segments we need to draw
-    const bool thick_line = (thickness > 1.0f);
+    const bool thick_line = (thickness > _FringeScale);
 
     if (Flags & ImDrawListFlags_AntiAliasedLines)
     {
         // Anti-aliased stroke
-        const float AA_SIZE = 1.0f;
+        const float AA_SIZE = _FringeScaleInv;
         const ImU32 col_trans = col & ~IM_COL32_A_MASK;
 
         // Thicknesses <1.0 should behave like thickness 1.0
@@ -935,7 +937,7 @@ void ImDrawList::AddConvexPolyFilled(const ImVec2* points, const int points_coun
     if (Flags & ImDrawListFlags_AntiAliasedFill)
     {
         // Anti-aliased Fill
-        const float AA_SIZE = 1.0f;
+        const float AA_SIZE = _FringeScaleInv;
         const ImU32 col_trans = col & ~IM_COL32_A_MASK;
         const int idx_count = (points_count - 2)*3 + points_count * 6;
         const int vtx_count = (points_count * 2);
@@ -1727,6 +1729,7 @@ ImFontAtlas::ImFontAtlas()
     TexID = (ImTextureID)NULL;
     TexDesiredWidth = 0;
     TexGlyphPadding = 1;
+    Scale = 1.0f;
 
     TexPixelsAlpha8 = NULL;
     TexPixelsRGBA32 = NULL;
@@ -1855,6 +1858,9 @@ ImFont* ImFontAtlas::AddFont(const ImFontConfig* font_cfg)
 
     if (new_font_cfg.DstFont->EllipsisChar == (ImWchar)-1)
         new_font_cfg.DstFont->EllipsisChar = font_cfg->EllipsisChar;
+
+    if (Scale != 1.0f)
+        new_font_cfg.SizePixels = IM_ROUND(new_font_cfg.SizePixels * Scale);
 
     // Invalidate texture
     ClearTexData();
@@ -2019,6 +2025,46 @@ bool    ImFontAtlas::Build()
 {
     IM_ASSERT(!Locked && "Cannot modify a locked ImFontAtlas between NewFrame() and EndFrame/Render()!");
     return ImFontAtlasBuildWithStbTruetype(this);
+}
+
+void     ImFontAtlas::CloneInto(ImFontAtlas* dest, float scale)
+{
+    IM_ASSERT(Locked == false && "Source atlas must not be locked!");
+    IM_ASSERT(dest->Locked == false && "Destination atlas must not be locked!");
+    dest->Clear();
+
+    // User input
+    dest->Flags = Flags;
+    dest->TexDesiredWidth = TexDesiredWidth;
+    dest->TexGlyphPadding = TexGlyphPadding;
+    dest->Scale = scale;
+
+    // Fonts
+    for (int i = 0; i < ConfigData.Size; i++)
+    {
+        ImFontConfig config = ConfigData[i];
+        config.DstFont = NULL;
+        config.FontDataOwnedByAtlas = false;
+        memset(config.Name, 0, IM_ARRAYSIZE(config.Name));
+        dest->AddFont(&config);
+    }
+    IM_ASSERT(Fonts.Size == dest->Fonts.Size);
+    IM_ASSERT(ConfigData.Size == dest->ConfigData.Size);
+
+    // Custom rects
+    for (int i = 0; i < CustomRects.Size; i++)
+    {
+        ImFontAtlasCustomRect& rect = CustomRects[i];
+        if (rect.Font != NULL)
+        {
+            ImFont* dest_font = dest->Fonts[Fonts.index_from_ptr(Fonts.find(rect.Font))];
+            dest->AddCustomRectFontGlyph(dest_font, rect.GlyphID, rect.Width, rect.Height, rect.GlyphAdvanceX, rect.GlyphOffset);
+        }
+        else
+        {
+            dest->AddCustomRectRegular(rect.Width, rect.Height);
+        }
+    }
 }
 
 void    ImFontAtlasBuildMultiplyCalcLookupTable(unsigned char out_table[256], float in_brighten_factor)
@@ -2333,6 +2379,7 @@ void ImFontAtlasBuildSetupFont(ImFontAtlas* atlas, ImFont* font, ImFontConfig* f
     {
         font->ClearOutputData();
         font->FontSize = font_config->SizePixels;
+        font->FontScaleRatioInv = 1.0f / font->FontSize;
         font->ConfigData = font_config;
         font->ConfigDataCount = 0;
         font->ContainerAtlas = atlas;
@@ -2797,6 +2844,7 @@ void    ImFont::ClearOutputData()
     DirtyLookupTables = true;
     Ascent = Descent = 0.0f;
     MetricsTotalSurface = 0;
+    FontScaleRatioInv = 1.0f;
 }
 
 void ImFont::BuildLookupTable()
@@ -3069,7 +3117,7 @@ ImVec2 ImFont::CalcTextSizeA(float size, float max_width, float wrap_width, cons
         text_end = text_begin + strlen(text_begin); // FIXME-OPT: Need to avoid this.
 
     const float line_height = size;
-    const float scale = size / FontSize;
+    const float scale = size * FontScaleRatioInv;
 
     ImVec2 text_size = ImVec2(0, 0);
     float line_width = 0.0f;
@@ -3162,7 +3210,7 @@ void ImFont::RenderChar(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
     const ImFontGlyph* glyph = FindGlyph(c);
     if (!glyph || !glyph->Visible)
         return;
-    float scale = (size >= 0.0f) ? (size / FontSize) : 1.0f;
+    float scale = (size >= 0.0f) ? (size * FontScaleRatioInv) : 1.0f;
     pos.x = IM_FLOOR(pos.x + DisplayOffset.x);
     pos.y = IM_FLOOR(pos.y + DisplayOffset.y);
     draw_list->PrimReserve(6, 4);
@@ -3182,8 +3230,8 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
     if (y > clip_rect.w)
         return;
 
-    const float scale = size / FontSize;
-    const float line_height = FontSize * scale;
+    const float scale = size * FontScaleRatioInv;
+    const float line_height = size;
     const bool word_wrap_enabled = (wrap_width > 0.0f);
     const char* word_wrap_eol = NULL;
 

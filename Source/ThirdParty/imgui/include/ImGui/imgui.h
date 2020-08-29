@@ -258,6 +258,7 @@ namespace ImGui
     // Main
     IMGUI_API ImGuiIO&      GetIO();                                    // access the IO structure (mouse/keyboard/gamepad inputs, time, various configuration options/flags)
     IMGUI_API ImGuiStyle&   GetStyle();                                 // access the Style structure (colors, sizes). Always use PushStyleCol(), PushStyleVar() to modify style mid-frame!
+    IMGUI_API ImGuiStyle&   GetStyleTemplate();                         // access the Style template which will be used to create style during DPI scaling. Modify this structure when you are defining style and use above one to access style values.
     IMGUI_API void          NewFrame();                                 // start a new Dear ImGui frame, you can submit any command from this point until Render()/EndFrame().
     IMGUI_API void          EndFrame();                                 // ends the Dear ImGui frame. automatically called by Render(). If you don't need to render data (skipping rendering) you may call EndFrame() without Render()... but you'll have wasted CPU already! If you don't need to render, better to not create any windows and not call NewFrame() at all!
     IMGUI_API void          Render();                                   // ends the Dear ImGui frame, finalize the draw data. You can get call GetDrawData() to obtain it and run your rendering function (up to v1.60, this used to call io.RenderDrawListsFn(). Nowadays, we allow and prefer calling your render function yourself.)
@@ -1554,6 +1555,8 @@ struct ImGuiStyle
     bool        AntiAliasedFill;            // Enable anti-aliased edges around filled shapes (rounded rectangles, circles, etc.). Disable if you are really tight on CPU/GPU. Latched at the beginning of the frame (copied to ImDrawList).
     float       CurveTessellationTol;       // Tessellation tolerance when using PathBezierCurveTo() without a specific number of segments. Decrease for highly tessellated curves (higher quality, more polygons), increase to reduce quality.
     float       CircleSegmentMaxError;      // Maximum error (in pixels) allowed when using AddCircle()/AddCircleFilled() or drawing rounded corner rectangles with no explicit segment count specified. Decrease for higher quality but more geometry.
+    float       PointSize;                  // Size of a point, in pixels. 1.0f on 96 DPI screens. Use this value to scale sizes independently of screen pixel density.
+    float       PointSizeRound;             // = IM_ROUND(PointSize).
     ImVec4      Colors[ImGuiCol_COUNT];
 
     IMGUI_API ImGuiStyle();
@@ -1588,6 +1591,7 @@ struct ImGuiIO
     void*       UserData;                       // = NULL           // Store your own data for retrieval by callbacks.
 
     ImFontAtlas*Fonts;                          // <auto>           // Font atlas: load, rasterize and pack one or more fonts into a single texture.
+    ImVector<ImFontAtlas*> AllFonts;            // <auto>           //
     float       FontGlobalScale;                // = 1.0f           // Global scale all fonts
     bool        FontAllowUserScaling;           // = false          // Allow user scaling text of individual window with CTRL+Wheel.
     ImFont*     FontDefault;                    // = NULL           // Font to use on NewFrame(). Use NULL to uses Fonts->Fonts[0].
@@ -2193,6 +2197,8 @@ struct ImDrawList
     ImVector<ImVec2>        _Path;              // [Internal] current path building
     ImDrawCmd               _CmdHeader;         // [Internal] Template of active commands. Fields should match those of CmdBuffer.back().
     ImDrawListSplitter      _Splitter;          // [Internal] for channels api (note: prefer using your own persistent instance of ImDrawListSplitter!)
+    float                   _FringeScale;       // [Internal]
+    float                   _FringeScaleInv;    // [Internal]
 
     // If you want to create ImDrawList instances, pass them ImGui::GetDrawListSharedData() or create and use your own ImDrawListSharedData (so you can use ImDrawList without ImGui)
     ImDrawList(const ImDrawListSharedData* shared_data) { _Data = shared_data; Flags = ImDrawListFlags_None; _VtxCurrentIdx = 0; _VtxWritePtr = NULL; _IdxWritePtr = NULL; _OwnerName = NULL; }
@@ -2426,6 +2432,7 @@ struct ImFontAtlas
     // Building in RGBA32 format is provided for convenience and compatibility, but note that unless you manually manipulate or copy color data into
     // the texture (e.g. when using the AddCustomRect*** api), then the RGB pixels emitted will always be white (~75% of memory/bandwidth waste.
     IMGUI_API bool              Build();                    // Build pixels data. This is called automatically for you by the GetTexData*** functions.
+    IMGUI_API void              CloneInto(ImFontAtlas* dest, float scale);  // Clone atlas and rescale fonts.
     IMGUI_API void              GetTexDataAsAlpha8(unsigned char** out_pixels, int* out_width, int* out_height, int* out_bytes_per_pixel = NULL);  // 1 byte per-pixel
     IMGUI_API void              GetTexDataAsRGBA32(unsigned char** out_pixels, int* out_width, int* out_height, int* out_bytes_per_pixel = NULL);  // 4 bytes-per-pixel
     bool                        IsBuilt() const             { return Fonts.Size > 0 && (TexPixelsAlpha8 != NULL || TexPixelsRGBA32 != NULL); }
@@ -2474,6 +2481,7 @@ struct ImFontAtlas
     ImTextureID                 TexID;              // User data to refer to the texture once it has been uploaded to user's graphic systems. It is passed back to you during rendering via the ImDrawCmd structure.
     int                         TexDesiredWidth;    // Texture width desired by user before Build(). Must be a power-of-two. If have many glyphs your graphics API have texture size restrictions you may want to increase texture width to decrease height.
     int                         TexGlyphPadding;    // Padding between glyphs within texture in pixels. Defaults to 1. If your rendering method doesn't rely on bilinear filtering you may set this to 0.
+    float                       Scale;              // Fonts will be scaled by this value.
 
     // [Internal]
     // NB: Access texture data via GetTexData*() calls! Which will setup a default font for you.
@@ -2505,6 +2513,7 @@ struct ImFont
     // Members: Hot ~20/24 bytes (for CalcTextSize)
     ImVector<float>             IndexAdvanceX;      // 12-16 // out //            // Sparse. Glyphs->AdvanceX in a directly indexable way (cache-friendly for CalcTextSize functions which only this this info, and are often bottleneck in large UI).
     float                       FallbackAdvanceX;   // 4     // out // = FallbackGlyph->AdvanceX
+    float                       FontScaleRatioInv;  // 4     // out // = 1.0f / FontSize
     float                       FontSize;           // 4     // in  //            // Height of characters/line, set during loading (don't change after loading)
 
     // Members: Hot ~36/48 bytes (for CalcTextSize + render loop)

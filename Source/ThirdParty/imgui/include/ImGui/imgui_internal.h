@@ -1268,6 +1268,7 @@ struct ImGuiContext
     ImGuiIO                 IO;
     ImGuiPlatformIO         PlatformIO;
     ImGuiStyle              Style;
+    ImGuiStyle              StyleTemplate;                      // 1x scale original style.
     ImGuiConfigFlags        ConfigFlagsCurrFrame;               // = g.IO.ConfigFlags at the time of NewFrame()
     ImGuiConfigFlags        ConfigFlagsLastFrame;
     ImFont*                 Font;                               // (Shortcut) == FontStack.empty() ? IO.Font : FontStack.back()
@@ -2009,6 +2010,7 @@ namespace ImGui
     IMGUI_API void          SetCurrentFont(ImFont* font);
     inline ImFont*          GetDefaultFont() { ImGuiContext& g = *GImGui; return g.IO.FontDefault ? g.IO.FontDefault : g.IO.Fonts->Fonts[0]; }
     inline ImDrawList*      GetForegroundDrawList(ImGuiWindow* window) { return GetForegroundDrawList(window->Viewport); }
+    IMGUI_API ImFont*       MapFontToDPI(ImFont* font, float dpi);
 
     // Init
     IMGUI_API void          Initialize(ImGuiContext* context);
