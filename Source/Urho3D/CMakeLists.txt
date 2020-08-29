@@ -156,7 +156,7 @@ if (URHO3D_USE_OPENAL)
     find_package(OpenAL REQUIRED)
     target_include_directories(Urho3D PRIVATE ${OPENAL_INCLUDE_DIR})
 else ()
-    set (OPENAL_LIBRARY MojoAL)
+    set (MOJOAL_LIBRARY MojoAL)
 endif ()
 
 # Link dependencies
@@ -191,7 +191,7 @@ set (THIRD_PARTY_DEPENDENCIES
     ETCPACK
     xatlas
     embree
-    ${OPENAL_LIBRARY}
+    ${MOJOAL_LIBRARY}
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
@@ -205,6 +205,10 @@ elseif (TARGET Bullet)
     else ()
         target_link_libraries(Urho3D PUBLIC Bullet)
     endif ()
+endif ()
+
+if (${OPENAL_FOUND})
+    target_link_libraries(Urho3D PUBLIC ${OPENAL_LIBRARY})
 endif ()
 
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
