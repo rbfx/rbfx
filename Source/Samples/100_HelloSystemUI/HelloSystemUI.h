@@ -61,5 +61,5 @@ private:
     /// Reference holding message box.
     SharedPtr<SystemMessageBox> messageBox_;
     /// Flag controlling display of imgui demo window.
-    bool demoOpen_ = false;
+    bool metricsOpen_ = false;
 };
