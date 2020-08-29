@@ -82,8 +82,6 @@ public:
     bool IsAnyItemActive() const;
     /// Return whether mouse is hovering any system ui component.
     bool IsAnyItemHovered() const;
-    /// Prepares font textures, updates projection matrix and does other things that are required to start this subsystem.
-    void Start();
     /// Hold a reference to this texture until end of frame.
     void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
     /// Return value cache for storing temporary UI state that expires when unused.
@@ -92,7 +90,7 @@ public:
 protected:
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
-    SharedPtr<Texture2D> fontTexture_;
+    ea::vector<SharedPtr<Texture2D>> fontTextures_;
     ea::vector<float> fontSizes_;
     ImGuiContext* imContext_;
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
@@ -101,6 +99,8 @@ protected:
     void PlatformInitialize();
     void PlatformShutdown();
     void ReallocateFontTexture();
+    void ClearPerScreenFonts();
+    ImTextureID AllocateFontTexture(ImFontAtlas* atlas);
     void OnRawEvent(VariantMap& args);
     void OnScreenMode(VariantMap& args);
     void OnInputEnd(VariantMap& args);

@@ -147,9 +147,10 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
+    engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_DpiEnableScaleFonts;
 #if URHO3D_SYSTEMUI_VIEWPORTS
     engineParameters_[EP_HIGH_DPI] = true;
-    engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DpiEnableScaleViewports;
+    engineParameters_[EP_SYSTEMUI_FLAGS] = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt() | ImGuiConfigFlags_ViewportsEnable /*| ImGuiConfigFlags_DpiEnableScaleViewports*/;
 #else
     engineParameters_[EP_HIGH_DPI] = false;
 #endif
@@ -576,11 +577,7 @@ void Editor::OnEndFrame()
         CloseProject();
         // Reset SystemUI so that imgui loads it's config proper.
         context_->RemoveSubsystem<SystemUI>();
-#if URHO3D_SYSTEMUI_VIEWPORTS
-        unsigned flags = ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DpiEnableScaleViewports;
-#else
-        unsigned flags = 0;
-#endif
+        unsigned flags = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt();
         context_->RegisterSubsystem(new SystemUI(context_, flags));
         SetupSystemUI();
 
@@ -730,6 +727,8 @@ Tab* Editor::GetTab(StringHash type)
 
 void Editor::SetupSystemUI()
 {
+    auto& io = ui::GetIO();
+    auto& style = ImGui::GetStyleTemplate();
     static ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     static ImWchar notoSansRanges[] = {0x20, 0x52f, 0x1ab0, 0x2189, 0x2c60, 0x2e44, 0xa640, 0xab65, 0};
     static ImWchar notoMonoRanges[] = {0x20, 0x513, 0x1e00, 0x1f4d, 0};
@@ -740,9 +739,8 @@ void Editor::SetupSystemUI()
     systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
     monoFont_ = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
     systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
-    ui::GetStyle().WindowRounding = 3;
+    style.WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
-    auto& io = ui::GetIO();
 #if URHO3D_SYSTEMUI_VIEWPORTS
     io.ConfigViewportsNoAutoMerge = true;
 #endif
@@ -752,11 +750,10 @@ void Editor::SetupSystemUI()
     io.ConfigWindowsResizeFromEdges = true;
 
     // TODO: Make configurable.
-    auto& style = ImGui::GetStyle();
     style.FrameBorderSize = 0;
     style.WindowBorderSize = 1;
     style.ItemSpacing = {4, 4};
-    ImVec4* colors = ImGui::GetStyle().Colors;
+    ImVec4* colors = style.Colors;
     colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImGuiCol_TextDisabled]           = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
     colors[ImGuiCol_WindowBg]               = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
