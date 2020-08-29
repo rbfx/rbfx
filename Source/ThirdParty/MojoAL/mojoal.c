@@ -1599,6 +1599,7 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
     } else 
     #endif
 
+    {
     #if NEED_SCALAR_FALLBACK
     {
         ALfloat projected[3];
@@ -1613,11 +1614,15 @@ static void calculate_channel_gains(const ALCcontext *ctx, const ALsource *src, 
         radians = SDL_atan2f(dot1, dot2);
     }
     #endif
+    }
+
     if(radians < 0.0f)
     {
         radians = 2.0f*M_PI+radians;
     }
     
+    printf("radians = %f\n", radians);
+
     gains[1] = get_stereo_gain(radians);
     gains[0] = get_stereo_gain(2.0f * M_PI - radians);
 
