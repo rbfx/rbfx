@@ -138,6 +138,13 @@
 %ignore ImGui::GetDragDropPayload;
 %ignore ImGui::GetDragDropPayload;
 
+%ignore ImGui::ShowDemoWindow;
+%ignore ImGui::ShowAboutWindow;
+%ignore ImGui::ShowStyleEditor;
+%ignore ImGui::ShowStyleSelector;
+%ignore ImGui::ShowFontSelector;
+%ignore ImGui::ShowUserGuide;
+
 %define %imgui_enum(NAME)
     %ignore NAME;
     %rename(NAME) NAME##_;
