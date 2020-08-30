@@ -494,6 +494,10 @@ struct ALCdevice_struct
             RingBuffer ring;  /* only used if iscapture */
         } capture;
     };
+
+    // rbfx: Fixed size buffer used for pitching audio
+    // It's bigger than it needs to be on most cases
+    float* pitch_buffer;
 };
 
 struct ALCcontext_struct
@@ -1173,26 +1177,35 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
         const int framesneeded = *len / deviceframesize;
 
         float* data;
+        int numframes;
 
         if(src->pitch != 1.0f)
         {
+            data = ctx->device->pitch_buffer;
             // We must resample the data, sadly this is a heavy
             // perfomance hit TODO: Optimize
-            data = malloc(sizeof(float) * framesneeded);
-            // We manually load the pitched data
             float r = 0;
-            int fr = 0;
             for(int i = 0; i < framesneeded; i++)
             {
-                int rpos = round(r);
+                int rpos = floor(r);
+                if(rpos * sizeof(float) + src->offset > buffer->len)
+                {
+                    // We overflowed the buffer and need to request another one
+                    // (or the playback will finish / loop)
+                    // TODO: Improve this as this MAY cause clicking on pitched sources
+                    break;
+                }
+                float a = data[i];
+                float b = datao[rpos];
                 data[i] = datao[rpos];
                 r += src->pitch;
-                fr = rpos;
+                numframes = rpos;
             }
         }
         else
         {
             data = datao;
+            numframes = buffer->len;
         }
         
 
@@ -1226,13 +1239,19 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
             const int framesavail = (buffer->len - src->offset) / bufferframesize;
             const int mixframes = SDL_min(framesneeded, framesavail);
             mix_buffer(buffer, src->panning, data, *stream, mixframes);
-            src->offset += mixframes * bufferframesize * src->pitch;
+            // rbfx: We only need to change the src->offset 
+            float frames = (float)(mixframes * bufferframesize) * src->pitch;
+            // rbfx: TODO this leads to clicking
+            src->offset += SDL_max((int)round(frames), round(framesneeded * src->pitch));
+            if(src->offset > buffer->len)
+                src->offset = buffer->len;
             *len -= mixframes * deviceframesize;
             *stream += mixframes * ctx->device->channels;
         }
 
         SDL_assert(src->offset <= buffer->len);
 
+        printf("offset = %i, len = %i\n", src->offset, buffer->len);
         processed = src->offset >= buffer->len;
         if (processed) {
             FIXME("does the offset have to represent the whole queue or just the current buffer?");
@@ -1892,6 +1911,10 @@ static ALCcontext *_alcCreateContext(ALCdevice *device, const ALCint* attrlist)
         device->channels = 2;
         device->frequency = freq;
         device->framesize = sizeof (float) * device->channels;
+    
+        // rbfx: Create the pitch_buffer
+        device->pitch_buffer = SDL_malloc(device->framesize * desired.samples);
+        
         SDL_PauseAudioDevice(device->sdldevice, 0);
     }
 
