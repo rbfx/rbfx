@@ -496,7 +496,6 @@ struct ALCdevice_struct
     };
 
     // rbfx: Fixed size buffer used for pitching audio
-    // It's bigger than it needs to be on most cases
     float* pitch_buffer;
 };
 
@@ -1185,27 +1184,31 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
             // We must resample the data, sadly this is a heavy
             // perfomance hit TODO: Optimize
             float r = 0;
-            for(int i = 0; i < framesneeded; i++)
+            for(int i = 0; i <= framesneeded; i++)
             {
                 int rpos = floor(r);
                 if(rpos * sizeof(float) + src->offset > buffer->len)
-                {
-                    // We overflowed the buffer and need to request another one
-                    // (or the playback will finish / loop)
-                    // TODO: Improve this as this MAY cause clicking on pitched sources
                     break;
-                }
                 float a = data[i];
                 float b = datao[rpos];
                 data[i] = datao[rpos];
                 r += src->pitch;
-                numframes = rpos;
+                numframes = i;
+            }
+            // TODO: This happens sometimes but should be avoided
+            // Possible approach: Make sure src->offset increases in multiples
+            //  of bufferframesize:
+            //       bytes = ((bytes + bufferframesize - 1) / bufferframesize) * bufferframesize
+            //  This approach causes some clicking on streams for wathever reason
+            if(numframes == 0 && src->pitch != 0.0f)
+            {
+                numframes = 1;
             }
         }
         else
         {
             data = datao;
-            numframes = buffer->len;
+            numframes = (buffer->len - src->offset) / bufferframesize;
         }
         
 
@@ -1236,13 +1239,12 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
                 remainingmixframes -= getframes;
             }
         } else {
-            const int framesavail = (buffer->len - src->offset) / bufferframesize;
+            const int framesavail = numframes;
             const int mixframes = SDL_min(framesneeded, framesavail);
             mix_buffer(buffer, src->panning, data, *stream, mixframes);
             // rbfx: We only need to change the src->offset 
-            float frames = (float)(mixframes * bufferframesize) * src->pitch;
-            // rbfx: TODO this leads to clicking
-            src->offset += SDL_max((int)round(frames), round(framesneeded * src->pitch));
+            int bytes = (int)round((float)(mixframes * bufferframesize) * src->pitch);
+            src->offset += bytes;
             if(src->offset > buffer->len)
                 src->offset = buffer->len;
             *len -= mixframes * deviceframesize;
