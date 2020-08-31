@@ -533,7 +533,8 @@ struct ALCcontext_struct
 };
 
 /* forward declarations */
-static int source_get_offset(ALsource *src, ALenum param);
+// rbfx: Use double
+static double source_get_offset(ALsource *src, ALenum param);
 static void source_set_offset(ALsource *src, ALenum param, ALfloat value);
 
 /* the just_queued list is backwards. Add it to the queue in the correct order. */
@@ -1202,6 +1203,7 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
             //  This approach causes some clicking on streams for wathever reason
             if(numframes == 0 && src->pitch != 0.0f)
             {
+                printf("FIX!");
                 numframes = 1;
             }
         }
@@ -1254,7 +1256,9 @@ static ALboolean mix_source_buffer(ALCcontext *ctx, ALsource *src, BufferQueueIt
         SDL_assert(src->offset <= buffer->len);
 
         printf("offset = %i, len = %i\n", src->offset, buffer->len);
-        processed = src->offset >= buffer->len;
+        // rbfx: We add the - bufferframesize which seems to reduce clicking
+        // (Is this correct? It's a guess solution)
+        processed = src->offset >= buffer->len - bufferframesize;
         if (processed) {
             FIXME("does the offset have to represent the whole queue or just the current buffer?");
             src->offset = 0;
@@ -3643,7 +3647,8 @@ static void _alGetSourcefv(const ALuint name, const ALenum param, ALfloat *value
         case AL_SEC_OFFSET:
         case AL_SAMPLE_OFFSET:
         case AL_BYTE_OFFSET:
-            *values = source_get_offset(src, param);
+            // rbfx: Cast to float
+            *values = (ALfloat) source_get_offset(src, param);
             break;
 
         default: set_al_error(ctx, AL_INVALID_ENUM); break;
@@ -3907,7 +3912,10 @@ static void source_pause(ALCcontext *ctx, const ALuint name)
     }
 }
 
-static int source_get_offset(ALsource *src, ALenum param)
+// rbfx: Change to double for higher precision 
+// (It can safely represent all integers too!)float
+// TODO: Divide this function into one with floats and another with int 
+static double source_get_offset(ALsource *src, ALenum param)
 {
     int offset = 0;
     int framesize = sizeof(float);
@@ -3928,7 +3936,7 @@ static int source_get_offset(ALsource *src, ALenum param)
     }
     switch(param) {
         case AL_SAMPLE_OFFSET: return offset / framesize; break;
-        case AL_SEC_OFFSET: return (offset / framesize) / freq; break;
+        case AL_SEC_OFFSET: return (float)(offset / framesize) / (float)freq; break;
         case AL_BYTE_OFFSET: return offset; break;
         default: return 0; break;
     }
