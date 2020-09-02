@@ -424,6 +424,6 @@ inline bool CompareDrawables(const Drawable* lhs, const Drawable* rhs)
     return lhs->GetSortValue() < rhs->GetSortValue();
 }
 
-URHO3D_API bool WriteDrawablesToOBJ(ea::vector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV = false);
+URHO3D_API bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV = false);
 
 }
