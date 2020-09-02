@@ -20,17 +20,17 @@
 # THE SOFTWARE.
 #
 
-# Find Generic Buffer Management development library
+# Find NetworkAudioSystem development library
 #
-#  GBM_FOUND
-#  GBM_INCLUDE_DIRS
-#  GBM_LIBRARIES
+#  NAS_FOUND
+#  NAS_INCLUDE_DIRS
+#  NAS_LIBRARIES
 #
 
-find_path (GBM_INCLUDE_DIRS NAMES gbm.h DOC "GenericBufferManagement include directory")
-find_library (GBM_LIBRARIES NAMES gbm DOC "GenericBufferManagement library")
+find_path (NAS_INCLUDE_DIRS NAMES audio/audiolib.h nas/audiolib.h DOC "NetworkAudioSystem include directory")
+find_library (NAS_LIBRARIES NAMES audio DOC "NetworkAudioSystem library")
 
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (GenericBufferManagement REQUIRED_VARS GBM_LIBRARIES GBM_INCLUDE_DIRS FAIL_MESSAGE "Could NOT find Direct Generic Buffer Management development library")
+find_package_handle_standard_args (NAS REQUIRED_VARS NAS_LIBRARIES NAS_INCLUDE_DIRS FAIL_MESSAGE "Could NOT find NetworkAudioSystem development library")
 
-mark_as_advanced (GBM_INCLUDE_DIRS GBM_LIBRARIES)
+mark_as_advanced (NAS_INCLUDE_DIRS NAS_LIBRARIES)
