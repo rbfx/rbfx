@@ -37,6 +37,7 @@ class ProfilerTab : public Tab
     URHO3D_OBJECT(ProfilerTab, Tab)
 public:
     explicit ProfilerTab(Context* context);
+    ~ProfilerTab();
 
     bool RenderWindowContent() override;
     void RunOnMainThread(std::function<void()> cb);
