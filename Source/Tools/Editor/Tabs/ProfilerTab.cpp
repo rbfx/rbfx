@@ -46,6 +46,11 @@ ProfilerTab::ProfilerTab(Context* context)
     profilerTab = this;
 }
 
+ProfilerTab::~ProfilerTab()
+{
+    profilerTab = nullptr;
+}
+
 bool ProfilerTab::RenderWindowContent()
 {
     ui::PushID("Profiler");
