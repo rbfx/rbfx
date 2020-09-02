@@ -20,17 +20,17 @@
 # THE SOFTWARE.
 #
 
-# Find Direct Rendering Manager development library
+# Find Generic Buffer Management development library
 #
-#  DRM_FOUND
-#  DRM_INCLUDE_DIRS
-#  DRM_LIBRARIES
+#  GBM_FOUND
+#  GBM_INCLUDE_DIRS
+#  GBM_LIBRARIES
 #
 
-find_path (DRM_INCLUDE_DIRS NAMES xf86drm.h DOC "DirectRenderingManager include directory")
-find_library (DRM_LIBRARIES NAMES drm DOC "DirectRenderingManager library")
+find_path (GBM_INCLUDE_DIRS NAMES gbm.h DOC "GenericBufferManagement include directory")
+find_library (GBM_LIBRARIES NAMES gbm DOC "GenericBufferManagement library")
 
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (DirectRenderingManager REQUIRED_VARS DRM_LIBRARIES DRM_INCLUDE_DIRS FAIL_MESSAGE "Could NOT find Direct Rendering Manager development library")
+find_package_handle_standard_args (GBM REQUIRED_VARS GBM_LIBRARIES GBM_INCLUDE_DIRS FAIL_MESSAGE "Could NOT find Direct Generic Buffer Management development library")
 
-mark_as_advanced (DRM_INCLUDE_DIRS DRM_LIBRARIES)
+mark_as_advanced (GBM_INCLUDE_DIRS GBM_LIBRARIES)
