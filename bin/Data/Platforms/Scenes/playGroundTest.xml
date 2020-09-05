@@ -1,0 +1,504 @@
+<?xml version="1.0"?>
+<scene id="1">
+	<attribute name="Name" value="" />
+	<attribute name="Time Scale" value="1" />
+	<attribute name="Smoothing Constant" value="50" />
+	<attribute name="Snap Threshold" value="5" />
+	<attribute name="Elapsed Time" value="0" />
+	<attribute name="Next Replicated Node ID" value="35" />
+	<attribute name="Next Replicated Component ID" value="56" />
+	<attribute name="Next Local Node ID" value="16777227" />
+	<attribute name="Next Local Component ID" value="16777348" />
+	<attribute name="Variables" />
+	<attribute name="Variable Names" value="IsMovingPlatform" />
+	<component type="PhysicsWorld" id="1" />
+	<component type="Octree" id="2" />
+	<component type="DebugRenderer" id="3" />
+	<node id="2">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Zone" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Zone" id="4">
+			<attribute name="Bounding Box Min" value="-1000 -1000 -1000" />
+			<attribute name="Bounding Box Max" value="1000 1000 1000" />
+			<attribute name="Ambient Color" value="0.25 0.25 0.25 1" />
+		</component>
+	</node>
+	<node id="3">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="GlobalLight" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="0.836516 0.482963 0.224144 -0.12941" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Light" id="5">
+			<attribute name="Light Type" value="Directional" />
+			<attribute name="Color" value="0.9 0.9 0.9 1" />
+			<attribute name="Specular Intensity" value="0.5" />
+			<attribute name="Cast Shadows" value="true" />
+			<attribute name="CSM Splits" value="10 50 200 0" />
+			<attribute name="Depth Constant Bias" value="0.00025" />
+		</component>
+	</node>
+	<node id="4">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Lift" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="35.5938 0.350185 10.4836" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="6">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/Lift.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+		</component>
+		<component type="RigidBody" id="15">
+			<attribute name="Physics Position" value="35.5938 0.350185 10.4836" />
+			<attribute name="Angular Factor" value="0 0 0" />
+			<attribute name="Collision Layer" value="16" />
+			<attribute name="Collision Mask" value="65502" />
+			<attribute name="Use Gravity" value="false" />
+		</component>
+		<component type="CollisionShape" id="16">
+			<attribute name="Shape Type" value="TriangleMesh" />
+			<attribute name="Offset Position" value="0 0 0" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/Lift.mdl" />
+		</component>
+		<node id="9">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="LiftButton" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 6.19186 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="7">
+				<attribute name="Model" value="Model;Platforms/Scenes/Models/LiftButton.mdl" />
+				<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			</component>
+			<component type="RigidBody" id="21">
+				<attribute name="Physics Position" value="35.5938 0.412104 10.4836" />
+				<attribute name="Collision Layer" value="32" />
+				<attribute name="Collision Mask" value="65511" />
+				<attribute name="Use Gravity" value="false" />
+				<attribute name="Is Kinematic" value="true" />
+				<attribute name="Is Trigger" value="true" />
+			</component>
+			<component type="CollisionShape" id="22">
+				<attribute name="Shape Type" value="Cylinder" />
+				<attribute name="Size" value="100 80 1" />
+				<attribute name="Model" value="Model;Platforms/Scenes/Models/LiftButton.mdl" />
+			</component>
+		</node>
+		<node id="18">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="LiftLight" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 355.464 0" />
+			<attribute name="Rotation" value="0.71132 0.702868 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="Light" id="35">
+				<attribute name="Color" value="0.5 0.5 1 1" />
+				<attribute name="Specular Intensity" value="0.4" />
+				<attribute name="Radius" value="4" />
+				<attribute name="Length" value="2" />
+				<attribute name="Range" value="6.2" />
+				<attribute name="Light Shape Texture" value="TextureCube;" />
+			</component>
+		</node>
+		<node id="19">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="LiftVolume" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 58.3463 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables">
+				<variant hash="3025579211" type="Bool" value="true" />
+			</attribute>
+			<component type="RigidBody" id="36">
+				<attribute name="Physics Position" value="35.5938 0.933648 10.4836" />
+				<attribute name="Collision Layer" value="32" />
+				<attribute name="Collision Mask" value="65111" />
+				<attribute name="Is Kinematic" value="true" />
+				<attribute name="Is Trigger" value="true" />
+			</component>
+			<component type="CollisionShape" id="37">
+				<attribute name="Shape Type" value="Cylinder" />
+				<attribute name="Size" value="900 80 1" />
+			</component>
+		</node>
+	</node>
+	<node id="10">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="base" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="8">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/base.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+		</component>
+		<component type="RigidBody" id="17">
+			<attribute name="Collision Mask" value="65487" />
+		</component>
+		<component type="CollisionShape" id="18">
+			<attribute name="Shape Type" value="ConvexHull" />
+			<attribute name="Offset Position" value="0 -5 0" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/base.mdl" />
+		</component>
+	</node>
+	<node id="11">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="liftExterior" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="35.6211 7.66765 10.4388" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="9">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/liftExterior.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+		<component type="RigidBody" id="19">
+			<attribute name="Physics Position" value="35.6211 7.66765 10.4388" />
+			<attribute name="Collision Mask" value="65487" />
+		</component>
+		<component type="CollisionShape" id="20">
+			<attribute name="Shape Type" value="TriangleMesh" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/liftExterior.mdl" />
+		</component>
+	</node>
+	<node id="12">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="upperFloor" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="30.16 6.98797 10.0099" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="10">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/upperFloor.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+		<component type="RigidBody" id="23">
+			<attribute name="Physics Position" value="30.16 6.98797 10.0099" />
+			<attribute name="Collision Mask" value="65487" />
+		</component>
+		<component type="CollisionShape" id="24">
+			<attribute name="Shape Type" value="TriangleMesh" />
+			<attribute name="Offset Position" value="0 -5 0" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/upperFloor.mdl" />
+		</component>
+	</node>
+	<node id="13">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="ramp" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="13.5771 6.23965 10.9272" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="11">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/ramp.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+		<component type="RigidBody" id="25">
+			<attribute name="Physics Position" value="13.5771 6.23965 10.9272" />
+			<attribute name="Collision Mask" value="65487" />
+		</component>
+		<component type="CollisionShape" id="26">
+			<attribute name="Shape Type" value="TriangleMesh" />
+			<attribute name="Offset Position" value="0 -5 0" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/ramp.mdl" />
+		</component>
+	</node>
+	<node id="14">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="ramp2" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-22.8933 2.63165 -23.6786" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="12">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/ramp2.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+		<component type="RigidBody" id="27">
+			<attribute name="Physics Position" value="-22.8933 2.63165 -23.6786" />
+			<attribute name="Collision Mask" value="65487" />
+		</component>
+		<component type="CollisionShape" id="28">
+			<attribute name="Shape Type" value="ConvexHull" />
+			<attribute name="Offset Position" value="0 -5 0" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/ramp2.mdl" />
+		</component>
+	</node>
+	<node id="15">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="ramp3" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-15.2665 1.9782 -43.135" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="13">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/ramp3.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+		<component type="RigidBody" id="29">
+			<attribute name="Physics Position" value="-15.2665 1.9782 -43.135" />
+			<attribute name="Collision Mask" value="65487" />
+		</component>
+		<component type="CollisionShape" id="30">
+			<attribute name="Shape Type" value="ConvexHull" />
+			<attribute name="Offset Position" value="0 -5 0" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/ramp3.mdl" />
+		</component>
+	</node>
+	<node id="16">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="movingPlatformDisk1" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="26.1357 7.00645 -34.7563" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.01 0.01 0.01" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="14">
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/disk.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+		<component type="RigidBody" id="31">
+			<attribute name="Physics Position" value="26.1357 7.00645 -34.7563" />
+			<attribute name="Friction" value="1" />
+			<attribute name="Linear Factor" value="1 0 1" />
+			<attribute name="Angular Factor" value="0 0 0" />
+			<attribute name="Collision Layer" value="16" />
+			<attribute name="Collision Mask" value="65502" />
+			<attribute name="Use Gravity" value="false" />
+		</component>
+		<component type="CollisionShape" id="32">
+			<attribute name="Shape Type" value="TriangleMesh" />
+			<attribute name="Offset Position" value="0 -5 0" />
+			<attribute name="Model" value="Model;Platforms/Scenes/Models/disk.mdl" />
+		</component>
+		<node id="17">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="PlatformVolume" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 71.7516 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables">
+				<variant hash="3025579211" type="Bool" value="true" />
+			</attribute>
+			<component type="RigidBody" id="33">
+				<attribute name="Physics Position" value="26.1357 7.72397 -34.7563" />
+				<attribute name="Collision Layer" value="32" />
+				<attribute name="Collision Mask" value="65511" />
+				<attribute name="Use Gravity" value="false" />
+				<attribute name="Is Kinematic" value="true" />
+				<attribute name="Is Trigger" value="true" />
+			</component>
+			<component type="CollisionShape" id="34">
+				<attribute name="Shape Type" value="Cylinder" />
+				<attribute name="Size" value="520 80 1" />
+			</component>
+		</node>
+	</node>
+	<node id="20">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="splinePath1" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.14317 0.5 35.1134" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="SplinePath" id="38">
+			<attribute name="Interpolation Mode" value="Catmull-Rom Full" />
+			<attribute name="Speed" value="6" />
+			<attribute name="Controlled" value="33" />
+			<attribute name="Control Points">
+				<variant type="Int" value="13" />
+				<variant type="Int" value="21" />
+				<variant type="Int" value="22" />
+				<variant type="Int" value="23" />
+				<variant type="Int" value="24" />
+				<variant type="Int" value="25" />
+				<variant type="Int" value="26" />
+				<variant type="Int" value="27" />
+				<variant type="Int" value="28" />
+				<variant type="Int" value="29" />
+				<variant type="Int" value="30" />
+				<variant type="Int" value="31" />
+				<variant type="Int" value="32" />
+				<variant type="Int" value="21" />
+			</attribute>
+		</component>
+		<node id="21">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-1.85441 7.34028 7.73154" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="22">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="12.3533 7.34028 -1.41246" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="23">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="6.71511 7.34028 -7.44203" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="24">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-7.30396 7.34028 -7.44203" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="25">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-22.6731 7.34028 -11.7417" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="26">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-31.6409 7.34028 -21.8727" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="27">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-35.8832 4.98511 -47.866" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="28">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-45.9073 5.92764 -52.7658" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="29">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-50.1447 6.74262 -41.1805" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="30">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-50.1447 7.34028 -21.4852" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="31">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-48.1308 7.34028 1.13441" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+		<node id="32">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-23.4324 7.34028 11.1794" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+		</node>
+	</node>
+	<node id="33">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="plaform2" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.294956 2.48167 28.3161" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="6 0.7 6" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="51">
+			<attribute name="Model" value="Model;Models/Cylinder.mdl" />
+			<attribute name="Material" value="Material;Platforms/Materials/playgroundMat.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+		<component type="RigidBody" id="52">
+			<attribute name="Physics Position" value="-0.294956 2.48167 28.3161" />
+		</component>
+		<component type="CollisionShape" id="53">
+			<attribute name="Shape Type" value="Cylinder" />
+		</component>
+		<node id="34">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0.984117 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables">
+				<variant hash="3025579211" type="Bool" value="true" />
+			</attribute>
+			<component type="RigidBody" id="54">
+				<attribute name="Physics Position" value="-0.294956 3.46579 28.3161" />
+				<attribute name="Collision Layer" value="32" />
+				<attribute name="Collision Mask" value="65511" />
+				<attribute name="Is Kinematic" value="true" />
+				<attribute name="Is Trigger" value="true" />
+			</component>
+			<component type="CollisionShape" id="55">
+				<attribute name="Shape Type" value="Cylinder" />
+				<attribute name="Size" value="0.8 1 0.8" />
+			</component>
+		</node>
+	</node>
+</scene>
