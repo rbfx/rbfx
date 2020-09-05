@@ -1,4 +1,4 @@
-#ifdef COMPILEVS
+#if defined(COMPILEVS) || defined(COMPILEGS) || defined(COMPILEDS)
 
 #ifdef D3D11
 #define OUTPOSITION SV_POSITION

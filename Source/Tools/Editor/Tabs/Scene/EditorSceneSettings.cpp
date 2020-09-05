@@ -135,6 +135,7 @@ void EditorSceneSettings::OnSceneSet(Scene* scene)
 
     auto* cameraComponent = camera->GetOrCreateComponent<Camera>();
     cameraComponent->SetFarClip(160000);
+    cameraComponent->SetFillMode(FILL_WIREFRAME);
 
     auto* debug = scene->GetOrCreateComponent<DebugRenderer>(LOCAL);
     debug->SetView(cameraComponent);

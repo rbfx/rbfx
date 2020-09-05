@@ -1,0 +1,11 @@
+<technique vs="Tess_Unlit" ps="Tess_Unlit" hs="Tess_Unlit" ds="Tess_Unlit" 
+    vsdefines="TESS_PHONG"
+    hsdefines="TESS_PHONG"
+    dsdefines="TESS_PHONG"
+    psdefines="DIFFMAP TESS_PHONG" 
+    >
+    <pass name="base" />
+    <pass name="prepass" psdefines="PREPASS" />
+    <pass name="material" />
+    <pass name="deferred" psdefines="DEFERRED" />
+</technique>

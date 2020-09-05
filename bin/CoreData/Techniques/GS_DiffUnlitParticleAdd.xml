@@ -1,0 +1,4 @@
+<technique vs="UnlitParticle" gs="UnlitParticle" ps="UnlitParticle" 
+    vsdefines="VERTEXCOLOR POINTEXPAND" gsdefines="VERTEXCOLOR POINTEXPAND" psdefines="DIFFMAP VERTEXCOLOR ADDITIVE POINTEXPAND">
+    <pass name="alpha" depthwrite="false" blend="add" />
+</technique>

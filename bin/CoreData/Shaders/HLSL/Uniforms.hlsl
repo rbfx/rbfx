@@ -94,7 +94,8 @@ uniform float2 cVSMShadowParams;
 
 // D3D11 uniforms (using constant buffers)
 
-#ifdef COMPILEVS
+#if defined(COMPILEVS) || defined(COMPILEGS) || defined(COMPILEHS) || defined(COMPILEDS)
+
 
 // Vertex shader uniforms
 cbuffer FrameVS : register(b0)

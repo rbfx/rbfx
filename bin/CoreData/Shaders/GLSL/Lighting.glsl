@@ -1,4 +1,4 @@
-#ifdef COMPILEVS
+#if defined(COMPILEVS) || defined(COMPILEHS) || defined(COMPILEDS) || defined(COMPILEGS)
 vec3 GetAmbient(float zonePos)
 {
     return cAmbientStartColor + zonePos * cAmbientEndColor;

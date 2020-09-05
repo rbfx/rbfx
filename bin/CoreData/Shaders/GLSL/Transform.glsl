@@ -1,11 +1,11 @@
-#ifdef COMPILEVS
-
+#if defined (COMPILEVS) || defined(COMPILEHS) || defined(COMPILEDS) || defined(COMPILEGS)
 // Silence GLSL 150 deprecation warnings
 #ifdef GL3
 #define attribute in
 #define varying out
 #endif
 
+#ifdef COMPILEVS
 attribute vec4 iPos;
 attribute vec3 iNormal;
 attribute vec4 iColor;
@@ -32,7 +32,7 @@ attribute vec4 iCubeTexCoord1;
         attribute vec4 iTexCoord7;
     #endif
 #endif
-attribute float iObjectIndex;
+#endif
 
 #ifdef SKINNED
 mat4 GetSkinMatrix(vec4 blendWeights, vec4 blendIndices)
@@ -73,12 +73,10 @@ vec4 GetClipPos(vec3 worldPos)
 {
     vec4 ret = vec4(worldPos, 1.0) * cViewProj;
     // While getting the clip coordinate, also automatically set gl_ClipVertex for user clip planes
-#if !defined(GL_ES)
-#   if !defined(GL3)
+#if !defined(GL_ES) && !defined(GL3)
     gl_ClipVertex = ret;
-#   else
+#elif defined(GL3) && !defined(GL4)
     gl_ClipDistance[0] = dot(cClipPlane, ret);
-#   endif
 #endif
     return ret;
 }
@@ -170,6 +168,7 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
     #define iModelMatrix cModel
 #endif
 
+#ifdef COMPILEVS
 vec3 GetWorldPos(mat4 modelMatrix)
 {
     #if defined(BILLBOARD)
@@ -210,6 +209,7 @@ vec4 GetWorldTangent(mat4 modelMatrix)
         return vec4(normalize(iTangent.xyz * GetNormalMatrix(modelMatrix)), iTangent.w);
     #endif
 }
+#endif
 
 #else
 

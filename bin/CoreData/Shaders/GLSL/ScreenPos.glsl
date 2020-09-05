@@ -1,4 +1,4 @@
-#ifdef COMPILEVS
+#if defined(COMPILEVS) || defined(COMPILEGS) || defined(COMPILEHS) || defined(COMPILEDS)
 mat3 GetCameraRot()
 {
     return mat3(cViewInv[0][0], cViewInv[0][1], cViewInv[0][2],

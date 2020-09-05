@@ -119,6 +119,7 @@
 #if URHO3D_NAVIGATION
 #include "106_BakedLighting/BakedLighting.h"
 #endif
+#include "107_AdvancedShaders/AdvancedShaders.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -294,7 +295,9 @@ void SamplesManager::Start()
 #if URHO3D_NAVIGATION
     RegisterSample<BakedLighting>();
 #endif
+    RegisterSample<AdvancedShaders>();
 
+    startSample_ = "AdvancedShaders";
     if (!startSample_.empty())
         StartSample(startSample_);
 }
