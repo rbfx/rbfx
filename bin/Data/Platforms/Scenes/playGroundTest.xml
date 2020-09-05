@@ -120,7 +120,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables">
-				<variant hash="3025579211" type="Bool" value="true" />
+				<variant hash="1301124395" type="Bool" value="true" />
 			</attribute>
 			<component type="RigidBody" id="36">
 				<attribute name="Physics Position" value="35.5938 0.933648 10.4836" />
@@ -305,7 +305,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables">
-				<variant hash="3025579211" type="Bool" value="true" />
+				<variant hash="1301124395" type="Bool" value="true" />
 			</attribute>
 			<component type="RigidBody" id="33">
 				<attribute name="Physics Position" value="26.1357 7.72397 -34.7563" />
@@ -486,7 +486,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables">
-				<variant hash="3025579211" type="Bool" value="true" />
+				<variant hash="1301124395" type="Bool" value="true" />
 			</attribute>
 			<component type="RigidBody" id="54">
 				<attribute name="Physics Position" value="-0.294956 3.46579 28.3161" />
