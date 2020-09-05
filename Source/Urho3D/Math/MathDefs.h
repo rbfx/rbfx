@@ -127,6 +127,13 @@ inline T Clamp(T value, T min, T max)
         return value;
 }
 
+/// Per-component clamp of vector.
+template <class T>
+inline T VectorClamp(const T& value, const T& min, const T& max)
+{
+    return VectorMax(min, VectorMin(value, max));
+}
+
 /// Smoothly damp between values.
 template <class T>
 inline T SmoothStep(T lhs, T rhs, T t)
