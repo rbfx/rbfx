@@ -102,7 +102,7 @@ protected:
     void RemoveKinematicFromWorld();
 
 protected:
-    int colLayer_{1};
+    int colLayer_{ 1 };
     int colMask_{ 0xffff };
 
     float stepHeight_{ 0.4f };
@@ -112,7 +112,7 @@ protected:
     float maxSlope_{ 45.0f };
     float linearDamping_{ 0.2f };
     float angularDamping_{ 0.2f };
-    Vector3 gravity_{Vector3(0.0f, -14.0f, 0.0f)};
+    Vector3 gravity_{ Vector3(0.0f, -14.0f, 0.0f) };
 
     WeakPtr<PhysicsWorld> physicsWorld_;
     ea::unique_ptr<btPairCachingGhostObject> pairCachingGhostObject_;
