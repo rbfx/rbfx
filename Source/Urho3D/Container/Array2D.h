@@ -30,7 +30,7 @@ namespace Urho3D
 {
 
 /// 2D indexing utilities for row-major 2D array.
-class ArrayDimensions2D
+class URHO3D_API ArrayDimensions2D
 {
 public:
     /// Construct default.
@@ -125,7 +125,7 @@ public:
     /// Resize array. All elements are reset to default value.
     void Resize(const ArrayDimensions2D& dim, const T& value = {})
     {
-        Resize(dim.Width(), dim.Height(), value);
+        Resize(dim.GetWidth(), dim.GetHeight(), value);
     }
 
     /// Resize array. All elements are reset to default value.
