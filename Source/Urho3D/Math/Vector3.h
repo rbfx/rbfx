@@ -243,6 +243,9 @@ public:
     {
     }
 
+    /// Construct from 2D vector in X0Z plane.
+    static Vector3 FromXZ(const Vector2& vector) { return { vector.x_, 0.0f, vector.y_ }; }
+
     /// Assign from another vector.
     Vector3& operator =(const Vector3& rhs) noexcept = default;
 
