@@ -468,4 +468,63 @@ public:
     static const IntRect ZERO;
 };
 
+/// Iterator that iterates through all elements of IntRect row-by-row.
+class URHO3D_API IntRectIterator
+{
+public:
+    /// Construct valid. Iterators with different rectangles are incompatible.
+    IntRectIterator(const IntRect& rect, const IntVector2& index)
+        : rect_(rect)
+        , index_(index)
+    {
+    }
+
+    /// Pre-increment.
+    IntRectIterator& operator++()
+    {
+        ++index_.x_;
+        if (index_.x_ >= rect_.right_)
+        {
+            ++index_.y_;
+            index_.x_ = rect_.left_;
+
+            if (index_.y_ >= rect_.bottom_)
+                index_.y_ = rect_.bottom_;
+        }
+        return *this;
+    }
+
+    /// Post-increment.
+    IntRectIterator operator++(int)
+    {
+        IntRectIterator tmp(*this);
+        ++(*this);
+        return tmp;
+    }
+
+    /// Compare for equality.
+    bool operator ==(const IntRectIterator& rhs) const { assert(rect_ == rhs.rect_); return index_ == rhs.index_; }
+
+    /// Compare for non-equality.
+    bool operator !=(const IntRectIterator& rhs) const { return !(*this == rhs); }
+
+    /// Dereference.
+    const IntVector2& operator *() const { return index_; }
+
+    /// Dereference.
+    const IntVector2* operator ->() const { return &index_; }
+
+private:
+    /// Iterated rectangle.
+    IntRect rect_;
+    /// Current index within rectangle.
+    IntVector2 index_;
+};
+
+/// Return begin iterator of IntRect.
+inline IntRectIterator begin(const IntRect& rect) { return IntRectIterator(rect, rect.Min()); }
+
+/// Return end iterator of IntRect.
+inline IntRectIterator end(const IntRect& rect) { return IntRectIterator(rect, IntVector2(rect.left_, rect.bottom_)); }
+
 }
