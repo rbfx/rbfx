@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include "KinematicCharacter.h"
 
 namespace Urho3D
 {
@@ -32,9 +33,9 @@ class Scene;
 
 }
 
-class KinematicCharacter;
-class KinematicTouch;
-class CharacterController;
+class Character;
+class Touch;
+class KinematicCharacterController;
 
 /// Moving character example.
 /// This sample demonstrates:
@@ -50,12 +51,12 @@ class KinematicCharacterDemo : public Sample
 
 public:
     /// Construct.
-    KinematicCharacterDemo(Context* context);
+    explicit KinematicCharacterDemo(Context* context);
     /// Destruct.
-    ~KinematicCharacterDemo();
+    ~KinematicCharacterDemo() override;
 
     /// Setup after engine initialization and before running the main loop.
-    virtual void Start();
+    void Start() override;
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
@@ -104,7 +105,7 @@ protected:
         "</patch>";
     }
 
-protected:
+private:
     /// Create static scene content.
     void CreateScene();
     /// Create controllable character.
@@ -119,15 +120,13 @@ protected:
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
-protected:
     /// Touch utility object.
     SharedPtr<Touch> touch_;
     /// The controllable character component.
     WeakPtr<KinematicCharacter> character_;
-    WeakPtr<CharacterController> kinematicCharacter_;
+    WeakPtr<KinematicCharacterController> kinematicCharacter_;
     /// First person camera flag.
     bool firstPerson_;
 
     bool drawDebug_;
-
 };

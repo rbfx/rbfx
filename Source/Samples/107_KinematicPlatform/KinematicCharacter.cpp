@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,29 +22,28 @@
 
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Graphics/AnimationController.h>
-#include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
-#include <Urho3D/Physics/CharacterController.h>
+#include <Urho3D/Physics/KinematicCharacterController.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Math/Ray.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/DebugNew.h>
 
 #include "KinematicCharacter.h"
 
-#include <Urho3D/DebugNew.h>
-//=============================================================================
-//=============================================================================
 KinematicCharacter::KinematicCharacter(Context* context) :
     LogicComponent(context),
     onGround_(false),
     okToJump_(true),
     inAirTimer_(0.0f),
+    curMoveDir_(Vector3::ZERO),
+    isJumping_(false),
     jumpStarted_(false)
 {
+    // Only the physics update event is needed: unsubscribe from the rest for optimization
     SetUpdateEventMask(USE_FIXEDUPDATE | USE_FIXEDPOSTUPDATE);
 }
 
@@ -52,6 +51,8 @@ void KinematicCharacter::RegisterObject(Context* context)
 {
     context->RegisterFactory<KinematicCharacter>();
 
+    // These macros register the class attributes to the Context for automatic load / save handling.
+    // We specify the Default attribute mode which means it will be used both for saving into file, and network replication
     URHO3D_ATTRIBUTE("Controls Yaw", float, controls_.yaw_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Controls Pitch", float, controls_.pitch_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("On Ground", bool, onGround_, false, AM_DEFAULT);
@@ -63,9 +64,8 @@ void KinematicCharacter::DelayedStart()
 {
     collisionShape_ = node_->GetComponent<CollisionShape>(true);
     animController_ = node_->GetComponent<AnimationController>(true);
-    kinematicController_ = node_->GetComponent<CharacterController>(true);
+    kinematicController_ = node_->GetComponent<KinematicCharacterController>(true);
 }
-
 void KinematicCharacter::Start()
 {
     // Component has been inserted into its scene node. Subscribe to events now
@@ -101,12 +101,24 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         moveDir.Normalize();
 
     // rotate movedir
-    curMoveDir_ = rot * moveDir;
+    Vector3 velocity = rot * moveDir;
+    if (onGround_)
+    {
+        curMoveDir_ = velocity;
+    }
+    else
+    {   // In-air direction control is limited
+        curMoveDir_ = curMoveDir_.Lerp(velocity, 0.03f);
+    }
 
     kinematicController_->SetWalkDirection(curMoveDir_ * (softGrounded ? MOVE_FORCE : INAIR_MOVE_FORCE));
 
     if (softGrounded)
     {
+        if (isJumping_)
+        {
+            isJumping_ = false;
+        }
         isJumping_ = false;
         // Jump. Must release jump control between jumps
         if (controls_.IsDown(CTRL_JUMP))
@@ -151,10 +163,6 @@ void KinematicCharacter::FixedUpdate(float timeStep)
             {
                 animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.2f);
             }
-            //else if (result.body_ == NULL)
-            //{
-            //    // fall to death animation
-            //}
         }
     }
     else
@@ -223,6 +231,7 @@ void KinematicCharacter::NodeOnMovingPlatform(Node *node)
 
 void KinematicCharacter::HandleNodeCollision(StringHash eventType, VariantMap& eventData)
 {
+    // Check collision contacts and see if character is standing on ground (look for a contact that has near vertical normal)
     using namespace NodeCollision;
 
     // possible moving platform trigger volume

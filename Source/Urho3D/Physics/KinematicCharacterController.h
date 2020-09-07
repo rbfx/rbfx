@@ -35,15 +35,15 @@ using namespace Urho3D;
 class btPairCachingGhostObject;
 class btKinematicCharacterController;
 
-class URHO3D_API CharacterController : public Component
+class URHO3D_API KinematicCharacterController : public Component
 {
-    URHO3D_OBJECT(CharacterController, Component);
+    URHO3D_OBJECT(KinematicCharacterController, Component);
 
 public:
     /// Construct.
-    CharacterController(Context* context);
+    KinematicCharacterController(Context* context);
     /// Destruct.
-    ~CharacterController() override;
+    ~KinematicCharacterController() override;
 
     /// Register object factory and attributes.
     static void RegisterObject(Context* context);
