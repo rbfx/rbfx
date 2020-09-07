@@ -31,7 +31,7 @@
 #include "../Graphics/Model.h"
 #include "../IO/Log.h"
 #include "../Math/Ray.h"
-#include "../Physics/CharacterController.h"
+#include "../Physics/KinematicCharacterController.h"
 #include "../Physics/CollisionShape.h"
 #include "../Physics/Constraint.h"
 #include "../Physics/PhysicsEvents.h"
@@ -1095,7 +1095,7 @@ void RegisterPhysicsLibrary(Context* context)
     Constraint::RegisterObject(context);
     PhysicsWorld::RegisterObject(context);
     RaycastVehicle::RegisterObject(context);
-    CharacterController::RegisterObject(context);
+    KinematicCharacterController::RegisterObject(context);
 }
 
 }

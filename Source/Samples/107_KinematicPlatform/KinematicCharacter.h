@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,18 +33,16 @@ class CollisionShape;
 }
 
 using namespace Urho3D;
-class CharacterController;
+class KinematicCharacterController;
 
-//=============================================================================
-//=============================================================================
-const int CTRL_FORWARD = 1;
-const int CTRL_BACK = 2;
-const int CTRL_LEFT = 4;
-const int CTRL_RIGHT = 8;
-const int CTRL_JUMP = 16;
+const unsigned CTRL_FORWARD = 1;
+const unsigned CTRL_BACK = 2;
+const unsigned CTRL_LEFT = 4;
+const unsigned CTRL_RIGHT = 8;
+const unsigned CTRL_JUMP = 16;
 
 const float MOVE_FORCE = 0.2f;
-const float INAIR_MOVE_FORCE = 0.06f;
+const float INAIR_MOVE_FORCE = 0.2f;
 const float BRAKE_FORCE = 0.2f;
 const float JUMP_FORCE = 7.0f;
 const float YAW_SENSITIVITY = 0.1f;
@@ -80,17 +78,17 @@ class KinematicCharacter : public LogicComponent
 
 public:
     /// Construct.
-    KinematicCharacter(Context* context);
-    
+    explicit KinematicCharacter(Context* context);
+
     /// Register object factory and attributes.
     static void RegisterObject(Context* context);
     
-    virtual void DelayedStart();
+    void DelayedStart() override;
 
     /// Handle startup. Called by LogicComponent base class.
-    virtual void Start();
+    void Start() override;
     /// Handle physics world update. Called by LogicComponent base class.
-    virtual void FixedUpdate(float timeStep);
+    void FixedUpdate(float timeStep) override;
     virtual void FixedPostUpdate(float timeStep);
     
     void SetOnMovingPlatform(RigidBody *platformBody)
@@ -99,19 +97,21 @@ public:
         //platformBody_ = platformBody; 
     }
 
-public:
     /// Movement controls. Assigned by the main program each frame.
     Controls controls_;
 
-protected:
+private:
     bool IsNodeMovingPlatform(Node *node) const;
     void NodeOnMovingPlatform(Node *node);
     /// Handle physics collision event.
     void HandleNodeCollision(StringHash eventType, VariantMap& eventData);
-    
+
 protected:
+    /// Grounded flag for movement.
     bool onGround_;
+    /// Jump flag.
     bool okToJump_;
+    /// In air timer. Due to possible physics inaccuracy, character can be off ground for max. 1/10 second and still be allowed to move.
     float inAirTimer_;
 
     // extra vars
@@ -121,7 +121,7 @@ protected:
 
     WeakPtr<CollisionShape> collisionShape_;
     WeakPtr<AnimationController> animController_;
-    WeakPtr<CharacterController> kinematicController_;
+    WeakPtr<KinematicCharacterController> kinematicController_;
 
     // moving platform data
     MovingData movingData_[2];
