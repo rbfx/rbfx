@@ -26,6 +26,7 @@
 #include "../Physics/CollisionShape.h"
 #include "../Physics/PhysicsUtils.h"
 #include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 #include "../IO/Log.h"
 
 #include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
@@ -92,6 +93,7 @@ void KinematicCharacterController::OnSetAttribute(const AttributeInfo& attr, con
 
 void KinematicCharacterController::ApplyAttributes()
 {
+    AddKinematicToWorld();
     if (reapplyAttributes_)
     {
         ApplySettings(true);
@@ -123,17 +125,24 @@ void KinematicCharacterController::OnSceneSet(Scene* scene)
         if (scene == node_)
             URHO3D_LOGWARNING(GetTypeName() + " should not be created to the root scene node");
 
-        physicsWorld_ = scene->GetComponent<PhysicsWorld>();
+        physicsWorld_ = scene->GetOrCreateComponent<PhysicsWorld>();
 
         if (physicsWorld_)
         {
             AddKinematicToWorld();
         }
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
     }
     else
     {
         RemoveKinematicFromWorld();
+        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTSTEP);
     }
+}
+
+void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData)
+{
+    node_->SetWorldPosition(GetPosition());
 }
 
 void KinematicCharacterController::AddKinematicToWorld()
@@ -145,7 +154,13 @@ void KinematicCharacterController::AddKinematicToWorld()
             CollisionShape *colShape = GetComponent<CollisionShape>();
             assert(colShape && "missing Collision Shape");
 
-            pairCachingGhostObject_->setCollisionShape(colShape->GetCollisionShape());
+            btCollisionShape* btColShape = colShape->GetCollisionShape();
+            //Skip kinematicController_ creation is collision shape is not yet created.
+            if (!btColShape)
+            {
+                return;
+            }
+            pairCachingGhostObject_->setCollisionShape(btColShape);
             colShapeOffset_ = colShape->GetPosition();
 
             kinematicController_.reset( newKinematicCharCtrl(pairCachingGhostObject_.get(), 
