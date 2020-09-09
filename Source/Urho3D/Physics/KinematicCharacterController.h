@@ -24,16 +24,13 @@
 
 #include "../Scene/Component.h"
 
+class btPairCachingGhostObject;
+class btKinematicCharacterController;
+
 namespace Urho3D
 {
 class PhysicsWorld;
 class DebugRenderer;
-}
-
-using namespace Urho3D;
-
-class btPairCachingGhostObject;
-class btKinematicCharacterController;
 
 class URHO3D_API KinematicCharacterController : public Component
 {
@@ -52,45 +49,79 @@ public:
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
 
-    const Vector3& GetPosition();
-    const Quaternion& GetRotation();
+    /// Return character position in world space.
+    Vector3 GetPosition() const;
+    /// Return character rotation in world space.
+    Quaternion GetRotation() const;
+    /// Set character position and rotation in world space as an atomic operation.
     void SetTransform(const Vector3& position, const Quaternion& rotation);
-    void GetTransform(Vector3& position, Quaternion& rotation);
+    /// Get character position and rotation in world space.
+    void GetTransform(Vector3& position, Quaternion& rotation) const;
 
-    void SetCollisionLayer(int layer);
-    void SetCollisionMask(int mask);
-    void SetCollisionLayerAndMask(int layer, int mask);
+    /// Set collision layer.
+    void SetCollisionLayer(unsigned layer);
+    /// Return collision layer.
+    unsigned GetCollisionLayer() const { return colLayer_; }
+    /// Set collision mask.
+    void SetCollisionMask(unsigned mask);
+    /// Return collision mask.
+    unsigned GetCollisionMask() const { return colMask_; }
+    /// Set collision group and mask.
+    void SetCollisionLayerAndMask(unsigned layer, unsigned mask);
 
+    /// Set gravity.
     void SetGravity(const Vector3 &gravity);
+    /// Get gravity.
     const Vector3& GetGravity() const { return gravity_; }
+    /// Set linear velocity damping factor.
     void SetLinearDamping(float linearDamping);
+    /// Return linear velocity damping factor.
     float GetLinearDamping() const { return linearDamping_; }
+    /// Set angular velocity damping factor.
     void SetAngularDamping(float angularDamping);
+    /// Return linear velocity damping factor.
     float GetAngularDamping() const { return angularDamping_; }
-
+    /// Set step height.
     void SetStepHeight(float stepHeight);
+    /// Return step height.
     float GetStepHeight() const { return stepHeight_; }
+    /// Set max jump height.
     void SetMaxJumpHeight(float maxJumpHeight);
+    /// Return max jump height.
     float GetMaxJumpHeight() const { return maxJumpHeight_; }
+    /// Set fall speed (terminal velocity).
     void SetFallSpeed(float fallSpeed);
+    /// Return fall speed (terminal velocity).
     float GetFallSpeed() const { return fallSpeed_; }
+    /// Set jump speed.
     void SetJumpSpeed(float jumpSpeed);
+    /// Return jump speed.
     float GetJumpSpeed() const { return jumpSpeed_; }
+    /// Set max slope angle in degrees.
     void SetMaxSlope(float maxSlope);
+    /// Return max slope angle in degrees.
     float GetMaxSlope() const { return maxSlope_; }
-
+    /// Set walk direction. This is neither a direction nor a velocity, but the amount to increment the position each simulation iteration, regardless of dt.
     void SetWalkDirection(const Vector3& walkDir);
+    /// Check if character in on the ground.
     bool OnGround() const;
+    /// Jump.
     void Jump(const Vector3 &jump = Vector3::ZERO);
     /// ApplyImpulse is same as Jump
     void ApplyImpulse(const Vector3 &impulse);
+    /// Check if character can jump.
     bool CanJump() const;
-
+    /// Set angular velocity.
     void SetAngularVelocity(const Vector3 &velocity);
+    /// Return angular velocity.
     const Vector3 GetAngularVelocity() const;
+    /// Set linear velocity.
     void SetLinearVelocity(const Vector3 &velocity);
+    /// Return linear velocity.
     const Vector3 GetLinearVelocity() const;
+    /// Teleport character into new position.
     void Warp(const Vector3 &position);
+    /// Draw debug geometry.
     virtual void DrawDebugGeometry();
 
 protected:
@@ -104,8 +135,8 @@ protected:
     virtual void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
 
 protected:
-    int colLayer_{ 1 };
-    int colMask_{ 0xffff };
+    unsigned colLayer_{ 1 };
+    unsigned colMask_{ 0xffff };
 
     float stepHeight_{ 0.4f };
     float maxJumpHeight_{ 2.0f };
@@ -120,9 +151,8 @@ protected:
     ea::unique_ptr<btPairCachingGhostObject> pairCachingGhostObject_;
     ea::unique_ptr<btKinematicCharacterController> kinematicController_;
 
-    Vector3 position_;
-    Quaternion rotation_;
     Vector3 colShapeOffset_{ Vector3::ZERO };
     bool reapplyAttributes_{ false };
-
 };
+
+}

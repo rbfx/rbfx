@@ -37,6 +37,9 @@
 
 #include "KinematicCharacterController.h"
 
+namespace Urho3D
+{
+
 //=============================================================================
 // NOTE! declare these function before #include <Urho3D/DebugNew> 
 // otherwise you'll get a compile error for _DEBUG build
@@ -207,7 +210,7 @@ void KinematicCharacterController::RemoveKinematicFromWorld()
     }
 }
 
-void KinematicCharacterController::SetCollisionLayer(int layer)
+void KinematicCharacterController::SetCollisionLayer(unsigned layer)
 {
     if (physicsWorld_)
     {
@@ -216,12 +219,12 @@ void KinematicCharacterController::SetCollisionLayer(int layer)
             colLayer_ = layer;
             btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
             phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
-            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
+            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), static_cast<int>(colLayer_), static_cast<int>(colMask_));
         }
     }
 }
 
-void KinematicCharacterController::SetCollisionMask(int mask)
+void KinematicCharacterController::SetCollisionMask(unsigned mask)
 {
     if (physicsWorld_)
     {
@@ -230,12 +233,12 @@ void KinematicCharacterController::SetCollisionMask(int mask)
             colMask_ = mask;
             btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
             phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
-            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
+            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), static_cast<int>(colLayer_), static_cast<int>(colMask_));
         }
     }
 }
 
-void KinematicCharacterController::SetCollisionLayerAndMask(int layer, int mask)
+void KinematicCharacterController::SetCollisionLayerAndMask(unsigned layer, unsigned mask)
 {
     if (physicsWorld_)
     {
@@ -245,23 +248,21 @@ void KinematicCharacterController::SetCollisionLayerAndMask(int layer, int mask)
             colMask_ = mask;
             btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
             phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
-            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
+            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), static_cast<int>(colLayer_), static_cast<int>(colMask_));
         }
     }
 }
 
-const Vector3& KinematicCharacterController::GetPosition()
+Vector3 KinematicCharacterController::GetPosition() const
 {
     btTransform t = pairCachingGhostObject_->getWorldTransform();
-    position_ = ToVector3(t.getOrigin()) - colShapeOffset_;
-    return position_;
+    return ToVector3(t.getOrigin()) - colShapeOffset_;
 }
 
-const Quaternion& KinematicCharacterController::GetRotation()
+Quaternion KinematicCharacterController::GetRotation() const
 {
     btTransform t = pairCachingGhostObject_->getWorldTransform();
-    rotation_ = ToQuaternion(t.getRotation());
-    return rotation_;
+    return ToQuaternion(t.getRotation());
 }
 
 void KinematicCharacterController::SetTransform(const Vector3& position, const Quaternion& rotation)
@@ -273,7 +274,7 @@ void KinematicCharacterController::SetTransform(const Vector3& position, const Q
     pairCachingGhostObject_->setWorldTransform(worldTrans);
 }
 
-void KinematicCharacterController::GetTransform(Vector3& position, Quaternion& rotation)
+void KinematicCharacterController::GetTransform(Vector3& position, Quaternion& rotation) const
 {
     btTransform worldTrans = pairCachingGhostObject_->getWorldTransform();
     rotation = ToQuaternion(worldTrans.getRotation());
@@ -415,3 +416,4 @@ void KinematicCharacterController::DrawDebugGeometry()
     kinematicController_->debugDraw(physicsWorld_);
 }
 
+}

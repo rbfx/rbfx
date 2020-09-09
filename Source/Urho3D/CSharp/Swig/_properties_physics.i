@@ -145,7 +145,7 @@
   public $typemap(cstype, const Urho3D::Quaternion &) Rotation {
     get { return GetRotation(); }
   }
-  public $typemap(cstype, Urho3D::Vector3 &) Gravity {
+  public $typemap(cstype, const Urho3D::Vector3 &) Gravity {
     get { return GetGravity(); }
     set { SetGravity(value); }
   }
@@ -177,19 +177,21 @@
     get { return GetMaxSlope(); }
     set { SetMaxSlope(value); }
   }
-  public $typemap(cstype, bool) CanJump {
-    get { return GetMaxSlope(); }
-  }
-  public $typemap(cstype, bool) OnGround {
-    get { return OnGround(); }
-  }
-  public $typemap(cstype, float) AngularVelocity {
+  public $typemap(cstype, const Urho3D::Vector3 &) AngularVelocity {
     get { return GetAngularVelocity(); }
     set { SetAngularVelocity(value); }
   }
-  public $typemap(cstype, float) LinearVelocity {
+  public $typemap(cstype, const Urho3D::Vector3 &) LinearVelocity {
     get { return GetLinearVelocity(); }
     set { SetLinearVelocity(value); }
+  }
+  public $typemap(cstype, unsigned int) CollisionLayer {
+    get { return GetCollisionLayer(); }
+    set { SetCollisionLayer(value); }
+  }
+  public $typemap(cstype, unsigned int) CollisionMask {
+    get { return GetCollisionMask(); }
+    set { SetCollisionMask(value); }
   }
 %}
 %csmethodmodifiers Urho3D::KinematicCharacterController::GetPosition "private";
@@ -208,12 +210,18 @@
 %csmethodmodifiers Urho3D::KinematicCharacterController::SetFallSpeed "private";
 %csmethodmodifiers Urho3D::KinematicCharacterController::GetJumpSpeed "private";
 %csmethodmodifiers Urho3D::KinematicCharacterController::SetJumpSpeed "private";
+%csmethodmodifiers Urho3D::KinematicCharacterController::SetMaxSlope "private";
 %csmethodmodifiers Urho3D::KinematicCharacterController::GetMaxSlope "private";
-%csmethodmodifiers Urho3D::KinematicCharacterController::OnGround "private";
 %csmethodmodifiers Urho3D::KinematicCharacterController::GetAngularVelocity "private";
 %csmethodmodifiers Urho3D::KinematicCharacterController::SetAngularVelocity "private";
 %csmethodmodifiers Urho3D::KinematicCharacterController::GetLinearVelocity "private";
 %csmethodmodifiers Urho3D::KinematicCharacterController::SetLinearVelocity "private";
+%csmethodmodifiers Urho3D::KinematicCharacterController::GetCollisionLayer "private";
+%csmethodmodifiers Urho3D::KinematicCharacterController::SetCollisionLayer "private";
+%csmethodmodifiers Urho3D::KinematicCharacterController::GetCollisionMask "private";
+%csmethodmodifiers Urho3D::KinematicCharacterController::SetCollisionMask "private";
+%csmethodmodifiers Urho3D::KinematicCharacterController::GetCollisionEventMode "private";
+%csmethodmodifiers Urho3D::KinematicCharacterController::SetCollisionEventMode "private";
 %typemap(cscode) Urho3D::PhysicsWorld %{
   public $typemap(cstype, Urho3D::Vector3) Gravity {
     get { return GetGravity(); }
