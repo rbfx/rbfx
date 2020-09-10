@@ -2,7 +2,7 @@
 
 ![Windows](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&label=Windows) ![Linux](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&label=Linux) ![MacOS](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&label=MacOS) ![Web](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Web&label=Web) ![Android](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Android&label=Android) ![iOS](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=iOS&label=iOS)
 
-[![Join the chat at https://gitter.im/rokups/rbfx](https://badges.gitter.im/rokups/rbfx.svg)](https://gitter.im/rokups/rbfx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/rokups/rbfx](https://badges.gitter.im/rokups/rbfx.svg)](https://gitter.im/rokups/rbfx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Discord Chat](https://img.shields.io/discord/560082228928053258.svg?logo=discord)](https://discord.gg/XKs73yf)  
 
 **Urho3D Rebel Fork** aka **rbfx** is an experimental fork of [Urho3D](http://urho3d.github.io/) game engine.
 
