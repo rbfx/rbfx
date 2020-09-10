@@ -289,7 +289,7 @@ if (URHO3D_CSHARP)
         message(FATAL_ERROR "msbuild executable was not found.")
     endif ()
 
-    if (URHO3D_NETFX MATCHES "net46.*")
+    if (URHO3D_NETFX MATCHES "net(46|standard).*")
         set (URHO3D_NETFX_LEGACY_VERSION ON)
     endif ()
 
