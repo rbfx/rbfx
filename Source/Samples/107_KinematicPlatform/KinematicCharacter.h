@@ -30,10 +30,10 @@ namespace Urho3D
 class AnimationController;
 class RigidBody;
 class CollisionShape;
+class KinematicCharacterController;
 }
 
 using namespace Urho3D;
-class KinematicCharacterController;
 
 const unsigned CTRL_FORWARD = 1;
 const unsigned CTRL_BACK = 2;

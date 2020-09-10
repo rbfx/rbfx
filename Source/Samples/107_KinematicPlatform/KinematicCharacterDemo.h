@@ -30,12 +30,11 @@ namespace Urho3D
 
 class Node;
 class Scene;
-
+class KinematicCharacterController;
 }
 
 class Character;
 class Touch;
-class KinematicCharacterController;
 
 /// Moving character example.
 /// This sample demonstrates:
