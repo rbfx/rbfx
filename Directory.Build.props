@@ -26,9 +26,6 @@
     <TargetFramework>$(URHO3D_NETFX)</TargetFramework>
     <RuntimeIdentifier>$(URHO3D_NETFX_RUNTIME_IDENTIFIER)</RuntimeIdentifier>
   </PropertyGroup>
-  <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(URHO3D_NETFX), '^net(46|standard).*$'))">
-    <DefineConstants>$(DefineConstants);URHO3D_NETFX_LEGACY_VERSION</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(CMAKE_BINARY_DIR)' == '' ">
     <CMAKE_BINARY_DIR Condition=" '$(OS)' == 'Windows_NT' ">$(SolutionDir)</CMAKE_BINARY_DIR>                           <!-- Solution is in cmake binary dir -->
     <CMAKE_BINARY_DIR Condition=" '$(OS)' != 'Windows_NT' ">$(SolutionDir)cmake-build/</CMAKE_BINARY_DIR>               <!-- Solution is in engine source dir -->

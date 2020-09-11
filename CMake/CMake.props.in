@@ -9,4 +9,7 @@
     <URHO3D_NETFX>@URHO3D_NETFX@</URHO3D_NETFX>
     <URHO3D_NETFX_RUNTIME_IDENTIFIER>@URHO3D_NETFX_RUNTIME_IDENTIFIER@</URHO3D_NETFX_RUNTIME_IDENTIFIER>
   </PropertyGroup>
+  <PropertyGroup Condition="'@URHO3D_NETFX_LEGACY_VERSION@' != ''">
+    <DefineConstants>$(DefineConstants);URHO3D_NETFX_LEGACY_VERSION</DefineConstants>
+  </PropertyGroup>
 </Project>
