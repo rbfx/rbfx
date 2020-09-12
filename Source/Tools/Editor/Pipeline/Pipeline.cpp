@@ -57,7 +57,7 @@ Pipeline::Pipeline(Context* context)
     : Object(context)
     , watcher_(context)
 {
-    if (context_->GetEngine()->IsHeadless())
+    if (context_->GetSubsystem<Engine>()->IsHeadless())
         return;
 
     SubscribeToEvent(E_ENDFRAME, &Pipeline::OnEndFrame);
@@ -285,7 +285,7 @@ SharedPtr<WorkItem> Pipeline::ScheduleImport(Asset* asset, Flavor* flavor, Pipel
 
     asset->AddRef();
     asset->importing_ = true;
-    return context_->GetWorkQueue()->AddWorkItem([this, asset, flavor, flags]()
+    return context_->GetSubsystem<WorkQueue>()->AddWorkItem([this, asset, flavor, flags]()
     {
         if (ExecuteImport(asset, flavor, flags))
         {
@@ -334,7 +334,7 @@ bool Pipeline::ExecuteImport(Asset* asset, Flavor* flavor, PipelineBuildFlags fl
 void Pipeline::BuildCache(Flavor* flavor, PipelineBuildFlags flags)
 {
     auto* project = GetSubsystem<Project>();
-    auto* fs = context_->GetFileSystem();
+    auto* fs = context_->GetSubsystem<FileSystem>();
 
     if (flavor == nullptr)
         flavor = GetDefaultFlavor();
@@ -354,7 +354,7 @@ void Pipeline::BuildCache(Flavor* flavor, PipelineBuildFlags flags)
 
 void Pipeline::WaitForCompletion() const
 {
-    context_->GetWorkQueue()->Complete(0);
+    context_->GetSubsystem<WorkQueue>()->Complete(0);
 }
 
 void Pipeline::CreatePaksAsync(Flavor* flavor)
@@ -404,7 +404,7 @@ void Pipeline::OnUpdate()
     }
     else if (!pendingPackageFlavor_.empty())
     {
-        auto* fs = context_->GetFileSystem();
+        auto* fs = context_->GetSubsystem<FileSystem>();
         auto* project = GetSubsystem<Project>();
 
         Flavor* flavor = pendingPackageFlavor_.front();
@@ -628,7 +628,7 @@ bool Pipeline::CookSettings() const
         JSONOutputArchive archive(&file);
         if (!settings.Serialize(archive))
             return false;
-        context_->GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
+        context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(flavor->GetCachePath() + "Settings.json");
     }
     return true;
@@ -674,7 +674,7 @@ bool Pipeline::CookCacheInfo() const
         if (!SerializeStringMap(archive, "cacheInfo", "map", mapping))
             return false;
 
-        context_->GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
+        context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(Format("{}CacheInfo.json", flavor->GetCachePath(), flavor->GetName()));
     }
     return true;

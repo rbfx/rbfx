@@ -86,10 +86,10 @@ Project::~Project()
 #if URHO3D_PLUGINS
     context_->RemoveSubsystem(plugins_->GetType());
 #endif
-    if (context_->GetSystemUI())
+    if (context_->GetSubsystem<SystemUI>())
         ui::GetIO().IniFilename = nullptr;
 
-    if (auto* cache = context_->GetCache())
+    if (auto* cache = context_->GetSubsystem<ResourceCache>())
     {
         cache->RemoveResourceDir(GetCachePath());
         for (const ea::string& resourcePath : resourcePaths_)
@@ -145,7 +145,7 @@ bool Project::LoadProject(const ea::string& projectPath)
     // Default resource path is first resource directory in the list.
     defaultResourcePath_ = projectFileDir_ + resourcePaths_.front();
 
-    if (context_->GetSystemUI())
+    if (context_->GetSubsystem<SystemUI>())
     {
         uiConfigPath_ = projectFileDir_ + ".ui.ini";
         defaultUiPlacement_ = !fs->FileExists(uiConfigPath_);
@@ -200,7 +200,7 @@ bool Project::LoadProject(const ea::string& projectPath)
 
 #if URHO3D_PLUGINS
     // Clean up old copies of reloadable files.
-    if (!context_->GetEngine()->IsHeadless())
+    if (!context_->GetSubsystem<Engine>()->IsHeadless())
     {
         // Normal execution cleans up old versions of plugins.
         StringVector files;
@@ -222,7 +222,7 @@ bool Project::LoadProject(const ea::string& projectPath)
 
 bool Project::SaveProject()
 {
-    if (context_->GetEngine()->IsHeadless())
+    if (context_->GetSubsystem<Engine>()->IsHeadless())
     {
         URHO3D_LOGERROR("Headless instance is supposed to use project as read-only.");
         return false;
@@ -281,7 +281,7 @@ bool Project::SaveProject()
 bool Project::Serialize(Archive& archive)
 {
     const int version = 1;
-    if (!archive.IsInput() && context_->GetEngine()->IsHeadless())
+    if (!archive.IsInput() && context_->GetSubsystem<Engine>()->IsHeadless())
     {
         URHO3D_LOGERROR("Headless instance is supposed to use project as read-only.");
         return false;
@@ -331,7 +331,7 @@ void Project::RenderSettingsUI()
 
             explicit ProjectSettingsState(Project* project)
             {
-                project->context_->GetFileSystem()->ScanDir(scenes_, project->GetResourcePath(), "*.xml", SCAN_FILES, true);
+                project->context_->GetSubsystem<FileSystem>()->ScanDir(scenes_, project->GetResourcePath(), "*.xml", SCAN_FILES, true);
                 for (auto it = scenes_.begin(); it != scenes_.end();)
                 {
                     if (GetContentType(project->context_, *it) == CTYPE_SCENE)

@@ -117,10 +117,10 @@ void Editor::Setup()
 #endif
 
     // Discover resource prefix path by looking for CoreData and going up.
-    for (coreResourcePrefixPath_ = context_->GetFileSystem()->GetProgramDir();;
+    for (coreResourcePrefixPath_ = context_->GetSubsystem<FileSystem>()->GetProgramDir();;
         coreResourcePrefixPath_ = GetParentPath(coreResourcePrefixPath_))
     {
-        if (context_->GetFileSystem()->DirExists(coreResourcePrefixPath_ + "CoreData"))
+        if (context_->GetSubsystem<FileSystem>()->DirExists(coreResourcePrefixPath_ + "CoreData"))
             break;
         else
         {
@@ -156,7 +156,7 @@ void Editor::Setup()
 #endif
     // Load editor settings
     {
-        auto* fs = context_->GetFileSystem();
+        auto* fs = context_->GetSubsystem<FileSystem>();
         ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
         if (!fs->DirExists(editorSettingsDir))
             fs->CreateDir(editorSettingsDir);
@@ -179,7 +179,7 @@ void Editor::Setup()
         }
     }
 
-    context_->GetLog()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
+    context_->GetSubsystem<Log>()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 
@@ -237,7 +237,7 @@ void Editor::Start()
     {
         if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().c_str()))
         {
-            context_->GetLog()->SetLogFormat("%v");
+            context_->GetSubsystem<Log>()->SetLogFormat("%v");
             ExecuteSubcommand(cmd);
             engine_->Exit();
             return;
@@ -247,10 +247,10 @@ void Editor::Start()
     // Continue with normal editor initialization
     context_->RegisterSubsystem(new SceneManager(context_));
     context_->RegisterSubsystem(new EditorIconCache(context_));
-    context_->GetInput()->SetMouseMode(MM_ABSOLUTE);
-    context_->GetInput()->SetMouseVisible(true);
+    context_->GetSubsystem<Input>()->SetMouseMode(MM_ABSOLUTE);
+    context_->GetSubsystem<Input>()->SetMouseVisible(true);
 
-    context_->GetCache()->SetAutoReloadResources(true);
+    context_->GetSubsystem<ResourceCache>()->SetAutoReloadResources(true);
     engine_->SetAutoExit(false);
 
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
@@ -258,7 +258,7 @@ void Editor::Start()
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
     auto* console = engine_->CreateConsole();
     console->SetAutoVisibleOnError(false);
-    context_->GetFileSystem()->SetExecuteConsoleCommands(false);
+    context_->GetSubsystem<FileSystem>()->SetExecuteConsoleCommands(false);
     SubscribeToEvent(E_CONSOLECOMMAND, [this](StringHash, VariantMap& args) { OnConsoleCommand(args); });
     console->RefreshInterpreters();
 
@@ -275,7 +275,7 @@ void Editor::Start()
     }
 
     // Hud will be rendered manually.
-    context_->GetEngine()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
+    context_->GetSubsystem<Engine>()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
@@ -306,7 +306,7 @@ void Editor::Stop()
         windowPos_ = graphics->GetWindowPosition();
         windowSize_ = graphics->GetSize();
 
-        auto* fs = context_->GetFileSystem();
+        auto* fs = context_->GetSubsystem<FileSystem>();
         ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
         if (!fs->DirExists(editorSettingsDir))
             fs->CreateDir(editorSettingsDir);
@@ -322,7 +322,7 @@ void Editor::Stop()
             URHO3D_LOGERROR("Serializing of editor settings failed.");
     }
 
-    context_->GetWorkQueue()->Complete(0);
+    context_->GetSubsystem<WorkQueue>()->Complete(0);
     if (auto* manager = GetSubsystem<SceneManager>())
         manager->UnloadAll();
     CloseProject();
@@ -401,7 +401,7 @@ void Editor::OnUpdate(VariantMap& args)
         {
             explicit State(Editor* editor)
             {
-                FileSystem *fs = editor->GetContext()->GetFileSystem();
+                FileSystem *fs = editor->GetContext()->GetSubsystem<FileSystem>();
                 StringVector& recents = editor->recentProjects_;
                 snapshots_.resize(recents.size());
                 for (int i = 0; i < recents.size();)
@@ -473,7 +473,7 @@ void Editor::OnUpdate(VariantMap& args)
     // Dialog for a warning when application is being closed with unsaved resources.
     if (exiting_)
     {
-        if (!context_->GetWorkQueue()->IsCompleted(0))
+        if (!context_->GetSubsystem<WorkQueue>()->IsCompleted(0))
         {
             ui::OpenPopup("Completing Tasks");
 
@@ -481,8 +481,8 @@ void Editor::OnUpdate(VariantMap& args)
                                                                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
             {
                 ui::TextUnformatted("Some tasks are in progress and are being completed. Please wait.");
-                static float totalIncomplete = context_->GetWorkQueue()->GetNumIncomplete(0);
-                ui::ProgressBar(100.f / totalIncomplete * Min(totalIncomplete - (float)context_->GetWorkQueue()->GetNumIncomplete(0), totalIncomplete));
+                static float totalIncomplete = context_->GetSubsystem<WorkQueue>()->GetNumIncomplete(0);
+                ui::ProgressBar(100.f / totalIncomplete * Min(totalIncomplete - (float)context_->GetSubsystem<WorkQueue>()->GetNumIncomplete(0), totalIncomplete));
                 ui::EndPopup();
             }
         }
@@ -526,7 +526,7 @@ void Editor::OnUpdate(VariantMap& args)
         }
         else
         {
-            context_->GetWorkQueue()->Complete(0);
+            context_->GetSubsystem<WorkQueue>()->Complete(0);
             if (project_.NotNull())
             {
                 project_->SaveProject();
@@ -588,7 +588,7 @@ void Editor::OnEndFrame()
         // subsystem reads this file and loads settings.
         if (loaded)
         {
-            auto* fs = context_->GetFileSystem();
+            auto* fs = context_->GetSubsystem<FileSystem>();
             loadDefaultLayout_ = project_->NeeDefaultUIPlacement();
             StringVector& recents = recentProjects_;
             // Remove latest project if it was already opened or any projects that no longer exists.
@@ -844,7 +844,7 @@ void Editor::SetupSystemUI()
 
 void Editor::UpdateWindowTitle(const ea::string& resourcePath)
 {
-    if (context_->GetEngine()->IsHeadless())
+    if (context_->GetSubsystem<Engine>()->IsHeadless())
         return;
 
     auto* project = GetSubsystem<Project>();
@@ -859,7 +859,7 @@ void Editor::UpdateWindowTitle(const ea::string& resourcePath)
             title += ToString(" | %s", GetFileName(resourcePath).c_str());
     }
 
-    context_->GetGraphics()->SetWindowTitle(title);
+    context_->GetSubsystem<Graphics>()->SetWindowTitle(title);
 }
 
 template<typename T>
@@ -899,7 +899,7 @@ void Editor::OnConsoleUriClick(VariantMap& args)
         const ea::string& protocol = args[P_PROTOCOL].GetString();
         const ea::string& address = args[P_ADDRESS].GetString();
         if (protocol == "res")
-            context_->GetFileSystem()->SystemOpen(context_->GetCache()->GetResourceFileName(address));
+            context_->GetSubsystem<FileSystem>()->SystemOpen(context_->GetSubsystem<ResourceCache>()->GetResourceFileName(address));
     }
 }
 

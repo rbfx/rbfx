@@ -100,8 +100,8 @@ ea::string GetFileIcon(const ea::string& fileName)
 
 ContentType GetContentType(Context* context, const ea::string& resourcePath)
 {
-    ResourceCache* cache = context->GetCache();
-    FileSystem* fs = context->GetFileSystem();
+    ResourceCache* cache = context->GetSubsystem<ResourceCache>();
+    FileSystem* fs = context->GetSubsystem<FileSystem>();
 
     if (IsAbsolutePath(resourcePath))
     {
@@ -129,7 +129,7 @@ ContentType GetContentType(Context* context, const ea::string& resourcePath)
                 return CTYPE_UNKNOWN;
         }
         else
-            xml = context->GetCache()->GetResource<XMLFile>(resourcePath);
+            xml = context->GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourcePath);
 
         if (!xml)
             return CTYPE_UNKNOWN;

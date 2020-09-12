@@ -93,7 +93,7 @@ ImageCube* Skybox::GetImage() const
     if (!texture || !texture->IsInstanceOf<TextureCube>())
         return nullptr;
 
-    return context_->GetCache()->GetResource<ImageCube>(texture->GetName());
+    return context_->GetSubsystem<ResourceCache>()->GetResource<ImageCube>(texture->GetName());
 }
 
 void Skybox::OnWorldBoundingBoxUpdate()

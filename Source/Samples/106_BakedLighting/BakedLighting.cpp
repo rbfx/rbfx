@@ -193,7 +193,7 @@ void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
     // Toggle textures
     if (input->GetKeyPress(KEY_TAB))
     {
-        auto cache = context_->GetCache();
+        auto cache = context_->GetSubsystem<ResourceCache>();
         auto animModel = animController->GetNode()->GetComponent<AnimatedModel>();
 
         texturesEnabled_ = !texturesEnabled_;
