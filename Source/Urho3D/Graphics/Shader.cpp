@@ -152,7 +152,7 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
             if (definesHash != normalizedHash)
                 variations.insert(ea::make_pair(definesHash, i->second));
 
-            Graphics* graphics = context_->GetGraphics();
+            Graphics* graphics = context_->GetSubsystem<Graphics>();
             i->second->SetName(GetFileName(GetName()));
             i->second->SetDefines(graphics->GetGlobalShaderDefines() + " " + normalizedDefines);
             ++numVariations_;
@@ -165,7 +165,7 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
 
 unsigned Shader::GetShaderDefinesHash(const char* defines) const
 {
-    Graphics* graphics = context_->GetGraphics();
+    Graphics* graphics = context_->GetSubsystem<Graphics>();
     unsigned definesHash = StringHash(defines).Value();
     CombineHash(definesHash, graphics->GetGlobalShaderDefinesHash().Value());
     return definesHash;

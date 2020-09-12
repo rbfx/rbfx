@@ -217,41 +217,6 @@ public:
         return i != eventReceivers_.end() ? i->second : nullptr;
     }
 
-    /// Return engine subsystem.
-    inline Engine* GetEngine() const { return engine_; }
-    /// Return time subsystem.
-    inline Time* GetTime() const { return time_; }
-    /// Return work queue subsystem.
-    inline WorkQueue* GetWorkQueue() const { return workQueue_; }
-    /// Return file system subsystem.
-    inline FileSystem* GetFileSystem() const { return fileSystem_; }
-#if URHO3D_LOGGING
-    /// Return logging subsystem.
-    inline Log* GetLog() const { return log_; }
-#endif
-    /// Return resource cache subsystem.
-    inline ResourceCache* GetCache() const { return cache_; }
-    /// Return localization subsystem.
-    inline Localization* GetLocalization() const { return l18n_; }
-#if URHO3D_NETWORK
-    /// Return network subsystem.
-    inline Network* GetNetwork() const { return network_; }
-#endif
-    /// Return input subsystem.
-    inline Input* GetInput() const { return input_; }
-    /// Return audio subsystem.
-    inline Audio* GetAudio() const { return audio_; }
-    /// Return UI subsystem.
-    inline UI* GetUI() const { return ui_; }
-#if URHO3D_SYSTEMUI
-    /// Return system ui subsystem.
-    inline SystemUI* GetSystemUI() const { return systemUi_; }
-#endif
-    /// Return graphics subsystem.
-    inline Graphics* GetGraphics() const { return graphics_; }
-    /// Return renderer subsystem.
-    inline Renderer* GetRenderer() const { return renderer_; }
-
     /// Register engine subsystem and cache it's pointer.
     void RegisterSubsystem(Engine* subsystem);
     /// Register time subsystem and cache it's pointer.

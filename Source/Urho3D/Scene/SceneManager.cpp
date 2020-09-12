@@ -144,7 +144,7 @@ void SceneManager::SetRenderSurface(RenderSurface* surface)
 void SceneManager::UpdateViewports()
 {
     if (renderSurface_.Expired())
-        context_->GetRenderer()->SetNumViewports(0);
+        context_->GetSubsystem<Renderer>()->SetNumViewports(0);
     else
         renderSurface_->SetNumViewports(0);
 
@@ -154,7 +154,7 @@ void SceneManager::UpdateViewports()
     unsigned index = 0;
     const SceneComponentIndex& viewportComponents = activeScene_->GetComponentIndex<CameraViewport>();
     if (renderSurface_.Expired())
-        context_->GetRenderer()->SetNumViewports(viewportComponents.size());
+        context_->GetSubsystem<Renderer>()->SetNumViewports(viewportComponents.size());
     else
         renderSurface_->SetNumViewports(viewportComponents.size());
 
@@ -163,13 +163,13 @@ void SceneManager::UpdateViewports()
         auto* const cameraViewport = static_cast<CameraViewport* const>(component);
         // Trigger resizing of underlying viewport
         if (renderSurface_.Expired())
-            cameraViewport->SetScreenRect({0, 0, context_->GetGraphics()->GetWidth(), context_->GetGraphics()->GetHeight()});
+            cameraViewport->SetScreenRect({0, 0, context_->GetSubsystem<Graphics>()->GetWidth(), context_->GetSubsystem<Graphics>()->GetHeight()});
         else
             cameraViewport->SetScreenRect({0, 0, renderSurface_->GetWidth(), renderSurface_->GetHeight()});
         cameraViewport->UpdateViewport();
         cameraViewport->GetViewport()->SetDrawDebug(false); // TODO: make this configurable maybe?
         if (renderSurface_.Expired())
-            context_->GetRenderer()->SetViewport(index++, cameraViewport->GetViewport());
+            context_->GetSubsystem<Renderer>()->SetViewport(index++, cameraViewport->GetViewport());
         else
             renderSurface_->SetViewport(index++, cameraViewport->GetViewport());
     }

@@ -65,7 +65,7 @@ void ParallelFor(unsigned count, unsigned numTasks, const T& callback)
 inline SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
 {
     auto renderPath = MakeShared<RenderPath>();
-    auto renderPathXml = context->GetCache()->GetResource<XMLFile>(renderPathName);
+    auto renderPathXml = context->GetSubsystem<ResourceCache>()->GetResource<XMLFile>(renderPathName);
     if (!renderPath->Load(renderPathXml))
         return nullptr;
     return renderPath;
@@ -160,7 +160,7 @@ inline SharedPtr<Material> CreateBakingMaterial(Material* bakingMaterial, Materi
     const Vector4& scaleOffset, unsigned tapIndex, unsigned numTaps, const Vector2& tapOffset, unsigned geometryId,
     const Vector2& scaledAndConstBias)
 {
-    auto renderer = bakingMaterial->GetContext()->GetRenderer();
+    auto renderer = bakingMaterial->GetContext()->GetSubsystem<Renderer>();
     if (!sourceMaterial)
         sourceMaterial = renderer->GetDefaultMaterial();
 

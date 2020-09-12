@@ -56,7 +56,7 @@ struct SceneState
         sceneState_.Seek(0);
         BinaryInputArchive sceneArchive(scene->GetContext(), sceneState_);
         scene->Serialize(sceneArchive);
-        scene->GetContext()->GetUI()->Clear();
+        scene->GetContext()->GetSubsystem<UI>()->Clear();
         root->SetDefaultStyle(defaultStyle_);
         BinaryInputArchive uiArchive(scene->GetContext(), uiState_);
         root->Serialize(uiArchive);

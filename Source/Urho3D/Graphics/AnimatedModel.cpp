@@ -88,7 +88,7 @@ AnimatedModel::AnimatedModel(Context* context) :
     assignBonesPending_(false),
     forceAnimationUpdate_(false)
 {
-    if (auto renderer = context_->GetRenderer())
+    if (auto renderer = context_->GetSubsystem<Renderer>())
     {
         softwareSkinning_ = !renderer->GetUseHardwareSkinning();
         numSoftwareSkinningBones_ = renderer->GetNumSoftwareSkinningBones();

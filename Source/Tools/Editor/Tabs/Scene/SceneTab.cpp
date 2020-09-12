@@ -227,7 +227,7 @@ bool SceneTab::RenderWindowContent()
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
-    if (!gizmo_.IsActive() && (isClickedLeft_ || isClickedRight_) && context_->GetInput()->IsMouseVisible())
+    if (!gizmo_.IsActive() && (isClickedLeft_ || isClickedRight_) && context_->GetSubsystem<Input>()->IsMouseVisible())
     {
         // Handle object selection.
         ImGuiIO& io = ui::GetIO();
@@ -260,7 +260,7 @@ bool SceneTab::RenderWindowContent()
 
             if (isClickedLeft_)
             {
-                if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
+                if (!context_->GetSubsystem<Input>()->GetKeyDown(KEY_CTRL))
                     ClearSelection();
 
                 if (clickNode == GetScene())
@@ -392,9 +392,9 @@ bool SceneTab::SaveResource()
     if (!BaseClassName::SaveResource())
         return false;
 
-    context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
+    context_->GetSubsystem<ResourceCache>()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
 
-    auto fullPath = context_->GetCache()->GetResourceFileName(resourceName_);
+    auto fullPath = context_->GetSubsystem<ResourceCache>()->GetResourceFileName(resourceName_);
     if (fullPath.empty())
         return false;
 
@@ -799,28 +799,28 @@ void SceneTab::OnUpdate(VariantMap& args)
             if (!ui::IsAnyItemActive())
             {
                 // Global view hotkeys
-                if (context_->GetInput()->GetKeyPress(KEY_DELETE))
+                if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_DELETE))
                     RemoveSelection();
-                else if (context_->GetInput()->GetKeyDown(KEY_CTRL))
+                else if (context_->GetSubsystem<Input>()->GetKeyDown(KEY_CTRL))
                 {
-                    if (context_->GetInput()->GetKeyPress(KEY_C))
+                    if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_C))
                         CopySelection();
-                    else if (context_->GetInput()->GetKeyPress(KEY_V))
+                    else if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_V))
                     {
-                        if (context_->GetInput()->GetKeyDown(KEY_SHIFT))
+                        if (context_->GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
                             PasteIntoSelection();
                         else
                             PasteIntuitive();
                     }
                 }
-                else if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
+                else if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_ESCAPE))
                     ClearSelection();
             }
         }
 
         if (tab == this)
         {
-            Input* input = context_->GetInput();
+            Input* input = context_->GetSubsystem<Input>();
             if (input->IsMouseVisible())
             {
                 if (input->GetKeyPress(KEY_W))
@@ -1161,7 +1161,7 @@ void SceneTab::AddComponentIcon(Component* component)
         (node->GetName().starts_with("__") && node->GetName().ends_with("__")))
         return;
 
-    auto* material = context_->GetCache()->GetResource<Material>(Format("Materials/Editor/DebugIcon{}.xml", component->GetTypeName()), false);
+    auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(Format("Materials/Editor/DebugIcon{}.xml", component->GetTypeName()), false);
     if (material != nullptr)
     {
         auto iconTag = "DebugIcon" + component->GetTypeName();
@@ -1195,7 +1195,7 @@ void SceneTab::AddComponentIcon(Component* component)
 
         if (auto* bb = billboard->GetBillboard(0))
         {
-            auto* graphics = context_->GetGraphics();
+            auto* graphics = context_->GetSubsystem<Graphics>();
             float scale = graphics->GetDisplayDPI(graphics->GetCurrentMonitor()).z_ / 96.f;
             bb->size_ = Vector2::ONE * 0.2f * scale;
             bb->enabled_ = true;
