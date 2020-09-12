@@ -316,7 +316,7 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
         return {};
     }
 
-    Material* bakingMaterial = context->GetCache()->GetResource<Material>(settings.materialName_);
+    Material* bakingMaterial = context->GetSubsystem<ResourceCache>()->GetResource<Material>(settings.materialName_);
     if (!bakingMaterial)
     {
         URHO3D_LOGERROR("Cannot load material \"{}\"", settings.materialName_);
@@ -453,8 +453,8 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
 LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBakingScene& bakingScene)
 {
     Context* context = bakingScene.context_;
-    Graphics* graphics = context->GetGraphics();
-    Renderer* renderer = context->GetRenderer();
+    Graphics* graphics = context->GetSubsystem<Graphics>();
+    Renderer* renderer = context->GetSubsystem<Renderer>();
 
     static thread_local ea::vector<Vector4> buffer;
 

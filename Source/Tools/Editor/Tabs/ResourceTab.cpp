@@ -358,7 +358,7 @@ ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
     for (auto i = 1; i < M_MAX_INT; i++)
     {
         resourcePath = Format("{}{} {}{}", project->GetResourcePath(), basePath, baseName, i, ext);
-        if (!context_->GetFileSystem()->FileExists(resourcePath))
+        if (!context_->GetSubsystem<FileSystem>()->FileExists(resourcePath))
             return resourcePath;
     }
 
@@ -528,7 +528,7 @@ void ResourceTab::RenderContextMenu()
         {
             selectedItem_ = "New Folder";
             ea::string path = GetNewResourcePath(currentDir_ + selectedItem_);
-            if (context_->GetFileSystem()->CreateDir(path))
+            if (context_->GetSubsystem<FileSystem>()->CreateDir(path))
             {
                 scrollToCurrent_ = true;
                 StartRename();
@@ -540,7 +540,7 @@ void ResourceTab::RenderContextMenu()
         if (ui::MenuItem("Scene"))
         {
             auto path = GetNewResourcePath(currentDir_ + "New Scene.xml");
-            context_->GetFileSystem()->CreateDirsRecursive(GetPath(path));
+            context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(GetPath(path));
 
             SharedPtr<Scene> scene(new Scene(context_));
             scene->CreateComponent<Octree>();
@@ -559,7 +559,7 @@ void ResourceTab::RenderContextMenu()
         if (ui::MenuItem("Material"))
         {
             auto path = GetNewResourcePath(currentDir_ + "New Material.xml");
-            context_->GetFileSystem()->CreateDirsRecursive(GetPath(path));
+            context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(GetPath(path));
 
             SharedPtr<Material> material(new Material(context_));
             File file(context_, path, FILE_WRITE);
@@ -577,7 +577,7 @@ void ResourceTab::RenderContextMenu()
         if (ui::MenuItem("UI Layout"))
         {
             auto path = GetNewResourcePath(currentDir_ + "New UI Layout.xml");
-            context_->GetFileSystem()->CreateDirsRecursive(GetPath(path));
+            context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(GetPath(path));
 
             SharedPtr<UIElement> scene(new UIElement(context_));
             XMLFile layout(context_);
@@ -627,7 +627,7 @@ void ResourceTab::RenderContextMenu()
 
         if (ui::MenuItem("Generate Lightmap UV", nullptr, nullptr))
         {
-            auto model = context_->GetCache()->GetResource<Model>(currentDir_ + selectedItem_);
+            auto model = context_->GetSubsystem<ResourceCache>()->GetResource<Model>(currentDir_ + selectedItem_);
             if (model && !model->GetNativeFileName().empty())
             {
                 ModelView modelView(context_);

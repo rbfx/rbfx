@@ -226,7 +226,7 @@ void EditorSceneSettings::SetEditorViewportRenderPath(const ResourceRef& renderP
         return;
     }
 
-    if (XMLFile* renderPathFile = context_->GetCache()->GetResource<XMLFile>(renderPath.name_))
+    if (XMLFile* renderPathFile = context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>(renderPath.name_))
     {
         if (auto* tab = GetSubsystem<Editor>()->GetTab<SceneTab>())
         {
@@ -240,7 +240,7 @@ void EditorSceneSettings::SetEditorViewportRenderPath(const ResourceRef& renderP
             {
                 if (command.pixelShaderName_.starts_with("PBR"))
                 {
-                    XMLFile* gammaCorrection = context_->GetCache()->GetResource<XMLFile>(
+                    XMLFile* gammaCorrection = context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>(
                         "PostProcess/GammaCorrection.xml");
                     path->Append(gammaCorrection);
                     return;

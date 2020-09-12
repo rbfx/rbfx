@@ -93,11 +93,11 @@ void Packager::Start()
     {
         logger_.Warning("Resources directory is empty, package was not created.");
         output_.Close();
-        context_->GetFileSystem()->Delete(outputPath_);
+        context_->GetSubsystem<FileSystem>()->Delete(outputPath_);
         return;
     }
 
-    context_->GetWorkQueue()->AddWorkItem([this]() { WritePackage(); });
+    context_->GetSubsystem<WorkQueue>()->AddWorkItem([this]() { WritePackage(); });
 }
 
 void Packager::WritePackage()

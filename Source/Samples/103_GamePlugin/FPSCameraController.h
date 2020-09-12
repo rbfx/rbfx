@@ -45,7 +45,7 @@ public:
 
     void Update(float timeStep) override
     {
-        Input* input = context_->GetInput();
+        Input* input = context_->GetSubsystem<Input>();
         if (input->ShouldIgnoreInput())
         {
             // This component takes into account the fact that it will execute in context of editor where scene may
