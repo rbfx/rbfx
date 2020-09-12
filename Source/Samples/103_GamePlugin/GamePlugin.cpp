@@ -57,8 +57,8 @@ void GamePlugin::Start()
 {
     // Set up any game state here. Configure input. Create objects. Add UI. Game application assumes control of the
     // input.
-    context_->GetInput()->SetMouseVisible(false);
-    context_->GetInput()->SetMouseMode(MM_WRAP);
+    context_->GetSubsystem<Input>()->SetMouseVisible(false);
+    context_->GetSubsystem<Input>()->SetMouseMode(MM_WRAP);
 }
 
 void GamePlugin::Stop()

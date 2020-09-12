@@ -65,7 +65,7 @@ Asset::Asset(Context* context)
                 return;
         }
 
-        auto* fs = context_->GetFileSystem();
+        auto* fs = context_->GetSubsystem<FileSystem>();
         auto* project = GetSubsystem<Project>();
         ea::string newName = to + (isDir ? name_.substr(from.size()) : "");
 
@@ -166,7 +166,7 @@ bool Asset::Save()
     }
     else
     {
-        context_->GetFileSystem()->Delete(assetPath);
+        context_->GetSubsystem<FileSystem>()->Delete(assetPath);
         return true;
     }
 
@@ -179,7 +179,7 @@ bool Asset::Load()
     assert(!name_.empty());
     ea::string assetPath = RemoveTrailingSlash(resourcePath_) + ".asset";
     JSONFile file(context_);
-    if (context_->GetFileSystem()->FileExists(assetPath))
+    if (context_->GetSubsystem<FileSystem>()->FileExists(assetPath))
     {
         if (!file.LoadFile(assetPath))
         {
@@ -280,7 +280,7 @@ void Asset::ReimportOutOfDateRecursive() const
     if (!IsMetaAsset())
         return;
 
-    auto fs = context_->GetFileSystem();
+    auto fs = context_->GetSubsystem<FileSystem>();
     auto pipeline = GetSubsystem<Pipeline>();
 
     StringVector files;

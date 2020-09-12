@@ -35,14 +35,14 @@ DebugCameraController::DebugCameraController(Context* context)
 void DebugCameraController::Update(float timeStep)
 {
     // Do not move if the UI has a focused element
-    if (context_->GetUI()->GetFocusElement())
+    if (context_->GetSubsystem<UI>()->GetFocusElement())
         return;
 
     // Do not move if interacting with UI controls
-    if (context_->GetSystemUI()->IsAnyItemActive())
+    if (context_->GetSubsystem<SystemUI>()->IsAnyItemActive())
         return;
 
-    Input* input = context_->GetInput();
+    Input* input = context_->GetSubsystem<Input>();
 
     // Movement speed as world units per second
     if (input->GetKeyPress(KEY_KP_PLUS))
@@ -70,7 +70,7 @@ DebugCameraController3D::DebugCameraController3D(Context* context)
 
 void DebugCameraController3D::RunFrame(float timeStep)
 {
-    Input* input = context_->GetInput();
+    Input* input = context_->GetSubsystem<Input>();
     IntVector2 delta = input->GetMouseMove();
     float moveSpeed_ = speed_;
     if (input->GetKeyDown(KEY_SHIFT))
@@ -134,7 +134,7 @@ DebugCameraController2D::DebugCameraController2D(Context* context)
 
 void DebugCameraController2D::RunFrame(float timeStep)
 {
-    Input* input = context_->GetInput();
+    Input* input = context_->GetSubsystem<Input>();
     IntVector2 delta = input->GetMouseMove();
     // Movement speed as world units per second
     float moveSpeed_ = speed_;

@@ -76,7 +76,7 @@ Urho3D::Context* gContext = nullptr;
 static void SetWindowTitleCallback(const char* title)
 {
     assert(gContext != nullptr);
-    gContext->GetGraphics()->SetWindowTitle(title);
+    gContext->GetSubsystem<Graphics>()->SetWindowTitle(title);
 }
 
 std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildConnectionHistory( const std::unordered_map<std::string, uint64_t>& connHistMap )
@@ -232,9 +232,9 @@ public:
         engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_DockingEnable;
 
         JSONFile config(context_);
-        ea::string preferencesDir = context_->GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler");
-        if (!context_->GetFileSystem()->DirExists(preferencesDir))
-            context_->GetFileSystem()->CreateDir(preferencesDir);
+        ea::string preferencesDir = context_->GetSubsystem<FileSystem>()->GetAppPreferencesDir("rbfx", "Profiler");
+        if (!context_->GetSubsystem<FileSystem>()->DirExists(preferencesDir))
+            context_->GetSubsystem<FileSystem>()->CreateDir(preferencesDir);
         if (config.LoadFile(preferencesDir + "Settings.json"))
         {
             const auto& root = config.GetRoot();
@@ -252,10 +252,10 @@ public:
 
     void Start() override
     {
-        context_->GetGraphics()->SetWindowTitle(
+        context_->GetSubsystem<Graphics>()->SetWindowTitle(
             Format("Urho3D Profiler {}.{}.{}", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch));
-        context_->GetInput()->SetMouseVisible(true);
-        context_->GetInput()->SetMouseMode(MM_FREE);
+        context_->GetSubsystem<Input>()->SetMouseVisible(true);
+        context_->GetSubsystem<Input>()->SetMouseMode(MM_FREE);
 
         ImGui::StyleColorsDark();
         float dpiScale = GetDPIScale();
@@ -278,11 +278,11 @@ public:
             0
         };
 
-        context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, "Arimo", rangesBasic, 15.0f);
-        context_->GetSystemUI()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, "FontAwesome", rangesIcons, 14.0f, true);
-        fixedWidth = context_->GetSystemUI()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, "Cousine", nullptr, 15.0f);
-        bigFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 20.0f);
-        smallFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 10.0f);
+        context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, "Arimo", rangesBasic, 15.0f);
+        context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, "FontAwesome", rangesIcons, 14.0f, true);
+        fixedWidth = context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, "Cousine", nullptr, 15.0f);
+        bigFont = context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 20.0f);
+        smallFont = context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 10.0f);
 
         if (!readCapture.empty())
         {
@@ -297,19 +297,19 @@ public:
     void Stop() override
     {
         JSONValue root{JSON_OBJECT};
-        root["x"] = context_->GetGraphics()->GetWindowPosition().x_;
-        root["y"] = context_->GetGraphics()->GetWindowPosition().y_;
-        root["width"] = context_->GetGraphics()->GetWidth();
-        root["height"] = context_->GetGraphics()->GetHeight();
+        root["x"] = context_->GetSubsystem<Graphics>()->GetWindowPosition().x_;
+        root["y"] = context_->GetSubsystem<Graphics>()->GetWindowPosition().y_;
+        root["width"] = context_->GetSubsystem<Graphics>()->GetWidth();
+        root["height"] = context_->GetSubsystem<Graphics>()->GetHeight();
 
         JSONFile config(context_);
         config.GetRoot() = root;
-        config.SaveFile(Format("{}/Settings.json", context_->GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler")));
+        config.SaveFile(Format("{}/Settings.json", context_->GetSubsystem<FileSystem>()->GetAppPreferencesDir("rbfx", "Profiler")));
     }
 
     float GetDPIScale()
     {
-        return context_->GetGraphics()->GetDisplayDPI(context_->GetGraphics()->GetCurrentMonitor()).z_ / 96.f;
+        return context_->GetSubsystem<Graphics>()->GetDisplayDPI(context_->GetSubsystem<Graphics>()->GetCurrentMonitor()).z_ / 96.f;
     }
 
     void Update()
@@ -699,8 +699,8 @@ public:
             }
             if( loadThread.joinable() ) loadThread.join();
 
-            int display_w = context_->GetGraphics()->GetWidth();
-            int display_h = context_->GetGraphics()->GetHeight();
+            int display_w = context_->GetSubsystem<Graphics>()->GetWidth();
+            int display_h = context_->GetSubsystem<Graphics>()->GetHeight();
 
             view->NotifyRootWindowSize( display_w, display_h );
             if( !view->Draw() )

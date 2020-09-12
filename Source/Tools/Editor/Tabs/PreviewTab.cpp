@@ -142,9 +142,9 @@ void PreviewTab::OnSceneActivated(StringHash type, VariantMap& args)
 void PreviewTab::OnEndRenderingSystemUI(StringHash type, VariantMap& args)
 {
     if (simulationStatus_ == SCENE_SIMULATION_STOPPED)
-        dim_ = Max(dim_ - context_->GetTime()->GetTimeStep() * 10, 0.f);
+        dim_ = Max(dim_ - context_->GetSubsystem<Time>()->GetTimeStep() * 10, 0.f);
     else
-        dim_ = Min(dim_ + context_->GetTime()->GetTimeStep() * 6, 1.f);
+        dim_ = Min(dim_ + context_->GetSubsystem<Time>()->GetTimeStep() * 6, 1.f);
 
     if (dim_ > M_EPSILON)
     {
@@ -205,11 +205,11 @@ bool PreviewTab::RenderWindowContent()
     ui::Image(texture_.Get(), rect.GetSize());
 
     ImVec2 offset = (ui::GetItemRectMin() - viewport->Pos) * dpi;
-    auto* root = static_cast<RootUIElement*>(context_->GetUI()->GetRoot());
+    auto* root = static_cast<RootUIElement*>(context_->GetSubsystem<UI>()->GetRoot());
     root->SetOffset({static_cast<int>(IM_ROUND(offset.x)), static_cast<int>(IM_ROUND(offset.y))});
 
     if (!inputGrabbed_ && simulationStatus_ == SCENE_SIMULATION_RUNNING && ui::IsItemHovered() &&
-        ui::IsAnyMouseDown() && context_->GetInput()->IsMouseVisible())
+        ui::IsAnyMouseDown() && context_->GetSubsystem<Input>()->IsMouseVisible())
         GrabInput();
 
     return true;
@@ -266,13 +266,13 @@ void PreviewTab::RenderButtons()
     {
     case SCENE_SIMULATION_RUNNING:
     {
-        float timeStep = context_->GetTime()->GetTimeStep();
+        float timeStep = context_->GetSubsystem<Time>()->GetTimeStep();
         scene->Update(timeStep);
-        context_->GetUI()->Update(timeStep);
+        context_->GetSubsystem<UI>()->Update(timeStep);
     }
     case SCENE_SIMULATION_PAUSED:
     {
-        if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
+        if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_ESCAPE))
         {
             if (Time::GetSystemTime() - lastEscPressTime_ > 300)
                 lastEscPressTime_ = Time::GetSystemTime();
@@ -312,8 +312,8 @@ void PreviewTab::Play()
         // Scene was not running. Allow scene to set up input parameters.
         undo_->SetTrackingEnabled(false);
         tab->SaveState(sceneState_);
-        context_->GetUI()->SetBlockEvents(false);
-        context_->GetAudio()->Play();
+        context_->GetSubsystem<UI>()->SetBlockEvents(false);
+        context_->GetSubsystem<Audio>()->Play();
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         SendEvent(E_SIMULATIONSTART);
         inputGrabbed_ = true;
@@ -324,8 +324,8 @@ void PreviewTab::Play()
     {
         // Scene was paused. When resuming restore saved scene input parameters.
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
-        context_->GetUI()->SetBlockEvents(false);
-        context_->GetAudio()->Play();
+        context_->GetSubsystem<UI>()->SetBlockEvents(false);
+        context_->GetSubsystem<Audio>()->Play();
         break;
     }
     default:
@@ -337,8 +337,8 @@ void PreviewTab::Pause()
 {
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
         simulationStatus_ = SCENE_SIMULATION_PAUSED;
-    context_->GetUI()->SetBlockEvents(true);
-    context_->GetAudio()->Stop();
+    context_->GetSubsystem<UI>()->SetBlockEvents(true);
+    context_->GetSubsystem<Audio>()->Stop();
 }
 
 void PreviewTab::Toggle()
@@ -366,8 +366,8 @@ void PreviewTab::Step(float timeStep)
         Pause();
 
     scene->Update(timeStep);
-    context_->GetUI()->Update(timeStep);
-    context_->GetAudio()->Update(timeStep);
+    context_->GetSubsystem<UI>()->Update(timeStep);
+    context_->GetSubsystem<Audio>()->Update(timeStep);
 }
 
 void PreviewTab::Stop()
@@ -380,8 +380,8 @@ void PreviewTab::Stop()
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         tab->RestoreState(sceneState_);
         undo_->SetTrackingEnabled(true);
-        context_->GetUI()->SetBlockEvents(true);
-        context_->GetAudio()->Stop();
+        context_->GetSubsystem<UI>()->SetBlockEvents(true);
+        context_->GetSubsystem<Audio>()->Stop();
     }
 }
 
@@ -398,9 +398,9 @@ void PreviewTab::GrabInput()
         return;
 
     inputGrabbed_ = true;
-    context_->GetInput()->SetMouseVisible(sceneMouseVisible_);
-    context_->GetInput()->SetMouseMode(sceneMouseMode_);
-    context_->GetInput()->SetShouldIgnoreInput(false);
+    context_->GetSubsystem<Input>()->SetMouseVisible(sceneMouseVisible_);
+    context_->GetSubsystem<Input>()->SetMouseMode(sceneMouseMode_);
+    context_->GetSubsystem<Input>()->SetShouldIgnoreInput(false);
 }
 
 void PreviewTab::ReleaseInput()
@@ -409,25 +409,25 @@ void PreviewTab::ReleaseInput()
         return;
 
     inputGrabbed_ = false;
-    sceneMouseVisible_ = context_->GetInput()->IsMouseVisible();
-    sceneMouseMode_ = context_->GetInput()->GetMouseMode();
-    context_->GetInput()->SetMouseVisible(true);
-    context_->GetInput()->SetMouseMode(MM_ABSOLUTE);
-    context_->GetInput()->SetShouldIgnoreInput(true);
+    sceneMouseVisible_ = context_->GetSubsystem<Input>()->IsMouseVisible();
+    sceneMouseMode_ = context_->GetSubsystem<Input>()->GetMouseMode();
+    context_->GetSubsystem<Input>()->SetMouseVisible(true);
+    context_->GetSubsystem<Input>()->SetMouseMode(MM_ABSOLUTE);
+    context_->GetSubsystem<Input>()->SetShouldIgnoreInput(true);
 }
 
 void PreviewTab::RenderUI()
 {
-    Graphics* graphics = context_->GetGraphics();
+    Graphics* graphics = context_->GetSubsystem<Graphics>();
 
     if (RenderSurface* surface = texture_->GetRenderSurface())
     {
-        context_->GetUI()->SetCustomSize(surface->GetWidth(), surface->GetHeight());
+        context_->GetSubsystem<UI>()->SetCustomSize(surface->GetWidth(), surface->GetHeight());
         graphics->ResetRenderTargets();
         graphics->SetDepthStencil(surface->GetLinkedDepthStencil());
         graphics->SetRenderTarget(0, surface);
         graphics->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
-        context_->GetUI()->Render();
+        context_->GetSubsystem<UI>()->Render();
     }
 }
 

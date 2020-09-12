@@ -656,7 +656,7 @@ Zone* Octree::GetZone(unsigned viewMask) const
     ZoneOctreeQuery query(viewMask);
     GetDrawables(query);
     Zone* zone = query.GetZone();
-    return zone ? zone : context_->GetRenderer()->GetDefaultZone();
+    return zone ? zone : context_->GetSubsystem<Renderer>()->GetDefaultZone();
 }
 
 Skybox* Octree::GetSkybox(unsigned viewMask) const

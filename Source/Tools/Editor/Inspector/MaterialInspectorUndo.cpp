@@ -46,7 +46,7 @@ UndoTechniqueChanged::UndoTechniqueChanged(const Material* material, unsigned in
 
 void UndoTechniqueChanged::RemoveTechnique()
 {
-    if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
+    if (auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialName_))
     {
         // Shift techniques back
         for (auto i = index_ + 1; i < material->GetNumTechniques(); i++)
@@ -61,9 +61,9 @@ void UndoTechniqueChanged::RemoveTechnique()
 
 void UndoTechniqueChanged::AddTechnique(const UndoTechniqueChanged::TechniqueInfo& info)
 {
-    if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
+    if (auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialName_))
     {
-        if (auto* technique = context_->GetCache()->GetResource<Technique>(info.techniqueName_))
+        if (auto* technique = context_->GetSubsystem<ResourceCache>()->GetResource<Technique>(info.techniqueName_))
         {
             auto index = material->GetNumTechniques();
             material->SetNumTechniques(index + 1);
@@ -82,16 +82,16 @@ void UndoTechniqueChanged::AddTechnique(const UndoTechniqueChanged::TechniqueInf
 
 void UndoTechniqueChanged::SetTechnique(const UndoTechniqueChanged::TechniqueInfo& info)
 {
-    if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
+    if (auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialName_))
     {
-        if (auto* technique = context_->GetCache()->GetResource<Technique>(info.techniqueName_))
+        if (auto* technique = context_->GetSubsystem<ResourceCache>()->GetResource<Technique>(info.techniqueName_))
             material->SetTechnique(static_cast<unsigned int>(index_), technique, info.qualityLevel_, info.lodDistance_);
     }
 }
 
 bool UndoTechniqueChanged::Undo(Context* context)
 {
-    if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
+    if (auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialName_))
     {
         if (oldValue_.techniqueName_.empty() && !newValue_.techniqueName_.empty())
             // Was added
@@ -103,8 +103,8 @@ bool UndoTechniqueChanged::Undo(Context* context)
             // Was modified
             SetTechnique(oldValue_);
 
-        context_->GetCache()->IgnoreResourceReload(material);
-        material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        context_->GetSubsystem<ResourceCache>()->IgnoreResourceReload(material);
+        material->SaveFile(context_->GetSubsystem<ResourceCache>()->GetResourceFileName(material->GetName()));
         return true;
     }
     return false;
@@ -112,7 +112,7 @@ bool UndoTechniqueChanged::Undo(Context* context)
 
 bool UndoTechniqueChanged::Redo(Context* context)
 {
-    if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
+    if (auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialName_))
     {
         if (oldValue_.techniqueName_.empty() && !newValue_.techniqueName_.empty())
             // Was added
@@ -124,8 +124,8 @@ bool UndoTechniqueChanged::Redo(Context* context)
             // Was modified
             SetTechnique(newValue_);
 
-        context_->GetCache()->IgnoreResourceReload(material);
-        material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        context_->GetSubsystem<ResourceCache>()->IgnoreResourceReload(material);
+        material->SaveFile(context_->GetSubsystem<ResourceCache>()->GetResourceFileName(material->GetName()));
         return true;
     }
     return false;
@@ -142,7 +142,7 @@ UndoShaderParameterChanged::UndoShaderParameterChanged(const Material* material,
 
 bool UndoShaderParameterChanged::Undo(Context* context)
 {
-    if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
+    if (auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialName_))
     {
         if (oldValue_.IsEmpty() && !newValue_.IsEmpty())
             // Was added
@@ -151,8 +151,8 @@ bool UndoShaderParameterChanged::Undo(Context* context)
             // Was removed or modified
             material->SetShaderParameter(parameterName_, oldValue_);
 
-        context_->GetCache()->IgnoreResourceReload(material);
-        material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        context_->GetSubsystem<ResourceCache>()->IgnoreResourceReload(material);
+        material->SaveFile(context_->GetSubsystem<ResourceCache>()->GetResourceFileName(material->GetName()));
         return true;
     }
     return false;
@@ -160,7 +160,7 @@ bool UndoShaderParameterChanged::Undo(Context* context)
 
 bool UndoShaderParameterChanged::Redo(Context* context)
 {
-    if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
+    if (auto* material = context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialName_))
     {
         if (!oldValue_.IsEmpty() && newValue_.IsEmpty())
             // Was removed
@@ -169,8 +169,8 @@ bool UndoShaderParameterChanged::Redo(Context* context)
             // Was added or modified
             material->SetShaderParameter(parameterName_, newValue_);
 
-        context_->GetCache()->IgnoreResourceReload(material);
-        material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        context_->GetSubsystem<ResourceCache>()->IgnoreResourceReload(material);
+        material->SaveFile(context_->GetSubsystem<ResourceCache>()->GetResourceFileName(material->GetName()));
         return true;
     }
     return false;

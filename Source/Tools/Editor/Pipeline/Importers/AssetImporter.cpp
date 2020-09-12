@@ -107,7 +107,7 @@ bool AssetImporter::IsOutOfDate() const
     if (lastAttributeHash_ != HashEffectiveAttributeValues())
         return true;
 
-    auto* fs = context_->GetFileSystem();
+    auto* fs = context_->GetSubsystem<FileSystem>();
     auto* project = GetSubsystem<Project>();
 
     unsigned mtime = fs->GetLastModifiedTime(asset_->GetResourcePath());
@@ -157,7 +157,7 @@ void AssetImporter::Initialize(Asset* asset, Flavor* flavor)
 
 void AssetImporter::ClearByproducts()
 {
-    auto* fs = context_->GetFileSystem();
+    auto* fs = context_->GetSubsystem<FileSystem>();
     auto* project = GetSubsystem<Project>();
     for (const ea::string& byproduct : byproducts_)
         fs->Delete(project->GetCachePath() + byproduct);

@@ -101,7 +101,7 @@ void GlobalIllumination::CompileLightProbes()
     lightProbesMesh_.Define(collection.worldPositions_);
 
     // Store in file
-    auto cache = context_->GetCache();
+    auto cache = context_->GetSubsystem<ResourceCache>();
     auto file = cache->GetTempResource<BinaryFile>(fileRef_.name_);
     if (!file)
     {
@@ -167,7 +167,7 @@ bool GlobalIllumination::SerializeData(Archive& archive)
 
 void GlobalIllumination::ReloadData()
 {
-    auto cache = context_->GetCache();
+    auto cache = context_->GetSubsystem<ResourceCache>();
     auto file = cache->GetTempResource<BinaryFile>(fileRef_.name_);
 
     bool success = false;

@@ -486,7 +486,7 @@ void Run(const ea::vector<ea::string>& arguments)
         outName_ = outFile;
         outPath_ = GetPath(outFile);
 
-        context_->GetFileSystem()->CreateDirsRecursive(outPath_);
+        context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(outPath_);
 
         if (resourcePath_.empty())
         {
@@ -1275,7 +1275,7 @@ void BuildAndSaveAnimations(OutModel* model)
 
         ea::string outName = model ? model->outName_ : outName_;
 
-        if (context_->GetFileSystem()->DirExists(outName))
+        if (context_->GetSubsystem<FileSystem>()->DirExists(outName))
         {
             animName = SanitateAssetName(animName);
             outName = AddTrailingSlash(outName);

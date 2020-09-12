@@ -141,7 +141,7 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
         // Update stats regardless of them being shown.
         if (fpsTimer_.GetMSec(false) > FPS_UPDATE_INTERVAL_MS)
         {
-            fps_ = static_cast<unsigned int>(Round(context_->GetTime()->GetFramesPerSecond()));
+            fps_ = static_cast<unsigned int>(Round(context_->GetSubsystem<Time>()->GetFramesPerSecond()));
             fpsTimer_.Reset();
         }
 
@@ -154,8 +154,8 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
         }
         else
         {
-            primitives = context_->GetRenderer()->GetNumPrimitives();
-            batches = context_->GetRenderer()->GetNumBatches();
+            primitives = context_->GetSubsystem<Renderer>()->GetNumPrimitives();
+            batches = context_->GetSubsystem<Renderer>()->GetNumBatches();
         }
 
         float left_offset = ui::GetCursorPos().x;
