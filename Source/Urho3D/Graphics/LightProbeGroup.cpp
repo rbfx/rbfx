@@ -342,7 +342,7 @@ void LightProbeGroup::UpdateBakedData()
         return;
 
     bakedDataDirty_ = false;
-    auto cache = context_->GetCache();
+    auto cache = context_->GetSubsystem<ResourceCache>();
     auto bakedDataFile = cache->GetTempResource<BinaryFile>(bakedDataRef_.name_);
 
     // Try to load from file

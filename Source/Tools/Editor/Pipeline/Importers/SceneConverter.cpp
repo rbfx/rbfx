@@ -50,7 +50,7 @@ bool SceneConverter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     if (!BaseClassName::Execute(input, outputPath))
         return false;
 
-    auto* fs = context_->GetFileSystem();
+    auto* fs = context_->GetSubsystem<FileSystem>();
     auto* project = GetSubsystem<Project>();
 
     // A subproces is used to cook a scene because resource loading is reserved to a main thread, but asset importers run in worker threads.

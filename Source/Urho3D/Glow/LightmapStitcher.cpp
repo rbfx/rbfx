@@ -79,7 +79,7 @@ unsigned GetStitchTextureFormat(unsigned numChannels)
 SharedPtr<Scene> CreateStitchingScene(Context* context,
     const LightmapStitchingSettings& settings, Texture2D* inputTexture, Model* seamsModel, float texelSize)
 {
-    auto cache = context->GetCache();
+    auto cache = context->GetSubsystem<ResourceCache>();
 
     auto scene = MakeShared<Scene>(context);
     auto octree = scene->CreateComponent<Octree>();
@@ -192,7 +192,7 @@ void StitchTextureSeams(LightmapStitchingContext& stitchingContext,
     ea::vector<Vector4>& buffer, const LightmapStitchingSettings& settings, Model* seamsModel)
 {
     Context* context = stitchingContext.context_;
-    auto graphics = context->GetGraphics();
+    auto graphics = context->GetSubsystem<Graphics>();
     const float texelSize = 1.0f / stitchingContext.lightmapSize_;
 
     // Initialize scenes and render path

@@ -356,7 +356,7 @@ RTCGeometry CreateEmbreeGeometryForTerrain(RTCDevice embreeDevice, const Raytrac
 ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(RTCDevice embreeDevice,
     ModelView* modelView, StaticModel* staticModel, unsigned objectIndex, unsigned lightmapUVChannel)
 {
-    auto renderer = staticModel->GetContext()->GetRenderer();
+    auto renderer = staticModel->GetContext()->GetSubsystem<Renderer>();
 
     Node* node = staticModel->GetNode();
     const Vector4& lightmapUVScaleOffset = staticModel->GetLightmapScaleOffset();
@@ -412,7 +412,7 @@ ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(RTCDevice 
 ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForTerrain(RTCDevice embreeDevice,
     Terrain* terrain, unsigned objectIndex, unsigned lightmapUVChannel)
 {
-    auto renderer = terrain->GetContext()->GetRenderer();
+    auto renderer = terrain->GetContext()->GetSubsystem<Renderer>();
 
     const Material* material = terrain->GetMaterial();
     if (!material)
@@ -532,7 +532,7 @@ SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vect
     rtcCommitScene(scene);
 
     // Load images
-    auto cache = context->GetCache();
+    auto cache = context->GetSubsystem<ResourceCache>();
     for (auto& nameAndImage : diffuseImages)
     {
         if (!nameAndImage.first.empty())

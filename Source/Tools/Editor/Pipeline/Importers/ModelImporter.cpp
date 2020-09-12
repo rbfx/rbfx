@@ -67,7 +67,7 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     if (!BaseClassName::Execute(input, outputPath))
         return false;
 
-    auto* fs = context_->GetFileSystem();
+    auto* fs = context_->GetSubsystem<FileSystem>();
     auto* project = GetSubsystem<Project>();
 
     // A path mimicking structure of cache directory, but with byproducts of this import procedure only. It serves us to allow easy

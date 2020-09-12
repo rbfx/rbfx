@@ -139,7 +139,7 @@ bool TextureImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath
     if (pixelFormatValue == (int)PixelFormat::None)
         return false;
     else
-        context_->GetFileSystem()->CreateDirsRecursive(outputDirectory);
+        context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(outputDirectory);
 
     ea::string output;
     StringVector arguments{
@@ -206,7 +206,7 @@ bool TextureImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath
     arguments.push_back("-file");
     arguments.push_back(input->GetResourcePath());
 
-    int result = context_->GetFileSystem()->SystemRun(context_->GetFileSystem()->GetProgramDir() + "/crunch", arguments, output);
+    int result = context_->GetSubsystem<FileSystem>()->SystemRun(context_->GetSubsystem<FileSystem>()->GetProgramDir() + "/crunch", arguments, output);
     if (result != 0)
     {
         logger_.Error("Error {}-compressing 'res://{}' to '{}' failed.", pixelFormat, input->GetName(), outputFile);

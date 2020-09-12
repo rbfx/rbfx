@@ -138,7 +138,7 @@ struct IncrementalLightBaker::Impl
 
         settings_.incremental_.outputDirectory_ = AddTrailingSlash(settings_.incremental_.outputDirectory_);
 
-        FileSystem* fs = context_->GetFileSystem();
+        FileSystem* fs = context_->GetSubsystem<FileSystem>();
         if (!fs->CreateDir(settings_.incremental_.outputDirectory_))
         {
             URHO3D_LOGERROR("Cannot create output directory \"{}\" for lightmaps", settings_.incremental_.outputDirectory_);
@@ -176,7 +176,7 @@ struct IncrementalLightBaker::Impl
             URHO3D_LOGERROR("Cannot allocate GI data file at \"{}\"", giFileName);
             return false;
         }
-        gi->SetFileRef({ BinaryFile::GetTypeStatic(), GetResourceName(context_->GetCache(), giFileName) });
+        gi->SetFileRef({ BinaryFile::GetTypeStatic(), GetResourceName(context_->GetSubsystem<ResourceCache>(), giFileName) });
 
         return true;
     }
@@ -201,7 +201,7 @@ struct IncrementalLightBaker::Impl
             collector_->CommitGeometries(chunk);
 
             // Assign baked data files for light probe groups
-            auto fileSystem = context_->GetFileSystem();
+            auto fileSystem = context_->GetSubsystem<FileSystem>();
             for (unsigned i = 0; i < uniqueLightProbes.size(); ++i)
             {
                 LightProbeGroup* group = uniqueLightProbes[i];
@@ -219,7 +219,7 @@ struct IncrementalLightBaker::Impl
         for (unsigned i = 0; i < numLightmapCharts_; ++i)
         {
             const ea::string fileName = GetLightmapFileName(i);
-            const ea::string resourceName = GetResourceName(context_->GetCache(), fileName);
+            const ea::string resourceName = GetResourceName(context_->GetSubsystem<ResourceCache>(), fileName);
             if (resourceName.empty())
             {
                 URHO3D_LOGWARNING("Cannot find resource name for lightmap \"{}\", absolute path is used", fileName);
@@ -441,7 +441,7 @@ struct IncrementalLightBaker::Impl
 
                 // Save image to destination folder
                 const ea::string fileName = GetLightmapFileName(lightmapIndex);
-                context_->GetFileSystem()->CreateDirsRecursive(GetPath(fileName));
+                context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(GetPath(fileName));
                 lightmapImage->SaveFile(fileName);
             }
         }

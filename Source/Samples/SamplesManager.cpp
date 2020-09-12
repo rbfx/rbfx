@@ -158,8 +158,8 @@ void SamplesManager::Setup()
 
 void SamplesManager::Start()
 {
-    Input* input = context_->GetInput();
-    UI* ui = context_->GetUI();
+    Input* input = context_->GetSubsystem<Input>();
+    UI* ui = context_->GetSubsystem<UI>();
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
     context_->RegisterFactory<Rotator>();
@@ -168,14 +168,14 @@ void SamplesManager::Start()
     input->SetMouseVisible(true);
 
 #if URHO3D_SYSTEMUI
-    context_->GetEngine()->CreateDebugHud()->ToggleAll();
+    context_->GetSubsystem<Engine>()->CreateDebugHud()->ToggleAll();
 #endif
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
-    ui->GetRoot()->SetDefaultStyle(context_->GetCache()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    ui->GetRoot()->SetDefaultStyle(context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
     auto* layout = ui->GetRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
@@ -320,12 +320,12 @@ void SamplesManager::OnClickSample(VariantMap& args)
 
 void SamplesManager::StartSample(StringHash sampleType)
 {
-    UI* ui = context_->GetUI();
+    UI* ui = context_->GetSubsystem<UI>();
     ui->GetRoot()->RemoveAllChildren();
     ui->SetFocusElement(nullptr);
 
 #if MOBILE
-    Graphics* graphics = context_->GetGraphics();
+    Graphics* graphics = context_->GetSubsystem<Graphics>();
     graphics->SetOrientations("LandscapeLeft LandscapeRight");
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
@@ -355,8 +355,8 @@ void SamplesManager::OnFrameStart()
         isClosing_ = false;
         if (runningSample_.NotNull())
         {
-            Input* input = context_->GetInput();
-            UI* ui = context_->GetUI();
+            Input* input = context_->GetSubsystem<Input>();
+            UI* ui = context_->GetSubsystem<UI>();
             runningSample_->Stop();
             runningSample_ = nullptr;
             input->SetMouseMode(MM_FREE);
@@ -366,7 +366,7 @@ void SamplesManager::OnFrameStart()
             ui->GetRoot()->AddChild(listViewHolder_);
             ui->GetRoot()->AddChild(logoSprite_);
 #if MOBILE
-            Graphics* graphics = context_->GetGraphics();
+            Graphics* graphics = context_->GetSubsystem<Graphics>();
             graphics->SetOrientations("Portrait");
             IntVector2 screenSize = graphics->GetSize();
             graphics->SetMode(Min(screenSize.x_, screenSize.y_), Max(screenSize.x_, screenSize.y_));
@@ -385,7 +385,7 @@ void SamplesManager::OnFrameStart()
             }
 #endif
 #if !defined(__EMSCRIPTEN__)
-            context_->GetEngine()->Exit();
+            context_->GetSubsystem<Engine>()->Exit();
 #endif
         }
     }
@@ -404,10 +404,10 @@ void SamplesManager::RegisterSample()
     auto* title = button->CreateChild<Text>();
     title->SetAlignment(HA_CENTER, VA_CENTER);
     title->SetText(T::GetTypeNameStatic());
-    title->SetFont(context_->GetCache()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
+    title->SetFont(context_->GetSubsystem<ResourceCache>()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
     title->SetStyleAuto();
 
-    context_->GetUI()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
+    context_->GetSubsystem<UI>()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
 }
 
 }

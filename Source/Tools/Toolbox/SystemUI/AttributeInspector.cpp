@@ -120,7 +120,7 @@ bool RenderResourceRef(ResourceRef& ref, Object* eventSender)
         const Variant& payload = ui::AcceptDragDropVariant("res");
         if (!payload.IsEmpty())
         {
-            resource = eventSender->GetContext()->GetCache()->GetResource(ref.type_, payload.GetString());
+            resource = eventSender->GetContext()->GetSubsystem<ResourceCache>()->GetResource(ref.type_, payload.GetString());
             assert(resource != nullptr);
             ref.name_ = resource->GetName();
             modified = true;
