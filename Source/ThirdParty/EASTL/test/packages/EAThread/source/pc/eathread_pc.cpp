@@ -674,6 +674,7 @@ namespace Internal {
 		// which runs later. This only seems to happen when a debugger is attached and there's some managed
 		// code in the process.
 
+#ifdef _MSC_VER // rbfx: Fix for MinGW
 		jmp_buf jmpbuf;
 
 		__pragma(warning(push))
@@ -686,6 +687,7 @@ namespace Internal {
 			longjmp(jmpbuf, 1);
 		}
 		__pragma(warning(pop))
+#endif
 	}
 
 	void SetThreadName(EAThreadDynamicData* pTDD, const char* pName)
