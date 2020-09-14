@@ -512,6 +512,18 @@ namespace EA
 			};
 		#endif
 
+		// rbfx
+		#ifdef EA_PROCESSOR_WASM
+			struct CallstackContext
+			{
+				// Empty
+			};
+			struct Context
+			{
+				// Empty
+			};
+		#endif
+
 	} // namespace Thread
 
 } // namespace EA

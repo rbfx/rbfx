@@ -543,7 +543,7 @@ static void* RunnableFunctionInternal(void* pContext)
             SetPlatformThreadAffinity(pTDD);
         else if(pTDD->mStartupProcessor == EA::Thread::kProcessorAny)
             EA::Thread::SetThreadAffinityMask(pTDD->mnThreadAffinityMask);
-    #elif !defined(EA_PLATFORM_CONSOLE) && !defined(EA_PLATFORM_MOBILE)
+    #elif !defined(EA_PLATFORM_CONSOLE) && !defined(EA_PLATFORM_MOBILE) && !defined(EA_PLATFORM_WEB) // rbfx
         pTDD->mThreadPid = getpid(); // We can't set a thread affinity with a process id. 
     #else
         pTDD->mThreadPid = 0;
@@ -607,7 +607,7 @@ static void* RunnableObjectInternal(void* pContext)
         else if(pTDD->mStartupProcessor == EA::Thread::kProcessorAny)
             EA::Thread::SetThreadAffinityMask(pTDD->mnThreadAffinityMask);
 
-    #elif !defined(EA_PLATFORM_CONSOLE) && !defined(EA_PLATFORM_MOBILE)
+    #elif !defined(EA_PLATFORM_CONSOLE) && !defined(EA_PLATFORM_MOBILE) && !defined(EA_PLATFORM_WEB)    // rbfx
         pTDD->mThreadPid = getpid(); // We can't set a thread affinity with a process id. 
     #else
         pTDD->mThreadPid = 0;

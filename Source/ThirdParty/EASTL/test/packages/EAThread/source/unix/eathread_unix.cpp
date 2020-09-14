@@ -203,7 +203,7 @@
 			thr_stksegment(&s);
 			return s.ss_sp;  // Note that this is not the sp pointer (which would refer to the a location low in the stack address space). When returned by thr_stksegment(), ss_sp refers to the top (base) of the stack.
 
-		#elif defined(__CYGWIN__)
+		#elif defined(__CYGWIN__) || defined(__MINGW32__)   // rbfx
 			// Cygwin reserves pthread_attr_getstackaddr and pthread_attr_getstacksize for future use.
 			// The solution here is probably to use the Windows implementation of this here.
 			return 0;
