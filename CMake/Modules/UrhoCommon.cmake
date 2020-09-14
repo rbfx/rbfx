@@ -180,6 +180,20 @@ if (URHO3D_SSE)
     endif ()
 endif ()
 
+if (MINGW AND CROSS_TARGET)
+    # Workarounds for crosscompiling MinGW on linux. EASTL uses uppser-case headers where MinGW has them lower-case.
+    foreach(HEADER Windows.h WinSock2.h ShellAPI.h XInput.h Rpc.h)
+        find_path(${HEADER}_PATH ${HEADER})
+        if (NOT ${${HEADER}_PATH})
+            string(TOLOWER "${HEADER}" HEADER_LOWER)
+            find_path(${HEADER}_PATH ${HEADER_LOWER})
+            file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/MinGW-crosscompiler-includes)
+            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${${HEADER}_PATH}/${HEADER_LOWER} ${CMAKE_BINARY_DIR}/MinGW-crosscompiler-includes/${HEADER})
+        endif ()
+    endforeach()
+    include_directories(${CMAKE_BINARY_DIR}/MinGW-crosscompiler-includes)
+endif ()
+
 # Macro for setting symbolic link on platform that supports it
 function (create_symlink SOURCE DESTINATION)
     # Make absolute paths so they work more reliably on cmake-gui
