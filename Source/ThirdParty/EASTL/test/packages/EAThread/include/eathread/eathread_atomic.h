@@ -30,13 +30,14 @@ EA_RESTORE_ALL_VC_WARNINGS()
 #include <eathread/eathread.h>
 #include <eathread/eathread_sync.h>
 
-// Urho3D: Atomics are needed regardless of threading availability
-// #if !EA_THREADS_AVAILABLE
-// 	// Do nothing. Let the default implementation below be used.
-// //#elif defined(EA_USE_CPP11_CONCURRENCY) && EA_USE_CPP11_CONCURRENCY
-// //    #include <eathread/cpp11/eathread_atomic_cpp11.h> // CPP11 atomics are currently broken and slow.  To be renabled for other platforms when VS2013 released.
-// #el
+// rbfx: move this to front so we have atomics even when threading is disabled.
 #if defined(EA_USE_COMMON_ATOMICINT_IMPLEMENTATION) && EA_USE_COMMON_ATOMICINT_IMPLEMENTATION
+    #include <eathread/internal/eathread_atomic.h>
+#elif !EA_THREADS_AVAILABLE
+	// Do nothing. Let the default implementation below be used.
+#elif defined(EA_USE_CPP11_CONCURRENCY) && EA_USE_CPP11_CONCURRENCY
+   #include <eathread/cpp11/eathread_atomic_cpp11.h> // CPP11 atomics are currently broken and slow.  To be renabled for other platforms when VS2013 released.
+#elif defined(EA_USE_COMMON_ATOMICINT_IMPLEMENTATION) && EA_USE_COMMON_ATOMICINT_IMPLEMENTATION
 	#include <eathread/internal/eathread_atomic.h>
 #elif defined(EA_PLATFORM_APPLE)
 	#include <eathread/apple/eathread_atomic_apple.h>
