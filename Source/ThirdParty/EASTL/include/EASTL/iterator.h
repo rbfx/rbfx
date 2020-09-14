@@ -85,6 +85,8 @@ namespace eastl
 		struct bidirectional_iterator_tag : public forward_iterator_tag { };
 		struct random_access_iterator_tag : public bidirectional_iterator_tag { };
 		struct contiguous_iterator_tag    : public random_access_iterator_tag { };  // Extension to the C++ standard. Contiguous ranges are more than random access, they are physically contiguous.
+    #else
+        struct contiguous_iterator_tag    : public std::random_access_iterator_tag { };  // rbfx: Fix builds with EASTL_STD_ITERATOR_CATEGORY_ENABLED
 	#endif
 
 
