@@ -358,6 +358,9 @@ endforeach ()
 if (MINGW)
     include (CheckStructHasMember)
     check_struct_has_member (RTL_OSVERSIONINFOW dwOSVersionInfoSize minwindef.h\;winnt.h HAVE_RTL_OSVERSIONINFOW)
+    if (EXISTS ${CMAKE_BINARY_DIR}/MinGW-crosscompiler-includes)
+        target_include_directories(Urho3D PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/MinGW-crosscompiler-includes>)
+    endif ()
 endif ()
 
 # Workarounds
