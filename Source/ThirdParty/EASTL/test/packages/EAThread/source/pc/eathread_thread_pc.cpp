@@ -434,9 +434,9 @@ EA_DISABLE_VC_WARNING(6312 6322)
 		pData->AddRef(); // AddRef for the thread, to be released upon the thread exiting.
 		pData->AddRef(); // AddRef for this function, to be released upon this function's exit.
 		pData->mhThread = kThreadIdInvalid;
-		pData->mpStartContext[0] = pFunction;
+		pData->mpStartContext[0] = (void*)pFunction; // rbfx: build fix.
 		pData->mpStartContext[1] = pContext;
-		pData->mpBeginThreadUserWrapper = pUserWrapper;
+		pData->mpBeginThreadUserWrapper = (void*)pUserWrapper; // rbfx: build fix.
 		pData->mnThreadAffinityMask = pTP ? pTP->mnAffinityMask : kThreadAffinityMaskAny;
 
 		const unsigned nStackSize = pTP ? (unsigned)pTP->mnStackSize : 0;
@@ -548,7 +548,7 @@ EA_DISABLE_VC_WARNING(6312 6322)
 		pData->mhThread = kThreadIdInvalid;
 		pData->mpStartContext[0] = pRunnable;
 		pData->mpStartContext[1] = pContext;
-		pData->mpBeginThreadUserWrapper = pUserWrapper;
+		pData->mpBeginThreadUserWrapper = (void*)pUserWrapper; // rbfx: MinGW build fix.
 		pData->mnThreadAffinityMask = pTP ? pTP->mnAffinityMask : kThreadAffinityMaskAny;
 		const unsigned nStackSize     = pTP ? (unsigned)pTP->mnStackSize : 0;
 

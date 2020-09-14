@@ -21,6 +21,7 @@ file(GLOB_RECURSE EASTL_SOURCES
     test/packages/EAStdC/include/*.h
     test/packages/EAStdC/source/*.cpp
 )
+file(GLOB EASTL_THREAD_SOURCES test/packages/EAThread/include/*.h test/packages/EAThread/source/*.cpp)
 
 add_library(EASTL STATIC ${EASTL_SOURCES} ${EASTL_THREAD_SOURCES} doc/EASTL.natvis)
 target_compile_definitions(EASTL
@@ -28,8 +29,6 @@ target_compile_definitions(EASTL
             -DEASTL_RTTI_ENABLED=0
             -DEASTL_URHO3D_EXTENSIONS=1
             -DEASTL_SIZE_T_32BIT=1        # Urho3D uses `unsigned` for sizes all over place. Can not use native size without breaking lots of code.
-            -DEASTDC_THREADING_SUPPORTED=0
-            -DEA_USE_CPP11_CONCURRENCY=1
             -DEASTDC_GLOBALPTR_SUPPORT_ENABLED=0
     PRIVATE -D_CHAR16T
 )
@@ -48,7 +47,7 @@ target_include_directories(EASTL SYSTEM
 )
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(EASTL PUBLIC -DEASTL_DLL -DEASTDC_DLL PRIVATE -DEASTL_EXPORTS -DEASTDC_EXPORTS)
+    target_compile_definitions(EASTL PUBLIC -DEA_DLL PRIVATE -DEASTL_EXPORTS -DEASTDC_EXPORTS -DEATHREAD_EXPORTS)
 endif ()
 
 # Urho3D:

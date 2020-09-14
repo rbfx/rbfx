@@ -244,7 +244,7 @@ EATHREADLIB_API void ShutdownCallstack()
 // return address).
 //
 // UNWIND_HISTORY_TABLE "is used as a cache to speed up repeated exception handling lookups, 
-// and is typically optional as far as usage with RtlUnwindEx goes – though certainly 
+// and is typically optional as far as usage with RtlUnwindEx goes â€“ though certainly 
 // recommended from a performance perspective." This may be useful to us, though we'd need
 // to make it a thread-safe static variable or similar and not a local variable.
 // History table declaration and preparation for use, which needs to be done per-thread:
@@ -318,17 +318,20 @@ EATHREADLIB_API size_t GetCallstack(void* pReturnAddressArray[], size_t nReturnA
 	{
 		// Try to look up unwind metadata for the current function.
 		nPrevImageBase = nImageBase;
+#ifndef __MINGW32__ // rbfx
 		__try
+#endif
 		{
 			pRuntimeFunction = (PRUNTIME_FUNCTION)RtlLookupFunctionEntry(context.Rip, &nImageBase, NULL /*&unwindHistoryTable*/);
 		}
+#ifndef __MINGW32__ // rbfx
 		__except (EXCEPTION_EXECUTE_HANDLER)
 		{
 			// Something went wrong in RtlLookupFunctionEntry, and it is unknown
 			// if it is recoverable; so just get out.
 			return nFrameIndex;
 		}
-
+#endif
 		if(pRuntimeFunction)
 		{
 			// RtlVirtualUnwind is not declared in the SDK headers for non-desktop apps, 
@@ -340,17 +343,21 @@ EATHREADLIB_API size_t GetCallstack(void* pReturnAddressArray[], size_t nReturnA
 			// enabled in the build, which usually isn't so for optimized builds and for
 			// third party code. 
 
+#ifndef __MINGW32__ // rbfx
 			__try // Under at least the XBox One platform, RtlVirtualUnwind can crash here. It may possibly be due to the context being incomplete.
+#endif
 			{
 				VOID*          handlerData = NULL;
 				ULONG64        establisherFramePointers[2] = { 0, 0 };
 				RtlVirtualUnwind(UNW_FLAG_NHANDLER, nImageBase, context.Rip, pRuntimeFunction, &context, &handlerData,  establisherFramePointers, NULL);                        
 			}
+#ifndef __MINGW32__ // rbfx
 			__except (EXCEPTION_EXECUTE_HANDLER)
 			{
 				context.Rip          = NULL;
 				context.ContextFlags = 0;
 			}
+#endif
 		}
 		else
 		{
