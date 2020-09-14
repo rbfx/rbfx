@@ -34,6 +34,7 @@ target_compile_definitions(EASTL
             -DEASTL_URHO3D_EXTENSIONS=1
             -DEASTL_SIZE_T_32BIT=1        # Urho3D uses `unsigned` for sizes all over place. Can not use native size without breaking lots of code.
             -DEASTDC_GLOBALPTR_SUPPORT_ENABLED=0
+            -DEASTL_STD_ITERATOR_CATEGORY_ENABLED=1
     PRIVATE -D_CHAR16T
 )
 if (MSVC)
