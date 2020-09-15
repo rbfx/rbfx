@@ -52,9 +52,6 @@ static const Matrix4 flipMatrix(
 
 Camera::Camera(Context* context) :
     Component(context),
-    viewDirty_(true),
-    projectionDirty_(true),
-    frustumDirty_(true),
     orthographic_(false),
     nearClip_(DEFAULT_NEARCLIP),
     farClip_(DEFAULT_FARCLIP),
@@ -114,24 +111,27 @@ void Camera::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 void Camera::SetNearClip(float nearClip)
 {
     nearClip_ = Max(nearClip, M_MIN_NEARCLIP);
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
 void Camera::SetFarClip(float farClip)
 {
     farClip_ = Max(farClip, M_MIN_NEARCLIP);
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
 void Camera::SetFov(float fov)
 {
     fov_ = Clamp(fov, 0.0f, M_MAX_FOV);
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -139,8 +139,9 @@ void Camera::SetOrthoSize(float orthoSize)
 {
     orthoSize_ = orthoSize;
     aspectRatio_ = 1.0f;
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -149,8 +150,9 @@ void Camera::SetOrthoSize(const Vector2& orthoSize)
     autoAspectRatio_ = false;
     orthoSize_ = orthoSize.y_;
     aspectRatio_ = orthoSize.x_ / orthoSize.y_;
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -163,8 +165,9 @@ void Camera::SetAspectRatio(float aspectRatio)
 void Camera::SetZoom(float zoom)
 {
     zoom_ = Max(zoom, M_EPSILON);
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -195,8 +198,9 @@ void Camera::SetFillMode(FillMode mode)
 void Camera::SetOrthographic(bool enable)
 {
     orthographic_ = enable;
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -209,15 +213,17 @@ void Camera::SetAutoAspectRatio(bool enable)
 void Camera::SetProjectionOffset(const Vector2& offset)
 {
     projectionOffset_ = offset;
-    projectionDirty_ = true;
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
 void Camera::SetUseReflection(bool enable)
 {
     useReflection_ = enable;
-    viewDirty_ = true;
-    frustumDirty_ = true;
+    viewDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
+    frustumDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -225,15 +231,17 @@ void Camera::SetReflectionPlane(const Plane& plane)
 {
     reflectionPlane_ = plane;
     reflectionMatrix_ = reflectionPlane_.ReflectionMatrix();
-    viewDirty_ = true;
-    frustumDirty_ = true;
+    viewDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
+    frustumDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
 void Camera::SetUseClipping(bool enable)
 {
     useClipping_ = enable;
-    projectionDirty_ = true;
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -246,6 +254,7 @@ void Camera::SetClipPlane(const Plane& plane)
 void Camera::SetFlipVertical(bool enable)
 {
     flipVertical_ = enable;
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -257,9 +266,10 @@ void Camera::SetProjection(const Matrix4& projection)
     // Calculate the actual near & far clip from the custom matrix
     projNearClip_ = (projInverse * Vector3(0.0f, 0.0f, 0.0f)).z_;
     projFarClip_ = (projInverse * Vector3(0.0f, 0.0f, 1.0f)).z_;
-    projectionDirty_ = false;
+    projectionDirty_.Clean();
     autoAspectRatio_ = false;
-    frustumDirty_ = true;
+    viewProjDirty_.MarkDirty();
+    frustumDirty_.MarkDirty();
     customProjection_ = true;
     // Called due to autoAspectRatio changing state, the projection itself is not serialized
     MarkNetworkUpdate();
@@ -267,7 +277,7 @@ void Camera::SetProjection(const Matrix4& projection)
 
 float Camera::GetNearClip() const
 {
-    if (projectionDirty_)
+    if (projectionDirty_.IsDirty())
         UpdateProjection();
 
     return projNearClip_;
@@ -275,7 +285,7 @@ float Camera::GetNearClip() const
 
 float Camera::GetFarClip() const
 {
-    if (projectionDirty_)
+    if (projectionDirty_.IsDirty())
         UpdateProjection();
 
     return projFarClip_;
@@ -284,24 +294,25 @@ float Camera::GetFarClip() const
 const Frustum& Camera::GetFrustum() const
 {
     // Use projection_ instead of GetProjection() so that Y-flip has no effect. Update first if necessary
-    if (projectionDirty_)
+    if (projectionDirty_.IsDirty())
         UpdateProjection();
 
-    if (frustumDirty_)
+    if (frustumDirty_.IsDirty())
     {
+        Frustum frustum;
         if (customProjection_)
-            frustum_.Define(projection_ * GetView());
+            frustum.Define(projection_ * GetView());
         else
         {
             // If not using a custom projection, prefer calculating frustum from projection parameters instead of matrix
             // for better accuracy
             if (!orthographic_)
-                frustum_.Define(fov_, aspectRatio_, zoom_, GetNearClip(), GetFarClip(), GetEffectiveWorldTransform());
+                frustum.Define(fov_, aspectRatio_, zoom_, GetNearClip(), GetFarClip(), GetEffectiveWorldTransform());
             else
-                frustum_.DefineOrtho(orthoSize_, aspectRatio_, zoom_, GetNearClip(), GetFarClip(), GetEffectiveWorldTransform());
+                frustum.DefineOrtho(orthoSize_, aspectRatio_, zoom_, GetNearClip(), GetFarClip(), GetEffectiveWorldTransform());
         }
 
-        frustumDirty_ = false;
+        frustumDirty_.Clean([&] { frustum_ = frustum; });
     }
 
     return frustum_;
@@ -309,7 +320,7 @@ const Frustum& Camera::GetFrustum() const
 
 Frustum Camera::GetSplitFrustum(float nearClip, float farClip) const
 {
-    if (projectionDirty_)
+    if (projectionDirty_.IsDirty())
         UpdateProjection();
 
     nearClip = Max(nearClip, projNearClip_);
@@ -339,7 +350,7 @@ Frustum Camera::GetSplitFrustum(float nearClip, float farClip) const
 
 Frustum Camera::GetViewSpaceFrustum() const
 {
-    if (projectionDirty_)
+    if (projectionDirty_.IsDirty())
         UpdateProjection();
 
     Frustum ret;
@@ -359,7 +370,7 @@ Frustum Camera::GetViewSpaceFrustum() const
 
 Frustum Camera::GetViewSpaceSplitFrustum(float nearClip, float farClip) const
 {
-    if (projectionDirty_)
+    if (projectionDirty_.IsDirty())
         UpdateProjection();
 
     nearClip = Max(nearClip, projNearClip_);
@@ -439,7 +450,7 @@ Vector3 Camera::ScreenToWorldPoint(const Vector3& screenPos) const
 
 Matrix4 Camera::GetProjection() const
 {
-    if (projectionDirty_)
+    if (projectionDirty_.IsDirty())
         UpdateProjection();
 
     return flipVertical_ ? flipMatrix * projection_ : projection_;
@@ -584,14 +595,28 @@ bool Camera::IsProjectionValid() const
 
 const Matrix3x4& Camera::GetView() const
 {
-    if (viewDirty_)
+    if (viewDirty_.IsDirty())
     {
         // Note: view matrix is unaffected by node or parent scale
-        view_ = GetEffectiveWorldTransform().Inverse();
-        viewDirty_ = false;
+        const Matrix3x4 view = GetEffectiveWorldTransform().Inverse();
+        viewDirty_.Clean([&] { view_ = view; });
     }
 
     return view_;
+}
+
+const Matrix4& Camera::GetViewProj() const
+{
+    if (viewProjDirty_.IsDirty())
+        UpdateViewProjectionMatrices();
+    return viewProj_;
+}
+
+const Matrix4& Camera::GetInverseViewProj() const
+{
+    if (viewProjDirty_.IsDirty())
+        UpdateViewProjectionMatrices();
+    return inverseViewProj_;
 }
 
 void Camera::SetAspectRatioInternal(float aspectRatio)
@@ -599,8 +624,9 @@ void Camera::SetAspectRatioInternal(float aspectRatio)
     if (aspectRatio != aspectRatio_)
     {
         aspectRatio_ = aspectRatio;
-        frustumDirty_ = true;
-        projectionDirty_ = true;
+        frustumDirty_.MarkDirty();
+        projectionDirty_.MarkDirty();
+        viewProjDirty_.MarkDirty();
     }
     MarkNetworkUpdate();
 }
@@ -608,8 +634,9 @@ void Camera::SetAspectRatioInternal(float aspectRatio)
 void Camera::SetOrthoSizeAttr(float orthoSize)
 {
     orthoSize_ = orthoSize;
-    frustumDirty_ = true;
-    projectionDirty_ = true;
+    frustumDirty_.MarkDirty();
+    projectionDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -641,14 +668,17 @@ void Camera::OnNodeSet(Node* node)
 
 void Camera::OnMarkedDirty(Node* node)
 {
-    frustumDirty_ = true;
-    viewDirty_ = true;
+    frustumDirty_.MarkDirty();
+    viewDirty_.MarkDirty();
+    viewProjDirty_.MarkDirty();
 }
 
 void Camera::UpdateProjection() const
 {
     // Start from a zero matrix in case it was custom previously
-    projection_ = Matrix4::ZERO;
+    Matrix4 projection;
+    float projNearClip{};
+    float projFarClip{};
 
     if (!orthographic_)
     {
@@ -657,15 +687,15 @@ void Camera::UpdateProjection() const
         float q = farClip_ / (farClip_ - nearClip_);
         float r = -q * nearClip_;
 
-        projection_.m00_ = w;
-        projection_.m02_ = projectionOffset_.x_ * 2.0f;
-        projection_.m11_ = h;
-        projection_.m12_ = projectionOffset_.y_ * 2.0f;
-        projection_.m22_ = q;
-        projection_.m23_ = r;
-        projection_.m32_ = 1.0f;
-        projNearClip_ = nearClip_;
-        projFarClip_ = farClip_;
+        projection.m00_ = w;
+        projection.m02_ = projectionOffset_.x_ * 2.0f;
+        projection.m11_ = h;
+        projection.m12_ = projectionOffset_.y_ * 2.0f;
+        projection.m22_ = q;
+        projection.m23_ = r;
+        projection.m32_ = 1.0f;
+        projNearClip = nearClip_;
+        projFarClip = farClip_;
     }
     else
     {
@@ -674,20 +704,36 @@ void Camera::UpdateProjection() const
         float q = 1.0f / farClip_;
         float r = 0.0f;
 
-        projection_.m00_ = w;
-        projection_.m03_ = projectionOffset_.x_ * 2.0f;
-        projection_.m11_ = h;
-        projection_.m13_ = projectionOffset_.y_ * 2.0f;
-        projection_.m22_ = q;
-        projection_.m23_ = r;
-        projection_.m33_ = 1.0f;
+        projection.m00_ = w;
+        projection.m03_ = projectionOffset_.x_ * 2.0f;
+        projection.m11_ = h;
+        projection.m13_ = projectionOffset_.y_ * 2.0f;
+        projection.m22_ = q;
+        projection.m23_ = r;
+        projection.m33_ = 1.0f;
         // Near clip does not affect depth accuracy in ortho projection, so let it stay 0 to avoid problems with shader depth parameters
-        projNearClip_ = 0.0f;
-        projFarClip_ = farClip_;
+        projNearClip = 0.0f;
+        projFarClip = farClip_;
     }
 
-    projectionDirty_ = false;
+    projectionDirty_.Clean([&]
+    {
+        projection_ = projection;
+        projNearClip_ = projNearClip;
+        projFarClip_ = projFarClip;
+    });
     customProjection_ = false;
+}
+
+void Camera::UpdateViewProjectionMatrices() const
+{
+    const Matrix4 viewProj = GetProjection() * GetView();
+    const Matrix4 inverseViewProj = viewProj.Inverse();
+    viewProjDirty_.Clean([&]
+    {
+        viewProj_ = viewProj;
+        inverseViewProj_ = inverseViewProj;
+    });
 }
 
 }
