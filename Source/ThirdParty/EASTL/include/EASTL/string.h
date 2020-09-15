@@ -453,12 +453,12 @@ namespace eastl
 			inline value_type* HeapCapacityPtr() EA_NOEXCEPT             { return heap.mpBegin + GetHeapCapacity(); }
 			inline const value_type* HeapCapacityPtr() const EA_NOEXCEPT { return heap.mpBegin + GetHeapCapacity(); }
 
-			inline value_type* SSOCapcityPtr() EA_NOEXCEPT               { return sso.mData + SSOLayout::SSO_CAPACITY; }
-			inline const value_type* SSOCapcityPtr() const EA_NOEXCEPT   { return sso.mData + SSOLayout::SSO_CAPACITY; }
+			inline value_type* SSOCapacityPtr() EA_NOEXCEPT               { return sso.mData + SSOLayout::SSO_CAPACITY; }
+			inline const value_type* SSOCapacityPtr() const EA_NOEXCEPT   { return sso.mData + SSOLayout::SSO_CAPACITY; }
 
 			// Points to end of the buffer at the terminating '0', *ptr == '0' <- only true when size() == capacity()
-			inline value_type* CapacityPtr() EA_NOEXCEPT                 { return IsHeap() ? HeapCapacityPtr() : SSOCapcityPtr(); }
-			inline const value_type* CapacityPtr() const EA_NOEXCEPT     { return IsHeap() ? HeapCapacityPtr() : SSOCapcityPtr(); }
+			inline value_type* CapacityPtr() EA_NOEXCEPT                 { return IsHeap() ? HeapCapacityPtr() : SSOCapacityPtr(); }
+			inline const value_type* CapacityPtr() const EA_NOEXCEPT     { return IsHeap() ? HeapCapacityPtr() : SSOCapacityPtr(); }
 
 			inline void SetHeapBeginPtr(value_type* pBegin) EA_NOEXCEPT  { heap.mpBegin = pBegin; }
 
@@ -1793,11 +1793,11 @@ namespace eastl
 	inline typename basic_string<T, Allocator>::reference
 	basic_string<T, Allocator>::front()
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference the trailing 0 char without asserting.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
 				EASTL_FAIL_MSG("basic_string::front -- empty string");
+		#else
+			// We allow the user to reference the trailing 0 char without asserting.
 		#endif
 
 		return *internalLayout().BeginPtr();
@@ -1808,11 +1808,11 @@ namespace eastl
 	inline typename basic_string<T, Allocator>::const_reference
 	basic_string<T, Allocator>::front() const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference the trailing 0 char without asserting.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
 				EASTL_FAIL_MSG("basic_string::front -- empty string");
+		#else
+			// We allow the user to reference the trailing 0 char without asserting.
 		#endif
 
 		return *internalLayout().BeginPtr();
@@ -1823,11 +1823,11 @@ namespace eastl
 	inline typename basic_string<T, Allocator>::reference
 	basic_string<T, Allocator>::back()
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference the trailing 0 char without asserting.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
 				EASTL_FAIL_MSG("basic_string::back -- empty string");
+		#else
+			// We allow the user to reference the trailing 0 char without asserting.
 		#endif
 
 		return *(internalLayout().EndPtr() - 1);
@@ -1838,11 +1838,11 @@ namespace eastl
 	inline typename basic_string<T, Allocator>::const_reference
 	basic_string<T, Allocator>::back() const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference the trailing 0 char without asserting.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(internalLayout().GetSize() <= 0)) // We assert if the user references the trailing 0 char.
 				EASTL_FAIL_MSG("basic_string::back -- empty string");
+		#else
+			// We allow the user to reference the trailing 0 char without asserting.
 		#endif
 
 		return *(internalLayout().EndPtr() - 1);
@@ -4165,12 +4165,12 @@ namespace eastl
 	typedef basic_string<char>    string;
 	typedef basic_string<wchar_t> wstring;
 
-	/// string8 / string16 / string32
-	typedef basic_string<char8_t>  string8;
+	/// custom string8 / string16 / string32
+	typedef basic_string<char>     string8;
 	typedef basic_string<char16_t> string16;
 	typedef basic_string<char32_t> string32;
 
-	// C++11 string types
+	/// ISO mandated string types
 	typedef basic_string<char8_t>  u8string;    // Actually not a C++11 type, but added for consistency.
 	typedef basic_string<char16_t> u16string;
 	typedef basic_string<char32_t> u32string;
@@ -4206,20 +4206,22 @@ namespace eastl
 		}
 	};
 
-	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
-		template <>
-		struct hash<string8>
-		{
-			size_t operator()(const string8& x) const
-			{
-				const char8_t* p = (const char8_t*)x.c_str();
-				unsigned int c, result = 2166136261U;
-				while((c = *p++) != 0)
-					result = (result * 16777619) ^ c;
-				return (size_t)result;
-			}
-		};
-	#endif
+	// NOTE(rparolin): no longer required.
+	//
+	// #if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+	//     template <>
+	//     struct hash<string8>
+	//     {
+	//         size_t operator()(const string8& x) const
+	//         {
+	//             const char8_t* p = (const char8_t*)x.c_str();
+	//             unsigned int c, result = 2166136261U;
+	//             while((c = *p++) != 0)
+	//                 result = (result * 16777619) ^ c;
+	//             return (size_t)result;
+	//         }
+	//     };
+	// #endif
 
 	template <>
 	struct hash<string16>

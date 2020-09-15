@@ -9,10 +9,7 @@
 
 // EAMathHelp.h (or possibly the build file) would have set none or one of the 
 // following (usually none). If none were defined then we auto-detect.
-#if !defined(EAMATHHELP_MODE_SSE)     && \
-	!defined(EAMATHHELP_MODE_X86ASM)  && \
-	!defined(EAMATHHELP_MODE_REFERENCE)
-
+#if !defined(EAMATHHELP_MODE_SSE) && !defined(EAMATHHELP_MODE_X86ASM) && !defined(EAMATHHELP_MODE_REFERENCE)
 	#if !defined(EAMATHHELP_MODE_SSE) && defined(EA_PROCESSOR_X86_64) && defined(EA_COMPILER_MSVC)
 		#define EAMATHHELP_MODE_SSE 1
 	#elif !defined(EAMATHHELP_MODE_X86ASM) && defined(EA_PROCESSOR_X86) && defined(EA_ASM_STYLE_INTEL)
@@ -20,7 +17,6 @@
 	#else
 		#define EAMATHHELP_MODE_REFERENCE 1
 	#endif
-
 #endif
 
 #if EAMATHHELP_MODE_SSE

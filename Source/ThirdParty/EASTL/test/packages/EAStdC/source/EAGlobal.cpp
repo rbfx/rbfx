@@ -471,7 +471,11 @@ namespace
 					SCE_KERNEL_MAIN_DMEM_SIZE,
 					kDirectMemoryLength,
 					0,
+				#if defined(EA_PLATFORM_PS4)
 					SCE_KERNEL_WB_ONION,
+				#else
+					SCE_KERNEL_MTYPE_C_SHARED,
+				#endif
 					&gDirectMemoryStartAddr);
 			EA_ASSERT(err == SCE_OK);
 			
