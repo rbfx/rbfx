@@ -64,13 +64,14 @@ if (WEB OR ANDROID)
     # crosscompiler works just fine.
     unset (CMAKE_CXX_STANDARD)
 endif ()
-if (CLANG AND NOT WEB)
+if (CLANG)
     if (APPLE)
         # Ensure that everything built by this project use these libraries. Urho3D target also exports them so all downstream
         # projects linking to the engine get them as well.
         ucm_add_flags(C CXX -stdlib=libc++)
         link_libraries(c++ c++abi)
-    else ()
+    elseif (DESKTOP AND UNIX)
+        # Android ndk handles linking runtime library. Emscripten does not need these.
         link_libraries(stdc++ m)
     endif ()
 endif ()
@@ -96,10 +97,13 @@ elseif (MSVC)
 	ucm_add_flags("/W1")
 endif ()
 
-if (URHO3D_STATIC_RUNTIME)
-    ucm_set_runtime(STATIC)
-else ()
-    ucm_set_runtime(DYNAMIC)
+if (DESKTOP)
+    # Mobile/web toolchains manage runtime libraries themselves, we should not interfere.
+    if (URHO3D_STATIC_RUNTIME)
+        ucm_set_runtime(STATIC)
+    else ()
+        ucm_set_runtime(DYNAMIC)
+    endif ()
 endif ()
 
 add_subdirectory(Source)
