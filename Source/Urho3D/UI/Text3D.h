@@ -98,6 +98,8 @@ public:
     void SetOpacity(float opacity);
     /// Set whether text has fixed size on screen (pixel-perfect) regardless of distance to camera. Works best when combined with face camera rotation. Default false.
     void SetFixedScreenSize(bool enable);
+    /// Set whether to snap text to pixels. Has effect only if fixed screen size is enabled.
+    void SetSnapToPixels(bool enable);
     /// Set how the text should rotate in relation to the camera. Default is to not rotate (FC_NONE).
     void SetFaceCameraMode(FaceCameraMode mode);
 
@@ -153,6 +155,8 @@ public:
     float GetOpacity() const;
     /// Return whether text has fixed screen size.
     bool IsFixedScreenSize() const { return fixedScreenSize_; }
+    /// Return whether text is snapped to pixels.
+    bool GetSnapToPixels() const { return snapToPixels_; }
     /// Return how the text rotates in relation to the camera.
     FaceCameraMode GetFaceCameraMode() const { return faceCameraMode_; }
 
@@ -206,6 +210,8 @@ protected:
     float minAngle_;
     /// Fixed screen size flag.
     bool fixedScreenSize_;
+    /// Snap to pixel flag. Has effect only if fixed screen size is enabled.
+    bool snapToPixels_{};
     /// Text needs update flag.
     bool textDirty_;
     /// Geometry dirty flag.

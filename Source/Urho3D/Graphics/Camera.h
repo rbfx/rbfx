@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "../Core/DirtyFlag.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Math/Frustum.h"
 #include "../Math/Ray.h"
@@ -150,6 +151,10 @@ public:
     Matrix4 GetGPUProjection() const;
     /// Return view matrix.
     const Matrix3x4& GetView() const;
+    /// Return view-projection matrix.
+    const Matrix4& GetViewProj() const;
+    /// Return inverted view-projection matrix.
+    const Matrix4& GetInverseViewProj() const;
     /// Return frustum near and far sizes.
     void GetFrustumSize(Vector3& nearSize, Vector3& farSize) const;
     /// Return half view size.
@@ -225,19 +230,27 @@ protected:
 private:
     /// Recalculate projection matrix.
     void UpdateProjection() const;
+    /// Recalculate view-projection matrices.
+    void UpdateViewProjectionMatrices() const;
 
     /// Cached view matrix.
     mutable Matrix3x4 view_;
     /// Cached projection matrix.
     mutable Matrix4 projection_;
+    /// Cached view-projection matrix.
+    mutable Matrix4 viewProj_;
+    /// Cached inverse view-projection matrix.
+    mutable Matrix4 inverseViewProj_;
     /// Cached world space frustum.
     mutable Frustum frustum_;
     /// View matrix dirty flag.
-    mutable bool viewDirty_;
+    mutable DirtyFlag viewDirty_;
     /// Projection matrix dirty flag.
-    mutable bool projectionDirty_;
+    mutable DirtyFlag projectionDirty_;
     /// Frustum dirty flag.
-    mutable bool frustumDirty_;
+    mutable DirtyFlag frustumDirty_;
+    /// View-projection matrices dirty flag.
+    mutable DirtyFlag viewProjDirty_;
     /// Orthographic mode flag.
     bool orthographic_;
     /// Cached actual near clip distance.
