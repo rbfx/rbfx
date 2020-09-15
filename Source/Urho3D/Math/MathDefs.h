@@ -194,11 +194,15 @@ template <class T> inline T Fract(T value) { return value - floor(value); }
 /// Round value down.
 template <class T> inline T Floor(T x) { return floor(x); }
 
+/// Round value down to nearest number that can be represented as i*y, where i is integer.
+template <class T> inline T SnapFloor(T x, T y) { return floor(x / y) * y; }
+
 /// Round value down. Returns integer value.
 template <class T> inline int FloorToInt(T x) { return static_cast<int>(floor(x)); }
 
 /// Round value to nearest integer.
 template <class T> inline T Round(T x) { return round(x); }
+
 #ifndef SWIG
 /// Compute average value of the range.
 template <class Iterator> inline auto Average(Iterator begin, Iterator end) -> typename std::decay<decltype(*begin)>::type
@@ -216,6 +220,10 @@ template <class Iterator> inline auto Average(Iterator begin, Iterator end) -> t
     return size != 0 ? average / size : average;
 }
 #endif
+
+/// Round value to nearest number that can be represented as i*y, where i is integer.
+template <class T> inline T SnapRound(T x, T y) { return round(x / y) * y; }
+
 /// Round value to nearest integer.
 template <class T> inline int RoundToInt(T x) { return static_cast<int>(round(x)); }
 
@@ -233,6 +241,9 @@ template <class T> inline T RoundToNearestMultiple(T x, T multiple)
 
 /// Round value up.
 template <class T> inline T Ceil(T x) { return ceil(x); }
+
+/// Round value up to nearest number that can be represented as i*y, where i is integer.
+template <class T> inline T SnapCeil(T x, T y) { return ceil(x / y) * y; }
 
 /// Round value up.
 template <class T> inline int CeilToInt(T x) { return static_cast<int>(ceil(x)); }
