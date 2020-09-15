@@ -81,6 +81,7 @@ void Text3D::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Word Wrap", bool, text_.wordWrap_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Can Be Occluded", IsOccludee, SetOccludee, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Fixed Screen Size", IsFixedScreenSize, SetFixedScreenSize, bool, false, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Snap to Pixels", GetSnapToPixels, SetSnapToPixels, bool, false, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Face Camera Mode", faceCameraMode_, faceCameraModeNames, FC_NONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
@@ -368,6 +369,18 @@ void Text3D::SetFixedScreenSize(bool enable)
     }
 }
 
+void Text3D::SetSnapToPixels(bool enable)
+{
+    if (enable != snapToPixels_)
+    {
+        snapToPixels_ = enable;
+
+        // Bounding box must be recalculated
+        OnMarkedDirty(node_);
+        MarkNetworkUpdate();
+    }
+}
+
 void Text3D::SetFaceCameraMode(FaceCameraMode mode)
 {
     if (mode != faceCameraMode_)
@@ -583,11 +596,13 @@ void Text3D::UpdateTextBatches()
         break;
 
     case HA_CENTER:
-        offset.x_ -= (float)text_.GetWidth() * 0.5f;
+        // Offset by integer number of pixels to simplify snapping to pixels.
+        // If snapping is off, the possible half-pixel difference is negligible anyway.
+        offset.x_ -= text_.GetWidth() / 2;
         break;
 
     case HA_RIGHT:
-        offset.x_ -= (float)text_.GetWidth();
+        offset.x_ -= text_.GetWidth();
         break;
     }
 
@@ -597,11 +612,13 @@ void Text3D::UpdateTextBatches()
         break;
 
     case VA_CENTER:
-        offset.y_ -= (float)text_.GetHeight() * 0.5f;
+        // Offset by integer number of pixels to simplify snapping to pixels.
+        // If snapping is off, the possible half-pixel difference is negligible anyway.
+        offset.y_ -= text_.GetHeight() / 2;
         break;
 
     case VA_BOTTOM:
-        offset.y_ -= (float)text_.GetHeight();
+        offset.y_ -= text_.GetHeight();
         break;
     }
 
@@ -739,17 +756,20 @@ void Text3D::CalculateFixedScreenSize(const FrameInfo& frame)
 
     if (fixedScreenSize_)
     {
+        Vector4 projPos = frame.camera_->GetViewProj() * Vector4(worldPosition, 1.0f);
+
         float textScaling = 2.0f / TEXT_SCALING / frame.viewSize_.y_;
         float halfViewWorldSize = frame.camera_->GetHalfViewSize();
 
-        if (!frame.camera_->IsOrthographic())
+        worldScale *= textScaling * halfViewWorldSize * projPos.w_;
+
+        if (snapToPixels_)
         {
-            Matrix4 viewProj(frame.camera_->GetProjection() * frame.camera_->GetView());
-            Vector4 projPos(viewProj * Vector4(worldPosition, 1.0f));
-            worldScale *= textScaling * halfViewWorldSize * projPos.w_;
+            // Convert XY from [-1, 1] to [0, 1], snap to pixels, convert back
+            projPos.x_ = (SnapRound(projPos.x_ / projPos.w_ * 0.5f + 0.5f, 1.0f / frame.viewSize_.x_) * 2.0f - 1.0f) * projPos.w_;
+            projPos.y_ = (SnapRound(projPos.y_ / projPos.w_ * 0.5f + 0.5f, 1.0f / frame.viewSize_.y_) * 2.0f - 1.0f) * projPos.w_;
+            worldPosition = static_cast<Vector3>(frame.camera_->GetInverseViewProj() * projPos);
         }
-        else
-            worldScale *= textScaling * halfViewWorldSize;
     }
 
     customWorldTransform_ = Matrix3x4(worldPosition, frame.camera_->GetFaceCameraRotation(

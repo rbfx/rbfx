@@ -32,6 +32,9 @@
 #include "../Core/NonCopyable.h"
 #include "../Core/Profiler.h"
 
+#include <atomic>
+#include <thread>
+
 namespace Urho3D
 {
 
@@ -60,6 +63,39 @@ using MutexType = Detail::CriticalSection;
 #else
 using MutexType = std::recursive_mutex;
 #endif
+
+/// Spinlock mutex.
+class URHO3D_API SpinLockMutex
+{
+public:
+    /// Acquire the mutex. Block if already acquired.
+    void Acquire()
+    {
+        const unsigned ticket = newTicket_.fetch_add(1, std::memory_order_relaxed);
+        for (int spinCount = 0; currentTicket_.load(std::memory_order_acquire) != ticket; ++spinCount)
+        {
+            if (spinCount < 16)
+                ; //_mm_pause();
+            else
+            {
+                std::this_thread::yield();
+                spinCount = 0;
+            }
+        }
+    }
+
+    /// Release the mutex.
+    void Release()
+    {
+        currentTicket_.store(currentTicket_.load(std::memory_order_relaxed) + 1, std::memory_order_release);
+    }
+
+private:
+    /// Next ticket to be served.
+    std::atomic_uint32_t newTicket_{ 0 };
+    /// Currently processed ticket.
+    std::atomic_uint32_t currentTicket_{ 0 };
+};
 
 /// Operating system mutual exclusion primitive.
 class URHO3D_API Mutex
