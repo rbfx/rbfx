@@ -1014,11 +1014,12 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::operator[](size_type n)
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
-			if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
+	    #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
+			// We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
+			if (EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#endif
 
@@ -1030,11 +1031,12 @@ namespace eastl
 	inline typename vector<T, Allocator>::const_reference
 	vector<T, Allocator>::operator[](size_type n) const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
-			if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
+			// We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
+			if (EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#endif
 
@@ -1046,8 +1048,8 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::at(size_type n)
 	{
-		// The difference between at() and operator[] is it signals 
-		// the requested position is out of range by throwing an 
+		// The difference between at() and operator[] is it signals
+		// the requested position is out of range by throwing an
 		// out_of_range exception.
 
 		#if EASTL_EXCEPTIONS_ENABLED
@@ -1082,11 +1084,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::front()
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::front -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *mpBegin;
@@ -1097,11 +1099,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::const_reference
 	vector<T, Allocator>::front() const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::front -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *mpBegin;
@@ -1112,11 +1114,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::back()
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::back -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *(mpEnd - 1);
@@ -1127,11 +1129,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::const_reference
 	vector<T, Allocator>::back() const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::back -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *(mpEnd - 1);

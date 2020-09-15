@@ -413,7 +413,7 @@ namespace StdC
 
 
 
-#if   defined(EA_PLATFORM_MICROSOFT)
+#if defined(EA_PLATFORM_MICROSOFT)
 	#include <EAStdC/Win32/EAMathHelpWin32.inl>
 #else
 	#define EAMATHHELP_MODE_REFERENCE 1 // Use the reference implementation, which has no optimizations.

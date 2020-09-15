@@ -27,8 +27,8 @@ namespace Thread
 
 #define EAT_FAKE_ATOMIC_SWAP_LOCK_COUNT 32U
 static pthread_mutex_t sFakeAtomic64SwapLocks[EAT_FAKE_ATOMIC_SWAP_LOCK_COUNT];
-// Urho3D: unsigned -> int64_t to fix build error on 64bit android
-#define EAT_SWAP_LOCK(addr) &sFakeAtomic64SwapLocks[((int64_t)(void*)(addr) >> 3U) % EAT_FAKE_ATOMIC_SWAP_LOCK_COUNT]
+// Urho3D: unsigned -> uintptr_t to fix build error on 64bit android
+#define EAT_SWAP_LOCK(addr) &sFakeAtomic64SwapLocks[((uintptr_t)(void*)(addr) >> 3U) % EAT_FAKE_ATOMIC_SWAP_LOCK_COUNT]
 
 
 int64_t android_fake_atomic_swap_64(int64_t value, volatile int64_t* addr)
