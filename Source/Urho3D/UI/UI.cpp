@@ -55,6 +55,7 @@
 #include "../UI/Sprite.h"
 #include "../UI/Text.h"
 #include "../UI/Text3D.h"
+#include "../UI/TextRenderer3D.h"
 #include "../UI/ToolTip.h"
 #include "../UI/UI.h"
 #include "../UI/UIEvents.h"
@@ -2253,6 +2254,7 @@ void RegisterUILibrary(Context* context)
     Cursor::RegisterObject(context);
     Text::RegisterObject(context);
     Text3D::RegisterObject(context);
+    TextRenderer3D::RegisterObject(context);
     Window::RegisterObject(context);
     View3D::RegisterObject(context);
     LineEdit::RegisterObject(context);
