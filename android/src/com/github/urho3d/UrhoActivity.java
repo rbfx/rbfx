@@ -69,6 +69,11 @@ public class UrhoActivity extends SDLActivity {
                 // Static builds would not contain this library.
                 libraryNames.add(libraryNames.size() - 1, libraryNames.remove(index));
             }
+            index = libraryNames.indexOf("c++_shared");
+            if (index >= 0) {
+                // Static builds would not contain this library.
+                libraryNames.add(0, libraryNames.remove(index));
+            }
             return libraryNames;
         }
     }
