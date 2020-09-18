@@ -455,6 +455,9 @@ public:
     /// Return bottom coordinate.
     int Bottom() const { return bottom_; }
 
+    /// Return true if specified point is within rectangle bounds.
+    bool Contains(IntVector2 point) const { return left_ <= point.x_ && point.x_ < right_ && top_ <= point.y_ && point.y_ < bottom_; }
+
     /// Left coordinate.
     int left_;
     /// Top coordinate.
