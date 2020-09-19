@@ -438,6 +438,9 @@ void Input::Update()
     while (SDL_PollEvent(&evt))
         HandleSDLEvent(&evt);
 
+    if (!enabled_)
+        return;
+
     if (suppressNextMouseMove_ && (mouseMove_ != IntVector2::ZERO || mouseMoved))
         UnsuppressMouseMove();
 #endif
@@ -1904,6 +1907,9 @@ void Input::HandleSDLEvent(void* sdlEvent)
         if (eventData[P_CONSUMED].GetBool())
             return;
     }
+
+    if (!enabled_)
+        return;
 
     // While not having input focus, skip key/mouse/touch/joystick events, except for the "click to focus" mechanism
     if (!inputFocus_ && evt.type >= SDL_KEYDOWN && evt.type <= SDL_MULTIGESTURE)

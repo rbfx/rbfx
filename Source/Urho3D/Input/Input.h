@@ -303,10 +303,10 @@ public:
     /// Return whether application window is minimized.
     bool IsMinimized() const;
 
-    /// Return whether user should ignore input events.
-    bool ShouldIgnoreInput() const { return shouldIgnoreInput_; }
-    /// Set a flag indicating that user should ignore input.
-    void SetShouldIgnoreInput(bool ignore) { shouldIgnoreInput_ = ignore; }
+    /// Enable input reporting. When disabled, only E_SDLRAWINPUT event will be sent sent.
+    void SetEnabled(bool enabled) { enabled_ = enabled; }
+    /// Return true if input reporting is enabled.
+    bool GetEnabled() const { return enabled_; }
 
 private:
     /// Initialize when screen mode initially set.
@@ -442,6 +442,8 @@ private:
     bool mouseMoveScaled_;
     /// Initialized flag.
     bool initialized_;
+    /// Flag indicating that input subsystem is reporting events.
+    bool enabled_ = true;
 
 #ifdef __EMSCRIPTEN__
     /// Emscripten Input glue instance.
@@ -453,8 +455,6 @@ private:
     /// Flag indicating current pointer-lock status.
     bool emscriptenPointerLock_;
 #endif
-    /// Whether user should suspend input handling.
-    bool shouldIgnoreInput_ = false;
 };
 
 }
