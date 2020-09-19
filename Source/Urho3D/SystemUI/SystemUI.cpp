@@ -127,9 +127,11 @@ void SystemUI::PlatformShutdown()
 void SystemUI::OnRawEvent(VariantMap& args)
 {
     assert(imContext_ != nullptr);
+    using namespace SDLRawInput;
 
-    auto* evt = static_cast<SDL_Event*>(args[SDLRawInput::P_SDLEVENT].Get<void*>());
-    auto& io = ui::GetIO();
+    auto* evt = static_cast<SDL_Event*>(args[P_SDLEVENT].Get<void*>());
+    ImGuiContext& g = *ui::GetCurrentContext();
+    ImGuiIO& io = ui::GetIO();
     switch (evt->type)
     {
     case SDL_MOUSEMOTION:
@@ -155,6 +157,32 @@ void SystemUI::OnRawEvent(VariantMap& args)
     default:
         ImGui_ImplSDL2_ProcessEvent(evt);
         break;
+    }
+
+    // Consume events handled by imgui, unless explicitly told not to.
+    if (!passThroughEvents_)
+    {
+        switch (evt->type)
+        {
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+            args[P_CONSUMED] = io.WantCaptureKeyboard;
+            break;
+        case SDL_TEXTINPUT:
+            args[P_CONSUMED] = io.WantTextInput;
+            break;
+        case SDL_MOUSEMOTION:
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+        case SDL_MOUSEWHEEL:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+        case SDL_FINGERMOTION:
+            args[P_CONSUMED] = io.WantCaptureMouse;
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -372,16 +400,6 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
         ui::StyleColorsLight(&style);
     style.Alpha = 1.0f;
     style.FrameRounding = 3.0f;
-}
-
-bool SystemUI::IsAnyItemActive() const
-{
-    return ui::IsAnyItemActive();
-}
-
-bool SystemUI::IsAnyItemHovered() const
-{
-    return ui::IsAnyItemHovered() || ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 }
 
 int ToImGui(MouseButton button)
