@@ -310,8 +310,9 @@ void UITab::OnActiveUpdate()
     {
         if (ui::IsMouseReleased(MOUSEB_LEFT) || ui::IsMouseReleased(MOUSEB_RIGHT))
         {
-            Input* input = GetSubsystem<Input>();
-            IntVector2 pos = rootElement_->ScreenToElement(input->GetMousePosition());
+            ImGuiIO& io = ui::GetIO();
+            IntVector2 pos(io.MousePos.x, io.MousePos.y);
+            pos = rootElement_->ScreenToElement(pos);
             UIElement* clicked = offScreenUI_->GetElementAt(pos, false);
             if (!clicked && rootElement_->GetCombinedScreenRect().IsInside(pos) == INSIDE && !ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
                 clicked = rootElement_;

@@ -245,10 +245,12 @@ void Editor::Start()
     }
 
     // Continue with normal editor initialization
+    Input* input = context_->GetSubsystem<Input>();
     context_->RegisterSubsystem(new SceneManager(context_));
     context_->RegisterSubsystem(new EditorIconCache(context_));
-    context_->GetSubsystem<Input>()->SetMouseMode(MM_ABSOLUTE);
-    context_->GetSubsystem<Input>()->SetMouseVisible(true);
+    input->SetMouseMode(MM_ABSOLUTE);
+    input->SetMouseVisible(true);
+    input->SetEnabled(false);
 
     context_->GetSubsystem<ResourceCache>()->SetAutoReloadResources(true);
     engine_->SetAutoExit(false);

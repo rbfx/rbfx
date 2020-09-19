@@ -70,13 +70,13 @@ DebugCameraController3D::DebugCameraController3D(Context* context)
 
 void DebugCameraController3D::RunFrame(float timeStep)
 {
-    Input* input = context_->GetSubsystem<Input>();
-    IntVector2 delta = input->GetMouseMove();
+    ImGuiIO& io = ImGui::GetIO();
+    IntVector2 delta(io.MouseDelta.x, io.MouseDelta.y);
     float moveSpeed_ = speed_;
-    if (input->GetKeyDown(KEY_SHIFT))
+    if (ui::IsKeyDown(KEY_SHIFT))
         moveSpeed_ *= 2;
 
-    if (isRotationCenterValid_ && input->GetQualifierDown(QUAL_ALT))
+    if (isRotationCenterValid_ && io.KeyAlt)
     {
 #if URHO3D_SYSTEMUI
         // The following LOC is use to make SystemUI be not outlined
@@ -106,17 +106,17 @@ void DebugCameraController3D::RunFrame(float timeStep)
     }
 
     // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
+    if (ui::IsKeyDown(KEY_W))
         GetNode()->Translate(Vector3::FORWARD * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_S))
+    if (ui::IsKeyDown(KEY_S))
         GetNode()->Translate(Vector3::BACK * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_A))
+    if (ui::IsKeyDown(KEY_A))
         GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_D))
+    if (ui::IsKeyDown(KEY_D))
         GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_E))
+    if (ui::IsKeyDown(KEY_E))
         GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep, TS_WORLD);
-    if (input->GetKeyDown(KEY_Q))
+    if (ui::IsKeyDown(KEY_Q))
         GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep, TS_WORLD);
 }
 
@@ -134,23 +134,23 @@ DebugCameraController2D::DebugCameraController2D(Context* context)
 
 void DebugCameraController2D::RunFrame(float timeStep)
 {
-    Input* input = context_->GetSubsystem<Input>();
-    IntVector2 delta = input->GetMouseMove();
+    ImGuiIO& io = ImGui::GetIO();
+    IntVector2 delta(io.MouseDelta.x, io.MouseDelta.y);
     // Movement speed as world units per second
     float moveSpeed_ = speed_;
-    if (input->GetKeyDown(KEY_SHIFT))
+    if (ui::IsKeyDown(KEY_SHIFT))
         moveSpeed_ *= 2;
 
     Node* node = GetNode();
     node->Translate2D(Vector2{static_cast<float>(-delta.x_), static_cast<float>(delta.y_)} * moveSpeed_ * timeStep);
     // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
+    if (ui::IsKeyDown(KEY_W))
         node->Translate(Vector3::UP * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_S))
+    if (ui::IsKeyDown(KEY_S))
         node->Translate(Vector3::DOWN * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_A))
+    if (ui::IsKeyDown(KEY_A))
         node->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_D))
+    if (ui::IsKeyDown(KEY_D))
         node->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
 }
 
