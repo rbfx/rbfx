@@ -110,14 +110,14 @@ void ModelPreview::RenderPreview()
     if (mouseGrabbed_)
     {
         Node* node = view_.GetCamera()->GetNode();
-        if (input->GetKeyPress(KEY_ESCAPE))
+        if (ui::IsKeyPressed(KEY_ESCAPE))
         {
             node->SetPosition(Vector3::BACK * distance_);
             node->LookAt(Vector3::ZERO);
         }
         else
         {
-            Vector2 delta(input->GetMouseMove());
+            Vector2 delta = ui::GetMouseDragDelta(MOUSEB_RIGHT);
             Quaternion rotateDelta = Quaternion(delta.x_ * 0.1f, node->GetUp()) *
                 Quaternion(delta.y_ * 0.1f, node->GetRight());
             node->RotateAround(Vector3::ZERO, rotateDelta, TS_WORLD);
