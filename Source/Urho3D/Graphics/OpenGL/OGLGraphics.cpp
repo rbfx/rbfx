@@ -598,15 +598,6 @@ bool Graphics::BeginFrame()
     if (!IsInitialized() || IsDeviceLost())
         return false;
 
-    if (!externalWindow_)
-    {
-        int width, height;
-
-        SDL_GL_GetDrawableSize(window_, &width, &height);
-        if (width != width_ || height != height_)
-            SetMode(width, height);
-    }
-
     // Re-enable depth test and depth func in case a third party program has modified it
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(glCmpFunc[depthTestMode_]);
