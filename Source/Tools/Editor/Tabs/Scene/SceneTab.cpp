@@ -91,7 +91,6 @@ SceneTab::SceneTab(Context* context)
 
     offScreenUI_ = new UI(context_);
     offScreenUI_->SetRoot(rootElement_);
-    offScreenUI_->SetRenderInSystemUI(true);
     offScreenUI_->SetBlockEvents(true);
     context_->RegisterSubsystem(offScreenUI_);
 
@@ -823,15 +822,15 @@ void SceneTab::OnUpdate(VariantMap& args)
             Input* input = context_->GetSubsystem<Input>();
             if (input->IsMouseVisible())
             {
-                if (input->GetKeyPress(KEY_W))
+                if (ui::IsKeyPressed(KEY_W))
                 {
                     gizmo_.SetOperation(GIZMOOP_TRANSLATE);
                 }
-                else if (input->GetKeyPress(KEY_E))
+                else if (ui::IsKeyPressed(KEY_E))
                 {
                     gizmo_.SetOperation(GIZMOOP_ROTATE);
                 }
-                else if (input->GetKeyPress(KEY_R))
+                else if (ui::IsKeyPressed(KEY_R))
                 {
                     gizmo_.SetOperation(GIZMOOP_SCALE);
                 }
