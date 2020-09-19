@@ -78,14 +78,14 @@ public:
     /// \param darkStyle enables dark style, otherwise it is a light style.
     /// \param alpha value between 0.0f - 1.0f
     void ApplyStyleDefault(bool darkStyle, float alpha);
-    /// Return whether user is interacting with any ui element.
-    bool IsAnyItemActive() const;
-    /// Return whether mouse is hovering any system ui component.
-    bool IsAnyItemHovered() const;
     /// Hold a reference to this texture until end of frame.
     void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
     /// Return value cache for storing temporary UI state that expires when unused.
     ValueCache& GetValueCache() { return cache_; }
+    /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
+    void SetPassThroughEvents(bool enabled) { passThroughEvents_ = enabled; }
+    /// Return true if SystemUI is allowing events through even when SystemUI is handling them.
+    bool GetPassThroughEvents() const { return passThroughEvents_; }
 
 protected:
     VertexBuffer vertexBuffer_;
@@ -95,6 +95,8 @@ protected:
     ImGuiContext* imContext_;
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
     ValueCache cache_{context_};
+    /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
+    bool passThroughEvents_ = false;
 
     void PlatformInitialize();
     void PlatformShutdown();

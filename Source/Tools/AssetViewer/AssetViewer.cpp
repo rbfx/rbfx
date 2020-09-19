@@ -123,7 +123,7 @@ public:
         if (!node_)
             return;
 
-        if (!context_->GetSubsystem<SystemUI>()->IsAnyItemActive() && !context_->GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        if (!ui::IsAnyItemActive() && !ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
         {
             auto input = GetSubsystem<Input>();
 

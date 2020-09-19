@@ -991,10 +991,6 @@
   public $typemap(cstype, Urho3D::Texture2D *) RenderTarget {
     get { return GetRenderTarget(); }
   }
-  public $typemap(cstype, bool) RenderInSystemUI {
-    get { return GetRenderInSystemUI(); }
-    set { SetRenderInSystemUI(value); }
-  }
 %}
 %csmethodmodifiers Urho3D::UI::GetRoot "private";
 %csmethodmodifiers Urho3D::UI::SetRoot "private";
@@ -1040,8 +1036,6 @@
 %csmethodmodifiers Urho3D::UI::GetCustomSize "private";
 %csmethodmodifiers Urho3D::UI::SetCustomSize "private";
 %csmethodmodifiers Urho3D::UI::GetRenderTarget "private";
-%csmethodmodifiers Urho3D::UI::GetRenderInSystemUI "private";
-%csmethodmodifiers Urho3D::UI::SetRenderInSystemUI "private";
 %typemap(cscode) Urho3D::UIComponent %{
   public $typemap(cstype, Urho3D::UIElement *) Root {
     get { return GetRoot(); }
