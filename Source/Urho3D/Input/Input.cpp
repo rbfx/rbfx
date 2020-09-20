@@ -1909,7 +1909,48 @@ void Input::HandleSDLEvent(void* sdlEvent)
     }
 
     if (!enabled_)
-        return;
+    {
+        switch (evt.type)
+        {
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+        case SDL_TEXTEDITING:
+        case SDL_TEXTINPUT:
+        case SDL_KEYMAPCHANGED:
+        case SDL_MOUSEMOTION:
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+        case SDL_MOUSEWHEEL:
+        case SDL_JOYAXISMOTION:
+        case SDL_JOYBALLMOTION:
+        case SDL_JOYHATMOTION:
+        case SDL_JOYBUTTONDOWN:
+        case SDL_JOYBUTTONUP:
+        case SDL_JOYDEVICEADDED:
+        case SDL_JOYDEVICEREMOVED:
+        case SDL_CONTROLLERAXISMOTION:
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+        case SDL_CONTROLLERDEVICEADDED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+        case SDL_CONTROLLERDEVICEREMAPPED:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+        case SDL_FINGERMOTION:
+        case SDL_DOLLARGESTURE:
+        case SDL_DOLLARRECORD:
+        case SDL_MULTIGESTURE:
+        case SDL_CLIPBOARDUPDATE:
+        case SDL_DROPFILE:
+        case SDL_DROPTEXT:
+        case SDL_DROPBEGIN:
+        case SDL_DROPCOMPLETE:
+        case SDL_SENSORUPDATE:
+            return;
+        default:
+            break;
+        }
+    }
 
     // While not having input focus, skip key/mouse/touch/joystick events, except for the "click to focus" mechanism
     if (!inputFocus_ && evt.type >= SDL_KEYDOWN && evt.type <= SDL_MULTIGESTURE)
