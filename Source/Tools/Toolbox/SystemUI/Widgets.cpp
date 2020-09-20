@@ -98,13 +98,15 @@ bool MaskSelector(const char* title, unsigned int* mask)
     const ImGuiStyle& style = ui::GetStyle();
     ImVec2 pos = ui::GetCursorPos();
     float w = CalcItemWidth();
-    ImVec2 buttonSize(w / 16.0f, (GImGui->FontSize + style.ItemSpacing.y * 2) / 2.0f - 1);
+    float x16 = Round(16.0f * style.PointSize);
+    ImVec2 buttonSize(Round(w / (x16 + style.PointSize)), Round(GImGui->FontSize * 0.5f + style.ItemSpacing.y));
 
+    ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
     for (unsigned row = 0; row < 2; row++)
     {
         for (unsigned col = 0; col < 16; col++)
         {
-            unsigned bitPosition = row * 16 + col;
+            unsigned bitPosition = row * x16 + col;
             unsigned bitMask = 1u << bitPosition;
             bool selected = (*mask & bitMask) != 0;
             if (selected)
@@ -127,13 +129,14 @@ bool MaskSelector(const char* title, unsigned int* mask)
             if (ui::IsItemHovered())
                 ui::SetTooltip("%d", bitPosition);
             ui::PopID();
-            ui::SameLine(0, 0);
+            ui::SameLine(0, style.PointSize);
             ui::PopStyleColor(2);
         }
         ui::NewLine();
         if (row < 1)
-            ui::SetCursorPos({pos.x, pos.y + buttonSize.y + 1});
+            ui::SetCursorPos({pos.x, pos.y + buttonSize.y + style.PointSize});
     }
+    ui::PopStyleVar();
 
     if (title && *title)
     {
