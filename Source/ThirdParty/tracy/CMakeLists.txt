@@ -29,6 +29,10 @@ if (URHO3D_PROFILING)
     set (TRACY_OPTIONS_PUBLIC -DTRACY_ENABLE=1 -DTRACY_ON_DEMAND=1 -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1)
     set (TRACY_OPTIONS_PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -D_USE_MATH_DEFINES)
 
+    if (NOT URHO3D_PROFILING_SYSTRACE)
+        list (APPEND TRACY_OPTIONS_PUBLIC -DTRACY_NO_SYSTEM_TRACING=1)
+    endif ()
+
     if (BUILD_SHARED_LIBS)
         # A workaround library. Usually each dll or executable that wishes to use profiling functionality would have to compile
         # TracyClientDLL.cpp as part of it's sources. Putting it into a static library allows us automating the process and it is
