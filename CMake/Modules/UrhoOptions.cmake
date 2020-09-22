@@ -100,6 +100,7 @@ _option(URHO3D_NAVIGATION         "Navigation subsystem enabled"                
 _option2(URHO3D_NETWORK           "Networking subsystem enabled"                          ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 _option(URHO3D_PHYSICS            "Physics subsystem enabled"                             ${URHO3D_ENABLE_ALL})
 _option2(URHO3D_PROFILING         "Profiler support enabled"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
+_option2(URHO3D_PROFILING_SYSTRACE "Profiler systrace support enabled"                    OFF                  "URHO3D_PROFILING"              OFF)
 _option(URHO3D_SYSTEMUI           "Build SystemUI subsystem"                              ${URHO3D_ENABLE_ALL})
 _option(URHO3D_URHO2D             "2D subsystem enabled"                                  ${URHO3D_ENABLE_ALL})
 
