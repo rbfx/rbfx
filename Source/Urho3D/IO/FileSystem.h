@@ -104,13 +104,11 @@ public:
     void ScanDirAdd(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
     /// Return the program's directory.
     ea::string GetProgramDir() const;
-#if DESKTOP
-    /// Return the program's executable file path.
+    /// Return the program's executable file path, or empty string if not applicable.
     ea::string GetProgramFileName() const;
-    /// Return executable path of interpreter program (for example path to mono executable on unixes for C# application).
+    /// Return executable path of interpreter program (for example path to mono executable on unixes for C# application), or empty string if not applicable.
     /// If application is executed directly (no interpreter) this will return same result as GetProgramFileName().
     ea::string GetInterpreterFileName() const;
-#endif
     /// Return the user documents directory.
     ea::string GetUserDocumentsDir() const;
     /// Return the application preferences directory.
