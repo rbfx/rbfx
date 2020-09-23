@@ -27,6 +27,27 @@ if (MSVC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif ()
 
+# When crosscompiling, we need several tools built for host system so various build tasks can be completed.
+if (CMAKE_CROSSCOMPILING)
+    include (ExternalProject)
+    if (IOS OR TVOS)
+        # When cross-compiling for iOS/tvOS the host environment has been altered by xcodebuild for the said platform, the following fix is required to reset the host environment before spawning another process to configure/generate project file for external project
+        # Also workaround a known CMake/Xcode generator bug which prevents it from installing native tool binaries correctly
+        set (ALTERNATE_COMMAND /usr/bin/env -i PATH=$ENV{PATH} CC=${SAVED_CC} CXX=${SAVED_CXX} CI=$ENV{CI} ${CMAKE_COMMAND} BUILD_COMMAND bash -c "sed -i '' 's/\$$\(EFFECTIVE_PLATFORM_NAME\)//g' CMakeScripts/install_postBuildPhase.make*")
+    else ()
+        set (ALTERNATE_COMMAND ${CMAKE_COMMAND} -E env CC=${SAVED_CC} CXX=${SAVED_CXX} CI=$ENV{CI} ${CMAKE_COMMAND})
+    endif ()
+    set (URHO3D_NATIVE_PREFIX ${CMAKE_BINARY_DIR}/native)
+    ExternalProject_Add (Urho3D-Native
+        SOURCE_DIR ${rbfx_SOURCE_DIR}
+        CMAKE_COMMAND ${ALTERNATE_COMMAND}
+        CMAKE_ARGS -DURHO3D_ENABLE_ALL=OFF -DMINI_URHO=ON -DURHO3D_TOOLS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+                   -DURHO3D_SYSTEMUI=OFF -DURHO3D_CSHARP=${URHO3D_CSHARP} -DCMAKE_INSTALL_PREFIX=${URHO3D_NATIVE_PREFIX}
+    )
+    set (PACKAGE_TOOL    "${URHO3D_NATIVE_PREFIX}/${DEST_BIN_DIR_CONFIG}/PackageTool" CACHE STRING "" FORCE)
+    set (SWIG_EXECUTABLE "${URHO3D_NATIVE_PREFIX}/${DEST_BIN_DIR_CONFIG}/swig"        CACHE STRING "" FORCE)
+endif ()
+
 add_subdirectory (ThirdParty)
 add_subdirectory (Urho3D)
 add_subdirectory (Tools)

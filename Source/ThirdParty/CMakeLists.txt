@@ -37,10 +37,12 @@ add_subdirectory(CLI11)
 add_subdirectory(fmt)
 add_subdirectory(spdlog)
 add_subdirectory(SDL)
-add_subdirectory(crunch)
 add_subdirectory(ETCPACK)
 
 if (NOT MINI_URHO)
+    if (URHO3D_TOOLS)
+        add_subdirectory(crunch)
+    endif ()
     add_subdirectory(FreeType)
 
     if (URHO3D_GLOW)
@@ -120,11 +122,13 @@ if (NOT MINI_URHO)
     if (URHO3D_TOOLS)
         add_subdirectory(Assimp)
     endif ()
-
-    if (URHO3D_CSHARP)
-        add_subdirectory(swig)
-    endif ()
 endif ()
+
+if (URHO3D_CSHARP AND NOT CMAKE_CROSSCOMPILING)
+    # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
+    add_subdirectory(swig)
+endif ()
+
 if (WIN32 OR APPLE)
 	add_subdirectory (LibCpuId)
 endif ()

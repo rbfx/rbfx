@@ -53,7 +53,7 @@ target_include_directories(swig PRIVATE Source/CParse Source/DOH Source/Include 
 
 # A lame way to detect that target is built alone, with a native toolchain when corsscompiling.
 if (NOT TARGET Urho3D)
-    install (TARGETS swig RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+    install (TARGETS swig RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG} BUNDLE DESTINATION ${DEST_BIN_DIR_CONFIG})
 endif ()
 
 file(TIMESTAMP Lib/swigwarn.swg SWIGWARN_SWG_TIMESTAMP "%s")
@@ -71,3 +71,5 @@ if ("${SWIGWARN_SWG_TIMESTAMP}" VERSION_LESS "${SWIGWARN_H_TIMESTAMP}" OR NOT EX
         endif ()
     endforeach ()
 endif ()
+
+set(SWIG_EXECUTABLE "$<TARGET_FILE:swig>" CACHE STRING "" FORCE)
