@@ -842,18 +842,23 @@ ea::string FileSystem::GetProgramDir() const
     return GetCurrentDir();
 #endif
 }
-#if DESKTOP
+
 ea::string FileSystem::GetProgramFileName() const
 {
+#if DESKTOP
     if (!specifiedExecutableFile.empty())
         return specifiedExecutableFile;
 
     return GetInterpreterFileName();
+#else
+    return "";
+#endif
 }
 
 ea::string FileSystem::GetInterpreterFileName() const
 {
-#if defined(_WIN32)
+#ifndef DESKTOP
+#elif defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;
     GetModuleFileNameW(nullptr, exeName, MAX_PATH);
@@ -871,11 +876,10 @@ ea::string FileSystem::GetInterpreterFileName() const
     ea::string link(ea::string::CtorSprintf{}, "/proc/%d/exe", pid);
     readlink(link.c_str(), exeName, MAX_PATH);
     return ea::string(exeName);
-#else
-    return ea::string();
 #endif
+    return "";
 }
-#endif
+
 ea::string FileSystem::GetUserDocumentsDir() const
 {
 #if defined(__ANDROID__)
