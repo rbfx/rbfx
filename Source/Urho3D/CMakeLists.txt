@@ -51,10 +51,10 @@ macro (define_engine_source_files)
     endforeach ()
 endmacro()
 
-define_engine_source_files (Container Core Engine IO Math)
+define_engine_source_files (Container Core IO Math)
 
 if (NOT MINI_URHO)
-    define_engine_source_files (Audio Input Resource Scene UI)
+    define_engine_source_files (Audio Engine Input Resource Scene UI)
     define_engine_source_files (NORECURSE . Graphics)
     if (URHO3D_OPENGL)
         define_engine_source_files (Graphics/OpenGL)
@@ -63,6 +63,9 @@ if (NOT MINI_URHO)
     elseif (URHO3D_D3D9)
         define_engine_source_files (Graphics/Direct3D9)
     endif ()
+else ()
+    # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
+    set (URHO3D_CSHARP OFF)
 endif ()
 
 if (URHO3D_GLOW)
@@ -102,11 +105,6 @@ group_sources()
 
 if (APPLE AND NOT IOS)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
-endif ()
-
-if (MINI_URHO)
-    # Avoid building freetype
-    list (REMOVE_ITEM SOURCE_FILES UI/FontFaceFreeType.cpp)
 endif ()
 
 add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES} $<$<CXX_COMPILER_ID:MSVC>:${rbfx_SOURCE_DIR}/script/rbfx.natvis>)

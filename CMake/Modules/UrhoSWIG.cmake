@@ -191,6 +191,14 @@ function(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
   if(SWIG_MODULE_${name}_EXTRA_FLAGS)
     set(swig_extra_flags ${swig_extra_flags} ${SWIG_MODULE_${name}_EXTRA_FLAGS})
   endif()
+
+  # Urho3D: Add dependencies on targets which may provide swig executable.
+  if (TARGET swig)
+      list (APPEND SWIG_TARGETS swig)
+  elseif (TARGET Urho3D-Native)
+      list (APPEND SWIG_TARGETS Urho3D-Native)
+  endif ()
+
   add_custom_command(
       OUTPUT "${swig_generated_file_fullname}" ${swig_extra_generated_files}
       # Let's create the ${swig_outdir} at execution time, in case dir contains $(OutDir)
@@ -208,7 +216,7 @@ function(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
       "${swig_source_file_fullname}"
       #> ${CMAKE_CURRENT_BINARY_DIR}/swig_${name}.log
       MAIN_DEPENDENCY "${swig_source_file_fullname}"
-      DEPENDS ${SWIG_MODULE_${name}_EXTRA_DEPS} swig
+      DEPENDS ${SWIG_MODULE_${name}_EXTRA_DEPS} ${SWIG_TARGETS}
       COMMENT "SWIG ${name}")
   set_source_files_properties("${swig_generated_file_fullname}" ${swig_extra_generated_files}
       PROPERTIES GENERATED ON)
