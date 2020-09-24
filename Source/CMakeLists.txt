@@ -55,4 +55,15 @@ add_subdirectory (Extras)
 add_subdirectory (Samples)
 add_subdirectory (Player)
 
+if ("${rbfx_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+    # Building standalone engine.
+    if (URHO3D_CSHARP)
+        if (NOT CMAKE_VS_MSBUILD_COMMAND)
+            # Generate a VS solution for C# projects when outside of visual studio.
+            vs_generate_sln(${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln ${RBFX_CSPROJ_LIST})
+        endif ()
+        add_msbuild_target(TARGET restore EXCLUDE_FROM_ALL ARGS ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln /t:restore /m:1)
+    endif ()
+endif ()
+
 install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)
