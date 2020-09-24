@@ -20,6 +20,10 @@
 // THE SOFTWARE.
 //
 
+#if URHO3D_RMLUI
+#   include <Urho3D/RmlUI/RmlUI.h>
+#endif
+
 #include "Sample.h"
 
 Sample::Sample(Context* context) :
@@ -192,6 +196,21 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
 #if URHO3D_SYSTEMUI
     if (key == KEY_F1 || key == KEY_BACKQUOTE)
     {
+#if URHO3D_RMLUI
+        if (auto* ui = GetSubsystem<RmlUI>())
+        {
+            if (ui->IsInputCaptured())
+                return;
+        }
+#endif
+        if (auto* ui = GetSubsystem<UI>())
+        {
+            if (UIElement* element = ui->GetFocusElement())
+            {
+                if (element->IsEditable())
+                    return;
+            }
+        }
         GetSubsystem<Console>()->Toggle();
         return;
     }
