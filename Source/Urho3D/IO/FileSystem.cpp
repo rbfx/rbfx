@@ -30,6 +30,9 @@
 #include "../IO/FileSystem.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
+#if URHO3D_SYSTEMUI
+#   include "../SystemUI/Console.h"
+#endif
 
 #ifdef __ANDROID__
 #include <SDL/SDL_rwops.h>
@@ -462,6 +465,7 @@ bool FileSystem::CreateDir(const ea::string& pathName)
 
 void FileSystem::SetExecuteConsoleCommands(bool enable)
 {
+#if URHO3D_SYSTEMUI
     if (enable == executeConsoleCommands_)
         return;
 
@@ -470,6 +474,12 @@ void FileSystem::SetExecuteConsoleCommands(bool enable)
         SubscribeToEvent(E_CONSOLECOMMAND, URHO3D_HANDLER(FileSystem, HandleConsoleCommand));
     else
         UnsubscribeFromEvent(E_CONSOLECOMMAND);
+
+    Console* console = GetSubsystem<Console>();
+    console->RefreshInterpreters();
+#else
+    URHO3D_LOGWARNING("Engine was built without console support.");
+#endif
 }
 
 int FileSystem::SystemCommand(const ea::string& commandLine, bool redirectStdOutToLog)
