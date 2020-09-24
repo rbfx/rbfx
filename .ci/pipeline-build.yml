@@ -168,6 +168,9 @@ jobs:
     steps:
       - template: cmake.yml
       - bash: |
+          sudo apt-get install -y --no-install-recommends ninja-build uuid-dev
+
+      - bash: |
           # Setup
           cd $(Build.SourcesDirectory)/android
           gradle wrapper
