@@ -4,6 +4,8 @@ apply plugin: 'com.android.application'
 def projectSourceDir = '..'
 // Relative path to project source code directory. Modify as required.
 def rbfxSourceDir = '..'
+// Minimum required CMake version. This is same as in ../CMakeLists.txt.
+def cmakeVersion = '3.14.0.0+'
 
 buildscript {
     repositories {
@@ -39,6 +41,7 @@ android {
     }
     externalNativeBuild {
         cmake {
+            version "${cmakeVersion}"
             path "${projectSourceDir}/CMakeLists.txt"
         }
     }
