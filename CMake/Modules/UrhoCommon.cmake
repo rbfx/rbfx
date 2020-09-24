@@ -21,6 +21,7 @@
 #
 
 include(ucm)
+include(VSSolution)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set (CLANG ON)
@@ -46,6 +47,7 @@ set (URHO3D_URL "https://github.com/urho3d/Urho3D")
 set (URHO3D_DESCRIPTION "Urho3D is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE (http://www.ogre3d.org) and Horde3D (http://www.horde3d.org).")
 execute_process (COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE URHO3D_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
 string (REGEX MATCH "([^.]+)\\.([^.]+)\\.(.+)" MATCHED "${URHO3D_VERSION}")
+set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
 # Setup SDK install destinations
 if (WIN32)
@@ -361,19 +363,6 @@ if (URHO3D_CSHARP)
         set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
     endif ()
     include(UrhoSWIG)
-
-    # Prefer binary dir - generated msvc solution with .csproj projects included in it.
-    if (MSVC)
-        set (VS_SOLUTIONS ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln)
-    else ()
-        # On unixes source directory will contain manually crafted .sln
-        file (GLOB VS_SOLUTIONS ${CMAKE_SOURCE_DIR}/*.sln)
-        if (NOT VS_SOLUTIONS)
-            # Otherwise use engine .sln
-            file (GLOB VS_SOLUTIONS ${rbfx_SOURCE_DIR}/*.sln)
-        endif ()
-    endif ()
-    add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL ARGS ${VS_SOLUTIONS} /t:restore /m)
 endif()
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
@@ -410,6 +399,8 @@ function (add_target_csharp)
             /p:Configuration=${CSHARP_CONFIG}
             BYPRODUCTS ${CS_OUTPUT_FILE}
         )
+        list(APPEND RBFX_CSPROJ_LIST ${CS_PROJECT})
+        set(RBFX_CSPROJ_LIST "${RBFX_CSPROJ_LIST}" CACHE STRING "A list of C# projects." FORCE)
     endif ()
 endfunction ()
 
