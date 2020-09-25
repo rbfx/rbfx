@@ -50,7 +50,6 @@
 #include "EditorIconCache.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/Scene/EditorSceneSettings.h"
-#include "Tabs/UI/UITab.h"
 #include "Tabs/InspectorTab.h"
 #include "Tabs/HierarchyTab.h"
 #include "Tabs/ConsoleTab.h"
@@ -186,7 +185,6 @@ void Editor::Setup()
     // Register factories
     context_->RegisterFactory<EditorIconCache>();
     context_->RegisterFactory<SceneTab>();
-    context_->RegisterFactory<UITab>();
     context_->RegisterFactory<ConsoleTab>();
     context_->RegisterFactory<HierarchyTab>();
     context_->RegisterFactory<InspectorTab>();

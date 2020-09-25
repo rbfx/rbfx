@@ -41,7 +41,6 @@
 
 #include "EditorEvents.h"
 #include "Tabs/Scene/SceneTab.h"
-#include "Tabs/UI/UITab.h"
 #include "Tabs/InspectorTab.h"
 #include "Pipeline/Pipeline.h"
 #include "Editor.h"
