@@ -1,0 +1,35 @@
+<rml>
+    <head>
+    <link type="text/template" href="window.rml"/>
+    <title>Sample Window</title>
+</head>
+
+<body template="window" style="width: 300px">
+    <p>Sample Window</p>
+    <div data-model="example_model">
+        <h3>Text</h3>
+        <b>Bold text</b>, <i>italic text</i>, <s><span>striked out text</span></s>.
+        <hr/>
+        <h3>Buttons</h3>
+        <button data-event-click="count">Clicked {{counter}} times!</button>
+        <input type="submit" disabled>Click!</input>
+        <h3>Inputs</h3>
+        <textarea></textarea>
+        <input type="checkbox" checked="false"/> <label>Greatness</label><br/>
+        <input type="text" value="foo"/><br/>
+        <input type="password" value="foo"/><br/>
+        <form>
+            <input type="radio" value="1"/> Radio 1<br/>
+            <input type="radio" value="2"/> Radio 2<br/>
+        </form>
+        <input type="range" min="10" max="50" step="2" data-value="slider_value"/>&nbsp;<span>{{slider_value}}</span>
+        <select>
+            <option>Foo</option>
+            <option>Bar</option>
+        </select>
+        <h3>Progress bars</h3>
+        <progressbar class="progress-horizontal" data-value="progress" />
+        <progressbar class="progress-vertical" direction="top" data-value="progress" style="height: 100dp;"/>
+    </div>
+</body>
+</rml>
