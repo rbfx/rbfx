@@ -61,7 +61,9 @@ if (BUILD_SHARED_LIBS)
     if (MINGW)
         target_compile_definitions(fmt ${FMT_PUBLIC} -DFMT_HEADER_ONLY)
     else ()
-        target_compile_definitions(fmt ${FMT_PUBLIC} -DFMT_SHARED PRIVATE -DFMT_EXPORT)
+        target_compile_definitions(fmt ${FMT_PUBLIC} -DFMT_SHARED
+            PRIVATE -DFMT_EXPORT -DEASTL_EXPORTS=1 -DEASTDC_EXPORTS=1 -DEATHREAD_EXPORTS=1
+        )
     endif ()
 endif ()
 install (DIRECTORY fmt DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
