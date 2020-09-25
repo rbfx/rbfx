@@ -68,6 +68,10 @@ else ()
     set (URHO3D_CSHARP OFF)
 endif ()
 
+if (URHO3D_RMLUI)
+    define_engine_source_files (RmlUI)
+endif ()
+
 if (URHO3D_GLOW)
     define_engine_source_files (Glow)
 endif ()
@@ -184,6 +188,7 @@ set (THIRD_PARTY_DEPENDENCIES
     ETCPACK
     xatlas
     embree
+    RmlUi
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
@@ -334,7 +339,8 @@ if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
             -DEASTDC_EXPORTS=1 -DEATHREAD_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
-            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DTRACY_EXPORTS=1
+            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DTRACY_EXPORTS=1 -DRmlCore_EXPORTS=1
+            -DRmlDebugger_EXPORTS=1
     )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
