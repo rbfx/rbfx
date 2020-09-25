@@ -123,6 +123,9 @@
 #if URHO3D_NAVIGATION
 #include "106_BakedLighting/BakedLighting.h"
 #endif
+#if URHO3D_RMLUI
+#include "107_HelloRmlUI/HelloRmlUI.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -147,6 +150,7 @@ void SamplesManager::Setup()
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
     engineParameters_[EP_HIGH_DPI]     = false;
+    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data;EditorData";
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
@@ -297,6 +301,9 @@ void SamplesManager::Start()
     RegisterSample<Serialization>();
 #if URHO3D_NAVIGATION
     RegisterSample<BakedLighting>();
+#endif
+#if URHO3D_RMLUI
+    RegisterSample<HelloRmlUI>();
 #endif
 
     if (!startSample_.empty())
