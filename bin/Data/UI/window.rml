@@ -1,0 +1,17 @@
+<template name="window" content="content">
+<head>
+	<link type="text/rcss" href="rml.rcss"/>
+	<link type="text/rcss" href="default.rcss"/>
+</head>
+<body id="window">
+    <div id="titlebar">
+        <handle move_target="#document">
+            <div id="title">Title</div>
+            <button class="close-window" onclick="{'e': 'CloseWindow'}"></button>
+        </handle>
+    </div>
+    <div id="content">
+    </div>
+    <handle size_target="#document" class="resize-handle"></handle>
+</body>
+</template>

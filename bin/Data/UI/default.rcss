@@ -1,0 +1,373 @@
+@spritesheet theme
+{
+	src: /Textures/RmlUI-1x.png;
+
+	close-button: 0px 0px 20px 20px;
+	arrow-right: 20px 0px 16px 16px;
+	arrow-down: 36px 0px 16px 16px;
+	radio-dot: 52px 0px 16px 16px;
+	check-mark: 68px 0px 16px 16px;
+	resize-handle: 84px 0px 16px 16px;
+}
+
+body
+{
+    font-family: "Noto Sans";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 16dp;
+    color: white;
+    display: inline-block;
+    overflow: hidden;
+}
+
+#window
+{
+    background: #354343;
+    border-top: 2dp #3d574a;
+    border-bottom: 2dp #3d574a;
+    border-left: 2dp #2b3939;
+    border-right: 2dp #2b3939;
+    padding: 8dp;
+    border-radius: 6dp;
+    min-width: 100dp;
+    min-height: 100dp;
+}
+
+#titlebar
+{
+    text-align: left;
+    margin: -8dp;
+    padding: 4dp 8dp 4dp 8dp;
+    border-bottom: 1dp #2b3939;
+    height: 20dp;
+}
+
+#titlebar #title
+{
+    display: inline-block;
+    width: 100%;
+}
+
+#content
+{
+    width: auto;
+    overflow: hidden auto;
+    margin: 0;
+}
+
+*:disabled
+{
+    color: gray;
+    cursor: unavailable;
+}
+
+/* button */
+button,
+input.submit
+{
+    border: 1dp #45614a;
+    border-top: 1dp #688762;
+    decorator: gradient(vertical #3c5c4a #25413a);
+    display: inline-block;
+    text-align: center;
+    padding: 4dp 8dp;
+    margin-right: 4dp;
+    tab-index: auto;
+    border-radius: 3dp;
+}
+
+button:hover,
+input.submit:hover
+{
+    border: 1dp #45614a;
+    border-top: 1dp #688762;
+    decorator: gradient(vertical #3b785a #225b4b);
+}
+
+button:active,
+input.submit:active
+{
+    decorator: gradient(vertical #225b4b #3b785a);
+}
+
+input.submit:disabled
+{
+    decorator: gradient(vertical #3c5c4a #25413a);
+}
+
+/* X button */
+.close-window
+{
+    border: 2dp #6b8a64;
+    decorator: image(close-button), gradient(vertical #c45036 #7f2c24);
+    border: 0dp;
+    width: 20dp;
+    height: 20dp;
+    padding: 0;
+    position: absolute;
+    right: 3dp;
+    top: 3dp;
+}
+
+.close-window:hover
+{
+    decorator: image(close-button), gradient(vertical #7f2c24 #c45036);
+}
+
+.close-window:active
+{
+    decorator: image(close-button), gradient(vertical #c45036 #7f2c24);
+}
+
+/* textarea */
+textarea
+{
+    border: 1dp #2b3939;
+    border-top: #3d584b;
+    border-radius: 4dp;
+	padding: 4dp;
+    cursor: text;
+    display: block;
+    min-height: 100dp;
+    min-width: 200dp;
+    margin-top: 4dp;
+}
+
+/* checkbox, radio */
+input.checkbox
+{
+    width: 16dp;
+    height: 16dp;
+    vertical-align: -3dp;
+    margin-right: 4dp;
+    border: 1dp #45614a;
+    border-bottom: 1dp #6a8963;
+    border-radius: 3dp;
+    background: #344443;
+}
+
+input.radio
+{
+    width: 16dp;
+    height: 16dp;
+    border: 1dp #45614a;
+    border-bottom: 1dp #6a8963;
+    border-radius: 0.5em;
+}
+
+input.checkbox:hover,
+input.checkbox:checked:hover,
+input.radio:hover,
+input.radio:checked:hover
+{
+    background: #45614a;
+}
+
+input.checkbox:checked
+{
+	decorator: image(check-mark);
+}
+input.radio:checked
+{
+	decorator: image(radio-dot);
+}
+
+/* range */
+input.range
+{
+    height: 16dp;
+    border-radius: 4dp;
+    border: 1dp #2b3939;
+    border-top: #3d584b;
+    border-bottom: #3d584b;
+}
+
+/* text */
+input.text,
+input.password
+{
+    border: 1dp #2b3939;
+    border-top: #3d584b;
+    border-bottom: #3d584b;
+    padding: 4dp;
+    height: 20dp;
+    border-radius: 5dp;
+}
+
+input.text:hover,
+input.password:hover
+{
+    border-left: 1dp #45614a;
+    border-right: 1dp #45614a;
+    border-top: 1dp #6b8a64;
+    border-bottom: 1dp #6b8a64;
+}
+
+/* select */
+select
+{
+    border: 1dp #2b3939;
+    border-top: #3d584b;
+    border-bottom: #3d584b;
+    border-radius: 5dp;
+    padding: 0dp 4dp;
+    margin-top: 4dp;
+    height: 20dp;
+}
+
+select selectarrow
+{
+    width: 16dp;
+    height: 16dp;
+    decorator: image(arrow-down);
+}
+
+select selectbox
+{
+    border: 1dp #2b3939;
+    border-top: 0;
+    border-bottom: #3d584b;
+    padding: 0 4dp;
+    background: #354343;
+    border-bottom-left-radius: 5dp;
+    border-bottom-right-radius: 5dp;
+}
+
+select selectbox option:hover
+{
+    text-decoration: underline;
+}
+
+/* scrollbar */
+scrollbarvertical, scrollbarhorizontal
+{
+    border: 1dp #3d584b;
+    background: #354343;
+    border-radius: 3dp;
+}
+
+scrollbarvertical
+{
+    width: 16dp;
+    border-top: 0dp;
+    border-bottom: 0dp;
+}
+
+scrollbarhorizontal
+{
+    height: 16dp;
+    border-left: 0dp;
+    border-right: 0dp;
+}
+
+scrollbarvertical sliderarrowinc,
+scrollbarvertical sliderarrowdec,
+scrollbarhorizontal sliderarrowinc,
+scrollbarhorizontal sliderarrowdec,
+input.range sliderarrowinc,
+input.range sliderarrowdec
+{
+    width: 16dp;
+    height: 16dp;
+    border: 1dp #45614a;
+    border-top: #688762;
+    border-radius: 3dp;
+    decorator: gradient(vertical #3c5c4a #25413a);
+}
+
+scrollbarvertical sliderarrowdec
+{
+     decorator: image(arrow-down flip-vertical), gradient(vertical #3c5c4a #25413a);
+}
+scrollbarvertical sliderarrowinc
+{
+     decorator: image(arrow-down), gradient(vertical #3c5c4a #25413a);
+}
+
+scrollbarhorizontal sliderarrowdec,
+input.range sliderarrowdec
+{
+     decorator: image(arrow-right flip-horizontal), gradient(vertical #3c5c4a #25413a);
+}
+scrollbarhorizontal sliderarrowinc,
+input.range sliderarrowinc
+{
+     decorator: image(arrow-right), gradient(vertical #3c5c4a #25413a);
+}
+
+scrollbarvertical sliderarrowinc:hover
+{
+    decorator: image(arrow-down), gradient(vertical #3b785a #357e57);
+}
+scrollbarvertical sliderarrowdec:hover
+{
+    decorator: image(arrow-down flip-vertical),gradient(vertical #3b785a #357e57);
+}
+scrollbarhorizontal sliderarrowinc:hover,
+input.range sliderarrowinc:hover
+{
+    decorator: image(arrow-right), gradient(vertical #3b785a #357e57);
+}
+scrollbarhorizontal sliderarrowdec:hover,
+input.range sliderarrowdec:hover
+{
+    decorator: image(arrow-right flip-horizontal), gradient(vertical #3b785a #357e57);
+}
+
+sliderbar
+{
+    width: 16dp;
+    height: 16dp;
+    border: 1dp #45614a;
+    border-top: #688762;
+    border-radius: 3dp;
+    decorator: gradient(vertical #3c5c4a #25413a);
+}
+
+sliderbar:hover
+{
+    decorator: gradient(vertical #3b785a #357e57);
+}
+
+sliderbar:active
+{
+    decorator: gradient(vertical #357e57 #3b785a);
+}
+
+progressbar
+{
+    display: block;
+    border: 1dp #45614a;
+    border-top: #688762;
+    border-radius: 3dp;
+    decorator: gradient(vertical #3c5c4a #25413a);
+}
+
+progressbar.progress-horizontal
+{
+    height: 20dp;
+}
+
+progressbar.progress-vertical
+{
+    width: 20dp;
+}
+
+progressbar fill
+{
+    border: 2dp #225b4b;
+    background-color: #3b785a;
+}
+
+.resize-handle
+{
+    decorator: image(resize-handle);
+    position: absolute;
+    width: 16dp;
+    height: 16dp;
+    bottom: 1dp;
+    right: 1dp;
+    cursor: resize;
+    clip: 1;
+}
