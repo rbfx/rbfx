@@ -63,6 +63,9 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../UI/UI.h"
+#ifdef URHO3D_RMLUI
+#include "../RmlUI/RmlUI.h"
+#endif
 #ifdef URHO3D_URHO2D
 #include "../Urho2D/Urho2D.h"
 #endif
@@ -141,7 +144,10 @@ Engine::Engine(Context* context) :
     // there may exist multiple instances of UI.
     RegisterUILibrary(context_);
     context_->RegisterSubsystem(new UI(context_));
-
+#ifdef URHO3D_RMLUI
+    RegisterRmlUILibrary(context_);
+    context_->RegisterSubsystem(new RmlUI(context_));
+#endif
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);
 
