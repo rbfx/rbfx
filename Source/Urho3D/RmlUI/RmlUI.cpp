@@ -490,7 +490,7 @@ void RmlUI::SetRenderTarget(Texture2D* target, const Color& clearColor)
     SetRenderTarget(target ? target->GetRenderSurface() : nullptr, clearColor);
 }
 
-void RmlUI::SetRenderTarget(nullptr_t, const Color& clearColor)
+void RmlUI::SetRenderTarget(std::nullptr_t, const Color& clearColor)
 {
     SetRenderTarget(static_cast<RenderSurface*>(nullptr), clearColor);
 }
