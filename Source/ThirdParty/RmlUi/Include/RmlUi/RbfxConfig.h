@@ -114,38 +114,13 @@ inline UniquePtr<T> MakeUnique(Args... args) { return eastl::make_unique<T, Args
 #include <Urho3D/Math/Vector4.h>
 #include <Urho3D/Math/Matrix4.h>
 
-#define RMLUI_COLOUR_USER_EXTRA                                                                         \
-    template<typename U = ColourType, typename std::enable_if_t<std::is_same_v<U, byte>>* = nullptr>    \
-    operator Urho3D::Color() const { return Urho3D::Color(                                              \
-        (float)red / 256.0f, (float)green / 256.0f, (float)blue / 256.0f, (float)alpha / 256.0f); }     \
-    template<typename U = ColourType, typename std::enable_if_t<std::is_same_v<U, float>>* = nullptr>   \
-    operator Urho3D::Color() const { return Urho3D::Color(red, green, blue, alpha); }                   \
+#define RMLUI_COLOUR_USER_EXTRA "RbfxColor.inl"
 
-#define RMLUI_VECTOR2_USER_EXTRA                                                                        \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, int>>* = nullptr>           \
-    operator typename Urho3D::IntVector2() const { return Urho3D::IntVector2(x, y); }                   \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, float>>* = nullptr>         \
-    operator Urho3D::Vector2() const { return Urho3D::Vector2(x, y); }                                  \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, int>>* = nullptr>           \
-    Vector2(Urho3D::IntVector2 value) : Vector2(value.x_, value.y_) { }                                 \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, float>>* = nullptr>         \
-    Vector2(Urho3D::Vector2 value) : Vector2(value.x_, value.y_) { }                                    \
+#define RMLUI_VECTOR2_USER_EXTRA "RbfxVector2.inl"
 
-#define RMLUI_VECTOR3_USER_EXTRA                                                                        \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, int>>* = nullptr>           \
-    operator typename Urho3D::IntVector3() const { return Urho3D::IntVector3(x, y, z); }                \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, float>>* = nullptr>         \
-    operator Urho3D::Vector3() const { return Urho3D::Vector3(x, y, z); }                               \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, int>>* = nullptr>           \
-    Vector3(Urho3D::IntVector3 value) : Vector3(value.x_, value.y_, value.z_) { }                       \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, float>>* = nullptr>         \
-    Vector3(Urho3D::Vector3 value) : Vector3(value.x_, value.y_, value.z_) { }                          \
+#define RMLUI_VECTOR3_USER_EXTRA "RbfxVector3.inl"
 
-#define RMLUI_VECTOR4_USER_EXTRA                                                                        \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, float>>* = nullptr>         \
-    operator Urho3D::Vector4() const { return Urho3D::Vector4(x, y, z, w); }                            \
-    template<typename U = Type, typename std::enable_if_t<std::is_same_v<U, float>>* = nullptr>         \
-    Vector4(Urho3D::Vector4 value) : Vector4(value.x_, value.y_, value.z_, value.w_) { }                \
+#define RMLUI_VECTOR4_USER_EXTRA "RbfxVector4.inl"
 
 #define RMLUI_MATRIX4_USER_EXTRA operator Urho3D::Matrix4() const { return Urho3D::Matrix4(data()); }
 
