@@ -271,12 +271,6 @@ const ea::vector<ea::string>& ParseArguments(const ea::string& cmdLine, bool ski
 {
     arguments.clear();
 
-    // At the time of writing compiler that comes with Visual Studio 16.5.4 broke. Passing cmdStart as
-    // first parameter of substr() after for() loop crashes compiler. volatile prevents optimizer from
-    // going off the rails and we get on with our lives.
-#if _MSC_VER
-    volatile
-#endif
     unsigned cmdStart = 0, cmdEnd = 0;
     bool inCmd = false;
     bool inQuote = false;
