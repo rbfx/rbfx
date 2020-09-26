@@ -65,7 +65,7 @@ public:
     /// Set render target where this instance will render into.
     void SetRenderTarget(Texture2D* target, const Color& clearColor=Color::TRANSPARENT_BLACK);
     /// Set render target where this instance will render into. A convenience overload to resolve ambiguity when clearing rendertarget.
-    void SetRenderTarget(nullptr_t target, const Color& clearColor=Color::TRANSPARENT_BLACK);
+    void SetRenderTarget(std::nullptr_t target, const Color& clearColor=Color::TRANSPARENT_BLACK);
     /// Enable or disable this UI subsystem. When disabled, no inputs will be processed and nothing will be rendered.
     void SetEnabled(bool enabled);
     /// Return true if this subsystem is rendering and accepting input.
