@@ -77,7 +77,7 @@ void VS()
         vVertexLight = vec3(0.0, 0.0, 0.0);
         vTexCoord2 = GetLightMapTexCoord(iTexCoord1);
     #else
-        vVertexLight = GetAmbientLight(vec4(vNormal, 1)) + GetAmbient(0.0);
+        vVertexLight = GetAmbientLight(vec4(vNormal, 1.0)) + GetAmbient(0.0);
     #endif
 
     #ifdef PERPIXEL
@@ -176,7 +176,7 @@ void PS()
         vec3 lightDir;
         vec3 finalColor;
 
-        float atten = 1;
+        float atten = 1.0;
 
         #if defined(DIRLIGHT)
             atten = GetAtten(normal, vWorldPos.xyz, lightDir);
