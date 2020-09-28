@@ -28,6 +28,8 @@
 
 #include <SDL/SDL_clipboard.h>
 
+#include "../DebugNew.h"
+
 namespace Urho3D
 {
 

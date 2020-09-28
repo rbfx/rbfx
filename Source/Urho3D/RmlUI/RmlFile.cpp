@@ -25,6 +25,8 @@
 #include "../Resource/ResourceCache.h"
 #include "../RmlUI/RmlFile.h"
 
+#include "../DebugNew.h"
+
 namespace Urho3D
 {
 
