@@ -22,174 +22,97 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
-#include "../Graphics/BillboardSet.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../Scene/Scene.h"
-#include "../Resource/ResourceCache.h"
-#include "../RmlUI/RmlUIComponent.h"
 #include "../IO/Log.h"
+#include "../Resource/BinaryFile.h"
+#include "../RmlUI/RmlUIComponent.h"
+#include "../RmlUI/RmlEvents.h"
+#include "../RmlUI/RmlUI.h"
 
-#include <RmlUi/Core/Context.h>
+#include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-static int const UICOMPONENT_DEFAULT_TEXTURE_SIZE = 512;
-static int const UICOMPONENT_MIN_TEXTURE_SIZE = 64;
-static int const UICOMPONENT_MAX_TEXTURE_SIZE = 4096;
+extern const char* RML_UI_CATEGORY;
 
 RmlUIComponent::RmlUIComponent(Context* context)
     : Component(context)
 {
-    offScreenUI_ = new RmlUI(context_, Format("RmlUiComponent_{:p}", (void*)this).c_str());
-    offScreenUI_->mouseMoveEvent_.Subscribe(this, &RmlUIComponent::ScreenToUI);
-
-    texture_ = context_->CreateObject<Texture2D>();
-    texture_->SetFilterMode(FILTER_BILINEAR);
-    texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
-    texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
-    texture_->SetNumLevels(1);                                                                                  // No mipmaps
-    SetSize({UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE});
-
-    material_ = context_->CreateObject<Material>();
-    material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
-    material_->SetTexture(TU_DIFFUSE, texture_);
+    RmlUI* ui = GetSubsystem<RmlUI>();
+    SubscribeToEvent(ui, E_UIDOCUMENTCLOSED, &RmlUIComponent::OnDocumentClosed);
 }
 
 RmlUIComponent::~RmlUIComponent()
 {
+    CloseInternal();
+}
 
+void RmlUIComponent::RegisterObject(Context* context)
+{
+    context->RegisterFactory<RmlUIComponent>(RML_UI_CATEGORY);
+    URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
+    URHO3D_ATTRIBUTE_EX("Window Resource", ResourceRef, windowResource_, UpdateWindowState, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Is Open", bool, open_, UpdateWindowState, false, AM_DEFAULT);
 }
 
 void RmlUIComponent::OnNodeSet(Node* node)
 {
-    if (node)
-    {
-        auto* model = node->GetComponent<StaticModel>();
-        if (model == nullptr)
-            model_ = model = node->CreateComponent<StaticModel>();
-        model->SetMaterial(material_);
-    }
-    else if (model_)
-    {
-        model_->Remove();
-        model_ = nullptr;
-    }
-}
-
-void RmlUIComponent::ScreenToUI(IntVector2& screenPos)
-{
-    if (node_ == nullptr)
-        return;
-
-    if (auto* ui = GetSubsystem<RmlUI>())
-    {
-        Rml::Context* context = ui->GetRmlContext();
-        if (ui->IsEnabled() && context->GetHoverElement() != context->GetRootElement())
-        {
-            // Cursor hovers UI rendered into backbuffer. Do not process any input here.
-            screenPos = {-1, -1};
-            return;
-        }
-    }
-
-    Scene* scene = node_->GetScene();
-    auto* model = node_->GetComponent<StaticModel>();
-    auto* renderer = GetSubsystem<Renderer>();
-    auto* octree = scene ? scene->GetComponent<Octree>() : nullptr;
-    if (scene == nullptr || model == nullptr || renderer == nullptr || octree == nullptr)
-        return;
-
-    Viewport* viewport = nullptr;
-    for (int i = 0; i < renderer->GetNumViewports(); i++)
-    {
-        if (Viewport* vp = renderer->GetViewport(i))
-        {
-            IntRect rect = vp->GetRect();
-            if (vp->GetScene() == scene)
-            {
-                if (rect == IntRect::ZERO)
-                {
-                    // Save full-screen viewport only if we do not have a better smaller candidate.
-                    if (viewport == nullptr)
-                        viewport = vp;
-                }
-                else if (rect.Contains(screenPos))
-                    // Small viewports override full-screen one (picture-in-picture situation).
-                    viewport = vp;
-                break;
-            }
-        }
-    }
-
-    if (viewport == nullptr)
-        return;
-
-    Camera* camera = viewport->GetCamera();
-    if (camera == nullptr)
-        return;
-
-    IntRect rect = viewport->GetRect();
-    if (rect == IntRect::ZERO)
-    {
-        auto* graphics = GetSubsystem<Graphics>();
-        rect.right_ = graphics->GetWidth();
-        rect.bottom_ = graphics->GetHeight();
-    }
-
-    Ray ray(camera->GetScreenRay((float)screenPos.x_ / rect.Width(), (float)screenPos.y_ / rect.Height()));
-    ea::vector<RayQueryResult> queryResultVector;
-    RayOctreeQuery query(queryResultVector, ray, RAY_TRIANGLE_UV, M_INFINITY, DRAWABLE_GEOMETRY, DEFAULT_VIEWMASK);
-    octree->Raycast(query);
-    if (queryResultVector.empty())
-        return;
-
-    for (RayQueryResult& queryResult : queryResultVector)
-    {
-        if (queryResult.drawable_ != model)
-        {
-            // ignore billboard sets by default
-            if (queryResult.drawable_->GetTypeInfo()->IsTypeOf(BillboardSet::GetTypeStatic()))
-                continue;
-            return;
-        }
-
-        Vector2& uv = queryResult.textureUV_;
-        IntVector2 uiSize = offScreenUI_->GetRmlContext()->GetDimensions();
-        screenPos = IntVector2(static_cast<int>(uv.x_ * uiSize.x_), static_cast<int>(uv.y_ * uiSize.y_));
-    }
-}
-
-void RmlUIComponent::SetSize(IntVector2 size)
-{
-    if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
-        size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
-    {
-        URHO3D_LOGERROR("RmlUIComponent: Invalid texture size {}x{}", size.x_, size.y_);
-        return;
-    }
-
-    if (texture_->SetSize(size.x_, size.y_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET))
-    {
-        RenderSurface* surface = texture_->GetRenderSurface();
-        surface->SetUpdateMode(SURFACE_MANUALUPDATE);
-        offScreenUI_->SetRenderTarget(surface, Color::BLACK);
-        offScreenUI_->SetEnabled(true);
-    }
+    if (open_ && node != nullptr)
+        OpenInternal();
     else
+        CloseInternal();
+}
+
+void RmlUIComponent::SetOpen(bool open)
+{
+    if (!open)
+        CloseInternal();
+    else if (node_ != nullptr)
     {
-        offScreenUI_->SetRenderTarget(nullptr);
-        offScreenUI_->SetEnabled(false);
-        URHO3D_LOGERROR("RmlUIComponent: Resizing of UI rendertarget texture failed.");
+        OpenInternal();
+        open = document_ != nullptr;
     }
+    open_ = open;
+}
+
+void RmlUIComponent::OpenInternal()
+{
+    if (document_ != nullptr)
+        return;
+
+    if (windowResource_.name_.empty())
+    {
+        URHO3D_LOGERROR("UI document can be opened after setting resource path.");
+        return;
+    }
+
+    RmlUI* ui = GetSubsystem<RmlUI>();
+    document_ = ui->LoadDocument(windowResource_.name_);
+}
+
+void RmlUIComponent::CloseInternal()
+{
+    if (document_ == nullptr)
+        return;
+
+    document_->Close();
+    document_ = nullptr;
+}
+
+void RmlUIComponent::OnDocumentClosed(StringHash, VariantMap& args)
+{
+    using namespace UIDocumentClosed;
+    Rml::ElementDocument* document = reinterpret_cast<Rml::ElementDocument*>(args[P_DOCUMENT].GetVoidPtr());
+    if (document_ == document)
+    {
+        document_ = nullptr;
+        open_ = false;
+    }
+}
+
+void RmlUIComponent::UpdateWindowState()
+{
+    SetOpen(open_);
 }
 
 }

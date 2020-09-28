@@ -40,7 +40,7 @@
 namespace Urho3D
 {
 
-namespace Detail { class RmlContext; }
+namespace Detail { class RmlContext; class RmlPlugin; }
 
 /// %UI subsystem. Manages the graphical user interface.
 class URHO3D_API RmlUI : public Object
@@ -83,6 +83,8 @@ private:
     bool IsHovered() const;
     /// Return true if input is captured by this instance of RmlUI.
     bool IsInputCapturedInternal() const;
+    /// Signal that document belonging to this subsystem was closed.
+    void OnDocumentUnload(Rml::ElementDocument* document);
 
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
@@ -127,6 +129,8 @@ private:
     bool isEnabled_ = false;
     /// Other instances of RmlUI.
     ea::vector<WeakPtr<RmlUI>> siblingSubsystems_;
+
+    friend class Detail::RmlPlugin;
 };
 
 namespace Detail
