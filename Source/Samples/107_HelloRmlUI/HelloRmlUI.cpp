@@ -32,7 +32,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
 #include <RmlUi/Debugger.h>
-#include <Urho3D/RmlUI/RmlUIComponent.h>
+#include <Urho3D/RmlUI/RmlMaterialComponent.h>
 
 #include "HelloRmlUI.h"
 
@@ -143,9 +143,14 @@ void HelloRmlUI::InitWindow()
     // Node that will get UI rendered on it.
     Node* boxNode = scene_->GetChild("Box");
     // Create a component that sets up UI rendering. It sets material to StaticModel of the node.
-    auto* component = boxNode->CreateComponent<RmlUIComponent>();
+    auto* component = boxNode->CreateComponent<RmlMaterialComponent>();
     // Optionally modify material. Technique is changed so object is visible without any lights.
-    component->GetMaterial()->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
+    auto* material = component->GetMaterial();
+    material->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
+    // Create a StaticModel for our cube.
+    auto* model = boxNode->GetComponent<StaticModel>();
+    // And set a material to it so UI would be rendered on to cube.
+    model->SetMaterial(material);
 
     // Initialize fonts in backbuffer UI.
     ui->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
