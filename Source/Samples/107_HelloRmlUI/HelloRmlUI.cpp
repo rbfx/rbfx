@@ -57,6 +57,12 @@ DemoWindow::DemoWindow(RmlUI* ui)
     SubscribeToEvent("CloseWindow", &DemoWindow::OnCloseWindow);
 }
 
+DemoWindow::~DemoWindow()
+{
+    document_->Close();
+    ui_->GetRmlContext()->RemoveDataModel("example_model");
+}
+
 void DemoWindow::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
 {
     // Increase counter and notify model of it's update.

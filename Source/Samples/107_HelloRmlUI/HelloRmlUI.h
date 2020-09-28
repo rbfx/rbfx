@@ -34,6 +34,8 @@ class DemoWindow : public Object
 public:
     /// Construct.
     explicit DemoWindow(RmlUI* ui);
+    /// Destruct.
+    ~DemoWindow();
     /// Reload window rml and rcss from disk/cache.
     void Reload();
     /// Callback function invoked from rml template.
