@@ -29,6 +29,8 @@
 #include "../Math/Matrix4.h"
 #include "../RmlUI/RmlRenderer.h"
 
+#include "../DebugNew.h"
+
 namespace Urho3D
 {
 

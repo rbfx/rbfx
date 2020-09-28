@@ -31,8 +31,7 @@
 #include "../RmlUI/RmlUI.h"
 #include "../RmlUI/RmlEventListeners.h"
 
-#include <RmlUi/Core/Context.h>
-
+#include "../DebugNew.h"
 
 namespace Urho3D
 {
