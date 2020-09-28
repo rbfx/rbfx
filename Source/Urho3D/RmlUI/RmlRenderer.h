@@ -71,7 +71,7 @@ public:
     bool LoadTexture(Rml::TextureHandle& textureOut, Rml::Vector2i& sizeOut, const Rml::String& source) override;
     /// Create a texture from pixelbuffer.
     bool GenerateTexture(Rml::TextureHandle& handleOut, const Rml::byte* source, const Rml::Vector2i& size) override;
-    /// Release a texture that was previouslyt created by LoadTexture() or GenerateTexture().
+    /// Release a texture that was previously created by LoadTexture() or GenerateTexture().
     void ReleaseTexture(Rml::TextureHandle textureHandle) override;
     /// Set or unset a custom transform.
     void SetTransform(const Rml::Matrix4f* transform) override;
