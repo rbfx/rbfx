@@ -277,14 +277,11 @@ RmlUI::~RmlUI()
     if (rmlInstanceCounter.fetch_sub(1) == 1)
     {
         // Freeing last instance of RmlUI, deinitialize backend library.
-        Rml::Factory::RegisterEventListenerInstancer(nullptr);
-        Rml::Shutdown();
+        Rml::Factory::RegisterEventListenerInstancer(nullptr); // Set to a static object instance because there is no getter to delete it.
         delete Rml::GetRenderInterface();
-        Rml::SetRenderInterface(nullptr);
         delete Rml::GetSystemInterface();
-        Rml::SetSystemInterface(nullptr);
         delete Rml::GetFileInterface();
-        Rml::SetFileInterface(nullptr);
+        Rml::Shutdown();
     }
 }
 
