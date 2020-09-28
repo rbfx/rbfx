@@ -45,9 +45,11 @@
 #include "../RmlUI/RmlSystem.h"
 #include "../RmlUI/RmlFile.h"
 #include "../RmlUI/RmlEventListeners.h"
+#include "../RmlUI/RmlMaterialComponent.h"
+#include "../RmlUI/RmlTextureComponent.h"
 #include "../RmlUI/RmlUIComponent.h"
+#include "../RmlUI/RmlEvents.h"
 
-#include <cassert>
 #include <atomic>
 #include <RmlUi/Core.h>
 #include <RmlUi/Debugger.h>
@@ -56,6 +58,8 @@
 
 namespace Urho3D
 {
+
+const char* RML_UI_CATEGORY = "Rml UI";
 
 static MouseButton MakeTouchIDMask(int id)
 {
@@ -102,6 +106,21 @@ public:
 protected:
     /// RmlContextInstancer is static, nothing to release.
     void Release() override { }
+};
+
+class RmlPlugin : public Rml::Plugin
+{
+public:
+    virtual ~RmlPlugin() = default;
+
+    int GetEventClasses() override { return EVT_DOCUMENT; }
+
+    void OnDocumentUnload(Rml::ElementDocument* document) override
+    {
+        RmlContext* rmlContext = static_cast<RmlContext*>(document->GetContext());
+        RmlUI* ui = rmlContext->GetOwnerSubsystem();
+        ui->OnDocumentUnload(document);
+    }
 };
 
 }
@@ -353,7 +372,8 @@ void RmlUI::HandleMouseMove(StringHash, VariantMap& eventData)
     int modifiers = ModifiersUrho3DToRml(static_cast<QualifierFlags>(eventData[P_QUALIFIERS].GetInt()));
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
     mouseMoveEvent_(this, pos);
-    rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
+    if (pos.x_ >= 0 && pos.y_ >= 0)
+        rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
 }
 
 void RmlUI::HandleMouseWheel(StringHash, VariantMap& eventData)
@@ -378,7 +398,8 @@ void RmlUI::HandleTouchBegin(StringHash, VariantMap& eventData)
     rmlContext_->ProcessMouseButtonDown(button, modifiers);
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
     mouseMoveEvent_(this, pos);
-    rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
+    if (pos.x_ >= 0 && pos.y_ >= 0)
+        rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
 }
 
 void RmlUI::HandleTouchEnd(StringHash, VariantMap& eventData)
@@ -400,7 +421,8 @@ void RmlUI::HandleTouchMove(StringHash, VariantMap& eventData)
     int modifiers = ModifiersUrho3DToRml(input->GetQualifiers());
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
     mouseMoveEvent_(this, pos);
-    rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
+    if (pos.x_ >= 0 && pos.y_ >= 0)
+        rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
 }
 
 void RmlUI::HandleKeyDown(StringHash, VariantMap& eventData)
@@ -562,6 +584,12 @@ bool RmlUI::IsInputCapturedInternal() const
     return false;
 }
 
+void RmlUI::OnDocumentUnload(Rml::ElementDocument* document)
+{
+    using namespace UIDocumentClosed;
+    SendEvent(E_UIDOCUMENTCLOSED, P_DOCUMENT, reinterpret_cast<void*>(document));
+}
+
 static int MouseButtonUrho3DToRml(MouseButton button)
 {
     int rmlButton = -1;
@@ -592,7 +620,9 @@ static int ModifiersUrho3DToRml(QualifierFlags modifier)
 void RegisterRmlUILibrary(Context* context)
 {
     context->RegisterFactory<RmlUI>();
-    context->RegisterFactory<RmlUIComponent>();
+    RmlUIComponent::RegisterObject(context);
+    RmlTextureComponent::RegisterObject(context);
+    RmlMaterialComponent::RegisterObject(context);
 }
 
 }

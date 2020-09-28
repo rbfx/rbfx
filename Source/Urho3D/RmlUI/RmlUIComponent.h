@@ -22,20 +22,13 @@
 #pragma once
 
 #include "../Scene/Component.h"
-#include "../RmlUI/RmlUI.h"
+
+namespace Rml { class ElementDocument; }
 
 namespace Urho3D
 {
 
-class Material;
-class Texture2D;
-class StaticModel;
-class Viewport;
-class UIElement;
-class UIBatch;
-class VertexBuffer;
-class UIElement3D;
-
+/// Adds a single window to game screen.
 class RmlUIComponent : public Component
 {
     URHO3D_OBJECT(RmlUIComponent, Component);
@@ -45,29 +38,34 @@ public:
     /// Destruct.
     ~RmlUIComponent() override;
 
-    /// Return UIElement.
-    RmlUI* GetUI() const { return offScreenUI_; }
-    /// Return material which will be used for rendering UI texture.
-    Material* GetMaterial() const { return material_; }
-    /// Return texture which will be used for rendering UI to.
-    Texture2D* GetTexture() const { return texture_; }
-    /// Set size of texture UI will be rendered into.
-    void SetSize(IntVector2 size);
+    /// Registers object with the engine.
+    static void RegisterObject(Context* context);
+
+    /// Returns a path to a rml file defining a window.
+    const ResourceRef& GetWindowResource() const { return windowResource_; }
+    /// Returns true if window is open, false otherwise. May return true when component is detached from a node and no window is open.
+    bool IsOpen() const { return open_; }
+    /// Set whether window opens as soon as component ias added to an object.
+    void SetOpen(bool open);
 
 protected:
     /// Handle component being added to Node or removed from it.
     void OnNodeSet(Node* node) override;
-    /// Convert screen coordinates to context-local coordinates of RmlUI instance.
-    void ScreenToUI(IntVector2& screenPos);
+    /// Open a window document if it was not already open.
+    void OpenInternal();
+    /// Close a window document if it was open.
+    void CloseInternal();
+    /// Resets document_ pointer when window is closed.
+    void OnDocumentClosed(StringHash, VariantMap& args);
+    /// Handle UI opening and closing when component state changes.
+    void UpdateWindowState();
 
-    /// Material that is set to the model.
-    SharedPtr<Material> material_;
-    /// Texture that UIElement will be rendered into.
-    SharedPtr<Texture2D> texture_;
-    /// Model created by this component. If node already has StaticModel then this will be null.
-    SharedPtr<StaticModel> model_;
-    /// Subsystem that handles UI rendering to the texture.
-    SharedPtr<RmlUI> offScreenUI_;
+    /// A rml file resource.
+    ResourceRef windowResource_;
+    /// Flag indicating that window will open as soon as component is added to an object.
+    bool open_ = false;
+    /// Currently open document. Null if document was closed.
+    Rml::ElementDocument* document_ = nullptr;
 };
 
 }
