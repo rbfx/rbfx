@@ -27,11 +27,15 @@
 namespace Urho3D
 {
 
+using audio_t = unsigned char;
+void _ALERROR();
+
 // SoundSource type defaults
 static const ea::string SOUND_MASTER = "Master";
 static const ea::string SOUND_EFFECT = "Effect";
 static const ea::string SOUND_AMBIENT = "Ambient";
 static const ea::string SOUND_VOICE = "Voice";
 static const ea::string SOUND_MUSIC = "Music";
+
 
 }

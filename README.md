@@ -118,10 +118,14 @@ rbfx uses the following third-party libraries:
 - spdlog 1.4.2 (https://github.com/gabime/spdlog/)
 - EASTL 3.16.01 (https://github.com/electronicarts/EASTL/)
 - SWIG 4.0 (http://swig.org/)
-* Embree 3.11 (https://github.com/embree/embree)
+- Embree 3.11 (https://github.com/embree/embree)
+- MojoAL (https://www.icculus.org/mojoAL/)
 
 rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
+- .NET Framework (https://dotnet.microsoft.com/download/dotnet-framework)
+- OpenSSL (https://www.openssl.org/)
+- OpenAL (https://www.openal.org/)
 
 ## Supported Platforms
 

@@ -59,6 +59,7 @@ public:
     void SetOuterAngle(float angle);
     /// Set rolloff power factor, defines attenuation function shape.
     void SetRolloffFactor(float factor);
+    
     /// Calculate attenuation and panning based on current position and listener position.
     void CalculateAttenuation();
 

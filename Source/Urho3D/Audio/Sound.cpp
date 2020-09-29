@@ -103,7 +103,7 @@ bool Sound::BeginLoad(Deserializer& source)
 bool Sound::LoadOggVorbis(Deserializer& source)
 {
     unsigned dataSize = source.GetSize();
-    ea::shared_array<signed char> data(new signed char[dataSize]);
+    ea::shared_array<audio_t> data(new audio_t[dataSize]);
     source.Read(data.get(), dataSize);
 
     // Check for validity of data
@@ -203,13 +203,6 @@ bool Sound::LoadWav(Deserializer& source)
     SetFormat(header.frequency_, header.bits_ == 16, header.channels_ == 2);
     source.Read(data_.get(), length);
 
-    // Convert 8-bit audio to signed
-    if (!sixteenBit_)
-    {
-        for (unsigned i = 0; i < length; ++i)
-            data_[i] -= 128;
-    }
-
     return true;
 }
 
@@ -225,7 +218,7 @@ void Sound::SetSize(unsigned dataSize)
     if (!dataSize)
         return;
 
-    data_.reset(new signed char[dataSize + IP_SAFETY]);
+    data_.reset(new audio_t[dataSize + IP_SAFETY]);
     dataSize_ = dataSize;
     compressed_ = false;
     SetLooped(false);

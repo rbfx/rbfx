@@ -30,6 +30,9 @@
 #include "../Graphics/DebugRenderer.h"
 #include "../Scene/Node.h"
 
+#include <al.h>
+#include <alc.h>
+
 namespace Urho3D
 {
 
@@ -51,6 +54,8 @@ SoundSource3D::SoundSource3D(Context* context) :
     outerAngle_(DEFAULT_ANGLE),
     rolloffFactor_(DEFAULT_ROLLOFF)
 {
+    // 3D sources are defined in world position
+    alSourcei(alsource_, AL_SOURCE_RELATIVE, AL_FALSE); _ALERROR();
     // Start from zero volume until attenuation properly calculated
     attenuation_ = 0.0f;
 }
@@ -97,6 +102,8 @@ void SoundSource3D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
 void SoundSource3D::Update(float timeStep)
 {
+    Vector3 pos = node_->GetPosition();
+    alSource3f(alsource_, AL_POSITION, pos.x_, pos.y_, -pos.z_);	
     CalculateAttenuation();
     SoundSource::Update(timeStep);
 }
@@ -169,9 +176,6 @@ void SoundSource3D::CalculateAttenuation()
                 attenuation_ = powf(1.0f - Clamp(distance - nearDistance_, 0.0f, interval) / interval, rolloffFactor_);
             else
                 attenuation_ = distance <= nearDistance_ ? 1.0f : 0.0f;
-
-            // Panning
-            panning_ = relativePos.Normalized().x_;
 
             // Angle attenuation
             if (innerAngle_ < DEFAULT_ANGLE && outerAngle_ > 0.0f)

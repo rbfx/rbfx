@@ -1,5 +1,5 @@
 %typemap(cscode) Urho3D::Audio %{
-  public $typemap(cstype, unsigned int) SampleSize {
+  /*public $typemap(cstype, unsigned int) SampleSize {
     get { return GetSampleSize(); }
   }
   public $typemap(cstype, int) MixRate {
@@ -7,7 +7,7 @@
   }
   public $typemap(cstype, bool) Interpolation {
     get { return GetInterpolation(); }
-  }
+  }*/
   public $typemap(cstype, Urho3D::SoundListener *) Listener {
     get { return GetListener(); }
     set { SetListener(value); }
@@ -15,9 +15,9 @@
   public $typemap(cstype, const eastl::vector<Urho3D::SoundSource *> &) SoundSources {
     get { return GetSoundSources(); }
   }
-  public $typemap(cstype, Urho3D::Mutex &) Mutex {
+  /*public $typemap(cstype, Urho3D::Mutex &) Mutex {
     get { return GetMutex(); }
-  }
+  }*/
 %}
 %csmethodmodifiers Urho3D::Audio::GetSampleSize "private";
 %csmethodmodifiers Urho3D::Audio::GetMixRate "private";
@@ -82,9 +82,9 @@
   public $typemap(cstype, Urho3D::Sound *) Sound {
     get { return GetSound(); }
   }
-  public $typemap(cstype, volatile signed char *) PlayPosition {
+  /*public $typemap(cstype, volatile signed char *) PlayPosition {
     get { return GetPlayPosition(); }
-  }
+  }*/
   public $typemap(cstype, eastl::string) SoundType {
     get { return GetSoundType(); }
   }
