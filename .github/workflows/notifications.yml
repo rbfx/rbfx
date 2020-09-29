@@ -1,0 +1,16 @@
+name: Notifications
+
+on:
+  push: {}
+
+jobs:
+  stale:
+    name: Discord Commits
+    runs-on: ubuntu-latest
+    steps:
+    - name: Discord Commits
+      uses: Sniddl/discord-commits@v1.2
+      with:
+        webhook: ${{ secrets.DISCORD_WEBHOOK_COMMITS }}
+        message: "{{ github.ref }}\nDiff: {{ github.context.payload.compare }}"
+        embed: '{ "title": "{{ commit.title }}", "description": "{{ commit.description }}", "url": "{{ commit.url }}", "author": { "name": "{{ commit.author.name }} ({{ commit.author.username }})", "icon_url": "https://unavatar.now.sh/gravatar/{{ commit.author.email }}"} }'
