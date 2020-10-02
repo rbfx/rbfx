@@ -21,7 +21,7 @@
 //
 #pragma once
 
-#include "../Scene/Component.h"
+#include "../Scene/LogicComponent.h"
 
 namespace Rml { class ElementDocument; }
 
@@ -31,10 +31,12 @@ namespace Urho3D
 struct RmlCanvasResizedArgs;
 struct RmlDocumentReloadedArgs;
 
+class RmlUI;
+
 /// Adds a single window to game screen.
-class RmlUIComponent : public Component
+class RmlUIComponent : public LogicComponent
 {
-    URHO3D_OBJECT(RmlUIComponent, Component);
+    URHO3D_OBJECT(RmlUIComponent, LogicComponent);
 public:
     /// Construct.
     explicit RmlUIComponent(Context* context);
@@ -45,7 +47,9 @@ public:
     static void RegisterObject(Context* context);
 
     /// Set resource path of rml file defining a window.
-    void SetResource(const ResourceRef& resource);
+    void SetResource(const ResourceRef& resourceRef);
+    /// Set resource path of rml file defining a window.
+    void SetResource(const ea::string& resourceName);
     /// Returns a path to a rml file defining a window.
     const ResourceRef& GetResource() const { return resource_; }
     /// Returns true if window is open, false otherwise. May return true when component is detached from a node and no window is open.
