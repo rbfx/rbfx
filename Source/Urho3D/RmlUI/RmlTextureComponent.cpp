@@ -43,7 +43,7 @@ static int const UICOMPONENT_MAX_TEXTURE_SIZE = 4096;
 extern const char* RML_UI_CATEGORY;
 
 RmlTextureComponent::RmlTextureComponent(Context* context)
-    : Component(context)
+    : LogicComponent(context)
 {
     offScreenUI_ = new RmlUI(context_, Format("RmlTextureComponent_{:p}", (void*)this).c_str());
     offScreenUI_->mouseMoveEvent_.Subscribe(this, &RmlTextureComponent::TranslateMousePos);
@@ -55,6 +55,8 @@ RmlTextureComponent::RmlTextureComponent(Context* context)
     texture_->SetNumLevels(1);  // No mipmaps
 
     SetTextureSize({UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE});
+
+    SetUpdateEventMask(USE_UPDATE);
 }
 
 void RmlTextureComponent::RegisterObject(Context* context)
