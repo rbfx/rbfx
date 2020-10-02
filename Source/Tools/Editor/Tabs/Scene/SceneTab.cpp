@@ -85,15 +85,6 @@ SceneTab::SceneTab(Context* context)
     texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     texture_->GetRenderSurface()->SetViewport(0, viewport_);
 
-    rootElement_ = new RootUIElement(context_);
-    rootElement_->SetTraversalMode(TM_BREADTH_FIRST);
-    rootElement_->SetEnabled(true);
-
-    offScreenUI_ = new UI(context_);
-    offScreenUI_->SetRoot(rootElement_);
-    offScreenUI_->SetBlockEvents(true);
-    context_->RegisterSubsystem(offScreenUI_);
-
     // Camera preview objects
     cameraPreviewViewport_ = new Viewport(context_);
     cameraPreviewViewport_->SetRect(IntRect{{0, 0}, cameraPreviewSize});
@@ -857,7 +848,7 @@ void SceneTab::SaveState(SceneState& destination)
             savedComponentSelection_.push_back(component->GetID());
     }
 
-    destination.Save(GetScene(), rootElement_);
+    destination.Save(GetScene());
 }
 
 void SceneTab::RestoreState(SceneState& source)
@@ -872,7 +863,7 @@ void SceneTab::RestoreState(SceneState& source)
         editorObjects->Save(editorObjectsState);
     }
 
-    source.Load(GetScene(), rootElement_);
+    source.Load(GetScene());
     GetSubsystem<SceneManager>()->UnloadAllButActiveScene();
 
     if (editorObjectsState.GetSize() > 0)

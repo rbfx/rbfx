@@ -204,10 +204,6 @@ bool PreviewTab::RenderWindowContent()
 
     ui::Image(texture_.Get(), rect.GetSize());
 
-    ImVec2 offset = (ui::GetItemRectMin() - viewport->Pos) * dpi;
-    auto* root = static_cast<RootUIElement*>(context_->GetSubsystem<UI>()->GetRoot());
-    root->SetOffset({static_cast<int>(IM_ROUND(offset.x)), static_cast<int>(IM_ROUND(offset.y))});
-
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
     {
         if (ui::IsWindowFocused() && !inputGrabbed_)
@@ -272,7 +268,6 @@ void PreviewTab::RenderButtons()
     {
         float timeStep = context_->GetSubsystem<Time>()->GetTimeStep();
         scene->Update(timeStep);
-        context_->GetSubsystem<UI>()->Update(timeStep);
     }
     case SCENE_SIMULATION_PAUSED:
     {
@@ -316,7 +311,6 @@ void PreviewTab::Play()
         // Scene was not running. Allow scene to set up input parameters.
         undo_->SetTrackingEnabled(false);
         tab->SaveState(sceneState_);
-        context_->GetSubsystem<UI>()->SetBlockEvents(false);
         context_->GetSubsystem<Audio>()->Play();
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         SendEvent(E_SIMULATIONSTART);
@@ -326,7 +320,6 @@ void PreviewTab::Play()
     {
         // Scene was paused. When resuming restore saved scene input parameters.
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
-        context_->GetSubsystem<UI>()->SetBlockEvents(false);
         context_->GetSubsystem<Audio>()->Play();
         break;
     }
@@ -339,7 +332,6 @@ void PreviewTab::Pause()
 {
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
         simulationStatus_ = SCENE_SIMULATION_PAUSED;
-    context_->GetSubsystem<UI>()->SetBlockEvents(true);
     context_->GetSubsystem<Audio>()->Stop();
 }
 
@@ -368,7 +360,6 @@ void PreviewTab::Step(float timeStep)
         Pause();
 
     scene->Update(timeStep);
-    context_->GetSubsystem<UI>()->Update(timeStep);
     context_->GetSubsystem<Audio>()->Update(timeStep);
 }
 
@@ -382,7 +373,6 @@ void PreviewTab::Stop()
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         tab->RestoreState(sceneState_);
         undo_->SetTrackingEnabled(true);
-        context_->GetSubsystem<UI>()->SetBlockEvents(true);
         context_->GetSubsystem<Audio>()->Stop();
     }
 }
@@ -426,18 +416,6 @@ void PreviewTab::ReleaseInput()
 
 void PreviewTab::RenderUI()
 {
-    Graphics* graphics = context_->GetSubsystem<Graphics>();
-
-    if (RenderSurface* surface = texture_->GetRenderSurface())
-    {
-        auto* ui = context_->GetSubsystem<UI>();
-        ui->SetCustomSize(surface->GetWidth(), surface->GetHeight());
-        graphics->ResetRenderTargets();
-        graphics->SetDepthStencil(surface->GetLinkedDepthStencil());
-        graphics->SetRenderTarget(0, surface);
-        graphics->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
-        ui->Render();
-    }
 }
 
 }
