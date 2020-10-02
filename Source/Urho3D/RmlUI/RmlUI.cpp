@@ -36,6 +36,7 @@
 #include "../Input/Input.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
+#include "../Resource/ResourceEvents.h"
 #include "../Scene/Scene.h"
 #ifdef URHO3D_SYSTEMUI
 #include "../SystemUI/SystemUI.h"
@@ -50,6 +51,7 @@
 #include "../RmlUI/RmlUIComponent.h"
 
 #include <atomic>
+#include <EASTL/fixed_vector.h>
 #include <RmlUi/Core.h>
 #include <RmlUi/Debugger.h>
 
@@ -295,6 +297,8 @@ RmlUI::RmlUI(Context* context, const char* name)
     SubscribeToEvent(E_SCREENMODE, &RmlUI::HandleScreenMode);
     SubscribeToEvent(E_POSTUPDATE, &RmlUI::HandlePostUpdate);
     SubscribeToEvent(E_ENDALLVIEWSRENDER, &RmlUI::HandleEndAllViewsRender);
+
+    SubscribeToEvent(E_FILECHANGED, &RmlUI::HandleResourceReloaded);
 }
 
 RmlUI::~RmlUI()
@@ -345,7 +349,7 @@ Rml::Context* RmlUI::GetRmlContext() const
 void RmlUI::HandleScreenMode(StringHash, VariantMap& eventData)
 {
     assert(rmlContext_ != nullptr);
-    RmlUICanvasResizedArgs args;
+    RmlCanvasResizedArgs args;
     args.oldSize_ = rmlContext_->GetDimensions();
     args.newSize_ = GetDesiredCanvasSize();
     rmlContext_->SetDimensions(args.newSize_);
@@ -498,7 +502,7 @@ void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
 {
     renderSurface_ = target;
     clearColor_ = clearColor;
-    RmlUICanvasResizedArgs args;
+    RmlCanvasResizedArgs args;
     args.oldSize_ = rmlContext_->GetDimensions();
     args.newSize_ = GetDesiredCanvasSize();
     rmlContext_->SetDimensions(args.newSize_);
@@ -589,6 +593,61 @@ void RmlUI::Update(float timeStep)
 
     if (rmlContext_)
         rmlContext_->Update();
+}
+
+void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
+{
+    using namespace FileChanged;
+    const ea::string& fileName = eventData[P_FILENAME].GetString();
+    Detail::RmlFile* file = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
+    if (file->GetFileWasOpened(fileName))
+    {
+        file->ClearOpenedFiles();
+
+        Rml::ReleaseTextures();
+        Rml::Factory::ClearStyleSheetCache();
+        Rml::Factory::ClearTemplateCache();
+
+        ea::fixed_vector<Rml::ElementDocument*, 64> unloadingDocuments;
+        for (int i = 0; i < rmlContext_->GetNumDocuments(); i++)
+            unloadingDocuments.push_back(rmlContext_->GetDocument(i));
+
+        for (Rml::ElementDocument* document : unloadingDocuments)
+            ReloadDocument(document);
+    }
+}
+
+Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
+{
+    assert(document != nullptr);
+    assert(document->GetContext() == rmlContext_);
+
+    Vector2 pos = document->GetAbsoluteOffset(Rml::Box::BORDER);
+    Vector2 size = document->GetBox().GetSize(Rml::Box::CONTENT);
+    Rml::ModalFlag modal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
+    Rml::FocusFlag focus = Rml::FocusFlag::Auto;
+    bool visible = document->IsVisible();
+    if (Rml::Element* element = rmlContext_->GetFocusElement())
+        focus = element->GetOwnerDocument() == document ? Rml::FocusFlag::Document : focus;
+
+    document->Close();
+
+    Rml::ElementDocument* newDocument = rmlContext_->LoadDocument(document->GetSourceURL());
+    newDocument->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Property::PX));
+    newDocument->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Property::PX));
+    newDocument->SetProperty(Rml::PropertyId::Width, Rml::Property(size.x_, Rml::Property::PX));
+    newDocument->SetProperty(Rml::PropertyId::Height, Rml::Property(size.y_, Rml::Property::PX));
+    newDocument->UpdateDocument();
+
+    if (visible)
+        newDocument->Show(modal, focus);
+
+    RmlDocumentReloadedArgs args;
+    args.unloadedDocument_ = document;
+    args.loadedDocument_ = newDocument;
+    documentReloaded_(this, args);
+
+    return newDocument;
 }
 
 static int MouseButtonUrho3DToRml(MouseButton button)
