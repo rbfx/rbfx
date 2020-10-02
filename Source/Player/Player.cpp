@@ -40,6 +40,9 @@
 #if URHO3D_SYSTEMUI
 #   include <Urho3D/SystemUI/SystemUI.h>
 #endif
+#if URHO3D_RMLUI
+#   include <Urho3D/RmlUI/RmlUI.h>
+#endif
 #include "Player.h"
 
 namespace Urho3D
@@ -169,6 +172,16 @@ void Player::Start()
     context_->GetSubsystem<ResourceCache>()->AddResourceRouter(router);
 
     context_->RegisterSubsystem(new SceneManager(context_));
+
+#if URHO3D_RMLUI
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* ui = GetSubsystem<RmlUI>();
+    ea::vector<ea::string> fonts;
+    cache->Scan(fonts, "Fonts/", "*.ttf", SCAN_FILES, true);
+    cache->Scan(fonts, "Fonts/", "*.otf", SCAN_FILES, true);
+    for (const ea::string& font : fonts)
+        ui->LoadFont(Format("Fonts/{}", font));
+#endif
 
 #if URHO3D_STATIC
     // Static builds require user to manually register plugins by subclassing Player class.
