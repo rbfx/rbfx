@@ -30,7 +30,6 @@
 #include <Toolbox/Graphics/SceneView.h>
 #include "Tabs/BaseResourceTab.h"
 #include "Tabs/Scene/SceneClipboard.h"
-#include "Tabs/UI/RootUIElement.h"
 
 
 namespace Urho3D
@@ -40,38 +39,25 @@ class EditorSceneSettings;
 
 struct SceneState
 {
-    void Save(Scene* scene, UIElement* root)
+    void Save(Scene* scene)
     {
         sceneState_.Clear();
-        uiState_.Clear();
         BinaryOutputArchive sceneArchive(scene->GetContext(), sceneState_);
         scene->Serialize(sceneArchive);
-        BinaryOutputArchive uiArchive(scene->GetContext(), uiState_);
-        root->Serialize(uiArchive);
-        defaultStyle_ = root->GetDefaultStyle();
     }
 
-    void Load(Scene* scene, UIElement* root)
+    void Load(Scene* scene)
     {
         sceneState_.Seek(0);
         BinaryInputArchive sceneArchive(scene->GetContext(), sceneState_);
         scene->Serialize(sceneArchive);
         scene->GetContext()->GetSubsystem<UI>()->Clear();
-        root->SetDefaultStyle(defaultStyle_);
-        BinaryInputArchive uiArchive(scene->GetContext(), uiState_);
-        root->Serialize(uiArchive);
-        defaultStyle_ = nullptr;
         sceneState_.Clear();
-        uiState_.Clear();
         scene->GetSubsystem<SceneManager>()->SetActiveScene(scene);
     }
 
     ///
     VectorBuffer sceneState_;
-    ///
-    VectorBuffer uiState_;
-    ///
-    SharedPtr<XMLFile> defaultStyle_;
 };
 
 class SceneTab : public BaseResourceTab, public IHierarchyProvider
@@ -246,12 +232,6 @@ protected:
     ea::vector<unsigned> savedNodeSelection_;
     /// List of component IDs that are saved when scene state is saved. Component selection will be restored using these.
     ea::vector<unsigned> savedComponentSelection_;
-    ///
-    SharedPtr<UI> offScreenUI_;
-    /// Root element which contains edited UI.
-    SharedPtr<RootUIElement> rootElement_;
-    ///
-    SharedPtr<XMLFile> defaultStyle_;
     ///
     bool debugHudVisible_ = false;
     /// Rectangle encompassing all selected nodes.

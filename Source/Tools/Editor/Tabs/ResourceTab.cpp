@@ -573,24 +573,6 @@ void ResourceTab::RenderContextMenu()
                 URHO3D_LOGERRORF("Failed opening file '%s'.", path.c_str());
         }
 
-        if (ui::MenuItem("UI Layout"))
-        {
-            auto path = GetNewResourcePath(currentDir_ + "New UI Layout.xml");
-            context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(GetPath(path));
-
-            SharedPtr<UIElement> scene(new UIElement(context_));
-            XMLFile layout(context_);
-            auto root = layout.GetOrCreateRoot("element");
-            if (scene->SaveXML(root) && layout.SaveFile(path))
-            {
-                selectedItem_ = GetFileNameAndExtension(path);
-                scrollToCurrent_ = true;
-                StartRename();
-            }
-            else
-                URHO3D_LOGERRORF("Failed opening file '%s'.", path.c_str());
-        }
-
         ui::EndMenu();
     }
 
