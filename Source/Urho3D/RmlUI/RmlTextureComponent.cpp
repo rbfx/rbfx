@@ -84,7 +84,8 @@ void RmlTextureComponent::OnSetEnabled()
 {
     if (!enabled_)
         ClearTexture();
-    offScreenUI_->SetEnabled(enabled_);
+    offScreenUI_->SetRendering(enabled_);
+    offScreenUI_->SetBlockEvents(!enabled_);
 }
 
 void RmlTextureComponent::SetTextureSize(IntVector2 size)
