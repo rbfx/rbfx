@@ -28,7 +28,8 @@ namespace Rml { class ElementDocument; }
 namespace Urho3D
 {
 
-struct RmlUICanvasResizedArgs;
+struct RmlCanvasResizedArgs;
+struct RmlDocumentReloadedArgs;
 
 /// Adds a single window to game screen.
 class RmlUIComponent : public Component
@@ -74,7 +75,9 @@ protected:
     /// Resets document_ pointer when window is closed.
     void OnDocumentClosed(Rml::ElementDocument*& document);
     /// Reposition UI elements on UI canvas resize.
-    void OnUICanvasResized(RmlUICanvasResizedArgs& size);
+    void OnUICanvasResized(RmlCanvasResizedArgs& size);
+    /// Handle document pointer changes on resource reload.
+    void OnDocumentReloaded(RmlDocumentReloadedArgs& args);
     /// Update position and size when toggling use of normalized coordinates.
     void OnUseNormalizedCoordinates();
 
