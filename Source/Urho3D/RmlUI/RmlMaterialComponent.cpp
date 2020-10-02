@@ -69,7 +69,7 @@ void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
     if (auto* ui = GetSubsystem<RmlUI>())
     {
         Rml::Context* context = ui->GetRmlContext();
-        if (ui->IsEnabled() && context->GetHoverElement() != context->GetRootElement())
+        if (!ui->GetBlockEvents() && context->GetHoverElement() != context->GetRootElement())
         {
             // Cursor hovers UI rendered into backbuffer. Do not process any input here.
             screenPos = {-1, -1};
