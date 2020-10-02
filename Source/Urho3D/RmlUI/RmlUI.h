@@ -42,12 +42,20 @@ namespace Urho3D
 
 namespace Detail { class RmlContext; class RmlPlugin; }
 
-struct RmlUICanvasResizedArgs
+struct RmlCanvasResizedArgs
 {
     /// Previous size of canvas.
     IntVector2 oldSize_;
     /// Current size of canvas.
     IntVector2 newSize_;
+};
+
+struct RmlDocumentReloadedArgs
+{
+    /// Pointer to a document that was unloaded.
+    Rml::ElementDocument* unloadedDocument_;
+    /// Pointer to a document that was loaded in place of unloaded one.
+    Rml::ElementDocument* loadedDocument_;
 };
 
 /// %UI subsystem. Manages the graphical user interface.
@@ -60,7 +68,8 @@ public:
     explicit RmlUI(Context* context, const char* name="master");
     /// Destruct.
     ~RmlUI() override;
-    /// Load a specified rml document.
+    /// Load a specified rml document. When resource reloader is active, returned pointer will be invalidated when associated resource change triggers reloading a document.
+    /// In such cases it is important to subscribe to documentReloaded_ signal and update handle change of document pointer.
     Rml::ElementDocument* LoadDocument(const ea::string& path);
     /// Show or hide RmlUi debugger.
     void SetDebuggerVisible(bool visible);
@@ -84,13 +93,17 @@ public:
     void Update(float timeStep);
     /// Render UI.
     void Render();
+    /// Unload passed document and load it's rml again, return newly loaded document. This operation preserves document position and size.
+    Rml::ElementDocument* ReloadDocument(Rml::ElementDocument* document);
 
     /// Emitted when mouse input is detected. Should be used for translating mouse coordinates when UI is rendered on 3D objects. Takes 2D screen coordinates as input, they may be modified by subscribers.
     Signal<IntVector2> mouseMoveEvent_;
     /// Emitted when a window document owned by this subsystem is closed.
     Signal<Rml::ElementDocument*> documentClosedEvent_;
     /// Emitted when underlying UI canvas is resized.
-    Signal<RmlUICanvasResizedArgs> canvasResizedEvent_;
+    Signal<RmlCanvasResizedArgs> canvasResizedEvent_;
+    /// Emitted when automatic resource reloading triggers reload of a document.
+    Signal<RmlDocumentReloadedArgs> documentReloaded_;
 
 private:
     /// Returns a size that this UI screen will cover.
@@ -130,6 +143,8 @@ private:
     void HandleDropFile(StringHash eventType, VariantMap& eventData);
     /// Handle rendering to a texture.
     void HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData);
+    /// Handle resource reloading.
+    void HandleResourceReloaded(StringHash eventType, VariantMap& eventData);
 
     /// UI context name.
     ea::string name_;
@@ -142,7 +157,7 @@ private:
     /// Flag indicating RmlUi debugger is already initialized.
     bool debuggerInitialized_ = false;
     /// Whether current subsystem is rendering or not.
-    bool isRendering_ = false;
+    bool isRendering_ = true;
     /// Other instances of RmlUI.
     ea::vector<WeakPtr<RmlUI>> siblingSubsystems_;
 
