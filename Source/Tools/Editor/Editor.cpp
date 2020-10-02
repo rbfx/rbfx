@@ -73,7 +73,6 @@
 #include "Inspector/ComponentInspector.h"
 #include "Inspector/SerializableInspector.h"
 #include "Inspector/SoundInspector.h"
-#include "Inspector/UIElementInspector.h"
 #include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
@@ -199,7 +198,6 @@ void Editor::Setup()
     inspectors_.push_back(SharedPtr(new SoundInspector(context_)));
     inspectors_.push_back(SharedPtr(new NodeInspector(context_)));
     inspectors_.push_back(SharedPtr(new ComponentInspector(context_)));
-    inspectors_.push_back(SharedPtr(new UIElementInspector(context_)));
     // FIXME: If user registers their own inspector later then SerializableInspector would no longer come in last.
     inspectors_.push_back(SharedPtr(new SerializableInspector(context_)));
 
