@@ -82,24 +82,7 @@ void DemoWindow::OnUpdate(StringHash, VariantMap&)
 
 void DemoWindow::Reload()
 {
-    // RmlUI instance which owns current document. It is not necessarily same as a result of GetSubsystem<RmlUI>().
-    // Save position and size of window document.
-    Vector2 pos = document_->GetAbsoluteOffset(Rml::Box::BORDER);
-    Vector2 size = document_->GetBox().GetSize(Rml::Box::CONTENT);
-    // Close document discarding any state.
-    document_->Close();
-    // Reset stylesheets and templates so they are reloaded from filesystem/cache.
-    Rml::Factory::ClearStyleSheetCache();
-    Rml::Factory::ClearTemplateCache();
-    // Reopen same document.
-    document_ = ui_->LoadDocument(documentPath_);
-    // Restore old position and size.
-    document_->SetProperty(Rml::PropertyId::Left, Rml::Property(pos.x_, Rml::Property::PX));
-    document_->SetProperty(Rml::PropertyId::Top, Rml::Property(pos.y_, Rml::Property::PX));
-    document_->SetProperty(Rml::PropertyId::Width, Rml::Property(size.x_, Rml::Property::PX));
-    document_->SetProperty(Rml::PropertyId::Height, Rml::Property(size.y_, Rml::Property::PX));
-    // Reopen document with old position and size.
-    document_->Show();
+    document_ = ui_->ReloadDocument(document_);
     // Model does not have to be recreated and old model will be reused. State stored in the model persists across reloads.
 }
 

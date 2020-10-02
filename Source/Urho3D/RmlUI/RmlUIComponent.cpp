@@ -40,6 +40,7 @@ RmlUIComponent::RmlUIComponent(Context* context)
     RmlUI* ui = GetSubsystem<RmlUI>();
     ui->documentClosedEvent_.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
     ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
+    ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
 }
 
 RmlUIComponent::~RmlUIComponent()
@@ -197,7 +198,7 @@ void RmlUIComponent::SetSize(Vector2 size)
     document_->UpdateDocument();
 }
 
-void RmlUIComponent::OnUICanvasResized(RmlUICanvasResizedArgs& args)
+void RmlUIComponent::OnUICanvasResized(RmlCanvasResizedArgs& args)
 {
     if (!useNormalized_)
         // Element is positioned using absolute pixel values. Nothing to adjust.
@@ -217,6 +218,12 @@ void RmlUIComponent::OnUICanvasResized(RmlUICanvasResizedArgs& args)
 
     SetPosition(pos);
     SetSize(size);
+}
+
+void RmlUIComponent::OnDocumentReloaded(RmlDocumentReloadedArgs& args)
+{
+    if (document_ == args.unloadedDocument_)
+        document_ = args.loadedDocument_;
 }
 
 }

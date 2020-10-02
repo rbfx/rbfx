@@ -26,6 +26,8 @@
 
 #include <RmlUi/Core/FileInterface.h>
 
+#include <unordered_set>
+
 namespace Urho3D
 {
 
@@ -34,7 +36,7 @@ class Context;
 namespace Detail
 {
 
-class URHO3D_API RmlFile : public RefCounted, public Rml::FileInterface
+class URHO3D_API RmlFile : public Rml::FileInterface
 {
 public:
     /// Construct.
@@ -53,9 +55,16 @@ public:
     /// Returns the length of the file.
     size_t Length(Rml::FileHandle file) override;
 
+    /// Returns true if file was opened since last call to ClearOpenedFiles().
+    bool GetFileWasOpened(const ea::string& path);
+    /// Clear a set of opened files.
+    void ClearOpenedFiles() { loadedFiles_.clear(); }
+
 private:
     /// Context pointer.
     WeakPtr<Context> context_;
+    /// A set of loaded files. Used to trigger UI reloads when resource cache reloads a modified file.
+    ea::unordered_set<ea::string> loadedFiles_;
 };
 
 }   // namespace Detail
