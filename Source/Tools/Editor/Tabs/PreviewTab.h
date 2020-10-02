@@ -32,6 +32,8 @@
 namespace Urho3D
 {
 
+class RmlUI;
+
 enum SceneSimulationStatus
 {
     SCENE_SIMULATION_STOPPED,
@@ -96,6 +98,8 @@ protected:
     void OnSceneActivated(StringHash type, VariantMap& args);
     ///
     void OnEndRenderingSystemUI(StringHash type, VariantMap& args);
+    ///
+    void RemapUICursorPos(IntVector2& pos);
 
     /// Texture used to display preview.
     SharedPtr<Texture2D> texture_{};
@@ -115,6 +119,8 @@ protected:
     MouseMode sceneMouseMode_ = MM_FREE;
     /// Ratio for dimming non-scene windows when scene is being played.
     float dim_ = 0.0f;
+    /// Rect were viewport was rendered, in imgui coordinates.
+    Rect viewportRect_;
 };
 
 }
