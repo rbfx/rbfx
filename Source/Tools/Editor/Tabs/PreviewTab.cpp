@@ -34,6 +34,9 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/SystemUI/Console.h>
+#if URHO3D_RMLUI
+#   include <Urho3D/RmlUI/RmlUI.h>
+#endif
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include "EditorEventsPrivate.h"
@@ -53,6 +56,11 @@ PreviewTab::PreviewTab(Context* context)
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
     texture_ = context_->CreateObject<Texture2D>();
     noContentPadding_ = true;
+#if URHO3D_RMLUI
+    auto* ui = context->GetSubsystem<RmlUI>();
+    ui->UnsubscribeFromEvent(E_ENDALLVIEWSRENDER);
+    ui->mouseMoveEvent_.Subscribe(this, &PreviewTab::RemapUICursorPos);
+#endif
 
     SubscribeToEvent(E_CAMERAVIEWPORTRESIZED, &PreviewTab::OnCameraViewportResized);
     SubscribeToEvent(E_COMPONENTADDED, &PreviewTab::OnComponentAdded);
@@ -200,9 +208,24 @@ bool PreviewTab::RenderWindowContent()
         if (auto* surface = texture_->GetRenderSurface())
             surface->SetUpdateMode(SURFACE_UPDATEALWAYS);
         UpdateViewports();
+
+#if URHO3D_RMLUI
+        auto* ui = GetSubsystem<RmlUI>();
+        ui->SetRenderTarget(texture_);
+#endif
     }
 
     ui::Image(texture_.Get(), rect.GetSize());
+    ui::SetCursorScreenPos(ui::GetItemRectMin());
+    ui::InvisibleButton("###preview", rect.GetSize());
+
+    viewportRect_.min_ = ui::GetItemRectMin();
+    viewportRect_.max_ = ui::GetItemRectMax();
+    if (!window->ViewportOwned)
+    {
+        viewportRect_.min_ -= static_cast<Vector2>(viewport->Pos);
+        viewportRect_.max_ -= static_cast<Vector2>(viewport->Pos);
+    }
 
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
     {
@@ -268,6 +291,10 @@ void PreviewTab::RenderButtons()
     {
         float timeStep = context_->GetSubsystem<Time>()->GetTimeStep();
         scene->Update(timeStep);
+#if URHO3D_RMLUI
+        if (auto* ui = GetSubsystem<RmlUI>())
+            ui->Update(timeStep);
+#endif
     }
     case SCENE_SIMULATION_PAUSED:
     {
@@ -311,6 +338,10 @@ void PreviewTab::Play()
         // Scene was not running. Allow scene to set up input parameters.
         undo_->SetTrackingEnabled(false);
         tab->SaveState(sceneState_);
+#if URHO3D_RMLUI
+        if (auto* ui = GetSubsystem<RmlUI>())
+            ui->SetBlockEvents(false);
+#endif
         context_->GetSubsystem<Audio>()->Play();
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         SendEvent(E_SIMULATIONSTART);
@@ -320,6 +351,10 @@ void PreviewTab::Play()
     {
         // Scene was paused. When resuming restore saved scene input parameters.
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
+#if URHO3D_RMLUI
+        if (auto* ui = GetSubsystem<RmlUI>())
+            ui->SetBlockEvents(false);
+#endif
         context_->GetSubsystem<Audio>()->Play();
         break;
     }
@@ -332,6 +367,10 @@ void PreviewTab::Pause()
 {
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
         simulationStatus_ = SCENE_SIMULATION_PAUSED;
+#if URHO3D_RMLUI
+    if (auto* ui = GetSubsystem<RmlUI>())
+        ui->SetBlockEvents(true);
+#endif
     context_->GetSubsystem<Audio>()->Stop();
 }
 
@@ -360,6 +399,10 @@ void PreviewTab::Step(float timeStep)
         Pause();
 
     scene->Update(timeStep);
+#if URHO3D_RMLUI
+    if (auto* ui = GetSubsystem<RmlUI>())
+        ui->Update(timeStep);
+#endif
     context_->GetSubsystem<Audio>()->Update(timeStep);
 }
 
@@ -373,6 +416,10 @@ void PreviewTab::Stop()
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         tab->RestoreState(sceneState_);
         undo_->SetTrackingEnabled(true);
+#if URHO3D_RMLUI
+        if (auto* ui = GetSubsystem<RmlUI>())
+            ui->SetBlockEvents(true);
+#endif
         context_->GetSubsystem<Audio>()->Stop();
     }
 }
@@ -416,6 +463,16 @@ void PreviewTab::ReleaseInput()
 
 void PreviewTab::RenderUI()
 {
+#if URHO3D_RMLUI
+    if (auto* ui = GetSubsystem<RmlUI>())
+        ui->Render();
+#endif
+}
+
+void PreviewTab::RemapUICursorPos(IntVector2& pos)
+{
+    pos.x_ -= viewportRect_.min_.x_;
+    pos.y_ -= viewportRect_.min_.y_;
 }
 
 }

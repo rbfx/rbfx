@@ -48,7 +48,6 @@
 #include "../RmlUI/RmlMaterialComponent.h"
 #include "../RmlUI/RmlTextureComponent.h"
 #include "../RmlUI/RmlUIComponent.h"
-#include "../RmlUI/RmlEvents.h"
 
 #include <atomic>
 #include <RmlUi/Core.h>
@@ -281,7 +280,21 @@ RmlUI::RmlUI(Context* context, const char* name)
     if (auto* ui = GetSubsystem<RmlUI>())
         ui->siblingSubsystems_.push_back(WeakPtr(this));
 
-    SetEnabled(true);
+    SubscribeToEvent(E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
+    SubscribeToEvent(E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
+    SubscribeToEvent(E_MOUSEMOVE, &RmlUI::HandleMouseMove);
+    SubscribeToEvent(E_MOUSEWHEEL, &RmlUI::HandleMouseWheel);
+    SubscribeToEvent(E_TOUCHBEGIN, &RmlUI::HandleTouchBegin);
+    SubscribeToEvent(E_TOUCHEND, &RmlUI::HandleTouchEnd);
+    SubscribeToEvent(E_TOUCHMOVE, &RmlUI::HandleTouchMove);
+    SubscribeToEvent(E_KEYDOWN, &RmlUI::HandleKeyDown);
+    SubscribeToEvent(E_KEYUP, &RmlUI::HandleKeyUp);
+    SubscribeToEvent(E_TEXTINPUT, &RmlUI::HandleTextInput);
+    SubscribeToEvent(E_DROPFILE, &RmlUI::HandleDropFile);
+
+    SubscribeToEvent(E_SCREENMODE, &RmlUI::HandleScreenMode);
+    SubscribeToEvent(E_POSTUPDATE, &RmlUI::HandlePostUpdate);
+    SubscribeToEvent(E_ENDALLVIEWSRENDER, &RmlUI::HandleEndAllViewsRender);
 }
 
 RmlUI::~RmlUI()
@@ -331,8 +344,12 @@ Rml::Context* RmlUI::GetRmlContext() const
 
 void RmlUI::HandleScreenMode(StringHash, VariantMap& eventData)
 {
-    if (renderSurface_.Null())
-        rmlContext_->SetDimensions(GetDesiredCanvasSize());
+    assert(rmlContext_ != nullptr);
+    RmlUICanvasResizedArgs args;
+    args.oldSize_ = rmlContext_->GetDimensions();
+    args.newSize_ = GetDesiredCanvasSize();
+    rmlContext_->SetDimensions(args.newSize_);
+    canvasResizedEvent_(this, args);
 }
 
 void RmlUI::HandleMouseButtonDown(StringHash, VariantMap& eventData)
@@ -451,10 +468,7 @@ void RmlUI::HandleTextInput(StringHash, VariantMap& eventData)
 
 void RmlUI::HandlePostUpdate(StringHash, VariantMap& eventData)
 {
-    URHO3D_PROFILE("UpdateUI");
-
-    if (rmlContext_)
-        rmlContext_->Update();
+    Update(eventData[PostUpdate::P_TIMESTEP].GetFloat());
 }
 
 void RmlUI::HandleDropFile(StringHash, VariantMap& eventData)
@@ -476,32 +490,19 @@ void RmlUI::HandleDropFile(StringHash, VariantMap& eventData)
 
 void RmlUI::HandleEndAllViewsRender(StringHash, VariantMap& eventData)
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
-    if (!graphics || !graphics->IsInitialized())
-        return;
-
-    URHO3D_PROFILE("RenderUI");
-    graphics->ResetRenderTargets();
-    if (renderSurface_)
-    {
-        graphics->SetDepthStencil(renderSurface_->GetLinkedDepthStencil());
-        graphics->SetRenderTarget(0, renderSurface_);
-        graphics->SetViewport(IntRect(0, 0, renderSurface_->GetWidth(), renderSurface_->GetHeight()));
-
-        if (clearColor_.a_ > 0)
-            graphics->Clear(CLEAR_COLOR, clearColor_);
-    }
-    else
-        graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
-
-    rmlContext_->Render();
+    if (isRendering_)
+        Render();
 }
 
 void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
 {
     renderSurface_ = target;
     clearColor_ = clearColor;
-    rmlContext_->SetDimensions(GetDesiredCanvasSize());
+    RmlUICanvasResizedArgs args;
+    args.oldSize_ = rmlContext_->GetDimensions();
+    args.newSize_ = GetDesiredCanvasSize();
+    rmlContext_->SetDimensions(args.newSize_);
+    canvasResizedEvent_(this, args);
 }
 
 void RmlUI::SetRenderTarget(Texture2D* target, const Color& clearColor)
@@ -512,36 +513,6 @@ void RmlUI::SetRenderTarget(Texture2D* target, const Color& clearColor)
 void RmlUI::SetRenderTarget(std::nullptr_t, const Color& clearColor)
 {
     SetRenderTarget(static_cast<RenderSurface*>(nullptr), clearColor);
-}
-
-void RmlUI::SetEnabled(bool enabled)
-{
-    if (isEnabled_ == enabled)
-        return;
-
-    isEnabled_ = enabled;
-    if (enabled)
-    {
-        rmlContext_->SetDimensions(GetDesiredCanvasSize());
-
-        SubscribeToEvent(E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
-        SubscribeToEvent(E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
-        SubscribeToEvent(E_MOUSEMOVE, &RmlUI::HandleMouseMove);
-        SubscribeToEvent(E_MOUSEWHEEL, &RmlUI::HandleMouseWheel);
-        SubscribeToEvent(E_TOUCHBEGIN, &RmlUI::HandleTouchBegin);
-        SubscribeToEvent(E_TOUCHEND, &RmlUI::HandleTouchEnd);
-        SubscribeToEvent(E_TOUCHMOVE, &RmlUI::HandleTouchMove);
-        SubscribeToEvent(E_KEYDOWN, &RmlUI::HandleKeyDown);
-        SubscribeToEvent(E_KEYUP, &RmlUI::HandleKeyUp);
-        SubscribeToEvent(E_TEXTINPUT, &RmlUI::HandleTextInput);
-        SubscribeToEvent(E_DROPFILE, &RmlUI::HandleDropFile);
-
-        SubscribeToEvent(E_SCREENMODE, &RmlUI::HandleScreenMode);
-        SubscribeToEvent(E_POSTUPDATE, &RmlUI::HandlePostUpdate);
-        SubscribeToEvent(E_ENDALLVIEWSRENDER, &RmlUI::HandleEndAllViewsRender);
-    }
-    else
-        UnsubscribeFromAllEvents();
 }
 
 IntVector2 RmlUI::GetDesiredCanvasSize() const
@@ -584,10 +555,40 @@ bool RmlUI::IsInputCapturedInternal() const
     return false;
 }
 
+void RmlUI::Render()
+{
+    Graphics* graphics = GetSubsystem<Graphics>();
+    if (!graphics || !graphics->IsInitialized())
+        return;
+
+    URHO3D_PROFILE("RenderUI");
+    graphics->ResetRenderTargets();
+    if (renderSurface_)
+    {
+        graphics->SetDepthStencil(renderSurface_->GetLinkedDepthStencil());
+        graphics->SetRenderTarget(0, renderSurface_);
+        graphics->SetViewport(IntRect(0, 0, renderSurface_->GetWidth(), renderSurface_->GetHeight()));
+
+        if (clearColor_.a_ > 0)
+            graphics->Clear(CLEAR_COLOR, clearColor_);
+    }
+    else
+        graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
+
+    rmlContext_->Render();
+}
+
 void RmlUI::OnDocumentUnload(Rml::ElementDocument* document)
 {
-    using namespace UIDocumentClosed;
-    SendEvent(E_UIDOCUMENTCLOSED, P_DOCUMENT, reinterpret_cast<void*>(document));
+    documentClosedEvent_(this, document);
+}
+
+void RmlUI::Update(float timeStep)
+{
+    URHO3D_PROFILE("UpdateUI");
+
+    if (rmlContext_)
+        rmlContext_->Update();
 }
 
 static int MouseButtonUrho3DToRml(MouseButton button)
