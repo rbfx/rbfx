@@ -35,12 +35,13 @@ namespace Urho3D
 extern const char* RML_UI_CATEGORY;
 
 RmlUIComponent::RmlUIComponent(Context* context)
-    : Component(context)
+    : LogicComponent(context)
 {
     RmlUI* ui = GetSubsystem<RmlUI>();
     ui->documentClosedEvent_.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
     ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
     ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
+    SetUpdateEventMask(USE_UPDATE);
 }
 
 RmlUIComponent::~RmlUIComponent()
@@ -67,9 +68,9 @@ void RmlUIComponent::OnNodeSet(Node* node)
         CloseInternal();
 }
 
-void RmlUIComponent::SetResource(const ResourceRef& resource)
+void RmlUIComponent::SetResource(const ResourceRef& resourceRef)
 {
-    resource_ = resource;
+    resource_ = resourceRef;
     if (resource_.type_ == StringHash::ZERO)
         resource_.type_ = BinaryFile::GetTypeStatic();
     SetOpen(open_);
@@ -224,6 +225,12 @@ void RmlUIComponent::OnDocumentReloaded(RmlDocumentReloadedArgs& args)
 {
     if (document_ == args.unloadedDocument_)
         document_ = args.loadedDocument_;
+}
+
+void RmlUIComponent::SetResource(const eastl::string& resourceName)
+{
+    ResourceRef resourceRef(BinaryFile::GetTypeStatic(), resourceName);
+    SetResource(resourceRef);
 }
 
 }
