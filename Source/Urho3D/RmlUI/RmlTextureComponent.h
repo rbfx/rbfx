@@ -21,7 +21,7 @@
 //
 #pragma once
 
-#include "../Scene/Component.h"
+#include "../Scene/LogicComponent.h"
 
 namespace Urho3D
 {
@@ -30,9 +30,9 @@ class RmlUI;
 class Texture2D;
 
 /// Renders off-screen UI into a texture.
-class RmlTextureComponent : public Component
+class RmlTextureComponent : public LogicComponent
 {
-    URHO3D_OBJECT(RmlTextureComponent, Component);
+    URHO3D_OBJECT(RmlTextureComponent, LogicComponent);
 public:
     /// Construct.
     explicit RmlTextureComponent(Context* context);
