@@ -42,6 +42,14 @@ namespace Urho3D
 
 namespace Detail { class RmlContext; class RmlPlugin; }
 
+struct RmlUICanvasResizedArgs
+{
+    /// Previous size of canvas.
+    IntVector2 oldSize_;
+    /// Current size of canvas.
+    IntVector2 newSize_;
+};
+
 /// %UI subsystem. Manages the graphical user interface.
 class URHO3D_API RmlUI : public Object
 {
@@ -67,14 +75,22 @@ public:
     /// Set render target where this instance will render into. A convenience overload to resolve ambiguity when clearing rendertarget.
     void SetRenderTarget(std::nullptr_t target, const Color& clearColor=Color::TRANSPARENT_BLACK);
     /// Enable or disable this UI subsystem. When disabled, no inputs will be processed and nothing will be rendered.
-    void SetEnabled(bool enabled);
-    /// Return true if this subsystem is rendering and accepting input.
-    bool IsEnabled() const { return isEnabled_; }
+    void SetRendering(bool enable) { isRendering_ = enable; }
+    /// Return true if this subsystem is rendering. When disabled, it is still possible to manually render by calling Render() method.
+    bool IsRendering() const { return isRendering_; }
     /// Return true if input is captured by UI.
     bool IsInputCaptured() const;
+    /// Update the UI logic. Called by HandlePostUpdate().
+    void Update(float timeStep);
+    /// Render UI.
+    void Render();
 
     /// Emitted when mouse input is detected. Should be used for translating mouse coordinates when UI is rendered on 3D objects. Takes 2D screen coordinates as input, they may be modified by subscribers.
     Signal<IntVector2> mouseMoveEvent_;
+    /// Emitted when a window document owned by this subsystem is closed.
+    Signal<Rml::ElementDocument*> documentClosedEvent_;
+    /// Emitted when underlying UI canvas is resized.
+    Signal<RmlUICanvasResizedArgs> canvasResizedEvent_;
 
 private:
     /// Returns a size that this UI screen will cover.
@@ -126,7 +142,7 @@ private:
     /// Flag indicating RmlUi debugger is already initialized.
     bool debuggerInitialized_ = false;
     /// Whether current subsystem is rendering or not.
-    bool isEnabled_ = false;
+    bool isRendering_ = false;
     /// Other instances of RmlUI.
     ea::vector<WeakPtr<RmlUI>> siblingSubsystems_;
 
