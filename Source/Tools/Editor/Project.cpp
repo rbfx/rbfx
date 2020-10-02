@@ -30,6 +30,9 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#if URHO3D_RMLUI
+#   include <Urho3D/RmlUI/RmlUI.h>
+#endif
 
 #include <regex>
 #include <EASTL/sort.h>
@@ -197,6 +200,16 @@ bool Project::LoadProject(const ea::string& projectPath)
         cache->AddResourceDir(absolutePath, i + 1);
     }
     cache->SetAutoReloadResources(true);
+
+#if URHO3D_RMLUI
+    // TODO: Sucks. Newly added fonts wont work.
+    auto* ui = GetSubsystem<RmlUI>();
+    ea::vector<ea::string> fonts;
+    cache->Scan(fonts, "Fonts/", "*.ttf", SCAN_FILES, true);
+    cache->Scan(fonts, "Fonts/", "*.otf", SCAN_FILES, true);
+    for (const ea::string& font : fonts)
+        ui->LoadFont(Format("Fonts/{}", font));
+#endif
 
 #if URHO3D_PLUGINS
     // Clean up old copies of reloadable files.
