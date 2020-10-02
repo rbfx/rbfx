@@ -23,35 +23,66 @@
 #pragma once
 
 #include "Sample.h"
+
+#include <Urho3D/RmlUI/RmlUIComponent.h>
+#include <Urho3D/RmlUI/RmlMaterialComponent.h>
+
 #include <RmlUi/Core.h>
 
 namespace Urho3D { class RmlUI; }
 
-/// A helper class used to manage one window.
-class DemoWindow : public Object
+/// A 2D UI window.
+class SimpleWindow : public RmlUIComponent
 {
-    URHO3D_OBJECT(DemoWindow, Object);
+    URHO3D_OBJECT(SimpleWindow, RmlUIComponent);
 public:
     /// Construct.
-    explicit DemoWindow(RmlUI* ui);
+    explicit SimpleWindow(Context* context);
     /// Destruct.
-    ~DemoWindow();
+    ~SimpleWindow() override;
     /// Reload window rml and rcss from disk/cache.
     void Reload();
     /// Callback function invoked from rml template.
     void CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments);
-    /// Update model and animate progressbars.
-    void OnUpdate(StringHash, VariantMap&);
     /// Process 'CloseWindow' event.
     void OnCloseWindow(StringHash, VariantMap& args);
 
 public:
-    /// UI instance which renders this window.
-    WeakPtr<RmlUI> ui_;
-    /// Sample rml document path.
-    ea::string documentPath_{"UI/HelloRmlUI.rml"};
-    /// Rml document instance.
-    Rml::ElementDocument* document_;
+    /// Update model and animate progressbars.
+    void Update(float timeStep) override;
+
+    /// Value of UI slider.
+    int sliderValue_ = 0;
+    /// Value of button click counter.
+    int counter_ = 0;
+    /// Value of progressbar progress.
+    float progress_ = 0;
+    /// Handle of our data model.
+    Rml::DataModelHandle model_;
+};
+
+/// A 2D UI window rendered on 3D object.
+class SimpleWindowMaterial : public RmlMaterialComponent
+{
+    URHO3D_OBJECT(SimpleWindowMaterial, RmlMaterialComponent);
+public:
+    /// Construct.
+    explicit SimpleWindowMaterial(Context* context);
+    /// Destruct.
+    ~SimpleWindowMaterial() override;
+    /// Reload window rml and rcss from disk/cache.
+    void Reload();
+    /// Callback function invoked from rml template.
+    void CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments);
+    /// Process 'CloseWindow' event.
+    void OnCloseWindow(StringHash, VariantMap& args);
+
+public:
+    /// Update model and animate progressbars.
+    void Update(float timeStep) override;
+
+    /// Window document.
+    Rml::ElementDocument* document_ = nullptr;
     /// Value of UI slider.
     int sliderValue_ = 0;
     /// Value of button click counter.
@@ -71,6 +102,8 @@ public:
     explicit HelloRmlUI(Context* context);
     /// Setup after engine initialization and before running the main loop.
     void Start() override;
+    /// Tear down any state that would pollute next initialization of the sample.
+    void Stop() override;
 
 private:
     /// Initialize 3D scene.
@@ -81,9 +114,9 @@ private:
     void OnUpdate(StringHash, VariantMap&);
 
     /// Window which will be rendered into backbuffer.
-    SharedPtr<DemoWindow> window_;
+    WeakPtr<SimpleWindow> window_;
     /// Window which will be rendered onto a side of a cube.
-    SharedPtr<DemoWindow> window3D_;
+    WeakPtr<SimpleWindowMaterial> windowMaterial_;
 };
 
 

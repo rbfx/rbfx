@@ -39,38 +39,42 @@
 #include <Urho3D/DebugNew.h>
 
 
-DemoWindow::DemoWindow(RmlUI* ui)
-    : Object(ui->GetContext())
-    , ui_(ui)
+SimpleWindow::SimpleWindow(Context* context)
+    : RmlUIComponent(context)
 {
+    RmlUI* ui = GetSubsystem<RmlUI>();
+
+    // Create a data model for connecting UI with state kept in this class.
     Rml::DataModelConstructor constructor = ui->GetRmlContext()->CreateDataModel("example_model");
     assert(constructor);
     constructor.Bind("slider_value", &sliderValue_);
     constructor.Bind("counter", &counter_);
     constructor.Bind("progress", &progress_);
-    constructor.BindEventCallback("count", &DemoWindow::CountClicks, this);
+    constructor.BindEventCallback("count", &SimpleWindow::CountClicks, this);
     model_ = constructor.GetModelHandle();
-    document_ = ui->LoadDocument(documentPath_);
-    document_->Show();
 
-    SubscribeToEvent(E_UPDATE, &DemoWindow::OnUpdate);
-    SubscribeToEvent("CloseWindow", &DemoWindow::OnCloseWindow);
+    // Load UI.
+    SetResource("UI/HelloRmlUI.rml");
+    SetOpen(true);
+
+    // Act on pressing window close button.
+    SubscribeToEvent(ui, "CloseWindow", &SimpleWindow::OnCloseWindow);
 }
 
-DemoWindow::~DemoWindow()
+SimpleWindow::~SimpleWindow()
 {
-    document_->Close();
-    ui_->GetRmlContext()->RemoveDataModel("example_model");
+    RmlUI* ui = GetSubsystem<RmlUI>();
+    ui->GetRmlContext()->RemoveDataModel("example_model");
 }
 
-void DemoWindow::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
+void SimpleWindow::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
 {
     // Increase counter and notify model of it's update.
     counter_++;
     modelHandle.DirtyVariable("counter");
 }
 
-void DemoWindow::OnUpdate(StringHash, VariantMap&)
+void SimpleWindow::Update(float timeStep)
 {
     // Animate progressbars
     progress_ = (Sin(GetSubsystem<Time>()->GetElapsedTime() * 50) + 1) / 2;
@@ -80,13 +84,14 @@ void DemoWindow::OnUpdate(StringHash, VariantMap&)
     model_.Update();
 }
 
-void DemoWindow::Reload()
+void SimpleWindow::Reload()
 {
-    document_ = ui_->ReloadDocument(document_);
+    RmlUI* ui = GetSubsystem<RmlUI>();
+    document_ = ui->ReloadDocument(document_);
     // Model does not have to be recreated and old model will be reused. State stored in the model persists across reloads.
 }
 
-void DemoWindow::OnCloseWindow(StringHash, VariantMap& args)
+void SimpleWindow::OnCloseWindow(StringHash, VariantMap& args)
 {
     Rml::Element* element = static_cast<Rml::Element*>(args["_Element"].GetVoidPtr());
     if (element->GetOwnerDocument() == document_)
@@ -96,6 +101,66 @@ void DemoWindow::OnCloseWindow(StringHash, VariantMap& args)
     }
 }
 
+
+SimpleWindowMaterial::SimpleWindowMaterial(Context* context)
+    : RmlMaterialComponent(context)
+{
+    // Create a data model for connecting UI with state kept in this class.
+    Rml::DataModelConstructor constructor = GetUI()->GetRmlContext()->CreateDataModel("example_model");
+    assert(constructor);
+    constructor.Bind("slider_value", &sliderValue_);
+    constructor.Bind("counter", &counter_);
+    constructor.Bind("progress", &progress_);
+    constructor.BindEventCallback("count", &SimpleWindowMaterial::CountClicks, this);
+    model_ = constructor.GetModelHandle();
+
+    // Load UI.
+    document_ = GetUI()->LoadDocument("UI/HelloRmlUI.rml");
+    document_->Show();
+
+    // Act on pressing window close button.
+    SubscribeToEvent(GetUI(), "CloseWindow", &SimpleWindowMaterial::OnCloseWindow);
+}
+
+SimpleWindowMaterial::~SimpleWindowMaterial()
+{
+    GetUI()->GetRmlContext()->RemoveDataModel("example_model");
+}
+
+void SimpleWindowMaterial::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
+{
+    // Increase counter and notify model of it's update.
+    counter_++;
+    modelHandle.DirtyVariable("counter");
+}
+
+void SimpleWindowMaterial::Update(float timeStep)
+{
+    // Animate progressbars
+    progress_ = (Sin(GetSubsystem<Time>()->GetElapsedTime() * 50) + 1) / 2;
+    model_.DirtyVariable("progress");
+
+    // Update UI model. Called once per frame in E_UPDATE event.
+    model_.Update();
+}
+
+void SimpleWindowMaterial::Reload()
+{
+    document_ = GetUI()->ReloadDocument(document_);
+    // Model does not have to be recreated and old model will be reused. State stored in the model persists across reloads.
+}
+
+void SimpleWindowMaterial::OnCloseWindow(StringHash, VariantMap& args)
+{
+    Rml::Element* element = static_cast<Rml::Element*>(args["_Element"].GetVoidPtr());
+    if (element->GetOwnerDocument() == document_)
+    {
+        document_->Close();
+        document_ = nullptr;
+    }
+}
+
+
 HelloRmlUI::HelloRmlUI(Context* context)
     : Sample(context)
 {
@@ -103,6 +168,10 @@ HelloRmlUI::HelloRmlUI(Context* context)
 
 void HelloRmlUI::Start()
 {
+    // Register custom components.
+    context_->RegisterFactory<SimpleWindow>();
+    context_->RegisterFactory<SimpleWindowMaterial>();
+
     // Execute base class startup
     Sample::Start();
 
@@ -118,22 +187,16 @@ void HelloRmlUI::Start()
     GetSubsystem<FileSystem>()->SetExecuteConsoleCommands(true);
 }
 
+void HelloRmlUI::Stop()
+{
+    context_->RemoveFactory<SimpleWindow>();
+    context_->RemoveFactory<SimpleWindowMaterial>();
+}
+
 void HelloRmlUI::InitWindow()
 {
     auto* ui = context_->GetSubsystem<RmlUI>();
     auto* cache = GetSubsystem<ResourceCache>();
-
-    // Node that will get UI rendered on it.
-    Node* boxNode = scene_->GetChild("Box");
-    // Create a component that sets up UI rendering. It sets material to StaticModel of the node.
-    auto* component = boxNode->CreateComponent<RmlMaterialComponent>();
-    // Optionally modify material. Technique is changed so object is visible without any lights.
-    auto* material = component->GetMaterial();
-    material->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-    // Create a StaticModel for our cube.
-    auto* model = boxNode->GetComponent<StaticModel>();
-    // And set a material to it so UI would be rendered on to cube.
-    model->SetMaterial(material);
 
     // Initialize fonts in backbuffer UI.
     ui->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
@@ -141,16 +204,30 @@ void HelloRmlUI::InitWindow()
     ui->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
     ui->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
 
-    // Initialize fonts in 3D UI.
-    component->GetUI()->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
-    component->GetUI()->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
-    component->GetUI()->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
-    component->GetUI()->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
-
     // Create a window rendered into backbuffer.
-    window_ = new DemoWindow(ui);
-    // Create a window rendered onto a cube.
-    window3D_ = new DemoWindow(component->GetUI());
+    window_ = scene_->CreateComponent<SimpleWindow>();
+
+    // Node that will get UI rendered on it.
+    Node* boxNode = scene_->GetChild("Box");
+
+    // Create a component that sets up UI rendering. It sets material to StaticModel of the node.
+    windowMaterial_ = boxNode->CreateComponent<SimpleWindowMaterial>();
+
+    // Initialize fonts in 3D UI.
+    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
+    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
+    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
+    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
+
+    // Optionally modify material. Technique is changed so object is visible without any lights.
+    auto* material = windowMaterial_->GetMaterial();
+    material->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
+
+    // Create a StaticModel for our cube.
+    auto* model = boxNode->GetComponent<StaticModel>();
+
+    // And set a material to it so UI would be rendered on to cube.
+    model->SetMaterial(material);
 
     // Subscribe to update event for handling keys and animating cube.
     SubscribeToEvent(E_UPDATE, &HelloRmlUI::OnUpdate);
@@ -204,9 +281,8 @@ void HelloRmlUI::OnUpdate(StringHash, VariantMap& eventData)
     Input* input = GetSubsystem<Input>();
     if (input->GetKeyPress(KEY_F5))
     {
-        DemoWindow* windows[] = {window_, window3D_};
-        for (DemoWindow* window : windows)
-            window->Reload();
+        window_->Reload();
+        windowMaterial_->Reload();
     }
 
     if (input->GetKeyPress(KEY_F9))
