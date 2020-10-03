@@ -82,8 +82,6 @@ protected:
     void OnUICanvasResized(RmlCanvasResizedArgs& size);
     /// Handle document pointer changes on resource reload.
     void OnDocumentReloaded(RmlDocumentReloadedArgs& args);
-    /// Update position and size when toggling use of normalized coordinates.
-    void OnUseNormalizedCoordinates();
 
     /// A rml file resource.
     ResourceRef resource_;
