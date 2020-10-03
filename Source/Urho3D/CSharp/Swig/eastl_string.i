@@ -120,7 +120,7 @@ class string_view;
 %}
 
 %pragma(csharp) modulecode=%{
-    [System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="CSharp_Urho3D_String_Set")]
+    [System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="CSharp_Urho3D_String_Set")]
     internal static extern void SetString(global::System.IntPtr str,
 #if URHO3D_NETFX_LEGACY_VERSION
         [param: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPStr)]
@@ -129,7 +129,7 @@ class string_view;
 #endif
         string val);
 
-    [System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="CSharp_Urho3D_String_Get")]
+    [System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="CSharp_Urho3D_String_Get")]
 #if URHO3D_NETFX_LEGACY_VERSION
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPStr)]
 #else
