@@ -484,7 +484,13 @@ function (csharp_bind_target)
         CPLUSPLUS ON
         SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
     )
-    set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT ${BIND_NATIVE})
+    if (NOT DEFINED SWIG_MODULE_${BIND_TARGET}_DLLIMPORT)
+        if (IOS)
+            set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT ${BIND_NATIVE})
+        else ()
+            set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT __Internal)
+        endif ()
+    endif ()
     set (SWIG_MODULE_${BIND_TARGET}_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp)
     set (SWIG_MODULE_${BIND_TARGET}_NO_LIBRARY ON)
 
