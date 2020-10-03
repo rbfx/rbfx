@@ -23,7 +23,7 @@ static SWIG_CSharpWStringHelperCallback SWIG_csharp_wstring_callback = NULL;
     public delegate string SWIGWStringDelegate(global::System.IntPtr message);
     static SWIGWStringDelegate wstringDelegate = new SWIGWStringDelegate(CreateWString);
 
-    [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegisterWStringCallback_$module")]
+    [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="SWIGRegisterWStringCallback_$module")]
     public static extern void SWIGRegisterWStringCallback_$module(SWIGWStringDelegate wstringDelegate);
 
     static string CreateWString([global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPWStr)]global::System.IntPtr cString) {

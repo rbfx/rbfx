@@ -61,6 +61,9 @@ class CSHARP:public Language {
   String *module_class_constants_code;
   String *enum_code;
   String *dllimport;		// DllImport attribute name
+#ifndef WITHOUT_RBFX
+  String *dllimport_module;		// Variable used in DllImport attribute
+#endif
   String *namespce;		// Optional namespace name
   String *imclass_imports;	//intermediary class imports from %pragma
   String *module_imports;	//module imports from %pragma
@@ -415,6 +418,14 @@ public:
     if (!dllimport)
       dllimport = Copy(module_class_name);
 
+#ifndef WITHOUT_RBFX
+    dllimport_module = Copy(dllimport);
+    Delete(dllimport);
+    dllimport = NewString("");
+    Printf(dllimport, "global::%s.%s.DllImportModule", namespce, imclass_name);
+#else
+    dllimport_var = Copy(dllimport);
+#endif
     Swig_banner(f_begin);
 
     Printf(f_runtime, "\n\n#ifndef SWIGCSHARP\n#define SWIGCSHARP\n#endif\n\n");
@@ -489,6 +500,9 @@ public:
       // Add the intermediary class methods
       Replaceall(imclass_class_code, "$module", module_class_name);
       Replaceall(imclass_class_code, "$imclassname", imclass_name);
+#ifndef WITHOUT_RBFX
+      Replaceall(imclass_class_code, "$dllimport_module", dllimport_module);
+#endif
       Replaceall(imclass_class_code, "$dllimport", dllimport);
       Printv(f_im, imclass_class_code, NIL);
       Printv(f_im, imclass_cppcasts_code, NIL);
@@ -540,6 +554,10 @@ public:
       Replaceall(module_class_code, "$imclassname", imclass_name);
       Replaceall(module_class_constants_code, "$imclassname", imclass_name);
 
+#ifndef WITHOUT_RBFX
+      Replaceall(module_class_code, "$dllimport_module", dllimport_module);
+      Replaceall(module_class_constants_code, "$dllimport_module", dllimport_module);
+#endif
       Replaceall(module_class_code, "$dllimport", dllimport);
       Replaceall(module_class_constants_code, "$dllimport", dllimport);
 
@@ -639,6 +657,8 @@ public:
     typeid_imcode = NULL;
     Delete(typeid_cppcode);
     typeid_cppcode = NULL;
+    Delete(dllimport_module);
+    dllimport_module = NULL;
 #endif
     Delete(dmethods_seq);
     dmethods_seq = NULL;
@@ -890,7 +910,7 @@ public:
       }
     }
 
-    Printv(imclass_class_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
+    Printv(imclass_class_code, "\n  [global::System.Runtime.InteropServices.DllImport(", dllimport, ", EntryPoint=\"", wname, "\")]\n", NIL);
 
     if (im_outattributes)
       Printf(imclass_class_code, "  %s\n", im_outattributes);
@@ -1633,6 +1653,9 @@ public:
     String *section = Getattr(n, "section");
     Replaceall(code, "$module", module_class_name);
     Replaceall(code, "$imclassname", imclass_name);
+#ifndef WITHOUT_RBFX
+    Replaceall(code, "$dllimport_module", dllimport_module);
+#endif
     Replaceall(code, "$dllimport", dllimport);
 
     if (!ImportMode && (Cmp(section, "proxycode") == 0)) {
@@ -1796,7 +1819,7 @@ public:
   void upcastsCode(SwigType *smart, String *upcast_method_name, String *c_classname, String *c_baseclass) {
     String *wname = Swig_name_wrapper(upcast_method_name);
 
-    Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
+    Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(", dllimport, ", EntryPoint=\"", wname, "\")]\n", NIL);
     Printf(imclass_cppcasts_code, "  public static extern global::System.IntPtr %s(global::System.IntPtr jarg1);\n", upcast_method_name);
 
     Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
@@ -2139,7 +2162,7 @@ public:
       String *typeid_method_name = Swig_name_member(getNSpace(), getClassPrefix(), "SWIGTypeId");
       String *wname = Swig_name_wrapper(typeid_method_name);
 
-      Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
+      Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(", dllimport, ", EntryPoint=\"", wname, "\")]\n", NIL);
       Printf(imclass_cppcasts_code, "  public static extern global::System.IntPtr %s(global::System.IntPtr jarg1);\n", typeid_method_name);
 
       Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
@@ -2156,7 +2179,7 @@ public:
       typeid_method_name = Swig_name_member(getNSpace(), getClassPrefix(), "SWIGTypeIdStatic");
       wname = Swig_name_wrapper(typeid_method_name);
 
-      Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
+      Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(", dllimport, ", EntryPoint=\"", wname, "\")]\n", NIL);
       Printf(imclass_cppcasts_code, "  public static extern global::System.IntPtr %s();\n", typeid_method_name);
 
       Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
@@ -2331,6 +2354,12 @@ public:
       Replaceall(proxy_class_constants_code, "$imclassname", full_imclass_name);
       Replaceall(interface_class_code, "$imclassname", full_imclass_name);
 
+#ifndef WITHOUT_RBFX
+      Replaceall(proxy_class_def, "$dllimport_module", dllimport_module);
+      Replaceall(proxy_class_code, "$dllimport_module", dllimport_module);
+      Replaceall(proxy_class_constants_code, "$dllimport_module", dllimport_module);
+      Replaceall(interface_class_code, "$dllimport_module", dllimport_module);
+#endif
       Replaceall(proxy_class_def, "$dllimport", dllimport);
       Replaceall(proxy_class_code, "$dllimport", dllimport);
       Replaceall(proxy_class_constants_code, "$dllimport", dllimport);
@@ -3670,6 +3699,9 @@ public:
     Replaceall(swigtype, "$csclassname", classname);
     Replaceall(swigtype, "$module", module_class_name);
     Replaceall(swigtype, "$imclassname", imclass_name);
+#ifndef WITHOUT_RBFX
+    Replaceall(swigtype, "$dllimport_module", dllimport_module);
+#endif
     Replaceall(swigtype, "$dllimport", dllimport);
 
     // For unknown enums
@@ -3882,7 +3914,7 @@ public:
     if (nspace)
       Insert(qualified_classname, 0, NewStringf("%s.", nspace));
 
-    Printv(imclass_class_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
+    Printv(imclass_class_code, "\n  [global::System.Runtime.InteropServices.DllImport(", dllimport, ", EntryPoint=\"", wname, "\")]\n", NIL);
 // #ifndef WITHOUT_RBFX
 //     Printf(imclass_class_code, "  public static extern void %s(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.IntPtr handle", swig_director_connect);
 //
