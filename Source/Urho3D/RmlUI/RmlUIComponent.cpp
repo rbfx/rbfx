@@ -54,7 +54,7 @@ void RmlUIComponent::RegisterObject(Context* context)
     context->RegisterFactory<RmlUIComponent>(RML_UI_CATEGORY);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Use Normalized Coordinates", bool, useNormalized_, OnUseNormalizedCoordinates, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Open", IsOpen, SetOpen, bool, false, AM_DEFAULT);
@@ -124,11 +124,6 @@ void RmlUIComponent::OnDocumentClosed(Rml::ElementDocument*& document)
         document_ = nullptr;
         open_ = false;
     }
-}
-
-void RmlUIComponent::OnUseNormalizedCoordinates()
-{
-
 }
 
 Vector2 RmlUIComponent::GetPosition() const
