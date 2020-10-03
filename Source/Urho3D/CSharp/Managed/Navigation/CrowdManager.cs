@@ -29,7 +29,7 @@ namespace Urho3DNet
     {
         public delegate void CrowdAgentVelocityShaderDelegate(CrowdAgent agent, float timeStep, ref Vector3 desiredVelocity, ref float desiredSpeed);
         private delegate void CrowdAgentVelocityShaderFnDelegate(IntPtr agent, float timeStep, IntPtr desiredVelocity, IntPtr desiredSpeed);
-        [DllImport("Urho3D", EntryPoint = "Urho3D_CrowdManager_SetVelocityShader")]
+        [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_CrowdManager_SetVelocityShader")]
         private static extern void Urho3D_CrowdManager_SetVelocityShader(HandleRef crowdManager, IntPtr callback, IntPtr callbackHandle);
 
         public void SetVelocityShader(CrowdAgentVelocityShaderDelegate shader)
