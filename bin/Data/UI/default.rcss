@@ -1,13 +1,13 @@
 @spritesheet theme
 {
-	src: /Textures/RmlUI-1x.png;
+    src: /Textures/RmlUI-1x.png;
 
-	close-button: 0px 0px 20px 20px;
-	arrow-right: 20px 0px 16px 16px;
-	arrow-down: 36px 0px 16px 16px;
-	radio-dot: 52px 0px 16px 16px;
-	check-mark: 68px 0px 16px 16px;
-	resize-handle: 84px 0px 16px 16px;
+    close-button: 0px 0px 20px 20px;
+    arrow-right: 20px 0px 16px 16px;
+    arrow-down: 36px 0px 16px 16px;
+    radio-dot: 52px 0px 16px 16px;
+    check-mark: 68px 0px 16px 16px;
+    resize-handle: 84px 0px 16px 16px;
 }
 
 body
@@ -126,7 +126,7 @@ textarea
     border: 1dp #2b3939;
     border-top: #3d584b;
     border-radius: 4dp;
-	padding: 4dp;
+    padding: 4dp;
     cursor: text;
     display: block;
     min-height: 100dp;
@@ -166,11 +166,11 @@ input.radio:checked:hover
 
 input.checkbox:checked
 {
-	decorator: image(check-mark);
+    decorator: image(check-mark);
 }
 input.radio:checked
 {
-	decorator: image(radio-dot);
+    decorator: image(radio-dot);
 }
 
 /* range */
