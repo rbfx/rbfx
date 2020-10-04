@@ -31,7 +31,7 @@
 
 namespace Urho3D { class RmlUI; }
 
-/// A 2D UI window.
+/// A 2D UI window, managed by main UI instance returned by GetSubsystem<RmlUI>().
 class SimpleWindow : public RmlUIComponent
 {
     URHO3D_OBJECT(SimpleWindow, RmlUIComponent);
@@ -61,7 +61,7 @@ public:
     Rml::DataModelHandle model_;
 };
 
-/// A 2D UI window rendered on 3D object.
+/// A 2D UI window rendered on 3D object. It contains it's own RmlUI instance returned by GetUI().
 class SimpleWindowMaterial : public RmlMaterialComponent
 {
     URHO3D_OBJECT(SimpleWindowMaterial, RmlMaterialComponent);
