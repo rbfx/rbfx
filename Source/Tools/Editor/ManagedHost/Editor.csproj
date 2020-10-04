@@ -11,7 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="../../../Urho3D/CSharp/Urho3DNet.csproj" />
     <ProjectReference Include="../../../Urho3D/CSharp/Urho3DNet.Scripts.csproj" />
-    <PackageReference Include="Mono.Cecil" Version="0.11.2" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.3" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|x64'"></PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|Win32'"></PropertyGroup>
