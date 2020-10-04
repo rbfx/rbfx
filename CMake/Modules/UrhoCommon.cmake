@@ -455,6 +455,9 @@ function (csharp_bind_target)
     endif ()
 
     # Swig
+    if (IOS)
+        list (APPEND GENERATOR_OPTIONS -D__IOS__)
+    endif ()
     set(CMAKE_SWIG_FLAGS
         -namespace ${BIND_NAMESPACE}
         -fastdispatch
