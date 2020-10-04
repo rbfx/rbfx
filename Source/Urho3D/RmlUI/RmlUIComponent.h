@@ -34,7 +34,7 @@ struct RmlDocumentReloadedArgs;
 class RmlUI;
 
 /// Adds a single window to game screen.
-class RmlUIComponent : public LogicComponent
+class URHO3D_API RmlUIComponent : public LogicComponent
 {
     URHO3D_OBJECT(RmlUIComponent, LogicComponent);
 public:
