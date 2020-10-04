@@ -63,6 +63,8 @@ SimpleWindow::SimpleWindow(Context* context)
 
 SimpleWindow::~SimpleWindow()
 {
+    // RmlUIComponent is responsible for storing document instance, therefore we do not need to close it here.
+    // Dispose of data model.
     RmlUI* ui = GetSubsystem<RmlUI>();
     ui->GetRmlContext()->RemoveDataModel("example_model");
 }
@@ -124,6 +126,11 @@ SimpleWindowMaterial::SimpleWindowMaterial(Context* context)
 
 SimpleWindowMaterial::~SimpleWindowMaterial()
 {
+    // Close document.
+    if (document_)
+        document_->Close();
+
+    // Dispose of model
     GetUI()->GetRmlContext()->RemoveDataModel("example_model");
 }
 
