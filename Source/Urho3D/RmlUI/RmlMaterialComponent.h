@@ -30,7 +30,7 @@ class RmlUI;
 class Texture2D;
 
 /// Renders off-screen UI into a texture.
-class RmlMaterialComponent : public RmlTextureComponent
+class URHO3D_API RmlMaterialComponent : public RmlTextureComponent
 {
     URHO3D_OBJECT(RmlMaterialComponent, RmlTextureComponent);
 public:
