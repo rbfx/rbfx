@@ -676,7 +676,7 @@ void Camera::OnMarkedDirty(Node* node)
 void Camera::UpdateProjection() const
 {
     // Start from a zero matrix in case it was custom previously
-    Matrix4 projection;
+    Matrix4 projection = Matrix4::ZERO;
     float projNearClip{};
     float projFarClip{};
 
