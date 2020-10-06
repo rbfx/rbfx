@@ -11,10 +11,6 @@
 %include "swiginterface.i"
 %include "attribute.i"
 
-#ifdef __IOS__
-%typemap(csattributes) SWIGTYPE "[global::Foundation.Preserve(AllMembers = true)]"
-#endif
-
 %include "InstanceCache.i"
 
 %apply bool* INOUT                  { bool&, bool* };
