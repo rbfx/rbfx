@@ -1,7 +1,6 @@
 name: Notifications
 
-on:
-  push: {}
+on: [push]
 
 jobs:
   stale:
@@ -9,8 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Discord Commits
-      uses: Sniddl/discord-commits@v1.2
+      uses: dearimgui/github_discord_notifier@65b7bef
       with:
-        webhook: ${{ secrets.DISCORD_WEBHOOK_COMMITS }}
-        message: "{{ github.ref }}\nDiff: {{ github.context.payload.compare }}"
-        embed: '{ "title": "{{ commit.title }}", "description": "{{ commit.description }}", "url": "{{ commit.url }}", "author": { "name": "{{ commit.author.name }} ({{ commit.author.username }})", "icon_url": "https://unavatar.now.sh/gravatar/{{ commit.author.email }}"} }'
+        discord-webhook: ${{ secrets.DISCORD_WEBHOOK_COMMITS }}
+        github-token: ${{ github.token }}
+        action-task: discord-commits
+        discord-filter: "'{{ github.branch }}' == 'master'"
+        discord-username: GitHub
