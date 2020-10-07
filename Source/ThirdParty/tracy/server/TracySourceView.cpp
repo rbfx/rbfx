@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-// #include <capstone/capstone.h> rbfx
+#include <capstone/capstone.h>
 
 #include "../imgui/imgui.h"
 #include "TracyCharUtil.hpp"
@@ -62,7 +62,7 @@ static constexpr const char* s_regNameX86[] = {
 };
 static_assert( sizeof( s_regNameX86 ) / sizeof( *s_regNameX86 ) == (size_t)SourceView::RegsX86::NUMBER_OF_ENTRIES, "Invalid x86 register name table" );
 
-// static SourceView::RegsX86 s_regMapX86[X86_REG_ENDING];  // rbfx
+static SourceView::RegsX86 s_regMapX86[X86_REG_ENDING];
 
 
 enum { JumpSeparation = 6 };
@@ -100,7 +100,7 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     {
         m_microArchOpMap.emplace( OpsList[i], i );
     }
-#if 0   // rbfx
+
     memset( s_regMapX86, 0, sizeof( s_regMapX86 ) );
 
     s_regMapX86[X86_REG_EFLAGS] = RegsX86::flags;
@@ -292,7 +292,6 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     s_regMapX86[X86_REG_K5] = RegsX86::k5;
     s_regMapX86[X86_REG_K6] = RegsX86::k6;
     s_regMapX86[X86_REG_K7] = RegsX86::k7;
-#endif
 }
 
 SourceView::~SourceView()
@@ -520,8 +519,6 @@ static bool IsJumpConditionalX86( const char* op )
 
 bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 {
-    return false;
-#if 0   // rbfx
     m_asm.clear();
     m_locMap.clear();
     m_jumpTable.clear();
@@ -873,7 +870,6 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     m_codeLen = len;
     ResetAsm();
     return true;
-#endif
 }
 
 void SourceView::Render( const Worker& worker, View& view )
