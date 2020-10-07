@@ -150,7 +150,7 @@ void SamplesManager::Setup()
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
     engineParameters_[EP_HIGH_DPI]     = false;
-    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data;EditorData";
+    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
