@@ -190,12 +190,11 @@ void HelloRmlUI::Start()
 
     // Set the mouse mode to use in the sample
     Sample::InitMouseMode(MM_FREE);
-
-    GetSubsystem<FileSystem>()->SetExecuteConsoleCommands(true);
 }
 
 void HelloRmlUI::Stop()
 {
+    // Only necessary so sample can be reopened. Under normal circumnstances applications do not need to do this.
     context_->RemoveFactory<SimpleWindow>();
     context_->RemoveFactory<SimpleWindowMaterial>();
 }
