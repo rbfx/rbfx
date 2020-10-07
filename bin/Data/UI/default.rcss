@@ -2,12 +2,12 @@
 {
     src: /Textures/RmlUI-1x.png;
 
-    close-button: 0px 0px 20px 20px;
-    arrow-right: 20px 0px 16px 16px;
-    arrow-down: 36px 0px 16px 16px;
-    radio-dot: 52px 0px 16px 16px;
-    check-mark: 68px 0px 16px 16px;
-    resize-handle: 84px 0px 16px 16px;
+    close-button: 0dp 0dp 20dp 20dp;
+    arrow-right: 20dp 0dp 16dp 16dp;
+    arrow-down: 36dp 0dp 16dp 16dp;
+    radio-dot: 20dp 16dp 16dp 16dp;
+    check-mark: 36dp 16dp 16dp 16dp;
+    resize-handle: 36dp 32dp 16dp 16dp;
 }
 
 body
