@@ -69,6 +69,7 @@ if (URHO3D_PROFILING)
             if (TRACY_NO_PARALLEL_ALGORITHMS)
                 target_compile_definitions(${TARGET} PUBLIC -DTRACY_NO_PARALLEL_ALGORITHMS=1)
             endif ()
+            target_link_libraries (${TARGET} PRIVATE capstone-static)
         endmacro ()
 
         file (GLOB_RECURSE TRACY_PROFILER_SOURCE_FILES profiler/src/*.cpp)

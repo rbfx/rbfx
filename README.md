@@ -109,6 +109,7 @@ rbfx uses the following third-party libraries:
 - ETCPACK (https://github.com/Ericsson/ETCPACK)
 - Dear ImGui 1.75+ (https://github.com/ocornut/imgui/tree/docking)
 - tracy (https://bitbucket.org/wolfpld/tracy/)
+- capstone (http://www.capstone-engine.org/)
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 - ImGuizmo 1.61 (https://github.com/CedricGuillemet/ImGuizmo)
@@ -118,7 +119,7 @@ rbfx uses the following third-party libraries:
 - spdlog 1.4.2 (https://github.com/gabime/spdlog/)
 - EASTL 3.16.01 (https://github.com/electronicarts/EASTL/)
 - SWIG 4.0 (http://swig.org/)
-* Embree 3.11 (https://github.com/embree/embree)
+- Embree 3.11 (https://github.com/embree/embree)
 
 rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
