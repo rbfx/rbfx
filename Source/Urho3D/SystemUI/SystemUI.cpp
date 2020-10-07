@@ -392,7 +392,7 @@ ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
 
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 {
-    ImGuiStyle& style = ui::GetStyle();
+    ImGuiStyle& style = ui::GetStyleTemplate();
     style.ScrollbarSize = 10.f;
     if (darkStyle)
         ui::StyleColorsDark(&style);
