@@ -307,7 +307,10 @@ RmlUI::~RmlUI()
         ui->siblingSubsystems_.erase_first(WeakPtr(this));
 
     if (rmlContext_ != nullptr)
-        Rml::RemoveContext(rmlContext_->GetName());
+    {
+        if (!Rml::RemoveContext(rmlContext_->GetName()))
+            URHO3D_LOGERROR("Removal of RmlUI context {} failed.", rmlContext_->GetName());
+    }
     rmlContext_ = nullptr;
 
     if (rmlInstanceCounter.fetch_sub(1) == 1)
