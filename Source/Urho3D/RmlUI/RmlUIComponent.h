@@ -68,6 +68,10 @@ public:
     Vector2 GetSize() const;
     /// Sets window size in pixels or normalized coordinates.
     void SetSize(Vector2 size);
+    /// Enable auto-sizing based on rml document contents.
+    void SetAutoSize(bool enable) { autoSize_ = enable; }
+    /// Return true if window automatically resizes based on rml document contents.
+    bool GetAutoSize() const { return autoSize_; }
 
 protected:
     /// Handle component being added to Node or removed from it.
@@ -95,6 +99,8 @@ protected:
     Vector2 size_;
     /// Used to store position when document is not available.
     Vector2 position_;
+    /// Use automatic size inherited from rml document.
+    bool autoSize_ = true;
 };
 
 }

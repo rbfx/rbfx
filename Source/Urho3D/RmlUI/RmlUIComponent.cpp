@@ -57,6 +57,7 @@ void RmlUIComponent::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, Vector2, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Auto Size", bool, autoSize_, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Open", IsOpen, SetOpen, bool, false, AM_DEFAULT);
 }
 
@@ -149,6 +150,9 @@ void RmlUIComponent::SetPosition(Vector2 pos)
         return;
     }
 
+    if (pos == Vector2::ZERO)
+        return;
+
     if (useNormalized_)
     {
         IntVector2 canvasSize = document_->GetContext()->GetDimensions();
@@ -164,6 +168,9 @@ Vector2 RmlUIComponent::GetSize() const
 {
     if (document_ == nullptr)
         return size_;
+
+    if (autoSize_)
+        return Vector2::ZERO;
 
     Vector2 size = document_->GetBox().GetSize(Rml::Box::CONTENT);
     if (useNormalized_)
@@ -182,6 +189,9 @@ void RmlUIComponent::SetSize(Vector2 size)
         size_ = size;
         return;
     }
+
+    if (size == Vector2::ZERO || autoSize_)
+        return;
 
     if (useNormalized_)
     {
