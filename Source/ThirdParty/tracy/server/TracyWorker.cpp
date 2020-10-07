@@ -18,7 +18,7 @@
 #include <inttypes.h>
 #include <sys/stat.h>
 
-// #include <capstone/capstone.h> rbfx
+#include <capstone/capstone.h>
 
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
@@ -3477,7 +3477,6 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
 
 void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
 {
-#if 0   // rbfx
     auto it = m_pendingSymbolCode.find( ptr );
     assert( it != m_pendingSymbolCode.end() );
     m_pendingSymbolCode.erase( it );
@@ -3521,7 +3520,6 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         cs_free( insn, cnt );
     }
     cs_close( &handle );
-#endif
 }
 
 CallstackFrameId Worker::PackPointer( uint64_t ptr ) const
