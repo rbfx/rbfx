@@ -114,10 +114,10 @@ void RmlRenderer::RenderCompiledGeometry(Rml::CompiledGeometryHandle geometryHan
 
     RenderSurface* surface = graphics_->GetRenderTarget(0);
     IntVector2 viewSize = graphics_->GetViewport().Size();
-    if (viewSize != lastViewportSize_ || lastViewportHadRendertarget_ != (surface != nullptr))
+    if (viewSize != lastViewportSize_ || lastViewportHadRenderTarget_ != (surface != nullptr))
     {
         lastViewportSize_ = viewSize;
-        lastViewportHadRendertarget_ = (surface != nullptr);
+        lastViewportHadRenderTarget_ = (surface != nullptr);
 
         Vector2 invScreenSize(1.0f / (float)viewSize.x_, 1.0f / (float)viewSize.y_);
         Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
@@ -215,7 +215,7 @@ void RmlRenderer::ReleaseCompiledGeometry(Rml::CompiledGeometryHandle geometry)
 
 void RmlRenderer::EnableScissorRegion(bool enable)
 {
-    scrissorEnabled_ = enable;
+    scissorEnabled_ = enable;
 }
 
 void RmlRenderer::SetScissorRegion(int x, int y, int width, int height)
@@ -228,7 +228,7 @@ void RmlRenderer::SetScissorRegion(int x, int y, int width, int height)
 
 void RmlRenderer::ApplyScissorRegion(RenderSurface* surface, const IntVector2& viewSize)
 {
-    if (!scrissorEnabled_)
+    if (!scissorEnabled_)
     {
         graphics_->SetScissorTest(false);
         return;
