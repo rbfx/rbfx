@@ -83,7 +83,7 @@ private:
     /// Graphics subsystem instance.
     WeakPtr<Graphics> graphics_;
     /// Set to true when RmlUi requests use of scissor region.
-    bool scrissorEnabled_ = false;
+    bool scissorEnabled_ = false;
     /// Set to true when RmlUi requests use of a specific
     bool transformEnabled_ = false;
     /// Scissor region set by RmlUi.
@@ -97,7 +97,7 @@ private:
     /// Last viewport size.
     IntVector2 lastViewportSize_;
     /// Flag indicating last batch rendered into a custom rendertarget.
-    bool lastViewportHadRendertarget_ = false;
+    bool lastViewportHadRenderTarget_ = false;
     /// Last projection matrix. Reused when viewport size does not change.
     Matrix4 projection_;
 
