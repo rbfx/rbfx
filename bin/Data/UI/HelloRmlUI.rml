@@ -13,6 +13,7 @@
         <h3>Buttons</h3>
         <button data-event-click="count">Clicked {{counter}} times!</button>
         <input type="submit" disabled>Click!</input>
+        <button onclick="sound:Sounds/PlayerFist.wav">Sound!</button>
         <h3>Inputs</h3>
         <textarea></textarea>
         <input type="checkbox" checked="false"/> <label>Greatness</label><br/>
