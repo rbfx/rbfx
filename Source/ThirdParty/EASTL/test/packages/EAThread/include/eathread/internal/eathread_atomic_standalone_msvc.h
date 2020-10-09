@@ -194,7 +194,7 @@ inline bool AtomicSetValueConditional(volatile unsigned long* ptr, unsigned long
 	inline bool AtomicSetValueConditional(volatile char32_t* ptr, char32_t value, unsigned int condition) { return _InterlockedCompareExchange((long*)ptr, (long)value, (long)condition) == (long)condition; }
 #endif
 
-
+#if defined(EA_PROCESSOR_X86_64)    // rbfx: These are not available on 32bit windows.
 // long long
 inline long long AtomicGetValue(volatile long long* ptr) { return detail::AtomicGetValue(ptr); }
 inline long long AtomicGetValue(const volatile long long* ptr) { return AtomicGetValue(const_cast<volatile long long*>(ptr)); }
@@ -224,7 +224,7 @@ inline unsigned long long AtomicFetchXor(volatile unsigned long long* ptr, unsig
 inline unsigned long long AtomicFetchSwap(volatile unsigned long long* ptr, unsigned long long value) { return static_cast<unsigned long long>(_InterlockedExchange64(reinterpret_cast<volatile long long*>(ptr),(long long) value)); }
 inline unsigned long long AtomicFetchSwapConditional(volatile unsigned long long* ptr, unsigned long long value, unsigned long long condition) { return static_cast<unsigned long long>(_InterlockedCompareExchange64(reinterpret_cast<volatile long long*>(ptr), (long long)value, (long long)condition)); }
 inline bool AtomicSetValueConditional(volatile unsigned long long* ptr, unsigned long long value, unsigned long long condition) { return static_cast<unsigned long long>(_InterlockedCompareExchange64(reinterpret_cast<volatile long long*>(ptr), (long long)value, (long long)condition)) == condition; }
-
+#endif
 
 namespace detail
 {
