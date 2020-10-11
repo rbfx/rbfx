@@ -317,11 +317,14 @@ RmlUI::~RmlUI()
     {
         // Freeing last instance of RmlUI, deinitialize backend library.
         Rml::Factory::RegisterEventListenerInstancer(nullptr); // Set to a static object instance because there is no getter to delete it.
+        auto* renderer = Rml::GetRenderInterface();
+        auto* system = Rml::GetSystemInterface();
+        auto* file = Rml::GetFileInterface();
         Rml::ReleaseTextures();
         Rml::Shutdown();
-        delete Rml::GetRenderInterface();
-        delete Rml::GetSystemInterface();
-        delete Rml::GetFileInterface();
+        delete renderer;
+        delete system;
+        delete file;
     }
 }
 
