@@ -13377,7 +13377,7 @@ GLenum glxewInit (GLXEW_CONTEXT_ARG_DEF_LIST)
   GLXEW_SUN_video_resize = _glewSearchExtension("GLX_SUN_video_resize", extStart, extEnd);
   if (glewExperimental || GLXEW_SUN_video_resize) GLXEW_SUN_video_resize = !_glewInit_GLX_SUN_video_resize(GLEW_CONTEXT_ARG_VAR_INIT);
 #endif /* GLX_SUN_video_resize */
-
+  free(extStart);   // rbfx: Fix memory leak.
   return GLEW_OK;
 }
 
