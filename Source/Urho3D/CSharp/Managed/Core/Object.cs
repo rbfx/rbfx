@@ -31,10 +31,13 @@ namespace Urho3DNet
         private static extern void Urho3D_Object_SubscribeToEvent(HandleRef receiver, HandleRef sender, uint eventType,
             IntPtr callback, IntPtr callbackHandle);
 
+#if __IOS__
+        [global::ObjCRuntime.MonoNativeFunctionWrapper]
+#endif
         private delegate void EventCallbackDelegate(IntPtr actionHandle, uint eventHash, IntPtr argMap);
 
 #if __IOS__
-        [global::ObjCRuntime.MonoNativeFunctionWrapper]
+        [global::ObjCRuntime.MonoPInvokeCallback(typeof(EventCallbackDelegate))]
 #endif
         private static void EventHandlerCallback(IntPtr actionHandle, uint eventHash, IntPtr argMap)
         {
