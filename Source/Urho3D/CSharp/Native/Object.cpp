@@ -26,7 +26,7 @@
 namespace Urho3D
 {
 
-typedef void(SWIGSTDCALL*EventHandlerCallback)(unsigned, VariantMap*);
+typedef void(SWIGSTDCALL*EventHandlerCallback)(void*, unsigned, VariantMap*);
 
 class ManagedEventHandler : public EventHandler
 {
@@ -46,7 +46,7 @@ public:
 
     void Invoke(VariantMap& eventData) override
     {
-        callback_(eventType_.Value(), &eventData);
+        callback_(callbackHandle_, eventType_.Value(), &eventData);
     }
 
     EventHandler* Clone() const override
