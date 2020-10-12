@@ -31,16 +31,22 @@ namespace Urho3DNet
         private static extern void Urho3D_Object_SubscribeToEvent(HandleRef receiver, HandleRef sender, uint eventType,
             IntPtr callback, IntPtr callbackHandle);
 
-        private delegate void EventCallbackDelegate(uint eventHash, IntPtr argMap);
+        private delegate void EventCallbackDelegate(IntPtr actionHandle, uint eventHash, IntPtr argMap);
+
+#if __IOS__
+        [global::ObjCRuntime.MonoNativeFunctionWrapper]
+#endif
+        private static void EventHandlerCallback(IntPtr actionHandle, uint eventHash, IntPtr argMap)
+        {
+            var eventHandler = (Action<StringHash, VariantMap>)GCHandle.FromIntPtr(actionHandle).Target;
+            eventHandler(new StringHash(eventHash), VariantMap.wrap(argMap, false));
+        }
+        private static readonly EventCallbackDelegate EventHandlerCallbackInstance = EventHandlerCallback;
 
         public void SubscribeToEvent(StringHash e, Object sender, Action<StringHash, VariantMap> eventHandler)
         {
-            var eventCallback = new EventCallbackDelegate((eventHash, argMap) =>
-                {
-                    eventHandler(new StringHash(eventHash), VariantMap.wrap(argMap, false));
-                });
-            var handle = GCHandle.ToIntPtr(GCHandle.Alloc(eventCallback));
-            var callback = Marshal.GetFunctionPointerForDelegate(eventCallback);
+            IntPtr handle = GCHandle.ToIntPtr(GCHandle.Alloc(eventHandler));
+            IntPtr callback = Marshal.GetFunctionPointerForDelegate(EventHandlerCallbackInstance);
             Urho3D_Object_SubscribeToEvent(swigCPtr, getCPtr(sender), e.Hash, callback, handle);
         }
 
