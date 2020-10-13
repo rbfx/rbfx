@@ -531,7 +531,15 @@
 	#undef  EA_PLATFORM_WINDOWS
 	#define EA_PLATFORM_WINDOWS 1
 	#define EA_PLATFORM_NAME "Windows"
-	#ifdef _WIN64 // VC++ defines both _WIN32 and _WIN64 when compiling for Win64.
+
+	// EA_PLATFORM_WINRT
+	// This is a subset of Windows which is used for tablets and the "Metro" (restricted) Windows user interface.
+	// WinRT doesn't doesn't have access to the Windows "desktop" API, but WinRT can nevertheless run on 
+	// desktop computers in addition to tablets. The Windows Phone API is a subset of WinRT and is not included
+	// in it due to it being only a part of the API.
+	#if defined(__cplusplus_winrt)
+		#define EA_PLATFORM_WINRT 1
+	#elif defined(_WIN64) // VC++ defines both _WIN32 and _WIN64 when compiling for Win64.
 		#define EA_PLATFORM_WIN64 1
 	#else
 		#define EA_PLATFORM_WIN32 1
@@ -600,15 +608,6 @@
 	#define EA_WINAPI_PARTITION_GAMES    (EA_WINAPI_FAMILY == EA_WINAPI_FAMILY_GAMES)
 
 	#define EA_WINAPI_FAMILY_PARTITION(Partition)   (Partition)
-
-	// EA_PLATFORM_WINRT
-	// This is a subset of Windows which is used for tablets and the "Metro" (restricted) Windows user interface.
-	// WinRT doesn't doesn't have access to the Windows "desktop" API, but WinRT can nevertheless run on 
-	// desktop computers in addition to tablets. The Windows Phone API is a subset of WinRT and is not included
-	// in it due to it being only a part of the API.
-	#if defined(__cplusplus_winrt)
-		#define EA_PLATFORM_WINRT 1 
-	#endif
 
 // Sun (Solaris)
 // __SUNPRO_CC is defined by the Sun compiler.
