@@ -642,7 +642,7 @@ namespace Internal {
 	bool WinSetThreadName(EA::Thread::ThreadId threadId, const char* pName)
 	{
 		bool result = true;
-
+#ifndef EA_PLATFORM_WINRT
 		typedef HRESULT(WINAPI *SetThreadDescription)(HANDLE hThread, PCWSTR lpThreadDescription);
 
 		// Check if Windows Operating System has the 'SetThreadDescription" API.
@@ -655,7 +655,7 @@ namespace Internal {
 			result = SUCCEEDED(pSetThreadDescription(threadId, wName));
 			EAT_ASSERT(result);
 		}
-
+#endif
 		return result;
 	}
 	
