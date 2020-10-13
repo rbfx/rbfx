@@ -6,7 +6,7 @@
 
 #if defined(EA_PLATFORM_WIN32) && EA_WINAPI_FAMILY_PARTITION(EA_WINAPI_PARTITION_DESKTOP)
 	#include "pc/eathread_callstack_win32.cpp"
-#elif defined(EA_PLATFORM_MICROSOFT) && defined(EA_PROCESSOR_X86_64)
+#elif defined(EA_PLATFORM_MICROSOFT) && defined(EA_PROCESSOR_X86_64) && EA_WINAPI_FAMILY_PARTITION(EA_WINAPI_PARTITION_DESKTOP)
 	#include "pc/eathread_callstack_win64.cpp"
 #elif defined(EA_PLATFORM_SONY)
 	#include "kettle/eathread_callstack_kettle.cpp"
