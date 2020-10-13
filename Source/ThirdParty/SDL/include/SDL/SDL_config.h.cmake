@@ -333,6 +333,7 @@
 #cmakedefine SDL_VIDEO_DRIVER_DIRECTFB_DYNAMIC @SDL_VIDEO_DRIVER_DIRECTFB_DYNAMIC@
 #cmakedefine SDL_VIDEO_DRIVER_DUMMY @SDL_VIDEO_DRIVER_DUMMY@
 #cmakedefine SDL_VIDEO_DRIVER_WINDOWS @SDL_VIDEO_DRIVER_WINDOWS@
+#cmakedefine SDL_VIDEO_DRIVER_WINRT @SDL_VIDEO_DRIVER_WINRT@
 #cmakedefine SDL_VIDEO_DRIVER_WAYLAND @SDL_VIDEO_DRIVER_WAYLAND@
 #cmakedefine SDL_VIDEO_DRIVER_RPI @SDL_VIDEO_DRIVER_RPI@
 #cmakedefine SDL_VIDEO_DRIVER_VIVANTE @SDL_VIDEO_DRIVER_VIVANTE@
@@ -398,6 +399,7 @@
 #cmakedefine SDL_POWER_ANDROID @SDL_POWER_ANDROID@
 #cmakedefine SDL_POWER_LINUX @SDL_POWER_LINUX@
 #cmakedefine SDL_POWER_WINDOWS @SDL_POWER_WINDOWS@
+#cmakedefine SDL_POWER_WINRT @SDL_POWER_WINRT@
 #cmakedefine SDL_POWER_MACOSX @SDL_POWER_MACOSX@
 // Urho3D - needed on iOS/tvOS platform
 #cmakedefine SDL_POWER_UIKIT @SDL_POWER_UIKIT@
@@ -433,7 +435,7 @@
 #cmakedefine SDL_IPHONE_MAX_GFORCE @SDL_IPHONE_MAX_GFORCE@
 
 /* Platform specific definitions */
-#if !defined(__WIN32__)
+#if !defined(__WIN32__) && !defined(__WINRT__)
 #  if !defined(_STDINT_H_) && !defined(_STDINT_H) && !defined(HAVE_STDINT_H) && !defined(_HAVE_STDINT_H)
 typedef unsigned int size_t;
 typedef signed char int8_t;
