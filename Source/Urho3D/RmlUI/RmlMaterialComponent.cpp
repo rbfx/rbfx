@@ -58,7 +58,26 @@ void RmlMaterialComponent::RegisterObject(Context* context)
 {
     context->RegisterFactory<RmlMaterialComponent>(RML_UI_CATEGORY);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
+    URHO3D_ATTRIBUTE_EX("Virtual Material Name", ea::string, virtualMaterialName_, OnVirtualMaterialNameSet, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);
+}
+
+void RmlMaterialComponent::OnNodeSet(Node* node)
+{
+    BaseClassName::OnNodeSet(node);
+
+    Resource* resource = material_;
+    assert(resource != nullptr);
+    if (node)
+    {
+        if (!virtualMaterialName_.empty())
+            AddVirtualResource(resource);
+    }
+    else
+    {
+        if (!virtualMaterialName_.empty())
+            RemoveVirtualResource(resource);
+    }
 }
 
 void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
@@ -144,9 +163,25 @@ void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
     }
 }
 
-Resource* RmlMaterialComponent::GetVirtualResource()
+void RmlMaterialComponent::SetVirtualMaterialName(const ea::string& name)
 {
-    return material_;
+    virtualMaterialName_ = name;
+    OnVirtualMaterialNameSet();
+}
+
+void RmlMaterialComponent::OnVirtualMaterialNameSet()
+{
+    bool attachedToNode = GetNode() != nullptr;
+    Resource* resource = texture_;
+    assert(resource != nullptr);
+
+    if (attachedToNode && !resource->GetName().empty())
+        RemoveVirtualResource(resource);
+
+    resource->SetName(virtualMaterialName_);
+
+    if (attachedToNode && !resource->GetName().empty())
+        AddVirtualResource(resource);
 }
 
 }
