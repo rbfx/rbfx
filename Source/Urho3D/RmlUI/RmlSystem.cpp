@@ -48,10 +48,10 @@ double RmlSystem::GetElapsedTime()
 
 int RmlSystem::TranslateString(Rml::String& translated, const Rml::String& input)
 {
-    Localization* l18n = context_->GetSubsystem<Localization>();
-    if (l18n->GetLanguageIndex() > -1)
+    Localization* l10n = context_->GetSubsystem<Localization>();
+    if (l10n->GetLanguageIndex() > -1)
     {
-        translated = l18n->Get(input.c_str()).c_str();
+        translated = l10n->Get(input.c_str()).c_str();
         return 1;
     }
     translated = input;
