@@ -81,7 +81,7 @@ size_t RmlFile::Length(Rml::FileHandle file)
     return reinterpret_cast<File*>(file)->GetSize();
 }
 
-bool RmlFile::GetFileWasOpened(const ea::string& path)
+bool RmlFile::IsFileLoaded(const ea::string& path)
 {
     ea::string fullPath;
     FileSystem* fs = context_->GetSubsystem<FileSystem>();
