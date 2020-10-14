@@ -56,9 +56,9 @@ public:
     size_t Length(Rml::FileHandle file) override;
 
     /// Returns true if file was opened since last call to ClearOpenedFiles().
-    bool GetFileWasOpened(const ea::string& path);
+    bool IsFileLoaded(const ea::string& path);
     /// Clear a set of opened files.
-    void ClearOpenedFiles() { loadedFiles_.clear(); }
+    void ClearLoadedFiles() { loadedFiles_.clear(); }
 
 private:
     /// Context pointer.

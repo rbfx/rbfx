@@ -45,11 +45,11 @@ public:
     /// Set size of texture UI will be rendered into.
     void SetTextureSize(IntVector2 size);
     /// Get size of texture UI will be rendered into.
-    IntVector2 GetTextureSize(IntVector2) const;
+    IntVector2 GetTextureSize() const;
     /// Sets a name of virtual texture resource. Virtual texture gets created if/when component is added to the node.
-    void SetVirtualResourceName(const ea::string& name);
+    void SetVirtualTextureName(const ea::string& name);
     /// Returns a name of virtual texture resource.
-    const ea::string& GetVirtualResourceName() const { return virtualResourceName_; }
+    const ea::string& GetVirtualTextureName() const { return virtualTextureName_; }
 
     /// Return off-screen RmlUI instance.
     RmlUI* GetUI() const { return offScreenUI_; }
@@ -64,23 +64,21 @@ protected:
     /// Convert screen coordinates to context-local coordinates of RmlUI instance.
     virtual void TranslateMousePos(IntVector2& screenPos) { }
 
-    virtual /// Adds a manual texture resource.
+    /// Adds a manual texture resource.
     void AddVirtualResource(Resource* resource);
-    virtual /// Releases a manual texture resource.
+    /// Releases a manual texture resource.
     void RemoveVirtualResource(Resource* resource);
     /// Set texture color to transparent.
     void ClearTexture();
     /// Handle updates of virtual resource name.
-    void OnVirtualResourceNameSet();
-    /// Return virtual resource pointer. Subclasses may change it to provide a different virtual resource. For example RmlMaterialComponent returns a material.
-    virtual Resource* GetVirtualResource() { return texture_; }
+    void OnVirtualTextureNameSet();
 
     /// Texture that UIElement will be rendered into.
     SharedPtr<Texture2D> texture_;
     /// Subsystem that handles UI rendering to the texture.
     SharedPtr<RmlUI> offScreenUI_;
     /// Name of virtual resource which this component will register as.
-    ea::string virtualResourceName_;
+    ea::string virtualTextureName_;
 };
 
 }

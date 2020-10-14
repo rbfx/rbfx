@@ -40,9 +40,9 @@ namespace Detail
 
 struct CompiledGeometryForRml
 {
-	SharedPtr<VertexBuffer> vertexBuffer_;
-	SharedPtr<IndexBuffer> indexBuffer_;
-	SharedPtr<Texture> texture_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
+    SharedPtr<IndexBuffer> indexBuffer_;
+    SharedPtr<Texture> texture_;
 };
 
 class URHO3D_API RmlRenderer : public Object, public Rml::RenderInterface
@@ -58,7 +58,7 @@ public:
     /// Render compiled geometry.
     void RenderCompiledGeometry(Rml::CompiledGeometryHandle geometryHandle, const Rml::Vector2f& translation) override;
     /// Compile and render geometry.
-	void RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation) override;
+    void RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation) override;
     /// Free compiled geometry which was returned by previous call to CompileGeometry().
     void ReleaseCompiledGeometry(Rml::CompiledGeometryHandle geometry) override;
     /// Enable or disable scissor region.

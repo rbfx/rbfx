@@ -63,21 +63,21 @@ void RmlTextureComponent::RegisterObject(Context* context)
 {
     context->RegisterFactory<RmlTextureComponent>(RML_UI_CATEGORY);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
-    URHO3D_ATTRIBUTE_EX("Virtual Resource Name", ea::string, virtualResourceName_, OnVirtualResourceNameSet, "", AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Virtual Texture Name", ea::string, virtualTextureName_, OnVirtualTextureNameSet, "", AM_DEFAULT);
 }
 
 void RmlTextureComponent::OnNodeSet(Node* node)
 {
-    Resource* resource = GetVirtualResource();
+    Resource* resource = texture_;
     assert(resource != nullptr);
     if (node)
     {
-        if (!virtualResourceName_.empty())
+        if (!virtualTextureName_.empty())
             AddVirtualResource(resource);
     }
     else
     {
-        if (!virtualResourceName_.empty())
+        if (!virtualTextureName_.empty())
             RemoveVirtualResource(resource);
     }
 }
@@ -114,7 +114,7 @@ void RmlTextureComponent::SetTextureSize(IntVector2 size)
     ClearTexture();
 }
 
-IntVector2 RmlTextureComponent::GetTextureSize(IntVector2) const
+IntVector2 RmlTextureComponent::GetTextureSize() const
 {
     if (texture_.Null())
         return IntVector2::ZERO;
@@ -122,10 +122,10 @@ IntVector2 RmlTextureComponent::GetTextureSize(IntVector2) const
         return IntVector2(texture_->GetWidth(), texture_->GetHeight());
 }
 
-void RmlTextureComponent::SetVirtualResourceName(const ea::string& name)
+void RmlTextureComponent::SetVirtualTextureName(const ea::string& name)
 {
-    virtualResourceName_ = name;
-    OnVirtualResourceNameSet();
+    virtualTextureName_ = name;
+    OnVirtualTextureNameSet();
 }
 
 void RmlTextureComponent::AddVirtualResource(Resource* resource)
@@ -156,16 +156,16 @@ void RmlTextureComponent::ClearTexture()
     }
 }
 
-void RmlTextureComponent::OnVirtualResourceNameSet()
+void RmlTextureComponent::OnVirtualTextureNameSet()
 {
     bool attachedToNode = GetNode() != nullptr;
-    Resource* resource = GetVirtualResource();
+    Resource* resource = texture_;
     assert(resource != nullptr);
 
     if (attachedToNode && !resource->GetName().empty())
         RemoveVirtualResource(resource);
 
-    resource->SetName(virtualResourceName_);
+    resource->SetName(virtualTextureName_);
 
     if (attachedToNode && !resource->GetName().empty())
         AddVirtualResource(resource);

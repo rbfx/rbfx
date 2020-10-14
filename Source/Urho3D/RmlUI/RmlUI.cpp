@@ -136,7 +136,7 @@ static Detail::RmlEventListenerInstancer RmlEventListenerInstancerInstance;
 static Detail::RmlContextInstancer RmlContextInstancerInstance;
 
 /// Map engine keys to RmlUi keys. Note that top bit is cleared from key constants when they are used as array index.
-static ea::unordered_map<unsigned, uint16_t> keyMap_{
+static const ea::unordered_map<unsigned, uint16_t> keyMap{
     { KEY_SPACE, Rml::Input::KI_SPACE },
     { KEY_0, Rml::Input::KI_0 },
     { KEY_1, Rml::Input::KI_1 },
@@ -456,7 +456,10 @@ void RmlUI::HandleTouchMove(StringHash, VariantMap& eventData)
 void RmlUI::HandleKeyDown(StringHash, VariantMap& eventData)
 {
     using namespace KeyDown;
-    Rml::Input::KeyIdentifier key = static_cast<Rml::Input::KeyIdentifier>(keyMap_[eventData[P_KEY].GetUInt()]);
+    auto it = keyMap.find(eventData[P_KEY].GetUInt());
+    if (it == keyMap.end())
+        return;
+    Rml::Input::KeyIdentifier key = static_cast<Rml::Input::KeyIdentifier>(it->second);
     int modifiers = ModifiersUrho3DToRml((QualifierFlags)eventData[P_QUALIFIERS].GetInt());
     rmlContext_->ProcessKeyDown(key, modifiers);
     if (key == Rml::Input::KI_RETURN || key == Rml::Input::KI_NUMPADENTER)
@@ -466,7 +469,10 @@ void RmlUI::HandleKeyDown(StringHash, VariantMap& eventData)
 void RmlUI::HandleKeyUp(StringHash, VariantMap& eventData)
 {
     using namespace KeyUp;
-    Rml::Input::KeyIdentifier key = static_cast<Rml::Input::KeyIdentifier>(keyMap_[eventData[P_KEY].GetUInt()]);
+    auto it = keyMap.find(eventData[P_KEY].GetUInt());
+    if (it == keyMap.end())
+        return;
+    Rml::Input::KeyIdentifier key = static_cast<Rml::Input::KeyIdentifier>(it->second);
     int modifiers = ModifiersUrho3DToRml((QualifierFlags)eventData[P_QUALIFIERS].GetInt());
     rmlContext_->ProcessKeyUp(key, modifiers);
 }
@@ -596,6 +602,7 @@ void RmlUI::OnDocumentUnload(Rml::ElementDocument* document)
 
 void RmlUI::Update(float timeStep)
 {
+    (void)timeStep;
     URHO3D_PROFILE("UpdateUI");
 
     if (rmlContext_)
@@ -604,12 +611,13 @@ void RmlUI::Update(float timeStep)
 
 void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
 {
+    (void)eventType;
     using namespace FileChanged;
     const ea::string& fileName = eventData[P_FILENAME].GetString();
     Detail::RmlFile* file = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
-    if (file->GetFileWasOpened(fileName))
+    if (file->IsFileLoaded(fileName))
     {
-        file->ClearOpenedFiles();
+        file->ClearLoadedFiles();
 
         Rml::ReleaseTextures();
         Rml::Factory::ClearStyleSheetCache();
