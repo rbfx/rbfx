@@ -458,9 +458,9 @@ ImVec2 ui::GetMouseDragDelta(Urho3D::MouseButton button, float lock_threshold)
     return ui::GetMouseDragDelta(Urho3D::ToImGui(button), lock_threshold);
 }
 
-bool ui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond)
+bool ui::SetDragDropVariant(const ea::string& types, const Urho3D::Variant& variant, ImGuiCond cond)
 {
-    if (SetDragDropPayload(type, nullptr, 0, cond))
+    if (SetDragDropPayload(types.c_str(), nullptr, 0, cond))
     {
         auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
         systemUI->GetContext()->SetGlobalVar("SystemUI_Drag&Drop_Value", variant);
@@ -469,20 +469,37 @@ bool ui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, Im
     return false;
 }
 
-const Urho3D::Variant& ui::AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags)
+const Urho3D::Variant& ui::AcceptDragDropVariant(const ea::string& types, ImGuiDragDropFlags flags)
 {
+    using namespace Urho3D;
+
     if (const ImGuiPayload* payload = GetDragDropPayload())
     {
-        Urho3D::StringVector types = ea::string(payload->DataType).split(',');
-        for (const ea::string& t : types)
+        bool accepted = false;
+        for (const ea::string& type : types.split(','))
         {
-            if (t == type && AcceptDragDropPayload(payload->DataType, flags))
+            const char* t = payload->DataType;
+            while (t < payload->DataType + URHO3D_ARRAYSIZE(payload->DataType))
             {
-                auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-                return systemUI->GetContext()->GetGlobalVar("SystemUI_Drag&Drop_Value");
+                t = strstr(t, type.c_str());
+                if (t == nullptr)
+                    break;
+
+                const char* tEnd = strstr(t, ",");
+                tEnd = tEnd ? Min(t + strlen(t), tEnd) : t + strlen(t);
+                if ((t == payload->DataType || t[-1] == ',') && (*tEnd == 0 || *tEnd == ','))
+                    accepted = true;
+                t = tEnd;
             }
         }
+
+        if (AcceptDragDropPayload(accepted ? payload->DataType : "Smth that won't be accepted.", flags))
+        {
+            SystemUI* systemUI = static_cast<SystemUI*>(GetIO().UserData);
+            return systemUI->GetContext()->GetGlobalVar("SystemUI_Drag&Drop_Value");
+        }
     }
+
     return Urho3D::Variant::EMPTY;
 }
 
