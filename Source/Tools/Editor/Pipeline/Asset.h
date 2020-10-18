@@ -102,6 +102,8 @@ protected:
     AssetImporterMap importers_;
     /// Flag indicating that asset is being imported.
     std::atomic<bool> importing_{false};
+    /// Flag indicating that this asset is virtual, and should not be saved.
+    bool virtual_ = false;
 
     friend class Pipeline;
     friend class AssetImporter;
