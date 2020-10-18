@@ -28,6 +28,7 @@ namespace Urho3D
 
 class RmlUI;
 class Texture2D;
+class Material;
 
 /// Renders off-screen UI into a texture.
 class URHO3D_API RmlMaterialComponent : public RmlTextureComponent
