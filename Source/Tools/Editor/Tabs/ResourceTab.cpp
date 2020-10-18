@@ -472,14 +472,13 @@ void ResourceTab::ScanAssets()
         return;
     rescan_ = false;
 
-    FileSystem* fs = GetSubsystem<FileSystem>();
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
     Project* project = GetSubsystem<Project>();
     Pipeline* pipeline = GetSubsystem<Pipeline>();
 
     // Gather directories from project resource paths and CoreData.
     currentDirs_.clear();
-    for (const ea::string& resourcePath : project->GetResourcePaths())
-        fs->ScanDirAdd(currentDirs_, project->GetProjectPath() + resourcePath + currentDir_, "", SCAN_DIRS, false);
+    cache->Scan(currentDirs_, currentDir_, "", SCAN_DIRS, false);
     ea::sort(currentDirs_.begin(), currentDirs_.end());
     currentDirs_.erase(ea::unique(currentDirs_.begin(), currentDirs_.end()), currentDirs_.end());
     if (currentDir_.empty())
@@ -493,8 +492,7 @@ void ResourceTab::ScanAssets()
 
     // Gather files from project resource paths and CoreData.
     currentFiles_.clear();
-    for (const ea::string& resourcePath : project->GetResourcePaths())
-        fs->ScanDirAdd(currentFiles_, project->GetProjectPath() + resourcePath + currentDir_, "", SCAN_FILES, false);
+    cache->Scan(currentFiles_, currentDir_, "", SCAN_FILES, false);
     ea::sort(currentFiles_.begin(), currentFiles_.end());
     currentFiles_.erase(ea::unique(currentFiles_.begin(), currentFiles_.end()), currentFiles_.end());
 
@@ -725,11 +723,9 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
 
 void ResourceTab::ScanDirTree(StringVector& result, const eastl::string& path)
 {
-    Project* project = GetSubsystem<Project>();
-    FileSystem* fs = GetSubsystem<FileSystem>();
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
     result.clear();
-    for (const ea::string& resourcePath : project->GetResourcePaths())
-        fs->ScanDirAdd(result, project->GetProjectPath() + resourcePath + path, "", SCAN_DIRS, false);
+    cache->Scan(result, path, "", SCAN_DIRS, false);
     ea::sort(result.begin(), result.end());
     result.erase(ea::unique(result.begin(), result.end()), result.end());
     result.erase_first(".");
