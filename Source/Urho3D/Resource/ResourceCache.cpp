@@ -176,6 +176,7 @@ bool ResourceCache::AddManualResource(Resource* resource)
         return false;
     }
 
+    manualResources_.insert(resource);
     resource->ResetUseTimer();
     resourceGroups_[resource->GetType()].resources_[resource->GetNameHash()] = resource;
     UpdateResourceGroup(resource->GetType());
@@ -255,6 +256,7 @@ void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, boo
     // If other references exist, do not release, unless forced
     if ((existingRes.Refs() == 1 && existingRes.WeakRefs() == 0) || force)
     {
+        manualResources_.erase(existingRes);
         resourceGroups_[type].resources_.erase(nameHash);
         UpdateResourceGroup(type);
     }
@@ -274,6 +276,7 @@ void ResourceCache::ReleaseResources(StringHash type, bool force)
             // If other references exist, do not release, unless forced
             if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
             {
+                manualResources_.erase(current->second);
                 i->second.resources_.erase(current);
                 released = true;
             }
@@ -300,6 +303,7 @@ void ResourceCache::ReleaseResources(StringHash type, const ea::string& partialN
                 // If other references exist, do not release, unless forced
                 if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                 {
+                    manualResources_.erase(current->second);
                     i->second.resources_.erase(current);
                     released = true;
                 }
@@ -332,6 +336,7 @@ void ResourceCache::ReleaseResources(const ea::string& partialName, bool force)
                     // If other references exist, do not release, unless forced
                     if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                     {
+                        manualResources_.erase(current->second);
                         i->second.resources_.erase(current);
                         released = true;
                     }
@@ -361,6 +366,7 @@ void ResourceCache::ReleaseAllResources(bool force)
                 // If other references exist, do not release, unless forced
                 if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                 {
+                    manualResources_.erase(current->second);
                     i->second.resources_.erase(current);
                     released = true;
                 }
@@ -1073,6 +1079,7 @@ void ResourceCache::UpdateResourceGroup(StringHash type)
         {
             URHO3D_LOGDEBUG("Resource group " + oldestResource->second->GetTypeName() + " over memory budget, releasing resource " +
                      oldestResource->second->GetName());
+            manualResources_.erase(oldestResource->second);
             i->second.resources_.erase(oldestResource);
         }
         else
@@ -1173,6 +1180,34 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
     {
         fileSystem->ScanDir(interimResult, resourceDirs_[i] + pathName, filter, flags, recursive);
         result.insert(result.end(), interimResult.begin(), interimResult.end());
+    }
+
+    // Filtering copied from PackageFile::Scan().
+    ea::string sanitizedPath = GetSanitizedPath(pathName);
+    ea::string filterExtension;
+    unsigned dotPos = filter.find_last_of('.');
+    if (dotPos != ea::string::npos)
+        filterExtension = filter.substr(dotPos);
+    if (filterExtension.contains('*'))
+        filterExtension.clear();
+
+    bool caseSensitive = true;
+#ifdef _WIN32
+    // On Windows ignore case in string comparisons
+    caseSensitive = false;
+#endif
+    for (Resource* resource : manualResources_)
+    {
+        ea::string entryName = GetSanitizedPath(resource->GetName());
+        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
+            entryName.starts_with(sanitizedPath, caseSensitive))
+        {
+            int index = entryName.find("/", sanitizedPath.length());
+            if (flags & SCAN_DIRS && index >= 0)
+                result.emplace_back(entryName.substr(sanitizedPath.length(), index - sanitizedPath.length()));
+            else if (flags & SCAN_FILES && index == -1)
+                result.emplace_back(entryName.substr(sanitizedPath.length()));
+        }
     }
 }
 

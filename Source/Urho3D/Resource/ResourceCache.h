@@ -280,6 +280,8 @@ private:
     int finishBackgroundResourcesMs_;
     /// List of resources that will not be auto-reloaded if reloading event triggers.
     ea::vector<ea::string> ignoreResourceAutoReload_;
+    /// A list of resources added through AddManualResource().
+    ea::hash_set<Resource*> manualResources_;
 };
 
 template <class T> T* ResourceCache::GetExistingResource(const ea::string& name)
