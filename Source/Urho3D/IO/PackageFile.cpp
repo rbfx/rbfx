@@ -170,7 +170,10 @@ void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathNam
     result.clear();
 
     ea::string sanitizedPath = GetSanitizedPath(pathName);
-    ea::string filterExtension = filter.substr(filter.find_last_of('.'));
+    ea::string filterExtension;
+    unsigned dotPos = filter.find_last_of('.');
+    if (dotPos != ea::string::npos)
+        filterExtension = filter.substr(dotPos);
     if (filterExtension.contains('*'))
         filterExtension.clear();
 
