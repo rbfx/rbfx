@@ -117,12 +117,10 @@ bool RenderResourceRef(ResourceRef& ref, Object* eventSender)
     // Resources are assigned by dropping on to them.
     if (ui::BeginDragDropTarget())
     {
-        const Variant& payload = ui::AcceptDragDropVariant("res");
+        const Variant& payload = ui::AcceptDragDropVariant(ref.type_.ToString());
         if (!payload.IsEmpty())
         {
-            resource = eventSender->GetContext()->GetSubsystem<ResourceCache>()->GetResource(ref.type_, payload.GetString());
-            assert(resource != nullptr);
-            ref.name_ = resource->GetName();
+            ref.name_ = payload.GetString();
             modified = true;
         }
         ui::EndDragDropTarget();
