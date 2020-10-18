@@ -57,9 +57,12 @@ CameraViewport::CameraViewport(Context* context)
 void CameraViewport::SetNormalizedRect(const Rect& rect)
 {
     rect_ = rect;
-    IntRect screenRect = GetScreenRect();
-    IntRect viewportRect(static_cast<int>(rect.Left() * screenRect.Left()), static_cast<int>(rect.Top() * screenRect.Top()),
-        static_cast<int>(rect.Right() * screenRect.Right()), static_cast<int>(rect.Bottom() * screenRect.Bottom()));
+    IntRect viewportRect(
+        static_cast<int>(screenRect_.Left() + screenRect_.Width() * rect.Left()),
+        static_cast<int>(screenRect_.Top() + screenRect_.Height() * rect.Top()),
+        static_cast<int>(screenRect_.Left() + screenRect_.Width() * rect.Right()),
+        static_cast<int>(screenRect_.Top() + screenRect_.Height() * rect.Bottom())
+    );
     viewport_->SetRect(viewportRect);
 
     using namespace CameraViewportResized;
