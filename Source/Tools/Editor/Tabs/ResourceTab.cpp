@@ -170,8 +170,9 @@ bool ResourceTab::RenderWindowContent()
         {
             if (ui::BeginDragDropSource())
             {
-                ui::SetDragDropVariant("path", currentDir_ + name);
-                ui::Text("%s%s", currentDir_.c_str(), name.c_str());
+                ea::string resourceName = currentDir_ + name;
+                ui::SetDragDropVariant("path", resourceName);
+                ui::TextUnformatted(resourceName.c_str());
                 ui::EndDragDropSource();
             }
         }
@@ -259,8 +260,9 @@ bool ResourceTab::RenderWindowContent()
         {
             if (ui::BeginDragDropSource())
             {
-                ui::SetDragDropVariant("path,res", currentDir_ + name);
-                ui::Text("%s%s", currentDir_.c_str(), name.c_str());
+                ea::string resourceName = currentDir_ + name;
+                ui::SetDragDropVariant(Format("path,{}", GetContentResourceType(context_, resourceName).ToString()), resourceName);
+                ui::TextUnformatted(resourceName.c_str());
                 ui::EndDragDropSource();
             }
         }
@@ -313,8 +315,9 @@ bool ResourceTab::RenderWindowContent()
                 {
                     if (ui::BeginDragDropSource())
                     {
-                        ui::SetDragDropVariant("path,res", currentDir_ + byproductWithDir);
-                        ui::Text("%s%s", currentDir_.c_str(), byproductWithDir.c_str());
+                        ea::string resourceName = currentDir_ + byproductWithDir;
+                        ui::SetDragDropVariant(Format("path,{}", GetContentResourceType(context_, resourceName).ToString()), resourceName);
+                        ui::TextUnformatted(resourceName.c_str());
                         ui::EndDragDropSource();
                     }
                 }

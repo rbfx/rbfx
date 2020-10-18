@@ -575,14 +575,14 @@ void SceneTab::RenderNodeTree(Node* node)
 
     if (ui::BeginDragDropSource())
     {
-        ui::SetDragDropVariant("ptr", node);
-        ui::Text("%s", name.c_str());
+        ui::SetDragDropVariant(node->GetType().ToString(), node);
+        ui::TextUnformatted(name.c_str());
         ui::EndDragDropSource();
     }
 
     if (ui::BeginDragDropTarget())
     {
-        const Variant& payload = ui::AcceptDragDropVariant("ptr");
+        const Variant& payload = ui::AcceptDragDropVariant(Node::GetTypeStatic().ToString());
         if (!payload.IsEmpty())
         {
             SharedPtr<Node> child(dynamic_cast<Node*>(payload.GetPtr()));
