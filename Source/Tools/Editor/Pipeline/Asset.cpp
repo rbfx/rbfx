@@ -134,6 +134,9 @@ void Asset::ClearCache()
 
 bool Asset::Save()
 {
+    if (virtual_)
+        return true;
+
     ea::string assetPath = RemoveTrailingSlash(resourcePath_) + ".asset";
 
     bool isModified = false;
@@ -312,6 +315,9 @@ void Asset::OnFlavorRemoved(VariantMap& args)
 
 void Asset::Inspect()
 {
+    if (virtual_)
+        return;
+
     auto* inspector = GetSubsystem<InspectorTab>();
     auto* pipeline = GetSubsystem<Pipeline>();
     auto* cache = GetSubsystem<ResourceCache>();

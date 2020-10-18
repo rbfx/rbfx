@@ -188,16 +188,14 @@ Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
         if (!autoCreate)
             return nullptr;
 
-        if (fs->Exists(resourcePath))
-        {
-            SharedPtr<Asset> asset(context_->CreateObject<Asset>());
-            asset->SetName(actualResourceName);
-            asset->resourcePath_ = resourcePath;    // TODO: Clean this up!
-            asset->Load();
-            assert(asset->GetName() == actualResourceName);
-            assets_[actualResourceName] = asset;
-            return asset.Get();
-        }
+        SharedPtr<Asset> asset(context_->CreateObject<Asset>());
+        asset->SetName(actualResourceName);
+        asset->virtual_ = !fs->Exists(resourcePath);
+        asset->resourcePath_ = resourcePath;    // TODO: Clean this up!
+        asset->Load();
+        assert(asset->GetName() == actualResourceName);
+        assets_[actualResourceName] = asset;
+        return asset.Get();
     }
 
     return nullptr;
