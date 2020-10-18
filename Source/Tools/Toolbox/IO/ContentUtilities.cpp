@@ -29,6 +29,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/Node.h>
@@ -126,13 +127,13 @@ ContentType GetContentType(Context* context, const ea::string& resourcePath)
         {
             xml = SharedPtr<XMLFile>(new XMLFile(context));
             if (!xml->LoadFile(resourcePath))
-                return CTYPE_UNKNOWN;
+                return CTYPE_BINARY;
         }
         else
-            xml = context->GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourcePath);
+            xml = context->GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourcePath, false);
 
         if (!xml)
-            return CTYPE_UNKNOWN;
+            return CTYPE_BINARY;
 
         auto rootElementName = xml->GetRoot().GetName();
         if (rootElementName == "scene")
@@ -174,7 +175,7 @@ ContentType GetContentType(Context* context, const ea::string& resourcePath)
     if (imagesExtensions_.contains(extension))
         return CTYPE_TEXTURE;
 
-    return CTYPE_UNKNOWN;
+    return CTYPE_BINARY;
 }
 
 StringHash GetContentResourceType(Context* context, const ea::string& resourcePath)
@@ -206,7 +207,7 @@ StringHash GetContentResourceType(Context* context, const ea::string& resourcePa
     default:
         break;
     }
-    return StringHash();
+    return BinaryFile::GetTypeStatic();
 }
 
 }
