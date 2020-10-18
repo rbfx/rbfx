@@ -172,7 +172,7 @@ void RmlMaterialComponent::SetVirtualMaterialName(const ea::string& name)
 void RmlMaterialComponent::OnVirtualMaterialNameSet()
 {
     bool attachedToNode = GetNode() != nullptr;
-    Resource* resource = texture_;
+    Resource* resource = material_;
     assert(resource != nullptr);
 
     if (attachedToNode && !resource->GetName().empty())
