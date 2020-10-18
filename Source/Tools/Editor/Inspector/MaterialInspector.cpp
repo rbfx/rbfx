@@ -307,7 +307,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             // Drop target
             if (ui::BeginDragDropTarget())
             {
-                const Variant& payload = ui::AcceptDragDropVariant("path");
+                const Variant& payload = ui::AcceptDragDropVariant(Technique::GetTypeStatic().ToString());
                 if (!payload.IsEmpty())
                 {
                     *techName = payload.GetString();
@@ -463,7 +463,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
         // Drag and drop
         if (ui::BeginDragDropTarget())
         {
-            const Variant& payload = ui::AcceptDragDropVariant("path");
+            const Variant& payload = ui::AcceptDragDropVariant(Technique::GetTypeStatic().ToString());
             if (!payload.IsEmpty())
             {
                 *newTechniqueName = payload.GetString();
