@@ -97,7 +97,7 @@ protected:
     /// Full path to resource. May point to resources or cache directory.
     ea::string resourcePath_;
     /// A content type of this asset.
-    ContentType contentType_ = CTYPE_UNKNOWN;
+    ContentType contentType_ = CTYPE_BINARY;
     /// Map a flavor to a list of importers that this asset will be executing.
     AssetImporterMap importers_;
     /// Flag indicating that asset is being imported.
