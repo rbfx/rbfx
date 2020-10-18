@@ -141,7 +141,7 @@ void RmlTextureComponent::RemoveVirtualResource(Resource* resource)
     assert(resource != nullptr);
     assert(!resource->GetName().empty());
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    cache->ReleaseResource(resource->GetType(), resource->GetName());
+    cache->ReleaseResource(resource->GetType(), resource->GetName(), true);
 }
 
 void RmlTextureComponent::ClearTexture()
