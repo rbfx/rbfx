@@ -24,8 +24,12 @@
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Resource/BinaryFile.h"
-#include "../RmlUI/RmlUIComponent.h"
+#include "../Graphics/Material.h"
+#include "../RmlUI/RmlMaterialComponent.h"
 #include "../RmlUI/RmlUI.h"
+#include "../RmlUI/RmlUIComponent.h"
+#include "../RmlUI/RmlTextureComponent.h"
+#include "../Scene/Node.h"
 
 #include "../DebugNew.h"
 
@@ -100,7 +104,15 @@ void RmlUIComponent::OpenInternal()
         return;
     }
 
-    RmlUI* ui = GetSubsystem<RmlUI>();
+    RmlUI* ui = nullptr;
+    if (RmlMaterialComponent* component = GetNode()->GetComponent<RmlMaterialComponent>())
+        ui = component->GetUI();
+    else if (RmlTextureComponent* component = GetNode()->GetComponent<RmlTextureComponent>())
+        ui = component->GetUI();
+
+    if (ui == nullptr)
+        ui = GetSubsystem<RmlUI>();
+
     document_ = ui->LoadDocument(resource_.name_);
     SetPosition(position_);
     SetSize(size_);
