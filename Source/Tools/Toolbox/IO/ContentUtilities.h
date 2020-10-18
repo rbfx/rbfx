@@ -49,7 +49,7 @@ enum FileType : unsigned
 
 enum ContentType : unsigned
 {
-    CTYPE_UNKNOWN,
+    CTYPE_BINARY,
     CTYPE_SCENE,
     CTYPE_SCENEOBJECT,
     CTYPE_UILAYOUT,
