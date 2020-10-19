@@ -3,9 +3,10 @@ name: Notifications
 on: [push]
 
 jobs:
-  stale:
+  notifications:
     name: Discord Commits
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
     - name: Discord Commits
       uses: dearimgui/github_discord_notifier@latest
