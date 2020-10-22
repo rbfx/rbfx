@@ -294,6 +294,9 @@ if (URHO3D_CSHARP)
     if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
         # Workaround for some cases where csc has issues when invoked by CMake.
         set (TERM_WORKAROUND env TERM=xterm)
+    elseif ("${CMAKE_GENERATOR}" STREQUAL "Xcode")
+        # Xcode adds something to environment which makes msbuild targets fail. Invoke msbuild with clean environment instead.
+        set (TERM_WORKAROUND env -i)
     endif ()
     if (CMAKE_VS_MSBUILD_COMMAND)
         set (MSBUILD ${CMAKE_VS_MSBUILD_COMMAND} CACHE STRING "")
