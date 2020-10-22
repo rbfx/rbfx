@@ -1,0 +1,418 @@
+name: Build
+on:
+  push:
+    branches-ignore:
+      - 'no-ci-**'
+      - 'skip-ci-**'
+  pull_request: {}
+
+env:
+  URHO3D_ENABLE_ALL: ON
+  URHO3D_SAMPLES: ON
+
+jobs:
+  CheckSkipCI:
+    runs-on: ubuntu-latest
+    if: |
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      !contains(github.event.pull_request.title, '[skip ci]') &&
+      !contains(github.event.head_commit.message, '[skip-ci]') &&
+      !contains(github.event.pull_request.title, '[skip-ci]')
+    steps:
+      - run: exit 0
+
+  Windows:
+    runs-on: windows-latest
+    needs: [CheckSkipCI]
+
+    env:
+      URHO3D_SAMPLES: ON
+
+    strategy:
+      fail-fast: false
+      matrix:
+        generator:
+          - 'MinGW Makefiles'
+          - 'Visual Studio 16 2019'
+        arch:
+          - Win32
+          - x64
+        env:
+          - LIB_TYPE: SHARED
+            URHO3D_FEATURES: CSHARP
+          - LIB_TYPE: STATIC
+        build-type:
+          #- Debug
+          - RelWithDebInfo
+        exclude:
+          # No mingw on 32bit
+          - generator: 'MinGW Makefiles'
+            arch: Win32
+          # No mingw debug builds
+          - generator: 'MinGW Makefiles'
+            build-type: Debug
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Generate
+        env:
+          URHO3D_FEATURES: ${{ matrix.env.URHO3D_FEATURES }}
+          URHO3D_BUILD_${{ matrix.env.LIB_TYPE }}_LIBS: ON
+        shell: bash
+        run: |
+          # MinGW-specific settings.
+          if [[ '${{ matrix.generator }}' == 'MinGW Makefiles' ]];
+          then
+            export DURHO3D_GRAPHICS_API=D3D9                      # Try building D3D9 API, because default is D3D11.
+          elif [[ '${{ matrix.generator }}' == 'Visual Studio 16 2019' ]];
+          then
+            CMAKE_EXTRA_ARGUMENTS='-A ${{ matrix.arch }}'         # Visual Studio generator architecture selection
+          fi
+
+          # Generate CMake cache.
+          mkdir cmake-build
+          cd cmake-build
+          cmake -G "${{ matrix.generator }}" $CMAKE_EXTRA_ARGUMENTS   \
+            -DCMAKE_INSTALL_PREFIX=`pwd`/../SDK                       \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}               \
+            ../source-code
+
+      - name: Restore
+        if: contains(matrix.env.URHO3D_FEATURES, 'CSHARP') && matrix.generator != 'MinGW Makefiles'
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target restore
+
+      - name: MSBuild
+        if: matrix.generator == 'Visual Studio 16 2019'
+        shell: powershell
+        run: |
+          cd cmake-build
+          msbuild /p:Configuration=${{ matrix.build-type }} rbfx.sln
+
+      - name: Build
+        if: matrix.generator != 'Visual Studio 16 2019'
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --config ${{ matrix.build-type }}
+
+      - name: Install
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target install
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: 'rbfx-${{ github.job }}-${{ matrix.arch }}-(${{ matrix.generator }})-${{ matrix.build-type }}-${{ github.sha }}'
+          path: SDK
+
+  Linux:
+    runs-on: ubuntu-20.04
+    needs: [CheckSkipCI]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - LIB_TYPE: SHARED
+            URHO3D_FEATURES: CSHARP
+          - LIB_TYPE: STATIC
+        compiler:
+          - CC: gcc
+            CXX: g++
+          - CC: clang
+            CXX: clang++
+        build-type:
+          #- Debug
+          - RelWithDebInfo
+        generator:
+          - Ninja
+        arch:
+          - x64
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev libtbb-dev ninja-build
+          if [[ "${{ matrix.env.URHO3D_FEATURES }}" == *"CSHARP"* ]];
+          then
+            sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+            echo "deb http://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends mono-devel msbuild-libhostfxr msbuild-sdkresolver msbuild
+          fi
+
+      - name: Generate
+        env:
+          URHO3D_FEATURES: ${{ matrix.env.URHO3D_FEATURES }}
+          URHO3D_BUILD_${{ matrix.env.LIB_TYPE }}_LIBS: ON
+          CC: ${{ matrix.compiler.CC }}
+          CXX: ${{ matrix.compiler.CXX }}
+        shell: bash
+        run: |
+          # Generate CMake cache.
+          mkdir cmake-build
+          cd cmake-build
+          cmake -G "${{ matrix.generator }}" $CMAKE_EXTRA_ARGUMENTS       \
+            -DCMAKE_INSTALL_PREFIX=`pwd`/../SDK                           \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}                   \
+            ../source-code
+
+      - name: Restore
+        if: contains(matrix.env.URHO3D_FEATURES, 'CSHARP')
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target restore
+
+      - name: Build
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --config ${{ matrix.build-type }}
+
+      - name: Install
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target install
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: 'rbfx-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build-type }}-${{ github.sha }}'
+          path: SDK
+
+  MacOS:
+    runs-on: macos-latest
+    needs: [CheckSkipCI]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - LIB_TYPE: SHARED
+            URHO3D_FEATURES: CSHARP
+          - LIB_TYPE: STATIC
+        build-type:
+          #- Debug
+          - RelWithDebInfo
+        generator:
+          - Xcode
+        arch:
+          - x64
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Install Depedencies
+        shell: bash
+        run: |
+          brew install pkg-config
+          wget -q https://download.mono-project.com/archive/6.8.0/macos-10-universal/MonoFramework-MDK-6.8.0.123.macos10.xamarin.universal.pkg -O /tmp/Mono.pkg
+          sudo installer -pkg /tmp/Mono.pkg -target /
+
+      - name: Generate
+        env:
+          URHO3D_FEATURES: ${{ matrix.env.URHO3D_FEATURES }}
+          URHO3D_BUILD_${{ matrix.env.LIB_TYPE }}_LIBS: ON
+        shell: bash
+        run: |
+          # Generate CMake cache.
+          mkdir cmake-build
+          cd cmake-build
+          cmake -G "${{ matrix.generator }}" $CMAKE_EXTRA_ARGUMENTS   \
+            -DCMAKE_INSTALL_PREFIX=`pwd`/../SDK                       \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}               \
+            ../source-code
+
+      - name: Restore
+        if: contains(matrix.env.URHO3D_FEATURES, 'CSHARP')
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target restore
+
+      - name: Build
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --config ${{ matrix.build-type }}
+
+      - name: Install
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target install
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: 'rbfx-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build-type }}-${{ github.sha }}'
+          path: SDK
+
+  Android:
+    runs-on: ubuntu-20.04
+    needs: [CheckSkipCI]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type:
+          #- assembleDebug
+          - assembleRelease
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          sudo apt-get install -y --no-install-recommends uuid-dev ninja-build
+
+      - name: Build
+        shell: bash
+        run: |
+          cd source-code/android
+          gradle wrapper
+          ./gradlew ${{ matrix.build-type }}
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: 'rbfx-${{ github.job }}-${{ matrix.build-type }}-${{ github.sha }}'
+          path: '**/*.apk'
+
+  iOS:
+    runs-on: macos-latest
+    needs: [CheckSkipCI]
+
+    env:
+      LIB_TYPE: STATIC
+      URHO3D_SAMPLES: ON
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type:
+          #- Debug
+          - MinSizeRel
+        generator:
+          - Xcode
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Generate
+        env:
+          URHO3D_FEATURES: ${{ env.URHO3D_FEATURES }}
+          URHO3D_BUILD_${{ env.LIB_TYPE }}_LIBS: ON
+        shell: bash
+        run: |
+          # Generate CMake cache.
+          mkdir cmake-build
+          cd cmake-build
+          cmake -G "${{ matrix.generator }}" $CMAKE_EXTRA_ARGUMENTS   \
+            -DCMAKE_INSTALL_PREFIX=`pwd`/../SDK                       \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}               \
+            -DBUILD_SHARED_LIBS=$SHARED                               \
+            -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake         \
+            -DPLATFORM=SIMULATOR64                                    \
+            -DEPLOYMENT_TARGET=11                                     \
+            ../source-code
+
+      - name: Build
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --config ${{ matrix.build-type }}
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: 'rbfx-${{ github.job }}-${{ matrix.build-type }}-${{ github.sha }}'
+          path: '**/*.app'
+
+  Web:
+    runs-on: ubuntu-20.04
+    needs: [CheckSkipCI]
+
+    env:
+      LIB_TYPE: STATIC
+      URHO3D_SAMPLES: ON
+      URHO3D_PROFILING: OFF
+
+    strategy:
+      matrix:
+        build-type:
+          - MinSizeRel
+        generator:
+          - Ninja
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - uses: mymindstorm/setup-emsdk@v7
+
+      - name: Dependencies
+        shell: bash
+        run: |
+          sudo apt-get install -y --no-install-recommends uuid-dev ninja-build
+
+      - name: Generate
+        env:
+          URHO3D_FEATURES: ${{ matrix.env.URHO3D_FEATURES }}
+          URHO3D_BUILD_${{ matrix.env.LIB_TYPE }}_LIBS: ON
+        shell: bash
+        run: |
+          # Generate CMake cache.
+          export CC=${{ matrix.compiler.CC }}
+          export CXX=${{ matrix.compiler.CXX }}
+          mkdir cmake-build
+          cd cmake-build
+          cmake -G "${{ matrix.generator }}" $CMAKE_EXTRA_ARGUMENTS   \
+            -DCMAKE_INSTALL_PREFIX=`pwd`/../SDK                       \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}               \
+            -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake  \
+            ../source-code
+
+      - name: Build
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --config ${{ matrix.build-type }}
+
+      - name: Install
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target install
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: 'rbfx-${{ github.job }}-${{ matrix.build-type }}-${{ github.sha }}'
+          path: SDK

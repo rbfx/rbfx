@@ -9,5 +9,9 @@ charset = utf-8
 [*.xml]
 indent_style = tab
 
+[*.yml]
+indent_size = 2
+tab_width = 2
+
 [*.{c,cpp,h,hpp,hxx}]
 max_line_length = 140
