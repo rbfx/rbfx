@@ -1,0 +1,51 @@
+name: Documentation
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - Docs/**
+      - Source/Urho3D/**.h
+
+env:
+  URHO3D_DOCS: ON
+  URHO3D_ENABLE_ALL: ON
+  URHO3D_CSHARP: ON
+  BUILD_SHARED_LIBS: ON
+
+jobs:
+  Documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          sudo apt-get install -y --no-install-recommends doxygen
+
+      - name: Generate
+        shell: bash
+        run: |
+          # Generate CMake cache.
+          mkdir cmake-build
+          cd cmake-build
+          cmake ../source-code
+
+      - name: Build
+        shell: bash
+        run: |
+          cd cmake-build
+          cmake --build . --target doc
+
+      - name: Deploy
+        if: github.repository == 'rokups/rbfx-private'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
+          external_repository: rbfx/rbfx.github.io
+          publish_dir: ./cmake-build/Docs/html/
+          publish_branch: master
