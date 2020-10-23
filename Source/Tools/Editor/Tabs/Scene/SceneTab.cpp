@@ -789,13 +789,13 @@ void SceneTab::OnUpdate(VariantMap& args)
             if (!ui::IsAnyItemActive())
             {
                 // Global view hotkeys
-                if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_DELETE))
+                if (ui::IsKeyPressed(KEY_DELETE))
                     RemoveSelection();
-                else if (context_->GetSubsystem<Input>()->GetKeyDown(KEY_CTRL))
+                else if (ui::IsKeyPressed(KEY_CTRL))
                 {
-                    if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_C))
+                    if (ui::IsKeyPressed(KEY_C))
                         CopySelection();
-                    else if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_V))
+                    else if (ui::IsKeyPressed(KEY_V))
                     {
                         if (context_->GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
                             PasteIntoSelection();
@@ -803,7 +803,7 @@ void SceneTab::OnUpdate(VariantMap& args)
                             PasteIntuitive();
                     }
                 }
-                else if (context_->GetSubsystem<Input>()->GetKeyPress(KEY_ESCAPE))
+                else if (ui::IsKeyPressed(KEY_ESCAPE))
                     ClearSelection();
             }
         }
