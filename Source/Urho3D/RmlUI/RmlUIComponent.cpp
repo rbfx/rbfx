@@ -25,6 +25,8 @@
 #include "../IO/Log.h"
 #include "../Resource/BinaryFile.h"
 #include "../Graphics/Material.h"
+#include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 #include "../RmlUI/RmlMaterialComponent.h"
 #include "../RmlUI/RmlUI.h"
 #include "../RmlUI/RmlUIComponent.h"
@@ -41,10 +43,6 @@ extern const char* RML_UI_CATEGORY;
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
 {
-    RmlUI* ui = GetSubsystem<RmlUI>();
-    ui->documentClosedEvent_.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
-    ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
-    ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
     SetUpdateEventMask(USE_UPDATE);
 }
 
@@ -67,6 +65,17 @@ void RmlUIComponent::RegisterObject(Context* context)
 
 void RmlUIComponent::OnNodeSet(Node* node)
 {
+    if (node)
+    {
+        SubscribeToEvent(node->GetScene(), E_COMPONENTADDED, &RmlUIComponent::OnComponentAdded);
+        SubscribeToEvent(node->GetScene(), E_COMPONENTREMOVED, &RmlUIComponent::OnComponentRemoved);
+    }
+    else
+    {
+        UnsubscribeFromEvent(E_COMPONENTADDED);
+        UnsubscribeFromEvent(E_COMPONENTREMOVED);
+    }
+
     if (open_ && node != nullptr)
         OpenInternal();
     else
@@ -93,7 +102,7 @@ void RmlUIComponent::SetOpen(bool open)
     open_ = open;
 }
 
-void RmlUIComponent::OpenInternal()
+void RmlUIComponent::OpenInternal(Component* ignoreComponent)
 {
     if (document_ != nullptr)
         return;
@@ -105,13 +114,30 @@ void RmlUIComponent::OpenInternal()
     }
 
     RmlUI* ui = nullptr;
-    if (RmlMaterialComponent* component = GetNode()->GetComponent<RmlMaterialComponent>())
-        ui = component->GetUI();
-    else if (RmlTextureComponent* component = GetNode()->GetComponent<RmlTextureComponent>())
-        ui = component->GetUI();
+    Component* component = GetNode()->GetComponent<RmlMaterialComponent>();
+    if (component && component != ignoreComponent)
+    {
+        ui = static_cast<RmlMaterialComponent*>(component)->GetUI();
+        uiDestinationComponent_ = component;
+    }
+    else
+    {
+        component = GetNode()->GetComponent<RmlTextureComponent>();
+        if (component && component != ignoreComponent)
+        {
+            ui = static_cast<RmlTextureComponent*>(component)->GetUI();
+            uiDestinationComponent_ = component;
+        }
+        else
+        {
+            ui = GetSubsystem<RmlUI>();
+            uiDestinationComponent_ = nullptr;
+        }
+    }
 
-    if (ui == nullptr)
-        ui = GetSubsystem<RmlUI>();
+    ui->documentClosedEvent_.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
+    ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
+    ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
 
     document_ = ui->LoadDocument(resource_.name_);
     SetPosition(position_);
@@ -123,6 +149,11 @@ void RmlUIComponent::CloseInternal()
 {
     if (document_ == nullptr)
         return;
+
+    RmlUI* ui = static_cast<Detail::RmlContext*>(document_->GetContext())->GetOwnerSubsystem();
+    ui->documentClosedEvent_.Unsubscribe(this);
+    ui->canvasResizedEvent_.Unsubscribe(this);
+    ui->documentReloaded_.Unsubscribe(this);
 
     position_ = GetPosition();
     size_ = GetSize();
@@ -248,6 +279,43 @@ void RmlUIComponent::SetResource(const eastl::string& resourceName)
 {
     ResourceRef resourceRef(BinaryFile::GetTypeStatic(), resourceName);
     SetResource(resourceRef);
+}
+
+void RmlUIComponent::OnComponentAdded(StringHash, VariantMap& args)
+{
+    using namespace ComponentAdded;
+
+    Node* node = static_cast<Node*>(args[P_NODE].GetPtr());
+    if (node != node_)
+        return;
+
+    if (uiDestinationComponent_.NotNull())
+        // Window is rendered into some component already.
+        return;
+
+    Component* addedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    if (addedComponent->IsInstanceOf<RmlTextureComponent>() || addedComponent->IsInstanceOf<RmlMaterialComponent>())
+    {
+        CloseInternal();
+        OpenInternal();
+    }
+}
+
+void RmlUIComponent::OnComponentRemoved(StringHash, VariantMap& args)
+{
+    using namespace ComponentRemoved;
+
+    Node* node = static_cast<Node*>(args[P_NODE].GetPtr());
+    if (node != node_)
+        return;
+
+    Component* removedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    if (removedComponent == uiDestinationComponent_)
+    {
+        // Reopen this window in a new best fitting RmlUI instance.
+        CloseInternal();
+        OpenInternal(removedComponent);
+    }
 }
 
 }
