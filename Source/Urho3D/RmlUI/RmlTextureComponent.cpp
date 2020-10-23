@@ -63,23 +63,15 @@ void RmlTextureComponent::RegisterObject(Context* context)
 {
     context->RegisterFactory<RmlTextureComponent>(RML_UI_CATEGORY);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
-    URHO3D_ATTRIBUTE_EX("Virtual Texture Name", ea::string, virtualTextureName_, OnVirtualTextureNameSet, "", AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Virtual Texture Name", GetVirtualTextureName, SetVirtualTextureName, ea::string, "", AM_DEFAULT);
 }
 
 void RmlTextureComponent::OnNodeSet(Node* node)
 {
-    Resource* resource = texture_;
-    assert(resource != nullptr);
-    if (node)
-    {
-        if (!virtualTextureName_.empty())
-            AddVirtualResource(resource);
-    }
-    else
-    {
-        if (!virtualTextureName_.empty())
-            RemoveVirtualResource(resource);
-    }
+    UpdateVirtualTextureResource();
+
+    if (node == nullptr)
+        ClearTexture(); // A little bit of visual feedback when component is referenced by StaticModel and is removed.
 }
 
 void RmlTextureComponent::OnSetEnabled()
@@ -92,6 +84,7 @@ void RmlTextureComponent::OnSetEnabled()
 
 void RmlTextureComponent::SetTextureSize(IntVector2 size)
 {
+    assert(texture_.NotNull());
     if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
         size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
     {
@@ -124,14 +117,23 @@ IntVector2 RmlTextureComponent::GetTextureSize() const
 
 void RmlTextureComponent::SetVirtualTextureName(const ea::string& name)
 {
-    virtualTextureName_ = name;
-    OnVirtualTextureNameSet();
+    assert(texture_.NotNull());
+    RemoveVirtualResource(texture_);
+    texture_->SetName(name);
+    UpdateVirtualTextureResource();
+}
+
+const ea::string& RmlTextureComponent::GetVirtualTextureName() const
+{
+    assert(texture_.NotNull());
+    return texture_->GetName();
 }
 
 void RmlTextureComponent::AddVirtualResource(Resource* resource)
 {
     assert(resource != nullptr);
-    assert(!resource->GetName().empty());
+    if (resource->GetName().empty())
+        return;
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     cache->AddManualResource(resource);
 }
@@ -139,13 +141,17 @@ void RmlTextureComponent::AddVirtualResource(Resource* resource)
 void RmlTextureComponent::RemoveVirtualResource(Resource* resource)
 {
     assert(resource != nullptr);
-    assert(!resource->GetName().empty());
+    if (resource->GetName().empty())
+        return;
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     cache->ReleaseResource(resource->GetType(), resource->GetName(), true);
 }
 
 void RmlTextureComponent::ClearTexture()
 {
+    if (texture_.Null())
+        return;
+
     Image clear(context_);
     int w = texture_->GetWidth(), h = texture_->GetHeight();
     if (w > 0 && h > 0)
@@ -156,19 +162,19 @@ void RmlTextureComponent::ClearTexture()
     }
 }
 
-void RmlTextureComponent::OnVirtualTextureNameSet()
+void RmlTextureComponent::UpdateVirtualTextureResource()
 {
-    bool attachedToNode = GetNode() != nullptr;
-    Resource* resource = texture_;
-    assert(resource != nullptr);
+    assert(texture_.NotNull());
+    if (node_)
+        AddVirtualResource(texture_);
+    else
+        RemoveVirtualResource(texture_);
+}
 
-    if (attachedToNode && !resource->GetName().empty())
-        RemoveVirtualResource(resource);
-
-    resource->SetName(virtualTextureName_);
-
-    if (attachedToNode && !resource->GetName().empty())
-        AddVirtualResource(resource);
+void RmlTextureComponent::ApplyAttributes()
+{
+    if (texture_.NotNull())
+        UpdateVirtualTextureResource();
 }
 
 }
