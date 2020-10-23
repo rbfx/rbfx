@@ -1,13 +1,8 @@
 ![rbfx-logo](https://user-images.githubusercontent.com/19151258/57008846-a292be00-6bfb-11e9-8303-d79e6dd36038.png)
 
-[![Windows](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&label=Windows)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![Linux](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&label=Linux)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![MacOS](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&label=MacOS)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![Web](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Web&label=Web)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![Android](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Android&label=Android)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![iOS](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=iOS&label=iOS)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-
-[![Join the chat at https://gitter.im/rokups/rbfx](https://badges.gitter.im/rokups/rbfx.svg)](https://gitter.im/rokups/rbfx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Discord Chat](https://img.shields.io/discord/560082228928053258.svg?logo=discord)](https://discord.gg/XKs73yf)
+[![Build Status](https://github.com/rokups/rbfx/workflows/.github/workflows/build.yml/badge.svg)](https://github.com/rokups/rbfx/actions)
+[![Join the chat at https://gitter.im/rokups/rbfx](https://badges.gitter.im/rokups/rbfx.svg)](https://gitter.im/rokups/rbfx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Discord Chat](https://img.shields.io/discord/560082228928053258.svg?logo=discord)](https://discord.gg/XKs73yf)
 
 **Urho3D Rebel Fork** aka **rbfx** is an experimental fork of [Urho3D](http://urho3d.github.io/) game engine.
 
@@ -133,17 +128,3 @@ rbfx optionally uses the following external third-party libraries:
 | OpenGL 2 / 3.1        | ✔       | ✔     | ✔     |     |         |     |
 | OpenGL ES 2 / 3       |         |       |       | ✔   | ✔       |     |
 | WebGL                 |         |       |       |     |         | ✔   |
-
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-msvc-d3d11&label=static-msvc-d3d11)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-msvc-d3d11&label=shared-msvc-d3d11)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-mingw-d3d9&label=static-mingw-d3d9)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-mingw-d3d9&label=shared-mingw-d3d9)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-gcc-opengl&label=static-gcc-opengl)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-gcc-opengl&label=shared-gcc-opengl)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-clang-opengl&label=static-clang-opengl)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-clang-opengl&label=shared-clang-opengl)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20static-clang-opengl&label=static-macos-clang-opengl)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20shared-clang-opengl&label=shared-macos-clang-opengl)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Web&label=web)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Android&label=android)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
-[![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=iOS&label=ios)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
