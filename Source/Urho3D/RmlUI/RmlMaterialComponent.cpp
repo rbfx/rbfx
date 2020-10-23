@@ -58,26 +58,14 @@ void RmlMaterialComponent::RegisterObject(Context* context)
 {
     context->RegisterFactory<RmlMaterialComponent>(RML_UI_CATEGORY);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
-    URHO3D_ATTRIBUTE_EX("Virtual Material Name", ea::string, virtualMaterialName_, OnVirtualMaterialNameSet, "", AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Virtual Material Name", GetVirtualMaterialName, SetVirtualMaterialName, ea::string, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);
 }
 
 void RmlMaterialComponent::OnNodeSet(Node* node)
 {
     BaseClassName::OnNodeSet(node);
-
-    Resource* resource = material_;
-    assert(resource != nullptr);
-    if (node)
-    {
-        if (!virtualMaterialName_.empty())
-            AddVirtualResource(resource);
-    }
-    else
-    {
-        if (!virtualMaterialName_.empty())
-            RemoveVirtualResource(resource);
-    }
+    UpdateVirtualMaterialResource();
 }
 
 void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
@@ -165,23 +153,32 @@ void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
 
 void RmlMaterialComponent::SetVirtualMaterialName(const ea::string& name)
 {
-    virtualMaterialName_ = name;
-    OnVirtualMaterialNameSet();
+    assert(material_.NotNull());
+    RemoveVirtualResource(material_);
+    material_->SetName(name);
+    UpdateVirtualMaterialResource();
 }
 
-void RmlMaterialComponent::OnVirtualMaterialNameSet()
+const ea::string& RmlMaterialComponent::GetVirtualMaterialName() const
 {
-    bool attachedToNode = GetNode() != nullptr;
-    Resource* resource = material_;
-    assert(resource != nullptr);
+    assert(material_.NotNull());
+    return material_->GetName();
+}
 
-    if (attachedToNode && !resource->GetName().empty())
-        RemoveVirtualResource(resource);
+void RmlMaterialComponent::UpdateVirtualMaterialResource()
+{
+    assert(material_.NotNull());
+    if (node_)
+        AddVirtualResource(material_);
+    else
+        RemoveVirtualResource(material_);
+}
 
-    resource->SetName(virtualMaterialName_);
-
-    if (attachedToNode && !resource->GetName().empty())
-        AddVirtualResource(resource);
+void RmlMaterialComponent::ApplyAttributes()
+{
+    BaseClassName::ApplyAttributes();
+    if (material_.NotNull())
+        UpdateVirtualMaterialResource();
 }
 
 }
