@@ -49,7 +49,7 @@ public:
     /// Sets a name of virtual texture resource. Virtual texture gets created if/when component is added to the node.
     void SetVirtualTextureName(const ea::string& name);
     /// Returns a name of virtual texture resource.
-    const ea::string& GetVirtualTextureName() const { return virtualTextureName_; }
+    const ea::string& GetVirtualTextureName() const;
 
     /// Return off-screen RmlUI instance.
     RmlUI* GetUI() const { return offScreenUI_; }
@@ -70,15 +70,15 @@ protected:
     void RemoveVirtualResource(Resource* resource);
     /// Set texture color to transparent.
     void ClearTexture();
-    /// Handle updates of virtual resource name.
-    void OnVirtualTextureNameSet();
+    /// Add or remove virtual texture resource.
+    void UpdateVirtualTextureResource();
+    /// Apply attribute changes that can not be applied immediately.
+    void ApplyAttributes() override;
 
     /// Texture that UIElement will be rendered into.
     SharedPtr<Texture2D> texture_;
     /// Subsystem that handles UI rendering to the texture.
     SharedPtr<RmlUI> offScreenUI_;
-    /// Name of virtual resource which this component will register as.
-    ea::string virtualTextureName_;
 };
 
 }

@@ -46,7 +46,7 @@ public:
     /// Sets a name of virtual texture resource. Virtual texture gets created if/when component is added to the node.
     void SetVirtualMaterialName(const ea::string& name);
     /// Returns a name of virtual texture resource.
-    const ea::string& GetMaterialTextureName() const { return virtualMaterialName_; }
+    const ea::string& GetVirtualMaterialName() const;
     /// Return material which renders UI on to objects.
     Material* GetMaterial() { return material_; }
     /// Return true if mouse position is remapped on to UI rendered on to sibling StaticModel.
@@ -59,13 +59,13 @@ protected:
     void OnNodeSet(Node* node) override;
     /// Convert screen coordinates to context-local coordinates of RmlUI instance.
     void TranslateMousePos(IntVector2& screenPos) override;
-    /// Handle updates of virtual resource name.
-    void OnVirtualMaterialNameSet();
+    /// Add or remove virtual material resource.
+    void UpdateVirtualMaterialResource();
+    /// Apply attribute changes that can not be applied immediately.
+    void ApplyAttributes() override;
 
     /// Material managed by this component.
     SharedPtr<Material> material_;
-    /// Name of virtual material resource.
-    ea::string virtualMaterialName_;
     /// Flag indicating that this component remaps mouse position on to a sibling StaticModel if present.
     bool remapMousePos_ = true;
 };

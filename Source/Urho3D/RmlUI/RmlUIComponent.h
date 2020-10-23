@@ -77,7 +77,7 @@ protected:
     /// Handle component being added to Node or removed from it.
     void OnNodeSet(Node* node) override;
     /// Open a window document if it was not already open.
-    void OpenInternal();
+    void OpenInternal(Component* ignoreComponent = nullptr);
     /// Close a window document if it was open.
     void CloseInternal();
     /// Resets document_ pointer when window is closed.
@@ -86,7 +86,12 @@ protected:
     void OnUICanvasResized(RmlCanvasResizedArgs& size);
     /// Handle document pointer changes on resource reload.
     void OnDocumentReloaded(RmlDocumentReloadedArgs& args);
+    /// Handle addition of sibling components.
+    void OnComponentAdded(StringHash, VariantMap& args);
+    /// Handle removal of sibling components.
+    void OnComponentRemoved(StringHash, VariantMap& args);
 
+protected:
     /// A rml file resource.
     ResourceRef resource_;
     /// Flag indicating that window will open as soon as component is added to an object.
@@ -101,6 +106,8 @@ protected:
     Vector2 position_;
     /// Use automatic size inherited from rml document.
     bool autoSize_ = true;
+    /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into default RmlUI subsystem.
+    WeakPtr<Component> uiDestinationComponent_;
 };
 
 }
