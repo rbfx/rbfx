@@ -155,11 +155,11 @@ struct IdScopeGoUp : ScopeHelper
     ImVector<ImGuiID> ids_;
 };
 
-#define UI_INDENT(len) for (ImGui::IndentScope ___indenter_bf655352_0811_4629_b929_051958ca8855##__LINE__(len); static_cast<bool>(___indenter_bf655352_0811_4629_b929_051958ca8855##__LINE__);)
-#define UI_ITEMWIDTH(width) for (ImGui::ItemWidthScope ___widthscope_4c0ffd93_e615_43c9_a58e_da6db01d5bb8##__LINE__(width); static_cast<bool>(___widthscope_4c0ffd93_e615_43c9_a58e_da6db01d5bb8##__LINE__);)
-#define UI_STYLEVAR(var, ...) for (ImGui::StyleVarScope ___stylevarscope_0652d51d_6ff6_4deb_a1ba_841bbc684e3a##__LINE__(var, __VA_ARGS__); static_cast<bool>(___stylevarscope_0652d51d_6ff6_4deb_a1ba_841bbc684e3a##__LINE__);)
-#define UI_ID(id) for (ImGui::IdScope ___idscope_bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__(id); static_cast<bool>(___idscope_bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__);)
-#define UI_UPIDSCOPE(id) for (ImGui::IdScopeGoUp ___idscopeup_b0614a09_2df3_4258_b1d5_ee0daafcd388##__LINE__(id); static_cast<bool>(___idscopeup_b0614a09_2df3_4258_b1d5_ee0daafcd388##__LINE__);)
+#define UI_INDENT(len)          for (ImGui::IndentScope     ___bf655352_0811_4629_b929_051958ca8855##__LINE__(len);                 static_cast<bool>(___bf655352_0811_4629_b929_051958ca8855##__LINE__);)
+#define UI_ITEMWIDTH(width)     for (ImGui::ItemWidthScope  ___4c0ffd93_e615_43c9_a58e_da6db01d5bb8##__LINE__(width);               static_cast<bool>(___4c0ffd93_e615_43c9_a58e_da6db01d5bb8##__LINE__);)
+#define UI_STYLEVAR(var, ...)   for (ImGui::StyleVarScope   ___0652d51d_6ff6_4deb_a1ba_841bbc684e3a##__LINE__(var, __VA_ARGS__);    static_cast<bool>(___0652d51d_6ff6_4deb_a1ba_841bbc684e3a##__LINE__);)
+#define UI_ID(id)               for (ImGui::IdScope         ___bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__(id);                  static_cast<bool>(___bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__);)
+#define UI_UPIDSCOPE(id)        for (ImGui::IdScopeGoUp     ___b0614a09_2df3_4258_b1d5_ee0daafcd388##__LINE__(id);                  static_cast<bool>(___b0614a09_2df3_4258_b1d5_ee0daafcd388##__LINE__);)
 
 /// function will be passed to constructor of type T.
 template<typename T, typename... Args>
