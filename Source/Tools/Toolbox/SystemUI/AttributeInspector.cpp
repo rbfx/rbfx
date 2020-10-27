@@ -152,7 +152,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
     const double doubleMax = std::numeric_limits<double>::infinity();
     int intMin = std::numeric_limits<int>::min();
     int intMax = std::numeric_limits<int>::max();
-    const float floatStep = 0.01f;
+    const float floatStep = 0.1f;
     const ImGuiStyle& style = ui::GetStyle();
 
     // FIXME: string_view is used as zero-terminated C string. Fix this when https://github.com/ocornut/imgui/pull/3038 is merged. Until then do not use string slices with attribute inspector!
@@ -274,30 +274,26 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
         }
         case VAR_QUATERNION:
         {
-            const Quaternion& rotation = value.GetQuaternion();
-            Vector3 angles, anglesInitial;
-            angles = anglesInitial = rotation.EulerAngles();
-            const char* formats[] = {"P=%.3f", "Y=%.3f", "R=%.3f"};
+            Vector3 currentAngles = value.GetQuaternion().EulerAngles();
+            Vector3& angles = *ui::GetUIState<Vector3>(currentAngles);
+            Vector3 anglesInitial = angles;
             if (showHelperLabels)
+            {
+                const char* formats[] = {"P=%.3f", "Y=%.3f", "R=%.3f"};
                 modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, formats);
+            }
             else
                 modified |= ui::DragScalarN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, "%.3f");
+
             if (modified)
             {
-                // FIXME: This is most likely wrong.
-                static Vector3 directions[3]{Vector3::RIGHT, Vector3::UP, Vector3::FORWARD};
-                Quaternion result = rotation;
-                Quaternion delta;
-                for (int i = 0; i < 3; i++)
-                {
-                    float angle = angles.Data()[i] - anglesInitial.Data()[i];
-                    if (angle != 0.0f)
-                    {
-                        delta.FromAngleAxis(angle, directions[i]);
-                        result = result * delta;
-                    }
-                }
-                value = result;
+                if (angles.x_ != anglesInitial.x_)
+                    angles.x_ += angles.x_ > 360.0f ? -360.0f : angles.x_ < 0.0f ? +360.0f : 0.0f;
+                if (angles.y_ != anglesInitial.y_)
+                    angles.y_ += angles.y_ > 360.0f ? -360.0f : angles.y_ < 0.0f ? +360.0f : 0.0f;
+                if (angles.z_ != anglesInitial.z_)
+                    angles.z_ += angles.z_ > 360.0f ? -360.0f : angles.z_ < 0.0f ? +360.0f : 0.0f;
+                value = Quaternion(angles);
             }
             break;
         }
