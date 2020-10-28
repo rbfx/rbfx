@@ -112,10 +112,9 @@ protected:
 class RmlPlugin : public Rml::Plugin
 {
 public:
-    virtual ~RmlPlugin() = default;
-
+    /// Subscribe to events.
     int GetEventClasses() override { return EVT_DOCUMENT; }
-
+    /// Handle documents being closed from within RmlUi middleware.
     void OnDocumentUnload(Rml::ElementDocument* document) override
     {
         RmlContext* rmlContext = static_cast<RmlContext*>(document->GetContext());
@@ -134,6 +133,9 @@ static Detail::RmlEventListenerInstancer RmlEventListenerInstancerInstance;
 
 /// A standalone object which creates Context instances for RmlUi.
 static Detail::RmlContextInstancer RmlContextInstancerInstance;
+
+/// A standalone object which acts as a bridge between our classes and RmlUi middleware.
+static Detail::RmlPlugin RmlPluginInstance;
 
 /// Map engine keys to RmlUi keys. Note that top bit is cleared from key constants when they are used as array index.
 static const ea::unordered_map<unsigned, uint16_t> keyMap{
@@ -275,6 +277,7 @@ RmlUI::RmlUI(Context* context, const char* name)
         Rml::Initialise();
         Rml::Factory::RegisterEventListenerInstancer(&RmlEventListenerInstancerInstance);
         Rml::Factory::RegisterContextInstancer(&RmlContextInstancerInstance);
+        Rml::RegisterPlugin(&RmlPluginInstance);
     }
     rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), GetDesiredCanvasSize()));
     rmlContext_->SetOwnerSubsystem(this);

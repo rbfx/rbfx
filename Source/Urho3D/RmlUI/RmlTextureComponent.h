@@ -37,7 +37,7 @@ public:
     /// Construct.
     explicit RmlTextureComponent(Context* context);
     /// Destruct.
-    ~RmlTextureComponent() override = default;
+    ~RmlTextureComponent() override;
 
     /// Registers object with the engine.
     static void RegisterObject(Context* context);
