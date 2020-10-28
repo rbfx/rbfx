@@ -29,8 +29,7 @@ else ()
     target_compile_definitions(GLEW PUBLIC  -DGLEW_STATIC)
 endif ()
 target_include_directories(GLEW
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/GLEW>
+    SYSTEM BEFORE PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 if (WIN32)
