@@ -47,7 +47,7 @@
 #include <GLES2/gl2ext.h>
 #endif
 #else
-#include <GLEW/glew.h>
+#include <GL/glew.h>
 #endif
 
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
