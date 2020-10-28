@@ -48,14 +48,6 @@ RmlTextureComponent::RmlTextureComponent(Context* context)
     offScreenUI_ = new RmlUI(context_, Format("RmlTextureComponent_{:p}", (void*)this).c_str());
     offScreenUI_->mouseMoveEvent_.Subscribe(this, &RmlTextureComponent::TranslateMousePos);
 
-    texture_ = context_->CreateObject<Texture2D>();
-    texture_->SetFilterMode(FILTER_BILINEAR);
-    texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
-    texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
-    texture_->SetNumLevels(1);  // No mipmaps
-
-    SetTextureSize({UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE});
-
     SetUpdateEventMask(USE_UPDATE);
 }
 
@@ -117,8 +109,22 @@ IntVector2 RmlTextureComponent::GetTextureSize() const
 
 void RmlTextureComponent::SetVirtualTextureName(const ea::string& name)
 {
-    assert(texture_.NotNull());
-    RemoveVirtualResource(texture_);
+    if (texture_.NotNull())
+        RemoveVirtualResource(texture_);
+    else
+    {
+        // Component is being created, material may not exist. Look it up in resource cache first. This solves a problem where removing
+        // RmlMaterialComponent in the editor and indoing operation creates a new material while old one is still attached to StaticModel.
+        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        if (Texture2D* texture = cache->GetResource<Texture2D>(name, false))
+            texture_ = texture;
+        else
+        {
+            texture_ = CreateTexture();
+            SetTextureSize({UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE});
+        }
+        OnTextureUpdated();
+    }
     texture_->SetName(name);
     UpdateVirtualTextureResource();
 }
@@ -144,7 +150,7 @@ void RmlTextureComponent::RemoveVirtualResource(Resource* resource)
     if (resource->GetName().empty())
         return;
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    cache->ReleaseResource(resource->GetType(), resource->GetName(), true);
+    cache->ReleaseResource(resource->GetType(), resource->GetName());
 }
 
 void RmlTextureComponent::ClearTexture()
@@ -164,7 +170,9 @@ void RmlTextureComponent::ClearTexture()
 
 void RmlTextureComponent::UpdateVirtualTextureResource()
 {
-    assert(texture_.NotNull());
+    if (texture_.Null())
+        return;
+
     if (node_)
         AddVirtualResource(texture_);
     else
@@ -173,8 +181,24 @@ void RmlTextureComponent::UpdateVirtualTextureResource()
 
 void RmlTextureComponent::ApplyAttributes()
 {
-    if (texture_.NotNull())
-        UpdateVirtualTextureResource();
+    if (texture_.Null())
+    {
+        texture_ = CreateTexture();
+        SetTextureSize({UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE});
+        OnTextureUpdated();
+    }
+
+    UpdateVirtualTextureResource();
+}
+
+Texture2D* RmlTextureComponent::CreateTexture()
+{
+    Texture2D* texture = context_->CreateObject<Texture2D>().Detach();
+    texture->SetFilterMode(FILTER_BILINEAR);
+    texture->SetAddressMode(COORD_U, ADDRESS_CLAMP);
+    texture->SetAddressMode(COORD_V, ADDRESS_CLAMP);
+    texture->SetNumLevels(1);  // No mipmaps
+    return texture;
 }
 
 }

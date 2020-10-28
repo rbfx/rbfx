@@ -63,6 +63,10 @@ protected:
     void UpdateVirtualMaterialResource();
     /// Apply attribute changes that can not be applied immediately.
     void ApplyAttributes() override;
+    /// Create a material instance UI will be rendered into.
+    Material* CreateMaterial() const;
+    /// Sets new texture instance to material TU_DIFFUSE slot.
+    void OnTextureUpdated() override;
 
     /// Material managed by this component.
     SharedPtr<Material> material_;
