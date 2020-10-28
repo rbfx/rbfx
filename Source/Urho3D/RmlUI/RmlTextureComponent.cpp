@@ -51,6 +51,13 @@ RmlTextureComponent::RmlTextureComponent(Context* context)
     SetUpdateEventMask(USE_UPDATE);
 }
 
+RmlTextureComponent::~RmlTextureComponent()
+{
+    // Unload document first so other components can receive events about document invalidation and null their pointers. This process
+    // depends on RmlUI instance being alive.
+    offScreenUI_->GetRmlContext()->UnloadAllDocuments();
+}
+
 void RmlTextureComponent::RegisterObject(Context* context)
 {
     context->RegisterFactory<RmlTextureComponent>(RML_UI_CATEGORY);
