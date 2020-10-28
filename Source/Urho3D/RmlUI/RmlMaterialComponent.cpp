@@ -49,9 +49,6 @@ extern const char* RML_UI_CATEGORY;
 RmlMaterialComponent::RmlMaterialComponent(Context* context)
     : RmlTextureComponent(context)
 {
-    material_ = context_->CreateObject<Material>();
-    material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
-    material_->SetTexture(TU_DIFFUSE, texture_);
 }
 
 void RmlMaterialComponent::RegisterObject(Context* context)
@@ -153,8 +150,21 @@ void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
 
 void RmlMaterialComponent::SetVirtualMaterialName(const ea::string& name)
 {
-    assert(material_.NotNull());
-    RemoveVirtualResource(material_);
+    if (material_.NotNull())
+        RemoveVirtualResource(material_);
+    else
+    {
+        // Component is being created, material may not exist. Look it up in resource cache first. This solves a problem where removing
+        // RmlMaterialComponent in the editor and indoing operation creates a new material while old one is still attached to StaticModel.
+        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        if (Material* material = cache->GetResource<Material>(name, false))
+        {
+            material_ = material;
+            material_->SetTexture(TU_DIFFUSE, texture_);
+        }
+        else
+            material_ = CreateMaterial();
+    }
     material_->SetName(name);
     UpdateVirtualMaterialResource();
 }
@@ -167,7 +177,9 @@ const ea::string& RmlMaterialComponent::GetVirtualMaterialName() const
 
 void RmlMaterialComponent::UpdateVirtualMaterialResource()
 {
-    assert(material_.NotNull());
+    if (material_.Null())
+        return;
+
     if (node_)
         AddVirtualResource(material_);
     else
@@ -176,9 +188,25 @@ void RmlMaterialComponent::UpdateVirtualMaterialResource()
 
 void RmlMaterialComponent::ApplyAttributes()
 {
+    if (material_.Null())
+        material_ = CreateMaterial();
+
     BaseClassName::ApplyAttributes();
+    UpdateVirtualMaterialResource();
+}
+
+Material* RmlMaterialComponent::CreateMaterial() const
+{
+    Material* material = context_->CreateObject<Material>().Detach();
+    material->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
+    material->SetTexture(TU_DIFFUSE, texture_);
+    return material;
+}
+
+void RmlMaterialComponent::OnTextureUpdated()
+{
     if (material_.NotNull())
-        UpdateVirtualMaterialResource();
+        material_->SetTexture(TU_DIFFUSE, texture_);
 }
 
 }

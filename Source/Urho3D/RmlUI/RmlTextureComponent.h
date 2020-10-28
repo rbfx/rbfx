@@ -74,6 +74,10 @@ protected:
     void UpdateVirtualTextureResource();
     /// Apply attribute changes that can not be applied immediately.
     void ApplyAttributes() override;
+    /// Create a material instance UI will be rendered into.
+    Texture2D* CreateTexture();
+    /// Signal subclasses that texture instance pointer was updated.
+    virtual void OnTextureUpdated() { }
 
     /// Texture that UIElement will be rendered into.
     SharedPtr<Texture2D> texture_;
