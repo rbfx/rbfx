@@ -261,7 +261,15 @@ bool ResourceTab::RenderWindowContent()
             if (ui::BeginDragDropSource())
             {
                 ea::string resourceName = currentDir_ + name;
-                ui::SetDragDropVariant(Format("path,{}", GetContentResourceType(context_, resourceName).ToString()), resourceName);
+                ResourceContentTypes contentTypes;
+                GetContentResourceType(context_, resourceName, contentTypes);
+                ea::string dragType = "path";
+                for (StringHash type : contentTypes)
+                {
+                    dragType += ",";
+                    dragType += type.ToString();
+                }
+                ui::SetDragDropVariant(dragType, resourceName);
                 ui::TextUnformatted(resourceName.c_str());
                 ui::EndDragDropSource();
             }
@@ -316,7 +324,15 @@ bool ResourceTab::RenderWindowContent()
                     if (ui::BeginDragDropSource())
                     {
                         ea::string resourceName = currentDir_ + byproductWithDir;
-                        ui::SetDragDropVariant(Format("path,{}", GetContentResourceType(context_, resourceName).ToString()), resourceName);
+                        ResourceContentTypes contentTypes;
+                        GetContentResourceType(context_, resourceName, contentTypes);
+                        ea::string dragType = "path";
+                        for (StringHash type : contentTypes)
+                        {
+                            dragType += ",";
+                            dragType += type.ToString();
+                        }
+                        ui::SetDragDropVariant(dragType, resourceName);
                         ui::TextUnformatted(resourceName.c_str());
                         ui::EndDragDropSource();
                     }
@@ -374,6 +390,7 @@ void ResourceTab::SelectCurrentItemInspector()
 
     ea::string selected = currentDir_ + selectedItem_;
 
+    ResourceContentTypes contentTypes;
     auto* inspector = GetSubsystem<InspectorTab>();
     auto* pipeline = GetSubsystem<Pipeline>();
     auto* cache = GetSubsystem<ResourceCache>();
@@ -382,10 +399,10 @@ void ResourceTab::SelectCurrentItemInspector()
 
     if (Asset* asset = pipeline->GetAsset(selected))
         asset->Inspect();
-    else if (StringHash resourceType = GetContentResourceType(context_, selected))
+    else if (GetContentResourceType(context_, selected, contentTypes))
     {
         // Inspect byproduct directly.
-        if (Resource* resource = cache->GetResource(resourceType, selected))
+        if (Resource* resource = cache->GetResource(contentTypes.front(), selected))
         {
             inspector->Inspect(resource);
             undo->Connect(resource);    // ??
