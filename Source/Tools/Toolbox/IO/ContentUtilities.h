@@ -27,6 +27,8 @@
 #include <Urho3D/Container/Str.h>
 #include <Urho3D/Precompiled.h>
 
+#include <EASTL/fixed_vector.h>
+
 
 namespace Urho3D
 {
@@ -65,6 +67,8 @@ enum ContentType : unsigned
     CTYPE_FOLDER,
 };
 
+using ResourceContentTypes = ea::fixed_vector<StringHash, 2>;
+
 /// Return file type based on extension of file name.
 URHO3D_TOOLBOX_API FileType GetFileType(const ea::string& fileName);
 /// Return icon from icon font based on extension of file name.
@@ -73,6 +77,6 @@ URHO3D_TOOLBOX_API ea::string GetFileIcon(const ea::string& fileName);
 /// Return content type by inspecting file contents.
 URHO3D_TOOLBOX_API ContentType GetContentType(Context* context, const ea::string& resourcePath);
 /// Return resource type by inspecting file contents.
-URHO3D_TOOLBOX_API StringHash GetContentResourceType(Context* context, const ea::string& resourcePath);
+URHO3D_TOOLBOX_API bool GetContentResourceType(Context* context, const ea::string& resourcePath, ResourceContentTypes& types);
 
 }

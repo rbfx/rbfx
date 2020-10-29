@@ -318,6 +318,7 @@ void Asset::Inspect()
     if (virtual_)
         return;
 
+    ResourceContentTypes contentTypes;
     auto* inspector = GetSubsystem<InspectorTab>();
     auto* pipeline = GetSubsystem<Pipeline>();
     auto* cache = GetSubsystem<ResourceCache>();
@@ -330,18 +331,18 @@ void Asset::Inspect()
     {
         for (const ea::string& byproduct : importer->GetByproducts())
         {
-            if (StringHash resourceType = GetContentResourceType(context_, byproduct))
+            if (GetContentResourceType(context_, byproduct, contentTypes))
             {
-                Resource* resource = cache->GetResource(resourceType, byproduct);
+                Resource* resource = cache->GetResource(contentTypes.front(), byproduct);
                 inspector->Inspect(resource);
                 undo->Connect(resource);    // ??
             }
         }
     }
     // Show inspector for raw resource.
-    if (StringHash resourceType = GetContentResourceType(context_, GetName()))
+    if (GetContentResourceType(context_, GetName(), contentTypes))
     {
-        if (Resource* resource = cache->GetResource(resourceType, GetName()))
+        if (Resource* resource = cache->GetResource(contentTypes.front(), GetName()))
         {
             inspector->Inspect(resource);
             undo->Connect(resource);    // ??
