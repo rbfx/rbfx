@@ -176,7 +176,6 @@ bool ResourceCache::AddManualResource(Resource* resource)
         return false;
     }
 
-    manualResources_.insert(resource);
     resource->ResetUseTimer();
     resourceGroups_[resource->GetType()].resources_[resource->GetNameHash()] = resource;
     UpdateResourceGroup(resource->GetType());
@@ -256,7 +255,6 @@ void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, boo
     // If other references exist, do not release, unless forced
     if ((existingRes.Refs() == 1 && existingRes.WeakRefs() == 0) || force)
     {
-        manualResources_.erase(existingRes);
         resourceGroups_[type].resources_.erase(nameHash);
         UpdateResourceGroup(type);
     }
@@ -276,7 +274,6 @@ void ResourceCache::ReleaseResources(StringHash type, bool force)
             // If other references exist, do not release, unless forced
             if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
             {
-                manualResources_.erase(current->second);
                 i->second.resources_.erase(current);
                 released = true;
             }
@@ -303,7 +300,6 @@ void ResourceCache::ReleaseResources(StringHash type, const ea::string& partialN
                 // If other references exist, do not release, unless forced
                 if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                 {
-                    manualResources_.erase(current->second);
                     i->second.resources_.erase(current);
                     released = true;
                 }
@@ -336,7 +332,6 @@ void ResourceCache::ReleaseResources(const ea::string& partialName, bool force)
                     // If other references exist, do not release, unless forced
                     if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                     {
-                        manualResources_.erase(current->second);
                         i->second.resources_.erase(current);
                         released = true;
                     }
@@ -366,7 +361,6 @@ void ResourceCache::ReleaseAllResources(bool force)
                 // If other references exist, do not release, unless forced
                 if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                 {
-                    manualResources_.erase(current->second);
                     i->second.resources_.erase(current);
                     released = true;
                 }
@@ -1079,7 +1073,6 @@ void ResourceCache::UpdateResourceGroup(StringHash type)
         {
             URHO3D_LOGDEBUG("Resource group " + oldestResource->second->GetTypeName() + " over memory budget, releasing resource " +
                      oldestResource->second->GetName());
-            manualResources_.erase(oldestResource->second);
             i->second.resources_.erase(oldestResource);
         }
         else
@@ -1196,17 +1189,30 @@ void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathN
     // On Windows ignore case in string comparisons
     caseSensitive = false;
 #endif
-    for (Resource* resource : manualResources_)
+
+    // Manual resources.
+    for (auto group = resourceGroups_.begin(); group != resourceGroups_.end(); ++group)
     {
-        ea::string entryName = GetSanitizedPath(resource->GetName());
-        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
-            entryName.starts_with(sanitizedPath, caseSensitive))
+        for (auto res = group->second.resources_.begin(); res != group->second.resources_.end(); ++res)
         {
-            int index = entryName.find("/", sanitizedPath.length());
-            if (flags & SCAN_DIRS && index >= 0)
-                result.emplace_back(entryName.substr(sanitizedPath.length(), index - sanitizedPath.length()));
-            else if (flags & SCAN_FILES && index == -1)
-                result.emplace_back(entryName.substr(sanitizedPath.length()));
+            ea::string entryName = GetSanitizedPath(res->second->GetName());
+            if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
+                entryName.starts_with(sanitizedPath, caseSensitive))
+            {
+                // Manual resources do not exist in resource dirs.
+                bool isPhysicalResource = false;
+                for (unsigned i = 0; i < resourceDirs_.size() && !isPhysicalResource; ++i)
+                    isPhysicalResource = fileSystem->FileExists(resourceDirs_[i] + pathName);
+
+                if (!isPhysicalResource)
+                {
+                    int index = entryName.find("/", sanitizedPath.length());
+                    if (flags & SCAN_DIRS && index >= 0)
+                        result.emplace_back(entryName.substr(sanitizedPath.length(), index - sanitizedPath.length()));
+                    else if (flags & SCAN_FILES && index == -1)
+                        result.emplace_back(entryName.substr(sanitizedPath.length()));
+                }
+            }
         }
     }
 }
