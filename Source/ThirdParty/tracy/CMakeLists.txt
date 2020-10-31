@@ -33,6 +33,10 @@ if (URHO3D_PROFILING)
         list (APPEND TRACY_OPTIONS_PUBLIC -DTRACY_NO_SYSTEM_TRACING=1)
     endif ()
 
+    if (NOT DEFINED TRACY_NO_PARALLEL_ALGORITHMS AND APPLE)
+        set (TRACY_NO_PARALLEL_ALGORITHMS ON)
+    endif ()
+
     if (BUILD_SHARED_LIBS)
         # A workaround library. Usually each dll or executable that wishes to use profiling functionality would have to compile
         # TracyClientDLL.cpp as part of it's sources. Putting it into a static library allows us automating the process and it is
