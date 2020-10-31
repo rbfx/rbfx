@@ -43,6 +43,14 @@
 # THE SOFTWARE.
 #
 
+# rbfx - force DirectX initialization if needed
+if (URHO3D_D3D9)
+    find_package(DirectX REQUIRED D3D9)
+endif ()
+if (URHO3D_D3D11)
+    find_package(DirectX REQUIRED D3D11)
+endif ()
+
 # Urho3D - commented out in-source tree build prevention as Urho3D supports both out-of-source and in-source tree builds
 
 # Urho3D - commented out setting SDL2 as project name as we want SDL sub-library to remain within Urho3D "umbrella" project
