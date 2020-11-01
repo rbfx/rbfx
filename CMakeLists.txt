@@ -46,6 +46,9 @@ if (WEB AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     set (CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 endif ()
 
+# Include file that sets up ccache support for Xcode.
+include(CCacheXcode)
+
 # Include file that sets up all configurable properties
 include(UrhoOptions)
 
