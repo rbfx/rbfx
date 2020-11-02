@@ -29,6 +29,8 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
 # Urho3D extras
 add_subdirectory (OgreBatchConverter)
 
-install(DIRECTORY OgreMaxscriptExport DESTINATION ${DEST_SHARE_DIR})
+if (NOT URHO_MINI)
+    install(DIRECTORY OgreMaxscriptExport DESTINATION ${DEST_SHARE_DIR})
+endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)

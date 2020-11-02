@@ -37,7 +37,12 @@ if (CMAKE_CROSSCOMPILING)
     else ()
         set (ALTERNATE_COMMAND ${CMAKE_COMMAND} -E env CC=${SAVED_CC} CXX=${SAVED_CXX} CI=$ENV{CI} ${CMAKE_COMMAND})
     endif ()
-    set (URHO3D_NATIVE_PREFIX ${CMAKE_BINARY_DIR}/native)
+    # When we are building SDK, we need these tools in it, so macros from UrhoCommon.cmake work.
+    if (CMAKE_INSTALL_PREFIX)
+        set (URHO3D_NATIVE_PREFIX ${CMAKE_INSTALL_PREFIX})
+    else ()
+        set (URHO3D_NATIVE_PREFIX ${CMAKE_BINARY_DIR}/native)
+    endif ()
     ExternalProject_Add (Urho3D-Native
         SOURCE_DIR ${rbfx_SOURCE_DIR}
         CMAKE_COMMAND ${ALTERNATE_COMMAND}
@@ -66,4 +71,6 @@ if ("${rbfx_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
     endif ()
 endif ()
 
-install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)
+if (NOT MINI_URHO)
+    install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)
+endif ()
