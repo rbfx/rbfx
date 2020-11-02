@@ -24,5 +24,8 @@ add_library(IconFontCppHeaders INTERFACE)
 target_include_directories(IconFontCppHeaders
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-install (TARGETS IconFontCppHeaders EXPORT Urho3D)
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+
+if (NOT MINI_URHO)
+    install (TARGETS IconFontCppHeaders EXPORT Urho3D)
+    install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+endif ()
