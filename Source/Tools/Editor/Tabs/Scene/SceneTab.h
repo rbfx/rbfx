@@ -83,8 +83,6 @@ public:
     void RenderHierarchy() override;
     /// Render buttons which customize gizmo behavior.
     void RenderToolbarButtons() override;
-    /// Called on every frame when tab is active.
-    void OnActiveUpdate() override;
     /// Load scene from xml or json file.
     bool LoadResource(const ea::string& resourcePath) override;
     /// Save scene to a resource file.

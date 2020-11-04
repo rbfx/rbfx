@@ -58,8 +58,6 @@ public:
     virtual bool RenderWindowContent() = 0;
     /// Render toolbar buttons.
     virtual void RenderToolbarButtons() { }
-    /// Update window when it is active.
-    virtual void OnActiveUpdate() { }
     /// Render tab content.
     virtual bool RenderWindow();
     /// Save ui settings.
