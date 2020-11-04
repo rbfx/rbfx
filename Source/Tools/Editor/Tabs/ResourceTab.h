@@ -97,8 +97,6 @@ protected:
     StringVector currentFiles_;
     /// Flag which requests rescan of current selected resource path.
     bool rescan_ = true;
-    /// Flag indicating that current selection is being deleted. Deletion confirmation dialog is rendered.
-    bool deletionPending_ = false;
     /// Flag requesting to scroll to selection on next frame.
     bool scrollToCurrent_ = false;
     /// Timer for periodic selected resource path rescan.
