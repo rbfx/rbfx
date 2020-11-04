@@ -248,21 +248,11 @@ bool SceneTab::RenderWindowContent()
             while (!clickNode.Expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
                 clickNode = clickNode->GetParent();
 
-            if (isClickedLeft_)
+            if (isClickedLeft_ || (isClickedRight_ && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f))
             {
                 if (!ui::IsKeyDown(KEY_CTRL))
                     ClearSelection();
 
-                if (clickNode == GetScene())
-                {
-                    if (componentType != StringHash::ZERO)
-                        ModifySelection({}, {clickNode->GetComponent(componentType)}, SelectionMode::Toggle);
-                }
-                else
-                    ToggleSelection(clickNode);
-            }
-            else if (isClickedRight_ && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f)
-            {
                 if (clickNode == GetScene())
                 {
                     if (componentType != StringHash::ZERO)
@@ -276,14 +266,13 @@ bool SceneTab::RenderWindowContent()
                     }
                 }
                 else if (!IsSelected(clickNode))
-                {
-                    ClearSelection();
                     ToggleSelection(clickNode);
-                }
-                ui::OpenPopupEx(ui::GetID("Node context menu"));
+
+                if (isClickedRight_)
+                    ui::OpenPopupEx(ui::GetID("Node context menu"));
             }
         }
-        else
+        else if (isClickedLeft_)
         {
             ClearSelection();
             OnNodeSelectionChanged();
