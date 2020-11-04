@@ -250,7 +250,7 @@ bool SceneTab::RenderWindowContent()
 
             if (isClickedLeft_)
             {
-                if (!context_->GetSubsystem<Input>()->GetKeyDown(KEY_CTRL))
+                if (!ui::IsKeyDown(KEY_CTRL))
                     ClearSelection();
 
                 if (clickNode == GetScene())
@@ -796,7 +796,7 @@ void SceneTab::OnUpdate(VariantMap& args)
                         CopySelection();
                     else if (ui::IsKeyPressed(KEY_V))
                     {
-                        if (context_->GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
+                        if (ui::IsKeyDown(KEY_SHIFT))
                             PasteIntoSelection();
                         else
                             PasteIntuitive();
