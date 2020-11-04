@@ -719,10 +719,6 @@ void SceneTab::RenderNodeTree(Node* node)
     ui::PopID();
 }
 
-void SceneTab::OnActiveUpdate()
-{
-}
-
 void SceneTab::RemoveSelection()
 {
     for (auto& component : selectedComponents_)
