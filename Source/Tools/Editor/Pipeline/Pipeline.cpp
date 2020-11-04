@@ -92,8 +92,8 @@ Pipeline::Pipeline(Context* context)
             }
         }
     });
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { OnUpdate(); });
-    SubscribeToEvent(E_EDITORIMPORTERATTRIBUTEMODIFIED, [this](StringHash, VariantMap& args) { OnImporterModified(args); });
+    SubscribeToEvent(E_UPDATE, &Pipeline::OnUpdate);
+    SubscribeToEvent(E_EDITORIMPORTERATTRIBUTEMODIFIED, &Pipeline::OnImporterModified);
     SubscribeToEvent(E_RESOURCEBROWSERDELETE, [this](StringHash, VariantMap& args) {
         using namespace ResourceBrowserDelete;
         if (Asset* asset = GetAsset(args[P_NAME].GetString(), false))
@@ -172,7 +172,7 @@ Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
 
     for (const ea::string& resourceDir : project->GetResourcePaths())
     {
-        ea::string resourcePath = Format("{}{}/{}", project->GetProjectPath(), resourceDir, resourceName);
+        ea::string resourcePath = Format("{}{}{}", project->GetProjectPath(), resourceDir, resourceName);
         ea::string resourceDirName;
         if (fs->DirExists(resourcePath))
         {
@@ -382,7 +382,7 @@ void Pipeline::CreatePaksAsync(Flavor* flavor)
      */
 }
 
-void Pipeline::OnUpdate()
+void Pipeline::OnUpdate(StringHash, VariantMap&)
 {
     if (packager_.NotNull())
     {
@@ -569,7 +569,7 @@ Flavor* Pipeline::GetFlavor(const ea::string& name) const
     return *it;
 }
 
-void Pipeline::OnImporterModified(VariantMap& args)
+void Pipeline::OnImporterModified(StringHash, VariantMap& args)
 {
     using namespace EditorImporterAttributeModified;
     auto* asset = static_cast<Asset*>(args[P_ASSET].GetPtr());
