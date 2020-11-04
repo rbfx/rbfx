@@ -370,11 +370,6 @@ void Editor::OnUpdate(VariantMap& args)
                 tabs_.erase(tabs_.find(tab));
         }
 
-        if (!activeTab_.Expired())
-        {
-            activeTab_->OnActiveUpdate();
-        }
-
         if (loadDefaultLayout_ && project_)
         {
             loadDefaultLayout_ = false;
