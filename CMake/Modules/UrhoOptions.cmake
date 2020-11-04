@@ -69,6 +69,11 @@ option(BUILD_SHARED_LIBS                        "Build engine as shared library.
 option(URHO3D_ENABLE_ALL                        "Enable (almost) all engine features."  ON)
 option(URHO3D_STATIC_RUNTIME                    "Link to static runtime"               OFF)
 set   (URHO3D_SSE             SSE2 CACHE STRING "Enable SSE instructions")
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
+    cmake_dependent_option(URHO3D_PCH           "Enable precompiled header"                              OFF                  "NOT WEB;NOT ANDROID"           OFF)
+else ()
+    set (URHO3D_PCH OFF)
+endif ()
 
 # Subsystems
 cmake_dependent_option(URHO3D_GLOW               "Lightmapping subsystem enabled"                        ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE AND NOT MINGW" OFF)
