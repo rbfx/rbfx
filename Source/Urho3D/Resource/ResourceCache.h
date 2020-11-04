@@ -108,6 +108,8 @@ public:
     void RemovePackageFile(const ea::string& fileName, bool releaseResources = true, bool forceRelease = false);
     /// Release a resource by name.
     void ReleaseResource(StringHash type, const ea::string& name, bool force = false);
+    /// Release a resource by name.
+    void ReleaseResource(const ea::string& resourceName, bool force = false);
     /// Release all resources of a specific type.
     void ReleaseResources(StringHash type, bool force = false);
     /// Release resources of a specific type and partial name.
@@ -171,7 +173,7 @@ public:
     /// Template version of loading a resource without storing it to the cache.
     template <class T> SharedPtr<T> GetTempResource(const ea::string& name, bool sendEventOnFailure = true);
     /// Template version of releasing a resource by name.
-    template <class T> void ReleaseResource(const ea::string& name, bool force = false);
+    template <class T> void ReleaseResource(const ea::string& resourceName, bool force = false);
     /// Template version of queueing a resource background load.
     template <class T> bool BackgroundLoadResource(const ea::string& name, bool sendEventOnFailure = true, Resource* caller = nullptr);
     /// Template version of returning loaded resources of a specific type.
@@ -219,7 +221,7 @@ public:
     unsigned GetNumResourceDirs() const { return resourceDirs_.size(); }
     /// Get resource directory at a given index
     const ea::string& GetResourceDir(unsigned index) const { return index < resourceDirs_.size() ? resourceDirs_[index] : EMPTY_STRING; }
-    
+
     /// Scan for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
