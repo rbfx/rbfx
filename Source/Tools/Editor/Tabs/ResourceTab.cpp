@@ -353,7 +353,6 @@ bool ResourceTab::RenderWindowContent()
     RenderContextMenu();
     ui::EndChild();
     ui::Columns(1);
-    RenderDeletionDialog();
 
     if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && ui::IsKeyPressed(KEY_F2))
         StartRename();
@@ -530,12 +529,16 @@ void ResourceTab::ScanAssets()
 void ResourceTab::RenderContextMenu()
 {
     bool requiresItemSelected = false;
+    bool deletionPending = false;
     if (ui::BeginPopup("Resource Item Context Menu"))
         requiresItemSelected = true;
     else if (ui::BeginPopup("Resource Dir Context Menu"))
         requiresItemSelected = false;
     else
+    {
+        RenderDeletionDialog();
         return;
+    }
 
     const ImGuiStyle& style = ui::GetStyle();
     bool hasSelection = !selectedItem_.empty() && selectedItem_ != "." && selectedItem_ != "..";
@@ -608,8 +611,7 @@ void ResourceTab::RenderContextMenu()
     if (ui::MenuItem("Rename", "F2"))
         StartRename();
 
-    if (ui::MenuItem("Delete", "Del"))
-        deletionPending_ = true;
+    deletionPending = ui::MenuItem("Delete", "Del");
 
     if (disableCurrentItemOps)
     {
@@ -651,6 +653,10 @@ void ResourceTab::RenderContextMenu()
     resourceContextMenu_(this, args);
 
     ui::EndPopup();
+
+    if (deletionPending)
+        ui::OpenPopup("Delete?");
+    RenderDeletionDialog();
 }
 
 void ResourceTab::RenderDirectoryTree(const eastl::string& path)
@@ -754,10 +760,7 @@ void ResourceTab::ScanDirTree(StringVector& result, const eastl::string& path)
 
 void ResourceTab::RenderDeletionDialog()
 {
-    if (!deletionPending_)
-        return;
-
-    if (ui::Begin("Delete?", &deletionPending_, ImGuiWindowFlags_Modal))
+    if (ui::BeginPopupModal("Delete?", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ui::Text("Would you like to delete '%s%s'?", currentDir_.c_str(), selectedItem_ == ".." ? "" : selectedItem_.c_str());
         ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone!");
@@ -768,11 +771,12 @@ void ResourceTab::RenderDeletionDialog()
             Project* project = GetSubsystem<Project>();
             ResourceCache* cache = GetSubsystem<ResourceCache>();
             FileSystem* fs = GetSubsystem<FileSystem>();
-            const ea::string& resourceName = currentDir_ + selectedItem_ == ".." ? "" : selectedItem_;
+            const ea::string& resourceName = currentDir_ + (selectedItem_ == ".." ? "" : selectedItem_);
             const ea::string& fileName = cache->GetResourceFileName(resourceName);
             if (fs->FileExists(fileName))
             {
                 cache->IgnoreResourceReload(resourceName);
+                cache->ReleaseResource(resourceName, true);
                 fs->Delete(fileName);
 
                 using namespace ResourceBrowserDelete;
@@ -791,6 +795,7 @@ void ResourceTab::RenderDeletionDialog()
                         {
                             ea::string fullResourceName = AddTrailingSlash(fullResourceName) + name;
                             cache->IgnoreResourceReload(fullResourceName);
+                            cache->ReleaseResource(fullResourceName, true);
 
                             using namespace ResourceBrowserDelete;
                             SendEvent(E_RESOURCEBROWSERDELETE, P_NAME, fullResourceName);
@@ -799,10 +804,14 @@ void ResourceTab::RenderDeletionDialog()
                     }
                 }
             }
-            deletionPending_ = false;
+            ui::CloseCurrentPopup();
         }
+
+        if (ui::IsKeyPressed(KEY_ESCAPE))
+            ui::CloseCurrentPopup();
+
+        ui::EndPopup();
     }
-    ui::End();
 }
 
 void ResourceTab::StartRename()
