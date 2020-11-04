@@ -534,8 +534,11 @@ void SceneTab::RenderHierarchy()
 
     // Perform range selection on next frame. Only then we can have a rectangle covering selection ends
     // which we need to do range selection.
-    if (ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsKeyDown(SCANCODE_SHIFT) && !selectedNodes_.empty())
-        performRangeSelectionFrame_ = ui::GetFrameCount() + 1;
+    if (ui::IsWindowHovered())
+    {
+        if (ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsKeyDown(SCANCODE_SHIFT) && !selectedNodes_.empty())
+            performRangeSelectionFrame_ = ui::GetFrameCount() + 1;
+    }
 }
 
 void SceneTab::RenderNodeTree(Node* node)
