@@ -260,6 +260,39 @@ void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, boo
     }
 }
 
+void ResourceCache::ReleaseResource(const ea::string& resourceName, bool force)
+{
+    // Some resources refer to others, like materials to textures. Repeat the release logic as many times as necessary to ensure
+    // these get released. This is not necessary if forcing release
+    bool released;
+    do
+    {
+        released = false;
+
+        for (auto i = resourceGroups_.begin(); i != resourceGroups_.end(); ++i)
+        {
+            for (auto j = i->second.resources_.begin(); j != i->second.resources_.end();)
+            {
+                auto current = i->second.resources_.find(resourceName);
+                if (current != i->second.resources_.end())
+                {
+                    // If other references exist, do not release, unless forced
+                    if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
+                    {
+                        j = i->second.resources_.erase(current);
+                        released = true;
+                        continue;
+                    }
+                }
+                ++j;
+            }
+            if (released)
+                UpdateResourceGroup(i->first);
+        }
+
+    } while (released && !force);
+}
+
 void ResourceCache::ReleaseResources(StringHash type, bool force)
 {
     bool released = false;
