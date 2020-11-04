@@ -72,9 +72,9 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 
     // A path mimicking structure of cache directory, but with byproducts of this import procedure only. It serves us to allow easy
     // detection of all byproducts of this import procedure.
-    ea::string tempPath = project->GetProjectPath() + "Temp." + GenerateUUID() + "/";
+    ea::string tempPath = Format("{}Temp.{}/", AddTrailingSlash(project->GetProjectPath()), GenerateUUID());
     // Actual output destination AssetImporter will be writing.
-    ea::string resourceBaseName = GetPath(input->GetName()) + GetFileName(input->GetName()) + "/";  // Strips file extension
+    ea::string resourceBaseName = GetPath(input->GetName()) + AddTrailingSlash(GetFileName(input->GetName()));  // Strips file extension
     ea::string tempOutput = tempPath + resourceBaseName;
     fs->CreateDirsRecursive(tempOutput);
 
@@ -111,11 +111,15 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     if (!GetAttribute(MODEL_IMPORTER_FBX_PIVOT).GetBool())
         args.emplace_back("-np");
 
-    int result = fs->SystemRun(fs->GetProgramDir() + "AssetImporter", args);
+    ea::string cmdOutput;
+    int result = fs->SystemRun(fs->GetProgramDir() + "AssetImporter", args, cmdOutput);
 
     if (result != 0)
     {
         URHO3D_LOGERROR("Importing asset 'res://{}' failed.", input->GetName());
+        for (const auto& line : cmdOutput.split("\n"))
+            URHO3D_LOGERROR(line);
+        fs->RemoveDir(tempPath, true);
         return false;
     }
 

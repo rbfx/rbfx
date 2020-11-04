@@ -106,11 +106,11 @@ protected:
     /// Handles file watchers.
     void OnEndFrame(StringHash, VariantMap&);
     /// Handles modal dialogs.
-    void OnUpdate();
+    void OnUpdate(StringHash, VariantMap&);
     ///
     void SortFlavors();
     ///
-    void OnImporterModified(VariantMap& args);
+    void OnImporterModified(StringHash, VariantMap& args);
     /// Render a pipeline tab in settings window.
     void RenderSettingsUI();
 
