@@ -37,6 +37,24 @@ namespace Urho3D
 namespace Detail
 {
 
+namespace
+{
+
+/// Internal RmlUI texture holder.
+struct CachedRmlTexture
+{
+    SharedPtr<Image> image_;
+    SharedPtr<Texture2D> texture_;
+};
+
+/// Wrap CachedRmlTexture pointer to RmlUI handle.
+Rml::TextureHandle WrapTextureHandle(CachedRmlTexture* texture) { return reinterpret_cast<Rml::TextureHandle>(texture); }
+
+/// Unwrap RmlUI handle to CachedRmlTexture pointer.
+CachedRmlTexture* UnwrapTextureHandle(Rml::TextureHandle texture) { return reinterpret_cast<CachedRmlTexture*>(texture); }
+
+}
+
 RmlRenderer::RmlRenderer(Context* context)
     : Object(context)
     , vertexBuffer_(context->CreateObject<VertexBuffer>())
@@ -66,7 +84,7 @@ void RmlRenderer::CompileGeometry(CompiledGeometryForRml& compiledGeometryOut, R
 {
     VertexBuffer* vertexBuffer;
     IndexBuffer* indexBuffer;
-    compiledGeometryOut.texture_ = reinterpret_cast<Urho3D::Texture*>(texture);
+    compiledGeometryOut.texture_ = texture;
     if (compiledGeometryOut.vertexBuffer_.Null())
         compiledGeometryOut.vertexBuffer_ = vertexBuffer = context_->CreateObject<VertexBuffer>().Detach();
     else
@@ -158,7 +176,16 @@ void RmlRenderer::RenderCompiledGeometry(Rml::CompiledGeometryHandle geometryHan
     ShaderVariation* ps;
     ShaderVariation* vs;
 
-    if (geometry->texture_.Null())
+    // Restore texture data if lost
+    CachedRmlTexture* cachedTexture = UnwrapTextureHandle(geometry->texture_);
+    Texture2D* texture = cachedTexture ? cachedTexture->texture_ : nullptr;
+    if (texture && texture->IsDataLost())
+    {
+        texture->SetData(cachedTexture->image_, true);
+        texture->ClearDataLost();
+    }
+
+    if (!texture)
     {
         ps = noTexturePS_;
         vs = noTextureVS_;
@@ -167,13 +194,13 @@ void RmlRenderer::RenderCompiledGeometry(Rml::CompiledGeometryHandle geometryHan
     {
         // If texture contains only an alpha channel, use alpha shader (for fonts)
         vs = textureVS_;
-        if (geometry->texture_->GetFormat() == Graphics::GetAlphaFormat())
+        if (texture->GetFormat() == Graphics::GetAlphaFormat())
             ps = textureAlphaPS_;
         else
             ps = textureOpaquePS_;
     }
 
-    graphics_->SetTexture(0, geometry->texture_);
+    graphics_->SetTexture(0, texture);
     graphics_->SetVertexBuffer(geometry->vertexBuffer_);
     graphics_->SetIndexBuffer(geometry->indexBuffer_);
     graphics_->SetShaders(vs, ps);
@@ -332,20 +359,22 @@ bool RmlRenderer::LoadTexture(Rml::TextureHandle& textureOut, Rml::Vector2i& siz
 
 bool RmlRenderer::GenerateTexture(Rml::TextureHandle& handleOut, const Rml::byte* source, const Rml::Vector2i& size)
 {
-    Image image(context_);
-    image.SetSize(size.x, size.y, 4);
-    image.SetData(source);
-    Texture2D* texture = context_->CreateObject<Texture2D>().Detach();
-    texture->AddRef();
-    texture->SetData(&image, true);
-    handleOut = reinterpret_cast<Rml::TextureHandle>(texture);
+    auto image = MakeShared<Image>(context_);
+    image->SetSize(size.x, size.y, 4);
+    image->SetData(source);
+
+    auto texture = MakeShared<Texture2D>(context_);
+    texture->SetData(image, true);
+
+    auto cachedTexture = new CachedRmlTexture{ image, texture };
+    handleOut = WrapTextureHandle(cachedTexture);
     return true;
 }
 
 void RmlRenderer::ReleaseTexture(Rml::TextureHandle textureHandle)
 {
-    if (auto* texture = reinterpret_cast<Urho3D::Texture*>(textureHandle))
-        texture->ReleaseRef();
+    CachedRmlTexture* cachedTexture = UnwrapTextureHandle(textureHandle);
+    delete cachedTexture;
 }
 
 void RmlRenderer::SetTransform(const Rml::Matrix4f* transform)
