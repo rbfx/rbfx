@@ -42,7 +42,7 @@ struct CompiledGeometryForRml
 {
     SharedPtr<VertexBuffer> vertexBuffer_;
     SharedPtr<IndexBuffer> indexBuffer_;
-    SharedPtr<Texture> texture_;
+    Rml::TextureHandle texture_;
 };
 
 class URHO3D_API RmlRenderer : public Object, public Rml::RenderInterface
