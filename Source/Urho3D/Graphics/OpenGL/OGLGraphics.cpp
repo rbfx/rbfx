@@ -58,6 +58,9 @@
 #include "../../Input/Input.h"
 #include "../../UI/Cursor.h"
 #include "../../UI/UI.h"
+#ifdef URHO3D_RMLUI
+    #include "../../RmlUI/RmlUI.h"
+#endif
 #include <emscripten/emscripten.h>
 #include <emscripten/bind.h>
 
@@ -104,6 +107,11 @@ static void JSCanvasSize(int width, int height, bool fullscreen, float scale)
             if (cursor)
                 uiCursorVisible = cursor->IsVisible();
         }
+
+#ifdef URHO3D_RMLUI
+        if (RmlUI* ui = appContext->GetSubsystem<RmlUI>())
+            ui->SetScale(scale);
+#endif
 
         // Apply new resolution
         appContext->GetSubsystem<Graphics>()->SetMode(width, height);
