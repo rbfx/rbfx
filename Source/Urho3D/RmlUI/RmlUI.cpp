@@ -514,6 +514,11 @@ void RmlUI::HandleEndAllViewsRender(StringHash, VariantMap& eventData)
         Render();
 }
 
+void RmlUI::SetScale(float scale)
+{
+    rmlContext_->SetDensityIndependentPixelRatio(scale);
+}
+
 void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
 {
     renderSurface_ = target;
