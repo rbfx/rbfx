@@ -426,11 +426,11 @@ void RmlUI::HandleTouchBegin(StringHash, VariantMap& eventData)
     const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
     int modifiers = ModifiersUrho3DToRml(input->GetQualifiers());
     int button = MouseButtonUrho3DToRml(touchId);
-    rmlContext_->ProcessMouseButtonDown(button, modifiers);
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
     mouseMoveEvent_(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
+    rmlContext_->ProcessMouseButtonDown(button, modifiers);
 }
 
 void RmlUI::HandleTouchEnd(StringHash, VariantMap& eventData)
