@@ -77,6 +77,8 @@ public:
     bool LoadFont(const ea::string& resourceName, bool fallback=false);
     /// Returns RmlUi context object.
     Rml::Context* GetRmlContext() const;
+    /// Set UI scale aka dp to px ratio. 1.0 is default (pixel perfect).
+    void SetScale(float scale);
     /// Set render target where this instance will render into.
     void SetRenderTarget(RenderSurface* target, const Color& clearColor=Color::TRANSPARENT_BLACK);
     /// Set render target where this instance will render into.
