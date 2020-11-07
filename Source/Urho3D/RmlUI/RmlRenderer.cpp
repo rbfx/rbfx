@@ -96,7 +96,9 @@ void RmlRenderer::CompileGeometry(CompiledGeometryForRml& compiledGeometryOut, R
         indexBuffer = compiledGeometryOut.indexBuffer_.Get();
 
     vertexBuffer->SetSize(numVertices, MASK_POSITION | MASK_COLOR | (texture ? MASK_TEXCOORD1 : MASK_NONE), true);
+    vertexBuffer->SetShadowed(true);
     indexBuffer->SetSize(numIndices, true);
+    indexBuffer->SetShadowed(true);
 
     float* vertexData = static_cast<float*>(vertexBuffer->Lock(0, numVertices, true));
     assert(vertexData != nullptr);
