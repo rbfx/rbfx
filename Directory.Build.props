@@ -1,12 +1,8 @@
 <Project>
-  <!-- Works when -DURHO3D_OMNISHARP_HELPER=ON is used, typically with VSCode -->
-  <Import Project="$(MSBuildThisFileDirectory)/.OmniSharp.props" Condition=" Exists('$(MSBuildThisFileDirectory)/.OmniSharp.props') " />
   <!-- Works when building on windows using cmake-generated VS solution -->
   <Import Project="$(SolutionDir)/CMake.props" Condition=" '$(SolutionDir)' != '' And Exists('$(SolutionDir)/CMake.props')" />
   <!-- When separate .csproj projects are built by make/ninja -->
   <Import Project="$(CMAKE_BINARY_DIR)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(CMAKE_BINARY_DIR)' != '' And Exists('$(CMAKE_BINARY_DIR)/CMake.props') " />
-  <!-- When separate .csproj projects are built by make/ninja -->
-  <Import Project="$(SolutionDir)/cmake-build/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(SolutionDir)' != '' And '$(CMAKE_BINARY_DIR)' == '' And Exists('$(SolutionDir)/cmake-build/CMake.props') " />
   <!-- Azure pipelines for some reason have SolutionDir undefined however -->
   <Import Project="$(MSBuildStartupDirectory)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(SolutionDir)' == '' And Exists('$(MSBuildStartupDirectory)/CMake.props') " />
   <PropertyGroup>
