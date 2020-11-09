@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,44 +19,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-using System;
-using Urho3DNet;
-using ImGuiNet;
-
-namespace CSharpPlugin
+namespace Urho3DNet
 {
-    // Class can have any name, but it must inherit from PluginApplication.
-    [LoadablePlugin]
-    public class SamplePlugin : PluginApplication
+    /// Tag subclasses of PluginApplication in order to make a C# dll a loadable plugin.
+    public class LoadablePluginAttribute : System.Attribute
     {
-        public SamplePlugin(Context context) : base(context)
-        {
-        }
-
-        public override void Load()
-        {
-            SubscribeToEvent("EditorApplicationMenu", RenderMenu);
-        }
-
-        void RenderMenu(VariantMap args)
-        {
-            if (ImGui.BeginMenu("SamplePlugin"))
-            {
-                ImGui.TextUnformatted("C# says hello");
-                ImGui.EndMenu();
-            }
-        }
-
-        public override void Start()
-        {
-        }
-
-        public override void Stop()
-        {
-        }
-
-        public override void Unload()
-        {
-        }
     }
 }
