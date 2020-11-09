@@ -35,7 +35,7 @@ set (CMAKE_CXX_STANDARD 17)
 project (rbfx)
 
 # Set CMake modules search path
-set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules)
+set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 if (WEB AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     # Workaround for following error:
@@ -273,7 +273,7 @@ endif ()
 
 if (URHO3D_CSHARP)
     # For .csproj embedded into visual studio solution
-    configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
+    configure_file("${rbfx_SOURCE_DIR}/cmake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
     # For .csproj that gets built by cmake invoking msbuild
     set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
     set (ENV{CMAKE_BINARY_DIR "${CMAKE_BINARY_DIR}/")
@@ -409,8 +409,8 @@ if (URHO3D_DOCS)
 endif ()
 
 # Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/CMake/Toolchains)    # Note: the trailing slash is significant
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${DEST_SHARE_DIR}/CMake/Modules/)
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/cmake/Toolchains)    # Note: the trailing slash is significant
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Modules/ DESTINATION ${DEST_SHARE_DIR}/cmake/Modules/)
 # Install CMake build scripts
 file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
