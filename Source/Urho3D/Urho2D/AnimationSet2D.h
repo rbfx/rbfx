@@ -60,6 +60,7 @@ public:
     bool EndLoad() override;
 
     /// Get number of animations.
+    /// @property
     unsigned GetNumAnimations() const;
     /// Return animation name.
     ea::string GetAnimation(unsigned index) const;

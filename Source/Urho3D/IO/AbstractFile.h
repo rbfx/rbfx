@@ -29,6 +29,7 @@ namespace Urho3D
 {
 
 /// A common root class for objects that implement both Serializer and Deserializer.
+/// @fakeref
 class URHO3D_API AbstractFile : public Deserializer, public Serializer
 {
 public:
@@ -38,6 +39,20 @@ public:
     explicit AbstractFile(unsigned int size) : Deserializer(size) { }
     /// Destruct.
     ~AbstractFile() override = default;
+    /// Change the file name. Used by the resource system.
+    /// @property
+    virtual void SetName(const ea::string& name) { name_ = name; }
+#ifndef SWIG
+    // A workaround for SWIG failing to generate bindings because both IAbstractFile and IDeserializer provide GetName() method. This is
+    // fine because IAbstractFile inherits GetName() from IDeserializer anyway.
+
+    /// Return the file name.
+    const ea::string& GetName() const override { return name_; }
+#endif
+
+protected:
+    /// File name.
+    ea::string name_;
 };
 
 }

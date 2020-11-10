@@ -80,7 +80,7 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 
 rbfx uses the following third-party libraries:
 - Box2D 2.3.2 WIP (http://box2d.org)
-- Bullet 2.86.1 (http://www.bulletphysics.org)
+- Bullet 3.06+ (http://www.bulletphysics.org)
 - Civetweb 1.7 (https://github.com/civetweb/civetweb)
 - FreeType 2.8 (https://www.freetype.org)
 - GLEW 2.1 (http://glew.sourceforge.net)

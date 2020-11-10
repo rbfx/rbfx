@@ -327,6 +327,7 @@ enum ShaderParameterGroup
 };
 
 /// Texture units.
+/// @manualbind
 enum TextureUnit
 {
     TU_DIFFUSE = 0,

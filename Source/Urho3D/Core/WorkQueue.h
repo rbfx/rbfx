@@ -42,6 +42,7 @@ URHO3D_EVENT(E_WORKITEMCOMPLETED, WorkItemCompleted)
 class WorkerThread;
 
 /// Work queue item.
+/// @nobind
 struct WorkItem : public RefCounted
 {
     friend class WorkQueue;

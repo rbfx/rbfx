@@ -77,8 +77,10 @@ public:
     /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting. Returns new reference count value. Operation is atomic.
     int ReleaseRef();
     /// Return reference count.
+    /// @property
     int Refs() const;
     /// Return weak reference count.
+    /// @property
     int WeakRefs() const;
 
     /// Return pointer to the reference count structure.

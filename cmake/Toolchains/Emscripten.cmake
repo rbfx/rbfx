@@ -107,6 +107,7 @@ endif ()
 if (NOT EMSCRIPTEN_EMCC_VERSION)
     execute_process (COMMAND ${EMSCRIPTEN_ROOT_PATH}/emcc${TOOL_EXT} --version RESULT_VARIABLE EXIT_CODE OUTPUT_VARIABLE EMSCRIPTEN_EMCC_VERSION ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
     if (EXIT_CODE EQUAL 0)
+        message (${EMSCRIPTEN_EMCC_VERSION})
         string (REGEX MATCH "[^ .]+\\.[^.]+\\.[^ ]+" EMSCRIPTEN_EMCC_VERSION "${EMSCRIPTEN_EMCC_VERSION}")
     else ()
         message (FATAL_ERROR "Could not determine the emcc version. Make sure you have installed and activated the Emscripten SDK correctly.")
@@ -151,12 +152,8 @@ set (CMAKE_RANLIB       ${EMSCRIPTEN_ROOT_PATH}/emranlib${TOOL_EXT} CACHE PATH "
 set (CMAKE_LINKER       ${EMSCRIPTEN_ROOT_PATH}/emlink.py           CACHE PATH "linker")
 # Specific to Emscripten
 set (EMRUN              ${EMSCRIPTEN_ROOT_PATH}/emrun${TOOL_EXT}    CACHE PATH "emrun")
-find_program(PYTHON NAMES python3 python)
-if (NOT PYTHON)
-    message(FATAL_ERROR "Python v3.5+ is required")
-endif ()
-set (EMPACKAGER         ${PYTHON} ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
-set (EMBUILDER          ${PYTHON} ${EMSCRIPTEN_ROOT_PATH}/embuilder.py CACHE PATH "embuilder.py")
+set (EMPACKAGER         python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
+set (EMBUILDER          python ${EMSCRIPTEN_ROOT_PATH}/embuilder.py CACHE PATH "embuilder.py")
 
 # Still perform the compiler checks except for those stated otherwise below
 foreach (LANG C CXX)

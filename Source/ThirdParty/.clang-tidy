@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 #
 # Copyright (c) 2008-2020 the Urho3D project.
 #
@@ -21,9 +20,12 @@
 # THE SOFTWARE.
 #
 
-$(dirname $0)/cmake_generic.sh "$@" -G "Eclipse CDT4 - Unix Makefiles"
+---
+Checks: '-*,bugprone-integer-division'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle: none
+...
 
-# After importing the generated project into Eclipse workspace, set the [Build], [Subprojects], and [Targets] linked resources property as 'Derived'
-# to exclude the derived resources in those folders from being listed in the Open Resource and Search Result list
-
-# vi: set ts=4 sw=4 expandtab:
+# vi: set ts=2 sw=2 expandtab:

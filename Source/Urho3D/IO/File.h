@@ -82,9 +82,6 @@ public:
     /// Write bytes to the file. Return number of bytes actually written.
     unsigned Write(const void* data, unsigned size) override;
 
-    /// Return the file name.
-    const ea::string& GetName() const override { return fileName_; }
-
     /// Return absolute file name in file system.
     const ea::string& GetAbsoluteName() const { return absoluteFileName_; }
 
@@ -99,19 +96,20 @@ public:
     void Close();
     /// Flush any buffered output to the file.
     void Flush();
-    /// Change the file name. Used by the resource system.
-    void SetName(const ea::string& name);
 
     /// Return the open mode.
+    /// @property
     FileMode GetMode() const { return mode_; }
 
     /// Return whether is open.
+    /// @property
     bool IsOpen() const;
 
     /// Return the file handle.
     void* GetHandle() const { return handle_; }
 
     /// Return whether the file originates from a package.
+    /// @property
     bool IsPackaged() const { return offset_ != 0; }
 
     /// Reads a binary file to buffer.
@@ -138,8 +136,6 @@ private:
     /// Seek in file internally using either C standard IO functions or SDL RWops for Android asset files.
     void SeekInternal(unsigned newPosition);
 
-    /// File name. For files from ResourceCache, relative to cache directory.
-    ea::string fileName_;
     /// Absolute file name.
     ea::string absoluteFileName_;
     /// Open mode.
