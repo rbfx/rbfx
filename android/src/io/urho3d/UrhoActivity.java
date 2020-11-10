@@ -21,7 +21,7 @@
 // THE SOFTWARE.
 //
 
-package com.github.urho3d;
+package io.urho3d;
 
 import org.libsdl.app.SDLActivity;
 

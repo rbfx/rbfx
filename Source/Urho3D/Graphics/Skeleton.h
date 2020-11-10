@@ -43,6 +43,7 @@ class ResourceCache;
 class Serializer;
 
 /// %Bone in a skeleton.
+/// @fakeref
 struct Bone
 {
     /// Construct with defaults.
@@ -95,6 +96,7 @@ struct Bone
 };
 
 /// Hierarchical collection of bones.
+/// @fakeref
 class URHO3D_API Skeleton
 {
 public:
@@ -123,9 +125,11 @@ public:
     ea::vector<Bone>& GetModifiableBones() { return bones_; }
 
     /// Return number of bones.
+    /// @property
     unsigned GetNumBones() const { return bones_.size(); }
 
     /// Return root bone.
+    /// @property
     Bone* GetRootBone();
     /// Return index of the bone by name. Return M_MAX_UNSIGNED if not found.
     unsigned GetBoneIndex(const ea::string& boneName) const;
@@ -136,6 +140,7 @@ public:
     /// Return parent of the given bone. Return null for root bones.
     Bone* GetBoneParent(const Bone* bone);
     /// Return bone by index.
+    /// @property{get_bones}
     Bone* GetBone(unsigned index);
     /// Return bone by name.
     Bone* GetBone(const ea::string& name);

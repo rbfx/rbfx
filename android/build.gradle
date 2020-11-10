@@ -23,7 +23,7 @@ android {
     compileSdkVersion 28
     buildToolsVersion '28.0.3'
     defaultConfig {
-        applicationId 'com.github.urho3d'
+        applicationId 'io.urho3d'
         versionCode 1
         versionName '1.0.0'
         minSdkVersion 17
