@@ -66,6 +66,7 @@ public:
 };
 
 /// Point octree query.
+/// @nobind
 class URHO3D_API PointOctreeQuery : public OctreeQuery
 {
 public:
@@ -87,6 +88,7 @@ public:
 };
 
 /// %Sphere octree query.
+/// @nobind
 class URHO3D_API SphereOctreeQuery : public OctreeQuery
 {
 public:
@@ -108,6 +110,7 @@ public:
 };
 
 /// Bounding box octree query.
+/// @nobind
 class URHO3D_API BoxOctreeQuery : public OctreeQuery
 {
 public:
@@ -129,6 +132,7 @@ public:
 };
 
 /// %Frustum octree query.
+/// @nobind
 class URHO3D_API FrustumOctreeQuery : public OctreeQuery
 {
 public:
@@ -216,6 +220,7 @@ struct URHO3D_API RayQueryResult
 };
 
 /// Raycast octree query.
+/// @nobind
 class URHO3D_API RayOctreeQuery : private NonCopyable
 {
 public:
@@ -259,6 +264,7 @@ private:
     ea::vector<RayQueryResult> resultStorage_;
 };
 
+/// @nobind
 class URHO3D_API AllContentOctreeQuery : public OctreeQuery
 {
 public:

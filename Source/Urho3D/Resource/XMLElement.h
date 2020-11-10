@@ -106,6 +106,7 @@ public:
     XPathResultSet SelectPrepared(const XPathQuery& query) const;
 
     /// Set the value for an inner node in the following format <node>value</node>.
+    /// @property
     bool SetValue(const ea::string& value);
     /// Set the value for an inner node in the following format <node>value</node>. Must be used on the <node> element.
     bool SetValue(const char* value);
@@ -181,12 +182,15 @@ public:
     bool SetMatrix4(const ea::string& name, const Matrix4& value);
 
     /// Return whether does not refer to an element or an XPath node.
+    /// @property{get_isNull}
     bool IsNull() const;
     /// Return whether refers to an element or an XPath node.
+    /// @property
     bool NotNull() const;
     /// Return true if refers to an element or an XPath node.
     explicit operator bool() const;
     /// Return element name (or attribute name if it is an attribute only XPath query result).
+    /// @property
     ea::string GetName() const;
     /// Return whether has a child element.
     bool HasChild(const ea::string& name) const;
@@ -201,14 +205,17 @@ public:
     /// Return next sibling element.
     XMLElement GetNext(const char* name) const;
     /// Return parent element.
+    /// @property
     XMLElement GetParent() const;
     /// Return number of attributes.
+    /// @property
     unsigned GetNumAttributes() const;
     /// Return whether has an attribute.
     bool HasAttribute(const ea::string& name) const;
     /// Return whether has an attribute.
     bool HasAttribute(const char* name) const;
     /// Return inner value, or empty if missing for nodes like <node>value</node>.
+    /// @property
     ea::string GetValue() const;
     /// Return attribute, or empty if missing.
     ea::string GetAttribute(const ea::string& name = EMPTY_STRING) const;
@@ -289,6 +296,7 @@ public:
     /// Return a Matrix4 attribute, or zero matrix if missing.
     Matrix4 GetMatrix4(const ea::string& name) const;
     /// Return XML file.
+    /// @property
     XMLFile* GetFile() const;
 
     /// Return pugixml xml_node_struct.
@@ -304,6 +312,7 @@ public:
     unsigned GetXPathResultIndex() const { return xpathResultIndex_; }
 
     /// Return next XPath query result. Only valid when this instance of XMLElement is itself one of the query result in the result set.
+    /// @property
     XMLElement NextResult() const;
 
     /// Empty XMLElement.
@@ -341,10 +350,13 @@ public:
     XMLElement operator [](unsigned index) const;
     /// Return the first result in the set. Call XMLElement::GetNextResult() to get the subsequent result in the set.
     /// Note: The XPathResultSet return value must be stored in a lhs variable to ensure the underlying xpath_node_set* is still valid while performing XPathResultSet::FirstResult(), XPathResultSet::operator [], and XMLElement::NextResult().
+    /// @property
     XMLElement FirstResult();
     /// Return size of result set.
+    /// @property
     unsigned Size() const;
     /// Return whether result set is empty.
+    /// @property
     bool Empty() const;
 
     /// Return pugixml xpath_node_set.
@@ -394,6 +406,7 @@ public:
     XPathResultSet Evaluate(const XMLElement& element) const;
 
     /// Return query string.
+    /// @property
     ea::string GetQuery() const { return queryString_; }
 
     /// Return pugixml xpath_query.

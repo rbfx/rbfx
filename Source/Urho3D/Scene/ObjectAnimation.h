@@ -75,10 +75,13 @@ public:
     void RemoveAttributeAnimation(ValueAnimation* attributeAnimation);
 
     /// Return attribute animation by name.
+    /// @property{get_attributeAnimations}
     ValueAnimation* GetAttributeAnimation(const ea::string& name) const;
     /// Return attribute animation wrap mode by name.
+    /// @property{get_wrapModes}
     WrapMode GetAttributeAnimationWrapMode(const ea::string& name) const;
     /// Return attribute animation speed by name.
+    /// @property{get_speeds}
     float GetAttributeAnimationSpeed(const ea::string& name) const;
 
     /// Return all attribute animations infos.

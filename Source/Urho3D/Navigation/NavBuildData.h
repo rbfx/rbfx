@@ -100,6 +100,7 @@ struct URHO3D_API SimpleNavBuildData : public NavBuildData
     rcPolyMeshDetail* polyMeshDetail_;
 };
 
+/// @nobind
 struct URHO3D_API DynamicNavBuildData : public NavBuildData
 {
     /// Constructor.

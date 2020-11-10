@@ -51,6 +51,7 @@ enum AsyncLoadState
 };
 
 /// Base class for resources.
+/// @templateversion
 class URHO3D_API Resource : public Object
 {
     URHO3D_OBJECT(Resource, Object);
@@ -69,11 +70,14 @@ public:
     virtual bool Save(Serializer& dest) const;
 
     /// Load resource from file.
+    /// @alias{Load}
     bool LoadFile(const ea::string& fileName);
     /// Save resource to file.
+    /// @alias{Save}
     virtual bool SaveFile(const ea::string& fileName) const;
 
     /// Set name.
+    /// @property
     void SetName(const ea::string& name);
     /// Set memory use in bytes, possibly approximate.
     void SetMemoryUse(unsigned size);
@@ -85,15 +89,18 @@ public:
     void SetAbsoluteFileName(const ea::string& fileName) { absoluteFileName_ = fileName; }
 
     /// Return name.
+    /// @property
     const ea::string& GetName() const { return name_; }
 
     /// Return name hash.
     StringHash GetNameHash() const { return nameHash_; }
 
     /// Return memory use in bytes, possibly approximate.
+    /// @property
     unsigned GetMemoryUse() const { return memoryUse_; }
 
     /// Return time since last use in milliseconds. If referred to elsewhere than in the resource cache, returns always zero.
+    /// @property
     unsigned GetUseTimer();
 
     /// Return the asynchronous loading state.
@@ -127,6 +134,7 @@ public:
     explicit ResourceWithMetadata(Context* context) : Resource(context) {}
 
     /// Add new metadata variable or overwrite old value.
+    /// @property{set_metadata}
     void AddMetadata(const ea::string& name, const Variant& value);
     /// Remove metadata variable.
     void RemoveMetadata(const ea::string& name);
@@ -135,8 +143,10 @@ public:
     /// Return all metadata keys.
     const StringVector& GetMetadataKeys() const { return metadataKeys_; }
     /// Return metadata variable.
+    /// @property
     const Variant& GetMetadata(const ea::string& name) const;
     /// Return whether the resource has metadata.
+    /// @property
     bool HasMetadata() const;
 
 protected:

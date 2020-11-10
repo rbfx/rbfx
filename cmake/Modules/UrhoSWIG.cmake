@@ -212,9 +212,9 @@ function(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
       ${swig_extra_flags}
       ${swig_include_dirs}
       -o "${swig_generated_file_fullname}"
-      #-debug-tmsearch
+      -debug-tmsearch
       "${swig_source_file_fullname}"
-      #> ${CMAKE_CURRENT_BINARY_DIR}/swig_${name}.log
+      > ${CMAKE_CURRENT_BINARY_DIR}/swig_${name}.log
       MAIN_DEPENDENCY "${swig_source_file_fullname}"
       DEPENDS ${SWIG_MODULE_${name}_EXTRA_DEPS} ${SWIG_TARGETS}
       COMMENT "SWIG ${name}")

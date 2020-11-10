@@ -54,6 +54,7 @@ public:
     ea::string ToString(const ea::string& indendation = "\t") const;
 
     /// Return root value.
+    /// @property
     JSONValue& GetRoot() { return root_; }
     /// Return root value.
     const JSONValue& GetRoot() const { return root_; }

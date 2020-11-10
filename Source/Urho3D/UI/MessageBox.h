@@ -49,16 +49,21 @@ public:
     static void RegisterObject(Context* context);
 
     /// Set title text. No-ops if there is no title text element.
+    /// @property
     void SetTitle(const ea::string& text);
     /// Set message text. No-ops if there is no message text element.
+    /// @property
     void SetMessage(const ea::string& text);
 
     /// Return title text. Return empty string if there is no title text element.
+    /// @property
     const ea::string& GetTitle() const;
     /// Return message text. Return empty string if there is no message text element.
+    /// @property
     const ea::string& GetMessage() const;
 
     /// Return dialog window.
+    /// @property
     UIElement* GetWindow() const { return window_; }
 
 private:

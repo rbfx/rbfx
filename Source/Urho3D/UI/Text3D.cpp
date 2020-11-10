@@ -598,11 +598,14 @@ void Text3D::UpdateTextBatches()
     case HA_CENTER:
         // Offset by integer number of pixels to simplify snapping to pixels.
         // If snapping is off, the possible half-pixel difference is negligible anyway.
-        offset.x_ -= text_.GetWidth() / 2;
+        offset.x_ -= (float)text_.GetWidth() * 0.5f;
         break;
 
     case HA_RIGHT:
-        offset.x_ -= text_.GetWidth();
+        offset.x_ -= (float)text_.GetWidth();
+        break;
+
+    case HA_CUSTOM:
         break;
     }
 
@@ -614,11 +617,14 @@ void Text3D::UpdateTextBatches()
     case VA_CENTER:
         // Offset by integer number of pixels to simplify snapping to pixels.
         // If snapping is off, the possible half-pixel difference is negligible anyway.
-        offset.y_ -= text_.GetHeight() / 2;
+        offset.y_ -= (float)text_.GetHeight() * 0.5f;
         break;
 
     case VA_BOTTOM:
-        offset.y_ -= text_.GetHeight();
+        offset.y_ -= (float)text_.GetHeight();
+        break;
+
+    case VA_CUSTOM:
         break;
     }
 
