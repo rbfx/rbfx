@@ -50,12 +50,14 @@ public:
     static void RegisterObject(Context* context);
 
     /// Set number of vertex buffers.
+    /// @property
     bool SetNumVertexBuffers(unsigned num);
     /// Set a vertex buffer by index.
     bool SetVertexBuffer(unsigned index, VertexBuffer* buffer);
     /// Set all vertex buffers at once.
     void SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer>>& vertexBuffers);
     /// Set the index buffer.
+    /// @property
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set the draw range.
     bool SetDrawRange(PrimitiveType type, unsigned indexStart, unsigned indexCount, bool getUsedVertexRange = true);
@@ -63,6 +65,7 @@ public:
     bool SetDrawRange(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned vertexStart, unsigned vertexCount,
         bool checkIllegal = true);
     /// Set the LOD distance.
+    /// @property
     void SetLodDistance(float distance);
     /// Override raw vertex data to be returned for CPU-side operations.
     void SetRawVertexData(const ea::shared_array<unsigned char>& data, const ea::vector<VertexElement>& elements);
@@ -77,30 +80,39 @@ public:
     const ea::vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
 
     /// Return number of vertex buffers.
+    /// @property
     unsigned GetNumVertexBuffers() const { return vertexBuffers_.size(); }
 
     /// Return vertex buffer by index.
+    /// @property{get_vertexBuffers}
     VertexBuffer* GetVertexBuffer(unsigned index) const;
 
     /// Return the index buffer.
+    /// @property
     IndexBuffer* GetIndexBuffer() const { return indexBuffer_; }
 
     /// Return primitive type.
+    /// @property
     PrimitiveType GetPrimitiveType() const { return primitiveType_; }
 
     /// Return start index.
+    /// @property
     unsigned GetIndexStart() const { return indexStart_; }
 
     /// Return number of indices.
+    /// @property
     unsigned GetIndexCount() const { return indexCount_; }
 
     /// Return first used vertex.
+    /// @property
     unsigned GetVertexStart() const { return vertexStart_; }
 
     /// Return number of used vertices.
+    /// @property
     unsigned GetVertexCount() const { return vertexCount_; }
 
     /// Return LOD distance.
+    /// @property
     float GetLodDistance() const { return lodDistance_; }
 
     /// Return buffers' combined hash value for state sorting.
@@ -116,6 +128,7 @@ public:
     bool IsInside(const Ray& ray) const;
 
     /// Return whether has empty draw range.
+    /// @property
     bool IsEmpty() const { return indexCount_ == 0 && vertexCount_ == 0; }
 
 private:

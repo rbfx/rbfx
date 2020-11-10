@@ -37,6 +37,7 @@ static const int NUM_OCTANTS = 8;
 static const unsigned ROOT_INDEX = M_MAX_UNSIGNED;
 
 /// %Octree octant.
+/// @nobind
 class URHO3D_API Octant
 {
 public:
@@ -76,6 +77,7 @@ public:
     }
 
     /// Return world-space bounding box.
+    /// @property
     const BoundingBox& GetWorldBoundingBox() const { return worldBoundingBox_; }
 
     /// Return bounding box used for fitting drawable objects.
@@ -185,6 +187,7 @@ public:
     void RemoveManualDrawable(Drawable* drawable);
 
     /// Return drawable objects by a query.
+    /// @nobind
     void GetDrawables(OctreeQuery& query) const;
     /// Return drawable objects by a ray query.
     void Raycast(RayOctreeQuery& query) const;
@@ -197,6 +200,7 @@ public:
     Skybox* GetSkybox(unsigned viewMask = DEFAULT_VIEWMASK) const;
 
     /// Return subdivision levels.
+    /// @property
     unsigned GetNumLevels() const { return numLevels_; }
 
     /// Mark drawable object as requiring an update and a reinsertion.

@@ -156,16 +156,21 @@ public:
     /// Close the log file.
     void Close();
     /// Set logging level.
+    /// @property
     void SetLevel(LogLevel level);
     /// Set whether to timestamp log messages.
+    /// @property
     void SetLogFormat(const ea::string& format);
     /// Set quiet mode ie. only print error entries to standard error stream (which is normally redirected to console also). Output to log file is not affected by this mode.
+    /// @property
     void SetQuiet(bool quiet);
 
     /// Return logging level.
+    /// @property
     LogLevel GetLevel() const { return level_; }
 
     /// Return whether log is in quiet mode (only errors printed to standard error stream).
+    /// @property
     bool IsQuiet() const { return quiet_; }
 
     /// Returns a logger with specified name.

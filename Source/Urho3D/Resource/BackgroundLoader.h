@@ -50,6 +50,7 @@ struct URHO3D_API BackgroundLoadItem
 };
 
 /// Background loader of resources. Owned by the ResourceCache.
+/// @nobind
 class URHO3D_API BackgroundLoader : public RefCounted, public Thread
 {
 public:
