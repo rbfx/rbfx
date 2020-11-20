@@ -366,6 +366,12 @@ public:
         return *this * (newLen / len);
     }
 
+    /// Return orthogonal vector (clockwise).
+    Vector2 GetOrthogonalClockwise() const { return { y_, -x_ }; }
+
+    /// Return orthogonal vector (counter-clockwise).
+    Vector2 GetOrthogonalCounterClockwise() const { return { -y_, x_ }; }
+
     /// Return float data.
     const float* Data() const { return &x_; }
 
