@@ -62,8 +62,8 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 * 2D and “3D” audio playback, Ogg Vorbis support using stb_vorbis + WAV format support
 * TrueType font rendering using FreeType
 * Unicode string support
-* Inbuilt UI, localization
-* WYSIWYG scene editor and UI-layout editor implemented with undo & redo capabilities and hot code reload
+* Inbuilt UI based on subset of html and css, localization
+* WYSIWYG scene editor editor with undo & redo capabilities and hot code reload
 * Model/scene/animation/material import from formats supported by Open Asset Import Library
 * Alternative model/animation import from OGRE mesh.xml and skeleton.xml files
 * Supported IDEs: Visual Studio, Xcode, Eclipse, CodeBlocks, CodeLite, QtCreator, CLion
