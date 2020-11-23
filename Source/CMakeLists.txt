@@ -38,7 +38,7 @@ if (CMAKE_CROSSCOMPILING)
         set (ALTERNATE_COMMAND ${CMAKE_COMMAND} -E env CC=${SAVED_CC} CXX=${SAVED_CXX} CI=$ENV{CI} ${CMAKE_COMMAND})
     endif ()
     # When we are building SDK, we need these tools in it, so macros from UrhoCommon.cmake work.
-    if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    if (NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
         set (URHO3D_NATIVE_PREFIX ${CMAKE_INSTALL_PREFIX})
     else ()
         set (URHO3D_NATIVE_PREFIX ${CMAKE_BINARY_DIR}/native)
