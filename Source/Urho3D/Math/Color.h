@@ -49,6 +49,8 @@ public:
     static const ChannelMask ABGR;
     /// Mask for 0xAARRGGBB layout.
     static const ChannelMask ARGB;
+    /// Mask for 0xRRGGBB layout.
+    static const ChannelMask RGB;
 
     /// Construct with default values (opaque white).
     Color() noexcept :
@@ -300,5 +302,15 @@ protected:
 
 /// Multiply Color with a scalar.
 inline Color operator *(float lhs, const Color& rhs) { return rhs * lhs; }
+
+/// Create Color from integer with ABGR mask.
+inline Color operator"" _abgr(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::ABGR }; }
+
+/// Create Color from integer with ARGB mask.
+inline Color operator"" _argb(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::ARGB }; }
+
+/// Create Color from integer with RGB mask.
+inline Color operator"" _rgb(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::RGB }; }
+
 
 }
