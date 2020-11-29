@@ -24,8 +24,8 @@
 
 #include "../Container/Ptr.h"
 #include "../Container/RefCounted.h"
-#include "../Core/Function.h"
 
+#include <EASTL/fixed_function.h>
 #include <EASTL/utility.h>
 #include <EASTL/vector.h>
 
@@ -37,8 +37,11 @@ template<typename T, typename Sender=RefCounted>
 class Signal
 {
 public:
+    /// Small object optimization buffer size.
+    static const unsigned HandlerSize = 4 * sizeof(void*);
+
     /// Signal handler type.
-    using Handler = Function<bool(RefCounted*, Sender*, T&)>;
+    using Handler = ea::fixed_function<HandlerSize, bool(RefCounted*, Sender*, T&)>;
 
     /// Subscribe to event.
     template<typename Receiver>
@@ -121,6 +124,13 @@ public:
         }
     }
 
+    /// Invoke event.
+    void operator()(Sender* sender, const T& args)
+    {
+        T tempArgs = args;
+        (*this)(sender, tempArgs);
+    }
+
     /// Returns true when event has at least one subscriber.
     bool HasSubscribers() const { return !handlers_.empty(); }
 
@@ -133,8 +143,11 @@ template<typename Sender>
 class Signal<void, Sender>
 {
 public:
+    /// Small object optimization buffer size.
+    static const unsigned HandlerSize = 4 * sizeof(void*);
+
     /// Signal handler type.
-    using Handler = Function<bool(RefCounted*, Sender*)>;
+    using Handler = ea::fixed_function<HandlerSize, bool(RefCounted*, Sender*)>;
 
     /// Subscribe to event.
     template<typename Receiver>
