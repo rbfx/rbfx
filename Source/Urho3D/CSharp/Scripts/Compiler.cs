@@ -73,20 +73,30 @@ namespace Urho3DNet
                 foreach (CompilerError error in results.Errors)
                 {
                     string resourceName = error.FileName;
+                    // ressource paths use lower key c: and '/' as separator and but Windows uses upper key C: and '\'
+                    // using Uri to mitigate that
+                    var resourcePath = new Uri(resourceName);
                     foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
                     {
-                        if (resourceName.StartsWith(resourceDir))
+                        var resourceDirPath = new Uri(resourceDir);
+                        if (resourceDirPath.IsBaseOf( resourcePath) )
                         {
-                            resourceName = resourceName.Substring(resourceDir.Length);
+                            resourceName = resourceDirPath.MakeRelativeUri(resourcePath).ToString();
                             break;
                         }
                     }
 
                     string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
                     if (error.IsWarning)
+                    { 
                         Log.Warning(message);
+                    }
                     else
+                    {
                         Log.Error(message);
+                        // no compiled assembly is generated when there's an error !
+                        return null;
+                    }
                 }
             }
 
