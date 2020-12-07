@@ -61,7 +61,7 @@ bool TypeInfo::IsTypeOf(const TypeInfo* typeInfo) const
 {
     if (typeInfo == nullptr)
         return false;
-    
+
     const TypeInfo* current = this;
     while (current)
     {
@@ -132,6 +132,13 @@ void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData
 }
 
 bool Object::Serialize(Archive& /*archive*/)
+{
+    URHO3D_LOGERROR("Serialization is not supported for " + GetTypeInfo()->GetTypeName());
+    assert(0);
+    return false;
+}
+
+bool Object::Serialize(Archive& /*archive*/, ArchiveBlock& /*block*/)
 {
     URHO3D_LOGERROR("Serialization is not supported for " + GetTypeInfo()->GetTypeName());
     assert(0);

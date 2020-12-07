@@ -50,6 +50,8 @@ public:
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive) override;
+    /// Serialize content from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, ArchiveBlock& block) override;
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;

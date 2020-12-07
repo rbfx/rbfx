@@ -142,6 +142,14 @@ bool AnimatedModel::Serialize(Archive& archive)
     return success;
 }
 
+bool AnimatedModel::Serialize(Archive& archive, ArchiveBlock& block)
+{
+    loading_ = true;
+    bool success = Serializable::Serialize(archive, block);
+    loading_ = false;
+    return success;
+}
+
 bool AnimatedModel::Load(Deserializer& source)
 {
     loading_ = true;
