@@ -36,6 +36,7 @@ namespace Urho3D
 {
 
 class Archive;
+class ArchiveBlock;
 class Context;
 class EventHandler;
 class Engine;
@@ -134,6 +135,8 @@ public:
 
     /// Serialize object.
     virtual bool Serialize(Archive& archive);
+    /// Serialize content from/to archive. Return true if successful.
+    virtual bool Serialize(Archive& archive, ArchiveBlock& block);
 
     /// Return type info static.
     static const TypeInfo* GetTypeInfoStatic() { return nullptr; }

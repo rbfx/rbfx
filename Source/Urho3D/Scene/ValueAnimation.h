@@ -82,7 +82,7 @@ public:
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive) override;
     /// Serialize content from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block);
+    bool Serialize(Archive& archive, ArchiveBlock& block) override;
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
