@@ -58,8 +58,6 @@ Also see \ref PortingNotes for necessary changes when moving to a newer Urho3D v
 
 \page Credits Credits
 
-List of authors may be found in AUTHORS.md
-
 Urho3D is greatly inspired by OGRE (http://www.ogre3d.org/) and Horde3D (http://www.horde3d.org/). Additional inspiration & research used:
 
 - Rectangle packing by Jukka Jyl&auml;nki (clb) (http://clb.demon.fi/projects/rectangle-bin-packing/)
