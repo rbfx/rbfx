@@ -49,7 +49,7 @@ generators_windows_mingw=('-G' 'MinGW Makefiles')
 generators_windows=('-G' 'Visual Studio 16 2019')
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
-generators_macos=('-G' 'Xcode')
+generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
 generators_ios=('-G' 'Xcode')
 
 toolchains_ios=(
