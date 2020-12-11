@@ -79,7 +79,7 @@ namespace Urho3DNet
                     foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
                     {
                         var resourceDirPath = new Uri(resourceDir);
-                        if (resourceDirPath.IsBaseOf( resourcePath) )
+                        if (resourceDirPath.IsBaseOf(resourcePath))
                         {
                             resourceName = resourceDirPath.MakeRelativeUri(resourcePath).ToString();
                             break;
