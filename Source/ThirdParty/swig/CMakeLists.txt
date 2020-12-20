@@ -71,5 +71,3 @@ if ("${SWIGWARN_SWG_TIMESTAMP}" VERSION_LESS "${SWIGWARN_H_TIMESTAMP}" OR NOT EX
         endif ()
     endforeach ()
 endif ()
-
-set(SWIG_EXECUTABLE "$<TARGET_FILE:swig>" CACHE STRING "" FORCE)
