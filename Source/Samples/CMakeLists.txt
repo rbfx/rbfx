@@ -55,10 +55,12 @@ endif ()
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} "Sample Projects")
 
 # Package resources for samples.
-if (WEB OR MOBILE)
+if (URHO3D_PACKAGING)
     create_pak("${rbfx_SOURCE_DIR}/bin/Data"               "${CMAKE_BINARY_DIR}/bin/Data.pak")
     create_pak("${rbfx_SOURCE_DIR}/bin/CoreData"           "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
     create_pak("${rbfx_SOURCE_DIR}/bin/Autoload/LargeData" "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
+	set (URHO3D_DATA_PAKS "${CMAKE_BINARY_DIR}/bin/Data.pak" "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
+	set (URHO3D_AUTOLOAD_PAKS "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
 endif ()
 
 if (WEB)
@@ -94,13 +96,10 @@ if (XCODE)
             PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
                        MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
         )
-        if (RESOURCE_PAKS)
-            set_source_files_properties ("${CMAKE_BINARY_DIR}/bin/Data.pak" "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
-                PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-            set_source_files_properties ("${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak"
-                PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Autoload)
-            target_sources(Samples PRIVATE "${CMAKE_BINARY_DIR}/bin/Data.pak" "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
-                "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
+        if (URHO3D_PACKAGING)
+            set_source_files_properties (${URHO3D_DATA_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+            set_source_files_properties (${URHO3D_AUTOLOAD_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Autoload)
+            target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
         else ()
             set_source_files_properties (
                 "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData" "${rbfx_SOURCE_DIR}/bin/Autoload"
@@ -109,6 +108,16 @@ if (XCODE)
                 "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData" "${rbfx_SOURCE_DIR}/bin/Autoload")
         endif ()
     endif ()
+endif ()
+
+if (UWP)
+	if (URHO3D_PACKAGING)
+		set_property(SOURCE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS} PROPERTY VS_DEPLOYMENT_CONTENT 1)
+		source_group("Resource Files" FILES ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
+		target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
+	else ()
+		# TODO
+	endif ()
 endif ()
 
 if (NOT ANDROID)
