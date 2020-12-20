@@ -223,13 +223,14 @@ Log::Log(Context* context) :
     formatPattern_("[%H:%M:%S] [%l] [%n] : %v")
 {
     logInstance = this;
-
+    spdlog::flush_every(std::chrono::seconds(5));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Log, HandleEndFrame));
 }
 
 Log::~Log()
 {
     logInstance = nullptr;
+    spdlog::shutdown();
 }
 
 void Log::Open(const ea::string& fileName)
