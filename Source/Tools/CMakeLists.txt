@@ -20,18 +20,18 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_TOOLS OR NOT DESKTOP)
-    # Tools are only useful on desktops.
+if (NOT DESKTOP OR UWP)
+    # Tools are only useful on desktops. We will build win32 tools when targetting UWP.
     return ()
 endif ()
 
-# Urho3D tools
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
 
-add_subdirectory(PackageTool)
-set(PACKAGE_TOOL "$<TARGET_FILE:PackageTool>" CACHE STRING "" FORCE)
+if (URHO3D_TOOLS OR URHO3D_PACKAGING)
+    add_subdirectory(PackageTool)
+endif ()
 
-if (NOT MINI_URHO)
+if (URHO3D_TOOLS AND NOT MINI_URHO)
     add_subdirectory(Toolbox)
     add_subdirectory(AssetImporter)
     add_subdirectory(AssetViewer)
