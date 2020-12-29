@@ -311,6 +311,9 @@ public:
     /// Calculate absolute dot product.
     float AbsDotProduct(const Vector2& rhs) const { return Urho3D::Abs(x_ * rhs.x_) + Urho3D::Abs(y_ * rhs.y_); }
 
+    /// Calculate "cross product" aka z component of cross product of (x1, y1, 0) and (x2, y2, 0).
+    float CrossProduct(const Vector2& rhs) const { return x_ * rhs.y_ - y_ * rhs.x_; }
+
     /// Project vector onto axis.
     float ProjectOntoAxis(const Vector2& axis) const { return DotProduct(axis.Normalized()); }
 
