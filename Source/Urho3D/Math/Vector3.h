@@ -475,6 +475,9 @@ public:
         return hash;
     }
 
+    /// Return 2D vector (z component is ignored).
+    Vector2 ToVector2() const { return { x_, y_ }; }
+
     /// X coordinate.
     float x_;
     /// Y coordinate.
