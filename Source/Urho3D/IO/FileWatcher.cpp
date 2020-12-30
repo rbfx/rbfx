@@ -280,7 +280,7 @@ void FileWatcher::ThreadFunction()
                 else if (record->Action == FILE_ACTION_RENAMED_OLD_NAME)
                     rename.oldFileName_ = fileName;
                 else if (record->Action == FILE_ACTION_RENAMED_NEW_NAME)
-                    rename.oldFileName_ = fileName;
+                    rename.fileName_ = fileName;
 
                 if (!rename.oldFileName_.empty() && !rename.fileName_.empty())
                 {
