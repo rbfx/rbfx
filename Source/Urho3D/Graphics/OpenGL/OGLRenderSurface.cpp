@@ -131,7 +131,16 @@ void RenderSurface::Release()
         graphics->CleanupRenderSurface(this);
 
         if (renderBuffer_)
-            glDeleteRenderbuffersEXT(1, &renderBuffer_);
+        {
+            if (Graphics::GetGL3Support())
+            {
+                glDeleteRenderbuffers(1, &renderBuffer_);
+            }
+            else
+            {
+                glDeleteRenderbuffersEXT(1, &renderBuffer_);
+            }
+        }
     }
 
     renderBuffer_ = 0;
