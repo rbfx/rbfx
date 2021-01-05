@@ -42,7 +42,7 @@ public:
     /// Resource name of scene that player application will start.
     ea::string defaultScene_{};
     /// A map of settings which will be loaded into Application::engineParameters_ on player startup.
-    ea::unordered_map<ea::string, Variant> engineParameters_{};
+    StringVariantMap engineParameters_{};
     /// Plugins to be loaded by the player application.
     StringVector plugins_{};
     /// List on platforms this package is valid on.
