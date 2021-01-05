@@ -160,7 +160,7 @@ private:
     /// Geometries.
     ea::vector<GeometryView> geometries_;
     /// Metadata.
-    ea::unordered_map<ea::string, Variant> metadata_;
+    StringVariantMap metadata_;
 };
 
 }
