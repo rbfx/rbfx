@@ -244,7 +244,7 @@ public:
     }
 
     /// Construct from 2D vector in X0Z plane.
-    static Vector3 FromXZ(const Vector2& vector) { return { vector.x_, 0.0f, vector.y_ }; }
+    static Vector3 FromXZ(const Vector2& vector, float y = 0.0f) { return { vector.x_, y, vector.y_ }; }
 
     /// Assign from another vector.
     Vector3& operator =(const Vector3& rhs) noexcept = default;
@@ -477,6 +477,9 @@ public:
 
     /// Return 2D vector (z component is ignored).
     Vector2 ToVector2() const { return { x_, y_ }; }
+
+    /// Return x and z components as 2D vector (y component is ignored).
+    Vector2 ToXZ() const { return { x_, z_ }; }
 
     /// X coordinate.
     float x_;
