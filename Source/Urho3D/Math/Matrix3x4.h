@@ -174,6 +174,38 @@ public:
 #endif
     }
 
+    /// Construct from translation vector.
+    static Matrix3x4 FromTranslation(const Vector3& translation)
+    {
+        Matrix3x4 m;
+        m.SetTranslation(translation);
+        return m;
+    }
+
+    /// Construct from rotation as quaternion.
+    static Matrix3x4 FromRotation(const Quaternion& rotation)
+    {
+        Matrix3x4 m;
+        m.SetRotation(rotation.RotationMatrix());
+        return m;
+    }
+
+    /// Constuct from scalar scale.
+    static Matrix3x4 FromScale(float scale)
+    {
+        Matrix3x4 m;
+        m.SetScale(scale);
+        return m;
+    }
+
+    /// Constuct from vector scale.
+    static Matrix3x4 FromScale(const Vector3& scale)
+    {
+        Matrix3x4 m;
+        m.SetScale(scale);
+        return m;
+    }
+
     /// Assign from another matrix.
     Matrix3x4& operator =(const Matrix3x4& rhs) noexcept = default;
 
