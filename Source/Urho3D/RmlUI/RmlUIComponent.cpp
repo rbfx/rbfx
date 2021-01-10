@@ -161,7 +161,7 @@ void RmlUIComponent::CloseInternal()
     document_ = nullptr;
 }
 
-void RmlUIComponent::OnDocumentClosed(Rml::ElementDocument*& document)
+void RmlUIComponent::OnDocumentClosed(Rml::ElementDocument* document)
 {
     if (document_ == document)
     {
@@ -247,7 +247,7 @@ void RmlUIComponent::SetSize(Vector2 size)
     document_->UpdateDocument();
 }
 
-void RmlUIComponent::OnUICanvasResized(RmlCanvasResizedArgs& args)
+void RmlUIComponent::OnUICanvasResized(const RmlCanvasResizedArgs& args)
 {
     if (!useNormalized_)
         // Element is positioned using absolute pixel values. Nothing to adjust.
@@ -269,7 +269,7 @@ void RmlUIComponent::OnUICanvasResized(RmlCanvasResizedArgs& args)
     SetSize(size);
 }
 
-void RmlUIComponent::OnDocumentReloaded(RmlDocumentReloadedArgs& args)
+void RmlUIComponent::OnDocumentReloaded(const RmlDocumentReloadedArgs& args)
 {
     if (document_ == args.unloadedDocument_)
         document_ = args.loadedDocument_;

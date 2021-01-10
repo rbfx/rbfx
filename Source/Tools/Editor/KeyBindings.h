@@ -76,7 +76,7 @@ struct KeyBoundAction : KeyCombination
     /// Set to true when key combination is held down.
     bool isDown_ = false;
     /// Sent when key combination is pressed.
-    Signal<void> onPressed_{};
+    Signal<void()> onPressed_{};
 };
 
 /// Key bindings manager.
