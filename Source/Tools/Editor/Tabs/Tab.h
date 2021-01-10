@@ -110,7 +110,7 @@ public:
     bool DeserializeSelection(const ByteVector& data);
 
     /// Sent during rendering of tab context menu.
-    Signal<void> onTabContextMenu_;
+    Signal<void()> onTabContextMenu_;
 
 protected:
     /// Updates cached unique title when id or title changed.
