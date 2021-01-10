@@ -60,13 +60,8 @@ public:
                     return (receiver->*handler)(sender, args...), true;
                 else if constexpr (ea::is_invocable_r_v<bool, Callback, Receiver*, Args...>)
                     return (receiver->*handler)(args...);
-                else if constexpr (ea::is_invocable_r_v<void, Callback, Receiver*, Args...>)
+                else// if constexpr (ea::is_invocable_r_v<void, Callback, Receiver*, Args...>)
                     return (receiver->*handler)(args...), true;
-                else
-                {
-                    static_assert(0, "Callback return type or args are incorrect");
-                    return true;
-                }
             }
         );
     }
