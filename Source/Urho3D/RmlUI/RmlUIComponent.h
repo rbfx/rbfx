@@ -81,11 +81,11 @@ protected:
     /// Close a window document if it was open.
     void CloseInternal();
     /// Resets document_ pointer when window is closed.
-    void OnDocumentClosed(Rml::ElementDocument*& document);
+    void OnDocumentClosed(Rml::ElementDocument* document);
     /// Reposition UI elements on UI canvas resize.
-    void OnUICanvasResized(RmlCanvasResizedArgs& size);
+    void OnUICanvasResized(const RmlCanvasResizedArgs& size);
     /// Handle document pointer changes on resource reload.
-    void OnDocumentReloaded(RmlDocumentReloadedArgs& args);
+    void OnDocumentReloaded(const RmlDocumentReloadedArgs& args);
     /// Handle addition of sibling components.
     void OnComponentAdded(StringHash, VariantMap& args);
     /// Handle removal of sibling components.

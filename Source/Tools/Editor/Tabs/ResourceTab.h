@@ -59,7 +59,7 @@ public:
     bool SerializeSelection(Archive& archive) override;
 
     /// Signal set when user right-clicks a resource or folder.
-    Signal<ResourceContextMenuArgs> resourceContextMenu_;
+    Signal<void(const ResourceContextMenuArgs&)> resourceContextMenu_;
 
 protected:
     ///

@@ -99,13 +99,13 @@ public:
     Rml::ElementDocument* ReloadDocument(Rml::ElementDocument* document);
 
     /// Emitted when mouse input is detected. Should be used for translating mouse coordinates when UI is rendered on 3D objects. Takes 2D screen coordinates as input, they may be modified by subscribers.
-    Signal<IntVector2> mouseMoveEvent_;
+    Signal<void(IntVector2&)> mouseMoveEvent_;
     /// Emitted when a window document owned by this subsystem is closed.
-    Signal<Rml::ElementDocument*> documentClosedEvent_;
+    Signal<void(Rml::ElementDocument*)> documentClosedEvent_;
     /// Emitted when underlying UI canvas is resized.
-    Signal<RmlCanvasResizedArgs> canvasResizedEvent_;
+    Signal<void(const RmlCanvasResizedArgs&)> canvasResizedEvent_;
     /// Emitted when automatic resource reloading triggers reload of a document.
-    Signal<RmlDocumentReloadedArgs> documentReloaded_;
+    Signal<void(const RmlDocumentReloadedArgs&)> documentReloaded_;
 
 private:
     /// Returns a size that this UI screen will cover.

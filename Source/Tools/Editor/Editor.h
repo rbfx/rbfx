@@ -111,9 +111,9 @@ public:
     /// Key bindings manager.
     KeyBindings keyBindings_{context_};
     /// Signal is fired when settings tabs are rendered. Various subsystems can register their tabs.
-    Signal<void> settingsTabs_{};
+    Signal<void()> settingsTabs_{};
     /// Signal is fired when something wants to inspect a certain object.
-    Signal<InspectArgs> onInspect_;
+    Signal<void(InspectArgs&)> onInspect_;
 
 protected:
     /// Process console commands.
