@@ -19,8 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#pragma once
 
+#pragma once
 
 #include "../Container/Ptr.h"
 #include "../Container/RefCounted.h"
@@ -29,66 +29,44 @@
 #include <EASTL/utility.h>
 #include <EASTL/vector.h>
 
-
 namespace Urho3D
 {
 
-template<typename T, typename Sender=RefCounted>
-class Signal
+/// Signal with specified or default sender type.
+template <typename Signature, typename Sender = RefCounted>
+class Signal;
+
+template <typename Sender, typename... Args>
+class Signal<void(Args...), Sender>
 {
 public:
     /// Small object optimization buffer size.
     static const unsigned HandlerSize = 4 * sizeof(void*);
 
     /// Signal handler type.
-    using Handler = ea::fixed_function<HandlerSize, bool(RefCounted*, Sender*, T&)>;
+    using Handler = ea::fixed_function<HandlerSize, bool(RefCounted*, Sender*, Args...)>;
 
     /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, void(Receiver::*handler)(Sender*, T&))
+    template <typename Receiver, typename Callback>
+    void Subscribe(Receiver* receiver, Callback handler)
     {
         handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender, T& args)
+            [handler](RefCounted* receiverPtr, Sender* sender, Args... args)
             {
-                (static_cast<Receiver*>(receiver)->*handler)(sender, args);
-                return true;
-            }
-        );
-    }
-
-    /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, bool(Receiver::*handler)(RefCounted*, T&))
-    {
-        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender, T& args)
-            {
-                return (static_cast<Receiver*>(receiver)->*handler)(sender, args);
-            }
-        );
-    }
-
-    /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, void(Receiver::*handler)(T&))
-    {
-        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender, T& args)
-            {
-                (static_cast<Receiver*>(receiver)->*handler)(args);
-                return true;
-            }
-        );
-    }
-
-    /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, bool(Receiver::*handler)(T&))
-    {
-        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender, T& args)
-            {
-                return (static_cast<Receiver*>(receiver)->*handler)(args);
+                auto receiver = static_cast<Receiver*>(receiverPtr);
+                if constexpr (ea::is_invocable_r_v<bool, Callback, Receiver*, Sender*, Args...>)
+                    return (receiver->*handler)(sender, args...);
+                else if constexpr (ea::is_invocable_r_v<void, Callback, Receiver*, Sender*, Args...>)
+                    return (receiver->*handler)(sender, args...), true;
+                else if constexpr (ea::is_invocable_r_v<bool, Callback, Receiver*, Args...>)
+                    return (receiver->*handler)(args...);
+                else if constexpr (ea::is_invocable_r_v<void, Callback, Receiver*, Args...>)
+                    return (receiver->*handler)(args...), true;
+                else
+                {
+                    static_assert(0, "Callback return type or args are incorrect");
+                    return true;
+                }
             }
         );
     }
@@ -107,120 +85,15 @@ public:
     }
 
     /// Invoke event.
-    void operator()(Sender* sender, T& args)
+    template <typename... InvokeArgs>
+    void operator()(Sender* sender, InvokeArgs&&... args)
     {
         for (auto it = handlers_.begin(); it != handlers_.end();)
         {
             ea::pair<WeakPtr<RefCounted>, Handler>& pair = *it;
             if (RefCounted* receiver = pair.first.Get())
             {
-                if (pair.second(receiver, sender, args))
-                    ++it;
-                else
-                    it = handlers_.erase(it);
-            }
-            else
-                it = handlers_.erase(it);
-        }
-    }
-
-    /// Invoke event.
-    void operator()(Sender* sender, const T& args)
-    {
-        T tempArgs = args;
-        (*this)(sender, tempArgs);
-    }
-
-    /// Returns true when event has at least one subscriber.
-    bool HasSubscribers() const { return !handlers_.empty(); }
-
-protected:
-    /// A collection of event handlers.
-    ea::vector<ea::pair<WeakPtr<RefCounted>, Handler>> handlers_;
-};
-
-template<typename Sender>
-class Signal<void, Sender>
-{
-public:
-    /// Small object optimization buffer size.
-    static const unsigned HandlerSize = 4 * sizeof(void*);
-
-    /// Signal handler type.
-    using Handler = ea::fixed_function<HandlerSize, bool(RefCounted*, Sender*)>;
-
-    /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, void(Receiver::*handler)(Sender*))
-    {
-        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender)
-            {
-                (static_cast<Receiver*>(receiver)->*handler)(sender);
-                return true;
-            }
-        );
-    }
-
-    /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, bool(Receiver::*handler)(RefCounted*))
-    {
-        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender)
-            {
-                return (static_cast<Receiver*>(receiver)->*handler)(sender);
-            }
-        );
-    }
-
-    /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, void(Receiver::*handler)())
-    {
-        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender)
-            {
-                (static_cast<Receiver*>(receiver)->*handler)();
-                return true;
-            }
-        );
-    }
-
-    /// Subscribe to event.
-    template<typename Receiver>
-    void Subscribe(Receiver* receiver, bool(Receiver::*handler)())
-    {
-        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
-            [handler](RefCounted* receiver, Sender* sender)
-            {
-                return (static_cast<Receiver*>(receiver)->*handler)();
-            }
-        );
-    }
-
-    /// Unsubscribe all handlers of specified receiver from this events.
-    void Unsubscribe(RefCounted* receiver)
-    {
-        for (auto it = handlers_.begin(); it != handlers_.end();)
-        {
-            ea::pair<WeakPtr<RefCounted>, Handler>& pair = *it;
-            if (pair.first.Expired() || pair.first == receiver)
-                it = handlers_.erase(it);
-            else
-                ++it;
-        }
-    }
-
-    /// Invoke event.
-    void operator()(Sender* sender)
-    {
-        for (auto it = handlers_.begin(); it != handlers_.end();)
-        {
-            ea::pair<WeakPtr<RefCounted>, Handler>& pair = *it;
-            if (RefCounted* receiver = pair.first.Get())
-            {
-                if (pair.second(receiver, sender))
+                if (pair.second(receiver, sender, args...))
                     ++it;
                 else
                     it = handlers_.erase(it);
@@ -237,5 +110,6 @@ protected:
     /// A collection of event handlers.
     ea::vector<ea::pair<WeakPtr<RefCounted>, Handler>> handlers_;
 };
+
 
 }
