@@ -490,6 +490,7 @@ void ResourceTab::ScanAssets()
     if (!rescan_)
         return;
     rescan_ = false;
+    rescanTimer_.Reset();
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     Project* project = GetSubsystem<Project>();
