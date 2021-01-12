@@ -175,6 +175,14 @@ const ea::string& RmlMaterialComponent::GetVirtualMaterialName() const
     return material_->GetName();
 }
 
+Material* RmlMaterialComponent::GetMaterial()
+{
+    if (material_.Null())
+        ApplyAttributes();
+
+    return material_;
+}
+
 void RmlMaterialComponent::UpdateVirtualMaterialResource()
 {
     if (material_.Null())
