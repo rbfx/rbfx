@@ -48,7 +48,7 @@ public:
     /// Returns a name of virtual texture resource.
     const ea::string& GetVirtualMaterialName() const;
     /// Return material which renders UI on to objects.
-    Material* GetMaterial() { return material_; }
+    Material* GetMaterial();
     /// Return true if mouse position is remapped on to UI rendered on to sibling StaticModel.
     bool GetRemapMousePositions() const { return remapMousePos_; }
     /// Enable or disable mouse position remapping on to sibling StaticModel.

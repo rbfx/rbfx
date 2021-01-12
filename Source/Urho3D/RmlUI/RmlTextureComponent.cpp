@@ -65,6 +65,14 @@ void RmlTextureComponent::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Virtual Texture Name", GetVirtualTextureName, SetVirtualTextureName, ea::string, "", AM_DEFAULT);
 }
 
+Texture2D* RmlTextureComponent::GetTexture()
+{
+    if (texture_.Null())
+        ApplyAttributes();
+
+    return texture_;
+}
+
 void RmlTextureComponent::OnNodeSet(Node* node)
 {
     UpdateVirtualTextureResource();
