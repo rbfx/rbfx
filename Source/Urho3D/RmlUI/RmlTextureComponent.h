@@ -54,7 +54,7 @@ public:
     /// Return off-screen RmlUI instance.
     RmlUI* GetUI() const { return offScreenUI_; }
     /// Return texture where UI is rendered into.
-    Texture2D* GetTexture() const { return texture_; }
+    Texture2D* GetTexture();
 
 protected:
     /// Handle component being added to Node or removed from it.
