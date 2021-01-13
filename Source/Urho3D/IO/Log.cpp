@@ -223,7 +223,9 @@ Log::Log(Context* context) :
     formatPattern_("[%H:%M:%S] [%l] [%n] : %v")
 {
     logInstance = this;
+#if !__EMSCRIPTEN__
     spdlog::flush_every(std::chrono::seconds(5));
+#endif
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Log, HandleEndFrame));
 }
 
