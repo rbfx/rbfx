@@ -387,6 +387,8 @@ void StaticModel::SetMaterialsAttr(const ResourceRefList& value)
     auto* cache = GetSubsystem<ResourceCache>();
     for (unsigned i = 0; i < value.names_.size(); ++i)
         SetMaterial(i, cache->GetResource<Material>(value.names_[i]));
+    for (unsigned i = value.names_.size(); i < batches_.size(); ++i)
+        batches_[i].material_ = nullptr;
 }
 
 ResourceRef StaticModel::GetModelAttr() const
