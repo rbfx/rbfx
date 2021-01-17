@@ -30,6 +30,8 @@ UndoStack::UndoStack(Context* context)
         stack_.resize(index_);              // Discard unneeded states
         stack_.push_back(currentFrameActions_);
         index_++;
+        for (UndoAction* action : currentFrameActions_)
+            action->OnModified(context_);
         currentFrameActions_.clear();
         modifiedThisFrame_ = nullptr;
     });
