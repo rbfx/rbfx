@@ -535,7 +535,9 @@ void SceneTab::RenderNodeTree(Node* node)
     if (node == nullptr)
         return;
 
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
+        | ImGuiTreeNodeFlags_OpenOnDoubleClick
+        | ImGuiTreeNodeFlags_SpanAvailWidth;
     if (node->GetParent() == nullptr)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
