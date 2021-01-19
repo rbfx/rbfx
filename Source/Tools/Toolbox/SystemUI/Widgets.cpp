@@ -106,7 +106,7 @@ bool MaskSelector(const char* title, unsigned int* mask)
     {
         for (unsigned col = 0; col < 16; col++)
         {
-            unsigned bitPosition = row * x16 + col;
+            unsigned bitPosition = row * 16 + col;
             unsigned bitMask = 1u << bitPosition;
             bool selected = (*mask & bitMask) != 0;
             if (selected)
