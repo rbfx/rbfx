@@ -122,7 +122,7 @@ bool Tab::RenderWindow()
             if (noContentPadding)
                 ui::PopStyleVar();
 
-            if (onTabContextMenu_.HasSubscribers())
+            if (onTabContextMenu_.HasSubscriptions())
             {
                 if (ui::BeginPopupContextItem("Tab context menu"))
                 {
