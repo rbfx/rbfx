@@ -30,8 +30,11 @@
 #include "../Container/FlagSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
+#include "../Core/Signal.h"
 #include "../Input/InputEvents.h"
 #include "../UI/Cursor.h"
+
+union SDL_Event;
 
 namespace Urho3D
 {
@@ -141,6 +144,23 @@ struct URHO3D_API JoystickState
 class EmscriptenInput;
 #endif
 
+/// Priority of raw input processing. It's safe to use arbitrary integers casted to this enum.
+enum class RawInputPriority : int
+{
+    /// Lowest priority. Processed after any built-in input handling.
+    Lowest = 0,
+    /// Priority of primary UI subsystem (RmlUI by default).
+    UISubsystem = 1000,
+    /// Priority of external tool hosting the engine (e.g. Editor).
+    ExternalTool = 2000,
+    /// Priority of UI subsystem of external tool (SystemUI by default).
+    ExternalUISubsystem = 3000,
+    /// Priority of SDLRawInput event.
+    SDLRawInput = 4000,
+    /// Highest priority. Processed before any built-in input handling.
+    Highest = 5000
+};
+
 /// %Input subsystem. Converts operating system window messages to input state and events.
 class URHO3D_API Input : public Object
 {
@@ -155,6 +175,9 @@ public:
     explicit Input(Context* context);
     /// Destruct.
     ~Input() override;
+
+    /// Low-level input sink. User is responsible for checking "consumed" flag.
+    PrioritySignal<void(SDL_Event& evt, bool& consumed), RawInputPriority> OnRawInput;
 
     /// Poll for window messages. Called by HandleBeginFrame().
     void Update();
@@ -399,6 +422,8 @@ private:
     void HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventData);
     /// Handle SDL event.
     void HandleSDLEvent(void* sdlEvent);
+    /// Send SDLRawInput event.
+    void OnSDLRawInput(SDL_Event& evt, bool& consumed);
 
 #ifndef __EMSCRIPTEN__
     /// Set SDL mouse mode relative.
