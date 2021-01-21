@@ -391,6 +391,8 @@ Input::Input(Context* context) :
     mouseMoveScaled_(false),
     initialized_(false)
 {
+    OnRawInput.Subscribe(this, RawInputPriority::SDLRawInput, &Input::OnSDLRawInput);
+
     context_->RequireSDL(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
 
     for (int i = 0; i < TOUCHID_MAX; i++)
@@ -1891,22 +1893,30 @@ void Input::UnsuppressMouseMove()
     lastMousePosition_ = GetMousePosition();
 }
 
+void Input::OnSDLRawInput(SDL_Event& evt, bool& consumed)
+{
+    if (consumed)
+        return;
+
+    using namespace SDLRawInput;
+
+    VariantMap& eventData = GetEventDataMap();
+    eventData[P_SDLEVENT] = &evt;
+    eventData[P_CONSUMED] = false;
+    SendEvent(E_SDLRAWINPUT, eventData);
+
+    consumed = eventData[P_CONSUMED].GetBool();
+}
+
 void Input::HandleSDLEvent(void* sdlEvent)
 {
     SDL_Event& evt = *static_cast<SDL_Event*>(sdlEvent);
 
     // Possibility for custom handling or suppression of default handling for the SDL event
-    {
-        using namespace SDLRawInput;
-
-        VariantMap eventData = GetEventDataMap();
-        eventData[P_SDLEVENT] = &evt;
-        eventData[P_CONSUMED] = false;
-        SendEvent(E_SDLRAWINPUT, eventData);
-
-        if (eventData[P_CONSUMED].GetBool())
-            return;
-    }
+    bool consumed = false;
+    OnRawInput(this, evt, consumed);
+    if (consumed)
+        return;
 
     if (!enabled_)
     {
