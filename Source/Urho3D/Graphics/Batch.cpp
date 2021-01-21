@@ -580,7 +580,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 }
                 else
                 {
-                    cutoff = -1.0f;
+                    cutoff = -2.0f;
                     invCutoff = 1.0f;
                 }
 
