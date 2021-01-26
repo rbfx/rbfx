@@ -143,35 +143,37 @@ protected:
     {
         return [handler](RefCounted* receiverPtr, Sender* sender, Args... args)
         {
-            static constexpr bool boolSenderArgs = ea::is_invocable_r_v<bool, Callback, Receiver*, Sender*, Args...>;
-            static constexpr bool voidSenderArgs = ea::is_invocable_r_v<void, Callback, Receiver*, Sender*, Args...>;
-            static constexpr bool boolArgs = ea::is_invocable_r_v<bool, Callback, Receiver*, Args...>;
-            static constexpr bool voidArgs = ea::is_invocable_r_v<void, Callback, Receiver*, Args...>;
-            static_assert(boolSenderArgs || voidSenderArgs || boolArgs || voidArgs,
+            // MSVC has some issues with static constexpr bool, use macros
+#define INVOKE_SENDER_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Receiver*, Sender*, Args...>
+#define INVOKE_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Receiver*, Args...>
+
+            static_assert(INVOKE_SENDER_ARGS(bool) || INVOKE_SENDER_ARGS(void) || INVOKE_ARGS(bool) || INVOKE_ARGS(void),
                 "Callback should return either bool or void. "
                 "Callback should accept either (Args...) or (Sender*, Args...) as parameters.");
 
             auto receiver = static_cast<Receiver*>(receiverPtr);
             // MinGW build fails at ea::invoke ATM, call as member function
 #ifdef __MINGW32__
-            if constexpr (boolSenderArgs)
+            if constexpr (INVOKE_SENDER_ARGS(bool))
                 return (receiver->*handler)(sender, args...);
-            else if constexpr (voidSenderArgs)
+            else if constexpr (INVOKE_SENDER_ARGS(void))
                 return (receiver->*handler)(sender, args...), true;
-            else if constexpr (boolArgs)
+            else if constexpr (INVOKE_ARGS(bool))
                 return (receiver->*handler)(args...);
-            else if constexpr (voidArgs)
+            else if constexpr (INVOKE_ARGS(void))
                 return (receiver->*handler)(args...), true;
 #else
-            if constexpr (boolSenderArgs)
+            if constexpr (INVOKE_SENDER_ARGS(bool))
                 return ea::invoke(handler, receiver, sender, args...);
-            else if constexpr (voidSenderArgs)
+            else if constexpr (INVOKE_SENDER_ARGS(void))
                 return ea::invoke(handler, receiver, sender, args...), true;
-            else if constexpr (boolArgs)
+            else if constexpr (INVOKE_ARGS(bool))
                 return ea::invoke(handler, receiver, args...);
-            else if constexpr (voidArgs)
+            else if constexpr (INVOKE_ARGS(void))
                 return ea::invoke(handler, receiver, args...), true;
 #endif
+#undef INVOKE_SENDER_ARGS
+#undef INVOKE_ARGS
         };
     }
 
