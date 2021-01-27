@@ -154,6 +154,8 @@ bool ModelImporter::Accepts(const ea::string& path) const
         return true;
     if (path.ends_with(".blend"))
         return true;
+    if (path.ends_with(".obj"))
+        return true;
     return false;
 }
 

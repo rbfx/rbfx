@@ -117,6 +117,7 @@ void Pipeline::EnableWatcher()
     if (!fs->DirExists(project->GetCachePath()))
         fs->CreateDirsRecursive(project->GetCachePath());
 
+    watcher_.StopWatching();
     for (const ea::string& resourceDir : project->GetResourcePaths())
     {
         ea::string absolutePath = project->GetProjectPath() + resourceDir;
