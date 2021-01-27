@@ -110,14 +110,26 @@ public:
     /// Construct default.
     Array2D() = default;
 
+    /// Construct with dimensions and default value.
+    explicit Array2D(const ArrayDimensions2D& dim)
+        : ArrayDimensions2D(dim)
+        , data_(GetCapacity())
+    {}
+
     /// Construct with dimensions and initial value.
-    explicit Array2D(const ArrayDimensions2D& dim, const T& value = {})
+    explicit Array2D(const ArrayDimensions2D& dim, const T& value)
         : ArrayDimensions2D(dim)
         , data_(GetCapacity(), value)
     {}
 
+    /// Construct with given size and default value.
+    Array2D(int width, int height)
+        : ArrayDimensions2D(width, height)
+        , data_(GetCapacity())
+    {}
+
     /// Construct with given size and initial value.
-    Array2D(int width, int height, const T& value = {})
+    Array2D(int width, int height, const T& value)
         : ArrayDimensions2D(width, height)
         , data_(GetCapacity(), value)
     {}
