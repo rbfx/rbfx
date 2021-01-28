@@ -25,7 +25,6 @@
 #include "Sample.h"
 
 #include <Urho3D/RmlUI/RmlUIComponent.h>
-#include <Urho3D/RmlUI/RmlMaterialComponent.h>
 
 #include <RmlUi/Core.h>
 
@@ -38,8 +37,6 @@ class SimpleWindow : public RmlUIComponent
 public:
     /// Construct.
     explicit SimpleWindow(Context* context);
-    /// Destruct.
-    ~SimpleWindow() override;
     /// Reload window rml and rcss from disk/cache.
     void Reload();
     /// Callback function invoked from rml template.
@@ -47,9 +44,11 @@ public:
     /// Process 'CloseWindow' event.
     void OnCloseWindow(StringHash, VariantMap& args);
 
-public:
+protected:
     /// Update model and animate progressbars.
     void Update(float timeStep) override;
+    /// Initialize component state when RmlUI subsystem is available.
+    void OnNodeSet(Node* node) override;
 
     /// Value of UI slider.
     int sliderValue_ = 0;
@@ -61,37 +60,6 @@ public:
     Rml::DataModelHandle model_;
 };
 
-/// A 2D UI window rendered on 3D object. It contains it's own RmlUI instance returned by GetUI().
-class SimpleWindowMaterial : public RmlMaterialComponent
-{
-    URHO3D_OBJECT(SimpleWindowMaterial, RmlMaterialComponent);
-public:
-    /// Construct.
-    explicit SimpleWindowMaterial(Context* context);
-    /// Destruct.
-    ~SimpleWindowMaterial() override;
-    /// Reload window rml and rcss from disk/cache.
-    void Reload();
-    /// Callback function invoked from rml template.
-    void CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments);
-    /// Process 'CloseWindow' event.
-    void OnCloseWindow(StringHash, VariantMap& args);
-
-public:
-    /// Update model and animate progressbars.
-    void Update(float timeStep) override;
-
-    /// Window document.
-    Rml::ElementDocument* document_ = nullptr;
-    /// Value of UI slider.
-    int sliderValue_ = 0;
-    /// Value of button click counter.
-    int counter_ = 0;
-    /// Value of progressbar progress.
-    float progress_ = 0;
-    /// Handle of our data model.
-    Rml::DataModelHandle model_;
-};
 
 /// A RmlUI demonstration.
 class HelloRmlUI : public Sample
@@ -116,7 +84,11 @@ private:
     /// Window which will be rendered into backbuffer.
     WeakPtr<SimpleWindow> window_;
     /// Window which will be rendered onto a side of a cube.
-    WeakPtr<SimpleWindowMaterial> windowMaterial_;
+    WeakPtr<SimpleWindow> windowOnCube_;
+    /// Texture to which windowOnCube_ will render.
+    SharedPtr<Texture2D> texture_;
+    /// Material which will apply windowOnCube_ on to a cube.
+    SharedPtr<Material> material_;
 };
 
 

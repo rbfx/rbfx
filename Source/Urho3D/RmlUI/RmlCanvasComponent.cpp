@@ -23,18 +23,18 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/BillboardSet.h"
-#include "../Graphics/Graphics.h"
 #include "../Graphics/Camera.h"
-#include "../Graphics/Material.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/StaticModel.h"
-#include "../Graphics/VertexBuffer.h"
+#include "../Graphics/Viewport.h"
 #include "../Graphics/Texture2D.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
-#include "../RmlUI/RmlMaterialComponent.h"
+#include "../RmlUI/RmlCanvasComponent.h"
 #include "../RmlUI/RmlUI.h"
+#include "../Scene/Node.h"
 #include "../Scene/Scene.h"
 
 #include <RmlUi/Core/Context.h>
@@ -44,28 +44,115 @@
 namespace Urho3D
 {
 
+static int const UICOMPONENT_DEFAULT_TEXTURE_SIZE = 512;
+static int const UICOMPONENT_MIN_TEXTURE_SIZE = 64;
+static int const UICOMPONENT_MAX_TEXTURE_SIZE = 4096;
+
 extern const char* RML_UI_CATEGORY;
 
-RmlMaterialComponent::RmlMaterialComponent(Context* context)
-    : RmlTextureComponent(context)
+RmlCanvasComponent::RmlCanvasComponent(Context* context)
+    : LogicComponent(context)
 {
+    offScreenUI_ = new RmlUI(context_, Format("RmlTextureComponent_{:p}", (void*)this).c_str());
+    offScreenUI_->mouseMoveEvent_.Subscribe(this, &RmlCanvasComponent::RemapMousePos);
+    texture_ = context_->CreateObject<Texture2D>().Detach();
+    SetUpdateEventMask(USE_UPDATE);
 }
 
-void RmlMaterialComponent::RegisterObject(Context* context)
+RmlCanvasComponent::~RmlCanvasComponent()
 {
-    context->RegisterFactory<RmlMaterialComponent>(RML_UI_CATEGORY);
+    // Unload document first so other components can receive events about document invalidation and null their pointers. This process
+    // depends on RmlUI instance being alive.
+    offScreenUI_->GetRmlContext()->UnloadAllDocuments();
+}
+
+void RmlCanvasComponent::RegisterObject(Context* context)
+{
+    context->RegisterFactory<RmlCanvasComponent>(RML_UI_CATEGORY);
     URHO3D_COPY_BASE_ATTRIBUTES(BaseClassName);
-    URHO3D_ACCESSOR_ATTRIBUTE("Virtual Material Name", GetVirtualMaterialName, SetVirtualMaterialName, ea::string, "", AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureRef, SetTextureRef, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);
 }
 
-void RmlMaterialComponent::OnNodeSet(Node* node)
+void RmlCanvasComponent::OnNodeSet(Node* node)
 {
-    BaseClassName::OnNodeSet(node);
-    UpdateVirtualMaterialResource();
+    if (node == nullptr)
+        ClearTexture();
 }
 
-void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
+void RmlCanvasComponent::OnSetEnabled()
+{
+    if (!enabled_)
+        ClearTexture();
+    offScreenUI_->SetRendering(enabled_);
+    offScreenUI_->SetBlockEvents(!enabled_);
+}
+
+void RmlCanvasComponent::SetUISize(IntVector2 size)
+{
+    assert(texture_.NotNull());
+    if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
+        size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
+    {
+        URHO3D_LOGERROR("RmlCanvasComponent: Invalid texture size {}x{}", size.x_, size.y_);
+        return;
+    }
+
+    if (texture_->SetSize(size.x_, size.y_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET))
+    {
+        RenderSurface* surface = texture_->GetRenderSurface();
+        surface->SetUpdateMode(SURFACE_MANUALUPDATE);
+        offScreenUI_->SetRenderTarget(surface, Color::BLACK);
+    }
+    else
+    {
+        offScreenUI_->SetRenderTarget(nullptr);
+        SetEnabled(false);
+        URHO3D_LOGERROR("RmlCanvasComponent: Resizing of UI render-target texture failed.");
+    }
+    ClearTexture();
+}
+
+void RmlCanvasComponent::SetTextureRef(const ResourceRef& texture)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    if (Resource* textureRes = cache->GetResource(texture.type_, texture.name_))
+    {
+        if (Texture2D* texture2D = textureRes->Cast<Texture2D>())
+        {
+            SetTexture(texture2D);
+            SetUISize({UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE});    // TODO: To attribute
+        }
+        else
+            URHO3D_LOGERROR("Resource with name {} exists, but is not a Texture2D.", texture.name_);
+    }
+    else
+        URHO3D_LOGERROR("Resource with name {} is already registered.", texture.name_);
+}
+
+ResourceRef RmlCanvasComponent::GetTextureRef() const
+{
+    if (texture_.Null())
+        return ResourceRef(Texture2D::GetTypeStatic());
+    return ResourceRef(Texture2D::GetTypeStatic(), texture_->GetName());
+}
+
+void RmlCanvasComponent::ClearTexture()
+{
+    if (texture_.Null())
+        return;
+
+    Image clear(context_);
+    int w = texture_->GetWidth(), h = texture_->GetHeight();
+    if (w > 0 && h > 0)
+    {
+        clear.SetSize(w, h, 4);
+        clear.Clear(Color::TRANSPARENT_BLACK);
+        texture_->SetData(&clear);
+    }
+}
+
+void RmlCanvasComponent::RemapMousePos(IntVector2& screenPos)
 {
     if (!remapMousePos_ || node_ == nullptr)
         return;
@@ -148,73 +235,16 @@ void RmlMaterialComponent::TranslateMousePos(IntVector2& screenPos)
     }
 }
 
-void RmlMaterialComponent::SetVirtualMaterialName(const ea::string& name)
+void RmlCanvasComponent::SetTexture(Texture2D* texture)
 {
-    if (material_.NotNull())
-        RemoveVirtualResource(material_);
-    else
+    if (texture)
     {
-        // Component is being created, material may not exist. Look it up in resource cache first. This solves a problem where removing
-        // RmlMaterialComponent in the editor and indoing operation creates a new material while old one is still attached to StaticModel.
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
-        if (Material* material = cache->GetResource<Material>(name, false))
-        {
-            material_ = material;
-            material_->SetTexture(TU_DIFFUSE, texture_);
-        }
-        else
-            material_ = CreateMaterial();
+        texture_->SetFilterMode(FILTER_BILINEAR);
+        texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
+        texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
+        texture_->SetNumLevels(1);  // No mipmaps
     }
-    material_->SetName(name);
-    UpdateVirtualMaterialResource();
-}
-
-const ea::string& RmlMaterialComponent::GetVirtualMaterialName() const
-{
-    assert(material_.NotNull());
-    return material_->GetName();
-}
-
-Material* RmlMaterialComponent::GetMaterial()
-{
-    if (material_.Null())
-        ApplyAttributes();
-
-    return material_;
-}
-
-void RmlMaterialComponent::UpdateVirtualMaterialResource()
-{
-    if (material_.Null())
-        return;
-
-    if (node_)
-        AddVirtualResource(material_);
-    else
-        RemoveVirtualResource(material_);
-}
-
-void RmlMaterialComponent::ApplyAttributes()
-{
-    if (material_.Null())
-        material_ = CreateMaterial();
-
-    BaseClassName::ApplyAttributes();
-    UpdateVirtualMaterialResource();
-}
-
-Material* RmlMaterialComponent::CreateMaterial() const
-{
-    Material* material = context_->CreateObject<Material>().Detach();
-    material->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
-    material->SetTexture(TU_DIFFUSE, texture_);
-    return material;
-}
-
-void RmlMaterialComponent::OnTextureUpdated()
-{
-    if (material_.NotNull())
-        material_->SetTexture(TU_DIFFUSE, texture_);
+    texture_ = texture;
 }
 
 }
