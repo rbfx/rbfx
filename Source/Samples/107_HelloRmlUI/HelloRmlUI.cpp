@@ -28,11 +28,12 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Technique.h>
 #include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
+#include <Urho3D/RmlUI/RmlCanvasComponent.h>
 #include <RmlUi/Debugger.h>
-#include <Urho3D/RmlUI/RmlMaterialComponent.h>
 
 #include "HelloRmlUI.h"
 
@@ -42,31 +43,39 @@
 SimpleWindow::SimpleWindow(Context* context)
     : RmlUIComponent(context)
 {
-    RmlUI* ui = GetSubsystem<RmlUI>();
-
-    // Create a data model for connecting UI with state kept in this class.
-    Rml::DataModelConstructor constructor = ui->GetRmlContext()->CreateDataModel("example_model");
-    assert(constructor);
-    constructor.Bind("slider_value", &sliderValue_);
-    constructor.Bind("counter", &counter_);
-    constructor.Bind("progress", &progress_);
-    constructor.BindEventCallback("count", &SimpleWindow::CountClicks, this);
-    model_ = constructor.GetModelHandle();
-
-    // Load UI.
-    SetResource("UI/HelloRmlUI.rml");
-    SetOpen(true);
-
-    // Act on pressing window close button.
-    SubscribeToEvent(ui, "CloseWindow", &SimpleWindow::OnCloseWindow);
 }
 
-SimpleWindow::~SimpleWindow()
+void SimpleWindow::OnNodeSet(Node* node)
 {
-    // RmlUIComponent is responsible for storing document instance, therefore we do not need to close it here.
-    // Dispose of data model.
-    RmlUI* ui = GetSubsystem<RmlUI>();
-    ui->GetRmlContext()->RemoveDataModel("example_model");
+    BaseClassName::OnNodeSet(node);
+
+    RmlUI* ui = GetUI();
+    Rml::Context* context = ui->GetRmlContext();
+    if (node != nullptr && !model_)
+    {
+        // Create a data model for connecting UI with state kept in this class.
+        // Important: there can only be one data model with given name per unique RmlUI subsystem!
+        Rml::DataModelConstructor constructor = context->CreateDataModel("example_model");
+        assert(constructor);
+        constructor.Bind("slider_value", &sliderValue_);
+        constructor.Bind("counter", &counter_);
+        constructor.Bind("progress", &progress_);
+        constructor.BindEventCallback("count", &SimpleWindow::CountClicks, this);
+        model_ = constructor.GetModelHandle();
+
+        // Load UI.
+        SetResource("UI/HelloRmlUI.rml");
+        SetOpen(true);
+
+        // Act on pressing window close button.
+        SubscribeToEvent(ui, "CloseWindow", &SimpleWindow::OnCloseWindow);
+    }
+    else if (node == nullptr && model_)
+    {
+        // Dispose of data model when it is no longer necessary.
+        context->RemoveDataModel("example_model");
+        model_ = nullptr;
+    }
 }
 
 void SimpleWindow::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
@@ -104,70 +113,6 @@ void SimpleWindow::OnCloseWindow(StringHash, VariantMap& args)
 }
 
 
-SimpleWindowMaterial::SimpleWindowMaterial(Context* context)
-    : RmlMaterialComponent(context)
-{
-    // Create a data model for connecting UI with state kept in this class.
-    Rml::DataModelConstructor constructor = GetUI()->GetRmlContext()->CreateDataModel("example_model");
-    assert(constructor);
-    constructor.Bind("slider_value", &sliderValue_);
-    constructor.Bind("counter", &counter_);
-    constructor.Bind("progress", &progress_);
-    constructor.BindEventCallback("count", &SimpleWindowMaterial::CountClicks, this);
-    model_ = constructor.GetModelHandle();
-
-    // Load UI.
-    document_ = GetUI()->LoadDocument("UI/HelloRmlUI.rml");
-    document_->Show();
-
-    // Act on pressing window close button.
-    SubscribeToEvent(GetUI(), "CloseWindow", &SimpleWindowMaterial::OnCloseWindow);
-}
-
-SimpleWindowMaterial::~SimpleWindowMaterial()
-{
-    // Close document.
-    if (document_)
-        document_->Close();
-
-    // Dispose of model
-    GetUI()->GetRmlContext()->RemoveDataModel("example_model");
-}
-
-void SimpleWindowMaterial::CountClicks(Rml::DataModelHandle modelHandle, Rml::Event& ev, const Rml::VariantList& arguments)
-{
-    // Increase counter and notify model of it's update.
-    counter_++;
-    modelHandle.DirtyVariable("counter");
-}
-
-void SimpleWindowMaterial::Update(float timeStep)
-{
-    // Animate progressbars
-    progress_ = (Sin(GetSubsystem<Time>()->GetElapsedTime() * 50) + 1) / 2;
-    model_.DirtyVariable("progress");
-
-    // Update UI model. Called once per frame in E_UPDATE event.
-    model_.Update();
-}
-
-void SimpleWindowMaterial::Reload()
-{
-    document_ = GetUI()->ReloadDocument(document_);
-    // Model does not have to be recreated and old model will be reused. State stored in the model persists across reloads.
-}
-
-void SimpleWindowMaterial::OnCloseWindow(StringHash, VariantMap& args)
-{
-    Rml::Element* element = static_cast<Rml::Element*>(args["_Element"].GetVoidPtr());
-    if (element->GetOwnerDocument() == document_)
-    {
-        document_->Close();
-        document_ = nullptr;
-    }
-}
-
-
 HelloRmlUI::HelloRmlUI(Context* context)
     : Sample(context)
 {
@@ -177,7 +122,6 @@ void HelloRmlUI::Start()
 {
     // Register custom components.
     context_->RegisterFactory<SimpleWindow>();
-    context_->RegisterFactory<SimpleWindowMaterial>();
 
     // Execute base class startup
     Sample::Start();
@@ -196,13 +140,11 @@ void HelloRmlUI::Stop()
 {
     // Only necessary so sample can be reopened. Under normal circumnstances applications do not need to do this.
     context_->RemoveFactory<SimpleWindow>();
-    context_->RemoveFactory<SimpleWindowMaterial>();
 }
 
 void HelloRmlUI::InitWindow()
 {
     auto* ui = context_->GetSubsystem<RmlUI>();
-    auto* cache = GetSubsystem<ResourceCache>();
 
     // Initialize fonts in backbuffer UI.
     ui->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
@@ -216,24 +158,32 @@ void HelloRmlUI::InitWindow()
     // Node that will get UI rendered on it.
     Node* boxNode = scene_->GetChild("Box");
 
-    // Create a component that sets up UI rendering. It sets material to StaticModel of the node.
-    windowMaterial_ = boxNode->CreateComponent<SimpleWindowMaterial>();
+    // Create a texture we will render to.
+    texture_ = context_->CreateObject<Texture2D>();
 
-    // Initialize fonts in 3D UI.
-    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
-    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
-    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
-    windowMaterial_->GetUI()->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
+    // Create a material that will display UI texture on a cube.
+    material_ = context_->CreateObject<Material>();
+    material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/DiffUnlit.xml"));
+    material_->SetTexture(TU_DIFFUSE, texture_);
 
-    // Optionally modify material. Technique is changed so object is visible without any lights.
-    auto* material = windowMaterial_->GetMaterial();
-    material->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
+    // Create a component that sets up UI rendering.
+    auto* renderer = boxNode->CreateComponent<RmlCanvasComponent>();
+    renderer->GetUI()->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
+    renderer->GetUI()->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
+    renderer->GetUI()->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
+    renderer->GetUI()->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
+    renderer->SetTexture(texture_);
+    renderer->SetUISize({512, 512});
+    renderer->SetRemapMousePos(true);
+
+    // Create a window that will be rendered on a cube.
+    windowOnCube_ = boxNode->CreateComponent<SimpleWindow>();
 
     // Create a StaticModel for our cube.
     auto* model = boxNode->GetComponent<StaticModel>();
 
     // And set a material to it so UI would be rendered on to cube.
-    model->SetMaterial(material);
+    model->SetMaterial(material_);
 
     // Subscribe to update event for handling keys and animating cube.
     SubscribeToEvent(E_UPDATE, &HelloRmlUI::OnUpdate);
@@ -288,7 +238,7 @@ void HelloRmlUI::OnUpdate(StringHash, VariantMap& eventData)
     if (input->GetKeyPress(KEY_F5))
     {
         window_->Reload();
-        windowMaterial_->Reload();
+        windowOnCube_->Reload();
     }
 
     if (input->GetKeyPress(KEY_F9))
