@@ -579,14 +579,29 @@ void ResourceTab::RenderContextMenu()
 
         if (ui::MenuItem("Material"))
         {
-            auto path = GetNewResourcePath(currentDir_ + "New Material.xml");
+            ea::string path = GetNewResourcePath(currentDir_ + "New Material.xml");
             context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(GetPath(path));
 
-            SharedPtr<Material> material(new Material(context_));
+            Material material(context_);
             File file(context_, path, FILE_WRITE);
-            if (file.IsOpen())
+            if (file.IsOpen() && material.Save(file))
             {
-                material->Save(file);
+                scrollToCurrent_ = true;
+                selectedItem_ = GetFileNameAndExtension(path);
+                StartRename();
+            }
+            else
+                URHO3D_LOGERRORF("Failed opening file '%s'.", path.c_str());
+        }
+
+        if (ui::MenuItem("Texture (PNG)"))
+        {
+            ea::string path = GetNewResourcePath(currentDir_ + "New Texture.png");
+            Image image(context_);
+            image.SetSize(1, 1, 4);
+            File file(context_, path, FILE_WRITE);
+            if (file.IsOpen() && image.Save(file))
+            {
                 scrollToCurrent_ = true;
                 selectedItem_ = GetFileNameAndExtension(path);
                 StartRename();
