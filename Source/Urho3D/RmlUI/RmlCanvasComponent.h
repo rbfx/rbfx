@@ -21,55 +21,57 @@
 //
 #pragma once
 
-#include "../RmlUI/RmlTextureComponent.h"
+#include "../Scene/LogicComponent.h"
 
 namespace Urho3D
 {
 
 class RmlUI;
 class Texture2D;
-class Material;
 
 /// Renders off-screen UI into a texture.
-class URHO3D_API RmlMaterialComponent : public RmlTextureComponent
+class URHO3D_API RmlCanvasComponent : public LogicComponent
 {
-    URHO3D_OBJECT(RmlMaterialComponent, RmlTextureComponent);
+    URHO3D_OBJECT(RmlCanvasComponent, LogicComponent);
 public:
     /// Construct.
-    explicit RmlMaterialComponent(Context* context);
+    explicit RmlCanvasComponent(Context* context);
     /// Destruct.
-    ~RmlMaterialComponent() override = default;
-
+    ~RmlCanvasComponent() override;
     /// Registers object with the engine.
     static void RegisterObject(Context* context);
 
-    /// Sets a name of virtual texture resource. Virtual texture gets created if/when component is added to the node.
-    void SetVirtualMaterialName(const ea::string& name);
-    /// Returns a name of virtual texture resource.
-    const ea::string& GetVirtualMaterialName() const;
-    /// Return material which renders UI on to objects.
-    Material* GetMaterial();
-    /// Return true if mouse position is remapped on to UI rendered on to sibling StaticModel.
-    bool GetRemapMousePositions() const { return remapMousePos_; }
-    /// Enable or disable mouse position remapping on to sibling StaticModel.
-    void SetRemapMousePositions(bool enable) { remapMousePos_ = enable; }
+    /// Set size of texture UI will be rendered into.
+    void SetUISize(IntVector2 size);
+    /// Set texture canvas will render into.
+    void SetTexture(Texture2D* texture);
+    /// Return texture where UI is rendered into.
+    Texture2D* GetTexture() const { return texture_; }
+    /// Enable input remapping (use if canvas renders on 3D objects).
+    void SetRemapMousePos(bool remap) { remapMousePos_ = remap; }
+    /// Return whether input remapping is enabled.
+    bool GetRemapMousePos() const { return remapMousePos_; }
+    /// Return off-screen RmlUI instance.
+    RmlUI* GetUI() const { return offScreenUI_; }
 
 protected:
+    /// Set texture (for attribute).
+    void SetTextureRef(const ResourceRef& texture);
+    /// Get texture (for attribute).
+    ResourceRef GetTextureRef() const;
     /// Handle component being added to Node or removed from it.
     void OnNodeSet(Node* node) override;
+    /// Handle component being enabled or disabled.
+    void OnSetEnabled() override;
+    /// Set texture color to transparent.
+    void ClearTexture();
     /// Convert screen coordinates to context-local coordinates of RmlUI instance.
-    void TranslateMousePos(IntVector2& screenPos) override;
-    /// Add or remove virtual material resource.
-    void UpdateVirtualMaterialResource();
-    /// Apply attribute changes that can not be applied immediately.
-    void ApplyAttributes() override;
-    /// Create a material instance UI will be rendered into.
-    Material* CreateMaterial() const;
-    /// Sets new texture instance to material TU_DIFFUSE slot.
-    void OnTextureUpdated() override;
+    void RemapMousePos(IntVector2& screenPos);
 
-    /// Material managed by this component.
-    SharedPtr<Material> material_;
+    /// Texture that UIElement will be rendered into.
+    SharedPtr<Texture2D> texture_;
+    /// Subsystem that handles UI rendering to the texture.
+    SharedPtr<RmlUI> offScreenUI_;
     /// Flag indicating that this component remaps mouse position on to a sibling StaticModel if present.
     bool remapMousePos_ = true;
 };
