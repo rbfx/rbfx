@@ -484,7 +484,7 @@ bool Material::Load(const XMLElement& source)
 
     XMLElement depthBiasElem = source.GetChild("depthbias");
     if (depthBiasElem)
-        SetDepthBias(BiasParameters(depthBiasElem.GetFloat("constant"), depthBiasElem.GetFloat("slopescaled")));
+        SetDepthBias(BiasParameters(depthBiasElem.GetFloat("constant"), depthBiasElem.GetFloat("slopescaled"), depthBiasElem.GetFloat("normaloffset")));
 
     XMLElement alphaToCoverageElem = source.GetChild("alphatocoverage");
     if (alphaToCoverageElem)
@@ -501,6 +501,10 @@ bool Material::Load(const XMLElement& source)
     XMLElement occlusionElem = source.GetChild("occlusion");
     if (occlusionElem)
         SetOcclusion(occlusionElem.GetBool("enable"));
+
+    XMLElement specularElem = source.GetChild("specular");
+    if (specularElem)
+        SetOcclusion(specularElem.GetBool("enable"));
 
     RefreshShaderParameterHash();
     RefreshMemoryUse();
@@ -645,7 +649,7 @@ bool Material::Load(const JSONValue& source)
 
     JSONValue depthBiasVal = source.Get("depthbias");
     if (!depthBiasVal.IsNull())
-        SetDepthBias(BiasParameters(depthBiasVal.Get("constant").GetFloat(), depthBiasVal.Get("slopescaled").GetFloat()));
+        SetDepthBias(BiasParameters(depthBiasVal.Get("constant").GetFloat(), depthBiasVal.Get("slopescaled").GetFloat(), depthBiasVal.Get("normaloffset").GetFloat()));
 
     JSONValue alphaToCoverageVal = source.Get("alphatocoverage");
     if (!alphaToCoverageVal.IsNull())
@@ -662,6 +666,10 @@ bool Material::Load(const JSONValue& source)
     JSONValue occlusionVal = source.Get("occlusion");
     if (!occlusionVal.IsNull())
         SetOcclusion(occlusionVal.GetBool());
+
+    JSONValue specularVal = source.Get("specular");
+    if (!specularVal.IsNull())
+        SetSpecular(specularVal.GetBool());
 
     RefreshShaderParameterHash();
     RefreshMemoryUse();
@@ -756,6 +764,7 @@ bool Material::Save(XMLElement& dest) const
     XMLElement depthBiasElem = dest.CreateChild("depthbias");
     depthBiasElem.SetFloat("constant", depthBias_.constantBias_);
     depthBiasElem.SetFloat("slopescaled", depthBias_.slopeScaledBias_);
+    depthBiasElem.SetFloat("normaloffset", depthBias_.normalOffset_);
 
     // Write alpha-to-coverage
     XMLElement alphaToCoverageElem = dest.CreateChild("alphatocoverage");
@@ -772,6 +781,10 @@ bool Material::Save(XMLElement& dest) const
     // Write occlusion
     XMLElement occlusionElem = dest.CreateChild("occlusion");
     occlusionElem.SetBool("enable", occlusion_);
+
+    // Write specular
+    XMLElement specularElem = dest.CreateChild("specular");
+    specularElem.SetBool("specular", specular_);
 
     return true;
 }
@@ -860,6 +873,7 @@ bool Material::Save(JSONValue& dest) const
     JSONValue depthBiasValue;
     depthBiasValue.Set("constant", depthBias_.constantBias_);
     depthBiasValue.Set("slopescaled", depthBias_.slopeScaledBias_);
+    depthBiasValue.Set("normaloffset", depthBias_.normalOffset_);
     dest.Set("depthbias", depthBiasValue);
 
     // Write alpha-to-coverage
@@ -873,6 +887,9 @@ bool Material::Save(JSONValue& dest) const
 
     // Write occlusion
     dest.Set("occlusion", occlusion_);
+
+    // Write specular
+    dest.Set("specular", specular_);
 
     return true;
 }
