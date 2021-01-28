@@ -46,8 +46,7 @@
 #include "../RmlUI/RmlSystem.h"
 #include "../RmlUI/RmlFile.h"
 #include "../RmlUI/RmlEventListeners.h"
-#include "../RmlUI/RmlMaterialComponent.h"
-#include "../RmlUI/RmlTextureComponent.h"
+#include "../RmlUI/RmlCanvasComponent.h"
 #include "../RmlUI/RmlUIComponent.h"
 
 #include <atomic>
@@ -704,8 +703,7 @@ void RegisterRmlUILibrary(Context* context)
 {
     context->RegisterFactory<RmlUI>();
     RmlUIComponent::RegisterObject(context);
-    RmlTextureComponent::RegisterObject(context);
-    RmlMaterialComponent::RegisterObject(context);
+    RmlCanvasComponent::RegisterObject(context);
 }
 
 }

@@ -27,10 +27,9 @@
 #include "../Graphics/Material.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "../RmlUI/RmlMaterialComponent.h"
 #include "../RmlUI/RmlUI.h"
 #include "../RmlUI/RmlUIComponent.h"
-#include "../RmlUI/RmlTextureComponent.h"
+#include "../RmlUI/RmlCanvasComponent.h"
 #include "../Scene/Node.h"
 
 #include "../DebugNew.h"
@@ -76,6 +75,8 @@ void RmlUIComponent::OnNodeSet(Node* node)
         UnsubscribeFromEvent(E_COMPONENTREMOVED);
     }
 
+    canvasComponent_ = GetComponent<RmlCanvasComponent>();
+
     if (open_ && node != nullptr)
         OpenInternal();
     else
@@ -92,20 +93,25 @@ void RmlUIComponent::SetResource(const ResourceRef& resourceRef)
 
 void RmlUIComponent::SetOpen(bool open)
 {
-    if (!open)
-        CloseInternal();
-    else if (node_ != nullptr  && !resource_.name_.empty())
+    if (open)
     {
-        OpenInternal();
-        open = document_ != nullptr;
+        if (node_ != nullptr && !resource_.name_.empty())
+        {
+            OpenInternal();
+            open_ = document_ != nullptr;
+        }
     }
-    open_ = open;
+    else
+    {
+        CloseInternal();
+        open_ = false;
+    }
 }
 
-void RmlUIComponent::OpenInternal(Component* ignoreComponent)
+void RmlUIComponent::OpenInternal()
 {
     if (document_ != nullptr)
-        return;
+        return; // Already open.
 
     if (resource_.name_.empty())
     {
@@ -113,28 +119,7 @@ void RmlUIComponent::OpenInternal(Component* ignoreComponent)
         return;
     }
 
-    RmlUI* ui = nullptr;
-    Component* component = GetNode()->GetComponent<RmlMaterialComponent>();
-    if (component && component != ignoreComponent)
-    {
-        ui = static_cast<RmlMaterialComponent*>(component)->GetUI();
-        uiDestinationComponent_ = component;
-    }
-    else
-    {
-        component = GetNode()->GetComponent<RmlTextureComponent>();
-        if (component && component != ignoreComponent)
-        {
-            ui = static_cast<RmlTextureComponent*>(component)->GetUI();
-            uiDestinationComponent_ = component;
-        }
-        else
-        {
-            ui = GetSubsystem<RmlUI>();
-            uiDestinationComponent_ = nullptr;
-        }
-    }
-
+    RmlUI* ui = GetUI();
     ui->documentClosedEvent_.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
     ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
     ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
@@ -148,7 +133,7 @@ void RmlUIComponent::OpenInternal(Component* ignoreComponent)
 void RmlUIComponent::CloseInternal()
 {
     if (document_ == nullptr)
-        return;
+        return; // Already closed.
 
     RmlUI* ui = static_cast<Detail::RmlContext*>(document_->GetContext())->GetOwnerSubsystem();
     ui->documentClosedEvent_.Unsubscribe(this);
@@ -289,14 +274,15 @@ void RmlUIComponent::OnComponentAdded(StringHash, VariantMap& args)
     if (node != node_)
         return;
 
-    if (uiDestinationComponent_.NotNull())
+    if (canvasComponent_.NotNull())
         // Window is rendered into some component already.
         return;
 
     Component* addedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-    if (addedComponent->IsInstanceOf<RmlTextureComponent>() || addedComponent->IsInstanceOf<RmlMaterialComponent>())
+    if (addedComponent->IsInstanceOf<RmlCanvasComponent>())
     {
         CloseInternal();
+        canvasComponent_ = addedComponent->Cast<RmlCanvasComponent>();
         OpenInternal();
     }
 }
@@ -310,12 +296,23 @@ void RmlUIComponent::OnComponentRemoved(StringHash, VariantMap& args)
         return;
 
     Component* removedComponent = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-    if (removedComponent == uiDestinationComponent_)
+
+    // Reopen this window in a new best fitting RmlUI instance.
+    if (removedComponent == canvasComponent_)
     {
-        // Reopen this window in a new best fitting RmlUI instance.
         CloseInternal();
-        OpenInternal(removedComponent);
+        canvasComponent_ = GetNode()->GetComponent<RmlCanvasComponent>();
+        if (canvasComponent_ == removedComponent)
+            canvasComponent_ = nullptr;
+        OpenInternal();
     }
+}
+
+RmlUI* RmlUIComponent::GetUI() const
+{
+    if (canvasComponent_.NotNull())
+        return canvasComponent_->GetUI();
+    return GetSubsystem<RmlUI>();
 }
 
 }
