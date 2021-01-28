@@ -129,7 +129,6 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     // Alpha To Coverage
     {
         bool value = material->GetAlphaToCoverage();
-        ui::ItemAlign(ui::GetFrameHeight());
         ui::ItemLabel("Alpha To Coverage");
         if (ui::Checkbox("###Alpha To Coverage", &value))
         {
