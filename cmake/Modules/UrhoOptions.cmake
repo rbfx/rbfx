@@ -64,7 +64,8 @@ if (APPLE AND NOT IOS)
     set (MACOS ON CACHE BOOL "" FORCE)
 endif ()
 
-if ((WIN32 OR LINUX OR MACOS) AND NOT WEB AND NOT MOBILE)
+# Even though UWP can run on desktop, we do not treat it as a desktop platform, because it behavres more like a mobile app.
+if ((WIN32 OR LINUX OR MACOS) AND NOT WEB AND NOT MOBILE AND NOT UWP)
     set (DESKTOP ON CACHE BOOL "" FORCE)
 endif ()
 
@@ -73,8 +74,8 @@ option(BUILD_SHARED_LIBS                        "Build engine as shared library.
 option(URHO3D_ENABLE_ALL                        "Enable (almost) all engine features."  ON)
 option(URHO3D_STATIC_RUNTIME                    "Link to static runtime"               OFF)
 if (UWP)
-	set (URHO3D_SSE OFF)
-	set (URHO3D_GRAPHICS_API D3D11)
+    set (URHO3D_SSE OFF)
+    set (URHO3D_GRAPHICS_API D3D11)
 else ()
     set (URHO3D_SSE           SSE2 CACHE STRING "Enable SSE instructions")
 endif ()
@@ -118,7 +119,7 @@ set(EMSCRIPTEN_TOTAL_MEMORY 128MB CACHE STRING  "Memory limit in megabytes. Set 
 # Misc
 cmake_dependent_option(URHO3D_PLAYER            "Build player application"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 cmake_dependent_option(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE"            OFF)
-cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE"            OFF)
+cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
 option(URHO3D_DOCS                              "Build documentation."                                  OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
