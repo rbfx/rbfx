@@ -502,10 +502,6 @@ bool Material::Load(const XMLElement& source)
     if (occlusionElem)
         SetOcclusion(occlusionElem.GetBool("enable"));
 
-    XMLElement specularElem = source.GetChild("specular");
-    if (specularElem)
-        SetOcclusion(specularElem.GetBool("enable"));
-
     RefreshShaderParameterHash();
     RefreshMemoryUse();
     return true;
@@ -667,10 +663,6 @@ bool Material::Load(const JSONValue& source)
     if (!occlusionVal.IsNull())
         SetOcclusion(occlusionVal.GetBool());
 
-    JSONValue specularVal = source.Get("specular");
-    if (!specularVal.IsNull())
-        SetSpecular(specularVal.GetBool());
-
     RefreshShaderParameterHash();
     RefreshMemoryUse();
     return true;
@@ -782,10 +774,6 @@ bool Material::Save(XMLElement& dest) const
     XMLElement occlusionElem = dest.CreateChild("occlusion");
     occlusionElem.SetBool("enable", occlusion_);
 
-    // Write specular
-    XMLElement specularElem = dest.CreateChild("specular");
-    specularElem.SetBool("specular", specular_);
-
     return true;
 }
 
@@ -887,9 +875,6 @@ bool Material::Save(JSONValue& dest) const
 
     // Write occlusion
     dest.Set("occlusion", occlusion_);
-
-    // Write specular
-    dest.Set("specular", specular_);
 
     return true;
 }

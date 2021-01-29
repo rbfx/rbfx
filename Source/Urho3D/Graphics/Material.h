@@ -327,9 +327,6 @@ public:
     /// Return whether should render specular.
     bool GetSpecular() const { return specular_; }
 
-    /// Set whether should render specular.
-    void SetSpecular(bool specular) { specular_ = specular; }
-
     /// Return the scene associated with the material for shader parameter animation updates.
     /// @property
     Scene* GetScene() const;

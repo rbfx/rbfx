@@ -1211,7 +1211,6 @@
   }
   public $typemap(cstype, bool) Specular {
     get { return GetSpecular(); }
-    set { SetSpecular(value); }
   }
   public $typemap(cstype, Urho3D::Scene *) Scene {
     get { return GetScene(); }

@@ -178,18 +178,6 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             undo->Add<UndoResourceSetter<Material, bool>>(material->GetName(), !value, value, &Material::SetOcclusion);
         }
     }
-    // Specular
-    {
-        bool value = material->GetSpecular();
-        ui::ItemLabel("Specular");
-        // if (flags & ui::ItemLabelFlag::Right)
-        //     ui::ItemAlign(ui::GetFrameHeight());
-        if (ui::Checkbox("###Specular", &value))
-        {
-            material->SetSpecular(value);
-            undo->Add<UndoResourceSetter<Material, bool>>(material->GetName(), !value, value, &Material::SetSpecular);
-        }
-    }
     // Constant Bias
     {
         ui::PushID("Constant Bias");
