@@ -157,7 +157,9 @@ void SamplesManager::Setup()
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
 
+#if DESKTOP
     GetCommandLineParser().add_option("--sample", startSample_);
+#endif
 }
 
 void SamplesManager::Start()

@@ -60,9 +60,10 @@ public:
 protected:
     /// Handle log message.
     void HandleLogMessage(StringHash eventType, VariantMap& eventData);
+#ifndef UWP
     /// Return command line for registering custom parameters.
     CLI::App& GetCommandLineParser();
-
+#endif
     /// Urho3D engine.
     SharedPtr<Engine> engine_;
     /// Engine parameters map.

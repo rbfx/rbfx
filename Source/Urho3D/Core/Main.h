@@ -45,7 +45,7 @@ extern "C" int SDL_main(int argc, char** argv) \
     Urho3D::ParseArguments(argc, argv); \
     return function; \
 } \
-extern "C" DECLSPEC int SDL_WinRTRunApp(int(*)(int, char**), void*); \
+extern "C" URHO3D_API int SDL_WinRTRunApp(int(*)(int, char**), void*); \
 int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int) \
 { \
     return SDL_WinRTRunApp(&SDL_main, nullptr); \

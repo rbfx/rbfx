@@ -350,7 +350,7 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
       return NULL;
   }
   /* cannot direclty use &size because of strict aliasing rules */
-  return (WSAAddressToString((struct sockaddr *)&ss, sizeof(ss), NULL, dst, &s) == 0)?
+  return (WSAAddressToStringA((struct sockaddr *)&ss, sizeof(ss), NULL, dst, &s) == 0)? // rbfx fix
           dst : NULL;
 }
 
