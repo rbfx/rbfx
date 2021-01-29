@@ -5489,7 +5489,7 @@ static void
 set_close_on_exec(SOCKET sock, struct mg_connection *conn /* may be null */)
 {
 (void)conn; /* Unused. */
-#if defined(_WIN32_WCE)
+#if defined(_WIN32_WCE) || defined(UWP) // rbfx: build error fix
 (void)sock;
 #else
 (void)SetHandleInformation((HANDLE)(intptr_t)sock, HANDLE_FLAG_INHERIT, 0);
@@ -18222,7 +18222,6 @@ get_system_name(char **sysName) {
     *sysName = mg_strdup("WinCE");
 #else
     char name[128];
-    DWORD dwVersion = 0;
     DWORD dwMajorVersion = 0;
     DWORD dwMinorVersion = 0;
     DWORD dwBuild = 0;
@@ -18233,15 +18232,20 @@ get_system_name(char **sysName) {
     /* GetVersion was declared deprecated */
 #pragma warning(disable : 4996)
 #endif
-    dwVersion = GetVersion();
+    // rbfx: Fix for UWP.
+    OSVERSIONINFO info;
+    GetVersionEx(&info);
+    dwMajorVersion = info.dwMajorVersion;
+    dwMinorVersion = info.dwMinorVersion;
+    dwBuild = info.dwBuildNumber;
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 
-    dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
-    dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
-    dwBuild = ((dwVersion < 0x80000000) ? (DWORD)(HIWORD(dwVersion)) : 0);
-    (void)dwBuild;
+    //dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+    //dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
+    //dwBuild = ((dwVersion < 0x80000000) ? (DWORD)(HIWORD(dwVersion)) : 0);
+    //(void)dwBuild;
 
     wowRet = IsWow64Process(GetCurrentProcess(), &isWoW);
 
@@ -18854,13 +18858,17 @@ GetSystemInfo(&si);
 /* GetVersion was declared deprecated */
 #pragma warning(disable : 4996)
 #endif
-dwVersion = GetVersion();
+    // rbfx fix for UWP
+    OSVERSIONINFO info;
+    GetVersionEx(&info);
+    dwMajorVersion = info.dwMajorVersion;
+    dwMinorVersion = info.dwMinorVersion;
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 
-dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
-dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
+//dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+//dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
 
 mg_snprintf(NULL,
 NULL,

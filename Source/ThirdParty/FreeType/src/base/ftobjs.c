@@ -44,6 +44,11 @@
 #include "ftbase.h"
 #endif
 
+// rbfx:
+#if defined(UWP)
+#define generic GenericFromFreeTypeLibrary
+#endif
+
 
 #ifdef FT_DEBUG_LEVEL_TRACE
 
@@ -5215,5 +5220,9 @@
     return error;
   }
 
+// rbfx:
+#if defined(UWP)
+#undef generic
+#endif
 
 /* END */

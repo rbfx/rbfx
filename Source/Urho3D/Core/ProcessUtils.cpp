@@ -104,6 +104,11 @@ inline void SetFPUState(unsigned control)
 }
 #endif
 
+// A workaround for UWP headers bug.
+#if defined(UWP) && !defined(RpcStringFree)
+extern "C" RPCRTAPI RPC_STATUS RPC_ENTRY RpcStringFreeA(RPC_CSTR* String);
+#endif
+
 #ifndef MINI_URHO
 #include <SDL/SDL.h>
 #endif
@@ -213,7 +218,7 @@ void ErrorExit(const ea::string& message, int exitCode)
 
 void OpenConsoleWindow()
 {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(UWP)
     if (consoleOpened)
         return;
 
@@ -229,7 +234,7 @@ void OpenConsoleWindow()
 void PrintUnicode(const ea::string& str, bool error)
 {
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(UWP)
     // If the output stream has been redirected, use fprintf instead of WriteConsoleW,
     // though it means that proper Unicode output will not work
     FILE* out = error ? stderr : stdout;
@@ -361,7 +366,9 @@ ea::string GetConsoleInput()
     // When we are running automated tests, reading the console may block. Just return empty in that case
     return ret;
 #else
-#ifdef _WIN32
+#if defined(UWP)
+    // ...
+#elif defined(_WIN32)
     HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
     HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
     if (input == INVALID_HANDLE_VALUE || output == INVALID_HANDLE_VALUE)
