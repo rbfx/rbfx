@@ -28,7 +28,7 @@ if (MSVC)
 endif ()
 
 # When crosscompiling, we need several tools built for host system so various build tasks can be completed.
-if (CMAKE_CROSSCOMPILING OR UWP)
+if ((CMAKE_CROSSCOMPILING OR UWP) AND (URHO3D_PACKAGING OR URHO3D_CSHARP))
     include (ExternalProject)
     if (IOS OR TVOS)
         # When cross-compiling for iOS/tvOS the host environment has been altered by xcodebuild for the said platform, the following fix is required to reset the host environment before spawning another process to configure/generate project file for external project

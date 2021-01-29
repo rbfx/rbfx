@@ -137,8 +137,10 @@ public:
     /// Get the timestep for the next frame and sleep for frame limiting if necessary.
     void ApplyFrameLimit();
 
+#if DESKTOP
     /// Parse the engine startup parameters map from command line arguments.
     static void DefineParameters(CLI::App& commandLine, VariantMap& engineParameters);
+#endif
     /// Return whether startup parameters contains a specific parameter.
     static bool HasParameter(const VariantMap& parameters, const ea::string& parameter);
     /// Get an engine startup parameter, with default value if missing.
