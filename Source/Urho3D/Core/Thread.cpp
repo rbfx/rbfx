@@ -44,8 +44,10 @@ namespace Urho3D
 #ifdef URHO3D_THREADING
 #ifdef _WIN32
 
+#if !defined(UWP)
 typedef HRESULT (WINAPI *pfnSetThreadDescription)(HANDLE, PCWSTR);
 static auto pSetThreadDescription = (pfnSetThreadDescription) GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetThreadDescription");
+#endif
 
 #pragma pack(push,8)
 typedef struct tagTHREADNAME_INFO
@@ -65,9 +67,12 @@ DWORD WINAPI Thread::ThreadFunctionStatic(void* data)
     Thread* thread = static_cast<Thread*>(data);
 
     // Borrowed from SDL_systhread.c
+#if !defined(UWP)
     if (pSetThreadDescription)
         pSetThreadDescription(GetCurrentThread(), MultiByteToWide(thread->name_).c_str());
-    else if (IsDebuggerPresent())
+    else
+#endif
+    if (IsDebuggerPresent())
     {
         // Presumably some version of Visual Studio will understand SetThreadDescription(),
         // but we still need to deal with older OSes and debuggers. Set it with the arcane

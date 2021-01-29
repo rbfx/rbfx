@@ -68,6 +68,7 @@ target_compile_definitions(SLikeNet PRIVATE
     -D_RAKNET_SUPPORT_ReadyEvent=0
     -D_RAKNET_SUPPORT_MessageFilter=0
     -D_RAKNET_SUPPORT_FileListTransfer=0
+    -D_WINSOCK_DEPRECATED_NO_WARNINGS=1
 )
 
 if (WIN32)

@@ -142,7 +142,7 @@ endif ()
 target_compile_definitions(Urho3D PUBLIC -DNOMINMAX -DURHO3D_DEBUG=$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>)
 
 # Set platform definitions
-foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP)
+foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP UWP)
     if (${def})
         target_compile_definitions(Urho3D PUBLIC -D${def}=1)
     endif ()

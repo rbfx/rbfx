@@ -58,7 +58,10 @@ int gettimeofday(struct timeval *tv, struct timezone *tz)
   {
     if (!tzflag)
     {
+    // rbfx fix:
+#ifndef UWP
       _tzset();
+#endif
       tzflag++;
     }
 	long seconds;
