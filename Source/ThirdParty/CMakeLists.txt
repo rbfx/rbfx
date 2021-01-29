@@ -22,13 +22,13 @@
 
 # Third party warnings are irrelevant to us.
 if (MSVC)
-	ucm_add_flags("/W0")
+    ucm_add_flags("/W0")
 else ()
-	ucm_add_flags("-w")
+    ucm_add_flags("-w")
 endif ()
 
 if (UWP)
-	add_definitions (-DUWP=1)
+    add_definitions (-DUWP=1)
 endif ()
 
 add_subdirectory(EASTL)
@@ -54,9 +54,8 @@ if (NOT MINI_URHO)
         add_subdirectory(RmlUi)
     endif ()
 
-    if (URHO3D_GLOW)
+    if (URHO3D_GLOW AND DESKTOP)
         add_subdirectory(xatlas)
-
         set (EMBREE_ISPC_SUPPORT OFF CACHE BOOL "")
         set (EMBREE_TUTORIALS OFF CACHE BOOL "")
         set (EMBREE_STATIC_LIB ON CACHE BOOL "")
@@ -150,7 +149,7 @@ if (URHO3D_CSHARP AND NOT CMAKE_CROSSCOMPILING)
 endif ()
 
 if ((WIN32 OR APPLE) AND NOT UWP)
-	add_subdirectory (LibCpuId)
+    add_subdirectory (LibCpuId)
 endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
