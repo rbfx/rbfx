@@ -36,7 +36,7 @@
 #include "../Graphics/Graphics.h"
 #include <SDL/SDL.h>
 #endif
-#include <Urho3D/Core/CommandLine.h>
+#include "../Core/CommandLine.h"
 
 #include "../DebugNew.h"
 
@@ -54,8 +54,10 @@ void RunFrame(void* data)
 }
 #endif
 
+#if DESKTOP
 /// Command line parser.
 static CLI::App commandLine_{};
+#endif
 
 Application::Application(Context* context) :
     Object(context),
@@ -79,15 +81,18 @@ int Application::Run()
         // Register application command line arguments or set up engine parameters
         Setup();
 
+#if DESKTOP
         if (engine_->GetParameter(engineParameters_, EP_ENGINE_CLI_PARAMETERS, true).GetBool())
         {
             // Register engine command line arguments
             Engine::DefineParameters(commandLine_, engineParameters_);
         }
+#endif
 
         if (exitCode_)
             return exitCode_;
 
+#if DESKTOP
         // Parse command line parameters
         {
             const StringVector& rawArguments = GetArguments();
@@ -104,6 +109,7 @@ int Application::Run()
                 return exitCode_;
             }
         }
+#endif
 
         if (!engine_->Initialize(engineParameters_))
         {
@@ -227,11 +233,11 @@ void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
         startupErrors_ += error + "\n";
     }
 }
-
+#if DESKTOP
 CLI::App& Application::GetCommandLineParser()
 {
     return commandLine_;
 }
-
+#endif
 
 }

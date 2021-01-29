@@ -37,6 +37,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/base_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
 #include <spdlog/details/null_mutex.h>
 
 #include <mutex>
@@ -187,7 +188,9 @@ public:
 #elif defined(IOS) || defined(TVOS)
         platformSink_ = std::make_shared<IOSSink_mt>();
 #else
-#if _WIN32
+#if UWP
+        platformSink_ = std::make_shared<spdlog::sinks::stdout_sink_mt>();
+#elif _WIN32
         platformSink_ = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
 #else
         platformSink_ = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
@@ -207,7 +210,9 @@ public:
     /// File sink. Only for desktops.
     std::shared_ptr<spdlog::sinks::basic_file_sink_mt> fileSink_;
     /// STDOUT sink.
-#if _WIN32
+#if UWP
+    std::shared_ptr<spdlog::sinks::stdout_sink_mt> platformSink_;
+#elif _WIN32
     std::shared_ptr<spdlog::sinks::wincolor_stdout_sink_mt> platformSink_;
 #else
     std::shared_ptr<spdlog::sinks::ansicolor_stdout_sink_mt> platformSink_;

@@ -837,6 +837,7 @@ void Engine::ApplyFrameLimit()
         timeStep_ = lastTimeSteps_.back();
 }
 
+#if DESKTOP
 void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameters)
 {
     auto addFlagInternal = [&](const char* name, const char* description, CLI::callback_t fun) {
@@ -989,6 +990,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
 #endif
 }
+#endif
 
 bool Engine::HasParameter(const VariantMap& parameters, const ea::string& parameter)
 {

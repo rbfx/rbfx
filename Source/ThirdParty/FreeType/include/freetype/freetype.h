@@ -38,6 +38,11 @@
 FT_BEGIN_HEADER
 
 
+// rbfx:
+#if defined(UWP)
+#define generic GenericFromFreeTypeLibrary
+#endif
+
 
   /*************************************************************************/
   /*                                                                       */
@@ -4532,6 +4537,11 @@ FT_BEGIN_HEADER
                                 FT_Bool  value );
 
   /* */
+
+// rbfx:
+#if defined(UWP)
+#undef generic
+#endif
 
 
 FT_END_HEADER

@@ -110,13 +110,34 @@ if (XCODE)
     endif ()
 endif ()
 
-if (UWP)
+if (MSVC)
     if (URHO3D_PACKAGING)
-        set_property(SOURCE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS} PROPERTY VS_DEPLOYMENT_CONTENT 1)
+        # Include .pak files under "Resource Files" in VS project.
         source_group("Resource Files" FILES ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
+        # Ensure file VS wont try to build resources.
+        set_property(SOURCE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS} PROPERTY VS_TOOL_OVERRIDE None)
+        # Include .pak files in UWP app. VS_DEPLOYMENT_LOCATION is not set, they will go into root of app dir.
+        set_property(SOURCE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS} PROPERTY VS_DEPLOYMENT_CONTENT 1)
+        # Consume file. Without this resources are just ignored.
         target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
     else ()
-        # TODO
+        foreach (subfolder Data CoreData Autoload)
+            file(GLOB_RECURSE DATA_FILES RELATIVE "${rbfx_SOURCE_DIR}/bin" "${rbfx_SOURCE_DIR}/bin/${subfolder}/**")
+            foreach (filename ${DATA_FILES})
+                set (filepath "${rbfx_SOURCE_DIR}/bin/${filename}")
+                get_filename_component(dirname "${filename}" DIRECTORY)
+                # Include file in UWP app.
+                set_property(SOURCE ${filepath} PROPERTY VS_DEPLOYMENT_CONTENT 1)
+                # Set file path by which UWP app will access it.
+                set_property(SOURCE ${filepath} PROPERTY VS_DEPLOYMENT_LOCATION "${dirname}")
+                # Ensure file VS wont try to build resources.
+                set_property(SOURCE ${filepath} PROPERTY VS_TOOL_OVERRIDE None)
+                # Include file under "Resource Files" in VS project.
+                source_group("Resource Files/${dirname}" FILES "${filepath}")
+                # Consume file. Without this resources are just ignored.
+                target_sources(Samples PRIVATE "${filepath}")
+            endforeach ()
+        endforeach ()
     endif ()
 endif ()
 

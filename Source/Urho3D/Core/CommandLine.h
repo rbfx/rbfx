@@ -22,6 +22,7 @@
 
 #pragma once
 
+#if DESKTOP
 
 #include <sstream>
 #include <EASTL/vector.h>
@@ -60,3 +61,5 @@ template <> constexpr const char *type_name<ea::string>() { return "TEXT"; }
 }
 
 }
+
+#endif  // defined(DESKTOP)
