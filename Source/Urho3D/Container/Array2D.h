@@ -30,7 +30,7 @@ namespace Urho3D
 {
 
 /// 2D indexing utilities for row-major 2D array.
-class URHO3D_API ArrayDimensions2D
+class ArrayDimensions2D
 {
 public:
     /// Construct default.

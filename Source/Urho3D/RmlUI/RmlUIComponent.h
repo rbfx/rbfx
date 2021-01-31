@@ -28,7 +28,7 @@ namespace Rml { class ElementDocument; }
 namespace Urho3D
 {
 
-struct RmlCanvasComponent;
+class RmlCanvasComponent;
 struct RmlCanvasResizedArgs;
 struct RmlDocumentReloadedArgs;
 
