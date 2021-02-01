@@ -25,6 +25,7 @@
 /* Windows includes */
 #include <roapi.h>
 #include <windows.foundation.h>
+#include <windows.gaming.ui.h>
 #include <EventToken.h>
 
 
