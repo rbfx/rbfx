@@ -51,9 +51,15 @@ public:
 
 private:
     ///
+    int GetSelectedIndex() const;
+    ///
+    UIElement* GetSampleButtonAt(int index);
+    ///
     void OnClickSample(VariantMap& args);
     ///
     void OnKeyPress(VariantMap& args);
+    ///
+    void OnButtonPress(VariantMap& args);
     ///
     void OnFrameStart();
     /// Add a sample to sample list.
