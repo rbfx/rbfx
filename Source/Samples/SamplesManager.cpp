@@ -179,6 +179,7 @@ void SamplesManager::Start()
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
     ui->GetRoot()->SetDefaultStyle(context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
@@ -346,6 +347,99 @@ void SamplesManager::StartSample(StringHash sampleType)
         ErrorExit("Specified sample does not exist.");
 }
 
+UIElement* SamplesManager::GetSampleButtonAt(int index)
+{
+    if (index < 0)
+        return nullptr;
+    ListView* listView = listViewHolder_->GetChildStaticCast<ListView>("SampleList", true);
+    const auto& children = listView->GetItems();
+    if (index < children.size())
+        return children.at(index);
+    return nullptr;
+}
+
+int SamplesManager::GetSelectedIndex() const
+{
+    ListView* listView = listViewHolder_->GetChildStaticCast<ListView>("SampleList", true);
+    if (listView)
+    {
+        const auto& children = listView->GetItems();
+        const eastl_size_t numButtons = children.size();
+        if (numButtons > 0)
+        {
+            eastl_size_t currentIndex = numButtons - 1;
+            for (eastl_size_t i = 0; i < numButtons; ++i)
+            {
+                if (children.at(i)->IsSelected())
+                {
+                    return static_cast<int>(i);
+                    break;
+                }
+            }
+        }
+    }
+    return -1;
+}
+
+void SamplesManager::OnButtonPress(VariantMap& args)
+{
+    using namespace JoystickButtonDown;
+    int key = args[P_BUTTON].GetInt();
+    int joystick = args[P_JOYSTICKID].GetInt();
+
+    Input* input = context_->GetSubsystem<Input>();
+    auto* state = input->GetJoystickByIndex(joystick);
+    if (state->IsController())
+    {
+        switch (key)
+        {
+            case CONTROLLER_BUTTON_DPAD_UP:
+            {
+                int currentIndex = GetSelectedIndex();
+                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
+                if (currentSelection)
+                    currentSelection->SetSelected(false);
+                UIElement* nextSelection = GetSampleButtonAt(currentIndex - 1);
+                if (nextSelection)
+                    nextSelection->SetSelected(true);
+                break;
+            }
+            case CONTROLLER_BUTTON_DPAD_DOWN:
+            {
+                int currentIndex = GetSelectedIndex();
+                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
+                if (currentSelection)
+                    currentSelection->SetSelected(false);
+                UIElement* nextSelection = GetSampleButtonAt(currentIndex + 1);
+                if (nextSelection)
+                    nextSelection->SetSelected(true);
+                break;
+            }
+            case CONTROLLER_BUTTON_A:
+            {
+                UIElement* button = GetSampleButtonAt(GetSelectedIndex());
+
+                if (button)
+                {
+                    using namespace Released;
+                    StringHash sampleType = button->GetVar("SampleType").GetStringHash();
+                    if (!sampleType)
+                        return;
+
+                    StartSample(sampleType);
+                }
+                break;
+            }
+            // CONTROLLER_BUTTON_B converted by SDL into Escape key code.
+            //case CONTROLLER_BUTTON_B:
+            //{
+            //    isClosing_ = true;
+            //    break;
+            //}
+        }
+    }
+}
+
 void SamplesManager::OnKeyPress(VariantMap& args)
 {
     using namespace KeyUp;
@@ -355,6 +449,45 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     // Close console (if open) or exit when ESC is pressed
     if (key == KEY_ESCAPE)
         isClosing_ = true;
+
+    if (key == KEY_SPACE)
+    {
+        UIElement* button = GetSampleButtonAt(GetSelectedIndex());
+
+        if (button)
+        {
+            using namespace Released;
+            StringHash sampleType = button->GetVar("SampleType").GetStringHash();
+            if (!sampleType)
+                return;
+
+            StartSample(sampleType);
+        }
+    }
+
+    if (key == KEY_DOWN)
+    {
+        int currentIndex = GetSelectedIndex();
+        UIElement* currentSelection = GetSampleButtonAt(currentIndex);
+        if (currentSelection)
+            currentSelection->SetSelected(false);
+        UIElement* nextSelection = GetSampleButtonAt(currentIndex + 1);
+        if (nextSelection)
+            nextSelection->SetSelected(true);
+    }
+
+
+    if (key == KEY_UP)
+    {
+        int currentIndex = GetSelectedIndex();
+        UIElement* currentSelection = GetSampleButtonAt(currentIndex);
+        if (currentSelection)
+            currentSelection->SetSelected(false);
+        UIElement* nextSelection = GetSampleButtonAt(currentIndex - 1);
+        if (nextSelection)
+            nextSelection->SetSelected(true);
+    }
+
 }
 
 void SamplesManager::OnFrameStart()
