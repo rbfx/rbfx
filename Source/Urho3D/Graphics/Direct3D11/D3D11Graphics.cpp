@@ -2103,12 +2103,22 @@ bool Graphics::CreateDevice(int width, int height)
         impl_->swapChain_ = nullptr;
     }
 
-    IDXGIDevice3* dxgiDevice = nullptr;
-    impl_->device_->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
+    IDXGIDevice* dxgiDevice = nullptr;
+    if (FAILED(impl_->device_->QueryInterface(IID_PPV_ARGS(&dxgiDevice))))
+        return false;
     IDXGIAdapter* dxgiAdapter = nullptr;
-    dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter));
-    IDXGIFactory4* dxgiFactory = nullptr;
-    dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory));
+    if (FAILED(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter))))
+    {
+        dxgiDevice->Release();
+        return false;
+    }
+    IDXGIFactory2* dxgiFactory = nullptr;
+    if (FAILED(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory))))
+    {
+        dxgiAdapter->Release();
+        dxgiDevice->Release();
+        return false;
+    }
 
 #ifndef UWP
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullScreenDesc{};
