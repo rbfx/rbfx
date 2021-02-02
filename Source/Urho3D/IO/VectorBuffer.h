@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/ByteVector.h"
 #include "../IO/AbstractFile.h"
 
 namespace Urho3D
@@ -34,7 +35,7 @@ public:
     /// Construct an empty buffer.
     VectorBuffer();
     /// Construct from another buffer.
-    explicit VectorBuffer(const ea::vector<unsigned char>& data);
+    explicit VectorBuffer(const ByteVector& data);
     /// Construct from a memory area.
     VectorBuffer(const void* data, unsigned size);
     /// Construct from a stream.
@@ -68,13 +69,13 @@ public:
     unsigned char* GetModifiableData() { return size_ ? &buffer_[0] : nullptr; }
 
     /// Return the buffer.
-    const ea::vector<unsigned char>& GetBuffer() const { return buffer_; }
+    const ByteVector& GetBuffer() const { return buffer_; }
     /// Return the buffer.
-    ea::vector<unsigned char>& GetBuffer() { return buffer_; }
+    ByteVector& GetBuffer() { return buffer_; }
 
 private:
     /// Dynamic data buffer.
-    ea::vector<unsigned char> buffer_;
+    ByteVector buffer_;
 };
 
 }

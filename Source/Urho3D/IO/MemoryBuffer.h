@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/ByteVector.h"
 #include "../IO/AbstractFile.h"
 
 namespace Urho3D
@@ -37,9 +38,9 @@ public:
     /// Construct as read-only with a pointer and size.
     MemoryBuffer(const void* data, unsigned size);
     /// Construct from a vector, which must not go out of scope before MemoryBuffer.
-    explicit MemoryBuffer(ea::vector<unsigned char>& data);
+    explicit MemoryBuffer(ByteVector& data);
     /// Construct from a read-only vector, which must not go out of scope before MemoryBuffer.
-    explicit MemoryBuffer(const ea::vector<unsigned char>& data);
+    explicit MemoryBuffer(const ByteVector& data);
 
     /// Read bytes from the memory area. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;

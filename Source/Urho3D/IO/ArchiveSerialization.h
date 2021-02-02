@@ -425,7 +425,7 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
 
 /// Serialize vector with standard interface. Content is serialized as bytes.
 template <class T>
-inline bool SerializeVectorAsBytes(Archive& archive, const char* name, const char* element, T& vector)
+inline bool SerializeVectorAsBytes(Archive& archive, const char* name, T& vector)
 {
     using ValueType = typename T::value_type;
     static_assert(std::is_standard_layout<ValueType>::value, "Type should have standard layout to safely use byte serialization");
@@ -476,7 +476,7 @@ inline bool SerializeVector(Archive& archive, const char* name, const char* elem
     else
     {
         if constexpr (standardLayout && triviallyCopyable)
-            return SerializeVectorAsBytes(archive, name, element, vector);
+            return SerializeVectorAsBytes(archive, name, vector);
         else
             return SerializeVectorAsObjects(archive, name, element, vector);
     }

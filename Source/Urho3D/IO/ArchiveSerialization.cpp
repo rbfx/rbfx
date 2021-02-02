@@ -54,7 +54,7 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         if (archive.IsInput() && !value.GetBufferPtr())
             value = VariantBuffer{};
         if (auto ptr = value.GetBufferPtr())
-            return SerializeVectorAsBytes(archive, name, "elem", *ptr);
+            return SerializeVectorAsBytes(archive, name, *ptr);
         return false;
     case VAR_RESOURCEREF:
         return Detail::SerializeVariantValueType<ResourceRef>(archive, name, value);
