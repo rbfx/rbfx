@@ -25,7 +25,7 @@
 /* Windows includes */
 #include <roapi.h>
 #include <windows.foundation.h>
-#include <windows.gaming.ui.h>
+#include <windows.gaming.ui.h>  // rbfx: build fix.
 #include <EventToken.h>
 
 
