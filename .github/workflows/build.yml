@@ -372,7 +372,7 @@ jobs:
       ci_compiler: ${{ matrix.ci_compiler }}
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v7
+      - uses: mymindstorm/setup-emsdk@v8
 
       - uses: actions/checkout@v2
         with:
