@@ -24,11 +24,8 @@
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
-#include "../Core/ProcessUtils.h"
-#include "../Core/Profiler.h"
 #include "../Core/Thread.h"
 #include "../Core/Timer.h"
-#include "../IO/File.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 
@@ -37,7 +34,11 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/base_sink.h>
+#if DESKTOP
+#include <spdlog/sinks/stdout_color_sinks.h>
+#else
 #include <spdlog/sinks/stdout_sinks.h>
+#endif
 #include <spdlog/details/null_mutex.h>
 
 #include <mutex>
@@ -187,14 +188,14 @@ public:
         platformSink_ = std::make_shared<spdlog::sinks::android_sink_mt>("Urho3D");
 #elif defined(IOS) || defined(TVOS)
         platformSink_ = std::make_shared<IOSSink_mt>();
-#else
-#if UWP
-        platformSink_ = std::make_shared<spdlog::sinks::stdout_sink_mt>();
-#elif _WIN32
+#elif defined(DESKTOP)
+#ifdef _WIN32
         platformSink_ = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
 #else
         platformSink_ = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
 #endif
+#else   // Non-desktop platforms like WEB/UWP.
+        platformSink_ = std::make_shared<spdlog::sinks::stdout_sink_mt>();
 #endif
         sinkProxy_->add_sink(platformSink_);
         sinkProxy_->add_sink(std::make_shared<MessageForwarderSink_mt>());
@@ -206,18 +207,18 @@ public:
 #elif defined(IOS) || defined(TVOS)
     /// IOS sink.
     std::shared_ptr<IOSSink_mt> platformSink_;
-#else
+#elif defined(DESKTOP)
     /// File sink. Only for desktops.
     std::shared_ptr<spdlog::sinks::basic_file_sink_mt> fileSink_;
     /// STDOUT sink.
-#if UWP
-    std::shared_ptr<spdlog::sinks::stdout_sink_mt> platformSink_;
-#elif _WIN32
+#ifdef _WIN32
     std::shared_ptr<spdlog::sinks::wincolor_stdout_sink_mt> platformSink_;
 #else
     std::shared_ptr<spdlog::sinks::ansicolor_stdout_sink_mt> platformSink_;
 #endif
-#endif
+#else   // Non-desktop platforms like WEB/UWP.
+    std::shared_ptr<spdlog::sinks::stdout_sink_mt> platformSink_;
+#endif  // defined(IOS) || defined(TVOS)
     /// Sink that forwards messages to all other sinks.
     std::shared_ptr<spdlog::sinks::dist_sink_mt> sinkProxy_;
 };
@@ -242,7 +243,7 @@ Log::~Log()
 
 void Log::Open(const ea::string& fileName)
 {
-#if !defined(MOBILE) && !defined(__EMSCRIPTEN__)
+#if defined(DESKTOP)
     if (fileName.empty())
         return;
 
@@ -259,7 +260,7 @@ void Log::Open(const ea::string& fileName)
 
 void Log::Close()
 {
-#if !defined(MOBILE) && !defined(__EMSCRIPTEN__)
+#if defined(DESKTOP)
     if (impl_->fileSink_)
     {
         impl_->sinkProxy_->remove_sink(impl_->fileSink_);
@@ -293,7 +294,7 @@ void Log::SetLogFormat(const ea::string& format)
     if (impl_->platformSink_)
         impl_->platformSink_->set_pattern(format.c_str());
 
-#if !defined(MOBILE) && !defined(__EMSCRIPTEN__)
+#if defined(DESKTOP)
     // May not be opened yet if patter is set from Application::Setup().
     if (impl_->fileSink_)
         impl_->fileSink_->set_pattern(format.c_str());
