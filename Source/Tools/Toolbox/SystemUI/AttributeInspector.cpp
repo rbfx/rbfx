@@ -439,7 +439,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             if (showHelperLabels)
                 modified |= ui::DragScalarFormatsN("", ImGuiDataType_S32, const_cast<int*>(&v.x_), 2, 1, &intMin, &intMax, formats, 1.0f);
             else
-                modified |= ui::DragScalarN("", ImGuiDataType_S32, const_cast<int*>(&v.x_), 2, 1, &intMin, &intMax, "%.3f", 1.0f);
+                modified |= ui::DragScalarN("", ImGuiDataType_S32, const_cast<int*>(&v.x_), 2, 1, &intMin, &intMax, "%d", 1.0f);
             break;
         }
         case VAR_MATRIX3:

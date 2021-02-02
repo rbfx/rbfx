@@ -33,7 +33,7 @@ static ea::string vectorBufferName{"VectorBuffer"};
 
 VectorBuffer::VectorBuffer() = default;
 
-VectorBuffer::VectorBuffer(const ea::vector<unsigned char>& data)
+VectorBuffer::VectorBuffer(const ByteVector& data)
 {
     SetData(data);
 }
