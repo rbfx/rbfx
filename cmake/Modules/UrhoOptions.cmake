@@ -160,14 +160,19 @@ elseif (URHO3D_TOOLS AND NOT MINI_URHO)
     set (URHO3D_HASH_DEBUG ON)
 endif ()
 
-if (WEB AND URHO3D_CSHARP)
-    message(WARNING "C# is not supported in this configuration.")
-    set (URHO3D_CSHARP OFF)
-endif ()
-
-if (WEB AND BUILD_SHARED_LIBS)
-    set (BUILD_SHARED_LIBS OFF)
-    message(WARNING "Shared builds unsupported when compiling with emscripten")     # For now.
+if (WEB)
+    if (URHO3D_CSHARP)
+        message(WARNING "C# is not supported in this configuration.")
+        set (URHO3D_CSHARP OFF)
+    endif ()
+    if (BUILD_SHARED_LIBS)
+        set (BUILD_SHARED_LIBS OFF)
+        message(WARNING "Shared builds unsupported when compiling with emscripten")     # For now.
+    endif ()
+    if (NOT URHO3D_PACKAGING)
+        # Web builds do not function without data packaging.
+        set (URHO3D_PACKAGING ON)
+    endif ()
 endif ()
 
 if (ANDROID)
