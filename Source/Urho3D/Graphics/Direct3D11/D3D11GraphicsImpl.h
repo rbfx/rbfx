@@ -28,8 +28,8 @@
 #include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
 
-#include <d3d11_4.h>
-#include <dxgi1_4.h>
+#include <d3d11.h>
+#include <dxgi1_2.h>
 
 namespace Urho3D
 {
