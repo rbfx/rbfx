@@ -333,6 +333,7 @@ function (package_resources_web)
     string(LENGTH "${PAK_RELATIVE_DIR}" PAK_RELATIVE_DIR_LEN)
 
     foreach (file ${PAK_FILES})
+        set_property(SOURCE ${file} PROPERTY GENERATED ON)
         string(SUBSTRING "${file}" ${PAK_RELATIVE_DIR_LEN} 999999 rel_file)
         set (PRELOAD_FILES ${PRELOAD_FILES} ${file}@${rel_file})
     endforeach ()
