@@ -387,6 +387,8 @@ jobs:
 
     steps:
       - uses: mymindstorm/setup-emsdk@v8
+        with:
+          version: 2.0.12
 
       - uses: actions/checkout@v2
         with:
