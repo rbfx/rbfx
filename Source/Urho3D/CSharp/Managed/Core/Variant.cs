@@ -191,7 +191,7 @@ namespace Urho3DNet
                 return VariantType.VarColor;
             if (type == typeof(string))
                 return VariantType.VarString;
-            if (type == typeof(UCharArray))
+            if (type == typeof(ByteVector))
                 return VariantType.VarBuffer;
             if (type == typeof(IntPtr))
                 return VariantType.VarVoidPtr;

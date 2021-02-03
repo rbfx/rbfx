@@ -86,7 +86,7 @@ namespace Urho3DNet
                     dest.Set((string) _field.GetValue(ptr));
                     break;
                 case VariantType.VarBuffer:
-                    dest.Set((UCharArray) _field.GetValue(ptr));
+                    dest.Set((ByteVector) _field.GetValue(ptr));
                     break;
                 case VariantType.VarVoidPtr:
                     dest.Set((IntPtr) _field.GetValue(ptr));
@@ -182,7 +182,7 @@ namespace Urho3DNet
                     _field.SetValue(ptr, src.String);
                     break;
                 case VariantType.VarBuffer:
-                    _field.SetValue(ptr, new UCharArray(src.Buffer));
+                    _field.SetValue(ptr, new ByteVector(src.Buffer));
                     break;
                 case VariantType.VarVoidPtr:
                     _field.SetValue(ptr, src.VoidPtr);
@@ -284,7 +284,7 @@ namespace Urho3DNet
                     dest.Set((string) _field.GetValue(ptr));
                     break;
                 case VariantType.VarBuffer:
-                    dest.Set((UCharArray) _field.GetValue(ptr));
+                    dest.Set((ByteVector) _field.GetValue(ptr));
                     break;
                 case VariantType.VarVoidPtr:
                     dest.Set((IntPtr) _field.GetValue(ptr));
@@ -380,7 +380,7 @@ namespace Urho3DNet
                     _field.SetValue(ptr, src.String);
                     break;
                 case VariantType.VarBuffer:
-                    _field.SetValue(ptr, new UCharArray(src.Buffer));
+                    _field.SetValue(ptr, new ByteVector(src.Buffer));
                     break;
                 case VariantType.VarVoidPtr:
                     _field.SetValue(ptr, src.VoidPtr);
