@@ -17,7 +17,7 @@
 %template(CharArray)                        eastl::vector<char>;
 %template(ShortArray)                       eastl::vector<short>;
 %template(IntArray)                         eastl::vector<int>;
-%template(UCharArray)                       eastl::vector<unsigned char>;
+%template(ByteVector)                       eastl::vector<unsigned char>;
 %template(UShortArray)                      eastl::vector<unsigned short>;
 %template(UIntArray)                        eastl::vector<unsigned int>;
 %template(FloatArray)                       eastl::vector<float>;
