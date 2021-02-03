@@ -504,7 +504,7 @@ void Node::AddTag(const ea::string& tag)
     if (scene_)
     {
         scene_->NodeTagAdded(this, tag);
-    
+
         // Send event
         using namespace NodeTagAdded;
         VariantMap& eventData = GetEventDataMap();
