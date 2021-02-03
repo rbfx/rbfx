@@ -52,7 +52,7 @@ public:
     unsigned Write(const void* data, unsigned size) override;
 
     /// Set data from another buffer.
-    void SetData(const ea::vector<unsigned char>& data);
+    void SetData(const ByteVector& data);
     /// Set data from a memory area.
     void SetData(const void* data, unsigned size);
     /// Set data from a stream.

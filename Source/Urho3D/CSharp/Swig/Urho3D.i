@@ -300,6 +300,9 @@ namespace SDL
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
 
+// --------------------------------------- Container ------------------------------------
+%include "Urho3D/Container/ByteVector.h"
+
 // --------------------------------------- Engine ---------------------------------------
 %include "_properties_engine.i"
 %ignore Urho3D::Engine::DefineParameters;

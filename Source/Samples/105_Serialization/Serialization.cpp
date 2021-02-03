@@ -224,7 +224,7 @@ bool SerializeValue(Archive& archive, const char* name, ContainerStruct& value)
     {
         SerializeValue(archive, "justString_", value.string_);
         SerializeVectorAsObjects(archive, "vectorOfFloats_", "elem", value.vectorOfFloats_);
-        SerializeVectorAsBytes(archive, "byteFloatVector_", "elem", value.byteFloatVector_);
+        SerializeVectorAsBytes(archive, "byteFloatVector_", value.byteFloatVector_);
         SerializeStringMap(archive, "mapOfFloats_", "elem", value.mapOfFloats_);
         SerializeValue(archive, "variantMap_", value.variantMap_);
         SerializeValue(archive, "variantVector_", value.variantVector_);
