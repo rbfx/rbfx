@@ -20,6 +20,9 @@
 // THE SOFTWARE.
 //
 
+/// \file
+/// @nobindfile
+
 #pragma once
 
 #include "../Container/Ptr.h"

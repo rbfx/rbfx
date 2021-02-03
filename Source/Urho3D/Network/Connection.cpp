@@ -1671,12 +1671,13 @@ void Connection::ProcessUnknownMessage(int msgID, MemoryBuffer& msg)
     SendEvent(E_NETWORKMESSAGE, eventData);
 }
 
-ea::string Connection::GetAddress() const {
+ea::string Connection::GetAddress() const
+{
     return ea::string(address_->ToString(false /*write port*/));
 }
 
 void Connection::SetAddressOrGUID(const SLNet::AddressOrGUID& addr)
-{ 
+{
     delete address_;
     address_ = nullptr;
     address_ = new SLNet::AddressOrGUID(addr);
