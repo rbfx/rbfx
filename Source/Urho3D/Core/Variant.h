@@ -96,7 +96,7 @@ using StringVariantMap = ea::unordered_map<ea::string, Variant>;
 
 /// Deprecated. Use ByteVector instead.
 /// TODO: Rename all instances of VariantBuffer to ByteVector.
-using VariantBuffer = ea::vector<unsigned char>;
+using VariantBuffer = ByteVector;
 
 /// Typed resource reference.
 struct URHO3D_API ResourceRef
