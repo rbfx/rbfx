@@ -143,7 +143,7 @@ if (NOT MINI_URHO)
     endif ()
 endif ()
 
-if (URHO3D_CSHARP AND NOT CMAKE_CROSSCOMPILING)
+if (URHO3D_CSHARP_TOOLS AND DESKTOP)
     # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
     add_subdirectory(swig)
 endif ()

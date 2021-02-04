@@ -99,7 +99,13 @@ option                (URHO3D_URHO2D             "2D subsystem enabled"         
 option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI middleware"                  ${URHO3D_ENABLE_ALL})
 
 # Features
+set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
+if (NOT MINI_URHO)
+    # Keep C# tools in minimal build if we requested them. This is a workaround for building swig as a native tool during crosscompiling.
+	# Otherwise it would fail because we build tools with -DBUILD_SHARED_LIBS=OFF due to cryptic build errors, and C# is disabled in static builds.
+    set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
+endif ()
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 set(URHO3D_NETFX net471 CACHE STRING "TargetFramework value for .NET projects")
 set_property(CACHE URHO3D_NETFX PROPERTY STRINGS net46 net461 net462 net47 net471 net472 net48)
