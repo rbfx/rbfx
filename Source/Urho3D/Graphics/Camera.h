@@ -284,6 +284,8 @@ private:
         float projNearClip_{};
         /// Cached actual far clip distance.
         float projFarClip_{};
+        /// Use custom projection matrix flag. Used internally.
+        bool customProjection_{};
     };
 
     /// Cached view-projection matrix.
@@ -341,8 +343,6 @@ private:
     bool useReflection_;
     /// Use custom clip plane flag.
     bool useClipping_;
-    /// Use custom projection matrix flag. Used internally.
-    mutable bool customProjection_;
 };
 
 }
