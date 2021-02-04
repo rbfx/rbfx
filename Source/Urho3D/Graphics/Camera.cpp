@@ -69,8 +69,7 @@ Camera::Camera(Context* context) :
     autoAspectRatio_(true),
     flipVertical_(false),
     useReflection_(false),
-    useClipping_(false),
-    customProjection_(false)
+    useClipping_(false)
 {
     reflectionMatrix_ = reflectionPlane_.ReflectionMatrix();
 }
@@ -265,11 +264,10 @@ void Camera::SetProjection(const Matrix4& projection)
     // Calculate the actual near & far clip from the custom matrix
     const float projNearClip = (projInverse * Vector3(0.0f, 0.0f, 0.0f)).z_;
     const float projFarClip = (projInverse * Vector3(0.0f, 0.0f, 1.0f)).z_;
-    cachedProjection_.Restore({ projection, projNearClip, projFarClip });
+    cachedProjection_.Restore({ projection, projNearClip, projFarClip, true });
     autoAspectRatio_ = false;
     cachedViewProj_.Invalidate();
     cachedFrustum_.Invalidate();
-    customProjection_ = true;
     // Called due to autoAspectRatio changing state, the projection itself is not serialized
     MarkNetworkUpdate();
 }
@@ -296,11 +294,12 @@ const Frustum& Camera::GetFrustum() const
     if (cachedProjection_.IsInvalidated())
         UpdateProjection();
 
+    const CachedProjection& cache = cachedProjection_.Get();
     if (cachedFrustum_.IsInvalidated())
     {
         Frustum frustum;
-        if (customProjection_)
-            frustum.Define(cachedProjection_.Get().projection_ * GetView());
+        if (cache.customProjection_)
+            frustum.Define(cache.projection_ * GetView());
         else
         {
             // If not using a custom projection, prefer calculating frustum from projection parameters instead of matrix
@@ -322,18 +321,19 @@ Frustum Camera::GetSplitFrustum(float nearClip, float farClip) const
     if (cachedProjection_.IsInvalidated())
         UpdateProjection();
 
-    nearClip = Max(nearClip, cachedProjection_.Get().projNearClip_);
-    farClip = Min(farClip, cachedProjection_.Get().projFarClip_);
+    const CachedProjection& cache = cachedProjection_.Get();
+    nearClip = Max(nearClip, cache.projNearClip_);
+    farClip = Min(farClip, cache.projFarClip_);
     if (farClip < nearClip)
         farClip = nearClip;
 
     Frustum ret;
 
-    if (customProjection_)
+    if (cache.customProjection_)
     {
         // DefineSplit() needs to project the near & far distances, so can not use a combined view-projection matrix.
         // Transform to world space afterward instead
-        ret.DefineSplit(cachedProjection_.Get().projection_, nearClip, farClip);
+        ret.DefineSplit(cache.projection_, nearClip, farClip);
         ret.Transform(GetEffectiveWorldTransform());
     }
     else
@@ -352,10 +352,12 @@ Frustum Camera::GetViewSpaceFrustum() const
     if (cachedProjection_.IsInvalidated())
         UpdateProjection();
 
+    const CachedProjection& cache = cachedProjection_.Get();
+
     Frustum ret;
 
-    if (customProjection_)
-        ret.Define(cachedProjection_.Get().projection_);
+    if (cache.customProjection_)
+        ret.Define(cache.projection_);
     else
     {
         if (!orthographic_)
@@ -372,15 +374,17 @@ Frustum Camera::GetViewSpaceSplitFrustum(float nearClip, float farClip) const
     if (cachedProjection_.IsInvalidated())
         UpdateProjection();
 
-    nearClip = Max(nearClip, cachedProjection_.Get().projNearClip_);
-    farClip = Min(farClip, cachedProjection_.Get().projFarClip_);
+    const CachedProjection& cache = cachedProjection_.Get();
+
+    nearClip = Max(nearClip, cache.projNearClip_);
+    farClip = Min(farClip, cache.projFarClip_);
     if (farClip < nearClip)
         farClip = nearClip;
 
     Frustum ret;
 
-    if (customProjection_)
-        ret.DefineSplit(cachedProjection_.Get().projection_, nearClip, farClip);
+    if (cache.customProjection_)
+        ret.DefineSplit(cache.projection_, nearClip, farClip);
     else
     {
         if (!orthographic_)
@@ -716,8 +720,7 @@ void Camera::UpdateProjection() const
         projFarClip = farClip_;
     }
 
-    cachedProjection_.Restore({ projection, projNearClip, projFarClip });
-    customProjection_ = false;
+    cachedProjection_.Restore({ projection, projNearClip, projFarClip, false });
 }
 
 void Camera::UpdateViewProjectionMatrices() const

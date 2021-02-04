@@ -72,7 +72,7 @@ private:
     /// Spinlock mutex for updating cached object.
     SpinLockMutex mutex_;
     /// Cached object.
-    T object_;
+    T object_{};
 };
 
 }
