@@ -29,33 +29,50 @@
 namespace Urho3D
 {
 
-/// Thread-safe dirty flag that can be used for maintaining caches.
-class URHO3D_API DirtyFlag
+/// Thread-safe cache that holds an object.
+/// It's safe to:
+/// - Invalidate cached object from multiple threads;
+/// - Restore cached object from multiple threads, as long as all threads assign the same value.
+/// It's unsafe to both invalidate and restore cached object from multiple threads simultaneously.
+/// If different threads assign different values on Restore, cache will keep first provided value.
+template <class T>
+class ThreadSafeCache
 {
 public:
-    /// Mark dirty. It's not safe to concurrently call MarkDirty and Clean.
-    void MarkDirty() { dirty_.store(true, std::memory_order_relaxed); }
+    /// Invalidate cached object.
+    void Invalidate() { dirty_.store(true, std::memory_order_relaxed); }
 
-    /// Return whether is dirty.
-    bool IsDirty() const { return dirty_.load(std::memory_order_acquire); }
+    /// Return whether the object is invalid and has to be restored.
+    bool IsInvalidated() const { return dirty_.load(std::memory_order_acquire); }
 
-    /// Clean dirty flag.
-    void Clean() { dirty_.store(false, std::memory_order_release); }
-
-    /// Execute callback thread-safely and clean dirty flag.
-    template <class T>
-    void Clean(T callback)
+    /// Restore cached object. This call may be ignored if cache is already restored.
+    void Restore(const T& object)
     {
         MutexLock<SpinLockMutex> lock(mutex_);
-        callback();
-        dirty_.store(false, std::memory_order_release);
+        if (dirty_.load(std::memory_order_acquire))
+        {
+            object_ = object;
+            dirty_.store(false, std::memory_order_release);
+        }
     }
+
+    /// Same as Restore.
+    ThreadSafeCache<T>& operator=(const T& object)
+    {
+        Restore(object);
+        return *this;
+    }
+
+    /// Return object value. Intentionally unchecked, caller must ensure that cache is valid.
+    const T& Get() const { return object_; }
 
 private:
     /// Whether dirty flag is set.
     std::atomic_bool dirty_ = true;
     /// Spinlock mutex for updating cached object.
     SpinLockMutex mutex_;
+    /// Cached object.
+    T object_;
 };
 
 }
