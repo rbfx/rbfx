@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Core/DirtyFlag.h"
+#include "../Core/ThreadSafeCache.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Math/Frustum.h"
 #include "../Math/Ray.h"
@@ -275,30 +275,36 @@ private:
     /// Recalculate view-projection matrices.
     void UpdateViewProjectionMatrices() const;
 
-    /// Cached view matrix.
-    mutable Matrix3x4 view_;
-    /// Cached projection matrix.
-    mutable Matrix4 projection_;
+    /// Cached projection data.
+    struct CachedProjection
+    {
+        /// Cached projection matrix.
+        Matrix4 projection_;
+        /// Cached actual near clip distance.
+        float projNearClip_{};
+        /// Cached actual far clip distance.
+        float projFarClip_{};
+    };
+
     /// Cached view-projection matrix.
-    mutable Matrix4 viewProj_;
-    /// Cached inverse view-projection matrix.
-    mutable Matrix4 inverseViewProj_;
+    struct CachedViewProj
+    {
+        /// Cached view-projection matrix.
+        Matrix4 viewProj_;
+        /// Cached inverse view-projection matrix.
+        Matrix4 inverseViewProj_;
+    };
+
+    /// Cached view matrix.
+    mutable ThreadSafeCache<Matrix3x4> cachedView_;
+    /// Cached projection data.
+    mutable ThreadSafeCache<CachedProjection> cachedProjection_;
+    /// Cached view-projection matrices.
+    mutable ThreadSafeCache<CachedViewProj> cachedViewProj_;
     /// Cached world space frustum.
-    mutable Frustum frustum_;
-    /// View matrix dirty flag.
-    mutable DirtyFlag viewDirty_;
-    /// Projection matrix dirty flag.
-    mutable DirtyFlag projectionDirty_;
-    /// Frustum dirty flag.
-    mutable DirtyFlag frustumDirty_;
-    /// View-projection matrices dirty flag.
-    mutable DirtyFlag viewProjDirty_;
+    mutable ThreadSafeCache<Frustum> cachedFrustum_;
     /// Orthographic mode flag.
     bool orthographic_;
-    /// Cached actual near clip distance.
-    mutable float projNearClip_{};
-    /// Cached actual far clip distance.
-    mutable float projFarClip_{};
     /// Near clip distance.
     float nearClip_;
     /// Far clip distance.
