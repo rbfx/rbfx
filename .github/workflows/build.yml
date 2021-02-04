@@ -88,9 +88,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ hashFiles('**/source-code/Source/**') }}
+          key: ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ hashFiles('**/source-code/Source/**') }}
           restore-keys: |
-            ${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
+            ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
       - name: Dependencies
         shell: bash
@@ -156,9 +156,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
           restore-keys: |
-            ${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
+            ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
       - name: Dependencies
         shell: bash
@@ -223,9 +223,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
           restore-keys: |
-            ${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
+            ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
       - name: Bash
         shell: bash
@@ -286,9 +286,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}
+          key: ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
-            ${{ github.job }}-${{ matrix.ci_build_type }}
+            ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_build_type }}
 
       - name: Dependencies
         shell: bash
@@ -339,9 +339,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
+          key: ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
-            ${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
+            ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
 
       - name: Bash
         shell: bash
@@ -399,9 +399,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
+          key: ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
-            ${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
+            ${{ secrets.CACHE_VERSION }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
 
       - name: Dependencies
         shell: bash
