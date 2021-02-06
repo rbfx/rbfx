@@ -28,6 +28,7 @@
 #include "../Core/Mutex.h"
 #include "../Core/Profiler.h"
 #include "../Core/StringHashRegister.h"
+#include "../Core/SubsystemCache.h"
 #include "../Core/Variant.h"
 #include <functional>
 #include <utility>
@@ -39,32 +40,6 @@ class Archive;
 class ArchiveBlock;
 class Context;
 class EventHandler;
-class Engine;
-class Time;
-class WorkQueue;
-#if URHO3D_PROFILING
-class Profiler;
-#endif
-class FileSystem;
-#if URHO3D_LOGGING
-class Log;
-#endif
-class ResourceCache;
-class Localization;
-#if URHO3D_NETWORK
-class Network;
-#endif
-class Input;
-class Audio;
-class UI;
-#if URHO3D_SYSTEMUI
-class SystemUI;
-#endif
-class Graphics;
-class Renderer;
-#if URHO3D_CSHARP
-class ScriptSubsystem;
-#endif
 
 /// Type info.
 /// @nobind
@@ -232,6 +207,8 @@ protected:
     WeakPtr<Context> context_;
 
 private:
+    /// Return all subsystems from Context.
+    const SubsystemCache& GetSubsystems() const;
     /// Find the first event handler with no specific sender.
     ea::intrusive_list<EventHandler>::iterator FindEventHandler(StringHash eventType);
     /// Find the first event handler with no specific sender.
@@ -256,7 +233,7 @@ private:
     bool blockEvents_;
 };
 
-template <class T> T* Object::GetSubsystem() const { return static_cast<T*>(GetSubsystem(T::GetTypeStatic())); }
+template <class T> T* Object::GetSubsystem() const { return GetSubsystems().Get<T>(); }
 
 /// Base class for object factories.
 class URHO3D_API ObjectFactory : public RefCounted
@@ -446,26 +423,4 @@ URHO3D_API StringHashRegister& GetEventNameRegister();
 /// Convenience macro to construct an EventHandler that points to a receiver object and its member function, and also defines a userdata pointer.
 #define URHO3D_HANDLER_USERDATA(className, function, userData) (new Urho3D::EventHandlerImpl<className>(this, &className::function, userData))
 
-// Explicit template specializations for most commonly used engine subsystems. They sidestep HashMap lookup and return
-// subsystem pointer cached in Context object.
-template <> URHO3D_API Engine* Object::GetSubsystem<Engine>() const;
-template <> URHO3D_API Time* Object::GetSubsystem<Time>() const;
-template <> URHO3D_API WorkQueue* Object::GetSubsystem<WorkQueue>() const;
-template <> URHO3D_API FileSystem* Object::GetSubsystem<FileSystem>() const;
-#if URHO3D_LOGGING
-template <> URHO3D_API Log* Object::GetSubsystem<Log>() const;
-#endif
-template <> URHO3D_API ResourceCache* Object::GetSubsystem<ResourceCache>() const;
-template <> URHO3D_API Localization* Object::GetSubsystem<Localization>() const;
-#if URHO3D_NETWORK
-template <> URHO3D_API Network* Object::GetSubsystem<Network>() const;
-#endif
-template <> URHO3D_API Input* Object::GetSubsystem<Input>() const;
-template <> URHO3D_API Audio* Object::GetSubsystem<Audio>() const;
-template <> URHO3D_API UI* Object::GetSubsystem<UI>() const;
-#if URHO3D_SYSTEMUI
-template <> URHO3D_API SystemUI* Object::GetSubsystem<SystemUI>() const;
-#endif
-template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
-template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
 }
