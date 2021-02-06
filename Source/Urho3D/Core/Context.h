@@ -27,6 +27,7 @@
 #include "../Container/Ptr.h"
 #include "../Core/Attribute.h"
 #include "../Core/Object.h"
+#include "../Core/SubsystemCache.h"
 
 namespace Urho3D
 {
@@ -155,7 +156,7 @@ public:
     void SetGlobalVar(StringHash key, const Variant& value);
 
     /// Return all subsystems.
-    const ea::unordered_map<StringHash, SharedPtr<Object> >& GetSubsystems() const { return subsystems_; }
+    const SubsystemCache& GetSubsystems() const { return subsystems_; }
 
     /// Return all object factories.
     const ea::unordered_map<StringHash, SharedPtr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
@@ -217,41 +218,6 @@ public:
         return i != eventReceivers_.end() ? i->second : nullptr;
     }
 
-    /// Register engine subsystem and cache it's pointer.
-    void RegisterSubsystem(Engine* subsystem);
-    /// Register time subsystem and cache it's pointer.
-    void RegisterSubsystem(Time* subsystem);
-    /// Register work queue subsystem and cache it's pointer.
-    void RegisterSubsystem(WorkQueue* subsystem);
-    /// Register file system subsystem and cache it's pointer.
-    void RegisterSubsystem(FileSystem* subsystem);
-#if URHO3D_LOGGING
-    /// Register logging subsystem and cache it's pointer.
-    void RegisterSubsystem(Log* subsystem);
-#endif
-    /// Register resource cache subsystem and cache it's pointer.
-    void RegisterSubsystem(ResourceCache* subsystem);
-    /// Register localization subsystem and cache it's pointer.
-    void RegisterSubsystem(Localization* subsystem);
-#if URHO3D_NETWORK
-    /// Register network subsystem and cache it's pointer.
-    void RegisterSubsystem(Network* subsystem);
-#endif
-    /// Register input subsystem and cache it's pointer.
-    void RegisterSubsystem(Input* subsystem);
-    /// Register audio subsystem and cache it's pointer.
-    void RegisterSubsystem(Audio* subsystem);
-    /// Register UI subsystem and cache it's pointer.
-    void RegisterSubsystem(UI* subsystem);
-#if URHO3D_SYSTEMUI
-    /// Register system UI subsystem and cache it's pointer.
-    void RegisterSubsystem(SystemUI* subsystem);
-#endif
-    /// Register system graphics subsystem and cache it's pointer.
-    void RegisterSubsystem(Graphics* subsystem);
-    /// Register system renderer subsystem and cache it's pointer.
-    void RegisterSubsystem(Renderer* subsystem);
-
 private:
     /// Add event receiver.
     void AddEventReceiver(Object* receiver, StringHash eventType);
@@ -274,7 +240,7 @@ private:
     /// Object factories.
     ea::unordered_map<StringHash, SharedPtr<ObjectFactory> > factories_;
     /// Subsystems.
-    ea::unordered_map<StringHash, SharedPtr<Object> > subsystems_;
+    SubsystemCache subsystems_;
     /// Attribute descriptions per object type.
     ea::unordered_map<StringHash, ea::vector<AttributeInfo> > attributes_;
     /// Network replication attribute descriptions per object type.
@@ -293,41 +259,6 @@ private:
     ea::unordered_map<ea::string, ea::vector<StringHash> > objectCategories_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
-
-    /// Cached pointer of engine susbsystem.
-    WeakPtr<Engine> engine_;
-    /// Cached pointer of time susbsystem.
-    WeakPtr<Time> time_;
-    /// Cached pointer of work queue susbsystem.
-    WeakPtr<WorkQueue> workQueue_;
-    /// Cached pointer of file system susbsystem.
-    WeakPtr<FileSystem> fileSystem_;
-#if URHO3D_LOGGING
-    /// Cached pointer of logging susbsystem.
-    WeakPtr<Log> log_;
-#endif
-    /// Cached pointer of resource cache susbsystem.
-    WeakPtr<ResourceCache> cache_;
-    /// Cached pointer of internationalization susbsystem.
-    WeakPtr<Localization> l18n_;
-#if URHO3D_NETWORK
-    /// Cached pointer of network susbsystem.
-    WeakPtr<Network> network_;
-#endif
-    /// Cached pointer of input susbsystem.
-    WeakPtr<Input> input_;
-    /// Cached pointer of audio susbsystem.
-    WeakPtr<Audio> audio_;
-    /// Cached pointer of UI susbsystem.
-    WeakPtr<UI> ui_;
-#if URHO3D_SYSTEMUI
-    /// Cached pointer of system UI susbsystem.
-    WeakPtr<SystemUI> systemUi_;
-#endif
-    /// Cached pointer of graphics susbsystem.
-    WeakPtr<Graphics> graphics_;
-    /// Cached pointer of renderer susbsystem.
-    WeakPtr<Renderer> renderer_;
 };
 
 // Helper functions that terminate looping of argument list.
@@ -378,7 +309,7 @@ template <class T> void Context::RemoveAllAttributes() { RemoveAllAttributes(T::
 
 template <class T, class U> void Context::CopyBaseAttributes() { CopyBaseAttributes(T::GetTypeStatic(), U::GetTypeStatic()); }
 
-template <class T> T* Context::GetSubsystem() const { return static_cast<T*>(GetSubsystem(T::GetTypeStatic())); }
+template <class T> T* Context::GetSubsystem() const { return subsystems_.Get<T>(); }
 
 template <class T> AttributeInfo* Context::GetAttribute(const char* name) { return GetAttribute(T::GetTypeStatic(), name); }
 

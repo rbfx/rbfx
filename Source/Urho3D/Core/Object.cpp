@@ -461,6 +461,11 @@ const ea::string& Object::GetCategory() const
     return EMPTY_STRING;
 }
 
+const SubsystemCache& Object::GetSubsystems() const
+{
+    return context_->GetSubsystems();
+}
+
 ea::intrusive_list<EventHandler>::iterator Object::FindEventHandler(StringHash eventType)
 {
     return ea::find_if(eventHandlers_.begin(), eventHandlers_.end(), [eventType](const EventHandler& e) {
@@ -512,75 +517,6 @@ void Object::SendEvent(StringHash eventType, const VariantMap& eventData)
 {
     VariantMap eventDataCopy = eventData;
     SendEvent(eventType, eventDataCopy);
-}
-
-template <> Engine* Object::GetSubsystem<Engine>() const
-{
-    return context_->engine_;
-}
-
-template <> Time* Object::GetSubsystem<Time>() const
-{
-    return context_->time_;
-}
-
-template <> WorkQueue* Object::GetSubsystem<WorkQueue>() const
-{
-    return context_->workQueue_;
-}
-template <> FileSystem* Object::GetSubsystem<FileSystem>() const
-{
-    return context_->fileSystem_;
-}
-#if URHO3D_LOGGING
-template <> Log* Object::GetSubsystem<Log>() const
-{
-    return context_->log_;
-}
-#endif
-template <> ResourceCache* Object::GetSubsystem<ResourceCache>() const
-{
-    return context_->cache_;
-}
-
-template <> Localization* Object::GetSubsystem<Localization>() const
-{
-    return context_->l18n_;
-}
-#if URHO3D_NETWORK
-template <> Network* Object::GetSubsystem<Network>() const
-{
-    return context_->network_;
-}
-#endif
-template <> Input* Object::GetSubsystem<Input>() const
-{
-    return context_->input_;
-}
-
-template <> Audio* Object::GetSubsystem<Audio>() const
-{
-    return context_->audio_;
-}
-
-template <> UI* Object::GetSubsystem<UI>() const
-{
-    return context_->ui_;
-}
-#if URHO3D_SYSTEMUI
-template <> SystemUI* Object::GetSubsystem<SystemUI>() const
-{
-    return context_->systemUi_;
-}
-#endif
-template <> Graphics* Object::GetSubsystem<Graphics>() const
-{
-    return context_->graphics_;
-}
-
-template <> Renderer* Object::GetSubsystem<Renderer>() const
-{
-    return context_->renderer_;
 }
 
 }
