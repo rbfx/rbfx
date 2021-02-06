@@ -2069,7 +2069,11 @@ bool Graphics::CreateDevice(int width, int height)
             nullptr,
             D3D_DRIVER_TYPE_HARDWARE,
             nullptr,
-            D3D11_CREATE_DEVICE_BGRA_SUPPORT| D3D11_CREATE_DEVICE_DEBUG,
+            D3D11_CREATE_DEVICE_BGRA_SUPPORT
+#if URHO3D_DEBUG
+            | D3D11_CREATE_DEVICE_DEBUG
+#endif
+            ,
             featureLevels,
             ARRAYSIZE(featureLevels),
             D3D11_SDK_VERSION,
