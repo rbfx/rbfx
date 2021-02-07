@@ -46,6 +46,11 @@ set (PACKAGE_VERSION "4.0.0")
 
 configure_file(Source/Include/swigconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/swigconfig.h)
 
+find_package(BISON)
+if (BISON_FOUND)
+  bison_target(SWIG ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.y ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.c COMPILE_FLAGS "-y -d --color=no")
+endif ()
+
 file (GLOB_RECURSE SWIG_SOURCES Source/*.c Source/*.cxx Source/*.h)
 add_executable(swig ${SWIG_SOURCES})
 target_link_libraries(swig PUBLIC pcre)
