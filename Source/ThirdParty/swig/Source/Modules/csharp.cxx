@@ -1658,6 +1658,31 @@ public:
 #endif
     Replaceall(code, "$dllimport", dllimport);
 
+#ifndef WITHOUT_RBFX
+    // %feature("nocsattribute", "1")
+    //  %insert("proxycode", cls="csattribute", depends1=, depends2=)
+    String *options = Getattr(n, "options");
+    if (options) {
+        String *cls = Getattr(options, "cls");
+        String *noclsname = NewStringf("no%s", cls);
+        
+        for (int i = 1; ; i++) {
+            String *pname = NewStringf("depends%d", i);
+            String *depends = Getattr(options, pname);
+            Delete(pname);
+            if (depends) {
+                Node* node = Swig_symbol_clookup(depends, Getattr(n, "sym:symtab"));
+                String* nocls = node ? Getattr(node, noclsname) : 0;
+                if (node == 0 || GetFlag(node, "feature:ignore") || (nocls && Cmp(nocls, "1") == 0))
+                    return ret;
+            } else {
+                break;
+            }
+        }
+        Delete(noclsname);
+    }
+#endif    
+    
     if (!ImportMode && (Cmp(section, "proxycode") == 0)) {
       if (proxy_class_code) {
 	Swig_typemap_replace_embedded_typemap(code, n);
@@ -1722,8 +1747,15 @@ public:
 	} else if (Strcmp(code, "modulecode") == 0) {
 	  Printf(module_class_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "moduleimports") == 0) {
+#ifndef WITHOUT_RBFX
+      // Append when using %pragma(csharp) moduleimports instead of replacing.
+      String* new_imports = NewStringf("%s%s", module_imports, strvalue);
+      Delete(module_imports);
+      module_imports = new_imports;
+#else
 	  Delete(module_imports);
 	  module_imports = Copy(strvalue);
+#endif
 	} else if (Strcmp(code, "moduleinterfaces") == 0) {
 	  Delete(module_interfaces);
 	  module_interfaces = Copy(strvalue);
@@ -1823,6 +1855,9 @@ public:
     Printf(imclass_cppcasts_code, "  public static extern global::System.IntPtr %s(global::System.IntPtr jarg1);\n", upcast_method_name);
 
     Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
+#ifndef WITHOUT_RBFX
+    Replaceall(imclass_cppcasts_code, "$nspace", namespce);
+#endif
 
     if (smart) {
       SwigType *bsmart = Copy(smart);
@@ -2359,6 +2394,10 @@ public:
       Replaceall(proxy_class_code, "$dllimport_module", dllimport_module);
       Replaceall(proxy_class_constants_code, "$dllimport_module", dllimport_module);
       Replaceall(interface_class_code, "$dllimport_module", dllimport_module);
+      Replaceall(proxy_class_def, "$nspace", namespce);
+      Replaceall(proxy_class_code, "$nspace", namespce);
+      Replaceall(proxy_class_constants_code, "$nspace", namespce);
+      Replaceall(interface_class_code, "$nspace", namespce);
 #endif
       Replaceall(proxy_class_def, "$dllimport", dllimport);
       Replaceall(proxy_class_code, "$dllimport", dllimport);
@@ -3607,6 +3646,9 @@ public:
     Delete(strippedtype);
     Delete(type);
 
+#ifndef WITHOUT_RBFX
+    Replaceall(tm, "$nspace", namespce);
+#endif
     return substitution_performed;
   }
 
@@ -3701,6 +3743,7 @@ public:
     Replaceall(swigtype, "$imclassname", imclass_name);
 #ifndef WITHOUT_RBFX
     Replaceall(swigtype, "$dllimport_module", dllimport_module);
+    Replaceall(swigtype, "$nspace", namespce);
 #endif
     Replaceall(swigtype, "$dllimport", dllimport);
 
@@ -4361,8 +4404,9 @@ public:
     if ((tm = Swig_typemap_lookup("csdirectorout", n, "", 0))) {
       substituteClassname(returntype, tm);
 #ifndef WITHOUT_RBFX
-      Replaceall(tm, "$cscall", "$csclassname.wrap(_this, false).$cscall");
+      Replaceall(tm, "$cscall", "global::$nspace.$csclassname.wrap(_this, false).$cscall");
       Replaceall(tm, "$csclassname", classname);
+      Replaceall(tm, "$nspace", namespce);
 #endif
       Replaceall(tm, "$cscall", upcall);
       if (!is_void)
