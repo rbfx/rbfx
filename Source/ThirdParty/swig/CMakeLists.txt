@@ -48,7 +48,10 @@ configure_file(Source/Include/swigconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/swigco
 
 find_package(BISON)
 if (BISON_FOUND)
-  bison_target(SWIG ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.y ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.c COMPILE_FLAGS "-y -d --color=no")
+  if ("${BISON_VERSION}" VERSION_GREATER_EQUAL "3.5.4")
+    set (BISON_NO_COLORS "--color=no")
+  endif ()
+  bison_target(SWIG ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.y ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.c COMPILE_FLAGS "-y -d ${BISON_NO_COLORS}")
 endif ()
 
 file (GLOB_RECURSE SWIG_SOURCES Source/*.c Source/*.cxx Source/*.h)
