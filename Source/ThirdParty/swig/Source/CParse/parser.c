@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.3.2.  */
+/* A Bison parser, made by GNU Bison 3.7.3.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2019 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -34,6 +34,10 @@
 /* C LALR(1) parser skeleton written by Richard Stallman, by
    simplifying the original so-called "semantic" parser.  */
 
+/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+   especially those whose name start with YY_ or yy_.  They are
+   private implementation details that can be changed or removed.  */
+
 /* All symbols defined below should begin with yy or YY, to avoid
    infringing on user name space.  This should be done even for local
    variables, as they might otherwise be expanded by user macros.
@@ -41,14 +45,11 @@
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
 
-/* Undocumented macros, especially those whose name start with YY_,
-   are private implementation details.  Do not rely on them.  */
-
 /* Identify Bison output.  */
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.3.2"
+#define YYBISON_VERSION "3.7.3"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -66,7 +67,7 @@
 
 
 /* First part of user prologue.  */
-#line 25 "CParse/parser.y" /* yacc.c:337  */
+#line 25 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
 
 #define yylex yylex
 
@@ -1583,7 +1584,17 @@ static String *add_qualifier_to_declarator(SwigType *type, SwigType *qualifier) 
 }
 
 
-#line 1587 "parser.tab.c" /* yacc.c:337  */
+#line 1588 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
+
+# ifndef YY_CAST
+#  ifdef __cplusplus
+#   define YY_CAST(Type, Val) static_cast<Type> (Val)
+#   define YY_REINTERPRET_CAST(Type, Val) reinterpret_cast<Type> (Val)
+#  else
+#   define YY_CAST(Type, Val) ((Type) (Val))
+#   define YY_REINTERPRET_CAST(Type, Val) ((Type) (Val))
+#  endif
+# endif
 # ifndef YY_NULLPTR
 #  if defined __cplusplus
 #   if 201103L <= __cplusplus
@@ -1596,237 +1607,338 @@ static String *add_qualifier_to_declarator(SwigType *type, SwigType *qualifier) 
 #  endif
 # endif
 
-/* Enabling verbose error messages.  */
-#ifdef YYERROR_VERBOSE
-# undef YYERROR_VERBOSE
-# define YYERROR_VERBOSE 1
-#else
-# define YYERROR_VERBOSE 0
-#endif
-
-
-/* Debug traces.  */
-#ifndef YYDEBUG
-# define YYDEBUG 0
-#endif
-#if YYDEBUG
-extern int yydebug;
-#endif
-
-/* Token type.  */
-#ifndef YYTOKENTYPE
-# define YYTOKENTYPE
-  enum yytokentype
-  {
-    ID = 258,
-    HBLOCK = 259,
-    POUND = 260,
-    STRING = 261,
-    WSTRING = 262,
-    INCLUDE = 263,
-    IMPORT = 264,
-    INSERT = 265,
-    CHARCONST = 266,
-    WCHARCONST = 267,
-    NUM_INT = 268,
-    NUM_FLOAT = 269,
-    NUM_UNSIGNED = 270,
-    NUM_LONG = 271,
-    NUM_ULONG = 272,
-    NUM_LONGLONG = 273,
-    NUM_ULONGLONG = 274,
-    NUM_BOOL = 275,
-    TYPEDEF = 276,
-    TYPE_INT = 277,
-    TYPE_UNSIGNED = 278,
-    TYPE_SHORT = 279,
-    TYPE_LONG = 280,
-    TYPE_FLOAT = 281,
-    TYPE_DOUBLE = 282,
-    TYPE_CHAR = 283,
-    TYPE_WCHAR = 284,
-    TYPE_VOID = 285,
-    TYPE_SIGNED = 286,
-    TYPE_BOOL = 287,
-    TYPE_COMPLEX = 288,
-    TYPE_TYPEDEF = 289,
-    TYPE_RAW = 290,
-    TYPE_NON_ISO_INT8 = 291,
-    TYPE_NON_ISO_INT16 = 292,
-    TYPE_NON_ISO_INT32 = 293,
-    TYPE_NON_ISO_INT64 = 294,
-    LPAREN = 295,
-    RPAREN = 296,
-    COMMA = 297,
-    SEMI = 298,
-    EXTERN = 299,
-    INIT = 300,
-    LBRACE = 301,
-    RBRACE = 302,
-    PERIOD = 303,
-    CONST_QUAL = 304,
-    VOLATILE = 305,
-    REGISTER = 306,
-    STRUCT = 307,
-    UNION = 308,
-    EQUAL = 309,
-    SIZEOF = 310,
-    MODULE = 311,
-    LBRACKET = 312,
-    RBRACKET = 313,
-    BEGINFILE = 314,
-    ENDOFFILE = 315,
-    ILLEGAL = 316,
-    CONSTANT = 317,
-    NAME = 318,
-    RENAME = 319,
-    NAMEWARN = 320,
-    EXTEND = 321,
-    PRAGMA = 322,
-    FEATURE = 323,
-    VARARGS = 324,
-    ENUM = 325,
-    CLASS = 326,
-    TYPENAME = 327,
-    PRIVATE = 328,
-    PUBLIC = 329,
-    PROTECTED = 330,
-    COLON = 331,
-    STATIC = 332,
-    VIRTUAL = 333,
-    FRIEND = 334,
-    THROW = 335,
-    CATCH = 336,
-    EXPLICIT = 337,
-    STATIC_ASSERT = 338,
-    CONSTEXPR = 339,
-    THREAD_LOCAL = 340,
-    DECLTYPE = 341,
-    AUTO = 342,
-    NOEXCEPT = 343,
-    OVERRIDE = 344,
-    FINAL = 345,
-    USING = 346,
-    NAMESPACE = 347,
-    NATIVE = 348,
-    INLINE = 349,
-    TYPEMAP = 350,
-    EXCEPT = 351,
-    ECHO = 352,
-    APPLY = 353,
-    CLEAR = 354,
-    SWIGTEMPLATE = 355,
-    FRAGMENT = 356,
-    WARN = 357,
-    LESSTHAN = 358,
-    GREATERTHAN = 359,
-    DELETE_KW = 360,
-    DEFAULT = 361,
-    LESSTHANOREQUALTO = 362,
-    GREATERTHANOREQUALTO = 363,
-    EQUALTO = 364,
-    NOTEQUALTO = 365,
-    ARROW = 366,
-    QUESTIONMARK = 367,
-    TYPES = 368,
-    PARMS = 369,
-    NONID = 370,
-    DSTAR = 371,
-    DCNOT = 372,
-    TEMPLATE = 373,
-    OPERATOR = 374,
-    CONVERSIONOPERATOR = 375,
-    PARSETYPE = 376,
-    PARSEPARM = 377,
-    PARSEPARMS = 378,
-    DOXYGENSTRING = 379,
-    DOXYGENPOSTSTRING = 380,
-    CAST = 381,
-    LOR = 382,
-    LAND = 383,
-    OR = 384,
-    XOR = 385,
-    AND = 386,
-    LSHIFT = 387,
-    RSHIFT = 388,
-    PLUS = 389,
-    MINUS = 390,
-    STAR = 391,
-    SLASH = 392,
-    MODULO = 393,
-    UMINUS = 394,
-    NOT = 395,
-    LNOT = 396,
-    DCOLON = 397
-  };
-#endif
-
-/* Value type.  */
-#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
-union YYSTYPE
+#include "parser.h"
+/* Symbol kind.  */
+enum yysymbol_kind_t
 {
-#line 1542 "CParse/parser.y" /* yacc.c:352  */
-
-  const char  *id;
-  List  *bases;
-  struct Define {
-    String *val;
-    String *rawval;
-    int     type;
-    String *qualifier;
-    String *refqualifier;
-    String *bitfield;
-    Parm   *throws;
-    String *throwf;
-    String *nexcept;
-    String *final;
-  } dtype;
-  struct {
-    const char *type;
-    String *filename;
-    int   line;
-  } loc;
-  struct {
-    char      *id;
-    SwigType  *type;
-    String    *defarg;
-    ParmList  *parms;
-    short      have_parms;
-    ParmList  *throws;
-    String    *throwf;
-    String    *nexcept;
-    String    *final;
-  } decl;
-  Parm         *tparms;
-  struct {
-    String     *method;
-    Hash       *kwargs;
-  } tmap;
-  struct {
-    String     *type;
-    String     *us;
-  } ptype;
-  SwigType     *type;
-  String       *str;
-  Parm         *p;
-  ParmList     *pl;
-  int           intvalue;
-  Node         *node;
-
-#line 1818 "parser.tab.c" /* yacc.c:352  */
+  YYSYMBOL_YYEMPTY = -2,
+  YYSYMBOL_YYEOF = 0,                      /* "end of file"  */
+  YYSYMBOL_YYerror = 1,                    /* error  */
+  YYSYMBOL_YYUNDEF = 2,                    /* "invalid token"  */
+  YYSYMBOL_ID = 3,                         /* ID  */
+  YYSYMBOL_HBLOCK = 4,                     /* HBLOCK  */
+  YYSYMBOL_POUND = 5,                      /* POUND  */
+  YYSYMBOL_STRING = 6,                     /* STRING  */
+  YYSYMBOL_WSTRING = 7,                    /* WSTRING  */
+  YYSYMBOL_INCLUDE = 8,                    /* INCLUDE  */
+  YYSYMBOL_IMPORT = 9,                     /* IMPORT  */
+  YYSYMBOL_INSERT = 10,                    /* INSERT  */
+  YYSYMBOL_CHARCONST = 11,                 /* CHARCONST  */
+  YYSYMBOL_WCHARCONST = 12,                /* WCHARCONST  */
+  YYSYMBOL_NUM_INT = 13,                   /* NUM_INT  */
+  YYSYMBOL_NUM_FLOAT = 14,                 /* NUM_FLOAT  */
+  YYSYMBOL_NUM_UNSIGNED = 15,              /* NUM_UNSIGNED  */
+  YYSYMBOL_NUM_LONG = 16,                  /* NUM_LONG  */
+  YYSYMBOL_NUM_ULONG = 17,                 /* NUM_ULONG  */
+  YYSYMBOL_NUM_LONGLONG = 18,              /* NUM_LONGLONG  */
+  YYSYMBOL_NUM_ULONGLONG = 19,             /* NUM_ULONGLONG  */
+  YYSYMBOL_NUM_BOOL = 20,                  /* NUM_BOOL  */
+  YYSYMBOL_TYPEDEF = 21,                   /* TYPEDEF  */
+  YYSYMBOL_TYPE_INT = 22,                  /* TYPE_INT  */
+  YYSYMBOL_TYPE_UNSIGNED = 23,             /* TYPE_UNSIGNED  */
+  YYSYMBOL_TYPE_SHORT = 24,                /* TYPE_SHORT  */
+  YYSYMBOL_TYPE_LONG = 25,                 /* TYPE_LONG  */
+  YYSYMBOL_TYPE_FLOAT = 26,                /* TYPE_FLOAT  */
+  YYSYMBOL_TYPE_DOUBLE = 27,               /* TYPE_DOUBLE  */
+  YYSYMBOL_TYPE_CHAR = 28,                 /* TYPE_CHAR  */
+  YYSYMBOL_TYPE_WCHAR = 29,                /* TYPE_WCHAR  */
+  YYSYMBOL_TYPE_VOID = 30,                 /* TYPE_VOID  */
+  YYSYMBOL_TYPE_SIGNED = 31,               /* TYPE_SIGNED  */
+  YYSYMBOL_TYPE_BOOL = 32,                 /* TYPE_BOOL  */
+  YYSYMBOL_TYPE_COMPLEX = 33,              /* TYPE_COMPLEX  */
+  YYSYMBOL_TYPE_TYPEDEF = 34,              /* TYPE_TYPEDEF  */
+  YYSYMBOL_TYPE_RAW = 35,                  /* TYPE_RAW  */
+  YYSYMBOL_TYPE_NON_ISO_INT8 = 36,         /* TYPE_NON_ISO_INT8  */
+  YYSYMBOL_TYPE_NON_ISO_INT16 = 37,        /* TYPE_NON_ISO_INT16  */
+  YYSYMBOL_TYPE_NON_ISO_INT32 = 38,        /* TYPE_NON_ISO_INT32  */
+  YYSYMBOL_TYPE_NON_ISO_INT64 = 39,        /* TYPE_NON_ISO_INT64  */
+  YYSYMBOL_LPAREN = 40,                    /* LPAREN  */
+  YYSYMBOL_RPAREN = 41,                    /* RPAREN  */
+  YYSYMBOL_COMMA = 42,                     /* COMMA  */
+  YYSYMBOL_SEMI = 43,                      /* SEMI  */
+  YYSYMBOL_EXTERN = 44,                    /* EXTERN  */
+  YYSYMBOL_INIT = 45,                      /* INIT  */
+  YYSYMBOL_LBRACE = 46,                    /* LBRACE  */
+  YYSYMBOL_RBRACE = 47,                    /* RBRACE  */
+  YYSYMBOL_PERIOD = 48,                    /* PERIOD  */
+  YYSYMBOL_CONST_QUAL = 49,                /* CONST_QUAL  */
+  YYSYMBOL_VOLATILE = 50,                  /* VOLATILE  */
+  YYSYMBOL_REGISTER = 51,                  /* REGISTER  */
+  YYSYMBOL_STRUCT = 52,                    /* STRUCT  */
+  YYSYMBOL_UNION = 53,                     /* UNION  */
+  YYSYMBOL_EQUAL = 54,                     /* EQUAL  */
+  YYSYMBOL_SIZEOF = 55,                    /* SIZEOF  */
+  YYSYMBOL_MODULE = 56,                    /* MODULE  */
+  YYSYMBOL_LBRACKET = 57,                  /* LBRACKET  */
+  YYSYMBOL_RBRACKET = 58,                  /* RBRACKET  */
+  YYSYMBOL_BEGINFILE = 59,                 /* BEGINFILE  */
+  YYSYMBOL_ENDOFFILE = 60,                 /* ENDOFFILE  */
+  YYSYMBOL_ILLEGAL = 61,                   /* ILLEGAL  */
+  YYSYMBOL_CONSTANT = 62,                  /* CONSTANT  */
+  YYSYMBOL_NAME = 63,                      /* NAME  */
+  YYSYMBOL_RENAME = 64,                    /* RENAME  */
+  YYSYMBOL_NAMEWARN = 65,                  /* NAMEWARN  */
+  YYSYMBOL_EXTEND = 66,                    /* EXTEND  */
+  YYSYMBOL_PRAGMA = 67,                    /* PRAGMA  */
+  YYSYMBOL_FEATURE = 68,                   /* FEATURE  */
+  YYSYMBOL_VARARGS = 69,                   /* VARARGS  */
+  YYSYMBOL_ENUM = 70,                      /* ENUM  */
+  YYSYMBOL_CLASS = 71,                     /* CLASS  */
+  YYSYMBOL_TYPENAME = 72,                  /* TYPENAME  */
+  YYSYMBOL_PRIVATE = 73,                   /* PRIVATE  */
+  YYSYMBOL_PUBLIC = 74,                    /* PUBLIC  */
+  YYSYMBOL_PROTECTED = 75,                 /* PROTECTED  */
+  YYSYMBOL_COLON = 76,                     /* COLON  */
+  YYSYMBOL_STATIC = 77,                    /* STATIC  */
+  YYSYMBOL_VIRTUAL = 78,                   /* VIRTUAL  */
+  YYSYMBOL_FRIEND = 79,                    /* FRIEND  */
+  YYSYMBOL_THROW = 80,                     /* THROW  */
+  YYSYMBOL_CATCH = 81,                     /* CATCH  */
+  YYSYMBOL_EXPLICIT = 82,                  /* EXPLICIT  */
+  YYSYMBOL_STATIC_ASSERT = 83,             /* STATIC_ASSERT  */
+  YYSYMBOL_CONSTEXPR = 84,                 /* CONSTEXPR  */
+  YYSYMBOL_THREAD_LOCAL = 85,              /* THREAD_LOCAL  */
+  YYSYMBOL_DECLTYPE = 86,                  /* DECLTYPE  */
+  YYSYMBOL_AUTO = 87,                      /* AUTO  */
+  YYSYMBOL_NOEXCEPT = 88,                  /* NOEXCEPT  */
+  YYSYMBOL_OVERRIDE = 89,                  /* OVERRIDE  */
+  YYSYMBOL_FINAL = 90,                     /* FINAL  */
+  YYSYMBOL_USING = 91,                     /* USING  */
+  YYSYMBOL_NAMESPACE = 92,                 /* NAMESPACE  */
+  YYSYMBOL_NATIVE = 93,                    /* NATIVE  */
+  YYSYMBOL_INLINE = 94,                    /* INLINE  */
+  YYSYMBOL_TYPEMAP = 95,                   /* TYPEMAP  */
+  YYSYMBOL_EXCEPT = 96,                    /* EXCEPT  */
+  YYSYMBOL_ECHO = 97,                      /* ECHO  */
+  YYSYMBOL_APPLY = 98,                     /* APPLY  */
+  YYSYMBOL_CLEAR = 99,                     /* CLEAR  */
+  YYSYMBOL_SWIGTEMPLATE = 100,             /* SWIGTEMPLATE  */
+  YYSYMBOL_FRAGMENT = 101,                 /* FRAGMENT  */
+  YYSYMBOL_WARN = 102,                     /* WARN  */
+  YYSYMBOL_LESSTHAN = 103,                 /* LESSTHAN  */
+  YYSYMBOL_GREATERTHAN = 104,              /* GREATERTHAN  */
+  YYSYMBOL_DELETE_KW = 105,                /* DELETE_KW  */
+  YYSYMBOL_DEFAULT = 106,                  /* DEFAULT  */
+  YYSYMBOL_LESSTHANOREQUALTO = 107,        /* LESSTHANOREQUALTO  */
+  YYSYMBOL_GREATERTHANOREQUALTO = 108,     /* GREATERTHANOREQUALTO  */
+  YYSYMBOL_EQUALTO = 109,                  /* EQUALTO  */
+  YYSYMBOL_NOTEQUALTO = 110,               /* NOTEQUALTO  */
+  YYSYMBOL_ARROW = 111,                    /* ARROW  */
+  YYSYMBOL_QUESTIONMARK = 112,             /* QUESTIONMARK  */
+  YYSYMBOL_TYPES = 113,                    /* TYPES  */
+  YYSYMBOL_PARMS = 114,                    /* PARMS  */
+  YYSYMBOL_NONID = 115,                    /* NONID  */
+  YYSYMBOL_DSTAR = 116,                    /* DSTAR  */
+  YYSYMBOL_DCNOT = 117,                    /* DCNOT  */
+  YYSYMBOL_TEMPLATE = 118,                 /* TEMPLATE  */
+  YYSYMBOL_OPERATOR = 119,                 /* OPERATOR  */
+  YYSYMBOL_CONVERSIONOPERATOR = 120,       /* CONVERSIONOPERATOR  */
+  YYSYMBOL_PARSETYPE = 121,                /* PARSETYPE  */
+  YYSYMBOL_PARSEPARM = 122,                /* PARSEPARM  */
+  YYSYMBOL_PARSEPARMS = 123,               /* PARSEPARMS  */
+  YYSYMBOL_DOXYGENSTRING = 124,            /* DOXYGENSTRING  */
+  YYSYMBOL_DOXYGENPOSTSTRING = 125,        /* DOXYGENPOSTSTRING  */
+  YYSYMBOL_CAST = 126,                     /* CAST  */
+  YYSYMBOL_LOR = 127,                      /* LOR  */
+  YYSYMBOL_LAND = 128,                     /* LAND  */
+  YYSYMBOL_OR = 129,                       /* OR  */
+  YYSYMBOL_XOR = 130,                      /* XOR  */
+  YYSYMBOL_AND = 131,                      /* AND  */
+  YYSYMBOL_LSHIFT = 132,                   /* LSHIFT  */
+  YYSYMBOL_RSHIFT = 133,                   /* RSHIFT  */
+  YYSYMBOL_PLUS = 134,                     /* PLUS  */
+  YYSYMBOL_MINUS = 135,                    /* MINUS  */
+  YYSYMBOL_STAR = 136,                     /* STAR  */
+  YYSYMBOL_SLASH = 137,                    /* SLASH  */
+  YYSYMBOL_MODULO = 138,                   /* MODULO  */
+  YYSYMBOL_UMINUS = 139,                   /* UMINUS  */
+  YYSYMBOL_NOT = 140,                      /* NOT  */
+  YYSYMBOL_LNOT = 141,                     /* LNOT  */
+  YYSYMBOL_DCOLON = 142,                   /* DCOLON  */
+  YYSYMBOL_YYACCEPT = 143,                 /* $accept  */
+  YYSYMBOL_program = 144,                  /* program  */
+  YYSYMBOL_interface = 145,                /* interface  */
+  YYSYMBOL_declaration = 146,              /* declaration  */
+  YYSYMBOL_swig_directive = 147,           /* swig_directive  */
+  YYSYMBOL_extend_directive = 148,         /* extend_directive  */
+  YYSYMBOL_149_1 = 149,                    /* $@1  */
+  YYSYMBOL_apply_directive = 150,          /* apply_directive  */
+  YYSYMBOL_clear_directive = 151,          /* clear_directive  */
+  YYSYMBOL_constant_directive = 152,       /* constant_directive  */
+  YYSYMBOL_echo_directive = 153,           /* echo_directive  */
+  YYSYMBOL_except_directive = 154,         /* except_directive  */
+  YYSYMBOL_stringtype = 155,               /* stringtype  */
+  YYSYMBOL_fname = 156,                    /* fname  */
+  YYSYMBOL_fragment_directive = 157,       /* fragment_directive  */
+  YYSYMBOL_include_directive = 158,        /* include_directive  */
+  YYSYMBOL_159_2 = 159,                    /* $@2  */
+  YYSYMBOL_includetype = 160,              /* includetype  */
+  YYSYMBOL_inline_directive = 161,         /* inline_directive  */
+  YYSYMBOL_insert_directive = 162,         /* insert_directive  */
+  YYSYMBOL_module_directive = 163,         /* module_directive  */
+  YYSYMBOL_name_directive = 164,           /* name_directive  */
+  YYSYMBOL_native_directive = 165,         /* native_directive  */
+  YYSYMBOL_pragma_directive = 166,         /* pragma_directive  */
+  YYSYMBOL_pragma_arg = 167,               /* pragma_arg  */
+  YYSYMBOL_pragma_lang = 168,              /* pragma_lang  */
+  YYSYMBOL_rename_directive = 169,         /* rename_directive  */
+  YYSYMBOL_rename_namewarn = 170,          /* rename_namewarn  */
+  YYSYMBOL_feature_directive = 171,        /* feature_directive  */
+  YYSYMBOL_stringbracesemi = 172,          /* stringbracesemi  */
+  YYSYMBOL_featattr = 173,                 /* featattr  */
+  YYSYMBOL_varargs_directive = 174,        /* varargs_directive  */
+  YYSYMBOL_varargs_parms = 175,            /* varargs_parms  */
+  YYSYMBOL_typemap_directive = 176,        /* typemap_directive  */
+  YYSYMBOL_typemap_type = 177,             /* typemap_type  */
+  YYSYMBOL_tm_list = 178,                  /* tm_list  */
+  YYSYMBOL_tm_tail = 179,                  /* tm_tail  */
+  YYSYMBOL_typemap_parm = 180,             /* typemap_parm  */
+  YYSYMBOL_types_directive = 181,          /* types_directive  */
+  YYSYMBOL_template_directive = 182,       /* template_directive  */
+  YYSYMBOL_warn_directive = 183,           /* warn_directive  */
+  YYSYMBOL_c_declaration = 184,            /* c_declaration  */
+  YYSYMBOL_185_3 = 185,                    /* $@3  */
+  YYSYMBOL_c_decl = 186,                   /* c_decl  */
+  YYSYMBOL_c_decl_tail = 187,              /* c_decl_tail  */
+  YYSYMBOL_initializer = 188,              /* initializer  */
+  YYSYMBOL_cpp_alternate_rettype = 189,    /* cpp_alternate_rettype  */
+  YYSYMBOL_cpp_lambda_decl = 190,          /* cpp_lambda_decl  */
+  YYSYMBOL_lambda_introducer = 191,        /* lambda_introducer  */
+  YYSYMBOL_lambda_body = 192,              /* lambda_body  */
+  YYSYMBOL_lambda_tail = 193,              /* lambda_tail  */
+  YYSYMBOL_194_4 = 194,                    /* $@4  */
+  YYSYMBOL_c_enum_key = 195,               /* c_enum_key  */
+  YYSYMBOL_c_enum_inherit = 196,           /* c_enum_inherit  */
+  YYSYMBOL_c_enum_forward_decl = 197,      /* c_enum_forward_decl  */
+  YYSYMBOL_c_enum_decl = 198,              /* c_enum_decl  */
+  YYSYMBOL_c_constructor_decl = 199,       /* c_constructor_decl  */
+  YYSYMBOL_cpp_declaration = 200,          /* cpp_declaration  */
+  YYSYMBOL_cpp_class_decl = 201,           /* cpp_class_decl  */
+  YYSYMBOL_202_5 = 202,                    /* @5  */
+  YYSYMBOL_203_6 = 203,                    /* @6  */
+  YYSYMBOL_cpp_opt_declarators = 204,      /* cpp_opt_declarators  */
+  YYSYMBOL_cpp_forward_class_decl = 205,   /* cpp_forward_class_decl  */
+  YYSYMBOL_cpp_template_decl = 206,        /* cpp_template_decl  */
+  YYSYMBOL_207_7 = 207,                    /* $@7  */
+  YYSYMBOL_cpp_template_possible = 208,    /* cpp_template_possible  */
+  YYSYMBOL_template_parms = 209,           /* template_parms  */
+  YYSYMBOL_templateparameters = 210,       /* templateparameters  */
+  YYSYMBOL_templateparameter = 211,        /* templateparameter  */
+  YYSYMBOL_templateparameterstail = 212,   /* templateparameterstail  */
+  YYSYMBOL_cpp_using_decl = 213,           /* cpp_using_decl  */
+  YYSYMBOL_cpp_namespace_decl = 214,       /* cpp_namespace_decl  */
+  YYSYMBOL_215_8 = 215,                    /* @8  */
+  YYSYMBOL_216_9 = 216,                    /* $@9  */
+  YYSYMBOL_cpp_members = 217,              /* cpp_members  */
+  YYSYMBOL_218_10 = 218,                   /* $@10  */
+  YYSYMBOL_219_11 = 219,                   /* $@11  */
+  YYSYMBOL_220_12 = 220,                   /* $@12  */
+  YYSYMBOL_cpp_member_no_dox = 221,        /* cpp_member_no_dox  */
+  YYSYMBOL_cpp_member = 222,               /* cpp_member  */
+  YYSYMBOL_cpp_constructor_decl = 223,     /* cpp_constructor_decl  */
+  YYSYMBOL_cpp_destructor_decl = 224,      /* cpp_destructor_decl  */
+  YYSYMBOL_cpp_conversion_operator = 225,  /* cpp_conversion_operator  */
+  YYSYMBOL_cpp_catch_decl = 226,           /* cpp_catch_decl  */
+  YYSYMBOL_cpp_static_assert = 227,        /* cpp_static_assert  */
+  YYSYMBOL_cpp_protection_decl = 228,      /* cpp_protection_decl  */
+  YYSYMBOL_cpp_swig_directive = 229,       /* cpp_swig_directive  */
+  YYSYMBOL_cpp_end = 230,                  /* cpp_end  */
+  YYSYMBOL_cpp_vend = 231,                 /* cpp_vend  */
+  YYSYMBOL_anonymous_bitfield = 232,       /* anonymous_bitfield  */
+  YYSYMBOL_anon_bitfield_type = 233,       /* anon_bitfield_type  */
+  YYSYMBOL_extern_string = 234,            /* extern_string  */
+  YYSYMBOL_storage_class = 235,            /* storage_class  */
+  YYSYMBOL_parms = 236,                    /* parms  */
+  YYSYMBOL_rawparms = 237,                 /* rawparms  */
+  YYSYMBOL_ptail = 238,                    /* ptail  */
+  YYSYMBOL_parm_no_dox = 239,              /* parm_no_dox  */
+  YYSYMBOL_parm = 240,                     /* parm  */
+  YYSYMBOL_valparms = 241,                 /* valparms  */
+  YYSYMBOL_rawvalparms = 242,              /* rawvalparms  */
+  YYSYMBOL_valptail = 243,                 /* valptail  */
+  YYSYMBOL_valparm = 244,                  /* valparm  */
+  YYSYMBOL_def_args = 245,                 /* def_args  */
+  YYSYMBOL_parameter_declarator = 246,     /* parameter_declarator  */
+  YYSYMBOL_plain_declarator = 247,         /* plain_declarator  */
+  YYSYMBOL_declarator = 248,               /* declarator  */
+  YYSYMBOL_notso_direct_declarator = 249,  /* notso_direct_declarator  */
+  YYSYMBOL_direct_declarator = 250,        /* direct_declarator  */
+  YYSYMBOL_abstract_declarator = 251,      /* abstract_declarator  */
+  YYSYMBOL_direct_abstract_declarator = 252, /* direct_abstract_declarator  */
+  YYSYMBOL_pointer = 253,                  /* pointer  */
+  YYSYMBOL_cv_ref_qualifier = 254,         /* cv_ref_qualifier  */
+  YYSYMBOL_ref_qualifier = 255,            /* ref_qualifier  */
+  YYSYMBOL_type_qualifier = 256,           /* type_qualifier  */
+  YYSYMBOL_type_qualifier_raw = 257,       /* type_qualifier_raw  */
+  YYSYMBOL_type = 258,                     /* type  */
+  YYSYMBOL_rawtype = 259,                  /* rawtype  */
+  YYSYMBOL_type_right = 260,               /* type_right  */
+  YYSYMBOL_decltype = 261,                 /* decltype  */
+  YYSYMBOL_primitive_type = 262,           /* primitive_type  */
+  YYSYMBOL_primitive_type_list = 263,      /* primitive_type_list  */
+  YYSYMBOL_type_specifier = 264,           /* type_specifier  */
+  YYSYMBOL_definetype = 265,               /* definetype  */
+  YYSYMBOL_266_13 = 266,                   /* $@13  */
+  YYSYMBOL_default_delete = 267,           /* default_delete  */
+  YYSYMBOL_deleted_definition = 268,       /* deleted_definition  */
+  YYSYMBOL_explicit_default = 269,         /* explicit_default  */
+  YYSYMBOL_ename = 270,                    /* ename  */
+  YYSYMBOL_constant_directives = 271,      /* constant_directives  */
+  YYSYMBOL_optional_ignored_defines = 272, /* optional_ignored_defines  */
+  YYSYMBOL_enumlist = 273,                 /* enumlist  */
+  YYSYMBOL_enumlist_item = 274,            /* enumlist_item  */
+  YYSYMBOL_edecl_with_dox = 275,           /* edecl_with_dox  */
+  YYSYMBOL_edecl = 276,                    /* edecl  */
+  YYSYMBOL_etype = 277,                    /* etype  */
+  YYSYMBOL_expr = 278,                     /* expr  */
+  YYSYMBOL_exprmem = 279,                  /* exprmem  */
+  YYSYMBOL_valexpr = 280,                  /* valexpr  */
+  YYSYMBOL_exprnum = 281,                  /* exprnum  */
+  YYSYMBOL_exprcompound = 282,             /* exprcompound  */
+  YYSYMBOL_ellipsis = 283,                 /* ellipsis  */
+  YYSYMBOL_variadic = 284,                 /* variadic  */
+  YYSYMBOL_inherit = 285,                  /* inherit  */
+  YYSYMBOL_raw_inherit = 286,              /* raw_inherit  */
+  YYSYMBOL_287_14 = 287,                   /* $@14  */
+  YYSYMBOL_base_list = 288,                /* base_list  */
+  YYSYMBOL_base_specifier = 289,           /* base_specifier  */
+  YYSYMBOL_290_15 = 290,                   /* @15  */
+  YYSYMBOL_291_16 = 291,                   /* @16  */
+  YYSYMBOL_access_specifier = 292,         /* access_specifier  */
+  YYSYMBOL_templcpptype = 293,             /* templcpptype  */
+  YYSYMBOL_cpptype = 294,                  /* cpptype  */
+  YYSYMBOL_classkey = 295,                 /* classkey  */
+  YYSYMBOL_classkeyopt = 296,              /* classkeyopt  */
+  YYSYMBOL_opt_virtual = 297,              /* opt_virtual  */
+  YYSYMBOL_virt_specifier_seq = 298,       /* virt_specifier_seq  */
+  YYSYMBOL_virt_specifier_seq_opt = 299,   /* virt_specifier_seq_opt  */
+  YYSYMBOL_exception_specification = 300,  /* exception_specification  */
+  YYSYMBOL_qualifiers_exception_specification = 301, /* qualifiers_exception_specification  */
+  YYSYMBOL_cpp_const = 302,                /* cpp_const  */
+  YYSYMBOL_ctor_end = 303,                 /* ctor_end  */
+  YYSYMBOL_ctor_initializer = 304,         /* ctor_initializer  */
+  YYSYMBOL_mem_initializer_list = 305,     /* mem_initializer_list  */
+  YYSYMBOL_mem_initializer = 306,          /* mem_initializer  */
+  YYSYMBOL_less_valparms_greater = 307,    /* less_valparms_greater  */
+  YYSYMBOL_identifier = 308,               /* identifier  */
+  YYSYMBOL_idstring = 309,                 /* idstring  */
+  YYSYMBOL_idstringopt = 310,              /* idstringopt  */
+  YYSYMBOL_idcolon = 311,                  /* idcolon  */
+  YYSYMBOL_idcolontail = 312,              /* idcolontail  */
+  YYSYMBOL_idtemplate = 313,               /* idtemplate  */
+  YYSYMBOL_idtemplatetemplate = 314,       /* idtemplatetemplate  */
+  YYSYMBOL_idcolonnt = 315,                /* idcolonnt  */
+  YYSYMBOL_idcolontailnt = 316,            /* idcolontailnt  */
+  YYSYMBOL_string = 317,                   /* string  */
+  YYSYMBOL_wstring = 318,                  /* wstring  */
+  YYSYMBOL_stringbrace = 319,              /* stringbrace  */
+  YYSYMBOL_options = 320,                  /* options  */
+  YYSYMBOL_options_ex = 321,               /* options_ex  */
+  YYSYMBOL_kwargs = 322,                   /* kwargs  */
+  YYSYMBOL_stringnum = 323,                /* stringnum  */
+  YYSYMBOL_empty = 324                     /* empty  */
 };
-
-typedef union YYSTYPE YYSTYPE;
-# define YYSTYPE_IS_TRIVIAL 1
-# define YYSTYPE_IS_DECLARED 1
-#endif
-
-
-extern YYSTYPE yylval;
-
-int yyparse (void);
-
+typedef enum yysymbol_kind_t yysymbol_kind_t;
 
 
 
@@ -1835,28 +1947,75 @@ int yyparse (void);
 # undef short
 #endif
 
-#ifdef YYTYPE_UINT8
-typedef YYTYPE_UINT8 yytype_uint8;
-#else
-typedef unsigned char yytype_uint8;
+/* On compilers that do not define __PTRDIFF_MAX__ etc., make sure
+   <limits.h> and (if available) <stdint.h> are included
+   so that the code can choose integer types of a good width.  */
+
+#ifndef __PTRDIFF_MAX__
+# include <limits.h> /* INFRINGES ON USER NAME SPACE */
+# if defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
+#  include <stdint.h> /* INFRINGES ON USER NAME SPACE */
+#  define YY_STDINT_H
+# endif
 #endif
 
-#ifdef YYTYPE_INT8
-typedef YYTYPE_INT8 yytype_int8;
+/* Narrow types that promote to a signed type and that can represent a
+   signed or unsigned integer of at least N bits.  In tables they can
+   save space and decrease cache pressure.  Promoting to a signed type
+   helps avoid bugs in integer arithmetic.  */
+
+#ifdef __INT_LEAST8_MAX__
+typedef __INT_LEAST8_TYPE__ yytype_int8;
+#elif defined YY_STDINT_H
+typedef int_least8_t yytype_int8;
 #else
 typedef signed char yytype_int8;
 #endif
 
-#ifdef YYTYPE_UINT16
-typedef YYTYPE_UINT16 yytype_uint16;
-#else
-typedef unsigned short yytype_uint16;
-#endif
-
-#ifdef YYTYPE_INT16
-typedef YYTYPE_INT16 yytype_int16;
+#ifdef __INT_LEAST16_MAX__
+typedef __INT_LEAST16_TYPE__ yytype_int16;
+#elif defined YY_STDINT_H
+typedef int_least16_t yytype_int16;
 #else
 typedef short yytype_int16;
+#endif
+
+#if defined __UINT_LEAST8_MAX__ && __UINT_LEAST8_MAX__ <= __INT_MAX__
+typedef __UINT_LEAST8_TYPE__ yytype_uint8;
+#elif (!defined __UINT_LEAST8_MAX__ && defined YY_STDINT_H \
+       && UINT_LEAST8_MAX <= INT_MAX)
+typedef uint_least8_t yytype_uint8;
+#elif !defined __UINT_LEAST8_MAX__ && UCHAR_MAX <= INT_MAX
+typedef unsigned char yytype_uint8;
+#else
+typedef short yytype_uint8;
+#endif
+
+#if defined __UINT_LEAST16_MAX__ && __UINT_LEAST16_MAX__ <= __INT_MAX__
+typedef __UINT_LEAST16_TYPE__ yytype_uint16;
+#elif (!defined __UINT_LEAST16_MAX__ && defined YY_STDINT_H \
+       && UINT_LEAST16_MAX <= INT_MAX)
+typedef uint_least16_t yytype_uint16;
+#elif !defined __UINT_LEAST16_MAX__ && USHRT_MAX <= INT_MAX
+typedef unsigned short yytype_uint16;
+#else
+typedef int yytype_uint16;
+#endif
+
+#ifndef YYPTRDIFF_T
+# if defined __PTRDIFF_TYPE__ && defined __PTRDIFF_MAX__
+#  define YYPTRDIFF_T __PTRDIFF_TYPE__
+#  define YYPTRDIFF_MAXIMUM __PTRDIFF_MAX__
+# elif defined PTRDIFF_MAX
+#  ifndef ptrdiff_t
+#   include <stddef.h> /* INFRINGES ON USER NAME SPACE */
+#  endif
+#  define YYPTRDIFF_T ptrdiff_t
+#  define YYPTRDIFF_MAXIMUM PTRDIFF_MAX
+# else
+#  define YYPTRDIFF_T long
+#  define YYPTRDIFF_MAXIMUM LONG_MAX
+# endif
 #endif
 
 #ifndef YYSIZE_T
@@ -1864,7 +2023,7 @@ typedef short yytype_int16;
 #  define YYSIZE_T __SIZE_TYPE__
 # elif defined size_t
 #  define YYSIZE_T size_t
-# elif ! defined YYSIZE_T
+# elif defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
 #  include <stddef.h> /* INFRINGES ON USER NAME SPACE */
 #  define YYSIZE_T size_t
 # else
@@ -1872,7 +2031,20 @@ typedef short yytype_int16;
 # endif
 #endif
 
-#define YYSIZE_MAXIMUM ((YYSIZE_T) -1)
+#define YYSIZE_MAXIMUM                                  \
+  YY_CAST (YYPTRDIFF_T,                                 \
+           (YYPTRDIFF_MAXIMUM < YY_CAST (YYSIZE_T, -1)  \
+            ? YYPTRDIFF_MAXIMUM                         \
+            : YY_CAST (YYSIZE_T, -1)))
+
+#define YYSIZEOF(X) YY_CAST (YYPTRDIFF_T, sizeof (X))
+
+
+/* Stored state numbers (used for stacks). */
+typedef yytype_int16 yy_state_t;
+
+/* State numbers in computations.  */
+typedef int yy_state_fast_t;
 
 #ifndef YY_
 # if defined YYENABLE_NLS && YYENABLE_NLS
@@ -1886,22 +2058,21 @@ typedef short yytype_int16;
 # endif
 #endif
 
-#ifndef YY_ATTRIBUTE
-# if (defined __GNUC__                                               \
-      && (2 < __GNUC__ || (__GNUC__ == 2 && 96 <= __GNUC_MINOR__)))  \
-     || defined __SUNPRO_C && 0x5110 <= __SUNPRO_C
-#  define YY_ATTRIBUTE(Spec) __attribute__(Spec)
+
+#ifndef YY_ATTRIBUTE_PURE
+# if defined __GNUC__ && 2 < __GNUC__ + (96 <= __GNUC_MINOR__)
+#  define YY_ATTRIBUTE_PURE __attribute__ ((__pure__))
 # else
-#  define YY_ATTRIBUTE(Spec) /* empty */
+#  define YY_ATTRIBUTE_PURE
 # endif
 #endif
 
-#ifndef YY_ATTRIBUTE_PURE
-# define YY_ATTRIBUTE_PURE   YY_ATTRIBUTE ((__pure__))
-#endif
-
 #ifndef YY_ATTRIBUTE_UNUSED
-# define YY_ATTRIBUTE_UNUSED YY_ATTRIBUTE ((__unused__))
+# if defined __GNUC__ && 2 < __GNUC__ + (7 <= __GNUC_MINOR__)
+#  define YY_ATTRIBUTE_UNUSED __attribute__ ((__unused__))
+# else
+#  define YY_ATTRIBUTE_UNUSED
+# endif
 #endif
 
 /* Suppress unused-variable warnings by "using" E.  */
@@ -1913,11 +2084,11 @@ typedef short yytype_int16;
 
 #if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
 /* Suppress an incorrect diagnostic about yylval being uninitialized.  */
-# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN \
-    _Pragma ("GCC diagnostic push") \
-    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")\
+# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                            \
+    _Pragma ("GCC diagnostic push")                                     \
+    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")              \
     _Pragma ("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
-# define YY_IGNORE_MAYBE_UNINITIALIZED_END \
+# define YY_IGNORE_MAYBE_UNINITIALIZED_END      \
     _Pragma ("GCC diagnostic pop")
 #else
 # define YY_INITIAL_VALUE(Value) Value
@@ -1930,8 +2101,22 @@ typedef short yytype_int16;
 # define YY_INITIAL_VALUE(Value) /* Nothing. */
 #endif
 
+#if defined __cplusplus && defined __GNUC__ && ! defined __ICC && 6 <= __GNUC__
+# define YY_IGNORE_USELESS_CAST_BEGIN                          \
+    _Pragma ("GCC diagnostic push")                            \
+    _Pragma ("GCC diagnostic ignored \"-Wuseless-cast\"")
+# define YY_IGNORE_USELESS_CAST_END            \
+    _Pragma ("GCC diagnostic pop")
+#endif
+#ifndef YY_IGNORE_USELESS_CAST_BEGIN
+# define YY_IGNORE_USELESS_CAST_BEGIN
+# define YY_IGNORE_USELESS_CAST_END
+#endif
 
-#if ! defined yyoverflow || YYERROR_VERBOSE
+
+#define YY_ASSERT(E) ((void) (0 && (E)))
+
+#if !defined yyoverflow
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
@@ -1996,8 +2181,7 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 #   endif
 #  endif
 # endif
-#endif /* ! defined yyoverflow || YYERROR_VERBOSE */
-
+#endif /* !defined yyoverflow */
 
 #if (! defined yyoverflow \
      && (! defined __cplusplus \
@@ -2006,17 +2190,17 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
 {
-  yytype_int16 yyss_alloc;
+  yy_state_t yyss_alloc;
   YYSTYPE yyvs_alloc;
 };
 
 /* The size of the maximum gap between one aligned stack and the next.  */
-# define YYSTACK_GAP_MAXIMUM (sizeof (union yyalloc) - 1)
+# define YYSTACK_GAP_MAXIMUM (YYSIZEOF (union yyalloc) - 1)
 
 /* The size of an array large to enough to hold all stacks, each with
    N elements.  */
 # define YYSTACK_BYTES(N) \
-     ((N) * (sizeof (yytype_int16) + sizeof (YYSTYPE)) \
+     ((N) * (YYSIZEOF (yy_state_t) + YYSIZEOF (YYSTYPE)) \
       + YYSTACK_GAP_MAXIMUM)
 
 # define YYCOPY_NEEDED 1
@@ -2029,11 +2213,11 @@ union yyalloc
 # define YYSTACK_RELOCATE(Stack_alloc, Stack)                           \
     do                                                                  \
       {                                                                 \
-        YYSIZE_T yynewbytes;                                            \
+        YYPTRDIFF_T yynewbytes;                                         \
         YYCOPY (&yyptr->Stack_alloc, Stack, yysize);                    \
         Stack = &yyptr->Stack_alloc;                                    \
-        yynewbytes = yystacksize * sizeof (*Stack) + YYSTACK_GAP_MAXIMUM; \
-        yyptr += yynewbytes / sizeof (*yyptr);                          \
+        yynewbytes = yystacksize * YYSIZEOF (*Stack) + YYSTACK_GAP_MAXIMUM; \
+        yyptr += yynewbytes / YYSIZEOF (*yyptr);                        \
       }                                                                 \
     while (0)
 
@@ -2045,12 +2229,12 @@ union yyalloc
 # ifndef YYCOPY
 #  if defined __GNUC__ && 1 < __GNUC__
 #   define YYCOPY(Dst, Src, Count) \
-      __builtin_memcpy (Dst, Src, (Count) * sizeof (*(Src)))
+      __builtin_memcpy (Dst, Src, YY_CAST (YYSIZE_T, (Count)) * sizeof (*(Src)))
 #  else
 #   define YYCOPY(Dst, Src, Count)              \
       do                                        \
         {                                       \
-          YYSIZE_T yyi;                         \
+          YYPTRDIFF_T yyi;                      \
           for (yyi = 0; yyi < (Count); yyi++)   \
             (Dst)[yyi] = (Src)[yyi];            \
         }                                       \
@@ -2062,24 +2246,27 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  62
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   5637
+#define YYLAST   5736
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  143
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  181
+#define YYNNTS  182
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  611
+#define YYNRULES  613
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  1191
+#define YYNSTATES  1195
 
-#define YYUNDEFTOK  2
+/* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   397
+
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex, with out-of-bounds checking.  */
-#define YYTRANSLATE(YYX)                                                \
-  ((unsigned) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
+#define YYTRANSLATE(YYX)                                \
+  (0 <= (YYX) && (YYX) <= YYMAXUTOK                     \
+   ? YY_CAST (yysymbol_kind_t, yytranslate[YYX])        \
+   : YYSYMBOL_YYUNDEF)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex.  */
@@ -2129,7 +2316,7 @@ static const yytype_uint8 yytranslate[] =
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint16 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
        0,  1713,  1713,  1725,  1729,  1732,  1735,  1738,  1741,  1746,
     1755,  1759,  1766,  1771,  1772,  1773,  1774,  1775,  1785,  1801,
@@ -2137,84 +2324,91 @@ static const yytype_uint16 yyrline[] =
     1821,  1822,  1823,  1824,  1825,  1826,  1827,  1828,  1829,  1830,
     1831,  1838,  1838,  1920,  1930,  1941,  1961,  1985,  2009,  2020,
     2029,  2048,  2054,  2060,  2065,  2072,  2079,  2083,  2096,  2105,
-    2120,  2133,  2133,  2189,  2190,  2197,  2216,  2247,  2251,  2261,
-    2266,  2284,  2327,  2333,  2346,  2352,  2378,  2384,  2391,  2392,
-    2395,  2396,  2403,  2449,  2495,  2506,  2509,  2536,  2542,  2548,
-    2554,  2562,  2568,  2574,  2580,  2588,  2589,  2590,  2593,  2598,
-    2608,  2644,  2645,  2680,  2697,  2705,  2718,  2743,  2749,  2753,
-    2756,  2767,  2772,  2785,  2797,  3095,  3105,  3112,  3113,  3117,
-    3117,  3142,  3148,  3158,  3170,  3179,  3259,  3322,  3326,  3351,
-    3355,  3366,  3371,  3372,  3373,  3377,  3378,  3379,  3390,  3395,
-    3400,  3407,  3413,  3418,  3421,  3421,  3434,  3437,  3440,  3449,
-    3452,  3459,  3481,  3510,  3608,  3661,  3662,  3663,  3664,  3665,
-    3666,  3671,  3671,  3920,  3920,  4067,  4068,  4080,  4098,  4098,
-    4359,  4365,  4371,  4374,  4377,  4380,  4383,  4386,  4391,  4427,
-    4431,  4434,  4437,  4442,  4446,  4451,  4461,  4492,  4492,  4550,
-    4550,  4572,  4599,  4616,  4621,  4616,  4629,  4630,  4631,  4631,
-    4647,  4648,  4665,  4666,  4667,  4668,  4669,  4670,  4671,  4672,
-    4673,  4674,  4675,  4676,  4677,  4678,  4679,  4680,  4682,  4685,
-    4689,  4701,  4730,  4760,  4793,  4809,  4827,  4846,  4866,  4886,
-    4894,  4901,  4908,  4916,  4924,  4927,  4931,  4934,  4935,  4936,
-    4937,  4938,  4939,  4940,  4941,  4944,  4955,  4966,  4979,  4990,
-    5001,  5015,  5018,  5021,  5022,  5026,  5028,  5036,  5048,  5049,
-    5050,  5051,  5052,  5053,  5054,  5055,  5056,  5057,  5058,  5059,
-    5060,  5061,  5062,  5063,  5064,  5065,  5066,  5067,  5074,  5085,
-    5089,  5096,  5100,  5105,  5109,  5121,  5131,  5141,  5144,  5148,
-    5154,  5167,  5171,  5174,  5178,  5182,  5210,  5218,  5231,  5247,
-    5258,  5268,  5280,  5284,  5288,  5295,  5317,  5334,  5353,  5372,
-    5379,  5387,  5396,  5405,  5409,  5418,  5429,  5440,  5452,  5462,
-    5476,  5484,  5493,  5502,  5506,  5515,  5526,  5537,  5549,  5559,
-    5569,  5580,  5593,  5600,  5608,  5624,  5632,  5643,  5654,  5665,
-    5684,  5692,  5709,  5717,  5724,  5731,  5742,  5754,  5765,  5777,
-    5788,  5799,  5819,  5840,  5846,  5852,  5859,  5866,  5875,  5884,
-    5887,  5896,  5905,  5912,  5919,  5926,  5934,  5944,  5955,  5966,
-    5977,  5984,  5991,  5994,  6011,  6029,  6039,  6046,  6052,  6057,
-    6064,  6068,  6073,  6080,  6084,  6090,  6094,  6100,  6101,  6102,
-    6108,  6114,  6118,  6119,  6123,  6130,  6133,  6134,  6138,  6139,
-    6141,  6144,  6147,  6152,  6163,  6188,  6191,  6245,  6249,  6253,
-    6257,  6261,  6265,  6269,  6273,  6277,  6281,  6285,  6289,  6293,
-    6297,  6303,  6303,  6319,  6324,  6327,  6333,  6348,  6364,  6365,
-    6368,  6369,  6373,  6374,  6378,  6382,  6387,  6395,  6404,  6409,
-    6414,  6417,  6423,  6431,  6443,  6458,  6459,  6479,  6483,  6493,
-    6499,  6502,  6505,  6509,  6514,  6519,  6520,  6525,  6539,  6555,
-    6565,  6583,  6590,  6597,  6604,  6612,  6620,  6624,  6628,  6634,
-    6635,  6636,  6637,  6638,  6639,  6640,  6641,  6644,  6648,  6652,
-    6656,  6660,  6664,  6668,  6672,  6676,  6680,  6684,  6688,  6692,
-    6696,  6710,  6714,  6718,  6724,  6728,  6732,  6736,  6740,  6756,
-    6761,  6764,  6769,  6774,  6774,  6775,  6778,  6795,  6804,  6804,
-    6822,  6822,  6840,  6841,  6842,  6845,  6849,  6853,  6857,  6863,
-    6866,  6870,  6876,  6880,  6884,  6890,  6893,  6898,  6899,  6902,
-    6905,  6908,  6911,  6916,  6919,  6924,  6930,  6936,  6942,  6948,
-    6954,  6962,  6970,  6975,  6982,  6985,  6995,  7006,  7017,  7027,
-    7037,  7045,  7057,  7058,  7061,  7062,  7063,  7064,  7067,  7079,
-    7085,  7094,  7095,  7096,  7099,  7100,  7101,  7104,  7105,  7108,
-    7113,  7117,  7120,  7123,  7126,  7129,  7134,  7138,  7141,  7148,
-    7154,  7157,  7162,  7165,  7171,  7176,  7180,  7183,  7186,  7189,
-    7194,  7198,  7201,  7204,  7210,  7213,  7216,  7224,  7227,  7230,
-    7234,  7239,  7252,  7256,  7261,  7267,  7271,  7276,  7280,  7287,
-    7290,  7295
+    2120,  2133,  2133,  2189,  2190,  2197,  2216,  2247,  2251,  2262,
+    2268,  2287,  2330,  2336,  2349,  2355,  2381,  2387,  2394,  2395,
+    2398,  2399,  2406,  2452,  2498,  2509,  2512,  2539,  2545,  2551,
+    2557,  2565,  2571,  2577,  2583,  2591,  2592,  2593,  2596,  2601,
+    2611,  2647,  2648,  2683,  2700,  2708,  2721,  2746,  2752,  2756,
+    2759,  2770,  2775,  2788,  2800,  3098,  3108,  3115,  3116,  3120,
+    3120,  3145,  3151,  3161,  3173,  3182,  3262,  3325,  3329,  3354,
+    3358,  3369,  3374,  3375,  3376,  3380,  3381,  3382,  3393,  3398,
+    3403,  3410,  3416,  3421,  3424,  3424,  3437,  3440,  3443,  3452,
+    3455,  3462,  3484,  3513,  3611,  3664,  3665,  3666,  3667,  3668,
+    3669,  3674,  3674,  3923,  3923,  4070,  4071,  4083,  4101,  4101,
+    4362,  4368,  4374,  4377,  4380,  4383,  4386,  4389,  4394,  4430,
+    4434,  4437,  4440,  4445,  4449,  4454,  4464,  4495,  4495,  4553,
+    4553,  4575,  4602,  4619,  4624,  4619,  4632,  4633,  4634,  4634,
+    4650,  4651,  4668,  4669,  4670,  4671,  4672,  4673,  4674,  4675,
+    4676,  4677,  4678,  4679,  4680,  4681,  4682,  4683,  4685,  4688,
+    4692,  4704,  4733,  4763,  4796,  4812,  4830,  4849,  4869,  4889,
+    4897,  4904,  4911,  4919,  4927,  4930,  4934,  4937,  4938,  4939,
+    4940,  4941,  4942,  4943,  4944,  4947,  4958,  4969,  4982,  4993,
+    5004,  5018,  5021,  5024,  5025,  5029,  5031,  5039,  5051,  5052,
+    5053,  5054,  5055,  5056,  5057,  5058,  5059,  5060,  5061,  5062,
+    5063,  5064,  5065,  5066,  5067,  5068,  5069,  5070,  5077,  5088,
+    5092,  5099,  5103,  5108,  5112,  5124,  5134,  5144,  5147,  5151,
+    5157,  5170,  5174,  5177,  5181,  5185,  5213,  5221,  5234,  5250,
+    5261,  5271,  5283,  5287,  5291,  5298,  5320,  5337,  5356,  5375,
+    5382,  5390,  5399,  5408,  5412,  5421,  5432,  5443,  5455,  5465,
+    5479,  5487,  5496,  5505,  5509,  5518,  5529,  5540,  5552,  5562,
+    5572,  5583,  5596,  5603,  5611,  5627,  5635,  5646,  5657,  5668,
+    5687,  5695,  5712,  5720,  5727,  5734,  5745,  5757,  5768,  5780,
+    5791,  5802,  5822,  5843,  5849,  5855,  5862,  5869,  5878,  5887,
+    5890,  5899,  5908,  5915,  5922,  5929,  5937,  5947,  5958,  5969,
+    5980,  5987,  5994,  5997,  6014,  6032,  6042,  6049,  6055,  6060,
+    6067,  6071,  6076,  6083,  6087,  6093,  6097,  6103,  6104,  6105,
+    6111,  6117,  6121,  6122,  6126,  6133,  6136,  6137,  6141,  6142,
+    6144,  6147,  6150,  6155,  6166,  6191,  6194,  6248,  6252,  6256,
+    6260,  6264,  6268,  6272,  6276,  6280,  6284,  6288,  6292,  6296,
+    6300,  6306,  6306,  6322,  6327,  6330,  6336,  6351,  6367,  6368,
+    6371,  6372,  6376,  6377,  6381,  6385,  6390,  6398,  6407,  6412,
+    6417,  6420,  6426,  6434,  6446,  6461,  6462,  6482,  6486,  6496,
+    6502,  6505,  6508,  6512,  6517,  6522,  6523,  6528,  6542,  6558,
+    6568,  6586,  6593,  6600,  6607,  6615,  6623,  6627,  6631,  6637,
+    6638,  6639,  6640,  6641,  6642,  6643,  6644,  6647,  6651,  6655,
+    6659,  6663,  6667,  6671,  6675,  6679,  6683,  6687,  6691,  6695,
+    6699,  6713,  6717,  6721,  6727,  6731,  6735,  6739,  6743,  6759,
+    6764,  6767,  6772,  6777,  6777,  6778,  6781,  6798,  6807,  6807,
+    6825,  6825,  6843,  6844,  6845,  6848,  6852,  6856,  6860,  6866,
+    6869,  6873,  6879,  6883,  6887,  6893,  6896,  6901,  6902,  6905,
+    6908,  6911,  6914,  6919,  6922,  6927,  6933,  6939,  6945,  6951,
+    6957,  6965,  6973,  6978,  6985,  6988,  6998,  7009,  7020,  7030,
+    7040,  7048,  7060,  7061,  7064,  7065,  7066,  7067,  7070,  7082,
+    7088,  7097,  7098,  7099,  7102,  7103,  7104,  7107,  7108,  7111,
+    7116,  7120,  7123,  7126,  7129,  7132,  7137,  7141,  7144,  7151,
+    7157,  7160,  7165,  7168,  7174,  7179,  7183,  7186,  7189,  7192,
+    7197,  7201,  7204,  7207,  7213,  7216,  7219,  7227,  7230,  7233,
+    7237,  7242,  7255,  7257,  7270,  7274,  7279,  7285,  7289,  7294,
+    7298,  7305,  7308,  7313
 };
 #endif
 
-#if YYDEBUG || YYERROR_VERBOSE || 0
+/** Accessing symbol of state STATE.  */
+#define YY_ACCESSING_SYMBOL(State) YY_CAST (yysymbol_kind_t, yystos[State])
+
+#if YYDEBUG || 0
+/* The user-facing name of the symbol whose (internal) number is
+   YYSYMBOL.  No bounds checking.  */
+static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
+
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "ID", "HBLOCK", "POUND", "STRING",
-  "WSTRING", "INCLUDE", "IMPORT", "INSERT", "CHARCONST", "WCHARCONST",
-  "NUM_INT", "NUM_FLOAT", "NUM_UNSIGNED", "NUM_LONG", "NUM_ULONG",
-  "NUM_LONGLONG", "NUM_ULONGLONG", "NUM_BOOL", "TYPEDEF", "TYPE_INT",
-  "TYPE_UNSIGNED", "TYPE_SHORT", "TYPE_LONG", "TYPE_FLOAT", "TYPE_DOUBLE",
-  "TYPE_CHAR", "TYPE_WCHAR", "TYPE_VOID", "TYPE_SIGNED", "TYPE_BOOL",
-  "TYPE_COMPLEX", "TYPE_TYPEDEF", "TYPE_RAW", "TYPE_NON_ISO_INT8",
-  "TYPE_NON_ISO_INT16", "TYPE_NON_ISO_INT32", "TYPE_NON_ISO_INT64",
-  "LPAREN", "RPAREN", "COMMA", "SEMI", "EXTERN", "INIT", "LBRACE",
-  "RBRACE", "PERIOD", "CONST_QUAL", "VOLATILE", "REGISTER", "STRUCT",
-  "UNION", "EQUAL", "SIZEOF", "MODULE", "LBRACKET", "RBRACKET",
-  "BEGINFILE", "ENDOFFILE", "ILLEGAL", "CONSTANT", "NAME", "RENAME",
-  "NAMEWARN", "EXTEND", "PRAGMA", "FEATURE", "VARARGS", "ENUM", "CLASS",
-  "TYPENAME", "PRIVATE", "PUBLIC", "PROTECTED", "COLON", "STATIC",
+  "\"end of file\"", "error", "\"invalid token\"", "ID", "HBLOCK",
+  "POUND", "STRING", "WSTRING", "INCLUDE", "IMPORT", "INSERT", "CHARCONST",
+  "WCHARCONST", "NUM_INT", "NUM_FLOAT", "NUM_UNSIGNED", "NUM_LONG",
+  "NUM_ULONG", "NUM_LONGLONG", "NUM_ULONGLONG", "NUM_BOOL", "TYPEDEF",
+  "TYPE_INT", "TYPE_UNSIGNED", "TYPE_SHORT", "TYPE_LONG", "TYPE_FLOAT",
+  "TYPE_DOUBLE", "TYPE_CHAR", "TYPE_WCHAR", "TYPE_VOID", "TYPE_SIGNED",
+  "TYPE_BOOL", "TYPE_COMPLEX", "TYPE_TYPEDEF", "TYPE_RAW",
+  "TYPE_NON_ISO_INT8", "TYPE_NON_ISO_INT16", "TYPE_NON_ISO_INT32",
+  "TYPE_NON_ISO_INT64", "LPAREN", "RPAREN", "COMMA", "SEMI", "EXTERN",
+  "INIT", "LBRACE", "RBRACE", "PERIOD", "CONST_QUAL", "VOLATILE",
+  "REGISTER", "STRUCT", "UNION", "EQUAL", "SIZEOF", "MODULE", "LBRACKET",
+  "RBRACKET", "BEGINFILE", "ENDOFFILE", "ILLEGAL", "CONSTANT", "NAME",
+  "RENAME", "NAMEWARN", "EXTEND", "PRAGMA", "FEATURE", "VARARGS", "ENUM",
+  "CLASS", "TYPENAME", "PRIVATE", "PUBLIC", "PROTECTED", "COLON", "STATIC",
   "VIRTUAL", "FRIEND", "THROW", "CATCH", "EXPLICIT", "STATIC_ASSERT",
   "CONSTEXPR", "THREAD_LOCAL", "DECLTYPE", "AUTO", "NOEXCEPT", "OVERRIDE",
   "FINAL", "USING", "NAMESPACE", "NATIVE", "INLINE", "TYPEMAP", "EXCEPT",
@@ -2269,14 +2463,20 @@ static const char *const yytname[] =
   "mem_initializer", "less_valparms_greater", "identifier", "idstring",
   "idstringopt", "idcolon", "idcolontail", "idtemplate",
   "idtemplatetemplate", "idcolonnt", "idcolontailnt", "string", "wstring",
-  "stringbrace", "options", "kwargs", "stringnum", "empty", YY_NULLPTR
+  "stringbrace", "options", "options_ex", "kwargs", "stringnum", "empty", YY_NULLPTR
 };
+
+static const char *
+yysymbol_name (yysymbol_kind_t yysymbol)
+{
+  return yytname[yysymbol];
+}
 #endif
 
-# ifdef YYPRINT
+#ifdef YYPRINT
 /* YYTOKNUM[NUM] -- (External) token number corresponding to the
    (internal) symbol number NUM (which must be that of a token).  */
-static const yytype_uint16 yytoknum[] =
+static const yytype_int16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
@@ -2294,317 +2494,317 @@ static const yytype_uint16 yytoknum[] =
      385,   386,   387,   388,   389,   390,   391,   392,   393,   394,
      395,   396,   397
 };
-# endif
+#endif
 
-#define YYPACT_NINF -1036
+#define YYPACT_NINF (-1036)
 
-#define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-1036)))
+#define yypact_value_is_default(Yyn) \
+  ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF -612
+#define YYTABLE_NINF (-614)
 
-#define yytable_value_is_error(Yytable_value) \
+#define yytable_value_is_error(Yyn) \
   0
 
   /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
      STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-     719,  4503,  4606,    69,    81,  3947, -1036, -1036, -1036, -1036,
+     399,  4602,  4705,   250,    89,  4046, -1036, -1036, -1036, -1036,
    -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
-   -1036, -1036, -1036, -1036, -1036, -1036,   149, -1036, -1036, -1036,
-   -1036, -1036,   304,   205,   236,   299, -1036, -1036,   226,   241,
-     289,  5235,   185,   306,   441,  5518,   699,   174,   699, -1036,
-   -1036, -1036,  3303, -1036,   185,   289, -1036,   269, -1036,   463,
-     507,  4916, -1036,   382, -1036, -1036, -1036,   521, -1036, -1036,
-      39,   535,  5019,   537, -1036, -1036,   535,   546,   579,   590,
-       8, -1036, -1036,   613,   562,   624,   217,   293,   298,   343,
-     635,   169,   639,   649,   542,  5306,  5306,   640,   654,   698,
-     665,   278, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
-   -1036, -1036, -1036, -1036,   535, -1036, -1036, -1036, -1036, -1036,
-   -1036, -1036,   857, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
+   -1036, -1036, -1036, -1036, -1036, -1036,   127, -1036, -1036, -1036,
+   -1036, -1036,   292,   153,   159,    72, -1036, -1036,   111,   189,
+     243,  5334,   488,   137,   322,  5617,   619,  1265,   619, -1036,
+   -1036, -1036,  2765, -1036,   488,   243, -1036,   163, -1036,   385,
+     403,  5015, -1036,   344, -1036, -1036, -1036,   316, -1036, -1036,
+      44,   444,  5118,   460, -1036, -1036,   444,   467,   496,   501,
+      12, -1036, -1036,   515,   476,   531,   366,    39,   240,   412,
+     560,   175,   570,   587,   602,  5405,  5405,   576,   578,   616,
+     625,    15, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
+   -1036, -1036, -1036, -1036,   444, -1036, -1036, -1036, -1036, -1036,
+   -1036, -1036,  1700, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
    -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
-   -1036, -1036, -1036,    82,  5377, -1036,   660, -1036, -1036,   662,
-     664,   185,   162,   483,  2266, -1036, -1036, -1036, -1036, -1036,
-     699, -1036,  3541,   674,   166,  2402,  3218,    52,   434,  1513,
-      48,   185, -1036, -1036,   244,   385,   244,   404,   403,   597,
-   -1036, -1036, -1036, -1036, -1036,   202,   223, -1036, -1036, -1036,
-     683, -1036,   687, -1036, -1036,   626, -1036, -1036,   483,   154,
-     626,   626, -1036,   682,  1158, -1036,    13,   802,    34,   202,
-     202, -1036,   626,  4813, -1036, -1036,  4916, -1036, -1036, -1036,
-   -1036, -1036, -1036,   185,   272, -1036,   249,   700,   202, -1036,
-   -1036,   626,   202, -1036, -1036, -1036,   768,  4916,   730,   381,
-     747,   754,   626,   698,   768,  4916,  4916,   185,   698,   358,
-     925,  1139,   626,   438,  2013,   688, -1036, -1036,  1158,   185,
-    1441,   232, -1036,   759,   764,   772,   202, -1036, -1036,   269,
-     711,   706, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
-   -1036, -1036, -1036,  3218,   370,  3218,  3218,  3218,  3218,  3218,
-    3218,  3218, -1036,   714, -1036,   786,   790,  1061,  2238,    36,
-      21, -1036, -1036,   768,   827, -1036, -1036,  3658,   130,   130,
-     797,   803,   892,   733,   798, -1036, -1036, -1036,   799,  3218,
-   -1036, -1036, -1036, -1036,  3722, -1036,  2238,   814,  3658,   809,
-     185,   440,   404, -1036,   811,   440,   404, -1036,   725, -1036,
-   -1036,  4916,  2538, -1036,  4916,  2674,   818,  1935,  2272,   440,
-     404,   755,   553, -1036, -1036,   269,   830,  4709, -1036, -1036,
-   -1036, -1036,   839,   768,   185, -1036, -1036,   392,   842, -1036,
-   -1036,  1447,   244,   447,   318, -1036,   858, -1036, -1036, -1036,
-   -1036,   185, -1036,   860,   844,   499,   868,   861, -1036,   874,
-     873, -1036,  5448, -1036,   185, -1036,   877,   879, -1036,   880,
-     881,  5306, -1036, -1036,   459, -1036, -1036, -1036,  5306, -1036,
-   -1036, -1036,   883, -1036, -1036,   566,   261,   885,   823, -1036,
-     889, -1036,   165, -1036, -1036,    54,   128,   128,   128,   467,
-     819,   895,   147,   894,  4916,  2408,  2492,   828,  2018,  1576,
-      50,   863,   242, -1036,  3775,  1576, -1036,   897, -1036,   286,
-   -1036, -1036, -1036, -1036,   289, -1036,   483,   942,  2642,  5448,
-     900,  3050,  2649, -1036, -1036, -1036, -1036, -1036, -1036,  2266,
-   -1036, -1036, -1036,  3218,  3218,  3218,  3218,  3218,  3218,  3218,
-    3218,  3218,  3218,  3218,  3218,  3218,  3218,  3218,  3218,  3218,
-     947,   953, -1036,   531,   531,  2074,   845,   362, -1036,   519,
-   -1036, -1036,   531,   531,   565,   848,  1601,   128,  3218,  2238,
-   -1036,  4916,  2007,    11,   910, -1036,  4916,  2810,   918, -1036,
-     926, -1036,  4450,   928, -1036,  4760,   922,   923,   440,   404,
-     930,   440,   404,  1887,   931,   932,  2544,   440, -1036, -1036,
-   -1036,  4916,   687,   354, -1036, -1036,   626,  2722, -1036,   941,
-    4916,   946, -1036,   944, -1036,   681,  1465,  2237,   954,  4916,
-    1158,   973, -1036,   381,  4060,   979, -1036,  1048,  5306,   186,
-     984,   980,  4916,   754,   508,   982,   626,  4916,   126,   935,
-    4916, -1036, -1036, -1036,  1601,   276,  1305,    18, -1036,   987,
-    2356,   989,   288,   945,   948, -1036, -1036,   638, -1036,   328,
-   -1036, -1036, -1036,   920, -1036,   977,  5518,   482, -1036,   995,
-     819,   244,   960, -1036, -1036,   993, -1036,   185, -1036,  3218,
-    2946,  3082,  3354,    70,   174,   997,   786,   867,   867,  3177,
-    3177,  2373,  1277,  3050,  2921,  2785,  2649,   752,   752,   732,
-     732, -1036, -1036, -1036, -1036, -1036,   848,   699, -1036, -1036,
-   -1036,   531,  1000,  1002,   381,   438,  4863,  1006,   600,   848,
-   -1036,  1232,  1305,  1007, -1036,  5395,  1305,   416, -1036,   416,
-   -1036,  1305,  1004,  1005,  1010,  1011,  2628,   440,   404,  1018,
-    1019,  1020,   440,   687, -1036, -1036, -1036,   768,  4173, -1036,
-    1008, -1036,   261,  1012, -1036,  1030, -1036, -1036, -1036, -1036,
-     768, -1036, -1036, -1036,  1033, -1036,  1576,   768, -1036,  1022,
-      88,   658,  1465, -1036,  1576, -1036,  1034, -1036, -1036,  4286,
-      44,  5448,   484, -1036, -1036,  4916, -1036,  1037, -1036,   939,
-   -1036,   280,   985, -1036,  1041,  1036, -1036,   185,  1742,   889,
-   -1036,   381,  1576,   353,  1305, -1036,  4916,  3218, -1036, -1036,
-   -1036, -1036, -1036,  4678, -1036,   474, -1036, -1036,  1023,  3076,
-     426, -1036, -1036,  1045, -1036,   804, -1036,  2147, -1036,   244,
-    2238,  3218,  3218,  3354,  3845,  3218,  1049,  1050,  1057,  1060,
-   -1036,  3218, -1036, -1036,  1063,  1064, -1036, -1036, -1036,   621,
-     440, -1036, -1036,   440, -1036, -1036,   440,  1305,  1305,  1054,
-    1059,  1062,   440,  1305,  1065,  1066, -1036, -1036,   626,   626,
-     416,  2147,  4916,   126,  2722,  1654,   626,  1070, -1036,  1576,
-    1046, -1036, -1036,   768,  1158,   173, -1036,  5306, -1036,  1071,
-     416,    72,   202,   104, -1036,  2266,   192, -1036,  1067,    39,
-     302, -1036, -1036, -1036, -1036, -1036, -1036, -1036,  5090, -1036,
-    4399,  1077, -1036,  1083,  2777, -1036, -1036, -1036,   505, -1036,
-   -1036, -1036,  4916, -1036,   525,  1023, -1036,    62,  1081,    24,
-   -1036,  4916,   318,  1082,  1055, -1036, -1036,  1158, -1036, -1036,
-   -1036,   960, -1036, -1036, -1036,   185, -1036, -1036, -1036,  1092,
-    1073,  1076,  1078,  1013,  3435,   202, -1036, -1036, -1036, -1036,
+   -1036, -1036, -1036,    35,  5476, -1036,   608, -1036, -1036,   624,
+     631,   488,   337,   592,  2272, -1036, -1036, -1036, -1036, -1036,
+     619, -1036,  3640,   633,   220,  2408,  3224,    46,   110,   439,
+      50,   488, -1036, -1036,   231,   237,   231,   317,  1857,   568,
+   -1036, -1036, -1036, -1036, -1036,   245,   364, -1036, -1036, -1036,
+     647, -1036,   650, -1036, -1036,   408, -1036, -1036,   592,   118,
+     408,   408, -1036,   657,  3400, -1036,   161,  1003,   353,   245,
+     245, -1036,   408,  4912, -1036, -1036,  5015, -1036, -1036, -1036,
+   -1036, -1036, -1036,   488,   336, -1036,   172,   656,   245, -1036,
+   -1036,   408,   245, -1036, -1036, -1036,   699,  5015,   662,  1471,
+     667,   672,   408,   616,   699,  5015,  5015,   488,   616,  2244,
+     571,  1039,   408,   321,  1387,   603, -1036, -1036,  3400,   488,
+    3414,   558, -1036,   680,   682,   697,   245, -1036, -1036,   163,
+     651,   669, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
+   -1036, -1036, -1036,  3224,   432,  3224,  3224,  3224,  3224,  3224,
+    3224,  3224, -1036,   654, -1036,   681,   754,  1933,  2918,    59,
+      61, -1036, -1036,   699,   795, -1036, -1036,  3757,   806,   806,
+     769,   770,    54,   701,   768, -1036, -1036, -1036,   762,  3224,
+   -1036, -1036, -1036, -1036,  3821, -1036,  2918,   787,  3757,   781,
+     488,   383,   317, -1036,   782,   383,   317, -1036,   702, -1036,
+   -1036,  5015,  2544, -1036,  5015,  2680,   799,   886,  1015,   383,
+     317,   725,   184, -1036, -1036,   163,   807,  4808, -1036, -1036,
+   -1036, -1036,   814,   699,   488, -1036, -1036,   424,   808, -1036,
+   -1036,   979,   231,   452,   480, -1036,   817, -1036, -1036, -1036,
+   -1036,   488, -1036,   823,   811,   596,   826,   829, -1036,   831,
+     832, -1036,  5547, -1036,   488, -1036,   836,   838, -1036,   843,
+     847,  5405, -1036, -1036,   486, -1036, -1036, -1036,  5405, -1036,
+   -1036, -1036,   849, -1036, -1036,   675,   254,   851,   789, -1036,
+     852, -1036,    62, -1036, -1036,   104,   249,   249,   249,   709,
+     784,   861,   380,   863,  5015,  1143,  1211,   788,  1916,  1214,
+      74,   834,   299, -1036,  3874,  1214, -1036,   865, -1036,   255,
+   -1036, -1036, -1036, -1036,   243, -1036,   592,   910,  2511,  5547,
+     866,  3606,  2518, -1036, -1036, -1036, -1036, -1036, -1036,  2272,
+   -1036, -1036, -1036,  3224,  3224,  3224,  3224,  3224,  3224,  3224,
+    3224,  3224,  3224,  3224,  3224,  3224,  3224,  3224,  3224,  3224,
+     917,   919, -1036,   494,   494,  1565,   815,   313, -1036,   372,
+   -1036, -1036,   494,   494,   449,   816,   888,   249,  3224,  2918,
+   -1036,  5015,   148,    18,   887, -1036,  5015,  2816,   892, -1036,
+     907, -1036,  4549,   908, -1036,  4859,   905,   913,   383,   317,
+     921,   383,   317,  3434,   924,   925,  1258,   383, -1036, -1036,
+   -1036,  5015,   650,   408,   938, -1036, -1036, -1036,   408,  1202,
+   -1036,   937,  5015,   940, -1036,   939, -1036,   645,   404,  2498,
+     943,  5015,  3400,   942, -1036,  1471,  4159,   948, -1036,   880,
+    5405,   265,   946,   947,  5015,   672,   614,   956,   408,  5015,
+      84,   920,  5015, -1036, -1036, -1036,   888,  1624,   448,    23,
+   -1036,   963,  2362,   968,   182,   933,   926, -1036, -1036,   793,
+   -1036,   272, -1036, -1036, -1036,   914, -1036,   970,  5617,   502,
+   -1036,   988,   784,   231,   955, -1036, -1036,   990, -1036,   488,
+   -1036,  3224,  2952,  3088,  3360,    14,  1265,   992,   681,  1106,
+    1106,  1590,  1590,  2782,  3190,  3606,  2791,  1817,  2518,  1069,
+    1069,   648,   648, -1036, -1036, -1036, -1036, -1036,   816,   619,
+   -1036, -1036, -1036,   494,  1000,  1002,  1471,   321,  4962,  1006,
+     540,   816, -1036,   346,   448,  1008, -1036,  5494,   448,   219,
+   -1036,   219, -1036,   448,  1004,  1009,  1012,  1013,  1485,   383,
+     317,  1014,  1022,  1027,   383,   650, -1036, -1036,   314,  4272,
+   -1036,  1035, -1036,   254,  1038, -1036,  1010, -1036, -1036, -1036,
+   -1036,   699, -1036, -1036, -1036,  1016, -1036,  1214,   699, -1036,
+    1028,   103,   694,   404, -1036,  1214, -1036,  1011, -1036, -1036,
+    4385,    40,  5547,   586, -1036, -1036,  5015, -1036,  1043, -1036,
+     944, -1036,   199,   986, -1036,  1050,  1049, -1036,   488,   953,
+     852, -1036,  1471,  1214,   187,   448, -1036,  5015,  3224, -1036,
+   -1036, -1036, -1036, -1036,  4777, -1036,   422, -1036, -1036,  1040,
+    1812,   417, -1036, -1036,  1061, -1036,   724, -1036,  2142, -1036,
+     231,  2918,  3224,  3224,  3360,  3944,  3224,  1065,  1070,  1072,
+    1074, -1036,  3224, -1036, -1036,  1075,  1076, -1036, -1036, -1036,
+     555,   383, -1036, -1036,   383, -1036, -1036,   383,   448,   448,
+    1077,  1084,  1087,   383,   448,  1088,  1093, -1036, -1036, -1036,
+     699, -1036,   408,   408,   219,  2142,  5015,    84,  1202,  1672,
+     408,  1081, -1036,  1214,  1099, -1036, -1036,   699,  3400,   146,
+   -1036,  5405, -1036,  1083,   219,   233,   245,   384, -1036,  2272,
+     236, -1036,  1064,    44,   622, -1036, -1036, -1036, -1036, -1036,
+   -1036, -1036,  5189, -1036,  4498,  1104, -1036,  1107,  2647, -1036,
+   -1036, -1036,   684, -1036, -1036, -1036,  5015, -1036,   510,  1040,
+   -1036,   123,  1109,    16, -1036,  5015,   480,  1097,  1089, -1036,
+   -1036,  3400, -1036, -1036, -1036,   955, -1036, -1036, -1036,   488,
+   -1036, -1036, -1036,  1111,  1091,  1092,  1098,  1019,  3534,   245,
    -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
-   -1036, -1036, -1036, -1036, -1036, -1036, -1036,  1099,  1031,  2147,
-   -1036, -1036, -1036, -1036, -1036, -1036, -1036,  5162,  1100,  2147,
-   -1036,  2238,  2238,  2238,  3218,  3218, -1036,  5448,  2508, -1036,
-   -1036, -1036,   440,   440,  1305,  1107,  1115,   440,  1305,  1305,
-   -1036, -1036,   244,  1117,  1128, -1036,   768,  1136, -1036,  1576,
-    1768,   126, -1036,  1138, -1036,  1141, -1036, -1036, -1036,   280,
-   -1036, -1036,   280,  1084, -1036, -1036,  5448,  4916,  1158,  5448,
-    1950, -1036, -1036,   505, -1036, -1036,   244, -1036,  1129, -1036,
-   -1036, -1036, -1036,   202,  1023, -1036,  1131,  1774,    38, -1036,
-    1149,  1148,   318,   185,   620, -1036,  1576, -1036,  1134,   960,
-    2147, -1036, -1036, -1036, -1036,   202, -1036,  1155,  1831, -1036,
-   -1036,  1123,  1126,  1133,  1135,  1140,    25,  1153,  2238,  2238,
-     174,   440,  1305,  1305,   440,   440,  1161, -1036,  1162, -1036,
-    1164, -1036,  1576, -1036, -1036, -1036, -1036, -1036,  1167,   381,
-    1108,    17,  3775, -1036,   426,  1576,  1174, -1036, -1036,  3218,
-   -1036,  1576,  1023, -1036,   627, -1036,  1181,  1176,  1177,   486,
-   -1036, -1036,   244,  1178, -1036, -1036, -1036,   185, -1036,  2147,
-    1187,  4916, -1036, -1036,  1576,  3218, -1036,  1831,  1191,   440,
-     440, -1036, -1036, -1036,  1190, -1036,  1193, -1036,  4916,  1197,
-    1198,     9,  1202, -1036,    45, -1036, -1036,  2238,   244, -1036,
-   -1036, -1036, -1036,   185,  1196, -1036, -1036,   426,  1201,  1134,
-    1192,  4916,  1204,   244,  2912, -1036, -1036, -1036, -1036,  1210,
-    4916,  4916,  4916,  1215,  3076,  5448,   525,   426,  1211,  1212,
-   -1036, -1036, -1036, -1036,  1221,  1576,   426, -1036,  1576,  1229,
-    1230,  1233,  4916, -1036,  1234, -1036, -1036,  1228, -1036,  2147,
-    1576, -1036,   571, -1036, -1036,   606,  1576,  1576,  1576,  1237,
-     525,  1239, -1036, -1036, -1036, -1036,   318, -1036, -1036,   318,
-   -1036, -1036, -1036,  1576, -1036, -1036,  1242,  1245, -1036, -1036,
-   -1036
+   -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036, -1036,
+   -1036,  1113,  1044,  2142, -1036, -1036, -1036, -1036, -1036, -1036,
+   -1036,  5261,  1131,  2142, -1036,  2918,  2918,  2918,  3224,  3224,
+   -1036,  5547,  3054, -1036, -1036, -1036,   383,   383,   448,  1132,
+    1133,   383,   448,   448, -1036, -1036,   231,  1137,  1144, -1036,
+     699,  1146, -1036,  1214,  1753,    84, -1036,  1147, -1036,  1149,
+   -1036, -1036, -1036,   199, -1036, -1036,   199,  1082, -1036, -1036,
+    5547,  5015,  3400,  5547,  3432, -1036, -1036,   684, -1036, -1036,
+     231, -1036,  1148, -1036, -1036, -1036, -1036,   245,  1040, -1036,
+    1140,  1960,    94, -1036,  1154,  1153,   480,   488,   516, -1036,
+    1214, -1036,  1150,   955,  2142, -1036, -1036, -1036, -1036,   245,
+   -1036,  1161,  3378, -1036, -1036,  1134,  1135,  1136,  1151,  1152,
+     261,  1166,  2918,  2918,  1265,   383,   448,   448,   383,   383,
+    1181, -1036,  1182, -1036,  1183, -1036,  1214, -1036, -1036, -1036,
+   -1036, -1036,  1187,  1471,  1141,    92,  3874, -1036,   417,  1214,
+    1193, -1036, -1036,  3224, -1036,  1214,  1040, -1036,   612, -1036,
+    1204,  1206,  1205,   431, -1036, -1036,   231,  1212, -1036, -1036,
+   -1036,   488, -1036,  2142,  1210,  5015, -1036, -1036,  1214,  3224,
+   -1036,  3378,  1225,   383,   383, -1036, -1036, -1036,  1224, -1036,
+    1226, -1036,  5015,  1236,  1237,    22,  1234, -1036,    49, -1036,
+   -1036,  2918,   231, -1036, -1036, -1036, -1036,   488,  1231, -1036,
+   -1036,   417,  1238,  1150,  1240,  5015,  1243,   231,  1997, -1036,
+   -1036, -1036, -1036,  1252,  5015,  5015,  5015,  1255,  1812,  5547,
+     510,   417,  1248,  1249, -1036, -1036, -1036, -1036,  1266,  1214,
+     417, -1036,  1214,  1267,  1268,  1269,  5015, -1036,  1253, -1036,
+   -1036,  1263, -1036,  2142,  1214, -1036,   338, -1036, -1036,   376,
+    1214,  1214,  1214,  1271,   510,  1270, -1036, -1036, -1036, -1036,
+     480, -1036, -1036,   480, -1036, -1036, -1036,  1214, -1036, -1036,
+    1272,  1273, -1036, -1036, -1036
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
      Performed when YYTABLE does not specify something else to do.  Zero
      means the default is an error.  */
-static const yytype_uint16 yydefact[] =
+static const yytype_int16 yydefact[] =
 {
-     611,     0,     0,     0,     0,     0,    12,     4,   561,   407,
+     613,     0,     0,     0,     0,     0,    12,     4,   561,   407,
      415,   408,   409,   412,   413,   410,   411,   397,   414,   396,
      416,   399,   417,   418,   419,   420,     0,   387,   388,   389,
      520,   521,   146,   515,   516,     0,   562,   563,     0,     0,
-     573,     0,     0,   287,     0,     0,   385,   611,   392,   402,
+     573,     0,     0,   287,     0,     0,   385,   613,   392,   402,
      395,   404,   405,   519,     0,   580,   400,   571,     6,     0,
-       0,   611,     1,    17,    67,    63,    64,     0,   263,    16,
-     258,   611,     0,     0,    85,    86,   611,   611,     0,     0,
+       0,   613,     1,    17,    67,    63,    64,     0,   263,    16,
+     258,   613,     0,     0,    85,    86,   613,   613,     0,     0,
      262,   264,   265,     0,   266,     0,   267,   272,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,    10,    11,     9,    13,    20,    21,    22,    23,
-      24,    25,    26,    27,   611,    28,    29,    30,    31,    32,
+      24,    25,    26,    27,   613,    28,    29,    30,    31,    32,
       33,    34,     0,    35,    36,    37,    38,    39,    40,    14,
      116,   121,   118,   117,    18,    15,   155,   156,   157,   158,
      159,   160,   124,   259,     0,   277,     0,   148,   147,     0,
-       0,     0,     0,     0,   611,   574,   288,   398,   289,     3,
-     391,   386,   611,     0,   421,     0,     0,   573,   363,   362,
-     379,     0,   304,   284,   611,   313,   611,   359,   353,   340,
+       0,     0,     0,     0,   613,   574,   288,   398,   289,     3,
+     391,   386,   613,     0,   421,     0,     0,   573,   363,   362,
+     379,     0,   304,   284,   613,   313,   613,   359,   353,   340,
      301,   393,   406,   401,   581,     0,     0,   569,     5,     8,
-       0,   278,   611,   280,    19,     0,   595,   275,     0,   257,
-       0,     0,   602,     0,     0,   390,   580,     0,   611,     0,
-       0,    81,     0,   611,   270,   274,   611,   268,   230,   271,
+       0,   278,   613,   280,    19,     0,   595,   275,     0,   257,
+       0,     0,   602,     0,     0,   390,   580,     0,   613,     0,
+       0,    81,     0,   613,   270,   274,   613,   268,   230,   271,
      269,   276,   273,     0,     0,   189,   580,     0,     0,    65,
-      66,     0,     0,    54,    52,    49,    50,   611,     0,   611,
-       0,   611,   611,     0,   115,   611,   611,     0,     0,     0,
-       0,     0,     0,   313,     0,   340,   261,   260,     0,   611,
-       0,   611,   286,     0,     0,     0,     0,   575,   582,   572,
+      66,     0,     0,    54,    52,    49,    50,   613,     0,   613,
+       0,   613,   613,     0,   115,   613,   613,     0,     0,     0,
+       0,     0,     0,   313,     0,   340,   261,   260,     0,   613,
+       0,   613,   286,     0,     0,     0,     0,   575,   582,   572,
        0,   561,   597,   457,   458,   469,   470,   471,   472,   473,
      474,   475,   476,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   295,     0,   290,   611,   446,   390,     0,   451,
-     445,   450,   455,   452,   456,   292,   394,   611,   363,   362,
+       0,     0,   295,     0,   290,   613,   446,   390,     0,   451,
+     445,   450,   455,   452,   456,   292,   394,   613,   363,   362,
        0,     0,   353,   400,     0,   299,   426,   427,   297,     0,
-     423,   424,   425,   370,     0,   445,   300,     0,   611,     0,
+     423,   424,   425,   370,     0,   445,   300,     0,   613,     0,
        0,   315,   361,   332,     0,   314,   360,   377,   378,   341,
-     302,   611,     0,   303,   611,     0,     0,   356,   355,   310,
+     302,   613,     0,   303,   613,     0,     0,   356,   355,   310,
      354,   332,   364,   579,   578,   577,     0,     0,   279,   283,
-     565,   564,     0,   566,     0,   594,   119,   605,     0,    71,
-      48,     0,   611,   313,   421,    73,     0,   523,   524,   522,
+     565,   564,   613,   566,     0,   594,   119,   607,     0,    71,
+      48,     0,   613,   313,   421,    73,     0,   523,   524,   522,
      525,     0,   526,     0,    77,     0,     0,     0,   101,     0,
-       0,   185,     0,   611,     0,   187,     0,     0,   106,     0,
+       0,   185,     0,   613,     0,   187,     0,     0,   106,     0,
        0,     0,   110,   306,   313,   307,   309,    44,     0,   107,
      109,   567,     0,   568,    57,     0,    56,     0,     0,   178,
-     611,   182,   519,   180,   170,     0,     0,     0,     0,   564,
-       0,     0,     0,     0,   611,     0,     0,   332,     0,   611,
-     340,   611,   580,   429,   611,   611,   503,     0,   502,   401,
+     613,   182,   519,   180,   170,     0,     0,     0,     0,   564,
+       0,     0,     0,     0,   613,     0,     0,   332,     0,   613,
+     340,   613,   580,   429,   613,   613,   503,     0,   502,   401,
      505,   517,   518,   403,     0,   570,     0,     0,     0,     0,
        0,   467,   466,   495,   494,   468,   496,   497,   560,     0,
      291,   294,   498,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,   596,   363,   362,   353,   400,     0,   340,     0,
      375,   372,   356,   355,     0,   340,   364,     0,     0,   422,
-     371,   611,   353,   400,     0,   333,   611,     0,     0,   376,
+     371,   613,   353,   400,     0,   333,   613,     0,     0,   376,
        0,   349,     0,     0,   368,     0,     0,     0,   312,   358,
        0,   311,   357,   366,     0,     0,     0,   316,   365,   576,
-       7,     0,   611,     0,   171,   611,     0,     0,   601,     0,
-     611,     0,    72,     0,    80,     0,     0,     0,     0,     0,
-       0,     0,   186,   611,     0,     0,   611,   611,     0,     0,
-     111,     0,   611,   611,     0,     0,     0,     0,     0,   168,
-       0,   179,   184,    61,     0,     0,     0,     0,    82,     0,
-       0,     0,   536,   529,   530,   384,   383,   541,   382,   380,
-     537,   542,   544,     0,   545,     0,     0,     0,   150,     0,
-     400,   611,   611,   163,   167,     0,   583,     0,   447,   459,
-       0,     0,   379,     0,   611,     0,   611,   492,   491,   489,
-     490,     0,   488,   487,   483,   484,   482,   485,   486,   477,
-     478,   479,   480,   481,   449,   448,     0,   364,   344,   343,
-     342,   366,     0,     0,   365,   323,     0,     0,     0,   332,
-     334,   364,     0,     0,   337,     0,     0,   351,   350,   373,
-     369,     0,     0,     0,     0,     0,     0,   317,   367,     0,
-       0,     0,   319,   611,   281,    69,    70,    68,     0,   606,
-     607,   610,   609,   603,    46,     0,    45,    41,    79,    76,
-      78,   600,    96,   599,     0,    91,   611,   598,    95,     0,
-     609,     0,     0,   102,   611,   229,     0,   190,   191,     0,
-     258,     0,     0,    53,    51,   611,    43,     0,   108,     0,
-     588,   586,     0,    60,     0,     0,   113,     0,   611,   611,
-     611,     0,   611,     0,     0,   351,   611,     0,   539,   532,
-     531,   543,   381,     0,   141,     0,   149,   151,   611,   611,
-       0,   131,   527,   504,   506,   508,   528,     0,   161,   611,
-     460,     0,     0,   379,   378,     0,     0,     0,     0,     0,
-     293,     0,   345,   347,     0,     0,   298,   352,   335,     0,
-     325,   339,   338,   324,   305,   374,   320,     0,     0,     0,
-       0,     0,   318,     0,     0,     0,   282,   120,     0,     0,
-     351,     0,   611,     0,     0,     0,     0,     0,    93,   611,
-       0,   122,   188,   257,     0,   580,   104,     0,   103,     0,
-     351,     0,     0,     0,   584,   611,     0,    55,     0,   258,
-       0,   172,   173,   176,   175,   169,   174,   177,     0,   183,
-       0,     0,    84,     0,     0,   134,   133,   135,   611,   137,
-     132,   136,   611,   142,     0,   430,   432,   438,     0,   434,
-     433,   611,   421,   542,   611,   154,   130,     0,   127,   129,
-     125,   611,   513,   512,   514,     0,   510,   198,   217,     0,
-       0,     0,     0,   264,   611,     0,   242,   243,   235,   244,
-     215,   196,   240,   236,   234,   237,   238,   239,   241,   216,
-     212,   213,   200,   207,   206,   210,   209,     0,   218,     0,
-     201,   202,   205,   211,   203,   204,   214,     0,   277,     0,
-     285,   463,   462,   461,     0,     0,   453,     0,   493,   346,
-     348,   336,   322,   321,     0,     0,     0,   326,     0,     0,
-     608,   604,   611,     0,     0,    87,   609,    98,    92,   611,
-       0,     0,   100,     0,    74,     0,   112,   308,   589,   587,
-     593,   592,   591,     0,    58,    59,     0,   611,     0,     0,
-       0,    62,    83,   535,   540,   533,   611,   534,     0,   144,
-     143,   140,   431,     0,   611,   440,   442,     0,   611,   435,
-       0,     0,     0,     0,     0,   553,   611,   507,   611,   611,
-       0,   193,   232,   231,   233,     0,   219,     0,     0,   220,
-     192,   397,   396,   399,     0,   395,   400,     0,   465,   464,
-     611,   327,     0,     0,   331,   330,     0,    42,     0,    99,
-       0,    94,   611,    89,    75,   105,   585,   590,     0,   611,
-       0,     0,   611,   538,     0,   611,     0,   441,   439,     0,
-     152,   611,   611,   436,     0,   550,     0,   552,   554,     0,
-     546,   547,   611,     0,   500,   509,   501,     0,   199,     0,
-       0,   611,   165,   164,   611,     0,   208,     0,     0,   329,
-     328,    47,    97,    88,     0,   114,     0,   168,   611,     0,
-       0,     0,     0,   126,     0,   145,   443,   444,   611,   437,
-     548,   549,   551,     0,     0,   558,   559,     0,     0,   611,
-       0,   611,     0,   611,     0,   162,   454,    90,   123,     0,
-     611,   611,   611,     0,   611,     0,     0,     0,   555,     0,
-     128,   499,   511,   194,     0,   611,     0,   251,   611,     0,
-       0,     0,   611,   221,     0,   138,   153,     0,   556,     0,
-     611,   222,     0,   166,   228,     0,   611,   611,   611,     0,
-       0,     0,   195,   223,   245,   247,     0,   248,   250,   421,
-     226,   225,   224,   611,   139,   557,     0,     0,   227,   246,
-     249
+       7,     0,   613,     0,     0,   604,   171,   613,     0,     0,
+     601,     0,   613,     0,    72,     0,    80,     0,     0,     0,
+       0,     0,     0,     0,   186,   613,     0,     0,   613,   613,
+       0,     0,   111,     0,   613,   613,     0,     0,     0,     0,
+       0,   168,     0,   179,   184,    61,     0,     0,     0,     0,
+      82,     0,     0,     0,   536,   529,   530,   384,   383,   541,
+     382,   380,   537,   542,   544,     0,   545,     0,     0,     0,
+     150,     0,   400,   613,   613,   163,   167,     0,   583,     0,
+     447,   459,     0,     0,   379,     0,   613,     0,   613,   492,
+     491,   489,   490,     0,   488,   487,   483,   484,   482,   485,
+     486,   477,   478,   479,   480,   481,   449,   448,     0,   364,
+     344,   343,   342,   366,     0,     0,   365,   323,     0,     0,
+       0,   332,   334,   364,     0,     0,   337,     0,     0,   351,
+     350,   373,   369,     0,     0,     0,     0,     0,     0,   317,
+     367,     0,     0,     0,   319,   613,   281,   603,     0,     0,
+     608,   609,   612,   611,   605,    46,     0,    45,    41,    79,
+      76,    78,   600,    96,   599,     0,    91,   613,   598,    95,
+       0,   611,     0,     0,   102,   613,   229,     0,   190,   191,
+       0,   258,     0,     0,    53,    51,   613,    43,     0,   108,
+       0,   588,   586,     0,    60,     0,     0,   113,     0,   613,
+     613,   613,     0,   613,     0,     0,   351,   613,     0,   539,
+     532,   531,   543,   381,     0,   141,     0,   149,   151,   613,
+     613,     0,   131,   527,   504,   506,   508,   528,     0,   161,
+     613,   460,     0,     0,   379,   378,     0,     0,     0,     0,
+       0,   293,     0,   345,   347,     0,     0,   298,   352,   335,
+       0,   325,   339,   338,   324,   305,   374,   320,     0,     0,
+       0,     0,     0,   318,     0,     0,     0,   282,    69,    70,
+      68,   120,     0,     0,   351,     0,   613,     0,     0,     0,
+       0,     0,    93,   613,     0,   122,   188,   257,     0,   580,
+     104,     0,   103,     0,   351,     0,     0,     0,   584,   613,
+       0,    55,     0,   258,     0,   172,   173,   176,   175,   169,
+     174,   177,     0,   183,     0,     0,    84,     0,     0,   134,
+     133,   135,   613,   137,   132,   136,   613,   142,     0,   430,
+     432,   438,     0,   434,   433,   613,   421,   542,   613,   154,
+     130,     0,   127,   129,   125,   613,   513,   512,   514,     0,
+     510,   198,   217,     0,     0,     0,     0,   264,   613,     0,
+     242,   243,   235,   244,   215,   196,   240,   236,   234,   237,
+     238,   239,   241,   216,   212,   213,   200,   207,   206,   210,
+     209,     0,   218,     0,   201,   202,   205,   211,   203,   204,
+     214,     0,   277,     0,   285,   463,   462,   461,     0,     0,
+     453,     0,   493,   346,   348,   336,   322,   321,     0,     0,
+       0,   326,     0,     0,   610,   606,   613,     0,     0,    87,
+     611,    98,    92,   613,     0,     0,   100,     0,    74,     0,
+     112,   308,   589,   587,   593,   592,   591,     0,    58,    59,
+       0,   613,     0,     0,     0,    62,    83,   535,   540,   533,
+     613,   534,     0,   144,   143,   140,   431,     0,   613,   440,
+     442,     0,   613,   435,     0,     0,     0,     0,     0,   553,
+     613,   507,   613,   613,     0,   193,   232,   231,   233,     0,
+     219,     0,     0,   220,   192,   397,   396,   399,     0,   395,
+     400,     0,   465,   464,   613,   327,     0,     0,   331,   330,
+       0,    42,     0,    99,     0,    94,   613,    89,    75,   105,
+     585,   590,     0,   613,     0,     0,   613,   538,     0,   613,
+       0,   441,   439,     0,   152,   613,   613,   436,     0,   550,
+       0,   552,   554,     0,   546,   547,   613,     0,   500,   509,
+     501,     0,   199,     0,     0,   613,   165,   164,   613,     0,
+     208,     0,     0,   329,   328,    47,    97,    88,     0,   114,
+       0,   168,   613,     0,     0,     0,     0,   126,     0,   145,
+     443,   444,   613,   437,   548,   549,   551,     0,     0,   558,
+     559,     0,     0,   613,     0,   613,     0,   613,     0,   162,
+     454,    90,   123,     0,   613,   613,   613,     0,   613,     0,
+       0,     0,   555,     0,   128,   499,   511,   194,     0,   613,
+       0,   251,   613,     0,     0,     0,   613,   221,     0,   138,
+     153,     0,   556,     0,   613,   222,     0,   166,   228,     0,
+     613,   613,   613,     0,     0,     0,   195,   223,   245,   247,
+       0,   248,   250,   421,   226,   225,   224,   613,   139,   557,
+       0,     0,   227,   246,   249
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-   -1036, -1036,  -360, -1036, -1036, -1036, -1036,    56,    67,    -2,
-      73, -1036,   743, -1036,    75,    80, -1036, -1036, -1036,    83,
-   -1036,    84, -1036,    90, -1036, -1036,    91, -1036,   101,  -553,
-    -684,   103, -1036,   105, -1036,  -369,   720,   -91,   107,   110,
-     112,   113, -1036,   554,  -913,  -933, -1036, -1036, -1036, -1035,
-    -915, -1036,  -130, -1036, -1036, -1036, -1036, -1036,    32, -1036,
-   -1036,   213,    35,    46, -1036, -1036,   327, -1036,   727,   570,
-     118, -1036, -1036, -1036,  -783, -1036, -1036, -1036,   420, -1036,
-     577, -1036,   578,   133, -1036, -1036, -1036, -1036,  -532, -1036,
-   -1036, -1036,    14,   -35, -1036,  -501,  1276,    10,   492, -1036,
-     702,   866,   -39,  -602,  -548,   197,  1175,    26,  -149,  1127,
-     201,  -621,   731,    74, -1036,   -65,    41,   -27,   576,  -714,
-    1280, -1036,  -365, -1036,  -163, -1036, -1036, -1036,   472,   344,
-    -936, -1036, -1036,   346, -1036,   978, -1036,  -144,  -503, -1036,
-   -1036,   221,   893, -1036, -1036, -1036,   460, -1036, -1036, -1036,
-    -240,    27, -1036, -1036,   334,  -568, -1036,  -576, -1036,   612,
-     212, -1036, -1036,   235,   -24,  1124,  -178, -1036,  1052,  -211,
-    -150,  1171, -1036,  -271,  1297, -1036,   628,     7,  -193,  -537,
-       0
+   -1036, -1036,  -364, -1036, -1036, -1036, -1036,    17,    43,    -2,
+      55, -1036,   765, -1036,    58,    73, -1036, -1036, -1036,    75,
+   -1036,    76, -1036,    87, -1036, -1036,    88, -1036,    93,  -561,
+    -680,   100, -1036,   101, -1036,  -356,   745,   -89,   112,   114,
+     116,   117, -1036,   582,  -973,  -921, -1036, -1036, -1036, -1035,
+    -943, -1036,  -140, -1036, -1036, -1036, -1036, -1036,     6, -1036,
+   -1036,   232,    32,    33, -1036, -1036,   348, -1036,   749,   593,
+     133, -1036, -1036, -1036,  -787, -1036, -1036, -1036,   429, -1036,
+     595, -1036,   597,   135, -1036, -1036, -1036, -1036,  -220, -1036,
+   -1036, -1036,     7,   -35, -1036,  -501,  1291,    64,   498, -1036,
+     707,   875,   -39,  -609,  -549,   575,  1235,     5,  -148,  1304,
+     218,  -618,   748,    85, -1036,   -65,    41,   -24,   599,  -714,
+    1294, -1036,  -365, -1036,  -163, -1036, -1036, -1036,   481,   358,
+    -894, -1036, -1036,   363, -1036,  1159, -1036,  -141,  -525, -1036,
+   -1036,   239,   916, -1036, -1036, -1036,   478, -1036, -1036, -1036,
+    -231,   -83, -1036, -1036,   357,  -571, -1036,  -589, -1036,   700,
+     234, -1036, -1036,   257,   -20,  1157,  -168, -1036,  1031,  -194,
+    -150,  1185, -1036,  -372,  1298, -1036,   652,   207, -1036,  -177,
+    -534,     0
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int16 yydefgoto[] =
 {
-      -1,     4,     5,   104,   105,   106,   811,   896,   897,   898,
-     899,   111,   414,   415,   900,   901,   740,   114,   115,   902,
-     117,   903,   119,   904,   699,   210,   905,   122,   906,   705,
-     558,   907,   387,   908,   397,   240,   409,   241,   909,   910,
-     911,   912,   545,   130,   880,   760,   858,   131,   755,   864,
-     991,  1056,    42,   607,   132,   133,   134,   135,   913,   929,
-     767,  1083,   914,   915,   738,   845,   418,   419,   420,   581,
-     916,   140,   566,   393,   917,  1079,  1159,  1010,   918,   919,
-     920,   921,   922,   923,   142,   924,   925,  1161,  1164,   926,
-    1024,   143,   927,   310,   191,   358,    43,   192,   293,   294,
-     470,   295,   761,   173,   402,   174,   331,   253,   176,   177,
-     254,   597,   598,    45,    46,   296,   205,    48,    49,    50,
-      51,    52,   318,   319,   360,   321,   322,   441,   866,   867,
-     868,   869,   994,   995,  1106,   298,   299,   325,   301,   302,
-    1074,  1075,   447,   448,   612,   763,   764,   885,  1009,   886,
-      53,    54,   380,   381,   765,   600,   986,   601,   602,  1165,
-     875,  1004,  1067,  1068,   184,    55,   367,   412,    56,   187,
-      57,   269,   732,   834,   303,   304,   708,   201,   368,   693,
-     193
+      -1,     4,     5,   104,   105,   106,   815,   900,   901,   902,
+     903,   111,   414,   415,   904,   905,   741,   114,   115,   906,
+     117,   907,   119,   908,   700,   210,   909,   122,   910,   706,
+     560,   911,   387,   912,   397,   240,   409,   241,   913,   914,
+     915,   916,   547,   130,   884,   761,   862,   131,   756,   868,
+     995,  1060,    42,   609,   132,   133,   134,   135,   917,   933,
+     768,  1087,   918,   919,   739,   849,   418,   419,   420,   583,
+     920,   140,   568,   393,   921,  1083,  1163,  1014,   922,   923,
+     924,   925,   926,   927,   142,   928,   929,  1165,  1168,   930,
+    1028,   143,   931,   310,   191,   358,    43,   192,   293,   294,
+     470,   295,   762,   173,   402,   174,   331,   253,   176,   177,
+     254,   599,   600,    45,    46,   296,   205,    48,    49,    50,
+      51,    52,   318,   319,   360,   321,   322,   441,   870,   871,
+     872,   873,   998,   999,  1110,   298,   299,   325,   301,   302,
+    1078,  1079,   447,   448,   614,   764,   765,   889,  1013,   890,
+      53,    54,   380,   381,   766,   602,   990,   603,   604,  1169,
+     879,  1008,  1071,  1072,   184,    55,   367,   412,    56,   187,
+      57,   269,   733,   838,   303,   304,   709,   201,   544,   368,
+     694,   193
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -2612,307 +2812,294 @@ static const yytype_int16 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
-       6,   320,   268,   109,   238,   145,   422,   204,   172,   551,
-     300,    44,    59,   311,   259,   716,   155,   362,   160,   144,
-     711,   751,   778,   369,   748,   736,   190,   817,   953,   376,
-     239,   239,   571,   564,   385,   353,   268,   136,   398,   860,
-     137,   684,    47,    47,   691,   196,   794,   180,   795,  1132,
-     196,   138,   660,  1054,   691,   327,   431,  1098,   455,   660,
-     365,   107,  1063,  -296,   411,     8,   998,   374,  1086,  1136,
-      60,   202,   108,   175,   433,     8,   202,   211,   110,   260,
-     112,    62,    47,   208,   490,   113,   377,   378,   116,   118,
-     405,   863,   214,   215,   365,   120,   121,    27,    28,    29,
-      72,  -256,    47,   256,   605,   379,   123,     8,   124,    61,
-     125,   775,   126,   583,   202,   127,   154,   128,   129,  1170,
-     161,   248,   181,   139,   197,  -296,  1109,   661,   247,   197,
-     701,     8,   196,     8,   744,   340,  1020,   343,   141,  1117,
-    1133,  1103,  -566,   155,   539,  1099,  1027,   491,  1100,   999,
-       8,    36,    37,   170,   305,   154,  1135,   198,   311,   818,
-     365,    36,    37,  1062,   292,     8,   438,   257,   371,   702,
-     162,   261,   703,   229,   180,  1137,   180,     8,   388,   311,
-     270,   389,   806,   873,   170,   688,   993,   165,     8,   952,
-    1146,   968,   359,    36,    37,   297,   974,   146,   776,   722,
-     366,   777,   400,    47,  1140,     8,   719,  -181,   382,   967,
-     417,   320,   315,  1025,   162,   230,   964,    36,    37,    36,
-      37,  1155,   163,   971,  1156,   364,     8,  1078,   164,   723,
-     373,   165,   724,  1163,   306,     8,    36,    37,   975,   406,
-     704,   410,   413,    38,   338,    38,   423,   167,   178,   167,
-     166,    36,    37,   149,    47,  1184,   421,    47,   172,   443,
-     955,   450,    38,    36,    37,   404,    40,   365,   171,  -181,
-     171,   316,   317,  1039,    36,    37,   154,   957,    47,     8,
-     266,   267,   196,   170,   150,  -428,    47,    47,  -428,    38,
-     985,    36,    37,   167,   219,   471,  1120,   180,   164,   220,
-      38,     8,   168,   394,    40,   169,   520,   577,   446,   523,
-     170,   691,    36,    37,   171,   391,   371,   573,  -428,   252,
-     166,    36,    37,   175,   163,   300,   392,   563,   747,   614,
-      30,    31,  -611,   549,   497,   499,   239,   221,   504,   151,
-     422,   266,   354,   239,   153,   154,     8,    38,    47,    33,
-      34,    40,   154,   689,    30,    31,   147,   653,   685,   365,
-     196,     8,   446,   312,   196,    36,    37,   542,   152,    47,
-     222,   337,   180,    33,    34,   148,  1172,   593,   594,   709,
-     850,   246,    47,   734,     8,    47,   185,    36,    37,   225,
-     223,    38,   154,     6,   624,   167,   852,   832,    47,   589,
-     686,   372,   434,   648,   250,   977,     8,   251,  1043,   609,
-     459,   186,   170,    38,   405,  1053,   171,    40,   460,   342,
-     582,   162,   833,   316,   317,   341,   538,   876,  1088,   163,
-     616,   158,    36,    37,   546,   653,   403,     8,   165,   604,
-     178,   608,   342,   328,   344,   604,   547,    36,    37,   450,
-     428,   346,   497,   499,   504,   439,   595,   445,    38,   596,
-     165,   345,    40,   316,   317,    27,    28,    29,   877,   878,
-      36,    37,   879,    38,   328,    47,   657,    40,   434,   292,
-     516,   663,   329,   617,   159,    47,   426,   550,   701,   427,
-     196,   165,    36,    37,   170,   342,    38,   517,   178,   572,
-     167,  1096,   194,   239,   342,   785,   188,  1001,   495,   168,
-     297,     8,   169,   599,   862,   695,   342,   170,    38,   599,
-     863,   171,    40,    36,    37,   757,  1115,   826,   758,   512,
-     703,   347,  1116,   655,   348,    30,    31,   727,   827,   519,
-     556,   557,   359,   330,   595,     6,   235,   596,   196,    38,
-     189,   683,    47,    40,    33,    34,     8,    47,   873,   434,
-     649,   195,   109,   406,   145,   989,     6,   145,   990,   713,
-     154,   307,   428,   410,   330,   200,   342,   207,   144,   756,
-     654,   721,    47,  -580,  -580,   172,   209,   735,   165,   404,
-     421,    47,   785,   432,   593,   594,   136,    36,    37,   137,
-      47,   534,    27,    28,    29,   434,   650,   575,   576,  -580,
-     138,   180,   766,    47,  1174,   950,   951,  1175,    47,   212,
-     107,    47,   342,   729,   180,  1176,   471,   730,  1173,     8,
-     213,   108,   196,   586,  1180,  1181,  1182,   110,   709,   112,
-     516,   788,    36,    37,   113,   428,   217,   116,   118,  1177,
-     175,  1188,  1178,   216,   120,   121,   824,   517,   741,   623,
-    1179,   516,   941,  1070,   218,   123,  1071,   124,    38,   125,
-    1110,   126,    40,  1111,   127,   228,   128,   129,   517,   231,
-     242,   535,   139,   359,   536,   698,   109,   196,   145,   232,
-     829,   300,   233,   330,   243,   234,   774,   141,  1046,   815,
-     816,  1047,   144,   652,   196,   245,   604,   178,   262,   320,
-     263,   853,   264,   352,   604,    36,    37,   109,   591,   145,
-     136,   538,   314,   137,   356,   370,   592,   593,   594,   357,
-     930,   316,   317,   144,   138,   538,   965,   422,   145,   582,
-       6,   599,   604,   599,   107,  1017,   395,   160,    27,    28,
-      29,   136,   848,   706,   137,   108,   865,   714,   870,   604,
-     403,   110,   239,   112,   178,   138,    47,   928,   113,   180,
-     842,   116,   118,   843,   365,   107,   401,   954,   120,   121,
-     599,   652,   742,   980,   844,   178,   108,    47,   599,   123,
-     407,   124,   110,   125,   112,   126,   408,   259,   127,   113,
-     128,   129,   116,   118,   438,     8,   139,   451,   196,   120,
-     121,   928,   452,   453,  1187,   456,   599,   457,   468,   604,
-     123,   141,   124,   337,   125,   178,   126,   988,   469,   127,
-     472,   128,   129,   599,   492,   305,  1000,   139,   500,  1066,
-       1,     2,     3,   375,   501,   292,   507,   774,   109,   506,
-     145,   784,   141,    47,   511,   178,   508,   514,   987,   518,
-       8,   170,   980,   865,   144,  1080,   526,   247,   487,   488,
-     489,   533,  1030,   540,  1005,   261,   297,   882,   883,   884,
-     543,   766,   136,   548,   599,   137,   485,   486,   487,   488,
-     489,    36,    37,   599,   145,     8,   138,   249,   555,   552,
-     405,   554,   560,    47,   599,   163,   107,   316,   317,   819,
-     559,  1049,    47,  1036,  1051,   561,   562,   108,   567,   928,
-     568,   569,   570,   110,   574,   112,   578,   579,     8,   928,
-     113,   580,   162,   116,   118,   584,   585,   588,   784,   606,
-     120,   121,   178,   613,   590,   618,    36,    37,   625,   165,
-     644,   123,   180,   124,   261,   125,   645,   126,   662,   604,
-     127,   647,   128,   129,   651,   432,   666,   667,   139,   669,
-     671,   672,    38,   329,   337,   519,   167,   423,   673,   679,
-     680,    36,    37,   141,   694,   250,   180,   421,   251,   696,
-     697,   172,   865,   170,   870,   712,   865,   171,   870,   483,
-     484,   485,   486,   487,   488,   489,   604,    38,  1076,   766,
-     928,   167,   959,  1186,    36,    37,   320,  1102,    47,   715,
-     502,   963,   718,   503,   725,   733,   737,   726,   745,   746,
-     180,   753,   171,   599,   754,   749,   759,   750,   762,   768,
-      38,   782,   604,   783,    40,   779,  1122,   787,   791,   406,
-     808,   603,   797,   798,   809,   604,   175,   611,   799,   800,
-     865,   604,   870,  1129,     8,   330,   803,   804,   805,    68,
-    1154,   810,   180,   812,  1006,   404,   814,   821,   830,   928,
-     599,   831,   836,   837,   604,    72,  1144,   881,   835,   962,
-     934,   935,   720,    47,   157,  1149,  1150,  1151,   936,   179,
-     937,   162,   944,  -611,   939,   940,   183,   945,   180,   163,
-     946,   960,   966,   948,   949,   164,   599,  1169,   165,  1076,
-     982,   976,    47,   180,   983,    80,    81,    82,   997,   599,
-      84,  1003,    86,    87,   604,   599,  1002,   166,  1011,    47,
-     224,   227,     8,   324,   326,   604,  1018,  -197,   604,  1012,
-      36,    37,  1013,  1015,  1014,  1032,  1019,  1042,   599,   928,
-     604,     8,    47,  1033,  1037,  -611,   604,   604,   604,  1038,
-    1055,    47,    47,    47,   255,   439,    38,   445,   816,   432,
-     167,  1044,  1073,   604,  1045,  1059,  -611,   334,  1048,   168,
-    1064,  1065,   169,    47,  1061,  1081,   206,   170,   371,  -254,
-    1087,   171,  -253,   265,  1091,  1092,   163,  1093,   599,  -255,
-    1095,  1085,  1097,   226,   313,  1084,  -252,  1105,  1113,   599,
-     333,   333,   599,   339,  1112,  1114,  1118,  1121,    36,    37,
-     351,   178,  1126,  1127,   599,     8,  1128,  1130,  1131,  1143,
-     599,   599,   599,  1134,  1139,  1145,   403,    36,    37,  1141,
-     178,  1148,  1101,   428,    38,  1152,   255,   599,    40,  1157,
-    1158,   458,  1160,   461,   462,   463,   464,   465,   466,   467,
-    1166,  1167,   432,    38,  1168,   390,  1171,   167,  1183,   330,
-     863,    27,    28,    29,  1084,  1189,   250,  1185,  1190,   251,
-     690,   179,   841,   728,   170,   332,   336,   509,   171,   424,
-    1125,   430,   333,   333,  1050,   350,   437,   739,     8,   849,
-     440,   157,   255,   449,  1016,   846,   847,   156,   813,   361,
-     522,    36,    37,   525,   361,   361,   820,   973,   780,   859,
-     752,   361,   182,   383,   384,   626,   361,   992,  1058,  1057,
-    1142,  1007,   615,  1077,   335,   432,  1153,    38,  1138,   179,
-     828,    40,   396,   349,   851,   361,   399,   355,     0,   496,
-     498,   498,     0,     0,   505,     0,   361,   199,     0,     0,
-       0,   874,   330,   429,     0,     0,   361,     0,     0,     0,
-     513,     0,   515,   442,   473,   474,   475,   476,     0,     0,
-     454,   236,     0,     0,    36,    37,   244,     0,     0,   333,
-     333,     0,     0,     0,   333,   479,   480,   481,   482,   483,
-     484,   485,   486,   487,   488,   489,   544,     0,     0,     0,
-      38,     0,     0,   430,    40,     0,   335,     0,     0,   349,
-       0,   961,     0,   553,     0,   332,   336,     0,     0,   350,
-       0,     0,     0,     0,     8,   330,   565,     0,     0,     0,
-       8,   627,   628,   629,   630,   631,   632,   633,   634,   635,
-     636,   637,   638,   639,   640,   641,   642,   643,     8,   701,
-       0,   196,     0,     0,   529,   532,     0,     0,   498,   498,
-     498,   444,     0,     0,   587,     0,   656,   333,   333,   163,
-     333,     0,   363,     0,     0,   665,   610,   363,   363,     0,
-       0,     0,     0,     0,   363,   371,     0,     0,   702,   363,
-       0,   703,     0,   163,     0,     0,     8,     0,     0,     0,
-       0,     0,   528,   531,     0,     0,     0,   537,   363,     0,
-      36,    37,     0,     0,     0,     0,    36,    37,     0,   363,
-     416,     0,     0,     0,     0,   425,   363,   646,     0,   363,
-       0,     0,     0,   328,    36,    37,    38,     0,   179,   498,
-     167,   334,    38,     0,   659,     0,    40,     0,     0,   250,
-     165,  1040,   251,     0,     0,   426,     0,   170,   427,   704,
-      38,   171,     0,   170,   167,   333,     0,     0,   333,     0,
-       0,     0,     0,   250,     0,     0,   251,   770,   633,   636,
-     641,   170,    36,    37,     8,   171,     0,     0,   255,     0,
-     528,   531,   255,   537,     0,   179,     0,     0,  1072,     0,
-     332,   336,   350,     0,     0,    27,    28,    29,    38,   529,
-     532,     0,    40,     0,     0,     0,   179,   255,   333,   350,
-       0,   162,   333,     0,     0,     0,     0,     0,     0,   163,
-      27,    28,    29,   330,  1094,     0,   591,     8,   165,     0,
-     678,     0,     0,     0,   592,   593,   594,  1104,     0,   769,
-     361,     0,     0,  1108,     0,     0,   179,     0,     0,     0,
-       0,   361,     0,     0,     0,     0,     0,   658,     0,     0,
-      36,    37,     0,     0,   371,     0,  1123,   958,   731,     0,
-     361,     0,   163,     0,   595,     0,   179,   596,   677,     0,
-       0,   682,     0,   333,   333,     0,    38,     0,   333,     0,
-     167,     0,     0,   333,     0,   854,     0,     0,   333,   168,
-       0,     0,   169,     0,     0,     0,     0,   170,     0,     0,
-       0,   171,     0,    36,    37,     0,   874,     0,     0,   931,
-     932,   465,     0,   933,     0,     0,     0,  1162,     0,   938,
-       0,   658,     0,    68,   255,   677,     0,     0,     0,    38,
-       0,     8,     0,   167,     0,     0,     0,     8,   678,     0,
-       0,     0,   250,     0,     0,   251,   839,     0,     0,   838,
-     170,     0,     0,   179,   171,     0,   333,     0,     0,     0,
-       0,     0,     0,     0,     0,   861,     0,     0,   371,     0,
-       0,  1041,     0,     0,   371,     0,   163,  1060,     0,    80,
-      81,    82,   163,     0,    84,     0,    86,    87,     0,     0,
-       0,     0,     0,     0,     8,     0,   789,   790,     0,     0,
-     687,   793,     0,   363,   692,   825,   796,     0,     0,   333,
-     333,   802,   700,   707,   710,   333,     0,    36,    37,     0,
-     840,     0,     0,    36,    37,     0,     0,   255,     0,     0,
-       0,   371,     0,   363,  1082,   707,   255,     0,     0,   163,
-       0,     0,   743,    38,     0,     0,     0,   167,     0,    38,
-       8,     0,     0,   167,     0,     0,   250,     0,     0,   251,
-       0,     0,   250,     0,   170,   251,     0,     0,   171,     0,
-     170,     0,  1028,  1029,   171,     0,     0,     0,     0,   789,
-      36,    37,     0,     0,     0,     0,     0,   328,     0,   255,
-       0,     0,   361,   361,     0,   674,     0,  1008,     8,     0,
-     361,     0,     0,     0,   165,     0,    38,     0,     0,     0,
-     167,     0,     0,     8,     0,   969,   970,   972,     0,   250,
-       0,     0,   251,     0,     0,     0,     0,   170,     0,     0,
-       0,   171,   942,   943,     0,   328,    36,    37,   947,  1026,
-       0,     0,     0,   527,     0,     0,     0,     0,     0,     0,
-    1052,   996,   165,     0,     0,     0,   333,     0,   163,     0,
-     333,   333,    38,     0,     0,     0,    40,     0,     0,   707,
-       8,     0,   255,     0,     0,   675,     8,   823,   676,   707,
-       0,     8,     0,     0,    36,    37,     0,   330,     0,     0,
-     255,     0,   255,     0,     0,     0,     0,  1107,     0,    36,
-      37,     0,     0,     0,     0,     0,     0,   328,     0,   255,
-      38,     0,     0,   432,    40,  1069,     0,     0,   432,     0,
-       0,   346,     0,  1124,   165,    38,   534,     0,     0,   167,
-     255,     0,     0,     0,     0,   330,     0,     8,   250,     0,
-       0,   251,   179,     0,   333,   333,   170,     0,     0,     0,
-     171,     0,     0,     0,     0,     0,    36,    37,     0,     0,
-       0,   179,    36,    37,   610,   363,   363,    36,    37,     0,
-     707,   956,     0,   363,   307,     0,     0,   996,     0,  1031,
-       0,     0,    38,  1034,  1035,     0,    40,     0,    38,  1119,
-       0,   165,    40,    38,     0,   502,   823,    40,   503,   255,
-       0,   435,     0,     0,   436,     0,   535,   330,   887,   536,
-    -611,    64,     0,   330,     0,    65,    66,    67,   330,     0,
-       0,     0,     0,    36,    37,  1069,     0,     0,    68,  -611,
-    -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,
-    -611,     0,  -611,  -611,  -611,  -611,  -611,     0,     0,    38,
-     888,    70,     0,    40,  -611,     0,  -611,  -611,  -611,  -611,
-    -611,     0,   502,     0,     0,   503,     0,  1089,  1090,    72,
-      73,    74,    75,   889,    77,    78,    79,  -611,  -611,  -611,
-     890,   891,   892,     0,    80,   893,    82,     0,    83,    84,
-      85,    86,    87,  -611,  -611,     0,  -611,  -611,    88,     0,
-       8,     0,    92,   196,    94,    95,    96,    97,    98,    99,
-     275,   276,   277,   278,   279,   280,   281,   282,   707,     0,
-     100,     0,  -611,     0,     0,   101,  -611,  -611,     0,   271,
-       0,   894,   196,   272,     0,     8,     0,   273,   274,   275,
-     276,   277,   278,   279,   280,   281,   282,   895,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    19,    20,
-       0,    21,    22,    23,    24,    25,   283,     0,     0,     0,
-       0,     0,   328,     0,    26,    27,    28,    29,    30,    31,
-     530,   284,     0,     0,     0,     0,    36,    37,     0,   165,
-       0,     0,     0,     0,     0,     0,    32,    33,    34,     0,
-       0,     0,   316,   317,     0,   473,   474,   475,   476,     0,
-     477,     0,    35,     0,     0,    36,    37,     0,     0,     8,
-       0,    36,    37,     0,     0,   478,   479,   480,   481,   482,
-     483,   484,   485,   486,   487,   488,   489,     0,     0,     0,
-       0,    38,     0,     0,    39,    40,     0,    38,     0,     0,
-      41,    40,     0,     0,   285,     0,   432,   286,     0,     0,
-     287,   288,   289,     0,   674,   271,   290,   291,   196,   272,
-       0,     8,   330,   273,   274,   275,   276,   277,   278,   279,
+       6,   320,   268,   109,   259,   145,   238,   204,   172,   553,
+     752,   136,   144,   300,   311,   422,   717,   779,   247,   737,
+     155,   160,   107,   749,   692,   712,   190,   362,   957,   566,
+     239,   239,   821,   369,   692,   353,   268,   137,   138,   376,
+     864,   686,    47,    47,   385,   573,   196,   180,   108,   327,
+     196,   795,   175,   796,   398,   776,   256,     8,  1002,   662,
+     110,   261,  1136,   112,   662,    44,    59,    30,    31,  1058,
+     270,   202,   431,  1140,   411,   455,   202,   211,   113,   260,
+     116,   118,    47,   221,   433,  1107,    33,    34,   702,    62,
+     196,   405,   120,   121,   162,   867,   214,   215,   123,    27,
+      28,    29,    47,  -296,  -181,   124,   125,   490,  1067,   365,
+     365,   165,   151,     8,   202,   364,   222,   126,   246,   127,
+     257,   128,   129,  1174,   365,   197,     8,   703,   607,   197,
+     704,   161,  1102,   181,   663,   340,  1024,   343,   139,   745,
+     141,  1003,   777,    36,    37,   778,  1031,   155,  1144,   154,
+     328,     8,   822,  1137,   305,  1121,    72,  -566,   329,   311,
+    1139,   539,   198,   585,   366,  -296,  -181,   165,  1160,    38,
+     491,   877,  1113,   167,   180,   146,   180,  1167,   388,   229,
+     311,   389,   502,   689,   807,   503,   170,     8,   328,   968,
+     438,  1141,   359,   365,   171,   297,   956,  1159,   705,    36,
+      37,   149,   400,    47,   720,   165,  1150,   150,   382,   373,
+     417,   320,    36,    37,   723,   374,   971,  1029,   292,  1066,
+    1103,   230,   748,  1104,   432,    38,   394,  1082,   170,    40,
+     856,  1188,   534,    27,    28,    29,     8,    36,    37,   406,
+     978,   410,   413,     8,   404,   306,   423,   997,     8,   154,
+     330,    60,     8,   152,    47,   338,   959,    47,   172,   443,
+     365,   450,   158,    38,   154,   178,   315,    40,    27,    28,
+      29,   595,   596,    36,    37,   154,   502,   341,    47,   503,
+     185,  1043,   979,   208,   961,   164,    47,    47,   330,   371,
+      61,   989,   153,   692,   342,   471,  1124,   180,   616,    38,
+     579,  -613,   175,    40,  1090,   186,   520,   166,   724,   523,
+     421,   725,   535,   497,   499,   536,   836,   504,   808,   575,
+     196,   248,    36,    37,   330,   316,   317,   565,   300,    36,
+      37,   446,   223,   551,    36,    37,   239,  -256,    36,    37,
+       8,   837,  -428,   239,   147,  -428,   154,   597,    47,     8,
+     598,   422,   972,   434,   650,    38,   195,   344,   655,    40,
+     809,   434,   545,   148,    38,   159,   687,     8,   167,    47,
+     342,   690,   180,   619,   345,  -428,  1176,   854,   342,   391,
+     312,  1178,    47,     8,  1179,    47,   432,     8,   337,   171,
+     392,   710,  1180,     6,   626,    27,    28,    29,    47,   591,
+     597,   735,   154,   598,  1047,   377,   378,     8,   702,   611,
+     196,     8,   434,   651,   196,     8,  1057,   405,   880,  1181,
+     584,   542,  1182,   516,   379,  1092,    36,    37,   188,   342,
+    1183,   497,   499,   504,   618,    36,    37,   538,   655,   606,
+     517,   610,     8,   219,   371,   606,   189,   703,   220,   450,
+     704,     8,   163,    36,    37,   266,   267,   178,   225,   881,
+     882,    38,   866,   883,   194,    40,   548,   428,   867,    36,
+      37,  1119,   459,    36,    37,    47,   659,  1120,   549,   328,
+     460,   665,   266,   354,   200,    47,   330,   334,   432,   434,
+     652,     8,   552,    36,    37,    38,   165,    36,    37,    40,
+     207,    36,    37,   975,  1100,   239,   342,   209,   786,   342,
+     297,  1005,   657,   316,   317,   178,   170,   696,   705,    38,
+       1,     2,     3,   167,   601,   495,   574,    38,    36,    37,
+     601,    40,   250,   292,   307,   251,   212,    36,    37,   728,
+     170,   213,   359,   342,   171,   758,   512,     6,   759,   877,
+     993,   165,    47,   994,    38,   216,   519,    47,    40,  1074,
+     217,     8,  1075,    38,   109,   406,   145,    40,     6,   145,
+     404,   218,   136,   144,     8,   410,   722,    36,    37,   330,
+     516,   789,    47,   107,   757,   316,   317,   172,   330,   428,
+     702,   656,   196,    47,   786,   516,   945,   517,   137,   138,
+     228,  1050,    47,    38,  1051,   685,   235,    40,   196,   108,
+     231,   432,   517,   180,   767,    47,   242,     8,   243,   329,
+      47,   110,   196,    47,   112,   714,   180,   232,   471,   830,
+     233,   175,   704,   234,   446,   954,   955,   558,   559,   113,
+     831,   116,   118,   736,    30,    31,   421,    36,    37,   699,
+     588,   196,   710,   120,   121,  1114,   262,   828,  1115,   123,
+      36,    37,   428,    33,    34,   245,   124,   125,    27,    28,
+      29,   742,   263,    38,    30,    31,   625,    40,   126,   264,
+     127,   314,   128,   129,   352,   359,    38,   109,   356,   145,
+      40,   833,   357,    33,    34,   136,   144,   252,   300,   139,
+     370,   141,   395,    36,    37,   365,   107,   606,   401,   775,
+     407,   330,   857,   320,   408,   606,   577,   578,   109,   438,
+     145,   137,   138,   469,   178,   981,   136,   144,   451,   730,
+     452,   934,   108,   731,   538,   819,   820,   107,   453,   145,
+     584,     6,   969,   606,   110,   846,   852,   112,   538,  1021,
+     422,   160,   137,   138,   601,   456,   601,   869,   468,   874,
+     606,   247,   113,   108,   116,   118,   239,    47,   932,   261,
+     180,   847,   848,   595,   596,   110,   120,   121,   112,   372,
+     457,   958,   123,   178,   487,   488,   489,   984,    47,   124,
+     125,   259,   601,   113,   472,   116,   118,   886,   887,   888,
+     601,   126,   492,   127,   178,   128,   129,   120,   121,     8,
+     500,   501,   154,   123,   403,   932,   507,   506,  1191,   508,
+     124,   125,   139,   606,   141,  -580,  -580,   511,   601,   514,
+     518,   992,   126,   439,   127,   445,   128,   129,   170,   305,
+    1004,   533,   337,  1070,   178,   601,   162,   526,   261,   550,
+     540,  -580,   109,   139,   145,   141,   543,    47,   554,   775,
+     136,   144,   991,   165,   556,   557,   984,   869,   561,  1084,
+     562,   107,   563,   593,   178,   564,  1034,   569,  1009,   570,
+     297,   594,   595,   596,   571,   767,   137,   138,   572,     8,
+     576,     8,   580,   581,   582,    36,    37,   108,   145,   601,
+     586,    68,   587,   292,   592,   405,   590,    47,   601,   110,
+     608,   615,   112,   620,   627,  1053,    47,  1040,  1055,   601,
+     646,    38,   647,   932,   721,   167,   328,   113,   162,   116,
+     118,   649,   653,   932,   527,   664,   163,    27,    28,    29,
+     668,   120,   121,   165,  1177,   165,   171,   123,   669,   671,
+    1184,  1185,  1186,   673,   124,   125,   180,    80,    81,    82,
+     178,   674,    84,   606,    86,    87,   126,  1192,   127,   675,
+     128,   129,   681,   682,    68,    36,    37,    36,    37,   688,
+     695,   423,     8,   697,   713,   698,   726,   139,   716,   141,
+     180,   719,   337,   519,   727,   172,   869,   843,   874,   734,
+     869,    38,   874,    38,   746,    40,     8,   167,   747,   196,
+     606,   738,  1080,   767,   932,   751,   168,  1190,     8,   169,
+     320,  1106,    47,   750,   170,   754,   330,   755,   171,   760,
+      80,    81,    82,   763,   180,    84,   769,    86,    87,   175,
+     780,   783,     8,   784,   375,   421,   606,   788,   601,   792,
+    1126,   814,   798,   406,   825,   328,   816,   799,   404,   606,
+     800,   801,   804,   530,   869,   606,   874,  1133,    36,    37,
+     805,   844,   165,   157,  1158,   806,   180,   812,   179,   432,
+     813,   654,   818,   932,   834,   183,   835,   334,   606,   839,
+    1148,   840,    36,    37,    38,   601,   841,    47,    40,  1153,
+    1154,  1155,    72,   885,    36,    37,   938,   426,   316,   317,
+     427,   939,   180,   940,   941,   170,   943,   944,   980,   224,
+     227,  1173,   964,  1080,   970,   948,    47,   180,    36,    37,
+      38,   601,   949,   707,    40,   950,   952,   715,   606,   605,
+     403,   953,   966,    47,   601,   613,     8,   986,   987,   606,
+     601,  1006,   606,   255,    38,   330,  1001,  1015,    40,  1019,
+    1022,   654,   743,   932,   606,  1007,    47,  1016,  1017,  1023,
+     606,   606,   606,   601,  1018,    47,    47,    47,  -197,   330,
+    1036,  1037,   265,   432,  1041,  1042,  1052,   606,   820,  1059,
+    1048,   527,  1049,   313,  1063,  1068,  1069,    47,  1077,   333,
+     333,  1085,   339,   485,   486,   487,   488,   489,   196,   351,
+    -254,  -253,  -255,  1091,     8,   275,   276,   277,   278,   279,
+     280,   281,   282,   601,  1095,  1096,  1097,  1089,  -252,   206,
+    1099,   785,    36,    37,   601,   255,  1109,   601,   483,   484,
+     485,   486,   487,   488,   489,  1101,   226,  1116,  1117,   601,
+    1125,   432,   178,  1118,   390,   601,   601,   601,    38,   530,
+    1122,     8,    40,    27,    28,    29,  1130,  1131,     8,  1132,
+     179,   178,   601,  1105,   428,  1138,  1134,  1135,   424,  1143,
+     430,   333,   333,   330,  1149,   437,  1145,  1147,   823,   440,
+     157,   255,   449,  1152,   593,  1156,  1161,  1162,   432,   867,
+      36,    37,   594,   595,   596,   162,   683,  1164,  1170,  1171,
+    1172,  1175,  1187,   163,   691,  1193,  1194,   785,  1189,   164,
+     729,   845,   165,  1129,   324,   326,    38,  1020,   179,  1054,
+      40,   740,   156,   853,   850,   781,   851,   977,   496,   498,
+     498,   166,   597,   505,   628,   598,   182,    36,    37,   753,
+     996,   330,   361,   863,    36,    37,  1062,   361,   361,   513,
+    1061,   515,  1146,  1011,   361,   617,   383,   384,   199,   361,
+    1081,   355,  1157,    38,  1142,   832,     0,    40,   333,   333,
+      38,     0,     0,   333,   167,   396,     0,     0,   361,   399,
+       8,     0,   236,   168,   963,   546,   169,   244,   330,   361,
+       0,   170,   430,   967,   335,   171,   429,   817,     0,   361,
+       0,     0,   555,   349,     0,   824,   442,     0,     0,     0,
+       0,     0,     0,   454,     0,   567,     0,   432,     0,     0,
+       0,     0,     0,     0,     0,   346,     0,     0,     0,     0,
+       0,     0,   458,   855,   461,   462,   463,   464,   465,   466,
+     467,     0,     0,     0,     0,     0,  1010,   498,   498,   498,
+     878,     0,     0,   589,     0,     0,   333,   333,     0,   333,
+       0,     0,   332,   336,     8,   612,    36,    37,   509,     0,
+       0,     0,   350,     0,     0,     0,   335,     0,     8,   349,
+       0,     0,     0,   363,     0,     0,     0,     0,   363,   363,
+       0,   522,    38,     0,   525,   363,    40,     0,     0,     0,
+     363,   162,     0,     0,     0,   435,     0,     0,   436,   163,
+       0,     0,     0,   965,     0,   432,   648,   330,   165,   363,
+       0,     0,     0,   802,     0,     0,     0,   179,   498,  1046,
+     363,   416,     0,   661,     0,     0,   425,   363,     0,     0,
+     363,     0,     0,     0,     0,     0,     0,   439,     0,   445,
+      36,    37,     0,     0,   333,     0,     0,   333,     8,     0,
+       0,     0,     0,     0,    36,    37,  1065,     0,     0,     0,
+       0,     0,   528,   531,     0,     0,    38,   537,     0,   255,
+     167,     0,     0,   255,     0,     0,   179,  1088,     0,   168,
+      38,     0,   169,     0,    40,   307,     0,   170,     0,     0,
+       0,   171,   332,   336,     0,     0,   350,   179,   255,   333,
+       0,     0,   165,   333,     0,   330,     0,     8,   403,     0,
+     196,     0,   629,   630,   631,   632,   633,   634,   635,   636,
+     637,   638,   639,   640,   641,   642,   643,   644,   645,     0,
+     770,   529,   532,     0,    36,    37,     0,   179,     0,     0,
+       0,     0,     0,  1044,   371,     0,  1088,   658,     0,     0,
+     528,   531,   163,   537,     0,     8,   667,     0,     0,     0,
+      38,     0,     0,     0,    40,     0,     0,   179,     0,     0,
+       0,     0,     0,   502,   333,   333,   503,   473,   474,   333,
+     361,     0,     0,     8,   333,   361,     0,     0,     0,   333,
+    1076,     0,   371,    36,    37,   962,   361,     0,     0,     0,
+     163,     0,   483,   484,   485,   486,   487,   488,   489,     0,
+       0,     0,     0,   732,     0,   361,     0,     0,     0,    38,
+     249,     0,     0,   167,   255,     0,  1098,   660,   163,     0,
+       0,     0,   250,     0,     0,   251,     8,     0,     0,  1108,
+     170,    36,    37,     0,   171,  1112,     0,     0,   679,   842,
+       0,   684,     0,   179,     0,     0,   333,     0,     0,     0,
+     771,   635,   638,   643,     0,   865,     0,    38,  1127,    36,
+      37,   167,     0,   371,     0,     0,  1045,   332,   336,   350,
+     250,   163,     0,   251,     0,     0,   529,   532,   170,     0,
+       0,     0,   171,     0,     0,    38,   350,     0,     0,   167,
+       0,     0,     0,   660,     0,     0,     0,   679,   250,   333,
+     333,   251,     0,     0,     0,   333,   170,   680,   878,     0,
+     171,   363,    36,    37,     0,     0,   363,   693,     0,  1166,
+     255,     0,   875,     0,     0,   701,   708,   711,     0,   255,
+       8,    27,    28,    29,     0,     0,   876,     0,    38,     0,
+       0,     0,   167,     0,     0,     0,   363,     0,   708,   829,
+       0,   250,     0,     0,   251,   744,     0,     0,     0,   170,
+       0,     0,   593,   171,     0,     0,     0,   328,   790,   791,
+     594,   595,   596,   794,     0,   346,     0,   858,   797,     0,
+       0,     0,   255,   803,   165,     0,     0,     0,     0,     8,
+    1012,     0,     0,     0,   473,   474,   475,   476,     0,     0,
+       0,   935,   936,   465,     0,   937,     8,     0,     0,     0,
+     597,   942,     0,   598,     0,     0,    36,    37,   482,   483,
+     484,   485,   486,   487,   488,   489,   432,   680,     0,     0,
+       0,     0,  1030,     8,   534,     0,     0,     0,     0,   361,
+     361,     0,    38,   162,     0,  -613,    40,   361,     0,   333,
+     790,   163,     0,   333,   333,   347,   810,   164,   348,     0,
+     165,     0,   973,   974,   976,   255,     0,   330,     0,     0,
+     371,     0,     0,  1064,     0,    36,    37,     0,   163,   166,
+       0,   708,     0,   255,     0,   255,     0,     0,     0,   827,
+       0,   708,    36,    37,     0,     0,     0,     0,  1000,     0,
+       0,    38,   255,   946,   947,    40,     0,  -613,  1073,   951,
+    1151,     0,     0,     0,   535,     0,     0,   536,    38,    36,
+      37,     0,   167,   255,     0,     0,   330,     0,  -613,     0,
+       0,   168,     0,     0,   169,   179,     0,   333,   333,   170,
+       0,     0,     0,   171,     0,    38,     0,     0,     0,   167,
+       0,     0,     0,     0,   179,     0,     0,   612,   250,     0,
+       0,   251,     0,     0,     0,     0,   170,  1032,  1033,     0,
+     171,     0,     0,     0,   473,   474,   475,   476,     0,   477,
+     363,   363,  1123,     0,     0,   708,   960,     0,   363,     0,
+       0,     0,   255,     0,   478,   479,   480,   481,   482,   483,
+     484,   485,   486,   487,   488,   489,     0,     0,     0,     0,
+       0,   827,     0,   891,     0,  -613,    64,     0,  1073,     0,
+      65,    66,    67,     0,  1000,     0,     0,     0,     0,     0,
+       0,     0,     0,    68,  -613,  -613,  -613,  -613,  -613,  -613,
+    -613,  -613,  -613,  -613,  -613,  -613,     0,  -613,  -613,  -613,
+    -613,  -613,     0,  1035,     0,   892,    70,  1038,  1039,  -613,
+       0,  -613,  -613,  -613,  -613,  -613,     0,     0,     0,     0,
+       0,     0,     0,     0,    72,    73,    74,    75,   893,    77,
+      78,    79,  -613,  -613,  -613,   894,   895,   896,     0,    80,
+     897,    82,  1111,    83,    84,    85,    86,    87,  -613,  -613,
+       0,  -613,  -613,    88,     0,     0,     0,    92,     0,    94,
+      95,    96,    97,    98,    99,     0,     0,     8,  1128,     0,
+     196,     0,     0,     0,     0,   100,     0,  -613,     0,     0,
+     101,  -613,  -613,   708,     0,     0,   898,     0,     0,     0,
+       0,  1093,  1094,     0,     0,   271,     0,     0,   196,   272,
+       0,     0,   899,   273,   274,   275,   276,   277,   278,   279,
      280,   281,   282,     0,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,     0,    21,    22,    23,
-      24,    25,   283,     0,     0,    36,    37,     0,   432,   781,
-       0,    27,    28,    29,    30,    31,   527,   284,     0,     0,
-     323,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    38,    32,    33,    34,    40,     0,     0,     0,     0,
-     473,   474,   475,   476,   675,   477,     0,   676,    35,     0,
-       0,    36,    37,     0,     0,     8,   330,    36,    37,     0,
-     478,   479,   480,   481,   482,   483,   484,   485,   486,   487,
-     488,   489,     0,     0,     0,     0,     0,    38,     0,     0,
-       0,    40,     0,    38,     0,     0,     0,    40,     0,     0,
+      24,    25,   283,     0,     0,     0,     0,     0,     0,     0,
+      26,    27,    28,    29,    30,    31,     0,   284,     0,     0,
+       0,     0,     0,    36,    37,     0,     0,     0,     0,     0,
+       0,     0,    32,    33,    34,     0,     0,     0,     0,   316,
+     317,     0,     0,     0,     0,     0,     0,     0,    35,    38,
+       0,    36,    37,    40,     0,     8,     0,     0,     0,     0,
+       0,     0,   426,     0,     0,   427,     0,     0,     0,     0,
+     170,     0,     0,     0,     0,     0,     0,    38,     0,     0,
+      39,    40,     0,     0,     0,     0,    41,     0,     0,     0,
      285,     0,   432,   286,     0,     0,   287,   288,   289,     0,
-     530,   271,   290,   291,   196,   272,     0,     8,   330,   273,
+     676,   271,   290,   291,   196,   272,     0,     0,     0,   273,
      274,   275,   276,   277,   278,   279,   280,   281,   282,     0,
        9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
       19,    20,     0,    21,    22,    23,    24,    25,   283,     0,
-       0,    36,    37,     0,   432,     0,     0,    27,    28,    29,
-      30,    31,   681,   284,     0,     0,   521,     0,     0,     0,
+       0,    36,    37,     0,     0,     0,     0,    27,    28,    29,
+      30,    31,     0,   284,     0,     0,   323,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,    38,    32,    33,
-      34,    40,     0,     0,     0,   473,   474,   475,   476,     0,
-       0,     0,     0,     0,    35,     0,     0,    36,    37,     0,
-       0,     8,   330,    36,    37,   478,   479,   480,   481,   482,
-     483,   484,   485,   486,   487,   488,   489,     0,     0,     0,
-       0,     0,     0,    38,     0,     0,     0,    40,     0,    38,
-       0,     0,     0,    40,     0,     0,   285,     0,   432,   286,
-       0,     0,   287,   288,   289,     0,   801,   271,   290,   291,
-     196,   272,     0,   619,   330,   273,   274,   275,   276,   277,
+      34,    40,     0,     0,     0,     0,     0,     0,     0,     0,
+     677,     0,     0,   678,    35,     0,     0,    36,    37,     0,
+       0,     8,   330,     0,   196,     0,     0,     0,     0,     0,
+       0,   275,   276,   277,   278,   279,   280,   281,   282,     0,
+       0,     0,     0,    38,     0,     0,     0,    40,     0,     0,
+       0,     0,     0,     0,     0,     0,   285,     0,     0,   286,
+       0,     0,   287,   288,   289,     0,     0,   271,   290,   291,
+     196,   272,   621,     0,     0,   273,   274,   275,   276,   277,
      278,   279,   280,   281,   282,     0,     9,    10,    11,    12,
       13,    14,    15,    16,    17,    18,    19,    20,     0,    21,
       22,    23,    24,    25,   283,     0,     0,    36,    37,     0,
-       0,     0,     0,    27,    28,    29,    30,    31,   196,   284,
-       0,     0,   524,     0,     0,   275,   276,   277,   278,   279,
-     280,   281,   282,    38,    32,    33,    34,    40,     0,   473,
-     474,   475,   476,     0,   477,     0,   473,   474,   475,   476,
-      35,     0,     0,    36,    37,     0,     0,     0,   330,   478,
-     620,   480,   481,   621,   483,   484,   485,   486,   622,   488,
-     489,   483,   484,   485,   486,   487,   488,   489,     0,    38,
+       0,     0,     0,    27,    28,    29,    30,    31,     0,   284,
+       0,     0,   521,   316,   317,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    32,    33,    34,     0,   473,   474,
+     475,   476,     0,   477,     0,   473,   474,   475,   476,     0,
+      35,     0,     0,    36,    37,     0,     0,     0,   478,   622,
+     480,   481,   623,   483,   484,   485,   486,   624,   488,   489,
+     483,   484,   485,   486,   487,   488,   489,     0,     0,    38,
        0,     0,     0,    40,     0,     0,     0,     0,     0,     0,
        0,     0,   285,     0,     0,   286,     0,     0,   287,   288,
-     289,     0,     0,   271,   290,   291,   196,   272,   984,     0,
+     289,     0,     0,   271,   290,   291,   196,   272,   988,     0,
        0,   273,   274,   275,   276,   277,   278,   279,   280,   281,
      282,     0,     9,    10,    11,    12,    13,    14,    15,    16,
       17,    18,    19,    20,     0,    21,    22,    23,    24,    25,
      283,     0,     0,     0,     0,     0,     0,     0,     0,    27,
-      28,    29,    30,    31,     0,   284,     0,     0,   664,     0,
+      28,    29,    30,    31,     0,   284,     0,     0,   524,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
       32,    33,    34,     0,   473,   474,   475,   476,     0,   477,
-       0,     0,   473,   474,   475,   476,    35,     0,     0,    36,
+       0,     0,     0,     0,     0,     0,    35,     0,     0,    36,
       37,     0,     0,     0,   478,   479,   480,   481,   482,   483,
-     484,   485,   486,   487,   488,   489,   482,   483,   484,   485,
-     486,   487,   488,   489,     0,    38,     0,     0,     0,    40,
-       0,     0,     0,     0,     0,     0,     0,     0,   285,     0,
+     484,   485,   486,   487,   488,   489,     0,     9,    10,    11,
+      12,    13,    14,    15,    16,    38,    18,     0,    20,    40,
+       0,    22,    23,    24,    25,     0,     0,     0,   285,     0,
        0,   286,     0,     0,   287,   288,   289,     0,     0,   271,
-     290,   291,   196,   272,     0,  1147,     0,   273,   274,   275,
+     290,   291,   196,   272,     0,     0,     0,   273,   274,   275,
      276,   277,   278,   279,   280,   281,   282,     0,     9,    10,
       11,    12,    13,    14,    15,    16,    17,    18,    19,    20,
-       0,    21,    22,    23,    24,    25,   283,   771,     0,     0,
+       0,    21,    22,    23,    24,    25,   283,     0,   782,     0,
        0,     0,     0,     0,     0,    27,    28,    29,    30,    31,
-       0,   284,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   284,     0,     0,   666,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,    32,    33,    34,   473,
      474,   475,   476,     0,   477,     0,     0,     0,   473,   474,
      475,   476,    35,     0,     0,    36,    37,     0,     0,   478,
@@ -2923,30 +3110,30 @@ static const yytype_int16 yytable[] =
      287,   288,   289,     0,     0,   271,   290,   291,   196,   272,
        0,     0,     0,   273,   274,   275,   276,   277,   278,   279,
      280,   281,   282,     0,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,   871,    21,    22,    23,
-      24,    25,   283,   772,     0,    27,    28,    29,     0,     0,
-     872,    27,    28,    29,    30,    31,     0,   284,     0,     0,
+      15,    16,    17,    18,    19,    20,     0,    21,    22,    23,
+      24,    25,   283,   772,     0,     0,     0,     0,     0,     0,
+       0,    27,    28,    29,    30,    31,     0,   284,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,    32,    33,    34,     0,   591,   473,   474,   475,
-     476,     0,     0,     0,   592,   593,   594,     0,    35,     0,
-       0,    36,    37,     0,     0,     0,     0,     0,     0,   480,
-     481,   482,   483,   484,   485,   486,   487,   488,   489,     0,
+       0,     0,    32,    33,    34,   473,   474,   475,   476,     0,
+     477,     0,     0,     0,     0,     0,     0,     0,    35,     0,
+       0,    36,    37,     0,     0,   478,   479,   480,   481,   482,
+     483,   484,   485,   486,   487,   488,   489,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,    38,     0,     0,
-       0,    40,     0,     0,   595,     0,     0,   596,     0,     0,
+       0,    40,     0,     0,     0,     0,     0,     0,     0,     0,
      285,     0,     0,   286,     0,     0,   287,   288,   289,     0,
        0,   271,   290,   291,   196,   272,     0,     0,     0,   273,
      274,   275,   276,   277,   278,   279,   280,   281,   282,     0,
        9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      19,    20,     0,    21,    22,    23,    24,    25,   283,     0,
+      19,    20,     0,    21,    22,    23,    24,    25,   283,   773,
        0,     0,     0,     0,     0,     0,     0,    27,    28,    29,
       30,    31,     0,   284,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,   473,   474,     0,     0,    32,    33,
-      34,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,    35,     0,     0,    36,    37,   483,
-     484,   485,   486,   487,   488,   489,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     9,    10,    11,    12,    13,
-      14,    15,    16,    38,    18,     0,    20,    40,     0,    22,
-      23,    24,    25,     0,     0,     0,   285,     0,     0,   286,
+       0,     0,     0,     0,     0,     0,     0,     0,    32,    33,
+      34,   473,   474,   475,   476,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    35,     0,     0,    36,    37,     0,
+       0,   478,   479,   480,   481,   482,   483,   484,   485,   486,
+     487,   488,   489,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    38,     0,     0,     0,    40,     0,     0,
+       0,     0,     0,     0,     0,     0,   285,     0,     0,   286,
        0,     0,   287,   288,   289,     0,     0,   271,   290,   291,
      196,   272,     0,     0,     0,   273,   274,   275,   276,   277,
      278,   279,   280,   281,   282,     0,     9,    10,    11,    12,
@@ -2954,511 +3141,521 @@ static const yytype_int16 yytable[] =
       22,    23,    24,    25,   283,     0,     0,     0,     0,     0,
        0,     0,     0,    27,    28,    29,    30,    31,     0,   284,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,    32,    33,    34,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    64,
-      35,     0,     0,    36,    37,    67,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    68,     0,     0,     0,
+       0,     0,     0,     0,    32,    33,    34,   473,   474,   475,
+     476,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      35,     0,     0,    36,    37,     0,     0,     0,   479,   480,
+     481,   482,   483,   484,   485,   486,   487,   488,   489,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,    38,
-       0,     0,     0,    40,     0,     0,     0,     0,   888,    70,
-       0,     0,     0,     0,     0,     0,     0,     0,   287,   288,
-     773,     0,     0,     0,   290,   291,     0,    72,    73,    74,
-      75,     0,    77,    78,    79,     0,     0,     0,   890,   891,
-     892,     0,    80,   893,    82,     0,    83,    84,    85,    86,
-      87,     0,     0,     0,     0,     0,    88,     0,     0,     0,
-      92,     0,    94,    95,    96,    97,    98,    99,     0,     0,
-       0,     0,     0,     0,     8,     0,     0,     0,   100,     0,
-       0,     0,     0,   101,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     9,    10,    11,    12,    13,    14,    15,
-      16,    17,    18,    19,    20,   895,    21,    22,    23,    24,
-      25,   307,     0,     0,     0,     0,     0,     0,     0,    26,
-      27,    28,    29,    30,    31,     0,     0,     0,   165,     0,
+       0,     0,     0,    40,     0,     0,     0,     0,     0,     0,
+       0,     0,   285,     0,     0,   286,     0,     0,   287,   288,
+     289,     0,     0,   271,   290,   291,   196,   272,     0,     0,
+       0,   273,   274,   275,   276,   277,   278,   279,   280,   281,
+     282,     8,     9,    10,    11,    12,    13,    14,    15,    16,
+      17,    18,    19,    20,     0,    21,    22,    23,    24,    25,
+     283,     0,     0,     8,     0,     0,     0,     0,     0,    27,
+      28,    29,    30,    31,     0,   284,     0,     8,   371,     0,
+       0,  1086,     0,     0,     0,     0,   163,     0,     0,     0,
+      32,    33,    34,     0,     0,     8,     0,     8,     0,     0,
+     371,     0,     0,     0,     0,     0,    35,     0,   163,    36,
+      37,     0,     0,     0,   444,     0,     0,     0,     0,     0,
+       0,     0,   163,     0,     0,     0,     0,    36,    37,     0,
+       0,     0,  1056,     0,   328,    38,     0,     0,     0,    40,
+     163,     0,   676,     0,     0,     0,     0,     0,     0,    36,
+      37,   165,     0,    38,   287,   288,   774,   167,     0,     0,
+     290,   291,     0,    36,    37,     0,   250,     0,     0,   251,
+       0,     0,     0,     0,   170,    38,     0,     0,   171,   167,
+       0,    36,    37,    36,    37,     0,     0,     0,   250,    38,
+       0,   251,     0,   167,     0,     0,   170,     0,    64,     0,
+     171,     0,   250,     0,    67,   251,     0,    38,     0,    38,
+     170,   167,     0,    40,   171,    68,     0,     0,     0,     0,
+     250,     0,   677,   251,     0,   678,     0,     0,   170,     0,
+       0,     0,   171,     0,   330,     0,     0,   892,    70,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    32,    33,    34,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    35,     0,     0,
-      36,    37,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,    72,    73,    74,    75,
+       0,    77,    78,    79,     0,     0,     0,   894,   895,   896,
+       0,    80,   897,    82,     0,    83,    84,    85,    86,    87,
+       0,     0,     0,     0,     0,    88,     0,     0,     0,    92,
+       0,    94,    95,    96,    97,    98,    99,     0,     0,     0,
+       0,     0,     0,     8,     0,     0,     0,   100,     0,     0,
+       0,     0,   101,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     9,    10,    11,    12,    13,    14,    15,    16,
+      17,    18,    19,    20,   899,    21,    22,    23,    24,    25,
+     307,     0,     0,     0,     0,     0,     0,     0,    26,    27,
+      28,    29,    30,    31,     0,     0,     0,   165,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    38,     0,     0,    39,
-      40,     8,     0,     0,     0,    41,     0,     0,     0,   308,
-       0,     0,   309,     0,     0,     0,     0,   170,     0,     0,
+      32,    33,    34,   473,   474,   475,   476,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,    35,     0,     0,    36,
+      37,     0,     0,     0,     0,   480,   481,   482,   483,   484,
+     485,   486,   487,   488,   489,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,    38,     0,     0,    39,    40,
+       8,     0,     0,     0,    41,     0,     0,     0,   308,     0,
+       0,   309,     0,     0,     0,     0,   170,     0,     0,     9,
+      10,    11,    12,    13,    14,    15,    16,    17,    18,    19,
+      20,     0,    21,    22,    23,    24,    25,   307,     0,     0,
+       0,     0,     0,     0,     0,    26,    27,    28,    29,    30,
+      31,     0,     0,     0,   165,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    32,    33,    34,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    35,     0,     0,    36,    37,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    38,     0,     0,    39,    40,     8,     0,   510,
+       0,    41,     0,     0,     0,   493,     0,     0,   494,     0,
+       0,     0,     0,   170,     0,     0,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,    19,    20,     0,    21,
+      22,    23,    24,    25,     0,     0,     0,     0,     0,     0,
+       0,     0,    26,    27,    28,    29,    30,    31,   473,   474,
+     475,   476,     0,   477,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    32,    33,    34,     8,   478,   479,
+     480,   481,   482,   483,   484,   485,   486,   487,   488,   489,
+      35,     0,     0,    36,    37,     0,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,    19,    20,     0,    21,
+      22,    23,    24,    25,     0,     0,     0,     0,     0,    38,
+       0,     0,    39,    40,     0,     0,    30,    31,    41,     0,
+       0,     0,   426,     0,     0,   427,     0,     0,     0,     0,
+     170,     0,     0,     0,    32,    33,    34,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      35,     0,     0,    36,    37,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,    -2,    63,     0,  -613,
+      64,     0,     0,     0,    65,    66,    67,     0,     0,    38,
+       0,     0,     0,    40,     0,     0,     0,    68,  -613,  -613,
+    -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,
+     170,  -613,  -613,  -613,  -613,  -613,     0,     0,     0,    69,
+      70,     0,     0,     0,     0,  -613,  -613,  -613,  -613,  -613,
+       0,     0,    71,     0,     0,     0,     0,     0,    72,    73,
+      74,    75,    76,    77,    78,    79,  -613,  -613,  -613,     0,
+       0,     0,     0,    80,    81,    82,     0,    83,    84,    85,
+      86,    87,  -613,  -613,     0,  -613,  -613,    88,    89,    90,
+      91,    92,    93,    94,    95,    96,    97,    98,    99,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   100,
+      63,  -613,  -613,    64,   101,  -613,     0,    65,    66,    67,
+     102,   103,     0,     0,     0,     0,     0,     0,     0,     0,
+      68,  -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,
+    -613,  -613,  -613,     0,  -613,  -613,  -613,  -613,  -613,     0,
+       0,     0,    69,    70,     0,     0,   718,     0,  -613,  -613,
+    -613,  -613,  -613,     0,     0,    71,     0,     0,     0,     0,
+       0,    72,    73,    74,    75,    76,    77,    78,    79,  -613,
+    -613,  -613,     0,     0,     0,     0,    80,    81,    82,     0,
+      83,    84,    85,    86,    87,  -613,  -613,     0,  -613,  -613,
+      88,    89,    90,    91,    92,    93,    94,    95,    96,    97,
+      98,    99,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   100,    63,  -613,  -613,    64,   101,  -613,     0,
+      65,    66,    67,   102,   103,     0,     0,     0,     0,     0,
+       0,     0,     0,    68,  -613,  -613,  -613,  -613,  -613,  -613,
+    -613,  -613,  -613,  -613,  -613,  -613,     0,  -613,  -613,  -613,
+    -613,  -613,     0,     0,     0,    69,    70,     0,     0,   811,
+       0,  -613,  -613,  -613,  -613,  -613,     0,     0,    71,     0,
+       0,     0,     0,     0,    72,    73,    74,    75,    76,    77,
+      78,    79,  -613,  -613,  -613,     0,     0,     0,     0,    80,
+      81,    82,     0,    83,    84,    85,    86,    87,  -613,  -613,
+       0,  -613,  -613,    88,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   100,    63,  -613,  -613,    64,
+     101,  -613,     0,    65,    66,    67,   102,   103,     0,     0,
+       0,     0,     0,     0,     0,     0,    68,  -613,  -613,  -613,
+    -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,     0,
+    -613,  -613,  -613,  -613,  -613,     0,     0,     0,    69,    70,
+       0,     0,   826,     0,  -613,  -613,  -613,  -613,  -613,     0,
+       0,    71,     0,     0,     0,     0,     0,    72,    73,    74,
+      75,    76,    77,    78,    79,  -613,  -613,  -613,     0,     0,
+       0,     0,    80,    81,    82,     0,    83,    84,    85,    86,
+      87,  -613,  -613,     0,  -613,  -613,    88,    89,    90,    91,
+      92,    93,    94,    95,    96,    97,    98,    99,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,   100,    63,
+    -613,  -613,    64,   101,  -613,     0,    65,    66,    67,   102,
+     103,     0,     0,     0,     0,     0,     0,     0,     0,    68,
+    -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,  -613,
+    -613,  -613,     0,  -613,  -613,  -613,  -613,  -613,     0,     0,
+       0,    69,    70,     0,     0,     0,     0,  -613,  -613,  -613,
+    -613,  -613,     0,     0,    71,     0,     0,     0,   985,     0,
+      72,    73,    74,    75,    76,    77,    78,    79,  -613,  -613,
+    -613,     0,     0,     0,     0,    80,    81,    82,     0,    83,
+      84,    85,    86,    87,  -613,  -613,     0,  -613,  -613,    88,
+      89,    90,    91,    92,    93,    94,    95,    96,    97,    98,
+      99,     0,     0,     7,     0,     8,     0,   670,     0,     0,
+       0,   100,     0,  -613,     0,     0,   101,  -613,     0,     0,
+       0,     0,   102,   103,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    18,    19,    20,     0,    21,    22,    23,
+      24,    25,     0,     0,     0,     0,     0,     0,     0,     0,
+      26,    27,    28,    29,    30,    31,   473,   474,   475,   476,
+       0,   477,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    32,    33,    34,     0,   478,   479,   480,   481,
+     482,   483,   484,   485,   486,   487,   488,   489,    35,     0,
+       0,    36,    37,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,    58,     0,     8,     0,
+       0,     0,     0,     0,     0,     0,     0,    38,     0,     0,
+      39,    40,     0,     0,     0,     0,    41,     9,    10,    11,
+      12,    13,    14,    15,    16,    17,    18,    19,    20,     0,
+      21,    22,    23,    24,    25,     0,     0,     0,     0,     0,
+       0,     0,     0,    26,    27,    28,    29,    30,    31,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,    32,    33,    34,     0,     0,
+       8,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    35,     0,     0,    36,    37,     0,     0,     0,     9,
+      10,    11,    12,    13,    14,    15,    16,   859,    18,   860,
+      20,     8,   861,    22,    23,    24,    25,     0,     0,     0,
+      38,     0,     0,    39,    40,     0,     0,     0,     0,    41,
        9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      19,    20,     0,    21,    22,    23,    24,    25,   307,     0,
+      19,    20,     0,    21,    22,    23,    24,    25,     0,     0,
        0,     0,     0,     0,     0,     0,    26,    27,    28,    29,
-      30,    31,     0,     0,     0,   165,     0,     0,     0,     0,
+      30,    31,     0,    35,     0,     0,    36,    37,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,    32,    33,
       34,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,    35,     0,     0,    36,    37,     0,
+       0,     0,    38,     0,    35,     0,    40,    36,    37,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    38,     0,     0,    39,    40,     8,     0,
-     510,     0,    41,     0,     0,     0,   493,     0,     0,   494,
-       0,     0,     0,     0,   170,     0,     0,     9,    10,    11,
+       0,     0,     0,     0,     0,     8,     0,   672,     0,     0,
+       0,     0,     0,    38,     0,   386,    39,    40,     0,     0,
+       0,     0,    41,   541,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    18,    19,    20,     0,    21,    22,    23,
+      24,    25,     0,     0,     0,     0,     0,     0,     0,     0,
+      26,    27,    28,    29,    30,    31,   473,   474,   475,   476,
+       0,   477,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    32,    33,    34,     0,   478,   479,   480,   481,
+     482,   483,   484,   485,   486,   487,   488,   489,    35,     0,
+       0,    36,    37,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     8,     0,
+     787,     0,     0,     0,     0,     0,     0,    38,     0,     0,
+      39,    40,     0,     0,     0,     0,    41,     9,    10,    11,
       12,    13,    14,    15,    16,    17,    18,    19,    20,     0,
       21,    22,    23,    24,    25,     0,     0,     0,     0,     0,
        0,     0,     0,    26,    27,    28,    29,    30,    31,   473,
      474,   475,   476,     0,   477,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    32,    33,    34,     8,   478,
+       0,     0,     0,     0,     0,    32,    33,    34,     0,   478,
      479,   480,   481,   482,   483,   484,   485,   486,   487,   488,
-     489,    35,     0,     0,    36,    37,     0,     9,    10,    11,
-      12,    13,    14,    15,    16,    17,    18,    19,    20,     0,
-      21,    22,    23,    24,    25,     0,     0,     0,     0,     0,
-      38,     0,     0,    39,    40,     0,     0,    30,    31,    41,
-       0,     0,     0,   426,     0,     0,   427,     0,     0,     0,
-       0,   170,     0,     0,     0,    32,    33,    34,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    35,     0,     0,    36,    37,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    -2,    63,     0,
-    -611,    64,     0,     0,     0,    65,    66,    67,     0,     0,
-      38,     0,     0,     0,    40,     0,     0,     0,    68,  -611,
-    -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,
-    -611,   170,  -611,  -611,  -611,  -611,  -611,     0,     0,     0,
-      69,    70,     0,     0,     0,     0,  -611,  -611,  -611,  -611,
-    -611,     0,     0,    71,     0,     0,     0,     0,     0,    72,
-      73,    74,    75,    76,    77,    78,    79,  -611,  -611,  -611,
-       0,     0,     0,     0,    80,    81,    82,     0,    83,    84,
-      85,    86,    87,  -611,  -611,     0,  -611,  -611,    88,    89,
-      90,    91,    92,    93,    94,    95,    96,    97,    98,    99,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-     100,    63,  -611,  -611,    64,   101,  -611,     0,    65,    66,
-      67,   102,   103,     0,     0,     0,     0,     0,     0,     0,
-       0,    68,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,
-    -611,  -611,  -611,  -611,     0,  -611,  -611,  -611,  -611,  -611,
-       0,     0,     0,    69,    70,     0,     0,   717,     0,  -611,
-    -611,  -611,  -611,  -611,     0,     0,    71,     0,     0,     0,
-       0,     0,    72,    73,    74,    75,    76,    77,    78,    79,
-    -611,  -611,  -611,     0,     0,     0,     0,    80,    81,    82,
-       0,    83,    84,    85,    86,    87,  -611,  -611,     0,  -611,
-    -611,    88,    89,    90,    91,    92,    93,    94,    95,    96,
-      97,    98,    99,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,   100,    63,  -611,  -611,    64,   101,  -611,
-       0,    65,    66,    67,   102,   103,     0,     0,     0,     0,
-       0,     0,     0,     0,    68,  -611,  -611,  -611,  -611,  -611,
-    -611,  -611,  -611,  -611,  -611,  -611,  -611,     0,  -611,  -611,
-    -611,  -611,  -611,     0,     0,     0,    69,    70,     0,     0,
-     807,     0,  -611,  -611,  -611,  -611,  -611,     0,     0,    71,
-       0,     0,     0,     0,     0,    72,    73,    74,    75,    76,
-      77,    78,    79,  -611,  -611,  -611,     0,     0,     0,     0,
-      80,    81,    82,     0,    83,    84,    85,    86,    87,  -611,
-    -611,     0,  -611,  -611,    88,    89,    90,    91,    92,    93,
-      94,    95,    96,    97,    98,    99,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,   100,    63,  -611,  -611,
-      64,   101,  -611,     0,    65,    66,    67,   102,   103,     0,
-       0,     0,     0,     0,     0,     0,     0,    68,  -611,  -611,
-    -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,
-       0,  -611,  -611,  -611,  -611,  -611,     0,     0,     0,    69,
-      70,     0,     0,   822,     0,  -611,  -611,  -611,  -611,  -611,
-       0,     0,    71,     0,     0,     0,     0,     0,    72,    73,
-      74,    75,    76,    77,    78,    79,  -611,  -611,  -611,     0,
-       0,     0,     0,    80,    81,    82,     0,    83,    84,    85,
-      86,    87,  -611,  -611,     0,  -611,  -611,    88,    89,    90,
-      91,    92,    93,    94,    95,    96,    97,    98,    99,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,   100,
-      63,  -611,  -611,    64,   101,  -611,     0,    65,    66,    67,
-     102,   103,     0,     0,     0,     0,     0,     0,     0,     0,
-      68,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,  -611,
-    -611,  -611,  -611,     0,  -611,  -611,  -611,  -611,  -611,     0,
-       0,     0,    69,    70,     0,     0,     0,     0,  -611,  -611,
-    -611,  -611,  -611,     0,     0,    71,     0,     0,     0,   981,
-       0,    72,    73,    74,    75,    76,    77,    78,    79,  -611,
-    -611,  -611,     0,     0,     0,     0,    80,    81,    82,     0,
-      83,    84,    85,    86,    87,  -611,  -611,     0,  -611,  -611,
-      88,    89,    90,    91,    92,    93,    94,    95,    96,    97,
-      98,    99,     0,     0,     7,     0,     8,     0,   668,     0,
-       0,     0,   100,     0,  -611,     0,     0,   101,  -611,     0,
-       0,     0,     0,   102,   103,     9,    10,    11,    12,    13,
-      14,    15,    16,    17,    18,    19,    20,     0,    21,    22,
-      23,    24,    25,     0,     0,     0,     0,     0,     0,     0,
-       0,    26,    27,    28,    29,    30,    31,   473,   474,   475,
-     476,     0,   477,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    32,    33,    34,     0,   478,   479,   480,
-     481,   482,   483,   484,   485,   486,   487,   488,   489,    35,
-       0,     0,    36,    37,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    58,     0,     8,
-       0,     0,     0,     0,     0,     0,     0,     0,    38,     0,
-       0,    39,    40,     0,     0,     0,     0,    41,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    19,    20,
-       0,    21,    22,    23,    24,    25,     0,     0,     0,     0,
-       0,     0,     0,     0,    26,    27,    28,    29,    30,    31,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    32,    33,    34,     0,
+     489,    35,     0,     0,    36,    37,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   203,
        0,     8,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,    35,     0,     0,    36,    37,     0,     0,     0,
-       9,    10,    11,    12,    13,    14,    15,    16,   855,    18,
-     856,    20,     8,   857,    22,    23,    24,    25,     0,     0,
-       0,    38,     0,     0,    39,    40,     0,     0,     0,     0,
-      41,     9,    10,    11,    12,    13,    14,    15,    16,    17,
+      38,     0,     0,    39,    40,     0,     0,     0,     0,    41,
+       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
+      19,    20,     0,    21,    22,    23,    24,    25,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    27,    28,    29,
+      30,    31,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    32,    33,
+      34,     0,     8,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    35,     0,     0,    36,    37,     0,
+       0,     9,    10,    11,    12,    13,    14,    15,    16,    17,
       18,    19,    20,     0,    21,    22,    23,    24,    25,     0,
-       0,     0,     0,     0,     0,     0,     0,    26,    27,    28,
-      29,    30,    31,     0,    35,     0,     0,    36,    37,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    32,
-      33,    34,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    38,     0,    35,     0,    40,    36,    37,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     8,     0,   670,     0,
-       0,     0,     0,     0,    38,     0,   386,    39,    40,     0,
-       0,     0,     0,    41,   541,     9,    10,    11,    12,    13,
-      14,    15,    16,    17,    18,    19,    20,     0,    21,    22,
-      23,    24,    25,     0,     0,     0,     0,     0,     0,     0,
-       0,    26,    27,    28,    29,    30,    31,   473,   474,   475,
-     476,     0,   477,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    32,    33,    34,     0,   478,   479,   480,
-     481,   482,   483,   484,   485,   486,   487,   488,   489,    35,
-       0,     0,    36,    37,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     8,
-       0,   786,     0,     0,     0,     0,     0,     0,    38,     0,
-       0,    39,    40,     0,     0,     0,     0,    41,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    19,    20,
-       0,    21,    22,    23,    24,    25,     0,     0,     0,     0,
-       0,     0,     0,     0,    26,    27,    28,    29,    30,    31,
-     473,   474,   475,   476,     0,   477,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    32,    33,    34,     0,
-     478,   479,   480,   481,   482,   483,   484,   485,   486,   487,
-     488,   489,    35,     0,     0,    36,    37,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-     203,     0,     8,     0,     0,     0,     0,     0,     0,     0,
-       0,    38,     0,     0,    39,    40,     0,     0,     0,     0,
-      41,     9,    10,    11,    12,    13,    14,    15,    16,    17,
-      18,    19,    20,     0,    21,    22,    23,    24,    25,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    27,    28,
+       0,     0,     0,    38,     0,     0,     0,    40,    27,    28,
       29,    30,    31,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,    32,
-      33,    34,     0,     8,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    35,     0,     0,    36,    37,
-       0,     0,     9,    10,    11,    12,    13,    14,    15,    16,
-      17,    18,    19,    20,     0,    21,    22,    23,    24,    25,
-       0,     0,     0,     0,    38,     0,     0,     0,    40,    27,
-      28,    29,    30,    31,     0,     0,     0,     0,     0,     0,
+      33,    34,     0,     0,     8,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,    35,   982,     0,    36,    37,
+       0,     0,     0,     9,    10,    11,    12,    13,    14,    15,
+      16,  1025,    18,  1026,    20,     0,  1027,    22,    23,    24,
+      25,     0,     0,     0,    38,     0,     0,     0,    40,   983,
+      27,    28,    29,    30,    31,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-      32,    33,    34,     0,     0,     8,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    35,   978,     0,    36,
-      37,     0,     0,     0,     9,    10,    11,    12,    13,    14,
-      15,    16,  1021,    18,  1022,    20,     0,  1023,    22,    23,
-      24,    25,     0,     0,     0,    38,     0,     0,     0,    40,
-     979,    27,    28,    29,    30,    31,     0,     0,     0,     0,
+       0,    32,    33,    34,     0,     0,     0,     8,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    35,   258,     0,
+      36,    37,     0,     0,     0,     0,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,    19,    20,     0,    21,
+      22,    23,    24,    25,     0,     0,    38,     0,     0,     0,
+      40,   983,    26,    27,    28,    29,    30,    31,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,    32,    33,    34,     0,     0,     0,     8,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    35,   258,
-       0,    36,    37,     0,     0,     0,     0,     9,    10,    11,
+       0,     0,     0,     0,    32,    33,    34,     0,     8,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      35,     0,     0,    36,    37,     0,     0,     9,    10,    11,
       12,    13,    14,    15,    16,    17,    18,    19,    20,     0,
-      21,    22,    23,    24,    25,     0,     0,    38,     0,     0,
-       0,    40,   979,    26,    27,    28,    29,    30,    31,     0,
+      21,    22,    23,    24,    25,   237,     0,     0,     0,    38,
+       0,     0,    39,    40,    27,    28,    29,    30,    31,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,    32,    33,    34,     0,     8,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,    35,     0,     0,    36,    37,     0,     0,     9,    10,
       11,    12,    13,    14,    15,    16,    17,    18,    19,    20,
-       0,    21,    22,    23,    24,    25,   237,     0,     0,     0,
-      38,     0,     0,    39,    40,    27,    28,    29,    30,    31,
+       0,    21,    22,    23,    24,    25,     0,     0,     0,     0,
+      38,     0,     0,     0,    40,    27,    28,    29,    30,    31,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,    32,    33,    34,     0,
-       8,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,    35,     0,     0,    36,    37,     0,     0,     9,
+       8,     0,   793,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    35,   258,     0,    36,    37,     0,     0,     9,
       10,    11,    12,    13,    14,    15,    16,    17,    18,    19,
       20,     0,    21,    22,    23,    24,    25,     0,     0,     0,
        0,    38,     0,     0,     0,    40,    27,    28,    29,    30,
+      31,   473,   474,   475,   476,     0,   477,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    32,    33,    34,
+       8,   478,   479,   480,   481,   482,   483,   484,   485,   486,
+     487,   488,   489,    35,     0,     0,    36,    37,     0,     9,
+      10,    11,    12,    13,    14,    15,    16,    17,    18,    19,
+      20,     0,    21,    22,    23,    24,    25,     0,     0,     0,
+       0,     0,    38,     0,     0,     0,    40,     0,     0,    30,
       31,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,    32,    33,    34,
-       0,     8,     0,   792,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    35,   258,     0,    36,    37,     0,     0,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      19,    20,     0,    21,    22,    23,    24,    25,     0,     0,
-       0,     0,    38,     0,     0,     0,    40,    27,    28,    29,
-      30,    31,   473,   474,   475,   476,     0,   477,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    32,    33,
-      34,     8,   478,   479,   480,   481,   482,   483,   484,   485,
-     486,   487,   488,   489,    35,     0,     0,    36,    37,     0,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      19,    20,     0,    21,    22,    23,    24,    25,     0,     0,
-       0,     0,     0,    38,     0,     0,     0,    40,     0,     0,
-      30,    31,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    32,    33,
-      34,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,    35,     0,     0,    36,    37,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    35,     0,     0,    36,    37,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    38,     0,     0,     0,    40
+       0,     0,    38,     0,     0,     0,    40
 };
 
 static const yytype_int16 yycheck[] =
 {
-       0,   164,   152,     5,    95,     5,   246,    72,    47,   374,
-     154,     1,     2,   162,   144,   563,    40,   195,    45,     5,
-     557,   597,   624,   201,   592,   578,    61,   711,   811,   207,
-      95,    96,   401,   393,   212,   185,   186,     5,   231,   753,
-       5,   542,     1,     2,   547,     6,   667,    47,   669,    40,
-       6,     5,    41,   986,   557,     3,   249,    40,   269,    41,
-       6,     5,   998,    42,   242,     3,    42,    54,    43,  1104,
-       1,    71,     5,    47,   252,     3,    76,    77,     5,   144,
-       5,     0,    41,    76,    48,     5,    52,    53,     5,     5,
-     239,    46,    84,    85,     6,     5,     5,    49,    50,    51,
-      62,    76,    61,    21,    54,    71,     5,     3,     5,    40,
-       5,    41,     5,    59,   114,     5,   103,     5,     5,  1154,
-      46,   114,    48,     5,    85,   104,  1062,   116,   101,    85,
-       4,     3,     6,     3,   116,   174,   919,   176,     5,  1072,
-     131,  1054,    54,   167,   355,   128,   929,   111,   131,   125,
-       3,    89,    90,   136,   154,   103,   111,   118,   307,   712,
-       6,    89,    90,   125,   154,     3,   116,    85,    40,    43,
-      40,   144,    46,     4,   174,  1108,   176,     3,   213,   328,
-     153,   216,   683,   759,   136,   545,   124,    57,     3,   810,
-    1123,   119,   192,    89,    90,   154,     4,    48,   128,   568,
-      46,   131,   237,   162,  1117,     3,   566,    42,   208,   830,
-     245,   374,    46,   927,    40,    46,    43,    89,    90,    89,
-      90,  1136,    48,   119,  1137,   198,     3,  1010,    54,    43,
-     204,    57,    46,  1146,   160,     3,    89,    90,    46,   239,
-     114,   241,   242,   115,   170,   115,   246,   119,    47,   119,
-      76,    89,    90,    48,   213,  1170,   246,   216,   297,   259,
-     813,   261,   115,    89,    90,   239,   119,     6,   140,   104,
-     140,   105,   106,   957,    89,    90,   103,   814,   237,     3,
-     118,   119,     6,   136,    48,    43,   245,   246,    46,   115,
-     858,    89,    90,   119,    77,   295,  1079,   297,    54,    82,
-     115,     3,   128,    54,   119,   131,   341,    46,    76,   344,
-     136,   814,    89,    90,   140,    43,    40,   408,    76,   122,
-      76,    89,    90,   297,    48,   469,    54,   392,    40,    43,
-      52,    53,    46,   372,   308,   309,   401,    44,   312,    40,
-     580,   118,   119,   408,   103,   103,     3,   115,   307,    71,
-      72,   119,   103,   546,    52,    53,    52,   506,     4,     6,
-       6,     3,    76,   162,     6,    89,    90,   357,   142,   328,
-      77,   170,   372,    71,    72,    71,  1159,    89,    90,   557,
-     740,   103,   341,   576,     3,   344,   117,    89,    90,    46,
-      92,   115,   103,   393,   459,   119,    43,   117,   357,   434,
-      46,   204,    40,    41,   128,   103,     3,   131,   961,   444,
-      40,   142,   136,   115,   563,   983,   140,   119,    48,    57,
-     420,    40,   142,   105,   106,    40,   352,     1,  1030,    48,
-     454,   125,    89,    90,    42,   584,   239,     3,    57,   439,
-     239,   441,    57,    40,    40,   445,    54,    89,    90,   449,
-     249,    48,   426,   427,   428,   258,   128,   260,   115,   131,
-      57,    57,   119,   105,   106,    49,    50,    51,    42,    43,
-      89,    90,    46,   115,    40,   434,   511,   119,    40,   469,
-      40,   516,    48,   456,    43,   444,   128,    40,     4,   131,
-       6,    57,    89,    90,   136,    57,   115,    57,   297,    40,
-     119,  1049,   120,   568,    57,   654,    43,   872,   307,   128,
-     469,     3,   131,   439,    40,   550,    57,   136,   115,   445,
-      46,   140,   119,    89,    90,    43,    40,    43,    46,   328,
-      46,   128,    46,   507,   131,    52,    53,   572,    54,   338,
-      41,    42,   542,   140,   128,   545,     4,   131,     6,   115,
-      43,   541,   511,   119,    71,    72,     3,   516,  1134,    40,
-      41,    40,   564,   563,   564,    40,   566,   567,    43,   559,
-     103,    40,   371,   573,   140,    40,    57,    40,   564,   606,
-     506,   567,   541,   116,   117,   624,    40,   577,    57,   563,
-     580,   550,   741,    40,    89,    90,   564,    89,    90,   564,
-     559,    48,    49,    50,    51,    40,    41,    41,    42,   142,
-     564,   611,   612,   572,    43,   808,   809,    46,   577,    40,
-     564,   580,    57,   115,   624,    54,   626,   119,  1160,     3,
-      40,   564,     6,   432,  1166,  1167,  1168,   564,   816,   564,
-      40,    41,    89,    90,   564,   444,    84,   564,   564,    43,
-     624,  1183,    46,    40,   564,   564,   721,    57,   584,   458,
-      54,    40,    41,    43,    40,   564,    46,   564,   115,   564,
-      43,   564,   119,    46,   564,    40,   564,   564,    57,    40,
-      40,   128,   564,   683,   131,     4,   688,     6,   688,    40,
-     725,   835,    43,   140,    40,    46,   622,   564,   969,    41,
-      42,   972,   688,   506,     6,    40,   706,   506,    48,   872,
-      48,   746,    48,   116,   714,    89,    90,   719,    80,   719,
-     688,   647,    48,   688,    41,    43,    88,    89,    90,    42,
-     769,   105,   106,   719,   688,   661,   827,   977,   738,   739,
-     740,   667,   742,   669,   688,   895,    46,   774,    49,    50,
-      51,   719,   738,   556,   719,   688,   758,   560,   758,   759,
-     563,   688,   827,   688,   563,   719,   725,   767,   688,   769,
-     738,   688,   688,   738,     6,   719,    46,   812,   688,   688,
-     706,   584,   585,   848,   738,   584,   719,   746,   714,   688,
-      43,   688,   719,   688,   719,   688,    42,   927,   688,   719,
-     688,   688,   719,   719,   116,     3,   688,    48,     6,   719,
-     719,   811,    48,    41,  1179,   104,   742,   111,   104,   819,
-     719,   688,   719,   622,   719,   624,   719,   862,    42,   719,
-      40,   719,   719,   759,     7,   835,   871,   719,    41,  1002,
-     121,   122,   123,    41,    41,   835,    48,   773,   850,   116,
-     850,   654,   719,   812,    40,   654,    57,    48,   858,    48,
-       3,   136,   927,   865,   850,  1015,    48,   840,   136,   137,
-     138,   116,   937,    43,   874,   848,   835,    73,    74,    75,
-      41,   881,   850,    41,   810,   850,   134,   135,   136,   137,
-     138,    89,    90,   819,   894,     3,   850,    40,    54,    41,
-    1049,    41,    41,   862,   830,    48,   850,   105,   106,   712,
-      42,   976,   871,   952,   979,    41,    43,   850,    41,   919,
-      41,    41,    41,   850,    41,   850,    41,   104,     3,   929,
-     850,    42,    40,   850,   850,   116,    41,    43,   741,    76,
-     850,   850,   741,    46,   116,     3,    89,    90,    48,    57,
-       3,   850,   952,   850,   927,   850,     3,   850,    48,   959,
-     850,   116,   850,   850,   116,    40,    48,    41,   850,    41,
-      48,    48,   115,    48,   773,   774,   119,   977,    48,    48,
-      48,    89,    90,   850,    43,   128,   986,   977,   131,    43,
-      46,  1030,   994,   136,   994,    41,   998,   140,   998,   132,
-     133,   134,   135,   136,   137,   138,  1006,   115,  1008,  1009,
-    1010,   119,   815,  1176,    89,    90,  1179,  1052,   977,    46,
-     128,   824,    43,   131,    40,    43,    91,    47,    41,    40,
-    1030,   111,   140,   959,    57,    90,    41,    89,    78,    46,
-     115,    41,  1042,    41,   119,    48,  1081,    41,    41,  1049,
-      42,   439,    48,    48,    42,  1055,  1030,   445,    48,    48,
-    1062,  1061,  1062,  1098,     3,   140,    48,    48,    48,    21,
-    1135,    41,  1072,    40,   877,  1049,    54,    43,    41,  1079,
-    1006,   142,    41,    47,  1084,    62,  1121,    42,   103,    43,
-      41,    41,    44,  1052,    42,  1130,  1131,  1132,    41,    47,
-      40,    40,    48,    42,    41,    41,    54,    48,  1108,    48,
-      48,    41,    41,    48,    48,    54,  1042,  1152,    57,  1119,
-      43,    54,  1081,  1123,    41,    77,    78,    79,    47,  1055,
-      82,    76,    84,    85,  1134,  1061,    54,    76,    46,  1098,
-      88,    89,     3,   165,   166,  1145,    47,    47,  1148,    76,
-      89,    90,    76,   140,    76,    48,   125,   960,  1084,  1159,
-    1160,     3,  1121,    48,    47,   104,  1166,  1167,  1168,    41,
-      41,  1130,  1131,  1132,   122,   978,   115,   980,    42,    40,
-     119,    43,    48,  1183,    43,    54,   125,    48,   104,   128,
-      41,    43,   131,  1152,   997,    40,    72,   136,    40,    76,
-      47,   140,    76,   151,    43,    43,    48,    43,  1134,    76,
-      43,    76,   104,    89,   162,  1018,    76,    43,    42,  1145,
-     168,   169,  1148,   171,    43,    48,    48,    40,    89,    90,
-     178,  1030,    41,    43,  1160,     3,    43,    40,    40,    47,
-    1166,  1167,  1168,    41,    48,    41,  1049,    89,    90,    48,
-    1049,    41,  1051,  1052,   115,    40,   204,  1183,   119,    48,
-      48,   283,    41,   285,   286,   287,   288,   289,   290,   291,
-      41,    41,    40,   115,    41,   223,    48,   119,    41,   140,
-      46,    49,    50,    51,  1087,    43,   128,    48,    43,   131,
-     547,   239,   738,   573,   136,   168,   169,   319,   140,   247,
-    1087,   249,   250,   251,   977,   178,   254,   580,     3,   739,
-     258,   259,   260,   261,   894,   738,   738,    41,   706,   195,
-     342,    89,    90,   345,   200,   201,   714,   835,   626,   753,
-     599,   207,    52,   209,   210,   469,   212,   865,   994,   993,
-    1119,   881,   449,  1009,   169,    40,  1134,   115,  1113,   297,
-     722,   119,   228,   178,   742,   231,   232,   186,    -1,   307,
-     308,   309,    -1,    -1,   312,    -1,   242,    70,    -1,    -1,
-      -1,   759,   140,   249,    -1,    -1,   252,    -1,    -1,    -1,
-     328,    -1,   330,   259,   107,   108,   109,   110,    -1,    -1,
-     266,    94,    -1,    -1,    89,    90,    99,    -1,    -1,   347,
-     348,    -1,    -1,    -1,   352,   128,   129,   130,   131,   132,
-     133,   134,   135,   136,   137,   138,   364,    -1,    -1,    -1,
-     115,    -1,    -1,   371,   119,    -1,   251,    -1,    -1,   254,
-      -1,   819,    -1,   381,    -1,   308,   309,    -1,    -1,   312,
-      -1,    -1,    -1,    -1,     3,   140,   394,    -1,    -1,    -1,
-       3,   473,   474,   475,   476,   477,   478,   479,   480,   481,
-     482,   483,   484,   485,   486,   487,   488,   489,     3,     4,
-      -1,     6,    -1,    -1,   347,   348,    -1,    -1,   426,   427,
-     428,    40,    -1,    -1,   432,    -1,   508,   435,   436,    48,
-     438,    -1,   195,    -1,    -1,   517,   444,   200,   201,    -1,
-      -1,    -1,    -1,    -1,   207,    40,    -1,    -1,    43,   212,
-      -1,    46,    -1,    48,    -1,    -1,     3,    -1,    -1,    -1,
-      -1,    -1,   347,   348,    -1,    -1,    -1,   352,   231,    -1,
-      89,    90,    -1,    -1,    -1,    -1,    89,    90,    -1,   242,
-     243,    -1,    -1,    -1,    -1,   248,   249,   495,    -1,   252,
-      -1,    -1,    -1,    40,    89,    90,   115,    -1,   506,   507,
-     119,    48,   115,    -1,   512,    -1,   119,    -1,    -1,   128,
-      57,   959,   131,    -1,    -1,   128,    -1,   136,   131,   114,
-     115,   140,    -1,   136,   119,   533,    -1,    -1,   536,    -1,
-      -1,    -1,    -1,   128,    -1,    -1,   131,   619,   620,   621,
-     622,   136,    89,    90,     3,   140,    -1,    -1,   556,    -1,
-     435,   436,   560,   438,    -1,   563,    -1,    -1,  1006,    -1,
-     493,   494,   495,    -1,    -1,    49,    50,    51,   115,   502,
-     503,    -1,   119,    -1,    -1,    -1,   584,   585,   586,   512,
-      -1,    40,   590,    -1,    -1,    -1,    -1,    -1,    -1,    48,
-      49,    50,    51,   140,  1042,    -1,    80,     3,    57,    -1,
-     533,    -1,    -1,    -1,    88,    89,    90,  1055,    -1,   617,
-     546,    -1,    -1,  1061,    -1,    -1,   624,    -1,    -1,    -1,
-      -1,   557,    -1,    -1,    -1,    -1,    -1,   512,    -1,    -1,
-      89,    90,    -1,    -1,    40,    -1,  1084,    43,   574,    -1,
-     576,    -1,    48,    -1,   128,    -1,   654,   131,   533,    -1,
-      -1,   536,    -1,   661,   662,    -1,   115,    -1,   666,    -1,
-     119,    -1,    -1,   671,    -1,   747,    -1,    -1,   676,   128,
-      -1,    -1,   131,    -1,    -1,    -1,    -1,   136,    -1,    -1,
-      -1,   140,    -1,    89,    90,    -1,  1134,    -1,    -1,   771,
-     772,   773,    -1,   775,    -1,    -1,    -1,  1145,    -1,   781,
-      -1,   586,    -1,    21,   712,   590,    -1,    -1,    -1,   115,
-      -1,     3,    -1,   119,    -1,    -1,    -1,     3,   651,    -1,
-      -1,    -1,   128,    -1,    -1,   131,    44,    -1,    -1,   737,
-     136,    -1,    -1,   741,   140,    -1,   744,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   753,    -1,    -1,    40,    -1,
-      -1,    43,    -1,    -1,    40,    -1,    48,    43,    -1,    77,
-      78,    79,    48,    -1,    82,    -1,    84,    85,    -1,    -1,
-      -1,    -1,    -1,    -1,     3,    -1,   661,   662,    -1,    -1,
-     543,   666,    -1,   546,   547,   721,   671,    -1,    -1,   797,
-     798,   676,   555,   556,   557,   803,    -1,    89,    90,    -1,
-     118,    -1,    -1,    89,    90,    -1,    -1,   815,    -1,    -1,
-      -1,    40,    -1,   576,    43,   578,   824,    -1,    -1,    48,
-      -1,    -1,   585,   115,    -1,    -1,    -1,   119,    -1,   115,
-       3,    -1,    -1,   119,    -1,    -1,   128,    -1,    -1,   131,
-      -1,    -1,   128,    -1,   136,   131,    -1,    -1,   140,    -1,
-     136,    -1,   934,   935,   140,    -1,    -1,    -1,    -1,   744,
-      89,    90,    -1,    -1,    -1,    -1,    -1,    40,    -1,   877,
-      -1,    -1,   808,   809,    -1,    48,    -1,   885,     3,    -1,
-     816,    -1,    -1,    -1,    57,    -1,   115,    -1,    -1,    -1,
-     119,    -1,    -1,     3,    -1,   831,   832,   833,    -1,   128,
-      -1,    -1,   131,    -1,    -1,    -1,    -1,   136,    -1,    -1,
-      -1,   140,   797,   798,    -1,    40,    89,    90,   803,   927,
-      -1,    -1,    -1,    48,    -1,    -1,    -1,    -1,    -1,    -1,
-      40,   867,    57,    -1,    -1,    -1,   944,    -1,    48,    -1,
-     948,   949,   115,    -1,    -1,    -1,   119,    -1,    -1,   712,
-       3,    -1,   960,    -1,    -1,   128,     3,   720,   131,   722,
-      -1,     3,    -1,    -1,    89,    90,    -1,   140,    -1,    -1,
-     978,    -1,   980,    -1,    -1,    -1,    -1,  1059,    -1,    89,
-      90,    -1,    -1,    -1,    -1,    -1,    -1,    40,    -1,   997,
-     115,    -1,    -1,    40,   119,  1003,    -1,    -1,    40,    -1,
-      -1,    48,    -1,  1085,    57,   115,    48,    -1,    -1,   119,
-    1018,    -1,    -1,    -1,    -1,   140,    -1,     3,   128,    -1,
-      -1,   131,  1030,    -1,  1032,  1033,   136,    -1,    -1,    -1,
-     140,    -1,    -1,    -1,    -1,    -1,    89,    90,    -1,    -1,
-      -1,  1049,    89,    90,  1052,   808,   809,    89,    90,    -1,
-     813,   814,    -1,   816,    40,    -1,    -1,   993,    -1,   944,
-      -1,    -1,   115,   948,   949,    -1,   119,    -1,   115,  1077,
-      -1,    57,   119,   115,    -1,   128,   839,   119,   131,  1087,
-      -1,   128,    -1,    -1,   131,    -1,   128,   140,     1,   131,
-       3,     4,    -1,   140,    -1,     8,     9,    10,   140,    -1,
-      -1,    -1,    -1,    89,    90,  1113,    -1,    -1,    21,    22,
-      23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
-      33,    -1,    35,    36,    37,    38,    39,    -1,    -1,   115,
-      43,    44,    -1,   119,    47,    -1,    49,    50,    51,    52,
-      53,    -1,   128,    -1,    -1,   131,    -1,  1032,  1033,    62,
-      63,    64,    65,    66,    67,    68,    69,    70,    71,    72,
-      73,    74,    75,    -1,    77,    78,    79,    -1,    81,    82,
-      83,    84,    85,    86,    87,    -1,    89,    90,    91,    -1,
-       3,    -1,    95,     6,    97,    98,    99,   100,   101,   102,
-      13,    14,    15,    16,    17,    18,    19,    20,   961,    -1,
-     113,    -1,   115,    -1,    -1,   118,   119,   120,    -1,     3,
-      -1,   124,     6,     7,    -1,     3,    -1,    11,    12,    13,
-      14,    15,    16,    17,    18,    19,    20,   140,    22,    23,
-      24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
-      -1,    35,    36,    37,    38,    39,    40,    -1,    -1,    -1,
-      -1,    -1,    40,    -1,    48,    49,    50,    51,    52,    53,
-      48,    55,    -1,    -1,    -1,    -1,    89,    90,    -1,    57,
-      -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,    -1,
-      -1,    -1,   105,   106,    -1,   107,   108,   109,   110,    -1,
-     112,    -1,    86,    -1,    -1,    89,    90,    -1,    -1,     3,
-      -1,    89,    90,    -1,    -1,   127,   128,   129,   130,   131,
-     132,   133,   134,   135,   136,   137,   138,    -1,    -1,    -1,
-      -1,   115,    -1,    -1,   118,   119,    -1,   115,    -1,    -1,
-     124,   119,    -1,    -1,   128,    -1,    40,   131,    -1,    -1,
-     134,   135,   136,    -1,    48,     3,   140,   141,     6,     7,
-      -1,     3,   140,    11,    12,    13,    14,    15,    16,    17,
+       0,   164,   152,     5,   144,     5,    95,    72,    47,   374,
+     599,     5,     5,   154,   162,   246,   565,   626,   101,   580,
+      40,    45,     5,   594,   549,   559,    61,   195,   815,   393,
+      95,    96,   712,   201,   559,   185,   186,     5,     5,   207,
+     754,   542,     1,     2,   212,   401,     6,    47,     5,     3,
+       6,   669,    47,   671,   231,    41,    21,     3,    42,    41,
+       5,   144,    40,     5,    41,     1,     2,    52,    53,   990,
+     153,    71,   249,  1108,   242,   269,    76,    77,     5,   144,
+       5,     5,    41,    44,   252,  1058,    71,    72,     4,     0,
+       6,   239,     5,     5,    40,    46,    84,    85,     5,    49,
+      50,    51,    61,    42,    42,     5,     5,    48,  1002,     6,
+       6,    57,    40,     3,   114,   198,    77,     5,   103,     5,
+      85,     5,     5,  1158,     6,    85,     3,    43,    54,    85,
+      46,    46,    40,    48,   116,   174,   923,   176,     5,   116,
+       5,   125,   128,    89,    90,   131,   933,   167,  1121,   103,
+      40,     3,   713,   131,   154,  1076,    62,    54,    48,   307,
+     111,   355,   118,    59,    46,   104,   104,    57,  1141,   115,
+     111,   760,  1066,   119,   174,    48,   176,  1150,   213,     4,
+     328,   216,   128,   547,   685,   131,   136,     3,    40,    43,
+     116,  1112,   192,     6,   140,   154,   814,  1140,   114,    89,
+      90,    48,   237,   162,   568,    57,  1127,    48,   208,   204,
+     245,   374,    89,    90,   570,    54,   834,   931,   154,   125,
+     128,    46,    40,   131,    40,   115,    54,  1014,   136,   119,
+      43,  1174,    48,    49,    50,    51,     3,    89,    90,   239,
+       4,   241,   242,     3,   239,   160,   246,   124,     3,   103,
+     140,     1,     3,   142,   213,   170,   817,   216,   297,   259,
+       6,   261,   125,   115,   103,    47,    46,   119,    49,    50,
+      51,    89,    90,    89,    90,   103,   128,    40,   237,   131,
+     117,   961,    46,    76,   818,    54,   245,   246,   140,    40,
+      40,   862,   103,   818,    57,   295,  1083,   297,    43,   115,
+      46,    46,   297,   119,    43,   142,   341,    76,    43,   344,
+     246,    46,   128,   308,   309,   131,   117,   312,     4,   408,
+       6,   114,    89,    90,   140,   105,   106,   392,   469,    89,
+      90,    76,    92,   372,    89,    90,   401,    76,    89,    90,
+       3,   142,    43,   408,    52,    46,   103,   128,   307,     3,
+     131,   582,   119,    40,    41,   115,    40,    40,   506,   119,
+      46,    40,   362,    71,   115,    43,   543,     3,   119,   328,
+      57,   548,   372,   456,    57,    76,  1163,   741,    57,    43,
+     162,    43,   341,     3,    46,   344,    40,     3,   170,   140,
+      54,   559,    54,   393,   459,    49,    50,    51,   357,   434,
+     128,   578,   103,   131,   965,    52,    53,     3,     4,   444,
+       6,     3,    40,    41,     6,     3,   987,   565,     1,    43,
+     420,   357,    46,    40,    71,  1034,    89,    90,    43,    57,
+      54,   426,   427,   428,   454,    89,    90,   352,   586,   439,
+      57,   441,     3,    77,    40,   445,    43,    43,    82,   449,
+      46,     3,    48,    89,    90,   118,   119,   239,    46,    42,
+      43,   115,    40,    46,   120,   119,    42,   249,    46,    89,
+      90,    40,    40,    89,    90,   434,   511,    46,    54,    40,
+      48,   516,   118,   119,    40,   444,   140,    48,    40,    40,
+      41,     3,    40,    89,    90,   115,    57,    89,    90,   119,
+      40,    89,    90,   119,  1053,   570,    57,    40,   656,    57,
+     469,   876,   507,   105,   106,   297,   136,   552,   114,   115,
+     121,   122,   123,   119,   439,   307,    40,   115,    89,    90,
+     445,   119,   128,   469,    40,   131,    40,    89,    90,   574,
+     136,    40,   542,    57,   140,    43,   328,   547,    46,  1138,
+      40,    57,   511,    43,   115,    40,   338,   516,   119,    43,
+      84,     3,    46,   115,   566,   565,   566,   119,   568,   569,
+     565,    40,   566,   566,     3,   575,   569,    89,    90,   140,
+      40,    41,   541,   566,   608,   105,   106,   626,   140,   371,
+       4,   506,     6,   552,   742,    40,    41,    57,   566,   566,
+      40,   973,   561,   115,   976,   541,     4,   119,     6,   566,
+      40,    40,    57,   613,   614,   574,    40,     3,    40,    48,
+     579,   566,     6,   582,   566,   561,   626,    40,   628,    43,
+      43,   626,    46,    46,    76,   812,   813,    41,    42,   566,
+      54,   566,   566,   579,    52,    53,   582,    89,    90,     4,
+     432,     6,   820,   566,   566,    43,    48,   722,    46,   566,
+      89,    90,   444,    71,    72,    40,   566,   566,    49,    50,
+      51,   586,    48,   115,    52,    53,   458,   119,   566,    48,
+     566,    48,   566,   566,   116,   685,   115,   689,    41,   689,
+     119,   726,    42,    71,    72,   689,   689,   122,   839,   566,
+      43,   566,    46,    89,    90,     6,   689,   707,    46,   624,
+      43,   140,   747,   876,    42,   715,    41,    42,   720,   116,
+     720,   689,   689,    42,   506,   103,   720,   720,    48,   115,
+      48,   770,   689,   119,   649,    41,    42,   720,    41,   739,
+     740,   741,   831,   743,   689,   739,   739,   689,   663,   899,
+     981,   775,   720,   720,   669,   104,   671,   759,   104,   759,
+     760,   844,   689,   720,   689,   689,   831,   726,   768,   852,
+     770,   739,   739,    89,    90,   720,   689,   689,   720,   204,
+     111,   816,   689,   565,   136,   137,   138,   852,   747,   689,
+     689,   931,   707,   720,    40,   720,   720,    73,    74,    75,
+     715,   689,     7,   689,   586,   689,   689,   720,   720,     3,
+      41,    41,   103,   720,   239,   815,    48,   116,  1183,    57,
+     720,   720,   689,   823,   689,   116,   117,    40,   743,    48,
+      48,   866,   720,   258,   720,   260,   720,   720,   136,   839,
+     875,   116,   624,  1006,   626,   760,    40,    48,   931,    41,
+      43,   142,   854,   720,   854,   720,    42,   816,    41,   774,
+     854,   854,   862,    57,    41,    54,   931,   869,    42,  1019,
+      41,   854,    41,    80,   656,    43,   941,    41,   878,    41,
+     839,    88,    89,    90,    41,   885,   854,   854,    41,     3,
+      41,     3,    41,   104,    42,    89,    90,   854,   898,   814,
+     116,    21,    41,   839,   116,  1053,    43,   866,   823,   854,
+      76,    46,   854,     3,    48,   980,   875,   956,   983,   834,
+       3,   115,     3,   923,    44,   119,    40,   854,    40,   854,
+     854,   116,   116,   933,    48,    48,    48,    49,    50,    51,
+      48,   854,   854,    57,  1164,    57,   140,   854,    41,    41,
+    1170,  1171,  1172,    48,   854,   854,   956,    77,    78,    79,
+     742,    48,    82,   963,    84,    85,   854,  1187,   854,    48,
+     854,   854,    48,    48,    21,    89,    90,    89,    90,    41,
+      43,   981,     3,    43,    41,    46,    40,   854,    46,   854,
+     990,    43,   774,   775,    47,  1034,   998,    44,   998,    43,
+    1002,   115,  1002,   115,    41,   119,     3,   119,    40,     6,
+    1010,    91,  1012,  1013,  1014,    89,   128,  1180,     3,   131,
+    1183,  1056,   981,    90,   136,   111,   140,    57,   140,    41,
+      77,    78,    79,    78,  1034,    82,    46,    84,    85,  1034,
+      48,    41,     3,    41,    41,   981,  1046,    41,   963,    41,
+    1085,    41,    48,  1053,    43,    40,    40,    48,  1053,  1059,
+      48,    48,    48,    48,  1066,  1065,  1066,  1102,    89,    90,
+      48,   118,    57,    42,  1139,    48,  1076,    42,    47,    40,
+      42,   506,    54,  1083,    41,    54,   142,    48,  1088,   103,
+    1125,    41,    89,    90,   115,  1010,    47,  1056,   119,  1134,
+    1135,  1136,    62,    42,    89,    90,    41,   128,   105,   106,
+     131,    41,  1112,    41,    40,   136,    41,    41,    54,    88,
+      89,  1156,    41,  1123,    41,    48,  1085,  1127,    89,    90,
+     115,  1046,    48,   558,   119,    48,    48,   562,  1138,   439,
+     565,    48,    43,  1102,  1059,   445,     3,    43,    41,  1149,
+    1065,    54,  1152,   122,   115,   140,    47,    46,   119,   140,
+      47,   586,   587,  1163,  1164,    76,  1125,    76,    76,   125,
+    1170,  1171,  1172,  1088,    76,  1134,  1135,  1136,    47,   140,
+      48,    48,   151,    40,    47,    41,   104,  1187,    42,    41,
+      43,    48,    43,   162,    54,    41,    43,  1156,    48,   168,
+     169,    40,   171,   134,   135,   136,   137,   138,     6,   178,
+      76,    76,    76,    47,     3,    13,    14,    15,    16,    17,
+      18,    19,    20,  1138,    43,    43,    43,    76,    76,    72,
+      43,   656,    89,    90,  1149,   204,    43,  1152,   132,   133,
+     134,   135,   136,   137,   138,   104,    89,    43,    42,  1164,
+      40,    40,  1034,    48,   223,  1170,  1171,  1172,   115,    48,
+      48,     3,   119,    49,    50,    51,    41,    43,     3,    43,
+     239,  1053,  1187,  1055,  1056,    41,    40,    40,   247,    48,
+     249,   250,   251,   140,    41,   254,    48,    47,   713,   258,
+     259,   260,   261,    41,    80,    40,    48,    48,    40,    46,
+      89,    90,    88,    89,    90,    40,    48,    41,    41,    41,
+      41,    48,    41,    48,   549,    43,    43,   742,    48,    54,
+     575,   739,    57,  1091,   165,   166,   115,   898,   297,   981,
+     119,   582,    41,   740,   739,   628,   739,   839,   307,   308,
+     309,    76,   128,   312,   469,   131,    52,    89,    90,   601,
+     869,   140,   195,   754,    89,    90,   998,   200,   201,   328,
+     997,   330,  1123,   885,   207,   449,   209,   210,    70,   212,
+    1013,   186,  1138,   115,  1117,   723,    -1,   119,   347,   348,
+     115,    -1,    -1,   352,   119,   228,    -1,    -1,   231,   232,
+       3,    -1,    94,   128,   819,   364,   131,    99,   140,   242,
+      -1,   136,   371,   828,   169,   140,   249,   707,    -1,   252,
+      -1,    -1,   381,   178,    -1,   715,   259,    -1,    -1,    -1,
+      -1,    -1,    -1,   266,    -1,   394,    -1,    40,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    48,    -1,    -1,    -1,    -1,
+      -1,    -1,   283,   743,   285,   286,   287,   288,   289,   290,
+     291,    -1,    -1,    -1,    -1,    -1,   881,   426,   427,   428,
+     760,    -1,    -1,   432,    -1,    -1,   435,   436,    -1,   438,
+      -1,    -1,   168,   169,     3,   444,    89,    90,   319,    -1,
+      -1,    -1,   178,    -1,    -1,    -1,   251,    -1,     3,   254,
+      -1,    -1,    -1,   195,    -1,    -1,    -1,    -1,   200,   201,
+      -1,   342,   115,    -1,   345,   207,   119,    -1,    -1,    -1,
+     212,    40,    -1,    -1,    -1,   128,    -1,    -1,   131,    48,
+      -1,    -1,    -1,   823,    -1,    40,   495,   140,    57,   231,
+      -1,    -1,    -1,    48,    -1,    -1,    -1,   506,   507,   964,
+     242,   243,    -1,   512,    -1,    -1,   248,   249,    -1,    -1,
+     252,    -1,    -1,    -1,    -1,    -1,    -1,   982,    -1,   984,
+      89,    90,    -1,    -1,   533,    -1,    -1,   536,     3,    -1,
+      -1,    -1,    -1,    -1,    89,    90,  1001,    -1,    -1,    -1,
+      -1,    -1,   347,   348,    -1,    -1,   115,   352,    -1,   558,
+     119,    -1,    -1,   562,    -1,    -1,   565,  1022,    -1,   128,
+     115,    -1,   131,    -1,   119,    40,    -1,   136,    -1,    -1,
+      -1,   140,   308,   309,    -1,    -1,   312,   586,   587,   588,
+      -1,    -1,    57,   592,    -1,   140,    -1,     3,  1053,    -1,
+       6,    -1,   473,   474,   475,   476,   477,   478,   479,   480,
+     481,   482,   483,   484,   485,   486,   487,   488,   489,    -1,
+     619,   347,   348,    -1,    89,    90,    -1,   626,    -1,    -1,
+      -1,    -1,    -1,   963,    40,    -1,  1091,   508,    -1,    -1,
+     435,   436,    48,   438,    -1,     3,   517,    -1,    -1,    -1,
+     115,    -1,    -1,    -1,   119,    -1,    -1,   656,    -1,    -1,
+      -1,    -1,    -1,   128,   663,   664,   131,   107,   108,   668,
+     543,    -1,    -1,     3,   673,   548,    -1,    -1,    -1,   678,
+    1010,    -1,    40,    89,    90,    43,   559,    -1,    -1,    -1,
+      48,    -1,   132,   133,   134,   135,   136,   137,   138,    -1,
+      -1,    -1,    -1,   576,    -1,   578,    -1,    -1,    -1,   115,
+      40,    -1,    -1,   119,   713,    -1,  1046,   512,    48,    -1,
+      -1,    -1,   128,    -1,    -1,   131,     3,    -1,    -1,  1059,
+     136,    89,    90,    -1,   140,  1065,    -1,    -1,   533,   738,
+      -1,   536,    -1,   742,    -1,    -1,   745,    -1,    -1,    -1,
+     621,   622,   623,   624,    -1,   754,    -1,   115,  1088,    89,
+      90,   119,    -1,    40,    -1,    -1,    43,   493,   494,   495,
+     128,    48,    -1,   131,    -1,    -1,   502,   503,   136,    -1,
+      -1,    -1,   140,    -1,    -1,   115,   512,    -1,    -1,   119,
+      -1,    -1,    -1,   588,    -1,    -1,    -1,   592,   128,   798,
+     799,   131,    -1,    -1,    -1,   804,   136,   533,  1138,    -1,
+     140,   543,    89,    90,    -1,    -1,   548,   549,    -1,  1149,
+     819,    -1,    40,    -1,    -1,   557,   558,   559,    -1,   828,
+       3,    49,    50,    51,    -1,    -1,    54,    -1,   115,    -1,
+      -1,    -1,   119,    -1,    -1,    -1,   578,    -1,   580,   722,
+      -1,   128,    -1,    -1,   131,   587,    -1,    -1,    -1,   136,
+      -1,    -1,    80,   140,    -1,    -1,    -1,    40,   663,   664,
+      88,    89,    90,   668,    -1,    48,    -1,   748,   673,    -1,
+      -1,    -1,   881,   678,    57,    -1,    -1,    -1,    -1,     3,
+     889,    -1,    -1,    -1,   107,   108,   109,   110,    -1,    -1,
+      -1,   772,   773,   774,    -1,   776,     3,    -1,    -1,    -1,
+     128,   782,    -1,   131,    -1,    -1,    89,    90,   131,   132,
+     133,   134,   135,   136,   137,   138,    40,   653,    -1,    -1,
+      -1,    -1,   931,     3,    48,    -1,    -1,    -1,    -1,   812,
+     813,    -1,   115,    40,    -1,    42,   119,   820,    -1,   948,
+     745,    48,    -1,   952,   953,   128,   688,    54,   131,    -1,
+      57,    -1,   835,   836,   837,   964,    -1,   140,    -1,    -1,
+      40,    -1,    -1,    43,    -1,    89,    90,    -1,    48,    76,
+      -1,   713,    -1,   982,    -1,   984,    -1,    -1,    -1,   721,
+      -1,   723,    89,    90,    -1,    -1,    -1,    -1,   871,    -1,
+      -1,   115,  1001,   798,   799,   119,    -1,   104,  1007,   804,
+      43,    -1,    -1,    -1,   128,    -1,    -1,   131,   115,    89,
+      90,    -1,   119,  1022,    -1,    -1,   140,    -1,   125,    -1,
+      -1,   128,    -1,    -1,   131,  1034,    -1,  1036,  1037,   136,
+      -1,    -1,    -1,   140,    -1,   115,    -1,    -1,    -1,   119,
+      -1,    -1,    -1,    -1,  1053,    -1,    -1,  1056,   128,    -1,
+      -1,   131,    -1,    -1,    -1,    -1,   136,   938,   939,    -1,
+     140,    -1,    -1,    -1,   107,   108,   109,   110,    -1,   112,
+     812,   813,  1081,    -1,    -1,   817,   818,    -1,   820,    -1,
+      -1,    -1,  1091,    -1,   127,   128,   129,   130,   131,   132,
+     133,   134,   135,   136,   137,   138,    -1,    -1,    -1,    -1,
+      -1,   843,    -1,     1,    -1,     3,     4,    -1,  1117,    -1,
+       8,     9,    10,    -1,   997,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    21,    22,    23,    24,    25,    26,    27,
+      28,    29,    30,    31,    32,    33,    -1,    35,    36,    37,
+      38,    39,    -1,   948,    -1,    43,    44,   952,   953,    47,
+      -1,    49,    50,    51,    52,    53,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    62,    63,    64,    65,    66,    67,
+      68,    69,    70,    71,    72,    73,    74,    75,    -1,    77,
+      78,    79,  1063,    81,    82,    83,    84,    85,    86,    87,
+      -1,    89,    90,    91,    -1,    -1,    -1,    95,    -1,    97,
+      98,    99,   100,   101,   102,    -1,    -1,     3,  1089,    -1,
+       6,    -1,    -1,    -1,    -1,   113,    -1,   115,    -1,    -1,
+     118,   119,   120,   965,    -1,    -1,   124,    -1,    -1,    -1,
+      -1,  1036,  1037,    -1,    -1,     3,    -1,    -1,     6,     7,
+      -1,    -1,   140,    11,    12,    13,    14,    15,    16,    17,
       18,    19,    20,    -1,    22,    23,    24,    25,    26,    27,
       28,    29,    30,    31,    32,    33,    -1,    35,    36,    37,
-      38,    39,    40,    -1,    -1,    89,    90,    -1,    40,    76,
-      -1,    49,    50,    51,    52,    53,    48,    55,    -1,    -1,
-      58,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,   115,    70,    71,    72,   119,    -1,    -1,    -1,    -1,
-     107,   108,   109,   110,   128,   112,    -1,   131,    86,    -1,
-      -1,    89,    90,    -1,    -1,     3,   140,    89,    90,    -1,
-     127,   128,   129,   130,   131,   132,   133,   134,   135,   136,
-     137,   138,    -1,    -1,    -1,    -1,    -1,   115,    -1,    -1,
-      -1,   119,    -1,   115,    -1,    -1,    -1,   119,    -1,    -1,
+      38,    39,    40,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      48,    49,    50,    51,    52,    53,    -1,    55,    -1,    -1,
+      -1,    -1,    -1,    89,    90,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    70,    71,    72,    -1,    -1,    -1,    -1,   105,
+     106,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    86,   115,
+      -1,    89,    90,   119,    -1,     3,    -1,    -1,    -1,    -1,
+      -1,    -1,   128,    -1,    -1,   131,    -1,    -1,    -1,    -1,
+     136,    -1,    -1,    -1,    -1,    -1,    -1,   115,    -1,    -1,
+     118,   119,    -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,
      128,    -1,    40,   131,    -1,    -1,   134,   135,   136,    -1,
-      48,     3,   140,   141,     6,     7,    -1,     3,   140,    11,
+      48,     3,   140,   141,     6,     7,    -1,    -1,    -1,    11,
       12,    13,    14,    15,    16,    17,    18,    19,    20,    -1,
       22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
       32,    33,    -1,    35,    36,    37,    38,    39,    40,    -1,
-      -1,    89,    90,    -1,    40,    -1,    -1,    49,    50,    51,
-      52,    53,    48,    55,    -1,    -1,    58,    -1,    -1,    -1,
+      -1,    89,    90,    -1,    -1,    -1,    -1,    49,    50,    51,
+      52,    53,    -1,    55,    -1,    -1,    58,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,   115,    70,    71,
-      72,   119,    -1,    -1,    -1,   107,   108,   109,   110,    -1,
-      -1,    -1,    -1,    -1,    86,    -1,    -1,    89,    90,    -1,
-      -1,     3,   140,    89,    90,   127,   128,   129,   130,   131,
-     132,   133,   134,   135,   136,   137,   138,    -1,    -1,    -1,
-      -1,    -1,    -1,   115,    -1,    -1,    -1,   119,    -1,   115,
-      -1,    -1,    -1,   119,    -1,    -1,   128,    -1,    40,   131,
-      -1,    -1,   134,   135,   136,    -1,    48,     3,   140,   141,
-       6,     7,    -1,    41,   140,    11,    12,    13,    14,    15,
+      72,   119,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+     128,    -1,    -1,   131,    86,    -1,    -1,    89,    90,    -1,
+      -1,     3,   140,    -1,     6,    -1,    -1,    -1,    -1,    -1,
+      -1,    13,    14,    15,    16,    17,    18,    19,    20,    -1,
+      -1,    -1,    -1,   115,    -1,    -1,    -1,   119,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   128,    -1,    -1,   131,
+      -1,    -1,   134,   135,   136,    -1,    -1,     3,   140,   141,
+       6,     7,    41,    -1,    -1,    11,    12,    13,    14,    15,
       16,    17,    18,    19,    20,    -1,    22,    23,    24,    25,
       26,    27,    28,    29,    30,    31,    32,    33,    -1,    35,
       36,    37,    38,    39,    40,    -1,    -1,    89,    90,    -1,
-      -1,    -1,    -1,    49,    50,    51,    52,    53,     6,    55,
-      -1,    -1,    58,    -1,    -1,    13,    14,    15,    16,    17,
-      18,    19,    20,   115,    70,    71,    72,   119,    -1,   107,
-     108,   109,   110,    -1,   112,    -1,   107,   108,   109,   110,
-      86,    -1,    -1,    89,    90,    -1,    -1,    -1,   140,   127,
-     128,   129,   130,   131,   132,   133,   134,   135,   136,   137,
-     138,   132,   133,   134,   135,   136,   137,   138,    -1,   115,
+      -1,    -1,    -1,    49,    50,    51,    52,    53,    -1,    55,
+      -1,    -1,    58,   105,   106,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    70,    71,    72,    -1,   107,   108,
+     109,   110,    -1,   112,    -1,   107,   108,   109,   110,    -1,
+      86,    -1,    -1,    89,    90,    -1,    -1,    -1,   127,   128,
+     129,   130,   131,   132,   133,   134,   135,   136,   137,   138,
+     132,   133,   134,   135,   136,   137,   138,    -1,    -1,   115,
       -1,    -1,    -1,   119,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,   128,    -1,    -1,   131,    -1,    -1,   134,   135,
      136,    -1,    -1,     3,   140,   141,     6,     7,    41,    -1,
@@ -3469,18 +3666,18 @@ static const yytype_int16 yycheck[] =
       50,    51,    52,    53,    -1,    55,    -1,    -1,    58,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       70,    71,    72,    -1,   107,   108,   109,   110,    -1,   112,
-      -1,    -1,   107,   108,   109,   110,    86,    -1,    -1,    89,
+      -1,    -1,    -1,    -1,    -1,    -1,    86,    -1,    -1,    89,
       90,    -1,    -1,    -1,   127,   128,   129,   130,   131,   132,
-     133,   134,   135,   136,   137,   138,   131,   132,   133,   134,
-     135,   136,   137,   138,    -1,   115,    -1,    -1,    -1,   119,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   128,    -1,
+     133,   134,   135,   136,   137,   138,    -1,    22,    23,    24,
+      25,    26,    27,    28,    29,   115,    31,    -1,    33,   119,
+      -1,    36,    37,    38,    39,    -1,    -1,    -1,   128,    -1,
       -1,   131,    -1,    -1,   134,   135,   136,    -1,    -1,     3,
-     140,   141,     6,     7,    -1,    43,    -1,    11,    12,    13,
+     140,   141,     6,     7,    -1,    -1,    -1,    11,    12,    13,
       14,    15,    16,    17,    18,    19,    20,    -1,    22,    23,
       24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
-      -1,    35,    36,    37,    38,    39,    40,    41,    -1,    -1,
+      -1,    35,    36,    37,    38,    39,    40,    -1,    76,    -1,
       -1,    -1,    -1,    -1,    -1,    49,    50,    51,    52,    53,
-      -1,    55,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    55,    -1,    -1,    58,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,   107,
      108,   109,   110,    -1,   112,    -1,    -1,    -1,   107,   108,
      109,   110,    86,    -1,    -1,    89,    90,    -1,    -1,   127,
@@ -3491,30 +3688,30 @@ static const yytype_int16 yycheck[] =
      134,   135,   136,    -1,    -1,     3,   140,   141,     6,     7,
       -1,    -1,    -1,    11,    12,    13,    14,    15,    16,    17,
       18,    19,    20,    -1,    22,    23,    24,    25,    26,    27,
-      28,    29,    30,    31,    32,    33,    40,    35,    36,    37,
-      38,    39,    40,    41,    -1,    49,    50,    51,    -1,    -1,
-      54,    49,    50,    51,    52,    53,    -1,    55,    -1,    -1,
+      28,    29,    30,    31,    32,    33,    -1,    35,    36,    37,
+      38,    39,    40,    41,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    49,    50,    51,    52,    53,    -1,    55,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    70,    71,    72,    -1,    80,   107,   108,   109,
-     110,    -1,    -1,    -1,    88,    89,    90,    -1,    86,    -1,
-      -1,    89,    90,    -1,    -1,    -1,    -1,    -1,    -1,   129,
-     130,   131,   132,   133,   134,   135,   136,   137,   138,    -1,
+      -1,    -1,    70,    71,    72,   107,   108,   109,   110,    -1,
+     112,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    86,    -1,
+      -1,    89,    90,    -1,    -1,   127,   128,   129,   130,   131,
+     132,   133,   134,   135,   136,   137,   138,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,   115,    -1,    -1,
-      -1,   119,    -1,    -1,   128,    -1,    -1,   131,    -1,    -1,
+      -1,   119,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
      128,    -1,    -1,   131,    -1,    -1,   134,   135,   136,    -1,
       -1,     3,   140,   141,     6,     7,    -1,    -1,    -1,    11,
       12,    13,    14,    15,    16,    17,    18,    19,    20,    -1,
       22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-      32,    33,    -1,    35,    36,    37,    38,    39,    40,    -1,
+      32,    33,    -1,    35,    36,    37,    38,    39,    40,    41,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    49,    50,    51,
       52,    53,    -1,    55,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   107,   108,    -1,    -1,    70,    71,
-      72,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    86,    -1,    -1,    89,    90,   132,
-     133,   134,   135,   136,   137,   138,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    22,    23,    24,    25,    26,
-      27,    28,    29,   115,    31,    -1,    33,   119,    -1,    36,
-      37,    38,    39,    -1,    -1,    -1,   128,    -1,    -1,   131,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
+      72,   107,   108,   109,   110,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    86,    -1,    -1,    89,    90,    -1,
+      -1,   127,   128,   129,   130,   131,   132,   133,   134,   135,
+     136,   137,   138,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   115,    -1,    -1,    -1,   119,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   128,    -1,    -1,   131,
       -1,    -1,   134,   135,   136,    -1,    -1,     3,   140,   141,
        6,     7,    -1,    -1,    -1,    11,    12,    13,    14,    15,
       16,    17,    18,    19,    20,    -1,    22,    23,    24,    25,
@@ -3522,98 +3719,87 @@ static const yytype_int16 yycheck[] =
       36,    37,    38,    39,    40,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    49,    50,    51,    52,    53,    -1,    55,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    70,    71,    72,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,     4,
-      86,    -1,    -1,    89,    90,    10,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    21,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    70,    71,    72,   107,   108,   109,
+     110,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      86,    -1,    -1,    89,    90,    -1,    -1,    -1,   128,   129,
+     130,   131,   132,   133,   134,   135,   136,   137,   138,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   115,
-      -1,    -1,    -1,   119,    -1,    -1,    -1,    -1,    43,    44,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   134,   135,
-     136,    -1,    -1,    -1,   140,   141,    -1,    62,    63,    64,
-      65,    -1,    67,    68,    69,    -1,    -1,    -1,    73,    74,
-      75,    -1,    77,    78,    79,    -1,    81,    82,    83,    84,
-      85,    -1,    -1,    -1,    -1,    -1,    91,    -1,    -1,    -1,
-      95,    -1,    97,    98,    99,   100,   101,   102,    -1,    -1,
-      -1,    -1,    -1,    -1,     3,    -1,    -1,    -1,   113,    -1,
-      -1,    -1,    -1,   118,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    22,    23,    24,    25,    26,    27,    28,
-      29,    30,    31,    32,    33,   140,    35,    36,    37,    38,
-      39,    40,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    48,
-      49,    50,    51,    52,    53,    -1,    -1,    -1,    57,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    70,    71,    72,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    86,    -1,    -1,
-      89,    90,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   115,    -1,    -1,   118,
-     119,     3,    -1,    -1,    -1,   124,    -1,    -1,    -1,   128,
-      -1,    -1,   131,    -1,    -1,    -1,    -1,   136,    -1,    -1,
-      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-      32,    33,    -1,    35,    36,    37,    38,    39,    40,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    48,    49,    50,    51,
-      52,    53,    -1,    -1,    -1,    57,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
-      72,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    86,    -1,    -1,    89,    90,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   115,    -1,    -1,   118,   119,     3,    -1,
-      58,    -1,   124,    -1,    -1,    -1,   128,    -1,    -1,   131,
-      -1,    -1,    -1,    -1,   136,    -1,    -1,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,    31,    32,    33,    -1,
-      35,    36,    37,    38,    39,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    48,    49,    50,    51,    52,    53,   107,
-     108,   109,   110,    -1,   112,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    70,    71,    72,     3,   127,
-     128,   129,   130,   131,   132,   133,   134,   135,   136,   137,
-     138,    86,    -1,    -1,    89,    90,    -1,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,    31,    32,    33,    -1,
-      35,    36,    37,    38,    39,    -1,    -1,    -1,    -1,    -1,
-     115,    -1,    -1,   118,   119,    -1,    -1,    52,    53,   124,
-      -1,    -1,    -1,   128,    -1,    -1,   131,    -1,    -1,    -1,
-      -1,   136,    -1,    -1,    -1,    70,    71,    72,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    86,    -1,    -1,    89,    90,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,     0,     1,    -1,
-       3,     4,    -1,    -1,    -1,     8,     9,    10,    -1,    -1,
-     115,    -1,    -1,    -1,   119,    -1,    -1,    -1,    21,    22,
-      23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
-      33,   136,    35,    36,    37,    38,    39,    -1,    -1,    -1,
-      43,    44,    -1,    -1,    -1,    -1,    49,    50,    51,    52,
-      53,    -1,    -1,    56,    -1,    -1,    -1,    -1,    -1,    62,
-      63,    64,    65,    66,    67,    68,    69,    70,    71,    72,
-      -1,    -1,    -1,    -1,    77,    78,    79,    -1,    81,    82,
-      83,    84,    85,    86,    87,    -1,    89,    90,    91,    92,
-      93,    94,    95,    96,    97,    98,    99,   100,   101,   102,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-     113,     1,   115,     3,     4,   118,   119,    -1,     8,     9,
-      10,   124,   125,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    21,    22,    23,    24,    25,    26,    27,    28,    29,
+      -1,    -1,    -1,   119,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   128,    -1,    -1,   131,    -1,    -1,   134,   135,
+     136,    -1,    -1,     3,   140,   141,     6,     7,    -1,    -1,
+      -1,    11,    12,    13,    14,    15,    16,    17,    18,    19,
+      20,     3,    22,    23,    24,    25,    26,    27,    28,    29,
       30,    31,    32,    33,    -1,    35,    36,    37,    38,    39,
-      -1,    -1,    -1,    43,    44,    -1,    -1,    47,    -1,    49,
-      50,    51,    52,    53,    -1,    -1,    56,    -1,    -1,    -1,
-      -1,    -1,    62,    63,    64,    65,    66,    67,    68,    69,
-      70,    71,    72,    -1,    -1,    -1,    -1,    77,    78,    79,
-      -1,    81,    82,    83,    84,    85,    86,    87,    -1,    89,
-      90,    91,    92,    93,    94,    95,    96,    97,    98,    99,
-     100,   101,   102,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   113,     1,   115,     3,     4,   118,   119,
-      -1,     8,     9,    10,   124,   125,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    21,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,    31,    32,    33,    -1,    35,    36,
-      37,    38,    39,    -1,    -1,    -1,    43,    44,    -1,    -1,
-      47,    -1,    49,    50,    51,    52,    53,    -1,    -1,    56,
-      -1,    -1,    -1,    -1,    -1,    62,    63,    64,    65,    66,
-      67,    68,    69,    70,    71,    72,    -1,    -1,    -1,    -1,
-      77,    78,    79,    -1,    81,    82,    83,    84,    85,    86,
-      87,    -1,    89,    90,    91,    92,    93,    94,    95,    96,
-      97,    98,    99,   100,   101,   102,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   113,     1,   115,     3,
-       4,   118,   119,    -1,     8,     9,    10,   124,   125,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    21,    22,    23,
+      40,    -1,    -1,     3,    -1,    -1,    -1,    -1,    -1,    49,
+      50,    51,    52,    53,    -1,    55,    -1,     3,    40,    -1,
+      -1,    43,    -1,    -1,    -1,    -1,    48,    -1,    -1,    -1,
+      70,    71,    72,    -1,    -1,     3,    -1,     3,    -1,    -1,
+      40,    -1,    -1,    -1,    -1,    -1,    86,    -1,    48,    89,
+      90,    -1,    -1,    -1,    40,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    48,    -1,    -1,    -1,    -1,    89,    90,    -1,
+      -1,    -1,    40,    -1,    40,   115,    -1,    -1,    -1,   119,
+      48,    -1,    48,    -1,    -1,    -1,    -1,    -1,    -1,    89,
+      90,    57,    -1,   115,   134,   135,   136,   119,    -1,    -1,
+     140,   141,    -1,    89,    90,    -1,   128,    -1,    -1,   131,
+      -1,    -1,    -1,    -1,   136,   115,    -1,    -1,   140,   119,
+      -1,    89,    90,    89,    90,    -1,    -1,    -1,   128,   115,
+      -1,   131,    -1,   119,    -1,    -1,   136,    -1,     4,    -1,
+     140,    -1,   128,    -1,    10,   131,    -1,   115,    -1,   115,
+     136,   119,    -1,   119,   140,    21,    -1,    -1,    -1,    -1,
+     128,    -1,   128,   131,    -1,   131,    -1,    -1,   136,    -1,
+      -1,    -1,   140,    -1,   140,    -1,    -1,    43,    44,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    62,    63,    64,    65,
+      -1,    67,    68,    69,    -1,    -1,    -1,    73,    74,    75,
+      -1,    77,    78,    79,    -1,    81,    82,    83,    84,    85,
+      -1,    -1,    -1,    -1,    -1,    91,    -1,    -1,    -1,    95,
+      -1,    97,    98,    99,   100,   101,   102,    -1,    -1,    -1,
+      -1,    -1,    -1,     3,    -1,    -1,    -1,   113,    -1,    -1,
+      -1,    -1,   118,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    22,    23,    24,    25,    26,    27,    28,    29,
+      30,    31,    32,    33,   140,    35,    36,    37,    38,    39,
+      40,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    48,    49,
+      50,    51,    52,    53,    -1,    -1,    -1,    57,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      70,    71,    72,   107,   108,   109,   110,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    86,    -1,    -1,    89,
+      90,    -1,    -1,    -1,    -1,   129,   130,   131,   132,   133,
+     134,   135,   136,   137,   138,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   115,    -1,    -1,   118,   119,
+       3,    -1,    -1,    -1,   124,    -1,    -1,    -1,   128,    -1,
+      -1,   131,    -1,    -1,    -1,    -1,   136,    -1,    -1,    22,
+      23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
+      33,    -1,    35,    36,    37,    38,    39,    40,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    48,    49,    50,    51,    52,
+      53,    -1,    -1,    -1,    57,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    86,    -1,    -1,    89,    90,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   115,    -1,    -1,   118,   119,     3,    -1,    58,
+      -1,   124,    -1,    -1,    -1,   128,    -1,    -1,   131,    -1,
+      -1,    -1,    -1,   136,    -1,    -1,    22,    23,    24,    25,
+      26,    27,    28,    29,    30,    31,    32,    33,    -1,    35,
+      36,    37,    38,    39,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    48,    49,    50,    51,    52,    53,   107,   108,
+     109,   110,    -1,   112,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    70,    71,    72,     3,   127,   128,
+     129,   130,   131,   132,   133,   134,   135,   136,   137,   138,
+      86,    -1,    -1,    89,    90,    -1,    22,    23,    24,    25,
+      26,    27,    28,    29,    30,    31,    32,    33,    -1,    35,
+      36,    37,    38,    39,    -1,    -1,    -1,    -1,    -1,   115,
+      -1,    -1,   118,   119,    -1,    -1,    52,    53,   124,    -1,
+      -1,    -1,   128,    -1,    -1,   131,    -1,    -1,    -1,    -1,
+     136,    -1,    -1,    -1,    70,    71,    72,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      86,    -1,    -1,    89,    90,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,     0,     1,    -1,     3,
+       4,    -1,    -1,    -1,     8,     9,    10,    -1,    -1,   115,
+      -1,    -1,    -1,   119,    -1,    -1,    -1,    21,    22,    23,
       24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
-      -1,    35,    36,    37,    38,    39,    -1,    -1,    -1,    43,
-      44,    -1,    -1,    47,    -1,    49,    50,    51,    52,    53,
+     136,    35,    36,    37,    38,    39,    -1,    -1,    -1,    43,
+      44,    -1,    -1,    -1,    -1,    49,    50,    51,    52,    53,
       -1,    -1,    56,    -1,    -1,    -1,    -1,    -1,    62,    63,
       64,    65,    66,    67,    68,    69,    70,    71,    72,    -1,
       -1,    -1,    -1,    77,    78,    79,    -1,    81,    82,    83,
@@ -3624,133 +3810,167 @@ static const yytype_int16 yycheck[] =
      124,   125,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
       31,    32,    33,    -1,    35,    36,    37,    38,    39,    -1,
-      -1,    -1,    43,    44,    -1,    -1,    -1,    -1,    49,    50,
-      51,    52,    53,    -1,    -1,    56,    -1,    -1,    -1,    60,
+      -1,    -1,    43,    44,    -1,    -1,    47,    -1,    49,    50,
+      51,    52,    53,    -1,    -1,    56,    -1,    -1,    -1,    -1,
       -1,    62,    63,    64,    65,    66,    67,    68,    69,    70,
       71,    72,    -1,    -1,    -1,    -1,    77,    78,    79,    -1,
       81,    82,    83,    84,    85,    86,    87,    -1,    89,    90,
       91,    92,    93,    94,    95,    96,    97,    98,    99,   100,
-     101,   102,    -1,    -1,     1,    -1,     3,    -1,    58,    -1,
-      -1,    -1,   113,    -1,   115,    -1,    -1,   118,   119,    -1,
-      -1,    -1,    -1,   124,   125,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,    31,    32,    33,    -1,    35,    36,
-      37,    38,    39,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    48,    49,    50,    51,    52,    53,   107,   108,   109,
-     110,    -1,   112,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    70,    71,    72,    -1,   127,   128,   129,
-     130,   131,   132,   133,   134,   135,   136,   137,   138,    86,
-      -1,    -1,    89,    90,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,     1,    -1,     3,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   115,    -1,
-      -1,   118,   119,    -1,    -1,    -1,    -1,   124,    22,    23,
-      24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
-      -1,    35,    36,    37,    38,    39,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    48,    49,    50,    51,    52,    53,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,    -1,
-      -1,     3,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    86,    -1,    -1,    89,    90,    -1,    -1,    -1,
+     101,   102,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   113,     1,   115,     3,     4,   118,   119,    -1,
+       8,     9,    10,   124,   125,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    21,    22,    23,    24,    25,    26,    27,
+      28,    29,    30,    31,    32,    33,    -1,    35,    36,    37,
+      38,    39,    -1,    -1,    -1,    43,    44,    -1,    -1,    47,
+      -1,    49,    50,    51,    52,    53,    -1,    -1,    56,    -1,
+      -1,    -1,    -1,    -1,    62,    63,    64,    65,    66,    67,
+      68,    69,    70,    71,    72,    -1,    -1,    -1,    -1,    77,
+      78,    79,    -1,    81,    82,    83,    84,    85,    86,    87,
+      -1,    89,    90,    91,    92,    93,    94,    95,    96,    97,
+      98,    99,   100,   101,   102,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   113,     1,   115,     3,     4,
+     118,   119,    -1,     8,     9,    10,   124,   125,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    21,    22,    23,    24,
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    -1,
+      35,    36,    37,    38,    39,    -1,    -1,    -1,    43,    44,
+      -1,    -1,    47,    -1,    49,    50,    51,    52,    53,    -1,
+      -1,    56,    -1,    -1,    -1,    -1,    -1,    62,    63,    64,
+      65,    66,    67,    68,    69,    70,    71,    72,    -1,    -1,
+      -1,    -1,    77,    78,    79,    -1,    81,    82,    83,    84,
+      85,    86,    87,    -1,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,   101,   102,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   113,     1,
+     115,     3,     4,   118,   119,    -1,     8,     9,    10,   124,
+     125,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    21,
       22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-      32,    33,     3,    35,    36,    37,    38,    39,    -1,    -1,
-      -1,   115,    -1,    -1,   118,   119,    -1,    -1,    -1,    -1,
-     124,    22,    23,    24,    25,    26,    27,    28,    29,    30,
-      31,    32,    33,    -1,    35,    36,    37,    38,    39,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    48,    49,    50,
-      51,    52,    53,    -1,    86,    -1,    -1,    89,    90,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,
-      71,    72,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   115,    -1,    86,    -1,   119,    89,    90,
+      32,    33,    -1,    35,    36,    37,    38,    39,    -1,    -1,
+      -1,    43,    44,    -1,    -1,    -1,    -1,    49,    50,    51,
+      52,    53,    -1,    -1,    56,    -1,    -1,    -1,    60,    -1,
+      62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
+      72,    -1,    -1,    -1,    -1,    77,    78,    79,    -1,    81,
+      82,    83,    84,    85,    86,    87,    -1,    89,    90,    91,
+      92,    93,    94,    95,    96,    97,    98,    99,   100,   101,
+     102,    -1,    -1,     1,    -1,     3,    -1,    58,    -1,    -1,
+      -1,   113,    -1,   115,    -1,    -1,   118,   119,    -1,    -1,
+      -1,    -1,   124,   125,    22,    23,    24,    25,    26,    27,
+      28,    29,    30,    31,    32,    33,    -1,    35,    36,    37,
+      38,    39,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      48,    49,    50,    51,    52,    53,   107,   108,   109,   110,
+      -1,   112,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    70,    71,    72,    -1,   127,   128,   129,   130,
+     131,   132,   133,   134,   135,   136,   137,   138,    86,    -1,
+      -1,    89,    90,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,     1,    -1,     3,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   115,    -1,    -1,
+     118,   119,    -1,    -1,    -1,    -1,   124,    22,    23,    24,
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    -1,
+      35,    36,    37,    38,    39,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    48,    49,    50,    51,    52,    53,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,     3,    -1,    58,    -1,
-      -1,    -1,    -1,    -1,   115,    -1,    13,   118,   119,    -1,
-      -1,    -1,    -1,   124,   125,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,    31,    32,    33,    -1,    35,    36,
-      37,    38,    39,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    48,    49,    50,    51,    52,    53,   107,   108,   109,
-     110,    -1,   112,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    70,    71,    72,    -1,   127,   128,   129,
-     130,   131,   132,   133,   134,   135,   136,   137,   138,    86,
-      -1,    -1,    89,    90,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,     3,
-      -1,    58,    -1,    -1,    -1,    -1,    -1,    -1,   115,    -1,
-      -1,   118,   119,    -1,    -1,    -1,    -1,   124,    22,    23,
-      24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
-      -1,    35,    36,    37,    38,    39,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    48,    49,    50,    51,    52,    53,
-     107,   108,   109,   110,    -1,   112,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,    -1,
-     127,   128,   129,   130,   131,   132,   133,   134,   135,   136,
-     137,   138,    86,    -1,    -1,    89,    90,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    70,    71,    72,    -1,    -1,
+       3,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    86,    -1,    -1,    89,    90,    -1,    -1,    -1,    22,
+      23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
+      33,     3,    35,    36,    37,    38,    39,    -1,    -1,    -1,
+     115,    -1,    -1,   118,   119,    -1,    -1,    -1,    -1,   124,
+      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
+      32,    33,    -1,    35,    36,    37,    38,    39,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    48,    49,    50,    51,
+      52,    53,    -1,    86,    -1,    -1,    89,    90,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
+      72,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   115,    -1,    86,    -1,   119,    89,    90,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-       1,    -1,     3,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,   115,    -1,    -1,   118,   119,    -1,    -1,    -1,    -1,
-     124,    22,    23,    24,    25,    26,    27,    28,    29,    30,
+      -1,    -1,    -1,    -1,    -1,     3,    -1,    58,    -1,    -1,
+      -1,    -1,    -1,   115,    -1,    13,   118,   119,    -1,    -1,
+      -1,    -1,   124,   125,    22,    23,    24,    25,    26,    27,
+      28,    29,    30,    31,    32,    33,    -1,    35,    36,    37,
+      38,    39,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      48,    49,    50,    51,    52,    53,   107,   108,   109,   110,
+      -1,   112,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    70,    71,    72,    -1,   127,   128,   129,   130,
+     131,   132,   133,   134,   135,   136,   137,   138,    86,    -1,
+      -1,    89,    90,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,     3,    -1,
+      58,    -1,    -1,    -1,    -1,    -1,    -1,   115,    -1,    -1,
+     118,   119,    -1,    -1,    -1,    -1,   124,    22,    23,    24,
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    -1,
+      35,    36,    37,    38,    39,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    48,    49,    50,    51,    52,    53,   107,
+     108,   109,   110,    -1,   112,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    70,    71,    72,    -1,   127,
+     128,   129,   130,   131,   132,   133,   134,   135,   136,   137,
+     138,    86,    -1,    -1,    89,    90,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,     1,
+      -1,     3,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+     115,    -1,    -1,   118,   119,    -1,    -1,    -1,    -1,   124,
+      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
+      32,    33,    -1,    35,    36,    37,    38,    39,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    49,    50,    51,
+      52,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
+      72,    -1,     3,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    86,    -1,    -1,    89,    90,    -1,
+      -1,    22,    23,    24,    25,    26,    27,    28,    29,    30,
       31,    32,    33,    -1,    35,    36,    37,    38,    39,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    49,    50,
+      -1,    -1,    -1,   115,    -1,    -1,    -1,   119,    49,    50,
       51,    52,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,
-      71,    72,    -1,     3,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    86,    -1,    -1,    89,    90,
-      -1,    -1,    22,    23,    24,    25,    26,    27,    28,    29,
-      30,    31,    32,    33,    -1,    35,    36,    37,    38,    39,
-      -1,    -1,    -1,    -1,   115,    -1,    -1,    -1,   119,    49,
-      50,    51,    52,    53,    -1,    -1,    -1,    -1,    -1,    -1,
+      71,    72,    -1,    -1,     3,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    86,    87,    -1,    89,    90,
+      -1,    -1,    -1,    22,    23,    24,    25,    26,    27,    28,
+      29,    30,    31,    32,    33,    -1,    35,    36,    37,    38,
+      39,    -1,    -1,    -1,   115,    -1,    -1,    -1,   119,   120,
+      49,    50,    51,    52,    53,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      70,    71,    72,    -1,    -1,     3,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    86,    87,    -1,    89,
-      90,    -1,    -1,    -1,    22,    23,    24,    25,    26,    27,
-      28,    29,    30,    31,    32,    33,    -1,    35,    36,    37,
-      38,    39,    -1,    -1,    -1,   115,    -1,    -1,    -1,   119,
-     120,    49,    50,    51,    52,    53,    -1,    -1,    -1,    -1,
+      -1,    70,    71,    72,    -1,    -1,    -1,     3,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    86,    87,    -1,
+      89,    90,    -1,    -1,    -1,    -1,    22,    23,    24,    25,
+      26,    27,    28,    29,    30,    31,    32,    33,    -1,    35,
+      36,    37,    38,    39,    -1,    -1,   115,    -1,    -1,    -1,
+     119,   120,    48,    49,    50,    51,    52,    53,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    70,    71,    72,    -1,    -1,    -1,     3,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    86,    87,
-      -1,    89,    90,    -1,    -1,    -1,    -1,    22,    23,    24,
+      -1,    -1,    -1,    -1,    70,    71,    72,    -1,     3,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      86,    -1,    -1,    89,    90,    -1,    -1,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    -1,
-      35,    36,    37,    38,    39,    -1,    -1,   115,    -1,    -1,
-      -1,   119,   120,    48,    49,    50,    51,    52,    53,    -1,
+      35,    36,    37,    38,    39,    40,    -1,    -1,    -1,   115,
+      -1,    -1,   118,   119,    49,    50,    51,    52,    53,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    70,    71,    72,    -1,     3,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    86,    -1,    -1,    89,    90,    -1,    -1,    22,    23,
       24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
-      -1,    35,    36,    37,    38,    39,    40,    -1,    -1,    -1,
-     115,    -1,    -1,   118,   119,    49,    50,    51,    52,    53,
+      -1,    35,    36,    37,    38,    39,    -1,    -1,    -1,    -1,
+     115,    -1,    -1,    -1,   119,    49,    50,    51,    52,    53,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,    -1,
-       3,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    86,    -1,    -1,    89,    90,    -1,    -1,    22,
+       3,    -1,    58,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    86,    87,    -1,    89,    90,    -1,    -1,    22,
       23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
       33,    -1,    35,    36,    37,    38,    39,    -1,    -1,    -1,
       -1,   115,    -1,    -1,    -1,   119,    49,    50,    51,    52,
+      53,   107,   108,   109,   110,    -1,   112,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,
+       3,   127,   128,   129,   130,   131,   132,   133,   134,   135,
+     136,   137,   138,    86,    -1,    -1,    89,    90,    -1,    22,
+      23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
+      33,    -1,    35,    36,    37,    38,    39,    -1,    -1,    -1,
+      -1,    -1,   115,    -1,    -1,    -1,   119,    -1,    -1,    52,
       53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    72,
-      -1,     3,    -1,    58,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    86,    87,    -1,    89,    90,    -1,    -1,
-      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-      32,    33,    -1,    35,    36,    37,    38,    39,    -1,    -1,
-      -1,    -1,   115,    -1,    -1,    -1,   119,    49,    50,    51,
-      52,    53,   107,   108,   109,   110,    -1,   112,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
-      72,     3,   127,   128,   129,   130,   131,   132,   133,   134,
-     135,   136,   137,   138,    86,    -1,    -1,    89,    90,    -1,
-      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-      32,    33,    -1,    35,    36,    37,    38,    39,    -1,    -1,
-      -1,    -1,    -1,   115,    -1,    -1,    -1,   119,    -1,    -1,
-      52,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
-      72,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    86,    -1,    -1,    89,    90,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    86,    -1,    -1,    89,    90,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   115,    -1,    -1,    -1,   119
+      -1,    -1,   115,    -1,    -1,    -1,   119
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
-static const yytype_uint16 yystos[] =
+static const yytype_int16 yystos[] =
 {
-       0,   121,   122,   123,   144,   145,   323,     1,     3,    22,
+       0,   121,   122,   123,   144,   145,   324,     1,     3,    22,
       23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
       33,    35,    36,    37,    38,    39,    48,    49,    50,    51,
       52,    53,    70,    71,    72,    86,    89,    90,   115,   118,
@@ -3764,14 +3984,14 @@ static const yytype_uint16 yystos[] =
      153,   154,   157,   158,   160,   161,   162,   163,   164,   165,
      166,   169,   170,   171,   174,   176,   181,   182,   183,   184,
      186,   190,   197,   198,   199,   200,   201,   205,   206,   213,
-     214,   226,   227,   234,   235,   323,    48,    52,    71,    48,
+     214,   226,   227,   234,   235,   324,    48,    52,    71,    48,
       48,    40,   142,   103,   103,   307,   239,   311,   125,    43,
      260,   256,    40,    48,    54,    57,    76,   119,   128,   131,
      136,   140,   245,   246,   248,   250,   251,   252,   253,   311,
-     323,   256,   263,   311,   307,   117,   142,   312,    43,    43,
-     236,   237,   240,   323,   120,    40,     6,    85,   118,   317,
-      40,   320,   323,     1,   258,   259,   308,    40,   320,    40,
-     168,   323,    40,    40,    84,    85,    40,    84,    40,    77,
+     324,   256,   263,   311,   307,   117,   142,   312,    43,    43,
+     236,   237,   240,   324,   120,    40,     6,    85,   118,   317,
+      40,   320,   324,     1,   258,   259,   308,    40,   320,    40,
+     168,   324,    40,    40,    84,    85,    40,    84,    40,    77,
       82,    44,    77,    92,   311,    46,   308,   311,    40,     4,
       46,    40,    40,    43,    46,     4,   317,    40,   180,   258,
      178,   180,    40,    40,   317,    40,   103,   294,   320,    40,
@@ -3780,100 +4000,100 @@ static const yytype_uint16 yystos[] =
      294,     3,     7,    11,    12,    13,    14,    15,    16,    17,
       18,    19,    20,    40,    55,   128,   131,   134,   135,   136,
      140,   141,   240,   241,   242,   244,   258,   259,   278,   279,
-     280,   281,   282,   317,   318,   323,   256,    40,   128,   131,
+     280,   281,   282,   317,   318,   324,   256,    40,   128,   131,
      236,   251,   253,   311,    48,    46,   105,   106,   265,   266,
      267,   268,   269,    58,   278,   280,   278,     3,    40,    48,
      140,   249,   252,   311,    48,   249,   252,   253,   256,   311,
      245,    40,    57,   245,    40,    57,    48,   128,   131,   249,
-     252,   311,   116,   313,   119,   314,    41,    42,   238,   323,
-     267,   308,   309,   317,   294,     6,    46,   309,   321,   309,
+     252,   311,   116,   313,   119,   314,    41,    42,   238,   324,
+     267,   308,   309,   317,   294,     6,    46,   309,   322,   309,
       43,    40,   248,   250,    54,    41,   309,    52,    53,    71,
-     295,   296,   323,   308,   308,   309,    13,   175,   236,   236,
-     311,    43,    54,   216,    54,    46,   308,   177,   321,   308,
-     236,    46,   247,   248,   250,   251,   323,    43,    42,   179,
-     323,   309,   310,   323,   155,   156,   317,   236,   209,   210,
-     211,   240,   293,   323,   311,   317,   128,   131,   253,   308,
-     311,   321,    40,   309,    40,   128,   131,   311,   116,   248,
-     311,   270,   308,   323,    40,   248,    76,   285,   286,   311,
-     323,    48,    48,    41,   308,   312,   104,   111,   278,    40,
+     295,   296,   324,   308,   308,   309,    13,   175,   236,   236,
+     311,    43,    54,   216,    54,    46,   308,   177,   322,   308,
+     236,    46,   247,   248,   250,   251,   324,    43,    42,   179,
+     324,   309,   310,   324,   155,   156,   317,   236,   209,   210,
+     211,   240,   293,   324,   311,   317,   128,   131,   253,   308,
+     311,   322,    40,   309,    40,   128,   131,   311,   116,   248,
+     311,   270,   308,   324,    40,   248,    76,   285,   286,   311,
+     324,    48,    48,    41,   308,   312,   104,   111,   278,    40,
       48,   278,   278,   278,   278,   278,   278,   278,   104,    42,
-     243,   323,    40,   107,   108,   109,   110,   112,   127,   128,
+     243,   324,    40,   107,   108,   109,   110,   112,   127,   128,
      129,   130,   131,   132,   133,   134,   135,   136,   137,   138,
       48,   111,     7,   128,   131,   253,   311,   250,   311,   250,
       41,    41,   128,   131,   250,   311,   116,    48,    57,   278,
       58,    40,   253,   311,    48,   311,    40,    57,    48,   253,
      236,    58,   278,   236,    58,   278,    48,    48,   249,   252,
       48,   249,   252,   116,    48,   128,   131,   249,   256,   312,
-      43,   125,   240,    41,   311,   185,    42,    54,    41,   245,
-      40,   265,    41,   311,    41,    54,    41,    42,   173,    42,
-      41,    41,    43,   258,   145,   311,   215,    41,    41,    41,
-      41,   178,    40,   180,    41,    41,    42,    46,    41,   104,
-      42,   212,   323,    59,   116,    41,   253,   311,    43,   236,
-     116,    80,    88,    89,    90,   128,   131,   254,   255,   256,
-     298,   300,   301,   302,   323,    54,    76,   196,   323,   236,
-     311,   302,   287,    46,    43,   285,   307,   294,     3,    41,
-     128,   131,   136,   253,   258,    48,   244,   278,   278,   278,
+      43,   125,   240,    42,   321,   324,   311,   185,    42,    54,
+      41,   245,    40,   265,    41,   311,    41,    54,    41,    42,
+     173,    42,    41,    41,    43,   258,   145,   311,   215,    41,
+      41,    41,    41,   178,    40,   180,    41,    41,    42,    46,
+      41,   104,    42,   212,   324,    59,   116,    41,   253,   311,
+      43,   236,   116,    80,    88,    89,    90,   128,   131,   254,
+     255,   256,   298,   300,   301,   302,   324,    54,    76,   196,
+     324,   236,   311,   302,   287,    46,    43,   285,   307,   294,
+       3,    41,   128,   131,   136,   253,   258,    48,   244,   278,
      278,   278,   278,   278,   278,   278,   278,   278,   278,   278,
-     278,   278,   278,   278,     3,     3,   311,   116,    41,    41,
-      41,   116,   248,   251,   256,   250,   278,   236,   249,   311,
-      41,   116,    48,   236,    58,   278,    48,    41,    58,    41,
-      58,    48,    48,    48,    48,   128,   131,   249,   252,    48,
-      48,    48,   249,   240,   238,     4,    46,   317,   145,   321,
-     155,   281,   317,   322,    43,   236,    43,    46,     4,   167,
-     317,     4,    43,    46,   114,   172,   248,   317,   319,   309,
-     317,   322,    41,   240,   248,    46,   247,    47,    43,   145,
-      44,   235,   178,    43,    46,    40,    47,   236,   179,   115,
-     119,   308,   315,    43,   321,   240,   172,    91,   207,   211,
-     159,   256,   248,   317,   116,    41,    40,    40,   298,    90,
-      89,   300,   255,   111,    57,   191,   260,    43,    46,    41,
-     188,   245,    78,   288,   289,   297,   323,   203,    46,   311,
-     278,    41,    41,   136,   256,    41,   128,   131,   246,    48,
-     243,    76,    41,    41,   248,   251,    58,    41,    41,   249,
-     249,    41,    58,   249,   254,   254,   249,    48,    48,    48,
-      48,    48,   249,    48,    48,    48,   238,    47,    42,    42,
-      41,   149,    40,   302,    54,    41,    42,   173,   172,   248,
-     302,    43,    47,   317,   258,   308,    43,    54,   319,   236,
-      41,   142,   117,   142,   316,   103,    41,    47,   311,    44,
-     118,   186,   201,   205,   206,   208,   223,   225,   235,   212,
-     145,   302,    43,   236,   278,    30,    32,    35,   189,   261,
-     262,   311,    40,    46,   192,   152,   271,   272,   273,   274,
-     323,    40,    54,   300,   302,   303,     1,    42,    43,    46,
-     187,    42,    73,    74,    75,   290,   292,     1,    43,    66,
-      73,    74,    75,    78,   124,   140,   150,   151,   152,   153,
-     157,   158,   162,   164,   166,   169,   171,   174,   176,   181,
-     182,   183,   184,   201,   205,   206,   213,   217,   221,   222,
-     223,   224,   225,   226,   228,   229,   232,   235,   323,   202,
-     245,   278,   278,   278,    41,    41,    41,    40,   278,    41,
-      41,    41,   249,   249,    48,    48,    48,   249,    48,    48,
-     321,   321,   254,   217,   236,   172,   317,   322,    43,   248,
-      41,   302,    43,   248,    43,   180,    41,   254,   119,   308,
-     308,   119,   308,   241,     4,    46,    54,   103,    87,   120,
-     258,    60,    43,    41,    41,   298,   299,   323,   236,    40,
-      43,   193,   271,   124,   275,   276,   308,    47,    42,   125,
-     236,   265,    54,    76,   304,   323,   248,   289,   311,   291,
-     220,    46,    76,    76,    76,   140,   221,   313,    47,   125,
-     217,    30,    32,    35,   233,   262,   311,   217,   278,   278,
-     258,   249,    48,    48,   249,   249,   245,    47,    41,   173,
-     302,    43,   248,   172,    43,    43,   316,   316,   104,   258,
-     209,   258,    40,   298,   188,    41,   194,   276,   272,    54,
-      43,   248,   125,   273,    41,    43,   267,   305,   306,   311,
-      43,    46,   302,    48,   283,   284,   323,   297,   217,   218,
-     313,    40,    43,   204,   248,    76,    43,    47,   246,   249,
-     249,    43,    43,    43,   302,    43,   247,   104,    40,   128,
-     131,   253,   236,   187,   302,    43,   277,   278,   302,   273,
-      43,    46,    43,    42,    48,    40,    46,   188,    48,   311,
-     217,    40,   236,   302,   278,   204,    41,    43,    43,   236,
-      40,    40,    40,   131,    41,   111,   192,   188,   306,    48,
-     187,    48,   284,    47,   236,    41,   188,    43,    41,   236,
-     236,   236,    40,   303,   258,   193,   187,    48,    48,   219,
-      41,   230,   302,   187,   231,   302,    41,    41,    41,   236,
-     192,    48,   217,   231,    43,    46,    54,    43,    46,    54,
-     231,   231,   231,    41,   193,    48,   267,   265,   231,    43,
-      43
+     278,   278,   278,   278,   278,   278,     3,     3,   311,   116,
+      41,    41,    41,   116,   248,   251,   256,   250,   278,   236,
+     249,   311,    41,   116,    48,   236,    58,   278,    48,    41,
+      58,    41,    58,    48,    48,    48,    48,   128,   131,   249,
+     252,    48,    48,    48,   249,   240,   238,   322,    41,   145,
+     322,   155,   281,   317,   323,    43,   236,    43,    46,     4,
+     167,   317,     4,    43,    46,   114,   172,   248,   317,   319,
+     309,   317,   323,    41,   240,   248,    46,   247,    47,    43,
+     145,    44,   235,   178,    43,    46,    40,    47,   236,   179,
+     115,   119,   308,   315,    43,   322,   240,   172,    91,   207,
+     211,   159,   256,   248,   317,   116,    41,    40,    40,   298,
+      90,    89,   300,   255,   111,    57,   191,   260,    43,    46,
+      41,   188,   245,    78,   288,   289,   297,   324,   203,    46,
+     311,   278,    41,    41,   136,   256,    41,   128,   131,   246,
+      48,   243,    76,    41,    41,   248,   251,    58,    41,    41,
+     249,   249,    41,    58,   249,   254,   254,   249,    48,    48,
+      48,    48,    48,   249,    48,    48,    48,   238,     4,    46,
+     317,    47,    42,    42,    41,   149,    40,   302,    54,    41,
+      42,   173,   172,   248,   302,    43,    47,   317,   258,   308,
+      43,    54,   319,   236,    41,   142,   117,   142,   316,   103,
+      41,    47,   311,    44,   118,   186,   201,   205,   206,   208,
+     223,   225,   235,   212,   145,   302,    43,   236,   278,    30,
+      32,    35,   189,   261,   262,   311,    40,    46,   192,   152,
+     271,   272,   273,   274,   324,    40,    54,   300,   302,   303,
+       1,    42,    43,    46,   187,    42,    73,    74,    75,   290,
+     292,     1,    43,    66,    73,    74,    75,    78,   124,   140,
+     150,   151,   152,   153,   157,   158,   162,   164,   166,   169,
+     171,   174,   176,   181,   182,   183,   184,   201,   205,   206,
+     213,   217,   221,   222,   223,   224,   225,   226,   228,   229,
+     232,   235,   324,   202,   245,   278,   278,   278,    41,    41,
+      41,    40,   278,    41,    41,    41,   249,   249,    48,    48,
+      48,   249,    48,    48,   322,   322,   254,   217,   236,   172,
+     317,   323,    43,   248,    41,   302,    43,   248,    43,   180,
+      41,   254,   119,   308,   308,   119,   308,   241,     4,    46,
+      54,   103,    87,   120,   258,    60,    43,    41,    41,   298,
+     299,   324,   236,    40,    43,   193,   271,   124,   275,   276,
+     308,    47,    42,   125,   236,   265,    54,    76,   304,   324,
+     248,   289,   311,   291,   220,    46,    76,    76,    76,   140,
+     221,   313,    47,   125,   217,    30,    32,    35,   233,   262,
+     311,   217,   278,   278,   258,   249,    48,    48,   249,   249,
+     245,    47,    41,   173,   302,    43,   248,   172,    43,    43,
+     316,   316,   104,   258,   209,   258,    40,   298,   188,    41,
+     194,   276,   272,    54,    43,   248,   125,   273,    41,    43,
+     267,   305,   306,   311,    43,    46,   302,    48,   283,   284,
+     324,   297,   217,   218,   313,    40,    43,   204,   248,    76,
+      43,    47,   246,   249,   249,    43,    43,    43,   302,    43,
+     247,   104,    40,   128,   131,   253,   236,   187,   302,    43,
+     277,   278,   302,   273,    43,    46,    43,    42,    48,    40,
+      46,   188,    48,   311,   217,    40,   236,   302,   278,   204,
+      41,    43,    43,   236,    40,    40,    40,   131,    41,   111,
+     192,   188,   306,    48,   187,    48,   284,    47,   236,    41,
+     188,    43,    41,   236,   236,   236,    40,   303,   258,   193,
+     187,    48,    48,   219,    41,   230,   302,   187,   231,   302,
+      41,    41,    41,   236,   192,    48,   217,   231,    43,    46,
+      54,    43,    46,    54,   231,   231,   231,    41,   193,    48,
+     267,   265,   231,    43,    43
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
-static const yytype_uint16 yyr1[] =
+static const yytype_int16 yyr1[] =
 {
        0,   143,   144,   144,   144,   144,   144,   144,   144,   145,
      145,   145,   145,   146,   146,   146,   146,   146,   146,   146,
@@ -3935,12 +4155,12 @@ static const yytype_uint16 yyr1[] =
      311,   311,   311,   311,   311,   311,   312,   312,   312,   312,
      313,   313,   314,   314,   315,   315,   315,   315,   315,   315,
      316,   316,   316,   316,   317,   317,   318,   318,   319,   319,
-     319,   320,   320,   321,   321,   321,   321,   321,   321,   322,
-     322,   323
+     319,   320,   320,   321,   321,   322,   322,   322,   322,   322,
+     322,   323,   323,   324
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
-static const yytype_uint8 yyr2[] =
+static const yytype_int8 yyr2[] =
 {
        0,     2,     1,     3,     2,     3,     2,     5,     3,     2,
        2,     2,     1,     1,     1,     1,     1,     1,     1,     2,
@@ -3948,8 +4168,8 @@ static const yytype_uint8 yyr2[] =
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     0,     8,     5,     3,     5,     5,     9,     3,     2,
        2,     5,     2,     5,     2,     4,     1,     1,     7,     7,
-       5,     0,     7,     1,     1,     2,     2,     1,     5,     5,
-       5,     3,     4,     3,     7,     8,     5,     3,     1,     1,
+       5,     0,     7,     1,     1,     2,     2,     1,     6,     6,
+       6,     3,     4,     3,     7,     8,     5,     3,     1,     1,
        3,     1,     4,     7,     6,     1,     1,     7,     9,     8,
       10,     5,     7,     6,     8,     1,     1,     5,     4,     5,
        7,     1,     3,     6,     6,     8,     1,     2,     3,     1,
@@ -4002,15 +4222,15 @@ static const yytype_uint8 yyr2[] =
        4,     1,     3,     1,     2,     3,     3,     2,     2,     2,
        1,     2,     1,     3,     2,     4,     1,     3,     1,     3,
        3,     2,     2,     2,     2,     1,     2,     1,     1,     1,
-       1,     3,     1,     3,     5,     1,     3,     3,     5,     1,
-       1,     0
+       1,     3,     1,     2,     1,     3,     5,     1,     3,     3,
+       5,     1,     1,     0
 };
 
 
+enum { YYENOMEM = -2 };
+
 #define yyerrok         (yyerrstatus = 0)
 #define yyclearin       (yychar = YYEMPTY)
-#define YYEMPTY         (-2)
-#define YYEOF           0
 
 #define YYACCEPT        goto yyacceptlab
 #define YYABORT         goto yyabortlab
@@ -4036,10 +4256,9 @@ static const yytype_uint8 yyr2[] =
       }                                                           \
   while (0)
 
-/* Error token number */
-#define YYTERROR        1
-#define YYERRCODE       256
-
+/* Backward compatibility with an undocumented macro.
+   Use YYerror or YYUNDEF. */
+#define YYERRCODE YYUNDEF
 
 
 /* Enable debugging if requested.  */
@@ -4057,18 +4276,18 @@ do {                                            \
 } while (0)
 
 /* This macro is provided for backward compatibility. */
-#ifndef YY_LOCATION_PRINT
-# define YY_LOCATION_PRINT(File, Loc) ((void) 0)
-#endif
+# ifndef YY_LOCATION_PRINT
+#  define YY_LOCATION_PRINT(File, Loc) ((void) 0)
+# endif
 
 
-# define YY_SYMBOL_PRINT(Title, Type, Value, Location)                    \
+# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)                    \
 do {                                                                      \
   if (yydebug)                                                            \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Type, Value); \
+                  Kind, Value); \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
@@ -4079,17 +4298,20 @@ do {                                                                      \
 `-----------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep)
+yy_symbol_value_print (FILE *yyo,
+                       yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep)
 {
   FILE *yyoutput = yyo;
   YYUSE (yyoutput);
   if (!yyvaluep)
     return;
 # ifdef YYPRINT
-  if (yytype < YYNTOKENS)
-    YYPRINT (yyo, yytoknum[yytype], *yyvaluep);
+  if (yykind < YYNTOKENS)
+    YYPRINT (yyo, yytoknum[yykind], *yyvaluep);
 # endif
-  YYUSE (yytype);
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+  YYUSE (yykind);
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
 
@@ -4098,12 +4320,13 @@ yy_symbol_value_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep)
 `---------------------------*/
 
 static void
-yy_symbol_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep)
+yy_symbol_print (FILE *yyo,
+                 yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep)
 {
   YYFPRINTF (yyo, "%s %s (",
-             yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
+             yykind < YYNTOKENS ? "token" : "nterm", yysymbol_name (yykind));
 
-  yy_symbol_value_print (yyo, yytype, yyvaluep);
+  yy_symbol_value_print (yyo, yykind, yyvaluep);
   YYFPRINTF (yyo, ")");
 }
 
@@ -4113,7 +4336,7 @@ yy_symbol_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep)
 `------------------------------------------------------------------*/
 
 static void
-yy_stack_print (yytype_int16 *yybottom, yytype_int16 *yytop)
+yy_stack_print (yy_state_t *yybottom, yy_state_t *yytop)
 {
   YYFPRINTF (stderr, "Stack now");
   for (; yybottom <= yytop; yybottom++)
@@ -4136,21 +4359,21 @@ do {                                                            \
 `------------------------------------------------*/
 
 static void
-yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule)
+yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp,
+                 int yyrule)
 {
-  unsigned long yylno = yyrline[yyrule];
+  int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
   int yyi;
-  YYFPRINTF (stderr, "Reducing stack by rule %d (line %lu):\n",
+  YYFPRINTF (stderr, "Reducing stack by rule %d (line %d):\n",
              yyrule - 1, yylno);
   /* The symbols being reduced.  */
   for (yyi = 0; yyi < yynrhs; yyi++)
     {
       YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr,
-                       yystos[yyssp[yyi + 1 - yynrhs]],
-                       &yyvsp[(yyi + 1) - (yynrhs)]
-                                              );
+                       YY_ACCESSING_SYMBOL (+yyssp[yyi + 1 - yynrhs]),
+                       &yyvsp[(yyi + 1) - (yynrhs)]);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -4165,8 +4388,8 @@ do {                                    \
    multiple parsers can coexist.  */
 int yydebug;
 #else /* !YYDEBUG */
-# define YYDPRINTF(Args)
-# define YY_SYMBOL_PRINT(Title, Type, Value, Location)
+# define YYDPRINTF(Args) ((void) 0)
+# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)
 # define YY_STACK_PRINT(Bottom, Top)
 # define YY_REDUCE_PRINT(Rule)
 #endif /* !YYDEBUG */
@@ -4189,260 +4412,38 @@ int yydebug;
 #endif
 
 
-#if YYERROR_VERBOSE
 
-# ifndef yystrlen
-#  if defined __GLIBC__ && defined _STRING_H
-#   define yystrlen strlen
-#  else
-/* Return the length of YYSTR.  */
-static YYSIZE_T
-yystrlen (const char *yystr)
-{
-  YYSIZE_T yylen;
-  for (yylen = 0; yystr[yylen]; yylen++)
-    continue;
-  return yylen;
-}
-#  endif
-# endif
 
-# ifndef yystpcpy
-#  if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
-#   define yystpcpy stpcpy
-#  else
-/* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
-   YYDEST.  */
-static char *
-yystpcpy (char *yydest, const char *yysrc)
-{
-  char *yyd = yydest;
-  const char *yys = yysrc;
 
-  while ((*yyd++ = *yys++) != '\0')
-    continue;
-
-  return yyd - 1;
-}
-#  endif
-# endif
-
-# ifndef yytnamerr
-/* Copy to YYRES the contents of YYSTR after stripping away unnecessary
-   quotes and backslashes, so that it's suitable for yyerror.  The
-   heuristic is that double-quoting is unnecessary unless the string
-   contains an apostrophe, a comma, or backslash (other than
-   backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
-   null, do not copy; instead, return the length of what the result
-   would have been.  */
-static YYSIZE_T
-yytnamerr (char *yyres, const char *yystr)
-{
-  if (*yystr == '"')
-    {
-      YYSIZE_T yyn = 0;
-      char const *yyp = yystr;
-
-      for (;;)
-        switch (*++yyp)
-          {
-          case '\'':
-          case ',':
-            goto do_not_strip_quotes;
-
-          case '\\':
-            if (*++yyp != '\\')
-              goto do_not_strip_quotes;
-            else
-              goto append;
-
-          append:
-          default:
-            if (yyres)
-              yyres[yyn] = *yyp;
-            yyn++;
-            break;
-
-          case '"':
-            if (yyres)
-              yyres[yyn] = '\0';
-            return yyn;
-          }
-    do_not_strip_quotes: ;
-    }
-
-  if (! yyres)
-    return yystrlen (yystr);
-
-  return (YYSIZE_T) (yystpcpy (yyres, yystr) - yyres);
-}
-# endif
-
-/* Copy into *YYMSG, which is of size *YYMSG_ALLOC, an error message
-   about the unexpected token YYTOKEN for the state stack whose top is
-   YYSSP.
-
-   Return 0 if *YYMSG was successfully written.  Return 1 if *YYMSG is
-   not large enough to hold the message.  In that case, also set
-   *YYMSG_ALLOC to the required number of bytes.  Return 2 if the
-   required number of bytes is too large to store.  */
-static int
-yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
-                yytype_int16 *yyssp, int yytoken)
-{
-  YYSIZE_T yysize0 = yytnamerr (YY_NULLPTR, yytname[yytoken]);
-  YYSIZE_T yysize = yysize0;
-  enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
-  /* Internationalized format string. */
-  const char *yyformat = YY_NULLPTR;
-  /* Arguments of yyformat. */
-  char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
-  /* Number of reported tokens (one for the "unexpected", one per
-     "expected"). */
-  int yycount = 0;
-
-  /* There are many possibilities here to consider:
-     - If this state is a consistent state with a default action, then
-       the only way this function was invoked is if the default action
-       is an error action.  In that case, don't check for expected
-       tokens because there are none.
-     - The only way there can be no lookahead present (in yychar) is if
-       this state is a consistent state with a default action.  Thus,
-       detecting the absence of a lookahead is sufficient to determine
-       that there is no unexpected or expected token to report.  In that
-       case, just report a simple "syntax error".
-     - Don't assume there isn't a lookahead just because this state is a
-       consistent state with a default action.  There might have been a
-       previous inconsistent state, consistent state with a non-default
-       action, or user semantic action that manipulated yychar.
-     - Of course, the expected token list depends on states to have
-       correct lookahead information, and it depends on the parser not
-       to perform extra reductions after fetching a lookahead from the
-       scanner and before detecting a syntax error.  Thus, state merging
-       (from LALR or IELR) and default reductions corrupt the expected
-       token list.  However, the list is correct for canonical LR with
-       one exception: it will still contain any token that will not be
-       accepted due to an error action in a later state.
-  */
-  if (yytoken != YYEMPTY)
-    {
-      int yyn = yypact[*yyssp];
-      yyarg[yycount++] = yytname[yytoken];
-      if (!yypact_value_is_default (yyn))
-        {
-          /* Start YYX at -YYN if negative to avoid negative indexes in
-             YYCHECK.  In other words, skip the first -YYN actions for
-             this state because they are default actions.  */
-          int yyxbegin = yyn < 0 ? -yyn : 0;
-          /* Stay within bounds of both yycheck and yytname.  */
-          int yychecklim = YYLAST - yyn + 1;
-          int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
-          int yyx;
-
-          for (yyx = yyxbegin; yyx < yyxend; ++yyx)
-            if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR
-                && !yytable_value_is_error (yytable[yyx + yyn]))
-              {
-                if (yycount == YYERROR_VERBOSE_ARGS_MAXIMUM)
-                  {
-                    yycount = 1;
-                    yysize = yysize0;
-                    break;
-                  }
-                yyarg[yycount++] = yytname[yyx];
-                {
-                  YYSIZE_T yysize1 = yysize + yytnamerr (YY_NULLPTR, yytname[yyx]);
-                  if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
-                    yysize = yysize1;
-                  else
-                    return 2;
-                }
-              }
-        }
-    }
-
-  switch (yycount)
-    {
-# define YYCASE_(N, S)                      \
-      case N:                               \
-        yyformat = S;                       \
-      break
-    default: /* Avoid compiler warnings. */
-      YYCASE_(0, YY_("syntax error"));
-      YYCASE_(1, YY_("syntax error, unexpected %s"));
-      YYCASE_(2, YY_("syntax error, unexpected %s, expecting %s"));
-      YYCASE_(3, YY_("syntax error, unexpected %s, expecting %s or %s"));
-      YYCASE_(4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
-      YYCASE_(5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
-# undef YYCASE_
-    }
-
-  {
-    YYSIZE_T yysize1 = yysize + yystrlen (yyformat);
-    if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
-      yysize = yysize1;
-    else
-      return 2;
-  }
-
-  if (*yymsg_alloc < yysize)
-    {
-      *yymsg_alloc = 2 * yysize;
-      if (! (yysize <= *yymsg_alloc
-             && *yymsg_alloc <= YYSTACK_ALLOC_MAXIMUM))
-        *yymsg_alloc = YYSTACK_ALLOC_MAXIMUM;
-      return 1;
-    }
-
-  /* Avoid sprintf, as that infringes on the user's name space.
-     Don't have undefined behavior even if the translation
-     produced a string with the wrong number of "%s"s.  */
-  {
-    char *yyp = *yymsg;
-    int yyi = 0;
-    while ((*yyp = *yyformat) != '\0')
-      if (*yyp == '%' && yyformat[1] == 's' && yyi < yycount)
-        {
-          yyp += yytnamerr (yyp, yyarg[yyi++]);
-          yyformat += 2;
-        }
-      else
-        {
-          yyp++;
-          yyformat++;
-        }
-  }
-  return 0;
-}
-#endif /* YYERROR_VERBOSE */
 
 /*-----------------------------------------------.
 | Release the memory associated to this symbol.  |
 `-----------------------------------------------*/
 
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
+yydestruct (const char *yymsg,
+            yysymbol_kind_t yykind, YYSTYPE *yyvaluep)
 {
   YYUSE (yyvaluep);
   if (!yymsg)
     yymsg = "Deleting";
-  YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
+  YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp);
 
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-  YYUSE (yytype);
+  YYUSE (yykind);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
 
-
-
-/* The lookahead symbol.  */
+/* Lookahead token kind.  */
 int yychar;
 
 /* The semantic value of the lookahead symbol.  */
 YYSTYPE yylval;
 /* Number of syntax errors so far.  */
 int yynerrs;
+
+
 
 
 /*----------.
@@ -4452,43 +4453,36 @@ int yynerrs;
 int
 yyparse (void)
 {
-    int yystate;
+    yy_state_fast_t yystate = 0;
     /* Number of tokens to shift before error messages enabled.  */
-    int yyerrstatus;
+    int yyerrstatus = 0;
 
-    /* The stacks and their tools:
-       'yyss': related to states.
-       'yyvs': related to semantic values.
-
-       Refer to the stacks through separate pointers, to allow yyoverflow
+    /* Refer to the stacks through separate pointers, to allow yyoverflow
        to reallocate them elsewhere.  */
 
-    /* The state stack.  */
-    yytype_int16 yyssa[YYINITDEPTH];
-    yytype_int16 *yyss;
-    yytype_int16 *yyssp;
+    /* Their size.  */
+    YYPTRDIFF_T yystacksize = YYINITDEPTH;
 
-    /* The semantic value stack.  */
+    /* The state stack: array, bottom, top.  */
+    yy_state_t yyssa[YYINITDEPTH];
+    yy_state_t *yyss = yyssa;
+    yy_state_t *yyssp = yyss;
+
+    /* The semantic value stack: array, bottom, top.  */
     YYSTYPE yyvsa[YYINITDEPTH];
-    YYSTYPE *yyvs;
-    YYSTYPE *yyvsp;
-
-    YYSIZE_T yystacksize;
+    YYSTYPE *yyvs = yyvsa;
+    YYSTYPE *yyvsp = yyvs;
 
   int yyn;
+  /* The return value of yyparse.  */
   int yyresult;
-  /* Lookahead token as an internal (translated) token number.  */
-  int yytoken = 0;
+  /* Lookahead symbol kind.  */
+  yysymbol_kind_t yytoken = YYSYMBOL_YYEMPTY;
   /* The variables used to return semantic value and location from the
      action routines.  */
   YYSTYPE yyval;
 
-#if YYERROR_VERBOSE
-  /* Buffer for error messages, and its allocated size.  */
-  char yymsgbuf[128];
-  char *yymsg = yymsgbuf;
-  YYSIZE_T yymsg_alloc = sizeof yymsgbuf;
-#endif
+
 
 #define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N))
 
@@ -4496,15 +4490,8 @@ yyparse (void)
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
 
-  yyssp = yyss = yyssa;
-  yyvsp = yyvs = yyvsa;
-  yystacksize = YYINITDEPTH;
-
   YYDPRINTF ((stderr, "Starting parse\n"));
 
-  yystate = 0;
-  yyerrstatus = 0;
-  yynerrs = 0;
   yychar = YYEMPTY; /* Cause a token to be read.  */
   goto yysetstate;
 
@@ -4519,10 +4506,15 @@ yynewstate:
 
 
 /*--------------------------------------------------------------------.
-| yynewstate -- set current state (the top of the stack) to yystate.  |
+| yysetstate -- set current state (the top of the stack) to yystate.  |
 `--------------------------------------------------------------------*/
 yysetstate:
-  *yyssp = (yytype_int16) yystate;
+  YYDPRINTF ((stderr, "Entering state %d\n", yystate));
+  YY_ASSERT (0 <= yystate && yystate < YYNSTATES);
+  YY_IGNORE_USELESS_CAST_BEGIN
+  *yyssp = YY_CAST (yy_state_t, yystate);
+  YY_IGNORE_USELESS_CAST_END
+  YY_STACK_PRINT (yyss, yyssp);
 
   if (yyss + yystacksize - 1 <= yyssp)
 #if !defined yyoverflow && !defined YYSTACK_RELOCATE
@@ -4530,23 +4522,23 @@ yysetstate:
 #else
     {
       /* Get the current used size of the three stacks, in elements.  */
-      YYSIZE_T yysize = (YYSIZE_T) (yyssp - yyss + 1);
+      YYPTRDIFF_T yysize = yyssp - yyss + 1;
 
 # if defined yyoverflow
       {
         /* Give user a chance to reallocate the stack.  Use copies of
            these so that the &'s don't force the real ones into
            memory.  */
+        yy_state_t *yyss1 = yyss;
         YYSTYPE *yyvs1 = yyvs;
-        yytype_int16 *yyss1 = yyss;
 
         /* Each stack pointer address is followed by the size of the
            data in use in that stack, in bytes.  This used to be a
            conditional around just the two extra args, but that might
            be undefined if yyoverflow is a macro.  */
         yyoverflow (YY_("memory exhausted"),
-                    &yyss1, yysize * sizeof (*yyssp),
-                    &yyvs1, yysize * sizeof (*yyvsp),
+                    &yyss1, yysize * YYSIZEOF (*yyssp),
+                    &yyvs1, yysize * YYSIZEOF (*yyvsp),
                     &yystacksize);
         yyss = yyss1;
         yyvs = yyvs1;
@@ -4560,14 +4552,15 @@ yysetstate:
         yystacksize = YYMAXDEPTH;
 
       {
-        yytype_int16 *yyss1 = yyss;
+        yy_state_t *yyss1 = yyss;
         union yyalloc *yyptr =
-          (union yyalloc *) YYSTACK_ALLOC (YYSTACK_BYTES (yystacksize));
+          YY_CAST (union yyalloc *,
+                   YYSTACK_ALLOC (YY_CAST (YYSIZE_T, YYSTACK_BYTES (yystacksize))));
         if (! yyptr)
           goto yyexhaustedlab;
         YYSTACK_RELOCATE (yyss_alloc, yyss);
         YYSTACK_RELOCATE (yyvs_alloc, yyvs);
-# undef YYSTACK_RELOCATE
+#  undef YYSTACK_RELOCATE
         if (yyss1 != yyssa)
           YYSTACK_FREE (yyss1);
       }
@@ -4576,15 +4569,15 @@ yysetstate:
       yyssp = yyss + yysize - 1;
       yyvsp = yyvs + yysize - 1;
 
-      YYDPRINTF ((stderr, "Stack size increased to %lu\n",
-                  (unsigned long) yystacksize));
+      YY_IGNORE_USELESS_CAST_BEGIN
+      YYDPRINTF ((stderr, "Stack size increased to %ld\n",
+                  YY_CAST (long, yystacksize)));
+      YY_IGNORE_USELESS_CAST_END
 
       if (yyss + yystacksize - 1 <= yyssp)
         YYABORT;
     }
 #endif /* !defined yyoverflow && !defined YYSTACK_RELOCATE */
-
-  YYDPRINTF ((stderr, "Entering state %d\n", yystate));
 
   if (yystate == YYFINAL)
     YYACCEPT;
@@ -4606,17 +4599,28 @@ yybackup:
 
   /* Not known => get a lookahead token if don't already have one.  */
 
-  /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
+  /* YYCHAR is either empty, or end-of-input, or a valid lookahead.  */
   if (yychar == YYEMPTY)
     {
-      YYDPRINTF ((stderr, "Reading a token: "));
+      YYDPRINTF ((stderr, "Reading a token\n"));
       yychar = yylex ();
     }
 
   if (yychar <= YYEOF)
     {
-      yychar = yytoken = YYEOF;
+      yychar = YYEOF;
+      yytoken = YYSYMBOL_YYEOF;
       YYDPRINTF ((stderr, "Now at end of input.\n"));
+    }
+  else if (yychar == YYerror)
+    {
+      /* The scanner already issued an error message, process directly
+         to error recovery.  But do not keep the error token as
+         lookahead, it is too special and may lead us to an endless
+         loop in error recovery. */
+      yychar = YYUNDEF;
+      yytoken = YYSYMBOL_YYerror;
+      goto yyerrlab1;
     }
   else
     {
@@ -4645,15 +4649,13 @@ yybackup:
 
   /* Shift the lookahead token.  */
   YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc);
-
-  /* Discard the shifted token.  */
-  yychar = YYEMPTY;
-
   yystate = yyn;
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   *++yyvsp = yylval;
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 
+  /* Discard the shifted token.  */
+  yychar = YYEMPTY;
   goto yynewstate;
 
 
@@ -4688,9 +4690,9 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-        case 2:
-#line 1713 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 2: /* program: interface  */
+#line 1713 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            {
                    if (!classes) classes = NewHash();
 		   Setattr((yyvsp[0].node),"classes",classes); 
 		   Setattr((yyvsp[0].node),"name",ModuleName);
@@ -4702,61 +4704,61 @@ yyreduce:
 		   Setattr((yyvsp[0].node),"module",module_node);
 	           top = (yyvsp[0].node);
                }
-#line 4706 "parser.tab.c" /* yacc.c:1652  */
+#line 4708 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 3:
-#line 1725 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 3: /* program: PARSETYPE parm SEMI  */
+#line 1725 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
                  top = Copy(Getattr((yyvsp[-1].p),"type"));
 		 Delete((yyvsp[-1].p));
                }
-#line 4715 "parser.tab.c" /* yacc.c:1652  */
+#line 4717 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 4:
-#line 1729 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 4: /* program: PARSETYPE error  */
+#line 1729 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
                  top = 0;
                }
-#line 4723 "parser.tab.c" /* yacc.c:1652  */
+#line 4725 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 5:
-#line 1732 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 5: /* program: PARSEPARM parm SEMI  */
+#line 1732 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
                  top = (yyvsp[-1].p);
                }
-#line 4731 "parser.tab.c" /* yacc.c:1652  */
+#line 4733 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 6:
-#line 1735 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 6: /* program: PARSEPARM error  */
+#line 1735 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
                  top = 0;
                }
-#line 4739 "parser.tab.c" /* yacc.c:1652  */
+#line 4741 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 7:
-#line 1738 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 7: /* program: PARSEPARMS LPAREN parms RPAREN SEMI  */
+#line 1738 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                     {
                  top = (yyvsp[-2].pl);
                }
-#line 4747 "parser.tab.c" /* yacc.c:1652  */
+#line 4749 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 8:
-#line 1741 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 8: /* program: PARSEPARMS error SEMI  */
+#line 1741 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
                  top = 0;
                }
-#line 4755 "parser.tab.c" /* yacc.c:1652  */
+#line 4757 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 9:
-#line 1746 "CParse/parser.y" /* yacc.c:1652  */
-    {  
+  case 9: /* interface: interface declaration  */
+#line 1746 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {  
                    /* add declaration to end of linked list (the declaration isn't always a single declaration, sometimes it is a linked list itself) */
                    if (currentDeclComment != NULL) {
 		     set_comment((yyvsp[0].node), currentDeclComment);
@@ -4765,65 +4767,65 @@ yyreduce:
                    appendChild((yyvsp[-1].node),(yyvsp[0].node));
                    (yyval.node) = (yyvsp[-1].node);
                }
-#line 4769 "parser.tab.c" /* yacc.c:1652  */
+#line 4771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 10:
-#line 1755 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 10: /* interface: interface DOXYGENSTRING  */
+#line 1755 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
                    currentDeclComment = (yyvsp[0].str); 
                    (yyval.node) = (yyvsp[-1].node);
                }
-#line 4778 "parser.tab.c" /* yacc.c:1652  */
+#line 4780 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 11:
-#line 1759 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 11: /* interface: interface DOXYGENPOSTSTRING  */
+#line 1759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                             {
                    Node *node = lastChild((yyvsp[-1].node));
                    if (node) {
                      set_comment(node, (yyvsp[0].str));
                    }
                    (yyval.node) = (yyvsp[-1].node);
                }
-#line 4790 "parser.tab.c" /* yacc.c:1652  */
+#line 4792 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 12:
-#line 1766 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 12: /* interface: empty  */
+#line 1766 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                    (yyval.node) = new_node("top");
                }
-#line 4798 "parser.tab.c" /* yacc.c:1652  */
+#line 4800 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 13:
-#line 1771 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4804 "parser.tab.c" /* yacc.c:1652  */
+  case 13: /* declaration: swig_directive  */
+#line 1771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.node) = (yyvsp[0].node); }
+#line 4806 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 14:
-#line 1772 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4810 "parser.tab.c" /* yacc.c:1652  */
+  case 14: /* declaration: c_declaration  */
+#line 1772 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.node) = (yyvsp[0].node); }
+#line 4812 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 15:
-#line 1773 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4816 "parser.tab.c" /* yacc.c:1652  */
+  case 15: /* declaration: cpp_declaration  */
+#line 1773 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 4818 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 16:
-#line 1774 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 4822 "parser.tab.c" /* yacc.c:1652  */
+  case 16: /* declaration: SEMI  */
+#line 1774 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      { (yyval.node) = 0; }
+#line 4824 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 17:
-#line 1775 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 17: /* declaration: error  */
+#line 1775 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                   (yyval.node) = 0;
 		  if (cparse_unknown_directive) {
 		      Swig_error(cparse_file, cparse_line, "Unknown directive '%s'.\n", cparse_unknown_directive);
@@ -4832,158 +4834,158 @@ yyreduce:
 		  }
 		  exit(1);
                }
-#line 4836 "parser.tab.c" /* yacc.c:1652  */
+#line 4838 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 18:
-#line 1785 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 18: /* declaration: c_constructor_decl  */
+#line 1785 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { 
                   if ((yyval.node)) {
    		      add_symbols((yyval.node));
                   }
                   (yyval.node) = (yyvsp[0].node); 
 	       }
-#line 4847 "parser.tab.c" /* yacc.c:1652  */
+#line 4849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 19:
-#line 1801 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 19: /* declaration: error CONVERSIONOPERATOR  */
+#line 1801 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {
                   (yyval.node) = 0;
                   skip_decl();
                }
-#line 4856 "parser.tab.c" /* yacc.c:1652  */
+#line 4858 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 20:
-#line 1811 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4862 "parser.tab.c" /* yacc.c:1652  */
+  case 20: /* swig_directive: extend_directive  */
+#line 1811 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4864 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 21:
-#line 1812 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4868 "parser.tab.c" /* yacc.c:1652  */
+  case 21: /* swig_directive: apply_directive  */
+#line 1812 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 4870 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 22:
-#line 1813 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4874 "parser.tab.c" /* yacc.c:1652  */
+  case 22: /* swig_directive: clear_directive  */
+#line 1813 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 4876 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 23:
-#line 1814 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4880 "parser.tab.c" /* yacc.c:1652  */
+  case 23: /* swig_directive: constant_directive  */
+#line 1814 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.node) = (yyvsp[0].node); }
+#line 4882 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 24:
-#line 1815 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4886 "parser.tab.c" /* yacc.c:1652  */
+  case 24: /* swig_directive: echo_directive  */
+#line 1815 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.node) = (yyvsp[0].node); }
+#line 4888 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 25:
-#line 1816 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4892 "parser.tab.c" /* yacc.c:1652  */
+  case 25: /* swig_directive: except_directive  */
+#line 1816 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4894 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 26:
-#line 1817 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4898 "parser.tab.c" /* yacc.c:1652  */
+  case 26: /* swig_directive: fragment_directive  */
+#line 1817 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.node) = (yyvsp[0].node); }
+#line 4900 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 27:
-#line 1818 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4904 "parser.tab.c" /* yacc.c:1652  */
+  case 27: /* swig_directive: include_directive  */
+#line 1818 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { (yyval.node) = (yyvsp[0].node); }
+#line 4906 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 28:
-#line 1819 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4910 "parser.tab.c" /* yacc.c:1652  */
+  case 28: /* swig_directive: inline_directive  */
+#line 1819 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4912 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 29:
-#line 1820 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4916 "parser.tab.c" /* yacc.c:1652  */
+  case 29: /* swig_directive: insert_directive  */
+#line 1820 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4918 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 30:
-#line 1821 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4922 "parser.tab.c" /* yacc.c:1652  */
+  case 30: /* swig_directive: module_directive  */
+#line 1821 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4924 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 31:
-#line 1822 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4928 "parser.tab.c" /* yacc.c:1652  */
+  case 31: /* swig_directive: name_directive  */
+#line 1822 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.node) = (yyvsp[0].node); }
+#line 4930 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 32:
-#line 1823 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4934 "parser.tab.c" /* yacc.c:1652  */
+  case 32: /* swig_directive: native_directive  */
+#line 1823 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4936 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 33:
-#line 1824 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4940 "parser.tab.c" /* yacc.c:1652  */
+  case 33: /* swig_directive: pragma_directive  */
+#line 1824 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4942 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 34:
-#line 1825 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4946 "parser.tab.c" /* yacc.c:1652  */
+  case 34: /* swig_directive: rename_directive  */
+#line 1825 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4948 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 35:
-#line 1826 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4952 "parser.tab.c" /* yacc.c:1652  */
+  case 35: /* swig_directive: feature_directive  */
+#line 1826 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { (yyval.node) = (yyvsp[0].node); }
+#line 4954 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 36:
-#line 1827 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4958 "parser.tab.c" /* yacc.c:1652  */
+  case 36: /* swig_directive: varargs_directive  */
+#line 1827 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { (yyval.node) = (yyvsp[0].node); }
+#line 4960 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 37:
-#line 1828 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4964 "parser.tab.c" /* yacc.c:1652  */
+  case 37: /* swig_directive: typemap_directive  */
+#line 1828 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { (yyval.node) = (yyvsp[0].node); }
+#line 4966 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 38:
-#line 1829 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4970 "parser.tab.c" /* yacc.c:1652  */
+  case 38: /* swig_directive: types_directive  */
+#line 1829 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 4972 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 39:
-#line 1830 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4976 "parser.tab.c" /* yacc.c:1652  */
+  case 39: /* swig_directive: template_directive  */
+#line 1830 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.node) = (yyvsp[0].node); }
+#line 4978 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 40:
-#line 1831 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 4982 "parser.tab.c" /* yacc.c:1652  */
+  case 40: /* swig_directive: warn_directive  */
+#line 1831 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.node) = (yyvsp[0].node); }
+#line 4984 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 41:
-#line 1838 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 41: /* $@1: %empty  */
+#line 1838 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                             {
                Node *cls;
 	       String *clsname;
 	       extendmode = 1;
@@ -5024,12 +5026,12 @@ yyreduce:
 	       Namespaceprefix= Swig_symbol_qualifiedscopename(0);
 	       Delete(clsname);
 	     }
-#line 5028 "parser.tab.c" /* yacc.c:1652  */
+#line 5030 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 42:
-#line 1878 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 42: /* extend_directive: EXTEND options classkeyopt idcolon LBRACE $@1 cpp_members RBRACE  */
+#line 1878 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
                String *clsname;
 	       extendmode = 0;
                (yyval.node) = new_node("extend");
@@ -5065,31 +5067,31 @@ yyreduce:
 	       (yyval.node) = 0;
 
 	     }
-#line 5069 "parser.tab.c" /* yacc.c:1652  */
+#line 5071 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 43:
-#line 1920 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 43: /* apply_directive: APPLY typemap_parm LBRACE tm_list RBRACE  */
+#line 1920 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                           {
                     (yyval.node) = new_node("apply");
                     Setattr((yyval.node),"pattern",Getattr((yyvsp[-3].p),"pattern"));
 		    appendChild((yyval.node),(yyvsp[-1].p));
                }
-#line 5079 "parser.tab.c" /* yacc.c:1652  */
+#line 5081 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 44:
-#line 1930 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 44: /* clear_directive: CLEAR tm_list SEMI  */
+#line 1930 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
 		 (yyval.node) = new_node("clear");
 		 appendChild((yyval.node),(yyvsp[-1].p));
                }
-#line 5088 "parser.tab.c" /* yacc.c:1652  */
+#line 5090 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 45:
-#line 1941 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 45: /* constant_directive: CONSTANT identifier EQUAL definetype SEMI  */
+#line 1941 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                {
 		   if (((yyvsp[-1].dtype).type != T_ERROR) && ((yyvsp[-1].dtype).type != T_SYMBOL)) {
 		     SwigType *type = NewSwigType((yyvsp[-1].dtype).type);
 		     (yyval.node) = new_node("constant");
@@ -5109,12 +5111,12 @@ yyreduce:
 		   }
 
 	       }
-#line 5113 "parser.tab.c" /* yacc.c:1652  */
+#line 5115 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 46:
-#line 1961 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 46: /* constant_directive: CONSTANT type declarator def_args SEMI  */
+#line 1961 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        {
 		 if (((yyvsp[-1].dtype).type != T_ERROR) && ((yyvsp[-1].dtype).type != T_SYMBOL)) {
 		   SwigType_push((yyvsp[-3].type),(yyvsp[-2].decl).type);
 		   /* Sneaky callback function trick */
@@ -5136,12 +5138,12 @@ yyreduce:
 		   (yyval.node) = 0;
 		 }
                }
-#line 5140 "parser.tab.c" /* yacc.c:1652  */
+#line 5142 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 47:
-#line 1985 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 47: /* constant_directive: CONSTANT type direct_declarator LPAREN parms RPAREN cv_ref_qualifier def_args SEMI  */
+#line 1985 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                    {
 		 if (((yyvsp[-1].dtype).type != T_ERROR) && ((yyvsp[-1].dtype).type != T_SYMBOL)) {
 		   SwigType_add_function((yyvsp[-7].type), (yyvsp[-4].pl));
 		   SwigType_push((yyvsp[-7].type), (yyvsp[-2].dtype).qualifier);
@@ -5165,21 +5167,21 @@ yyreduce:
 		   (yyval.node) = 0;
 		 }
 	       }
-#line 5169 "parser.tab.c" /* yacc.c:1652  */
+#line 5171 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 48:
-#line 2009 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 48: /* constant_directive: CONSTANT error SEMI  */
+#line 2009 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
 		 Swig_warning(WARN_PARSE_BAD_VALUE,cparse_file,cparse_line,"Bad constant value (ignored).\n");
 		 (yyval.node) = 0;
 	       }
-#line 5178 "parser.tab.c" /* yacc.c:1652  */
+#line 5180 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 49:
-#line 2020 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 49: /* echo_directive: ECHO HBLOCK  */
+#line 2020 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		 char temp[64];
 		 Replace((yyvsp[0].str),"$file",cparse_file, DOH_REPLACE_ANY);
 		 sprintf(temp,"%d", cparse_line);
@@ -5188,12 +5190,12 @@ yyreduce:
 		 Delete((yyvsp[0].str));
                  (yyval.node) = 0;
 	       }
-#line 5192 "parser.tab.c" /* yacc.c:1652  */
+#line 5194 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 50:
-#line 2029 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 50: /* echo_directive: ECHO string  */
+#line 2029 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		 char temp[64];
 		 String *s = (yyvsp[0].str);
 		 Replace(s,"$file",cparse_file, DOH_REPLACE_ANY);
@@ -5203,77 +5205,77 @@ yyreduce:
 		 Delete(s);
                  (yyval.node) = 0;
                }
-#line 5207 "parser.tab.c" /* yacc.c:1652  */
+#line 5209 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 51:
-#line 2048 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 51: /* except_directive: EXCEPT LPAREN identifier RPAREN LBRACE  */
+#line 2048 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                          {
                     skip_balanced('{','}');
 		    (yyval.node) = 0;
 		    Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
 	       }
-#line 5217 "parser.tab.c" /* yacc.c:1652  */
+#line 5219 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 52:
-#line 2054 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 52: /* except_directive: EXCEPT LBRACE  */
+#line 2054 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
                     skip_balanced('{','}');
 		    (yyval.node) = 0;
 		    Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
                }
-#line 5227 "parser.tab.c" /* yacc.c:1652  */
+#line 5229 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 53:
-#line 2060 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 53: /* except_directive: EXCEPT LPAREN identifier RPAREN SEMI  */
+#line 2060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                      {
 		 (yyval.node) = 0;
 		 Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
                }
-#line 5236 "parser.tab.c" /* yacc.c:1652  */
+#line 5238 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 54:
-#line 2065 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 54: /* except_directive: EXCEPT SEMI  */
+#line 2065 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		 (yyval.node) = 0;
 		 Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
 	       }
-#line 5245 "parser.tab.c" /* yacc.c:1652  */
+#line 5247 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 55:
-#line 2072 "CParse/parser.y" /* yacc.c:1652  */
-    {		 
+  case 55: /* stringtype: string LBRACE parm RBRACE  */
+#line 2072 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {		 
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"value",(yyvsp[-3].str));
 		 Setattr((yyval.node),"type",Getattr((yyvsp[-1].p),"type"));
                }
-#line 5255 "parser.tab.c" /* yacc.c:1652  */
+#line 5257 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 56:
-#line 2079 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 56: /* fname: string  */
+#line 2079 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"value",(yyvsp[0].str));
               }
-#line 5264 "parser.tab.c" /* yacc.c:1652  */
+#line 5266 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 57:
-#line 2083 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 57: /* fname: stringtype  */
+#line 2083 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
                 (yyval.node) = (yyvsp[0].node);
               }
-#line 5272 "parser.tab.c" /* yacc.c:1652  */
+#line 5274 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 58:
-#line 2096 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 58: /* fragment_directive: FRAGMENT LPAREN fname COMMA kwargs RPAREN HBLOCK  */
+#line 2096 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                     {
                    Hash *p = (yyvsp[-2].node);
 		   (yyval.node) = new_node("fragment");
 		   Setattr((yyval.node),"value",Getattr((yyvsp[-4].node),"value"));
@@ -5282,12 +5284,12 @@ yyreduce:
 		   Setattr((yyval.node),"kwargs",nextSibling(p));
 		   Setattr((yyval.node),"code",(yyvsp[0].str));
                  }
-#line 5286 "parser.tab.c" /* yacc.c:1652  */
+#line 5288 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 59:
-#line 2105 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 59: /* fragment_directive: FRAGMENT LPAREN fname COMMA kwargs RPAREN LBRACE  */
+#line 2105 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                    {
 		   Hash *p = (yyvsp[-2].node);
 		   String *code;
                    skip_balanced('{','}');
@@ -5302,23 +5304,23 @@ yyreduce:
 		   Setattr((yyval.node),"code",code);
 		   Delete(code);
                  }
-#line 5306 "parser.tab.c" /* yacc.c:1652  */
+#line 5308 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 60:
-#line 2120 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 60: /* fragment_directive: FRAGMENT LPAREN fname RPAREN SEMI  */
+#line 2120 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                     {
 		   (yyval.node) = new_node("fragment");
 		   Setattr((yyval.node),"value",Getattr((yyvsp[-2].node),"value"));
 		   Setattr((yyval.node),"type",Getattr((yyvsp[-2].node),"type"));
 		   Setattr((yyval.node),"emitonly","1");
 		 }
-#line 5317 "parser.tab.c" /* yacc.c:1652  */
+#line 5319 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 61:
-#line 2133 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 61: /* $@2: %empty  */
+#line 2133 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        {
                      (yyvsp[-3].loc).filename = Copy(cparse_file);
 		     (yyvsp[-3].loc).line = cparse_line;
 		     scanner_set_location((yyvsp[-1].str),1);
@@ -5328,12 +5330,12 @@ yyreduce:
 		         scanner_set_main_input_file(NewString(maininput));
 		     }
                }
-#line 5332 "parser.tab.c" /* yacc.c:1652  */
+#line 5334 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 62:
-#line 2142 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 62: /* include_directive: includetype options string BEGINFILE $@2 interface ENDOFFILE  */
+#line 2142 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
                      String *mname = 0;
                      (yyval.node) = (yyvsp[-1].node);
 		     scanner_set_location((yyvsp[-6].loc).filename,(yyvsp[-6].loc).line+1);
@@ -5378,24 +5380,24 @@ yyreduce:
 		     }
 		     Setattr((yyval.node),"options",(yyvsp[-5].node));
                }
-#line 5382 "parser.tab.c" /* yacc.c:1652  */
+#line 5384 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 63:
-#line 2189 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.loc).type = "include"; }
-#line 5388 "parser.tab.c" /* yacc.c:1652  */
+  case 63: /* includetype: INCLUDE  */
+#line 2189 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.loc).type = "include"; }
+#line 5390 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 64:
-#line 2190 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.loc).type = "import"; ++import_mode;}
-#line 5394 "parser.tab.c" /* yacc.c:1652  */
+  case 64: /* includetype: IMPORT  */
+#line 2190 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.loc).type = "import"; ++import_mode;}
+#line 5396 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 65:
-#line 2197 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 65: /* inline_directive: INLINE HBLOCK  */
+#line 2197 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
                  String *cpps;
 		 if (Namespaceprefix) {
 		   Swig_error(cparse_file, cparse_start_line, "%%inline directive inside a namespace is disallowed.\n");
@@ -5414,12 +5416,12 @@ yyreduce:
 		 }
 		 
 	       }
-#line 5418 "parser.tab.c" /* yacc.c:1652  */
+#line 5420 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 66:
-#line 2216 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 66: /* inline_directive: INLINE LBRACE  */
+#line 2216 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
                  String *cpps;
 		 int start_line = cparse_line;
 		 skip_balanced('{','}');
@@ -5440,62 +5442,65 @@ yyreduce:
 		   Delete(cpps);
 		 }
                }
-#line 5444 "parser.tab.c" /* yacc.c:1652  */
+#line 5446 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 67:
-#line 2247 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 67: /* insert_directive: HBLOCK  */
+#line 2247 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                  (yyval.node) = new_node("insert");
 		 Setattr((yyval.node),"code",(yyvsp[0].str));
 	       }
-#line 5453 "parser.tab.c" /* yacc.c:1652  */
+#line 5455 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 68:
-#line 2251 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 68: /* insert_directive: INSERT LPAREN idstring options_ex RPAREN string  */
+#line 2251 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
 		 String *code = NewStringEmpty();
 		 (yyval.node) = new_node("insert");
-		 Setattr((yyval.node),"section",(yyvsp[-2].id));
+		 Setattr((yyval.node),"section",(yyvsp[-3].id));
 		 Setattr((yyval.node),"code",code);
+		 Setattr((yyval.node),"options",(yyvsp[-2].node));
 		 if (Swig_insert_file((yyvsp[0].str),code) < 0) {
 		   Swig_error(cparse_file, cparse_line, "Couldn't find '%s'.\n", (yyvsp[0].str));
 		   (yyval.node) = 0;
 		 } 
                }
-#line 5468 "parser.tab.c" /* yacc.c:1652  */
+#line 5471 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 69:
-#line 2261 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 69: /* insert_directive: INSERT LPAREN idstring options_ex RPAREN HBLOCK  */
+#line 2262 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
 		 (yyval.node) = new_node("insert");
-		 Setattr((yyval.node),"section",(yyvsp[-2].id));
+		 Setattr((yyval.node),"section",(yyvsp[-3].id));
+		 Setattr((yyval.node),"options",(yyvsp[-2].node));
 		 Setattr((yyval.node),"code",(yyvsp[0].str));
                }
-#line 5478 "parser.tab.c" /* yacc.c:1652  */
+#line 5482 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 70:
-#line 2266 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 70: /* insert_directive: INSERT LPAREN idstring options_ex RPAREN LBRACE  */
+#line 2268 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
 		 String *code;
                  skip_balanced('{','}');
 		 (yyval.node) = new_node("insert");
-		 Setattr((yyval.node),"section",(yyvsp[-2].id));
+		 Setattr((yyval.node),"section",(yyvsp[-3].id));
+		 Setattr((yyval.node),"options",(yyvsp[-2].node));
 		 Delitem(scanner_ccode,0);
 		 Delitem(scanner_ccode,DOH_END);
 		 code = Copy(scanner_ccode);
 		 Setattr((yyval.node),"code", code);
 		 Delete(code);
 	       }
-#line 5494 "parser.tab.c" /* yacc.c:1652  */
+#line 5499 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 71:
-#line 2284 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 71: /* module_directive: MODULE options idstring  */
+#line 2287 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {
                  (yyval.node) = new_node("module");
 		 if ((yyvsp[-1].node)) {
 		   Setattr((yyval.node),"options",(yyvsp[-1].node));
@@ -5531,44 +5536,44 @@ yyreduce:
 		 }		 
 		 if (!module_node) module_node = (yyval.node);
 	       }
-#line 5535 "parser.tab.c" /* yacc.c:1652  */
+#line 5540 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 72:
-#line 2327 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 72: /* name_directive: NAME LPAREN idstring RPAREN  */
+#line 2330 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                             {
                  Swig_warning(WARN_DEPRECATED_NAME,cparse_file,cparse_line, "%%name is deprecated.  Use %%rename instead.\n");
 		 Delete(yyrename);
                  yyrename = NewString((yyvsp[-1].id));
 		 (yyval.node) = 0;
                }
-#line 5546 "parser.tab.c" /* yacc.c:1652  */
+#line 5551 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 73:
-#line 2333 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 73: /* name_directive: NAME LPAREN RPAREN  */
+#line 2336 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    {
 		 Swig_warning(WARN_DEPRECATED_NAME,cparse_file,cparse_line, "%%name is deprecated.  Use %%rename instead.\n");
 		 (yyval.node) = 0;
 		 Swig_error(cparse_file,cparse_line,"Missing argument to %%name directive.\n");
 	       }
-#line 5556 "parser.tab.c" /* yacc.c:1652  */
+#line 5561 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 74:
-#line 2346 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 74: /* native_directive: NATIVE LPAREN identifier RPAREN storage_class identifier SEMI  */
+#line 2349 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                 {
                  (yyval.node) = new_node("native");
 		 Setattr((yyval.node),"name",(yyvsp[-4].id));
 		 Setattr((yyval.node),"wrap:name",(yyvsp[-1].id));
 	         add_symbols((yyval.node));
 	       }
-#line 5567 "parser.tab.c" /* yacc.c:1652  */
+#line 5572 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 75:
-#line 2352 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 75: /* native_directive: NATIVE LPAREN identifier RPAREN storage_class type declarator SEMI  */
+#line 2355 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                    {
 		 if (!SwigType_isfunction((yyvsp[-1].decl).type)) {
 		   Swig_error(cparse_file,cparse_line,"%%native declaration '%s' is not a function.\n", (yyvsp[-1].decl).id);
 		   (yyval.node) = 0;
@@ -5585,57 +5590,57 @@ yyreduce:
 		 }
 	         add_symbols((yyval.node));
 	       }
-#line 5589 "parser.tab.c" /* yacc.c:1652  */
+#line 5594 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 76:
-#line 2378 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 76: /* pragma_directive: PRAGMA pragma_lang identifier EQUAL pragma_arg  */
+#line 2381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                  {
                  (yyval.node) = new_node("pragma");
 		 Setattr((yyval.node),"lang",(yyvsp[-3].id));
 		 Setattr((yyval.node),"name",(yyvsp[-2].id));
 		 Setattr((yyval.node),"value",(yyvsp[0].str));
 	       }
-#line 5600 "parser.tab.c" /* yacc.c:1652  */
+#line 5605 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 77:
-#line 2384 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 77: /* pragma_directive: PRAGMA pragma_lang identifier  */
+#line 2387 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                              {
 		(yyval.node) = new_node("pragma");
 		Setattr((yyval.node),"lang",(yyvsp[-1].id));
 		Setattr((yyval.node),"name",(yyvsp[0].id));
 	      }
-#line 5610 "parser.tab.c" /* yacc.c:1652  */
+#line 5615 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 78:
-#line 2391 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.str) = (yyvsp[0].str); }
-#line 5616 "parser.tab.c" /* yacc.c:1652  */
+  case 78: /* pragma_arg: string  */
+#line 2394 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.str) = (yyvsp[0].str); }
+#line 5621 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 79:
-#line 2392 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.str) = (yyvsp[0].str); }
-#line 5622 "parser.tab.c" /* yacc.c:1652  */
+  case 79: /* pragma_arg: HBLOCK  */
+#line 2395 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.str) = (yyvsp[0].str); }
+#line 5627 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 80:
-#line 2395 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (yyvsp[-1].id); }
-#line 5628 "parser.tab.c" /* yacc.c:1652  */
+  case 80: /* pragma_lang: LPAREN identifier RPAREN  */
+#line 2398 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         { (yyval.id) = (yyvsp[-1].id); }
+#line 5633 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 81:
-#line 2396 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (char *) "swig"; }
-#line 5634 "parser.tab.c" /* yacc.c:1652  */
+  case 81: /* pragma_lang: empty  */
+#line 2399 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      { (yyval.id) = (char *) "swig"; }
+#line 5639 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 82:
-#line 2403 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 82: /* rename_directive: rename_namewarn declarator idstring SEMI  */
+#line 2406 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                            {
                 SwigType *t = (yyvsp[-2].decl).type;
 		Hash *kws = NewHash();
 		String *fixname;
@@ -5681,12 +5686,12 @@ yyreduce:
                 (yyval.node) = 0;
 		scanner_clear_rename();
               }
-#line 5685 "parser.tab.c" /* yacc.c:1652  */
+#line 5690 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 83:
-#line 2449 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 83: /* rename_directive: rename_namewarn LPAREN kwargs RPAREN declarator cpp_const SEMI  */
+#line 2452 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                               {
 		String *fixname;
 		Hash *kws = (yyvsp[-4].node);
 		SwigType *t = (yyvsp[-2].decl).type;
@@ -5732,12 +5737,12 @@ yyreduce:
                 (yyval.node) = 0;
 		scanner_clear_rename();
               }
-#line 5736 "parser.tab.c" /* yacc.c:1652  */
+#line 5741 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 84:
-#line 2495 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 84: /* rename_directive: rename_namewarn LPAREN kwargs RPAREN string SEMI  */
+#line 2498 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
 		if ((yyvsp[-5].intvalue)) {
 		  Swig_name_rename_add(Namespaceprefix,(yyvsp[-1].str),0,(yyvsp[-3].node),0);
 		} else {
@@ -5746,155 +5751,155 @@ yyreduce:
 		(yyval.node) = 0;
 		scanner_clear_rename();
               }
-#line 5750 "parser.tab.c" /* yacc.c:1652  */
+#line 5755 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 85:
-#line 2506 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 85: /* rename_namewarn: RENAME  */
+#line 2509 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 		    (yyval.intvalue) = 1;
                 }
-#line 5758 "parser.tab.c" /* yacc.c:1652  */
+#line 5763 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 86:
-#line 2509 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 86: /* rename_namewarn: NAMEWARN  */
+#line 2512 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
                     (yyval.intvalue) = 0;
                 }
-#line 5766 "parser.tab.c" /* yacc.c:1652  */
+#line 5771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 87:
-#line 2536 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 87: /* feature_directive: FEATURE LPAREN idstring RPAREN declarator cpp_const stringbracesemi  */
+#line 2539 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                        {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-4].id), val, 0, (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5777 "parser.tab.c" /* yacc.c:1652  */
+#line 5782 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 88:
-#line 2542 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 88: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum RPAREN declarator cpp_const SEMI  */
+#line 2545 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                             {
                     String *val = Len((yyvsp[-4].str)) ? (yyvsp[-4].str) : 0;
                     new_feature((yyvsp[-6].id), val, 0, (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5788 "parser.tab.c" /* yacc.c:1652  */
+#line 5793 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 89:
-#line 2548 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 89: /* feature_directive: FEATURE LPAREN idstring featattr RPAREN declarator cpp_const stringbracesemi  */
+#line 2551 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                 {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-5].id), val, (yyvsp[-4].node), (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5799 "parser.tab.c" /* yacc.c:1652  */
+#line 5804 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 90:
-#line 2554 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 90: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum featattr RPAREN declarator cpp_const SEMI  */
+#line 2557 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                      {
                     String *val = Len((yyvsp[-5].str)) ? (yyvsp[-5].str) : 0;
                     new_feature((yyvsp[-7].id), val, (yyvsp[-4].node), (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5810 "parser.tab.c" /* yacc.c:1652  */
+#line 5815 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 91:
-#line 2562 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 91: /* feature_directive: FEATURE LPAREN idstring RPAREN stringbracesemi  */
+#line 2565 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                   {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-2].id), val, 0, 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5821 "parser.tab.c" /* yacc.c:1652  */
+#line 5826 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 92:
-#line 2568 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 92: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum RPAREN SEMI  */
+#line 2571 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                        {
                     String *val = Len((yyvsp[-2].str)) ? (yyvsp[-2].str) : 0;
                     new_feature((yyvsp[-4].id), val, 0, 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5832 "parser.tab.c" /* yacc.c:1652  */
+#line 5837 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 93:
-#line 2574 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 93: /* feature_directive: FEATURE LPAREN idstring featattr RPAREN stringbracesemi  */
+#line 2577 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                            {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-3].id), val, (yyvsp[-2].node), 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5843 "parser.tab.c" /* yacc.c:1652  */
+#line 5848 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 94:
-#line 2580 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 94: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum featattr RPAREN SEMI  */
+#line 2583 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                 {
                     String *val = Len((yyvsp[-3].str)) ? (yyvsp[-3].str) : 0;
                     new_feature((yyvsp[-5].id), val, (yyvsp[-2].node), 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5854 "parser.tab.c" /* yacc.c:1652  */
+#line 5859 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 95:
-#line 2588 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.str) = (yyvsp[0].str); }
-#line 5860 "parser.tab.c" /* yacc.c:1652  */
+  case 95: /* stringbracesemi: stringbrace  */
+#line 2591 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.str) = (yyvsp[0].str); }
+#line 5865 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 96:
-#line 2589 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.str) = 0; }
-#line 5866 "parser.tab.c" /* yacc.c:1652  */
+  case 96: /* stringbracesemi: SEMI  */
+#line 2592 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.str) = 0; }
+#line 5871 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 97:
-#line 2590 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.str) = (yyvsp[-2].pl); }
-#line 5872 "parser.tab.c" /* yacc.c:1652  */
+  case 97: /* stringbracesemi: PARMS LPAREN parms RPAREN SEMI  */
+#line 2593 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 { (yyval.str) = (yyvsp[-2].pl); }
+#line 5877 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 98:
-#line 2593 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 98: /* featattr: COMMA idstring EQUAL stringnum  */
+#line 2596 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 {
 		  (yyval.node) = NewHash();
 		  Setattr((yyval.node),"name",(yyvsp[-2].id));
 		  Setattr((yyval.node),"value",(yyvsp[0].str));
                 }
-#line 5882 "parser.tab.c" /* yacc.c:1652  */
+#line 5887 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 99:
-#line 2598 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 99: /* featattr: COMMA idstring EQUAL stringnum featattr  */
+#line 2601 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                          {
 		  (yyval.node) = NewHash();
 		  Setattr((yyval.node),"name",(yyvsp[-3].id));
 		  Setattr((yyval.node),"value",(yyvsp[-1].str));
                   set_nextSibling((yyval.node),(yyvsp[0].node));
                 }
-#line 5893 "parser.tab.c" /* yacc.c:1652  */
+#line 5898 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 100:
-#line 2608 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 100: /* varargs_directive: VARARGS LPAREN varargs_parms RPAREN declarator cpp_const SEMI  */
+#line 2611 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                  {
                  Parm *val;
 		 String *name;
 		 SwigType *t;
@@ -5929,18 +5934,18 @@ yyreduce:
 		 Delete(name);
 		 (yyval.node) = 0;
               }
-#line 5933 "parser.tab.c" /* yacc.c:1652  */
+#line 5938 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 101:
-#line 2644 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.pl) = (yyvsp[0].pl); }
-#line 5939 "parser.tab.c" /* yacc.c:1652  */
+  case 101: /* varargs_parms: parms  */
+#line 2647 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.pl) = (yyvsp[0].pl); }
+#line 5944 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 102:
-#line 2645 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 102: /* varargs_parms: NUM_INT COMMA parm  */
+#line 2648 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { 
 		  int i;
 		  int n;
 		  Parm *p;
@@ -5964,12 +5969,12 @@ yyreduce:
 		    }
 		  }
                 }
-#line 5968 "parser.tab.c" /* yacc.c:1652  */
+#line 5973 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 103:
-#line 2680 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 103: /* typemap_directive: TYPEMAP LPAREN typemap_type RPAREN tm_list stringbrace  */
+#line 2683 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                            {
 		   (yyval.node) = 0;
 		   if ((yyvsp[-3].tmap).method) {
 		     String *code = 0;
@@ -5986,12 +5991,12 @@ yyreduce:
 		     appendChild((yyval.node),(yyvsp[-1].p));
 		   }
 	       }
-#line 5990 "parser.tab.c" /* yacc.c:1652  */
+#line 5995 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 104:
-#line 2697 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 104: /* typemap_directive: TYPEMAP LPAREN typemap_type RPAREN tm_list SEMI  */
+#line 2700 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
 		 (yyval.node) = 0;
 		 if ((yyvsp[-3].tmap).method) {
 		   (yyval.node) = new_node("typemap");
@@ -5999,12 +6004,12 @@ yyreduce:
 		   appendChild((yyval.node),(yyvsp[-1].p));
 		 }
 	       }
-#line 6003 "parser.tab.c" /* yacc.c:1652  */
+#line 6008 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 105:
-#line 2705 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 105: /* typemap_directive: TYPEMAP LPAREN typemap_type RPAREN tm_list EQUAL typemap_parm SEMI  */
+#line 2708 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                    {
 		   (yyval.node) = 0;
 		   if ((yyvsp[-5].tmap).method) {
 		     (yyval.node) = new_node("typemapcopy");
@@ -6013,12 +6018,12 @@ yyreduce:
 		     appendChild((yyval.node),(yyvsp[-3].p));
 		   }
 	       }
-#line 6017 "parser.tab.c" /* yacc.c:1652  */
+#line 6022 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 106:
-#line 2718 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 106: /* typemap_type: kwargs  */
+#line 2721 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
 		 Hash *p;
 		 String *name;
 		 p = nextSibling((yyvsp[0].node));
@@ -6041,36 +6046,36 @@ yyreduce:
 		   (yyval.tmap).kwargs = p;
 		 }
                 }
-#line 6045 "parser.tab.c" /* yacc.c:1652  */
+#line 6050 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 107:
-#line 2743 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 107: /* tm_list: typemap_parm tm_tail  */
+#line 2746 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      {
                  (yyval.p) = (yyvsp[-1].p);
 		 set_nextSibling((yyval.p),(yyvsp[0].p));
 		}
-#line 6054 "parser.tab.c" /* yacc.c:1652  */
+#line 6059 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 108:
-#line 2749 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 108: /* tm_tail: COMMA typemap_parm tm_tail  */
+#line 2752 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            {
                  (yyval.p) = (yyvsp[-1].p);
 		 set_nextSibling((yyval.p),(yyvsp[0].p));
                 }
-#line 6063 "parser.tab.c" /* yacc.c:1652  */
+#line 6068 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 109:
-#line 2753 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.p) = 0;}
-#line 6069 "parser.tab.c" /* yacc.c:1652  */
+  case 109: /* tm_tail: empty  */
+#line 2756 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.p) = 0;}
+#line 6074 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 110:
-#line 2756 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 110: /* typemap_parm: type plain_declarator  */
+#line 2759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
                   Parm *parm;
 		  SwigType_push((yyvsp[-1].type),(yyvsp[0].decl).type);
 		  (yyval.p) = new_node("typemapitem");
@@ -6081,44 +6086,44 @@ yyreduce:
 		  /*		  $$ = NewParmWithoutFileLineInfo($1,$2.id);
 				  Setattr($$,"parms",$2.parms); */
                 }
-#line 6085 "parser.tab.c" /* yacc.c:1652  */
+#line 6090 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 111:
-#line 2767 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 111: /* typemap_parm: LPAREN parms RPAREN  */
+#line 2770 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
                   (yyval.p) = new_node("typemapitem");
 		  Setattr((yyval.p),"pattern",(yyvsp[-1].pl));
 		  /*		  Setattr($$,"multitype",$2); */
                }
-#line 6095 "parser.tab.c" /* yacc.c:1652  */
+#line 6100 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 112:
-#line 2772 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 112: /* typemap_parm: LPAREN parms RPAREN LPAREN parms RPAREN  */
+#line 2775 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                         {
 		 (yyval.p) = new_node("typemapitem");
 		 Setattr((yyval.p),"pattern", (yyvsp[-4].pl));
 		 /*                 Setattr($$,"multitype",$2); */
 		 Setattr((yyval.p),"parms",(yyvsp[-1].pl));
                }
-#line 6106 "parser.tab.c" /* yacc.c:1652  */
+#line 6111 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 113:
-#line 2785 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 113: /* types_directive: TYPES LPAREN parms RPAREN stringbracesemi  */
+#line 2788 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                            {
                    (yyval.node) = new_node("types");
 		   Setattr((yyval.node),"parms",(yyvsp[-2].pl));
                    if ((yyvsp[0].str))
 		     Setattr((yyval.node),"convcode",NewString((yyvsp[0].str)));
                }
-#line 6117 "parser.tab.c" /* yacc.c:1652  */
+#line 6122 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 114:
-#line 2797 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 114: /* template_directive: SWIGTEMPLATE LPAREN idstringopt RPAREN idcolonnt LESSTHAN valparms GREATERTHAN SEMI  */
+#line 2800 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                        {
                   Parm *p, *tp;
 		  Node *n;
 		  Node *outer_class = currentOuterClass;
@@ -6409,55 +6414,55 @@ yyreduce:
 		  Delete(Namespaceprefix);
 		  Namespaceprefix = Swig_symbol_qualifiedscopename(0);
                 }
-#line 6413 "parser.tab.c" /* yacc.c:1652  */
+#line 6418 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 115:
-#line 3095 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 115: /* warn_directive: WARN string  */
+#line 3098 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		  Swig_warning(0,cparse_file, cparse_line,"%s\n", (yyvsp[0].str));
 		  (yyval.node) = 0;
                }
-#line 6422 "parser.tab.c" /* yacc.c:1652  */
+#line 6427 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 116:
-#line 3105 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 116: /* c_declaration: c_decl  */
+#line 3108 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
                     (yyval.node) = (yyvsp[0].node); 
                     if ((yyval.node)) {
    		      add_symbols((yyval.node));
                       default_arguments((yyval.node));
    	            }
                 }
-#line 6434 "parser.tab.c" /* yacc.c:1652  */
+#line 6439 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 117:
-#line 3112 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 6440 "parser.tab.c" /* yacc.c:1652  */
+  case 117: /* c_declaration: c_enum_decl  */
+#line 3115 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.node) = (yyvsp[0].node); }
+#line 6445 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 118:
-#line 3113 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 6446 "parser.tab.c" /* yacc.c:1652  */
+  case 118: /* c_declaration: c_enum_forward_decl  */
+#line 3116 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      { (yyval.node) = (yyvsp[0].node); }
+#line 6451 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 119:
-#line 3117 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 119: /* $@3: %empty  */
+#line 3120 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
 		  if (Strcmp((yyvsp[-1].str),"C") == 0) {
 		    cparse_externc = 1;
 		  }
 		}
-#line 6456 "parser.tab.c" /* yacc.c:1652  */
+#line 6461 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 120:
-#line 3121 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 120: /* c_declaration: EXTERN string LBRACE $@3 interface RBRACE  */
+#line 3124 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   {
 		  cparse_externc = 0;
 		  if (Strcmp((yyvsp[-4].str),"C") == 0) {
 		    Node *n = firstChild((yyvsp[-1].node));
@@ -6478,23 +6483,23 @@ yyreduce:
 		    appendChild((yyval.node),firstChild((yyvsp[-1].node)));
 		  }
                 }
-#line 6482 "parser.tab.c" /* yacc.c:1652  */
+#line 6487 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 121:
-#line 3142 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 121: /* c_declaration: cpp_lambda_decl  */
+#line 3145 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		  (yyval.node) = (yyvsp[0].node);
 		  SWIG_WARN_NODE_BEGIN((yyval.node));
 		  Swig_warning(WARN_CPP11_LAMBDA, cparse_file, cparse_line, "Lambda expressions and closures are not fully supported yet.\n");
 		  SWIG_WARN_NODE_END((yyval.node));
 		}
-#line 6493 "parser.tab.c" /* yacc.c:1652  */
+#line 6498 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 122:
-#line 3148 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 122: /* c_declaration: USING idcolon EQUAL type plain_declarator SEMI  */
+#line 3151 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
 		  /* Convert using statement to a typedef statement */
 		  (yyval.node) = new_node("cdecl");
 		  Setattr((yyval.node),"type",(yyvsp[-2].type));
@@ -6504,12 +6509,12 @@ yyreduce:
 		  SetFlag((yyval.node),"typealias");
 		  add_symbols((yyval.node));
 		}
-#line 6508 "parser.tab.c" /* yacc.c:1652  */
+#line 6513 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 123:
-#line 3158 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 123: /* c_declaration: TEMPLATE LESSTHAN template_parms GREATERTHAN USING idcolon EQUAL type plain_declarator SEMI  */
+#line 3161 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                              {
 		  /* Convert alias template to a "template" typedef statement */
 		  (yyval.node) = new_node("template");
 		  Setattr((yyval.node),"type",(yyvsp[-2].type));
@@ -6521,20 +6526,20 @@ yyreduce:
 		  SetFlag((yyval.node),"aliastemplate");
 		  add_symbols((yyval.node));
 		}
-#line 6525 "parser.tab.c" /* yacc.c:1652  */
+#line 6530 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 124:
-#line 3170 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 124: /* c_declaration: cpp_static_assert  */
+#line 3173 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    {
                    (yyval.node) = (yyvsp[0].node);
                 }
-#line 6533 "parser.tab.c" /* yacc.c:1652  */
+#line 6538 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 125:
-#line 3179 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 125: /* c_decl: storage_class type declarator cpp_const initializer c_decl_tail  */
+#line 3182 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                          {
 	      String *decl = (yyvsp[-3].decl).type;
               (yyval.node) = new_node("cdecl");
 	      if ((yyvsp[-2].dtype).qualifier)
@@ -6612,12 +6617,12 @@ yyreduce:
 	      if ((yyvsp[-2].dtype).qualifier && (yyvsp[-5].id) && Strstr((yyvsp[-5].id), "static"))
 		Swig_error(cparse_file, cparse_line, "Static function %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)));
            }
-#line 6616 "parser.tab.c" /* yacc.c:1652  */
+#line 6621 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 126:
-#line 3259 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 126: /* c_decl: storage_class AUTO declarator cpp_const ARROW cpp_alternate_rettype virt_specifier_seq_opt initializer c_decl_tail  */
+#line 3262 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                                                {
               (yyval.node) = new_node("cdecl");
 	      if ((yyvsp[-5].dtype).qualifier) SwigType_push((yyvsp[-6].decl).type, (yyvsp[-5].dtype).qualifier);
 	      Setattr((yyval.node),"refqualifier",(yyvsp[-5].dtype).refqualifier);
@@ -6676,21 +6681,21 @@ yyreduce:
 	      if ((yyvsp[-5].dtype).qualifier && (yyvsp[-8].id) && Strstr((yyvsp[-8].id), "static"))
 		Swig_error(cparse_file, cparse_line, "Static function %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)));
            }
-#line 6680 "parser.tab.c" /* yacc.c:1652  */
+#line 6685 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 127:
-#line 3322 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 127: /* c_decl_tail: SEMI  */
+#line 3325 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      { 
                    (yyval.node) = 0;
                    Clear(scanner_ccode); 
                }
-#line 6689 "parser.tab.c" /* yacc.c:1652  */
+#line 6694 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 128:
-#line 3326 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 128: /* c_decl_tail: COMMA declarator cpp_const initializer c_decl_tail  */
+#line 3329 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                    {
 		 (yyval.node) = new_node("cdecl");
 		 if ((yyvsp[-2].dtype).qualifier) SwigType_push((yyvsp[-3].decl).type,(yyvsp[-2].dtype).qualifier);
 		 Setattr((yyval.node),"refqualifier",(yyvsp[-2].dtype).refqualifier);
@@ -6715,21 +6720,21 @@ yyreduce:
 		   set_nextSibling((yyval.node), (yyvsp[0].node));
 		 }
 	       }
-#line 6719 "parser.tab.c" /* yacc.c:1652  */
+#line 6724 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 129:
-#line 3351 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 129: /* c_decl_tail: LBRACE  */
+#line 3354 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { 
                    skip_balanced('{','}');
                    (yyval.node) = 0;
                }
-#line 6728 "parser.tab.c" /* yacc.c:1652  */
+#line 6733 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 130:
-#line 3355 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 130: /* c_decl_tail: error  */
+#line 3358 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
 		   (yyval.node) = 0;
 		   if (yychar == RPAREN) {
 		       Swig_error(cparse_file, cparse_line, "Unexpected ')'.\n");
@@ -6738,166 +6743,166 @@ yyreduce:
 		   }
 		   exit(1);
                }
-#line 6742 "parser.tab.c" /* yacc.c:1652  */
+#line 6747 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 131:
-#line 3366 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 131: /* initializer: def_args  */
+#line 3369 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
                    (yyval.dtype) = (yyvsp[0].dtype);
               }
-#line 6750 "parser.tab.c" /* yacc.c:1652  */
+#line 6755 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 132:
-#line 3371 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].type); }
-#line 6756 "parser.tab.c" /* yacc.c:1652  */
+  case 132: /* cpp_alternate_rettype: primitive_type  */
+#line 3374 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       { (yyval.node) = (yyvsp[0].type); }
+#line 6761 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 133:
-#line 3372 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].type); }
-#line 6762 "parser.tab.c" /* yacc.c:1652  */
+  case 133: /* cpp_alternate_rettype: TYPE_BOOL  */
+#line 3375 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.node) = (yyvsp[0].type); }
+#line 6767 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 134:
-#line 3373 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].type); }
-#line 6768 "parser.tab.c" /* yacc.c:1652  */
+  case 134: /* cpp_alternate_rettype: TYPE_VOID  */
+#line 3376 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.node) = (yyvsp[0].type); }
+#line 6773 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 135:
-#line 3377 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].type); }
-#line 6774 "parser.tab.c" /* yacc.c:1652  */
+  case 135: /* cpp_alternate_rettype: TYPE_RAW  */
+#line 3380 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.node) = (yyvsp[0].type); }
+#line 6779 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 136:
-#line 3378 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].str); }
-#line 6780 "parser.tab.c" /* yacc.c:1652  */
+  case 136: /* cpp_alternate_rettype: idcolon  */
+#line 3381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.node) = (yyvsp[0].str); }
+#line 6785 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 137:
-#line 3379 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].type); }
-#line 6786 "parser.tab.c" /* yacc.c:1652  */
+  case 137: /* cpp_alternate_rettype: decltype  */
+#line 3382 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.node) = (yyvsp[0].type); }
+#line 6791 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 138:
-#line 3390 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 138: /* cpp_lambda_decl: storage_class AUTO idcolon EQUAL lambda_introducer LPAREN parms RPAREN cpp_const lambda_body lambda_tail  */
+#line 3393 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                                           {
 		  (yyval.node) = new_node("lambda");
 		  Setattr((yyval.node),"name",(yyvsp[-8].str));
 		  add_symbols((yyval.node));
 	        }
-#line 6796 "parser.tab.c" /* yacc.c:1652  */
+#line 6801 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 139:
-#line 3395 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 139: /* cpp_lambda_decl: storage_class AUTO idcolon EQUAL lambda_introducer LPAREN parms RPAREN cpp_const ARROW type lambda_body lambda_tail  */
+#line 3398 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                                                      {
 		  (yyval.node) = new_node("lambda");
 		  Setattr((yyval.node),"name",(yyvsp[-10].str));
 		  add_symbols((yyval.node));
 		}
-#line 6806 "parser.tab.c" /* yacc.c:1652  */
+#line 6811 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 140:
-#line 3400 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 140: /* cpp_lambda_decl: storage_class AUTO idcolon EQUAL lambda_introducer lambda_body lambda_tail  */
+#line 3403 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                             {
 		  (yyval.node) = new_node("lambda");
 		  Setattr((yyval.node),"name",(yyvsp[-4].str));
 		  add_symbols((yyval.node));
 		}
-#line 6816 "parser.tab.c" /* yacc.c:1652  */
+#line 6821 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 141:
-#line 3407 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 141: /* lambda_introducer: LBRACKET  */
+#line 3410 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		  skip_balanced('[',']');
 		  (yyval.node) = 0;
 	        }
-#line 6825 "parser.tab.c" /* yacc.c:1652  */
+#line 6830 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 142:
-#line 3413 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 142: /* lambda_body: LBRACE  */
+#line 3416 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                     {
 		  skip_balanced('{','}');
 		  (yyval.node) = 0;
 		}
-#line 6834 "parser.tab.c" /* yacc.c:1652  */
+#line 6839 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 143:
-#line 3418 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 143: /* lambda_tail: SEMI  */
+#line 3421 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                     {
 		  (yyval.pl) = 0;
 		}
-#line 6842 "parser.tab.c" /* yacc.c:1652  */
+#line 6847 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 144:
-#line 3421 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 144: /* $@4: %empty  */
+#line 3424 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 		  skip_balanced('(',')');
 		}
-#line 6850 "parser.tab.c" /* yacc.c:1652  */
+#line 6855 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 145:
-#line 3423 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 145: /* lambda_tail: LPAREN $@4 SEMI  */
+#line 3426 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
 		  (yyval.pl) = 0;
 		}
-#line 6858 "parser.tab.c" /* yacc.c:1652  */
+#line 6863 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 146:
-#line 3434 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 146: /* c_enum_key: ENUM  */
+#line 3437 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                  {
 		   (yyval.node) = (char *)"enum";
 	      }
-#line 6866 "parser.tab.c" /* yacc.c:1652  */
+#line 6871 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 147:
-#line 3437 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 147: /* c_enum_key: ENUM CLASS  */
+#line 3440 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
 		   (yyval.node) = (char *)"enum class";
 	      }
-#line 6874 "parser.tab.c" /* yacc.c:1652  */
+#line 6879 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 148:
-#line 3440 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 148: /* c_enum_key: ENUM STRUCT  */
+#line 3443 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            {
 		   (yyval.node) = (char *)"enum struct";
 	      }
-#line 6882 "parser.tab.c" /* yacc.c:1652  */
+#line 6887 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 149:
-#line 3449 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 149: /* c_enum_inherit: COLON type_right  */
+#line 3452 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
                    (yyval.node) = (yyvsp[0].type);
               }
-#line 6890 "parser.tab.c" /* yacc.c:1652  */
+#line 6895 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 150:
-#line 3452 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 6896 "parser.tab.c" /* yacc.c:1652  */
+  case 150: /* c_enum_inherit: empty  */
+#line 3455 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      { (yyval.node) = 0; }
+#line 6901 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 151:
-#line 3459 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 151: /* c_enum_forward_decl: storage_class c_enum_key ename c_enum_inherit SEMI  */
+#line 3462 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                         {
 		   SwigType *ty = 0;
 		   int scopedenum = (yyvsp[-2].id) && !Equal((yyvsp[-3].node), "enum");
 		   (yyval.node) = new_node("enumforward");
@@ -6911,12 +6916,12 @@ yyreduce:
 		   Setattr((yyval.node),"sym:weak", "1");
 		   add_symbols((yyval.node));
 	      }
-#line 6915 "parser.tab.c" /* yacc.c:1652  */
+#line 6920 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 152:
-#line 3481 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 152: /* c_enum_decl: storage_class c_enum_key ename c_enum_inherit LBRACE enumlist RBRACE SEMI  */
+#line 3484 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                         {
 		  SwigType *ty = 0;
 		  int scopedenum = (yyvsp[-5].id) && !Equal((yyvsp[-6].node), "enum");
                   (yyval.node) = new_node("enum");
@@ -6945,12 +6950,12 @@ yyreduce:
 		    Namespaceprefix = Swig_symbol_qualifiedscopename(0);
 		  }
                }
-#line 6949 "parser.tab.c" /* yacc.c:1652  */
+#line 6954 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 153:
-#line 3510 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 153: /* c_enum_decl: storage_class c_enum_key ename c_enum_inherit LBRACE enumlist RBRACE declarator cpp_const initializer c_decl_tail  */
+#line 3513 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                                                   {
 		 Node *n;
 		 SwigType *ty = 0;
 		 String   *unnamed = 0;
@@ -7046,12 +7051,12 @@ yyreduce:
 	         add_symbols(n);
 		 Delete(unnamed);
 	       }
-#line 7050 "parser.tab.c" /* yacc.c:1652  */
+#line 7055 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 154:
-#line 3608 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 154: /* c_constructor_decl: storage_class type LPAREN parms RPAREN ctor_end  */
+#line 3611 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                     {
                    /* This is a sick hack.  If the ctor_end has parameters,
                       and the parms parameter only has 1 parameter, this
                       could be a declaration of the form:
@@ -7098,48 +7103,48 @@ yyreduce:
 		      exit(1);
 		    }
                 }
-#line 7102 "parser.tab.c" /* yacc.c:1652  */
+#line 7107 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 155:
-#line 3661 "CParse/parser.y" /* yacc.c:1652  */
-    {  (yyval.node) = (yyvsp[0].node); }
-#line 7108 "parser.tab.c" /* yacc.c:1652  */
+  case 155: /* cpp_declaration: cpp_class_decl  */
+#line 3664 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {  (yyval.node) = (yyvsp[0].node); }
+#line 7113 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 156:
-#line 3662 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 7114 "parser.tab.c" /* yacc.c:1652  */
+  case 156: /* cpp_declaration: cpp_forward_class_decl  */
+#line 3665 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         { (yyval.node) = (yyvsp[0].node); }
+#line 7119 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 157:
-#line 3663 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 7120 "parser.tab.c" /* yacc.c:1652  */
+  case 157: /* cpp_declaration: cpp_template_decl  */
+#line 3666 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.node) = (yyvsp[0].node); }
+#line 7125 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 158:
-#line 3664 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 7126 "parser.tab.c" /* yacc.c:1652  */
+  case 158: /* cpp_declaration: cpp_using_decl  */
+#line 3667 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 7131 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 159:
-#line 3665 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 7132 "parser.tab.c" /* yacc.c:1652  */
+  case 159: /* cpp_declaration: cpp_namespace_decl  */
+#line 3668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { (yyval.node) = (yyvsp[0].node); }
+#line 7137 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 160:
-#line 3666 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 7138 "parser.tab.c" /* yacc.c:1652  */
+  case 160: /* cpp_declaration: cpp_catch_decl  */
+#line 3669 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = 0; }
+#line 7143 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 161:
-#line 3671 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 161: /* @5: %empty  */
+#line 3674 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                               {
                    String *prefix;
                    List *bases = 0;
 		   Node *scope = 0;
@@ -7233,12 +7238,12 @@ yyreduce:
 		     Delete(code);
 		   }
                }
-#line 7237 "parser.tab.c" /* yacc.c:1652  */
+#line 7242 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 162:
-#line 3764 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 162: /* cpp_class_decl: storage_class cpptype idcolon inherit LBRACE @5 cpp_members RBRACE cpp_opt_declarators  */
+#line 3767 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        {
 		   Node *p;
 		   SwigType *ty;
 		   Symtab *cscope;
@@ -7391,12 +7396,12 @@ yyreduce:
 		   Namespaceprefix = Swig_symbol_qualifiedscopename(0);
 		   Classprefix = currentOuterClass ? Getattr(currentOuterClass, "Classprefix") : 0;
 	       }
-#line 7395 "parser.tab.c" /* yacc.c:1652  */
+#line 7400 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 163:
-#line 3920 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 163: /* @6: %empty  */
+#line 3923 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
 	       String *unnamed;
 	       String *code;
 	       unnamed = make_unnamed();
@@ -7436,12 +7441,12 @@ yyreduce:
 	       Setattr((yyval.node), "code", code);
 	       Delete(code);
 	     }
-#line 7440 "parser.tab.c" /* yacc.c:1652  */
+#line 7445 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 164:
-#line 3959 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 164: /* cpp_class_decl: storage_class cpptype inherit LBRACE @6 cpp_members RBRACE cpp_opt_declarators  */
+#line 3962 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                      {
 	       String *unnamed;
                List *bases = 0;
 	       String *name = 0;
@@ -7547,30 +7552,30 @@ yyreduce:
 	       }
 	       Classprefix = currentOuterClass ? Getattr(currentOuterClass, "Classprefix") : 0;
               }
-#line 7551 "parser.tab.c" /* yacc.c:1652  */
+#line 7556 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 165:
-#line 4067 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 7557 "parser.tab.c" /* yacc.c:1652  */
+  case 165: /* cpp_opt_declarators: SEMI  */
+#line 4070 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { (yyval.node) = 0; }
+#line 7562 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 166:
-#line 4068 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 166: /* cpp_opt_declarators: declarator cpp_const initializer c_decl_tail  */
+#line 4071 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                    {
                         (yyval.node) = new_node("cdecl");
                         Setattr((yyval.node),"name",(yyvsp[-3].decl).id);
                         Setattr((yyval.node),"decl",(yyvsp[-3].decl).type);
                         Setattr((yyval.node),"parms",(yyvsp[-3].decl).parms);
 			set_nextSibling((yyval.node), (yyvsp[0].node));
                     }
-#line 7569 "parser.tab.c" /* yacc.c:1652  */
+#line 7574 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 167:
-#line 4080 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 167: /* cpp_forward_class_decl: storage_class cpptype idcolon SEMI  */
+#line 4083 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                            {
               if ((yyvsp[-3].id) && (Strcmp((yyvsp[-3].id),"friend") == 0)) {
 		/* Ignore */
                 (yyval.node) = 0; 
@@ -7582,23 +7587,23 @@ yyreduce:
 		add_symbols((yyval.node));
 	      }
              }
-#line 7586 "parser.tab.c" /* yacc.c:1652  */
+#line 7591 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 168:
-#line 4098 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 168: /* $@7: %empty  */
+#line 4101 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 { 
 		    if (currentOuterClass)
 		      Setattr(currentOuterClass, "template_parameters", template_parameters);
 		    template_parameters = (yyvsp[-1].tparms); 
 		    parsing_template_declaration = 1;
 		  }
-#line 7597 "parser.tab.c" /* yacc.c:1652  */
+#line 7602 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 169:
-#line 4103 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 169: /* cpp_template_decl: TEMPLATE LESSTHAN template_parms GREATERTHAN $@7 cpp_template_possible  */
+#line 4106 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {
 			String *tname = 0;
 			int     error = 0;
 
@@ -7852,78 +7857,78 @@ yyreduce:
 			  template_parameters = 0;
 			parsing_template_declaration = 0;
                 }
-#line 7856 "parser.tab.c" /* yacc.c:1652  */
+#line 7861 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 170:
-#line 4359 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 170: /* cpp_template_decl: TEMPLATE cpptype idcolon  */
+#line 4362 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
                   (yyval.node) = 0; 
 		}
-#line 7865 "parser.tab.c" /* yacc.c:1652  */
+#line 7870 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 171:
-#line 4365 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 171: /* cpp_template_decl: EXTERN TEMPLATE cpptype idcolon  */
+#line 4368 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                  {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
                   (yyval.node) = 0; 
                 }
-#line 7874 "parser.tab.c" /* yacc.c:1652  */
+#line 7879 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 172:
-#line 4371 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 172: /* cpp_template_possible: c_decl  */
+#line 4374 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
 		  (yyval.node) = (yyvsp[0].node);
                 }
-#line 7882 "parser.tab.c" /* yacc.c:1652  */
+#line 7887 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 173:
-#line 4374 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 173: /* cpp_template_possible: cpp_class_decl  */
+#line 4377 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
                    (yyval.node) = (yyvsp[0].node);
                 }
-#line 7890 "parser.tab.c" /* yacc.c:1652  */
+#line 7895 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 174:
-#line 4377 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 174: /* cpp_template_possible: cpp_constructor_decl  */
+#line 4380 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
                    (yyval.node) = (yyvsp[0].node);
                 }
-#line 7898 "parser.tab.c" /* yacc.c:1652  */
+#line 7903 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 175:
-#line 4380 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 175: /* cpp_template_possible: cpp_template_decl  */
+#line 4383 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    {
 		  (yyval.node) = 0;
                 }
-#line 7906 "parser.tab.c" /* yacc.c:1652  */
+#line 7911 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 176:
-#line 4383 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 176: /* cpp_template_possible: cpp_forward_class_decl  */
+#line 4386 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
                   (yyval.node) = (yyvsp[0].node);
                 }
-#line 7914 "parser.tab.c" /* yacc.c:1652  */
+#line 7919 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 177:
-#line 4386 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 177: /* cpp_template_possible: cpp_conversion_operator  */
+#line 4389 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {
                   (yyval.node) = (yyvsp[0].node);
                 }
-#line 7922 "parser.tab.c" /* yacc.c:1652  */
+#line 7927 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 178:
-#line 4391 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 178: /* template_parms: templateparameters  */
+#line 4394 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
 		   /* Rip out the parameter names */
 		  Parm *p = (yyvsp[0].pl);
 		  (yyval.tparms) = (yyvsp[0].pl);
@@ -7957,58 +7962,58 @@ yyreduce:
 		    p = nextSibling(p);
 		  }
                  }
-#line 7961 "parser.tab.c" /* yacc.c:1652  */
+#line 7966 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 179:
-#line 4427 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 179: /* templateparameters: templateparameter templateparameterstail  */
+#line 4430 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                              {
                       set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
                       (yyval.pl) = (yyvsp[-1].p);
                    }
-#line 7970 "parser.tab.c" /* yacc.c:1652  */
+#line 7975 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 180:
-#line 4431 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.pl) = 0; }
-#line 7976 "parser.tab.c" /* yacc.c:1652  */
+  case 180: /* templateparameters: empty  */
+#line 4434 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.pl) = 0; }
+#line 7981 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 181:
-#line 4434 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 181: /* templateparameter: templcpptype  */
+#line 4437 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		    (yyval.p) = NewParmWithoutFileLineInfo(NewString((yyvsp[0].id)), 0);
                   }
-#line 7984 "parser.tab.c" /* yacc.c:1652  */
+#line 7989 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 182:
-#line 4437 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 182: /* templateparameter: parm  */
+#line 4440 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
                     (yyval.p) = (yyvsp[0].p);
                   }
-#line 7992 "parser.tab.c" /* yacc.c:1652  */
+#line 7997 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 183:
-#line 4442 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 183: /* templateparameterstail: COMMA templateparameter templateparameterstail  */
+#line 4445 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                        {
                          set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
                          (yyval.pl) = (yyvsp[-1].p);
                        }
-#line 8001 "parser.tab.c" /* yacc.c:1652  */
+#line 8006 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 184:
-#line 4446 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.pl) = 0; }
-#line 8007 "parser.tab.c" /* yacc.c:1652  */
+  case 184: /* templateparameterstail: empty  */
+#line 4449 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.pl) = 0; }
+#line 8012 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 185:
-#line 4451 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 185: /* cpp_using_decl: USING idcolon SEMI  */
+#line 4454 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    {
                   String *uname = Swig_symbol_type_qualify((yyvsp[-1].str),0);
 		  String *name = Swig_scopename_last((yyvsp[-1].str));
                   (yyval.node) = new_node("using");
@@ -8018,12 +8023,12 @@ yyreduce:
 		  Delete(name);
 		  add_symbols((yyval.node));
              }
-#line 8022 "parser.tab.c" /* yacc.c:1652  */
+#line 8027 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 186:
-#line 4461 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 186: /* cpp_using_decl: USING NAMESPACE idcolon SEMI  */
+#line 4464 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            {
 	       Node *n = Swig_symbol_clookup((yyvsp[-1].str),0);
 	       if (!n) {
 		 Swig_error(cparse_file, cparse_line, "Nothing known about namespace '%s'\n", (yyvsp[-1].str));
@@ -8052,12 +8057,12 @@ yyreduce:
 		 }
 	       }
              }
-#line 8056 "parser.tab.c" /* yacc.c:1652  */
+#line 8061 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 187:
-#line 4492 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 187: /* @8: %empty  */
+#line 4495 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                              { 
                 Hash *h;
 		Node *parent_ns = 0;
 		List *scopes = Swig_scopename_tolist((yyvsp[-1].str));
@@ -8101,12 +8106,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		}
 		Delete(scopes);
              }
-#line 8105 "parser.tab.c" /* yacc.c:1652  */
+#line 8110 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 188:
-#line 4535 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 188: /* cpp_namespace_decl: NAMESPACE idcolon LBRACE @8 interface RBRACE  */
+#line 4538 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		Node *n = (yyvsp[-2].node);
 		Node *top_ns = 0;
 		do {
@@ -8121,12 +8126,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		Delete((yyvsp[-1].node));
 		(yyval.node) = top_ns;
              }
-#line 8125 "parser.tab.c" /* yacc.c:1652  */
+#line 8130 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 189:
-#line 4550 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 189: /* $@9: %empty  */
+#line 4553 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 	       Hash *h;
 	       (yyvsp[-1].node) = Swig_symbol_current();
 	       h = Swig_symbol_clookup("    ",0);
@@ -8139,12 +8144,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       }
 	       Namespaceprefix = 0;
              }
-#line 8143 "parser.tab.c" /* yacc.c:1652  */
+#line 8148 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 190:
-#line 4562 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 190: /* cpp_namespace_decl: NAMESPACE LBRACE $@9 interface RBRACE  */
+#line 4565 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 	       (yyval.node) = (yyvsp[-1].node);
 	       set_nodeType((yyval.node),"namespace");
 	       Setattr((yyval.node),"unnamed","1");
@@ -8154,12 +8159,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Namespaceprefix = Swig_symbol_qualifiedscopename(0);
 	       add_symbols((yyval.node));
              }
-#line 8158 "parser.tab.c" /* yacc.c:1652  */
+#line 8163 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 191:
-#line 4572 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 191: /* cpp_namespace_decl: NAMESPACE identifier EQUAL idcolon SEMI  */
+#line 4575 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                       {
 	       /* Namespace alias */
 	       Node *n;
 	       (yyval.node) = new_node("namespace");
@@ -8184,12 +8189,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 }
 	       }
              }
-#line 8188 "parser.tab.c" /* yacc.c:1652  */
+#line 8193 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 192:
-#line 4599 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 192: /* cpp_members: cpp_member cpp_members  */
+#line 4602 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      {
                    (yyval.node) = (yyvsp[-1].node);
                    /* Insert cpp_member (including any siblings) to the front of the cpp_members linked list */
 		   if ((yyval.node)) {
@@ -8206,79 +8211,79 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     (yyval.node) = (yyvsp[0].node);
 		   }
              }
-#line 8210 "parser.tab.c" /* yacc.c:1652  */
+#line 8215 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 193:
-#line 4616 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 193: /* $@10: %empty  */
+#line 4619 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             { 
 	       extendmode = 1;
 	       if (cplus_mode != CPLUS_PUBLIC) {
 		 Swig_error(cparse_file,cparse_line,"%%extend can only be used in a public section\n");
 	       }
              }
-#line 8221 "parser.tab.c" /* yacc.c:1652  */
+#line 8226 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 194:
-#line 4621 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 194: /* $@11: %empty  */
+#line 4624 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 	       extendmode = 0;
 	     }
-#line 8229 "parser.tab.c" /* yacc.c:1652  */
+#line 8234 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 195:
-#line 4623 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 195: /* cpp_members: EXTEND LBRACE $@10 cpp_members RBRACE $@11 cpp_members  */
+#line 4626 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
 	       (yyval.node) = new_node("extend");
 	       mark_nodes_as_extend((yyvsp[-3].node));
 	       appendChild((yyval.node),(yyvsp[-3].node));
 	       set_nextSibling((yyval.node),(yyvsp[0].node));
 	     }
-#line 8240 "parser.tab.c" /* yacc.c:1652  */
+#line 8245 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 196:
-#line 4629 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8246 "parser.tab.c" /* yacc.c:1652  */
+  case 196: /* cpp_members: include_directive  */
+#line 4632 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 8251 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 197:
-#line 4630 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0;}
-#line 8252 "parser.tab.c" /* yacc.c:1652  */
+  case 197: /* cpp_members: empty  */
+#line 4633 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                     { (yyval.node) = 0;}
+#line 8257 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 198:
-#line 4631 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 198: /* $@12: %empty  */
+#line 4634 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                     {
 	       int start_line = cparse_line;
 	       skip_decl();
 	       Swig_error(cparse_file,start_line,"Syntax error in input(3).\n");
 	       exit(1);
 	       }
-#line 8263 "parser.tab.c" /* yacc.c:1652  */
+#line 8268 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 199:
-#line 4636 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 199: /* cpp_members: error $@12 cpp_members  */
+#line 4639 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             { 
 		 (yyval.node) = (yyvsp[0].node);
    	     }
-#line 8271 "parser.tab.c" /* yacc.c:1652  */
+#line 8276 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 200:
-#line 4647 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8277 "parser.tab.c" /* yacc.c:1652  */
+  case 200: /* cpp_member_no_dox: c_declaration  */
+#line 4650 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 8282 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 201:
-#line 4648 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 201: /* cpp_member_no_dox: cpp_constructor_decl  */
+#line 4651 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { 
                  (yyval.node) = (yyvsp[0].node); 
 		 if (extendmode && current_class) {
 		   String *symname;
@@ -8295,134 +8300,134 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 add_symbols((yyval.node));
                  default_arguments((yyval.node));
              }
-#line 8299 "parser.tab.c" /* yacc.c:1652  */
+#line 8304 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 202:
-#line 4665 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8305 "parser.tab.c" /* yacc.c:1652  */
+  case 202: /* cpp_member_no_dox: cpp_destructor_decl  */
+#line 4668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { (yyval.node) = (yyvsp[0].node); }
+#line 8310 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 203:
-#line 4666 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8311 "parser.tab.c" /* yacc.c:1652  */
+  case 203: /* cpp_member_no_dox: cpp_protection_decl  */
+#line 4669 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { (yyval.node) = (yyvsp[0].node); }
+#line 8316 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 204:
-#line 4667 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8317 "parser.tab.c" /* yacc.c:1652  */
+  case 204: /* cpp_member_no_dox: cpp_swig_directive  */
+#line 4670 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 8322 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 205:
-#line 4668 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8323 "parser.tab.c" /* yacc.c:1652  */
+  case 205: /* cpp_member_no_dox: cpp_conversion_operator  */
+#line 4671 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       { (yyval.node) = (yyvsp[0].node); }
+#line 8328 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 206:
-#line 4669 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8329 "parser.tab.c" /* yacc.c:1652  */
+  case 206: /* cpp_member_no_dox: cpp_forward_class_decl  */
+#line 4672 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      { (yyval.node) = (yyvsp[0].node); }
+#line 8334 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 207:
-#line 4670 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8335 "parser.tab.c" /* yacc.c:1652  */
+  case 207: /* cpp_member_no_dox: cpp_class_decl  */
+#line 4673 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.node) = (yyvsp[0].node); }
+#line 8340 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 208:
-#line 4671 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 8341 "parser.tab.c" /* yacc.c:1652  */
+  case 208: /* cpp_member_no_dox: storage_class idcolon SEMI  */
+#line 4674 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          { (yyval.node) = 0; }
+#line 8346 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 209:
-#line 4672 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8347 "parser.tab.c" /* yacc.c:1652  */
+  case 209: /* cpp_member_no_dox: cpp_using_decl  */
+#line 4675 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.node) = (yyvsp[0].node); }
+#line 8352 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 210:
-#line 4673 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8353 "parser.tab.c" /* yacc.c:1652  */
+  case 210: /* cpp_member_no_dox: cpp_template_decl  */
+#line 4676 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 8358 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 211:
-#line 4674 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 8359 "parser.tab.c" /* yacc.c:1652  */
+  case 211: /* cpp_member_no_dox: cpp_catch_decl  */
+#line 4677 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.node) = 0; }
+#line 8364 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 212:
-#line 4675 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8365 "parser.tab.c" /* yacc.c:1652  */
+  case 212: /* cpp_member_no_dox: template_directive  */
+#line 4678 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 8370 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 213:
-#line 4676 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8371 "parser.tab.c" /* yacc.c:1652  */
+  case 213: /* cpp_member_no_dox: warn_directive  */
+#line 4679 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.node) = (yyvsp[0].node); }
+#line 8376 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 214:
-#line 4677 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 8377 "parser.tab.c" /* yacc.c:1652  */
+  case 214: /* cpp_member_no_dox: anonymous_bitfield  */
+#line 4680 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = 0; }
+#line 8382 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 215:
-#line 4678 "CParse/parser.y" /* yacc.c:1652  */
-    {(yyval.node) = (yyvsp[0].node); }
-#line 8383 "parser.tab.c" /* yacc.c:1652  */
+  case 215: /* cpp_member_no_dox: fragment_directive  */
+#line 4681 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {(yyval.node) = (yyvsp[0].node); }
+#line 8388 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 216:
-#line 4679 "CParse/parser.y" /* yacc.c:1652  */
-    {(yyval.node) = (yyvsp[0].node); }
-#line 8389 "parser.tab.c" /* yacc.c:1652  */
+  case 216: /* cpp_member_no_dox: types_directive  */
+#line 4682 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {(yyval.node) = (yyvsp[0].node); }
+#line 8394 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 217:
-#line 4680 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 8395 "parser.tab.c" /* yacc.c:1652  */
+  case 217: /* cpp_member_no_dox: SEMI  */
+#line 4683 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                    { (yyval.node) = 0; }
+#line 8400 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 218:
-#line 4682 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 218: /* cpp_member: cpp_member_no_dox  */
+#line 4685 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		(yyval.node) = (yyvsp[0].node);
 	     }
-#line 8403 "parser.tab.c" /* yacc.c:1652  */
+#line 8408 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 219:
-#line 4685 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 219: /* cpp_member: DOXYGENSTRING cpp_member_no_dox  */
+#line 4688 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                               {
 	         (yyval.node) = (yyvsp[0].node);
 		 set_comment((yyvsp[0].node), (yyvsp[-1].str));
 	     }
-#line 8412 "parser.tab.c" /* yacc.c:1652  */
+#line 8417 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 220:
-#line 4689 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 220: /* cpp_member: cpp_member_no_dox DOXYGENPOSTSTRING  */
+#line 4692 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                   {
 	         (yyval.node) = (yyvsp[-1].node);
 		 set_comment((yyvsp[-1].node), (yyvsp[0].str));
 	     }
-#line 8421 "parser.tab.c" /* yacc.c:1652  */
+#line 8426 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 221:
-#line 4701 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 221: /* cpp_constructor_decl: storage_class type LPAREN parms RPAREN ctor_end  */
+#line 4704 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                       {
               if (inclass || extendmode) {
 		SwigType *decl = NewStringEmpty();
 		(yyval.node) = new_node("constructor");
@@ -8447,12 +8452,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		(yyval.node) = 0;
               }
               }
-#line 8451 "parser.tab.c" /* yacc.c:1652  */
+#line 8456 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 222:
-#line 4730 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 222: /* cpp_destructor_decl: NOT idtemplate LPAREN parms RPAREN cpp_end  */
+#line 4733 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
                String *name = NewStringf("%s",(yyvsp[-4].str));
 	       if (*(Char(name)) != '~') Insert(name,0,"~");
                (yyval.node) = new_node("destructor");
@@ -8479,12 +8484,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Swig_error(cparse_file, cparse_line, "Destructor %s %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)), SwigType_str((yyvsp[0].dtype).qualifier, 0));
 	       add_symbols((yyval.node));
 	      }
-#line 8483 "parser.tab.c" /* yacc.c:1652  */
+#line 8488 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 223:
-#line 4760 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 223: /* cpp_destructor_decl: VIRTUAL NOT idtemplate LPAREN parms RPAREN cpp_vend  */
+#line 4763 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                    {
 		String *name;
 		(yyval.node) = new_node("destructor");
 		Setattr((yyval.node),"storage","virtual");
@@ -8513,12 +8518,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  Swig_error(cparse_file, cparse_line, "Destructor %s %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)), SwigType_str((yyvsp[0].dtype).qualifier, 0));
 		add_symbols((yyval.node));
 	      }
-#line 8517 "parser.tab.c" /* yacc.c:1652  */
+#line 8522 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 224:
-#line 4793 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 224: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type pointer LPAREN parms RPAREN cpp_vend  */
+#line 4796 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                     {
                  (yyval.node) = new_node("cdecl");
                  Setattr((yyval.node),"type",(yyvsp[-5].type));
 		 Setattr((yyval.node),"name",(yyvsp[-6].str));
@@ -8534,12 +8539,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
               }
-#line 8538 "parser.tab.c" /* yacc.c:1652  */
+#line 8543 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 225:
-#line 4809 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 225: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type AND LPAREN parms RPAREN cpp_vend  */
+#line 4812 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                        {
 		 SwigType *decl;
                  (yyval.node) = new_node("cdecl");
                  Setattr((yyval.node),"type",(yyvsp[-5].type));
@@ -8557,12 +8562,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
 	       }
-#line 8561 "parser.tab.c" /* yacc.c:1652  */
+#line 8566 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 226:
-#line 4827 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 226: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type LAND LPAREN parms RPAREN cpp_vend  */
+#line 4830 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                         {
 		 SwigType *decl;
                  (yyval.node) = new_node("cdecl");
                  Setattr((yyval.node),"type",(yyvsp[-5].type));
@@ -8580,12 +8585,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
 	       }
-#line 8584 "parser.tab.c" /* yacc.c:1652  */
+#line 8589 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 227:
-#line 4846 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 227: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type pointer AND LPAREN parms RPAREN cpp_vend  */
+#line 4849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                                {
 		 SwigType *decl;
                  (yyval.node) = new_node("cdecl");
                  Setattr((yyval.node),"type",(yyvsp[-6].type));
@@ -8604,12 +8609,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
 	       }
-#line 8608 "parser.tab.c" /* yacc.c:1652  */
+#line 8613 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 228:
-#line 4866 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 228: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type LPAREN parms RPAREN cpp_vend  */
+#line 4869 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                   {
 		String *t = NewStringEmpty();
 		(yyval.node) = new_node("cdecl");
 		Setattr((yyval.node),"type",(yyvsp[-4].type));
@@ -8625,126 +8630,126 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		Setattr((yyval.node),"conversion_operator","1");
 		add_symbols((yyval.node));
               }
-#line 8629 "parser.tab.c" /* yacc.c:1652  */
+#line 8634 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 229:
-#line 4886 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 229: /* cpp_catch_decl: CATCH LPAREN parms RPAREN LBRACE  */
+#line 4889 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                  {
                  skip_balanced('{','}');
                  (yyval.node) = 0;
                }
-#line 8638 "parser.tab.c" /* yacc.c:1652  */
+#line 8643 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 230:
-#line 4894 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 230: /* cpp_static_assert: STATIC_ASSERT LPAREN  */
+#line 4897 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
                 skip_balanced('(',')');
                 (yyval.node) = 0;
               }
-#line 8647 "parser.tab.c" /* yacc.c:1652  */
+#line 8652 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 231:
-#line 4901 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 231: /* cpp_protection_decl: PUBLIC COLON  */
+#line 4904 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { 
                 (yyval.node) = new_node("access");
 		Setattr((yyval.node),"kind","public");
                 cplus_mode = CPLUS_PUBLIC;
               }
-#line 8657 "parser.tab.c" /* yacc.c:1652  */
+#line 8662 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 232:
-#line 4908 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 232: /* cpp_protection_decl: PRIVATE COLON  */
+#line 4911 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { 
                 (yyval.node) = new_node("access");
                 Setattr((yyval.node),"kind","private");
 		cplus_mode = CPLUS_PRIVATE;
 	      }
-#line 8667 "parser.tab.c" /* yacc.c:1652  */
+#line 8672 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 233:
-#line 4916 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 233: /* cpp_protection_decl: PROTECTED COLON  */
+#line 4919 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { 
 		(yyval.node) = new_node("access");
 		Setattr((yyval.node),"kind","protected");
 		cplus_mode = CPLUS_PROTECTED;
 	      }
-#line 8677 "parser.tab.c" /* yacc.c:1652  */
+#line 8682 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 234:
-#line 4924 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8683 "parser.tab.c" /* yacc.c:1652  */
+  case 234: /* cpp_swig_directive: pragma_directive  */
+#line 4927 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { (yyval.node) = (yyvsp[0].node); }
+#line 8688 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 235:
-#line 4927 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8689 "parser.tab.c" /* yacc.c:1652  */
+  case 235: /* cpp_swig_directive: constant_directive  */
+#line 4930 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.node) = (yyvsp[0].node); }
+#line 8694 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 236:
-#line 4931 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8695 "parser.tab.c" /* yacc.c:1652  */
+  case 236: /* cpp_swig_directive: name_directive  */
+#line 4934 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.node) = (yyvsp[0].node); }
+#line 8700 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 237:
-#line 4934 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8701 "parser.tab.c" /* yacc.c:1652  */
+  case 237: /* cpp_swig_directive: rename_directive  */
+#line 4937 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.node) = (yyvsp[0].node); }
+#line 8706 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 238:
-#line 4935 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8707 "parser.tab.c" /* yacc.c:1652  */
+  case 238: /* cpp_swig_directive: feature_directive  */
+#line 4938 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 8712 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 239:
-#line 4936 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8713 "parser.tab.c" /* yacc.c:1652  */
+  case 239: /* cpp_swig_directive: varargs_directive  */
+#line 4939 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 8718 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 240:
-#line 4937 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8719 "parser.tab.c" /* yacc.c:1652  */
+  case 240: /* cpp_swig_directive: insert_directive  */
+#line 4940 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.node) = (yyvsp[0].node); }
+#line 8724 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 241:
-#line 4938 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8725 "parser.tab.c" /* yacc.c:1652  */
+  case 241: /* cpp_swig_directive: typemap_directive  */
+#line 4941 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.node) = (yyvsp[0].node); }
+#line 8730 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 242:
-#line 4939 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8731 "parser.tab.c" /* yacc.c:1652  */
+  case 242: /* cpp_swig_directive: apply_directive  */
+#line 4942 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.node) = (yyvsp[0].node); }
+#line 8736 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 243:
-#line 4940 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8737 "parser.tab.c" /* yacc.c:1652  */
+  case 243: /* cpp_swig_directive: clear_directive  */
+#line 4943 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.node) = (yyvsp[0].node); }
+#line 8742 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 244:
-#line 4941 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = (yyvsp[0].node); }
-#line 8743 "parser.tab.c" /* yacc.c:1652  */
+  case 244: /* cpp_swig_directive: echo_directive  */
+#line 4944 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.node) = (yyvsp[0].node); }
+#line 8748 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 245:
-#line 4944 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 245: /* cpp_end: cpp_const SEMI  */
+#line 4947 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 	            Clear(scanner_ccode);
 		    (yyval.dtype).val = 0;
 		    (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
@@ -8755,12 +8760,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
 		    (yyval.dtype).final = (yyvsp[-1].dtype).final;
                }
-#line 8759 "parser.tab.c" /* yacc.c:1652  */
+#line 8764 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 246:
-#line 4955 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 246: /* cpp_end: cpp_const EQUAL default_delete SEMI  */
+#line 4958 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                     {
 	            Clear(scanner_ccode);
 		    (yyval.dtype).val = (yyvsp[-1].dtype).val;
 		    (yyval.dtype).qualifier = (yyvsp[-3].dtype).qualifier;
@@ -8771,12 +8776,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).nexcept = (yyvsp[-3].dtype).nexcept;
 		    (yyval.dtype).final = (yyvsp[-3].dtype).final;
                }
-#line 8775 "parser.tab.c" /* yacc.c:1652  */
+#line 8780 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 247:
-#line 4966 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 247: /* cpp_end: cpp_const LBRACE  */
+#line 4969 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { 
 		    skip_balanced('{','}'); 
 		    (yyval.dtype).val = 0;
 		    (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
@@ -8787,12 +8792,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
 		    (yyval.dtype).final = (yyvsp[-1].dtype).final;
 	       }
-#line 8791 "parser.tab.c" /* yacc.c:1652  */
+#line 8796 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 248:
-#line 4979 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 248: /* cpp_vend: cpp_const SEMI  */
+#line 4982 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { 
                      Clear(scanner_ccode);
                      (yyval.dtype).val = 0;
                      (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
@@ -8803,12 +8808,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                      (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-1].dtype).final;
                 }
-#line 8807 "parser.tab.c" /* yacc.c:1652  */
+#line 8812 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 249:
-#line 4990 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 249: /* cpp_vend: cpp_const EQUAL definetype SEMI  */
+#line 4993 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 { 
                      Clear(scanner_ccode);
                      (yyval.dtype).val = (yyvsp[-1].dtype).val;
                      (yyval.dtype).qualifier = (yyvsp[-3].dtype).qualifier;
@@ -8819,12 +8824,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                      (yyval.dtype).nexcept = (yyvsp[-3].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-3].dtype).final;
                }
-#line 8823 "parser.tab.c" /* yacc.c:1652  */
+#line 8828 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 250:
-#line 5001 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 250: /* cpp_vend: cpp_const LBRACE  */
+#line 5004 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { 
                      skip_balanced('{','}');
                      (yyval.dtype).val = 0;
                      (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
@@ -8835,52 +8840,52 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                      (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-1].dtype).final;
                }
-#line 8839 "parser.tab.c" /* yacc.c:1652  */
+#line 8844 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 251:
-#line 5015 "CParse/parser.y" /* yacc.c:1652  */
-    { }
-#line 8845 "parser.tab.c" /* yacc.c:1652  */
+  case 251: /* anonymous_bitfield: storage_class anon_bitfield_type COLON expr SEMI  */
+#line 5018 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                       { }
+#line 8850 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 252:
-#line 5018 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type);
+  case 252: /* anon_bitfield_type: primitive_type  */
+#line 5021 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.type) = (yyvsp[0].type);
                   /* Printf(stdout,"primitive = '%s'\n", $$);*/
                 }
-#line 8853 "parser.tab.c" /* yacc.c:1652  */
+#line 8858 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 253:
-#line 5021 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type); }
-#line 8859 "parser.tab.c" /* yacc.c:1652  */
+  case 253: /* anon_bitfield_type: TYPE_BOOL  */
+#line 5024 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.type) = (yyvsp[0].type); }
+#line 8864 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 254:
-#line 5022 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type); }
-#line 8865 "parser.tab.c" /* yacc.c:1652  */
+  case 254: /* anon_bitfield_type: TYPE_VOID  */
+#line 5025 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.type) = (yyvsp[0].type); }
+#line 8870 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 255:
-#line 5026 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type); }
-#line 8871 "parser.tab.c" /* yacc.c:1652  */
+  case 255: /* anon_bitfield_type: TYPE_RAW  */
+#line 5029 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.type) = (yyvsp[0].type); }
+#line 8876 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 256:
-#line 5028 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 256: /* anon_bitfield_type: idcolon  */
+#line 5031 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 		  (yyval.type) = (yyvsp[0].str);
                }
-#line 8879 "parser.tab.c" /* yacc.c:1652  */
+#line 8884 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 257:
-#line 5036 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 257: /* extern_string: EXTERN string  */
+#line 5039 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
                    if (Strcmp((yyvsp[0].str),"C") == 0) {
 		     (yyval.id) = "externc";
                    } else if (Strcmp((yyvsp[0].str),"C++") == 0) {
@@ -8890,132 +8895,132 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     (yyval.id) = 0;
 		   }
                }
-#line 8894 "parser.tab.c" /* yacc.c:1652  */
+#line 8899 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 258:
-#line 5048 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "extern"; }
-#line 8900 "parser.tab.c" /* yacc.c:1652  */
+  case 258: /* storage_class: EXTERN  */
+#line 5051 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.id) = "extern"; }
+#line 8905 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 259:
-#line 5049 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (yyvsp[0].id); }
-#line 8906 "parser.tab.c" /* yacc.c:1652  */
+  case 259: /* storage_class: extern_string  */
+#line 5052 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.id) = (yyvsp[0].id); }
+#line 8911 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 260:
-#line 5050 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "thread_local"; }
-#line 8912 "parser.tab.c" /* yacc.c:1652  */
+  case 260: /* storage_class: extern_string THREAD_LOCAL  */
+#line 5053 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            { (yyval.id) = "thread_local"; }
+#line 8917 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 261:
-#line 5051 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "typedef"; }
-#line 8918 "parser.tab.c" /* yacc.c:1652  */
+  case 261: /* storage_class: extern_string TYPEDEF  */
+#line 5054 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       { (yyval.id) = "typedef"; }
+#line 8923 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 262:
-#line 5052 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "static"; }
-#line 8924 "parser.tab.c" /* yacc.c:1652  */
+  case 262: /* storage_class: STATIC  */
+#line 5055 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.id) = "static"; }
+#line 8929 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 263:
-#line 5053 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "typedef"; }
-#line 8930 "parser.tab.c" /* yacc.c:1652  */
+  case 263: /* storage_class: TYPEDEF  */
+#line 5056 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.id) = "typedef"; }
+#line 8935 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 264:
-#line 5054 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "virtual"; }
-#line 8936 "parser.tab.c" /* yacc.c:1652  */
+  case 264: /* storage_class: VIRTUAL  */
+#line 5057 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.id) = "virtual"; }
+#line 8941 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 265:
-#line 5055 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "friend"; }
-#line 8942 "parser.tab.c" /* yacc.c:1652  */
+  case 265: /* storage_class: FRIEND  */
+#line 5058 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.id) = "friend"; }
+#line 8947 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 266:
-#line 5056 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "explicit"; }
-#line 8948 "parser.tab.c" /* yacc.c:1652  */
+  case 266: /* storage_class: EXPLICIT  */
+#line 5059 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.id) = "explicit"; }
+#line 8953 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 267:
-#line 5057 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "constexpr"; }
-#line 8954 "parser.tab.c" /* yacc.c:1652  */
+  case 267: /* storage_class: CONSTEXPR  */
+#line 5060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.id) = "constexpr"; }
+#line 8959 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 268:
-#line 5058 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "explicit constexpr"; }
-#line 8960 "parser.tab.c" /* yacc.c:1652  */
+  case 268: /* storage_class: EXPLICIT CONSTEXPR  */
+#line 5061 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.id) = "explicit constexpr"; }
+#line 8965 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 269:
-#line 5059 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "explicit constexpr"; }
-#line 8966 "parser.tab.c" /* yacc.c:1652  */
+  case 269: /* storage_class: CONSTEXPR EXPLICIT  */
+#line 5062 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.id) = "explicit constexpr"; }
+#line 8971 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 270:
-#line 5060 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "static constexpr"; }
-#line 8972 "parser.tab.c" /* yacc.c:1652  */
+  case 270: /* storage_class: STATIC CONSTEXPR  */
+#line 5063 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.id) = "static constexpr"; }
+#line 8977 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 271:
-#line 5061 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "static constexpr"; }
-#line 8978 "parser.tab.c" /* yacc.c:1652  */
+  case 271: /* storage_class: CONSTEXPR STATIC  */
+#line 5064 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { (yyval.id) = "static constexpr"; }
+#line 8983 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 272:
-#line 5062 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "thread_local"; }
-#line 8984 "parser.tab.c" /* yacc.c:1652  */
+  case 272: /* storage_class: THREAD_LOCAL  */
+#line 5065 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.id) = "thread_local"; }
+#line 8989 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 273:
-#line 5063 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "static thread_local"; }
-#line 8990 "parser.tab.c" /* yacc.c:1652  */
+  case 273: /* storage_class: THREAD_LOCAL STATIC  */
+#line 5066 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { (yyval.id) = "static thread_local"; }
+#line 8995 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 274:
-#line 5064 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "static thread_local"; }
-#line 8996 "parser.tab.c" /* yacc.c:1652  */
+  case 274: /* storage_class: STATIC THREAD_LOCAL  */
+#line 5067 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { (yyval.id) = "static thread_local"; }
+#line 9001 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 275:
-#line 5065 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "extern thread_local"; }
-#line 9002 "parser.tab.c" /* yacc.c:1652  */
+  case 275: /* storage_class: EXTERN THREAD_LOCAL  */
+#line 5068 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { (yyval.id) = "extern thread_local"; }
+#line 9007 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 276:
-#line 5066 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "extern thread_local"; }
-#line 9008 "parser.tab.c" /* yacc.c:1652  */
+  case 276: /* storage_class: THREAD_LOCAL EXTERN  */
+#line 5069 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { (yyval.id) = "extern thread_local"; }
+#line 9013 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 277:
-#line 5067 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = 0; }
-#line 9014 "parser.tab.c" /* yacc.c:1652  */
+  case 277: /* storage_class: empty  */
+#line 5070 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.id) = 0; }
+#line 9019 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 278:
-#line 5074 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 278: /* parms: rawparms  */
+#line 5077 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                  Parm *p;
 		 (yyval.pl) = (yyvsp[0].pl);
 		 p = (yyvsp[0].pl);
@@ -9024,56 +9029,56 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   p = nextSibling(p);
                  }
                }
-#line 9028 "parser.tab.c" /* yacc.c:1652  */
+#line 9033 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 279:
-#line 5085 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 279: /* rawparms: parm ptail  */
+#line 5088 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
                   set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
                   (yyval.pl) = (yyvsp[-1].p);
 		}
-#line 9037 "parser.tab.c" /* yacc.c:1652  */
+#line 9042 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 280:
-#line 5089 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 280: /* rawparms: empty  */
+#line 5092 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
 		  (yyval.pl) = 0;
 		  previousNode = currentNode;
 		  currentNode=0;
 	       }
-#line 9047 "parser.tab.c" /* yacc.c:1652  */
+#line 9052 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 281:
-#line 5096 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 281: /* ptail: COMMA parm ptail  */
+#line 5099 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
                  set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
 		 (yyval.pl) = (yyvsp[-1].p);
                 }
-#line 9056 "parser.tab.c" /* yacc.c:1652  */
+#line 9061 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 282:
-#line 5100 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 282: /* ptail: COMMA DOXYGENPOSTSTRING parm ptail  */
+#line 5103 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
 		 set_comment(previousNode, (yyvsp[-2].str));
                  set_nextSibling((yyvsp[-1].p), (yyvsp[0].pl));
 		 (yyval.pl) = (yyvsp[-1].p);
                }
-#line 9066 "parser.tab.c" /* yacc.c:1652  */
+#line 9071 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 283:
-#line 5105 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.pl) = 0; }
-#line 9072 "parser.tab.c" /* yacc.c:1652  */
+  case 283: /* ptail: empty  */
+#line 5108 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.pl) = 0; }
+#line 9077 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 284:
-#line 5109 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 284: /* parm_no_dox: rawtype parameter_declarator  */
+#line 5112 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                               {
                    SwigType_push((yyvsp[-1].type),(yyvsp[0].decl).type);
 		   (yyval.p) = NewParmWithoutFileLineInfo((yyvsp[-1].type),(yyvsp[0].decl).id);
 		   previousNode = currentNode;
@@ -9084,12 +9089,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     Setattr((yyval.p),"value",(yyvsp[0].decl).defarg);
 		   }
 		}
-#line 9088 "parser.tab.c" /* yacc.c:1652  */
+#line 9093 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 285:
-#line 5121 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 285: /* parm_no_dox: TEMPLATE LESSTHAN cpptype GREATERTHAN cpptype idcolon def_args  */
+#line 5124 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                 {
                   (yyval.p) = NewParmWithoutFileLineInfo(NewStringf("template<class> %s %s", (yyvsp[-2].id),(yyvsp[-1].str)), 0);
 		  previousNode = currentNode;
 		  currentNode = (yyval.p);
@@ -9099,12 +9104,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     Setattr((yyval.p),"value",(yyvsp[0].dtype).val);
                   }
                 }
-#line 9103 "parser.tab.c" /* yacc.c:1652  */
+#line 9108 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 286:
-#line 5131 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 286: /* parm_no_dox: PERIOD PERIOD PERIOD  */
+#line 5134 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
 		  SwigType *t = NewString("v(...)");
 		  (yyval.p) = NewParmWithoutFileLineInfo(t, 0);
 		  previousNode = currentNode;
@@ -9112,38 +9117,38 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  Setfile((yyval.p),cparse_file);
 		  Setline((yyval.p),cparse_line);
 		}
-#line 9116 "parser.tab.c" /* yacc.c:1652  */
+#line 9121 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 287:
-#line 5141 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 287: /* parm: parm_no_dox  */
+#line 5144 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
 		  (yyval.p) = (yyvsp[0].p);
 		}
-#line 9124 "parser.tab.c" /* yacc.c:1652  */
+#line 9129 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 288:
-#line 5144 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 288: /* parm: DOXYGENSTRING parm_no_dox  */
+#line 5147 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            {
 		  (yyval.p) = (yyvsp[0].p);
 		  set_comment((yyvsp[0].p), (yyvsp[-1].str));
 		}
-#line 9133 "parser.tab.c" /* yacc.c:1652  */
+#line 9138 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 289:
-#line 5148 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 289: /* parm: parm_no_dox DOXYGENPOSTSTRING  */
+#line 5151 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                {
 		  (yyval.p) = (yyvsp[-1].p);
 		  set_comment((yyvsp[-1].p), (yyvsp[0].str));
 		}
-#line 9142 "parser.tab.c" /* yacc.c:1652  */
+#line 9147 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 290:
-#line 5154 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 290: /* valparms: rawvalparms  */
+#line 5157 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
                  Parm *p;
 		 (yyval.p) = (yyvsp[0].p);
 		 p = (yyvsp[0].p);
@@ -9154,42 +9159,42 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   p = nextSibling(p);
                  }
                }
-#line 9158 "parser.tab.c" /* yacc.c:1652  */
+#line 9163 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 291:
-#line 5167 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 291: /* rawvalparms: valparm valptail  */
+#line 5170 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   {
                   set_nextSibling((yyvsp[-1].p),(yyvsp[0].p));
                   (yyval.p) = (yyvsp[-1].p);
 		}
-#line 9167 "parser.tab.c" /* yacc.c:1652  */
+#line 9172 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 292:
-#line 5171 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.p) = 0; }
-#line 9173 "parser.tab.c" /* yacc.c:1652  */
+  case 292: /* rawvalparms: empty  */
+#line 5174 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.p) = 0; }
+#line 9178 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 293:
-#line 5174 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 293: /* valptail: COMMA valparm valptail  */
+#line 5177 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                        {
                  set_nextSibling((yyvsp[-1].p),(yyvsp[0].p));
 		 (yyval.p) = (yyvsp[-1].p);
                 }
-#line 9182 "parser.tab.c" /* yacc.c:1652  */
+#line 9187 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 294:
-#line 5178 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.p) = 0; }
-#line 9188 "parser.tab.c" /* yacc.c:1652  */
+  case 294: /* valptail: empty  */
+#line 5181 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.p) = 0; }
+#line 9193 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 295:
-#line 5182 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 295: /* valparm: parm  */
+#line 5185 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      {
 		  (yyval.p) = (yyvsp[0].p);
 		  {
 		    /* We need to make a possible adjustment for integer parameters. */
@@ -9217,23 +9222,23 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  }
 
                }
-#line 9221 "parser.tab.c" /* yacc.c:1652  */
+#line 9226 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 296:
-#line 5210 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 296: /* valparm: valexpr  */
+#line 5213 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
                   (yyval.p) = NewParmWithoutFileLineInfo(0,0);
                   Setfile((yyval.p),cparse_file);
 		  Setline((yyval.p),cparse_line);
 		  Setattr((yyval.p),"value",(yyvsp[0].dtype).val);
                }
-#line 9232 "parser.tab.c" /* yacc.c:1652  */
+#line 9237 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 297:
-#line 5218 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 297: /* def_args: EQUAL definetype  */
+#line 5221 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { 
                   (yyval.dtype) = (yyvsp[0].dtype); 
 		  if ((yyvsp[0].dtype).type == T_ERROR) {
 		    Swig_warning(WARN_PARSE_BAD_DEFAULT,cparse_file, cparse_line, "Can't set default argument (ignored)\n");
@@ -9246,12 +9251,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).final = 0;
 		  }
                }
-#line 9250 "parser.tab.c" /* yacc.c:1652  */
+#line 9255 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 298:
-#line 5231 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 298: /* def_args: EQUAL definetype LBRACKET expr RBRACKET  */
+#line 5234 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                         { 
 		  (yyval.dtype) = (yyvsp[-3].dtype);
 		  if ((yyvsp[-3].dtype).type == T_ERROR) {
 		    Swig_warning(WARN_PARSE_BAD_DEFAULT,cparse_file, cparse_line, "Can't set default argument (ignored)\n");
@@ -9267,12 +9272,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).val = NewStringf("%s[%s]",(yyvsp[-3].dtype).val,(yyvsp[-1].dtype).val); 
 		  }		  
                }
-#line 9271 "parser.tab.c" /* yacc.c:1652  */
+#line 9276 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 299:
-#line 5247 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 299: /* def_args: EQUAL LBRACE  */
+#line 5250 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
 		 skip_balanced('{','}');
 		 (yyval.dtype).val = NewString(scanner_ccode);
 		 (yyval.dtype).rawval = 0;
@@ -9283,12 +9288,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).nexcept = 0;
 		 (yyval.dtype).final = 0;
 	       }
-#line 9287 "parser.tab.c" /* yacc.c:1652  */
+#line 9292 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 300:
-#line 5258 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 300: /* def_args: COLON expr  */
+#line 5261 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { 
 		 (yyval.dtype).val = 0;
 		 (yyval.dtype).rawval = 0;
 		 (yyval.dtype).type = 0;
@@ -9298,12 +9303,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).nexcept = 0;
 		 (yyval.dtype).final = 0;
 	       }
-#line 9302 "parser.tab.c" /* yacc.c:1652  */
+#line 9307 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 301:
-#line 5268 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 301: /* def_args: empty  */
+#line 5271 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                  (yyval.dtype).val = 0;
                  (yyval.dtype).rawval = 0;
                  (yyval.dtype).type = T_INT;
@@ -9313,40 +9318,40 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).nexcept = 0;
 		 (yyval.dtype).final = 0;
                }
-#line 9317 "parser.tab.c" /* yacc.c:1652  */
+#line 9322 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 302:
-#line 5280 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 302: /* parameter_declarator: declarator def_args  */
+#line 5283 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           {
                  (yyval.decl) = (yyvsp[-1].decl);
 		 (yyval.decl).defarg = (yyvsp[0].dtype).rawval ? (yyvsp[0].dtype).rawval : (yyvsp[0].dtype).val;
             }
-#line 9326 "parser.tab.c" /* yacc.c:1652  */
+#line 9331 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 303:
-#line 5284 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 303: /* parameter_declarator: abstract_declarator def_args  */
+#line 5287 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           {
               (yyval.decl) = (yyvsp[-1].decl);
 	      (yyval.decl).defarg = (yyvsp[0].dtype).rawval ? (yyvsp[0].dtype).rawval : (yyvsp[0].dtype).val;
             }
-#line 9335 "parser.tab.c" /* yacc.c:1652  */
+#line 9340 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 304:
-#line 5288 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 304: /* parameter_declarator: def_args  */
+#line 5291 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
    	      (yyval.decl).type = 0;
               (yyval.decl).id = 0;
 	      (yyval.decl).defarg = (yyvsp[0].dtype).rawval ? (yyvsp[0].dtype).rawval : (yyvsp[0].dtype).val;
             }
-#line 9345 "parser.tab.c" /* yacc.c:1652  */
+#line 9350 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 305:
-#line 5295 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 305: /* parameter_declarator: direct_declarator LPAREN parms RPAREN cv_ref_qualifier  */
+#line 5298 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                     {
 	      SwigType *t;
 	      (yyval.decl) = (yyvsp[-4].decl);
 	      t = NewStringEmpty();
@@ -9366,12 +9371,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).defarg = 0;
 	    }
-#line 9370 "parser.tab.c" /* yacc.c:1652  */
+#line 9375 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 306:
-#line 5317 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 306: /* plain_declarator: declarator  */
+#line 5320 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
                  (yyval.decl) = (yyvsp[0].decl);
 		 if (SwigType_isfunction((yyvsp[0].decl).type)) {
 		   Delete(SwigType_pop_function((yyvsp[0].decl).type));
@@ -9388,12 +9393,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.decl).parms = 0;
 		 }
             }
-#line 9392 "parser.tab.c" /* yacc.c:1652  */
+#line 9397 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 307:
-#line 5334 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 307: /* plain_declarator: abstract_declarator  */
+#line 5337 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
               (yyval.decl) = (yyvsp[0].decl);
 	      if (SwigType_isfunction((yyvsp[0].decl).type)) {
 		Delete(SwigType_pop_function((yyvsp[0].decl).type));
@@ -9410,12 +9415,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		(yyval.decl).parms = 0;
 	      }
             }
-#line 9414 "parser.tab.c" /* yacc.c:1652  */
+#line 9419 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 308:
-#line 5353 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 308: /* plain_declarator: direct_declarator LPAREN parms RPAREN cv_ref_qualifier  */
+#line 5356 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                     {
 	      SwigType *t;
 	      (yyval.decl) = (yyvsp[-4].decl);
 	      t = NewStringEmpty();
@@ -9434,22 +9439,22 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		(yyval.decl).type = t;
 	      }
 	    }
-#line 9438 "parser.tab.c" /* yacc.c:1652  */
+#line 9443 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 309:
-#line 5372 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 309: /* plain_declarator: empty  */
+#line 5375 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                    {
    	      (yyval.decl).type = 0;
               (yyval.decl).id = 0;
 	      (yyval.decl).parms = 0;
 	      }
-#line 9448 "parser.tab.c" /* yacc.c:1652  */
+#line 9453 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 310:
-#line 5379 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 310: /* declarator: pointer notso_direct_declarator  */
+#line 5382 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                              {
               (yyval.decl) = (yyvsp[0].decl);
 	      if ((yyval.decl).type) {
 		SwigType_push((yyvsp[-1].type),(yyval.decl).type);
@@ -9457,12 +9462,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-1].type);
            }
-#line 9461 "parser.tab.c" /* yacc.c:1652  */
+#line 9466 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 311:
-#line 5387 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 311: /* declarator: pointer AND notso_direct_declarator  */
+#line 5390 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_reference((yyvsp[-2].type));
               if ((yyval.decl).type) {
@@ -9471,12 +9476,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-2].type);
            }
-#line 9475 "parser.tab.c" /* yacc.c:1652  */
+#line 9480 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 312:
-#line 5396 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 312: /* declarator: pointer LAND notso_direct_declarator  */
+#line 5399 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                  {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_rvalue_reference((yyvsp[-2].type));
               if ((yyval.decl).type) {
@@ -9485,21 +9490,21 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-2].type);
            }
-#line 9489 "parser.tab.c" /* yacc.c:1652  */
+#line 9494 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 313:
-#line 5405 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 313: /* declarator: direct_declarator  */
+#line 5408 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
               (yyval.decl) = (yyvsp[0].decl);
 	      if (!(yyval.decl).type) (yyval.decl).type = NewStringEmpty();
            }
-#line 9498 "parser.tab.c" /* yacc.c:1652  */
+#line 9503 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 314:
-#line 5409 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 314: /* declarator: AND notso_direct_declarator  */
+#line 5412 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
 	     (yyval.decl) = (yyvsp[0].decl);
 	     (yyval.decl).type = NewStringEmpty();
 	     SwigType_add_reference((yyval.decl).type);
@@ -9508,12 +9513,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9512 "parser.tab.c" /* yacc.c:1652  */
+#line 9517 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 315:
-#line 5418 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 315: /* declarator: LAND notso_direct_declarator  */
+#line 5421 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {
 	     /* Introduced in C++11, move operator && */
              /* Adds one S/R conflict */
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9524,12 +9529,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9528 "parser.tab.c" /* yacc.c:1652  */
+#line 9533 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 316:
-#line 5429 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 316: /* declarator: idcolon DSTAR notso_direct_declarator  */
+#line 5432 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                   { 
 	     SwigType *t = NewStringEmpty();
 
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9540,12 +9545,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = t;
 	     }
-#line 9544 "parser.tab.c" /* yacc.c:1652  */
+#line 9549 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 317:
-#line 5440 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 317: /* declarator: pointer idcolon DSTAR notso_direct_declarator  */
+#line 5443 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                           { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-2].str));
@@ -9557,12 +9562,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     (yyval.decl).type = (yyvsp[-3].type);
 	     Delete(t);
 	   }
-#line 9561 "parser.tab.c" /* yacc.c:1652  */
+#line 9566 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 318:
-#line 5452 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 318: /* declarator: pointer idcolon DSTAR AND notso_direct_declarator  */
+#line 5455 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                               { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-4].type),(yyvsp[-3].str));
 	     SwigType_add_reference((yyvsp[-4].type));
@@ -9572,12 +9577,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = (yyvsp[-4].type);
 	   }
-#line 9576 "parser.tab.c" /* yacc.c:1652  */
+#line 9581 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 319:
-#line 5462 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 319: /* declarator: idcolon DSTAR AND notso_direct_declarator  */
+#line 5465 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                       { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-3].str));
@@ -9588,12 +9593,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     } 
 	     (yyval.decl).type = t;
 	   }
-#line 9592 "parser.tab.c" /* yacc.c:1652  */
+#line 9597 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 320:
-#line 5476 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 320: /* declarator: pointer PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5479 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                   {
               (yyval.decl) = (yyvsp[0].decl);
 	      if ((yyval.decl).type) {
 		SwigType_push((yyvsp[-4].type),(yyval.decl).type);
@@ -9601,12 +9606,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-4].type);
            }
-#line 9605 "parser.tab.c" /* yacc.c:1652  */
+#line 9610 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 321:
-#line 5484 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 321: /* declarator: pointer AND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5487 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                      {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_reference((yyvsp[-5].type));
               if ((yyval.decl).type) {
@@ -9615,12 +9620,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-5].type);
            }
-#line 9619 "parser.tab.c" /* yacc.c:1652  */
+#line 9624 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 322:
-#line 5493 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 322: /* declarator: pointer LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5496 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                       {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_rvalue_reference((yyvsp[-5].type));
               if ((yyval.decl).type) {
@@ -9629,21 +9634,21 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-5].type);
            }
-#line 9633 "parser.tab.c" /* yacc.c:1652  */
+#line 9638 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 323:
-#line 5502 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 323: /* declarator: PERIOD PERIOD PERIOD direct_declarator  */
+#line 5505 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
               (yyval.decl) = (yyvsp[0].decl);
 	      if (!(yyval.decl).type) (yyval.decl).type = NewStringEmpty();
            }
-#line 9642 "parser.tab.c" /* yacc.c:1652  */
+#line 9647 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 324:
-#line 5506 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 324: /* declarator: AND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5509 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                              {
 	     (yyval.decl) = (yyvsp[0].decl);
 	     (yyval.decl).type = NewStringEmpty();
 	     SwigType_add_reference((yyval.decl).type);
@@ -9652,12 +9657,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9656 "parser.tab.c" /* yacc.c:1652  */
+#line 9661 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 325:
-#line 5515 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 325: /* declarator: LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5518 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                               {
 	     /* Introduced in C++11, move operator && */
              /* Adds one S/R conflict */
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9668,12 +9673,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9672 "parser.tab.c" /* yacc.c:1652  */
+#line 9677 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 326:
-#line 5526 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 326: /* declarator: idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5529 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                        { 
 	     SwigType *t = NewStringEmpty();
 
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9684,12 +9689,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = t;
 	     }
-#line 9688 "parser.tab.c" /* yacc.c:1652  */
+#line 9693 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 327:
-#line 5537 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 327: /* declarator: pointer idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5540 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-5].str));
@@ -9701,12 +9706,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     (yyval.decl).type = (yyvsp[-6].type);
 	     Delete(t);
 	   }
-#line 9705 "parser.tab.c" /* yacc.c:1652  */
+#line 9710 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 328:
-#line 5549 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 328: /* declarator: pointer idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5552 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                    { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-7].type),(yyvsp[-6].str));
 	     SwigType_add_reference((yyvsp[-7].type));
@@ -9716,12 +9721,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = (yyvsp[-7].type);
 	   }
-#line 9720 "parser.tab.c" /* yacc.c:1652  */
+#line 9725 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 329:
-#line 5559 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 329: /* declarator: pointer idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5562 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                     { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-7].type),(yyvsp[-6].str));
 	     SwigType_add_rvalue_reference((yyvsp[-7].type));
@@ -9731,12 +9736,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = (yyvsp[-7].type);
 	   }
-#line 9735 "parser.tab.c" /* yacc.c:1652  */
+#line 9740 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 330:
-#line 5569 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 330: /* declarator: idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5572 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                            { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-6].str));
@@ -9747,12 +9752,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     } 
 	     (yyval.decl).type = t;
 	   }
-#line 9751 "parser.tab.c" /* yacc.c:1652  */
+#line 9756 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 331:
-#line 5580 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 331: /* declarator: idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
+#line 5583 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                             { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-6].str));
@@ -9763,46 +9768,46 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     } 
 	     (yyval.decl).type = t;
 	   }
-#line 9767 "parser.tab.c" /* yacc.c:1652  */
+#line 9772 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 332:
-#line 5593 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 332: /* notso_direct_declarator: idcolon  */
+#line 5596 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
                 /* Note: This is non-standard C.  Template declarator is allowed to follow an identifier */
                  (yyval.decl).id = Char((yyvsp[0].str));
 		 (yyval.decl).type = 0;
 		 (yyval.decl).parms = 0;
 		 (yyval.decl).have_parms = 0;
                   }
-#line 9779 "parser.tab.c" /* yacc.c:1652  */
+#line 9784 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 333:
-#line 5600 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 333: /* notso_direct_declarator: NOT idcolon  */
+#line 5603 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
                   (yyval.decl).id = Char(NewStringf("~%s",(yyvsp[0].str)));
                   (yyval.decl).type = 0;
                   (yyval.decl).parms = 0;
                   (yyval.decl).have_parms = 0;
                   }
-#line 9790 "parser.tab.c" /* yacc.c:1652  */
+#line 9795 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 334:
-#line 5608 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 334: /* notso_direct_declarator: LPAREN idcolon RPAREN  */
+#line 5611 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
                   (yyval.decl).id = Char((yyvsp[-1].str));
                   (yyval.decl).type = 0;
                   (yyval.decl).parms = 0;
                   (yyval.decl).have_parms = 0;
                   }
-#line 9801 "parser.tab.c" /* yacc.c:1652  */
+#line 9806 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 335:
-#line 5624 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 335: /* notso_direct_declarator: LPAREN pointer notso_direct_declarator RPAREN  */
+#line 5627 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                  {
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    if ((yyval.decl).type) {
 		      SwigType_push((yyvsp[-2].type),(yyval.decl).type);
@@ -9810,12 +9815,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 9814 "parser.tab.c" /* yacc.c:1652  */
+#line 9819 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 336:
-#line 5632 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 336: /* notso_direct_declarator: LPAREN idcolon DSTAR notso_direct_declarator RPAREN  */
+#line 5635 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                        {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    t = NewStringEmpty();
@@ -9826,12 +9831,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		    }
-#line 9830 "parser.tab.c" /* yacc.c:1652  */
+#line 9835 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 337:
-#line 5643 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 337: /* notso_direct_declarator: notso_direct_declarator LBRACKET RBRACKET  */
+#line 5646 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                              { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
 		    t = NewStringEmpty();
@@ -9842,12 +9847,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 9846 "parser.tab.c" /* yacc.c:1652  */
+#line 9851 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 338:
-#line 5654 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 338: /* notso_direct_declarator: notso_direct_declarator LBRACKET expr RBRACKET  */
+#line 5657 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                   { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -9858,12 +9863,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 9862 "parser.tab.c" /* yacc.c:1652  */
+#line 9867 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 339:
-#line 5665 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 339: /* notso_direct_declarator: notso_direct_declarator LPAREN parms RPAREN  */
+#line 5668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -9880,35 +9885,35 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).type = t;
 		    }
 		  }
-#line 9884 "parser.tab.c" /* yacc.c:1652  */
+#line 9889 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 340:
-#line 5684 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 340: /* direct_declarator: idcolon  */
+#line 5687 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            {
                 /* Note: This is non-standard C.  Template declarator is allowed to follow an identifier */
                  (yyval.decl).id = Char((yyvsp[0].str));
 		 (yyval.decl).type = 0;
 		 (yyval.decl).parms = 0;
 		 (yyval.decl).have_parms = 0;
                   }
-#line 9896 "parser.tab.c" /* yacc.c:1652  */
+#line 9901 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 341:
-#line 5692 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 341: /* direct_declarator: NOT idcolon  */
+#line 5695 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
                   (yyval.decl).id = Char(NewStringf("~%s",(yyvsp[0].str)));
                   (yyval.decl).type = 0;
                   (yyval.decl).parms = 0;
                   (yyval.decl).have_parms = 0;
                   }
-#line 9907 "parser.tab.c" /* yacc.c:1652  */
+#line 9912 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 342:
-#line 5709 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 342: /* direct_declarator: LPAREN pointer direct_declarator RPAREN  */
+#line 5712 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                            {
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    if ((yyval.decl).type) {
 		      SwigType_push((yyvsp[-2].type),(yyval.decl).type);
@@ -9916,36 +9921,36 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 9920 "parser.tab.c" /* yacc.c:1652  */
+#line 9925 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 343:
-#line 5717 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 343: /* direct_declarator: LPAREN AND direct_declarator RPAREN  */
+#line 5720 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        {
                     (yyval.decl) = (yyvsp[-1].decl);
 		    if (!(yyval.decl).type) {
 		      (yyval.decl).type = NewStringEmpty();
 		    }
 		    SwigType_add_reference((yyval.decl).type);
                   }
-#line 9932 "parser.tab.c" /* yacc.c:1652  */
+#line 9937 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 344:
-#line 5724 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 344: /* direct_declarator: LPAREN LAND direct_declarator RPAREN  */
+#line 5727 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                         {
                     (yyval.decl) = (yyvsp[-1].decl);
 		    if (!(yyval.decl).type) {
 		      (yyval.decl).type = NewStringEmpty();
 		    }
 		    SwigType_add_rvalue_reference((yyval.decl).type);
                   }
-#line 9944 "parser.tab.c" /* yacc.c:1652  */
+#line 9949 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 345:
-#line 5731 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 345: /* direct_declarator: LPAREN idcolon DSTAR declarator RPAREN  */
+#line 5734 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                           {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    t = NewStringEmpty();
@@ -9956,12 +9961,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 9960 "parser.tab.c" /* yacc.c:1652  */
+#line 9965 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 346:
-#line 5742 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 346: /* direct_declarator: LPAREN idcolon DSTAR type_qualifier declarator RPAREN  */
+#line 5745 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                          {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    t = NewStringEmpty();
@@ -9973,12 +9978,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 9977 "parser.tab.c" /* yacc.c:1652  */
+#line 9982 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 347:
-#line 5754 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 347: /* direct_declarator: LPAREN idcolon DSTAR abstract_declarator RPAREN  */
+#line 5757 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                    {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    t = NewStringEmpty();
@@ -9989,12 +9994,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 9993 "parser.tab.c" /* yacc.c:1652  */
+#line 9998 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 348:
-#line 5765 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 348: /* direct_declarator: LPAREN idcolon DSTAR type_qualifier abstract_declarator RPAREN  */
+#line 5768 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                   {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    t = NewStringEmpty();
@@ -10006,12 +10011,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 10010 "parser.tab.c" /* yacc.c:1652  */
+#line 10015 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 349:
-#line 5777 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 349: /* direct_declarator: direct_declarator LBRACKET RBRACKET  */
+#line 5780 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
 		    t = NewStringEmpty();
@@ -10022,12 +10027,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10026 "parser.tab.c" /* yacc.c:1652  */
+#line 10031 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 350:
-#line 5788 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 350: /* direct_declarator: direct_declarator LBRACKET expr RBRACKET  */
+#line 5791 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                             { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -10038,12 +10043,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10042 "parser.tab.c" /* yacc.c:1652  */
+#line 10047 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 351:
-#line 5799 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 351: /* direct_declarator: direct_declarator LPAREN parms RPAREN  */
+#line 5802 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                          {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -10060,12 +10065,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).type = t;
 		    }
 		  }
-#line 10064 "parser.tab.c" /* yacc.c:1652  */
+#line 10069 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 352:
-#line 5819 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 352: /* direct_declarator: OPERATOR ID LPAREN parms RPAREN  */
+#line 5822 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                   {
 		    SwigType *t;
                     Append((yyvsp[-4].str), " "); /* intervening space is mandatory */
                     Append((yyvsp[-4].str), Char((yyvsp[-3].id)));
@@ -10084,58 +10089,58 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).type = t;
 		    }
 		  }
-#line 10088 "parser.tab.c" /* yacc.c:1652  */
+#line 10093 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 353:
-#line 5840 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 353: /* abstract_declarator: pointer  */
+#line 5843 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
 		    (yyval.decl).type = (yyvsp[0].type);
                     (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
                   }
-#line 10099 "parser.tab.c" /* yacc.c:1652  */
+#line 10104 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 354:
-#line 5846 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 354: /* abstract_declarator: pointer direct_abstract_declarator  */
+#line 5849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                       { 
                      (yyval.decl) = (yyvsp[0].decl);
                      SwigType_push((yyvsp[-1].type),(yyvsp[0].decl).type);
 		     (yyval.decl).type = (yyvsp[-1].type);
 		     Delete((yyvsp[0].decl).type);
                   }
-#line 10110 "parser.tab.c" /* yacc.c:1652  */
+#line 10115 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 355:
-#line 5852 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 355: /* abstract_declarator: pointer AND  */
+#line 5855 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		    (yyval.decl).type = (yyvsp[-1].type);
 		    SwigType_add_reference((yyval.decl).type);
 		    (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		  }
-#line 10122 "parser.tab.c" /* yacc.c:1652  */
+#line 10127 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 356:
-#line 5859 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 356: /* abstract_declarator: pointer LAND  */
+#line 5862 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		    (yyval.decl).type = (yyvsp[-1].type);
 		    SwigType_add_rvalue_reference((yyval.decl).type);
 		    (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		  }
-#line 10134 "parser.tab.c" /* yacc.c:1652  */
+#line 10139 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 357:
-#line 5866 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 357: /* abstract_declarator: pointer AND direct_abstract_declarator  */
+#line 5869 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                           {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    SwigType_add_reference((yyvsp[-2].type));
 		    if ((yyval.decl).type) {
@@ -10144,12 +10149,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 10148 "parser.tab.c" /* yacc.c:1652  */
+#line 10153 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 358:
-#line 5875 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 358: /* abstract_declarator: pointer LAND direct_abstract_declarator  */
+#line 5878 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                            {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    SwigType_add_rvalue_reference((yyvsp[-2].type));
 		    if ((yyval.decl).type) {
@@ -10158,20 +10163,20 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 10162 "parser.tab.c" /* yacc.c:1652  */
+#line 10167 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 359:
-#line 5884 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 359: /* abstract_declarator: direct_abstract_declarator  */
+#line 5887 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                               {
 		    (yyval.decl) = (yyvsp[0].decl);
                   }
-#line 10170 "parser.tab.c" /* yacc.c:1652  */
+#line 10175 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 360:
-#line 5887 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 360: /* abstract_declarator: AND direct_abstract_declarator  */
+#line 5890 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                   {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_reference((yyval.decl).type);
@@ -10180,12 +10185,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      Delete((yyvsp[0].decl).type);
 		    }
                   }
-#line 10184 "parser.tab.c" /* yacc.c:1652  */
+#line 10189 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 361:
-#line 5896 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 361: /* abstract_declarator: LAND direct_abstract_declarator  */
+#line 5899 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_rvalue_reference((yyval.decl).type);
@@ -10194,48 +10199,48 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      Delete((yyvsp[0].decl).type);
 		    }
                   }
-#line 10198 "parser.tab.c" /* yacc.c:1652  */
+#line 10203 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 362:
-#line 5905 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 362: /* abstract_declarator: AND  */
+#line 5908 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
                     (yyval.decl).id = 0;
                     (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
                     (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_reference((yyval.decl).type);
                   }
-#line 10210 "parser.tab.c" /* yacc.c:1652  */
+#line 10215 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 363:
-#line 5912 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 363: /* abstract_declarator: LAND  */
+#line 5915 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
                     (yyval.decl).id = 0;
                     (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
                     (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_rvalue_reference((yyval.decl).type);
                   }
-#line 10222 "parser.tab.c" /* yacc.c:1652  */
+#line 10227 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 364:
-#line 5919 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 364: /* abstract_declarator: idcolon DSTAR  */
+#line 5922 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  { 
 		    (yyval.decl).type = NewStringEmpty();
                     SwigType_add_memberpointer((yyval.decl).type,(yyvsp[-1].str));
                     (yyval.decl).id = 0;
                     (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
       	          }
-#line 10234 "parser.tab.c" /* yacc.c:1652  */
+#line 10239 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 365:
-#line 5926 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 365: /* abstract_declarator: idcolon DSTAR type_qualifier  */
+#line 5929 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 {
 		    (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_memberpointer((yyval.decl).type, (yyvsp[-2].str));
 		    SwigType_push((yyval.decl).type, (yyvsp[0].str));
@@ -10243,12 +10248,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		  }
-#line 10247 "parser.tab.c" /* yacc.c:1652  */
+#line 10252 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 366:
-#line 5934 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 366: /* abstract_declarator: pointer idcolon DSTAR  */
+#line 5937 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          { 
 		    SwigType *t = NewStringEmpty();
                     (yyval.decl).type = (yyvsp[-2].type);
 		    (yyval.decl).id = 0;
@@ -10258,12 +10263,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    SwigType_push((yyval.decl).type,t);
 		    Delete(t);
                   }
-#line 10262 "parser.tab.c" /* yacc.c:1652  */
+#line 10267 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 367:
-#line 5944 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 367: /* abstract_declarator: pointer idcolon DSTAR direct_abstract_declarator  */
+#line 5947 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                     { 
 		    (yyval.decl) = (yyvsp[0].decl);
 		    SwigType_add_memberpointer((yyvsp[-3].type),(yyvsp[-2].str));
 		    if ((yyval.decl).type) {
@@ -10272,12 +10277,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-3].type);
                   }
-#line 10276 "parser.tab.c" /* yacc.c:1652  */
+#line 10281 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 368:
-#line 5955 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 368: /* direct_abstract_declarator: direct_abstract_declarator LBRACKET RBRACKET  */
+#line 5958 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                          { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
 		    t = NewStringEmpty();
@@ -10288,12 +10293,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10292 "parser.tab.c" /* yacc.c:1652  */
+#line 10297 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 369:
-#line 5966 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 369: /* direct_abstract_declarator: direct_abstract_declarator LBRACKET expr RBRACKET  */
+#line 5969 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                      { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -10304,44 +10309,44 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10308 "parser.tab.c" /* yacc.c:1652  */
+#line 10313 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 370:
-#line 5977 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 370: /* direct_abstract_declarator: LBRACKET RBRACKET  */
+#line 5980 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      { 
 		    (yyval.decl).type = NewStringEmpty();
 		    (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		    SwigType_add_array((yyval.decl).type,"");
                   }
-#line 10320 "parser.tab.c" /* yacc.c:1652  */
+#line 10325 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 371:
-#line 5984 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 371: /* direct_abstract_declarator: LBRACKET expr RBRACKET  */
+#line 5987 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           { 
 		    (yyval.decl).type = NewStringEmpty();
 		    (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		    SwigType_add_array((yyval.decl).type,(yyvsp[-1].dtype).val);
 		  }
-#line 10332 "parser.tab.c" /* yacc.c:1652  */
+#line 10337 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 372:
-#line 5991 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 372: /* direct_abstract_declarator: LPAREN abstract_declarator RPAREN  */
+#line 5994 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                      {
                     (yyval.decl) = (yyvsp[-1].decl);
 		  }
-#line 10340 "parser.tab.c" /* yacc.c:1652  */
+#line 10345 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 373:
-#line 5994 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 373: /* direct_abstract_declarator: direct_abstract_declarator LPAREN parms RPAREN  */
+#line 5997 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                   {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -10358,12 +10363,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).have_parms = 1;
 		    }
 		  }
-#line 10362 "parser.tab.c" /* yacc.c:1652  */
+#line 10367 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 374:
-#line 6011 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 374: /* direct_abstract_declarator: direct_abstract_declarator LPAREN parms RPAREN cv_ref_qualifier  */
+#line 6014 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                    {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-4].decl);
 		    t = NewStringEmpty();
@@ -10381,248 +10386,248 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).have_parms = 1;
 		    }
 		  }
-#line 10385 "parser.tab.c" /* yacc.c:1652  */
+#line 10390 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 375:
-#line 6029 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 375: /* direct_abstract_declarator: LPAREN parms RPAREN  */
+#line 6032 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                        {
                     (yyval.decl).type = NewStringEmpty();
                     SwigType_add_function((yyval.decl).type,(yyvsp[-1].pl));
 		    (yyval.decl).parms = (yyvsp[-1].pl);
 		    (yyval.decl).have_parms = 1;
 		    (yyval.decl).id = 0;
                   }
-#line 10397 "parser.tab.c" /* yacc.c:1652  */
+#line 10402 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 376:
-#line 6039 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 376: /* pointer: STAR type_qualifier pointer  */
+#line 6042 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         { 
              (yyval.type) = NewStringEmpty();
              SwigType_add_pointer((yyval.type));
 	     SwigType_push((yyval.type),(yyvsp[-1].str));
 	     SwigType_push((yyval.type),(yyvsp[0].type));
 	     Delete((yyvsp[0].type));
            }
-#line 10409 "parser.tab.c" /* yacc.c:1652  */
+#line 10414 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 377:
-#line 6046 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 377: /* pointer: STAR pointer  */
+#line 6049 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
 	     (yyval.type) = NewStringEmpty();
 	     SwigType_add_pointer((yyval.type));
 	     SwigType_push((yyval.type),(yyvsp[0].type));
 	     Delete((yyvsp[0].type));
 	   }
-#line 10420 "parser.tab.c" /* yacc.c:1652  */
+#line 10425 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 378:
-#line 6052 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 378: /* pointer: STAR type_qualifier  */
+#line 6055 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { 
 	     (yyval.type) = NewStringEmpty();
 	     SwigType_add_pointer((yyval.type));
 	     SwigType_push((yyval.type),(yyvsp[0].str));
            }
-#line 10430 "parser.tab.c" /* yacc.c:1652  */
+#line 10435 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 379:
-#line 6057 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 379: /* pointer: STAR  */
+#line 6060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                  {
 	     (yyval.type) = NewStringEmpty();
 	     SwigType_add_pointer((yyval.type));
            }
-#line 10439 "parser.tab.c" /* yacc.c:1652  */
+#line 10444 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 380:
-#line 6064 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 380: /* cv_ref_qualifier: type_qualifier  */
+#line 6067 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		  (yyval.dtype).qualifier = (yyvsp[0].str);
 		  (yyval.dtype).refqualifier = 0;
 	       }
-#line 10448 "parser.tab.c" /* yacc.c:1652  */
+#line 10453 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 381:
-#line 6068 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 381: /* cv_ref_qualifier: type_qualifier ref_qualifier  */
+#line 6071 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                              {
 		  (yyval.dtype).qualifier = (yyvsp[-1].str);
 		  (yyval.dtype).refqualifier = (yyvsp[0].str);
 		  SwigType_push((yyval.dtype).qualifier, (yyvsp[0].str));
 	       }
-#line 10458 "parser.tab.c" /* yacc.c:1652  */
+#line 10463 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 382:
-#line 6073 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 382: /* cv_ref_qualifier: ref_qualifier  */
+#line 6076 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
 		  (yyval.dtype).qualifier = NewStringEmpty();
 		  (yyval.dtype).refqualifier = (yyvsp[0].str);
 		  SwigType_push((yyval.dtype).qualifier, (yyvsp[0].str));
 	       }
-#line 10468 "parser.tab.c" /* yacc.c:1652  */
+#line 10473 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 383:
-#line 6080 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 383: /* ref_qualifier: AND  */
+#line 6083 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                    {
 	          (yyval.str) = NewStringEmpty();
 	          SwigType_add_reference((yyval.str));
 	       }
-#line 10477 "parser.tab.c" /* yacc.c:1652  */
+#line 10482 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 384:
-#line 6084 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 384: /* ref_qualifier: LAND  */
+#line 6087 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      {
 	          (yyval.str) = NewStringEmpty();
 	          SwigType_add_rvalue_reference((yyval.str));
 	       }
-#line 10486 "parser.tab.c" /* yacc.c:1652  */
+#line 10491 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 385:
-#line 6090 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 385: /* type_qualifier: type_qualifier_raw  */
+#line 6093 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    {
 	          (yyval.str) = NewStringEmpty();
 	          if ((yyvsp[0].id)) SwigType_add_qualifier((yyval.str),(yyvsp[0].id));
                }
-#line 10495 "parser.tab.c" /* yacc.c:1652  */
+#line 10500 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 386:
-#line 6094 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 386: /* type_qualifier: type_qualifier_raw type_qualifier  */
+#line 6097 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                   {
 		  (yyval.str) = (yyvsp[0].str);
 	          if ((yyvsp[-1].id)) SwigType_add_qualifier((yyval.str),(yyvsp[-1].id));
                }
-#line 10504 "parser.tab.c" /* yacc.c:1652  */
+#line 10509 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 387:
-#line 6100 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "const"; }
-#line 10510 "parser.tab.c" /* yacc.c:1652  */
+  case 387: /* type_qualifier_raw: CONST_QUAL  */
+#line 6103 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { (yyval.id) = "const"; }
+#line 10515 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 388:
-#line 6101 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = "volatile"; }
-#line 10516 "parser.tab.c" /* yacc.c:1652  */
+  case 388: /* type_qualifier_raw: VOLATILE  */
+#line 6104 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.id) = "volatile"; }
+#line 10521 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 389:
-#line 6102 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = 0; }
-#line 10522 "parser.tab.c" /* yacc.c:1652  */
+  case 389: /* type_qualifier_raw: REGISTER  */
+#line 6105 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.id) = 0; }
+#line 10527 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 390:
-#line 6108 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 390: /* type: rawtype  */
+#line 6111 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                    (yyval.type) = (yyvsp[0].type);
                    Replace((yyval.type),"typename ","", DOH_REPLACE_ANY);
                 }
-#line 10531 "parser.tab.c" /* yacc.c:1652  */
+#line 10536 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 391:
-#line 6114 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 391: /* rawtype: type_qualifier type_right  */
+#line 6117 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           {
                    (yyval.type) = (yyvsp[0].type);
 	           SwigType_push((yyval.type),(yyvsp[-1].str));
                }
-#line 10540 "parser.tab.c" /* yacc.c:1652  */
+#line 10545 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 392:
-#line 6118 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type); }
-#line 10546 "parser.tab.c" /* yacc.c:1652  */
+  case 392: /* rawtype: type_right  */
+#line 6121 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { (yyval.type) = (yyvsp[0].type); }
+#line 10551 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 393:
-#line 6119 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 393: /* rawtype: type_right type_qualifier  */
+#line 6122 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           {
 		  (yyval.type) = (yyvsp[-1].type);
 	          SwigType_push((yyval.type),(yyvsp[0].str));
 	       }
-#line 10555 "parser.tab.c" /* yacc.c:1652  */
+#line 10560 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 394:
-#line 6123 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 394: /* rawtype: type_qualifier type_right type_qualifier  */
+#line 6126 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                          {
 		  (yyval.type) = (yyvsp[-1].type);
 	          SwigType_push((yyval.type),(yyvsp[0].str));
 	          SwigType_push((yyval.type),(yyvsp[-2].str));
 	       }
-#line 10565 "parser.tab.c" /* yacc.c:1652  */
+#line 10570 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 395:
-#line 6130 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type);
+  case 395: /* type_right: primitive_type  */
+#line 6133 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.type) = (yyvsp[0].type);
                   /* Printf(stdout,"primitive = '%s'\n", $$);*/
                }
-#line 10573 "parser.tab.c" /* yacc.c:1652  */
+#line 10578 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 396:
-#line 6133 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type); }
-#line 10579 "parser.tab.c" /* yacc.c:1652  */
+  case 396: /* type_right: TYPE_BOOL  */
+#line 6136 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.type) = (yyvsp[0].type); }
+#line 10584 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 397:
-#line 6134 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type); }
-#line 10585 "parser.tab.c" /* yacc.c:1652  */
+  case 397: /* type_right: TYPE_VOID  */
+#line 6137 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.type) = (yyvsp[0].type); }
+#line 10590 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 398:
-#line 6138 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = NewStringf("enum %s", (yyvsp[0].str)); }
-#line 10591 "parser.tab.c" /* yacc.c:1652  */
+  case 398: /* type_right: c_enum_key idcolon  */
+#line 6141 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { (yyval.type) = NewStringf("enum %s", (yyvsp[0].str)); }
+#line 10596 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 399:
-#line 6139 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.type) = (yyvsp[0].type); }
-#line 10597 "parser.tab.c" /* yacc.c:1652  */
+  case 399: /* type_right: TYPE_RAW  */
+#line 6142 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.type) = (yyvsp[0].type); }
+#line 10602 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 400:
-#line 6141 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 400: /* type_right: idcolon  */
+#line 6144 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 		  (yyval.type) = (yyvsp[0].str);
                }
-#line 10605 "parser.tab.c" /* yacc.c:1652  */
+#line 10610 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 401:
-#line 6144 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 401: /* type_right: cpptype idcolon  */
+#line 6147 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 { 
 		 (yyval.type) = NewStringf("%s %s", (yyvsp[-1].id), (yyvsp[0].str));
                }
-#line 10613 "parser.tab.c" /* yacc.c:1652  */
+#line 10618 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 402:
-#line 6147 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 402: /* type_right: decltype  */
+#line 6150 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                  (yyval.type) = (yyvsp[0].type);
                }
-#line 10621 "parser.tab.c" /* yacc.c:1652  */
+#line 10626 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 403:
-#line 6152 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 403: /* decltype: DECLTYPE LPAREN idcolon RPAREN  */
+#line 6155 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                {
                  Node *n = Swig_symbol_clookup((yyvsp[-1].str),0);
                  if (!n) {
 		   Swig_error(cparse_file, cparse_line, "Identifier %s not defined.\n", (yyvsp[-1].str));
@@ -10631,12 +10636,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                    (yyval.type) = Getattr(n, "type");
                  }
                }
-#line 10635 "parser.tab.c" /* yacc.c:1652  */
+#line 10640 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 404:
-#line 6163 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 404: /* primitive_type: primitive_type_list  */
+#line 6166 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
 		 if (!(yyvsp[0].ptype).type) (yyvsp[0].ptype).type = NewString("int");
 		 if ((yyvsp[0].ptype).us) {
 		   (yyval.type) = NewStringf("%s %s", (yyvsp[0].ptype).us, (yyvsp[0].ptype).type);
@@ -10659,20 +10664,20 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.type) = NewString("long long");
 		 }
                }
-#line 10663 "parser.tab.c" /* yacc.c:1652  */
+#line 10668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 405:
-#line 6188 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 405: /* primitive_type_list: type_specifier  */
+#line 6191 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     { 
                  (yyval.ptype) = (yyvsp[0].ptype);
                }
-#line 10671 "parser.tab.c" /* yacc.c:1652  */
+#line 10676 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 406:
-#line 6191 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 406: /* primitive_type_list: type_specifier primitive_type_list  */
+#line 6194 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
                     if ((yyvsp[-1].ptype).us && (yyvsp[0].ptype).us) {
 		      Swig_error(cparse_file, cparse_line, "Extra %s specifier.\n", (yyvsp[0].ptype).us);
 		    }
@@ -10723,144 +10728,144 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      }
 		    }
                }
-#line 10727 "parser.tab.c" /* yacc.c:1652  */
+#line 10732 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 407:
-#line 6245 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 407: /* type_specifier: TYPE_INT  */
+#line 6248 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { 
 		    (yyval.ptype).type = NewString("int");
                     (yyval.ptype).us = 0;
                }
-#line 10736 "parser.tab.c" /* yacc.c:1652  */
+#line 10741 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 408:
-#line 6249 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 408: /* type_specifier: TYPE_SHORT  */
+#line 6252 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { 
                     (yyval.ptype).type = NewString("short");
                     (yyval.ptype).us = 0;
                 }
-#line 10745 "parser.tab.c" /* yacc.c:1652  */
+#line 10750 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 409:
-#line 6253 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 409: /* type_specifier: TYPE_LONG  */
+#line 6256 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { 
                     (yyval.ptype).type = NewString("long");
                     (yyval.ptype).us = 0;
                 }
-#line 10754 "parser.tab.c" /* yacc.c:1652  */
+#line 10759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 410:
-#line 6257 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 410: /* type_specifier: TYPE_CHAR  */
+#line 6260 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { 
                     (yyval.ptype).type = NewString("char");
                     (yyval.ptype).us = 0;
                 }
-#line 10763 "parser.tab.c" /* yacc.c:1652  */
+#line 10768 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 411:
-#line 6261 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 411: /* type_specifier: TYPE_WCHAR  */
+#line 6264 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { 
                     (yyval.ptype).type = NewString("wchar_t");
                     (yyval.ptype).us = 0;
                 }
-#line 10772 "parser.tab.c" /* yacc.c:1652  */
+#line 10777 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 412:
-#line 6265 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 412: /* type_specifier: TYPE_FLOAT  */
+#line 6268 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { 
                     (yyval.ptype).type = NewString("float");
                     (yyval.ptype).us = 0;
                 }
-#line 10781 "parser.tab.c" /* yacc.c:1652  */
+#line 10786 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 413:
-#line 6269 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 413: /* type_specifier: TYPE_DOUBLE  */
+#line 6272 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             { 
                     (yyval.ptype).type = NewString("double");
                     (yyval.ptype).us = 0;
                 }
-#line 10790 "parser.tab.c" /* yacc.c:1652  */
+#line 10795 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 414:
-#line 6273 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 414: /* type_specifier: TYPE_SIGNED  */
+#line 6276 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             { 
                     (yyval.ptype).us = NewString("signed");
                     (yyval.ptype).type = 0;
                 }
-#line 10799 "parser.tab.c" /* yacc.c:1652  */
+#line 10804 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 415:
-#line 6277 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 415: /* type_specifier: TYPE_UNSIGNED  */
+#line 6280 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { 
                     (yyval.ptype).us = NewString("unsigned");
                     (yyval.ptype).type = 0;
                 }
-#line 10808 "parser.tab.c" /* yacc.c:1652  */
+#line 10813 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 416:
-#line 6281 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 416: /* type_specifier: TYPE_COMPLEX  */
+#line 6284 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { 
                     (yyval.ptype).type = NewString("complex");
                     (yyval.ptype).us = 0;
                 }
-#line 10817 "parser.tab.c" /* yacc.c:1652  */
+#line 10822 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 417:
-#line 6285 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 417: /* type_specifier: TYPE_NON_ISO_INT8  */
+#line 6288 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   { 
                     (yyval.ptype).type = NewString("__int8");
                     (yyval.ptype).us = 0;
                 }
-#line 10826 "parser.tab.c" /* yacc.c:1652  */
+#line 10831 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 418:
-#line 6289 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 418: /* type_specifier: TYPE_NON_ISO_INT16  */
+#line 6292 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { 
                     (yyval.ptype).type = NewString("__int16");
                     (yyval.ptype).us = 0;
                 }
-#line 10835 "parser.tab.c" /* yacc.c:1652  */
+#line 10840 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 419:
-#line 6293 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 419: /* type_specifier: TYPE_NON_ISO_INT32  */
+#line 6296 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { 
                     (yyval.ptype).type = NewString("__int32");
                     (yyval.ptype).us = 0;
                 }
-#line 10844 "parser.tab.c" /* yacc.c:1652  */
+#line 10849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 420:
-#line 6297 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 420: /* type_specifier: TYPE_NON_ISO_INT64  */
+#line 6300 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    { 
                     (yyval.ptype).type = NewString("__int64");
                     (yyval.ptype).us = 0;
                 }
-#line 10853 "parser.tab.c" /* yacc.c:1652  */
+#line 10858 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 421:
-#line 6303 "CParse/parser.y" /* yacc.c:1652  */
-    { /* scanner_check_typedef(); */ }
-#line 10859 "parser.tab.c" /* yacc.c:1652  */
+  case 421: /* $@13: %empty  */
+#line 6306 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                 { /* scanner_check_typedef(); */ }
+#line 10864 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 422:
-#line 6303 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 422: /* definetype: $@13 expr  */
+#line 6306 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                         {
                    (yyval.dtype) = (yyvsp[0].dtype);
 		   if ((yyval.dtype).type == T_STRING) {
 		     (yyval.dtype).rawval = NewStringf("\"%(escape)s\"",(yyval.dtype).val);
@@ -10876,36 +10881,36 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).final = 0;
 		   scanner_ignore_typedef();
                 }
-#line 10880 "parser.tab.c" /* yacc.c:1652  */
+#line 10885 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 423:
-#line 6319 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 423: /* definetype: default_delete  */
+#line 6322 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		  (yyval.dtype) = (yyvsp[0].dtype);
 		}
-#line 10888 "parser.tab.c" /* yacc.c:1652  */
+#line 10893 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 424:
-#line 6324 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 424: /* default_delete: deleted_definition  */
+#line 6327 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    {
 		  (yyval.dtype) = (yyvsp[0].dtype);
 		}
-#line 10896 "parser.tab.c" /* yacc.c:1652  */
+#line 10901 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 425:
-#line 6327 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 425: /* default_delete: explicit_default  */
+#line 6330 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   {
 		  (yyval.dtype) = (yyvsp[0].dtype);
 		}
-#line 10904 "parser.tab.c" /* yacc.c:1652  */
+#line 10909 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 426:
-#line 6333 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 426: /* deleted_definition: DELETE_KW  */
+#line 6336 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
 		  (yyval.dtype).val = NewString("delete");
 		  (yyval.dtype).rawval = 0;
 		  (yyval.dtype).type = T_STRING;
@@ -10917,12 +10922,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 		}
-#line 10921 "parser.tab.c" /* yacc.c:1652  */
+#line 10926 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 427:
-#line 6348 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 427: /* explicit_default: DEFAULT  */
+#line 6351 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
 		  (yyval.dtype).val = NewString("default");
 		  (yyval.dtype).rawval = 0;
 		  (yyval.dtype).type = T_STRING;
@@ -10934,43 +10939,43 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 		}
-#line 10938 "parser.tab.c" /* yacc.c:1652  */
+#line 10943 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 428:
-#line 6364 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (yyvsp[0].id); }
-#line 10944 "parser.tab.c" /* yacc.c:1652  */
+  case 428: /* ename: identifier  */
+#line 6367 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             { (yyval.id) = (yyvsp[0].id); }
+#line 10949 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 429:
-#line 6365 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (char *) 0;}
-#line 10950 "parser.tab.c" /* yacc.c:1652  */
+  case 429: /* ename: empty  */
+#line 6368 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.id) = (char *) 0;}
+#line 10955 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 434:
-#line 6378 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 434: /* enumlist: enumlist_item  */
+#line 6381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		  Setattr((yyvsp[0].node),"_last",(yyvsp[0].node));
 		  (yyval.node) = (yyvsp[0].node);
 		}
-#line 10959 "parser.tab.c" /* yacc.c:1652  */
+#line 10964 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 435:
-#line 6382 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 435: /* enumlist: enumlist_item DOXYGENPOSTSTRING  */
+#line 6385 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                  {
 		  Setattr((yyvsp[-1].node),"_last",(yyvsp[-1].node));
 		  set_comment((yyvsp[-1].node), (yyvsp[0].str));
 		  (yyval.node) = (yyvsp[-1].node);
 		}
-#line 10969 "parser.tab.c" /* yacc.c:1652  */
+#line 10974 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 436:
-#line 6387 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 436: /* enumlist: enumlist_item COMMA enumlist  */
+#line 6390 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                               {
 		  if ((yyvsp[0].node)) {
 		    set_nextSibling((yyvsp[-2].node), (yyvsp[0].node));
 		    Setattr((yyvsp[-2].node),"_last",Getattr((yyvsp[0].node),"_last"));
@@ -10978,12 +10983,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  }
 		  (yyval.node) = (yyvsp[-2].node);
 		}
-#line 10982 "parser.tab.c" /* yacc.c:1652  */
+#line 10987 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 437:
-#line 6395 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 437: /* enumlist: enumlist_item COMMA DOXYGENPOSTSTRING enumlist  */
+#line 6398 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
 		  if ((yyvsp[0].node)) {
 		    set_nextSibling((yyvsp[-3].node), (yyvsp[0].node));
 		    Setattr((yyvsp[-3].node),"_last",Getattr((yyvsp[0].node),"_last"));
@@ -10992,45 +10997,45 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  set_comment((yyvsp[-3].node), (yyvsp[-1].str));
 		  (yyval.node) = (yyvsp[-3].node);
 		}
-#line 10996 "parser.tab.c" /* yacc.c:1652  */
+#line 11001 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 438:
-#line 6404 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 438: /* enumlist: optional_ignored_defines  */
+#line 6407 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           {
 		  (yyval.node) = 0;
 		}
-#line 11004 "parser.tab.c" /* yacc.c:1652  */
+#line 11009 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 439:
-#line 6409 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 439: /* enumlist_item: optional_ignored_defines edecl_with_dox optional_ignored_defines  */
+#line 6412 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                   {
 		  (yyval.node) = (yyvsp[-1].node);
 		}
-#line 11012 "parser.tab.c" /* yacc.c:1652  */
+#line 11017 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 440:
-#line 6414 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 440: /* edecl_with_dox: edecl  */
+#line 6417 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
 		  (yyval.node) = (yyvsp[0].node);
 		}
-#line 11020 "parser.tab.c" /* yacc.c:1652  */
+#line 11025 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 441:
-#line 6417 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 441: /* edecl_with_dox: DOXYGENSTRING edecl  */
+#line 6420 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      {
 		  (yyval.node) = (yyvsp[0].node);
 		  set_comment((yyvsp[0].node), (yyvsp[-1].str));
 		}
-#line 11029 "parser.tab.c" /* yacc.c:1652  */
+#line 11034 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 442:
-#line 6423 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 442: /* edecl: identifier  */
+#line 6426 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		   SwigType *type = NewSwigType(T_INT);
 		   (yyval.node) = new_node("enumitem");
 		   Setattr((yyval.node),"name",(yyvsp[0].id));
@@ -11038,12 +11043,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   SetFlag((yyval.node),"feature:immutable");
 		   Delete(type);
 		 }
-#line 11042 "parser.tab.c" /* yacc.c:1652  */
+#line 11047 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 443:
-#line 6431 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 443: /* edecl: identifier EQUAL etype  */
+#line 6434 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {
 		   SwigType *type = NewSwigType((yyvsp[0].dtype).type == T_BOOL ? T_BOOL : ((yyvsp[0].dtype).type == T_CHAR ? T_CHAR : T_INT));
 		   (yyval.node) = new_node("enumitem");
 		   Setattr((yyval.node),"name",(yyvsp[-2].id));
@@ -11053,12 +11058,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   Setattr((yyval.node),"value",(yyvsp[-2].id));
 		   Delete(type);
                  }
-#line 11057 "parser.tab.c" /* yacc.c:1652  */
+#line 11062 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 444:
-#line 6443 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 444: /* etype: expr  */
+#line 6446 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
                    (yyval.dtype) = (yyvsp[0].dtype);
 		   if (((yyval.dtype).type != T_INT) && ((yyval.dtype).type != T_UINT) &&
 		       ((yyval.dtype).type != T_LONG) && ((yyval.dtype).type != T_ULONG) &&
@@ -11069,18 +11074,18 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     Swig_error(cparse_file,cparse_line,"Type error. Expecting an integral type\n");
 		   }
                 }
-#line 11073 "parser.tab.c" /* yacc.c:1652  */
+#line 11078 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 445:
-#line 6458 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11079 "parser.tab.c" /* yacc.c:1652  */
+  case 445: /* expr: valexpr  */
+#line 6461 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11084 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 446:
-#line 6459 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 446: /* expr: type  */
+#line 6462 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      {
 		 Node *n;
 		 (yyval.dtype).val = (yyvsp[0].type);
 		 (yyval.dtype).type = T_INT;
@@ -11097,100 +11102,100 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                    }
 		 }
                }
-#line 11101 "parser.tab.c" /* yacc.c:1652  */
+#line 11106 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 447:
-#line 6479 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 447: /* exprmem: ID ARROW ID  */
+#line 6482 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		 (yyval.dtype).val = NewStringf("%s->%s", (yyvsp[-2].id), (yyvsp[0].id));
 		 (yyval.dtype).type = 0;
 	       }
-#line 11110 "parser.tab.c" /* yacc.c:1652  */
+#line 11115 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 448:
-#line 6483 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 448: /* exprmem: exprmem ARROW ID  */
+#line 6486 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		 (yyval.dtype) = (yyvsp[-2].dtype);
 		 Printf((yyval.dtype).val, "->%s", (yyvsp[0].id));
 	       }
-#line 11119 "parser.tab.c" /* yacc.c:1652  */
+#line 11124 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 449:
-#line 6493 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 449: /* exprmem: exprmem PERIOD ID  */
+#line 6496 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   {
 		 (yyval.dtype) = (yyvsp[-2].dtype);
 		 Printf((yyval.dtype).val, ".%s", (yyvsp[0].id));
 	       }
-#line 11128 "parser.tab.c" /* yacc.c:1652  */
+#line 11133 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 450:
-#line 6499 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 450: /* valexpr: exprnum  */
+#line 6502 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                }
-#line 11136 "parser.tab.c" /* yacc.c:1652  */
+#line 11141 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 451:
-#line 6502 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 451: /* valexpr: exprmem  */
+#line 6505 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                }
-#line 11144 "parser.tab.c" /* yacc.c:1652  */
+#line 11149 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 452:
-#line 6505 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 452: /* valexpr: string  */
+#line 6508 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
 		    (yyval.dtype).val = (yyvsp[0].str);
                     (yyval.dtype).type = T_STRING;
                }
-#line 11153 "parser.tab.c" /* yacc.c:1652  */
+#line 11158 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 453:
-#line 6509 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 453: /* valexpr: SIZEOF LPAREN type parameter_declarator RPAREN  */
+#line 6512 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                {
 		  SwigType_push((yyvsp[-2].type),(yyvsp[-1].decl).type);
 		  (yyval.dtype).val = NewStringf("sizeof(%s)",SwigType_str((yyvsp[-2].type),0));
 		  (yyval.dtype).type = T_ULONG;
                }
-#line 11163 "parser.tab.c" /* yacc.c:1652  */
+#line 11168 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 454:
-#line 6514 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 454: /* valexpr: SIZEOF PERIOD PERIOD PERIOD LPAREN type parameter_declarator RPAREN  */
+#line 6517 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                                     {
 		  SwigType_push((yyvsp[-2].type),(yyvsp[-1].decl).type);
 		  (yyval.dtype).val = NewStringf("sizeof...(%s)",SwigType_str((yyvsp[-2].type),0));
 		  (yyval.dtype).type = T_ULONG;
                }
-#line 11173 "parser.tab.c" /* yacc.c:1652  */
+#line 11178 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 455:
-#line 6519 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11179 "parser.tab.c" /* yacc.c:1652  */
+  case 455: /* valexpr: exprcompound  */
+#line 6522 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11184 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 456:
-#line 6520 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 456: /* valexpr: wstring  */
+#line 6523 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 		    (yyval.dtype).val = (yyvsp[0].str);
 		    (yyval.dtype).rawval = NewStringf("L\"%s\"", (yyval.dtype).val);
                     (yyval.dtype).type = T_WSTRING;
 	       }
-#line 11189 "parser.tab.c" /* yacc.c:1652  */
+#line 11194 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 457:
-#line 6525 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 457: /* valexpr: CHARCONST  */
+#line 6528 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
 		  (yyval.dtype).val = NewString((yyvsp[0].str));
 		  if (Len((yyval.dtype).val)) {
 		    (yyval.dtype).rawval = NewStringf("'%(escape)s'", (yyval.dtype).val);
@@ -11204,12 +11209,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 	       }
-#line 11208 "parser.tab.c" /* yacc.c:1652  */
+#line 11213 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 458:
-#line 6539 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 458: /* valexpr: WCHARCONST  */
+#line 6542 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            {
 		  (yyval.dtype).val = NewString((yyvsp[0].str));
 		  if (Len((yyval.dtype).val)) {
 		    (yyval.dtype).rawval = NewStringf("L\'%s\'", (yyval.dtype).val);
@@ -11223,24 +11228,24 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 	       }
-#line 11227 "parser.tab.c" /* yacc.c:1652  */
+#line 11232 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 459:
-#line 6555 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 459: /* valexpr: LPAREN expr RPAREN  */
+#line 6558 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                {
 		    (yyval.dtype).val = NewStringf("(%s)",(yyvsp[-1].dtype).val);
 		    if ((yyvsp[-1].dtype).rawval) {
 		      (yyval.dtype).rawval = NewStringf("(%s)",(yyvsp[-1].dtype).rawval);
 		    }
 		    (yyval.dtype).type = (yyvsp[-1].dtype).type;
 	       }
-#line 11239 "parser.tab.c" /* yacc.c:1652  */
+#line 11244 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 460:
-#line 6565 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 460: /* valexpr: LPAREN expr RPAREN expr  */
+#line 6568 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
 		   switch ((yyvsp[-2].dtype).type) {
@@ -11258,48 +11263,48 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 }
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type, (yyvsp[0].dtype).type);
  	       }
-#line 11262 "parser.tab.c" /* yacc.c:1652  */
+#line 11267 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 461:
-#line 6583 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 461: /* valexpr: LPAREN expr pointer RPAREN expr  */
+#line 6586 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                            {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
 		   SwigType_push((yyvsp[-3].dtype).val,(yyvsp[-2].type));
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-3].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11274 "parser.tab.c" /* yacc.c:1652  */
+#line 11279 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 462:
-#line 6590 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 462: /* valexpr: LPAREN expr AND RPAREN expr  */
+#line 6593 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
 		   SwigType_add_reference((yyvsp[-3].dtype).val);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-3].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11286 "parser.tab.c" /* yacc.c:1652  */
+#line 11291 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 463:
-#line 6597 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 463: /* valexpr: LPAREN expr LAND RPAREN expr  */
+#line 6600 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                         {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
 		   SwigType_add_rvalue_reference((yyvsp[-3].dtype).val);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-3].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11298 "parser.tab.c" /* yacc.c:1652  */
+#line 11303 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 464:
-#line 6604 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 464: /* valexpr: LPAREN expr pointer AND RPAREN expr  */
+#line 6607 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
 		   SwigType_push((yyvsp[-4].dtype).val,(yyvsp[-3].type));
@@ -11307,12 +11312,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-4].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11311 "parser.tab.c" /* yacc.c:1652  */
+#line 11316 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 465:
-#line 6612 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 465: /* valexpr: LPAREN expr pointer LAND RPAREN expr  */
+#line 6615 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                 {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
 		   SwigType_push((yyvsp[-4].dtype).val,(yyvsp[-3].type));
@@ -11320,278 +11325,278 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-4].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11324 "parser.tab.c" /* yacc.c:1652  */
+#line 11329 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 466:
-#line 6620 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 466: /* valexpr: AND expr  */
+#line 6623 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
 		 (yyval.dtype) = (yyvsp[0].dtype);
                  (yyval.dtype).val = NewStringf("&%s",(yyvsp[0].dtype).val);
 	       }
-#line 11333 "parser.tab.c" /* yacc.c:1652  */
+#line 11338 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 467:
-#line 6624 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 467: /* valexpr: LAND expr  */
+#line 6627 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
 		 (yyval.dtype) = (yyvsp[0].dtype);
                  (yyval.dtype).val = NewStringf("&&%s",(yyvsp[0].dtype).val);
 	       }
-#line 11342 "parser.tab.c" /* yacc.c:1652  */
+#line 11347 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 468:
-#line 6628 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 468: /* valexpr: STAR expr  */
+#line 6631 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
 		 (yyval.dtype) = (yyvsp[0].dtype);
                  (yyval.dtype).val = NewStringf("*%s",(yyvsp[0].dtype).val);
 	       }
-#line 11351 "parser.tab.c" /* yacc.c:1652  */
+#line 11356 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 469:
-#line 6634 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11357 "parser.tab.c" /* yacc.c:1652  */
+  case 469: /* exprnum: NUM_INT  */
+#line 6637 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11362 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 470:
-#line 6635 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11363 "parser.tab.c" /* yacc.c:1652  */
+  case 470: /* exprnum: NUM_FLOAT  */
+#line 6638 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11368 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 471:
-#line 6636 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11369 "parser.tab.c" /* yacc.c:1652  */
+  case 471: /* exprnum: NUM_UNSIGNED  */
+#line 6639 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11374 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 472:
-#line 6637 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11375 "parser.tab.c" /* yacc.c:1652  */
+  case 472: /* exprnum: NUM_LONG  */
+#line 6640 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11380 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 473:
-#line 6638 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11381 "parser.tab.c" /* yacc.c:1652  */
+  case 473: /* exprnum: NUM_ULONG  */
+#line 6641 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11386 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 474:
-#line 6639 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11387 "parser.tab.c" /* yacc.c:1652  */
+  case 474: /* exprnum: NUM_LONGLONG  */
+#line 6642 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11392 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 475:
-#line 6640 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11393 "parser.tab.c" /* yacc.c:1652  */
+  case 475: /* exprnum: NUM_ULONGLONG  */
+#line 6643 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11398 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 476:
-#line 6641 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11399 "parser.tab.c" /* yacc.c:1652  */
+  case 476: /* exprnum: NUM_BOOL  */
+#line 6644 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.dtype) = (yyvsp[0].dtype); }
+#line 11404 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 477:
-#line 6644 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 477: /* exprcompound: expr PLUS expr  */
+#line 6647 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		 (yyval.dtype).val = NewStringf("%s+%s", COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11408 "parser.tab.c" /* yacc.c:1652  */
+#line 11413 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 478:
-#line 6648 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 478: /* exprcompound: expr MINUS expr  */
+#line 6651 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		 (yyval.dtype).val = NewStringf("%s-%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11417 "parser.tab.c" /* yacc.c:1652  */
+#line 11422 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 479:
-#line 6652 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 479: /* exprcompound: expr STAR expr  */
+#line 6655 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		 (yyval.dtype).val = NewStringf("%s*%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11426 "parser.tab.c" /* yacc.c:1652  */
+#line 11431 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 480:
-#line 6656 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 480: /* exprcompound: expr SLASH expr  */
+#line 6659 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		 (yyval.dtype).val = NewStringf("%s/%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11435 "parser.tab.c" /* yacc.c:1652  */
+#line 11440 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 481:
-#line 6660 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 481: /* exprcompound: expr MODULO expr  */
+#line 6663 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		 (yyval.dtype).val = NewStringf("%s%%%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11444 "parser.tab.c" /* yacc.c:1652  */
+#line 11449 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 482:
-#line 6664 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 482: /* exprcompound: expr AND expr  */
+#line 6667 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
 		 (yyval.dtype).val = NewStringf("%s&%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11453 "parser.tab.c" /* yacc.c:1652  */
+#line 11458 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 483:
-#line 6668 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 483: /* exprcompound: expr OR expr  */
+#line 6671 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
 		 (yyval.dtype).val = NewStringf("%s|%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11462 "parser.tab.c" /* yacc.c:1652  */
+#line 11467 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 484:
-#line 6672 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 484: /* exprcompound: expr XOR expr  */
+#line 6675 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
 		 (yyval.dtype).val = NewStringf("%s^%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11471 "parser.tab.c" /* yacc.c:1652  */
+#line 11476 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 485:
-#line 6676 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 485: /* exprcompound: expr LSHIFT expr  */
+#line 6679 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		 (yyval.dtype).val = NewStringf("%s << %s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote_type((yyvsp[-2].dtype).type);
 	       }
-#line 11480 "parser.tab.c" /* yacc.c:1652  */
+#line 11485 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 486:
-#line 6680 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 486: /* exprcompound: expr RSHIFT expr  */
+#line 6683 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		 (yyval.dtype).val = NewStringf("%s >> %s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote_type((yyvsp[-2].dtype).type);
 	       }
-#line 11489 "parser.tab.c" /* yacc.c:1652  */
+#line 11494 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 487:
-#line 6684 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 487: /* exprcompound: expr LAND expr  */
+#line 6687 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		 (yyval.dtype).val = NewStringf("%s&&%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11498 "parser.tab.c" /* yacc.c:1652  */
+#line 11503 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 488:
-#line 6688 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 488: /* exprcompound: expr LOR expr  */
+#line 6691 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               {
 		 (yyval.dtype).val = NewStringf("%s||%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11507 "parser.tab.c" /* yacc.c:1652  */
+#line 11512 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 489:
-#line 6692 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 489: /* exprcompound: expr EQUALTO expr  */
+#line 6695 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   {
 		 (yyval.dtype).val = NewStringf("%s==%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11516 "parser.tab.c" /* yacc.c:1652  */
+#line 11521 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 490:
-#line 6696 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 490: /* exprcompound: expr NOTEQUALTO expr  */
+#line 6699 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      {
 		 (yyval.dtype).val = NewStringf("%s!=%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11525 "parser.tab.c" /* yacc.c:1652  */
+#line 11530 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 491:
-#line 6710 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 491: /* exprcompound: expr GREATERTHANOREQUALTO expr  */
+#line 6713 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                {
 		 (yyval.dtype).val = NewStringf("%s >= %s", COMPOUND_EXPR_VAL((yyvsp[-2].dtype)), COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11534 "parser.tab.c" /* yacc.c:1652  */
+#line 11539 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 492:
-#line 6714 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 492: /* exprcompound: expr LESSTHANOREQUALTO expr  */
+#line 6717 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                             {
 		 (yyval.dtype).val = NewStringf("%s <= %s", COMPOUND_EXPR_VAL((yyvsp[-2].dtype)), COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11543 "parser.tab.c" /* yacc.c:1652  */
+#line 11548 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 493:
-#line 6718 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 493: /* exprcompound: expr QUESTIONMARK expr COLON expr  */
+#line 6721 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                      {
 		 (yyval.dtype).val = NewStringf("%s?%s:%s", COMPOUND_EXPR_VAL((yyvsp[-4].dtype)), COMPOUND_EXPR_VAL((yyvsp[-2].dtype)), COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 /* This may not be exactly right, but is probably good enough
 		  * for the purposes of parsing constant expressions. */
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type, (yyvsp[0].dtype).type);
 	       }
-#line 11554 "parser.tab.c" /* yacc.c:1652  */
+#line 11559 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 494:
-#line 6724 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 494: /* exprcompound: MINUS expr  */
+#line 6727 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
 		 (yyval.dtype).val = NewStringf("-%s",(yyvsp[0].dtype).val);
 		 (yyval.dtype).type = (yyvsp[0].dtype).type;
 	       }
-#line 11563 "parser.tab.c" /* yacc.c:1652  */
+#line 11568 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 495:
-#line 6728 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 495: /* exprcompound: PLUS expr  */
+#line 6731 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                        {
                  (yyval.dtype).val = NewStringf("+%s",(yyvsp[0].dtype).val);
 		 (yyval.dtype).type = (yyvsp[0].dtype).type;
 	       }
-#line 11572 "parser.tab.c" /* yacc.c:1652  */
+#line 11577 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 496:
-#line 6732 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 496: /* exprcompound: NOT expr  */
+#line 6735 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
 		 (yyval.dtype).val = NewStringf("~%s",(yyvsp[0].dtype).val);
 		 (yyval.dtype).type = (yyvsp[0].dtype).type;
 	       }
-#line 11581 "parser.tab.c" /* yacc.c:1652  */
+#line 11586 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 497:
-#line 6736 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 497: /* exprcompound: LNOT expr  */
+#line 6739 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
                  (yyval.dtype).val = NewStringf("!%s",COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = T_INT;
 	       }
-#line 11590 "parser.tab.c" /* yacc.c:1652  */
+#line 11595 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 498:
-#line 6740 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 498: /* exprcompound: type LPAREN  */
+#line 6743 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		 String *qty;
                  skip_balanced('(',')');
 		 qty = Swig_symbol_type_qualify((yyvsp[-1].type),0);
@@ -11605,62 +11610,62 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).type = T_INT;
 		 Delete(qty);
                }
-#line 11609 "parser.tab.c" /* yacc.c:1652  */
+#line 11614 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 499:
-#line 6756 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 499: /* ellipsis: PERIOD PERIOD PERIOD  */
+#line 6759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                     {
 	        (yyval.str) = NewString("...");
 	      }
-#line 11617 "parser.tab.c" /* yacc.c:1652  */
+#line 11622 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 500:
-#line 6761 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 500: /* variadic: ellipsis  */
+#line 6764 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
 	        (yyval.str) = (yyvsp[0].str);
 	      }
-#line 11625 "parser.tab.c" /* yacc.c:1652  */
+#line 11630 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 501:
-#line 6764 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 501: /* variadic: empty  */
+#line 6767 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                      {
 	        (yyval.str) = 0;
 	      }
-#line 11633 "parser.tab.c" /* yacc.c:1652  */
+#line 11638 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 502:
-#line 6769 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 502: /* inherit: raw_inherit  */
+#line 6772 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		 (yyval.bases) = (yyvsp[0].bases);
                }
-#line 11641 "parser.tab.c" /* yacc.c:1652  */
+#line 11646 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 503:
-#line 6774 "CParse/parser.y" /* yacc.c:1652  */
-    { inherit_list = 1; }
-#line 11647 "parser.tab.c" /* yacc.c:1652  */
+  case 503: /* $@14: %empty  */
+#line 6777 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { inherit_list = 1; }
+#line 11652 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 504:
-#line 6774 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.bases) = (yyvsp[0].bases); inherit_list = 0; }
-#line 11653 "parser.tab.c" /* yacc.c:1652  */
+  case 504: /* raw_inherit: COLON $@14 base_list  */
+#line 6777 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        { (yyval.bases) = (yyvsp[0].bases); inherit_list = 0; }
+#line 11658 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 505:
-#line 6775 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.bases) = 0; }
-#line 11659 "parser.tab.c" /* yacc.c:1652  */
+  case 505: /* raw_inherit: empty  */
+#line 6778 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.bases) = 0; }
+#line 11664 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 506:
-#line 6778 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 506: /* base_list: base_specifier  */
+#line 6781 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		   Hash *list = NewHash();
 		   Node *base = (yyvsp[0].node);
 		   Node *name = Getattr(base,"name");
@@ -11676,32 +11681,32 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   Append(Getattr(list,Getattr(base,"access")),name);
 	           (yyval.bases) = list;
                }
-#line 11680 "parser.tab.c" /* yacc.c:1652  */
+#line 11685 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 507:
-#line 6795 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 507: /* base_list: base_list COMMA base_specifier  */
+#line 6798 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                {
 		   Hash *list = (yyvsp[-2].bases);
 		   Node *base = (yyvsp[0].node);
 		   Node *name = Getattr(base,"name");
 		   Append(Getattr(list,Getattr(base,"access")),name);
                    (yyval.bases) = list;
                }
-#line 11692 "parser.tab.c" /* yacc.c:1652  */
+#line 11697 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 508:
-#line 6804 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 508: /* @15: %empty  */
+#line 6807 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                             {
 		 (yyval.intvalue) = cparse_line;
 	       }
-#line 11700 "parser.tab.c" /* yacc.c:1652  */
+#line 11705 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 509:
-#line 6806 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 509: /* base_specifier: opt_virtual @15 idcolon variadic  */
+#line 6809 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		 (yyval.node) = NewHash();
 		 Setfile((yyval.node),cparse_file);
 		 Setline((yyval.node),(yyvsp[-2].intvalue));
@@ -11717,20 +11722,20 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 if ((yyvsp[0].str))
 		   SetFlag((yyval.node), "variadic");
                }
-#line 11721 "parser.tab.c" /* yacc.c:1652  */
+#line 11726 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 510:
-#line 6822 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 510: /* @16: %empty  */
+#line 6825 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                              {
 		 (yyval.intvalue) = cparse_line;
 	       }
-#line 11729 "parser.tab.c" /* yacc.c:1652  */
+#line 11734 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 511:
-#line 6824 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 511: /* base_specifier: opt_virtual access_specifier @16 opt_virtual idcolon variadic  */
+#line 6827 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                              {
 		 (yyval.node) = NewHash();
 		 Setfile((yyval.node),cparse_file);
 		 Setline((yyval.node),(yyvsp[-3].intvalue));
@@ -11744,249 +11749,249 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 if ((yyvsp[0].str))
 		   SetFlag((yyval.node), "variadic");
                }
-#line 11748 "parser.tab.c" /* yacc.c:1652  */
+#line 11753 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 512:
-#line 6840 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (char*)"public"; }
-#line 11754 "parser.tab.c" /* yacc.c:1652  */
+  case 512: /* access_specifier: PUBLIC  */
+#line 6843 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.id) = (char*)"public"; }
+#line 11759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 513:
-#line 6841 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (char*)"private"; }
-#line 11760 "parser.tab.c" /* yacc.c:1652  */
+  case 513: /* access_specifier: PRIVATE  */
+#line 6844 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.id) = (char*)"private"; }
+#line 11765 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 514:
-#line 6842 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (char*)"protected"; }
-#line 11766 "parser.tab.c" /* yacc.c:1652  */
+  case 514: /* access_specifier: PROTECTED  */
+#line 6845 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           { (yyval.id) = (char*)"protected"; }
+#line 11771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 515:
-#line 6845 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 515: /* templcpptype: CLASS  */
+#line 6848 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { 
                    (yyval.id) = (char*)"class"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11775 "parser.tab.c" /* yacc.c:1652  */
+#line 11780 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 516:
-#line 6849 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 516: /* templcpptype: TYPENAME  */
+#line 6852 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { 
                    (yyval.id) = (char *)"typename"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11784 "parser.tab.c" /* yacc.c:1652  */
+#line 11789 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 517:
-#line 6853 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 517: /* templcpptype: CLASS PERIOD PERIOD PERIOD  */
+#line 6856 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            { 
                    (yyval.id) = (char *)"class..."; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11793 "parser.tab.c" /* yacc.c:1652  */
+#line 11798 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 518:
-#line 6857 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 518: /* templcpptype: TYPENAME PERIOD PERIOD PERIOD  */
+#line 6860 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                               { 
                    (yyval.id) = (char *)"typename..."; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11802 "parser.tab.c" /* yacc.c:1652  */
+#line 11807 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 519:
-#line 6863 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 519: /* cpptype: templcpptype  */
+#line 6866 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
                  (yyval.id) = (yyvsp[0].id);
                }
-#line 11810 "parser.tab.c" /* yacc.c:1652  */
+#line 11815 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 520:
-#line 6866 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 520: /* cpptype: STRUCT  */
+#line 6869 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { 
                    (yyval.id) = (char*)"struct"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11819 "parser.tab.c" /* yacc.c:1652  */
+#line 11824 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 521:
-#line 6870 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 521: /* cpptype: UNION  */
+#line 6873 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                    (yyval.id) = (char*)"union"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11828 "parser.tab.c" /* yacc.c:1652  */
+#line 11833 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 522:
-#line 6876 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 522: /* classkey: CLASS  */
+#line 6879 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                    (yyval.id) = (char*)"class";
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11837 "parser.tab.c" /* yacc.c:1652  */
+#line 11842 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 523:
-#line 6880 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 523: /* classkey: STRUCT  */
+#line 6883 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
                    (yyval.id) = (char*)"struct";
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11846 "parser.tab.c" /* yacc.c:1652  */
+#line 11851 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 524:
-#line 6884 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 524: /* classkey: UNION  */
+#line 6887 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                    (yyval.id) = (char*)"union";
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11855 "parser.tab.c" /* yacc.c:1652  */
+#line 11860 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 525:
-#line 6890 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 525: /* classkeyopt: classkey  */
+#line 6893 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
 		   (yyval.id) = (yyvsp[0].id);
                }
-#line 11863 "parser.tab.c" /* yacc.c:1652  */
+#line 11868 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 526:
-#line 6893 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 526: /* classkeyopt: empty  */
+#line 6896 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
 		   (yyval.id) = 0;
                }
-#line 11871 "parser.tab.c" /* yacc.c:1652  */
+#line 11876 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 529:
-#line 6902 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 529: /* virt_specifier_seq: OVERRIDE  */
+#line 6905 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
                    (yyval.str) = 0;
 	       }
-#line 11879 "parser.tab.c" /* yacc.c:1652  */
+#line 11884 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 530:
-#line 6905 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 530: /* virt_specifier_seq: FINAL  */
+#line 6908 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                    (yyval.str) = NewString("1");
 	       }
-#line 11887 "parser.tab.c" /* yacc.c:1652  */
+#line 11892 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 531:
-#line 6908 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 531: /* virt_specifier_seq: FINAL OVERRIDE  */
+#line 6911 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
                    (yyval.str) = NewString("1");
 	       }
-#line 11895 "parser.tab.c" /* yacc.c:1652  */
+#line 11900 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 532:
-#line 6911 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 532: /* virt_specifier_seq: OVERRIDE FINAL  */
+#line 6914 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
                    (yyval.str) = NewString("1");
 	       }
-#line 11903 "parser.tab.c" /* yacc.c:1652  */
+#line 11908 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 533:
-#line 6916 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 533: /* virt_specifier_seq_opt: virt_specifier_seq  */
+#line 6919 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            {
                    (yyval.str) = (yyvsp[0].str);
                }
-#line 11911 "parser.tab.c" /* yacc.c:1652  */
+#line 11916 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 534:
-#line 6919 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 534: /* virt_specifier_seq_opt: empty  */
+#line 6922 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
                    (yyval.str) = 0;
                }
-#line 11919 "parser.tab.c" /* yacc.c:1652  */
+#line 11924 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 535:
-#line 6924 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 535: /* exception_specification: THROW LPAREN parms RPAREN  */
+#line 6927 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
                     (yyval.dtype).throws = (yyvsp[-1].pl);
                     (yyval.dtype).throwf = NewString("1");
                     (yyval.dtype).nexcept = 0;
                     (yyval.dtype).final = 0;
 	       }
-#line 11930 "parser.tab.c" /* yacc.c:1652  */
+#line 11935 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 536:
-#line 6930 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 536: /* exception_specification: NOEXCEPT  */
+#line 6933 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = NewString("true");
                     (yyval.dtype).final = 0;
 	       }
-#line 11941 "parser.tab.c" /* yacc.c:1652  */
+#line 11946 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 537:
-#line 6936 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 537: /* exception_specification: virt_specifier_seq  */
+#line 6939 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                    {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = 0;
                     (yyval.dtype).final = (yyvsp[0].str);
 	       }
-#line 11952 "parser.tab.c" /* yacc.c:1652  */
+#line 11957 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 538:
-#line 6942 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 538: /* exception_specification: THROW LPAREN parms RPAREN virt_specifier_seq  */
+#line 6945 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                              {
                     (yyval.dtype).throws = (yyvsp[-2].pl);
                     (yyval.dtype).throwf = NewString("1");
                     (yyval.dtype).nexcept = 0;
                     (yyval.dtype).final = (yyvsp[0].str);
 	       }
-#line 11963 "parser.tab.c" /* yacc.c:1652  */
+#line 11968 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 539:
-#line 6948 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 539: /* exception_specification: NOEXCEPT virt_specifier_seq  */
+#line 6951 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                             {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = NewString("true");
                     (yyval.dtype).final = (yyvsp[0].str);
 	       }
-#line 11974 "parser.tab.c" /* yacc.c:1652  */
+#line 11979 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 540:
-#line 6954 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 540: /* exception_specification: NOEXCEPT LPAREN expr RPAREN  */
+#line 6957 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                             {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = (yyvsp[-1].dtype).val;
                     (yyval.dtype).final = 0;
 	       }
-#line 11985 "parser.tab.c" /* yacc.c:1652  */
+#line 11990 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 541:
-#line 6962 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 541: /* qualifiers_exception_specification: cv_ref_qualifier  */
+#line 6965 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                      {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = 0;
@@ -11994,40 +11999,40 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.dtype).qualifier = (yyvsp[0].dtype).qualifier;
                     (yyval.dtype).refqualifier = (yyvsp[0].dtype).refqualifier;
                }
-#line 11998 "parser.tab.c" /* yacc.c:1652  */
+#line 12003 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 542:
-#line 6970 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 542: /* qualifiers_exception_specification: exception_specification  */
+#line 6973 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                     (yyval.dtype).qualifier = 0;
                     (yyval.dtype).refqualifier = 0;
                }
-#line 12008 "parser.tab.c" /* yacc.c:1652  */
+#line 12013 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 543:
-#line 6975 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 543: /* qualifiers_exception_specification: cv_ref_qualifier exception_specification  */
+#line 6978 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                          {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                     (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
                     (yyval.dtype).refqualifier = (yyvsp[-1].dtype).refqualifier;
                }
-#line 12018 "parser.tab.c" /* yacc.c:1652  */
+#line 12023 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 544:
-#line 6982 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 544: /* cpp_const: qualifiers_exception_specification  */
+#line 6985 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                    {
                     (yyval.dtype) = (yyvsp[0].dtype);
                }
-#line 12026 "parser.tab.c" /* yacc.c:1652  */
+#line 12031 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 545:
-#line 6985 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 545: /* cpp_const: empty  */
+#line 6988 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { 
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = 0;
@@ -12035,12 +12040,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.dtype).qualifier = 0;
                     (yyval.dtype).refqualifier = 0;
                }
-#line 12039 "parser.tab.c" /* yacc.c:1652  */
+#line 12044 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 546:
-#line 6995 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 546: /* ctor_end: cpp_const ctor_initializer SEMI  */
+#line 6998 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 { 
                     Clear(scanner_ccode); 
                     (yyval.decl).have_parms = 0; 
                     (yyval.decl).defarg = 0; 
@@ -12051,12 +12056,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     if ((yyvsp[-2].dtype).qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-#line 12055 "parser.tab.c" /* yacc.c:1652  */
+#line 12060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 547:
-#line 7006 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 547: /* ctor_end: cpp_const ctor_initializer LBRACE  */
+#line 7009 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                   { 
                     skip_balanced('{','}'); 
                     (yyval.decl).have_parms = 0; 
                     (yyval.decl).defarg = 0; 
@@ -12067,12 +12072,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     if ((yyvsp[-2].dtype).qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-#line 12071 "parser.tab.c" /* yacc.c:1652  */
+#line 12076 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 548:
-#line 7017 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 548: /* ctor_end: LPAREN parms RPAREN SEMI  */
+#line 7020 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          { 
                     Clear(scanner_ccode); 
                     (yyval.decl).parms = (yyvsp[-2].pl); 
                     (yyval.decl).have_parms = 1; 
@@ -12082,12 +12087,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).nexcept = 0;
 		    (yyval.decl).final = 0;
                }
-#line 12086 "parser.tab.c" /* yacc.c:1652  */
+#line 12091 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 549:
-#line 7027 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 549: /* ctor_end: LPAREN parms RPAREN LBRACE  */
+#line 7030 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            {
                     skip_balanced('{','}'); 
                     (yyval.decl).parms = (yyvsp[-2].pl); 
                     (yyval.decl).have_parms = 1; 
@@ -12097,12 +12102,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.decl).nexcept = 0;
                     (yyval.decl).final = 0;
                }
-#line 12101 "parser.tab.c" /* yacc.c:1652  */
+#line 12106 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 550:
-#line 7037 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 550: /* ctor_end: EQUAL definetype SEMI  */
+#line 7040 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       { 
                     (yyval.decl).have_parms = 0; 
                     (yyval.decl).defarg = (yyvsp[-1].dtype).val; 
                     (yyval.decl).throws = 0;
@@ -12110,12 +12115,12 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.decl).nexcept = 0;
                     (yyval.decl).final = 0;
                }
-#line 12114 "parser.tab.c" /* yacc.c:1652  */
+#line 12119 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 551:
-#line 7045 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 551: /* ctor_end: exception_specification EQUAL default_delete SEMI  */
+#line 7048 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                                   {
                     (yyval.decl).have_parms = 0;
                     (yyval.decl).defarg = (yyvsp[-1].dtype).val;
                     (yyval.decl).throws = (yyvsp[-3].dtype).throws;
@@ -12125,350 +12130,350 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     if ((yyvsp[-3].dtype).qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-#line 12129 "parser.tab.c" /* yacc.c:1652  */
+#line 12134 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 558:
-#line 7067 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 558: /* mem_initializer: idcolon LPAREN  */
+#line 7070 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		  skip_balanced('(',')');
 		  Clear(scanner_ccode);
 		}
-#line 12138 "parser.tab.c" /* yacc.c:1652  */
+#line 12143 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 559:
-#line 7079 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 559: /* mem_initializer: idcolon LBRACE  */
+#line 7082 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
 		  skip_balanced('{','}');
 		  Clear(scanner_ccode);
 		}
-#line 12147 "parser.tab.c" /* yacc.c:1652  */
+#line 12152 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 560:
-#line 7085 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 560: /* less_valparms_greater: LESSTHAN valparms GREATERTHAN  */
+#line 7088 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                      {
                      String *s = NewStringEmpty();
                      SwigType_add_template(s,(yyvsp[-1].p));
                      (yyval.id) = Char(s);
 		     scanner_last_id(1);
                 }
-#line 12158 "parser.tab.c" /* yacc.c:1652  */
+#line 12163 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 561:
-#line 7094 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (yyvsp[0].id); }
-#line 12164 "parser.tab.c" /* yacc.c:1652  */
+  case 561: /* identifier: ID  */
+#line 7097 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                    { (yyval.id) = (yyvsp[0].id); }
+#line 12169 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 562:
-#line 7095 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = Swig_copy_string("override"); }
-#line 12170 "parser.tab.c" /* yacc.c:1652  */
+  case 562: /* identifier: OVERRIDE  */
+#line 7098 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.id) = Swig_copy_string("override"); }
+#line 12175 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 563:
-#line 7096 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = Swig_copy_string("final"); }
-#line 12176 "parser.tab.c" /* yacc.c:1652  */
+  case 563: /* identifier: FINAL  */
+#line 7099 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.id) = Swig_copy_string("final"); }
+#line 12181 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 564:
-#line 7099 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (yyvsp[0].id); }
-#line 12182 "parser.tab.c" /* yacc.c:1652  */
+  case 564: /* idstring: identifier  */
+#line 7102 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            { (yyval.id) = (yyvsp[0].id); }
+#line 12187 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 565:
-#line 7100 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = Char((yyvsp[0].dtype).val); }
-#line 12188 "parser.tab.c" /* yacc.c:1652  */
+  case 565: /* idstring: default_delete  */
+#line 7103 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                { (yyval.id) = Char((yyvsp[0].dtype).val); }
+#line 12193 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 566:
-#line 7101 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = Char((yyvsp[0].str)); }
-#line 12194 "parser.tab.c" /* yacc.c:1652  */
+  case 566: /* idstring: string  */
+#line 7104 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.id) = Char((yyvsp[0].str)); }
+#line 12199 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 567:
-#line 7104 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = (yyvsp[0].id); }
-#line 12200 "parser.tab.c" /* yacc.c:1652  */
+  case 567: /* idstringopt: idstring  */
+#line 7107 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          { (yyval.id) = (yyvsp[0].id); }
+#line 12205 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 568:
-#line 7105 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.id) = 0; }
-#line 12206 "parser.tab.c" /* yacc.c:1652  */
+  case 568: /* idstringopt: empty  */
+#line 7108 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.id) = 0; }
+#line 12211 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 569:
-#line 7108 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 569: /* idcolon: idtemplate idcolontail  */
+#line 7111 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                        { 
                   (yyval.str) = 0;
 		  if (!(yyval.str)) (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str),(yyvsp[0].str));
       	          Delete((yyvsp[0].str));
                }
-#line 12216 "parser.tab.c" /* yacc.c:1652  */
+#line 12221 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 570:
-#line 7113 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 570: /* idcolon: NONID DCOLON idtemplatetemplate idcolontail  */
+#line 7116 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                             {
 		 (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].str),(yyvsp[0].str));
                  Delete((yyvsp[0].str));
                }
-#line 12225 "parser.tab.c" /* yacc.c:1652  */
+#line 12230 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 571:
-#line 7117 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 571: /* idcolon: idtemplate  */
+#line 7120 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            {
 		 (yyval.str) = NewString((yyvsp[0].str));
    	       }
-#line 12233 "parser.tab.c" /* yacc.c:1652  */
+#line 12238 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 572:
-#line 7120 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 572: /* idcolon: NONID DCOLON idtemplatetemplate  */
+#line 7123 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 {
 		 (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12241 "parser.tab.c" /* yacc.c:1652  */
+#line 12246 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 573:
-#line 7123 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 573: /* idcolon: OPERATOR  */
+#line 7126 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                  (yyval.str) = NewStringf("%s", (yyvsp[0].str));
 	       }
-#line 12249 "parser.tab.c" /* yacc.c:1652  */
+#line 12254 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 574:
-#line 7126 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 574: /* idcolon: OPERATOR less_valparms_greater  */
+#line 7129 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                {
                  (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str), (yyvsp[0].id));
 	       }
-#line 12257 "parser.tab.c" /* yacc.c:1652  */
+#line 12262 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 575:
-#line 7129 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 575: /* idcolon: NONID DCOLON OPERATOR  */
+#line 7132 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
                  (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12265 "parser.tab.c" /* yacc.c:1652  */
+#line 12270 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 576:
-#line 7134 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 576: /* idcolontail: DCOLON idtemplatetemplate idcolontail  */
+#line 7137 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                       {
                    (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].str),(yyvsp[0].str));
 		   Delete((yyvsp[0].str));
                }
-#line 12274 "parser.tab.c" /* yacc.c:1652  */
+#line 12279 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 577:
-#line 7138 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 577: /* idcolontail: DCOLON idtemplatetemplate  */
+#line 7141 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                           {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12282 "parser.tab.c" /* yacc.c:1652  */
+#line 12287 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 578:
-#line 7141 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 578: /* idcolontail: DCOLON OPERATOR  */
+#line 7144 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12290 "parser.tab.c" /* yacc.c:1652  */
+#line 12295 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 579:
-#line 7148 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 579: /* idcolontail: DCNOT idtemplate  */
+#line 7151 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		 (yyval.str) = NewStringf("::~%s",(yyvsp[0].str));
                }
-#line 12298 "parser.tab.c" /* yacc.c:1652  */
+#line 12303 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 580:
-#line 7154 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 580: /* idtemplate: identifier  */
+#line 7157 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                           {
 		(yyval.str) = NewStringf("%s", (yyvsp[0].id));
 	      }
-#line 12306 "parser.tab.c" /* yacc.c:1652  */
+#line 12311 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 581:
-#line 7157 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 581: /* idtemplate: identifier less_valparms_greater  */
+#line 7160 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                 {
 		(yyval.str) = NewStringf("%s%s", (yyvsp[-1].id), (yyvsp[0].id));
 	      }
-#line 12314 "parser.tab.c" /* yacc.c:1652  */
+#line 12319 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 582:
-#line 7162 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 582: /* idtemplatetemplate: idtemplate  */
+#line 7165 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                {
 		(yyval.str) = (yyvsp[0].str);
 	      }
-#line 12322 "parser.tab.c" /* yacc.c:1652  */
+#line 12327 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 583:
-#line 7165 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 583: /* idtemplatetemplate: TEMPLATE identifier less_valparms_greater  */
+#line 7168 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                          {
 		(yyval.str) = NewStringf("%s%s", (yyvsp[-1].id), (yyvsp[0].id));
 	      }
-#line 12330 "parser.tab.c" /* yacc.c:1652  */
+#line 12335 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 584:
-#line 7171 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 584: /* idcolonnt: identifier idcolontailnt  */
+#line 7174 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
                   (yyval.str) = 0;
 		  if (!(yyval.str)) (yyval.str) = NewStringf("%s%s", (yyvsp[-1].id),(yyvsp[0].str));
       	          Delete((yyvsp[0].str));
                }
-#line 12340 "parser.tab.c" /* yacc.c:1652  */
+#line 12345 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 585:
-#line 7176 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 585: /* idcolonnt: NONID DCOLON identifier idcolontailnt  */
+#line 7179 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                       {
 		 (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].id),(yyvsp[0].str));
                  Delete((yyvsp[0].str));
                }
-#line 12349 "parser.tab.c" /* yacc.c:1652  */
+#line 12354 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 586:
-#line 7180 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 586: /* idcolonnt: identifier  */
+#line 7183 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                            {
 		 (yyval.str) = NewString((yyvsp[0].id));
    	       }
-#line 12357 "parser.tab.c" /* yacc.c:1652  */
+#line 12362 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 587:
-#line 7183 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 587: /* idcolonnt: NONID DCOLON identifier  */
+#line 7186 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                         {
 		 (yyval.str) = NewStringf("::%s",(yyvsp[0].id));
                }
-#line 12365 "parser.tab.c" /* yacc.c:1652  */
+#line 12370 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 588:
-#line 7186 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 588: /* idcolonnt: OPERATOR  */
+#line 7189 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                  (yyval.str) = NewString((yyvsp[0].str));
 	       }
-#line 12373 "parser.tab.c" /* yacc.c:1652  */
+#line 12378 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 589:
-#line 7189 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 589: /* idcolonnt: NONID DCOLON OPERATOR  */
+#line 7192 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
                  (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12381 "parser.tab.c" /* yacc.c:1652  */
+#line 12386 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 590:
-#line 7194 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 590: /* idcolontailnt: DCOLON identifier idcolontailnt  */
+#line 7197 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                  {
                    (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].id),(yyvsp[0].str));
 		   Delete((yyvsp[0].str));
                }
-#line 12390 "parser.tab.c" /* yacc.c:1652  */
+#line 12395 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 591:
-#line 7198 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 591: /* idcolontailnt: DCOLON identifier  */
+#line 7201 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                   {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].id));
                }
-#line 12398 "parser.tab.c" /* yacc.c:1652  */
+#line 12403 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 592:
-#line 7201 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 592: /* idcolontailnt: DCOLON OPERATOR  */
+#line 7204 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                 {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12406 "parser.tab.c" /* yacc.c:1652  */
+#line 12411 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 593:
-#line 7204 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 593: /* idcolontailnt: DCNOT identifier  */
+#line 7207 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
 		 (yyval.str) = NewStringf("::~%s",(yyvsp[0].id));
                }
-#line 12414 "parser.tab.c" /* yacc.c:1652  */
+#line 12419 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 594:
-#line 7210 "CParse/parser.y" /* yacc.c:1652  */
-    { 
+  case 594: /* string: string STRING  */
+#line 7213 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                               { 
                    (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str), (yyvsp[0].id));
                }
-#line 12422 "parser.tab.c" /* yacc.c:1652  */
+#line 12427 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 595:
-#line 7213 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.str) = NewString((yyvsp[0].id));}
-#line 12428 "parser.tab.c" /* yacc.c:1652  */
+  case 595: /* string: STRING  */
+#line 7216 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        { (yyval.str) = NewString((yyvsp[0].id));}
+#line 12433 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 596:
-#line 7216 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 596: /* wstring: wstring WSTRING  */
+#line 7219 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                  {
                    (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str), (yyvsp[0].id));
                }
-#line 12436 "parser.tab.c" /* yacc.c:1652  */
+#line 12441 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 597:
-#line 7224 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.str) = NewString((yyvsp[0].id));}
-#line 12442 "parser.tab.c" /* yacc.c:1652  */
+  case 597: /* wstring: WSTRING  */
+#line 7227 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         { (yyval.str) = NewString((yyvsp[0].id));}
+#line 12447 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 598:
-#line 7227 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 598: /* stringbrace: string  */
+#line 7230 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
 		 (yyval.str) = (yyvsp[0].str);
                }
-#line 12450 "parser.tab.c" /* yacc.c:1652  */
+#line 12455 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 599:
-#line 7230 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 599: /* stringbrace: LBRACE  */
+#line 7233 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
                   skip_balanced('{','}');
 		  (yyval.str) = NewString(scanner_ccode);
                }
-#line 12459 "parser.tab.c" /* yacc.c:1652  */
+#line 12464 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 600:
-#line 7234 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 600: /* stringbrace: HBLOCK  */
+#line 7237 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       {
 		 (yyval.str) = (yyvsp[0].str);
               }
-#line 12467 "parser.tab.c" /* yacc.c:1652  */
+#line 12472 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 601:
-#line 7239 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 601: /* options: LPAREN kwargs RPAREN  */
+#line 7242 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                      {
                   Hash *n;
                   (yyval.node) = NewHash();
                   n = (yyvsp[-1].node);
@@ -12481,92 +12486,117 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     n = nextSibling(n);
 		  }
                }
-#line 12485 "parser.tab.c" /* yacc.c:1652  */
+#line 12490 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 602:
-#line 7252 "CParse/parser.y" /* yacc.c:1652  */
-    { (yyval.node) = 0; }
-#line 12491 "parser.tab.c" /* yacc.c:1652  */
+  case 602: /* options: empty  */
+#line 7255 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.node) = 0; }
+#line 12496 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 603:
-#line 7256 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 603: /* options_ex: COMMA kwargs  */
+#line 7257 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                              {
+                  Hash *n;
+                  (yyval.node) = NewHash();
+                  n = (yyvsp[0].node);
+                  while(n) {
+                     String *name, *value;
+                     name = Getattr(n,"name");
+                     value = Getattr(n,"value");
+		     if (!value) value = (String *) "1";
+                     Setattr((yyval.node),name, value);
+		     n = nextSibling(n);
+		  }
+               }
+#line 12514 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
+    break;
+
+  case 604: /* options_ex: empty  */
+#line 7270 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                       { (yyval.node) = 0; }
+#line 12520 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
+    break;
+
+  case 605: /* kwargs: idstring EQUAL stringnum  */
+#line 7274 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                          {
 		 (yyval.node) = NewHash();
 		 Setattr((yyval.node),"name",(yyvsp[-2].id));
 		 Setattr((yyval.node),"value",(yyvsp[0].str));
                }
-#line 12501 "parser.tab.c" /* yacc.c:1652  */
+#line 12530 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 604:
-#line 7261 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 606: /* kwargs: idstring EQUAL stringnum COMMA kwargs  */
+#line 7279 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                       {
 		 (yyval.node) = NewHash();
 		 Setattr((yyval.node),"name",(yyvsp[-4].id));
 		 Setattr((yyval.node),"value",(yyvsp[-2].str));
 		 set_nextSibling((yyval.node),(yyvsp[0].node));
                }
-#line 12512 "parser.tab.c" /* yacc.c:1652  */
+#line 12541 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 605:
-#line 7267 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 607: /* kwargs: idstring  */
+#line 7285 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                          {
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"name",(yyvsp[0].id));
 	       }
-#line 12521 "parser.tab.c" /* yacc.c:1652  */
+#line 12550 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 606:
-#line 7271 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 608: /* kwargs: idstring COMMA kwargs  */
+#line 7289 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                       {
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"name",(yyvsp[-2].id));
                  set_nextSibling((yyval.node),(yyvsp[0].node));
                }
-#line 12531 "parser.tab.c" /* yacc.c:1652  */
+#line 12560 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 607:
-#line 7276 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 609: /* kwargs: idstring EQUAL stringtype  */
+#line 7294 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                            {
                  (yyval.node) = (yyvsp[0].node);
 		 Setattr((yyval.node),"name",(yyvsp[-2].id));
                }
-#line 12540 "parser.tab.c" /* yacc.c:1652  */
+#line 12569 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 608:
-#line 7280 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 610: /* kwargs: idstring EQUAL stringtype COMMA kwargs  */
+#line 7298 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                                                        {
                  (yyval.node) = (yyvsp[-2].node);
 		 Setattr((yyval.node),"name",(yyvsp[-4].id));
 		 set_nextSibling((yyval.node),(yyvsp[0].node));
                }
-#line 12550 "parser.tab.c" /* yacc.c:1652  */
+#line 12579 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 609:
-#line 7287 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 611: /* stringnum: string  */
+#line 7305 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                        {
 		 (yyval.str) = (yyvsp[0].str);
                }
-#line 12558 "parser.tab.c" /* yacc.c:1652  */
+#line 12587 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
-  case 610:
-#line 7290 "CParse/parser.y" /* yacc.c:1652  */
-    {
+  case 612: /* stringnum: exprnum  */
+#line 7308 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+                         {
                  (yyval.str) = Char((yyvsp[0].dtype).val);
                }
-#line 12566 "parser.tab.c" /* yacc.c:1652  */
+#line 12595 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
 
-#line 12570 "parser.tab.c" /* yacc.c:1652  */
+#line 12599 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
+
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -12580,11 +12610,10 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
      case of YYERROR or YYBACKUP, subsequent parser actions might lead
      to an incorrect destructor call or verbose syntax error message
      before the lookahead is translated.  */
-  YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
+  YY_SYMBOL_PRINT ("-> $$ =", YY_CAST (yysymbol_kind_t, yyr1[yyn]), &yyval, &yyloc);
 
   YYPOPSTACK (yylen);
   yylen = 0;
-  YY_STACK_PRINT (yyss, yyssp);
 
   *++yyvsp = yyval;
 
@@ -12608,49 +12637,13 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 yyerrlab:
   /* Make sure we have latest lookahead translation.  See comments at
      user semantic actions for why this is necessary.  */
-  yytoken = yychar == YYEMPTY ? YYEMPTY : YYTRANSLATE (yychar);
-
+  yytoken = yychar == YYEMPTY ? YYSYMBOL_YYEMPTY : YYTRANSLATE (yychar);
   /* If not already recovering from an error, report this error.  */
   if (!yyerrstatus)
     {
       ++yynerrs;
-#if ! YYERROR_VERBOSE
       yyerror (YY_("syntax error"));
-#else
-# define YYSYNTAX_ERROR yysyntax_error (&yymsg_alloc, &yymsg, \
-                                        yyssp, yytoken)
-      {
-        char const *yymsgp = YY_("syntax error");
-        int yysyntax_error_status;
-        yysyntax_error_status = YYSYNTAX_ERROR;
-        if (yysyntax_error_status == 0)
-          yymsgp = yymsg;
-        else if (yysyntax_error_status == 1)
-          {
-            if (yymsg != yymsgbuf)
-              YYSTACK_FREE (yymsg);
-            yymsg = (char *) YYSTACK_ALLOC (yymsg_alloc);
-            if (!yymsg)
-              {
-                yymsg = yymsgbuf;
-                yymsg_alloc = sizeof yymsgbuf;
-                yysyntax_error_status = 2;
-              }
-            else
-              {
-                yysyntax_error_status = YYSYNTAX_ERROR;
-                yymsgp = yymsg;
-              }
-          }
-        yyerror (yymsgp);
-        if (yysyntax_error_status == 2)
-          goto yyexhaustedlab;
-      }
-# undef YYSYNTAX_ERROR
-#endif
     }
-
-
 
   if (yyerrstatus == 3)
     {
@@ -12700,13 +12693,14 @@ yyerrorlab:
 yyerrlab1:
   yyerrstatus = 3;      /* Each real token shifted decrements this.  */
 
+  /* Pop stack until we find a state that shifts the error token.  */
   for (;;)
     {
       yyn = yypact[yystate];
       if (!yypact_value_is_default (yyn))
         {
-          yyn += YYTERROR;
-          if (0 <= yyn && yyn <= YYLAST && yycheck[yyn] == YYTERROR)
+          yyn += YYSYMBOL_YYerror;
+          if (0 <= yyn && yyn <= YYLAST && yycheck[yyn] == YYSYMBOL_YYerror)
             {
               yyn = yytable[yyn];
               if (0 < yyn)
@@ -12720,7 +12714,7 @@ yyerrlab1:
 
 
       yydestruct ("Error: popping",
-                  yystos[yystate], yyvsp);
+                  YY_ACCESSING_SYMBOL (yystate), yyvsp);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -12732,7 +12726,7 @@ yyerrlab1:
 
 
   /* Shift the error token.  */
-  YY_SYMBOL_PRINT ("Shifting", yystos[yyn], yyvsp, yylsp);
+  YY_SYMBOL_PRINT ("Shifting", YY_ACCESSING_SYMBOL (yyn), yyvsp, yylsp);
 
   yystate = yyn;
   goto yynewstate;
@@ -12754,20 +12748,20 @@ yyabortlab:
   goto yyreturn;
 
 
-#if !defined yyoverflow || YYERROR_VERBOSE
+#if !defined yyoverflow
 /*-------------------------------------------------.
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
 yyexhaustedlab:
   yyerror (YY_("memory exhausted"));
   yyresult = 2;
-  /* Fall through.  */
+  goto yyreturn;
 #endif
 
 
-/*-----------------------------------------------------.
-| yyreturn -- parsing is finished, return the result.  |
-`-----------------------------------------------------*/
+/*-------------------------------------------------------.
+| yyreturn -- parsing is finished, clean up and return.  |
+`-------------------------------------------------------*/
 yyreturn:
   if (yychar != YYEMPTY)
     {
@@ -12784,20 +12778,18 @@ yyreturn:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-                  yystos[*yyssp], yyvsp);
+                  YY_ACCESSING_SYMBOL (+*yyssp), yyvsp);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
   if (yyss != yyssa)
     YYSTACK_FREE (yyss);
 #endif
-#if YYERROR_VERBOSE
-  if (yymsg != yymsgbuf)
-    YYSTACK_FREE (yymsg);
-#endif
+
   return yyresult;
 }
-#line 7297 "CParse/parser.y" /* yacc.c:1918  */
+
+#line 7315 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
 
 
 SwigType *Swig_cparse_type(String *s) {
