@@ -124,6 +124,7 @@ Thumbs.db
 *.DotSettings.user
 __pycache__
 *.csproj.user
+*venv
 
 # Doxygen mess from absence of 'dot' dependency
 CMakeDoxyFile.in
