@@ -1658,7 +1658,7 @@ static String *add_qualifier_to_declarator(SwigType *type, SwigType *qualifier) 
 %type <node>     cpp_constructor_decl cpp_destructor_decl cpp_protection_decl cpp_conversion_operator cpp_static_assert;
 %type <node>     cpp_swig_directive cpp_template_possible cpp_opt_declarators ;
 %type <node>     cpp_using_decl cpp_namespace_decl cpp_catch_decl cpp_lambda_decl;
-%type <node>     kwargs options;
+%type <node>     kwargs options options_ex;
 
 /* Misc */
 %type <id>       identifier;
@@ -2248,26 +2248,29 @@ insert_directive : HBLOCK {
                  $$ = new_node("insert");
 		 Setattr($$,"code",$1);
 	       }
-               | INSERT LPAREN idstring RPAREN string {
+               | INSERT LPAREN idstring options_ex RPAREN string {
 		 String *code = NewStringEmpty();
 		 $$ = new_node("insert");
 		 Setattr($$,"section",$3);
 		 Setattr($$,"code",code);
-		 if (Swig_insert_file($5,code) < 0) {
-		   Swig_error(cparse_file, cparse_line, "Couldn't find '%s'.\n", $5);
+		 Setattr($$,"options",$4);
+		 if (Swig_insert_file($6,code) < 0) {
+		   Swig_error(cparse_file, cparse_line, "Couldn't find '%s'.\n", $6);
 		   $$ = 0;
 		 } 
                }
-               | INSERT LPAREN idstring RPAREN HBLOCK {
+               | INSERT LPAREN idstring options_ex RPAREN HBLOCK {
 		 $$ = new_node("insert");
 		 Setattr($$,"section",$3);
-		 Setattr($$,"code",$5);
+		 Setattr($$,"options",$4);
+		 Setattr($$,"code",$6);
                }
-               | INSERT LPAREN idstring RPAREN LBRACE {
+               | INSERT LPAREN idstring options_ex RPAREN LBRACE {
 		 String *code;
                  skip_balanced('{','}');
 		 $$ = new_node("insert");
 		 Setattr($$,"section",$3);
+		 Setattr($$,"options",$4);
 		 Delitem(scanner_ccode,0);
 		 Delitem(scanner_ccode,DOH_END);
 		 code = Copy(scanner_ccode);
@@ -7251,6 +7254,21 @@ options        : LPAREN kwargs RPAREN {
                }   
                | empty { $$ = 0; };
 
+options_ex     : COMMA kwargs {
+                  Hash *n;
+                  $$ = NewHash();
+                  n = $2;
+                  while(n) {
+                     String *name, *value;
+                     name = Getattr(n,"name");
+                     value = Getattr(n,"value");
+		     if (!value) value = (String *) "1";
+                     Setattr($$,name, value);
+		     n = nextSibling(n);
+		  }
+               }
+               | empty { $$ = 0; }
+               ;
  
 /* Keyword arguments */
 kwargs         : idstring EQUAL stringnum {
