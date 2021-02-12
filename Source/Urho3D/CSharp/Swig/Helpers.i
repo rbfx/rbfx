@@ -1,6 +1,8 @@
 // Various marshalling helpers
 %include <typemaps.i>
 
+#define %nocsattribute %feature("nocsattribute", "1")
+
 %typemap(ctype)  char* strdup "char*"
 %typemap(imtype) char* strdup "global::System.IntPtr"
 %typemap(cstype) char* strdup "global::System.IntPtr"
@@ -44,33 +46,27 @@ int strlen(const char* void_ptr_string);
     }
   }
 
-%define CS_CONSTANT(fqn, name, value)
-  %csconst(1) fqn;
-  %csconstvalue(value) fqn;
-  %rename(name) fqn;
-%enddef
+%define %stringify(token) #token %enddef
 
-%define %csattribute(Class, AttributeType, AttributeAccess, AttributeName, GetAccess, GetMethod, SetAccess, SetMethod)
-  #if #GetMethod != #AttributeName
-      %csmethodmodifiers Class::GetMethod "GetAccess";
-      %typemap(cstype)   double Class::AttributeName "$typemap(cstype, AttributeType)"
-      %typemap(csvarout) double Class::AttributeName "get { return GetMethod(); }"
-
-
-      %{#define %mangle(Class) ##_## AttributeName ## _get(...) 0%}
-
-      #if #SetMethod != "None"
-        %csmethodmodifiers Class::SetMethod(AttributeType) "SetAccess";
-        %typemap(csvarin) double Class::AttributeName "set { SetMethod(value); }"
-        %{#define %mangle(Class) ##_## AttributeName ## _set(...)%}
-      #else
-        %immutable Class::AttributeName;
-      #endif
-      %extend Class {
-        AttributeAccess:
-          double AttributeName;
+%define %csattribute(Class, AttributeType, AttributeName, GetMethod, SetMethod...)
+#if #SetMethod != ""
+  %extend Class {
+    %insert("proxycode", cls="csattribute", depends1=%stringify(Class::GetMethod), depends2=%stringify(Class::SetMethod)) %{
+      public $typemap(cstype, AttributeType) AttributeName {
+        get { return GetMethod(); }
+        set { SetMethod(value); }
       }
-  #endif
+    %}
+  }
+#else
+  %extend Class {
+    %insert("proxycode", cls="csattribute", depends1=%stringify(Class::GetMethod)) %{
+      public $typemap(cstype, AttributeType) AttributeName {
+        get { return GetMethod(); }
+      }
+    %}
+  }
+#endif
 %enddef
 
 %define %inheritable(NS, CTYPE)
