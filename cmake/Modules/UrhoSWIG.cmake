@@ -202,6 +202,7 @@ function(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
   add_custom_command(
       OUTPUT "${swig_generated_file_fullname}" ${swig_extra_generated_files}
       # Let's create the ${swig_outdir} at execution time, in case dir contains $(OutDir)
+      COMMAND ${CMAKE_COMMAND} -E remove_directory ${swig_outdir}
       COMMAND ${CMAKE_COMMAND} -E make_directory ${swig_outdir}
       COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${SWIG_DIR}" "${SWIG_EXECUTABLE}"
       ARGS "-${SWIG_MODULE_${name}_SWIG_LANGUAGE_FLAG}"
