@@ -106,12 +106,13 @@ private:
     /// Return cache index for given type.
     unsigned GetCacheIndex(StringHash type) const;
     /// Return cached subsystem types.
+#ifndef SWIG
     template <class ... Types>
     static ea::array<StringHash, NumCachedSubsystems> GetCachedSubsystemTypes(ea::tuple<Types...>*)
     {
         return { Types::GetTypeStatic()... };
     }
-
+#endif
     /// Cached subsytems.
     ea::array<Object*, NumCachedSubsystems> cachedSubsystems_{};
     /// Cached subsystem types.

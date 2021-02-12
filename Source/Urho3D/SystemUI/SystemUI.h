@@ -80,8 +80,10 @@ public:
     void ApplyStyleDefault(bool darkStyle, float alpha);
     /// Hold a reference to this texture until end of frame.
     void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
+#ifndef SWIG    // Due to some quirk SWIG fails to ignore this API.
     /// Return value cache for storing temporary UI state that expires when unused.
     ValueCache& GetValueCache() { return cache_; }
+#endif
     /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
     void SetPassThroughEvents(bool enabled) { passThroughEvents_ = enabled; }
     /// Return true if SystemUI is allowing events through even when SystemUI is handling them.
