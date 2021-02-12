@@ -26,6 +26,11 @@ namespace Urho3DNet
 {
     public partial class Variant
     {
+        public VariantType Type
+        {
+            get { return GetVariantType(); }
+        }
+
         public static implicit operator Variant(int value)
         {
             return new Variant(value);

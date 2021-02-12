@@ -6,7 +6,8 @@
 
 
 %define AddEqualityOperators(fqn)
-    %typemap(cscode) fqn %{
+  %extend fqn {
+    %proxycode %{
         public static bool operator ==($typemap(cstype, fqn) a, $typemap(cstype, fqn) b)
         {
             if (!ReferenceEquals(a, null))
@@ -24,4 +25,5 @@
             return Equals(other as $typemap(cstype, fqn));
         }
     %}
+  }
 %enddef

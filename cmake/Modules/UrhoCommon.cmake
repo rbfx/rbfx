@@ -191,12 +191,12 @@ function (csharp_bind_target)
         if (EQUALITY_INDEX EQUAL -1)
             set (item "${item}=1")
         endif ()
-        list(APPEND GENERATOR_OPTIONS "-D\"${item}\"")
+        list(APPEND GENERATOR_OPTIONS "-D${item}")
     endforeach()
 
     if (URHO3D_NETFX_LEGACY_VERSION)
         # TODO: Not great, little bit terrible.
-        list(APPEND GENERATOR_OPTIONS "-D\"URHO3D_NETFX_LEGACY_VERSION=1\"")
+        list(APPEND GENERATOR_OPTIONS -DURHO3D_NETFX_LEGACY_VERSION=1)
     endif ()
 
     if (NOT BIND_NATIVE)
@@ -215,16 +215,13 @@ function (csharp_bind_target)
     )
 
     foreach(item ${OPTIONS})
-        list(APPEND GENERATOR_OPTIONS -O${item})
+        list(APPEND GENERATOR_OPTIONS ${item})
     endforeach()
 
     # Finalize option list
-    list (APPEND GENERATOR_OPTIONS ${BIND_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig)
-    set (CSHARP_BINDING_GENERATOR_OPTIONS "${CMAKE_CURRENT_BINARY_DIR}/generator_options_${BIND_TARGET}.txt")
-    file (WRITE ${CSHARP_BINDING_GENERATOR_OPTIONS} "")
-    foreach (opt ${GENERATOR_OPTIONS})
-        file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
-    endforeach ()
+    string(REGEX REPLACE "[^;]+\\$<COMPILE_LANGUAGE:[^;]+;" "" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")    # COMPILE_LANGUAGE creates ambiguity, remove.
+    string(REPLACE ";" "\n" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")
+    file(GENERATE OUTPUT "GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt" CONTENT "${GENERATOR_OPTIONS}")
 
     set (SWIG_SYSTEM_INCLUDE_DIRS "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_SYSTEM_INCLUDE_PATH};${CMAKE_EXTRA_GENERATOR_CXX_SYSTEM_INCLUDE_DIRS}")
     if (BIND_INCLUDE_DIRS)
