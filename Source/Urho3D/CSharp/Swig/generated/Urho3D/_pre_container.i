@@ -1,0 +1,16 @@
+%ignore Urho3D::CONVERSION_BUFFER_LENGTH;
+%csconst(1) Urho3D::CONVERSION_BUFFER_LENGTH;
+%constant int ConversionBufferLength = 128;
+%ignore Urho3D::MATRIX_CONVERSION_BUFFER_LENGTH;
+%csconst(1) Urho3D::MATRIX_CONVERSION_BUFFER_LENGTH;
+%constant int MatrixConversionBufferLength = 256;
+%constant ea::string EmptyString = Urho3D::EMPTY_STRING;
+%ignore Urho3D::EMPTY_STRING;
+URHO3D_REFCOUNTED(Urho3D::ValueCache);
+%csattribute(Urho3D::RefCounted, %arg(bool), ScriptStrongRef, IsScriptStrongRef);
+%csattribute(Urho3D::ArrayDimensions2D, %arg(int), Width, GetWidth);
+%csattribute(Urho3D::ArrayDimensions2D, %arg(int), Height, GetHeight);
+%csattribute(Urho3D::ArrayDimensions2D, %arg(Urho3D::IntVector2), Size, GetSize);
+%csattribute(Urho3D::ArrayDimensions2D, %arg(Urho3D::IntRect), Rect, GetRect);
+%csattribute(Urho3D::ArrayDimensions2D, %arg(unsigned int), Capacity, GetCapacity);
+%csattribute(Urho3D::ValueCache, %arg(unsigned int), ExpireFrames, GetExpireFrames, SetExpireFrames);
