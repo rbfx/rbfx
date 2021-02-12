@@ -468,7 +468,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(csdirectorin) SWIGTYPE *, SWIGTYPE (CLASS::*) "($iminput == global::System.IntPtr.Zero) ? null : new $csclassname($iminput, false)"
 %typemap(csdirectorin) SWIGTYPE & "new $csclassname($iminput, false)"
 %typemap(csdirectorin) SWIGTYPE && "new $csclassname($iminput, false)"
-%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE (CLASS::*), SWIGTYPE &, SWIGTYPE && "$csclassname.getCPtr($cscall).Handle"
+%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE (CLASS::*), SWIGTYPE &, SWIGTYPE && "global::$nspace.$csclassname.getCPtr($cscall).Handle"
 
 /* Default array handling */
 %typemap(in) SWIGTYPE [] %{ $1 = ($1_ltype)$input; %}
@@ -612,9 +612,9 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
                  double,             const double &
     "$csinput"
 %typemap(csin) char *, char *&, char[ANY], char[] "$csinput"
-%typemap(csin) SWIGTYPE "$&csclassname.getCPtr($csinput)"
-%typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE &&, SWIGTYPE [] "$csclassname.getCPtr($csinput)"
-%typemap(csin) SWIGTYPE (CLASS::*) "$csclassname.getCMemberPtr($csinput)"
+%typemap(csin) SWIGTYPE "global::$nspace.$&csclassname.getCPtr($csinput)"
+%typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE &&, SWIGTYPE [] "global::$nspace.$csclassname.getCPtr($csinput)"
+%typemap(csin) SWIGTYPE (CLASS::*) "global::$nspace.$csclassname.getCMemberPtr($csinput)"
 
 /* The csout typemap is used for converting function return types from the return type
  * used in the PInvoke class to the type returned by the proxy, module or type wrapper class.
@@ -837,7 +837,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(ctype) SWIGTYPE *const& "void *"
 %typemap(imtype, out="global::System.IntPtr") SWIGTYPE *const& "global::System.Runtime.InteropServices.HandleRef"
 %typemap(cstype) SWIGTYPE *const& "$*csclassname"
-%typemap(csin) SWIGTYPE *const& "$*csclassname.getCPtr($csinput)"
+%typemap(csin) SWIGTYPE *const& "global::$nspace.$*csclassname.getCPtr($csinput)"
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE *const& {
     global::System.IntPtr cPtr = $imcall;
     $*csclassname ret = (cPtr == global::System.IntPtr.Zero) ? null : new $*csclassname(cPtr, $owner);$excode
@@ -862,7 +862,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
    swig_temp = ($*1_ltype)$input;
    $result = &swig_temp; %}
 %typemap(csdirectorin) SWIGTYPE *const& "($iminput == global::System.IntPtr.Zero) ? null : new $*csclassname($iminput, false)"
-%typemap(csdirectorout) SWIGTYPE *const& "$*csclassname.getCPtr($cscall).Handle"
+%typemap(csdirectorout) SWIGTYPE *const& "global::$nspace.$*csclassname.getCPtr($cscall).Handle"
 
 /* Marshal C/C++ pointer to global::System.IntPtr */
 %typemap(ctype) void *VOID_INT_PTR "void *"

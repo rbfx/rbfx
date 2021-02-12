@@ -93,63 +93,63 @@
   }
 
 %typemap(csdirectorin) SWIGTYPE "$&csclassname.wrap($iminput, true)"
-%typemap(csdirectorin) SWIGTYPE *, SWIGTYPE (CLASS::*) "($iminput == global::System.IntPtr.Zero) ? null : $csclassname.wrap($iminput, false)"
+%typemap(csdirectorin) SWIGTYPE *, SWIGTYPE (CLASS::*) "($iminput == global::System.IntPtr.Zero) ? null : global::$nspace.$csclassname.wrap($iminput, false)"
 %typemap(csdirectorin) SWIGTYPE & "$csclassname.wrap($iminput, false)"
 %typemap(csdirectorin) SWIGTYPE && "$csclassname.wrap($iminput, false)"
 
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE {
-    $&csclassname ret = $&csclassname.wrap($imcall, true);$excode
+    $&csclassname ret = global::$nspace.$&csclassname.wrap($imcall, true);$excode
     return ret;
   }
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE & {
-    $csclassname ret = $csclassname.wrap($imcall, $owner);$excode
+    $csclassname ret = global::$nspace.$csclassname.wrap($imcall, $owner);$excode
     return ret;
   }
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE && {
-    $csclassname ret = $csclassname.wrap($imcall, $owner);$excode
+    $csclassname ret = global::$nspace.$csclassname.wrap($imcall, $owner);$excode
     return ret;
   }
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE *, SWIGTYPE [] {
     global::System.IntPtr cPtr = $imcall;
-    $csclassname ret = (cPtr == global::System.IntPtr.Zero) ? null : $csclassname.wrap(cPtr, $owner);$excode
+    $csclassname ret = (cPtr == global::System.IntPtr.Zero) ? null : global::$nspace.$csclassname.wrap(cPtr, $owner);$excode
     return ret;
   }
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE (CLASS::*) {
     string cMemberPtr = $imcall;
-    $csclassname ret = (cMemberPtr == null) ? null : $csclassname.wrap(cMemberPtr, $owner);$excode
+    $csclassname ret = (cMemberPtr == null) ? null : global::$nspace.$csclassname.wrap(cMemberPtr, $owner);$excode
     return ret;
   }
 %typemap(csvarout, excode=SWIGEXCODE2) SWIGTYPE %{
     get {
-      $&csclassname ret = $&csclassname.wrap($imcall, true);$excode
+      $&csclassname ret = global::$nspace.$&csclassname.wrap($imcall, true);$excode
       return ret;
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) SWIGTYPE & %{
     get {
-      $csclassname ret = $csclassname.wrap($imcall, $owner);$excode
+      $csclassname ret = global::$nspace.$csclassname.wrap($imcall, $owner);$excode
       return ret;
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) SWIGTYPE && %{
     get {
-      $csclassname ret = $csclassname.wrap($imcall, $owner);$excode
+      $csclassname ret = global::$nspace.$csclassname.wrap($imcall, $owner);$excode
       return ret;
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) SWIGTYPE *, SWIGTYPE [] %{
     get {
       global::System.IntPtr cPtr = $imcall;
-      $csclassname ret = (cPtr == global::System.IntPtr.Zero) ? null : $csclassname.wrap(cPtr, $owner);$excode
+      $csclassname ret = (cPtr == global::System.IntPtr.Zero) ? null : global::$nspace.$csclassname.wrap(cPtr, $owner);$excode
       return ret;
     } %}
 
 %typemap(csvarout, excode=SWIGEXCODE2) SWIGTYPE (CLASS::*) %{
     get {
       string cMemberPtr = $imcall;
-      $csclassname ret = (cMemberPtr == null) ? null : $csclassname.wrap(cMemberPtr, $owner);$excode
+      $csclassname ret = (cMemberPtr == null) ? null : global::$nspace.$csclassname.wrap(cMemberPtr, $owner);$excode
       return ret;
     } %}
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE *const& {
     global::System.IntPtr cPtr = $imcall;
-    $*csclassname ret = (cPtr == global::System.IntPtr.Zero) ? null : $*csclassname.wrap(cPtr, $owner);$excode
+    $*csclassname ret = (cPtr == global::System.IntPtr.Zero) ? null : global::$nspace.$*csclassname.wrap(cPtr, $owner);$excode
     return ret;
   }
 

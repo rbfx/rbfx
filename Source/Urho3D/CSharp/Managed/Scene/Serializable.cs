@@ -143,7 +143,7 @@ namespace Urho3DNet
 
         public override void Set(Serializable ptr, Variant src)
         {
-            if (src == null || src.VariantType == VariantType.VarNone)
+            if (src == null || src.Type == VariantType.VarNone)
             {
                 _field.SetValue(ptr, null);
                 return;
@@ -194,7 +194,7 @@ namespace Urho3DNet
                     _field.SetValue(ptr, new ResourceRefList(src.ResourceRefList.Type, src.ResourceRefList.Names));
                     break;
                 case VariantType.VarVariantList:
-                    _field.SetValue(ptr, new VariantList(src.VariantList));
+                    _field.SetValue(ptr, new VariantList(src.VariantVector));
                     break;
                 case VariantType.VarVariantMap:
                     _field.SetValue(ptr, new VariantMap(src.VariantMap));
@@ -221,7 +221,7 @@ namespace Urho3DNet
                     _field.SetValue(ptr, src.Double);
                     break;
                 case VariantType.VarStringList:
-                    _field.SetValue(ptr, new StringList(src.StringList));
+                    _field.SetValue(ptr, new StringList(src.StringVector));
                     break;
                 case VariantType.VarRect:
                     _field.SetValue(ptr, src.Rect);
@@ -341,7 +341,7 @@ namespace Urho3DNet
 
         public override void Set(Serializable ptr, Variant src)
         {
-            if (src == null || src.VariantType == VariantType.VarNone)
+            if (src == null || src.Type == VariantType.VarNone)
             {
                 _field.SetValue(ptr, null);
                 return;
@@ -392,7 +392,7 @@ namespace Urho3DNet
                     _field.SetValue(ptr, new ResourceRefList(src.ResourceRefList.Type, src.ResourceRefList.Names));
                     break;
                 case VariantType.VarVariantList:
-                    _field.SetValue(ptr, new VariantList(src.VariantList));
+                    _field.SetValue(ptr, new VariantList(src.VariantVector));
                     break;
                 case VariantType.VarVariantMap:
                     _field.SetValue(ptr, new VariantMap(src.VariantMap));
@@ -419,7 +419,7 @@ namespace Urho3DNet
                     _field.SetValue(ptr, src.Double);
                     break;
                 case VariantType.VarStringList:
-                    _field.SetValue(ptr, new StringList(src.StringList));
+                    _field.SetValue(ptr, new StringList(src.StringVector));
                     break;
                 case VariantType.VarRect:
                     _field.SetValue(ptr, src.Rect);

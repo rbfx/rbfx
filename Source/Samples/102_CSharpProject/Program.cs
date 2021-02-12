@@ -50,13 +50,13 @@ namespace DemoApplication
         public override void Setup()
         {
             var currentDir = Directory.GetCurrentDirectory();
-            engineParameters_[Urho3D.EpFullScreen] = false;
-            engineParameters_[Urho3D.EpWindowWidth] = 1920;
-            engineParameters_[Urho3D.EpWindowHeight] = 1080;
-            engineParameters_[Urho3D.EpWindowTitle] = "Hello C#";
-            engineParameters_[Urho3D.EpResourcePrefixPaths] = $"{currentDir};{currentDir}/..";
+            EngineParameters[Urho3D.EpFullScreen] = false;
+            EngineParameters[Urho3D.EpWindowWidth] = 1920;
+            EngineParameters[Urho3D.EpWindowHeight] = 1080;
+            EngineParameters[Urho3D.EpWindowTitle] = "Hello C#";
+            EngineParameters[Urho3D.EpResourcePrefixPaths] = $"{currentDir};{currentDir}/..";
             // Opt in for automatic compilation of scripts in ResourcePath/Script folder.
-            engineParameters_[Urho3D.EpEngineAutoLoadScripts] = true;
+            EngineParameters[Urho3D.EpEngineAutoLoadScripts] = true;
         }
 
         public override void Start()
@@ -83,8 +83,8 @@ namespace DemoApplication
             // Cube
             _cube = _scene.CreateChild("Cube");
             var model = _cube.CreateComponent<StaticModel>();
-            model.SetModel(Context.Cache.GetResource<Model>("Models/Box.mdl"));
-            model.SetMaterial(0, Context.Cache.GetResource<Material>("Materials/Stone.xml"));
+            model.SetModel(Context.ResourceCache.GetResource<Model>("Models/Box.mdl"));
+            model.SetMaterial(0, Context.ResourceCache.GetResource<Material>("Materials/Stone.xml"));
 
             // RotateObject component is implemented in Data/Scripts/RotateObject.cs
             _cube.CreateComponent("ScriptRotateObject");

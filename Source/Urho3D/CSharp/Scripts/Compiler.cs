@@ -21,10 +21,10 @@ namespace Urho3DNet
             var scriptRsrcs = new StringList();
             var scriptCodes = new List<string>();
             var sourceFiles = new List<string>();
-            Context.Instance.Cache.Scan(scriptRsrcs, scanPath, "*.cs", Urho3D.ScanFiles, true);
+            Context.Instance.ResourceCache.Scan(scriptRsrcs, scanPath, "*.cs", Urho3D.ScanFiles, true);
             foreach (string fileName in scriptRsrcs)
             {
-                using (File file = Context.Instance.Cache.GetFile(fileName))
+                using (File file = Context.Instance.ResourceCache.GetFile(fileName))
                 {
                     // Gather both paths and code text here. If scripts are packaged we must compile them from
                     // text form. However if we are running a development version of application we prefer to
@@ -33,7 +33,7 @@ namespace Urho3DNet
                         scriptCodes.Add(file.ReadString());
                     else
                     {
-                        string path = Context.Instance.Cache.GetResourceFileName(fileName);
+                        string path = Context.Instance.ResourceCache.GetResourceFileName(fileName);
                         path = Urho3D.GetAbsolutePath(path);
                         path = Urho3D.GetNativePath(path);
                         sourceFiles.Add(path);
@@ -76,7 +76,7 @@ namespace Urho3DNet
                     // ressource paths use lower key c: and '/' as separator and but Windows uses upper key C: and '\'
                     // using Uri to mitigate that
                     var resourcePath = new Uri(resourceName);
-                    foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
+                    foreach (string resourceDir in Context.Instance.ResourceCache.ResourceDirs)
                     {
                         var resourceDirPath = new Uri(resourceDir);
                         if (resourceDirPath.IsBaseOf(resourcePath))
@@ -88,7 +88,7 @@ namespace Urho3DNet
 
                     string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
                     if (error.IsWarning)
-                    { 
+                    {
                         Log.Warning(message);
                     }
                     else

@@ -14,7 +14,7 @@ class StringHash;
 %typemap(csout, excode=SWIGEXCODE) StringHash {                       // convert pinvoke to C#
     var ret = new $typemap(cstype, Urho3D::StringHash)($imcall);$excode
     return ret;
-} 
+}
 %typemap(directorin)    StringHash "$input = $1.Value();"
 %typemap(directorout)   StringHash "$result = ($1_ltype)$input;"
 %typemap(csdirectorin)  StringHash "new $typemap(cstype, Urho3D::StringHash)($iminput)"

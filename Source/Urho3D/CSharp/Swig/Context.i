@@ -2,7 +2,6 @@
 %ignore Urho3D::Context::GetFactory;
 %ignore Urho3D::Context::GetEventHandler;
 %ignore Urho3D::Context::GetObjectCategories;
-%ignore Urho3D::Context::GetSubsystems;
 %ignore Urho3D::Context::GetObjectFactories;
 
 
