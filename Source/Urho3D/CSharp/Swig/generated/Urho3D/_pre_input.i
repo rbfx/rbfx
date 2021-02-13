@@ -545,13 +545,13 @@ using QualifierFlags = Urho3D::Qualifier;
 %csattribute(Urho3D::Input, %arg(unsigned int), NumJoysticks, GetNumJoysticks);
 %csattribute(Urho3D::Input, %arg(bool), ToggleFullscreen, GetToggleFullscreen, SetToggleFullscreen);
 %csattribute(Urho3D::Input, %arg(bool), ScreenKeyboardSupport, GetScreenKeyboardSupport);
-%csattribute(Urho3D::Input, %arg(bool), ScreenKeyboardVisible, IsScreenKeyboardVisible, SetScreenKeyboardVisible);
+%csattribute(Urho3D::Input, %arg(bool), IsScreenKeyboardVisible, IsScreenKeyboardVisible, SetScreenKeyboardVisible);
 %csattribute(Urho3D::Input, %arg(bool), TouchEmulation, GetTouchEmulation, SetTouchEmulation);
-%csattribute(Urho3D::Input, %arg(bool), MouseVisible, IsMouseVisible);
-%csattribute(Urho3D::Input, %arg(bool), MouseGrabbed, IsMouseGrabbed);
-%csattribute(Urho3D::Input, %arg(bool), MouseLocked, IsMouseLocked);
+%csattribute(Urho3D::Input, %arg(bool), IsMouseVisible, IsMouseVisible);
+%csattribute(Urho3D::Input, %arg(bool), IsMouseGrabbed, IsMouseGrabbed);
+%csattribute(Urho3D::Input, %arg(bool), IsMouseLocked, IsMouseLocked);
 %csattribute(Urho3D::Input, %arg(Urho3D::MouseMode), MouseMode, GetMouseMode);
-%csattribute(Urho3D::Input, %arg(bool), Minimized, IsMinimized);
+%csattribute(Urho3D::Input, %arg(bool), IsMinimized, IsMinimized);
 %csattribute(Urho3D::Input, %arg(bool), Enabled, GetEnabled, SetEnabled);
 %pragma(csharp) moduleimports=%{
 public static partial class E

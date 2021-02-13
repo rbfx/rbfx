@@ -83,7 +83,7 @@ namespace DemoApplication
             // Cube
             _cube = _scene.CreateChild("Cube");
             var model = _cube.CreateComponent<StaticModel>();
-            model.SetModel(Context.ResourceCache.GetResource<Model>("Models/Box.mdl"));
+            model.Model = Context.ResourceCache.GetResource<Model>("Models/Box.mdl");
             model.SetMaterial(0, Context.ResourceCache.GetResource<Material>("Materials/Stone.xml"));
 
             // RotateObject component is implemented in Data/Scripts/RotateObject.cs

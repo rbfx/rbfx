@@ -13,8 +13,8 @@ URHO3D_REFCOUNTED(Urho3D::SystemMessageBox);
 using DebugHudModeFlags = Urho3D::DebugHudMode;
 %typemap(ctype) DebugHudModeFlags "size_t";
 %typemap(out) DebugHudModeFlags "$result = (size_t)$1.AsInteger();"
-%csattribute(Urho3D::Console, %arg(bool), Visible, IsVisible, SetVisible);
-%csattribute(Urho3D::Console, %arg(bool), AutoVisibleOnError, IsAutoVisibleOnError, SetAutoVisibleOnError);
+%csattribute(Urho3D::Console, %arg(bool), IsVisible, IsVisible, SetVisible);
+%csattribute(Urho3D::Console, %arg(bool), IsAutoVisibleOnError, IsAutoVisibleOnError, SetAutoVisibleOnError);
 %csattribute(Urho3D::Console, %arg(ea::string), CommandInterpreter, GetCommandInterpreter, SetCommandInterpreter);
 %csattribute(Urho3D::Console, %arg(unsigned int), NumHistoryRows, GetNumHistoryRows, SetNumHistoryRows);
 %csattribute(Urho3D::Console, %arg(Urho3D::StringVector), Loggers, GetLoggers);
@@ -24,7 +24,7 @@ using DebugHudModeFlags = Urho3D::DebugHudMode;
 %csattribute(Urho3D::DebugHud, %arg(bool), UseRendererStats, GetUseRendererStats, SetUseRendererStats);
 %csattribute(Urho3D::SystemMessageBox, %arg(ea::string), Title, GetTitle, SetTitle);
 %csattribute(Urho3D::SystemMessageBox, %arg(ea::string), Message, GetMessage, SetMessage);
-%csattribute(Urho3D::SystemMessageBox, %arg(bool), Open, IsOpen);
+%csattribute(Urho3D::SystemMessageBox, %arg(bool), IsOpen, IsOpen);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
