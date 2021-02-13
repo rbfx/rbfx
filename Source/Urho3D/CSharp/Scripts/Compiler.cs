@@ -29,7 +29,7 @@ namespace Urho3DNet
                     // Gather both paths and code text here. If scripts are packaged we must compile them from
                     // text form. However if we are running a development version of application we prefer to
                     // compile scripts directly from file because then we get proper error locations.
-                    if (file.IsPackaged())
+                    if (file.IsPackaged)
                         scriptCodes.Add(file.ReadString());
                     else
                     {
