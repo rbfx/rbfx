@@ -49,12 +49,16 @@ int strlen(const char* void_ptr_string);
 %define %stringify(token) #token %enddef
 
 %define %csattribute(Class, AttributeType, AttributeName, GetMethod, SetMethod...)
+  %csmethodmodifiers Class::GetMethod "private";
+  %rename(_##GetMethod) Class::GetMethod;
 #if #SetMethod != ""
+  %csmethodmodifiers Class::SetMethod "private";
+  %rename(_##SetMethod) Class::SetMethod;
   %extend Class {
     %insert("proxycode", cls="csattribute", depends1=%stringify(Class::GetMethod), depends2=%stringify(Class::SetMethod)) %{
       public $typemap(cstype, AttributeType) AttributeName {
-        get { return GetMethod(); }
-        set { SetMethod(value); }
+        get { return _##GetMethod(); }
+        set { _##SetMethod(value); }
       }
     %}
   }
@@ -62,7 +66,7 @@ int strlen(const char* void_ptr_string);
   %extend Class {
     %insert("proxycode", cls="csattribute", depends1=%stringify(Class::GetMethod)) %{
       public $typemap(cstype, AttributeType) AttributeName {
-        get { return GetMethod(); }
+        get { return _##GetMethod(); }
       }
     %}
   }

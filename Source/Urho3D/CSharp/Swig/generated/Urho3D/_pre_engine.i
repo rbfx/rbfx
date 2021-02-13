@@ -114,9 +114,9 @@ URHO3D_REFCOUNTED(Urho3D::ApplicationSettings);
 %csattribute(Urho3D::Engine, %arg(int), TimeStepSmoothing, GetTimeStepSmoothing, SetTimeStepSmoothing);
 %csattribute(Urho3D::Engine, %arg(bool), PauseMinimized, GetPauseMinimized, SetPauseMinimized);
 %csattribute(Urho3D::Engine, %arg(bool), AutoExit, GetAutoExit, SetAutoExit);
-%csattribute(Urho3D::Engine, %arg(bool), Initialized, IsInitialized);
-%csattribute(Urho3D::Engine, %arg(bool), Exiting, IsExiting);
-%csattribute(Urho3D::Engine, %arg(bool), Headless, IsHeadless);
+%csattribute(Urho3D::Engine, %arg(bool), IsInitialized, IsInitialized);
+%csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
+%csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

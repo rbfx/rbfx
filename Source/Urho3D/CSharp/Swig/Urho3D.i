@@ -327,12 +327,12 @@ namespace SDL
 
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
-%include "Urho3D/Core/Variant.h"
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
 
 %include "generated/Urho3D/_pre_core.i"
+%include "Urho3D/Core/Variant.h"
 %include "Urho3D/Core/Attribute.h"
 %include "Urho3D/Core/SubsystemCache.h"
 %include "Urho3D/Core/Context.h"
