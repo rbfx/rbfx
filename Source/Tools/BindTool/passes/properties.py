@@ -41,6 +41,8 @@ class DefinePropertiesPass(AstPass):
         # Gather restricted names
         restricted_names = set()
         restricted_methods = set()
+        restricted_methods.add('GetType')     # Clashes with C#'s System.Object.GetType.
+
         for n in node.children:
             # Do not consider protected members as restricted. This is not strictly correct, because
             if n.access == AST_ACCESS_PUBLIC and n.kind in ('CXXMethodDecl', 'CXXConstructorDecl', 'FieldDecl', 'VarDecl', 'EnumDecl'):
@@ -52,6 +54,14 @@ class DefinePropertiesPass(AstPass):
         for base_class, interface_methods in self._parser.vars['interfaces'].items():
             if util.has_base_class(node, base_class):
                 restricted_methods.update(interface_methods)
+
+        # Blacklist methods where getter has any parameters or setter has more than one parameter.
+        for n in node.children:
+            if n.kind == 'CXXMethodDecl':
+                if (n.name.startswith('Get') or n.name.startswith('Is')) and len(n.params) > 0:
+                    restricted_methods.add(n.name)
+                elif n.name.startswith('Set') and len(n.params) != 1:
+                    restricted_methods.add(n.name)
 
         # Gather getters
         for n in node.children:
@@ -68,7 +78,8 @@ class DefinePropertiesPass(AstPass):
                 is_getter = is_getter and len(n.params) == 0
                 if is_getter:
                     if name.startswith('Is'):
-                        name = prop_name = name[2:]
+                        prop_name = name
+                        name = name[2:]
                     else:
                         name = prop_name = name[3:]
 

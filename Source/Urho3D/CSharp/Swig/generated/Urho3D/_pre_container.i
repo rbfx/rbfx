@@ -7,7 +7,7 @@
 %constant ea::string EmptyString = Urho3D::EMPTY_STRING;
 %ignore Urho3D::EMPTY_STRING;
 URHO3D_REFCOUNTED(Urho3D::ValueCache);
-%csattribute(Urho3D::RefCounted, %arg(bool), ScriptStrongRef, IsScriptStrongRef);
+%csattribute(Urho3D::RefCounted, %arg(bool), IsScriptStrongRef, IsScriptStrongRef);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(int), Width, GetWidth);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(int), Height, GetHeight);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(Urho3D::IntVector2), Size, GetSize);
