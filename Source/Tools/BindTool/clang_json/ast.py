@@ -171,8 +171,11 @@ class CXXMethodDecl(AstNode):
         super().__init__(parser, parent, json_node)
         self.params = [n for n in self.children if n.kind == 'ParmVarDecl']
         self.mangled_name = json_node.get('mangledName')
-        # TODO: Attempt to get type string. This will most likely fail when function returns a function pointer!
-        self.return_type = _get_type(json_node['returnType'])
+        if 'returnType' in json_node:
+            self.return_type = _get_type(json_node['returnType'])
+        else:
+            # TODO: Attempt to get type string. This will most likely fail when function returns a function pointer!
+            self.return_type = _get_type(json_node['type']).split('(')[0].strip()
         self.is_static = json_node.get('storageClass') == 'static'
         self.override = False
         self.virtual = json_node.get('virtual', False)

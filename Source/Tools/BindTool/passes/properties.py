@@ -122,6 +122,10 @@ class DefinePropertiesPass(AstPass):
             if prop_name == node.name:
                 # Property name can not be same as class name.
                 prop_name += 'Value'
+            if len(prop_name) > 3 and prop_name.endswith('Ptr') and node.name == 'Variant' and prop_name != 'VoidPtr':
+                # Drop Ptr suffix for some Variant properties. We use Ptr versions so that returned containers would
+                # be modifiable, but we do not care for this detail in C#.
+                prop_name = prop_name[:-3]
             param_type = param_type.rstrip('&')
             if param_type.startswith('const '):
                 param_type = param_type[6:]
