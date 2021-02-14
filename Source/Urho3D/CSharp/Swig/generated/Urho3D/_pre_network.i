@@ -42,10 +42,6 @@
 %ignore Urho3D::CONTROLS_CONTENT_ID;
 %constant unsigned int PackageFragmentSize = Urho3D::PACKAGE_FRAGMENT_SIZE;
 %ignore Urho3D::PACKAGE_FRAGMENT_SIZE;
-URHO3D_REFCOUNTED(Urho3D::Connection);
-URHO3D_REFCOUNTED(Urho3D::HttpRequest);
-URHO3D_REFCOUNTED(Urho3D::Network);
-URHO3D_REFCOUNTED(Urho3D::NetworkPriority);
 %csconstvalue("0") Urho3D::OPSM_NONE;
 %csconstvalue("0") Urho3D::HTTP_INITIALIZING;
 %csattribute(Urho3D::Connection, %arg(SLNet::AddressOrGUID), AddressOrGUID, GetAddressOrGUID, SetAddressOrGUID);

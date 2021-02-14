@@ -1,11 +1,3 @@
-URHO3D_REFCOUNTED(Urho3D::CrowdManager);
-URHO3D_REFCOUNTED(Urho3D::CrowdAgent);
-URHO3D_REFCOUNTED(Urho3D::NavigationMesh);
-URHO3D_REFCOUNTED(Urho3D::DynamicNavigationMesh);
-URHO3D_REFCOUNTED(Urho3D::NavArea);
-URHO3D_REFCOUNTED(Urho3D::Navigable);
-URHO3D_REFCOUNTED(Urho3D::Obstacle);
-URHO3D_REFCOUNTED(Urho3D::OffMeshConnection);
 %csconstvalue("0") Urho3D::CA_REQUESTEDTARGET_NONE;
 %csconstvalue("0") Urho3D::CA_TARGET_NONE;
 %csconstvalue("0") Urho3D::NAVIGATIONQUALITY_LOW;

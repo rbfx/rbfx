@@ -6,7 +6,6 @@
 %constant int MatrixConversionBufferLength = 256;
 %constant ea::string EmptyString = Urho3D::EMPTY_STRING;
 %ignore Urho3D::EMPTY_STRING;
-URHO3D_REFCOUNTED(Urho3D::ValueCache);
 %csattribute(Urho3D::RefCounted, %arg(bool), IsScriptStrongRef, IsScriptStrongRef);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(int), Width, GetWidth);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(int), Height, GetHeight);
