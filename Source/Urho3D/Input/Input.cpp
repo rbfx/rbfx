@@ -301,7 +301,7 @@ int EmscriptenInput::HandleSDLEvents(void* userData, SDL_Event* event)
 
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(DESKTOP)
 // On Windows repaint while the window is actively being resized.
 int Win32_ResizingEventWatcher(void* data, SDL_Event* event)
 {
@@ -1570,7 +1570,7 @@ void Input::Initialize()
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Input, HandleEndFrame));
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(DESKTOP)
     // Register callback for resizing in order to repaint.
     if (SDL_Window* window = graphics_->GetWindow())
     {
