@@ -1,6 +1,5 @@
 %constant Urho3D::IntVector2 MousePositionOffscreen = Urho3D::MOUSE_POSITION_OFFSCREEN;
 %ignore Urho3D::MOUSE_POSITION_OFFSCREEN;
-URHO3D_REFCOUNTED(Urho3D::Input);
 %csconstvalue("1") Urho3D::MOUSEB_LEFT;
 %csconstvalue("2") Urho3D::MOUSEB_MIDDLE;
 %csconstvalue("4") Urho3D::MOUSEB_RIGHT;

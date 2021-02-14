@@ -10,14 +10,6 @@
 %ignore Urho3D::SOUND_MUSIC;
 %constant int StreamBufferLength = Urho3D::STREAM_BUFFER_LENGTH;
 %ignore Urho3D::STREAM_BUFFER_LENGTH;
-URHO3D_REFCOUNTED(Urho3D::Audio);
-URHO3D_REFCOUNTED(Urho3D::SoundStream);
-URHO3D_REFCOUNTED(Urho3D::BufferedSoundStream);
-URHO3D_REFCOUNTED(Urho3D::OggVorbisSoundStream);
-URHO3D_REFCOUNTED(Urho3D::Sound);
-URHO3D_REFCOUNTED(Urho3D::SoundListener);
-URHO3D_REFCOUNTED(Urho3D::SoundSource);
-URHO3D_REFCOUNTED(Urho3D::SoundSource3D);
 %csattribute(Urho3D::Audio, %arg(unsigned int), SampleSize, GetSampleSize);
 %csattribute(Urho3D::Audio, %arg(int), MixRate, GetMixRate);
 %csattribute(Urho3D::Audio, %arg(bool), Interpolation, GetInterpolation);

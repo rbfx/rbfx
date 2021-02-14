@@ -1,10 +1,6 @@
 %ignore Urho3D::SYSTEMUI_DEFAULT_FONT_SIZE;
 %csconst(1) Urho3D::SYSTEMUI_DEFAULT_FONT_SIZE;
 %constant float SystemuiDefaultFontSize = (float)14;
-URHO3D_REFCOUNTED(Urho3D::Console);
-URHO3D_REFCOUNTED(Urho3D::SystemUI);
-URHO3D_REFCOUNTED(Urho3D::DebugHud);
-URHO3D_REFCOUNTED(Urho3D::SystemMessageBox);
 %csconstvalue("0") Urho3D::DEBUGHUD_SHOW_NONE;
 %csconstvalue("1") Urho3D::DEBUGHUD_SHOW_STATS;
 %csconstvalue("2") Urho3D::DEBUGHUD_SHOW_MODE;
