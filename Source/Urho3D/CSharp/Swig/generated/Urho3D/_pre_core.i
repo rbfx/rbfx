@@ -10,15 +10,6 @@
 %ignore Urho3D::DEFAULT_DATE_TIME_FORMAT;
 %constant char * DynLibSuffix = Urho3D::DYN_LIB_SUFFIX;
 %ignore Urho3D::DYN_LIB_SUFFIX;
-URHO3D_REFCOUNTED(Urho3D::Object);
-URHO3D_REFCOUNTED(Urho3D::ObjectFactory);
-URHO3D_REFCOUNTED(Urho3D::Time);
-URHO3D_REFCOUNTED(Urho3D::AttributeAccessor);
-URHO3D_REFCOUNTED(Urho3D::EventReceiverGroup);
-URHO3D_REFCOUNTED(Urho3D::Context);
-URHO3D_REFCOUNTED(Urho3D::PluginModule);
-URHO3D_REFCOUNTED(Urho3D::WorkItem);
-URHO3D_REFCOUNTED(Urho3D::WorkQueue);
 %csconstvalue("0") Urho3D::VAR_NONE;
 %typemap(csattributes) Urho3D::AttributeMode "[global::System.Flags]";
 using AttributeModeFlags = Urho3D::AttributeMode;

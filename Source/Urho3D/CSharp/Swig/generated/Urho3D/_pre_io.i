@@ -8,13 +8,6 @@
 %ignore Urho3D::SCAN_HIDDEN;
 %constant char * NullDevice = Urho3D::NULL_DEVICE;
 %ignore Urho3D::NULL_DEVICE;
-URHO3D_REFCOUNTED(Urho3D::File);
-URHO3D_REFCOUNTED(Urho3D::FileSystem);
-URHO3D_REFCOUNTED(Urho3D::FileWatcher);
-URHO3D_REFCOUNTED(Urho3D::Log);
-URHO3D_REFCOUNTED(Urho3D::MultiFileWatcher);
-URHO3D_REFCOUNTED(Urho3D::NamedPipe);
-URHO3D_REFCOUNTED(Urho3D::PackageFile);
 %csconstvalue("0") Urho3D::FILE_READ;
 %csattribute(Urho3D::ArchiveBlock, %arg(unsigned int), SizeHint, GetSizeHint);
 %csattribute(Urho3D::ArchiveBase, %arg(Urho3D::Context *), Context, GetContext);
