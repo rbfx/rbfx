@@ -1,6 +1,3 @@
-URHO3D_REFCOUNTED(Urho3D::IKConstraint);
-URHO3D_REFCOUNTED(Urho3D::IKEffector);
-URHO3D_REFCOUNTED(Urho3D::IKSolver);
 %csconstvalue("0") Urho3D::IKSolver::ONE_BONE;
 %csattribute(Urho3D::IKConstraint, %arg(float), Stiffness, GetStiffness, SetStiffness);
 %csattribute(Urho3D::IKConstraint, %arg(float), Stretchiness, GetStretchiness, SetStretchiness);

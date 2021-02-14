@@ -4,16 +4,6 @@
 %ignore Urho3D::DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
 %csconst(1) Urho3D::DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
 %constant float DefaultMaxNetworkAngularVelocity = (float)100;
-URHO3D_REFCOUNTED(Urho3D::CollisionGeometryData);
-URHO3D_REFCOUNTED(Urho3D::TriangleMeshData);
-URHO3D_REFCOUNTED(Urho3D::GImpactMeshData);
-URHO3D_REFCOUNTED(Urho3D::ConvexData);
-URHO3D_REFCOUNTED(Urho3D::HeightfieldData);
-URHO3D_REFCOUNTED(Urho3D::CollisionShape);
-URHO3D_REFCOUNTED(Urho3D::Constraint);
-URHO3D_REFCOUNTED(Urho3D::PhysicsWorld);
-URHO3D_REFCOUNTED(Urho3D::RigidBody);
-URHO3D_REFCOUNTED(Urho3D::RaycastVehicle);
 %csconstvalue("0") Urho3D::SHAPE_BOX;
 %csconstvalue("0") Urho3D::CONSTRAINT_POINT;
 %csconstvalue("0") Urho3D::COLLISION_NEVER;

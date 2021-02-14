@@ -1,5 +1,3 @@
-URHO3D_REFCOUNTED(Urho3D::RaytracerScene);
-URHO3D_REFCOUNTED(Urho3D::StaticModelForLightmap);
 %csattribute(Urho3D::DefaultBakedSceneCollector, %arg(ea::vector<IntVector3>), Chunks, GetChunks);
 %csattribute(Urho3D::RaytracerScene, %arg(Urho3D::Context *), Context, GetContext);
 %csattribute(Urho3D::RaytracerScene, %arg(embree3::RTCDevice), EmbreeDevice, GetEmbreeDevice);

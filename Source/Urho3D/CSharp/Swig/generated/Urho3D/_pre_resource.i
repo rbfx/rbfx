@@ -11,18 +11,6 @@
 // %ignore Urho3D::defaultElementName;
 // %constant char * DefaultRootName = Urho3D::defaultRootName;
 // %ignore Urho3D::defaultRootName;
-URHO3D_REFCOUNTED(Urho3D::Resource);
-URHO3D_REFCOUNTED(Urho3D::ResourceWithMetadata);
-URHO3D_REFCOUNTED(Urho3D::Image);
-URHO3D_REFCOUNTED(Urho3D::XMLFile);
-URHO3D_REFCOUNTED(Urho3D::BackgroundLoader);
-URHO3D_REFCOUNTED(Urho3D::BinaryFile);
-URHO3D_REFCOUNTED(Urho3D::ImageCube);
-URHO3D_REFCOUNTED(Urho3D::JSONFile);
-URHO3D_REFCOUNTED(Urho3D::Localization);
-URHO3D_REFCOUNTED(Urho3D::PListFile);
-URHO3D_REFCOUNTED(Urho3D::ResourceRouter);
-URHO3D_REFCOUNTED(Urho3D::ResourceCache);
 %csconstvalue("0") Urho3D::CF_NONE;
 %csconstvalue("0") Urho3D::PLVT_NONE;
 %csconstvalue("0") Urho3D::RESOURCE_CHECKEXISTS;

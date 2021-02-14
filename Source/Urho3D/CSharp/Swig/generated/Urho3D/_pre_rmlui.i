@@ -1,8 +1,3 @@
-URHO3D_REFCOUNTED(Urho3D::RmlCanvasComponent);
-URHO3D_REFCOUNTED(Urho3D::Detail::RmlRenderer);
-URHO3D_REFCOUNTED(Urho3D::Detail::RmlSystem);
-URHO3D_REFCOUNTED(Urho3D::RmlUI);
-URHO3D_REFCOUNTED(Urho3D::RmlUIComponent);
 %csattribute(Urho3D::RmlCanvasComponent, %arg(Urho3D::Texture2D *), Texture, GetTexture, SetTexture);
 %csattribute(Urho3D::RmlCanvasComponent, %arg(bool), RemapMousePos, GetRemapMousePos, SetRemapMousePos);
 %csattribute(Urho3D::RmlCanvasComponent, %arg(Urho3D::RmlUI *), Ui, GetUI);
