@@ -26,10 +26,6 @@
   <PropertyGroup Condition="'$(URHO3D_NETFX_LEGACY_VERSION)' != ''">
     <DefineConstants>$(DefineConstants);URHO3D_NETFX_LEGACY_VERSION</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(CMAKE_BINARY_DIR)' == '' ">
-    <CMAKE_BINARY_DIR Condition=" '$(OS)' == 'Windows_NT' ">$(SolutionDir)</CMAKE_BINARY_DIR>                           <!-- Solution is in cmake binary dir -->
-    <CMAKE_BINARY_DIR Condition=" '$(OS)' != 'Windows_NT' ">$(SolutionDir)cmake-build/</CMAKE_BINARY_DIR>               <!-- Solution is in engine source dir -->
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)' == '' ">
     <CMAKE_RUNTIME_OUTPUT_DIRECTORY>$(CMAKE_BINARY_DIR)$(BaseOutputPath)</CMAKE_RUNTIME_OUTPUT_DIRECTORY>               <!-- CMAKE_BINARY_DIR/bin -->
   </PropertyGroup>
