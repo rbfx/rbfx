@@ -1,22 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="FixNetFrameworkDefine">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Urho3DNet.Scripts</AssemblyName>
     <OutputType>Library</OutputType>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
     <LangVersion>7.2</LangVersion>
   </PropertyGroup>
-  <Target Name="FixNetFrameworkDefine" Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
-    <PropertyGroup>
-      <!-- For some reason mono does not define NETFRAMEWORK even when NET471 is defined. -->
-      <DefineConstants>$(DefineConstants);NETFRAMEWORK</DefineConstants>
-    </PropertyGroup>
-  </Target>
   <ItemGroup>
     <Compile Include="Scripts/**/*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' != '.NETFramework' ">
-    <!-- Only required for .netstandard-compatible implementation -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.5.0" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.8.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Urho3DNet.csproj" />

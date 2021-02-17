@@ -33,7 +33,7 @@ namespace Editor
         {
             int argc = args.Length + 1;                 // args + executable path
             var argv = new string[args.Length + 2];     // args + executable path + null
-            argv[0] = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
+            argv[0] = new Uri(Assembly.GetExecutingAssembly().Location).LocalPath;
             args.CopyTo(argv, 1);
             Urho3D.ParseArguments(argc, argv);
 

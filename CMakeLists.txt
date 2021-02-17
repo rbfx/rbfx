@@ -259,16 +259,26 @@ if (URHO3D_CSHARP)
     endif ()
     if (CMAKE_VS_MSBUILD_COMMAND)
         set (MSBUILD ${CMAKE_VS_MSBUILD_COMMAND} CACHE STRING "")
-    else ()
-        find_program(MSBUILD msbuild HINTS $<MACOS:/Library/Frameworks/Mono.framework/Versions/Current/bin> $ENV{PATH})
+    endif ()
+
+    if (URHO3D_NETFX MATCHES "net(46|standard2).*")
+        # .net 4.6 and .netstandard 2.x do not support UTF-8 string marshalling.
+        set (URHO3D_NETFX_LEGACY_VERSION ON)
+    endif ()
+
+    if (NOT MSBUILD)
+        if (URHO3D_NETFX MATCHES "net(standard|core|5).*")
+            find_program(DOTNET dotnet HINTS $ENV{PATH})
+            if (DOTNET)
+                set (MSBUILD ${DOTNET} msbuild -interactive:false -nodeReuse:false)
+            endif ()
+        else ()
+            find_program(MSBUILD msbuild HINTS $<MACOS:/Library/Frameworks/Mono.framework/Versions/Current/bin> $ENV{PATH})
+        endif ()
     endif ()
 
     if (NOT MSBUILD)
         message(FATAL_ERROR "msbuild executable was not found.")
-    endif ()
-
-    if (URHO3D_NETFX MATCHES "net(46|standard2).*")
-        set (URHO3D_NETFX_LEGACY_VERSION ON)
     endif ()
 
     if (WIN32)
@@ -281,21 +291,21 @@ if (URHO3D_CSHARP)
 endif ()
 
 if (URHO3D_CSHARP)
-    # For .csproj embedded into visual studio solution
-    configure_file("${rbfx_SOURCE_DIR}/cmake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
     # For .csproj that gets built by cmake invoking msbuild
     set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
     set (ENV{CMAKE_BINARY_DIR "${CMAKE_BINARY_DIR}/")
     set (ENV{RBFX_BINARY_DIR "${rbfx_BINARY_DIR}/")
     set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 
-    set (DOTNET_FRAMEWORK_TYPES net46 net461 net462 net47 net471 net472 net48)
-    set (DOTNET_FRAMEWORK_VERSIONS v4.6 v4.6.1 v4.6.2 v4.7 v4.7.1 v4.7.2 v4.8)
+    set (DOTNET_FRAMEWORK_TYPES net46 net461 net462 net47 net471 net472 net48 net5)
+    set (DOTNET_FRAMEWORK_VERSIONS v4.6 v4.6.1 v4.6.2 v4.7 v4.7.1 v4.7.2 v4.8 v5.0)
     list (FIND DOTNET_FRAMEWORK_TYPES ${URHO3D_NETFX} DOTNET_FRAMEWORK_INDEX)
     if (DOTNET_FRAMEWORK_INDEX GREATER -1)
         list (GET DOTNET_FRAMEWORK_VERSIONS ${DOTNET_FRAMEWORK_INDEX} CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION)
     endif ()
     unset (DOTNET_FRAMEWORK_INDEX)
+    # For .csproj embedded into visual studio solution
+    configure_file("${rbfx_SOURCE_DIR}/cmake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
 
     if (NOT SWIG_LIB)
         set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
