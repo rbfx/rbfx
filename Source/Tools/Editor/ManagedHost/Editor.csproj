@@ -2,8 +2,8 @@
   <PropertyGroup>
     <AssemblyName>Editor</AssemblyName>
     <OutputType>WinExe</OutputType>
-    <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
     <LangVersion>7.2</LangVersion>
+    <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
@@ -13,10 +13,4 @@
     <ProjectReference Include="../../../Urho3D/CSharp/Urho3DNet.Scripts.csproj" />
     <PackageReference Include="Mono.Cecil" Version="0.11.3" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|x64'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|Win32'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|x86'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'MinSizeRel|x64'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'MinSizeRel|Win32'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'MinSizeRel|x86'"></PropertyGroup>
 </Project>

@@ -41,10 +41,10 @@ elseif (ANDROID OR URHO3D_CSHARP)
             TARGET Player
             EXE
             PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Player.csproj
-            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player.exe
+            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player${CMAKE_EXECUTABLE_SUFFIX}
             DEPENDS Urho3DNet)
         add_dependencies(Player libPlayer Urho3DNet)
-        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player.exe" DESTINATION ${DEST_BIN_DIR_CONFIG})
+        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION ${DEST_BIN_DIR_CONFIG})
     endif ()
 else ()
     if (NOT URHO3D_WIN32_CONSOLE)
