@@ -70,7 +70,7 @@ if ("${rbfx_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
             # Generate a VS solution for C# projects when outside of visual studio.
             vs_generate_sln(${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln ${RBFX_CSPROJ_LIST})
         endif ()
-        add_msbuild_target(TARGET restore EXCLUDE_FROM_ALL ARGS ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln /t:restore /m:1)
+        add_msbuild_target(TARGET restore EXCLUDE_FROM_ALL ARGS ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln /t:restore)
     endif ()
 endif ()
 
