@@ -38,11 +38,7 @@ namespace Player
 
         private void Run(string[] args)
         {
-            int argc = args.Length + 1;                 // args + executable path
-            var argv = new string[args.Length + 2];     // args + executable path + null
-            argv[0] = new Uri(Assembly.GetExecutingAssembly().Location).LocalPath;
-            args.CopyTo(argv, 1);
-            Urho3D.ParseArguments(argc, argv);
+            Urho3D.ParseArguments(Assembly.GetExecutingAssembly(), args);
 
             // TODO: iOS does not allow runtime-compiled code.
             Context.SetRuntimeApi(new CompiledScriptRuntimeApiImpl());
