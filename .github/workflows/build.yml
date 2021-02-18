@@ -4,12 +4,13 @@ on:
     branches-ignore:
       - 'no-ci-**'
       - 'skip-ci-**'
-  pull_request: {}
+  pull_request:
 
 env:
   # common settings
   URHO3D_ENABLE_ALL: ON
   URHO3D_SAMPLES: ON
+  DOTNET_VERSION: 5.0.x
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -93,6 +94,12 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        if: matrix.ci_lib_type == 'dll'
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
       - name: Dependencies
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
@@ -160,6 +167,12 @@ jobs:
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        if: matrix.ci_lib_type == 'dll'
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Dependencies
         shell: bash
@@ -232,6 +245,12 @@ jobs:
         shell: bash
         run: brew install bash
 
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        if: matrix.ci_lib_type == 'dll'
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
       - name: Dependencies
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
@@ -291,6 +310,12 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_build_type }}
 
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        if: matrix.ci_lib_type == 'dll'
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
       - name: Dependencies
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
@@ -343,6 +368,12 @@ jobs:
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        if: matrix.ci_lib_type == 'dll'
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Bash
         shell: bash
