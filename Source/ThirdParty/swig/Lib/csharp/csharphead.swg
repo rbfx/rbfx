@@ -132,6 +132,11 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
 
 %pragma(csharp) imclasscode=%{
   public const string DllImportModule = "$dllimport_module";
+#if NET47 || NETSTANDARD2_1 || NETCOREAPP3_0 || NET5_0
+    public const global::System.Runtime.InteropServices.UnmanagedType LPStr = global::System.Runtime.InteropServices.UnmanagedType.LPUTF8Str;
+#else
+    public const global::System.Runtime.InteropServices.UnmanagedType LPStr = global::System.Runtime.InteropServices.UnmanagedType.LPStr;
+#endif
   protected class SWIGExceptionHelper {
 
 #if __IOS__
