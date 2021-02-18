@@ -143,14 +143,6 @@ function action-dependencies() {
         # Common dependencies
         sudo apt-get update
         sudo apt-get install -y ninja-build ccache xvfb "${dev_packages[@]}"
-
-        if [[ "$ci_lib_type" == "dll" ]];
-        then
-            sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-            echo "deb http://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends mono-devel msbuild-libhostfxr msbuild-sdkresolver msbuild
-        fi
     elif [[ "$ci_platform" == "web" || "$ci_platform" == "android" ]];
     then
         # Web / android dependencies
@@ -159,11 +151,6 @@ function action-dependencies() {
     then
         # iOS/MacOS dependencies
         brew install pkg-config ccache
-        if [[ "$ci_lib_type" == "dll" ]];
-        then
-            wget -q https://download.mono-project.com/archive/6.8.0/macos-10-universal/MonoFramework-MDK-6.8.0.123.macos10.xamarin.universal.pkg -O /tmp/Mono.pkg
-            sudo installer -pkg /tmp/Mono.pkg -target /
-        fi
     elif [[ "$ci_platform" == "windows" ]];
     then
         # Windows dependencies

@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>CSharpProject</RootNamespace>
     <LangVersion>7.2</LangVersion>
+    <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="**/*.cs" />
@@ -12,10 +13,4 @@
     <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
     <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.Scripts.csproj" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|x64'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|Win32'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|x86'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'MinSizeRel|x64'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'MinSizeRel|Win32'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'MinSizeRel|x86'"></PropertyGroup>
 </Project>

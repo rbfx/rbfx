@@ -18,19 +18,11 @@
     <PlatformTarget Condition=" '$(Platform)' == 'Win32' Or '$(Platform)' == 'x86' ">x86</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
 	<GenerateProjectSpecificOutputFolder>false</GenerateProjectSpecificOutputFolder>                                    <!-- Fixes linker errors for UWP -->
-  </PropertyGroup>
-  <PropertyGroup>
     <TargetFramework>$(URHO3D_NETFX)</TargetFramework>
+    <UseAppHost>True</UseAppHost>                                                                                       <!-- Produce a native executable -->
+    <SelfContained>False</SelfContained>                                                                                <!-- Do not include entire runtime in bin dir -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>                                                         <!-- Do not include a heap of language resource folders -->
     <RuntimeIdentifier>$(URHO3D_NETFX_RUNTIME_IDENTIFIER)</RuntimeIdentifier>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(URHO3D_NETFX_LEGACY_VERSION)' != ''">
-    <DefineConstants>$(DefineConstants);URHO3D_NETFX_LEGACY_VERSION</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)' == '' ">
-    <CMAKE_RUNTIME_OUTPUT_DIRECTORY>$(CMAKE_BINARY_DIR)$(BaseOutputPath)</CMAKE_RUNTIME_OUTPUT_DIRECTORY>               <!-- CMAKE_BINARY_DIR/bin -->
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(RBFX_BINARY_DIR)' == '' ">
-    <RBFX_BINARY_DIR>$(CMAKE_BINARY_DIR)</RBFX_BINARY_DIR>                                                              <!-- Could be CMAKE_BINARY_DIR/dep/rbfx for example -->
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(CMAKE_GENERATOR)' == 'Xcode' ">
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>

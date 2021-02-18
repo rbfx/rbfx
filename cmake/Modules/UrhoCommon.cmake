@@ -102,10 +102,18 @@ endfunction()
 function (add_msbuild_target)
     if (URHO3D_CSHARP)
         cmake_parse_arguments(MSBUILD "EXCLUDE_FROM_ALL" "TARGET;DEPENDS" "ARGS;BYPRODUCTS" ${ARGN})
+        if (LINUX)
+            # On linux instance of dotnet may hang indefinitely which prevents CMake from detecting build completion and hangs the build.
+            set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
+        elseif (MACOS)
+            # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
+            set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
+        endif ()
         add_custom_target(${MSBUILD_TARGET} ALL
-            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${MSBUILD_ARGS}
+            COMMAND ${DOTNET_MACOS_MSBUILD_WORKAROUND} ${DOTNET} msbuild /noLogo /interactive:false /nr:false /m:1 ${MSBUILD_ARGS}
             /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
             /consoleloggerparameters:ErrorsOnly /nologo
+            ${DOTNET_LINUX_MSBUILD_WORKAROUND}
             BYPRODUCTS ${MSBUILD_BYPRODUCTS}
             DEPENDS ${MSBUILD_DEPENDS})
         if (MSBUILD_EXCLUDE_FROM_ALL)
@@ -194,11 +202,6 @@ function (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS "-D${item}")
     endforeach()
 
-    if (URHO3D_NETFX_LEGACY_VERSION)
-        # TODO: Not great, little bit terrible.
-        list(APPEND GENERATOR_OPTIONS -DURHO3D_NETFX_LEGACY_VERSION=1)
-    endif ()
-
     if (NOT BIND_NATIVE)
         set (BIND_NATIVE ${BIND_TARGET})
     endif ()
@@ -247,6 +250,7 @@ function (csharp_bind_target)
     # cmake parameters. We exploit this to delete bindings upon configuration change and force their regeneration.
     if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
         file(REMOVE_RECURSE ${SWIG_MODULE_${BIND_TARGET}_OUTDIR})
+        file(MAKE_DIRECTORY ${SWIG_MODULE_${BIND_TARGET}_OUTDIR})
     endif ()
 
     swig_add_module(${BIND_TARGET} csharp ${BIND_SWIG})
