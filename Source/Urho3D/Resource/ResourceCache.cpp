@@ -1329,7 +1329,7 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
     }
 
     // Ensure parent path exists
-    if (!fileSystem->CreateDirsRecursive(GetPath(destination)))
+    if (!fileSystem->CreateDirsRecursive(GetParentPath(destination)))
         return false;
 
     if (!fileSystem->Rename(source, destination))
