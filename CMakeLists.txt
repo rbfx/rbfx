@@ -163,6 +163,12 @@ if (NOT DEFINED URHO3D_64BIT)
     endif ()
 endif ()
 
+if (MULTI_CONFIG_PROJECT)
+    set (URHO3D_CONFIG $<CONFIG>)
+else ()
+    set (URHO3D_CONFIG ${CMAKE_BUILD_TYPE})
+endif ()
+
 if (MINGW)
     find_file(DLL_FILE_PATH_1 "libstdc++-6.dll")
     find_file(DLL_FILE_PATH_2 "libgcc_s_seh-1.dll")
