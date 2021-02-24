@@ -99,29 +99,6 @@ function(vs_group_subdirectory_targets DIRECTORY FOLDER_NAME)
     endforeach()
 endfunction()
 
-function (add_msbuild_target)
-    if (URHO3D_CSHARP)
-        cmake_parse_arguments(MSBUILD "EXCLUDE_FROM_ALL" "TARGET;DEPENDS" "ARGS;BYPRODUCTS" ${ARGN})
-        if (LINUX)
-            # On linux instance of dotnet may hang indefinitely which prevents CMake from detecting build completion and hangs the build.
-            set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
-        elseif (MACOS)
-            # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
-            set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
-        endif ()
-        add_custom_target(${MSBUILD_TARGET} ALL
-            COMMAND ${DOTNET_MACOS_MSBUILD_WORKAROUND} ${DOTNET} msbuild /noLogo /interactive:false /nr:false /m:1 ${MSBUILD_ARGS}
-            /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
-            /consoleloggerparameters:ErrorsOnly /nologo
-            ${DOTNET_LINUX_MSBUILD_WORKAROUND}
-            BYPRODUCTS ${MSBUILD_BYPRODUCTS}
-            DEPENDS ${MSBUILD_DEPENDS})
-        if (MSBUILD_EXCLUDE_FROM_ALL)
-            set_target_properties(${MSBUILD_TARGET} PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
-        endif ()
-    endif ()
-endfunction ()
-
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})
     if (values)
@@ -146,16 +123,6 @@ function (add_target_csharp)
             add_dependencies(${CS_TARGET} ${CS_DEPENDS})
         endif ()
     else ()
-        if (MULTI_CONFIG_PROJECT)
-            set (CSHARP_CONFIG $<CONFIG>)
-        else ()
-            set (CSHARP_CONFIG ${CMAKE_BUILD_TYPE})
-        endif ()
-        add_msbuild_target(TARGET ${CS_TARGET} DEPENDS ${CS_DEPENDS} ARGS ${CS_PROJECT}
-            /p:Platform=${URHO3D_PLATFORM}
-            /p:Configuration=${CSHARP_CONFIG}
-            BYPRODUCTS ${CS_OUTPUT_FILE}
-        )
         list(APPEND RBFX_CSPROJ_LIST ${CS_PROJECT})
         set(RBFX_CSPROJ_LIST "${RBFX_CSPROJ_LIST}" CACHE STRING "A list of C# projects." FORCE)
     endif ()
@@ -269,7 +236,10 @@ function (csharp_bind_target)
             TARGET ${BIND_MANAGED_TARGET}
             PROJECT ${BIND_CSPROJ}
             OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll)
-        add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET})
+        if (TARGET ${BIND_MANAGED_TARGET})
+            # Real C# target
+            add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET})
+        endif ()
         install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR_CONFIG})
     endif ()
 endfunction ()
