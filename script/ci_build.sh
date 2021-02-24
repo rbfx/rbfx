@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # build.sh <action> ...
-# ci_action:       dependencies|generate|restore|build|install
+# ci_action:       dependencies|generate|build|install
 # ci_platform:     windows|linux|macos|android|ios|web
 # ci_arch:         x86|x64|arm|arm64
 # ci_compiler:     msvc|gcc|gcc-*|clang|clang-*|mingw
@@ -210,21 +210,6 @@ function action-generate() {
     cmake "${ci_cmake_params[@]}"
 }
 
-function action-restore() {
-    if [[ $ci_compiler == 'mingw' ]];  # Also see quirks array in action-generate.
-    then
-        echo 'C# is not supported with MinGW.'
-        exit 0;
-    fi
-    if [[ $ci_lib_type != 'dll' ]];
-    then
-        echo 'C# is not supported in static builds.'
-        exit 0;
-    fi
-    cd $ci_build_dir
-    cmake --build . --target restore
-}
-
 # Default build path using plain CMake.
 function action-build() {
     cd $ci_build_dir
@@ -236,7 +221,7 @@ function action-build() {
 function action-build-msvc() {
     cd $ci_build_dir
     # Invoke msbuild directly when using msvc. Invoking msbuild through cmake causes some custom target dependencies to not be respected.
-    "$MSBUILD" "-p:Configuration=${types[$ci_build_type]}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=C:/hostedtoolcache/windows/Python/3.7.9/x64/Scripts/" *.sln && \
+    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=C:/hostedtoolcache/windows/Python/3.7.9/x64/Scripts/" *.sln && \
     clcache -s
 }
 
