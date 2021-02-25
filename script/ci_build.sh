@@ -47,6 +47,7 @@ declare -A android_types=(
 
 generators_windows_mingw=('-G' 'MinGW Makefiles')
 generators_windows=('-G' 'Visual Studio 16 2019')
+generators_uwp=('-G' 'Visual Studio 16 2019' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
 generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
@@ -82,6 +83,10 @@ quirks_web=(
 quirks_dll=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
 quirks_windows_msvc_x86=('-A' 'Win32')
+quirks_uwo_msvc_x64=${quirks_windows_msvc_x64[*]}
+quirks_uwo_msvc_x86=${quirks_windows_msvc_x86[*]}
+quirks_uwp_msvc_arm=('-A' 'ARM')
+quirks_uwp_msvc_arm64=('-A' 'ARM64')
 quirks_clang=('-DTRACY_NO_PARALLEL_ALGORITHMS=ON')                  # Includes macos and ios
 quirks_macos_x86=('-DCMAKE_OSX_ARCHITECTURES=i386')
 quirks_macos_x64=('-DCMAKE_OSX_ARCHITECTURES=x86_64')
@@ -96,7 +101,7 @@ quirks_linux_x64=(
 
 # Find msbuild.exe
 MSBUILD=msbuild
-if [[ "$ci_platform" == "windows" ]];
+if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
 then
     MSBUILD=$(vswhere -products '*' -requires Microsoft.Component.MSBuild -property installationPath -latest)
     MSBUILD=$(echo $MSBUILD | tr "\\" "/" 2>/dev/null)    # Fix slashes
@@ -151,7 +156,7 @@ function action-dependencies() {
     then
         # iOS/MacOS dependencies
         brew install pkg-config ccache
-    elif [[ "$ci_platform" == "windows" ]];
+    elif [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
     then
         # Windows dependencies
         choco install -y ccache
