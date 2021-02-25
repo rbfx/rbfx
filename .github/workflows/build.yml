@@ -70,8 +70,6 @@ jobs:
         ci_compiler:
           - msvc
           - mingw
-        exclude:
-          - { ci_build_type: dbg, ci_compiler: mingw }    # MinGW debugging info is so bug build worker runs out of disk space.
 
     env:
       ci_platform: windows
