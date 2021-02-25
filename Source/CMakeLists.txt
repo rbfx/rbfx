@@ -63,31 +63,28 @@ add_subdirectory (Extras)
 add_subdirectory (Samples)
 add_subdirectory (Player)
 
-if ("${rbfx_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
-    # Building standalone engine.
-    if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
-        # Generate a VS solution for C# projects when outside of visual studio.
-        vs_generate_sln(${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln ${RBFX_CSPROJ_LIST})
+if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
+    # Generate a VS solution for C# projects when outside of visual studio.
+    vs_generate_sln(${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln ${RBFX_CSPROJ_LIST})
 
-        if (LINUX)
-            # On linux instance of dotnet may hang indefinitely which prevents CMake from detecting build completion and hangs the build.
-            set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
-        elseif (MACOS)
-            # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
-            set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
-        endif ()
-        add_custom_target(Urho3DNet ALL
-            COMMAND ${DOTNET_MACOS_MSBUILD_WORKAROUND} ${DOTNET} build ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln
-                -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
-                -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
-                ${DOTNET_LINUX_MSBUILD_WORKAROUND}
-            DEPENDS Urho3D)
-        foreach (TARGET libEditor libPlayer)
-            if (TARGET ${TARGET})
-                add_dependencies(Urho3DNet ${TARGET})
-            endif ()
-        endforeach ()
+    if (LINUX)
+        # On linux instance of dotnet may hang indefinitely which prevents CMake from detecting build completion and hangs the build.
+        set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
+    elseif (MACOS)
+        # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
+        set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
     endif ()
+    add_custom_target(Urho3DNet ALL
+        COMMAND ${DOTNET_MACOS_MSBUILD_WORKAROUND} ${DOTNET} build ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln
+            -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
+            -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
+            ${DOTNET_LINUX_MSBUILD_WORKAROUND}
+        DEPENDS Urho3D)
+    foreach (TARGET libEditor libPlayer)
+        if (TARGET ${TARGET})
+            add_dependencies(Urho3DNet ${TARGET})
+        endif ()
+    endforeach ()
 endif ()
 
 if (NOT MINI_URHO)
