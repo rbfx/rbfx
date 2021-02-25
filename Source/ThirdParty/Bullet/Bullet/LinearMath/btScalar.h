@@ -114,7 +114,7 @@ inline int btIsDoublePrecision()
  			#define btFsel(a,b,c) __fsel((a),(b),(c))
 		#else
 
-#if defined (_M_ARM)
+#if defined (_M_ARM) || defined(_M_ARM64)
             //Do not turn SSE on for ARM (may want to turn on BT_USE_NEON however)
 
 // Urho3D: commented out original

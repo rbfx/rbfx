@@ -108,7 +108,7 @@
 
 #elif defined(EA_PLATFORM_MICROSOFT) && !EA_POSIX_THREADS_AVAILABLE
 
-	#ifdef EA_PROCESSOR_X86_64
+	#if defined(EA_PROCESSOR_X86_64) || defined(EA_PROCESSOR_ARM64)
 		static const int MUTEX_PLATFORM_DATA_SIZE = 40; // CRITICAL_SECTION is 40 bytes on Win64.
 	#else
 		static const int MUTEX_PLATFORM_DATA_SIZE = 32; // CRITICAL_SECTION is 24 bytes on Win32, 28 bytes on XBox 360.
