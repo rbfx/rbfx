@@ -326,7 +326,7 @@ EATHREADLIB_API EA::Thread::ThreadId EA::Thread::GetThreadId(EA::Thread::SysThre
 
 EATHREADLIB_API EA::Thread::SysThreadId EA::Thread::GetSysThreadId(ThreadId id)
 {
-	#if defined(EA_PLATFORM_MICROSOFT) && defined(EA_PROCESSOR_X86_64)
+	#if defined(EA_PLATFORM_MICROSOFT) && (defined(EA_PROCESSOR_X86_64) || defined(EA_PROCESSOR_ARM32) || defined(EA_PROCESSOR_ARM64))
 		// Win64 has this function natively.
 		return ::GetThreadId(id);
 
@@ -485,7 +485,7 @@ void* EA::Thread::GetThreadStackBase()
 
 		return (void*)pTib->StackBase;
 
-	#elif defined(EA_PLATFORM_MICROSOFT) && defined(EA_PROCESSOR_X86_64) && defined(EA_COMPILER_MSVC)
+	#elif defined(EA_PLATFORM_MICROSOFT) && (defined(EA_PROCESSOR_X86_64) || defined(EA_PROCESSOR_ARM32) || defined(EA_PROCESSOR_ARM64)) && defined(EA_COMPILER_MSVC)
 		// VC++ also offers the __readgsdword() intrinsic, which is an alternative which could
 		// retrieve the current thread TEB if the following proves unreliable.
 		PNT_TIB64 pTib = reinterpret_cast<PNT_TIB64>(NtCurrentTeb());
