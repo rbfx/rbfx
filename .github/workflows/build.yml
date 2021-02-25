@@ -120,6 +120,75 @@ jobs:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
+  UWP:
+    runs-on: windows-latest
+    needs: [CheckSkipCI]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_arch:
+          - x64
+          - arm
+          - arm64
+        ci_lib_type:
+          - dll
+          - lib
+        ci_build_type:
+          - dbg
+          - rel
+        ci_compiler:
+          - msvc
+
+    env:
+      ci_platform: uwp
+      ci_arch: ${{ matrix.ci_arch }}
+      ci_lib_type: ${{ matrix.ci_lib_type }}
+      ci_build_type: ${{ matrix.ci_build_type }}
+      ci_compiler: ${{ matrix.ci_compiler }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: ${{ env.ci_source_dir }}
+          fetch-depth: 1
+
+      - name: Build Cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ hashFiles('**/source-code/Source/**') }}
+          restore-keys: |
+            ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        if: matrix.ci_lib_type == 'dll'
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Dependencies
+        shell: bash
+        run: ${{ env.ci_build_script }} dependencies
+
+      - name: Generate
+        shell: bash
+        run: ${{ env.ci_build_script }} generate
+
+      - name: Build
+        shell: bash
+        run: ${{ env.ci_build_script }} build-${{ env.ci_compiler }}
+
+      - name: Install
+        shell: bash
+        run: ${{ env.ci_build_script }} install
+
+      - uses: actions/upload-artifact@v2
+        if: github.context.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        with:
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          path: ${{ env.ci_sdk_dir }}
+
   Linux:
     runs-on: ubuntu-20.04
     needs: [CheckSkipCI]
