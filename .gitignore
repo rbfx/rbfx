@@ -59,9 +59,8 @@ captures/
 /CMakeLists.txt.user
 
 # JetBrains IDE project settings
-/.idea/
+.idea
 *.iml
-/cmake-build-*/
 
 # Code::Blocks project settings
 /*.cbp
@@ -79,13 +78,18 @@ captures/
 
 # Android output directories
 gradle*
+.gradle
 
 # Visual Studio project settings
 /.vs/
 /CMakeSettings.json
 /out/
 
+# VSCode project settings
+.vscode
+
 # CMake generated build files
+/cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
 CMakeScripts/
@@ -118,13 +122,13 @@ configure*
 *.log
 *.bak
 Thumbs.db
-.*
 !.ci
 *.DotSettings
 *.DotSettings.user
 __pycache__
 *.csproj.user
 *venv
+.directory
 
 # Doxygen mess from absence of 'dot' dependency
 CMakeDoxyFile.in
