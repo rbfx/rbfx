@@ -714,10 +714,12 @@ namespace eastl
 		struct is_function<ReturnValue __cdecl (ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
 			: public eastl::true_type {};
 
+#if !EA_PROCESSOR_ARM32
 		// __stdcall specialization
 		template <typename ReturnValue, typename... ArgPack>
 		struct is_function<ReturnValue __stdcall (ArgPack...)>
 			: public eastl::true_type {};
+#endif
 
 		// When functions use a variable number of arguments, it is the caller that cleans the stack (cf. cdecl).
 		//

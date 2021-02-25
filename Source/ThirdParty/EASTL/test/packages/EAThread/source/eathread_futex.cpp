@@ -229,10 +229,10 @@
 	// Validate what we assume to be invariants.
 	EAT_COMPILETIME_ASSERT(sizeof(CRITICAL_SECTION) <= (EA::Thread::FUTEX_PLATFORM_DATA_SIZE / sizeof(uint64_t) * sizeof(uint64_t)));
 
-	#if defined(EA_PLATFORM_MICROSOFT) && defined(EA_PROCESSOR_X86_64)
+	#if defined(EA_PLATFORM_MICROSOFT) && (defined(EA_PROCESSOR_X86_64) || defined(EA_PROCESSOR_ARM64))
 		EAT_COMPILETIME_ASSERT(offsetof(CRITICAL_SECTION, RecursionCount) == (3 * sizeof(int)));
 		EAT_COMPILETIME_ASSERT(offsetof(CRITICAL_SECTION, OwningThread)   == (4 * sizeof(int)));
-	#elif defined(EA_PLATFORM_WIN32)
+	#elif defined(EA_PLATFORM_WIN32) || defined(EA_PROCESSOR_ARM32)
 		EAT_COMPILETIME_ASSERT(offsetof(CRITICAL_SECTION, RecursionCount) == (2 * sizeof(int)));
 		EAT_COMPILETIME_ASSERT(offsetof(CRITICAL_SECTION, OwningThread)   == (3 * sizeof(int)));
 	#else

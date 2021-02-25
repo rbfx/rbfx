@@ -162,7 +162,7 @@ namespace EA
 		int           mResult;  // Result of call to pthread_key_create, so we can know if mKey is valid.
 	};
 
-#elif defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_WINDOWS_PHONE) && !(defined(EA_PLATFORM_WINDOWS) && !EA_WINAPI_FAMILY_PARTITION(EA_WINAPI_PARTITION_DESKTOP)) 
+#elif defined(EA_PLATFORM_MICROSOFT)
 	// In this case we will be using TlsAlloc, TlsFree, TlsGetValue, TlsSetValue.
 	typedef uint32_t EAThreadLocalStorageData;
 
