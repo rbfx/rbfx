@@ -148,7 +148,7 @@ if (URHO3D_CSHARP_TOOLS AND DESKTOP)
     add_subdirectory(swig)
 endif ()
 
-if ((WIN32 OR APPLE) AND NOT UWP)
+if (DESKTOP AND NOT LINUX)
     add_subdirectory (LibCpuId)
 endif ()
 
