@@ -18,47 +18,33 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-//
+
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Urho3DNet
 {
-    public partial class Node
+    public partial class UIElement
     {
-        public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T: Component
+        public T CreateChild<T>() where T : UIElement
         {
-            return (T)CreateComponent(typeof(T).Name, mode, id);
+            return (T)CreateChild(typeof(T).Name);
         }
 
-        public T GetComponent<T>(bool recursive) where T: Component
+        public T CreateChild<T>(string name) where T : UIElement
         {
-            return (T)GetComponent(typeof(T).Name, recursive);
+            return (T)CreateChild(typeof(T).Name, name);
         }
 
-        public T GetOrCreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T: Component
+        public T CreateChild<T>(string name, uint index) where T : UIElement
         {
-            return (T)GetOrCreateComponent(typeof(T).Name, mode, id);
+            return (T)CreateChild(typeof(T).Name, name, index);
         }
 
-        /// <summary>
-        /// Get first occurrence of a component type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public T GetComponent<T>() where T: Component
+        public T GetChild<T>(string name, bool recursive) where T : UIElement
         {
-            return (T)GetComponent(typeof(T).Name);
-        }
-
-        /// <summary>
-        /// get all components of a type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public ComponentList GetComponents<T>(bool recursive = false) where T: Component
-        {
-            ComponentList componentList = new ComponentList();
-            GetComponents(componentList, typeof(T).Name, recursive);
-            return componentList;
+            return (T) GetChild(typeof(T).Name, name, recursive);
         }
     }
 }
