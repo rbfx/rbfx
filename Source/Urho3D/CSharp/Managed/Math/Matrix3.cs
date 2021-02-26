@@ -341,7 +341,10 @@ namespace Urho3DNet
         static Matrix3 Zero = new Matrix3(0, 0, 0, 0, 0, 0, 0, 0, 0);
 
         /// Identity matrix.
-        static Matrix3 Identity;
+        static Matrix3 Identity = new Matrix3(
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1);
 
         public override int GetHashCode()
         {

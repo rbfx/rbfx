@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2008-2019 the Urho3D project.
 // Copyright (c) 2017-2020 the rbfx project.
 //
@@ -223,7 +223,9 @@ namespace Urho3DNet
         public static readonly Matrix2 ZERO = new Matrix2(0, 0, 0, 0);
 
         /// Identity matrix.
-        public static readonly Matrix2 IDENTITY;
+        public static readonly Matrix2 IDENTITY = new Matrix2(
+            1, 0,
+            0, 1);
 
         public override bool Equals(object obj)
         {
