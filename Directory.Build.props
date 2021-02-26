@@ -14,8 +14,8 @@
     <Configurations>Debug;Release;RelWithDebInfo;MinSizeRel</Configurations>
     <HasDebugInfo Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'RelWithDebInfo'">true</HasDebugInfo>
     <BaseOutputPath>bin/</BaseOutputPath>
-    <PlatformTarget Condition=" '$(PlatformTarget)' == '' Or '$(Platform)' == 'x64' ">x64</PlatformTarget>
-    <PlatformTarget Condition=" '$(Platform)' == 'Win32' Or '$(Platform)' == 'x86' ">x86</PlatformTarget>
+    <PlatformTarget>$(URHO3D_PLATFORM)</PlatformTarget>
+	<Platforms>$(PlatformTarget)</Platforms>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
 	<GenerateProjectSpecificOutputFolder>false</GenerateProjectSpecificOutputFolder>                                    <!-- Fixes linker errors for UWP -->
     <TargetFramework>$(URHO3D_NETFX)</TargetFramework>
