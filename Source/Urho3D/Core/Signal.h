@@ -108,36 +108,55 @@ public:
     /// Unsubscribe all handlers of specified receiver from this signal.
     void Unsubscribe(RefCounted* receiver)
     {
-        for (auto it = subscriptions_.begin(); it != subscriptions_.end();)
+        for (Subscription& subscription : subscriptions_)
         {
-            Subscription& subscription = *it;
-            if (subscription.receiver_.Expired() || subscription.receiver_ == receiver)
-                it = subscriptions_.erase(it);
-            else
-                ++it;
+            if (subscription.receiver_ == receiver)
+                subscription.receiver_ = nullptr;
         }
+
+        if (!invocationInProgress_)
+            RemoveExpiredElements();
     }
 
     /// Invoke signal.
     template <typename... InvokeArgs>
     void operator()(Sender* sender, InvokeArgs&&... args)
     {
-        for (auto it = subscriptions_.begin(); it != subscriptions_.end();)
+        if (invocationInProgress_)
         {
-            Subscription& subscription = *it;
-            RefCounted* receiver = subscription.receiver_.Get();
-            if (receiver && subscription.handler_(receiver, sender, args...))
-                ++it;
-            else
-                it = subscriptions_.erase(it);
+            assert(0);
+            return;
         }
+
+        bool hasExpiredElements = false;
+        invocationInProgress_ = true;
+        for (unsigned i = 0; i < subscriptions_.size(); ++i)
+        {
+            Subscription& subscription = subscriptions_[i];
+            RefCounted* receiver = subscription.receiver_.Get();
+            if (!receiver || !subscription.handler_(receiver, sender, args...))
+            {
+                hasExpiredElements = true;
+                subscription.receiver_ = nullptr;
+            }
+        }
+        invocationInProgress_ = false;
+
+        if (hasExpiredElements)
+            RemoveExpiredElements();
     }
 
     /// Returns true when event has at least one subscription.
     bool HasSubscriptions() const { return !subscriptions_.empty(); }
 
 protected:
-    /// Wrap callback into Handler.
+    void RemoveExpiredElements()
+    {
+        assert(!invocationInProgress_);
+        const auto isExpired = [](const Subscription& subscription) { return !subscription.receiver_; };
+        subscriptions_.erase(ea::remove_if(subscriptions_.begin(), subscriptions_.end(), isExpired), subscriptions_.end());
+    }
+
     template <class Receiver, class Callback>
     Handler WrapHandler(Callback handler)
     {
@@ -177,8 +196,10 @@ protected:
         };
     }
 
-    /// Vector of subscriptions.
+    /// Vector of subscriptions. May contain expired elements.
     SubscriptionVector subscriptions_;
+    /// Whether the invocation is in progress. If true, cannot execute RemoveExpiredElements().
+    bool invocationInProgress_{};
 };
 
 }
