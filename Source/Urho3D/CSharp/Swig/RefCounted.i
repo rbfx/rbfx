@@ -131,7 +131,7 @@
         // FreeGCHandle();
         if (_swigCMemOwn) {
           if (Refs() > 0)
-            throw new global::System.InvalidOperationException("Objects with active references can not be disposed.");
+            throw new global::System.InvalidOperationException($"Objects of type {GetType().Name} with active references can not be disposed.");
           _swigCMemOwn = false;
           if (!IsScriptStrongRef())
             $imcall;
@@ -151,7 +151,7 @@
         $typemap(csdisposed_extra_early_optional, TYPE)
         if (_swigCMemOwn) {
           if (Refs() > 0)
-            throw new global::System.InvalidOperationException("Objects with active references can not be disposed.");
+            throw new global::System.InvalidOperationException($"Objects of type {GetType().Name} with active references can not be disposed.");
           _swigCMemOwn = false;
           if (!IsScriptStrongRef())
             $imcall;
