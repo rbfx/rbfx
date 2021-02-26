@@ -31,7 +31,7 @@ namespace Urho3DNet
     public struct Ray : IEquatable<Ray>
     {
         /// Construct from origin and direction. The direction will be normalized.
-        Ray(in Vector3 origin, in Vector3 direction)
+        public Ray(in Vector3 origin, in Vector3 direction)
         {
             Origin = origin;
             Direction = direction.Normalized;
