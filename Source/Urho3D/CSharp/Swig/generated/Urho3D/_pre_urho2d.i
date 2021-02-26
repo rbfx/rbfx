@@ -38,7 +38,6 @@
 %csattribute(Urho3D::StaticSprite2D, %arg(Urho3D::ResourceRef), CustomMaterialAttr, GetCustomMaterialAttr, SetCustomMaterialAttr);
 %csattribute(Urho3D::AnimatedSprite2D, %arg(Urho3D::AnimationSet2D *), AnimationSet, GetAnimationSet, SetAnimationSet);
 %csattribute(Urho3D::AnimatedSprite2D, %arg(ea::string), Entity, GetEntity, SetEntity);
-%csattribute(Urho3D::AnimatedSprite2D, %arg(ea::string), Animation, GetAnimation);
 %csattribute(Urho3D::AnimatedSprite2D, %arg(Urho3D::LoopMode2D), LoopMode, GetLoopMode, SetLoopMode);
 %csattribute(Urho3D::AnimatedSprite2D, %arg(float), Speed, GetSpeed, SetSpeed);
 %csattribute(Urho3D::AnimatedSprite2D, %arg(Urho3D::ResourceRef), AnimationSetAttr, GetAnimationSetAttr, SetAnimationSetAttr);
