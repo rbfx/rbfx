@@ -61,7 +61,14 @@ namespace Urho3DNet
 
             // Register factories marked with attributes
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                RegisterFactories(assembly);
+            {
+                // Exclude system libraries and UWP HiddenScope assembly.
+                var assemblyName = assembly.GetName().Name;
+                if (!assemblyName.StartsWith("System.") && assemblyName != "HiddenScope")
+                {
+                    RegisterFactories(assembly);
+                }
+            }
 
             Instance = this;
         }
