@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -66,6 +66,11 @@ namespace Urho3DNet
         public void SubscribeToEvent(StringHash e, Action<VariantMap> eventHandler)
         {
             SubscribeToEvent(e, null, eventHandler);
+        }
+
+        public T GetSubsystem<T>() where T : Object
+        {
+            return (T)GetSubsystem(typeof(T).Name);
         }
     }
 }
