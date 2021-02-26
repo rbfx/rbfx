@@ -97,7 +97,11 @@ void SystemUI::PlatformInitialize()
 #endif
 #if URHO3D_OPENGL
 #if __APPLE__
+#if URHO3D_GLES3
+    const char* glslVersion = "#version 300 es";
+#else
     const char* glslVersion = "#version 150";
+#endif
 #else
     const char* glslVersion = nullptr;
 #endif
