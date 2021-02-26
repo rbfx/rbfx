@@ -553,7 +553,11 @@ public struct Matrix4 : IEquatable<Matrix4>
     /// Zero matrix.
     public static readonly Matrix4 Zero = new Matrix4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     /// Identity matrix.
-    public static readonly Matrix4 Identity;
-};
+    public static readonly Matrix4 Identity = new Matrix4(
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1);
+    };
 
 }
