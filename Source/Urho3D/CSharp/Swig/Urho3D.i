@@ -370,9 +370,7 @@ namespace SDL
   }
 %}
 
-%ignore Urho3D::TouchState::touchedElement_;
 %ignore Urho3D::TouchState::GetTouchedElement;
-%ignore Urho3D::JoystickState::IsController;
 %ignore Urho3D::Input::OnRawInput;
 
 %include "generated/Urho3D/_pre_input.i"
