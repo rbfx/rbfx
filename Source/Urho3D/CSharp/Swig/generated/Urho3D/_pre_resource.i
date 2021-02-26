@@ -23,9 +23,6 @@
 %csattribute(Urho3D::JSONValue, %arg(bool), IsString, IsString);
 %csattribute(Urho3D::JSONValue, %arg(bool), IsArray, IsArray);
 %csattribute(Urho3D::JSONValue, %arg(bool), IsObject, IsObject);
-%csattribute(Urho3D::JSONValue, %arg(Urho3D::Variant), Variant, GetVariant);
-%csattribute(Urho3D::JSONValue, %arg(Urho3D::VariantMap), VariantMap, GetVariantMap);
-%csattribute(Urho3D::JSONValue, %arg(Urho3D::VariantVector), VariantVector, GetVariantVector);
 %csattribute(Urho3D::Resource, %arg(ea::string), Name, GetName, SetName);
 %csattribute(Urho3D::Resource, %arg(Urho3D::StringHash), NameHash, GetNameHash);
 %csattribute(Urho3D::Resource, %arg(unsigned int), MemoryUse, GetMemoryUse, SetMemoryUse);
@@ -66,7 +63,6 @@
 %csattribute(Urho3D::XMLElement, %arg(pugi::xpath_node *), XPathNode, GetXPathNode);
 %csattribute(Urho3D::XMLElement, %arg(unsigned int), XPathResultIndex, GetXPathResultIndex);
 %csattribute(Urho3D::XPathResultSet, %arg(pugi::xpath_node_set *), XPathNodeSet, GetXPathNodeSet);
-%csattribute(Urho3D::XPathQuery, %arg(ea::string), Query, GetQuery);
 %csattribute(Urho3D::XPathQuery, %arg(pugi::xpath_variable_set *), XPathVariableSet, GetXPathVariableSet);
 %csattribute(Urho3D::XMLFile, %arg(pugi::xml_document *), Document, GetDocument);
 %csattribute(Urho3D::BackgroundLoader, %arg(unsigned int), NumQueuedResources, GetNumQueuedResources);
