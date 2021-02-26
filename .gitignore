@@ -129,6 +129,7 @@ __pycache__
 *.csproj.user
 *venv
 .directory
+.gdbinit
 
 # Doxygen mess from absence of 'dot' dependency
 CMakeDoxyFile.in
