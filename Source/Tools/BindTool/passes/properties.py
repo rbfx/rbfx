@@ -102,7 +102,7 @@ class DefinePropertiesPass(AstPass):
                 is_setter = name.startswith('Set') or name in properties
                 if is_setter:
                     # Setters have a single parameter
-                    if len(n.params) == 1:
+                    if len(n.params) > 0:
                         if name.startswith('Set'):
                             name = name[3:]
                         prop = properties.get(name)
@@ -113,7 +113,14 @@ class DefinePropertiesPass(AstPass):
                                     setter_param_type = setter_param_type[6:]
                                 setter_param_type = setter_param_type.rstrip('& ')
                             if prop[2] == setter_param_type:
-                                prop[1] = n
+                                if n.virtual:
+                                    logging.warning(f'{fqn}::{n.name} can not be a property: virtual.')
+                                    del properties[name]
+                                elif len(n.params) != 1:
+                                    logging.warning(f'{fqn}::{n.name} can not be a property: setter has too many parameters.')
+                                    del properties[name]
+                                else:
+                                    prop[1] = n
 
         # Print properties
         for name, (getter_node, setter_node, param_type, prop_name) in properties.items():

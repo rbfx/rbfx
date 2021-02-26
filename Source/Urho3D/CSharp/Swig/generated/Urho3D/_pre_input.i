@@ -546,10 +546,7 @@ using QualifierFlags = Urho3D::Qualifier;
 %csattribute(Urho3D::Input, %arg(bool), ScreenKeyboardSupport, GetScreenKeyboardSupport);
 %csattribute(Urho3D::Input, %arg(bool), IsScreenKeyboardVisible, IsScreenKeyboardVisible, SetScreenKeyboardVisible);
 %csattribute(Urho3D::Input, %arg(bool), TouchEmulation, GetTouchEmulation, SetTouchEmulation);
-%csattribute(Urho3D::Input, %arg(bool), IsMouseVisible, IsMouseVisible);
-%csattribute(Urho3D::Input, %arg(bool), IsMouseGrabbed, IsMouseGrabbed);
 %csattribute(Urho3D::Input, %arg(bool), IsMouseLocked, IsMouseLocked);
-%csattribute(Urho3D::Input, %arg(Urho3D::MouseMode), MouseMode, GetMouseMode);
 %csattribute(Urho3D::Input, %arg(bool), IsMinimized, IsMinimized);
 %csattribute(Urho3D::Input, %arg(bool), Enabled, GetEnabled, SetEnabled);
 %pragma(csharp) moduleimports=%{
