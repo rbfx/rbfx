@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2008-2019 the Urho3D project.
 // Copyright (c) 2017-2020 the rbfx project.
 //
@@ -470,8 +470,10 @@ public void SetTranslation(in Vector3 translation)
     /// Zero matrix.
     public static readonly Matrix3x4 Zero = new Matrix3x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     /// Identity matrix.
-    public static readonly Matrix3x4 Identity;
-
+    public static readonly Matrix3x4 Identity = new Matrix3x4(
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0);
 };
 
 }
