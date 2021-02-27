@@ -60,11 +60,8 @@ EA_DISABLE_ALL_VC_WARNINGS()
 #include <stddef.h>
 EA_RESTORE_ALL_VC_WARNINGS()
 
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
-	#pragma warning(disable: 4571)  // catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
-#endif
+EA_DISABLE_VC_WARNING(4530); // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+EA_DISABLE_VC_WARNING(4571); // catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
 
 #if defined(EA_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -162,15 +159,11 @@ namespace eastl
 	inline void ref_count_sp::release()
 	{
 		EASTL_ASSERT((mRefCount > 0) && (mWeakRefCount > 0));
-		if(Internal::atomic_decrement(&mRefCount) > 0)
-			Internal::atomic_decrement(&mWeakRefCount);
-		else
-		{
+		if(Internal::atomic_decrement(&mRefCount) == 0)
 			free_value();
 
-			if(Internal::atomic_decrement(&mWeakRefCount) == 0)
-				free_ref_count_sp();
-		}
+		if(Internal::atomic_decrement(&mWeakRefCount) == 0)
+			free_ref_count_sp();
 	}
 
 	inline void ref_count_sp::weak_addref() EA_NOEXCEPT
@@ -600,8 +593,10 @@ namespace eastl
 		/// the shared reference count is deleted.
 		~shared_ptr()
 		{
-			if(mpRefCount)
+			if (mpRefCount)
+			{
 				mpRefCount->release();
+			}
 			// else if mpValue is non-NULL then we just lose it because it wasn't actually shared (can happen with
 			// shared_ptr(const shared_ptr<U>& sharedPtr, element_type* pValue) constructor).
 
@@ -1690,9 +1685,8 @@ namespace eastl
 } // namespace eastl
 
 
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
+EA_RESTORE_VC_WARNING();
+EA_RESTORE_VC_WARNING();
 
 
 // We have to either #include enable_shared.h here or we need to move the enable_shared source code to here.
@@ -1700,7 +1694,3 @@ namespace eastl
 
 
 #endif // Header include guard
-
-
-
-

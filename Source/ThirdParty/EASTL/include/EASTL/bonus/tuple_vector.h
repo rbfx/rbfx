@@ -661,7 +661,7 @@ public:
 				size_type oldNumElements = mNumElements;
 				
 				DoCopyFromTupleArray(begin(), begin() + oldNumElements, first);
-				DoUninitializedCopyFromTupleArray(begin() + oldNumElements, begin() + newNumElements, first);
+				DoUninitializedCopyFromTupleArray(begin() + oldNumElements, begin() + newNumElements, first + oldNumElements);
 				mNumElements = newNumElements;
 			}
 			else // else 0 <= n <= mNumElements
@@ -728,7 +728,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation =	TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -774,7 +774,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -826,7 +826,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -880,7 +880,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(

@@ -49,7 +49,7 @@ target_include_directories(RmlUi SYSTEM
 install (DIRECTORY Include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(RmlUi PRIVATE -DRmlCore_EXPORTS=1 -DRmlDebugger_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS -DEATHREAD_EXPORTS)
+    target_compile_definitions(RmlUi PRIVATE -DRmlCore_EXPORTS=1 -DRmlDebugger_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS)
 else ()
     target_compile_definitions(RmlUi PUBLIC -DRMLUI_STATIC_LIB=1)
 endif ()

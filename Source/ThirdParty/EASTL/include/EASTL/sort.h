@@ -439,7 +439,7 @@ namespace eastl
 
 			if (lastSortedEnd < 1)
 			{
-				lastSortedEnd = is_sorted_until<RandomAccessIterator, StrictWeakOrdering>(first, last, compare) - first;
+				lastSortedEnd = eastl::is_sorted_until<RandomAccessIterator, StrictWeakOrdering>(first, last, compare) - first;
 			}
 
 			// Sort the region unless lastSortedEnd indicates it is already sorted.
@@ -1178,7 +1178,7 @@ namespace eastl
 				{
 					for(;; ++curr)
 					{
-						if(curr == (size - 1)) // If we are at the end of the data... this run is done.
+						if(curr >= (size - 1)) // If we are at the end of the data... this run is done.
 							break;
 
 						if(compare(*(first + curr), *(first + curr - 1))) // If this item is not in order... this run is done.
@@ -1189,7 +1189,7 @@ namespace eastl
 				{
 					for(;; ++curr)
 					{
-						if(curr == (size - 1))  // If we are at the end of the data... this run is done.
+						if(curr >= (size - 1))  // If we are at the end of the data... this run is done.
 							break;
 
 						if(!compare(*(first + curr), *(first + curr - 1)))  // If this item is not in order... this run is done.
