@@ -71,11 +71,11 @@ bool ElementInfo::Initialise()
 	AddEventListener(EventId::Mouseover, this);
 	AddEventListener(EventId::Mouseout, this);
 
-	SharedPtr<StyleSheet> style_sheet = Factory::InstanceStyleSheetString(String(common_rcss) + String(info_rcss));
+	SharedPtr<StyleSheetContainer> style_sheet = Factory::InstanceStyleSheetString(String(common_rcss) + String(info_rcss));
 	if (!style_sheet)
 		return false;
 
-	SetStyleSheet(std::move(style_sheet));
+	SetStyleSheetContainer(std::move(style_sheet));
 
 	return true;
 }
@@ -138,11 +138,12 @@ void ElementInfo::RenderHoverElement()
 		for (int i = 0; i < hover_element->GetNumBoxes(); i++)
 		{
 			// Render the content area.
-			const Box element_box = hover_element->GetBox(i);
+			Vector2f box_offset;
+			const Box& element_box = hover_element->GetBox(i, box_offset);
 			Vector2f size = element_box.GetSize(Box::BORDER);
 			size = Vector2f(std::max(size.x, 2.0f), std::max(size.y, 2.0f));
 			Geometry::RenderOutline(
-				hover_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::BORDER), 
+				hover_element->GetAbsoluteOffset(Box::BORDER) + box_offset + element_box.GetPosition(Box::BORDER),
 				size,
 				Colourb(255, 0, 0, 255), 
 				1
@@ -159,19 +160,21 @@ void ElementInfo::RenderSourceElement()
 
 		for (int i = 0; i < source_element->GetNumBoxes(); i++)
 		{
-			const Box element_box = source_element->GetBox(i);
+			Vector2f box_offset;
+			const Box element_box = source_element->GetBox(i, box_offset);
+			const Vector2f border_offset = box_offset + source_element->GetAbsoluteOffset(Box::BORDER);
 
 			// Content area:
-			Geometry::RenderBox(source_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::CONTENT), element_box.GetSize(), Colourb(158, 214, 237, 128));
+			Geometry::RenderBox(border_offset + element_box.GetPosition(Box::CONTENT), element_box.GetSize(), Colourb(158, 214, 237, 128));
 
 			// Padding area:
-			Geometry::RenderBox(source_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::PADDING), element_box.GetSize(Box::PADDING), source_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::CONTENT), element_box.GetSize(), Colourb(135, 122, 214, 128));
+			Geometry::RenderBox(border_offset + element_box.GetPosition(Box::PADDING), element_box.GetSize(Box::PADDING), border_offset + element_box.GetPosition(Box::CONTENT), element_box.GetSize(), Colourb(135, 122, 214, 128));
 
 			// Border area:
-			Geometry::RenderBox(source_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::BORDER), element_box.GetSize(Box::BORDER), source_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::PADDING), element_box.GetSize(Box::PADDING), Colourb(133, 133, 133, 128));
+			Geometry::RenderBox(border_offset + element_box.GetPosition(Box::BORDER), element_box.GetSize(Box::BORDER), border_offset + element_box.GetPosition(Box::PADDING), element_box.GetSize(Box::PADDING), Colourb(133, 133, 133, 128));
 
 			// Border area:
-			Geometry::RenderBox(source_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::MARGIN), element_box.GetSize(Box::MARGIN), source_element->GetAbsoluteOffset(Box::BORDER) + element_box.GetPosition(Box::BORDER), element_box.GetSize(Box::BORDER), Colourb(240, 255, 131, 128));
+			Geometry::RenderBox(border_offset + element_box.GetPosition(Box::MARGIN), element_box.GetSize(Box::MARGIN), border_offset + element_box.GetPosition(Box::BORDER), element_box.GetSize(Box::BORDER), Colourb(240, 255, 131, 128));
 		}
 	}
 }
@@ -232,6 +235,15 @@ void ElementInfo::ProcessEvent(Event& event)
 						force_update_once = true;
 					}
 				}
+				else if (id == "offset_parent")
+				{
+					if (source_element)
+					{
+						Element* offset_parent = source_element->GetOffsetParent();
+						if (offset_parent)
+							SetSourceElement(offset_parent);
+					}
+				}
 				// Check if the id is in the form "a %d" or "c %d" - these are the ancestor or child labels.
 				else
 				{
@@ -287,6 +299,11 @@ void ElementInfo::ProcessEvent(Event& event)
 				{
 					if (source_element != nullptr)
 						hover_element = source_element->GetChild(element_index);
+				}
+				else if (id == "offset_parent")
+				{
+					if (source_element)
+						hover_element = source_element->GetOffsetParent();
 				}
 				else
 				{
@@ -347,9 +364,17 @@ void ElementInfo::UpdateSourceElement()
 	// Set the pseudo classes
 	if (Element* pseudo = GetElementById("pseudo"))
 	{
-		PseudoClassList list;
+		StringList list;
 		if (source_element)
 			list = source_element->GetActivePseudoClasses();
+
+		auto EraseFromList = [](StringList& list, const String& value) {
+			auto it = std::find(list.begin(), list.end(), value);
+			if (it == list.end())
+				return false;
+			list.erase(it);
+			return true;
+		};
 
 		// There are some fixed pseudo classes that we always show and iterate through to determine if they are set.
 		// We also want to show other pseudo classes when they are set, they are added under the #extra element last.
@@ -360,17 +385,17 @@ void ElementInfo::UpdateSourceElement()
 
 			if (!name.empty())
 			{
-				bool active = (list.erase(name) == 1);
+				bool active = EraseFromList(list, name);
 				child->SetClass("active", active);
 			}
-			else if(child->GetId() == "extra")
+			else if (child->GetId() == "extra")
 			{
 				// First, we iterate through the extra elements and remove those that are no longer active.
 				for (int j = 0; j < child->GetNumChildren(); j++)
 				{
 					Element* grandchild = child->GetChild(j);
 					const String grandchild_name = grandchild->GetAttribute<String>("name", "");
-					bool active = (list.erase(grandchild_name) == 1);
+					bool active = (EraseFromList(list, grandchild_name) == 1);
 					if(!active)
 						child->RemoveChild(grandchild);
 				}
@@ -489,24 +514,39 @@ void ElementInfo::UpdateSourceElement()
 	// Set the position
 	if (Element* position_content = GetElementById("position-content"))
 	{
+		String position;
+
 		// left, top, width, height.
 		if (source_element != nullptr)
 		{
 			const Vector2f element_offset = source_element->GetRelativeOffset(Box::BORDER);
 			const Vector2f element_size = source_element->GetBox().GetSize(Box::BORDER);
+			Element* offset_parent = source_element->GetOffsetParent();
+			const String offset_parent_rml = (offset_parent ? StringUtilities::EncodeRml(offset_parent->GetAddress(false, false)) : String("<em>none</em>"));
 
-			const String positions = 
+			position = 
 				"<span class='name'>left: </span><em>"   + ToString(element_offset.x) + "px</em><br/>" +
 				"<span class='name'>top: </span><em>"    + ToString(element_offset.y) + "px</em><br/>" +
 				"<span class='name'>width: </span><em>"  + ToString(element_size.x)   + "px</em><br/>" +
-				"<span class='name'>height: </span><em>" + ToString(element_size.y)   + "px</em><br/>";
-
-			position_content->SetInnerRML( positions );
+				"<span class='name'>height: </span><em>" + ToString(element_size.y)   + "px</em><br/>" +
+				"<span class='name'>offset parent: </span><p style='display: inline' id='offset_parent'>" + offset_parent_rml + "</p>";
 		}
 		else
 		{
 			while (position_content->HasChildNodes())
 				position_content->RemoveChild(position_content->GetFirstChild());
+		}
+
+		if (position.empty())
+		{
+			while (position_content->HasChildNodes())
+				position_content->RemoveChild(position_content->GetFirstChild());
+			position_rml.clear();
+		}
+		else if (position != position_rml)
+		{
+			position_content->SetInnerRML(position);
+			position_rml = std::move(position);
 		}
 	}
 

@@ -90,9 +90,6 @@ void SimpleWindow::Update(float timeStep)
     // Animate progressbars
     progress_ = (Sin(GetSubsystem<Time>()->GetElapsedTime() * 50) + 1) / 2;
     model_.DirtyVariable("progress");
-
-    // Update UI model. Called once per frame in E_UPDATE event.
-    model_.Update();
 }
 
 void SimpleWindow::Reload()

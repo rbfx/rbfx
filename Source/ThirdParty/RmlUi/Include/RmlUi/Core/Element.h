@@ -60,8 +60,10 @@ class PropertiesIteratorView;
 class PropertyDictionary;
 class RenderInterface;
 class StyleSheet;
+class StyleSheetContainer;
 class TransformState;
 struct ElementMeta;
+struct StackingOrderedChild;
 
 /**
 	A generic element in the DOM tree.
@@ -103,11 +105,7 @@ public:
 
 	/// Returns the active style sheet for this element. This may be nullptr.
 	/// @return The element's style sheet.
-	virtual const SharedPtr<StyleSheet>& GetStyleSheet() const;
-
-	/// Returns the element's definition.
-	/// @return The element's definition.
-	const ElementDefinition* GetDefinition();
+	virtual const StyleSheet* GetStyleSheet() const;
 
 	/// Fills a string with the full address of this element.
 	/// @param[in] include_pseudo_classes True if the address is to include the pseudo-classes of the leaf element.
@@ -118,7 +116,7 @@ public:
 	/// @param[in] offset The offset (in pixels) of our primary box's top-left border corner from our offset parent's top-left border corner.
 	/// @param[in] offset_parent The element this element is being positioned relative to.
 	/// @param[in] offset_fixed True if the element is fixed in place (and will not scroll), false if not.
-	void SetOffset(const Vector2f& offset, Element* offset_parent, bool offset_fixed = false);
+	void SetOffset(Vector2f offset, Element* offset_parent, bool offset_fixed = false);
 	/// Returns the position of the top-left corner of one of the areas of this element's primary box, relative to its
 	/// offset parent's top-left border corner.
 	/// @param[in] area The desired area position.
@@ -141,20 +139,22 @@ public:
 	/// this element's logical children, plus the element's padding.
 	/// @param[in] content_offset The offset of the box's internal content.
 	/// @param[in] content_box The dimensions of the box's internal content.
-	void SetContentBox(const Vector2f& content_offset, const Vector2f& content_box);
+	void SetContentBox(Vector2f content_offset, Vector2f content_box);
 	/// Sets the box describing the size of the element, and removes all others.
 	/// @param[in] box The new dimensions box for the element.
 	void SetBox(const Box& box);
 	/// Adds a box to the end of the list describing this element's geometry.
 	/// @param[in] box The auxiliary box for the element.
-	void AddBox(const Box& box);
+	/// @param[in] offset The offset of the box relative to the top left border corner of the element.
+	void AddBox(const Box& box, Vector2f offset);
 	/// Returns the main box describing the size of the element.
 	/// @return The box.
 	const Box& GetBox();
 	/// Returns one of the boxes describing the size of the element.
 	/// @param[in] index The index of the desired box, with 0 being the main box. If outside of bounds, the main box will be returned.
+	/// @param[out] offset The offset of the box relative to the element's border box.
 	/// @return The requested box.
-	const Box& GetBox(int index);
+	const Box& GetBox(int index, Vector2f& offset);
 	/// Returns the number of boxes making up this element's geometry.
 	/// @return the number of boxes making up this element's geometry.
 	int GetNumBoxes();
@@ -172,7 +172,7 @@ public:
 	/// Checks if a given point in screen coordinates lies within the bordered area of this element.
 	/// @param[in] point The point to test.
 	/// @return True if the element is within this element, false otherwise.
-	virtual bool IsPointWithinElement(const Vector2f& point);
+	virtual bool IsPointWithinElement(Vector2f point);
 
 	/// Returns the visibility of the element.
 	/// @return True if the element is visible, false otherwise.
@@ -280,12 +280,12 @@ public:
 	/// @return True if the pseudo-class is set on the element, false if not.
 	bool IsPseudoClassSet(const String& pseudo_class) const;
 	/// Checks if a complete set of pseudo-classes are set on the element.
-	/// @param[in] pseudo_classes The set of pseudo-classes to check for.
+	/// @param[in] pseudo_classes The list of pseudo-classes to check for.
 	/// @return True if all of the pseudo-classes are set, false if not.
-	bool ArePseudoClassesSet(const PseudoClassList& pseudo_classes) const;
+	bool ArePseudoClassesSet(const StringList& pseudo_classes) const;
 	/// Gets a list of the current active pseudo-classes.
 	/// @return The list of active pseudo-classes.
-	const PseudoClassList& GetActivePseudoClasses() const;
+	StringList GetActivePseudoClasses() const;
 	//@}
 
 	/** @name Attributes
@@ -416,6 +416,11 @@ public:
 	/// Gets this element's parent node.
 	/// @return This element's parent.
 	Element* GetParentNode() const;
+	/// Recursively search for a ancestor of this node matching the given selector.
+	/// @param[in] selectors The selector or comma-separated selectors to match against.
+	/// @return The ancestor if found, or nullptr if no ancestor could be matched.
+	/// @performance Prefer GetElementById/TagName/ClassName whenever possible.
+	Element* Closest(const String& selectors) const;
 
 	/// Gets the element immediately following this one in the tree.
 	/// @return This element's next sibling element, or nullptr if there is no sibling element.
@@ -583,11 +588,11 @@ public:
 	const ComputedValues& GetComputedValues() const;
 
 protected:
-	void Update(float dp_ratio);
+	void Update(float dp_ratio, Vector2f vp_dimensions);
 	void Render();
 
 	/// Updates definition, computed values, and runs OnPropertyChange on this element.
-	void UpdateProperties();
+	void UpdateProperties(float dp_ratio, Vector2f vp_dimensions);
 
 	/// Forces the element to generate a local stacking context, regardless of the value of its z-index property.
 	void ForceLocalStackingContext();
@@ -607,6 +612,10 @@ protected:
 	/// Called when properties on the element are changed.
 	/// @param[in] changed_properties The properties changed on the element.
 	virtual void OnPropertyChange(const PropertyIdSet& changed_properties);
+	/// Called when a pseudo class on the element is changed.
+	/// @param[in] pseudo_class The pseudo class changed on the element.
+	/// @param[in] activate True if the pseudo class was activated.
+	virtual void OnPseudoClassChange(const String& pseudo_class, bool activate);
 
 	/// Called when a child node has been added up to two levels below us in the hierarchy.
 	/// @param[in] child The element that has been added. This may be this element.
@@ -625,6 +634,12 @@ protected:
 	/// @param[out] content The content of this element and those under it, in XML form.
 	virtual void GetRML(String& content);
 
+	/// Sets or removes an overriding pseudo-class on the element.
+	/// @param[in] target_element The element to set or remove the pseudo class on.
+	/// @param[in] pseudo_class The pseudo class to activate or deactivate.
+	/// @param[in] activate True if the pseudo-class is to be activated, false to be deactivated.
+	static void OverridePseudoClass(Element* target_element, const String& pseudo_class, bool activate);
+
 	void SetOwnerDocument(ElementDocument* document);
 
 	void Release() override;
@@ -640,6 +655,7 @@ private:
 
 	void BuildLocalStackingContext();
 	void BuildStackingContext(ElementList* stacking_context);
+	static void BuildStackingContextForTable(Vector<StackingOrderedChild>& ordered_children, Element* child);
 	void DirtyStackingContext();
 
 	void DirtyStructure();
@@ -702,9 +718,13 @@ private:
 	Vector2f scroll_offset;
 
 	// The size of the element.
-	using BoxList = Vector< Box >;
+	struct PositionedBox {
+		Box box;
+		Vector2f offset;
+	};
+	using PositionedBoxList = Vector< PositionedBox >;
 	Box main_box;
-	BoxList additional_boxes;
+	PositionedBoxList additional_boxes;
 
 	// And of the element's internal content.
 	Vector2f content_offset;
@@ -731,11 +751,6 @@ private:
 	bool structure_dirty;
 
 	bool computed_values_are_default_initialized;
-
-	// Cached rendering information
-	int clipping_ignore_depth;
-	bool clipping_enabled;
-	bool clipping_state_dirty;
 
 	// Transform state
 	UniquePtr< TransformState > transform_state;

@@ -26,33 +26,40 @@
  *
  */
 
-#ifndef RMLUI_CORE_MATHTYPES_H
-#define RMLUI_CORE_MATHTYPES_H
+#ifndef RMLUI_CORE_ELEMENTS_ELEMENTLABEL_H
+#define RMLUI_CORE_ELEMENTS_ELEMENTLABEL_H
 
-#include "Header.h"
-#include "Vector2.h"
-#include "Vector3.h"
-#include "Vector4.h"
+#include "../../../Include/RmlUi/Core/Header.h"
+#include "../../../Include/RmlUi/Core/Element.h"
+#include "../../../Include/RmlUi/Core/EventListener.h"
+
 
 namespace Rml {
 
-// Define common Vector2 types.
-typedef Vector2< int > Vector2i;
-typedef Vector2< float > Vector2f;
-RMLUICORE_API Vector2i operator*(int lhs, const Vector2i& rhs);
-RMLUICORE_API Vector2f operator*(float lhs, const Vector2f& rhs);
+/**
+	A specialisation of the generic Core::Element representing a label element.
+	
+ */
 
-// Define common Vector3 types.
-typedef Vector3< int > Vector3i;
-typedef Vector3< float > Vector3f;
-RMLUICORE_API Vector3i operator*(int lhs, const Vector3i& rhs);
-RMLUICORE_API Vector3f operator*(float lhs, const Vector3f& rhs);
+class ElementLabel : public Element, public EventListener
+{
+public:
+	RMLUI_RTTI_DefineWithParent(ElementLabel, Element)
 
-// Define common Vector4 types.
-typedef Vector4< int > Vector4i;
-typedef Vector4< float > Vector4f;
-RMLUICORE_API Vector4i operator*(int lhs, const Vector4i& rhs);
-RMLUICORE_API Vector4f operator*(float lhs, const Vector4f& rhs);
+	ElementLabel(const String& tag);
+	virtual ~ElementLabel();
+	
+protected:
+	void OnPseudoClassChange(const String& pseudo_class, bool activate) override;
+
+	void ProcessEvent(Event& event) override;
+
+private:
+	Element* GetTarget();
+
+	bool disable_click = false;
+};
 
 } // namespace Rml
+
 #endif

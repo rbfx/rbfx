@@ -32,10 +32,12 @@
 #include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/ElementDocument.h"
 #include "../../Include/RmlUi/Core/ElementInstancer.h"
+#include "../../Include/RmlUi/Core/ElementText.h"
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/EventListenerInstancer.h"
 #include "../../Include/RmlUi/Core/StreamMemory.h"
 #include "../../Include/RmlUi/Core/StyleSheet.h"
+#include "../../Include/RmlUi/Core/StyleSheetContainer.h"
 #include "../../Include/RmlUi/Core/SystemInterface.h"
 
 #include "../../Include/RmlUi/Core/Elements/ElementForm.h"
@@ -61,7 +63,6 @@
 #include "DecoratorNinePatch.h"
 #include "DecoratorGradient.h"
 #include "ElementHandle.h"
-#include "ElementTextDefault.h"
 #include "EventInstancerDefault.h"
 #include "FontEffectBlur.h"
 #include "FontEffectGlow.h"
@@ -79,6 +80,7 @@
 #include "XMLParseTools.h"
 
 #include "Elements/ElementImage.h"
+#include "Elements/ElementLabel.h"
 #include "Elements/ElementTextSelection.h"
 #include "Elements/XMLNodeHandlerDataGrid.h"
 #include "Elements/XMLNodeHandlerTabSet.h"
@@ -132,7 +134,7 @@ struct DefaultInstancers {
 
 	// Basic elements
 	ElementInstancerElement element_default;
-	ElementInstancerTextDefault element_text_default;
+	ElementInstancerText element_text;
 	ElementInstancerGeneric<ElementImage> element_img;
 	ElementInstancerGeneric<ElementHandle> element_handle;
 	ElementInstancerGeneric<ElementDocument> element_body;
@@ -142,6 +144,7 @@ struct DefaultInstancers {
 	ElementInstancerGeneric<ElementFormControlInput> input;
 	ElementInstancerGeneric<ElementFormControlDataSelect> dataselect;
 	ElementInstancerGeneric<ElementFormControlSelect> select;
+	ElementInstancerGeneric<ElementLabel> element_label;
 
 	ElementInstancerGeneric<ElementFormControlTextArea> textarea;
 	ElementInstancerGeneric<ElementTextSelection> selection;
@@ -170,6 +173,7 @@ struct DefaultInstancers {
 
 	// Data binding views
 	DataViewInstancerDefault<DataViewAttribute> data_view_attribute;
+	DataViewInstancerDefault<DataViewAttributeIf> data_view_attribute_if;
 	DataViewInstancerDefault<DataViewClass> data_view_class;
 	DataViewInstancerDefault<DataViewIf> data_view_if;
 	DataViewInstancerDefault<DataViewVisible> data_view_visible;
@@ -177,12 +181,14 @@ struct DefaultInstancers {
 	DataViewInstancerDefault<DataViewStyle> data_view_style;
 	DataViewInstancerDefault<DataViewText> data_view_text;
 	DataViewInstancerDefault<DataViewValue> data_view_value;
+	DataViewInstancerDefault<DataViewChecked> data_view_checked;
 
 	DataViewInstancerDefault<DataViewFor> structural_data_view_for;
 
 	// Data binding controllers
 	DataControllerInstancerDefault<DataControllerValue> data_controller_value;
 	DataControllerInstancerDefault<DataControllerEvent> data_controller_event;
+	DataControllerInstancerDefault<DataControllerChecked> data_controller_checked;
 };
 
 static UniquePtr<DefaultInstancers> default_instancers;
@@ -222,7 +228,7 @@ bool Factory::Initialise()
 	// Basic element instancers
 	RegisterElementInstancer("*", &default_instancers->element_default);
 	RegisterElementInstancer("img", &default_instancers->element_img);
-	RegisterElementInstancer("#text", &default_instancers->element_text_default);
+	RegisterElementInstancer("#text", &default_instancers->element_text);
 	RegisterElementInstancer("handle", &default_instancers->element_handle);
 	RegisterElementInstancer("body", &default_instancers->element_body);
 
@@ -231,6 +237,7 @@ bool Factory::Initialise()
 	RegisterElementInstancer("input", &default_instancers->input);
 	RegisterElementInstancer("dataselect", &default_instancers->dataselect);
 	RegisterElementInstancer("select", &default_instancers->select);
+	RegisterElementInstancer("label", &default_instancers->element_label);
 
 	RegisterElementInstancer("textarea", &default_instancers->textarea);
 	RegisterElementInstancer("#selection", &default_instancers->selection);
@@ -259,6 +266,7 @@ bool Factory::Initialise()
 
 	// Data binding views
 	RegisterDataViewInstancer(&default_instancers->data_view_attribute,      "attr",    false);
+	RegisterDataViewInstancer(&default_instancers->data_view_attribute_if,   "attrif",  false);
 	RegisterDataViewInstancer(&default_instancers->data_view_class,          "class",   false);
 	RegisterDataViewInstancer(&default_instancers->data_view_if,             "if",      false);
 	RegisterDataViewInstancer(&default_instancers->data_view_visible,        "visible", false);
@@ -266,11 +274,13 @@ bool Factory::Initialise()
 	RegisterDataViewInstancer(&default_instancers->data_view_style,          "style",   false);
 	RegisterDataViewInstancer(&default_instancers->data_view_text,           "text",    false);
 	RegisterDataViewInstancer(&default_instancers->data_view_value,          "value",   false);
+	RegisterDataViewInstancer(&default_instancers->data_view_checked,        "checked", false);
 	RegisterDataViewInstancer(&default_instancers->structural_data_view_for, "for",     true );
 
 	// Data binding controllers
 	RegisterDataControllerInstancer(&default_instancers->data_controller_value, "value");
 	RegisterDataControllerInstancer(&default_instancers->data_controller_event, "event");
+	RegisterDataControllerInstancer(&default_instancers->data_controller_checked, "checked");
 
 	// XML node handlers
 	XMLParser::RegisterNodeHandler("", MakeShared<XMLNodeHandlerDefault>());
@@ -411,7 +421,8 @@ bool Factory::InstanceElementText(Element* parent, const String& in_text)
 	{
 		RMLUI_ZoneScopedNC("InstanceStream", 0xDC143C);
 		auto stream = MakeUnique<StreamMemory>(text.size() + 32);
-		String tag = parent->GetContext()->GetDocumentsBaseTag();
+		Context* context = parent->GetContext();
+		String tag = context ? context->GetDocumentsBaseTag() : "body";
 		String open_tag = "<" + tag + ">";
 		String close_tag = "</" + tag + ">";
 		stream->Write(open_tag.c_str(), open_tag.size());
@@ -465,12 +476,11 @@ bool Factory::InstanceElementStream(Element* parent, Stream* stream)
 }
 
 // Instances a element tree based on the stream
-ElementPtr Factory::InstanceDocumentStream(Context* context, Stream* stream)
+ElementPtr Factory::InstanceDocumentStream(Context* context, Stream* stream, const String& document_base_tag)
 {
 	RMLUI_ZoneScoped;
-	RMLUI_ASSERT(context);
 
-	ElementPtr element = Factory::InstanceElement(nullptr, context->GetDocumentsBaseTag(), context->GetDocumentsBaseTag(), XMLAttributes());
+	ElementPtr element = Factory::InstanceElement(nullptr, document_base_tag, document_base_tag, XMLAttributes());
 	if (!element)
 	{
 		Log::Message(Log::LT_ERROR, "Failed to instance document, instancer returned nullptr.");
@@ -528,14 +538,14 @@ FontEffectInstancer* Factory::GetFontEffectInstancer(const String& name)
 
 
 // Creates a style sheet containing the passed in styles.
-SharedPtr<StyleSheet> Factory::InstanceStyleSheetString(const String& string)
+SharedPtr<StyleSheetContainer> Factory::InstanceStyleSheetString(const String& string)
 {
 	auto memory_stream = MakeUnique<StreamMemory>((const byte*) string.c_str(), string.size());
 	return InstanceStyleSheetStream(memory_stream.get());
 }
 
 // Creates a style sheet from a file.
-SharedPtr<StyleSheet> Factory::InstanceStyleSheetFile(const String& file_name)
+SharedPtr<StyleSheetContainer> Factory::InstanceStyleSheetFile(const String& file_name)
 {
 	auto file_stream = MakeUnique<StreamFile>();
 	file_stream->Open(file_name);
@@ -543,12 +553,12 @@ SharedPtr<StyleSheet> Factory::InstanceStyleSheetFile(const String& file_name)
 }
 
 // Creates a style sheet from an Stream.
-SharedPtr<StyleSheet> Factory::InstanceStyleSheetStream(Stream* stream)
+SharedPtr<StyleSheetContainer> Factory::InstanceStyleSheetStream(Stream* stream)
 {
-	SharedPtr<StyleSheet> style_sheet = MakeShared<StyleSheet>();
-	if (style_sheet->LoadStyleSheet(stream))
+	SharedPtr<StyleSheetContainer> style_sheet_container = MakeShared<StyleSheetContainer>();
+	if (style_sheet_container->LoadStyleSheetContainer(stream))
 	{
-		return style_sheet;
+		return style_sheet_container;
 	}
 	return nullptr;
 }
@@ -646,6 +656,11 @@ DataControllerPtr Factory::InstanceDataController(const String& type_name, Eleme
 	if (it != data_controller_instancers.end())
 		return it->second->InstanceController(element);
 	return DataControllerPtr();
+}
+
+bool Factory::IsStructuralDataView(const String& type_name)
+{
+	return structural_data_view_instancers.find(type_name) != structural_data_view_instancers.end();
 }
 
 const StringList& Factory::GetStructuralDataViewAttributeNames()

@@ -49,7 +49,7 @@ class EventListener;
 class EventListenerInstancer;
 class FontEffect;
 class FontEffectInstancer;
-class StyleSheet;
+class StyleSheetContainer;
 class PropertyDictionary;
 class PropertySpecification;
 class DecoratorInstancerInterface;
@@ -112,8 +112,9 @@ public:
 	/// Instances a document from a stream.
 	/// @param[in] context The context that is creating the document.
 	/// @param[in] stream The stream to instance from.
+	/// @param[in] document_base_tag The tag used to wrap the document, eg. 'rml'.
 	/// @return The instanced document, or nullptr if an error occurred.
-	static ElementPtr InstanceDocumentStream(Context* context, Stream* stream);
+	static ElementPtr InstanceDocumentStream(Context* context, Stream* stream, const String& document_base_tag);
 
 	/// Registers a non-owning pointer to an instancer that will be used to instance decorators.
 	/// @param[in] name The name of the decorator the instancer will be called for.
@@ -140,15 +141,15 @@ public:
 	/// Creates a style sheet from a user-generated string.
 	/// @param[in] string The contents of the style sheet.
 	/// @return A pointer to the newly created style sheet.
-	static SharedPtr<StyleSheet> InstanceStyleSheetString(const String& string);
+	static SharedPtr<StyleSheetContainer> InstanceStyleSheetString(const String& string);
 	/// Creates a style sheet from a file.
 	/// @param[in] file_name The location of the style sheet file.
 	/// @return A pointer to the newly created style sheet.
-	static SharedPtr<StyleSheet> InstanceStyleSheetFile(const String& file_name);
+	static SharedPtr<StyleSheetContainer> InstanceStyleSheetFile(const String& file_name);
 	/// Creates a style sheet from an Stream.
 	/// @param[in] stream A pointer to the stream containing the style sheet's contents.
 	/// @return A pointer to the newly created style sheet.
-	static SharedPtr<StyleSheet> InstanceStyleSheetStream(Stream* stream);
+	static SharedPtr<StyleSheetContainer> InstanceStyleSheetStream(Stream* stream);
 	/// Clears the style sheet cache. This will force style sheets to be reloaded.
 	static void ClearStyleSheetCache();
 	/// Clears the template cache. This will force template to be reloaded.
@@ -166,7 +167,7 @@ public:
 	/// @return The instanced event.
 	static EventPtr InstanceEvent(Element* target, EventId id, const String& type, const Dictionary& parameters, bool interruptible);
 
-	/// Register the instancer to be used for all event listeners.
+	/// Register the instancer to be used for all event listeners, or nullptr to clear an existing instancer.
 	/// @lifetime The instancer must be kept alive until after the call to Rml::Shutdown, or until a new instancer is set.
 	static void RegisterEventListenerInstancer(EventListenerInstancer* instancer);
 	/// Instance an event listener with the given string. This is used for instancing listeners for the on* events from RML.
@@ -194,6 +195,9 @@ public:
 
 	/// Instance the data controller with the given type name.
 	static DataControllerPtr InstanceDataController(const String& type_name, Element* element);
+
+	/// Returns true if the given type name is a structural data view.
+	static bool IsStructuralDataView(const String& type_name);
 
 	/// Returns the list of element attribute names with an associated structural data view instancer.
 	static const StringList& GetStructuralDataViewAttributeNames();

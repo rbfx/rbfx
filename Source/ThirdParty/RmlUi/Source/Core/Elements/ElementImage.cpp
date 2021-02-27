@@ -95,7 +95,7 @@ void ElementImage::OnAttributeChange(const ElementAttributes& changed_attributes
 	// Call through to the base element's OnAttributeChange().
 	Element::OnAttributeChange(changed_attributes);
 
-	float dirty_layout = false;
+	bool dirty_layout = false;
 
 	// Check for a changed 'src' attribute. If this changes, the old texture handle is released,
 	// forcing a reload when the layout is regenerated.
@@ -136,6 +136,15 @@ void ElementImage::OnPropertyChange(const PropertyIdSet& changed_properties)
         changed_properties.Contains(PropertyId::Opacity)) {
         GenerateGeometry();
     }
+}
+
+void ElementImage::OnChildAdd(Element* child)
+{
+	if (child == this && texture_dirty)
+	{
+		// Load the texture once we have attached to the document
+		LoadTexture();
+	}
 }
 
 // Regenerates the element's geometry.
@@ -204,7 +213,7 @@ bool ElementImage::LoadTexture()
 
 		if (ElementDocument* document = GetOwnerDocument())
 		{
-			if (auto& style_sheet = document->GetStyleSheet())
+			if (const StyleSheet* style_sheet = document->GetStyleSheet())
 			{
 				if (const Sprite* sprite = style_sheet->GetSprite(sprite_name))
 				{

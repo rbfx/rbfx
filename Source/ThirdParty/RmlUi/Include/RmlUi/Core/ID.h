@@ -56,6 +56,7 @@ enum class ShorthandId : uint8_t
 	Overflow,
 	Background,
 	Font,
+	Gap,
 	PerspectiveOrigin,
 	TransformOrigin,
 
@@ -120,6 +121,7 @@ enum class PropertyId : uint8_t
 	Visibility,
 	BackgroundColor,
 	Color,
+	CaretColor,
 	ImageColor,
 	FontFamily,
 	FontStyle,
@@ -130,6 +132,8 @@ enum class PropertyId : uint8_t
 	TextTransform,
 	WhiteSpace,
 	WordBreak,
+	RowGap,
+	ColumnGap,
 	Cursor,
 	Drag,
 	TabIndex,
@@ -162,6 +166,26 @@ enum class PropertyId : uint8_t
 	MaxNumIds = 128
 };
 
+enum class MediaQueryId : uint8_t
+{
+	Invalid, 
+
+	Width,
+	MinWidth,
+	MaxWidth,
+	Height,
+	MinHeight,
+	MaxHeight,
+	AspectRatio,
+	MinAspectRatio,
+	MaxAspectRatio,
+	Resolution,
+	MinResolution,
+	MaxResolution,
+	Orientation,
+
+	NumDefinedIds
+};
 
 enum class EventId : uint16_t 
 {

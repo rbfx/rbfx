@@ -26,57 +26,44 @@
  *
  */
 
-#ifndef RMLUI_CORE_EVENTITERATORS_H
-#define RMLUI_CORE_EVENTITERATORS_H
-
-#include "../../Include/RmlUi/Core/Element.h"
+#include "../../Include/RmlUi/Core/DataModelHandle.h"
+#include "DataModel.h"
 
 namespace Rml {
 
-/**
-	An STL unary functor for dispatching an event to a Element.
 
-	@author Peter Curry
- */
+DataModelHandle::DataModelHandle(DataModel* model) : model(model)
+{}
 
-class RmlEventFunctor
-{
-public:
-	RmlEventFunctor(EventId id, const Dictionary& parameters) : id(id), parameters(&parameters) {}
+bool DataModelHandle::IsVariableDirty(const String& variable_name) {
+	return model->IsVariableDirty(variable_name);
+}
 
-	void operator()(Element* element)
-	{
-		element->DispatchEvent(id, *parameters);
-	}
+void DataModelHandle::DirtyVariable(const String& variable_name) {
+	model->DirtyVariable(variable_name);
+}
 
-private:
-	EventId id;
-	const Dictionary* parameters;
-};
 
-/**
-	An STL unary functor for setting or clearing a pseudo-class on a Element.
+DataModelConstructor::DataModelConstructor() : model(nullptr), type_register(nullptr) {}
 
-	@author Pete
- */
+DataModelConstructor::DataModelConstructor(DataModel* model, DataTypeRegister* type_register) : model(model), type_register(type_register) {
+	RMLUI_ASSERT(model && type_register);
+}
 
-class PseudoClassFunctor
-{
-	public:
-		PseudoClassFunctor(const String& pseudo_class, bool set) : pseudo_class(pseudo_class)
-		{
-			this->set = set;
-		}
+DataModelHandle DataModelConstructor::GetModelHandle() const {
+	return DataModelHandle(model);
+}
 
-		void operator()(Element* element)
-		{
-			element->SetPseudoClass(pseudo_class, set);
-		}
+bool DataModelConstructor::BindFunc(const String& name, DataGetFunc get_func, DataSetFunc set_func) {
+	return model->BindFunc(name, std::move(get_func), std::move(set_func));
+}
 
-	private:
-		String pseudo_class;
-		bool set;
-};
+bool DataModelConstructor::BindEventCallback(const String& name, DataEventFunc event_func) {
+	return model->BindEventCallback(name, std::move(event_func));
+}
+
+bool DataModelConstructor::BindVariable(const String& name, DataVariable data_variable) {
+	return model->BindVariable(name, data_variable);
+}
 
 } // namespace Rml
-#endif
