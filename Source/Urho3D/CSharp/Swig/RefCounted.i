@@ -111,7 +111,7 @@
 
     %typemap(csdispose) TYPE %{
       ~$csclassname() {
-        if (!Expired) {
+        if (!IsExpired) {
           Dispose(false);
         }
       }
@@ -119,7 +119,7 @@
       public void Dispose() {
         // Free object when refcounting is not in use. If object had any references added through it's lifetime - last
         // ReleaseRef() will invoke Dispose(true) instead and this call will be noop.
-        if (!Expired && !IsScriptStrongRef())
+        if (!IsExpired && !IsScriptStrongRef())
           Dispose(true);
       }
     %}

@@ -71,7 +71,7 @@ namespace Urho3DNet
                 LastAccess = Environment.TickCount;
             }
 
-            internal bool Expired
+            internal bool IsExpired
             {
                 get
                 {
@@ -168,7 +168,7 @@ namespace Urho3DNet
             if (_expirationEnumerator.MoveNext())
             {
                 var entry = _expirationEnumerator.Current;
-                if (entry.Value.Expired)
+                if (entry.Value.IsExpired)
                     Remove(entry.Key);
             }
             else
