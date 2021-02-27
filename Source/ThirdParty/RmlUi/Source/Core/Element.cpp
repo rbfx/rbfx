@@ -30,7 +30,6 @@
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/Context.h"
 #include "../../Include/RmlUi/Core/Core.h"
-#include "../../Include/RmlUi/Core/DataModel.h"
 #include "../../Include/RmlUi/Core/ElementDocument.h"
 #include "../../Include/RmlUi/Core/ElementInstancer.h"
 #include "../../Include/RmlUi/Core/ElementScroll.h"
@@ -45,6 +44,7 @@
 #include "../../Include/RmlUi/Core/TransformPrimitive.h"
 #include "Clock.h"
 #include "ComputeProperty.h"
+#include "DataModel.h"
 #include "ElementAnimation.h"
 #include "ElementBackgroundBorder.h"
 #include "ElementDefinition.h"
@@ -65,33 +65,6 @@
 #include <cmath>
 
 namespace Rml {
-
-/**
-	STL function object for sorting elements by z-type (ie, float-types before general types, etc).
-	@author Peter Curry
- */
-class ElementSortZOrder
-{
-public:
-	bool operator()(const Pair< Element*, float >& lhs, const Pair< Element*, float >& rhs) const
-	{
-		return lhs.second < rhs.second;
-	}
-};
-
-/**
-	STL function object for sorting elements by z-index property.
-	@author Peter Curry
- */
-class ElementSortZIndex
-{
-public:
-	bool operator()(const Element* lhs, const Element* rhs) const
-	{
-		// Check the z-index.
-		return lhs->GetZIndex() < rhs->GetZIndex();
-	}
-};
 
 // Determines how many levels up in the hierarchy the OnChildAdd and OnChildRemove are called (starting at the child itself)
 static constexpr int ChildNotifyLevels = 2;
@@ -144,10 +117,6 @@ transform_state(), dirty_transform(false), dirty_perspective(false), dirty_anima
 
 	computed_values_are_default_initialized = true;
 
-	clipping_ignore_depth = 0;
-	clipping_enabled = false;
-	clipping_state_dirty = true;
-
 	meta = element_meta_chunk_pool.AllocateAndConstruct(this);
 	data_model = nullptr;
 }
@@ -174,7 +143,7 @@ Element::~Element()
 	element_meta_chunk_pool.DestroyAndDeallocate(meta);
 }
 
-void Element::Update(float dp_ratio)
+void Element::Update(float dp_ratio, Vector2f vp_dimensions)
 {
 #ifdef RMLUI_ENABLE_PROFILING
 	auto name = GetAddress(false, false);
@@ -192,42 +161,31 @@ void Element::Update(float dp_ratio)
 
 	meta->scroll.Update();
 
-	UpdateProperties();
+	UpdateProperties(dp_ratio, vp_dimensions);
 
 	// Do en extra pass over the animations and properties if the 'animation' property was just changed.
 	if (dirty_animation)
 	{
 		HandleAnimationProperty();
 		AdvanceAnimations();
-		UpdateProperties();
+		UpdateProperties(dp_ratio, vp_dimensions);
 	}
 
 	for (size_t i = 0; i < children.size(); i++)
-		children[i]->Update(dp_ratio);
+		children[i]->Update(dp_ratio, vp_dimensions);
 }
 
-
-void Element::UpdateProperties()
+void Element::UpdateProperties(const float dp_ratio, const Vector2f vp_dimensions)
 {
 	meta->style.UpdateDefinition();
 
 	if (meta->style.AnyPropertiesDirty())
 	{
-		const ComputedValues* parent_values = nullptr;
-		if (parent)
-			parent_values = &parent->GetComputedValues();
-
-		const ComputedValues* document_values = nullptr;
-		float dp_ratio = 1.0f;
-		if (auto doc = GetOwnerDocument())
-		{
-			document_values = &doc->GetComputedValues();
-			if (Context * context = doc->GetContext())
-				dp_ratio = context->GetDensityIndependentPixelRatio();
-		}
+		const ComputedValues* parent_values = parent ? &parent->GetComputedValues() : nullptr;
+		const ComputedValues* document_values = owner_document ? &owner_document->GetComputedValues() : nullptr;
 
 		// Compute values and clear dirty properties
-		PropertyIdSet dirty_properties = meta->style.ComputeValues(meta->computed_values, parent_values, document_values, computed_values_are_default_initialized, dp_ratio);
+		PropertyIdSet dirty_properties = meta->style.ComputeValues(meta->computed_values, parent_values, document_values, computed_values_are_default_initialized, dp_ratio, vp_dimensions);
 
 		computed_values_are_default_initialized = false;
 
@@ -299,6 +257,9 @@ ElementPtr Element::Clone() const
 
 	if (clone != nullptr)
 	{
+		// Set the attributes manually in case the instancer does not set them.
+		clone->SetAttributes(attributes);
+
 		String inner_rml;
 		GetInnerRML(inner_rml);
 
@@ -333,18 +294,11 @@ String Element::GetClassNames() const
 }
 
 // Returns the active style sheet for this element. This may be nullptr.
-const SharedPtr<StyleSheet>& Element::GetStyleSheet() const
+const StyleSheet* Element::GetStyleSheet() const
 {
 	if (ElementDocument * document = GetOwnerDocument())
 		return document->GetStyleSheet();
-	static SharedPtr<StyleSheet> null_style_sheet;
-	return null_style_sheet;
-}
-
-// Returns the element's definition.
-const ElementDefinition* Element::GetDefinition()
-{
-	return meta->style.GetDefinition();
+	return nullptr;
 }
 
 // Fills an String with the full address of this element.
@@ -370,11 +324,11 @@ String Element::GetAddress(bool include_pseudo_classes, bool include_parents) co
 
 	if (include_pseudo_classes)
 	{
-		const PseudoClassList& pseudo_classes = meta->style.GetActivePseudoClasses();		
-		for (PseudoClassList::const_iterator i = pseudo_classes.begin(); i != pseudo_classes.end(); ++i)
+		const PseudoClassMap& pseudo_classes = meta->style.GetActivePseudoClasses();
+		for (auto& pseudo_class : pseudo_classes)
 		{
 			address += ":";
-			address += (*i);
+			address += pseudo_class.first;
 		}
 	}
 
@@ -388,7 +342,7 @@ String Element::GetAddress(bool include_pseudo_classes, bool include_parents) co
 }
 
 // Sets the position of this element, as a two-dimensional offset from another element.
-void Element::SetOffset(const Vector2f& offset, Element* _offset_parent, bool _offset_fixed)
+void Element::SetOffset(Vector2f offset, Element* _offset_parent, bool _offset_fixed)
 {
 	_offset_fixed |= GetPosition() == Style::Position::Fixed;
 
@@ -469,7 +423,7 @@ Box::Area Element::GetClientArea() const
 }
 
 // Sets the dimensions of the element's internal content.
-void Element::SetContentBox(const Vector2f& _content_offset, const Vector2f& _content_box)
+void Element::SetContentBox(Vector2f _content_offset, Vector2f _content_box)
 {
 	if (content_offset != _content_offset ||
 		content_box != _content_box)
@@ -504,9 +458,9 @@ void Element::SetBox(const Box& box)
 }
 
 // Adds a box to the end of the list describing this element's geometry.
-void Element::AddBox(const Box& box)
+void Element::AddBox(const Box& box, Vector2f offset)
 {
-	additional_boxes.push_back(box);
+	additional_boxes.emplace_back(PositionedBox{ box, offset });
 
 	OnResize();
 
@@ -522,16 +476,20 @@ const Box& Element::GetBox()
 }
 
 // Returns one of the boxes describing the size of the element.
-const Box& Element::GetBox(int index)
+const Box& Element::GetBox(int index, Vector2f& offset)
 {
+	offset = Vector2f(0);
+
 	if (index < 1)
 		return main_box;
 	
-	int additional_box_index = index - 1;
+	const int additional_box_index = index - 1;
 	if (additional_box_index >= (int)additional_boxes.size())
 		return main_box;
 
-	return additional_boxes[additional_box_index];
+	offset = additional_boxes[additional_box_index].offset;
+
+	return additional_boxes[additional_box_index].box;
 }
 
 // Returns the number of boxes making up this element's geometry.
@@ -555,16 +513,17 @@ bool Element::GetIntrinsicDimensions(Vector2f& RMLUI_UNUSED_PARAMETER(dimensions
 }
 
 // Checks if a given point in screen coordinates lies within the bordered area of this element.
-bool Element::IsPointWithinElement(const Vector2f& point)
+bool Element::IsPointWithinElement(const Vector2f point)
 {
-	Vector2f position = GetAbsoluteOffset(Box::BORDER);
+	const Vector2f position = GetAbsoluteOffset(Box::BORDER);
 
 	for (int i = 0; i < GetNumBoxes(); ++i)
 	{
-		const Box& box = GetBox(i);
+		Vector2f box_offset;
+		const Box& box = GetBox(i, box_offset);
 
-		Vector2f box_position = position + box.GetOffset();
-		Vector2f box_dimensions = box.GetSize(Box::BORDER);
+		const Vector2f box_position = position + box_offset;
+		const Vector2f box_dimensions = box.GetSize(Box::BORDER);
 		if (point.x >= box_position.x &&
 			point.x <= (box_position.x + box_dimensions.x) &&
 			point.y >= box_position.y &&
@@ -783,7 +742,8 @@ PropertiesIteratorView Element::IterateLocalProperties() const
 // Sets or removes a pseudo-class on the element.
 void Element::SetPseudoClass(const String& pseudo_class, bool activate)
 {
-	meta->style.SetPseudoClass(pseudo_class, activate);
+	if (meta->style.SetPseudoClass(pseudo_class, activate, false))
+		OnPseudoClassChange(pseudo_class, activate);
 }
 
 // Checks if a specific pseudo-class has been set on the element.
@@ -793,11 +753,11 @@ bool Element::IsPseudoClassSet(const String& pseudo_class) const
 }
 
 // Checks if a complete set of pseudo-classes are set on the element.
-bool Element::ArePseudoClassesSet(const PseudoClassList& pseudo_classes) const
+bool Element::ArePseudoClassesSet(const StringList& pseudo_classes) const
 {
-	for (PseudoClassList::const_iterator i = pseudo_classes.begin(); i != pseudo_classes.end(); ++i)
+	for (const String& pseudo_class : pseudo_classes)
 	{
-		if (!IsPseudoClassSet(*i))
+		if (!IsPseudoClassSet(pseudo_class))
 			return false;
 	}
 
@@ -805,9 +765,23 @@ bool Element::ArePseudoClassesSet(const PseudoClassList& pseudo_classes) const
 }
 
 // Gets a list of the current active pseudo classes
-const PseudoClassList& Element::GetActivePseudoClasses() const
+StringList Element::GetActivePseudoClasses() const
 {
-	return meta->style.GetActivePseudoClasses();
+	const PseudoClassMap& pseudo_classes = meta->style.GetActivePseudoClasses();
+	StringList names;
+	names.reserve(pseudo_classes.size());
+	for (auto& pseudo_class : pseudo_classes)
+	{
+		names.push_back(pseudo_class.first);
+	}
+
+	return names;
+}
+
+void Element::OverridePseudoClass(Element* element, const String& pseudo_class, bool activate)
+{
+	RMLUI_ASSERT(element);
+	element->GetStyle()->SetPseudoClass(pseudo_class, activate, true);
 }
 
 /// Get the named attribute
@@ -1043,6 +1017,36 @@ Element* Element::GetParentNode() const
 	return parent;
 }
 
+// Recursively search for a ancestor of this node matching the given selector.
+Element* Element::Closest(const String& selectors) const
+{
+	StyleSheetNode root_node;
+	StyleSheetNodeListRaw leaf_nodes = StyleSheetParser::ConstructNodes(root_node, selectors);
+
+	if (leaf_nodes.empty())
+	{
+		Log::Message(Log::LT_WARNING, "Query selector '%s' is empty. In element %s", selectors.c_str(), GetAddress().c_str());
+		return nullptr;
+	}
+
+	Element* parent = GetParentNode();
+
+	while(parent)
+	{
+		for (const StyleSheetNode* node : leaf_nodes)
+		{
+			if (node->IsApplicable(parent, false))
+			{
+				return parent;
+			}
+		}
+		
+		parent = parent->GetParentNode();
+	}
+
+	return nullptr;
+}
+
 // Gets the element immediately following this one in the tree.
 Element* Element::GetNextSibling() const
 {
@@ -1246,34 +1250,35 @@ void Element::ScrollIntoView(bool align_with_top)
 {
 	Vector2f size(0, 0);
 	if (!align_with_top)
-	{
-		size.y = main_box.GetOffset().y +
-			main_box.GetSize(Box::BORDER).y;
-	}
+		size.y = main_box.GetSize(Box::BORDER).y;
 
 	Element* scroll_parent = parent;
 	while (scroll_parent != nullptr)
 	{
-		Style::Overflow overflow_x_property = scroll_parent->GetComputedValues().overflow_x;
-		Style::Overflow overflow_y_property = scroll_parent->GetComputedValues().overflow_y;
+		using Style::Overflow;
+		const ComputedValues& computed = scroll_parent->GetComputedValues();
+		const bool scrollable_box_x = (computed.overflow_x != Overflow::Visible && computed.overflow_x != Overflow::Hidden);
+		const bool scrollable_box_y = (computed.overflow_y != Overflow::Visible && computed.overflow_y != Overflow::Hidden);
 
-		if ((overflow_x_property != Style::Overflow::Visible &&
-			 scroll_parent->GetScrollWidth() > scroll_parent->GetClientWidth()) ||
-			(overflow_y_property != Style::Overflow::Visible &&
-			 scroll_parent->GetScrollHeight() > scroll_parent->GetClientHeight()))
+		const Vector2f parent_scroll_size = { scroll_parent->GetScrollWidth(), scroll_parent->GetScrollHeight() };
+		const Vector2f parent_client_size = { scroll_parent->GetClientWidth(), scroll_parent->GetClientHeight() };
+
+		if ((scrollable_box_x && parent_scroll_size.x > parent_client_size.x) ||
+			(scrollable_box_y && parent_scroll_size.y > parent_client_size.y))
 		{
-			Vector2f offset = scroll_parent->GetAbsoluteOffset(Box::BORDER) - GetAbsoluteOffset(Box::BORDER);
+			const Vector2f relative_offset = scroll_parent->GetAbsoluteOffset(Box::BORDER) - GetAbsoluteOffset(Box::BORDER);
+
 			Vector2f scroll_offset(scroll_parent->GetScrollLeft(), scroll_parent->GetScrollTop());
-			scroll_offset -= offset;
+			scroll_offset -= relative_offset;
 			scroll_offset.x += scroll_parent->GetClientLeft();
 			scroll_offset.y += scroll_parent->GetClientTop();
 
 			if (!align_with_top)
-				scroll_offset.y -= (scroll_parent->GetClientHeight() - size.y);
+				scroll_offset.y -= (parent_client_size.y - size.y);
 
-			if (overflow_x_property != Style::Overflow::Visible)
+			if (scrollable_box_x)
 				scroll_parent->SetScrollLeft(scroll_offset.x);
-			if (overflow_y_property != Style::Overflow::Visible)
+			if (scrollable_box_y)
 				scroll_parent->SetScrollTop(scroll_offset.y);
 		}
 
@@ -1486,7 +1491,9 @@ void Element::GetElementsByClassName(ElementList& elements, const String& class_
 
 static Element* QuerySelectorMatchRecursive(const StyleSheetNodeListRaw& nodes, Element* element)
 {
-	for (int i = 0; i < element->GetNumChildren(); i++)
+	const int num_children = element->GetNumChildren();
+
+	for (int i = 0; i < num_children; i++)
 	{
 		Element* child = element->GetChild(i);
 
@@ -1506,7 +1513,9 @@ static Element* QuerySelectorMatchRecursive(const StyleSheetNodeListRaw& nodes, 
 
 static void QuerySelectorAllMatchRecursive(ElementList& matching_elements, const StyleSheetNodeListRaw& nodes, Element* element)
 {
-	for (int i = 0; i < element->GetNumChildren(); i++)
+	const int num_children = element->GetNumChildren();
+
+	for (int i = 0; i < num_children; i++)
 	{
 		Element* child = element->GetChild(i);
 
@@ -1581,31 +1590,13 @@ DataModel* Element::GetDataModel() const
 	
 int Element::GetClippingIgnoreDepth()
 {
-	if (clipping_state_dirty)
-	{
-		IsClippingEnabled();
-	}
-	
-	return clipping_ignore_depth;
+	return GetComputedValues().clip.number;
 }
 	
 bool Element::IsClippingEnabled()
 {
-	if (clipping_state_dirty)
-	{
-		const auto& computed = GetComputedValues();
-
-		// Is clipping enabled for this element, yes unless both overlow properties are set to visible
-		clipping_enabled = computed.overflow_x != Style::Overflow::Visible
-							|| computed.overflow_y != Style::Overflow::Visible;
-		
-		// Get the clipping ignore depth from the clip property
-		clipping_ignore_depth = computed.clip.number;
-
-		clipping_state_dirty = false;
-	}
-	
-	return clipping_enabled;
+	const auto& computed = GetComputedValues();
+	return computed.overflow_x != Style::Overflow::Visible || computed.overflow_y != Style::Overflow::Visible;
 }
 
 // Gets the render interface owned by this element's context.
@@ -1669,6 +1660,18 @@ void Element::OnAttributeChange(const ElementAttributes& changed_attributes)
 	if (it != changed_attributes.end())
 	{
 		meta->style.SetClassNames(it->second.Get<String>());
+	}
+
+	if (changed_attributes.count("colspan") || changed_attributes.count("rowspan"))
+	{
+		if (meta->computed_values.display == Style::Display::TableCell)
+			DirtyLayout();
+	}
+
+	if (changed_attributes.count("span"))
+	{
+		if (meta->computed_values.display == Style::Display::TableColumn || meta->computed_values.display == Style::Display::TableColumnGroup)
+			DirtyLayout();
 	}
 
 	it = changed_attributes.find("style");
@@ -1828,14 +1831,6 @@ void Element::OnPropertyChange(const PropertyIdSet& changed_properties)
 	{
 		meta->decoration.DirtyDecorators();
 	}
-	
-	// Check for clipping state changes
-	if (changed_properties.Contains(PropertyId::Clip) ||
-		changed_properties.Contains(PropertyId::OverflowX) ||
-		changed_properties.Contains(PropertyId::OverflowY))
-	{
-		clipping_state_dirty = true;
-	}
 
 	// Check for `perspective' and `perspective-origin' changes
 	if (changed_properties.Contains(PropertyId::Perspective) ||
@@ -1864,6 +1859,10 @@ void Element::OnPropertyChange(const PropertyIdSet& changed_properties)
 	{
 		dirty_transition = true;
 	}
+}
+
+void Element::OnPseudoClassChange(const String& /*pseudo_class*/, bool /*activate*/)
+{
 }
 
 // Called when a child node has been added somewhere in the hierarchy
@@ -1895,9 +1894,13 @@ bool Element::IsLayoutDirty()
 
 void Element::ProcessDefaultAction(Event& event)
 {
-	if (event == EventId::Mousedown && IsPointWithinElement(Vector2f(event.GetParameter< float >("mouse_x", 0), event.GetParameter< float >("mouse_y", 0))) &&
-		event.GetParameter< int >("button", 0) == 0)
-		SetPseudoClass("active", true);
+	if (event == EventId::Mousedown)
+	{
+		const Vector2f mouse_pos(event.GetParameter("mouse_x", 0.f), event.GetParameter("mouse_y", 0.f));
+
+		if (IsPointWithinElement(mouse_pos) && event.GetParameter("button", 0) == 0)
+			SetPseudoClass("active", true);
+	}
 
 	if (event == EventId::Mousescroll)
 	{
@@ -1991,22 +1994,19 @@ void Element::GetRML(String& content)
 
 void Element::SetOwnerDocument(ElementDocument* document)
 {
-	// If this element is a document, then never change owner_document.
-	if (owner_document != this)
+	if (owner_document && !document)
 	{
-		if (owner_document && !document)
-		{
-			// We are detaching from the document and thereby also the context.
-			if (Context * context = owner_document->GetContext())
-				context->OnElementDetach(this);
-		}
+		// We are detaching from the document and thereby also the context.
+		if (Context* context = owner_document->GetContext())
+			context->OnElementDetach(this);
+	}
 
-		if (owner_document != document)
-		{
-			owner_document = document;
-			for (ElementPtr& child : children)
-				child->SetOwnerDocument(document);
-		}
+	// If this element is a document, then never change owner_document.
+	if (owner_document != this && owner_document != document)
+	{
+		owner_document = document;
+		for (ElementPtr& child : children)
+			child->SetOwnerDocument(document);
 	}
 }
 
@@ -2178,8 +2178,15 @@ void Element::BuildLocalStackingContext()
 	stacking_context.clear();
 
 	BuildStackingContext(&stacking_context);
-	std::stable_sort(stacking_context.begin(), stacking_context.end(), ElementSortZIndex());
+	std::stable_sort(stacking_context.begin(), stacking_context.end(), [](const Element* lhs, const Element* rhs) { return lhs->GetZIndex() < rhs->GetZIndex(); });
 }
+
+enum class RenderOrder { Block, TableColumnGroup, TableColumn, TableRowGroup, TableRow, TableCell, Inline, Floating, Positioned };
+struct StackingOrderedChild {
+	Element* element;
+	RenderOrder order;
+	bool include_children;
+};
 
 void Element::BuildStackingContext(ElementList* new_stacking_context)
 {
@@ -2188,52 +2195,118 @@ void Element::BuildStackingContext(ElementList* new_stacking_context)
 	// Build the list of ordered children. Our child list is sorted within the stacking context so stacked elements
 	// will render in the right order; ie, positioned elements will render on top of inline elements, which will render
 	// on top of floated elements, which will render on top of block elements.
-	Vector< Pair< Element*, float > > ordered_children;
-	for (size_t i = 0; i < children.size(); ++i)
+	Vector< StackingOrderedChild > ordered_children;
+
+	const size_t num_children = children.size();
+	ordered_children.reserve(num_children);
+
+	if (GetDisplay() == Style::Display::Table)
 	{
-		Element* child = children[i].get();
+		BuildStackingContextForTable(ordered_children, this);
+	}
+	else
+	{
+		for (size_t i = 0; i < num_children; ++i)
+		{
+			Element* child = children[i].get();
 
-		if (!child->IsVisible())
-			continue;
+			if (!child->IsVisible())
+				continue;
 
-		Pair< Element*, float > ordered_child;
-		ordered_child.first = child;
+			ordered_children.emplace_back();
+			StackingOrderedChild& ordered_child = ordered_children.back();
 
-		if (child->GetPosition() != Style::Position::Static)
-			ordered_child.second = 3;
-		else if (child->GetFloat() != Style::Float::None)
-			ordered_child.second = 1;
-		else if (child->GetDisplay() == Style::Display::Block)
-			ordered_child.second = 0;
-		else
-			ordered_child.second = 2;
+			ordered_child.element = child;
+			ordered_child.order = RenderOrder::Inline;
+			ordered_child.include_children = !child->local_stacking_context;
 
-		ordered_children.push_back(ordered_child);
+			const Style::Display child_display = child->GetDisplay();
+
+			if (child->GetPosition() != Style::Position::Static)
+				ordered_child.order = RenderOrder::Positioned;
+			else if (child->GetFloat() != Style::Float::None)
+				ordered_child.order = RenderOrder::Floating;
+			else if (child_display == Style::Display::Block || child_display == Style::Display::Table)
+				ordered_child.order = RenderOrder::Block;
+			else
+				ordered_child.order = RenderOrder::Inline;
+		}
 	}
 
 	// Sort the list!
-	std::stable_sort(ordered_children.begin(), ordered_children.end(), ElementSortZOrder());
+	std::stable_sort(ordered_children.begin(), ordered_children.end(), [](const StackingOrderedChild& lhs, const StackingOrderedChild& rhs) { return int(lhs.order) < int(rhs.order); });
 
 	// Add the list of ordered children into the stacking context in order.
 	for (size_t i = 0; i < ordered_children.size(); ++i)
 	{
-		new_stacking_context->push_back(ordered_children[i].first);
+		new_stacking_context->push_back(ordered_children[i].element);
 
-		if (!ordered_children[i].first->local_stacking_context)
-			ordered_children[i].first->BuildStackingContext(new_stacking_context);
+		if (ordered_children[i].include_children)
+			ordered_children[i].element->BuildStackingContext(new_stacking_context);
+	}
+}
+
+void Element::BuildStackingContextForTable(Vector<StackingOrderedChild>& ordered_children, Element* parent)
+{
+	const size_t num_children = parent->children.size();
+
+	for (size_t i = 0; i < num_children; ++i)
+	{
+		Element* child = parent->children[i].get();
+
+		if (!child->IsVisible())
+			continue;
+
+		ordered_children.emplace_back();
+		StackingOrderedChild& ordered_child = ordered_children.back();
+		ordered_child.element = child;
+		ordered_child.order = RenderOrder::Inline;
+		ordered_child.include_children = false;
+
+		bool recurse_into_children = false;
+
+		switch (child->GetDisplay())
+		{
+		case Style::Display::TableRow:
+			ordered_child.order = RenderOrder::TableRow;
+			recurse_into_children = true;
+			break;
+		case Style::Display::TableRowGroup:
+			ordered_child.order = RenderOrder::TableRowGroup;
+			recurse_into_children = true;
+			break;
+		case Style::Display::TableColumn:
+			ordered_child.order = RenderOrder::TableColumn;
+			break;
+		case Style::Display::TableColumnGroup:
+			ordered_child.order = RenderOrder::TableColumnGroup;
+			recurse_into_children = true;
+			break;
+		case Style::Display::TableCell:
+			ordered_child.order = RenderOrder::TableCell;
+			ordered_child.include_children = !child->local_stacking_context;
+			break;
+		default:
+			ordered_child.order = RenderOrder::Positioned;
+			ordered_child.include_children = !child->local_stacking_context;
+			break;
+		}
+
+		if (recurse_into_children)
+			BuildStackingContextForTable(ordered_children, child);
 	}
 }
 
 void Element::DirtyStackingContext()
 {
-	// The first ancestor of ours that doesn't have an automatic z-index is the ancestor that is establishing our local
-	// stacking context.
+	// Find the first ancestor that has a local stacking context, that is our stacking context parent.
 	Element* stacking_context_parent = this;
-	while (stacking_context_parent != nullptr &&
-		   !stacking_context_parent->local_stacking_context)
+	while (stacking_context_parent && !stacking_context_parent->local_stacking_context)
+	{
 		stacking_context_parent = stacking_context_parent->GetParentNode();
+	}
 
-	if (stacking_context_parent != nullptr)
+	if (stacking_context_parent)
 		stacking_context_parent->stacking_context_dirty = true;
 }
 
@@ -2456,10 +2529,10 @@ void Element::HandleAnimationProperty()
 
 		const AnimationList& animation_list = meta->computed_values.animation;
 		bool element_has_animations = (!animation_list.empty() || !animations.empty());
-		StyleSheet* stylesheet = nullptr;
+		const StyleSheet* stylesheet = nullptr;
 
 		if (element_has_animations)
-			stylesheet = GetStyleSheet().get();
+			stylesheet = GetStyleSheet();
 
 		if (stylesheet)
 		{

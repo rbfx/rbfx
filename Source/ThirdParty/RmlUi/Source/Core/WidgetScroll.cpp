@@ -210,7 +210,7 @@ void WidgetScroll::GetDimensions(Vector2f& dimensions) const
 }
 
 // Lays out and resizes the internal elements.
-void WidgetScroll::FormatElements(const Vector2f& containing_block, bool resize_element, float slider_length, float bar_length)
+void WidgetScroll::FormatElements(const Vector2f containing_block, bool resize_element, float slider_length, float bar_length)
 {
 	int length_axis = orientation == VERTICAL ? 1 : 0;
 
@@ -360,7 +360,7 @@ void WidgetScroll::FormatBar(float bar_length)
 	}
 
 	// Set the new dimensions on the bar to re-decorate it.
-	bar_box.SetContent(bar_box_content);
+	bar_box.SetContent(bar_box_content.Round());
 	bar->SetBox(bar_box);
 
 	// Now that it's been resized, re-position it.
@@ -455,8 +455,8 @@ void WidgetScroll::ProcessEvent(Event& event)
 
 void WidgetScroll::PositionBar()
 {
-	const Vector2f& track_dimensions = track->GetBox().GetSize();
-	const Vector2f& bar_dimensions = bar->GetBox().GetSize(Box::BORDER);
+	const Vector2f track_dimensions = track->GetBox().GetSize();
+	const Vector2f bar_dimensions = bar->GetBox().GetSize(Box::BORDER);
 
 	if (orientation == VERTICAL)
 	{
@@ -503,7 +503,7 @@ void WidgetScroll::SetLineHeight(float _line_height)
 }
 
 // Lays out and resizes the internal elements.
-void WidgetScroll::FormatElements(const Vector2f& containing_block, float slider_length)
+void WidgetScroll::FormatElements(const Vector2f containing_block, float slider_length)
 {
 	float relative_bar_length;
 

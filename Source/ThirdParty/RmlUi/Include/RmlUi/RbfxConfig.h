@@ -102,9 +102,9 @@ using SharedPtr = eastl::shared_ptr<T>;
 template<typename T>
 using WeakPtr = eastl::weak_ptr<T>;
 template<typename T, typename... Args>
-inline SharedPtr<T> MakeShared(Args... args) { return eastl::make_shared<T, Args...>(std::forward<Args>(args)...); }
+inline SharedPtr<T> MakeShared(Args&&... args) { return eastl::make_shared<T, Args...>(std::forward<Args>(args)...); }
 template<typename T, typename... Args>
-inline UniquePtr<T> MakeUnique(Args... args) { return eastl::make_unique<T, Args...>(std::forward<Args>(args)...); }
+inline UniquePtr<T> MakeUnique(Args&&... args) { return eastl::make_unique<T, Args...>(std::forward<Args>(args)...); }
 
 }
 
@@ -114,13 +114,13 @@ inline UniquePtr<T> MakeUnique(Args... args) { return eastl::make_unique<T, Args
 #include <Urho3D/Math/Vector4.h>
 #include <Urho3D/Math/Matrix4.h>
 
-#define RMLUI_COLOUR_USER_EXTRA "RbfxColor.inl"
+#define RMLUI_COLOUR_USER_INCLUDE "RbfxColor.inl"
 
-#define RMLUI_VECTOR2_USER_EXTRA "RbfxVector2.inl"
+#define RMLUI_VECTOR2_USER_INCLUDE "RbfxVector2.inl"
 
-#define RMLUI_VECTOR3_USER_EXTRA "RbfxVector3.inl"
+#define RMLUI_VECTOR3_USER_INCLUDE "RbfxVector3.inl"
 
-#define RMLUI_VECTOR4_USER_EXTRA "RbfxVector4.inl"
+#define RMLUI_VECTOR4_USER_INCLUDE "RbfxVector4.inl"
 
 #define RMLUI_MATRIX4_USER_EXTRA operator Urho3D::Matrix4() const { return Urho3D::Matrix4(data()); }
 

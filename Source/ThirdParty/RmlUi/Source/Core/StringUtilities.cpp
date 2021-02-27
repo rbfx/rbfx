@@ -122,6 +122,45 @@ RMLUICORE_API String StringUtilities::EncodeRml(const String& string)
 	return result;
 }
 
+String StringUtilities::DecodeRml(const String& s)
+{
+	String result;
+	result.reserve(s.size());
+	for (size_t i = 0; i < s.size();)
+	{
+		if (s[i] == '&')
+		{
+			if (s[i+1] == 'l' && s[i+2] == 't' && s[i+3] == ';')
+			{
+				result += "<";
+				i += 4;
+				continue;
+			}
+			else if (s[i+1] == 'g' && s[i+2] == 't' && s[i+3] == ';')
+			{
+				result += ">";
+				i += 4;
+				continue;
+			}
+			else if (s[i+1] == 'a' && s[i+2] == 'm' && s[i+3] == 'p' && s[i+4] == ';')
+			{
+				result += "&";
+				i += 5;
+				continue;
+			}
+			else if (s[i+1] == 'q' && s[i+2] == 'u' && s[i+3] == 'o' && s[i+4] == 't' && s[i+5] == ';')
+			{
+				result += "\"";
+				i += 6;
+				continue;
+			}
+		}
+		result += s[i];
+		i += 1;
+	}
+	return result;
+}
+
 String StringUtilities::Replace(String subject, const String& search, const String& replace)
 {
 	size_t pos = 0;
@@ -282,8 +321,6 @@ RMLUICORE_API String StringUtilities::StripWhitespace(StringView string)
 
 void StringUtilities::TrimTrailingDotZeros(String& string)
 {
-	RMLUI_ASSERTMSG(string.find('.') != String::npos, "This function probably does not do what you want if the string is not a number with a decimal point.")
-
 	size_t new_size = string.size();
 	for (size_t i = string.size() - 1; i < string.size(); i--)
 	{
@@ -301,39 +338,6 @@ void StringUtilities::TrimTrailingDotZeros(String& string)
 	if (new_size < string.size())
 		string.resize(new_size);
 }
-
-#ifdef RMLUI_DEBUG
-static struct TestTrimTrailingDotZeros {
-	TestTrimTrailingDotZeros() {
-		auto test = [](const String test_string, const String expected) {
-			String result = test_string;
-			StringUtilities::TrimTrailingDotZeros(result);
-			RMLUI_ASSERT(result == expected);
-		};
-		
-		test("0.1", "0.1");
-		test("0.10", "0.1");
-		test("0.1000", "0.1");
-		test("0.01", "0.01");
-		test("0.", "0");
-		test("5.", "5");
-		test("5.5", "5.5");
-		test("5.50", "5.5");
-		test("5.501", "5.501");
-		test("10.0", "10");
-		test("11.0", "11");
-
-		// Some test cases for behavior that are probably not what you want.
-		//test("test0", "test");
-		//test("1000", "1");
-		//test(".", "");
-		//test("0", "");
-		//test(".0", "");
-		//test(" 11 2121 3.00", " 11 2121 3");
-		//test("11", "11");
-	}
-} test_trim_trailing_dot_zeros;
-#endif
 
 bool StringUtilities::StringCompareCaseInsensitive(const StringView lhs, const StringView rhs)
 {

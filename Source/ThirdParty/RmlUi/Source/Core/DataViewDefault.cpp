@@ -28,15 +28,17 @@
 
 #include "DataViewDefault.h"
 #include "DataExpression.h"
-#include "../../Include/RmlUi/Core/DataModel.h"
+#include "DataModel.h"
+#include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/ElementText.h"
 #include "../../Include/RmlUi/Core/Factory.h"
+#include "../../Include/RmlUi/Core/SystemInterface.h"
 #include "../../Include/RmlUi/Core/Variant.h"
 
 namespace Rml {
 
-DataViewCommon::DataViewCommon(Element* element, String override_modifier) : DataView(element), modifier(override_modifier)
+DataViewCommon::DataViewCommon(Element* element, String override_modifier) : DataView(element), modifier(std::move(override_modifier))
 {}
 
 bool DataViewCommon::Initialize(DataModel& model, Element* element, const String& expression_str, const String& in_modifier)
@@ -101,8 +103,75 @@ bool DataViewAttribute::Update(DataModel& model)
 }
 
 
+DataViewAttributeIf::DataViewAttributeIf(Element* element) : DataViewCommon(element)
+{}
+
+bool DataViewAttributeIf::Update(DataModel& model)
+{
+	const String& attribute_name = GetModifier();
+	bool result = false;
+	Variant variant;
+	Element* element = GetElement();
+	DataExpressionInterface expr_interface(&model, element);
+
+	if (element && GetExpression().Run(expr_interface, variant))
+	{
+		const bool value = variant.Get<bool>();
+		const bool is_set = static_cast<bool>(element->GetAttribute(attribute_name));
+		if (is_set != value)
+		{
+			if (value)
+				element->SetAttribute(attribute_name, String());
+			else
+				element->RemoveAttribute(attribute_name);
+			result = true;
+		}
+	}
+	return result;
+}
+
+
 DataViewValue::DataViewValue(Element* element) : DataViewAttribute(element, "value")
 {}
+
+DataViewChecked::DataViewChecked(Element* element) : DataViewCommon(element)
+{}
+
+bool DataViewChecked::Update(DataModel & model)
+{
+	bool result = false;
+	Variant variant;
+	Element* element = GetElement();
+	DataExpressionInterface expr_interface(&model, element);
+
+	if (element && GetExpression().Run(expr_interface, variant))
+	{
+		bool new_checked_state = false;
+
+		if (variant.GetType() == Variant::BOOL)
+		{
+			new_checked_state = variant.Get<bool>();
+		}
+		else
+		{
+			const String value = variant.Get<String>();
+			new_checked_state = (!value.empty() && value == element->GetAttribute<String>("value", ""));
+		}
+
+		const bool current_checked_state = element->HasAttribute("checked");
+
+		if (new_checked_state != current_checked_state)
+		{
+			result = true;
+			if (new_checked_state)
+				element->SetAttribute("checked", String());
+			else
+				element->RemoveAttribute("checked");
+		}
+	}
+
+	return result;
+}
 
 
 DataViewStyle::DataViewStyle(Element* element) : DataViewCommon(element)
@@ -313,7 +382,11 @@ bool DataViewText::Update(DataModel& model)
 			if (ElementText* text_element = static_cast<ElementText*>(element))
 			{
 				String new_text = BuildText();
-				text_element->SetText(new_text);
+
+				String text;
+				if (SystemInterface* system_interface = GetSystemInterface())
+					system_interface->TranslateString(text, new_text);
+				text_element->SetText(text);
 			}
 		}
 		else
@@ -425,6 +498,17 @@ bool DataViewFor::Initialize(DataModel& model, Element* element, const String& i
 		return false;
 
 	element->SetProperty(PropertyId::Display, Property(Style::Display::None));
+
+	// Copy over the attributes, but remove the 'data-for' which would otherwise recreate the data-for loop on all constructed children recursively.
+	attributes = element->GetAttributes();
+	for (auto it = attributes.begin(); it != attributes.end(); ++it)
+	{
+		if (it->first == "data-for")
+		{
+			attributes.erase(it);
+			break;
+		}
+	}
 
 	return true;
 }
