@@ -90,20 +90,21 @@ EA_RESTORE_ALL_VC_WARNINGS()
 	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable: 4267)  // 'argument' : conversion from 'size_t' to 'const uint32_t', possible loss of data. This is a bogus warning resulting from a bug in VC++.
-	#pragma warning(disable: 4345)  // Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
-	#pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
-	#pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
-	#pragma warning(disable: 4571)  // catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
-	#if EASTL_EXCEPTIONS_ENABLED
-	#pragma warning(disable: 4703)  // potentially uninitialized local pointer variable used.   VC++ is mistakenly analyzing the possibility of uninitialized variables, though it's not easy for it to do so.
-	#pragma warning(disable: 4701)  // potentially uninitialized local variable used.
-	#endif
+
+// 4267 - 'argument' : conversion from 'size_t' to 'const uint32_t', possible loss of data. This is a bogus warning resulting from a bug in VC++.
+// 4345 - Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
+// 4480 - nonstandard extension used: specifying underlying type for enum
+// 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+// 4571 - catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
+EA_DISABLE_VC_WARNING(4267 4345 4480 4530 4571);
+
+#if EASTL_EXCEPTIONS_ENABLED
+	// 4703 - potentially uninitialized local pointer variable used. VC++ is mistakenly analyzing the possibility of uninitialized variables, though it's not easy for it to do so.
+	// 4701 - potentially uninitialized local variable used.
+	EA_DISABLE_VC_WARNING(4703 4701)
 #endif
 
-		
+
 #if defined(EA_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
 #endif
@@ -328,7 +329,7 @@ namespace eastl
 	/// but current efforts have resulted in less efficient and more fragile code.
 	/// The logic of this class doesn't lend itself to a clean implementation. 
 	/// It turns out that deques are one of the least likely classes you'd want this
-	/// behaviour in, so until this functionality becomes very imporantant to somebody,
+	/// behaviour in, so until this functionality becomes very important to somebody,
 	/// we will leave it as-is. It can probably be solved by adding some extra code to
 	/// the Do* functions and adding good comments explaining the situation.
 	/// 
@@ -564,6 +565,7 @@ namespace eastl
 		{
 			DoFreeSubarrays(mItBegin.mpCurrentArrayPtr, mItEnd.mpCurrentArrayPtr + 1);
 			DoFreePtrArray(mpPtrArray, mnPtrArraySize);
+			mpPtrArray = nullptr;
 		}
 	}
 
@@ -2676,16 +2678,10 @@ namespace eastl
 } // namespace eastl
 
 
-#ifdef _MSC_VER
-	#pragma warning(pop)
+EA_RESTORE_VC_WARNING();
+#if EASTL_EXCEPTIONS_ENABLED
+	EA_RESTORE_VC_WARNING();
 #endif
 
 
 #endif // Header include guard
-
-
-
-
-
-
-

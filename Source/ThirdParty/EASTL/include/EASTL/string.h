@@ -30,7 +30,7 @@
 //      trick of using: basic_string<char>(x).swap(x);
 //    - basic_string has a force_size() function, which unilaterally moves the string
 //      end position (mpEnd) to the given location. Useful for when the user writes
-//      into the string via some extenal means such as C strcpy or sprintf.
+//      into the string via some external means such as C strcpy or sprintf.
 //    - basic_string substr() deviates from the standard and returns a string with
 //		a copy of this->get_allocator()
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@
 //    - A reference count needs to exist with the string, which increases string memory usage.
 //    - With thread safety, atomic operations and mutex locks are expensive, especially
 //      on weaker memory systems such as console gaming platforms.
-//    - All non-const string accessor functions need to do a sharing check the the
+//    - All non-const string accessor functions need to do a sharing check then the
 //      first such check needs to detach the string. Similarly, all string assignments
 //      need to do a sharing check as well. If you access the string before doing an
 //      assignment, the assignment doesn't result in a shared string, because the string
@@ -117,18 +117,18 @@ EA_RESTORE_GCC_WARNING()
 EA_RESTORE_ALL_VC_WARNINGS()
 
 
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
-	#pragma warning(disable: 4267)  // 'argument' : conversion from 'size_t' to 'const uint32_t', possible loss of data. This is a bogus warning resulting from a bug in VC++.
-	#pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
-	#pragma warning(disable: 4571)  // catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
-	#pragma warning(disable: 4702)  // unreachable code
-#endif
+// 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+// 4480 - nonstandard extension used: specifying underlying type for enum
+// 4571 - catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
+// 4267 - 'argument' : conversion from 'size_t' to 'const uint32_t', possible loss of data. This is a bogus warning resulting from a bug in VC++.
+// 4702 - unreachable code
+EA_DISABLE_VC_WARNING(4530 4480 4571 4267 4702);
+
 
 #if defined(EA_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
 #endif
+
 
 #include <EASTL/internal/char_traits.h>
 #include <EASTL/string_view.h>
@@ -203,15 +203,16 @@ EA_RESTORE_ALL_VC_WARNINGS()
 		#endif
 	}
 #else
+    // rbfx: replaced extern with EASTL_API to fix shared builds.
 	// User-provided functions.
-	extern int Vsnprintf8 (char*  pDestination, size_t n, const char*  pFormat, va_list arguments);
-	extern int Vsnprintf16(char16_t* pDestination, size_t n, const char16_t* pFormat, va_list arguments);
+	int EASTL_API Vsnprintf8 (char*  pDestination, size_t n, const char*  pFormat, va_list arguments);
+	int EASTL_API Vsnprintf16(char16_t* pDestination, size_t n, const char16_t* pFormat, va_list arguments);
 	extern int Vsnprintf32(char32_t* pDestination, size_t n, const char32_t* pFormat, va_list arguments);
 	#if EA_CHAR8_UNIQUE
-		extern int Vsnprintf8 (char8_t*  pDestination, size_t n, const char8_t*  pFormat, va_list arguments);
+		int EASTL_API Vsnprintf8 (char8_t*  pDestination, size_t n, const char8_t*  pFormat, va_list arguments);
 	#endif
 	#if defined(EA_WCHAR_UNIQUE) && EA_WCHAR_UNIQUE
-		extern int VsnprintfW(wchar_t* pDestination, size_t n, const wchar_t* pFormat, va_list arguments);
+		int EASTL_API VsnprintfW(wchar_t* pDestination, size_t n, const wchar_t* pFormat, va_list arguments);
 	#endif
 
 	namespace eastl
@@ -397,7 +398,7 @@ namespace eastl
 				RawLayout raw;
 			};
 
-			Layout()                                                  { ResetToSSO(); SetSSOSize(0); } // start as SSO by default
+			Layout()                                                  { ResetToSSO(); } // start as SSO by default
 			Layout(const Layout& other)                               { Copy(*this, other); }
 			Layout(Layout&& other)                                    { Move(*this, other); }
 			Layout& operator=(const Layout& other)                    { Copy(*this, other); return *this; }
@@ -489,7 +490,7 @@ namespace eastl
 			inline void Move(Layout& dst, Layout& src) EA_NOEXCEPT       { eastl::swap(dst.raw, src.raw); }
 			inline void Swap(Layout& a, Layout& b) EA_NOEXCEPT           { eastl::swap(a.raw, b.raw); }
 
-			inline void ResetToSSO() EA_NOEXCEPT { memset(&raw, 0, sizeof(RawLayout)); }
+			inline void ResetToSSO() EA_NOEXCEPT { *SSOBeginPtr() = 0; SetSSOSize(0); }
 		};
 
 		eastl::compressed_pair<Layout, allocator_type> mPair;
@@ -1205,6 +1206,7 @@ namespace eastl
 	{
 		// Note that we do not call SizeInitialize here.
 		AllocateSelf(n);
+		internalLayout().SetSize(0);
 		*internalLayout().EndPtr() = 0;
 	}
 
@@ -1217,6 +1219,7 @@ namespace eastl
 	{
 		const size_type n = (size_type)CharStrlen(pFormat);
 		AllocateSelf(n);
+		internalLayout().SetSize(0);
 
 		va_list arguments;
 		va_start(arguments, pFormat);
@@ -1678,10 +1681,9 @@ namespace eastl
 					pointer pOldBegin = internalLayout().BeginPtr();
 					const size_type nOldCap = internalLayout().GetHeapCapacity();
 
-					internalLayout().ResetToSSO(); // reset layout to sso
-					CharStringUninitializedCopy(pOldBegin, pOldBegin + n, internalLayout().BeginPtr());
-					// *EndPtr() = 0 is already done by the ResetToSSO
+					CharStringUninitializedCopy(pOldBegin, pOldBegin + n, internalLayout().SSOBeginPtr());
 					internalLayout().SetSSOSize(n);
+					*internalLayout().SSOEndPtr() = 0;
 
 					DoFree(pOldBegin, nOldCap + 1);
 
@@ -3501,8 +3503,7 @@ namespace eastl
 		AllocateSelf(n);
 
 		CharStringUninitializedFillN(internalLayout().BeginPtr(), n, c);
-		internalLayout().SetSize(n);
-	   *internalLayout().EndPtr() = 0;
+		*internalLayout().EndPtr() = 0;
 	}
 
 
@@ -3519,8 +3520,7 @@ namespace eastl
 		AllocateSelf(n);
 
 		CharStringUninitializedCopy(pBegin, pEnd, internalLayout().BeginPtr());
-		internalLayout().SetSize(n);
-	   *internalLayout().EndPtr() = 0;
+		*internalLayout().EndPtr() = 0;
 	}
 
 
@@ -3582,7 +3582,6 @@ namespace eastl
 	inline void basic_string<T, Allocator>::AllocateSelf()
 	{
 		internalLayout().ResetToSSO();
-		internalLayout().SetSSOSize(0);
 	}
 
 
@@ -3604,10 +3603,10 @@ namespace eastl
 			pointer pBegin = DoAllocate(n + 1);
 			internalLayout().SetHeapBeginPtr(pBegin);
 			internalLayout().SetHeapCapacity(n);
-			internalLayout().SetHeapSize(0);
+			internalLayout().SetHeapSize(n);
 		}
 		else
-			AllocateSelf();
+			internalLayout().SetSSOSize(n);
 	}
 
 
@@ -4211,22 +4210,20 @@ namespace eastl
 		}
 	};
 
-	// NOTE(rparolin): no longer required.
-	//
-	// #if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
-	//     template <>
-	//     struct hash<string8>
-	//     {
-	//         size_t operator()(const string8& x) const
-	//         {
-	//             const char8_t* p = (const char8_t*)x.c_str();
-	//             unsigned int c, result = 2166136261U;
-	//             while((c = *p++) != 0)
-	//                 result = (result * 16777619) ^ c;
-	//             return (size_t)result;
-	//         }
-	//     };
-	// #endif
+	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+		template <>
+		struct hash<u8string>
+		{
+			size_t operator()(const u8string& x) const
+			{
+				const char8_t* p = (const char8_t*)x.c_str();
+				unsigned int c, result = 2166136261U;
+				while((c = *p++) != 0)
+					result = (result * 16777619) ^ c;
+				return (size_t)result;
+			}
+		};
+	#endif
 
 	template <>
 	struct hash<string16>
@@ -4375,8 +4372,7 @@ namespace eastl
 } // namespace eastl
 
 
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
+EA_RESTORE_VC_WARNING();
+
 
 #endif // Header include guard

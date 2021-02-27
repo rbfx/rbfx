@@ -5,7 +5,7 @@
 #ifndef EASTDC_THREAD_H
 #define EASTDC_THREAD_H
 
-
+#if EASTDC_THREADING_SUPPORTED
 #include <EABase/eabase.h>
 #include <eathread/eathread_atomic.h>
 #include <eathread/eathread_mutex.h>
@@ -78,7 +78,7 @@ namespace EA
 
 } // namespace EA
 
-
+#endif // EASTDC_THREADING_SUPPORTED
 
 
 #endif // Header include guard

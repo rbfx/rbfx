@@ -25,15 +25,15 @@ file(GLOB_RECURSE EASTL_SOURCES
     test/packages/EAStdC/include/*.h
     test/packages/EAStdC/source/*.cpp
 )
-file(GLOB EASTL_THREAD_SOURCES test/packages/EAThread/include/*.h test/packages/EAThread/source/*.cpp)
 
-add_library(EASTL STATIC ${EASTL_SOURCES} ${EASTL_THREAD_SOURCES} doc/EASTL.natvis)
+add_library(EASTL STATIC ${EASTL_SOURCES} doc/EASTL.natvis)
 target_compile_definitions(EASTL
     PUBLIC  -DEASTL_OPENSOURCE=1
             -DEASTL_RTTI_ENABLED=0
             -DEASTL_URHO3D_EXTENSIONS=1
             -DEASTL_SIZE_T_32BIT=1        # Urho3D uses `unsigned` for sizes all over place. Can not use native size without breaking lots of code.
             -DEASTDC_GLOBALPTR_SUPPORT_ENABLED=0
+            -DEASTDC_THREADING_SUPPORTED=0
             -DEASTL_STD_ITERATOR_CATEGORY_ENABLED=1
     PRIVATE -D_CHAR16T
 )
@@ -48,11 +48,10 @@ target_include_directories(EASTL SYSTEM
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test/packages/EABase/include/Common>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test/packages/EAAssert/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test/packages/EAStdC/include>
-           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test/packages/EAThread/include>
 )
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(EASTL PUBLIC -DEA_DLL PRIVATE -DEASTL_EXPORTS -DEASTDC_EXPORTS -DEATHREAD_EXPORTS)
+    target_compile_definitions(EASTL PUBLIC -DEA_DLL PRIVATE -DEASTL_EXPORTS -DEASTDC_EXPORTS)
 endif ()
 
 # Urho3D:
@@ -64,7 +63,6 @@ if (NOT MINI_URHO)
     install (DIRECTORY test/packages/EABase/include/Common/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
     install (DIRECTORY test/packages/EAAssert/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
     install (DIRECTORY test/packages/EAStdC/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
-    install (DIRECTORY test/packages/EAThread/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
     if (NOT URHO3D_MERGE_STATIC_LIBS)
         install(TARGETS EASTL EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
     endif ()
