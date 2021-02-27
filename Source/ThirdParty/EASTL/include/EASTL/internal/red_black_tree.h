@@ -30,12 +30,10 @@ EA_DISABLE_ALL_VC_WARNINGS()
 EA_RESTORE_ALL_VC_WARNINGS()
 
 
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable: 4512)  // 'class' : assignment operator could not be generated
-	#pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
-	#pragma warning(disable: 4571)  // catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
-#endif
+// 4512 - 'class' : assignment operator could not be generated
+// 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+// 4571 - catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
+EA_DISABLE_VC_WARNING(4512 4530 4571);
 
 
 namespace eastl
@@ -625,8 +623,14 @@ namespace eastl
 		eastl::pair<iterator, bool> DoInsertKey(true_type, const key_type& key);
 		iterator                    DoInsertKey(false_type, const key_type& key);
 
-		iterator DoInsertValueHint(true_type, const_iterator position, const value_type& value);
-		iterator DoInsertValueHint(false_type, const_iterator position, const value_type& value);
+		template <class... Args>
+		iterator DoInsertValueHint(true_type, const_iterator position, Args&&... args);
+
+		template <class... Args>
+		iterator DoInsertValueHint(false_type, const_iterator position, Args&&... args);
+
+		iterator DoInsertValueHint(true_type, const_iterator position, value_type&& value);
+		iterator DoInsertValueHint(false_type, const_iterator position, value_type&& value);
 
 		iterator DoInsertKey(true_type, const_iterator position, const key_type& key);  // By design we return iterator and not a pair.
 		iterator DoInsertKey(false_type, const_iterator position, const key_type& key);
@@ -859,7 +863,7 @@ namespace eastl
 			{
 		#endif
 				for(; first != last; ++first)
-					insert(eastl::move(*first));
+					insert(*first);
 		#if EASTL_EXCEPTIONS_ENABLED
 			}
 			catch(...)
@@ -1128,7 +1132,7 @@ namespace eastl
 	inline eastl::pair<typename rbtree<K, V, C, A, E, bM, bU>::iterator, bool>
 	rbtree<K, V, C, A, E, bM, bU>::try_emplace(const key_type& key, Args&&... args)
 	{
-		return DoInsertValue(has_unique_keys_type(), piecewise_construct, forward_as_tuple(key), forward_as_tuple(forward<Args>(args)...));
+		return DoInsertValue(has_unique_keys_type(), piecewise_construct, eastl::forward_as_tuple(key), eastl::forward_as_tuple(eastl::forward<Args>(args)...));
 	}
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
@@ -1136,7 +1140,7 @@ namespace eastl
 	inline eastl::pair<typename rbtree<K, V, C, A, E, bM, bU>::iterator, bool>
 	rbtree<K, V, C, A, E, bM, bU>::try_emplace(key_type&& key, Args&&... args)
 	{
-		return DoInsertValue(has_unique_keys_type(), piecewise_construct, forward_as_tuple(eastl::move(key)), forward_as_tuple(forward<Args>(args)...));
+		return DoInsertValue(has_unique_keys_type(), piecewise_construct, eastl::forward_as_tuple(eastl::move(key)), eastl::forward_as_tuple(eastl::forward<Args>(args)...));
 	}
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
@@ -1146,7 +1150,7 @@ namespace eastl
 	{
 		return DoInsertValueHint(
 		    has_unique_keys_type(), position,
-		    value_type(piecewise_construct, forward_as_tuple(key), forward_as_tuple(forward<Args>(args)...)));
+		    piecewise_construct, eastl::forward_as_tuple(key), eastl::forward_as_tuple(eastl::forward<Args>(args)...));
 	}
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
@@ -1156,7 +1160,7 @@ namespace eastl
 	{
 		return DoInsertValueHint(
 		    has_unique_keys_type(), position,
-		    value_type(piecewise_construct, forward_as_tuple(key), forward_as_tuple(forward<Args>(args)...)));
+		    piecewise_construct, eastl::forward_as_tuple(eastl::move(key)), eastl::forward_as_tuple(eastl::forward<Args>(args)...));
 	}
 
 
@@ -1174,7 +1178,7 @@ namespace eastl
 	inline typename rbtree<K, V, C, A, E, bM, bU>::iterator 
 	rbtree<K, V, C, A, E, bM, bU>::insert(const_iterator position, value_type&& value)
 	{
-		return DoInsertValueHint(has_unique_keys_type(), position, value_type(eastl::move(value)));
+		return DoInsertValueHint(has_unique_keys_type(), position, eastl::move(value));
 	}
 
 
@@ -1203,7 +1207,7 @@ namespace eastl
 
 		if(iter == end())
 		{
-			return insert(value_type(piecewise_construct, forward_as_tuple(k), forward_as_tuple(eastl::forward<M>(obj))));
+			return insert(value_type(piecewise_construct, eastl::forward_as_tuple(k), eastl::forward_as_tuple(eastl::forward<M>(obj))));
 		}
 		else
 		{
@@ -1221,7 +1225,7 @@ namespace eastl
 
 		if(iter == end())
 		{
-			return insert(value_type(piecewise_construct, forward_as_tuple(eastl::move(k)), forward_as_tuple(eastl::forward<M>(obj))));
+			return insert(value_type(piecewise_construct, eastl::forward_as_tuple(eastl::move(k)), eastl::forward_as_tuple(eastl::forward<M>(obj))));
 		}
 		else
 		{
@@ -1239,7 +1243,7 @@ namespace eastl
 
 		if(iter == end())
 		{
-			return insert(hint, value_type(piecewise_construct, forward_as_tuple(k), forward_as_tuple(eastl::forward<M>(obj))));
+			return insert(hint, value_type(piecewise_construct, eastl::forward_as_tuple(k), eastl::forward_as_tuple(eastl::forward<M>(obj))));
 		}
 		else
 		{
@@ -1257,7 +1261,7 @@ namespace eastl
 
 		if(iter == end())
 		{
-			return insert(hint, value_type(piecewise_construct, forward_as_tuple(eastl::move(k)), forward_as_tuple(eastl::forward<M>(obj))));
+			return insert(hint, value_type(piecewise_construct, eastl::forward_as_tuple(eastl::move(k)), eastl::forward_as_tuple(eastl::forward<M>(obj))));
 		}
 		else
 		{
@@ -1591,10 +1595,69 @@ namespace eastl
 		return NULL;
 	}
 
+	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
+	template <class... Args>
+	typename rbtree<K, V, C, A, E, bM, bU>::iterator
+	rbtree<K, V, C, A, E, bM, bU>::DoInsertValueHint(true_type, const_iterator position, Args&&... args) // true_type means keys are unique.
+	{
+		// This is the pathway for insertion of unique keys (map and set, but not multimap and multiset).
+		//
+		// We follow the same approach as SGI STL/STLPort and use the position as
+		// a forced insertion position for the value when possible.
+
+		node_type* pNodeNew = DoCreateNode(eastl::forward<Args>(args)...); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
+		const key_type& key(extract_key{}(pNodeNew->mValue));
+
+		bool       bForceToLeft;
+		node_type* pPosition = DoGetKeyInsertionPositionUniqueKeysHint(position, bForceToLeft, key);
+
+		if (!pPosition)
+		{
+			bool        canInsert;
+			pPosition = DoGetKeyInsertionPositionUniqueKeys(canInsert, key);
+
+			if (!canInsert)
+			{
+				DoFreeNode(pNodeNew);
+				return iterator(pPosition);
+			}
+
+			bForceToLeft = false;
+		}
+
+		return DoInsertValueImpl(pPosition, bForceToLeft, key, pNodeNew);
+	}
+
+
+	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
+	template <class... Args>
+	typename rbtree<K, V, C, A, E, bM, bU>::iterator
+	rbtree<K, V, C, A, E, bM, bU>::DoInsertValueHint(false_type, const_iterator position, Args&&... args) // false_type means keys are not unique.
+	{
+		// This is the pathway for insertion of non-unique keys (multimap and multiset, but not map and set).
+		//
+		// We follow the same approach as SGI STL/STLPort and use the position as
+		// a forced insertion position for the value when possible.
+
+		node_type* pNodeNew = DoCreateNode(eastl::forward<Args>(args)...); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
+		const key_type& key(extract_key{}(pNodeNew->mValue));
+
+		bool        bForceToLeft;
+		node_type*  pPosition = DoGetKeyInsertionPositionNonuniqueKeysHint(position, bForceToLeft, key);
+
+		if (!pPosition)
+		{
+			pPosition = DoGetKeyInsertionPositionNonuniqueKeys(key);
+			bForceToLeft = false;
+		}
+
+		return DoInsertValueImpl(pPosition, bForceToLeft, key, pNodeNew);
+	}
+
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	typename rbtree<K, V, C, A, E, bM, bU>::iterator
-	rbtree<K, V, C, A, E, bM, bU>::DoInsertValueHint(true_type, const_iterator position, const value_type& value) // true_type means keys are unique.
+	rbtree<K, V, C, A, E, bM, bU>::DoInsertValueHint(true_type, const_iterator position, value_type&& value) // true_type means keys are unique.
 	{
 		// This is the pathway for insertion of unique keys (map and set, but not multimap and multiset).
 		//
@@ -1607,15 +1670,15 @@ namespace eastl
 		node_type*  pPosition = DoGetKeyInsertionPositionUniqueKeysHint(position, bForceToLeft, key);
 
 		if(pPosition)
-			return DoInsertValueImpl(pPosition, bForceToLeft, key, value);
+			return DoInsertValueImpl(pPosition, bForceToLeft, key, eastl::move(value));
 		else
-			return DoInsertValue(has_unique_keys_type(), value).first;
+			return DoInsertValue(has_unique_keys_type(), eastl::move(value)).first;
 	}
 
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	typename rbtree<K, V, C, A, E, bM, bU>::iterator
-	rbtree<K, V, C, A, E, bM, bU>::DoInsertValueHint(false_type, const_iterator position, const value_type& value) // false_type means keys are not unique.
+	rbtree<K, V, C, A, E, bM, bU>::DoInsertValueHint(false_type, const_iterator position, value_type&& value) // false_type means keys are not unique.
 	{
 		// This is the pathway for insertion of non-unique keys (multimap and multiset, but not map and set).
 		//
@@ -1627,9 +1690,9 @@ namespace eastl
 		node_type*  pPosition = DoGetKeyInsertionPositionNonuniqueKeysHint(position, bForceToLeft, key);
 
 		if(pPosition)
-			return DoInsertValueImpl(pPosition, bForceToLeft, key, value);
+			return DoInsertValueImpl(pPosition, bForceToLeft, key, eastl::move(value));
 		else
-			return DoInsertValue(has_unique_keys_type(), value);
+			return DoInsertValue(has_unique_keys_type(), eastl::move(value));
 	}
 
 
@@ -2072,7 +2135,7 @@ namespace eastl
 	inline typename rbtree<K, V, C, A, E, bM, bU>::node_type*
 	rbtree<K, V, C, A, E, bM, bU>::DoAllocateNode()
 	{
-		auto* pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+		auto* pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(node_type), 0);
 		EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
 
 		return pNode;
@@ -2358,22 +2421,7 @@ namespace eastl
 } // namespace eastl
 
 
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
+EA_RESTORE_VC_WARNING();
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-
-
-
-
