@@ -17,17 +17,17 @@ namespace Urho3DNet
         /// <summary>
         /// Returns true if native object pointer is null.
         /// </summary>
-        public bool Expired => swigCPtr.Handle == IntPtr.Zero;
+        public bool IsExpired => swigCPtr.Handle == IntPtr.Zero;
         /// <summary>
         /// Returns true if native object pointer is not null.
         /// </summary>
-        public bool NotExpired => swigCPtr.Handle != IntPtr.Zero;
+        public bool IsNotExpired => swigCPtr.Handle != IntPtr.Zero;
         /// <summary>
         /// Free GC handle saved in a native object instance.
         /// </summary>
         internal void FreeGCHandle()
         {
-            if (Expired)
+            if (IsExpired)
                 return;
 
             IntPtr cPtr = GetScriptObject();
