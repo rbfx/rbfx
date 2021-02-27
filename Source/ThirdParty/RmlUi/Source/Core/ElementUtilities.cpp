@@ -29,14 +29,14 @@
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/Context.h"
 #include "../../Include/RmlUi/Core/Core.h"
-#include "../../Include/RmlUi/Core/DataController.h"
-#include "../../Include/RmlUi/Core/DataModel.h"
-#include "../../Include/RmlUi/Core/DataView.h"
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/ElementScroll.h"
 #include "../../Include/RmlUi/Core/Factory.h"
 #include "../../Include/RmlUi/Core/FontEngineInterface.h"
 #include "../../Include/RmlUi/Core/RenderInterface.h"
+#include "DataController.h"
+#include "DataModel.h"
+#include "DataView.h"
 #include "ElementStyle.h"
 #include "LayoutDetails.h"
 #include "LayoutEngine.h"
@@ -65,7 +65,7 @@ static void SetBox(Element* element)
 }
 
 // Positions an element relative to an offset parent.
-static void SetElementOffset(Element* element, const Vector2f& offset)
+static void SetElementOffset(Element* element, Vector2f offset)
 {
 	Vector2f relative_offset = element->GetParentNode()->GetBox().GetPosition(Box::CONTENT);
 	relative_offset += offset;
@@ -154,13 +154,13 @@ float ElementUtilities::GetDensityIndependentPixelRatio(Element * element)
 }
 
 // Returns the width of a string rendered within the context of the given element.
-int ElementUtilities::GetStringWidth(Element* element, const String& string)
+int ElementUtilities::GetStringWidth(Element* element, const String& string, Character prior_character)
 {
 	FontFaceHandle font_face_handle = element->GetFontFaceHandle();
 	if (font_face_handle == 0)
 		return 0;
 
-	return GetFontEngineInterface()->GetStringWidth(font_face_handle, string);
+	return GetFontEngineInterface()->GetStringWidth(font_face_handle, string, prior_character);
 }
 
 void ElementUtilities::BindEventAttributes(Element* element)
@@ -198,14 +198,15 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 		if (num_ignored_clips == 0 && clipping_element->IsClippingEnabled())
 		{
 			// Ignore nodes that don't clip.
-			if (clipping_element->GetClientWidth() < clipping_element->GetScrollWidth()
-				|| clipping_element->GetClientHeight() < clipping_element->GetScrollHeight())
+			if (clipping_element->GetClientWidth() < clipping_element->GetScrollWidth() - 0.5f
+				|| clipping_element->GetClientHeight() < clipping_element->GetScrollHeight() - 0.5f)
 			{
-				Vector2f element_origin_f = clipping_element->GetAbsoluteOffset(Box::CONTENT);
-				Vector2f element_dimensions_f = clipping_element->GetBox().GetSize(Box::CONTENT);
+				const Box::Area client_area = clipping_element->GetClientArea();
+				const Vector2f element_origin_f = clipping_element->GetAbsoluteOffset(client_area);
+				const Vector2f element_dimensions_f = clipping_element->GetBox().GetSize(client_area);
 				
-				Vector2i element_origin(Math::RealToInteger(element_origin_f.x), Math::RealToInteger(element_origin_f.y));
-				Vector2i element_dimensions(Math::RealToInteger(element_dimensions_f.x), Math::RealToInteger(element_dimensions_f.y));
+				const Vector2i element_origin(Math::RealToInteger(element_origin_f.x), Math::RealToInteger(element_origin_f.y));
+				const Vector2i element_dimensions(Math::RealToInteger(element_dimensions_f.x), Math::RealToInteger(element_dimensions_f.y));
 				
 				if (clip_origin == Vector2i(-1, -1) && clip_dimensions == Vector2i(-1, -1))
 				{
@@ -214,11 +215,11 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 				}
 				else
 				{
-					Vector2i top_left(Math::Max(clip_origin.x, element_origin.x),
-									  Math::Max(clip_origin.y, element_origin.y));
+					const Vector2i top_left(Math::Max(clip_origin.x, element_origin.x),
+					                        Math::Max(clip_origin.y, element_origin.y));
 					
-					Vector2i bottom_right(Math::Min(clip_origin.x + clip_dimensions.x, element_origin.x + element_dimensions.x),
-										  Math::Min(clip_origin.y + clip_dimensions.y, element_origin.y + element_dimensions.y));
+					const Vector2i bottom_right(Math::Min(clip_origin.x + clip_dimensions.x, element_origin.x + element_dimensions.x),
+					                            Math::Min(clip_origin.y + clip_dimensions.y, element_origin.y + element_dimensions.y));
 					
 					clip_origin = top_left;
 					clip_dimensions.x = Math::Max(0, bottom_right.x - top_left.x);
@@ -302,9 +303,9 @@ void ElementUtilities::ApplyActiveClipRegion(Context* context, RenderInterface* 
 }
 
 // Formats the contents of an element.
-bool ElementUtilities::FormatElement(Element* element, const Vector2f& containing_block)
+void ElementUtilities::FormatElement(Element* element, Vector2f containing_block)
 {
-	return LayoutEngine::FormatElement(element, containing_block);
+	LayoutEngine::FormatElement(element, containing_block);
 }
 
 // Generates the box for an element.
@@ -433,6 +434,14 @@ static bool ApplyDataViewsControllersInternal(Element* element, const bool const
 				}
 				else
 				{
+					if (Factory::IsStructuralDataView(type_name))
+					{
+						// Structural data views should cancel all other non-structural data views and controllers. Exit now.
+						// Eg. in elements with a 'data-for' attribute, the data views should be constructed on the generated
+						// children elements and not on the current element generating the 'for' view.
+						return false;
+					}
+
 					const size_t modifier_offset = data_str_length + type_name.size() + 1;
 					if (modifier_offset < name.size())
 						initializer.modifier_or_inner_rml = name.substr(modifier_offset);

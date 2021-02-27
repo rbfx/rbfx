@@ -1,9 +1,9 @@
 /*
- * This source file is part of rmlui, the HTML/CSS Interface Middleware
+ * This source file is part of RmlUi, the HTML/CSS Interface Middleware
  *
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
- * Copyright (c) 2014 Markus Schöngart
+ * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
  * Copyright (c) 2019 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,28 +26,49 @@
  *
  */
 
-#include "../../Include/RmlUi/Core/Types.h"
+#include "PropertyParserRatio.h"
 
 namespace Rml {
 
-Vector4i operator*(int lhs, const Vector4i& rhs)
+PropertyParserRatio::PropertyParserRatio()
 {
-	return Vector4i(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w);
 }
 
-Vector4f operator*(float lhs, const Vector4f& rhs)
+PropertyParserRatio::~PropertyParserRatio()
 {
-	return Vector4f(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w);
 }
 
-template <>
-Vector4< float > Vector4< float >::Normalise() const
+// Called to parse a RCSS string declaration.
+bool PropertyParserRatio::ParseValue(Property& property, const String& value, const ParameterMap& RMLUI_UNUSED_PARAMETER(parameters)) const
 {
-	float magnitude = Magnitude();
-	if (Math::IsZero(magnitude))
-		return *this;
+	RMLUI_UNUSED(parameters);
 
-	return *this / magnitude;
+	StringList parts;
+	StringUtilities::ExpandString(parts, value, '/');
+
+	if(parts.size() != 2)
+	{
+		return false;
+	}
+
+	float first_value = 0;
+	if (!TypeConverter<String, float>::Convert(parts[0], first_value))
+	{
+		// Number conversion failed
+		return false;
+	}
+	
+	float second_value = 0;
+	if (!TypeConverter<String, float>::Convert(parts[1], second_value))
+	{
+		// Number conversion failed
+		return false;
+	}
+
+	property.value = Variant(first_value / second_value);
+	property.unit = Property::NUMBER;
+
+	return true;
 }
 
 } // namespace Rml

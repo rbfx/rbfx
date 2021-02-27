@@ -499,8 +499,10 @@ class Matrix4
 		static ThisType Compose(const Vector3< Component >& translation, const Vector3< Component >& scale,
 			const Vector3< Component >& skew, const Vector4< Component >& perspective, const Vector4< Component >& quaternion) noexcept;
 
-#ifdef RMLUI_MATRIX4_USER_EXTRA
-		RMLUI_MATRIX4_USER_EXTRA
+#if defined(RMLUI_MATRIX4_USER_EXTRA)
+	RMLUI_MATRIX4_USER_EXTRA
+#elif defined(RMLUI_MATRIX4_USER_INCLUDE)
+	#include RMLUI_MATRIX4_USER_INCLUDE
 #endif
 };
 

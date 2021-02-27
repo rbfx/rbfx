@@ -51,7 +51,7 @@ SystemInterface::~SystemInterface()
 bool SystemInterface::LogMessage(Log::Type logtype, const String& message)
 {
 	// By default we just send a platform message
-#ifndef UWP
+#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)
 	if (logtype == Log::LT_ASSERT)
 	{
 		String message_user = CreateString(1024, "%s\nWould you like to interrupt execution?", message.c_str());	
