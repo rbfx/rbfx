@@ -30,7 +30,6 @@
 #include "ElementDefinition.h"
 #include "StyleSheetFactory.h"
 #include "StyleSheetNode.h"
-#include "StyleSheetParser.h"
 #include "Utilities.h"
 #include "../../Include/RmlUi/Core/DecoratorInstancer.h"
 #include "../../Include/RmlUi/Core/Element.h"
@@ -60,24 +59,15 @@ StyleSheet::~StyleSheet()
 {
 }
 
-bool StyleSheet::LoadStyleSheet(Stream* stream, int begin_line_number)
-{
-	StyleSheetParser parser;
-	specificity_offset = parser.Parse(root.get(), stream, *this, keyframes, decorator_map, spritesheet_list, begin_line_number);
-	return specificity_offset >= 0;
-}
-
 /// Combines this style sheet with another one, producing a new sheet
-SharedPtr<StyleSheet> StyleSheet::CombineStyleSheet(const StyleSheet& other_sheet) const
+UniquePtr<StyleSheet> StyleSheet::CombineStyleSheet(const StyleSheet& other_sheet) const
 {
 	RMLUI_ZoneScoped;
 
-	SharedPtr<StyleSheet> new_sheet = MakeShared<StyleSheet>();
-	if (!new_sheet->root->MergeHierarchy(root.get()) ||
-		!new_sheet->root->MergeHierarchy(other_sheet.root.get(), specificity_offset))
-	{
-		return nullptr;
-	}
+	UniquePtr<StyleSheet> new_sheet = UniquePtr<StyleSheet>(new StyleSheet());
+	
+	new_sheet->root = root->DeepCopy();
+	new_sheet->root->MergeHierarchy(other_sheet.root.get(), specificity_offset);
 
 	// Any matching @keyframe names are overridden as per CSS rules
 	new_sheet->keyframes.reserve(keyframes.size() + other_sheet.keyframes.size());
@@ -106,17 +96,29 @@ SharedPtr<StyleSheet> StyleSheet::CombineStyleSheet(const StyleSheet& other_shee
 	return new_sheet;
 }
 
+UniquePtr<StyleSheet> StyleSheet::Clone() const
+{
+	return CombineStyleSheet(StyleSheet{});
+}
+
 // Builds the node index for a combined style sheet.
-void StyleSheet::BuildNodeIndexAndOptimizeProperties()
+void StyleSheet::BuildNodeIndex()
 {
 	RMLUI_ZoneScoped;
 	styled_node_index.clear();
-	root->BuildIndexAndOptimizeProperties(styled_node_index, *this);
+	root->BuildIndex(styled_node_index);
 	root->SetStructurallyVolatileRecursive(false);
 }
 
+// Builds the node index for a combined style sheet.
+void StyleSheet::OptimizeNodeProperties()
+{
+	RMLUI_ZoneScoped;
+	root->OptimizeProperties(*this);
+}
+
 // Returns the Keyframes of the given name, or null if it does not exist.
-Keyframes * StyleSheet::GetKeyframes(const String & name)
+const Keyframes * StyleSheet::GetKeyframes(const String & name) const
 {
 	auto it = keyframes.find(name);
 	if (it != keyframes.end())
@@ -145,11 +147,12 @@ DecoratorsPtr StyleSheet::InstanceDecoratorsFromString(const String& decorator_s
 	//   decorator: invader-theme-background, ...;
 	// or is an anonymous decorator with inline properties
 	//   decorator: tiled-box( <shorthand properties> ), ...;
-	
-	Decorators decorators;
+
 	if (decorator_string_value.empty() || decorator_string_value == "none")
 		return nullptr;
 
+	RMLUI_ZoneScoped;
+	Decorators decorators;
 	const char* source_path = (source ? source->path.c_str() : "");
 	const int source_line_number = (source ? source->line_number : 0);
 
@@ -205,6 +208,7 @@ DecoratorsPtr StyleSheet::InstanceDecoratorsFromString(const String& decorator_s
 			
 			properties.SetSourceOfAllProperties(source);
 
+			RMLUI_ZoneScopedN("InstanceDecorator");
 			SharedPtr<Decorator> decorator = instancer->InstanceDecorator(type, properties, DecoratorInstancerInterface(*this));
 
 			if (decorator)
@@ -230,6 +234,7 @@ FontEffectsPtr StyleSheet::InstanceFontEffectsFromString(const String& font_effe
 	if (font_effect_string_value.empty() || font_effect_string_value == "none")
 		return nullptr;
 
+	RMLUI_ZoneScoped;
 	const char* source_path = (source ? source->path.c_str() : "");
 	const int source_line_number = (source ? source->line_number : 0);
 
@@ -283,6 +288,7 @@ FontEffectsPtr StyleSheet::InstanceFontEffectsFromString(const String& font_effe
 
 			properties.SetSourceOfAllProperties(source);
 
+			RMLUI_ZoneScopedN("InstanceFontEffect");
 			SharedPtr<FontEffect> font_effect = instancer->InstanceFontEffect(type, properties);
 			if (font_effect)
 			{
@@ -361,7 +367,7 @@ SharedPtr<ElementDefinition> StyleSheet::GetElementDefinition(const Element* ele
 			// Now see if we satisfy all of the requirements not yet tested: classes, pseudo classes, structural selectors, 
 			// and the full requirements of parent nodes. What this involves is traversing the style nodes backwards, 
 			// trying to match nodes in the element's hierarchy to nodes in the style hierarchy.
-			for (StyleSheetNode* node : nodes)
+			for (const StyleSheetNode* node : nodes)
 			{
 				if (node->IsApplicable(element, true))
 				{

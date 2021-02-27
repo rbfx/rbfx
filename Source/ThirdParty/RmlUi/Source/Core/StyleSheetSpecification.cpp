@@ -31,6 +31,7 @@
 #include "../../Include/RmlUi/Core/PropertyDefinition.h"
 #include "PropertyParserNumber.h"
 #include "PropertyParserAnimation.h"
+#include "PropertyParserRatio.h"
 #include "PropertyParserColour.h"
 #include "PropertyParserKeyword.h"
 #include "PropertyParserString.h"
@@ -55,6 +56,8 @@ struct DefaultStyleSheetParsers {
 	PropertyParserAnimation transition = PropertyParserAnimation(PropertyParserAnimation::TRANSITION_PARSER);
 	PropertyParserColour color = PropertyParserColour();
 	PropertyParserTransform transform = PropertyParserTransform();
+	PropertyParserRatio ratio = PropertyParserRatio();
+	PropertyParserNumber resolution = PropertyParserNumber(Property::X);
 };
 
 StyleSheetSpecification::StyleSheetSpecification() : 
@@ -247,6 +250,8 @@ void StyleSheetSpecification::RegisterDefaultParsers()
 	RegisterParser("transition", &default_parsers->transition);
 	RegisterParser("color", &default_parsers->color);
 	RegisterParser("transform", &default_parsers->transform);
+	RegisterParser("ratio", &default_parsers->ratio);
+	RegisterParser("resolution", &default_parsers->resolution);
 }
 
 
@@ -308,7 +313,7 @@ void StyleSheetSpecification::RegisterDefaultProperties()
 	RegisterProperty(PropertyId::BorderBottomLeftRadius, "border-bottom-left-radius", "0px", false, false).AddParser("length");
 	RegisterShorthand(ShorthandId::BorderRadius, "border-radius", "border-top-left-radius, border-top-right-radius, border-bottom-right-radius, border-bottom-left-radius", ShorthandType::Box);
 
-	RegisterProperty(PropertyId::Display, "display", "inline", false, true).AddParser("keyword", "none, block, inline, inline-block");
+	RegisterProperty(PropertyId::Display, "display", "inline", false, true).AddParser("keyword", "none, block, inline, inline-block, table, table-row, table-row-group, table-column, table-column-group, table-cell");
 	RegisterProperty(PropertyId::Position, "position", "static", false, true).AddParser("keyword", "static, relative, absolute, fixed");
 	RegisterProperty(PropertyId::Top, "top", "auto", false, false)
 		.AddParser("keyword", "auto")
@@ -361,6 +366,8 @@ void StyleSheetSpecification::RegisterDefaultProperties()
 
 	RegisterProperty(PropertyId::Color, "color", "white", true, false).AddParser("color");
 
+	RegisterProperty(PropertyId::CaretColor, "caret-color", "auto", true, false).AddParser("keyword", "auto").AddParser("color");
+
 	RegisterProperty(PropertyId::ImageColor, "image-color", "white", false, false).AddParser("color");
 	RegisterProperty(PropertyId::Opacity, "opacity", "1", true, false).AddParser("number");
 
@@ -375,6 +382,10 @@ void StyleSheetSpecification::RegisterDefaultProperties()
 	RegisterProperty(PropertyId::TextTransform, "text-transform", "none", true, true).AddParser("keyword", "none, capitalize, uppercase, lowercase");
 	RegisterProperty(PropertyId::WhiteSpace, "white-space", "normal", true, true).AddParser("keyword", "normal, pre, nowrap, pre-wrap, pre-line");
 	RegisterProperty(PropertyId::WordBreak, "word-break", "normal", true, true).AddParser("keyword", "normal, break-all, break-word");
+
+	RegisterProperty(PropertyId::RowGap, "row-gap", "0px", false, true).AddParser("length_percent").SetRelativeTarget(RelativeTarget::ContainingBlockHeight);
+	RegisterProperty(PropertyId::ColumnGap, "column-gap", "0px", false, true).AddParser("length_percent").SetRelativeTarget(RelativeTarget::ContainingBlockHeight);
+	RegisterShorthand(ShorthandId::Gap, "gap", "row-gap, column-gap", ShorthandType::Replicate);
 
 	RegisterProperty(PropertyId::Cursor, "cursor", "", true, false).AddParser("string");
 
@@ -405,8 +416,8 @@ void StyleSheetSpecification::RegisterDefaultProperties()
 	// Rare properties (not added to computed values)
 	RegisterProperty(PropertyId::FillImage, "fill-image", "", false, false).AddParser("string");
 
-	RMLUI_ASSERTMSG(instance->properties.property_map->AssertAllInserted(PropertyId::NumDefinedIds), "Missing specification for one or more Property IDs.");
 	RMLUI_ASSERTMSG(instance->properties.shorthand_map->AssertAllInserted(ShorthandId::NumDefinedIds), "Missing specification for one or more Shorthand IDs.");
+	RMLUI_ASSERTMSG(instance->properties.property_map->AssertAllInserted(PropertyId::NumDefinedIds), "Missing specification for one or more Property IDs.");
 }
 
 } // namespace Rml

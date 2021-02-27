@@ -185,9 +185,10 @@ void DebuggerPlugin::Render()
 					ElementUtilities::ApplyTransform(*element);
 					for (int j = 0; j < element->GetNumBoxes(); ++j)
 					{
-						const Box& box = element->GetBox(j);
+						Vector2f box_offset;
+						const Box& box = element->GetBox(j, box_offset);
 						Geometry::RenderOutline(
-							element->GetAbsoluteOffset(Box::BORDER) + box.GetPosition(Box::BORDER), 
+							element->GetAbsoluteOffset(Box::BORDER) + box_offset + box.GetPosition(Box::BORDER),
 							box.GetSize(Box::BORDER), 
 							Colourb(255, 0, 0, 128), 
 							1
@@ -297,7 +298,7 @@ bool DebuggerPlugin::LoadMenuElement()
 	menu_element->SetProperty(PropertyId::Visibility, Property(Style::Visibility::Hidden));
 	menu_element->SetInnerRML(menu_rml);
 
-	SharedPtr<StyleSheet> style_sheet = Factory::InstanceStyleSheetString(menu_rcss);
+	SharedPtr<StyleSheetContainer> style_sheet = Factory::InstanceStyleSheetString(menu_rcss);
 	if (!style_sheet)
 	{
 		host_context->UnloadDocument(menu_element);
@@ -305,7 +306,7 @@ bool DebuggerPlugin::LoadMenuElement()
 		return false;
 	}
 
-	menu_element->SetStyleSheet(std::move(style_sheet));
+	menu_element->SetStyleSheetContainer(std::move(style_sheet));
 
 	// Set the version info in the menu.
 	menu_element->GetElementById("version-number")->SetInnerRML("v" + Rml::GetVersion());

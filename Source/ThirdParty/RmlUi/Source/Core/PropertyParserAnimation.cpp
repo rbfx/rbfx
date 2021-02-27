@@ -234,7 +234,7 @@ static bool ParseTransition(Property & property, const StringList& transition_va
 	{
 
 		Transition transition;
-		PropertyIdSet target_property_names;
+		PropertyIdSet target_property_ids;
 
 		StringList arguments;
 		StringUtilities::ExpandString(arguments, single_transition_value, ' ');
@@ -314,12 +314,12 @@ static bool ParseTransition(Property & property, const StringList& transition_va
 					if (auto shorthand = StyleSheetSpecification::GetShorthand(argument))
 					{
 						PropertyIdSet underlying_properties = StyleSheetSpecification::GetShorthandUnderlyingProperties(shorthand->id);
-						target_property_names |= underlying_properties;
+						target_property_ids |= underlying_properties;
 					}
 					else if (auto definition = StyleSheetSpecification::GetProperty(argument))
 					{
 						// Single property
-						target_property_names.Insert(definition->GetId());
+						target_property_ids.Insert(definition->GetId());
 					}
 					else
 					{
@@ -331,16 +331,28 @@ static bool ParseTransition(Property & property, const StringList& transition_va
 		}
 
 		// Validate the parsed transition
-		if (target_property_names.Empty() || transition.duration <= 0.0f || transition.reverse_adjustment_factor < 0.0f || transition.reverse_adjustment_factor > 1.0f
-			|| (transition_list.all && target_property_names.Size() != 1))
+		if ((transition_list.all && !target_property_ids.Empty())
+			|| (!transition_list.all && target_property_ids.Empty())
+			|| transition.duration <= 0.0f
+			|| transition.reverse_adjustment_factor < 0.0f
+			|| transition.reverse_adjustment_factor > 1.0f
+			)
 		{
 			return false;
 		}
 
-		for (const auto& property_name : target_property_names)
+		if (transition_list.all)
 		{
-			transition.id = property_name;
+			transition.id = PropertyId::Invalid;
 			transition_list.transitions.push_back(transition);
+		}
+		else
+		{
+			for (const PropertyId id : target_property_ids)
+			{
+				transition.id = id;
+				transition_list.transitions.push_back(transition);
+			}
 		}
 	}
 
