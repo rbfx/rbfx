@@ -162,10 +162,12 @@ using namespace Urho3D;
 // These should be implemented in C# anyway.
 %ignore Urho3D::Polyhedron::Polyhedron(const Vector<eastl::vector<Vector3> >& faces);
 %ignore Urho3D::Polyhedron::faces_;
+%ignore Urho3D::RandomEngine::GetStandardNormalFloatPair;
 
 %include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Polyhedron.h"
 %include "Urho3D/Math/Frustum.h"
+%include "Urho3D/Math/RandomEngine.h"
 
 CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %apply Urho3D::Vector4 FIXED[] { Urho3D::Vector4[] };
