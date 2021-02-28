@@ -1343,6 +1343,20 @@ void Swig_name_rename_add(String *prefix, String *name, SwigType *decl, Hash *ne
 
   ParmList *declparms = declaratorparms;
 
+#ifndef WITHOUT_RBFX
+  // Prevent renaming and un-ignoring of already ignored things.
+  Hash *rn = Swig_name_object_get(name_rename_hash(), prefix, name, decl);
+  if (rn != 0)
+  {
+      char* newname_str = Char(Getattr(rn, "name"));
+      if (newname_str && strncmp(newname_str, "$ignore", 7) == 0)
+      {
+          // Do not un-ignore ignored stuff.
+          return;
+      }
+  }
+#endif
+  
   const char *rename_keys[] = { "fullname", "sourcefmt", "targetfmt", "continue", "regextarget", 0 };
   name_object_attach_keys(rename_keys, newname);
 
