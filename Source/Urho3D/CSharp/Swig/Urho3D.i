@@ -6,6 +6,7 @@ namespace Urho3D { }
 using namespace Urho3D;
 
 #define final
+#define URHO3D_DEPRECATED
 #define static_assert(...)
 
 %include "stl.i"
@@ -15,10 +16,6 @@ using namespace Urho3D;
 %include "cmalloc.i"
 %include "swiginterface.i"
 %include "attribute.i"
-
-#ifdef __IOS__
-%typemap(csattributes) SWIGTYPE "[global::Foundation.Preserve(AllMembers = true)]"
-#endif
 
 %include "InstanceCache.i"
 
@@ -99,7 +96,6 @@ using namespace Urho3D;
 #include <SDL/SDL_joystick.h>
 #include <SDL/SDL_gamecontroller.h>
 #include <SDL/SDL_keycode.h>
-#include <EASTL/unordered_map.h>
 #include <Urho3D/CSharp/Native/SWIGHelpers.h>
 %}
 
@@ -162,6 +158,12 @@ using namespace Urho3D;
 // These should be implemented in C# anyway.
 %ignore Urho3D::Polyhedron::Polyhedron(const Vector<eastl::vector<Vector3> >& faces);
 %ignore Urho3D::Polyhedron::faces_;
+%ignore Urho3D::Random;
+%ignore Urho3D::RandomNormal;
+%ignore Urho3D::SetRandomSeed;
+%ignore Urho3D::GetRandomSeed;
+%ignore Urho3D::Rand;
+%ignore Urho3D::RandStandardNormal;
 %ignore Urho3D::RandomEngine::GetStandardNormalFloatPair;
 
 %include "Urho3D/Math/MathDefs.h"
@@ -190,6 +192,7 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %apply const size_t& { const eastl_size_t& };
 %include "eastl_vector.i"
 %include "eastl_map.i"
+%include "eastl_pair.i"
 %include "eastl_unordered_map.i"
 
 // Declare inheritable classes in this file
@@ -356,6 +359,7 @@ namespace SDL
 %include "Urho3D/Engine/Engine.h"
 %include "Urho3D/Engine/Application.h"
 %include "Urho3D/Engine/PluginApplication.h"
+%include "generated/Urho3D/_pre_script.i"
 #if URHO3D_CSHARP
 %include "Urho3D/Script/Script.h"
 #endif
@@ -449,6 +453,7 @@ public:
 // These expose iterators of underlying collection. Iterate object through GetObject() instead.
 %ignore Urho3D::BackgroundLoadItem;
 %ignore Urho3D::BackgroundLoader::ThreadFunction;
+%ignore Urho3D::ImageCube::CalculateSphericalHarmonics;
 %rename(GetValueType) Urho3D::PListValue::GetType;
 
 %include "generated/Urho3D/_pre_resource.i"
@@ -457,6 +462,7 @@ public:
 %include "Urho3D/Resource/BackgroundLoader.h"
 #endif
 %include "Urho3D/Resource/Image.h"
+%include "Urho3D/Resource/ImageCube.h"
 %include "Urho3D/Resource/JSONValue.h"
 %include "Urho3D/Resource/JSONFile.h"
 %include "Urho3D/Resource/Localization.h"
@@ -464,6 +470,11 @@ public:
 %include "Urho3D/Resource/XMLElement.h"
 %include "Urho3D/Resource/XMLFile.h"
 %include "Urho3D/Resource/ResourceCache.h"
+
+%template(ImageVector)       eastl::vector<Urho3D::SharedPtr<Urho3D::Image>>;
+%template(FaceVectorPair)    eastl::pair<Urho3D::CubeMapFace, Urho3D::Vector2>;
+%template(FaceIntVectorPair) eastl::pair<Urho3D::CubeMapFace, Urho3D::IntVector2>;
+
 
 // --------------------------------------- Scene ---------------------------------------
 %ignore Urho3D::DirtyBits::data_;
@@ -578,7 +589,6 @@ public:
 %ignore Urho3D::ScenePassInfo::batchQueue_;
 %ignore Urho3D::LightQueryResult;
 %ignore Urho3D::View::GetLightQueues;
-%ignore Urho3D::View::GetGlobalIllumination;
 %ignore Urho3D::Drawable::GetMutableLightProbeTetrahedronHint;
 %ignore Urho3D::Skybox::GetImage;   // Needs ImageCube
 %ignore Urho3D::Drawable2D::layer_;
@@ -608,6 +618,7 @@ public:
 %ignore Urho3D::Drawable::firstLight_;
 %ignore Urho3D::Drawable::lights_;
 %ignore Urho3D::Drawable::vertexLights_;
+%ignore Urho3D::GlobalIllumination::SampleAmbientSH;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {
@@ -659,6 +670,7 @@ public:
 %include "Urho3D/Graphics/Tangent.h"
 //%include "Urho3D/Graphics/VertexDeclaration.h"
 %include "Urho3D/Graphics/Camera.h"
+%include "Urho3D/Graphics/GlobalIllumination.h"
 %include "Urho3D/Graphics/View.h"
 %include "Urho3D/Graphics/Material.h"
 %include "Urho3D/Graphics/CustomGeometry.h"
