@@ -751,6 +751,29 @@ public:
 %ignore Urho3D::TriangleMeshData::shape_;
 %ignore Urho3D::TriangleMeshData::infoMap_;
 %ignore Urho3D::GImpactMeshData::meshInterface_;
+%ignore Urho3D::HeightfieldData::heightData_;
+%ignore Urho3D::ConvexData::indexData_;
+%ignore Urho3D::ConvexData::vertexData_;
+%ignore Urho3D::PhysicsWorld::GetTriMeshCache;
+%ignore Urho3D::PhysicsWorld::GetGImpactTrimeshCache;
+%ignore Urho3D::PhysicsWorld::GetConvexCache;
+%ignore Urho3D::RigidBody::getWorldTransform;
+%ignore Urho3D::RigidBody::setWorldTransform;
+%apply void* VOID_INT_PTR {
+	btCollisionConfiguration*,
+	btCollisionShape*,
+	btCompoundShape*,
+	btDiscreteDynamicsWorld*,
+	btPersistentManifold*,
+	btRigidBody*,
+	btTypedConstraint*
+}
+
+#ifdef BT_USE_DOUBLE_PRECISION
+#error Not supported.
+#else
+%apply float { btScalar }
+#endif
 
 %include "generated/Urho3D/_pre_physics.i"
 %include "Urho3D/Physics/CollisionShape.h"
@@ -758,6 +781,8 @@ public:
 %include "Urho3D/Physics/PhysicsWorld.h"
 %include "Urho3D/Physics/RaycastVehicle.h"
 %include "Urho3D/Physics/RigidBody.h"
+%template(PhysicsRaucastResultVector)   eastl::vector<Urho3D::PhysicsRaycastResult>;
+%template(RigidBodyVector)              eastl::vector<Urho3D::RigidBody*>;
 #endif
 // --------------------------------------- SystemUI ---------------------------------------
 #if defined(URHO3D_SYSTEMUI)

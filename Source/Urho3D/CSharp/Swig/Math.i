@@ -108,5 +108,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
 }
 
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Vector2, ImVec2, pod::float2);
-URHO3D_BINARY_COMPATIBLE_TYPE_EX(Vector4, ImVec4, pod::float2);
+URHO3D_BINARY_COMPATIBLE_TYPE_EX(Vector4, ImVec4, pod::float4);
+URHO3D_BINARY_COMPATIBLE_TYPE_EX(Vector4, btVector3, pod::float4);  // Bullet stores 4 floats despite the name.
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Rect, ImRect, pod::float4);
