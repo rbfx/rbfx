@@ -83,7 +83,7 @@ namespace Urho3DNet
                     dest.Set((Color) _field.GetValue(ptr));
                     break;
                 case VariantType.VarString:
-                    dest.Set((string) _field.GetValue(ptr));
+                    dest.Set((string) _field.GetValue(ptr) ?? "");
                     break;
                 case VariantType.VarBuffer:
                     dest.Set((ByteVector) _field.GetValue(ptr));
