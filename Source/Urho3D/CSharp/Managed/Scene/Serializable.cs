@@ -509,6 +509,10 @@ namespace Urho3DNet
                 if (property.DeclaringType?.Assembly == serializableType.Assembly)
                     continue;
 
+                // Properties must have both getter and setter for them to be serializable.
+                if (property.GetMethod == null || property.SetMethod == null)
+                    continue;
+
                 // Private (even if partially) properties are not serialized by default.
                 var attribute = Attribute.GetCustomAttribute(property, typeof(SerializeFieldAttribute)) as SerializeFieldAttribute;
                 if ((property.GetMethod.IsPrivate || property.SetMethod.IsPrivate) && attribute == null)
