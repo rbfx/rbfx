@@ -345,6 +345,7 @@ template <class T> void ResourceCache::GetResources(ea::vector<T*>& result) cons
 }
 
 /// Register Resource library subsystems and objects.
+/// @nobind
 void URHO3D_API RegisterResourceLibrary(Context* context);
 
 }

@@ -948,6 +948,7 @@ private:
 };
 
 /// Register Graphics library objects.
+/// @nobind
 void URHO3D_API RegisterGraphicsLibrary(Context* context);
 
 }

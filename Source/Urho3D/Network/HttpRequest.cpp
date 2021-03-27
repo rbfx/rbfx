@@ -78,6 +78,8 @@ HttpRequest::~HttpRequest()
 
 void HttpRequest::ThreadFunction()
 {
+    URHO3D_PROFILE_THREAD("HttpRequest Thread");
+
     ea::string protocol = "http";
     ea::string host;
     ea::string path = "/";

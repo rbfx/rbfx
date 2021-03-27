@@ -146,6 +146,7 @@ public:
     /// Destruct.
     ~Drawable() override;
     /// Register object attributes. Drawable must be registered first.
+    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Handle enabled/disabled state change.

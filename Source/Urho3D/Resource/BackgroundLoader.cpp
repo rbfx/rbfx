@@ -50,6 +50,8 @@ BackgroundLoader::~BackgroundLoader()
 
 void BackgroundLoader::ThreadFunction()
 {
+    URHO3D_PROFILE_THREAD("BackgroundLoader Thread");
+
     while (shouldRun_)
     {
         backgroundLoadMutex_.Acquire();

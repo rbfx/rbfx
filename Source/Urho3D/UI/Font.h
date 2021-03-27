@@ -56,6 +56,7 @@ public:
     /// Destruct.
     ~Font() override;
     /// Register object factory.
+    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
