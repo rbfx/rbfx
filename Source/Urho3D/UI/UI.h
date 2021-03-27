@@ -479,6 +479,7 @@ private:
 };
 
 /// Register UI library objects.
+/// @nobind
 void URHO3D_API RegisterUILibrary(Context* context);
 
 }

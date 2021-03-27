@@ -46,6 +46,7 @@ public:
     /// Destruct.
     ~MessageBox() override;
     /// Register object factory.
+    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Set title text. No-ops if there is no title text element.

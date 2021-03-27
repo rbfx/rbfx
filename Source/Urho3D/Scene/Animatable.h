@@ -72,6 +72,7 @@ public:
     /// Destruct.
     ~Animatable() override;
     /// Register object factory.
+    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Serialize from/to archive. Return true if successful.

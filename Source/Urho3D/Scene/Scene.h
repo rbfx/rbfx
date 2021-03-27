@@ -107,6 +107,7 @@ public:
     /// Destruct.
     ~Scene() override;
     /// Register object factory. Node must be registered first.
+    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Create component index. Scene must be empty.
@@ -409,6 +410,7 @@ private:
 };
 
 /// Register Scene library objects.
+/// @nobind
 void URHO3D_API RegisterSceneLibrary(Context* context);
 
 }

@@ -546,6 +546,7 @@ void Engine::RunFrame()
 
     time->EndFrame();
 
+    // Mark a frame for profiling
     URHO3D_PROFILE_FRAME();
 }
 
