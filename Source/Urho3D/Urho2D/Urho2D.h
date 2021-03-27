@@ -30,6 +30,7 @@ namespace Urho3D
 class Context;
 
 /// Register Urho2D library objects.
+/// @nobind
 void URHO3D_API RegisterUrho2DLibrary(Context* context);
 
 }

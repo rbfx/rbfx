@@ -46,6 +46,7 @@ public:
     /// Destruct.
     ~AnimatedModel() override;
     /// Register object factory. Drawable must be registered first.
+    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Serialize from/to archive. Return true if successful.
