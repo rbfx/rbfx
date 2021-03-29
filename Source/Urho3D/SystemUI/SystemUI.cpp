@@ -232,6 +232,42 @@ void SystemUI::OnInputEnd(VariantMap& args)
     ImGuizmo::BeginFrame();
 }
 
+void SystemUI::SetMouseWrapping(bool enabled, bool revertMousePositionOnDisable)
+{
+    ImGuiWindow* currentWindow = ui::GetCurrentWindowRead();
+    const ImGuiContext& g = *ui::GetCurrentContext();
+    if (!enabled || !currentWindow)
+    {
+        enableWrapping_ = false;
+        return;
+    }
+
+    enableWrapping_ = true;
+    const ImVec2& windowPosition = currentWindow->Pos;
+    const ImVec2& windowSize = currentWindow->Size;
+    minWrapBound_ = windowPosition;
+    maxWrapBound_ = windowPosition + windowSize - ImVec2{ 1, 1 };
+
+    const unsigned monitorIndex = currentWindow->Viewport->PlatformMonitor;
+    if (monitorIndex < g.PlatformIO.Monitors.size())
+    {
+        const ImGuiPlatformMonitor& currentMonitor = g.PlatformIO.Monitors[monitorIndex];
+        const ImVec2& monitorPosition = currentMonitor.WorkPos;
+        const ImVec2& monitorSize = currentMonitor.WorkSize;
+        const ImVec2 minMonitorBound = monitorPosition;
+        const ImVec2 maxMonitorBound = monitorPosition + monitorSize - ImVec2{ 1, 1 };
+        minWrapBound_ = ImClamp(minWrapBound_, minMonitorBound, maxMonitorBound);
+        maxWrapBound_ = ImClamp(maxWrapBound_, minMonitorBound, maxMonitorBound);
+    }
+
+    const ImVec2 wrapRegionSize = maxWrapBound_ - minWrapBound_;
+    if (wrapRegionSize.x <= 3 || wrapRegionSize.y <= 3)
+        enableWrapping_ = false;
+
+    revertMousePositionOnDisable_ = revertMousePositionOnDisable;
+    revertMousePosition_ = g.IO.MousePos;
+}
+
 void SystemUI::OnRenderEnd()
 {
     // When SystemUI subsystem is recreated during runtime this method may be called without UI being rendered.
@@ -242,8 +278,41 @@ void SystemUI::OnRenderEnd()
     URHO3D_PROFILE("SystemUiRender");
     SendEvent(E_ENDRENDERINGSYSTEMUI);
 
+    // Disable mouse wrapping automatically if none of mouse buttons are down
+    if (!ui::IsMouseDown(MOUSEB_LEFT) && !ui::IsMouseDown(MOUSEB_MIDDLE) && !ui::IsMouseDown(MOUSEB_RIGHT))
+        enableWrapping_ = false;
+
     ImGuiIO& io = ui::GetIO();
     ui::Render();
+
+    // Apply mouse wrapping in the same way ImGUI controls mouse
+    if (enableWrapping_)
+    {
+        ImVec2 mousePos = io.MousePos;
+
+        if (mousePos.x <= minWrapBound_.x)
+            mousePos.x = maxWrapBound_.x - 1;
+        if (mousePos.x >= maxWrapBound_.x)
+            mousePos.x = minWrapBound_.x + 1;
+        if (mousePos.y <= minWrapBound_.y)
+            mousePos.y = maxWrapBound_.y - 1;
+        if (mousePos.y >= maxWrapBound_.y)
+            mousePos.y = minWrapBound_.y + 1;
+
+        if (mousePos != io.MousePos)
+        {
+            io.MousePos = mousePos;
+            io.MousePosPrev = mousePos;
+            io.WantSetMousePos = true;
+        }
+    }
+    else if (revertMousePositionOnDisable_)
+    {
+        revertMousePositionOnDisable_ = false;
+        io.MousePos = revertMousePosition_;
+        io.MousePosPrev = revertMousePosition_;
+        io.WantSetMousePos = true;
+    }
 
 #if URHO3D_OPENGL
     ImGui_ImplOpenGL3_RenderDrawData(ui::GetDrawData());

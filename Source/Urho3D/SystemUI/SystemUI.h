@@ -64,6 +64,11 @@ public:
     /// Destruct.
     ~SystemUI() override;
 
+    /// Enable or disable mouse wrapping for current display and window.
+    /// Should be called withing ImGUI window.
+    /// Mouse wrapping is automatically disabled when all mouse buttons are released.
+    void SetMouseWrapping(bool enabled, bool revertMousePositionOnDisable);
+
     /// Add font to imgui subsystem.
     /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
@@ -110,6 +115,12 @@ protected:
     void OnInputEnd(VariantMap& args);
     void OnRenderEnd();
     void OnMouseVisibilityChanged(StringHash, VariantMap& args);
+
+    bool enableWrapping_{};
+    ImVec2 minWrapBound_;
+    ImVec2 maxWrapBound_;
+    bool revertMousePositionOnDisable_{};
+    ImVec2 revertMousePosition_;
 };
 
 /// Convert Color to ImVec4.

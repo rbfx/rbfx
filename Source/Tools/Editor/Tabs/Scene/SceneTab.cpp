@@ -151,7 +151,6 @@ bool SceneTab::RenderWindowContent()
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }
 
-    Input* input = GetSubsystem<Input>();
     bool wasActive = isViewportActive_;
 
     // Buttons must render above the viewport, but they also should be rendered first in order to take precedence in
@@ -194,7 +193,7 @@ bool SceneTab::RenderWindowContent()
     RenderViewManipulator(rect);
 
     if (wasActive != isViewportActive_)
-        GetSubsystem<Input>()->SetMouseVisible(!isViewportActive_);
+        GetSubsystem<SystemUI>()->SetMouseWrapping(isViewportActive_, true);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -217,7 +216,7 @@ bool SceneTab::RenderWindowContent()
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
-    if (!gizmo_.IsActive() && (isClickedLeft_ || isClickedRight_) && context_->GetSubsystem<Input>()->IsMouseVisible())
+    if (!gizmo_.IsActive() && (isClickedLeft_ || isClickedRight_) && !isViewportActive_)
     {
         // Handle object selection.
         ImGuiIO& io = ui::GetIO();
@@ -800,8 +799,7 @@ void SceneTab::OnUpdate(VariantMap& args)
 
         if (tab == this)
         {
-            Input* input = context_->GetSubsystem<Input>();
-            if (input->IsMouseVisible())
+            if (!isViewportActive_)
             {
                 if (ui::IsKeyPressed(KEY_W))
                 {
@@ -884,8 +882,7 @@ void SceneTab::RenderNodeContextMenu()
 {
     if ((!selectedNodes_.empty() || !selectedComponents_.empty()) && ui::BeginPopup("Node context menu"))
     {
-        Input* input = GetSubsystem<Input>();
-        if (ui::IsKeyPressed(KEY_ESCAPE) || !input->IsMouseVisible())
+        if (ui::IsKeyPressed(KEY_ESCAPE) || isViewportActive_)
         {
             // Close when interacting with scene camera.
             ui::CloseCurrentPopup();
