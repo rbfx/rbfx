@@ -180,19 +180,6 @@ const String& ElementDocument::GetSourceURL() const
 	return source_url;
 }
 
-// Sets the style sheet this document, and all of its children, uses.
-void ElementDocument::SetStyleSheetContainer(SharedPtr<StyleSheetContainer> _style_sheet_container)
-{
-	RMLUI_ZoneScoped;
-
-	if (style_sheet_container == _style_sheet_container)
-		return;
-
-	style_sheet_container = std::move(_style_sheet_container);
-	
-	DirtyMediaQueries();
-}
-
 // Returns the document's style sheet.
 const StyleSheet* ElementDocument::GetStyleSheet() const
 {
@@ -202,9 +189,22 @@ const StyleSheet* ElementDocument::GetStyleSheet() const
 }
 
 // Returns the document's style sheet container.
-const SharedPtr<StyleSheetContainer>& ElementDocument::GetStyleSheetContainer() const
+const StyleSheetContainer* ElementDocument::GetStyleSheetContainer() const
 {
-	return style_sheet_container;
+	return style_sheet_container.get();
+}
+
+// Sets the style sheet this document, and all of its children, uses.
+void ElementDocument::SetStyleSheetContainer(SharedPtr<StyleSheetContainer> _style_sheet_container)
+{
+	RMLUI_ZoneScoped;
+
+	if (style_sheet_container == _style_sheet_container)
+		return;
+
+	style_sheet_container = std::move(_style_sheet_container);
+
+	DirtyMediaQueries();
 }
 
 // Reload the document's style sheet from source files.
@@ -228,17 +228,20 @@ void ElementDocument::ReloadStyleSheet()
 		return;
 	}
 
-	SetStyleSheetContainer(static_cast<ElementDocument*>(temp_doc.get())->GetStyleSheetContainer());
+	SetStyleSheetContainer(static_cast<ElementDocument*>(temp_doc.get())->style_sheet_container);
 }
 
 void ElementDocument::DirtyMediaQueries()
 {
 	if (context && style_sheet_container)
 	{
-		const bool changed_style_sheet = style_sheet_container->UpdateCompiledStyleSheet(context->GetDensityIndependentPixelRatio(), Vector2f(context->GetDimensions()));
+		const bool changed_style_sheet = style_sheet_container->UpdateCompiledStyleSheet(context);
 
 		if (changed_style_sheet)
+		{
 			GetStyle()->DirtyDefinition();
+			OnStyleSheetChangeRecursive();
+		}
 	}
 }
 
@@ -486,11 +489,6 @@ void ElementDocument::DirtyLayout()
 bool ElementDocument::IsLayoutDirty()
 {
 	return layout_dirty;
-}
-
-void ElementDocument::DirtyDpProperties()
-{
-	GetStyle()->DirtyPropertiesWithUnitsRecursive(Property::DP);
 }
 
 void ElementDocument::DirtyVwAndVhProperties()
