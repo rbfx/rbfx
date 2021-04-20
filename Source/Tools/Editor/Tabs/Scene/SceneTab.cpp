@@ -916,7 +916,9 @@ void SceneTab::RenderNodeContextMenu()
             {
                 auto* editor = GetSubsystem<Editor>();
                 auto categories = context_->GetObjectCategories().keys();
+#if URHO3D_RMLUI
                 categories.erase_first("UI");
+#endif
                 ea::quick_sort(categories.begin(), categories.end());
 
                 for (const ea::string& category : categories)
