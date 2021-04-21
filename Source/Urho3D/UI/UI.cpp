@@ -1234,7 +1234,7 @@ void UI::GetCursorPositionAndVisible(IntVector2& pos, bool& visible)
         }
         else
         {
-            pos = input->GetMousePosition();
+            pos = rootElement_->ScreenToElement(input->GetMousePosition());
             pos = ConvertSystemToUI(pos);
         }
     }
