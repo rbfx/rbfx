@@ -26,6 +26,7 @@
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
@@ -159,6 +160,8 @@ ContentType GetContentType(Context* context, const ea::string& resourcePath)
             return CTYPE_RENDERPATH;
         if (rootElementName == "texture")
             return CTYPE_TEXTUREXML;
+        if (rootElementName == "cubemap")
+            return CTYPE_TEXTURECUBE;
     }
 
     if (extension == ".mdl")
@@ -229,6 +232,13 @@ bool GetContentResourceType(Context* context, const ea::string& resourcePath, Re
     {
         types.emplace_back(Image::GetTypeStatic());
         types.emplace_back(Texture2D::GetTypeStatic());
+        types.emplace_back(Texture::GetTypeStatic());
+        break;
+    }
+    case CTYPE_TEXTURECUBE:
+    {
+        types.emplace_back(TextureCube::GetTypeStatic());
+        types.emplace_back(Texture::GetTypeStatic());
         break;
     }
     case CTYPE_SOUND:

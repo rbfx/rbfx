@@ -128,7 +128,7 @@ void Light::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Attenuation Texture", GetRampTextureAttr, SetRampTextureAttr, ResourceRef,
         ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Light Shape Texture", GetShapeTextureAttr, SetShapeTextureAttr, ResourceRef,
-        ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
+        ResourceRef(Texture::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Can Be Occluded", IsOccludee, SetOccludee, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Cast Shadows", bool, castShadows_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Per Vertex", bool, perVertex_, false, AM_DEFAULT);
@@ -539,7 +539,13 @@ ResourceRef Light::GetRampTextureAttr() const
 
 ResourceRef Light::GetShapeTextureAttr() const
 {
-    return GetResourceRef(shapeTexture_, lightType_ == LIGHT_POINT ? TextureCube::GetTypeStatic() : Texture2D::GetTypeStatic());
+    if (shapeTexture_.NotNull())
+        return GetResourceRef(shapeTexture_, lightType_ == LIGHT_POINT ? TextureCube::GetTypeStatic() : Texture2D::GetTypeStatic());
+    else
+        // TODO: This is a workaround for attributes not having any metadata. Shape texture now defaults to type `Texture` which hints that
+        //  we can set this attribute to any subclass of `Texture`. This is not correct as we only really support `TextureCube` and
+        //  `Texture2D`. Return default value if texture is unset to not confuse editor about what types this field accepts.
+        return ResourceRef(Texture::GetTypeStatic());
 }
 
 void Light::OnWorldBoundingBoxUpdate()
