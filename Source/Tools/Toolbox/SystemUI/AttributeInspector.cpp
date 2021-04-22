@@ -320,6 +320,9 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
         // case VAR_BUFFER:
         case VAR_RESOURCEREF:
         {
+            // TODO: This may return ResourceRef with empty name but set type. This can happen if object has a runtime-created resource set
+            //  programatically. Attribute getter may also return such value (see Light::GetShapeTextureAttr()). These cases may need
+            //  additional handling.
             ResourceRef ref = value.GetResourceRef();
             if (ref.type_ == StringHash::ZERO && info)
                 ref.type_ = info->defaultValue_.GetResourceRef().type_;
