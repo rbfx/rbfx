@@ -24,8 +24,6 @@ if (NOT URHO3D_EXTRAS OR NOT DESKTOP OR MINI_URHO)
     return ()
 endif ()
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
-
 # Urho3D extras
 add_subdirectory (OgreBatchConverter)
 
