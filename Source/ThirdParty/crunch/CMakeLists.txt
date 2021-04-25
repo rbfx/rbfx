@@ -69,8 +69,6 @@ if (MINGW AND NOT URHO3D_64BIT)
     target_compile_options(crnlib PRIVATE -fpermissive)
 endif ()
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
-
 file (GLOB CRUNCH_SOURCE_FILES crunch/*.cpp crunch/*.h)
 add_executable (crunch ${CRUNCH_SOURCE_FILES})
 target_link_libraries(crunch crnlib)
