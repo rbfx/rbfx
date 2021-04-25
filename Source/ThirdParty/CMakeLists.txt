@@ -22,7 +22,7 @@
 
 # Third party warnings are irrelevant to us.
 if (MSVC)
-    ucm_add_flags("/W0")
+    ucm_replace_flag("/W[0-3]" "/W0" REGEX)
 else ()
     ucm_add_flags("-w")
 endif ()
