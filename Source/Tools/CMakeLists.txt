@@ -25,8 +25,6 @@ if (NOT DESKTOP OR UWP)
     return ()
 endif ()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
-
 if (URHO3D_TOOLS OR URHO3D_PACKAGING)
     add_subdirectory(PackageTool)
 endif ()
