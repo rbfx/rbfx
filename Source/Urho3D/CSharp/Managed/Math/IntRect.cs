@@ -99,8 +99,8 @@ namespace Urho3DNet
         /// Return height.
         public int Height => Bottom - Top;
 
-                /// Test whether a point is inside.
-        Intersection IsInside(in IntVector2 point)
+        /// Test whether a point is inside.
+        public Intersection IsInside(in IntVector2 point)
         {
             if (point.X < Left || point.Y < Top || point.X >= Right || point.Y >= Bottom)
                 return Intersection.Outside;
@@ -127,7 +127,7 @@ namespace Urho3DNet
 
         /// Merge a rect.  If this rect was empty, become the other rect.  If the
         /// other rect is empty, do nothing.
-        void Merge(in IntRect rect)
+        public void Merge(in IntRect rect)
         {
             if (Width <= 0 || Height <= 0)
             {
