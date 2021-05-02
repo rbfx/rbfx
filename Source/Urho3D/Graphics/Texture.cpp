@@ -149,6 +149,21 @@ int Texture::GetLevelDepth(unsigned level) const
 
 unsigned Texture::GetDataSize(int width, int height) const
 {
+    if (format_ == COMPRESSED_RGB_PVRTC_4BPPV1_IMG ||
+        format_ == COMPRESSED_RGBA_PVRTC_4BPPV1_IMG ||
+        format_ == COMPRESSED_RGB_PVRTC_2BPPV1_IMG ||
+        format_ == COMPRESSED_RGBA_PVRTC_2BPPV1_IMG)
+    {
+        const unsigned bpp = (format_ == COMPRESSED_RGB_PVRTC_2BPPV1_IMG ||
+                              format_ == COMPRESSED_RGBA_PVRTC_2BPPV1_IMG)?2:4;
+        
+        const unsigned xSize =  (bpp == 2) ? 8 : 4;
+        const unsigned blockSize = 8;
+        // For MBX don't allow the sizes to get too small
+        unsigned blocksWide = Max(2, width / xSize);
+        unsigned blocksHeight = Max(2, height / 4);
+        return blocksWide * blocksHeight * blockSize;
+    }
     if (IsCompressed())
         return GetRowDataSize(width) * ((height + 3u) >> 2u);
     else
