@@ -137,6 +137,8 @@ void Pipeline::OnEndFrame(StringHash, VariantMap&)
 
         if (Asset* asset = GetAsset(entry.fileName_))
             ScheduleImport(asset);
+
+        onResourceChanged_(this, entry);
     }
 
     if (!dirtyAssets_.empty())

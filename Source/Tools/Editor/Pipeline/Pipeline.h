@@ -26,6 +26,7 @@
 #include <EASTL/map.h>
 #include <EASTL/unordered_map.h>
 
+#include <Urho3D/Core/Signal.h>
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/IO/MultiFileWatcher.h>
 #include <Urho3D/IO/Archive.h>
@@ -101,6 +102,9 @@ public:
     bool CookCacheInfo() const;
     /// Watch directory for changed assets and automatically convert them.
     void EnableWatcher();
+
+    /// Emitted when changes are detected in any resource folder. Signal may fire multiple times per frame if multiple changes were detected (unlikely).
+    Signal<void(const FileChange& change)> onResourceChanged_;
 
 protected:
     /// Handles file watchers.
