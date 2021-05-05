@@ -32,6 +32,7 @@ namespace Urho3D
 {
 
 class Asset;
+class FileChange;
 
 struct ResourceContextMenuArgs
 {
