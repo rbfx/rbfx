@@ -69,6 +69,10 @@ protected:
     /// Select current item in attribute inspector.
     void SelectCurrentItemInspector();
     ///
+    void OnEndFrame(StringHash, VariantMap&);
+    ///
+    void OnResourceUpdated(const FileChange& change);
+    ///
     void ScanAssets();
     ///
     void OpenResource(const ea::string& resourceName);
@@ -99,8 +103,6 @@ protected:
     bool rescan_ = true;
     /// Flag requesting to scroll to selection on next frame.
     bool scrollToCurrent_ = false;
-    /// Timer for periodic selected resource path rescan.
-    Timer rescanTimer_;
     /// State cache.
     ValueCache cache_{context_};
     /// Frame at which rename started. Non-zero means rename is in-progress.
