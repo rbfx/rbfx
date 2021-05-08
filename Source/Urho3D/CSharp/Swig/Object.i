@@ -13,10 +13,12 @@ IGNORE_SUBSYSTEM(Tasks)
     return ret;
 }
 
-%typemap(csout, excode=SWIGEXCODE) const eastl::string& GetTypeName, const eastl::string& GetTypeName {
+%typemap(csout, excode=SWIGEXCODE) const eastl::string& GetTypeName {
     var ret = GetType().Name;$excode
     return ret;
 }
+%csattributes Urho3D::Object::GetTypeName "[Urho3DPINVOKE.OverrideNative]";
+%csattributes Urho3D::Object::GetType "[Urho3DPINVOKE.OverrideNative]";
 
 // Not all RefCounted are Object descendants, but most are.
 // To implement these functions we need access to enclosing class type so we can use it with typeof().
