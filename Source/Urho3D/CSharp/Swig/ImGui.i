@@ -62,6 +62,7 @@
 
 %ignore ImGui::SetAllocatorFunctions;
 %ignore ImGui::SaveIniSettingsToMemory;
+%ignore ImGui::LogTextV;
 %ignore ImGui::TextV;
 %ignore ImGui::TextColoredV;
 %ignore ImGui::TextDisabledV;

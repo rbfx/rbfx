@@ -1,20 +1,26 @@
-// dear imgui: Renderer for modern OpenGL with shaders / programmatic pipeline
+// dear imgui: Renderer Backend for modern OpenGL with shaders / programmatic pipeline
 // - Desktop GL: 2.x 3.x 4.x
 // - Embedded GL: ES 2.0 (WebGL 1.0), ES 3.0 (WebGL 2.0)
-// This needs to be used along with a Platform Binding (e.g. GLFW, SDL, Win32, custom..)
+// This needs to be used along with a Platform Backend (e.g. GLFW, SDL, Win32, custom..)
 
 // Implemented features:
 //  [X] Renderer: User texture binding. Use 'GLuint' OpenGL texture identifier as void*/ImTextureID. Read the FAQ about ImTextureID!
 //  [X] Renderer: Multi-viewport support. Enable with 'io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable'.
 //  [x] Renderer: Desktop GL only: Support for large meshes (64k+ vertices) with 16-bit indices.
 
-// You can copy and use unmodified imgui_impl_* files in your project. See main.cpp for an example of using this.
-// If you are new to dear imgui, read examples/README.txt and read the documentation at the top of imgui.cpp.
-// https://github.com/ocornut/imgui
+// You can copy and use unmodified imgui_impl_* files in your project. See examples/ folder for examples of using this.
+// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
+// Read online: https://github.com/ocornut/imgui/tree/master/docs
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
-//  2020-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2021-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2021-04-06: OpenGL: Don't try to read GL_CLIP_ORIGIN unless we're OpenGL 4.5 or greater.
+//  2021-02-18: OpenGL: Change blending equation to preserve alpha in output buffer.
+//  2021-01-03: OpenGL: Backup, setup and restore GL_STENCIL_TEST state.
+//  2020-10-23: OpenGL: Backup, setup and restore GL_PRIMITIVE_RESTART state.
+//  2020-10-15: OpenGL: Use glGetString(GL_VERSION) instead of glGetIntegerv(GL_MAJOR_VERSION, ...) when the later returns zero (e.g. Desktop GL 2.x)
+//  2020-09-17: OpenGL: Fix to avoid compiling/calling glBindSampler() on ES or pre 3.3 context which have the defines set by a loader.
 //  2020-07-10: OpenGL: Added support for glad2 OpenGL loader.
 //  2020-05-08: OpenGL: Made default GLSL version 150 (instead of 130) on OSX.
 //  2020-04-21: OpenGL: Fixed handling of glClipControl(GL_UPPER_LEFT) by inverting projection matrix.
@@ -83,14 +89,9 @@
 #include <stdint.h>     // intptr_t
 #endif
 
-
 // GL includes
 #if defined(IMGUI_IMPL_OPENGL_ES2)
-#if (defined(__APPLE__) && (TARGET_OS_IOS || TARGET_OS_TV))
-#include <OpenGLES/ES2/gl.h>    // Use GL ES 2
-#else
-#include <GLES3/gl2.h>          // Use GL ES 2
-#endif
+#include <GLES2/gl2.h>
 #elif defined(IMGUI_IMPL_OPENGL_ES3)
 #if (defined(__APPLE__) && (TARGET_OS_IOS || TARGET_OS_TV))
 #include <OpenGLES/ES3/gl.h>    // Use GL ES 3
@@ -130,16 +131,24 @@ using namespace gl;
 #endif
 
 // Desktop GL 3.2+ has glDrawElementsBaseVertex() which GL ES and WebGL don't have.
-#if defined(IMGUI_IMPL_OPENGL_ES2) || defined(IMGUI_IMPL_OPENGL_ES3) || !defined(GL_VERSION_3_2)
-#define IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET   0
-#else
-#define IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET   1
+#if !defined(IMGUI_IMPL_OPENGL_ES2) && !defined(IMGUI_IMPL_OPENGL_ES3) && defined(GL_VERSION_3_2)
+#define IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
+#endif
+
+// Desktop GL 3.3+ has glBindSampler()
+#if !defined(IMGUI_IMPL_OPENGL_ES2) && !defined(IMGUI_IMPL_OPENGL_ES3) && defined(GL_VERSION_3_3)
+#define IMGUI_IMPL_OPENGL_MAY_HAVE_BIND_SAMPLER
+#endif
+
+// Desktop GL 3.1+ has GL_PRIMITIVE_RESTART state
+#if !defined(IMGUI_IMPL_OPENGL_ES2) && !defined(IMGUI_IMPL_OPENGL_ES3) && defined(GL_VERSION_3_1)
+#define IMGUI_IMPL_OPENGL_MAY_HAVE_PRIMITIVE_RESTART
 #endif
 
 // OpenGL Data
 static GLuint       g_GlVersion = 0;                // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries (e.g. 320 for GL 3.2)
 static char         g_GlslVersionString[32] = "";   // Specified by user or detected based on compile time GL settings.
-static GLuint       g_FontTexture = 0;
+static GLuint       g_FontTextures[32] = { };
 static GLuint       g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
 static GLint        g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;                                // Uniforms location
 static GLuint       g_AttribLocationVtxPos = 0, g_AttribLocationVtxUV = 0, g_AttribLocationVtxColor = 0; // Vertex attributes location
@@ -154,18 +163,25 @@ bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
 {
     // Query for GL version (e.g. 320 for GL 3.2)
 #if !defined(IMGUI_IMPL_OPENGL_ES2)
-    GLint major, minor;
+    GLint major = 0;
+    GLint minor = 0;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
+    if (major == 0 && minor == 0)
+    {
+        // Query GL_VERSION in desktop GL 2.x, the string will start with "<major>.<minor>"
+        const char* gl_version = (const char*)glGetString(GL_VERSION);
+        sscanf(gl_version, "%d.%d", &major, &minor);
+    }
     g_GlVersion = (GLuint)(major * 100 + minor * 10);
 #else
     g_GlVersion = 200; // GLES 2
 #endif
 
-    // Setup back-end capabilities flags
+    // Setup backend capabilities flags
     ImGuiIO& io = ImGui::GetIO();
     io.BackendRendererName = "imgui_impl_opengl3";
-#if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
     if (g_GlVersion >= 320)
         io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 #endif
@@ -244,21 +260,28 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
-    glEnable(GL_SCISSOR_TEST);
     glDisable(GL_STENCIL_TEST);
+    glEnable(GL_SCISSOR_TEST);
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_PRIMITIVE_RESTART
+    if (g_GlVersion >= 310)
+        glDisable(GL_PRIMITIVE_RESTART);
+#endif
 #ifdef GL_POLYGON_MODE
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
 
     // Support for GL 4.5 rarely used glClipControl(GL_UPPER_LEFT)
+#if defined(GL_CLIP_ORIGIN)
     bool clip_origin_lower_left = true;
-#if defined(GL_CLIP_ORIGIN) && !defined(__APPLE__)
-    GLenum current_clip_origin = 0; glGetIntegerv(GL_CLIP_ORIGIN, (GLint*)&current_clip_origin);
-    if (current_clip_origin == GL_UPPER_LEFT)
-        clip_origin_lower_left = false;
+    if (g_GlVersion >= 450)
+    {
+        GLenum current_clip_origin = 0; glGetIntegerv(GL_CLIP_ORIGIN, (GLint*)&current_clip_origin);
+        if (current_clip_origin == GL_UPPER_LEFT)
+            clip_origin_lower_left = false;
+    }
 #endif
 
     // Setup viewport, orthographic projection matrix
@@ -268,7 +291,9 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
     float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
     float T = draw_data->DisplayPos.y;
     float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
+#if defined(GL_CLIP_ORIGIN)
     if (!clip_origin_lower_left) { float tmp = T; T = B; B = tmp; } // Swap top and bottom if origin is upper left
+#endif
     const float ortho_projection[4][4] =
     {
         { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
@@ -279,8 +304,10 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
     glUseProgram(g_ShaderHandle);
     glUniform1i(g_AttribLocationTex, 0);
     glUniformMatrix4fv(g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
-#ifdef GL_SAMPLER_BINDING
-    glBindSampler(0, 0); // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
+
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_BIND_SAMPLER
+    if (g_GlVersion >= 330)
+        glBindSampler(0, 0); // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
 
     (void)vertex_array_object;
@@ -300,8 +327,8 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
 }
 
 // OpenGL3 Render function.
-// (this used to be set in io.RenderDrawListsFn and called by ImGui::Render(), but you can now call this directly from your main loop)
-// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
+// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly.
+// This is in order to be able to run within an OpenGL engine that doesn't do so.
 void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
 {
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
@@ -315,8 +342,8 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
     glActiveTexture(GL_TEXTURE0);
     GLuint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*)&last_program);
     GLuint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&last_texture);
-#ifdef GL_SAMPLER_BINDING
-    GLuint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, (GLint*)&last_sampler);
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_BIND_SAMPLER
+    GLuint last_sampler; if (g_GlVersion >= 330) { glGetIntegerv(GL_SAMPLER_BINDING, (GLint*)&last_sampler); } else { last_sampler = 0; }
 #endif
     GLuint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, (GLint*)&last_array_buffer);
 #ifndef IMGUI_IMPL_OPENGL_ES2
@@ -336,8 +363,11 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
     GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
-    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
     GLboolean last_enable_stencil_test = glIsEnabled(GL_STENCIL_TEST);
+    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_PRIMITIVE_RESTART
+    GLboolean last_enable_primitive_restart = (g_GlVersion >= 310) ? glIsEnabled(GL_PRIMITIVE_RESTART) : GL_FALSE;
+#endif
 
     // Setup desired GL state
     // Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered to. VAO are not shared among GL contexts)
@@ -389,7 +419,7 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
 
                     // Bind texture, Draw
                     glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
-#if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
                     if (g_GlVersion >= 320)
                         glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
                     else
@@ -408,8 +438,9 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
     // Restore modified GL state
     glUseProgram(last_program);
     glBindTexture(GL_TEXTURE_2D, last_texture);
-#ifdef GL_SAMPLER_BINDING
-    glBindSampler(0, last_sampler);
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_BIND_SAMPLER
+    if (g_GlVersion >= 330)
+        glBindSampler(0, last_sampler);
 #endif
     glActiveTexture(last_active_texture);
 #ifndef IMGUI_IMPL_OPENGL_ES2
@@ -421,8 +452,12 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
     if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
     if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
     if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
-    if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
     if (last_enable_stencil_test) glEnable(GL_STENCIL_TEST); else glDisable(GL_STENCIL_TEST);
+    if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+#ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_PRIMITIVE_RESTART
+    if (g_GlVersion >= 310) { if (last_enable_primitive_restart) glEnable(GL_PRIMITIVE_RESTART); else glDisable(GL_PRIMITIVE_RESTART); }
+#endif
+
 #ifdef GL_POLYGON_MODE
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
 #endif
@@ -430,19 +465,19 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
     glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
 }
 
-bool ImGui_ImplOpenGL3_CreateFontsTexture()
+ImTextureID ImGui_ImplOpenGL3_CreateFontsTexture(ImFontAtlas* fonts)
 {
     // Build texture atlas
-    ImGuiIO& io = ImGui::GetIO();
     unsigned char* pixels;
     int width, height;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+    GLuint font_texture = 0;
+    fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
 
     // Upload texture to graphics system
     GLint last_texture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    glGenTextures(1, &g_FontTexture);
-    glBindTexture(GL_TEXTURE_2D, g_FontTexture);
+    glGenTextures(1, &font_texture);
+    glBindTexture(GL_TEXTURE_2D, font_texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 #ifdef GL_UNPACK_ROW_LENGTH
@@ -451,22 +486,48 @@ bool ImGui_ImplOpenGL3_CreateFontsTexture()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
-    io.Fonts->TexID = (ImTextureID)(intptr_t)g_FontTexture;
+    fonts->SetTexID((ImTextureID)(intptr_t)font_texture);
 
     // Restore state
     glBindTexture(GL_TEXTURE_2D, last_texture);
 
+    return fonts->TexID;
+}
+
+bool ImGui_ImplOpenGL3_CreateFontsTexture()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_DpiEnableScaleFonts)
+    {
+        IM_ASSERT(!io.AllFonts.empty() && "All font atlases participating in DPI font scaling should be in io.AllFonts");
+        IM_ASSERT(io.AllFonts.Size < IM_ARRAYSIZE(g_FontTextures));
+        for (int i = 0; i < io.AllFonts.Size; i++)
+        {
+            g_FontTextures[i] = (GLuint)(intptr_t)ImGui_ImplOpenGL3_CreateFontsTexture(io.AllFonts[i]);
+            if (!g_FontTextures[i])
+                return false;
+        }
+    }
+    else
+    {
+        g_FontTextures[0] = (GLuint)(intptr_t)ImGui_ImplOpenGL3_CreateFontsTexture(io.Fonts);
+        if (!g_FontTextures[0])
+            return false;
+    }
     return true;
 }
 
 void ImGui_ImplOpenGL3_DestroyFontsTexture()
 {
-    if (g_FontTexture)
+    for (int i = 0; i < IM_ARRAYSIZE(g_FontTextures); i++)
     {
-        ImGuiIO& io = ImGui::GetIO();
-        glDeleteTextures(1, &g_FontTexture);
-        io.Fonts->TexID = 0;
-        g_FontTexture = 0;
+        if (g_FontTextures[i])
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            glDeleteTextures(1, &g_FontTextures[i]);
+            io.Fonts->SetTexID(0);
+            g_FontTextures[i] = 0;
+        }
     }
 }
 
@@ -701,7 +762,7 @@ void    ImGui_ImplOpenGL3_DestroyDeviceObjects()
 
 //--------------------------------------------------------------------------------------------------------
 // MULTI-VIEWPORT / PLATFORM INTERFACE SUPPORT
-// This is an _advanced_ and _optional_ feature, allowing the back-end to create and handle multiple viewports simultaneously.
+// This is an _advanced_ and _optional_ feature, allowing the backend to create and handle multiple viewports simultaneously.
 // If you are new to dear imgui or creating a new binding for dear imgui, it is recommended that you completely ignore this section first..
 //--------------------------------------------------------------------------------------------------------
 
