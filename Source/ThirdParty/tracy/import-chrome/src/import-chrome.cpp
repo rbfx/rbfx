@@ -6,11 +6,24 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unordered_map>
+
+#include <sys/stat.h>
+
+#ifdef _MSC_VER
+#  define stat64 _stat64
+#endif
+#if defined __CYGWIN__ || defined __APPLE__
+#  define stat64 stat
+#endif
 
 #include "json.hpp"
 
 #include "../../server/TracyFileWrite.hpp"
+#include "../../server/TracyMmap.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../zstd/zstd.h"
 
 using json = nlohmann::json;
 
@@ -40,15 +53,82 @@ int main( int argc, char** argv )
     printf( "Loading...\r" );
     fflush( stdout );
 
-    std::ifstream is( input );
-    if( !is.is_open() )
-    {
-        fprintf( stderr, "Cannot open input file!\n" );
-        exit( 1 );
-    }
     json j;
-    is >> j;
-    is.close();
+
+    const auto fnsz = strlen( input );
+    if( fnsz > 4 && memcmp( input+fnsz-4, ".zst", 4 ) == 0 )
+    {
+        FILE* f = fopen( input, "rb" );
+        if( !f )
+        {
+            fprintf( stderr, "Cannot open input file!\n" );
+            exit( 1 );
+        }
+        struct stat64 sb;
+        if( stat64( input, &sb ) != 0 )
+        {
+            fprintf( stderr, "Cannot open input file!\n" );
+            fclose( f );
+            exit( 1 );
+        }
+
+        const auto zsz = sb.st_size;
+        auto zbuf = (char*)mmap( nullptr, zsz, PROT_READ, MAP_SHARED, fileno( f ), 0 );
+        fclose( f );
+        if( !zbuf )
+        {
+            fprintf( stderr, "Cannot mmap input file!\n" );
+            exit( 1 );
+        }
+
+        auto zctx = ZSTD_createDStream();
+        ZSTD_initDStream( zctx );
+
+        enum { tmpSize = 64*1024 };
+        auto tmp = new char[tmpSize];
+
+        ZSTD_inBuffer_s zin = { zbuf, (size_t)zsz };
+        ZSTD_outBuffer_s zout = { tmp, (size_t)tmpSize };
+
+        std::vector<uint8_t> buf;
+        buf.reserve( 1024*1024 );
+
+        while( zin.pos < zin.size )
+        {
+            const auto res = ZSTD_decompressStream( zctx, &zout, &zin );
+            if( ZSTD_isError( res ) )
+            {
+                ZSTD_freeDStream( zctx );
+                delete[] tmp;
+                fprintf( stderr, "Couldn't decompress input file (%s)!\n", ZSTD_getErrorName( res ) );
+                exit( 1 );
+            }
+            if( zout.pos > 0 )
+            {
+                const auto bsz = buf.size();
+                buf.resize( bsz + zout.pos );
+                memcpy( buf.data() + bsz, tmp, zout.pos );
+                zout.pos = 0;
+            }
+        }
+
+        ZSTD_freeDStream( zctx );
+        delete[] tmp;
+        munmap( zbuf, zsz );
+
+        j = json::parse( buf.begin(), buf.end() );
+    }
+    else
+    {
+        std::ifstream is( input );
+        if( !is.is_open() )
+        {
+            fprintf( stderr, "Cannot open input file!\n" );
+            exit( 1 );
+        }
+        is >> j;
+        is.close();
+    }
 
     printf( "\33[2KParsing...\r" );
     fflush( stdout );
@@ -56,6 +136,7 @@ int main( int argc, char** argv )
     std::vector<tracy::Worker::ImportEventTimeline> timeline;
     std::vector<tracy::Worker::ImportEventMessages> messages;
     std::vector<tracy::Worker::ImportEventPlots> plots;
+    std::unordered_map<uint64_t, std::string> threadNames;
 
     if( j.is_object() && j.contains( "traceEvents" ) )
     {
@@ -156,6 +237,13 @@ int main( int argc, char** argv )
                 }
             }
         }
+        else if (type == "M")
+        {
+            if (v.contains("name") && v["name"] == "thread_name" && v.contains("args") && v["args"].is_object() && v["args"].contains("name"))
+            {
+                threadNames[v["tid"].get<uint64_t>()] = v["args"]["name"].get<std::string>();
+            }
+        }
     }
 
     std::stable_sort( timeline.begin(), timeline.end(), [] ( const auto& l, const auto& r ) { return l.timestamp < r.timestamp; } );
@@ -185,11 +273,15 @@ int main( int argc, char** argv )
     printf( "\33[2KProcessing...\r" );
     fflush( stdout );
 
-    auto program = input;
-    while( *program ) program++;
-    program--;
-    while( program > input && ( *program != '/' || *program != '\\' ) ) program--;
-    tracy::Worker worker( program, timeline, messages, plots );
+    auto&& getFilename = [](const char* in) {
+        auto out = in;
+        while (*out) ++out;
+        --out;
+        while (out > in && (*out != '/' || *out != '\\')) out--;
+        return out;
+    };
+
+    tracy::Worker worker( getFilename(output), getFilename(input), timeline, messages, plots, threadNames );
 
     auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
     if( !w )
