@@ -97,7 +97,7 @@ rbfx uses the following third-party libraries:
 - stb_image 2.18 (https://nothings.org)
 - stb_image_write 1.08 (https://nothings.org)
 - stb_rect_pack 0.11 (https://nothings.org)
-- stb_textedit 1.9 (https://nothings.org)
+- stb_textedit 1.13 (https://nothings.org)
 - stb_truetype 1.15 (https://nothings.org)
 - stb_vorbis 1.13b (https://nothings.org)
 - WebP (https://chromium.googlesource.com/webm/libwebp)
