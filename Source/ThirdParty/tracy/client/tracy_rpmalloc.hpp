@@ -18,8 +18,8 @@ namespace tracy
 {
 
 #if defined(__clang__) || defined(__GNUC__)
-# define RPMALLOC_EXPORT TRACY_API  // rbfx
-# define RPMALLOC_ALLOCATOR
+# define RPMALLOC_EXPORT __attribute__((visibility("default")))
+# define RPMALLOC_ALLOCATOR 
 # define RPMALLOC_ATTRIB_MALLOC __attribute__((__malloc__))
 # if defined(__clang_major__) && (__clang_major__ < 4)
 # define RPMALLOC_ATTRIB_ALLOC_SIZE(size)
@@ -30,14 +30,14 @@ namespace tracy
 # endif
 # define RPMALLOC_CDECL
 #elif defined(_MSC_VER)
-# define RPMALLOC_EXPORT TRACY_API  // rbfx
+# define RPMALLOC_EXPORT
 # define RPMALLOC_ALLOCATOR __declspec(allocator) __declspec(restrict)
 # define RPMALLOC_ATTRIB_MALLOC
 # define RPMALLOC_ATTRIB_ALLOC_SIZE(size)
 # define RPMALLOC_ATTRIB_ALLOC_SIZE2(count,size)
 # define RPMALLOC_CDECL __cdecl
 #else
-# define RPMALLOC_EXPORT TRACY_API  // rbfx
+# define RPMALLOC_EXPORT
 # define RPMALLOC_ALLOCATOR
 # define RPMALLOC_ATTRIB_MALLOC
 # define RPMALLOC_ATTRIB_ALLOC_SIZE(size)
@@ -166,7 +166,7 @@ typedef struct rpmalloc_config_t {
 } rpmalloc_config_t;
 
 //! Initialize allocator with default configuration
-RPMALLOC_EXPORT int
+TRACY_API int
 rpmalloc_initialize(void);
 
 //! Initialize allocator with given configuration
@@ -178,15 +178,15 @@ RPMALLOC_EXPORT const rpmalloc_config_t*
 rpmalloc_config(void);
 
 //! Finalize allocator
-RPMALLOC_EXPORT void
+TRACY_API void
 rpmalloc_finalize(void);
 
 //! Initialize allocator for calling thread
-RPMALLOC_EXPORT void
+TRACY_API void
 rpmalloc_thread_initialize(void);
 
 //! Finalize allocator for calling thread
-RPMALLOC_EXPORT void
+TRACY_API void
 rpmalloc_thread_finalize(void);
 
 //! Perform deferred deallocations pending for the calling thread heap
@@ -222,7 +222,7 @@ RPMALLOC_EXPORT RPMALLOC_ALLOCATOR void*
 rpcalloc(size_t num, size_t size) RPMALLOC_ATTRIB_MALLOC RPMALLOC_ATTRIB_ALLOC_SIZE2(1, 2);
 
 //! Reallocate the given block to at least the given size
-RPMALLOC_EXPORT RPMALLOC_ALLOCATOR void*
+TRACY_API RPMALLOC_ALLOCATOR void*
 rprealloc(void* ptr, size_t size) RPMALLOC_ATTRIB_MALLOC RPMALLOC_ATTRIB_ALLOC_SIZE(2);
 
 //! Reallocate the given block to at least the given size and alignment,
