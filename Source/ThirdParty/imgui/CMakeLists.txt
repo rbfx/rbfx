@@ -24,18 +24,18 @@
 # stb_rectpack already included in the engine.
 
 file (GLOB SOURCE_FILES *.cpp *.h)
-list (APPEND SOURCE_FILES examples/imgui_impl_sdl.h examples/imgui_impl_sdl.cpp)
+list (APPEND SOURCE_FILES backends/imgui_impl_sdl.h backends/imgui_impl_sdl.cpp)
 if (WIN32 AND NOT URHO3D_OPENGL)
     if (NOT UWP)
-	    list (APPEND SOURCE_FILES examples/imgui_impl_win32.h examples/imgui_impl_win32.cpp)
+	    list (APPEND SOURCE_FILES backends/imgui_impl_win32.h backends/imgui_impl_win32.cpp)
     endif ()
     if (URHO3D_D3D11)
-        list (APPEND SOURCE_FILES examples/imgui_impl_dx11.h examples/imgui_impl_dx11.cpp)
+        list (APPEND SOURCE_FILES backends/imgui_impl_dx11.h backends/imgui_impl_dx11.cpp)
     else ()
-        list (APPEND SOURCE_FILES examples/imgui_impl_dx9.h examples/imgui_impl_dx9.cpp)
+        list (APPEND SOURCE_FILES backends/imgui_impl_dx9.h backends/imgui_impl_dx9.cpp)
     endif ()
 else ()
-    list (APPEND SOURCE_FILES examples/imgui_impl_opengl3.h examples/imgui_impl_opengl3.cpp)
+    list (APPEND SOURCE_FILES backends/imgui_impl_opengl3.h backends/imgui_impl_opengl3.cpp)
 endif ()
 
 add_library (ImGui STATIC ${SOURCE_FILES})
@@ -67,7 +67,7 @@ target_include_directories(ImGui SYSTEM
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ImGui>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ImGuizmo>
-           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/examples>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/backends>
 )
 
 if (BUILD_SHARED_LIBS)
