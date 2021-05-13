@@ -27,6 +27,7 @@
 #if URHO3D_PROFILING
 #include <server/TracyBadVersion.hpp>
 #include <server/TracyView.hpp>
+#include <server/TracyMouse.hpp>
 #endif
 #include "ProfilerTab.h"
 
@@ -69,6 +70,7 @@ bool ProfilerTab::RenderWindowContent()
 #if URHO3D_PROFILING
     if (view_)
     {
+        tracy::MouseFrame();
         if (!view_->Draw())
             view_.reset();
     }
