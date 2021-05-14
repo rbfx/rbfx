@@ -1333,7 +1333,7 @@ elseif(WINDOWS)
     if(WINDOWS_STORE)
       set(SDL_VIDEO_DRIVER_WINRT 1)
       file(GLOB WIN_VIDEO_SOURCES
-        ${SDL2_SOURCE_DIR}/src/video/winrt/*.c 
+        ${SDL2_SOURCE_DIR}/src/video/winrt/*.c
         ${SDL2_SOURCE_DIR}/src/video/winrt/*.cpp
         ${SDL2_SOURCE_DIR}/src/render/direct3d11/*.cpp
         ${SDL2_SOURCE_DIR}/src/render/direct3d11/SDL_render_d3d11.c
@@ -1665,7 +1665,8 @@ target_include_directories (SDL SYSTEM
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
            ${INCLUDE_DIRS}
 )
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0"))
+if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0")) OR
+    ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0")))
     # Fix multiple definition of `WAYLAND_*' with GCC 10, because -fno-common is a new default.
     target_compile_options(SDL PRIVATE -fcommon)
 endif ()
