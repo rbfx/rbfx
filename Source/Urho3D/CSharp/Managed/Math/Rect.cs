@@ -173,7 +173,7 @@ namespace Urho3DNet
         public Vector2 HalfSize => (Max - Min) * 0.5f;
 
         /// Test whether a point is inside.
-        Intersection IsInside(in Vector2 point)
+        public Intersection IsInside(in Vector2 point)
         {
             if (point.X < Min.X || point.Y < Min.Y || point.X > Max.X || point.Y > Max.Y)
                 return Intersection.Outside;
@@ -182,7 +182,7 @@ namespace Urho3DNet
         }
 
         /// Test if another rect is inside, outside or intersects.
-        Intersection IsInside(in Rect rect)
+        public Intersection IsInside(in Rect rect)
         {
             if (rect.Max.X < Min.X || rect.Min.X > Max.X || rect.Max.Y < Min.Y || rect.Min.Y > Max.Y)
                 return Intersection.Outside;

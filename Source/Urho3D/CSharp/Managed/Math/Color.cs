@@ -95,6 +95,9 @@ namespace Urho3DNet
         /// Multiply with a scalar.
         public static Color operator *(in Color lhs, float rhs) { return new Color(lhs.R * rhs, lhs.G * rhs, lhs.B * rhs, lhs.A * rhs); }
 
+        /// Modulate with a color.
+        public static Color operator *(in Color lhs, in Color rhs) { return new Color(lhs.R * rhs.R, lhs.G * rhs.G, lhs.B * rhs.B, lhs.A * rhs.A); }
+
         /// Add a color.
         public static Color operator +(in Color lhs, in Color rhs) { return new Color(lhs.R + rhs.R, lhs.G + rhs.G, lhs.B + rhs.B, lhs.A + rhs.A); }
 
@@ -505,16 +508,16 @@ namespace Urho3DNet
         }
 
         /// Red value.
-        float R;
+        public float R;
 
         /// Green value.
-        float G;
+        public float G;
 
         /// Blue value.
-        float B;
+        public float B;
 
         /// Alpha value.
-        float A;
+        public float A;
 
         /// Opaque white color.
         public static readonly Color White = new Color(1.0f, 1.0f, 1.0f, 1.0f);

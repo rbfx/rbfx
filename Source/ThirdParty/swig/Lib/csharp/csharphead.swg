@@ -403,6 +403,16 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
 
 // rbfx
 %pragma(csharp) imclasscode=%{
+    internal class OverrideNativeAttribute : global::System.Attribute
+    {
+    }
+
+    internal static bool MethodHasAttribute<T>(global::System.Reflection.MethodInfo method) where T : global::System.Attribute
+    {
+        var attributes = method.GetCustomAttributes(typeof(T), true);
+        return attributes.Length > 0;
+    }
+
     internal static bool SwigDerivedClassHasMethod(object instance, string methodName, global::System.Type classType, global::System.Type[] methodTypes) {
       global::System.Reflection.MethodInfo methodInfo = instance.GetType().GetMethod(
           methodName, global::System.Reflection.BindingFlags.Public |
@@ -410,7 +420,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
                       global::System.Reflection.BindingFlags.Instance, null, methodTypes, null);
       bool hasDerivedMethod = methodInfo.IsVirtual && !methodInfo.IsAbstract &&
                               (methodInfo.DeclaringType.IsSubclassOf(classType) || methodInfo.DeclaringType == classType) &&
-                              methodInfo.DeclaringType != methodInfo.GetBaseDefinition().DeclaringType;
+                              (methodInfo.DeclaringType != methodInfo.GetBaseDefinition().DeclaringType || MethodHasAttribute<OverrideNativeAttribute>(methodInfo));
       /* Could add this code to cover corner case where the GetMethod() returns a method which allows type
        * promotion, eg it will return foo(double), if looking for foo(int).
        if (hasDerivedMethod) {
