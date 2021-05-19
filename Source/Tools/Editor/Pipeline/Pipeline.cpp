@@ -137,6 +137,8 @@ void Pipeline::OnEndFrame(StringHash, VariantMap&)
 
         if (Asset* asset = GetAsset(entry.fileName_))
             ScheduleImport(asset);
+
+        onResourceChanged_(this, entry);
     }
 
     if (!dirtyAssets_.empty())
@@ -168,6 +170,7 @@ Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
     if (resourceName.empty() || resourceName.ends_with(".asset"))
         return nullptr;
 
+    auto* cache = GetSubsystem<ResourceCache>();
     auto* project = GetSubsystem<Project>();
     auto* fs = GetSubsystem<FileSystem>();
 
@@ -181,6 +184,9 @@ Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
             resourceDirName = AddTrailingSlash(resourceName);
         }
         const ea::string& actualResourceName = !resourceDirName.empty() ? resourceDirName : resourceName;
+
+        if (!fs->Exists(resourcePath) && !cache->Exists(actualResourceName))
+            continue;
 
         auto it = assets_.find(actualResourceName);
         if (it != assets_.end())

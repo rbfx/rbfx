@@ -445,7 +445,9 @@ ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
     int width, height;
     atlas->ClearTexData();
 
-    ImGuiFreeType::BuildFontAtlas(atlas, ImGuiFreeType::ForceAutoHint);
+    const ImFontBuilderIO* fontBuilder = ImGuiFreeType::GetBuilderForFreeType();
+    atlas->FontBuilderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint;
+    fontBuilder->FontBuilder_Build(atlas);
     atlas->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     SharedPtr<Texture2D> fontTexture = context_->CreateObject<Texture2D>();

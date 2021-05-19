@@ -22,6 +22,7 @@
 
 #include <EASTL/sort.h>
 
+#include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
@@ -62,6 +63,11 @@ ResourceTab::ResourceTab(Context* context)
     isUtility_ = true;
 
     SubscribeToEvent(E_INSPECTORLOCATERESOURCE, &ResourceTab::OnLocateResource);
+    SubscribeToEvent(E_ENDFRAME, &ResourceTab::OnEndFrame);
+
+    Pipeline* pipeline = GetSubsystem<Pipeline>();
+    pipeline->onResourceChanged_.Subscribe(this, &ResourceTab::OnResourceUpdated);
+    ScanAssets();
 }
 
 void ResourceTab::OnLocateResource(StringHash, VariantMap& args)
@@ -96,7 +102,6 @@ bool ResourceTab::RenderWindowContent()
     const ImGuiStyle& style = ui::GetStyle();
     Project* project = GetSubsystem<Project>();
     Pipeline* pipeline = GetSubsystem<Pipeline>();
-    ScanAssets();
 
     // Render folder tree on the left
     ui::Columns(2);
@@ -108,7 +113,7 @@ bool ResourceTab::RenderWindowContent()
             {
                 currentDir_.clear();
                 selectedItem_.clear();
-                SelectCurrentItemInspector();
+                rescan_ = true;
             }
             ui::TreePop();
         }
@@ -484,19 +489,27 @@ void ResourceTab::OpenResource(const ea::string& resourceName)
     }
 }
 
-void ResourceTab::ScanAssets()
+void ResourceTab::OnEndFrame(StringHash, VariantMap&)
 {
-    rescan_ |= rescanTimer_.GetMSec(false) >= 1000;
     if (!rescan_)
         return;
+    ScanAssets();
     rescan_ = false;
-    rescanTimer_.Reset();
+}
 
+void ResourceTab::OnResourceUpdated(const FileChange& change)
+{
+    rescan_ = currentDir_ == GetPath(change.fileName_);
+    if (change.kind_ == FILECHANGE_RENAMED)
+        rescan_ |= currentDir_ == GetPath(change.oldFileName_);
+}
+
+void ResourceTab::ScanAssets()
+{
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    Project* project = GetSubsystem<Project>();
     Pipeline* pipeline = GetSubsystem<Pipeline>();
 
-    // Gather directories from project resource paths and CoreData.
+    // Gather directories from project resource paths.
     currentDirs_.clear();
     cache->Scan(currentDirs_, currentDir_, "", SCAN_DIRS, false);
     ea::sort(currentDirs_.begin(), currentDirs_.end());
@@ -737,6 +750,7 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
             isRenamingFrame_ = 0;
             openContextMenu |= ui::IsItemClicked(MOUSEB_RIGHT);
             // Not selecting this item in inspector on purpose, so users can navigate directory tree with a selected scene entity.
+            rescan_ = true;
         }
 
         if (!isOpen && currentDir_.starts_with(childDir) && currentDir_.length() > childDir.length())
