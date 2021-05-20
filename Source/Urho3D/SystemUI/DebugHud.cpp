@@ -53,7 +53,9 @@ static const char* shadowQualityTexts[] =
     "16bit Low",
     "24bit Low",
     "16bit High",
-    "24bit High"
+    "24bit High",
+    "VSM",
+    "Blur VSM"
 };
 
 static const unsigned FPS_UPDATE_INTERVAL_MS = 500;
