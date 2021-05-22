@@ -327,18 +327,18 @@ void FileWatcher::ThreadFunction()
             {
                 ea::string fileName = dirHandle_[event->wd] + event->name;
 
-                if (event->mask == IN_CREATE)
+                if ((event->mask & IN_CREATE) == IN_CREATE)
                     AddChange({FILECHANGE_ADDED, fileName, EMPTY_STRING});
-                else if (event->mask & IN_DELETE)
+                else if ((event->mask & IN_DELETE) == IN_DELETE)
                     AddChange({FILECHANGE_REMOVED, fileName, EMPTY_STRING});
-                else if (event->mask & IN_MODIFY || event->mask & IN_ATTRIB)
+                else if ((event->mask & IN_MODIFY) == IN_MODIFY || (event->mask & IN_ATTRIB) == IN_ATTRIB)
                     AddChange({FILECHANGE_MODIFIED, fileName, EMPTY_STRING});
-                else if (event->mask & IN_MOVE)
+                else if ((event->mask & IN_MOVE) == IN_MOVE)
                 {
                     auto& entry = renames[event->cookie];
-                    if (event->mask & IN_MOVED_FROM)
+                    if ((event->mask & IN_MOVED_FROM) == IN_MOVED_FROM)
                         entry.oldFileName_ = fileName;
-                    else if (event->mask & IN_MOVED_TO)
+                    else if ((event->mask & IN_MOVED_TO) == IN_MOVED_TO)
                         entry.fileName_ = fileName;
 
                     if (!entry.oldFileName_.empty() && !entry.fileName_.empty())
