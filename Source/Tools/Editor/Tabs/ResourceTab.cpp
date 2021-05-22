@@ -55,6 +55,16 @@ static ea::unordered_map<ContentType, ea::string> contentToTabType{
     {CTYPE_UILAYOUT, "UITab"},
 };
 
+static const int DIR_TREE_SEED_ID = 0x7b4bb0aa;
+
+struct CachedDirs
+{
+    /// Cached directories.
+    StringVector dirs_;
+    /// Flag indicating that directory results expired.
+    bool expired_ = true;
+};
+
 ResourceTab::ResourceTab(Context* context)
     : Tab(context)
 {
@@ -99,6 +109,7 @@ void ResourceTab::OnLocateResource(StringHash, VariantMap& args)
 
 bool ResourceTab::RenderWindowContent()
 {
+    URHO3D_PROFILE("ResourceTab::RenderWindowContent");
     const ImGuiStyle& style = ui::GetStyle();
     Project* project = GetSubsystem<Project>();
     Pipeline* pipeline = GetSubsystem<Pipeline>();
@@ -107,6 +118,7 @@ bool ResourceTab::RenderWindowContent()
     ui::Columns(2);
     if (ui::BeginChild("##DirectoryTree", ui::GetContentRegionAvail()))
     {
+        URHO3D_PROFILE("ResourceTab::DirectoryTree");
         if (ui::TreeNodeEx("Root", ImGuiTreeNodeFlags_Leaf|ImGuiTreeNodeFlags_SpanFullWidth|(currentDir_.empty() ? ImGuiTreeNodeFlags_Selected : 0)))
         {
             if (ui::IsItemClicked(MOUSEB_LEFT))
@@ -499,9 +511,22 @@ void ResourceTab::OnEndFrame(StringHash, VariantMap&)
 
 void ResourceTab::OnResourceUpdated(const FileChange& change)
 {
-    rescan_ = currentDir_ == GetPath(change.fileName_);
-    if (change.kind_ == FILECHANGE_RENAMED)
-        rescan_ |= currentDir_ == GetPath(change.oldFileName_);
+    // Rescan current dir if anything changed in it.
+    rescan_ = currentDir_ == change.fileName_ || currentDir_ == change.oldFileName_ || currentDir_ == GetPath(change.fileName_) ||
+        currentDir_ == GetPath(change.oldFileName_);
+
+    // Rescan directory tree if any files were added/deleted/removed.
+    if (change.kind_ != FILECHANGE_MODIFIED)
+    {
+        ImGuiID id = DIR_TREE_SEED_ID;
+        for (const ea::string& part : change.fileName_.split('/'))
+        {
+            id = ImHashStr(part.c_str(), 0, id);
+            id = ImHashStr("/", 0, id);
+        }
+        if (CachedDirs* value = cache_.Peek<CachedDirs>(id))
+            value->expired_ = true;
+    }
 }
 
 void ResourceTab::ScanAssets()
@@ -690,14 +715,6 @@ void ResourceTab::RenderContextMenu()
 
 void ResourceTab::RenderDirectoryTree(const eastl::string& path)
 {
-    struct CachedDirs
-    {
-        /// Cached directories.
-        StringVector dirs_;
-        /// Timer since this cache was last expired.
-        Timer expires_;
-    };
-
     auto getCachedDirs = [&](unsigned id, const eastl::string& scanPath)
     {
         CachedDirs* value = cache_.Peek<CachedDirs>(id);
@@ -706,15 +723,18 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
             value = cache_.Get<CachedDirs>(id);
 
         // Refresh caches every now and then.
-        if (isNewlyCreated || value->expires_.GetMSec(false) > 1000)
+        if (value->expired_)
         {
+            value->expired_ = false;
             ScanDirTree(value->dirs_, scanPath);
-            value->expires_.Reset();
         }
         return value;
     };
     ImGuiContext& g = *GImGui;
-    ui::PushID(path.c_str());
+    if (path.empty())
+        ui::PushOverrideID(DIR_TREE_SEED_ID);   // Make id predictable so we can replicate it in OnResourceUpdated() and mark changed dirs as expired.
+    else
+        ui::PushID(path.c_str());
     CachedDirs* value = getCachedDirs(ui::GetCurrentWindow()->IDStack.back(), path);
     bool openContextMenu = false;
     bool expireCache = false;
@@ -779,6 +799,7 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
 
 void ResourceTab::ScanDirTree(StringVector& result, const eastl::string& path)
 {
+    URHO3D_PROFILE("ResourceTab::ScanDirTree");
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     result.clear();
     cache->Scan(result, path, "", SCAN_DIRS, false);
