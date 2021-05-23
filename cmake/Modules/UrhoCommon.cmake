@@ -20,10 +20,16 @@
 # THE SOFTWARE.
 #
 
-include(ucm)
-include(VSSolution)
+include(${CMAKE_CURRENT_LIST_DIR}/ucm.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
+
+if (URHO3D_SDK)
+    # These will be re-set in engine build later, or used in SDK builds.
+    set (PACKAGE_TOOL    "${URHO3D_SDK}/bin/PackageTool")
+    set (SWIG_EXECUTABLE "${URHO3D_SDK}/bin/swig")
+endif ()
 
 # Macro for setting symbolic link on platform that supports it
 function (create_symlink SOURCE DESTINATION)
@@ -249,9 +255,13 @@ function (create_pak PAK_DIR PAK_FILE)
 
     get_filename_component(NAME "${PAK_FILE}" NAME)
     if (CMAKE_CROSSCOMPILING)
-        set (DEPENDENCY Urho3D-Native)
+        if (TARGET Urho3D-Native)
+            set (DEPENDENCY Urho3D-Native)
+        endif ()
     else ()
-        set (DEPENDENCY PackageTool)
+        if (TARGET PackageTool)
+            set (DEPENDENCY PackageTool)
+        endif ()
     endif ()
 
     if (NOT PAK_NO_COMPRESS)
@@ -322,9 +332,13 @@ function (package_resources_web)
         COMMENT "Packaging ${PAK_OUTPUT}"
     )
     if (CMAKE_CROSSCOMPILING)
-        add_dependencies("${PAK_OUTPUT}" Urho3D-Native)
+        if (TARGET Urho3D-Native)
+            add_dependencies("${PAK_OUTPUT}" Urho3D-Native)
+        endif ()
     else ()
-        add_dependencies("${PAK_OUTPUT}" PackageTool)
+        if (TARGET PackageTool)
+            add_dependencies("${PAK_OUTPUT}" PackageTool)
+        endif ()
     endif ()
     if (PAK_INSTALL_TO)
         install(FILES "${PAK_RELATIVE_DIR}${PAK_OUTPUT}" "${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data" DESTINATION ${PAK_INSTALL_TO})
