@@ -73,8 +73,10 @@ public:
     RefCounted& operator =(const RefCounted& rhs) = delete;
 
     /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting. Returns new reference count value. Operation is atomic.
+    /// @manualbind
     int AddRef();
     /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting. Returns new reference count value. Operation is atomic.
+    /// @manualbind
     int ReleaseRef();
     /// Return reference count.
     /// @property
