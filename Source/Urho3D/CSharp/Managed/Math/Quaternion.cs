@@ -500,7 +500,7 @@ namespace Urho3DNet
         public float Z;
 
         /// Identity quaternion.
-        public static readonly Quaternion IDENTITY;
+        public static readonly Quaternion IDENTITY = new Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
 
         public override bool Equals(object obj)
         {
