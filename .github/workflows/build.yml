@@ -503,9 +503,9 @@ jobs:
       ci_compiler: ${{ matrix.ci_compiler }}
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v8
+      - uses: mymindstorm/setup-emsdk@v9
         with:
-          version: 2.0.12
+          version: latest
 
       - uses: actions/checkout@v2
         with:
