@@ -31,6 +31,14 @@ if (URHO3D_SDK)
     set (SWIG_EXECUTABLE "${URHO3D_SDK}/bin/swig")
 endif ()
 
+if (WEB)
+    if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 2.0.17)
+        set (EMCC_WITH_SOURCE_MAPS_FLAG -g4)
+    else ()
+        set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map)
+    endif ()
+endif ()
+
 # Macro for setting symbolic link on platform that supports it
 function (create_symlink SOURCE DESTINATION)
     # Make absolute paths so they work more reliably on cmake-gui
