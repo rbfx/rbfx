@@ -333,7 +333,7 @@ void FileWatcher::ThreadFunction()
                     AddChange({FILECHANGE_REMOVED, fileName, EMPTY_STRING});
                 else if ((event->mask & IN_MODIFY) == IN_MODIFY || (event->mask & IN_ATTRIB) == IN_ATTRIB)
                     AddChange({FILECHANGE_MODIFIED, fileName, EMPTY_STRING});
-                else if ((event->mask & IN_MOVE) == IN_MOVE)
+                else if (event->mask & IN_MOVE)
                 {
                     auto& entry = renames[event->cookie];
                     if ((event->mask & IN_MOVED_FROM) == IN_MOVED_FROM)
