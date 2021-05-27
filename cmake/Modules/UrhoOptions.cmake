@@ -69,6 +69,16 @@ if ((WIN32 OR LINUX OR MACOS) AND NOT WEB AND NOT MOBILE AND NOT UWP)
     set (DESKTOP ON CACHE BOOL "" FORCE)
 endif ()
 
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten" AND NOT WEB)
+    # Compatibility with old toolchain.
+    set(WEB ON)
+    set(EMSCRIPTEN ON)
+    set(EMSCRIPTEN_EMCC_VERSION "${CMAKE_C_COMPILER_VERSION}")
+    set (EMRUN ${EMSCRIPTEN_ROOT_PATH}/emrun${TOOL_EXT}    CACHE PATH "emrun")
+    set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
+    set (EMBUILDER python ${EMSCRIPTEN_ROOT_PATH}/embuilder.py CACHE PATH "embuilder.py")
+endif ()
+
 # Build properties
 option(BUILD_SHARED_LIBS                        "Build engine as shared library."       ON)
 option(URHO3D_ENABLE_ALL                        "Enable (almost) all engine features."  ON)
