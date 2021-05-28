@@ -53,13 +53,17 @@ extern "C" void SDL_IOS_LogMessage(const char* message);
 #endif
 
 #include "../DebugNew.h"
-#include "../IO/Log.h"
 
 
 namespace Urho3D
 {
 
-static Log* logInstance = nullptr;
+static Log* GetLog()
+{
+    auto* context = Context::GetInstance();
+    auto* logInstance = context ? context->GetSubsystem<Log>() : nullptr;
+    return logInstance;
+}
 
 #if defined(IOS) || defined(TVOS)
 template<typename Mutex>
@@ -128,6 +132,7 @@ class MessageForwarderSink : public spdlog::sinks::base_sink<Mutex>
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override
     {
+        auto* logInstance = GetLog();
         if (logInstance == nullptr)
             return;
         time_t time = std::chrono::system_clock::to_time_t(msg.time);
@@ -228,7 +233,6 @@ Log::Log(Context* context) :
     impl_(new LogImpl(context)),
     formatPattern_("[%H:%M:%S] [%l] [%n] : %v")
 {
-    logInstance = this;
 #if !__EMSCRIPTEN__
     spdlog::flush_every(std::chrono::seconds(5));
 #endif
@@ -237,7 +241,6 @@ Log::Log(Context* context) :
 
 Log::~Log()
 {
-    logInstance = nullptr;
     spdlog::shutdown();
 }
 
@@ -304,6 +307,7 @@ void Log::SetLogFormat(const ea::string& format)
 Logger Log::GetLogger(const ea::string& name)
 {
     // Loggers may be used only after initializing Log subsystem, therefore do not use logging from static initializers.
+    auto* logInstance = GetLog();
     if (logInstance == nullptr)
         return {};
 
@@ -323,6 +327,7 @@ Logger Log::GetLogger(const ea::string& name)
 
 Logger Log::GetLogger()
 {
+    auto* logInstance = GetLog();
     if (logInstance == nullptr)
         return {};
     static Logger defaultLogger = Log::GetLogger("main");
@@ -339,15 +344,15 @@ void Log::SendMessageEvent(LogLevel level, time_t timestamp, const ea::string& l
     TracyMessageC(message.c_str(), message.size(), LOG_LEVEL_COLORS[level].ToUIntArgb());
 #endif
 
+    auto* logInstance = GetLog();
+    if (logInstance == nullptr)
+        return;
+
     // If not in the main thread, store message for later processing
     if (!Thread::IsMainThread())
     {
-        if (logInstance)
-        {
-            MutexLock lock(logMutex_);
-            threadMessages_.push_back(StoredLogMessage(level, timestamp, logger, message));
-        }
-
+        MutexLock lock(logMutex_);
+        threadMessages_.push_back(StoredLogMessage(level, timestamp, logger, message));
         return;
     }
 
