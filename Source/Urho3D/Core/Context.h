@@ -76,6 +76,9 @@ public:
     /// Destruct.
     ~Context() override;
 
+    /// Return global instance of context object. Only one context may exist within application.
+    static Context* GetInstance();
+
     /// Create an object by type. Return pointer to it or null if no factory found.
     template <class T> inline SharedPtr<T> CreateObject()
     {

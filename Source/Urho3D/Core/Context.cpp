@@ -71,6 +71,9 @@ static void HandleIKLog(const char* msg)
 }
 #endif
 
+// Global context instance. Set in Context constructor.
+static Context* contextInstance = nullptr;
+
 void EventReceiverGroup::BeginSendEvent()
 {
     ++inSend_;
@@ -140,6 +143,9 @@ void RemoveNamedAttribute(ea::unordered_map<StringHash, ea::vector<AttributeInfo
 Context::Context() :
     eventHandler_(nullptr)
 {
+    assert(contextInstance == nullptr);
+    contextInstance = this;
+
 #ifdef __ANDROID__
     // Always reset the random seed on Android, as the Urho3D library might not be unloaded between runs
     SetRandomSeed(1);
@@ -174,6 +180,15 @@ Context::~Context()
     for (auto i = eventDataMaps_.begin(); i != eventDataMaps_.end(); ++i)
         delete *i;
     eventDataMaps_.clear();
+
+    assert(contextInstance == this);
+    contextInstance = nullptr;
+}
+
+Context* Context::GetInstance()
+{
+    assert(contextInstance != nullptr);
+    return contextInstance;
 }
 
 SharedPtr<Object> Context::CreateObject(StringHash objectType)
