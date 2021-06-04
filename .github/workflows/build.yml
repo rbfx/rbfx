@@ -18,7 +18,7 @@ env:
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 9
   # clcache configuration
-  CLCACHE_DIR: ${{ github.workspace }}/.ccache            # Intentionally same as CCACHE_DIR
+  CLCACHE_DIR: ${{ github.workspace }}\.ccache            # Intentionally same as CCACHE_DIR
   CLCACHE_COMPRESS: true
   CLACHE_COMPRESSLEVEL: 9
   # paths
@@ -164,7 +164,7 @@ jobs:
       - name: Build Cache
         uses: actions/cache@v2
         with:
-          path: ${{ env.CCACHE_DIR }}
+          path: ${{ env.CLCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ hashFiles('**/source-code/Source/**') }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
