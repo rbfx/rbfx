@@ -226,7 +226,8 @@ function action-build() {
 function action-build-msvc() {
     cd $ci_build_dir
     # Invoke msbuild directly when using msvc. Invoking msbuild through cmake causes some custom target dependencies to not be respected.
-    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=C:/hostedtoolcache/windows/Python/3.7.9/x64/Scripts/" *.sln && \
+    python_path=$(python -c "import os, sys; print(os.path.dirname(sys.executable))")
+    "$MSBUILD" "-r" "-p:Configuration=${types[$ci_build_type]}" "-p:TrackFileAccess=false" "-p:CLToolExe=clcache.exe" "-p:CLToolPath=$python_path/Scripts/" *.sln && \
     clcache -s
 }
 
