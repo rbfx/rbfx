@@ -20,6 +20,8 @@
 # THE SOFTWARE.
 #
 
+include(ucm)
+
 find_program(CCACHE ccache)
 if (CCACHE_FOUND AND ENV{CCACHE_DIR})
     if (CMAKE_GENERATOR STREQUAL "Xcode")
@@ -46,4 +48,8 @@ if (CCACHE_FOUND AND ENV{CCACHE_DIR})
         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE})
         set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE})
     endif ()
+endif ()
+
+if (MSVC AND NOT ENV{CLCACHE_DIR} STREQUAL "")
+    ucm_replace_flag("/Z[iI]" "" REGEX CONFIG Debug RelWithDebInfo)
 endif ()
