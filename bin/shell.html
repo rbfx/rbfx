@@ -125,6 +125,10 @@
             }, 100);
         }
 
+        function handleMouseDown() {
+            window.focus();
+        }
+
         document.addEventListener('fullscreenchange', viewportResizeHandler, false);
         document.addEventListener('mozfullscreenchange', viewportResizeHandler, false);
         document.addEventListener('webkitfullscreenchange', viewportResizeHandler, false);
@@ -133,6 +137,8 @@
         document.addEventListener('visibilitychange', visibilityChanged, false);
         document.addEventListener('msvisibilitychange', visibilityChanged, false);
         document.addEventListener('webkitvisibilitychange', visibilityChanged, false);
+
+        document.addEventListener('mousedown', handleMouseDown, false);
 
         var resizeTimeout = false;
         // When window size has changed, resize the canvas accordingly
@@ -169,7 +175,9 @@
         // App is ready to launch, make canvas and fullscreen button visible
         function ready() {
             document.getElementById('canvas').style.display = 'block';
-            document.getElementById('fullscreen-button').style.display = 'block';
+            if (!document.referrer.includes('itch.io')) {
+                document.getElementById('fullscreen-button').style.display = 'block';
+            }
 
             if (document.hidden) {
                 return;
