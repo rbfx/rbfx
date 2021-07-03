@@ -29,8 +29,10 @@ file(GLOB_RECURSE SOURCE_FILES Include/*.h Source/*.cpp)
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
 add_library(RmlUi STATIC ${SOURCE_FILES})
 target_compile_definitions(RmlUi
-    PRIVATE -DRMLUI_VERSION="${RMLUI_VERSION_SHORT}" -D$<$<NOT:$<CONFIG:Debug>>:N>DEBUG=1 PUBLIC -DRMLUI_NO_THIRDPARTY_CONTAINERS=1
-    PUBLIC -DRMLUI_CUSTOM_CONFIGURATION_FILE="../RbfxConfig.h"
+    PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
+    PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1
+            RMLUI_CUSTOM_CONFIGURATION_FILE="../RbfxConfig.h"
+            $<$<CONFIG:Debug>:RMLUI_DEBUG>
 )
 if (APPLE)
     # Disables naked builtins from AssertMacros.h which
