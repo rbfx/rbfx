@@ -39,6 +39,14 @@ if (WEB)
     endif ()
 endif ()
 
+# Prevent use of undefined build type, default to Debug. Done here instead of UrhoOptions.cmake so that user projects
+# can take advantage of this behavior as UrhoCommon.cmake will be included earlier, most likely before any targets are
+# defined.
+if (NOT MULTI_CONFIG_PROJECT AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
+endif ()
+
 # Macro for setting symbolic link on platform that supports it
 function (create_symlink SOURCE DESTINATION)
     # Make absolute paths so they work more reliably on cmake-gui
