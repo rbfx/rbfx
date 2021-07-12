@@ -781,7 +781,7 @@ public:
 %include "Urho3D/Physics/PhysicsWorld.h"
 %include "Urho3D/Physics/RaycastVehicle.h"
 %include "Urho3D/Physics/RigidBody.h"
-%template(PhysicsRaucastResultVector)   eastl::vector<Urho3D::PhysicsRaycastResult>;
+%template(PhysicsRaycastResultVector)   eastl::vector<Urho3D::PhysicsRaycastResult>;
 %template(RigidBodyVector)              eastl::vector<Urho3D::RigidBody*>;
 #endif
 // --------------------------------------- SystemUI ---------------------------------------
