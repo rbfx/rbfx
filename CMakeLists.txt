@@ -392,6 +392,10 @@ if (DESKTOP)
     endif ()
 endif ()
 
+if (URHO3D_TESTING)
+    add_subdirectory(tests)
+endif ()
+
 add_subdirectory(Source)
 
 # Print current build configuration
