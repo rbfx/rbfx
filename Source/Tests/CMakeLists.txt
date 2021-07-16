@@ -20,10 +20,6 @@
 # THE SOFTWARE.
 #
 
-if (NOT ((APPLE AND NOT ARM) OR WIN32))
-    return ()
-endif ()
-
 set (TARGET_NAME Tests)
 
 # Setup GTest
