@@ -32,7 +32,7 @@
 namespace Urho3D
 {
 
-class ReflectionProbeData;
+struct ReflectionProbeData;
 
 /// Light parameters needed to calculate SH lighting.
 struct LightDataForAccumulator
@@ -91,7 +91,7 @@ struct LightDataForAccumulator
         const float distanceAttenuation = pair.second * pair.second;
         const float spotAttenuation = GetSpotAttenuation(dirToLight);
         const SphericalHarmonicsColor9 sh{ dirToLight, color_.ToVector3() };
-        return SphericalHarmonicsDot9{ sh } * (M_PI * distanceAttenuation * spotAttenuation);
+        return SphericalHarmonicsDot9{ sh } * static_cast<float>(M_PI * distanceAttenuation * spotAttenuation);
     }
 };
 
