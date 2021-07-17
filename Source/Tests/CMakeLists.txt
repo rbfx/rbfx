@@ -20,16 +20,16 @@
 # THE SOFTWARE.
 #
 
-enable_testing()
-include(CTest)
-include(../Source/ThirdParty/catch2/Catch.cmake)
+if (NOT URHO3D_TESTING)
+    return ()
+endif ()
 
-file(GLOB_RECURSE TEST_SOURCE_CODE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" *.cpp )
-foreach (src ${TEST_SOURCE_CODE})
-    get_filename_component(TARGET_NAME "${src}" NAME_WE)
-    if ("${TARGET_NAME}" MATCHES "^test_.+$")
-        add_executable(${TARGET_NAME} ${src})
-        target_link_libraries(${TARGET_NAME} PRIVATE Urho3D catch2)
-        catch_discover_tests(${TARGET_NAME})
-    endif ()
-endforeach ()
+enable_testing ()
+include (CTest)
+include (../ThirdParty/catch2/Catch.cmake)
+
+file (GLOB_RECURSE TEST_SOURCE_CODE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" *.cpp)
+set (TARGET_NAME Tests)
+add_executable(${TARGET_NAME} ${TEST_SOURCE_CODE})
+target_link_libraries(${TARGET_NAME} PRIVATE Urho3D catch2)
+catch_discover_tests(${TARGET_NAME})
