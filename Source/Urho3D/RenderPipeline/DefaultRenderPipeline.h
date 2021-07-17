@@ -57,9 +57,9 @@ public:
 
     /// Implement RenderPipelineView
     /// @{
-    bool Define(RenderSurface* renderTarget, Viewport* viewport);
-    void Update(const FrameInfo& frameInfo);
-    void Render();
+    bool Define(RenderSurface* renderTarget, Viewport* viewport) override;
+    void Update(const FrameInfo& frameInfo) override;
+    void Render() override;
     const FrameInfo& GetFrameInfo() const override;
     const RenderPipelineStats& GetStats() const override { return stats_; }
     /// @}

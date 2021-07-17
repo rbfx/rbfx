@@ -33,11 +33,11 @@
 namespace Urho3D
 {
 
-class CommonFrameInfo;
 class RenderSurface;
 class RenderPipelineInterface;
 class Texture;
 class Texture2D;
+struct CommonFrameInfo;
 struct FrameInfo;
 
 /// Base class fro writable texture or texture region. Readability is not guaranteed.
