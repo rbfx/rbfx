@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch_amalgamated.hpp>
 #include <Urho3D/Urho3D.h>
 
