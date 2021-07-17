@@ -61,8 +61,14 @@ struct PipelineBatchByState
     static constexpr unsigned long long RenderOrderOffset   = ShaderProgramOffset + ShaderProgramBits;
 
     static_assert(RenderOrderOffset + RenderOrderBits == 64, "Unexpected mask layout");
-    static_assert(PixelLightMask | LightmapMask | MaterialMask
-        | PipelineStateMask | ShaderProgramMask | RenderOrderMask == 0xffffffffffffffffull, "Unexpected mask layout");
+    static_assert((
+        (PixelLightMask << PixelLightOffset)
+        | (LightmapMask << LightmapOffset)
+        | (MaterialMask << MaterialOffset)
+        | (PipelineStateMask << PipelineStateOffset)
+        | (ShaderProgramMask << ShaderProgramOffset)
+        | (RenderOrderMask << RenderOrderOffset)
+        ) == 0xffffffffffffffffull, "Unexpected mask layout");
     /// @}
 
     /// Secondary key layout (from least to most important)
@@ -80,7 +86,11 @@ struct PipelineBatchByState
     static constexpr unsigned long long GeometryOffset      = VertexLightsOffset + VertexLightsBits;
 
     static_assert(GeometryOffset + GeometryBits == 64, "Unexpected mask layout");
-    static_assert(ReservedMask | VertexLightsMask | GeometryMask == 0xffffffffffffffffull, "Unexpected mask layout");
+    static_assert((
+        (ReservedMask << ReservedOffset)
+        | (VertexLightsMask << VertexLightsOffset)
+        | (GeometryMask << GeometryOffset)
+        ) == 0xffffffffffffffffull, "Unexpected mask layout");
     /// @}
 
     /// Primary sorting value.
