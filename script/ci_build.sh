@@ -69,6 +69,7 @@ lib_types_dll=('-DBUILD_SHARED_LIBS=ON')
 quirks_mingw=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
+    '-DURHO3D_TESTING=OFF'
 )
 quirks_ios=(
     '-DURHO3D_CSHARP=OFF'

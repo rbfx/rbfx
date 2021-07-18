@@ -14,7 +14,7 @@ env:
   DOTNET_VERSION: 5.0.x
   CMAKE_VERSION: 3.19.x
   # ccache configuration
-  ccache_prefix: ${{ secrets.CACHE_VERSION }}-renderer
+  ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 9
