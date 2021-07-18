@@ -123,6 +123,14 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
+      - name: Run Tests
+        shell: bash
+        env:
+          CTEST_OUTPUT_ON_FAILURE: 1
+        if: matrix.ci_compiler == 'msvc' && matrix.ci_build_type == 'rel'
+        working-directory: ${{ env.ci_build_dir }}/Source/Tests
+        run: ctest -C Release
+
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
         with:
