@@ -26,6 +26,7 @@
 
 namespace Urho3D
 {
+class File;
 
 /// %File entry within the package file.
 struct PackageEntry
@@ -106,6 +107,8 @@ public:
     /// Scan package for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
 
+    /// Create package from existing files.
+    static bool CreatePackage(Context* context, const ea::string& name, const ea::vector<SharedPtr<File>>& entries, bool compressed = false);
 private:
     /// File entries.
     ea::unordered_map<ea::string, PackageEntry> entries_;
