@@ -30,6 +30,9 @@
 
 using namespace Urho3D;
 
+namespace
+{
+
 class SerializableObject : public Object
 {
     URHO3D_OBJECT(SerializableObject, Object);
@@ -337,6 +340,8 @@ ea::unique_ptr<SerializationTestStruct> LoadTestStructBinary(Context* context, V
     if (archive.HasError())
         return nullptr;
     return ea::make_unique<SerializationTestStruct>(data);
+}
+
 }
 
 TEST_CASE("Test structure is serialized to archive")
