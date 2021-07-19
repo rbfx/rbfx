@@ -260,7 +260,8 @@ public:
 Log::Log(Context* context) :
     Object(context),
     impl_(new LogImpl(context)),
-    formatPattern_("[%H:%M:%S] [%l] [%n] : %v")
+    formatPattern_("[%H:%M:%S] [%l] [%n] : %v"),
+    defaultLogger_(GetOrCreateLogger("main"))
 {
 #if !__EMSCRIPTEN__
     spdlog::flush_every(std::chrono::seconds(5));
@@ -340,14 +341,19 @@ Logger Log::GetLogger(const ea::string& name)
     if (logInstance == nullptr)
         return {};
 
+    return logInstance->GetOrCreateLogger(name);
+}
+
+Logger Log::GetOrCreateLogger(const ea::string& name)
+{
     std::shared_ptr<spdlog::logger> logger;
-    MutexLock lock(logInstance->logMutex_);
+    MutexLock lock(logMutex_);
 
     logger = spdlog::get(name);
 
     if (!logger)
     {
-        logger = std::make_shared<spdlog::logger>(name, logInstance->impl_->sinkProxy_);
+        logger = std::make_shared<spdlog::logger>(name, impl_->sinkProxy_);
         spdlog::register_logger(logger);
     }
 
@@ -359,8 +365,7 @@ Logger Log::GetLogger()
     auto* logInstance = GetLog();
     if (logInstance == nullptr)
         return {};
-    static Logger defaultLogger = Log::GetLogger("main");
-    return defaultLogger;
+    return logInstance->defaultLogger_;
 }
 
 void Log::SendMessageEvent(LogLevel level, time_t timestamp, const ea::string& logger, const ea::string& message)
