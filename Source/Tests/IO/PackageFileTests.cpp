@@ -1,3 +1,6 @@
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/PackageBuilder.h"
+
 #include <Urho3D//IO/PackageFile.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/IO/File.h>
@@ -44,54 +47,61 @@ TEST_CASE("PackageFile")
 
     SECTION("Missing file returns false")
     {
-        auto packageFile = MakeShared<PackageFile>(context);
-        CHECK_FALSE(packageFile->Open("MissingFile"));
+        PackageFile packageFile(context.Get());
+        CHECK_FALSE(packageFile.Open("MissingFile"));
     }
 
     SECTION("Empty uncompressed PAK")
     {
-        TempFileHelper file(fileSystem, "empty.pak");
-        ea::vector<SharedPtr<File>> files;
-        PackageFile::CreatePackage(context, file.GetPath(), files);
+        ByteVector pakBuffer; pakBuffer.resize(1024);
+        MemoryBuffer pakFile(pakBuffer);
+        PackageBuilder builder;
+        CHECK(builder.Create(pakFile, false));
+        CHECK(builder.Build());
 
-        auto packageFile = MakeShared<PackageFile>(context);
-        CHECK(packageFile->Open(file.GetPath()));
+        CHECK(pakBuffer.size() > 0);
+
+        PackageFile packageFile(static_cast<Context*>(context));
+        pakFile.Seek(0);
+        CHECK(packageFile.Open(pakFile));
     }
 
     SECTION("Empty compressed PAK")
     {
-        TempFileHelper file(fileSystem, "empty.pak");
-        ea::vector<SharedPtr<File>> files;
-        PackageFile::CreatePackage(context, file.GetPath(), files, true);
+        ByteVector pakBuffer; pakBuffer.resize(1024);
+        MemoryBuffer pakFile(pakBuffer);
+        PackageBuilder builder;
+        CHECK(builder.Create(pakFile, false));
+        CHECK(builder.Build());
 
-        auto packageFile = MakeShared<PackageFile>(context);
-        CHECK(packageFile->Open(file.GetPath()));
+        CHECK(pakBuffer.size() > 0);
+
+        PackageFile packageFile(static_cast<Context*>(context));
+        pakFile.Seek(0);
+        CHECK(packageFile.Open(pakFile));
     }
 
     SECTION("compressed PAK")
     {
         const ea::string testString = "Sample message";
-        TempFileHelper file(fileSystem, "empty.pak");
-        TempFileHelper message(fileSystem, "message");
-        {
-            auto messageFile = MakeShared<File>(context);
-            messageFile->Open(message.GetPath(), FILE_WRITE);
-            messageFile->WriteString(testString);
-            messageFile->Close();
-        }
-        ea::vector<SharedPtr<File>> files;
-        files.push_back(SharedPtr<File>(new File(context, message.GetPath())));
-        
-        PackageFile::CreatePackage(context, file.GetPath(), files, false);
+        ByteVector message(testString.begin(), testString.end());
+        ByteVector pakBuffer; pakBuffer.resize(1024);
+        MemoryBuffer pakFile(pakBuffer);
+        PackageBuilder builder;
+        CHECK(builder.Create(pakFile, false));
+        CHECK(builder.Append("EntryName", message));
+        CHECK(builder.Build());
 
-        auto packageFile = MakeShared<PackageFile>(context);
-        CHECK(packageFile->Open(file.GetPath()));
-        {
-            auto messageFile = MakeShared<File>(context);
-            messageFile->Open(packageFile, message.GetPath());
-            const ea::string messageFromFile = messageFile->ReadText();
-            CHECK((messageFromFile == testString));
-            messageFile->Close();
-        }
+        PackageFile packageFile(context.Get());
+        pakFile.Seek(0);
+        CHECK(packageFile.Open(pakFile));
+        File packageEntry(context.Get());
+        const PackageEntry* entry = packageFile.GetEntry("EntryName");
+        CHECK(entry);
+        pakFile.Seek(entry->offset_);
+        //pakFile.ReadBuffer();
+        //CHECK(packageEntry.Open(&packageFile, "EntryName"));
+        //ea::string messageValue = packageEntry.ReadText();
+        //CHECK(messageValue == testString);
     }
 }
