@@ -184,6 +184,8 @@ public:
 private:
     /// Handle end of frame. Process the threaded log messages.
     void HandleEndFrame(StringHash eventType, VariantMap& eventData) { PumpThreadMessages(); }
+    /// Return new or existing logger for this Log instance.
+    Logger GetOrCreateLogger(const ea::string& name);
 
     /// Implementation hiding spdlog class types from public headers.
     SharedPtr<LogImpl> impl_;
@@ -203,6 +205,8 @@ private:
     bool inWrite_ = false;
     /// Quiet mode flag.
     bool quiet_ = false;
+    /// Default logger used to log messages from Urho3D library.
+    Logger defaultLogger_;
 };
 
 #ifdef URHO3D_LOGGING
