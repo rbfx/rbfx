@@ -27,6 +27,8 @@
 namespace Urho3D
 {
 class File;
+class MemoryBuffer;
+class AbstractFile;
 
 /// %File entry within the package file.
 struct PackageEntry
@@ -49,11 +51,15 @@ public:
     explicit PackageFile(Context* context);
     /// Construct and open.
     PackageFile(Context* context, const ea::string& fileName, unsigned startOffset = 0);
+    /// Construct and open.
+    PackageFile(SharedPtr<File> file, unsigned startOffset = 0);
     /// Destruct.
     ~PackageFile() override;
 
     /// Open the package file. Return true if successful.
     bool Open(const ea::string& fileName, unsigned startOffset = 0);
+    /// Open the package file. Return true if successful.
+    bool Open(MemoryBuffer& file, unsigned startOffset = 0);
     /// Check if a file exists within the package file. This will be case-insensitive on Windows and case-sensitive on other platforms.
     bool Exists(const ea::string& fileName) const;
     /// Return the file entry corresponding to the name, or null if not found. This will be case-insensitive on Windows and case-sensitive on other platforms.
@@ -107,8 +113,11 @@ public:
     /// Scan package for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
 
-    /// Create package from existing files.
-    static bool CreatePackage(Context* context, const ea::string& name, const ea::vector<SharedPtr<File>>& entries, bool compressed = false);
+private:
+
+    /// Open the package file. Return true if successful.
+    bool OpenImpl(AbstractFile* file, unsigned startOffset = 0);
+
 private:
     /// File entries.
     ea::unordered_map<ea::string, PackageEntry> entries_;

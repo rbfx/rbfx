@@ -27,6 +27,7 @@
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/PackageFile.h>
+#include <Urho3D/IO/PackageBuilder.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -257,121 +258,41 @@ void WritePackageFile(const ea::string& fileName, const ea::string& rootDir)
     if (!quiet_)
         PrintLine("Writing package");
 
-    File dest(context_);
-    if (!dest.Open(fileName, FILE_WRITE))
+    auto dest = MakeShared<File>(context_);
+    PackageBuilder builder;
+    if (!dest->Open(fileName, FILE_WRITE))
         ErrorExit("Could not open output file " + fileName);
 
-    // Write ID, number of files & placeholder for checksum
-    WriteHeader(dest);
-
-    for (unsigned i = 0; i < entries_.size(); ++i)
+    if (!builder.Create(dest, compress_))
     {
-        // Write entry (correct offset is still unknown, will be filled in later)
-        dest.WriteString(basePath_ + entries_[i].name_);
-        dest.WriteUInt(entries_[i].offset_);
-        dest.WriteUInt(entries_[i].size_);
-        dest.WriteUInt(entries_[i].checksum_);
+        ErrorExit("Could not create output file " + fileName);
     }
 
-    unsigned totalDataSize = 0;
-    unsigned lastOffset;
-
-    // Write file data, calculate checksums & correct offsets
     for (unsigned i = 0; i < entries_.size(); ++i)
     {
-        lastOffset = entries_[i].offset_ = dest.GetSize();
         ea::string fileFullPath = rootDir + "/" + entries_[i].name_;
-
-        File srcFile(context_, fileFullPath);
-        if (!srcFile.IsOpen())
+        auto file = MakeShared<File>(context_);
+        if (!file->Open(fileFullPath))
+        {
             ErrorExit("Could not open file " + fileFullPath);
-
-        unsigned dataSize = entries_[i].size_;
-        totalDataSize += dataSize;
-        ea::unique_ptr<unsigned char[]> buffer(new unsigned char[dataSize]);
-
-        if (srcFile.Read(&buffer[0], dataSize) != dataSize)
-            ErrorExit("Could not read file " + fileFullPath);
-        srcFile.Close();
-
-        for (unsigned j = 0; j < dataSize; ++j)
+        }
+        if (!builder.Append(basePath_ + entries_[i].name_, file))
         {
-            checksum_ = SDBMHash(checksum_, buffer[j]);
-            entries_[i].checksum_ = SDBMHash(entries_[i].checksum_, buffer[j]);
+            ErrorExit("Could not append file " + fileFullPath);
         }
 
-        if (!compress_)
-        {
-            if (!quiet_)
-                PrintLine(entries_[i].name_ + " size " + ea::to_string(dataSize));
-            dest.Write(&buffer[0], entries_[i].size_);
-        }
-        else
-        {
-            ea::unique_ptr<unsigned char[]> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
-
-            unsigned pos = 0;
-
-            while (pos < dataSize)
-            {
-                unsigned unpackedSize = blockSize_;
-                if (pos + unpackedSize > dataSize)
-                    unpackedSize = dataSize - pos;
-
-                auto packedSize = (unsigned)LZ4_compress_HC((const char*)&buffer[pos], (char*)compressBuffer.get(), unpackedSize, LZ4_compressBound(unpackedSize), 0);
-                if (!packedSize)
-                    ErrorExit("LZ4 compression failed for file " + entries_[i].name_ + " at offset " + ea::to_string(pos));
-
-                dest.WriteUShort((unsigned short)unpackedSize);
-                dest.WriteUShort((unsigned short)packedSize);
-                dest.Write(compressBuffer.get(), packedSize);
-
-                pos += unpackedSize;
-            }
-
-            if (!quiet_)
-            {
-                unsigned totalPackedBytes = dest.GetSize() - lastOffset;
-                ea::string fileEntry(entries_[i].name_);
-                fileEntry.append_sprintf("\tin: %u\tout: %u\tratio: %f", dataSize, totalPackedBytes,
-                    totalPackedBytes ? 1.f * dataSize / totalPackedBytes : 0.f);
-                PrintLine(fileEntry);
-            }
-        }
     }
-
-    // Write package size to the end of file to allow finding it linked to an executable file
-    unsigned currentSize = dest.GetSize();
-    dest.WriteUInt(currentSize + sizeof(unsigned));
-
-    // Write header again with correct offsets & checksums
-    dest.Seek(0);
-    WriteHeader(dest);
-
-    for (unsigned i = 0; i < entries_.size(); ++i)
+    if (!builder.Build())
     {
-        dest.WriteString(basePath_ + entries_[i].name_);
-        dest.WriteUInt(entries_[i].offset_);
-        dest.WriteUInt(entries_[i].size_);
-        dest.WriteUInt(entries_[i].checksum_);
+        ErrorExit("Could not build output file " + fileName);
     }
 
-    if (!quiet_)
-    {
-        PrintLine("Number of files: " + ea::to_string(entries_.size()));
-        PrintLine("File data size: " + ea::to_string(totalDataSize));
-        PrintLine("Package size: " + ea::to_string(dest.GetSize()));
-        PrintLine("Checksum: " + ea::to_string(checksum_));
-        PrintLine("Compressed: " + ea::string(compress_ ? "yes" : "no"));
-    }
-}
-
-void WriteHeader(File& dest)
-{
-    if (!compress_)
-        dest.WriteFileID("UPAK");
-    else
-        dest.WriteFileID("ULZ4");
-    dest.WriteUInt(entries_.size());
-    dest.WriteUInt(checksum_);
+    //if (!quiet_)
+    //{
+    //    PrintLine("Number of files: " + ea::to_string(entries_.size()));
+    //    PrintLine("File data size: " + ea::to_string(totalDataSize));
+    //    PrintLine("Package size: " + ea::to_string(dest.GetSize()));
+    //    PrintLine("Checksum: " + ea::to_string(checksum_));
+    //    PrintLine("Compressed: " + ea::string(compress_ ? "yes" : "no"));
+    //}
 }
