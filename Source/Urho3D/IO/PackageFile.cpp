@@ -73,16 +73,11 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
         URHO3D_LOGERROR("Can't open file " + file->GetName());
         return false;
     }
-    return OpenImpl(file);
-}
-
-bool PackageFile::Open(MemoryBuffer& file, unsigned startOffset)
-{
-    return OpenImpl(&file, startOffset);
+    return Open(file);
 }
 
 /// Open the package file. Return true if successful.
-bool PackageFile::OpenImpl(AbstractFile* file, unsigned startOffset)
+bool PackageFile::Open(AbstractFile* file, unsigned startOffset)
 {
     // Check ID, then read the directory
     file->Seek(startOffset);

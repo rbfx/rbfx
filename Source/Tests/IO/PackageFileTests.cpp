@@ -19,89 +19,74 @@ namespace
         return context;
     }
 
-    class TempFileHelper
+    bool AppendMessage(PackageBuilder& builder, const ea::string& entryName, const ea::string& value)
     {
-    public:
-        TempFileHelper(SharedPtr<FileSystem> fileSystem, const ea::string& fileName):
-            _fileSystem(std::move(fileSystem))
-        {
-            _fullPath = _fileSystem->GetTemporaryDir() + fileName;
-        }
-        ~TempFileHelper()
-        {
-            if (_fileSystem->Exists(_fullPath))
-                _fileSystem->Delete(_fullPath);
-        }
-        const ea::string& GetPath() const { return _fullPath; };
-    private:
-        ea::string _fullPath;
-        SharedPtr<FileSystem> _fileSystem;
-    };
+        ByteVector message(value.begin(), value.end());
+        if (!builder.Append("EntryName", message))
+            return false;
+        return true;
+    }
+
+    bool RetrieveMessage(AbstractFile& packageContent, const PackageEntry* entry, ea::string* value)
+    {
+        if (!entry)
+            return false;
+        if (!packageContent.Seek(entry->offset_))
+            return false;
+        value->resize(entry->size_);
+        if (!packageContent.Read(value->data(), entry->size_))
+            return false;
+        return true;
+    }
+
+    bool RetrieveMessage(AbstractFile& packageContent, const PackageFile& package, const ea::string& entryName, ea::string* value)
+    {
+        return RetrieveMessage(packageContent, package.GetEntry(entryName), value);
+    }
 }
 
-TEST_CASE("PackageFile")
+TEST_CASE("Missing PackageFile")
 {
     SharedPtr<Context> context = CreateTestContext();
-    auto fileSystem = MakeShared<FileSystem>(context);
-    auto temporaryDir = fileSystem->GetTemporaryDir();
+    PackageFile packageFile(context.Get());
+    CHECK_FALSE(packageFile.Open("MissingFile"));
 
-    SECTION("Missing file returns false")
-    {
-        PackageFile packageFile(context.Get());
-        CHECK_FALSE(packageFile.Open("MissingFile"));
-    }
+}
 
-    SECTION("Empty uncompressed PAK")
-    {
-        ByteVector pakBuffer; pakBuffer.resize(1024);
-        MemoryBuffer pakFile(pakBuffer);
-        PackageBuilder builder;
-        CHECK(builder.Create(pakFile, false));
-        CHECK(builder.Build());
+TEST_CASE("Empty PackageFile")
+{
+    SharedPtr<Context> context = CreateTestContext();
 
-        CHECK(pakBuffer.size() > 0);
+    ByteVector pakBuffer; pakBuffer.resize(1024);
+    MemoryBuffer pakFile(pakBuffer);
+    PackageBuilder builder;
+    CHECK(builder.Create(pakFile, GENERATE(false,true)));
+    CHECK(builder.Build());
 
-        PackageFile packageFile(static_cast<Context*>(context));
-        pakFile.Seek(0);
-        CHECK(packageFile.Open(pakFile));
-    }
+    CHECK(pakBuffer.size() > 0);
 
-    SECTION("Empty compressed PAK")
-    {
-        ByteVector pakBuffer; pakBuffer.resize(1024);
-        MemoryBuffer pakFile(pakBuffer);
-        PackageBuilder builder;
-        CHECK(builder.Create(pakFile, false));
-        CHECK(builder.Build());
+    PackageFile packageFile(static_cast<Context*>(context));
+    pakFile.Seek(0);
+    CHECK(packageFile.Open(&pakFile));
+}
 
-        CHECK(pakBuffer.size() > 0);
+TEST_CASE("Single entry PackageFile")
+{
+    SharedPtr<Context> context = CreateTestContext();
 
-        PackageFile packageFile(static_cast<Context*>(context));
-        pakFile.Seek(0);
-        CHECK(packageFile.Open(pakFile));
-    }
+    const ea::string testString = "Sample message";
+    ByteVector pakBuffer; pakBuffer.resize(1024);
+    MemoryBuffer pakFile(pakBuffer);
+    PackageBuilder builder;
+    CHECK(builder.Create(pakFile, GENERATE(false)));
+    CHECK(AppendMessage(builder, "EntryName", testString));
+    CHECK(builder.Build());
 
-    SECTION("compressed PAK")
-    {
-        const ea::string testString = "Sample message";
-        ByteVector message(testString.begin(), testString.end());
-        ByteVector pakBuffer; pakBuffer.resize(1024);
-        MemoryBuffer pakFile(pakBuffer);
-        PackageBuilder builder;
-        CHECK(builder.Create(pakFile, false));
-        CHECK(builder.Append("EntryName", message));
-        CHECK(builder.Build());
+    PackageFile packageFile(context.Get());
+    pakFile.Seek(0);
+    CHECK(packageFile.Open(&pakFile));
 
-        PackageFile packageFile(context.Get());
-        pakFile.Seek(0);
-        CHECK(packageFile.Open(pakFile));
-        File packageEntry(context.Get());
-        const PackageEntry* entry = packageFile.GetEntry("EntryName");
-        CHECK(entry);
-        pakFile.Seek(entry->offset_);
-        //pakFile.ReadBuffer();
-        //CHECK(packageEntry.Open(&packageFile, "EntryName"));
-        //ea::string messageValue = packageEntry.ReadText();
-        //CHECK(messageValue == testString);
-    }
+    ea::string messageValue;
+    CHECK(RetrieveMessage(pakFile, packageFile, "EntryName", &messageValue));
+    CHECK(messageValue == testString);
 }
