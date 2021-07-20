@@ -103,7 +103,7 @@ public:
 
     /// Return whether is open.
     /// @property
-    bool IsOpen() const;
+    bool IsOpen() const override;
 
     /// Return the file handle.
     void* GetHandle() const { return handle_; }

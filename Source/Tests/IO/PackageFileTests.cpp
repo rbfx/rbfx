@@ -60,7 +60,7 @@ TEST_CASE("Empty PackageFile")
     ByteVector pakBuffer; pakBuffer.resize(1024);
     MemoryBuffer pakFile(pakBuffer);
     PackageBuilder builder;
-    CHECK(builder.Create(pakFile, GENERATE(false,true)));
+    CHECK(builder.Create(&pakFile, GENERATE(false,true)));
     CHECK(builder.Build());
 
     CHECK(pakBuffer.size() > 0);
@@ -78,7 +78,7 @@ TEST_CASE("Single entry PackageFile")
     ByteVector pakBuffer; pakBuffer.resize(1024);
     MemoryBuffer pakFile(pakBuffer);
     PackageBuilder builder;
-    CHECK(builder.Create(pakFile, GENERATE(false)));
+    CHECK(builder.Create(&pakFile, GENERATE(false)));
     CHECK(AppendMessage(builder, "EntryName", testString));
     CHECK(builder.Build());
 

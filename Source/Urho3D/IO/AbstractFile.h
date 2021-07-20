@@ -38,9 +38,15 @@ public:
     explicit AbstractFile(unsigned int size) : Deserializer(size) { }
     /// Destruct.
     ~AbstractFile() override = default;
+
     /// Change the file name. Used by the resource system.
     /// @property
     virtual void SetName(const ea::string& name) { name_ = name; }
+
+    /// Return whether is open.
+    /// @property
+    virtual bool IsOpen() const { return true; }
+
 #ifndef SWIG
     // A workaround for SWIG failing to generate bindings because both IAbstractFile and IDeserializer provide GetName() method. This is
     // fine because IAbstractFile inherits GetName() from IDeserializer anyway.
