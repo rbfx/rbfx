@@ -23,16 +23,42 @@
 #pragma once
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/Variant.h>
 #include <Urho3D/Container/Ptr.h>
 
 #include <catch2/catch_amalgamated.hpp>
+#include <ostream>
+
+using namespace Urho3D;
 
 namespace Tests
 {
-
-using namespace Urho3D;
 
 /// Create test context with all subsystems ready.
 SharedPtr<Context> CreateCompleteTestContext();
 
 }
+
+/// Convert common types to strings
+/// @{
+namespace Catch
+{
+
+#define DEFINE_STRING_MAKER(type, expr) \
+    template<> struct StringMaker<type> \
+    { \
+        static std::string convert(const type& value) \
+        { \
+            return expr; \
+        } \
+    }
+
+DEFINE_STRING_MAKER(Variant, value.ToString().c_str());
+DEFINE_STRING_MAKER(Vector2, value.ToString().c_str());
+DEFINE_STRING_MAKER(Vector3, value.ToString().c_str());
+DEFINE_STRING_MAKER(Vector4, value.ToString().c_str());
+
+#undef DEFINE_STRING_MAKER
+
+}
+/// @}

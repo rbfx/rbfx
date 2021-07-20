@@ -37,8 +37,8 @@ SharedPtr<Context> CreateCompleteTestContext()
     VariantMap parameters;
     parameters[EP_HEADLESS] = true;
     parameters[EP_LOG_QUIET] = true;
-    const bool success = engine->Initialize(parameters);
-    REQUIRE(success);
+    const bool engineInitialized = engine->Initialize(parameters);
+    REQUIRE(engineInitialized);
     return context;
 }
 

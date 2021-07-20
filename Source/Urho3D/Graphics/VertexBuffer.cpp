@@ -97,6 +97,8 @@ Vector4 IntToVector4(int value) { return { static_cast<float>(value), 0.0f, 0.0f
 Vector4 FloatToVector4(float value) { return { value, 0.0f, 0.0f, 0.0f }; }
 Vector4 Vector2ToVector4(const Vector2& value) { return { value.x_, value.y_, 0.0f, 0.0f }; }
 Vector4 Vector3ToVector4(const Vector3& value) { return { value.x_, value.y_, value.z_, 0.0f }; }
+Vector4 Position2ToVector4(const Vector2& value) { return { value.x_, value.y_, 0.0f, 1.0f }; }
+Vector4 Position3ToVector4(const Vector3& value) { return { value.x_, value.y_, value.z_, 1.0f }; }
 Vector4 Ubyte4NormToVector4(const Ubyte4& value) { return Ubyte4ToVector4(value) / 255.0f; }
 
 int Vector4ToInt(const Vector4& value) { return static_cast<int>(value.x_); }
@@ -339,10 +341,16 @@ void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,
         ConvertArray<Vector4, float>(destBytes, sourceBytes, destStride, sourceStride, count, FloatToVector4);
         break;
     case TYPE_VECTOR2:
-        ConvertArray<Vector4, Vector2>(destBytes, sourceBytes, destStride, sourceStride, count, Vector2ToVector4);
+        if (element.semantic_ == SEM_POSITION)
+            ConvertArray<Vector4, Vector2>(destBytes, sourceBytes, destStride, sourceStride, count, Position2ToVector4);
+        else
+            ConvertArray<Vector4, Vector2>(destBytes, sourceBytes, destStride, sourceStride, count, Vector2ToVector4);
         break;
     case TYPE_VECTOR3:
-        ConvertArray<Vector4, Vector3>(destBytes, sourceBytes, destStride, sourceStride, count, Vector3ToVector4);
+        if (element.semantic_ == SEM_POSITION)
+            ConvertArray<Vector4, Vector3>(destBytes, sourceBytes, destStride, sourceStride, count, Position3ToVector4);
+        else
+            ConvertArray<Vector4, Vector3>(destBytes, sourceBytes, destStride, sourceStride, count, Vector3ToVector4);
         break;
     case TYPE_VECTOR4:
         ConvertArray<Vector4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToVector4);

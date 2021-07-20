@@ -221,6 +221,48 @@ const ea::vector<VertexElement> ModelVertex::VertexElements =
     VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 3 },
 };
 
+bool ModelVertex::operator ==(const ModelVertex& rhs) const
+{
+    for (unsigned i = 0; i < MaxColors; ++i)
+    {
+        if (!color_[i].Equals(rhs.color_[i]))
+            return false;
+    }
+
+    for (unsigned i = 0; i < MaxUVs; ++i)
+    {
+        if (!uv_[i].Equals(rhs.uv_[i]))
+            return false;
+    }
+
+    return position_.Equals(rhs.position_)
+        && normal_.Equals(rhs.normal_)
+        && tangent_.Equals(rhs.tangent_)
+        && binormal_.Equals(rhs.binormal_);
+}
+
+bool ModelVertexFormat::operator ==(const ModelVertexFormat& rhs) const
+{
+    return position_ == rhs.position_
+        && normal_ == rhs.normal_
+        && tangent_ == rhs.tangent_
+        && binormal_ == rhs.binormal_
+        && color_ == rhs.color_
+        && uv_ == rhs.uv_;
+}
+
+bool GeometryLODView::operator ==(const GeometryLODView& rhs) const
+{
+    return vertices_ == rhs.vertices_
+        && indices_ == rhs.indices_
+        && lodDistance_ == rhs.lodDistance_;
+}
+
+bool GeometryView::operator ==(const GeometryView& rhs) const
+{
+    return lods_ == rhs.lods_;
+}
+
 bool ModelVertex::ReplaceElement(const ModelVertex& source, const VertexElement& element)
 {
     switch (element.semantic_)

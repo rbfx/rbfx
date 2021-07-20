@@ -58,6 +58,8 @@ struct URHO3D_API ModelVertex
 
     /// Set position from 3-vector.
     void SetPosition(const Vector3& position) { position_ = Vector4(position, 1.0f); }
+    /// Set normal from 3-vector.
+    void SetNormal(const Vector3& normal) { normal_ = Vector4(normal, 0.0f); }
     /// Set color for given channel.
     void SetColor(unsigned i, const Color& color) { color_[i] = color.ToVector4(); }
 
@@ -79,25 +81,29 @@ struct URHO3D_API ModelVertex
     bool ReplaceElement(const ModelVertex& source, const VertexElement& element);
     /// Repair missing vertex elements if possible.
     void Repair();
+
+    bool operator ==(const ModelVertex& rhs) const;
+    bool operator !=(const ModelVertex& rhs) const { return !(*this == rhs); }
 };
 
 /// Model vertex format.
-struct ModelVertexFormat
+struct URHO3D_API ModelVertexFormat
 {
-    /// Undefined format.
+    /// Undefined format used to disable corresponding component.
     static const VertexElementType Undefined = MAX_VERTEX_ELEMENT_TYPES;
-    /// Position format.
+
+    /// Vertex element formats
+    /// @{
     VertexElementType position_{ Undefined };
-    /// Normal format.
     VertexElementType normal_{ Undefined };
-    /// Tangent format.
     VertexElementType tangent_{ Undefined };
-    /// Binormal format.
     VertexElementType binormal_{ Undefined };
-    /// Color formats.
-    VertexElementType color_[ModelVertex::MaxColors]{ Undefined, Undefined, Undefined, Undefined };
-    /// UV formats.
-    VertexElementType uv_[ModelVertex::MaxUVs]{ Undefined, Undefined, Undefined, Undefined };
+    ea::array<VertexElementType, ModelVertex::MaxColors> color_{ Undefined, Undefined, Undefined, Undefined };
+    ea::array<VertexElementType, ModelVertex::MaxUVs> uv_{ Undefined, Undefined, Undefined, Undefined };
+    /// @}
+
+    bool operator ==(const ModelVertexFormat& rhs) const;
+    bool operator !=(const ModelVertexFormat& rhs) const { return !(*this == rhs); }
 };
 
 /// Model geometry LOD view.
@@ -105,19 +111,26 @@ struct URHO3D_API GeometryLODView
 {
     /// Vertices.
     ea::vector<ModelVertex> vertices_;
-    /// Faces.
+    /// Faces: 3 indices per triangle.
     ea::vector<unsigned> indices_;
     /// LOD distance.
     float lodDistance_{};
-    /// Calculate center.
+
+    /// Calculate center of vertices' bounding box.
     Vector3 CalculateCenter() const;
+
+    bool operator ==(const GeometryLODView& rhs) const;
+    bool operator !=(const GeometryLODView& rhs) const { return !(*this == rhs); }
 };
 
 /// Model geometry view.
-struct GeometryView
+struct URHO3D_API GeometryView
 {
     /// LODs.
     ea::vector<GeometryLODView> lods_;
+
+    bool operator ==(const GeometryView& rhs) const;
+    bool operator !=(const GeometryView& rhs) const { return !(*this == rhs); }
 };
 
 /// Represents Model in editable form.

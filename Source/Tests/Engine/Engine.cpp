@@ -22,8 +22,6 @@
 
 #include "../CommonUtils.h"
 
-using namespace Urho3D;
-
 TEST_CASE("Engine started multiple times in same process")
 {
     {
