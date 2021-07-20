@@ -40,34 +40,6 @@ PackageBuilder::PackageBuilder():
 {
 }
 
-/// Build package into memory buffer.
-bool PackageBuilder::Create(MemoryBuffer& buffer, bool compress)
-{
-    if (buffer_)
-    {
-        URHO3D_LOGERROR("Target file already set");
-        return false;
-    }
-    return OpenImpl(&buffer, compress);
-}
-
-/// Build package into file.
-bool PackageBuilder::Create(const SharedPtr<File>& file, bool compress)
-{
-    if (buffer_)
-    {
-        URHO3D_LOGERROR("Target file already set");
-        return false;
-    }
-    file_ = file;
-    if (!file->IsOpen())
-    {
-        URHO3D_LOGERROR("Can't open file " + file->GetName());
-        return false;
-    }
-    return OpenImpl(file, compress);
-}
-
 bool PackageBuilder::WriteHeader()
 {
     // Write ID, number of files & placeholder for checksum
@@ -92,12 +64,25 @@ bool PackageBuilder::WriteHeader()
     return true;
 }
 
-bool PackageBuilder::OpenImpl(AbstractFile* dest, bool compress)
+bool PackageBuilder::Create(AbstractFile* dest, bool compress)
 {
+    if (buffer_)
+    {
+        URHO3D_LOGERROR("Target file already set");
+        return false;
+    }
+
+    if (!dest->IsOpen())
+    {
+        URHO3D_LOGERROR("Can't open file " + dest->GetName());
+        return false;
+    }
+
     entries_.clear();
     headerPosition_ = dest->GetPosition();
     compress_ = compress;
     buffer_ = dest;
+    file_ = dynamic_cast<RefCounted*>(dest);
     return WriteHeader();
 }
 /// Append entry to package.

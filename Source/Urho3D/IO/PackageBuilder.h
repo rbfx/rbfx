@@ -34,11 +34,8 @@ public:
     /// Constructor.
     PackageBuilder();
 
-    /// Build package into memory buffer.
-    bool Create(MemoryBuffer& buffer, bool compress);
-
-    /// Build package into file.
-    bool Create(const SharedPtr<File>& file, bool compress);
+    /// Build package.
+    bool Create(AbstractFile* buffer, bool compress);
 
     /// Append entry to package.
     bool Append(const ea::string& name, const SharedPtr<File>& file);
@@ -77,7 +74,7 @@ private:
 
     AbstractFile* buffer_;
 
-    SharedPtr<File> file_;
+    SharedPtr<RefCounted> file_;
 
     ea::vector<FileEntry> entries_;
 };
