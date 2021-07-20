@@ -59,7 +59,7 @@ public:
     /// Open the package file. Return true if successful.
     bool Open(const ea::string& fileName, unsigned startOffset = 0);
     /// Open the package file. Return true if successful.
-    bool Open(MemoryBuffer& file, unsigned startOffset = 0);
+    bool Open(AbstractFile* file, unsigned startOffset = 0);
     /// Check if a file exists within the package file. This will be case-insensitive on Windows and case-sensitive on other platforms.
     bool Exists(const ea::string& fileName) const;
     /// Return the file entry corresponding to the name, or null if not found. This will be case-insensitive on Windows and case-sensitive on other platforms.
@@ -112,11 +112,6 @@ public:
 
     /// Scan package for specified files.
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
-
-private:
-
-    /// Open the package file. Return true if successful.
-    bool OpenImpl(AbstractFile* file, unsigned startOffset = 0);
 
 private:
     /// File entries.
