@@ -63,8 +63,6 @@ TEST_CASE("Empty PackageFile")
     CHECK(builder.Create(&pakFile, GENERATE(false,true)));
     CHECK(builder.Build());
 
-    CHECK(pakBuffer.size() > 0);
-
     PackageFile packageFile(static_cast<Context*>(context));
     pakFile.Seek(0);
     CHECK(packageFile.Open(&pakFile));
