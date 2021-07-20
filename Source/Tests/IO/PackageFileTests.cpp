@@ -49,7 +49,7 @@ TEST_CASE("Missing PackageFile")
 {
     SharedPtr<Context> context = CreateTestContext();
     PackageFile packageFile(context.Get());
-    CHECK_FALSE(packageFile.Open("MissingFile"));
+    REQUIRE_FALSE(packageFile.Open("MissingFile"));
 
 }
 
@@ -60,12 +60,12 @@ TEST_CASE("Empty PackageFile")
     ByteVector pakBuffer; pakBuffer.resize(1024);
     MemoryBuffer pakFile(pakBuffer);
     PackageBuilder builder;
-    CHECK(builder.Create(&pakFile, GENERATE(false,true)));
-    CHECK(builder.Build());
+    REQUIRE(builder.Create(&pakFile, GENERATE(false,true)));
+    REQUIRE(builder.Build());
 
     PackageFile packageFile(static_cast<Context*>(context));
     pakFile.Seek(0);
-    CHECK(packageFile.Open(&pakFile));
+    REQUIRE(packageFile.Open(&pakFile));
 }
 
 TEST_CASE("Single entry PackageFile")
@@ -76,15 +76,15 @@ TEST_CASE("Single entry PackageFile")
     ByteVector pakBuffer; pakBuffer.resize(1024);
     MemoryBuffer pakFile(pakBuffer);
     PackageBuilder builder;
-    CHECK(builder.Create(&pakFile, GENERATE(false)));
-    CHECK(AppendMessage(builder, "EntryName", testString));
-    CHECK(builder.Build());
+    REQUIRE(builder.Create(&pakFile, GENERATE(false)));
+    REQUIRE(AppendMessage(builder, "EntryName", testString));
+    REQUIRE(builder.Build());
 
     PackageFile packageFile(context.Get());
     pakFile.Seek(0);
-    CHECK(packageFile.Open(&pakFile));
+    REQUIRE(packageFile.Open(&pakFile));
 
     ea::string messageValue;
-    CHECK(RetrieveMessage(pakFile, packageFile, "EntryName", &messageValue));
-    CHECK(messageValue == testString);
+    REQUIRE(RetrieveMessage(pakFile, packageFile, "EntryName", &messageValue));
+    REQUIRE(messageValue == testString);
 }
