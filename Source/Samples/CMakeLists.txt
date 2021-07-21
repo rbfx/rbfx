@@ -86,7 +86,7 @@ if (XCODE)
     set(RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/UrhoIcon.icns)
     if (IOS)
         # Default app icon on the iOS/tvOS home screen
-        list(APPEND RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/rbfx-icon.png)
+        list(APPEND RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/UrhoIcon.png)
     endif ()
     set_source_files_properties (${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_sources(Samples PRIVATE ${RESOURCE_FILES})
