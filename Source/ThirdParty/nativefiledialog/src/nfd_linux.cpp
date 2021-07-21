@@ -84,8 +84,8 @@ struct DialogHandlerDetector
 
     DialogHandlerDetector() : usekDialog(false)
     {
-        std::string desktop = getenv("XDG_SESSION_DESKTOP");
-        if (desktop == "KDE" || desktop == "lxqt")
+        const char* desktop = getenv("XDG_SESSION_DESKTOP");
+        if (desktop && (strcmp(desktop, "KDE") == 0 || strcmp(desktop, "lxqt") == 0))
             usekDialog = !nfd::popen("kdialog", {"--help"}).empty();
     }
 };
