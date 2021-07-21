@@ -45,7 +45,7 @@ IntVector2 CalculateModelLightmapSize(float texelDensity, float minObjectScale,
     const Variant& modelLightmapSizeVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapSizeKey);
     const Variant& modelLightmapDensityVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapDensityKey);
 
-    if (modelLightmapDensityVar.IsEmpty() || modelLightmapDensityVar.IsEmpty())
+    if (modelLightmapSizeVar.IsEmpty() || modelLightmapDensityVar.IsEmpty())
     {
         URHO3D_LOGWARNING("Cannot calculate chart size for model \"{}\", fallback to default.",
             model->GetName());
