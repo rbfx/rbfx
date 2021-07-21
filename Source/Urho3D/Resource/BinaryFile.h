@@ -33,7 +33,7 @@ namespace Urho3D
 {
 
 /// Resource for generic binary file.
-class URHO3D_API BinaryFile : public Resource, private VectorBuffer
+class URHO3D_API BinaryFile : public Resource
 {
     URHO3D_OBJECT(BinaryFile, Resource);
 
@@ -51,8 +51,6 @@ public:
     bool Save(Serializer& dest) const override;
     /// Save resource to a file.
     bool SaveFile(const ea::string& fileName) const override;
-    /// Return name of the stream.
-    const ea::string& GetName() const override { return Resource::GetName(); }
 
     /// Clear data.
     void Clear();
@@ -62,14 +60,16 @@ public:
     const ByteVector& GetData() const;
 
     /// Cast to Serializer.
-    Serializer& AsSerializer() { return *this; }
+    Serializer& AsSerializer() { return buffer_; }
     /// Cast to Deserializer.
-    Deserializer& AsDeserializer() { return *this; }
+    Deserializer& AsDeserializer() { return buffer_; }
 
     /// Create input archive that reads from the resource. Don't use more than one archive simultaneously.
-    BinaryInputArchive AsInputArchive() { return BinaryInputArchive(context_, *this); }
+    BinaryInputArchive AsInputArchive() { return BinaryInputArchive(context_, buffer_); }
     /// Create output archive that writes to the resource. Don't use more than one archive simultaneously.
-    BinaryOutputArchive AsOutputArchive() { return BinaryOutputArchive(context_, *this); }
+    BinaryOutputArchive AsOutputArchive() { return BinaryOutputArchive(context_, buffer_); }
+private:
+    VectorBuffer buffer_;
 };
 
 }
