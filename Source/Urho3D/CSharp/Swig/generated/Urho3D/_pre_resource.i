@@ -68,6 +68,7 @@
 %csattribute(Urho3D::BackgroundLoader, %arg(unsigned int), NumQueuedResources, GetNumQueuedResources);
 %csattribute(Urho3D::ImageCube, %arg(ea::vector<SharedPtr<Image>>), Images, GetImages);
 %csattribute(Urho3D::ImageCube, %arg(Urho3D::XMLFile *), ParametersXML, GetParametersXML);
+%csattribute(Urho3D::ImageCube, %arg(unsigned int), SphericalHarmonicsMipLevel, GetSphericalHarmonicsMipLevel);
 %csattribute(Urho3D::ImageCube, %arg(SharedPtr<Urho3D::ImageCube>), DecompressedImage, GetDecompressedImage);
 %csattribute(Urho3D::JSONFile, %arg(Urho3D::JSONValue), Root, GetRoot);
 %csattribute(Urho3D::JSONOutputArchiveBlock, %arg(ea::string_view), Name, GetName);

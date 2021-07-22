@@ -6,10 +6,14 @@
 %constant int MatrixConversionBufferLength = 256;
 %constant ea::string EmptyString = Urho3D::EMPTY_STRING;
 %ignore Urho3D::EMPTY_STRING;
+%constant Urho3D::IndexAllocator IndexAllocator = Urho3D::indexAllocator;
+%ignore Urho3D::indexAllocator;
 %csattribute(Urho3D::RefCounted, %arg(bool), IsScriptStrongRef, IsScriptStrongRef);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(int), Width, GetWidth);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(int), Height, GetHeight);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(Urho3D::IntVector2), Size, GetSize);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(Urho3D::IntRect), Rect, GetRect);
 %csattribute(Urho3D::ArrayDimensions2D, %arg(unsigned int), Capacity, GetCapacity);
+%csattribute(Urho3D::ConstString, %arg(Urho3D::StringHash), Hash, GetHash);
+%csattribute(Urho3D::IndexAllocator, %arg(unsigned int), NextFreeIndex, GetNextFreeIndex);
 %csattribute(Urho3D::ValueCache, %arg(unsigned int), ExpireFrames, GetExpireFrames, SetExpireFrames);

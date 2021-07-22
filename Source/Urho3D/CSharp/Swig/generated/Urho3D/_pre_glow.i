@@ -1,9 +1,10 @@
 %csattribute(Urho3D::DefaultBakedSceneCollector, %arg(ea::vector<IntVector3>), Chunks, GetChunks);
+%csattribute(Urho3D::DefaultBakedSceneCollector, %arg(Urho3D::BakedSceneBackgroundArrayPtr), Backgrounds, GetBackgrounds);
 %csattribute(Urho3D::RaytracerScene, %arg(Urho3D::Context *), Context, GetContext);
 %csattribute(Urho3D::RaytracerScene, %arg(embree3::RTCDevice), EmbreeDevice, GetEmbreeDevice);
 %csattribute(Urho3D::RaytracerScene, %arg(embree3::RTCScene), EmbreeScene, GetEmbreeScene);
 %csattribute(Urho3D::RaytracerScene, %arg(ea::vector<RaytracerGeometry>), Geometries, GetGeometries);
-%csattribute(Urho3D::RaytracerScene, %arg(Urho3D::RaytracingBackground), Background, GetBackground);
+%csattribute(Urho3D::RaytracerScene, %arg(Urho3D::BakedSceneBackgroundArrayPtr), Backgrounds, GetBackgrounds);
 %csattribute(Urho3D::RaytracerScene, %arg(float), MaxDistance, GetMaxDistance);
 %csattribute(Urho3D::LightmapChartRegion, %arg(Urho3D::Vector2), Scale, GetScale);
 %csattribute(Urho3D::LightmapChartRegion, %arg(Urho3D::Vector2), Offset, GetOffset);

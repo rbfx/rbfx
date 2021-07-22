@@ -1,10 +1,6 @@
 %csattribute(Urho3D::RmlCanvasComponent, %arg(Urho3D::Texture2D *), Texture, GetTexture, SetTexture);
 %csattribute(Urho3D::RmlCanvasComponent, %arg(bool), RemapMousePos, GetRemapMousePos, SetRemapMousePos);
 %csattribute(Urho3D::RmlCanvasComponent, %arg(Urho3D::RmlUI *), Ui, GetUI);
-%csattribute(Urho3D::RmlUI, %arg(Rml::Context *), RmlContext, GetRmlContext);
-%csattribute(Urho3D::RmlUI, %arg(bool), IsRendering, IsRendering, SetRendering);
-%csattribute(Urho3D::RmlUI, %arg(bool), IsInputCaptured, IsInputCaptured);
-%csattribute(Urho3D::Detail::RmlContext, %arg(Urho3D::RmlUI *), OwnerSubsystem, GetOwnerSubsystem, SetOwnerSubsystem);
 %csattribute(Urho3D::RmlUIComponent, %arg(Urho3D::ResourceRef), Resource, GetResource, SetResource);
 %csattribute(Urho3D::RmlUIComponent, %arg(bool), IsOpen, IsOpen, SetOpen);
 %csattribute(Urho3D::RmlUIComponent, %arg(bool), UseNormalizedCoordinates, GetUseNormalizedCoordinates, SetUseNormalizedCoordinates);
@@ -12,3 +8,7 @@
 %csattribute(Urho3D::RmlUIComponent, %arg(Urho3D::Vector2), Size, GetSize, SetSize);
 %csattribute(Urho3D::RmlUIComponent, %arg(bool), AutoSize, GetAutoSize, SetAutoSize);
 %csattribute(Urho3D::RmlUIComponent, %arg(Urho3D::RmlUI *), Ui, GetUI);
+%csattribute(Urho3D::RmlUI, %arg(Rml::Context *), RmlContext, GetRmlContext);
+%csattribute(Urho3D::RmlUI, %arg(bool), IsRendering, IsRendering, SetRendering);
+%csattribute(Urho3D::RmlUI, %arg(bool), IsInputCaptured, IsInputCaptured);
+%csattribute(Urho3D::Detail::RmlContext, %arg(Urho3D::RmlUI *), OwnerSubsystem, GetOwnerSubsystem, SetOwnerSubsystem);

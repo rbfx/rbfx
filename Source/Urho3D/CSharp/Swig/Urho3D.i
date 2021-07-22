@@ -631,8 +631,6 @@ public:
 %interface_custom("%s", "I%s", Urho3D::Octant);
 %include "Urho3D/Graphics/Octree.h"
 %include "Urho3D/Graphics/RenderPath.h"
-%include "Urho3D/RenderPipeline/RenderPipeline.h"
-%include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 %include "Urho3D/Graphics/Viewport.h"
 %include "Urho3D/Graphics/RenderSurface.h"
 %include "Urho3D/Graphics/Texture.h"
@@ -674,6 +672,12 @@ public:
 %include "Urho3D/Graphics/Zone.h"
 %include "Urho3D/Graphics/Renderer.h"
 %include "Urho3D/Graphics/Graphics.h"
+
+// ------------------------------------- RenderPipeline -------------------------------------
+%include "generated/Urho3D/_pre_renderpipeline.i"
+%include "Urho3D/RenderPipeline/RenderPipeline.h"
+%include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+
 
 // --------------------------------------- Navigation ---------------------------------------
 #if defined(URHO3D_NAVIGATION)
