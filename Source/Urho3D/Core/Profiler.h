@@ -23,6 +23,7 @@
 #pragma once
 
 #include <tracy/Tracy.hpp>
+#include <tracy/client/TracyLock.hpp>
 
 namespace Urho3D
 {
