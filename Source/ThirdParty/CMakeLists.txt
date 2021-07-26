@@ -33,6 +33,7 @@ endif ()
 
 add_subdirectory(EASTL)
 add_subdirectory(LZ4)
+add_subdirectory(tweetnacl)
 add_subdirectory(PugiXml)
 add_subdirectory(rapidjson)
 add_subdirectory(STB)
