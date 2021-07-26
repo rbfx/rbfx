@@ -30,7 +30,7 @@ namespace Urho3D
 class Serializer;
 class VectorBuffer;
 
-struct EncryptionKey
+struct URHO3D_API EncryptionKey
 {
     EncryptionKey(const unsigned char* key, unsigned size);
     EncryptionKey(const ea::vector<unsigned char>& key);
@@ -41,15 +41,30 @@ struct EncryptionKey
     unsigned char key_[32];
 };
 
+struct URHO3D_API EncryptionNonce
+{
+    /// Zero nonce.
+    static const EncryptionNonce ZERO;
+
+    EncryptionNonce();
+    EncryptionNonce(const unsigned char* nonce, unsigned size);
+    EncryptionNonce(const ea::vector<unsigned char>& nonce);
+    EncryptionNonce(const ea::string& base64key);
+
+    ea::string ToString() const;
+
+    unsigned char nonce_[24];
+};
+
 /// Generate random symmetric encryption key.
 URHO3D_API EncryptionKey GenerateSymmetricEncryptionKey();
 
 /// Estimate and return worst case LZ4 compressed output size in bytes for given input size.
 URHO3D_API unsigned EstimateEncryptBound(unsigned srcSize);
 /// Encrypt data using the LZ4 algorithm and return the compressed data size. The needed destination buffer worst-case size is given by EstimateEncryptBound().
-URHO3D_API unsigned EncryptData(void* dest, const void* src, unsigned srcSize, const EncryptionKey& key);
+URHO3D_API unsigned EncryptData(void* dest, const void* src, unsigned srcSize, const EncryptionKey& key, const EncryptionNonce& nonce = EncryptionNonce::ZERO);
 /// Uncompress data using the LZ4 algorithm. The uncompressed data size must be known. Return the number of compressed data bytes consumed.
-URHO3D_API unsigned DecryptData(void* dest, const void* src, unsigned srcSize, const EncryptionKey& key);
+URHO3D_API unsigned DecryptData(void* dest, const void* src, unsigned srcSize, const EncryptionKey& key, const EncryptionNonce& nonce = EncryptionNonce::ZERO);
 /// Encrypt a source stream (from current position to the end) to the destination stream using the LZ4 algorithm. Return true on success.
 URHO3D_API bool EncryptStream(Serializer& dest, Deserializer& src, unsigned short maxBlockSize = 32768);
 /// Decrypt a compressed source stream produced using EncryptStream() to the destination stream. Return true on success.
@@ -59,31 +74,32 @@ URHO3D_API VectorBuffer EncryptVectorBuffer(VectorBuffer& src);
 /// Decrypt a VectorBuffer produced using EncryptVectorBuffer().
 URHO3D_API VectorBuffer DecryptVectorBuffer(VectorBuffer& src);
 
-
 class URHO3D_API EncryptedStreamDeserializer : public ChunkStreamDeserializer
 {
 public:
     /// Construct Deserializer.
-    EncryptedStreamDeserializer(Deserializer& deserializer, const EncryptionKey& key);
+    EncryptedStreamDeserializer(Deserializer& deserializer, const EncryptionKey& key, const EncryptionNonce& nonce = EncryptionNonce::ZERO);
 protected:
-    /// Read block from underlying deserizalizer.
+    /// Read block from underlying deserializer.
     bool ReadBlock(Deserializer& deserializer, unsigned short unpackedSize, unsigned short packedSize) override;
 private:
     /// input buffer.
     ea::shared_array<unsigned char> inputBuffer_;
     /// Bytes in the current input buffer.
     unsigned inputBufferSize_;
-    /// Encryption key.
-    EncryptionKey key_;
     /// Read buffer capacity.
     unsigned readBufferCapacity_;
+    /// Encryption key.
+    EncryptionKey key_;
+    /// Encryption key.
+    EncryptionNonce nonce_;
 };
 
 class URHO3D_API EncryptedStreamSerializer : public ChunkStreamSerializer
 {
 public:
     /// Construct Serializer.
-    EncryptedStreamSerializer(Serializer& serializer, const EncryptionKey& key, unsigned short chunkSize);
+    EncryptedStreamSerializer(Serializer& serializer, const EncryptionKey& key, const EncryptionNonce& nonce = EncryptionNonce::ZERO, unsigned short chunkSize = DefaultChunkSize);
 protected:
     unsigned char* GetInputBuffer(unsigned chunkSize) override;
 
@@ -97,6 +113,8 @@ private:
     unsigned inputBufferSize_;
     /// Encryption key.
     EncryptionKey key_;
+    /// Encryption key.
+    EncryptionNonce nonce_;
 };
 
 }

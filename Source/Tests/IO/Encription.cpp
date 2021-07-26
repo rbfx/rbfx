@@ -50,7 +50,7 @@ TEST_CASE("Encrypted Stream Serializer and Deserializer")
     EncryptionKey key = GenerateSymmetricEncryptionKey();
 
     VectorBuffer encrypted;
-    EncryptedStreamSerializer serializer(encrypted, key, 32);
+    EncryptedStreamSerializer serializer(encrypted, key, EncryptionNonce::ZERO, 32);
 
     ea::string message = GENERATE(
         LongMessage,
@@ -62,7 +62,7 @@ TEST_CASE("Encrypted Stream Serializer and Deserializer")
     REQUIRE(serializer.Flush());
 
     encrypted.Seek(0);
-    EncryptedStreamDeserializer reader(encrypted, key);
+    EncryptedStreamDeserializer reader(encrypted, key, EncryptionNonce::ZERO);
     ea::string streamMessage; streamMessage.resize(message.size());
     // Let's read beyond original content size. The deserializer should return exactly what we stored.
     unsigned readed = reader.Read(streamMessage.data(), message.size()+32);

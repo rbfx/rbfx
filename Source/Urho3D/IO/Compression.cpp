@@ -59,27 +59,30 @@ unsigned DecompressData(void* dest, const void* src, unsigned destSize)
 bool CompressStream(Serializer& dest, Deserializer& src, unsigned short maxBlockSize)
 {
     auto maxDestSize = (unsigned)LZ4_compressBound(maxBlockSize);
-    ea::shared_array<unsigned char> srcBuffer(new unsigned char[maxBlockSize]);
-    ea::shared_array<unsigned char> destBuffer(new unsigned char[maxDestSize]);
+    const ea::shared_array<unsigned char> srcBuffer(new unsigned char[maxBlockSize]);
+    const ea::shared_array<unsigned char> destBuffer(new unsigned char[maxDestSize]);
 
     unsigned pos = 0;
     bool success = true;
     unsigned dataSize = src.GetSize() - src.GetPosition();
     while (pos < dataSize)
     {
-        unsigned blockSize = std::min((unsigned)maxBlockSize, dataSize - pos);
-        unsigned unpackedSize = src.Read(srcBuffer.get(), blockSize);
+        const unsigned blockSize = std::min(static_cast<unsigned>(maxBlockSize), dataSize - pos);
+        const unsigned unpackedSize = src.Read(srcBuffer.get(), blockSize);
         if (unpackedSize != blockSize)
             return false;
 
-        auto packedSize = (unsigned)LZ4_compress_HC((const char*)srcBuffer.get(), (char*)destBuffer.get(), unpackedSize, maxDestSize, 0);
+        auto packedSize = static_cast<unsigned>(LZ4_compress_HC(reinterpret_cast<const char*>(srcBuffer.get()),
+                                                                reinterpret_cast<char*>(destBuffer.get()),
+                                                                unpackedSize,
+                                                                maxDestSize, 0));
         if (!packedSize)
         {
             return false;
         }
 
-        success &= dest.WriteUShort((unsigned short)unpackedSize);
-        success &= dest.WriteUShort((unsigned short)packedSize);
+        success &= dest.WriteUShort(static_cast<unsigned short>(unpackedSize));
+        success &= dest.WriteUShort(static_cast<unsigned short>(packedSize));
         success &= (dest.Write(destBuffer.get(), packedSize) == packedSize);
 
         pos += unpackedSize;
@@ -97,8 +100,8 @@ bool DecompressStream(Serializer& dest, Deserializer& src)
 
     while (!src.IsEof())
     {
-        unsigned destSize = src.ReadUShort();
-        unsigned srcSize = src.ReadUShort();
+        const unsigned destSize = src.ReadUShort();
+        const unsigned srcSize = src.ReadUShort();
         if (!srcSize || !destSize)
             return true; // No data
 
@@ -119,7 +122,7 @@ bool DecompressStream(Serializer& dest, Deserializer& src)
         if (src.Read(srcBuffer.get(), srcSize) != srcSize)
             return false;
 
-        if (LZ4_decompress_fast((const char*)srcBuffer.get(), (char*)destBuffer.get(), destSize) < 0)
+        if (LZ4_decompress_fast(reinterpret_cast<const char*>(srcBuffer.get()), reinterpret_cast<char*>(destBuffer.get()), destSize) < 0)
             return false;
         if (dest.Write(destBuffer.get(), destSize) != destSize)
             return false;

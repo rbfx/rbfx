@@ -52,7 +52,7 @@ public:
     /// Construct Deserializer.
     CompressedStreamDeserializer(Deserializer& deserializer);
 protected:
-    /// Read block from underlying deserizalizer.
+    /// Read block from underlying deserializer.
     bool ReadBlock(Deserializer& deserializer, unsigned short unpackedSize, unsigned short packedSize) override;
 private:
     /// input buffer.
@@ -68,7 +68,7 @@ class URHO3D_API CompressedStreamSerializer : public ChunkStreamSerializer
 {
 public:
     /// Construct Serializer.
-    CompressedStreamSerializer(Serializer& serializer, unsigned short chunkSize);
+    CompressedStreamSerializer(Serializer& serializer, unsigned short chunkSize = DefaultChunkSize);
 protected:
     unsigned char* GetInputBuffer(unsigned chunkSize) override;
 

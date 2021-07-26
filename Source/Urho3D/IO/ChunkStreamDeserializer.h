@@ -96,7 +96,9 @@ namespace Urho3D
     class URHO3D_API ChunkStreamSerializer : public Serializer
     {
     public:
-        ChunkStreamSerializer(Serializer& serializer, unsigned short chunkSize);
+        static const unsigned DefaultChunkSize = 32768;
+
+        ChunkStreamSerializer(Serializer& serializer, unsigned short chunkSize = DefaultChunkSize);
 
         /// Write bytes to the stream. Return number of bytes actually written.
         unsigned Write(const void* data, unsigned size) override;
