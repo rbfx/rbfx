@@ -142,8 +142,6 @@ bool PackageBuilder::AppendImpl(const ea::string& name, AbstractFile* content)
     else
     {
         CompressedStreamSerializer serializer(*buffer_);
-        constexpr auto blockSize_ = COMPRESSED_BLOCK_SIZE;
-        ea::unique_ptr<unsigned char[]> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
         if (serializer.Write(buffer.get(), dataSize) != dataSize)
         {
             URHO3D_LOGERROR("LZ4 compression failed for file " + buffer_->GetName());
