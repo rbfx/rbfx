@@ -74,8 +74,6 @@ private:
 
     AbstractFile* buffer_;
 
-    SharedPtr<RefCounted> file_;
-
     ea::vector<FileEntry> entries_;
 };
 

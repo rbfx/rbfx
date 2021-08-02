@@ -182,22 +182,12 @@ bool ChunkStreamDeserializer::Add(const Chunk& chunk)
 }
 
 /// Find chunk by stream position.
-/// Returns chunk index if found or -1 otherwise.
+/// Returns nullptr if matching chunk is not visited yet.
 const ChunkStreamDeserializer::Chunk* ChunkStreamDeserializer::FindChunk(unsigned decodedPosition) const
 {
     // Early out for an empty collection.
     if (chunks_.empty())
         return nullptr;
-
-    // Check if position we looking for is beyond last chunk start.
-    const Chunk& lastChunk = chunks_.back();
-    if (decodedPosition >= lastChunk.decodedPosition_)
-    {
-        // If it is also within the last chunk then we found it.
-        if (decodedPosition < lastChunk.decodedPosition_ + lastChunk.decodedSize_)
-            return &lastChunk;
-        return nullptr;
-    }
 
     // Use binary search to find the destination.
     Chunk value;
@@ -212,7 +202,7 @@ const ChunkStreamDeserializer::Chunk* ChunkStreamDeserializer::FindChunk(unsigne
 
     --candidate;
     // If it is also within the last chunk then we found it.
-    if (decodedPosition < lastChunk.decodedPosition_ + lastChunk.decodedSize_)
+    if (decodedPosition < (*candidate).decodedPosition_ + (*candidate).decodedSize_)
         return &*candidate;
     return nullptr;
 }

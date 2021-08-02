@@ -38,15 +38,9 @@ namespace Urho3D
 
     EncryptionKey::EncryptionKey(const unsigned char* key, unsigned size)
     {
-        int i = 0;
-        for (; i < size && i < sizeof(key_); ++i)
-        {
-            key_[i] = key[i];
-        }
-        for (; i < sizeof(key_); ++i)
-        {
-            key_[i] = 0;
-        }
+        assert(size <= sizeof(key_));
+        memset(key_, 0, sizeof(key_));
+        memcpy(key_, key, size);
     }
 
     EncryptionKey::EncryptionKey(const ea::vector<unsigned char>& key)
@@ -76,15 +70,9 @@ namespace Urho3D
 
     EncryptionNonce::EncryptionNonce(const unsigned char* nonce, unsigned size)
     {
-        int i = 0;
-        for (; i < size && i < sizeof(nonce_); ++i)
-        {
-            nonce_[i] = nonce[i];
-        }
-        for (; i < sizeof(nonce_); ++i)
-        {
-            nonce_[i] = 0;
-        }
+        assert(size <= sizeof(nonce_));
+        memset(nonce_, 0, sizeof(nonce_));
+        memcpy(nonce_, nonce, size);
     }
 
     EncryptionNonce::EncryptionNonce(const ea::vector<unsigned char>& nonce)

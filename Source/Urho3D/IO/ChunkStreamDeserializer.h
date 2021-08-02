@@ -70,7 +70,7 @@ namespace Urho3D
         bool Add(const Chunk& chunk);
 
         /// Find chunk by stream position.
-        /// Returns pointer to chunk if found or nullptr if not.
+        /// Returns nullptr if matching chunk is not visited yet.
         const Chunk* FindChunk(unsigned decodedPosition) const;
 
         /// Get last known chunk or nullptr if none.

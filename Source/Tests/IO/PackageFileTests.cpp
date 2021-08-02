@@ -12,6 +12,14 @@ using namespace Urho3D;
 
 namespace
 {
+    void randombytes(unsigned char* x, unsigned long long xlen)
+    {
+        std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<> dist(0, 256);
+        for (unsigned long long _ = 0; _ < xlen; ++_) {
+            x[_] = dist(rng);
+        }
+    }
     SharedPtr<Context> CreateTestContext()
     {
         auto context = MakeShared<Context>();
@@ -61,7 +69,6 @@ TEST_CASE("Missing PackageFile")
     SharedPtr<Context> context = CreateTestContext();
     PackageFile packageFile(context.Get());
     REQUIRE_FALSE(packageFile.Open("MissingFile"));
-
 }
 
 TEST_CASE("Empty PackageFile")

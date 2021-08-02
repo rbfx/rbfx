@@ -29,7 +29,6 @@
 #include "../IO/Compression.h"
 #include "../IO/FileSystem.h"
 #include "LZ4/lz4.h"
-#include "LZ4/lz4hc.h"
 
 namespace Urho3D
 {
@@ -84,7 +83,6 @@ bool PackageBuilder::Create(AbstractFile* dest, bool compress)
     headerPosition_ = dest->GetPosition();
     compress_ = compress;
     buffer_ = dest;
-    file_ = dynamic_cast<RefCounted*>(dest);
     return WriteHeader();
 }
 /// Append entry to package.
@@ -179,7 +177,6 @@ bool PackageBuilder::Build()
     buffer_->Seek(headerPosition_);
     WriteHeader();
     buffer_ = nullptr;
-    file_.Reset();
     return true;
 }
 
