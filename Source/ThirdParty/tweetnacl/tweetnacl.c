@@ -225,7 +225,8 @@ int crypto_onetimeauth(u8 *out,const u8 *m,u64 n,const u8 *k)
 
   FOR(j,17) g[j] = h[j];
   add1305(h,minusp);
-  s = -(h[16] >> 7);
+  // RBFX: fixed UWP compilation error
+  s = 4294967295 - (h[16] >> 7) + 1;
   FOR(j,17) h[j] ^= s & (g[j] ^ h[j]);
 
   FOR(j,16) c[j] = k[j + 16];
