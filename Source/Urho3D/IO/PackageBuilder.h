@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "../IO/Encription.h"
+
 namespace Urho3D
 {
 class File;
@@ -35,13 +37,10 @@ public:
     PackageBuilder();
 
     /// Build package.
-    bool Create(AbstractFile* buffer, bool compress);
+    bool Create(AbstractFile* buffer, bool compress = false, const EncryptionKey* key = nullptr);
 
     /// Append entry to package.
-    bool Append(const ea::string& name, const SharedPtr<File>& file);
-
-    /// Append entry to package.
-    bool Append(const ea::string& name, MemoryBuffer& content);
+    bool Append(const ea::string& name, AbstractFile* content);
 
     /// Append entry to package.
     bool Append(const ea::string& name, const ByteVector& content);
@@ -49,10 +48,7 @@ public:
     /// Complete package.
     bool Build();
 private:
-    bool OpenImpl(AbstractFile* buffer, bool compress);
-
-    /// Append entry to package.
-    bool AppendImpl(const ea::string& name, AbstractFile* content);
+    bool OpenImpl(AbstractFile* buffer, bool compress, bool encrypt);
 
     bool WriteHeader();
 private:
@@ -66,15 +62,19 @@ private:
 
     bool compress_;
 
+    bool encrypt_;
+
     unsigned headerPosition_;
 
-    unsigned checksum_ = 0;
+    unsigned checksum_;
 
-    unsigned long long fileListOffset_ = 0;
+    unsigned long long fileListOffset_;
 
     AbstractFile* buffer_;
 
     ea::vector<FileEntry> entries_;
+
+    EncryptionKey encryptionKey_;
 };
 
 }

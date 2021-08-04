@@ -35,7 +35,7 @@ PackageFile::PackageFile(Context* context) :
     totalSize_(0),
     totalDataSize_(0),
     checksum_(0),
-    compressed_(false)
+    encodingFlags_(0)
 {
 }
 
@@ -44,7 +44,7 @@ PackageFile::PackageFile(Context* context, const ea::string& fileName, unsigned 
     totalSize_(0),
     totalDataSize_(0),
     checksum_(0),
-    compressed_(false)
+    encodingFlags_(0)
 {
     Open(fileName, startOffset);
 }
@@ -87,19 +87,37 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
     fileName_ = fileName;
     nameHash_ = fileName_;
     totalSize_ = file->GetSize();
-    compressed_ = id == "ULZ4" || id == "RLZ4";
+    if (id == "ULZ4" || id == "RLZ4")
+        encodingFlags_.Set(PE_LZ4);
     unsigned numFiles = file->ReadUInt();
     checksum_ = file->ReadUInt();
 
     if (id == "RPAK" || id == "RLZ4")
     {
-        // New PAK file format includes two extra PAK header fields:
+        // New PAK file format includes extra PAK header fields:
         // * Version. At this time this field is unused and is always 0. It will be used in the future if PAK format needs to be extended.
         // * File list offset. New format writes file list in the end of the file. This allows PAK creation without knowing entire file list
         //   beforehand.
+        // * Encoding flag: indicates what encoding is used.
         unsigned version = file->ReadUInt();                        // Reserved for future use.
-        assert(version == 0);
         int64_t fileListOffset = file->ReadInt64();                 // New format has file list at the end of the file.
+        if (id == "RPAK")
+        {
+            switch (version)
+            {
+            case 0: //No extra fields
+                break;
+            case 1: //Encoding flags
+                encodingFlags_ = PackageEncodingFlags(file->ReadUInt());
+                break;
+            default:
+                assert(version);
+            }
+        }
+        else
+        {
+            assert(version == 0);
+        }
         file->Seek(fileListOffset);                                 // TODO: Serializer/Deserializer do not support files bigger than 4 GB
     }
 
@@ -110,7 +128,7 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
         newEntry.offset_ = file->ReadUInt() + startOffset;
         totalDataSize_ += (newEntry.size_ = file->ReadUInt());
         newEntry.checksum_ = file->ReadUInt();
-        if (!compressed_ && newEntry.offset_ + newEntry.size_ > totalSize_)
+        if (!IsCompressed() && newEntry.offset_ + newEntry.size_ > totalSize_)
         {
             URHO3D_LOGERROR("File entry " + entryName + " outside package file");
             return false;

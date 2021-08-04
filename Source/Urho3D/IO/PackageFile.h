@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
+#include "../Container/FlagSet.h"
 
 namespace Urho3D
 {
@@ -37,6 +38,14 @@ struct PackageEntry
     /// File checksum.
     unsigned checksum_;
 };
+
+enum PackageEncoding
+{
+    PE_NONE = 0,
+    PE_LZ4 = 1 << 0,
+    PE_TWEETNACL = 2 << 0,
+};
+URHO3D_FLAGSET(PackageEncoding, PackageEncodingFlags);
 
 /// Stores files of a directory tree sequentially for convenient access.
 class URHO3D_API PackageFile : public Object
@@ -86,7 +95,11 @@ public:
 
     /// Return whether the files are compressed.
     /// @property
-    bool IsCompressed() const { return compressed_; }
+    bool IsCompressed() const { return encodingFlags_.Test(PE_LZ4); }
+
+    /// Return whether the files are compressed.
+    /// @property
+    bool IsEncrypted() const { return encodingFlags_.Test(PE_TWEETNACL); }
 
     /// Return list of file names in the package.
     const ea::vector<ea::string> GetEntryNames() const { return entries_.keys(); }
@@ -119,8 +132,9 @@ private:
     unsigned totalDataSize_;
     /// Package file checksum.
     unsigned checksum_;
-    /// Compressed flag.
-    bool compressed_;
+
+    /// Package encoding flags.
+    PackageEncodingFlags encodingFlags_;
 };
 
 }

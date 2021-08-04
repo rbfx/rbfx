@@ -32,10 +32,13 @@
 #include <windows.h>
 #endif
 
+#include "Urho3D/IO/PackageBuilder.h"
+
 #include <EASTL/unique_ptr.h>
 #include <LZ4/lz4.h>
 #include <LZ4/lz4hc.h>
 
+#include <Urho3D/IO/Encription.h>
 #include <Urho3D/DebugNew.h>
 
 
@@ -57,6 +60,9 @@ ea::string basePath_;
 ea::vector<FileEntry> entries_;
 unsigned checksum_ = 0;
 bool compress_ = false;
+bool encrypt_ = false;
+EncryptionKey encryptionKey_ = ea::string();
+bool legacy_ = false;
 bool quiet_ = false;
 unsigned blockSize_ = COMPRESSED_BLOCK_SIZE;
 
@@ -69,6 +75,7 @@ int main(int argc, char** argv);
 void Run(const ea::vector<ea::string>& arguments);
 void ProcessFile(const ea::string& fileName, const ea::string& rootDir);
 void WritePackageFile(const ea::string& fileName, const ea::string& rootDir);
+void WriteLegacyPackageFile(const ea::string& fileName, const ea::string& rootDir);
 void WriteHeader(File& dest);
 
 int main(int argc, char** argv)
@@ -96,8 +103,10 @@ void Run(const ea::vector<ea::string>& arguments)
             "Usage: PackageTool <directory to process> <package name> [basepath] [options]\n"
             "\n"
             "Options:\n"
-            "-c      Enable package file LZ4 compression\n"
-            "-q      Enable quiet mode\n"
+            "-c          Enable package file LZ4 compression\n"
+            "-k=<EncKey> Encryption key or with no value provided to generate a random key\n"
+            "-o          Legacy output format (doesn't support encryption)\n"
+            "-q          Enable quiet mode\n"
             "\n"
             "Basepath is an optional prefix that will be added to the file entries.\n\n"
             "Alternative output usage: PackageTool <output option> <package name>\n"
@@ -114,22 +123,46 @@ void Run(const ea::vector<ea::string>& arguments)
     {
         for (unsigned i = 2; i < arguments.size(); ++i)
         {
-            if (arguments[i][0] != '-')
-                basePath_ = AddTrailingSlash(arguments[i]);
+            const auto& argument = arguments[i];
+            if (argument[0] != '-')
+            {
+                basePath_ = AddTrailingSlash(argument);
+            }
             else
             {
-                if (arguments[i].length() > 1)
+                if (argument.length() > 1)
                 {
-                    switch (arguments[i][1])
+                    switch (argument[1])
                     {
                     case 'c':
                         compress_ = true;
                         break;
+                    case 'k':
+                    {
+                        encrypt_ = true;
+                        if (argument.length() == 2)
+                        {
+                            encryptionKey_ = GenerateSymmetricEncryptionKey();
+                            PrintLine("Encryption key: " + encryptionKey_.ToString());
+                        }
+                        else
+                        {
+                            if (argument.length() < 3 || argument[2] != '=')
+                            {
+                                ErrorExit("Unrecognized option format for encryption key");
+                            }
+                            encryptionKey_ = EncryptionKey(argument.substr(3));
+                        }
+                        break;
+                    }
                     case 'q':
                         quiet_ = true;
                         break;
+                    case 'o':
+                        legacy_ = true;
+                        break;
                     default:
-                        ErrorExit("Unrecognized option");
+                        ErrorExit("Unrecognized option "+argument);
                     }
                 }
             }
@@ -138,6 +171,9 @@ void Run(const ea::vector<ea::string>& arguments)
 
     if (!isOutputMode)
     {
+        if (legacy_ && encrypt_)
+            ErrorExit("Legacy format doesn't support encryption");
+
         if (!quiet_)
             PrintLine("Scanning directory " + dirName + " for files");
 
@@ -192,7 +228,10 @@ void Run(const ea::vector<ea::string>& arguments)
         for (unsigned i = 0; i < fileNames.size(); ++i)
             ProcessFile(fileNames[i], dirName);
 
-        WritePackageFile(packageName, dirName);
+        if (!legacy_)
+            WritePackageFile(packageName, dirName);
+        else
+            WriteLegacyPackageFile(packageName, dirName);
     }
     else
     {
@@ -253,6 +292,34 @@ void ProcessFile(const ea::string& fileName, const ea::string& rootDir)
 }
 
 void WritePackageFile(const ea::string& fileName, const ea::string& rootDir)
+{
+    if (!quiet_)
+        PrintLine("Writing package");
+
+    File dest(context_);
+    if (!dest.Open(fileName, FILE_WRITE))
+        ErrorExit("Could not open output file " + fileName);
+
+    PackageBuilder builder;
+    if (!builder.Create(&dest, compress_, encrypt_ ? &encryptionKey_ : nullptr))
+        ErrorExit("Could not create package builder");
+
+    for (unsigned i = 0; i < entries_.size(); ++i)
+    {
+
+        ea::string fileFullPath = rootDir + "/" + entries_[i].name_;
+
+        File srcFile(context_, fileFullPath);
+        if (!srcFile.IsOpen())
+            ErrorExit("Could not open file " + fileFullPath);
+
+        builder.Append(basePath_ + entries_[i].name_, &srcFile);
+    }
+
+    builder.Build();
+}
+
+void WriteLegacyPackageFile(const ea::string& fileName, const ea::string& rootDir)
 {
     if (!quiet_)
         PrintLine("Writing package");

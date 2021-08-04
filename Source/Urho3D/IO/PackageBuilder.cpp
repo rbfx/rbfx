@@ -26,27 +26,48 @@
 #include "../IO/MemoryBuffer.h"
 #include "../IO/Log.h"
 #include "../IO/PackageBuilder.h"
+
+#include "../IO/Encription.h"
 #include "../IO/Compression.h"
 #include "../IO/FileSystem.h"
 #include "LZ4/lz4.h"
 
 namespace Urho3D
 {
+namespace
+{
+    bool CopyStream(ChunkStreamSerializer& serializer, void* buffer, unsigned dataSize)
+    {
+        if (serializer.Write(buffer, dataSize) != dataSize)
+        {
+            return false;
+        }
+        if (!serializer.Flush())
+        {
+            return false;
+        }
+        return true;
+    }
+}
+
     static const unsigned COMPRESSED_BLOCK_SIZE = 32768;
 
 /// Constructor.
 PackageBuilder::PackageBuilder():
-    buffer_(nullptr)
+    compress_(false),
+    encrypt_(false),
+    headerPosition_(0),
+    checksum_(0),
+    fileListOffset_(0),
+    buffer_(nullptr),
+    encryptionKey_(nullptr, 0)
 {
 }
 
 bool PackageBuilder::WriteHeader()
 {
     // Write ID, number of files & placeholder for checksum
-    if (!compress_)
-        buffer_->WriteFileID("RPAK");
-    else
-        buffer_->WriteFileID("RLZ4");
+    buffer_->WriteFileID("RPK2");
 
     // Num files
     if (!buffer_->WriteUInt(entries_.size()))
@@ -64,7 +85,7 @@ bool PackageBuilder::WriteHeader()
     return true;
 }
 
-bool PackageBuilder::Create(AbstractFile* dest, bool compress)
+bool PackageBuilder::Create(AbstractFile* dest, bool compress, const EncryptionKey* key)
 {
     if (buffer_)
     {
@@ -82,30 +103,28 @@ bool PackageBuilder::Create(AbstractFile* dest, bool compress)
     entries_.clear();
     headerPosition_ = dest->GetPosition();
     compress_ = compress;
+    if (key)
+    {
+        encrypt_ = true;
+        encryptionKey_ = *key;
+    }
+    else
+    {
+        encrypt_ = false;
+    }
     buffer_ = dest;
     return WriteHeader();
-}
-/// Append entry to package.
-bool PackageBuilder::Append(const ea::string& name, const SharedPtr<File>& file)
-{
-    return AppendImpl(name, file.Get());
-}
-
-/// Append entry to package.
-bool PackageBuilder::Append(const ea::string& name, MemoryBuffer& content)
-{
-    return AppendImpl(name, &content);
 }
 
 /// Append entry to package.
 bool  PackageBuilder::Append(const ea::string& name, const ByteVector& content)
 {
     MemoryBuffer buffer(content);
-    return Append(name, buffer);
+    return Append(name, &buffer);
 }
 
 /// Append entry to package.
-bool PackageBuilder::AppendImpl(const ea::string& name, AbstractFile* content)
+bool PackageBuilder::Append(const ea::string& name, AbstractFile* content)
 {
     if (!buffer_)
     {
@@ -135,19 +154,25 @@ bool PackageBuilder::AppendImpl(const ea::string& name, AbstractFile* content)
 
     if (!compress_)
     {
-        //if (!quiet_)
-        //    PrintLine(entries_[i].name_ + " size " + ea::to_string(dataSize));
-        buffer_->Write(&buffer[0], entry.size_);
+        if (!encrypt_)
+        {
+            buffer_->Write(&buffer[0], entry.size_);
+        }
+        else
+        {
+
+            EncryptedStreamSerializer serializer(*buffer_, encryptionKey_);
+            if (!CopyStream(serializer, buffer.get(), dataSize))
+            {
+                URHO3D_LOGERROR("Encryption failed for file " + buffer_->GetName());
+                return false;
+            }
+        }
     }
     else
     {
         CompressedStreamSerializer serializer(*buffer_);
-        if (serializer.Write(buffer.get(), dataSize) != dataSize)
-        {
-            URHO3D_LOGERROR("LZ4 compression failed for file " + buffer_->GetName());
-            return false;
-        }
-        if (!serializer.Flush())
+        if (!CopyStream(serializer, buffer.get(), dataSize))
         {
             URHO3D_LOGERROR("LZ4 compression failed for file " + buffer_->GetName());
             return false;
