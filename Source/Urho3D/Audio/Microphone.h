@@ -32,7 +32,7 @@ namespace Urho3D
 
 class BufferedSoundStream;
 
-/// Microphone audio input device. Uses are for speech recognition or network speech.
+/// Microphone audio input device. Uses are for speech recognition or network speech, not intended for high quality recording usage.
 class URHO3D_API Microphone : public Object
 {
     URHO3D_OBJECT(Microphone, Object);
@@ -60,24 +60,30 @@ public:
     void Update(unsigned char* rawData, int rawDataLen);
 
     /// Returns the frequency of the microphone's recording.
+    /// @property
     unsigned GetFrequency() const { return frequency_; }
 
     /// Returns true if the device is actively recording.
+    /// @property
     bool IsEnabled() const { return enabled_; }
     /// Starts or stops recording.
+    /// @property
     void SetEnabled(bool state);
 
     /// Returns the minimum volume to wake the device (absolute value)
+    /// @property
     unsigned GetWakeThreshold() const { return wakeThreshold_; }
     /// Minimum volume to wake this device.
+    /// @property
     void SetWakeThreshold(unsigned hz) { wakeThreshold_ = hz; }
 
     /// Returns true if this device is in sleep state.
+    /// @property
     bool IsSleeping() const { return isSleeping_; }
 
     /// Gets the linked stream target if any.
     SharedPtr<BufferedSoundStream> GetLinked() const;
-    /// Links the given stream object to automatically fill with microphone data
+    /// Links the given stream object to automatically fill with microphone data.
     void Link(SharedPtr<BufferedSoundStream>);
     /// Unlinks the stream object, typically do this in E_RECORDINGENDED.
     void Unlink();
@@ -88,14 +94,23 @@ private:
     /// Audio calls this to check if the SDL thread has appended data to us.
     void CheckDirtiness();
 
+    /// Target to auto-copy data into.
     SharedPtr<BufferedSoundStream> linkedStream_;
+    /// Stored copy of data contained.
     ea::vector<int16_t> buffer_;
+    /// SDL identifier for the mic.
     SDL_AudioDeviceID micID_;
+    /// Lock object for thread safety, most operations on speech are going to want to be threaded.
     mutable Mutex lock_;
+    /// HZ freq of the mic.
     unsigned frequency_;
+    /// Signal threshold above which to "wake" the microphone. Not very effective.
     unsigned wakeThreshold_ = UINT_MAX;
+    /// Whether to active capture data or not (data still comes in, but is ignored not copied).
     bool enabled_;
+    /// Whether the microphone has failed to meet wake thresholds.
     bool isSleeping_ = false;
+    /// Cleanliness state of the data.
     bool isDirty_ = false;
 };
 
