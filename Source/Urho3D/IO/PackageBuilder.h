@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../IO/Encription.h"
+#include "../IO/PackageFile.h"
 
 namespace Urho3D
 {
@@ -60,9 +61,8 @@ private:
         unsigned checksum_{};
     };
 
-    bool compress_;
-
-    bool encrypt_;
+    /// Package encoding flags.
+    PackageEncodingFlags encodingFlags_;
 
     unsigned headerPosition_;
 
@@ -75,6 +75,8 @@ private:
     ea::vector<FileEntry> entries_;
 
     EncryptionKey encryptionKey_;
+
+    ea::unique_ptr<ChunkStreamSerializer> encoder_;
 };
 
 }

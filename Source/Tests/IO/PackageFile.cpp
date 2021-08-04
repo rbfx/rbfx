@@ -11,6 +11,8 @@ using namespace Urho3D;
 
 namespace
 {
+EncryptionKey TestEncryptionKey("pIkKsSTm8reeZU8sw6h6PrpiCdGFuqbay1Vs14pkgE8=");
+
 SharedPtr<Context> CreateTestContext()
 {
     auto context = MakeShared<Context>();
@@ -55,8 +57,6 @@ struct TmpFile
     FileSystem* fileSystem_;
     ea::string fileName_;
 };
-
-EncryptionKey TestEncryptionKey("");
 
 unsigned char ULZ4Content[] = {0x55, 0x4C, 0x5A, 0x34, 0x3, 0x0, 0x0, 0x0, 0xFF, 0xAC, 0x14, 0x73, 0x4C, 0x6F, 0x6E,
                                0x67, 0x4D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x0, 0x59, 0x0, 0x0, 0x0, 0xBA, 0x1, 0x0,
@@ -189,7 +189,7 @@ TEST_CASE("Empty PackageFile")
     {
         SharedPtr<File> pakFile = MakeShared<File>(context.Get(), tmpFile.fileName_, FILE_WRITE);
         bool compress = GENERATE(false, true);
-        EncryptionKey* key = GENERATE(nullptr, &TestEncryptionKey);
+        EncryptionKey* key = GENERATE(static_cast<EncryptionKey*>(nullptr), &TestEncryptionKey);
         REQUIRE(builder.Create(pakFile, compress, key));
         REQUIRE(builder.Build());
     }
@@ -207,7 +207,11 @@ TEST_CASE("Single entry PackageFile")
     {
         SharedPtr<File> pakFile = MakeShared<File>(context.Get(), tmpFile.fileName_, FILE_WRITE);
         PackageBuilder builder;
-        REQUIRE(builder.Create(pakFile, GENERATE(false, true), GENERATE(nullptr, &TestEncryptionKey)));
+        //bool compress = GENERATE(false, true);
+        //EncryptionKey* key = GENERATE(nullptr, &TestEncryptionKey);
+        bool compress = false;
+        EncryptionKey* key = &TestEncryptionKey;
+        REQUIRE(builder.Create(pakFile, compress, key));
         REQUIRE(AppendMessage(builder, "EntryName", testString));
         REQUIRE(builder.Build());
     }

@@ -44,6 +44,7 @@ enum PackageEncoding
     PE_NONE = 0,
     PE_LZ4 = 1 << 0,
     PE_TWEETNACL = 2 << 0,
+    PE_LZ4_TWEETNACL = PE_LZ4 | PE_TWEETNACL,
 };
 URHO3D_FLAGSET(PackageEncoding, PackageEncodingFlags);
 
@@ -100,6 +101,10 @@ public:
     /// Return whether the files are compressed.
     /// @property
     bool IsEncrypted() const { return encodingFlags_.Test(PE_TWEETNACL); }
+
+    /// Return files encoding flag set.
+    /// @property
+    PackageEncodingFlags PackageEncoding() const { return encodingFlags_; }
 
     /// Return list of file names in the package.
     const ea::vector<ea::string> GetEntryNames() const { return entries_.keys(); }

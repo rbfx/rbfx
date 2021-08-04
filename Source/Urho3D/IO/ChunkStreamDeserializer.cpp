@@ -37,6 +37,8 @@ ChunkStreamDeserializer::ChunkStreamDeserializer(Deserializer& deserializer) :
     readBufferSize_(0),
     offset_(deserializer.GetPosition())
 {
+    size_ = deserializer.GetSize() - offset_;
+    position_ = 0;
 }
 
 unsigned ChunkStreamDeserializer::Read(void* dest, unsigned size)

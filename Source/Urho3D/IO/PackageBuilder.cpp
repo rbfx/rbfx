@@ -54,8 +54,7 @@ namespace
 
 /// Constructor.
 PackageBuilder::PackageBuilder():
-    compress_(false),
-    encrypt_(false),
+    encodingFlags_(0),
     headerPosition_(0),
     checksum_(0),
     fileListOffset_(0),
@@ -67,7 +66,7 @@ PackageBuilder::PackageBuilder():
 bool PackageBuilder::WriteHeader()
 {
     // Write ID, number of files & placeholder for checksum
-    buffer_->WriteFileID("RPK2");
+    buffer_->WriteFileID("RPAK");
 
     // Num files
     if (!buffer_->WriteUInt(entries_.size()))
@@ -75,12 +74,27 @@ bool PackageBuilder::WriteHeader()
     // Checksum
     if (!buffer_->WriteUInt(checksum_))
         return false;
-    // Version
-    if (!buffer_->WriteUInt(0))
-        return false;
-    // fileListOffset
-    if (!buffer_->WriteUInt64(fileListOffset_))
-        return false;
+    if (encodingFlags_.AsInteger() == 0)
+    {
+        // Version
+        if (!buffer_->WriteUInt(0))
+            return false;
+        // fileListOffset
+        if (!buffer_->WriteUInt64(fileListOffset_))
+            return false;
+    }
+    else
+    {
+        // Version
+        if (!buffer_->WriteUInt(1))
+            return false;
+        // fileListOffset
+        if (!buffer_->WriteUInt64(fileListOffset_))
+            return false;
+        // Version
+        if (!buffer_->WriteUInt(encodingFlags_))
+            return false;
+    }
 
     return true;
 }
@@ -102,16 +116,34 @@ bool PackageBuilder::Create(AbstractFile* dest, bool compress, const EncryptionK
 
     entries_.clear();
     headerPosition_ = dest->GetPosition();
-    compress_ = compress;
+    encodingFlags_ = PackageEncodingFlags(0);
+    if (compress)
+    {
+        encodingFlags_.Set(PE_LZ4);
+    }
     if (key)
     {
-        encrypt_ = true;
+        encodingFlags_.Set(PE_TWEETNACL);
         encryptionKey_ = *key;
     }
-    else
+
+    if (encodingFlags_.Test(PE_LZ4))
     {
-        encrypt_ = false;
+        if (encodingFlags_.Test(PE_TWEETNACL))
+        {
+            encoder_ = ea::make_unique<EncryptedStreamSerializer>(*dest, *key);
+        }
+        else
+        {
+            encoder_ = ea::make_unique<CompressedStreamSerializer>(*dest);
+        }
     }
+    else if (encodingFlags_.Test(PE_TWEETNACL))
+    {
+        encoder_ = ea::make_unique<EncryptedStreamSerializer>(*dest, *key);
+    }
+
+    
     buffer_ = dest;
     return WriteHeader();
 }
@@ -152,29 +184,15 @@ bool PackageBuilder::Append(const ea::string& name, AbstractFile* content)
         entry.checksum_ = SDBMHash(entry.checksum_, buffer[j]);
     }
 
-    if (!compress_)
+    if (!encoder_)
     {
-        if (!encrypt_)
-        {
-            buffer_->Write(&buffer[0], entry.size_);
-        }
-        else
-        {
-
-            EncryptedStreamSerializer serializer(*buffer_, encryptionKey_);
-            if (!CopyStream(serializer, buffer.get(), dataSize))
-            {
-                URHO3D_LOGERROR("Encryption failed for file " + buffer_->GetName());
-                return false;
-            }
-        }
+        buffer_->Write(&buffer[0], entry.size_);
     }
     else
     {
-        CompressedStreamSerializer serializer(*buffer_);
-        if (!CopyStream(serializer, buffer.get(), dataSize))
+        if (!CopyStream(*encoder_, buffer.get(), dataSize))
         {
-            URHO3D_LOGERROR("LZ4 compression failed for file " + buffer_->GetName());
+            URHO3D_LOGERROR("Encoding failed for file " + buffer_->GetName());
             return false;
         }
     }
