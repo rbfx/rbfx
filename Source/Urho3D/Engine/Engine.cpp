@@ -311,7 +311,7 @@ bool Engine::Initialize(const VariantMap& parameters)
             GetSubsystem<Audio>()->SetMode(
                 GetParameter(parameters, EP_SOUND_BUFFER, 100).GetInt(),
                 GetParameter(parameters, EP_SOUND_MIX_RATE, 44100).GetInt(),
-                GetParameter(parameters, EP_SOUND_STEREO, true).GetBool(),
+                (SpeakerMode)GetParameter(parameters, EP_SOUND_MODE, SpeakerMode::SPK_AUTO).GetInt(),
                 GetParameter(parameters, EP_SOUND_INTERPOLATION, true).GetBool()
             );
         }
@@ -925,7 +925,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     addOptionPrependString("--portrait", EP_ORIENTATIONS, "Portrait PortraitUpsideDown ", "Force portrait orientation");
     addFlag("--nosound", EP_SOUND, false, "Disable sound");
     addFlag("--noip", EP_SOUND_INTERPOLATION, false, "Disable sound interpolation");
-    addFlag("--mono", EP_SOUND_STEREO, false, "Force mono sound output (default is stereo)");
+    addOptionInt("--speakermode", EP_SOUND_MODE, "Force sound speaker output mode (default is automatic)");
     auto* optRenderpath = addOptionString("--renderpath", EP_RENDER_PATH, "Use custom renderpath");
     auto* optPrepass = addOptionSetString("--prepass", EP_RENDER_PATH, "RenderPaths/Prepass.xml", "Use prepass renderpath")->excludes(optRenderpath);
     auto* optDeferred = addOptionSetString("--deferred", EP_RENDER_PATH, "RenderPaths/Deferred.xml", "Use deferred renderpath")->excludes(optRenderpath);

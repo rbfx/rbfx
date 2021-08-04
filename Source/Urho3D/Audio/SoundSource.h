@@ -77,6 +77,12 @@ public:
     /// Set stereo panning. -1.0 is full left and 1.0 is full right.
     /// @property
     void SetPanning(float panning);
+    /// Set surround sound forward/back reach. -1.0 is full back and 1.0 is full front.
+    /// @property
+    void SetReach(float reach);
+    /// Set whether this is a LFE output.
+    /// @property
+    void SetLowFrequency(bool state);
     /// Set to remove either the sound source component or its owner node from the scene automatically on sound playback completion. Disabled by default.
     /// @property
     void SetAutoRemoveMode(AutoRemoveMode mode);
@@ -114,6 +120,14 @@ public:
     /// @property
     float GetPanning() const { return panning_; }
 
+    /// Return surround sound forward/back reach.
+    /// @property
+    float GetReach() const { return reach_; }
+
+    /// Return whether this is a LFE output.
+    /// @property
+    bool IsLowFrequency() const { return lowFrequency_; }
+
     /// Return automatic removal mode on sound playback completion.
     /// @property
     AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
@@ -125,7 +139,7 @@ public:
     /// Update the sound source. Perform subclass specific operations. Called by Audio.
     virtual void Update(float timeStep);
     /// Mix sound source output to a 32-bit clipping buffer. Called by Audio.
-    void Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation);
+    void Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mode, bool interpolation);
     /// Update the effective master gain. Called internally and by Audio when the master gain changes.
     void UpdateMasterGain();
 
@@ -155,10 +169,14 @@ protected:
     float attenuation_;
     /// Stereo panning.
     float panning_;
+    /// Surround sound forward/back reach.
+    float reach_{0.0f};
     /// Effective master gain.
     float masterGain_{};
     /// Whether finished event should be sent on playback stop.
     bool sendFinishedEvent_;
+    /// Whether this source should output to the LFE.
+    bool lowFrequency_{ false };
     /// Automatic removal mode.
     AutoRemoveMode autoRemove_;
 
@@ -172,11 +190,11 @@ private:
     /// Set new playback position without locking the audio mutex. Called internally.
     void SetPlayPositionLockless(signed char* pos);
     /// Mix mono sample to mono buffer.
-    void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate, int channel = 0, int channelCount = 1);
     /// Mix mono sample to stereo buffer.
     void MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix mono sample to mono buffer interpolated.
-    void MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, int channel = 0, int channelCount = 1);
     /// Mix mono sample to stereo buffer interpolated.
     void MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix stereo sample to mono buffer.
@@ -187,6 +205,14 @@ private:
     void MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix stereo sample to stereo buffer interpolated.
     void MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
+    /// Mix a mono track to surround buffer.
+    void MixMonoToSurround(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
+    /// Mix a mono track into a surround buffer.
+    void MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
+    /// Mix stereo sample into multichannel. Front-center and LFE are ommitted.
+    void MixStereoToMulti(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
+    /// Mix stereo sample into multichannel. Front-center and LFE are ommitted.
+    void MixStereoToMultiIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
     /// Advance playback pointer without producing audible output.
     void MixZeroVolume(Sound* sound, unsigned samples, int mixRate);
     /// Advance playback pointer to simulate audio playback in headless mode.
