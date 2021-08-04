@@ -33,6 +33,7 @@ namespace Urho3D
 {
 
 class AudioImpl;
+class Microphone;
 class Sound;
 class SoundListener;
 class SoundSource;
@@ -49,7 +50,7 @@ public:
     ~Audio() override;
 
     /// Initialize sound output with specified buffer length and output mode.
-    bool SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpolation = true);
+    bool SetMode(int bufferLengthMSec, int mixRate, SpeakerMode mode, bool interpolation = true);
     /// Run update on sound sources. Not required for continued playback, but frees unused sound sources & sounds and updates 3D positions.
     void Update(float timeStep);
     /// Restart sound output.
@@ -83,9 +84,9 @@ public:
     /// @property
     bool GetInterpolation() const { return interpolation_; }
 
-    /// Return whether output is stereo.
+    /// Return mode of output.
     /// @property
-    bool IsStereo() const { return stereo_; }
+    SpeakerMode GetSpeakerMode() const { return speakerMode_; }
 
     /// Return whether audio is being output.
     /// @property
@@ -126,6 +127,11 @@ public:
     /// Mix sound sources into the buffer.
     void MixOutput(void* dest, unsigned samples);
 
+    /// Returns a pretty-name list of all attached microphones.
+    StringVector EnumerateMicrophones() const;
+    /// Constructs a microphone from a pretty-name (found via EnumerateMicrophones()).
+    SharedPtr<Microphone> CreateMicrophone(const ea::string& name, bool forSpeechRecog, unsigned wantedFreq);
+
 private:
     /// Handle render update event.
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
@@ -148,8 +154,8 @@ private:
     int mixRate_{};
     /// Mixing interpolation flag.
     bool interpolation_{};
-    /// Stereo flag.
-    bool stereo_{};
+    /// Speaker configuration.
+    SpeakerMode speakerMode_{SpeakerMode::SPK_AUTO};
     /// Playing flag.
     bool playing_{};
     /// Master gain by sound source type.
@@ -160,6 +166,8 @@ private:
     ea::vector<SoundSource*> soundSources_;
     /// Sound listener.
     WeakPtr<SoundListener> listener_;
+    /// List of microphones being tracked.   
+    ea::vector< WeakPtr<Microphone> > microphones_;
 };
 
 /// Register Audio library objects.

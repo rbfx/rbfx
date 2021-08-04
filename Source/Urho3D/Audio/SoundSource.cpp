@@ -38,6 +38,15 @@
 namespace Urho3D
 {
 
+/// Reminder that channels are in AAC order.
+static const int SOUND_SOURCE_LOW_FREQ_CHANNEL[] = {
+    0, // SPK_AUTO
+    0, // SPK_MONO
+    0, // SPK_STEREO
+    0, // SPK_QUADROPHONIC
+    3, // SPK_SURROUND_5_1
+};
+
 #define INC_POS_LOOPED() \
     pos += intAdd; \
     fractPos += fractAdd; \
@@ -139,6 +148,8 @@ void SoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Gain", float, gain_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Attenuation", float, attenuation_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Panning", float, panning_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Reach", float, reach_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Low Frequency Effect", bool, lowFrequency_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Playing", IsPlaying, SetPlayingAttr, bool, false, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Autoremove Mode", autoRemove_, autoRemoveModeNames, REMOVE_DISABLED, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Play Position", GetPositionAttr, SetPositionAttr, int, 0, AM_FILE);
@@ -305,6 +316,18 @@ void SoundSource::SetPanning(float panning)
     MarkNetworkUpdate();
 }
 
+void SoundSource::SetReach(float reach)
+{
+    reach_ = Clamp(reach, -1.0f, 1.0f);
+    MarkNetworkUpdate();
+}
+
+void SoundSource::SetLowFrequency(bool state)
+{
+    lowFrequency_ = state;
+    MarkNetworkUpdate();
+}
+
 void SoundSource::SetAutoRemoveMode(AutoRemoveMode mode)
 {
     autoRemove_ = mode;
@@ -363,7 +386,7 @@ void SoundSource::Update(float timeStep)
     }
 }
 
-void SoundSource::Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation)
+void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mode, bool interpolation)
 {
     if (!position_ || (!sound_ && !soundStream_) || (!IsEnabledEffective() && node_ != nullptr))
         return;
@@ -406,34 +429,62 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, bool stereo, bo
     {
         if (interpolation)
         {
-            if (stereo)
-                MixMonoToStereoIP(sound, dest, samples, mixRate);
-            else
-                MixMonoToMonoIP(sound, dest, samples, mixRate);
+            switch (mode)
+            {
+            case SPK_MONO:
+                if (!lowFrequency_) MixMonoToMonoIP(sound, dest, samples, mixRate);
+                break;
+            case SPK_STEREO:
+                if (!lowFrequency_) MixMonoToStereoIP(sound, dest, samples, mixRate);
+                break;
+            case SPK_QUADROPHONIC:
+                if (!lowFrequency_) MixMonoToSurroundIP(sound, dest, samples, mixRate, mode);
+                break;
+            case SPK_SURROUND_5_1:
+                if (lowFrequency_)
+                    MixMonoToMonoIP(sound, dest, samples, mixRate, SOUND_SOURCE_LOW_FREQ_CHANNEL[mode], 6);
+                else
+                    MixMonoToSurroundIP(sound, dest, samples, mixRate, mode);
+                break;
+            }
         }
         else
         {
-            if (stereo)
-                MixMonoToStereo(sound, dest, samples, mixRate);
-            else
-                MixMonoToMono(sound, dest, samples, mixRate);
+            switch (mode)
+            {
+            case SPK_MONO:
+                if (!lowFrequency_) MixMonoToStereo(sound, dest, samples, mixRate);
+                break;
+            case SPK_STEREO:
+                if (!lowFrequency_) MixMonoToMono(sound, dest, samples, mixRate);
+                break;
+            case SPK_QUADROPHONIC:
+                if (!lowFrequency_) MixMonoToSurround(sound, dest, samples, mixRate, mode);
+                break;
+            case SPK_SURROUND_5_1:
+                if (lowFrequency_)
+                    MixMonoToMono(sound, dest, samples, mixRate, SOUND_SOURCE_LOW_FREQ_CHANNEL[mode], 6);
+                else
+                    MixMonoToSurround(sound, dest, samples, mixRate, mode);
+                break;
+            }
         }
     }
     else
     {
         if (interpolation)
         {
-            if (stereo)
-                MixStereoToStereoIP(sound, dest, samples, mixRate);
-            else
+            if (mode == SPK_MONO)
                 MixStereoToMonoIP(sound, dest, samples, mixRate);
+            else
+                MixStereoToMultiIP(sound, dest, samples, mixRate, mode);
         }
         else
         {
-            if (stereo)
-                MixStereoToStereo(sound, dest, samples, mixRate);
-            else
+            if (mode == SPK_MONO)
                 MixStereoToMono(sound, dest, samples, mixRate);
+            else
+                MixStereoToMulti(sound, dest, samples, mixRate, mode);
         }
     }
 
@@ -602,7 +653,7 @@ void SoundSource::SetPlayPositionLockless(signed char* pos)
     timePosition_ = ((float)(int)(size_t)(pos - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
 }
 
-void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate, int channel, int channelCount)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
@@ -627,8 +678,9 @@ void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int 
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + (*pos * vol) / 256;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_LOOPED();
             }
             position_ = (signed char*)pos;
@@ -637,8 +689,9 @@ void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int 
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + (*pos * vol) / 256;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_ONESHOT();
             }
             position_ = (signed char*)pos;
@@ -654,8 +707,9 @@ void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int 
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + *pos * vol;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_LOOPED();
             }
             position_ = pos;
@@ -664,8 +718,9 @@ void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int 
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + *pos * vol;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_ONESHOT();
             }
             position_ = pos;
@@ -756,7 +811,7 @@ void SoundSource::MixMonoToStereo(Sound* sound, int dest[], unsigned samples, in
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, int channel, int channelCount)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
@@ -781,8 +836,9 @@ void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, in
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + (GET_IP_SAMPLE() * vol) / 256;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_LOOPED();
             }
             position_ = (signed char*)pos;
@@ -791,8 +847,9 @@ void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, in
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + (GET_IP_SAMPLE() * vol) / 256;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_ONESHOT();
             }
             position_ = (signed char*)pos;
@@ -808,8 +865,9 @@ void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, in
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + GET_IP_SAMPLE() * vol;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_LOOPED();
             }
             position_ = pos;
@@ -818,8 +876,9 @@ void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, in
         {
             while (samples--)
             {
+                dest += channel;
                 *dest = *dest + GET_IP_SAMPLE() * vol;
-                ++dest;
+                dest += channelCount - channel;
                 INC_POS_ONESHOT();
             }
             position_ = pos;
@@ -1222,6 +1281,535 @@ void SoundSource::MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples
                 ++dest;
                 *dest = *dest + GET_IP_SAMPLE_RIGHT() * vol;
                 ++dest;
+                INC_POS_STEREO_ONESHOT();
+            }
+            position_ = pos;
+        }
+    }
+
+    fractPosition_ = fractPos;
+}
+
+void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakerMode)
+{
+    float totalGain = masterGain_ * attenuation_ * gain_;
+    int frontLeftVol = (int)(((-panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+    int frontRightVol = (int)(((panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+    int rearLeftVol = (int)(((-panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+    int rearRightVol = (int)(((panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+
+    if (!frontLeftVol && !frontRightVol && !rearLeftVol && !rearRightVol)
+    {
+        MixZeroVolume(sound, samples, mixRate);
+        return;
+    }
+
+    float add = frequency_ / (float)mixRate;
+    int intAdd = (int)add;
+    int fractAdd = (int)((add - floorf(add)) * 65536.0f);
+    int fractPos = fractPosition_;
+
+    if (sound->IsSixteenBit())
+    {
+        short* pos = (short*)position_;
+        short* end = (short*)sound->GetEnd();
+        short* repeat = (short*)sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                *dest = *dest + (*pos * frontLeftVol) / 256; // FL
+                ++dest;
+                *dest = *dest + (*pos * frontRightVol) / 256; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + (*pos * rearLeftVol) / 256; // RL
+                ++dest;
+                *dest = *dest + (*pos * rearRightVol) / 256; // RR
+                ++dest;
+                INC_POS_LOOPED();
+            }
+            position_ = (signed char*)pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                *dest = *dest + (*pos * frontLeftVol) / 256; // FL
+                ++dest;
+                *dest = *dest + (*pos * frontRightVol) / 256; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + (*pos * rearLeftVol) / 256; // RL
+                ++dest;
+                *dest = *dest + (*pos * rearRightVol) / 256; // RR
+                ++dest;
+                INC_POS_ONESHOT();
+            }
+            position_ = (signed char*)pos;
+        }
+    }
+    else
+    {
+        signed char* pos = (signed char*)position_;
+        signed char* end = sound->GetEnd();
+        signed char* repeat = sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                *dest = *dest + *pos * frontLeftVol; // FL
+                ++dest;
+                *dest = *dest + *pos * frontRightVol; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + *pos * rearLeftVol; // RL
+                ++dest;
+                *dest = *dest + *pos * rearRightVol; // RR
+                ++dest;
+                INC_POS_LOOPED();
+            }
+            position_ = pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                *dest = *dest + *pos * frontLeftVol; // FL
+                ++dest;
+                *dest = *dest + *pos * frontRightVol; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + *pos * rearLeftVol; // RL
+                ++dest;
+                *dest = *dest + *pos * rearRightVol; // RR
+                ++dest;
+                INC_POS_ONESHOT();
+            }
+            position_ = pos;
+        }
+    }
+
+    fractPosition_ = fractPos;
+}
+
+void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakerMode)
+{
+    float totalGain = masterGain_ * attenuation_ * gain_;
+    int frontLeftVol = (int)(((-panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+    int frontRightVol = (int)(((panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+    int rearLeftVol = (int)(((-panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.05f));
+    int rearRightVol = (int)(((panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+
+    if (!frontLeftVol && !frontRightVol && !rearLeftVol && !rearRightVol)
+    {
+        MixZeroVolume(sound, samples, mixRate);
+        return;
+    }
+
+    float add = frequency_ / (float)mixRate;
+    int intAdd = (int)add;
+    int fractAdd = (int)((add - floorf(add)) * 65536.0f);
+    int fractPos = fractPosition_;
+
+    if (sound->IsSixteenBit())
+    {
+        short* pos = (short*)position_;
+        short* end = (short*)sound->GetEnd();
+        short* repeat = (short*)sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                int s = GET_IP_SAMPLE();
+                *dest = *dest + (s * frontLeftVol) / 256; // FL
+                ++dest;
+                *dest = *dest + (s * frontRightVol) / 256; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + (s * rearLeftVol) / 256; // RL
+                ++dest;
+                *dest = *dest + (s * rearRightVol) / 256; // RR
+                ++dest;
+                INC_POS_LOOPED();
+            }
+            position_ = (signed char*)pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                int s = GET_IP_SAMPLE();
+                *dest = *dest + (s * frontLeftVol) / 256; // FL
+                ++dest;
+                *dest = *dest + (s * frontRightVol) / 256; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + (s * rearLeftVol) / 256; // RL
+                ++dest;
+                *dest = *dest + (s * rearRightVol) / 256; // RR
+                ++dest;
+                INC_POS_ONESHOT();
+            }
+            position_ = (signed char*)pos;
+        }
+    }
+    else
+    {
+        signed char* pos = (signed char*)position_;
+        signed char* end = sound->GetEnd();
+        signed char* repeat = sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                int s = GET_IP_SAMPLE();
+                *dest = *dest + s * frontLeftVol; // FL
+                ++dest;
+                *dest = *dest + s * frontRightVol; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + s * rearLeftVol; // RL
+                ++dest;
+                *dest = *dest + s * rearRightVol; // RR
+                ++dest;
+                INC_POS_LOOPED();
+            }
+            position_ = pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                int s = GET_IP_SAMPLE();
+                *dest = *dest + s * frontLeftVol; // FL
+                ++dest;
+                *dest = *dest + s * frontRightVol; // FR
+                ++dest;
+
+                if (speakerMode == SPK_SURROUND_5_1)
+                {
+                    ++dest; // FC
+                    ++dest; // LFE
+                }
+
+                *dest = *dest + s * rearLeftVol; // RL
+                ++dest;
+                *dest = *dest + s * rearRightVol; // RR
+                ++dest;
+                INC_POS_ONESHOT();
+            }
+            position_ = pos;
+        }
+    }
+
+    fractPosition_ = fractPos;
+}
+
+void SoundSource::MixStereoToMulti(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers)
+{
+    float totalGain = masterGain_ * attenuation_ * gain_;
+    int vol = (int)(256.0f * totalGain + 0.5f);
+    if (!vol)
+    {
+        MixZeroVolume(sound, samples, mixRate);
+        return;
+    }
+
+    float add = frequency_ / (float)mixRate;
+    int intAdd = (int)add;
+    int fractAdd = (int)((add - floorf(add)) * 65536.0f);
+    int fractPos = fractPosition_;
+
+    if (sound->IsSixteenBit())
+    {
+        short* pos = (short*)position_;
+        short* end = (short*)sound->GetEnd();
+        short* repeat = (short*)sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                *dest = *dest + (pos[0] * vol) / 256; // FL
+                ++dest;
+                *dest = *dest + (pos[1] * vol) / 256; // FR
+                ++dest;
+
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        ++dest; // FC
+                        ++dest; // LFE
+                    }
+
+                    *dest = *dest + (pos[0] * vol) / 256; // RL
+                    ++dest;
+                    *dest = *dest + (pos[1] * vol) / 256; // RR
+                    ++dest;
+                }
+                INC_POS_STEREO_LOOPED();
+            }
+            position_ = (signed char*)pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                *dest = *dest + (pos[0] * vol) / 256; // FL
+                ++dest;
+                *dest = *dest + (pos[1] * vol) / 256; // FR
+                ++dest;
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        ++dest; // FC
+                        ++dest; // LFE
+                    }
+                    *dest = *dest + (pos[0] * vol) / 256; // RL
+                    ++dest;
+                    *dest = *dest + (pos[1] * vol) / 256; // RR
+                    ++dest;
+                }
+                INC_POS_STEREO_ONESHOT();
+            }
+            position_ = (signed char*)pos;
+        }
+    }
+    else
+    {
+        signed char* pos = (signed char*)position_;
+        signed char* end = sound->GetEnd();
+        signed char* repeat = sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                *dest = *dest + pos[0] * vol; // FL
+                ++dest;
+                *dest = *dest + pos[1] * vol; // FR
+                ++dest;
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        ++dest; // FC
+                        ++dest; // LFE
+                    }
+                    *dest = *dest + pos[0] * vol; // RL
+                    ++dest;
+                    *dest = *dest + pos[1] * vol; // RR
+                    ++dest;
+                }
+                INC_POS_STEREO_LOOPED();
+            }
+            position_ = pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                *dest = *dest + pos[0] * vol; // FL
+                ++dest;
+                *dest = *dest + pos[1] * vol; // FR
+                ++dest;
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        ++dest; // FC
+                        ++dest; // LFE
+                    }
+
+                    *dest = *dest + pos[0] * vol; // RL
+                    ++dest;
+                    *dest = *dest + pos[1] * vol; // RR
+                    ++dest;
+                }
+                INC_POS_STEREO_ONESHOT();
+            }
+            position_ = pos;
+        }
+    }
+
+    fractPosition_ = fractPos;
+}
+
+void SoundSource::MixStereoToMultiIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers)
+{
+    float totalGain = masterGain_ * attenuation_ * gain_;
+    int vol = (int)(256.0f * totalGain + 0.5f);
+    if (!vol)
+    {
+        MixZeroVolume(sound, samples, mixRate);
+        return;
+    }
+
+    float add = frequency_ / (float)mixRate;
+    int intAdd = (int)add;
+    int fractAdd = (int)((add - floorf(add)) * 65536.0f);
+    int fractPos = fractPosition_;
+
+    if (sound->IsSixteenBit())
+    {
+        short* pos = (short*)position_;
+        short* end = (short*)sound->GetEnd();
+        short* repeat = (short*)sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                *dest = *dest + (GET_IP_SAMPLE_LEFT() * vol) / 256; // FL
+                ++dest;
+                *dest = *dest + (GET_IP_SAMPLE_RIGHT() * vol) / 256; // FR
+                ++dest;
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        *dest = *dest + (((GET_IP_SAMPLE_LEFT() * vol) + GET_IP_SAMPLE_RIGHT() * vol) / 256) / 2;
+                        ++dest; // FC
+                        *dest = *dest + (((GET_IP_SAMPLE_LEFT() * vol) + GET_IP_SAMPLE_RIGHT() * vol) / 256) / 2;
+                        ++dest; // LFE
+                    }
+
+                    *dest = *dest + (GET_IP_SAMPLE_LEFT() * vol) / 256; // RL
+                    ++dest;
+                    *dest = *dest + (GET_IP_SAMPLE_RIGHT() * vol) / 256; // RR
+                    ++dest;
+                }
+                INC_POS_STEREO_LOOPED();
+            }
+            position_ = (signed char*)pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                *dest = *dest + (GET_IP_SAMPLE_LEFT() * vol) / 256; // FL
+                ++dest;
+                *dest = *dest + (GET_IP_SAMPLE_RIGHT() * vol) / 256; // FR
+                ++dest;
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        ++dest; // FC
+                        ++dest; // LFE
+                    }
+
+                    *dest = *dest + (GET_IP_SAMPLE_LEFT() * vol) / 256; // RL
+                    ++dest;
+                    *dest = *dest + (GET_IP_SAMPLE_RIGHT() * vol) / 256; // RR
+                    ++dest;
+                }
+                INC_POS_STEREO_ONESHOT();
+            }
+            position_ = (signed char*)pos;
+        }
+    }
+    else
+    {
+        signed char* pos = (signed char*)position_;
+        signed char* end = sound->GetEnd();
+        signed char* repeat = sound->GetRepeat();
+
+        if (sound->IsLooped())
+        {
+            while (samples--)
+            {
+                *dest = *dest + GET_IP_SAMPLE_LEFT() * vol; // FL
+                ++dest;
+                *dest = *dest + GET_IP_SAMPLE_RIGHT() * vol; // FR
+                ++dest;
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        ++dest; // FC
+                        ++dest; // LFE
+                    }
+
+                    *dest = *dest + GET_IP_SAMPLE_LEFT() * vol; // RL
+                    ++dest;
+                    *dest = *dest + GET_IP_SAMPLE_RIGHT() * vol; // RR
+                    ++dest;
+                }
+                INC_POS_STEREO_LOOPED();
+            }
+            position_ = pos;
+        }
+        else
+        {
+            while (samples--)
+            {
+                *dest = *dest + GET_IP_SAMPLE_LEFT() * vol; // FL
+                ++dest;
+                *dest = *dest + GET_IP_SAMPLE_RIGHT() * vol; // FR
+                ++dest;
+                if (speakers > SPK_STEREO)
+                {
+                    if (speakers == SPK_SURROUND_5_1)
+                    {
+                        ++dest; // FC
+                        ++dest; // LFE
+                    }
+
+                    *dest = *dest + GET_IP_SAMPLE_LEFT() * vol; // RL
+                    ++dest;
+                    *dest = *dest + GET_IP_SAMPLE_RIGHT() * vol; // RR
+                    ++dest;
+                }
                 INC_POS_STEREO_ONESHOT();
             }
             position_ = pos;

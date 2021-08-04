@@ -739,7 +739,7 @@ static const char* predefinedNames[] = {
     EP_SOUND_BUFFER.c_str(),
     EP_SOUND_INTERPOLATION.c_str(),
     EP_SOUND_MIX_RATE.c_str(),
-    EP_SOUND_STEREO.c_str(),
+    EP_SOUND_MODE.c_str(),
     EP_TEXTURE_ANISOTROPY.c_str(),
     EP_TEXTURE_FILTER_MODE.c_str(),
     EP_TEXTURE_QUALITY.c_str(),
@@ -793,7 +793,7 @@ static VariantType predefinedTypes[] = {
     VAR_INT,    // EP_SOUND_BUFFER
     VAR_BOOL,   // EP_SOUND_INTERPOLATION
     VAR_INT,    // EP_SOUND_MIX_RATE
-    VAR_BOOL,   // EP_SOUND_STEREO
+    VAR_INT,    // EP_SOUND_MODE
     VAR_INT,    // EP_TEXTURE_ANISOTROPY
     VAR_INT,    // EP_TEXTURE_FILTER_MODE
     VAR_INT,    // EP_TEXTURE_QUALITY
