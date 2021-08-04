@@ -38,7 +38,7 @@
 namespace Urho3D
 {
 
-/// Reminder that channels are in AAC order.
+/// Reminder that channels are in WAV order, FL FR FC LFE RL RR
 static const int SOUND_SOURCE_LOW_FREQ_CHANNEL[] = {
     0, // SPK_AUTO
     0, // SPK_MONO
