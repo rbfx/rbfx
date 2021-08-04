@@ -66,8 +66,8 @@
 %ignore Urho3D::EP_SOUND_INTERPOLATION;
 %constant ea::string EpSoundMixRate = Urho3D::EP_SOUND_MIX_RATE;
 %ignore Urho3D::EP_SOUND_MIX_RATE;
-%constant ea::string EpSoundStereo = Urho3D::EP_SOUND_STEREO;
-%ignore Urho3D::EP_SOUND_STEREO;
+%constant ea::string EpSoundMode = Urho3D::EP_SOUND_MODE;
+%ignore Urho3D::EP_SOUND_MODE;
 %constant ea::string EpTextureAnisotropy = Urho3D::EP_TEXTURE_ANISOTROPY;
 %ignore Urho3D::EP_TEXTURE_ANISOTROPY;
 %constant ea::string EpTextureFilterMode = Urho3D::EP_TEXTURE_FILTER_MODE;
