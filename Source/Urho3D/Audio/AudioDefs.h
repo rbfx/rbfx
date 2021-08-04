@@ -34,4 +34,14 @@ static const ea::string SOUND_AMBIENT = "Ambient";
 static const ea::string SOUND_VOICE = "Voice";
 static const ea::string SOUND_MUSIC = "Music";
 
+// Audio channel configuration, AAC ordered
+enum SpeakerMode
+{
+    SPK_AUTO,
+    SPK_MONO,           // Single channel
+    SPK_STEREO,         // Stereo, L-R
+    SPK_QUADROPHONIC,  // Surround 4, FL-FR-RL-RR
+    SPK_SURROUND_5_1,  // 5.1 Surround, FL-FR-RL-RR-C-S (again AAC order)
+};
+
 }
