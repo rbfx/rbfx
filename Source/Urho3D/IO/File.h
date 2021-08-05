@@ -70,7 +70,7 @@ public:
     explicit RawFile();
 
     /// Open file internally using either C standard IO functions or SDL RWops for Android asset files. Return true if successful.
-    bool Open(const ea::string& fileName, FileMode mode, const PackageEntry* packageEntry = nullptr);
+    bool Open(const ea::string& fileName, FileMode mode, unsigned offset = 0, unsigned size = ea::numeric_limits<unsigned>::max());
     /// Read bytes from the file. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;
     /// Set position from the beginning of the file.
@@ -175,7 +175,7 @@ public:
 
 private:
     /// Open file internally using either C standard IO functions or SDL RWops for Android asset files. Return true if successful.
-    bool OpenInternal(const ea::string& fileName, FileMode mode, const PackageEntry* packageEntry = nullptr);
+    bool OpenInternal(const ea::string& fileName, FileMode mode, const PackageEntry* packageEntry = nullptr, bool encoded = false);
     /// Seek in file internally using either C standard IO functions or SDL RWops for Android asset files.
     void SeekInternal(unsigned newPosition);
 

@@ -101,10 +101,7 @@ TEST_CASE("RawFile slice seek and read")
 
     { // Read it back
         RawFile file;
-        PackageEntry entry;
-        entry.offset_ = 100;
-        entry.size_ = messageSize;
-        file.Open(tmpFile.fileName_, FILE_READ, &entry);
+        file.Open(tmpFile.fileName_, FILE_READ, 100, messageSize);
         REQUIRE(file.GetSize() == messageSize);
         REQUIRE(file.GetPosition() == 0);
         file.Seek(start);

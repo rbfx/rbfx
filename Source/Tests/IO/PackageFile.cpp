@@ -30,7 +30,7 @@ bool AppendMessage(PackageBuilder& builder, const ea::string& entryName, const e
 
 bool RetrieveMessage(Context* context, PackageFile* packageFile, const ea::string& fileName, ea::string* value)
 {
-    SharedPtr<File> packageContent = MakeShared<File>(context, packageFile, fileName);
+    SharedPtr<File> packageContent = MakeShared<File>(context, packageFile, fileName, &TestEncryptionKey);
     auto* entry = packageFile->GetEntry(fileName);
     value->resize(entry->size_);
     if (packageContent->Read(value->data(), entry->size_) != entry->size_)
@@ -199,6 +199,10 @@ TEST_CASE("Empty PackageFile")
 
 TEST_CASE("Single entry PackageFile")
 {
+    bool compress = GENERATE(false, true);
+    EncryptionKey* key = GENERATE(nullptr, &TestEncryptionKey);
+    INFO("compress: " << compress << ", key: " << key);
+
     SharedPtr<Context> context = CreateTestContext();
 
     TmpFile tmpFile(context);
@@ -207,10 +211,6 @@ TEST_CASE("Single entry PackageFile")
     {
         SharedPtr<File> pakFile = MakeShared<File>(context.Get(), tmpFile.fileName_, FILE_WRITE);
         PackageBuilder builder;
-        //bool compress = GENERATE(false, true);
-        //EncryptionKey* key = GENERATE(nullptr, &TestEncryptionKey);
-        bool compress = false;
-        EncryptionKey* key = &TestEncryptionKey;
         REQUIRE(builder.Create(pakFile, compress, key));
         REQUIRE(AppendMessage(builder, "EntryName", testString));
         REQUIRE(builder.Build());

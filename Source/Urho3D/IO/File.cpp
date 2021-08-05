@@ -87,7 +87,7 @@ bool RawFile::IsOpen() const
 }
 
 /// Open file internally using either C standard IO functions or SDL RWops for Android asset files. Return true if successful.
-bool RawFile::Open(const ea::string& fileName, FileMode mode, const PackageEntry* packageEntry)
+bool RawFile::Open(const ea::string& fileName, FileMode mode, unsigned offset, unsigned maxSize)
 {
 #ifdef __ANDROID__
     if (URHO3D_IS_ASSET(fileName))
@@ -110,17 +110,11 @@ bool RawFile::Open(const ea::string& fileName, FileMode mode, const PackageEntry
             absoluteFileName_ = fileName;
             mode_ = mode;
             position_ = 0;
-            if (!packageEntry)
-            {
-                size_ = SDL_RWsize(assetHandle_);
-                offset_ = 0;
-            }
-            else
-            {
-                size_ = packageEntry->size_;
-                offset_ = packageEntry->offset_;
-            }
+            offset_ = offset;
+            size_ = ea::min(SDL_RWsize(assetHandle_)- offset_, maxSize);
             checksum_ = 0;
+            if (offset_)
+                Seek(0);
             return true;
         }
     }
@@ -148,26 +142,26 @@ bool RawFile::Open(const ea::string& fileName, FileMode mode, const PackageEntry
         return false;
     }
 
-    if (packageEntry)
+    offset_ = offset;
+
+    fseek((FILE*)handle_, 0, SEEK_END);
+    long size = ftell((FILE*)handle_);
+    if (size < offset_)
     {
-        size_ = packageEntry->size_;
-        offset_ = packageEntry->offset_;
-        fseek((FILE*)handle_, offset_, SEEK_SET);
+        URHO3D_LOGERRORF("Could not open file %s with offset beyond file size", fileName.c_str());
+        Close();
+        size_ = 0;
+        return false;
     }
-    else
+    if (size > M_MAX_UNSIGNED)
     {
-        fseek((FILE*)handle_, 0, SEEK_END);
-        long size = ftell((FILE*)handle_);
-        fseek((FILE*)handle_, 0, SEEK_SET);
-        if (size > M_MAX_UNSIGNED)
-        {
-            URHO3D_LOGERRORF("Could not open file %s which is larger than 4GB", fileName.c_str());
-            Close();
-            size_ = 0;
-            return false;
-        }
-        size_ = (unsigned)size;
+        URHO3D_LOGERRORF("Could not open file %s which is larger than 4GB", fileName.c_str());
+        Close();
+        size_ = 0;
+        return false;
     }
+    size_ = ea::min<unsigned>(size - offset_, maxSize);
+    Seek(0);
 
     return true;
 }
@@ -307,7 +301,7 @@ bool File::Open(PackageFile* package, const ea::string& fileName, const Encrypti
     if (!entry)
         return false;
 
-    bool success = OpenInternal(package->GetName(), FILE_READ, entry);
+    bool success = OpenInternal(package->GetName(), FILE_READ, entry, package->PackageEncoding() != PE_NONE);
     if (!success)
     {
         URHO3D_LOGERROR("Could not open package file " + fileName);
@@ -552,7 +546,7 @@ bool File::IsOpen() const
     return file_.IsOpen();
 }
 
-bool File::OpenInternal(const ea::string& fileName, FileMode mode, const PackageEntry* packageEntry)
+bool File::OpenInternal(const ea::string& fileName, FileMode mode, const PackageEntry* packageEntry, bool encoded)
 {
     Close();
 
@@ -573,12 +567,18 @@ bool File::OpenInternal(const ea::string& fileName, FileMode mode, const Package
         return false;
     }
 
-    if (!file_.Open(fileName, mode, packageEntry))
+    // For an encoded chunked stream we don't know actual data size in the underlying file so let's not limit it.
+    unsigned size = (packageEntry && !encoded) ? packageEntry->size_ : ea::numeric_limits<unsigned>::max();
+    // Underlying file offset depends on package entry offset.
+    unsigned offset = packageEntry ? packageEntry->offset_ : 0;
+
+    if (!file_.Open(fileName, mode, offset, size))
     {
         URHO3D_LOGERROR("Could not open file "+ fileName);
         return false;
     }
-    size_ = file_.GetSize();
+    // If we read a package entry the decoded data size is defined in the entry, otherwise it matches entire file size.
+    size_ = packageEntry ? packageEntry->size_ : file_.GetSize();
 
     name_ = fileName;
     absoluteFileName_ = fileName;
