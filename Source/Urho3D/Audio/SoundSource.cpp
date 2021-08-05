@@ -1297,6 +1297,7 @@ void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, i
     int frontRightVol = (int)(((panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
     int rearLeftVol = (int)(((-panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
     int rearRightVol = (int)(((panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+    int centerVol = Lerp(frontLeftVol, frontRightVol, 0.5f) * Clamp(reach_, 0.0f, 1.0f);
 
     if (!frontLeftVol && !frontRightVol && !rearLeftVol && !rearRightVol)
     {
@@ -1326,7 +1327,8 @@ void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, i
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
-                    ++dest; // FC
+                    *dest = *dest + (*pos * centerVol) / 256; // FC
+                    ++dest;
                     ++dest; // LFE
                 }
 
@@ -1349,7 +1351,8 @@ void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, i
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
-                    ++dest; // FC
+                    *dest = *dest + (*pos * centerVol) / 256; // FC
+                    ++dest;
                     ++dest; // LFE
                 }
 
@@ -1379,7 +1382,8 @@ void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, i
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
-                    ++dest; // FC
+                    *dest = *dest + *pos * centerVol; // FC
+                    ++dest;
                     ++dest; // LFE
                 }
 
@@ -1402,7 +1406,8 @@ void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, i
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
-                    ++dest; // FC
+                    *dest = *dest + *pos * centerVol; // FC
+                    ++dest;
                     ++dest; // LFE
                 }
 
@@ -1426,6 +1431,7 @@ void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples,
     int frontRightVol = (int)(((panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
     int rearLeftVol = (int)(((-panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.05f));
     int rearRightVol = (int)(((panning_ + 1.0f) * (-reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
+    int centerVol = Lerp(frontLeftVol, frontRightVol, 0.5f) * Clamp(reach_, 0.0f, 1.0f);
 
     if (!frontLeftVol && !frontRightVol && !rearLeftVol && !rearRightVol)
     {
@@ -1456,7 +1462,8 @@ void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples,
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
-                    ++dest; // FC
+                    *dest = *dest + (s * centerVol) / 256; // FC
+                    ++dest;
                     ++dest; // LFE
                 }
 
@@ -1480,7 +1487,8 @@ void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples,
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
-                    ++dest; // FC
+                    *dest = *dest + (s * centerVol) / 256; // FC
+                    ++dest;
                     ++dest; // LFE
                 }
 
@@ -1511,7 +1519,8 @@ void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples,
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
-                    ++dest; // FC
+                    *dest = *dest + s * centerVol; // FC
+                    ++dest;
                     ++dest; // LFE
                 }
 
@@ -1535,6 +1544,7 @@ void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples,
 
                 if (speakerMode == SPK_SURROUND_5_1)
                 {
+                    *dest = *dest + s * centerVol; // FC
                     ++dest; // FC
                     ++dest; // LFE
                 }

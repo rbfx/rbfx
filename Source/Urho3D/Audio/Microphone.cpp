@@ -103,7 +103,7 @@ void Microphone::SetEnabled(bool state)
             {
                 auto& eventData = GetEventDataMap();
                 eventData[RecordingEnded::P_MICROPHONE] = this;
-                eventData[RecordingEnded::P_DATALENGTH] = buffer_.size();
+                eventData[RecordingEnded::P_DATALENGTH] = (int)buffer_.size();
                 eventData[RecordingEnded::P_CLEARDATA] = false;
 
                 SendEvent(E_RECORDINGENDED, eventData);
