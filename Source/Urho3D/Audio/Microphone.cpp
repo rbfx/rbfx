@@ -160,7 +160,7 @@ void Microphone::CheckDirtiness()
     auto& data = GetEventDataMap();
 
     data[RecordingUpdated::P_MICROPHONE] = this;
-    data[RecordingUpdated::P_DATALENGTH] = buffer_.size();
+    data[RecordingUpdated::P_DATALENGTH] = (int)buffer_.size();
     data[RecordingUpdated::P_CLEARDATA] = false;
     SendEvent(E_RECORDINGUPDATED, data);
 
