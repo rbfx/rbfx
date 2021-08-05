@@ -30,6 +30,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Button.h>
+#include <Urho3D/UI/CheckBox.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Slider.h>
 #include <Urho3D/UI/Text.h>
@@ -125,6 +126,20 @@ void SoundEffects::CreateUI()
     slider = CreateSlider(20, 200, 200, 20, "Music Volume");
     slider->SetValue(audio->GetMasterGain(SOUND_MUSIC));
     SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleMusicVolume));
+
+    slider = CreateSlider(20, 260, 200, 20, "Sound Panning");
+    slider->SetValue(0.5f);
+    SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleSoundPan));
+
+    slider = CreateSlider(20, 320, 200, 20, "Sound Reach");
+    slider->SetValue(0.5f);
+    SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleSoundReach));
+
+    auto checkbox = CreateCheckbox(20, 380, "Output to LFE");
+    checkbox->SetChecked(false);
+    SubscribeToEvent(checkbox, E_TOGGLED, URHO3D_HANDLER(SoundEffects, HandleLFE));
+
+
 }
 
 Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const ea::string& text)
@@ -145,6 +160,26 @@ Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const ea:
     buttonText->SetText(text);
 
     return button;
+}
+
+CheckBox* SoundEffects::CreateCheckbox(int x, int y, const ea::string& text)
+{
+    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
+
+    // Create the button and center the text onto it
+    auto* checkbox = root->CreateChild<CheckBox>();
+    checkbox->SetStyleAuto();
+    checkbox->SetPosition(x, y);
+
+    auto* checkboxText = checkbox->CreateChild<Text>();
+    checkboxText->SetAlignment(HA_LEFT, VA_CENTER);
+    checkboxText->SetPosition(30, 0);
+    checkboxText->SetFont(font, 12);
+    checkboxText->SetText(text);
+
+    return checkbox;
 }
 
 Slider* SoundEffects::CreateSlider(int x, int y, int xSize, int ySize, const ea::string& text)
@@ -189,6 +224,9 @@ void SoundEffects::HandlePlaySound(StringHash eventType, VariantMap& eventData)
         soundSource->Play(sound);
         // In case we also play music, set the sound volume below maximum so that we don't clip the output
         soundSource->SetGain(0.75f);
+        soundSource->SetPanning(pan_);
+        soundSource->SetReach(reach_);
+        soundSource->SetLowFrequency(lfe_);
     }
 }
 
@@ -214,6 +252,27 @@ void SoundEffects::HandleSoundVolume(StringHash eventType, VariantMap& eventData
 
     float newVolume = eventData[P_VALUE].GetFloat();
     GetSubsystem<Audio>()->SetMasterGain(SOUND_EFFECT, newVolume);
+}
+
+void SoundEffects::HandleSoundPan(StringHash eventType, VariantMap& eventData)
+{
+    using namespace SliderChanged;
+
+    pan_ = eventData[P_VALUE].GetFloat() * 2.0f - 1.0f;
+}
+
+void SoundEffects::HandleSoundReach(StringHash eventType, VariantMap& eventData)
+{
+    using namespace SliderChanged;
+
+    reach_ = eventData[P_VALUE].GetFloat() * 2.0f - 1.0f;
+}
+
+void SoundEffects::HandleLFE(StringHash eventType, VariantMap& eventData)
+{
+    using namespace Toggled;
+
+    lfe_ = eventData[P_STATE].GetBool();
 }
 
 void SoundEffects::HandleMusicVolume(StringHash eventType, VariantMap& eventData)
