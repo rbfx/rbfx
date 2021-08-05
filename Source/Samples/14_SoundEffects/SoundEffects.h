@@ -28,6 +28,7 @@ namespace Urho3D
 {
 
 class Button;
+class CheckBox;
 class Scene;
 class Slider;
 class SoundSource;
@@ -72,6 +73,8 @@ private:
     void CreateUI();
     /// Create a button at position with specified text in it.
     Button* CreateButton(int x, int y, int xSize, int ySize, const ea::string& text);
+    /// Create a checkbox at the given position with specified text.
+    CheckBox* CreateCheckbox(int x, int y, const ea::string& text);
     /// Create a horizontal slider with specified text above it.
     Slider* CreateSlider(int x, int y, int xSize, int ySize, const ea::string& text);
     /// Handle a sound effect button click.
@@ -82,8 +85,21 @@ private:
     void HandleStopMusic(StringHash eventType, VariantMap& eventData);
     /// Handle sound effects volume slider change.
     void HandleSoundVolume(StringHash eventType, VariantMap& eventData);
+    /// Handle sound effect L/R pan slider change.
+    void HandleSoundPan(StringHash eventType, VariantMap& eventData);
+    /// Handle sound effect F/B reach slider change.
+    void HandleSoundReach(StringHash eventType, VariantMap& eventData);
+    /// Handle sound effect F/B reach slider change.
+    void HandleLFE(StringHash eventType, VariantMap& eventData);
     /// Handle music volume slider change.
     void HandleMusicVolume(StringHash eventType, VariantMap& eventData);
+
+    /// Explicit pan value.
+    float pan_{ 0.0f };
+    /// Explicit reach value.
+    float reach_{ 0.0f };
+    /// Output to subwoofer.
+    bool lfe_{ false };
 };
 
 
