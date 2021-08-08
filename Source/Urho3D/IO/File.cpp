@@ -222,6 +222,14 @@ unsigned RawFile::Write(const void* data, unsigned size)
 
 void RawFile::Close()
 {
+#ifdef __ANDROID__
+    if (assetHandle_)
+    {
+        SDL_RWclose(assetHandle_);
+        assetHandle_ = 0;
+    }
+#endif
+
     if (handle_)
     {
         fclose((FILE*)handle_);
@@ -239,7 +247,6 @@ File::File(Context* context) :
     Object(context),
     mode_(FILE_READ),
 #ifdef __ANDROID__
-    assetHandle_(0),
     readBufferOffset_(0),
     readBufferSize_(0),
 #endif
@@ -254,7 +261,6 @@ File::File(Context* context, const ea::string& fileName, FileMode mode) :
     Object(context),
     mode_(FILE_READ),
 #ifdef __ANDROID__
-    assetHandle_(0),
     readBufferOffset_(0),
     readBufferSize_(0),
 #endif
@@ -516,24 +522,17 @@ unsigned File::GetChecksum()
 
 void File::Close()
 {
+    file_.Close();
+
+    position_ = 0;
+    size_ = 0;
+    checksum_ = 0;
+
 #ifdef __ANDROID__
-    if (assetHandle_)
-    {
-        SDL_RWclose(assetHandle_);
-        assetHandle_ = 0;
-    }
     readBuffer_.reset();
 #endif
 
     decoder_ = nullptr;
-
-    if (file_.GetHandle())
-    {
-        file_.Close();
-        position_ = 0;
-        size_ = 0;
-        checksum_ = 0;
-    }
 }
 
 void File::Flush()

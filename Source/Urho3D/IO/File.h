@@ -136,7 +136,7 @@ public:
     /// Open a filesystem file. Return true if successful.
     bool Open(const ea::string& fileName, FileMode mode = FILE_READ);
     /// Open from within a package file. Return true if successful.
-    bool Open(PackageFile* package, const ea::string& fileName, const EncryptionKey* key);
+    bool Open(PackageFile* package, const ea::string& fileName, const EncryptionKey* key = nullptr);
     /// Close the file.
     void Close();
     /// Flush any buffered output to the file.
