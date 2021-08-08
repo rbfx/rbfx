@@ -134,7 +134,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel' && matrix.ci_compiler == 'msvc' && matrix.ci_arch == 'x64' && matrix.ci_lib_type == 'dll'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   UWP:
@@ -208,7 +208,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel' && matrix.ci_compiler == 'msvc' && matrix.ci_arch == 'x64' && matrix.ci_lib_type == 'dll'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   Linux:
@@ -282,7 +282,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel' && matrix.ci_compiler == 'gcc' && matrix.ci_arch == 'x64' && matrix.ci_lib_type == 'dll'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   MacOS:
@@ -359,7 +359,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel' && matrix.ci_compiler == 'clang' && matrix.ci_arch == 'x64' && matrix.ci_lib_type == 'dll'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   Android:
@@ -420,7 +420,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: '**/*.apk'
 
   iOS:
@@ -488,7 +488,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: '**/*.app'
 
   Web:
@@ -553,5 +553,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
