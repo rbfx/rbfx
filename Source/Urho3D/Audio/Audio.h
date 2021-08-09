@@ -51,6 +51,8 @@ public:
 
     /// Initialize sound output with specified buffer length and output mode.
     bool SetMode(int bufferLengthMSec, int mixRate, SpeakerMode mode, bool interpolation = true);
+    /// Shutdown this audio device, likely because we've lost it.
+    void Close();
     /// Run update on sound sources. Not required for continued playback, but frees unused sound sources & sounds and updates 3D positions.
     void Update(float timeStep);
     /// Restart sound output.
@@ -79,6 +81,10 @@ public:
     /// Return mixing rate.
     /// @property
     int GetMixRate() const { return mixRate_; }
+
+    /// Return millseconds of buffer length.
+    /// @property
+    unsigned GetBufferLengthMS() const { return bufferLengthMSec_; }
 
     /// Return whether output is interpolated.
     /// @property
@@ -130,7 +136,9 @@ public:
     /// Returns a pretty-name list of all attached microphones.
     StringVector EnumerateMicrophones() const;
     /// Constructs a microphone from a pretty-name (found via EnumerateMicrophones()).
-    SharedPtr<Microphone> CreateMicrophone(const ea::string& name, bool forSpeechRecog, unsigned wantedFreq);
+    SharedPtr<Microphone> CreateMicrophone(const ea::string& name, bool forSpeechRecog, unsigned wantedFreq, unsigned silenceLevelLimit = 0);
+    /// Disables a microphone that has been lost.
+    void CloseMicrophoneForLoss(unsigned which);
 
 private:
     /// Handle render update event.
@@ -150,6 +158,8 @@ private:
     unsigned sampleSize_{};
     /// Clip buffer size in samples.
     unsigned fragmentSize_{};
+    /// Clip buffer size in milliseconds.
+    unsigned bufferLengthMSec_{};
     /// Mixing rate.
     int mixRate_{};
     /// Mixing interpolation flag.
