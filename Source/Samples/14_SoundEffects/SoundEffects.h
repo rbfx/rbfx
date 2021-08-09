@@ -27,8 +27,10 @@
 namespace Urho3D
 {
 
+class BufferedSoundStream;
 class Button;
 class CheckBox;
+class Microphone;
 class Scene;
 class Slider;
 class SoundSource;
@@ -93,6 +95,8 @@ private:
     void HandleLFE(StringHash eventType, VariantMap& eventData);
     /// Handle music volume slider change.
     void HandleMusicVolume(StringHash eventType, VariantMap& eventData);
+    /// Handle button to mic recording.
+    void HandleMicRecord(StringHash eventType, VariantMap& eventData);
 
     /// Explicit pan value.
     float pan_{ 0.0f };
@@ -100,6 +104,9 @@ private:
     float reach_{ 0.0f };
     /// Output to subwoofer.
     bool lfe_{ false };
+
+    SharedPtr<Microphone> activeMic_;
+    SharedPtr<BufferedSoundStream> micStream_;
 };
 
 
