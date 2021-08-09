@@ -22,6 +22,8 @@
 
 #include <Urho3D/Audio/Audio.h>
 #include <Urho3D/Audio/AudioEvents.h>
+#include <Urho3D/Audio/BufferedSoundStream.h>
+#include <Urho3D/Audio/Microphone.h>
 #include <Urho3D/Audio/Sound.h>
 #include <Urho3D/Audio/SoundSource.h>
 #include <Urho3D/Engine/Engine.h>
@@ -33,6 +35,7 @@
 #include <Urho3D/UI/CheckBox.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Slider.h>
+#include <Urho3D/UI/DropDownList.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/UIEvents.h>
@@ -139,7 +142,24 @@ void SoundEffects::CreateUI()
     checkbox->SetChecked(false);
     SubscribeToEvent(checkbox, E_TOGGLED, URHO3D_HANDLER(SoundEffects, HandleLFE));
 
+    auto font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
+    auto micPicker = root->CreateChild<DropDownList>();
+    micPicker->SetName("MIC_PICKER");
+    micPicker->SetStyleAuto();
+    micPicker->SetPosition(20, 440);
+    micPicker->SetSize(300, 20);
 
+    auto micList = audio->EnumerateMicrophones();
+    for (auto mic : micList)
+    {
+        SharedPtr<Text> item(new Text(context_));
+        item->SetText(mic);
+        item->SetStyleAuto();
+        micPicker->AddItem(item);
+    }
+
+    auto record = CreateButton(20, 500, 180, 40, "Start/Stop Record");
+    SubscribeToEvent(record, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleMicRecord));
 }
 
 Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const ea::string& text)
@@ -281,4 +301,39 @@ void SoundEffects::HandleMusicVolume(StringHash eventType, VariantMap& eventData
 
     float newVolume = eventData[P_VALUE].GetFloat();
     GetSubsystem<Audio>()->SetMasterGain(SOUND_MUSIC, newVolume);
+}
+
+void SoundEffects::HandleMicRecord(StringHash eventType, VariantMap& eventData)
+{
+    if (activeMic_)
+    {
+        activeMic_.Reset();
+        return;
+    }
+
+    auto micPicker = (DropDownList*)GetSubsystem<UI>()->GetRoot()->GetChild("MIC_PICKER", true);
+    if (micPicker->GetNumItems() && micPicker->GetSelectedItem())
+    {
+        auto micName = ((Text*)micPicker->GetSelectedItem())->GetText();
+
+        activeMic_ = GetSubsystem<Audio>()->CreateMicrophone(micName, false, 16000, 64);
+        if (activeMic_)
+        {
+            micStream_.Reset(new BufferedSoundStream());
+            micStream_->SetFormat(activeMic_->GetFrequency(), true, false);
+            activeMic_->Link(micStream_);
+
+            auto* soundSource = scene_->CreateComponent<SoundSource>();
+            // Component will automatically remove itself when the sound finished playing
+            soundSource->SetAutoRemoveMode(REMOVE_COMPONENT);
+
+            SharedPtr<Sound> snd(new Sound(GetContext()));
+            soundSource->Play(micStream_);
+            soundSource->SetGain(1.0f);
+            soundSource->SetPanning(0.0f);
+            soundSource->SetReach(0.0f);
+        }
+    }
+    else
+        URHO3D_LOGERROR("No microphones detected");
 }
