@@ -117,3 +117,42 @@ TEST_CASE("RawFile slice seek and read")
 
 }
 
+
+TEST_CASE("File seek and read")
+{
+    SharedPtr<Context> context = CreateTestContext();
+
+    TmpFile tmpFile(context);
+
+    const unsigned messageSize = LongMessage.length();
+
+    unsigned start = GENERATE(0, 100, 400, 442);
+    unsigned read = GENERATE(0, 200, 442);
+    INFO("Read " << read << " starting from " << start);
+    unsigned expectedSize = ea::min(read, messageSize - start);
+    { // Create File.
+        File file(context);
+        file.Open(tmpFile.fileName_, FILE_WRITE);
+
+        file.Write(LongMessage.data(), LongMessage.length());
+        file.Close();
+    }
+
+    { // Read it back
+        File file(context);
+        file.Open(tmpFile.fileName_, FILE_READ);
+        REQUIRE(file.GetSize() == messageSize);
+        REQUIRE(file.GetPosition() == 0);
+        file.Seek(start);
+        REQUIRE(file.GetPosition() == start);
+        std::vector<char> buffer;
+        buffer.resize(read);
+        unsigned size = file.Read(buffer.data(), read);
+        REQUIRE(expectedSize == size);
+        REQUIRE(file.GetPosition() == start + expectedSize);
+        ea::string message(buffer.data(), buffer.data() + size);
+        REQUIRE(message == LongMessage.substr(start, size));
+    }
+
+}
+

@@ -94,6 +94,17 @@ public:
     /// @property
     bool IsPackaged() const { return offset_ != 0; }
 
+    /// Return whether is android asset.
+    /// @property
+    bool IsAndroidAsset() const
+    {
+#ifdef __ANDROID__
+        return assetHandle_ != nullptr;
+#else
+        return false;
+#endif
+    }
+
 private:
     /// File handle.
     void* handle_;

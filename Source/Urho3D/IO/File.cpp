@@ -112,7 +112,6 @@ bool RawFile::Open(const ea::string& fileName, FileMode mode, unsigned offset, u
             position_ = 0;
             offset_ = offset;
             size_ = ea::min(SDL_RWsize(assetHandle_)- offset_, maxSize);
-            checksum_ = 0;
             if (offset_)
                 Seek(0);
             return true;
@@ -173,7 +172,7 @@ unsigned RawFile::Read(void* dest, unsigned size)
 #ifdef __ANDROID__
     if (assetHandle_)
     {
-        unsigned readed = SDL_RWread(assetHandle_, dest, 1, actualSize) == 1);
+        unsigned readed = SDL_RWread(assetHandle_, dest, 1, actualSize);
         position_ += readed;
         return readed;
     }
@@ -276,7 +275,6 @@ File::File(Context* context, PackageFile* package, const ea::string& fileName, c
     Object(context),
     mode_(FILE_READ),
 #ifdef __ANDROID__
-    assetHandle_(0),
     readBufferOffset_(0),
     readBufferSize_(0),
 #endif
@@ -373,7 +371,7 @@ unsigned File::Read(void* dest, unsigned size)
     }
 
 #ifdef __ANDROID__
-    if (assetHandle_ && !compressed_)
+    if (!decoder_ && file_.IsAndroidAsset())
     {
         // If not using a compressed package file, buffer file reads on Android for better performance
         if (!readBuffer_)
@@ -392,7 +390,7 @@ unsigned File::Read(void* dest, unsigned size)
             {
                 readBufferSize_ = Min(size_ - position_, READ_BUFFER_SIZE);
                 readBufferOffset_ = 0;
-                file.Read(readBuffer_.get(), readBufferSize_);
+                file_.Read(readBuffer_.get(), readBufferSize_);
             }
 
             unsigned copySize = Min((readBufferSize_ - readBufferOffset_), sizeLeft);
