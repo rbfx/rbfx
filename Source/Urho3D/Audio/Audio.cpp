@@ -209,6 +209,11 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, SpeakerMode speakerMode, 
     return Play();
 }
 
+void Audio::Close()
+{
+    Release();
+}
+
 void Audio::Update(float timeStep)
 {
     if (!playing_)
@@ -446,9 +451,21 @@ StringVector Audio::EnumerateMicrophones() const
     StringVector ret;
 
     const int recordingDeviceCt = SDL_GetNumAudioDevices(SDL_TRUE);
-
     for (int i = 0; i < recordingDeviceCt; ++i)
-        ret.push_back(ea::string(SDL_GetAudioDeviceName(i, SDL_TRUE)));
+    {
+        // also need to update "which" as this could change
+        const char* deviceName = SDL_GetAudioDeviceName(i, SDL_TRUE);
+        for (auto mic : microphones_)
+        {
+            auto ptr = mic.Lock();
+            if (ptr)
+            {
+                if (Compare(ptr->name_, deviceName, false) == 0)
+                    ptr->which_ = i;
+            }
+        }
+        ret.push_back(deviceName);
+    }
 
     return ret;
 }
@@ -459,9 +476,24 @@ void SDL_audioRecordingCallback(void* userdata, Uint8* stream, int len)
     mic->Update(stream, len);
 }
 
-SharedPtr<Microphone> Audio::CreateMicrophone(const ea::string& name, bool forSpeechRecog, unsigned wantedFreq)
+SharedPtr<Microphone> Audio::CreateMicrophone(const ea::string& name, bool forSpeechRecog, unsigned wantedFreq, unsigned silenceLevelLimit)
 {
     const int recordingDeviceCt = SDL_GetNumAudioDevices(SDL_TRUE);
+
+    // update "which"
+    for (int deviceIdx = 0; deviceIdx < recordingDeviceCt; ++deviceIdx)
+    {
+        const char* deviceName = SDL_GetAudioDeviceName(deviceIdx, SDL_TRUE);
+        for (auto mic : microphones_)
+        {
+            auto ptr = mic.Lock();
+            if (ptr)
+            {
+                if (Compare(ptr->name_, deviceName, false) == 0)
+                    ptr->which_ = deviceIdx;
+            }
+        }
+    }
 
     for (int i = 0; i < recordingDeviceCt; ++i)
     {
@@ -481,7 +513,7 @@ SharedPtr<Microphone> Audio::CreateMicrophone(const ea::string& name, bool forSp
                 { 16000, 22050, 44100 }
             };
 
-            int iters = wantedFreq == 0 ? FREQ_COUNT : 0;
+            int iters = wantedFreq == 0 ? FREQ_COUNT : 1;
             for (int i = 0; i < iters; ++i)
             {
                 SDL_AudioSpec recordSpec;
@@ -501,7 +533,8 @@ SharedPtr<Microphone> Audio::CreateMicrophone(const ea::string& name, bool forSp
                 auto deviceID = SDL_OpenAudioDevice(deviceName, SDL_TRUE, &recordSpec, &gotRecordSpec, 0);
                 if (deviceID != 0)
                 {
-                    mic->Init(deviceID, recordSpec.samples, recordSpec.freq);
+                    mic->SetWakeThreshold(silenceLevelLimit);
+                    mic->Init(deviceName, deviceID, recordSpec.samples, recordSpec.freq, i);
                     microphones_.push_back(mic);
                     return mic;
                 }
@@ -512,6 +545,23 @@ SharedPtr<Microphone> Audio::CreateMicrophone(const ea::string& name, bool forSp
     }
 
     return nullptr;
+}
+
+void Audio::CloseMicrophoneForLoss(unsigned which)
+{
+    for (auto m : microphones_)
+    {
+        auto mic = m.Lock();
+        if (mic)
+        {
+            if (mic->which_ == which)
+            {
+                SDL_CloseAudioDevice(mic->micID_);
+                mic->which_ = UINT_MAX;
+                mic->micID_ = 0;
+            }
+        }
+    }
 }
 
 void RegisterAudioLibrary(Context* context)

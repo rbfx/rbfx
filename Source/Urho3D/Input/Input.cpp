@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Audio/Audio.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Mutex.h"
@@ -2469,6 +2470,25 @@ void Input::HandleSDLEvent(void* sdlEvent)
             SDL_free(evt.drop.file);
 
             SendEvent(E_DROPFILE, eventData);
+        }
+        break;
+
+    case SDL_AUDIODEVICEADDED:
+        {
+            if (evt.adevice.iscapture == SDL_FALSE)
+            {
+                auto audio = GetSubsystem<Audio>();
+                audio->SetMode(audio->GetBufferLengthMS(), audio->GetMixRate(), audio->GetSpeakerMode(), audio->GetInterpolation());
+            }
+        }
+        break;
+
+    case SDL_AUDIODEVICEREMOVED:
+        {
+            if (evt.adevice.iscapture)
+                GetSubsystem<Audio>()->CloseMicrophoneForLoss(evt.adevice.which);
+            else
+                GetSubsystem<Audio>()->Close();
         }
         break;
 

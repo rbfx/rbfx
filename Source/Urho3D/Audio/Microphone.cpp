@@ -36,6 +36,7 @@ namespace Urho3D
 
 Microphone::Microphone(Context* ctx) : Object(ctx),
     micID_(0),
+    which_(0),
     frequency_(0u),
     enabled_(false)
 {
@@ -46,7 +47,6 @@ Microphone::~Microphone()
 {
     if (micID_ != 0)
         SDL_CloseAudioDevice(micID_);
-
     micID_ = 0;
 }
 
@@ -69,13 +69,17 @@ void Microphone::ClearData()
     buffer_.clear();
 }
 
-void Microphone::Init(SDL_AudioDeviceID id, int bufferSize, unsigned frequency)
+void Microphone::Init(const ea::string& name, SDL_AudioDeviceID id, int bufferSize, unsigned frequency, unsigned which)
 {
     MutexLock lockHandle(lock_);
 
+    name_ = name;
     micID_ = id;
+    which_ = which;
     frequency_ = frequency;
     buffer_.reserve(bufferSize);
+
+    SetEnabled(true);
 }
 
 void Microphone::SetEnabled(bool state) 
@@ -124,10 +128,11 @@ void Microphone::Update(unsigned char* rawData, int rawDataLen)
     {
         int16_t* data = (int16_t*)rawData;
         const int sampleCt = rawDataLen / sizeof(int16_t);
+
         bool needsWake = false;
         for (int i = 0; i < sampleCt; ++i)
             needsWake |= abs(data[i]) > wakeThreshold_;
-        
+
         if (!needsWake)
         {
             isSleeping_ = true;
@@ -148,6 +153,7 @@ void Microphone::Update(unsigned char* rawData, int rawDataLen)
         linkedStream_->AddData(rawData, rawDataLen);
 
     isDirty_ = true;
+    isSleeping_ = false;
 }
 
 void Microphone::CheckDirtiness()
@@ -157,18 +163,21 @@ void Microphone::CheckDirtiness()
 
     MutexLock lockHandle(lock_);
 
-    auto& data = GetEventDataMap();
+    if (isDirty_)
+    {
+        auto& data = GetEventDataMap();
 
-    data[RecordingUpdated::P_MICROPHONE] = this;
-    data[RecordingUpdated::P_DATALENGTH] = (int)buffer_.size();
-    data[RecordingUpdated::P_CLEARDATA] = false;
-    SendEvent(E_RECORDINGUPDATED, data);
+        data[RecordingUpdated::P_MICROPHONE] = this;
+        data[RecordingUpdated::P_DATALENGTH] = (int)buffer_.size();
+        data[RecordingUpdated::P_CLEARDATA] = false;
+        SendEvent(E_RECORDINGUPDATED, data);
 
-    // This is generally not done, using an event-data param as a return value. Unsure about how I feel about it.
-    if (data[RecordingUpdated::P_CLEARDATA].GetBool())
-        buffer_.clear();
+        // This is generally not done, using an event-data param as a return value. Unsure about how I feel about it.
+        if (data[RecordingUpdated::P_CLEARDATA].GetBool())
+            buffer_.clear();
 
-    isDirty_ = false;
+        isDirty_ = false;
+    }
 }
 
 SharedPtr<BufferedSoundStream> Microphone::GetLinked() const

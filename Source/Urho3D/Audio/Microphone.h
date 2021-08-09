@@ -63,9 +63,13 @@ public:
     /// @property
     unsigned GetFrequency() const { return frequency_; }
 
+    /// Returns the user friendly name of this microphone.
+    /// @property
+    ea::string GetName() const { return name_; }
+
     /// Returns true if the device is actively recording.
     /// @property
-    bool IsEnabled() const { return enabled_; }
+    bool IsEnabled() const { return enabled_ && micID_ != 0; }
     /// Starts or stops recording.
     /// @property
     void SetEnabled(bool state);
@@ -75,7 +79,7 @@ public:
     unsigned GetWakeThreshold() const { return wakeThreshold_; }
     /// Minimum volume to wake this device.
     /// @property
-    void SetWakeThreshold(unsigned hz) { wakeThreshold_ = hz; }
+    void SetWakeThreshold(unsigned value) { wakeThreshold_ = value; }
 
     /// Returns true if this device is in sleep state.
     /// @property
@@ -90,16 +94,20 @@ public:
 
 private:
     /// Initializes the SDL audio device.
-    void Init(SDL_AudioDeviceID id, int bufferSize, unsigned frequency);
+    void Init(const ea::string& name, SDL_AudioDeviceID id, int bufferSize, unsigned frequency, unsigned which);
     /// Audio calls this to check if the SDL thread has appended data to us.
     void CheckDirtiness();
 
     /// Target to auto-copy data into.
     SharedPtr<BufferedSoundStream> linkedStream_;
+    /// Named identifier of the microphone.
+    ea::string name_;
     /// Stored copy of data contained.
     ea::vector<int16_t> buffer_;
     /// SDL identifier for the mic.
     SDL_AudioDeviceID micID_;
+    /// Last seen index by SDL.
+    unsigned which_;
     /// Lock object for thread safety, most operations on speech are going to want to be threaded.
     mutable Mutex lock_;
     /// HZ freq of the mic.
