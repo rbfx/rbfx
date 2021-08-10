@@ -200,7 +200,7 @@ TEST_CASE("Empty PackageFile")
 TEST_CASE("Single entry PackageFile")
 {
     bool compress = GENERATE(false, true);
-    EncryptionKey* key = GENERATE(nullptr, &TestEncryptionKey);
+    EncryptionKey* key = GENERATE(static_cast<EncryptionKey*>(nullptr), &TestEncryptionKey);
     INFO("compress: " << compress << ", key: " << key);
 
     SharedPtr<Context> context = CreateTestContext();
