@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata minClientVersion="3.0">
+        <id>rbfx.Tools</id>
+        <version>$version$</version>
+        <title>rbfx.Tools</title>
+        <authors>Rokas Kupstys</authors>
+        <copyright>© rbfx contributors. All rights reserved.</copyright>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/rokups/rbfx/</projectUrl>
+        <description>Tools of rbfx game engine</description>
+        <tags>rbfx Urho3D gamedev csharp dotnet gameengine</tags>
+        <dependencies>
+            <dependency id="rbfx.Urho3DNet" version="$version$" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="SDK-Windows/bin/Release/Editor.*" target="runtimes/win-x64/native/" />
+        <file src="SDK-Windows/bin/Release/Player.*" target="runtimes/win-x64/native/" />
+        <file src="SDK-Windows/bin/Release/AssetImporter.exe" target="runtimes/win-x64/native/AssetImporter.exe" />
+        <file src="SDK-Windows/bin/Release/AssetViewer.exe" target="runtimes/win-x64/native/AssetViewer.exe" />
+        <file src="SDK-Windows/bin/Release/OgreBatchConverter.exe" target="runtimes/win-x64/native/OgreBatchConverter.exe" />
+        <file src="SDK-Windows/bin/Release/OgreImporter.exe" target="runtimes/win-x64/native/OgreImporter.exe" />
+        <file src="SDK-Windows/bin/Release/PackageTool.exe" target="runtimes/win-x64/native/PackageTool.exe" />
+        <file src="SDK-Windows/bin/Release/Profiler.exe" target="runtimes/win-x64/native/Profiler.exe" />
+        <file src="SDK-Windows/bin/Release/RampGenerator.exe" target="runtimes/win-x64/native/RampGenerator.exe" />
+        <file src="SDK-Windows/bin/Release/SerializationConverter.exe" target="runtimes/win-x64/native/SerializationConverter.exe" />
+        <file src="SDK-Windows/bin/Release/SpritePacker.exe" target="runtimes/win-x64/native/SpritePacker.exe" />
+
+        <file src="SDK-Linux/bin/*Editor*" target="runtimes/linux-x64/native/" />
+        <file src="SDK-Linux/bin/*Player*" target="runtimes/linux-x64/native/" />
+        <file src="SDK-Linux/bin/crunch" target="runtimes/linux-x64/native/crunch" />
+        <file src="SDK-Linux/bin/AssetImporter" target="runtimes/linux-x64/native/AssetImporter" />
+        <file src="SDK-Linux/bin/AssetViewer" target="runtimes/linux-x64/native/AssetViewer" />
+        <file src="SDK-Linux/bin/OgreBatchConverter" target="runtimes/linux-x64/native/OgreBatchConverter" />
+        <file src="SDK-Linux/bin/OgreImporter" target="runtimes/linux-x64/native/OgreImporter" />
+        <file src="SDK-Linux/bin/PackageTool" target="runtimes/linux-x64/native/PackageTool" />
+        <file src="SDK-Linux/bin/Profiler" target="runtimes/linux-x64/native/Profiler" />
+        <file src="SDK-Linux/bin/RampGenerator" target="runtimes/linux-x64/native/RampGenerator" />
+        <file src="SDK-Linux/bin/SerializationConverter" target="runtimes/linux-x64/native/SerializationConverter" />
+        <file src="SDK-Linux/bin/SpritePacker" target="runtimes/linux-x64/native/SpritePacker" />
+
+        <file src="SDK-MacOS/bin/Release/*Editor*" target="runtimes/osx-x64/native/" />
+        <file src="SDK-MacOS/bin/Release/*Player*" target="runtimes/osx-x64/native/" />
+        <file src="SDK-MacOS/bin/Release/crunch" target="runtimes/osx-x64/native/crunch" />
+        <file src="SDK-MacOS/bin/Release/AssetImporter" target="runtimes/osx-x64/native/AssetImporter" />
+        <file src="SDK-MacOS/bin/Release/AssetViewer" target="runtimes/osx-x64/native/AssetViewer" />
+        <file src="SDK-MacOS/bin/Release/OgreBatchConverter" target="runtimes/osx-x64/native/OgreBatchConverter" />
+        <file src="SDK-MacOS/bin/Release/OgreImporter" target="runtimes/osx-x64/native/OgreImporter" />
+        <file src="SDK-MacOS/bin/Release/PackageTool" target="runtimes/osx-x64/native/PackageTool" />
+        <file src="SDK-MacOS/bin/Release/Profiler" target="runtimes/osx-x64/native/Profiler" />
+        <file src="SDK-MacOS/bin/Release/RampGenerator" target="runtimes/osx-x64/native/RampGenerator" />
+        <file src="SDK-MacOS/bin/Release/SerializationConverter" target="runtimes/osx-x64/native/SerializationConverter" />
+        <file src="SDK-MacOS/bin/Release/SpritePacker" target="runtimes/osx-x64/native/SpritePacker" />
+
+        <file src="build/rbfx.Tools.targets" target="build/" />
+        <file src="SDK-Linux/bin/EditorData/**" target="content/EditorData/" />
+    </files>
+</package>

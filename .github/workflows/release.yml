@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows:
+      - Build
+#    branches:
+#      - '*'
+#    tags:
+#      - '*'
+    types:
+      - completed
+
+jobs:
+  Release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Get short SHA
+        id: vars
+        run: echo "::set-output name=sha_short::$(echo ${GITHUB_SHA} | cut -c1-7)"
+
+      - uses: actions/download-artifact@v2
+
+      - name: Nuget
+        shell: bash
+        run: |
+          mv rbfx-*.zip source-code/packaging/nuget/
+          cd source-code/packaging/nuget
+          ./package.sh
+#          for pkg in out/*.nupkg;
+#          do
+#            dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+#          done
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: source-code/packaging/nuget/out/*.nupkg

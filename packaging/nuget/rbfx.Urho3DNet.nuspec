@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata minClientVersion="3.0">
+        <id>rbfx.Urho3DNet</id>
+        <version>$version$</version>
+        <title>rbfx.Urho3DNet</title>
+        <authors>Rokas Kupstys</authors>
+        <copyright>© rbfx contributors. All rights reserved.</copyright>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/rokups/rbfx/</projectUrl>
+        <description>rbfx game engine package for C#</description>
+        <tags>rbfx Urho3D gamedev csharp dotnet gameengine</tags>
+        <dependencies>
+            <group targetFramework="net6.0">
+                <dependency id="System.CodeDom" version="6.0.0-preview.6.21352.12" exclude="Build,Analyzers" />
+            </group>
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="SDK-Windows/bin/Release/Urho3DNet.dll" target="lib/net6.0/"/>
+        <file src="SDK-Windows/bin/Release/Urho3D.dll" target="runtimes/win-x64/native/"/>
+        <file src="SDK-Linux/bin/libUrho3D.so" target="runtimes/linux-x64/native/" />
+        <file src="SDK-MacOS/bin/Release/libUrho3D.dylib" target="runtimes/osx-x64/native/" />
+    </files>
+</package>
