@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata minClientVersion="3.0">
+        <id>rbfx.Data</id>
+        <version>$version$</version>
+        <title>rbfx.Data</title>
+        <authors>Rokas Kupstys</authors>
+        <copyright>© rbfx contributors. All rights reserved.</copyright>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/rokups/rbfx/</projectUrl>
+        <description>rbfx game engine package for sample Data</description>
+        <tags>rbfx Urho3D gamedev csharp dotnet gameengine</tags>
+    </metadata>
+    <files>
+        <file src="build/rbfx.Data.targets" target="build/" />
+        <file src="SDK-Linux/bin/Data/**" target="content/Data/" />
+        <file src="SDK-Linux/bin/Autoload/**" target="content/Autoload/" />
+    </files>
+</package>
