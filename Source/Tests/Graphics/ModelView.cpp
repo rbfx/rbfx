@@ -69,6 +69,20 @@ void AppendQuad(GeometryLODView& dest,
         dest.indices_.push_back(baseIndex + indices[i]);
 }
 
+void AppendSkinnedQuad(GeometryLODView& dest, const Vector4& blendIndices, const Vector4& blendWeights,
+    const Vector3& position, const Quaternion& rotation, const Vector2& size, const Color& color)
+{
+    const unsigned beginVertex = dest.vertices_.size();
+    AppendQuad(dest, position, rotation, size, color);
+    const unsigned endVertex = dest.vertices_.size();
+
+    for (unsigned i = beginVertex; i < endVertex; ++i)
+    {
+        dest.vertices_[i].blendIndices_ = blendIndices;
+        dest.vertices_[i].blendWeights_ = blendWeights;
+    }
+}
+
 }
 
 TEST_CASE("Simple model constructed and desconstructed")
@@ -225,5 +239,80 @@ TEST_CASE("Simple model constructed and desconstructed")
         REQUIRE(modelImported);
         CHECK(modelView->GetVertexFormat() == secondModelView->GetVertexFormat());
         CHECK(modelView->GetGeometries() == secondModelView->GetGeometries());
+        CHECK(modelView->GetBones() == secondModelView->GetBones());
+    }
+}
+
+TEST_CASE("Skeletal model constructed and desconstructed")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto modelView = MakeShared<ModelView>(context);
+
+    VectorBuffer modelData;
+    {
+        // Set vertex format
+        ModelVertexFormat format;
+        format.position_ = TYPE_VECTOR3;
+        format.normal_ = TYPE_VECTOR3;
+        format.color_[0] = TYPE_UBYTE4_NORM;
+        format.blendIndices_ = TYPE_UBYTE4;
+        format.blendWeights_ = TYPE_UBYTE4_NORM;
+        modelView->SetVertexFormat(format);
+
+        // Create geometry
+        auto& geometries = modelView->GetGeometries();
+        geometries.resize(1);
+        geometries[0].lods_.resize(1);
+        auto& geometry = geometries[0].lods_[0];
+
+        // Create bones
+        auto& bones = modelView->GetBones();
+        bones.resize(3);
+
+        bones[0].name_ = "Root";
+        bones[0].parentIndex_ = M_MAX_UNSIGNED;
+
+        bones[1].name_ = "Quad 1";
+        bones[1].parentIndex_ = 0;
+        bones[1].SetInitialTransform({ 0.0f, 0.0f, 0.0f });
+        bones[1].SetLocalBoundingBox({ Vector3{ -0.5f, 0.0f, 0.0f }, Vector3{ 0.5f, 1.0f, 0.0f } });
+        bones[1].RecalculateOffsetMatrix();
+
+        bones[2].name_ = "Quad 2";
+        bones[2].parentIndex_ = 1;
+        bones[2].SetInitialTransform({ 0.0f, 1.0f, 0.0f });
+        bones[2].SetLocalBoundingBox({ Vector3{ -0.5f, 0.0f, 0.0f }, Vector3{ 0.5f, 1.0f, 0.0f } });
+        bones[2].RecalculateOffsetMatrix();
+
+        // Set geometry data
+        AppendSkinnedQuad(geometry, { 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 0.0f },
+            { 0.0f, 0.5f, 0.0f }, { 0.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::WHITE);
+        AppendSkinnedQuad(geometry, { 0.0f, 2.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f },
+            { 0.0f, 1.5f, 0.0f }, { 0.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::WHITE);
+
+        // Convert
+        const auto model = modelView->ExportModel();
+        REQUIRE(model);
+
+        // Serialize
+        const bool modelSaved = model->Save(modelData);
+        REQUIRE(modelSaved);
+
+        modelData.Seek(0);
+    }
+
+    // Assert loaded
+    auto model = MakeShared<Model>(context);
+    const bool modelLoaded = model->Load(modelData);
+    REQUIRE(modelLoaded);
+
+    // Assert ModelView parsing
+    {
+        auto secondModelView = MakeShared<ModelView>(context);
+        const bool modelImported = secondModelView->ImportModel(model);
+        REQUIRE(modelImported);
+        CHECK(modelView->GetVertexFormat() == secondModelView->GetVertexFormat());
+        CHECK(modelView->GetGeometries() == secondModelView->GetGeometries());
+        CHECK(modelView->GetBones() == secondModelView->GetBones());
     }
 }
