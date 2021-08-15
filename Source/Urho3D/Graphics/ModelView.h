@@ -151,7 +151,7 @@ struct URHO3D_API BoneView
     /// @{
     Vector3 position_;
     Quaternion rotation_;
-    Vector3 scale_;
+    Vector3 scale_{ Vector3::ONE };
     /// Inverted value of bone transform corresponding to default vertex position.
     Matrix3x4 offsetMatrix_;
     /// @}

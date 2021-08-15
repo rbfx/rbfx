@@ -631,12 +631,12 @@ void ModelView::ExportModel(Model* model) const
     for (unsigned boneIndex = 0; boneIndex < numBones; ++boneIndex)
     {
         const BoneView& sourceBone = bones_[boneIndex];
-        const bool isRootBone = sourceBone.parentIndex_ != M_MAX_UNSIGNED;
+        const bool isRootBone = sourceBone.parentIndex_ == M_MAX_UNSIGNED;
         Bone& bone = *skeleton.GetBone(boneIndex);
 
         bone.name_ = sourceBone.name_;
         bone.nameHash_ = sourceBone.name_;
-        bone.parentIndex_ = isRootBone ? sourceBone.parentIndex_ : boneIndex;
+        bone.parentIndex_ = isRootBone ? boneIndex : sourceBone.parentIndex_;
 
         bone.initialPosition_ = sourceBone.position_;
         bone.initialRotation_ = sourceBone.rotation_;

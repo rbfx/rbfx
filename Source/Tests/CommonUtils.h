@@ -37,6 +37,9 @@ namespace Tests
 /// Create test context with all subsystems ready.
 SharedPtr<Context> CreateCompleteTestContext();
 
+/// Run frame with given time step.
+void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
+
 }
 
 /// Convert common types to strings

@@ -42,4 +42,17 @@ SharedPtr<Context> CreateCompleteTestContext()
     return context;
 }
 
+void RunFrame(Context* context, float timeStep, float maxTimeStep)
+{
+    auto engine = context->GetSubsystem<Engine>();
+    do
+    {
+        const float subTimeStep = ea::min(timeStep, maxTimeStep);
+        engine->SetNextTimeStep(subTimeStep);
+        engine->RunFrame();
+        timeStep -= subTimeStep;
+    }
+    while (timeStep > 0.0f);
+}
+
 }
