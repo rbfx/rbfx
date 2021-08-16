@@ -81,6 +81,8 @@ struct URHO3D_API ShaderParameter
 class URHO3D_API ShaderVariation : public RefCounted, public GPUObject
 {
 public:
+    typedef ea::array<unsigned, MAX_SHADER_PARAMETER_GROUPS> ConstantBufferSizes;
+
     /// Construct.
     ShaderVariation(Shader* owner, ShaderType type);
     /// Destruct.
@@ -132,7 +134,7 @@ public:
     const ea::string& GetCompilerOutput() const { return compilerOutput_; }
 
     /// Return constant buffer data sizes.
-    const unsigned* GetConstantBufferSizes() const { return &constantBufferSizes_[0]; }
+    const ConstantBufferSizes& GetConstantBufferSizes() const { return constantBufferSizes_; }
 
     /// D3D11 vertex semantic names. Used internally.
     static const char* elementSemanticNames[];
@@ -160,7 +162,7 @@ private:
     /// Texture unit use flags.
     bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
     /// Constant buffer sizes. 0 if a constant buffer slot is not in use.
-    unsigned constantBufferSizes_[MAX_SHADER_PARAMETER_GROUPS]{};
+    ConstantBufferSizes constantBufferSizes_{};
     /// Shader bytecode. Needed for inspecting the input signature and parameters. Not used on OpenGL.
     ea::vector<unsigned char> byteCode_;
     /// Shader name.

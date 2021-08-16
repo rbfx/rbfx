@@ -40,15 +40,15 @@ public:
     ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader)
     {
         // Create needed constant buffers
-        const unsigned* vsBufferSizes = vertexShader->GetConstantBufferSizes();
-        for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+        const ShaderVariation::ConstantBufferSizes& vsBufferSizes = vertexShader->GetConstantBufferSizes();
+        for (unsigned i = 0; i < vsBufferSizes.size(); ++i)
         {
             if (vsBufferSizes[i])
                 AddConstantBuffer(static_cast<ShaderParameterGroup>(i), vsBufferSizes[i]);
         }
 
-        const unsigned* psBufferSizes = pixelShader->GetConstantBufferSizes();
-        for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+        const ShaderVariation::ConstantBufferSizes& psBufferSizes = pixelShader->GetConstantBufferSizes();
+        for (unsigned i = 0; i < psBufferSizes.size(); ++i)
         {
             if (psBufferSizes[i])
                 AddConstantBuffer(static_cast<ShaderParameterGroup>(i), psBufferSizes[i]);
