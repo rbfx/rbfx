@@ -96,6 +96,42 @@ AnimationKeyFrame MakeRotationKeyFrame(float time, const Quaternion& rotation)
     return keyFrame;
 }
 
+SharedPtr<Animation> CreateLoopedTranslationAnimation(Context* context,
+    const ea::string& animationName, const ea::string& boneName,
+    const Vector3& origin, const Vector3& magnitude, float duration)
+{
+    auto animation = MakeShared<Animation>(context);
+    animation->SetName(animationName);
+    animation->SetLength(duration);
+
+    auto track = animation->CreateTrack(boneName);
+    track->channelMask_ = CHANNEL_POSITION;
+
+    track->AddKeyFrame(MakeTranslationKeyFrame(duration * 0.0f, origin));
+    track->AddKeyFrame(MakeTranslationKeyFrame(duration * 0.25f, origin - magnitude));
+    track->AddKeyFrame(MakeTranslationKeyFrame(duration * 0.75f, origin + magnitude));
+    track->AddKeyFrame(MakeTranslationKeyFrame(duration * 1.0f, origin));
+
+    return animation;
+}
+
+SharedPtr<Animation> CreateLoopedRotationAnimation(Context* context,
+    const ea::string& animationName, const ea::string& boneName,
+    const Vector3& axis, float duration)
+{
+    auto animation = MakeShared<Animation>(context);
+    animation->SetName(animationName);
+    animation->SetLength(duration);
+
+    auto track = animation->CreateTrack(boneName);
+    track->channelMask_ = CHANNEL_ROTATION;
+
+    for (int i = 0; i <= 4; ++i)
+        track->AddKeyFrame(MakeRotationKeyFrame(duration * i * 0.25f, { i * 90.0f, axis }));
+
+    return animation;
+}
+
 SharedPtr<ModelView> CreateSkinnedQuad_Model(Context* context)
 {
     auto modelView = MakeShared<ModelView>(context);
@@ -143,55 +179,4 @@ SharedPtr<ModelView> CreateSkinnedQuad_Model(Context* context)
     return modelView;
 }
 
-SharedPtr<Animation> CreateSkinnedQuad_Animation_2TX(Context* context)
-{
-    auto animation = MakeShared<Animation>(context);
-    animation->SetName("@/Models/SkinnedQuad_2TX.ani");
-    animation->SetLength(2.0f);
-
-    auto track = animation->CreateTrack("Quad 2");
-    track->channelMask_ = CHANNEL_POSITION;
-
-    track->AddKeyFrame(MakeTranslationKeyFrame(0.0f, { 0.0f, 1.0f, 0.0f }));
-    track->AddKeyFrame(MakeTranslationKeyFrame(0.5f, { -0.5f, 1.0f, 0.0f }));
-    track->AddKeyFrame(MakeTranslationKeyFrame(1.5f, { 0.5f, 1.0f, 0.0f }));
-    track->AddKeyFrame(MakeTranslationKeyFrame(2.0f, { 0.0f, 1.0f, 0.0f }));
-
-    return animation;
-}
-
-SharedPtr<Animation> CreateSkinnedQuad_Animation_2TZ(Context* context)
-{
-    auto animation = MakeShared<Animation>(context);
-    animation->SetName("@/Models/SkinnedQuad_2TZ.ani");
-    animation->SetLength(2.0f);
-
-    auto track = animation->CreateTrack("Quad 2");
-    track->channelMask_ = CHANNEL_POSITION;
-
-    track->AddKeyFrame(MakeTranslationKeyFrame(0.0f, { 0.0f, 1.0f, 0.0f }));
-    track->AddKeyFrame(MakeTranslationKeyFrame(0.5f, { 0.0f, 1.0f, -0.5f }));
-    track->AddKeyFrame(MakeTranslationKeyFrame(1.5f, { 0.0f, 1.0f, 0.5f }));
-    track->AddKeyFrame(MakeTranslationKeyFrame(2.0f, { 0.0f, 1.0f, 0.0f }));
-
-    return animation;
-}
-
-SharedPtr<Animation> CreateSkinnedQuad_Animation_1RY(Context* context)
-{
-    auto animation = MakeShared<Animation>(context);
-    animation->SetName("@/Models/SkinnedQuad_1RY.ani");
-    animation->SetLength(1.0f);
-
-    auto track = animation->CreateTrack("Quad 1");
-    track->channelMask_ = CHANNEL_ROTATION;
-
-    track->AddKeyFrame(MakeRotationKeyFrame(0.0f, { 0.0f, Vector3::UP }));
-    track->AddKeyFrame(MakeRotationKeyFrame(0.25f, { 90.0f, Vector3::UP }));
-    track->AddKeyFrame(MakeRotationKeyFrame(0.5f, { 180.0f, Vector3::UP }));
-    track->AddKeyFrame(MakeRotationKeyFrame(0.75f, { -90.0f, Vector3::UP }));
-    track->AddKeyFrame(MakeRotationKeyFrame(1.0f, { 0.0f, Vector3::UP }));
-
-    return animation;
-}
 }

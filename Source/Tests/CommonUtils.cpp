@@ -26,6 +26,7 @@
 
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Resource/XMLFile.h>
 
 namespace Tests
 {
@@ -53,6 +54,15 @@ void RunFrame(Context* context, float timeStep, float maxTimeStep)
         timeStep -= subTimeStep;
     }
     while (timeStep > 0.0f);
+}
+
+void SerializeAndDeserializeScene(Scene* scene)
+{
+    auto xmlFile = MakeShared<XMLFile>(scene->GetContext());
+    auto xmlRoot = xmlFile->GetOrCreateRoot("scene");
+    scene->SaveXML(xmlRoot);
+    scene->Clear();
+    scene->LoadXML(xmlRoot);
 }
 
 }

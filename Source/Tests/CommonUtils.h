@@ -25,6 +25,7 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Variant.h>
 #include <Urho3D/Container/Ptr.h>
+#include <Urho3D/Scene/Scene.h>
 
 #include <catch2/catch_amalgamated.hpp>
 #include <ostream>
@@ -39,6 +40,9 @@ SharedPtr<Context> CreateCompleteTestContext();
 
 /// Run frame with given time step.
 void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
+
+/// Serialize and deserialize Scene. Should preserve functional state of nodes and components.
+void SerializeAndDeserializeScene(Scene* scene);
 
 }
 
