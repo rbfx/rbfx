@@ -43,6 +43,12 @@ void AppendSkinnedQuad(GeometryLODView& dest, const Vector4& blendIndices, const
 /// @{
 AnimationKeyFrame MakeTranslationKeyFrame(float time, const Vector3& position);
 AnimationKeyFrame MakeRotationKeyFrame(float time, const Quaternion& rotation);
+SharedPtr<Animation> CreateLoopedTranslationAnimation(Context* context,
+    const ea::string& animationName, const ea::string& boneName,
+    const Vector3& origin, const Vector3& magnitude, float duration);
+SharedPtr<Animation> CreateLoopedRotationAnimation(Context* context,
+    const ea::string& animationName, const ea::string& boneName,
+    const Vector3& axis, float duration);
 /// @}
 
 /// Create test skinned model:
@@ -50,18 +56,5 @@ AnimationKeyFrame MakeRotationKeyFrame(float time, const Quaternion& rotation);
 /// |-1: First 1x1 quad at Y=0.5;
 ///   |-2: Second 1x1 quad at Y=1.5.
 SharedPtr<ModelView> CreateSkinnedQuad_Model(Context* context);
-
-/// Create animations for test skinned model
-/// @{
-
-/// [1]: Move second quad at X axis in range [-1, 1] for 2 seconds.
-SharedPtr<Animation> CreateSkinnedQuad_Animation_2TX(Context* context);
-/// [1]: Move second quad at Z axis in range [-1, 1] for 2 seconds.
-SharedPtr<Animation> CreateSkinnedQuad_Animation_2TZ(Context* context);
-/// [2]: Rotate first quad around Y axis for 1 second.
-SharedPtr<Animation> CreateSkinnedQuad_Animation_1RY(Context* context);
-
-/// @}
-
 
 }
