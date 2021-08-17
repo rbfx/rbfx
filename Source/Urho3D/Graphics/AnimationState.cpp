@@ -82,7 +82,7 @@ AnimationState::AnimationState(Node* node, Animation* animation) :
                 AnimationStateTrack stateTrack;
                 stateTrack.track_ = &i->second;
 
-                if (node_->GetNameHash() == nameHash || tracks.size() == 1)
+                if (node_->GetNameHash() == nameHash)
                     stateTrack.node_ = node_;
                 else
                 {
