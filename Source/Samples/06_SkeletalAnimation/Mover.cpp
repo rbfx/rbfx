@@ -52,13 +52,4 @@ void Mover3D::Update(float timeStep)
     Vector3 pos = node_->GetPosition();
     if (pos.x_ < bounds_.min_.x_ || pos.x_ > bounds_.max_.x_ || pos.z_ < bounds_.min_.z_ || pos.z_ > bounds_.max_.z_)
         node_->Yaw(rotationSpeed_ * timeStep);
-
-    // Get the model's first (only) animation state and advance its time. Note the convenience accessor to other components
-    // in the same scene node
-    auto* model = node_->GetComponent<AnimatedModel>(true);
-    if (model->GetNumAnimationStates())
-    {
-        AnimationState* state = model->GetAnimationStates()[0];
-        state->AddTime(timeStep);
-    }
 }
