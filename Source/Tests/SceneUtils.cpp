@@ -22,46 +22,25 @@
 
 #pragma once
 
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/Variant.h>
-#include <Urho3D/Container/Ptr.h>
+#include "SceneUtils.h"
 
-#include <catch2/catch_amalgamated.hpp>
-#include <ostream>
-
-using namespace Urho3D;
+#include <Urho3D/Resource/XMLFile.h>
 
 namespace Tests
 {
 
-/// Create test context with all subsystems ready.
-SharedPtr<Context> CreateCompleteTestContext();
-
-/// Run frame with given time step.
-void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
-
-}
-
-/// Convert common types to strings
-/// @{
-namespace Catch
+void SerializeAndDeserializeScene(Scene* scene)
 {
+    auto xmlFile = MakeShared<XMLFile>(scene->GetContext());
+    auto xmlRoot = xmlFile->GetOrCreateRoot("scene");
+    scene->SaveXML(xmlRoot);
+    scene->Clear();
+    scene->LoadXML(xmlRoot);
+}
 
-#define DEFINE_STRING_MAKER(type, expr) \
-    template<> struct StringMaker<type> \
-    { \
-        static std::string convert(const type& value) \
-        { \
-            return expr; \
-        } \
-    }
-
-DEFINE_STRING_MAKER(Variant, value.ToString().c_str());
-DEFINE_STRING_MAKER(Vector2, value.ToString().c_str());
-DEFINE_STRING_MAKER(Vector3, value.ToString().c_str());
-DEFINE_STRING_MAKER(Vector4, value.ToString().c_str());
-
-#undef DEFINE_STRING_MAKER
+Node* NodeRef::GetNode() const
+{
+    return scene_ ? scene_->GetChild(name_, true) : nullptr;
+}
 
 }
-/// @}

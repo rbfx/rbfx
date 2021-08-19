@@ -22,46 +22,28 @@
 
 #pragma once
 
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/Variant.h>
-#include <Urho3D/Container/Ptr.h>
-
-#include <catch2/catch_amalgamated.hpp>
-#include <ostream>
+#include <Urho3D/Scene/Scene.h>
 
 using namespace Urho3D;
 
 namespace Tests
 {
 
-/// Create test context with all subsystems ready.
-SharedPtr<Context> CreateCompleteTestContext();
+/// Serialize and deserialize Scene. Should preserve functional state of nodes and components.
+void SerializeAndDeserializeScene(Scene* scene);
 
-/// Run frame with given time step.
-void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
-
-}
-
-/// Convert common types to strings
-/// @{
-namespace Catch
+/// Weak reference to Scene node by name. Useful for tests with serialization when actual objects are recreated.
+struct NodeRef
 {
+    WeakPtr<Scene> scene_;
+    ea::string name_;
 
-#define DEFINE_STRING_MAKER(type, expr) \
-    template<> struct StringMaker<type> \
-    { \
-        static std::string convert(const type& value) \
-        { \
-            return expr; \
-        } \
-    }
+    Node* GetNode() const;
 
-DEFINE_STRING_MAKER(Variant, value.ToString().c_str());
-DEFINE_STRING_MAKER(Vector2, value.ToString().c_str());
-DEFINE_STRING_MAKER(Vector3, value.ToString().c_str());
-DEFINE_STRING_MAKER(Vector4, value.ToString().c_str());
-
-#undef DEFINE_STRING_MAKER
+    Node* operator*() const { return GetNode(); }
+    Node* operator->() const { return GetNode(); }
+    bool operator!() const { return GetNode() == nullptr; }
+    explicit operator bool() const { return !!*this; }
+};
 
 }
-/// @}

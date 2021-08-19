@@ -107,6 +107,8 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
+    void ApplyAttributes() override;
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
@@ -158,10 +160,6 @@ public:
     bool IsAtEnd(const ea::string& name) const;
     /// Return animation blending layer.
     unsigned char GetLayer(const ea::string& name) const;
-    /// Return animation start bone, or null if no such animation.
-    Bone* GetStartBone(const ea::string& name) const;
-    /// Return animation start bone name, or empty string if no such animation.
-    const ea::string& GetStartBoneName(const ea::string& name) const;
     /// Return animation time position.
     float GetTime(const ea::string& name) const;
     /// Return animation weight.
@@ -202,7 +200,22 @@ public:
     /// Return node animation states attribute.
     VariantVector GetNodeAnimationStatesAttr() const;
 
+    /// Array of AnimationState objects created by AnimationController.
+    /// @{
+    const AnimationStateVector& GetAnimationStates() const { return animationStates_; }
+    void SetAnimationStatesAttr(const VariantVector& value);
+    VariantVector GetAnimationStatesAttr() const;
+    /// @}
+
+    /// Mark animation state order dirty. For internal use only.
+    void MarkAnimationStateOrderDirty() { animationStateOrderDirty_ = true; }
+    /// Mark that animation state tracks are dirty and should be reconnected.
+    /// Should be called on every substantial change in animated structure.
+    void MarkAnimationStateTracksDirty();
+
 protected:
+    /// Handle node being assigned.
+    void OnNodeSet(Node* node) override;
     /// Handle scene being assigned.
     void OnSceneSet(Scene* scene) override;
 
@@ -215,13 +228,22 @@ private:
     void FindAnimation(const ea::string& name, unsigned& index, AnimationState*& state) const;
     /// Handle scene post-update event.
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
+    /// Update animation state tracks so they are connected to correct animatable objects.
+    void UpdateAnimationStateTracks(AnimationState* state);
+    /// Connect to AnimatedModel if possible.
+    void ConnectToAnimatedModel();
 
     /// Animation control structures.
     ea::vector<AnimationControl> animations_;
-    /// Node hierarchy mode animation states.
-    ea::vector<SharedPtr<AnimationState> > nodeAnimationStates_;
+    /// Animation states. Shared with AnimatedModel when possible.
+    AnimationStateVector animationStates_;
     /// Attribute buffer for network replication.
     mutable VectorBuffer attrBuffer_;
+
+    /// Internal dirty flags cleaned on Update.
+    /// @{
+    bool animationStateOrderDirty_{};
+    /// @}
 };
 
 }

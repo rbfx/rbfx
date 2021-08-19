@@ -104,7 +104,7 @@ SharedPtr<Animation> CreateLoopedTranslationAnimation(Context* context,
     animation->SetName(animationName);
     animation->SetLength(duration);
 
-    auto track = animation->CreateTrack(boneName);
+    AnimationTrack* track = animation->CreateTrack(boneName);
     track->channelMask_ = CHANNEL_POSITION;
 
     track->AddKeyFrame(MakeTranslationKeyFrame(duration * 0.0f, origin));
@@ -123,12 +123,38 @@ SharedPtr<Animation> CreateLoopedRotationAnimation(Context* context,
     animation->SetName(animationName);
     animation->SetLength(duration);
 
-    auto track = animation->CreateTrack(boneName);
+    AnimationTrack* track = animation->CreateTrack(boneName);
     track->channelMask_ = CHANNEL_ROTATION;
 
     for (int i = 0; i <= 4; ++i)
         track->AddKeyFrame(MakeRotationKeyFrame(duration * i * 0.25f, { i * 90.0f, axis }));
 
+    return animation;
+}
+
+SharedPtr<Animation> CreateCombinedAnimation(Context* context,
+    const ea::string& animationName, std::initializer_list<Animation*> animations)
+{
+    auto animation = MakeShared<Animation>(context);
+    animation->SetName(animationName);
+
+    float length = 0.0f;
+    for (Animation* sourceAnimation : animations)
+    {
+        const auto& sourceTracks = sourceAnimation->GetTracks();
+        const float sourceLength = sourceAnimation->GetLength();
+
+        length = ea::max(length, sourceLength);
+        for (const auto& item : sourceTracks)
+        {
+            const AnimationTrack& sourceTrack = item.second;
+            AnimationTrack* track = animation->CreateTrack(sourceTrack.name_);
+            track->channelMask_ = sourceTrack.channelMask_;
+            track->keyFrames_ = sourceTrack.keyFrames_;
+        }
+    }
+
+    animation->SetLength(length);
     return animation;
 }
 

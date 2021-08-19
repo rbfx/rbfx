@@ -22,6 +22,7 @@
 
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
+#include "../SceneUtils.h"
 
 #include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/AnimationController.h>
@@ -30,86 +31,316 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
-TEST_CASE("Animation played for skinned model")
+TEST_CASE("Lerp animation blending")
 {
     auto context = Tests::CreateCompleteTestContext();
     auto cache = context->GetSubsystem<ResourceCache>();
 
-    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel();
-    model->SetName("@/Models/SkinnedQuad.mdl");
-
-    auto animation_2tx = Tests::CreateLoopedTranslationAnimation(context,
-        "@/Models/SkinnedQuad_2TX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.0f, 0.0f }, 2.0f);
-    auto animation_2tz = Tests::CreateLoopedTranslationAnimation(context,
-        "@/Models/SkinnedQuad_2TZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.5f }, 2.0f);
-    auto animation_1ry = Tests::CreateLoopedRotationAnimation(context,
-        "@/Models/SkinnedQuad_1RY.ani", "Quad 1", Vector3::UP, 1.0f);
-
+    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
     cache->AddManualResource(model);
-    cache->AddManualResource(animation_2tx);
-    cache->AddManualResource(animation_2tz);
-    cache->AddManualResource(animation_1ry);
 
-    auto scene = MakeShared<Scene>(context);
-    scene->CreateComponent<Octree>();
+    auto animationRotate = Tests::CreateLoopedRotationAnimation(context,
+        "@/Rotate.ani", "Quad 1", Vector3::UP, 2.0f);
+    auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
+        "@/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+    auto animationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
+        "@/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
 
-    auto node = scene->CreateChild("Node");
-    auto animatedModel = node->CreateComponent<AnimatedModel>();
-    auto animationController = node->CreateComponent<AnimationController>();
+    cache->AddManualResource(animationRotate);
+    cache->AddManualResource(animationTranslateX);
+    cache->AddManualResource(animationTranslateZ);
 
-    animatedModel->SetModel(model);
-    animationController->Play(animation_2tx->GetName(), 0, true);
-    animationController->Play(animation_2tz->GetName(), 1, true);
-    animationController->SetBlendMode(animation_2tz->GetName(), ABM_ADDITIVE);
-    animationController->Play(animation_1ry->GetName(), 2, true);
+    // Test AnimatedModel mode
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
 
-    Tests::RunFrame(context, 0.5f, 0.05f);
-    REQUIRE(scene->GetChild("Quad 2", true)->GetWorldPosition().Equals({ 0.5f, 1.0f, 0.5f }, M_LARGE_EPSILON));
+        auto node = scene->CreateChild("Node");
+        auto animatedModel = node->CreateComponent<AnimatedModel>();
+        animatedModel->SetModel(model);
 
-    Tests::RunFrame(context, 1.0f, 0.05f);
-    REQUIRE(scene->GetChild("Quad 2", true)->GetWorldPosition().Equals({ -0.5f, 1.0f, -0.5f }, M_LARGE_EPSILON));
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/Rotate.ani", 0, true);
+        animationController->Play("@/TranslateX.ani", 0, true);
+        animationController->Play("@/TranslateZ.ani", 1, true);
+        animationController->SetWeight("@/TranslateZ.ani", 0.75f);
 
-    Tests::SerializeAndDeserializeScene(scene);
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
 
-    Tests::RunFrame(context, 0.5f, 0.05f);
-    REQUIRE(scene->GetChild("Quad 2", true)->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+        // Time 0.5: Translate X to -1 * 25%, Translate Z to -2 * 75%, Rotate 90 degrees (X to -Z, Z to X)
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.5f, 1.0f, 0.25f }, M_LARGE_EPSILON));
+
+        // Time 1.0: Translate X to 0 * 25%, Translate Z to 0 * 75%, Rotate 180 degrees (X to -X, Z to -Z)
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1 * 25%, Translate Z to 2 * 75%, Rotate 270 degrees (X to Z, Z to -X)
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.5f, 1.0f, 0.25f }, M_LARGE_EPSILON));
+
+        // Time 2.0: Translate X to 0 * 25%, Translate Z to 0 * 75%, Rotate 360 degrees (identity)
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+    }
+
+    // Test Node mode
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto nodeQuad1 = node->CreateChild("Quad 1");
+        auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/Rotate.ani", 0, true);
+        animationController->Play("@/TranslateX.ani", 0, true);
+        animationController->Play("@/TranslateZ.ani", 1, true);
+        animationController->SetWeight("@/TranslateZ.ani", 0.75f);
+
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
+
+        // Time 0.5: Translate X to -1 * 25%, Translate Z to -2 * 75%, Rotate 90 degrees (X to -Z, Z to X)
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.5f, 1.0f, 0.25f }, M_LARGE_EPSILON));
+
+        // Time 1.0: Translate X to 0 * 25%, Translate Z to 0 * 75%, Rotate 180 degrees (X to -X, Z to -Z)
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1 * 25%, Translate Z to 2 * 75%, Rotate 270 degrees (X to Z, Z to -X)
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.5f, 1.0f, 0.25f }, M_LARGE_EPSILON));
+
+        // Time 2.0: Translate X to 0 * 25%, Translate Z to 0 * 75%, Rotate 360 degrees (identity)
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+    }
 }
 
-TEST_CASE("Animation played for nodes")
+TEST_CASE("Additive animation blending")
 {
     auto context = Tests::CreateCompleteTestContext();
     auto cache = context->GetSubsystem<ResourceCache>();
 
-    auto animation_2tx = Tests::CreateLoopedTranslationAnimation(context,
-        "@/Models/SkinnedQuad_2TX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.5f, 0.0f, 0.0f }, 2.0f);
-    auto animation_1ry = Tests::CreateLoopedRotationAnimation(context,
-        "@/Models/SkinnedQuad_1RY.ani", "Quad 1", Vector3::UP, 1.0f);
+    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
+    cache->AddManualResource(model);
 
-    cache->AddManualResource(animation_2tx);
-    cache->AddManualResource(animation_1ry);
+    auto modelAnimationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
+        "@/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+    auto modelAnimationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
+        "@/TranslateZ_Model.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
+    auto nodeAnimationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
+        "@/TranslateZ_Node.ani", "Quad 2", { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
 
-    auto scene = MakeShared<Scene>(context);
-    scene->CreateComponent<Octree>();
+    cache->AddManualResource(modelAnimationTranslateX);
+    cache->AddManualResource(modelAnimationTranslateZ);
+    cache->AddManualResource(nodeAnimationTranslateZ);
 
-    auto node = scene->CreateChild("Node");
-    auto animationController = node->CreateComponent<AnimationController>();
+    // Test AnimatedModel mode
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
 
-    auto root = node->CreateChild("Root");
-    auto quad1 = root->CreateChild("Quad 1");
-    auto quad2 = quad1->CreateChild("Quad 2");
+        auto node = scene->CreateChild("Node");
+        auto animatedModel = node->CreateComponent<AnimatedModel>();
+        animatedModel->SetModel(model);
 
-    animationController->Play(animation_2tx->GetName(), 0, true);
-    animationController->Play(animation_1ry->GetName(), 1, true);
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/TranslateX.ani", 0, true);
+        animationController->Play("@/TranslateZ_Model.ani", 1, true);
+        animationController->SetWeight("@/TranslateZ_Model.ani", 0.75f);
+        animationController->SetBlendMode("@/TranslateZ_Model.ani", ABM_ADDITIVE);
 
-    Tests::RunFrame(context, 0.5f, 0.05f);
-    REQUIRE(scene->GetChild("Quad 2", true)->GetWorldPosition().Equals({ 0.5f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
 
-    Tests::RunFrame(context, 1.0f, 0.05f);
-    REQUIRE(scene->GetChild("Quad 2", true)->GetWorldPosition().Equals({ -0.5f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+        // Time 0.5: Translate X to -1 * 100%, Translate Z to -2 * 75%
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.0f, 1.0f, -1.5f }, M_LARGE_EPSILON));
 
-    // TODO(animation): It doesn't work in Urho
-    //Tests::SerializeAndDeserializeScene(scene);
+        // Time 1.0: Translate X to 0 * 100%, Translate Z to 0 * 75%
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
 
-    Tests::RunFrame(context, 0.5f, 0.05f);
-    REQUIRE(scene->GetChild("Quad 2", true)->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+        // Time 1.5: Translate X to 1 * 100%, Translate Z to 2 * 75%
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 1.0f, 1.0f, 1.5f }, M_LARGE_EPSILON));
+
+        // Time 2.0: Translate X to 0 * 100%, Translate Z to 0 * 75%
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+    }
+
+    // Test Node mode
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto nodeQuad1 = node->CreateChild("Quad 1");
+        auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/TranslateX.ani", 0, true);
+        animationController->Play("@/TranslateZ_Node.ani", 1, true);
+        animationController->SetWeight("@/TranslateZ_Node.ani", 0.75f);
+        animationController->SetBlendMode("@/TranslateZ_Node.ani", ABM_ADDITIVE);
+
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
+
+        // Time 0.5: Translate X to -1 * 100%, Translate Z to -2 * 75%
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.0f, 1.0f, -1.5f }, M_LARGE_EPSILON));
+
+        // Time 1.0: Translate X to 0 * 100%, Translate Z to 0 * 75%
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1 * 100%, Translate Z to 2 * 75%
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 1.0f, 1.0f, 1.5f }, M_LARGE_EPSILON));
+
+        // Time 2.0: Translate X to 0 * 100%, Translate Z to 0 * 75%
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
+    }
+}
+
+TEST_CASE("Animation start bone")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto cache = context->GetSubsystem<ResourceCache>();
+
+    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
+    cache->AddManualResource(model);
+
+    auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
+        "@/TranslateX.ani", "Quad 1", { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+    auto animationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
+        "@/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
+    auto animation = Tests::CreateCombinedAnimation(context,
+        "@/TranslateXZ.ani", { animationTranslateX, animationTranslateZ });
+
+    cache->AddManualResource(animation);
+
+    // Test AnimatedModel mode: both animations
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto animatedModel = node->CreateComponent<AnimatedModel>();
+        animatedModel->SetModel(model);
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 1");
+
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
+
+        // Time 0.5: Translate X to -1, Translate Z to -2
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.0f, 1.0f, -2.0f }, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1, Translate Z to 2
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 1.0f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 1.0f, 1.0f, 2.0f }, M_LARGE_EPSILON));
+    }
+
+    // Test AnimatedModel mode: one animation
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto animatedModel = node->CreateComponent<AnimatedModel>();
+        animatedModel->SetModel(model);
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 2");
+
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
+
+        // Time 0.5: Translate Z to -2
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, -2.0f }, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate Z to 2
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 1.0f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 2.0f }, M_LARGE_EPSILON));
+    }
+
+    // Test Node mode: both animations
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto nodeQuad1 = node->CreateChild("Quad 1");
+        auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 1");
+
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
+
+        // Time 0.5: Translate X to -1, Translate Z to -2
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ -1.0f, 1.0f, -2.0f }, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1, Translate Z to 2
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 1.0f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 1.0f, 1.0f, 2.0f }, M_LARGE_EPSILON));
+    }
+
+    // Test Node mode: one animation
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto nodeQuad1 = node->CreateChild("Quad 1");
+        auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        animationController->Play("@/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 2");
+
+        // Assert
+        Tests::NodeRef quad2{ scene, "Quad 2" };
+
+        // Time 0.5: Translate Z to -2
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, -2.0f }, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate Z to 2
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 1.0f, 0.05f);
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 2.0f }, M_LARGE_EPSILON));
+    }
 }

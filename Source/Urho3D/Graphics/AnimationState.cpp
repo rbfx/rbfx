@@ -24,6 +24,7 @@
 
 #include "../Graphics/AnimatedModel.h"
 #include "../Graphics/Animation.h"
+#include "../Graphics/AnimationController.h"
 #include "../Graphics/AnimationState.h"
 #include "../Graphics/DrawableEvents.h"
 #include "../IO/Log.h"
@@ -33,129 +34,53 @@
 namespace Urho3D
 {
 
-AnimationStateTrack::AnimationStateTrack() :
-    track_(nullptr),
-    bone_(nullptr),
-    weight_(1.0f),
-    keyFrame_(0)
-{
-}
-
-AnimationStateTrack::~AnimationStateTrack() = default;
-
-AnimationState::AnimationState(AnimatedModel* model, Animation* animation) :
+AnimationState::AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation) :
+    controller_(controller),
     model_(model),
-    animation_(animation),
-    startBone_(nullptr),
-    looped_(false),
-    weight_(0.0f),
-    time_(0.0f),
-    layer_(0),
-    blendingMode_(ABM_LERP)
+    animation_(animation)
 {
-    // Set default start bone (use all tracks)
-    SetStartBone(nullptr);
 }
 
-AnimationState::AnimationState(Node* node, Animation* animation) :
+AnimationState::AnimationState(AnimationController* controller, Node* node, Animation* animation) :
+    controller_(controller),
     node_(node),
-    animation_(animation),
-    startBone_(nullptr),
-    looped_(false),
-    weight_(1.0f),
-    time_(0.0f),
-    layer_(0),
-    blendingMode_(ABM_LERP)
+    animation_(animation)
 {
-    if (animation_)
-    {
-        // Setup animation track to scene node mapping
-        if (node_)
-        {
-            const ea::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
-            stateTracks_.clear();
-
-            for (auto i = tracks.begin(); i !=
-                tracks.end(); ++i)
-            {
-                const StringHash& nameHash = i->second.nameHash_;
-                AnimationStateTrack stateTrack;
-                stateTrack.track_ = &i->second;
-
-                if (node_->GetNameHash() == nameHash)
-                    stateTrack.node_ = node_;
-                else
-                {
-                    Node* targetNode = node_->GetChild(nameHash, true);
-                    if (targetNode)
-                        stateTrack.node_ = targetNode;
-                    else
-                        URHO3D_LOGWARNING("Node " + i->second.name_ + " not found for node animation " + animation_->GetName());
-                }
-
-                if (stateTrack.node_)
-                    stateTracks_.push_back(stateTrack);
-            }
-        }
-    }
 }
-
 
 AnimationState::~AnimationState() = default;
 
-void AnimationState::SetStartBone(Bone* startBone)
+bool AnimationState::AreTracksDirty() const
 {
-    if (!model_ || !animation_)
-        return;
+    return tracksDirty_;
+}
 
-    Skeleton& skeleton = model_->GetSkeleton();
-    if (!startBone)
-    {
-        Bone* rootBone = skeleton.GetRootBone();
-        if (!rootBone)
-            return;
-        startBone = rootBone;
-    }
+void AnimationState::MarkTracksDirty()
+{
+    tracksDirty_ = true;
+}
 
-    // Do not reassign if the start bone did not actually change, and we already have valid bone nodes
-    if (startBone == startBone_ && !stateTracks_.empty())
-        return;
+void AnimationState::ClearAllTracks()
+{
+    modelTracks_.clear();
+    nodeTracks_.clear();
+}
 
-    startBone_ = startBone;
+void AnimationState::AddModelTrack(const ModelAnimationStateTrack& track)
+{
+    modelTracks_.push_back(track);
+}
 
-    const ea::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
-    stateTracks_.clear();
+void AnimationState::AddNodeTrack(const NodeAnimationStateTrack& track)
+{
+    nodeTracks_.push_back(track);
+}
 
-    if (!startBone->node_)
-        return;
-
-    for (auto i = tracks.begin(); i != tracks.end(); ++i)
-    {
-        AnimationStateTrack stateTrack;
-        stateTrack.track_ = &i->second;
-
-        // Include those tracks that are either the start bone itself, or its children
-        Bone* trackBone = nullptr;
-        const StringHash& nameHash = i->second.nameHash_;
-
-        if (nameHash == startBone->nameHash_)
-            trackBone = startBone;
-        else
-        {
-            Node* trackBoneNode = startBone->node_->GetChild(nameHash, true);
-            if (trackBoneNode)
-                trackBone = skeleton.GetBone(nameHash);
-        }
-
-        if (trackBone && trackBone->node_)
-        {
-            stateTrack.bone_ = trackBone;
-            stateTrack.node_ = trackBone->node_;
-            stateTracks_.push_back(stateTrack);
-        }
-    }
-
-    model_->MarkAnimationDirty();
+void AnimationState::OnTracksReady()
+{
+    tracksDirty_ = false;
+    if (model_)
+        model_->MarkAnimationDirty();
 }
 
 void AnimationState::SetLooped(bool looped)
@@ -165,27 +90,25 @@ void AnimationState::SetLooped(bool looped)
 
 void AnimationState::SetWeight(float weight)
 {
-    // Weight can only be set in model mode. In node animation it is hardcoded to full
-    if (model_)
+    if (!animation_)
+        return;
+
+    weight = Clamp(weight, 0.0f, 1.0f);
+    if (weight != weight_)
     {
-        weight = Clamp(weight, 0.0f, 1.0f);
-        if (weight != weight_)
-        {
-            weight_ = weight;
+        weight_ = weight;
+        if (model_)
             model_->MarkAnimationDirty();
-        }
     }
 }
 
 void AnimationState::SetBlendMode(AnimationBlendMode mode)
 {
-    if (model_)
+    if (blendingMode_ != mode)
     {
-        if (blendingMode_ != mode)
-        {
-            blendingMode_ = mode;
+        blendingMode_ = mode;
+        if (model_)
             model_->MarkAnimationDirty();
-        }
     }
 }
 
@@ -203,44 +126,18 @@ void AnimationState::SetTime(float time)
     }
 }
 
-void AnimationState::SetBoneWeight(unsigned index, float weight, bool recursive)
+void AnimationState::SetStartBone(const ea::string& name)
 {
-    if (index >= stateTracks_.size())
+    if (!animation_)
         return;
 
-    weight = Clamp(weight, 0.0f, 1.0f);
-
-    if (weight != stateTracks_[index].weight_)
+    if (name != startBone_)
     {
-        stateTracks_[index].weight_ = weight;
+        startBone_ = name;
+        MarkTracksDirty();
         if (model_)
             model_->MarkAnimationDirty();
     }
-
-    if (recursive)
-    {
-        Node* boneNode = stateTracks_[index].node_;
-        if (boneNode)
-        {
-            const ea::vector<SharedPtr<Node> >& children = boneNode->GetChildren();
-            for (unsigned i = 0; i < children.size(); ++i)
-            {
-                unsigned childTrackIndex = GetTrackIndex(children[i]);
-                if (childTrackIndex != M_MAX_UNSIGNED)
-                    SetBoneWeight(childTrackIndex, weight, true);
-            }
-        }
-    }
-}
-
-void AnimationState::SetBoneWeight(const ea::string& name, float weight, bool recursive)
-{
-    SetBoneWeight(GetTrackIndex(name), weight, recursive);
-}
-
-void AnimationState::SetBoneWeight(StringHash nameHash, float weight, bool recursive)
-{
-    SetBoneWeight(GetTrackIndex(nameHash), weight, recursive);
 }
 
 void AnimationState::AddWeight(float delta)
@@ -367,8 +264,7 @@ void AnimationState::SetLayer(unsigned char layer)
     if (layer != layer_)
     {
         layer_ = layer;
-        if (model_)
-            model_->MarkAnimationOrderDirty();
+        controller_->MarkAnimationStateOrderDirty();
     }
 }
 
@@ -382,114 +278,49 @@ Node* AnimationState::GetNode() const
     return node_;
 }
 
-Bone* AnimationState::GetStartBone() const
-{
-    return model_ ? startBone_ : nullptr;
-}
-
-float AnimationState::GetBoneWeight(unsigned index) const
-{
-    return index < stateTracks_.size() ? stateTracks_[index].weight_ : 0.0f;
-}
-
-float AnimationState::GetBoneWeight(const ea::string& name) const
-{
-    return GetBoneWeight(GetTrackIndex(name));
-}
-
-float AnimationState::GetBoneWeight(StringHash nameHash) const
-{
-    return GetBoneWeight(GetTrackIndex(nameHash));
-}
-
-unsigned AnimationState::GetTrackIndex(const ea::string& name) const
-{
-    for (unsigned i = 0; i < stateTracks_.size(); ++i)
-    {
-        Node* node = stateTracks_[i].node_;
-        if (node && node->GetName() == name)
-            return i;
-    }
-
-    return M_MAX_UNSIGNED;
-}
-
-unsigned AnimationState::GetTrackIndex(Node* node) const
-{
-    for (unsigned i = 0; i < stateTracks_.size(); ++i)
-    {
-        if (stateTracks_[i].node_ == node)
-            return i;
-    }
-
-    return M_MAX_UNSIGNED;
-}
-
-unsigned AnimationState::GetTrackIndex(StringHash nameHash) const
-{
-    for (unsigned i = 0; i < stateTracks_.size(); ++i)
-    {
-        Node* node = stateTracks_[i].node_;
-        if (node && node->GetNameHash() == nameHash)
-            return i;
-    }
-
-    return M_MAX_UNSIGNED;
-}
-
 float AnimationState::GetLength() const
 {
     return animation_ ? animation_->GetLength() : 0.0f;
 }
 
-void AnimationState::Apply()
+void AnimationState::ApplyModelTracks()
 {
     if (!animation_ || !IsEnabled())
         return;
 
-    if (model_)
-        ApplyToModel();
-    else
-        ApplyToNodes();
-}
-
-void AnimationState::ApplyToModel()
-{
-    for (auto i = stateTracks_.begin(); i != stateTracks_.end(); ++i)
+    for (ModelAnimationStateTrack& stateTrack : modelTracks_)
     {
-        AnimationStateTrack& stateTrack = *i;
-        float finalWeight = weight_ * stateTrack.weight_;
-
-        // Do not apply if zero effective weight or the bone has animation disabled
-        if (Equals(finalWeight, 0.0f) || !stateTrack.bone_->animated_)
+        // Do not apply if the bone has animation disabled
+        if (!stateTrack.bone_->animated_)
             continue;
 
-        ApplyTrack(stateTrack, finalWeight, true);
+        ApplyTransformTrack(*stateTrack.track_, stateTrack.node_, stateTrack.bone_, stateTrack.keyFrame_, weight_, true);
     }
 }
 
-void AnimationState::ApplyToNodes()
+void AnimationState::ApplyNodeTracks()
 {
-    // When applying to a node hierarchy, can only use full weight (nothing to blend to)
-    for (auto i = stateTracks_.begin(); i != stateTracks_.end(); ++i)
-        ApplyTrack(*i, 1.0f, false);
-}
-
-void AnimationState::ApplyTrack(AnimationStateTrack& stateTrack, float weight, bool silent)
-{
-    const AnimationTrack* track = stateTrack.track_;
-    Node* node = stateTrack.node_;
-
-    if (track->keyFrames_.empty() || !node)
+    if (!animation_ || !IsEnabled())
         return;
 
-    unsigned& frame = stateTrack.keyFrame_;
-    track->GetKeyFrameIndex(time_, frame);
+    for (NodeAnimationStateTrack& stateTrack : nodeTracks_)
+    {
+        ApplyTransformTrack(*stateTrack.track_, stateTrack.node_, nullptr, stateTrack.keyFrame_, weight_, false);
+    }
+}
+
+void AnimationState::ApplyTransformTrack(const AnimationTrack& track,
+    Node* node, Bone* bone, unsigned& frame, float weight, bool silent)
+{
+    if (track.keyFrames_.empty() || !node)
+        return;
+
+    track.GetKeyFrameIndex(time_, frame);
 
     // Check if next frame to interpolate to is valid, or if wrapping is needed (looping animation only)
     unsigned nextFrame = frame + 1;
     bool interpolate = true;
-    if (nextFrame >= track->keyFrames_.size())
+    if (nextFrame >= track.keyFrames_.size())
     {
         if (!looped_)
         {
@@ -500,8 +331,8 @@ void AnimationState::ApplyTrack(AnimationStateTrack& stateTrack, float weight, b
             nextFrame = 0;
     }
 
-    const AnimationKeyFrame* keyFrame = &track->keyFrames_[frame];
-    const AnimationChannelFlags channelMask = track->channelMask_;
+    const AnimationKeyFrame* keyFrame = &track.keyFrames_[frame];
+    const AnimationChannelFlags channelMask = track.channelMask_;
 
     Vector3 newPosition;
     Quaternion newRotation;
@@ -509,7 +340,7 @@ void AnimationState::ApplyTrack(AnimationStateTrack& stateTrack, float weight, b
 
     if (interpolate)
     {
-        const AnimationKeyFrame* nextKeyFrame = &track->keyFrames_[nextFrame];
+        const AnimationKeyFrame* nextKeyFrame = &track.keyFrames_[nextFrame];
         float timeInterval = nextKeyFrame->time_ - keyFrame->time_;
         if (timeInterval < 0.0f)
             timeInterval += animation_->GetLength();
@@ -536,19 +367,19 @@ void AnimationState::ApplyTrack(AnimationStateTrack& stateTrack, float weight, b
     {
         if (channelMask & CHANNEL_POSITION)
         {
-            Vector3 delta = newPosition - stateTrack.bone_->initialPosition_;
+            const Vector3 delta = bone ? (newPosition - bone->initialPosition_) : newPosition;
             newPosition = node->GetPosition() + delta * weight;
         }
         if (channelMask & CHANNEL_ROTATION)
         {
-            Quaternion delta = newRotation * stateTrack.bone_->initialRotation_.Inverse();
+            const Quaternion delta = bone ? (newRotation * bone->initialRotation_.Inverse()) : newRotation;
             newRotation = (delta * node->GetRotation()).Normalized();
             if (!Equals(weight, 1.0f))
                 newRotation = node->GetRotation().Slerp(newRotation, weight);
         }
         if (channelMask & CHANNEL_SCALE)
         {
-            Vector3 delta = newScale - stateTrack.bone_->initialScale_;
+            const Vector3 delta = bone ? (newScale - bone->initialScale_) : newScale;
             newScale = node->GetScale() + delta * weight;
         }
     }
