@@ -654,9 +654,10 @@ void ModelView::ExportModel(Model* model) const
     model->SetSkeleton(skeleton);
 }
 
-SharedPtr<Model> ModelView::ExportModel() const
+SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
 {
     auto model = MakeShared<Model>(context_);
+    model->SetName(name);
     ExportModel(model);
     return model;
 }

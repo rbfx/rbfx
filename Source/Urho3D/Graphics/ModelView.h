@@ -194,7 +194,7 @@ public:
     /// @{
     bool ImportModel(const Model* model);
     void ExportModel(Model* model) const;
-    SharedPtr<Model> ExportModel() const;
+    SharedPtr<Model> ExportModel(const ea::string& name = EMPTY_STRING) const;
     /// @}
 
     /// Calculate bounding box.

@@ -56,13 +56,4 @@ void RunFrame(Context* context, float timeStep, float maxTimeStep)
     while (timeStep > 0.0f);
 }
 
-void SerializeAndDeserializeScene(Scene* scene)
-{
-    auto xmlFile = MakeShared<XMLFile>(scene->GetContext());
-    auto xmlRoot = xmlFile->GetOrCreateRoot("scene");
-    scene->SaveXML(xmlRoot);
-    scene->Clear();
-    scene->LoadXML(xmlRoot);
-}
-
 }

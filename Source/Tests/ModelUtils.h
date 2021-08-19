@@ -49,6 +49,8 @@ SharedPtr<Animation> CreateLoopedTranslationAnimation(Context* context,
 SharedPtr<Animation> CreateLoopedRotationAnimation(Context* context,
     const ea::string& animationName, const ea::string& boneName,
     const Vector3& axis, float duration);
+SharedPtr<Animation> CreateCombinedAnimation(Context* context,
+    const ea::string& animationName, std::initializer_list<Animation*> animations);
 /// @}
 
 /// Create test skinned model:
