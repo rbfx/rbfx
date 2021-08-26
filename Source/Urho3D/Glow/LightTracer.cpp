@@ -80,18 +80,6 @@ Vector2 RandomCircleOffset()
     return result;
 }
 
-/// Generate random hemisphere direction.
-Vector3 RandomHemisphereDirection(const Vector3& normal)
-{
-    Vector3 result;
-    RandomDirection3(result);
-
-    if (result.DotProduct(normal) < 0)
-        result = -result;
-
-    return result;
-}
-
 /// Make an orthonormal basis for e3.
 void GetBasis(const Vector3& e3, Vector3& e1, Vector3& e2)
 {
