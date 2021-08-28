@@ -158,8 +158,11 @@ void SoundEffects::CreateUI()
         micPicker->AddItem(item);
     }
 
-    auto record = CreateButton(20, 500, 180, 40, "Start/Stop Record");
-    SubscribeToEvent(record, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleMicRecord));
+    button = CreateButton(20, 500, 120, 40, "Start Record");
+    SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleStartMicRecord));
+
+    button = CreateButton(160, 500, 120, 40, "Stop Record");
+    SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleStopMicRecord));
 }
 
 Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const ea::string& text)
@@ -303,13 +306,10 @@ void SoundEffects::HandleMusicVolume(StringHash eventType, VariantMap& eventData
     GetSubsystem<Audio>()->SetMasterGain(SOUND_MUSIC, newVolume);
 }
 
-void SoundEffects::HandleMicRecord(StringHash eventType, VariantMap& eventData)
+void SoundEffects::HandleStartMicRecord(StringHash eventType, VariantMap& eventData)
 {
     if (activeMic_)
-    {
-        activeMic_.Reset();
         return;
-    }
 
     auto micPicker = (DropDownList*)GetSubsystem<UI>()->GetRoot()->GetChild("MIC_PICKER", true);
     if (micPicker->GetNumItems() && micPicker->GetSelectedItem())
@@ -322,18 +322,26 @@ void SoundEffects::HandleMicRecord(StringHash eventType, VariantMap& eventData)
             micStream_.Reset(new BufferedSoundStream());
             micStream_->SetFormat(activeMic_->GetFrequency(), true, false);
             activeMic_->Link(micStream_);
-
-            auto* soundSource = scene_->CreateComponent<SoundSource>();
-            // Component will automatically remove itself when the sound finished playing
-            soundSource->SetAutoRemoveMode(REMOVE_COMPONENT);
-
-            SharedPtr<Sound> snd(new Sound(GetContext()));
-            soundSource->Play(micStream_);
-            soundSource->SetGain(1.0f);
-            soundSource->SetPanning(0.0f);
-            soundSource->SetReach(0.0f);
         }
     }
     else
         URHO3D_LOGERROR("No microphones detected");
+}
+
+void SoundEffects::HandleStopMicRecord(StringHash eventType, VariantMap& eventData)
+{
+    activeMic_.Reset();
+
+    if (micStream_.NotNull())
+    {
+        auto* soundSource = scene_->CreateComponent<SoundSource>();
+        // Component will automatically remove itself when the sound finished playing
+        soundSource->SetAutoRemoveMode(REMOVE_COMPONENT);
+
+        SharedPtr<Sound> snd(new Sound(GetContext()));
+        soundSource->Play(micStream_);
+        soundSource->SetGain(1.0f);
+        soundSource->SetPanning(0.0f);
+        soundSource->SetReach(0.0f);
+    }
 }

@@ -95,8 +95,10 @@ private:
     void HandleLFE(StringHash eventType, VariantMap& eventData);
     /// Handle music volume slider change.
     void HandleMusicVolume(StringHash eventType, VariantMap& eventData);
-    /// Handle button to mic recording.
-    void HandleMicRecord(StringHash eventType, VariantMap& eventData);
+    /// Handle starting mic recording.
+    void HandleStartMicRecord(StringHash eventType, VariantMap& eventData);
+    /// Handle stopping mic recording.
+    void HandleStopMicRecord(StringHash eventType, VariantMap& eventData);
 
     /// Explicit pan value.
     float pan_{ 0.0f };
