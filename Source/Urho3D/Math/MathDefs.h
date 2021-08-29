@@ -74,7 +74,7 @@ inline bool Equals(T lhs, T rhs, T eps = M_EPSILON) { return lhs + eps >= rhs &&
 /// Linear interpolation between two values.
 /// @specialization{float,float}
 template <class T, class U>
-inline T Lerp(T lhs, T rhs, U t) { return lhs * (1.0 - t) + rhs * t; }
+inline T Lerp(T lhs, T rhs, U t) { return static_cast<T>(lhs * (1.0 - t) + rhs * t); }
 
 /// Inverse linear interpolation between two values.
 /// @specialization{float}

@@ -232,6 +232,9 @@ private:
     void UpdateAnimationStateTracks(AnimationState* state);
     /// Connect to AnimatedModel if possible.
     void ConnectToAnimatedModel();
+    /// Parse animatable path from starting node.
+    bool ParseAnimatablePath(ea::string_view path, Node* startNode,
+        WeakPtr<Serializable>& serializable, unsigned& attributeIndex, StringHash& variableName);
 
     /// Animation control structures.
     ea::vector<AnimationControl> animations_;

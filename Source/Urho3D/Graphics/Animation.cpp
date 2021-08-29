@@ -40,76 +40,220 @@
 namespace Urho3D
 {
 
+namespace
+{
+
 inline bool CompareTriggers(const AnimationTriggerPoint& lhs, const AnimationTriggerPoint& rhs)
 {
     return lhs.time_ < rhs.time_;
 }
 
-inline bool CompareKeyFrames(const AnimationKeyFrame& lhs, const AnimationKeyFrame& rhs)
+void ReadTransform(Deserializer& source, Transform& transform, AnimationChannelFlags channelMask)
 {
-    return lhs.time_ < rhs.time_;
+    if (channelMask & CHANNEL_POSITION)
+        transform.position_ = source.ReadVector3();
+    if (channelMask & CHANNEL_ROTATION)
+        transform.rotation_ = source.ReadQuaternion();
+    if (channelMask & CHANNEL_SCALE)
+        transform.scale_ = source.ReadVector3();
 }
 
-void AnimationTrack::SetKeyFrame(unsigned index, const AnimationKeyFrame& keyFrame)
+void WriteTransform(Serializer& dest, const Transform& transform, AnimationChannelFlags channelMask)
 {
-    if (index < keyFrames_.size())
+    if (channelMask & CHANNEL_POSITION)
+        dest.WriteVector3(transform.position_);
+    if (channelMask & CHANNEL_ROTATION)
+        dest.WriteQuaternion(transform.rotation_);
+    if (channelMask & CHANNEL_SCALE)
+        dest.WriteVector3(transform.scale_);
+}
+
+Variant InterpolateSpline(VariantType type,
+    const Variant& v1, const Variant& v2, const Variant& t1, const Variant& t2, float t)
+{
+    const float tt = t * t;
+    const float ttt = t * tt;
+
+    const float h1 = 2.0f * ttt - 3.0f * tt + 1.0f;
+    const float h2 = -2.0f * ttt + 3.0f * tt;
+    const float h3 = ttt - 2.0f * tt + t;
+    const float h4 = ttt - tt;
+
+    switch (type)
     {
-        keyFrames_[index] = keyFrame;
-        ea::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
+    case VAR_FLOAT:
+        return v1.GetFloat() * h1 + v2.GetFloat() * h2 + t1.GetFloat() * h3 + t2.GetFloat() * h4;
+
+    case VAR_VECTOR2:
+        return v1.GetVector2() * h1 + v2.GetVector2() * h2 + t1.GetVector2() * h3 + t2.GetVector2() * h4;
+
+    case VAR_VECTOR3:
+        return v1.GetVector3() * h1 + v2.GetVector3() * h2 + t1.GetVector3() * h3 + t2.GetVector3() * h4;
+
+    case VAR_VECTOR4:
+        return v1.GetVector4() * h1 + v2.GetVector4() * h2 + t1.GetVector4() * h3 + t2.GetVector4() * h4;
+
+    case VAR_QUATERNION:
+        return v1.GetQuaternion() * h1 + v2.GetQuaternion() * h2 + t1.GetQuaternion() * h3 + t2.GetQuaternion() * h4;
+
+    case VAR_COLOR:
+        return v1.GetColor() * h1 + v2.GetColor() * h2 + t1.GetColor() * h3 + t2.GetColor() * h4;
+
+    case VAR_DOUBLE:
+        return v1.GetDouble() * h1 + v2.GetDouble() * h2 + t1.GetDouble() * h3 + t2.GetDouble() * h4;
+
+    default:
+        return v1;
     }
-    else if (index == keyFrames_.size())
-        AddKeyFrame(keyFrame);
 }
 
-void AnimationTrack::AddKeyFrame(const AnimationKeyFrame& keyFrame)
+Variant SubstractAndMultiply(VariantType type, const Variant& v1, const Variant& v2, float t)
 {
-    bool needSort = keyFrames_.size() ? keyFrames_.back().time_ > keyFrame.time_ : false;
-    keyFrames_.push_back(keyFrame);
-    if (needSort)
-        ea::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
+    switch (type)
+    {
+    case VAR_FLOAT:
+        return (v1.GetFloat() - v2.GetFloat()) * t;
+
+    case VAR_VECTOR2:
+        return (v1.GetVector2() - v2.GetVector2()) * t;
+
+    case VAR_VECTOR3:
+        return (v1.GetVector3() - v2.GetVector3()) * t;
+
+    case VAR_VECTOR4:
+        return (v1.GetVector4() - v2.GetVector4()) * t;
+
+    case VAR_QUATERNION:
+        return (v1.GetQuaternion() - v2.GetQuaternion()) * t;
+
+    case VAR_COLOR:
+        return (v1.GetColor() - v2.GetColor()) * t;
+
+    case VAR_DOUBLE:
+        return (v1.GetDouble() - v2.GetDouble()) * t;
+
+    default:
+        return Variant(type);
+    }
 }
 
-void AnimationTrack::InsertKeyFrame(unsigned index, const AnimationKeyFrame& keyFrame)
-{
-    keyFrames_.insert_at(index, keyFrame);
-    ea::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
 }
 
-void AnimationTrack::RemoveKeyFrame(unsigned index)
+void AnimationTrack::Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& value) const
 {
-    keyFrames_.erase_at(index);
+    float blendFactor{};
+    unsigned nextFrameIndex{};
+    GetKeyFrames(time, duration, isLooped, frameIndex, nextFrameIndex, blendFactor);
+
+    const AnimationKeyFrame& keyFrame = keyFrames_[frameIndex];
+    const AnimationKeyFrame& nextKeyFrame = keyFrames_[nextFrameIndex];
+
+    if (blendFactor >= M_EPSILON)
+    {
+        if (channelMask_ & CHANNEL_POSITION)
+            value.position_ = keyFrame.position_.Lerp(nextKeyFrame.position_, blendFactor);
+        if (channelMask_ & CHANNEL_ROTATION)
+            value.rotation_ = keyFrame.rotation_.Slerp(nextKeyFrame.rotation_, blendFactor);
+        if (channelMask_ & CHANNEL_SCALE)
+            value.scale_ = keyFrame.scale_.Lerp(nextKeyFrame.scale_, blendFactor);
+    }
+    else
+    {
+        if (channelMask_ & CHANNEL_POSITION)
+            value.position_ = keyFrame.position_;
+        if (channelMask_ & CHANNEL_ROTATION)
+            value.rotation_ = keyFrame.rotation_;
+        if (channelMask_ & CHANNEL_SCALE)
+            value.scale_ = keyFrame.scale_;
+    }
 }
 
-void AnimationTrack::RemoveAllKeyFrames()
+void VariantAnimationTrack::Commit()
 {
-    keyFrames_.clear();
+    type_ = GetType();
+
+    switch (type_)
+    {
+    case VAR_FLOAT:
+    case VAR_VECTOR2:
+    case VAR_VECTOR3:
+    case VAR_VECTOR4:
+    case VAR_QUATERNION:
+    case VAR_COLOR:
+    case VAR_DOUBLE:
+        // Floating point compounds may have any interpolation type.
+        // Calculate tangents if spline interpolation is used.
+        if (interpolation_ == KeyFrameInterpolation::Spline)
+        {
+            const unsigned numKeyFrames = keyFrames_.size();
+            splineTangents_.resize(numKeyFrames);
+
+            for (unsigned i = 1; i + 1 < numKeyFrames; ++i)
+            {
+                splineTangents_[i] = SubstractAndMultiply(
+                    type_, keyFrames_[i + 1].value_, keyFrames_[i - 1].value_, splineTension_);
+            }
+
+            // If spline is not closed, make end point's tangent zero
+            if (numKeyFrames <= 2 || keyFrames_[0].value_ != keyFrames_[numKeyFrames - 1].value_)
+            {
+                splineTangents_[0] = Variant(type_);
+                if (numKeyFrames >= 2)
+                    splineTangents_[numKeyFrames - 1] = Variant(type_);
+            }
+            else
+            {
+                const Variant tangent = SubstractAndMultiply(
+                    type_, keyFrames_[1].value_, keyFrames_[numKeyFrames - 2].value_, splineTension_);
+                splineTangents_[0] = tangent;
+                splineTangents_[numKeyFrames - 1] = tangent;
+            }
+        }
+        break;
+
+    case VAR_INT:
+    case VAR_INT64:
+    case VAR_INTRECT:
+    case VAR_INTVECTOR2:
+    case VAR_INTVECTOR3:
+        // Integer compounds cannot have spline interpolation, fallback to linear.
+        if (interpolation_ == KeyFrameInterpolation::Spline)
+            interpolation_ = KeyFrameInterpolation::Linear;
+        break;
+
+    default:
+        // Other types don't support interpolation at all, fallback to none.
+        interpolation_ = KeyFrameInterpolation::None;
+        break;
+    }
 }
 
-AnimationKeyFrame* AnimationTrack::GetKeyFrame(unsigned index)
+Variant VariantAnimationTrack::Sample(float time, float duration, bool isLooped, unsigned& frameIndex) const
 {
-    return index < keyFrames_.size() ? &keyFrames_[index] : nullptr;
+    float blendFactor{};
+    unsigned nextFrameIndex{};
+    GetKeyFrames(time, duration, isLooped, frameIndex, nextFrameIndex, blendFactor);
+
+    const VariantAnimationKeyFrame& keyFrame = keyFrames_[frameIndex];
+    const VariantAnimationKeyFrame& nextKeyFrame = keyFrames_[nextFrameIndex];
+
+    if (blendFactor >= M_EPSILON)
+    {
+        if (interpolation_ == KeyFrameInterpolation::Spline && splineTangents_.size() == keyFrames_.size())
+        {
+            return InterpolateSpline(type_, keyFrame.value_, nextKeyFrame.value_,
+                splineTangents_[frameIndex], splineTangents_[nextFrameIndex], blendFactor);
+        }
+        else if (interpolation_ == KeyFrameInterpolation::Linear)
+            return keyFrame.value_.Lerp(nextKeyFrame.value_, blendFactor);
+    }
+
+    return keyFrame.value_;
 }
 
-bool AnimationTrack::GetKeyFrameIndex(float time, unsigned& index) const
+VariantType VariantAnimationTrack::GetType() const
 {
-    if (keyFrames_.empty())
-        return false;
-
-    if (time < 0.0f)
-        time = 0.0f;
-
-    if (index >= keyFrames_.size())
-        index = keyFrames_.size() - 1;
-
-    // Check for being too far ahead
-    while (index && time < keyFrames_[index].time_)
-        --index;
-
-    // Check for being too far behind
-    while (index < keyFrames_.size() - 1 && time >= keyFrames_[index + 1].time_)
-        ++index;
-
-    return true;
+    return keyFrames_.empty() ? VAR_NONE : keyFrames_[0].value_.GetType();
 }
 
 Animation::Animation(Context* context) :
@@ -130,11 +274,15 @@ bool Animation::BeginLoad(Deserializer& source)
     unsigned memoryUse = sizeof(Animation);
 
     // Check ID
-    if (source.ReadFileID() != "UANI")
+    const ea::string fileID = source.ReadFileID();
+    if (fileID != "UANI" && fileID != "UAN2")
     {
         URHO3D_LOGERROR(source.GetName() + " is not a valid animation file");
         return false;
     }
+
+    // Read version
+    const unsigned version = fileID == "UAN2" ? source.ReadUInt() : legacyVersion;
 
     // Read name and length
     animationName_ = source.ReadString();
@@ -142,7 +290,7 @@ bool Animation::BeginLoad(Deserializer& source)
     length_ = source.ReadFloat();
     tracks_.clear();
 
-    unsigned tracks = source.ReadUInt();
+    const unsigned tracks = source.ReadUInt();
     memoryUse += tracks * sizeof(AnimationTrack);
 
     // Read tracks
@@ -151,7 +299,10 @@ bool Animation::BeginLoad(Deserializer& source)
         AnimationTrack* newTrack = CreateTrack(source.ReadString());
         newTrack->channelMask_ = AnimationChannelFlags(source.ReadUByte());
 
-        unsigned keyFrames = source.ReadUInt();
+        if (version >= variantTrackVersion)
+            ReadTransform(source, newTrack->baseValue_, newTrack->channelMask_);
+
+        const unsigned keyFrames = source.ReadUInt();
         newTrack->keyFrames_.resize(keyFrames);
         memoryUse += keyFrames * sizeof(AnimationKeyFrame);
 
@@ -160,12 +311,38 @@ bool Animation::BeginLoad(Deserializer& source)
         {
             AnimationKeyFrame& newKeyFrame = newTrack->keyFrames_[j];
             newKeyFrame.time_ = source.ReadFloat();
-            if (newTrack->channelMask_ & CHANNEL_POSITION)
-                newKeyFrame.position_ = source.ReadVector3();
-            if (newTrack->channelMask_ & CHANNEL_ROTATION)
-                newKeyFrame.rotation_ = source.ReadQuaternion();
-            if (newTrack->channelMask_ & CHANNEL_SCALE)
-                newKeyFrame.scale_ = source.ReadVector3();
+            ReadTransform(source, newKeyFrame, newTrack->channelMask_);
+        }
+    }
+
+    // Read variant tracks
+    if (version >= variantTrackVersion)
+    {
+        const unsigned variantTracks = source.ReadUInt();
+        memoryUse += variantTracks * sizeof(VariantAnimationTrack);
+
+        for (unsigned i = 0; i < variantTracks; ++i)
+        {
+            VariantAnimationTrack* newTrack = CreateVariantTrack(source.ReadString());
+            const auto trackType = static_cast<VariantType>(source.ReadUByte());
+
+            newTrack->interpolation_ = static_cast<KeyFrameInterpolation>(source.ReadUByte());
+            newTrack->splineTension_ = source.ReadFloat();
+            newTrack->baseValue_ = source.ReadVariant(trackType);
+
+            const unsigned keyFrames = source.ReadUInt();
+            newTrack->keyFrames_.resize(keyFrames);
+            memoryUse += keyFrames * sizeof(VariantAnimationKeyFrame);
+
+            // Read keyframes of the track
+            for (unsigned j = 0; j < keyFrames; ++j)
+            {
+                VariantAnimationKeyFrame& newKeyFrame = newTrack->keyFrames_[j];
+                newKeyFrame.time_ = source.ReadFloat();
+                newKeyFrame.value_ = source.ReadVariant(trackType);
+            }
+
+            newTrack->Commit();
         }
     }
 
@@ -192,37 +369,6 @@ bool Animation::BeginLoad(Deserializer& source)
         return true;
     }
 
-    // Optionally read triggers from a JSON file
-    ea::string jsonName = ReplaceExtension(GetName(), ".json");
-
-    SharedPtr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
-    if (jsonFile)
-    {
-        const JSONValue& rootVal = jsonFile->GetRoot();
-        const JSONArray& triggerArray = rootVal.Get("triggers").GetArray();
-
-        for (unsigned i = 0; i < triggerArray.size(); i++)
-        {
-            const JSONValue& triggerValue = triggerArray.at(i);
-            JSONValue normalizedTimeValue = triggerValue.Get("normalizedTime");
-            if (!normalizedTimeValue.IsNull())
-                AddTrigger(normalizedTimeValue.GetFloat(), true, triggerValue.GetVariant());
-            else
-            {
-                JSONValue timeVal = triggerValue.Get("time");
-                if (!timeVal.IsNull())
-                    AddTrigger(timeVal.GetFloat(), false, triggerValue.GetVariant());
-            }
-        }
-
-        const JSONArray& metadataArray = rootVal.Get("metadata").GetArray();
-        LoadMetadataFromJSON(metadataArray);
-
-        memoryUse += triggers_.size() * sizeof(AnimationTriggerPoint);
-        SetMemoryUse(memoryUse);
-        return true;
-    }
-
     SetMemoryUse(memoryUse);
     return true;
 }
@@ -230,17 +376,19 @@ bool Animation::BeginLoad(Deserializer& source)
 bool Animation::Save(Serializer& dest) const
 {
     // Write ID, name and length
-    dest.WriteFileID("UANI");
+    dest.WriteFileID("UAN2");
+    dest.WriteUInt(currentVersion);
     dest.WriteString(animationName_);
     dest.WriteFloat(length_);
 
     // Write tracks
     dest.WriteUInt(tracks_.size());
-    for (auto i = tracks_.begin(); i != tracks_.end(); ++i)
+    for (const auto& item : tracks_)
     {
-        const AnimationTrack& track = i->second;
+        const AnimationTrack& track = item.second;
         dest.WriteString(track.name_);
         dest.WriteUByte(track.channelMask_);
+        WriteTransform(dest, track.baseValue_, track.channelMask_);
         dest.WriteUInt(track.keyFrames_.size());
 
         // Write keyframes of the track
@@ -248,12 +396,31 @@ bool Animation::Save(Serializer& dest) const
         {
             const AnimationKeyFrame& keyFrame = track.keyFrames_[j];
             dest.WriteFloat(keyFrame.time_);
-            if (track.channelMask_ & CHANNEL_POSITION)
-                dest.WriteVector3(keyFrame.position_);
-            if (track.channelMask_ & CHANNEL_ROTATION)
-                dest.WriteQuaternion(keyFrame.rotation_);
-            if (track.channelMask_ & CHANNEL_SCALE)
-                dest.WriteVector3(keyFrame.scale_);
+            WriteTransform(dest, keyFrame, track.channelMask_);
+        }
+    }
+
+    // Write variant tracks
+    dest.WriteUInt(variantTracks_.size());
+    for (const auto& item : variantTracks_)
+    {
+        const VariantAnimationTrack& track = item.second;
+        const VariantType trackType = track.GetType();
+        const Variant defaultValue(trackType);
+
+        dest.WriteString(track.name_);
+        dest.WriteUByte(static_cast<unsigned char>(trackType));
+        dest.WriteUByte(static_cast<unsigned char>(track.interpolation_));
+        dest.WriteFloat(track.splineTension_);
+        dest.WriteVariantData(track.baseValue_.GetType() == trackType ? track.baseValue_ : defaultValue);
+        dest.WriteUInt(track.keyFrames_.size());
+
+        // Write keyframes of the track
+        for (unsigned j = 0; j < track.keyFrames_.size(); ++j)
+        {
+            const VariantAnimationKeyFrame& keyFrame = track.keyFrames_[j];
+            dest.WriteFloat(keyFrame.time_);
+            dest.WriteVariantData(keyFrame.value_.GetType() == trackType ? keyFrame.value_ : defaultValue);
         }
     }
 
@@ -301,15 +468,31 @@ void Animation::SetLength(float length)
 AnimationTrack* Animation::CreateTrack(const ea::string& name)
 {
     /// \todo When tracks / keyframes are created dynamically, memory use is not updated
-    StringHash nameHash(name);
-    AnimationTrack* oldTrack = GetTrack(nameHash);
-    if (oldTrack)
-        return oldTrack;
+    static const AnimationTrack defaultTrack;
+    const auto [iter, isNew] = tracks_.emplace(name, defaultTrack);
 
-    AnimationTrack& newTrack = tracks_[nameHash];
-    newTrack.name_ = name;
-    newTrack.nameHash_ = nameHash;
-    return &newTrack;
+    if (isNew)
+    {
+        iter->second.name_ = name;
+        iter->second.nameHash_ = iter->first;
+    }
+
+    return &iter->second;
+}
+
+VariantAnimationTrack* Animation::CreateVariantTrack(const ea::string& name)
+{
+    /// \todo When tracks / keyframes are created dynamically, memory use is not updated
+    static const VariantAnimationTrack defaultTrack;
+    const auto [iter, isNew] = variantTracks_.emplace(name, defaultTrack);
+
+    if (isNew)
+    {
+        iter->second.name_ = name;
+        iter->second.nameHash_ = iter->first;
+    }
+
+    return &iter->second;
 }
 
 bool Animation::RemoveTrack(const ea::string& name)
@@ -389,19 +572,11 @@ SharedPtr<Animation> Animation::Clone(const ea::string& cloneName) const
 
 AnimationTrack* Animation::GetTrack(unsigned index)
 {
-    if (index >= GetNumTracks())
+    if (index >= tracks_.size())
         return nullptr;
 
-    int j = 0;
-    for(auto i = tracks_.begin(); i != tracks_.end(); ++i)
-    {
-        if (j == index)
-            return &i->second;
-
-        ++j;
-    }
-
-    return nullptr;
+    const auto iter = ea::next(tracks_.begin(), index);
+    return &iter->second;
 }
 
 AnimationTrack* Animation::GetTrack(const ea::string& name)
@@ -414,6 +589,27 @@ AnimationTrack* Animation::GetTrack(StringHash nameHash)
 {
     auto i = tracks_.find(nameHash);
     return i != tracks_.end() ? &i->second : nullptr;
+}
+
+VariantAnimationTrack* Animation::GetVariantTrack(unsigned index)
+{
+    if (index >= variantTracks_.size())
+        return nullptr;
+
+    const auto iter = ea::next(variantTracks_.begin(), index);
+    return &iter->second;
+}
+
+VariantAnimationTrack* Animation::GetVariantTrack(const ea::string& name)
+{
+    const auto iter = variantTracks_.find(StringHash(name));
+    return iter != variantTracks_.end() ? &iter->second : nullptr;
+}
+
+VariantAnimationTrack* Animation::GetVariantTrack(StringHash nameHash)
+{
+    const auto iter = variantTracks_.find(nameHash);
+    return iter != variantTracks_.end() ? &iter->second : nullptr;
 }
 
 AnimationTriggerPoint* Animation::GetTrigger(unsigned index)

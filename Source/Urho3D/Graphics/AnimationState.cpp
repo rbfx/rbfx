@@ -34,6 +34,53 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+Variant BlendAdditive(const Variant& oldValue, const Variant& newValue, const Variant& baseValue, float weight)
+{
+    switch (newValue.GetType())
+    {
+    case VAR_FLOAT:
+        return oldValue.GetFloat() + (newValue.GetFloat() - baseValue.GetFloat()) * weight;
+
+    case VAR_DOUBLE:
+        return oldValue.GetDouble() + (newValue.GetDouble() - baseValue.GetDouble()) * weight;
+
+    case VAR_INT:
+        return static_cast<int>(oldValue.GetInt() + (newValue.GetInt() - baseValue.GetInt()) * weight);
+
+    case VAR_INT64:
+        return static_cast<long long>(oldValue.GetInt64() + (newValue.GetInt64() - baseValue.GetInt64()) * weight);
+
+    case VAR_VECTOR2:
+        return oldValue.GetVector2() + (newValue.GetVector2() - baseValue.GetVector2()) * weight;
+
+    case VAR_VECTOR3:
+        return oldValue.GetVector3() + (newValue.GetVector3() - baseValue.GetVector3()) * weight;
+
+    case VAR_VECTOR4:
+        return oldValue.GetVector4() + (newValue.GetVector4() - baseValue.GetVector4()) * weight;
+
+    case VAR_QUATERNION:
+        return oldValue.GetQuaternion() * Quaternion::IDENTITY.Slerp(newValue.GetQuaternion() * baseValue.GetQuaternion().Inverse(), weight);
+
+    case VAR_COLOR:
+        return oldValue.GetColor() + (newValue.GetColor() - baseValue.GetColor()) * weight;
+
+    case VAR_INTVECTOR2:
+        return oldValue.GetIntVector2() + VectorRoundToInt(static_cast<Vector2>(newValue.GetIntVector2() - baseValue.GetIntVector2()) * weight);
+
+    case VAR_INTVECTOR3:
+        return oldValue.GetIntVector3() + VectorRoundToInt(static_cast<Vector3>(newValue.GetIntVector3() - baseValue.GetIntVector3()) * weight);
+
+    default:
+        return oldValue;
+    }
+}
+
+}
+
 AnimationState::AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation) :
     controller_(controller),
     model_(model),
@@ -64,6 +111,7 @@ void AnimationState::ClearAllTracks()
 {
     modelTracks_.clear();
     nodeTracks_.clear();
+    attributeTracks_.clear();
 }
 
 void AnimationState::AddModelTrack(const ModelAnimationStateTrack& track)
@@ -74,6 +122,11 @@ void AnimationState::AddModelTrack(const ModelAnimationStateTrack& track)
 void AnimationState::AddNodeTrack(const NodeAnimationStateTrack& track)
 {
     nodeTracks_.push_back(track);
+}
+
+void AnimationState::AddAttributeTrack(const AttributeAnimationStateTrack& track)
+{
+    attributeTracks_.push_back(track);
 }
 
 void AnimationState::OnTracksReady()
@@ -309,78 +362,49 @@ void AnimationState::ApplyNodeTracks()
     }
 }
 
+void AnimationState::ApplyAttributeTracks()
+{
+    if (!animation_ || !IsEnabled())
+        return;
+
+    for (AttributeAnimationStateTrack& stateTrack : attributeTracks_)
+    {
+        ApplyAttributeTrack(stateTrack, weight_);
+    }
+}
+
 void AnimationState::ApplyTransformTrack(const AnimationTrack& track,
     Node* node, Bone* bone, unsigned& frame, float weight, bool silent)
 {
     if (track.keyFrames_.empty() || !node)
         return;
 
-    track.GetKeyFrameIndex(time_, frame);
-
-    // Check if next frame to interpolate to is valid, or if wrapping is needed (looping animation only)
-    unsigned nextFrame = frame + 1;
-    bool interpolate = true;
-    if (nextFrame >= track.keyFrames_.size())
-    {
-        if (!looped_)
-        {
-            nextFrame = frame;
-            interpolate = false;
-        }
-        else
-            nextFrame = 0;
-    }
-
-    const AnimationKeyFrame* keyFrame = &track.keyFrames_[frame];
     const AnimationChannelFlags channelMask = track.channelMask_;
 
-    Vector3 newPosition;
-    Quaternion newRotation;
-    Vector3 newScale;
-
-    if (interpolate)
-    {
-        const AnimationKeyFrame* nextKeyFrame = &track.keyFrames_[nextFrame];
-        float timeInterval = nextKeyFrame->time_ - keyFrame->time_;
-        if (timeInterval < 0.0f)
-            timeInterval += animation_->GetLength();
-        float t = timeInterval > 0.0f ? (time_ - keyFrame->time_) / timeInterval : 1.0f;
-
-        if (channelMask & CHANNEL_POSITION)
-            newPosition = keyFrame->position_.Lerp(nextKeyFrame->position_, t);
-        if (channelMask & CHANNEL_ROTATION)
-            newRotation = keyFrame->rotation_.Slerp(nextKeyFrame->rotation_, t);
-        if (channelMask & CHANNEL_SCALE)
-            newScale = keyFrame->scale_.Lerp(nextKeyFrame->scale_, t);
-    }
-    else
-    {
-        if (channelMask & CHANNEL_POSITION)
-            newPosition = keyFrame->position_;
-        if (channelMask & CHANNEL_ROTATION)
-            newRotation = keyFrame->rotation_;
-        if (channelMask & CHANNEL_SCALE)
-            newScale = keyFrame->scale_;
-    }
+    Transform newTransform;
+    track.Sample(time_, animation_->GetLength(), looped_, frame, newTransform);
 
     if (blendingMode_ == ABM_ADDITIVE) // not ABM_LERP
     {
         if (channelMask & CHANNEL_POSITION)
         {
-            const Vector3 delta = bone ? (newPosition - bone->initialPosition_) : newPosition;
-            newPosition = node->GetPosition() + delta * weight;
+            const Vector3& base = bone ? bone->initialPosition_ : track.baseValue_.position_;
+            const Vector3 delta = newTransform.position_ - base;
+            newTransform.position_ = node->GetPosition() + delta * weight;
         }
         if (channelMask & CHANNEL_ROTATION)
         {
-            const Quaternion delta = bone ? (newRotation * bone->initialRotation_.Inverse()) : newRotation;
-            newRotation = (delta * node->GetRotation()).Normalized();
+            const Quaternion& base = bone ? bone->initialRotation_ : track.baseValue_.rotation_;
+            const Quaternion delta = newTransform.rotation_ * base.Inverse();
+            newTransform.rotation_ = (delta * node->GetRotation()).Normalized();
             if (!Equals(weight, 1.0f))
-                newRotation = node->GetRotation().Slerp(newRotation, weight);
+                newTransform.rotation_ = node->GetRotation().Slerp(newTransform.rotation_, weight);
         }
         if (channelMask & CHANNEL_SCALE)
         {
-            const Vector3 delta = bone ? (newScale - bone->initialScale_) : newScale;
-            newScale = node->GetScale() + delta * weight;
+            const Vector3& base = bone ? bone->initialScale_ : track.baseValue_.scale_;
+            const Vector3 delta = newTransform.scale_ - base;
+            newTransform.scale_ = node->GetScale() + delta * weight;
         }
     }
     else
@@ -388,31 +412,70 @@ void AnimationState::ApplyTransformTrack(const AnimationTrack& track,
         if (!Equals(weight, 1.0f)) // not full weight
         {
             if (channelMask & CHANNEL_POSITION)
-                newPosition = node->GetPosition().Lerp(newPosition, weight);
+                newTransform.position_ = node->GetPosition().Lerp(newTransform.position_, weight);
             if (channelMask & CHANNEL_ROTATION)
-                newRotation = node->GetRotation().Slerp(newRotation, weight);
+                newTransform.rotation_ = node->GetRotation().Slerp(newTransform.rotation_, weight);
             if (channelMask & CHANNEL_SCALE)
-                newScale = node->GetScale().Lerp(newScale, weight);
+                newTransform.scale_ = node->GetScale().Lerp(newTransform.scale_, weight);
         }
     }
 
     if (silent)
     {
         if (channelMask & CHANNEL_POSITION)
-            node->SetPositionSilent(newPosition);
+            node->SetPositionSilent(newTransform.position_);
         if (channelMask & CHANNEL_ROTATION)
-            node->SetRotationSilent(newRotation);
+            node->SetRotationSilent(newTransform.rotation_);
         if (channelMask & CHANNEL_SCALE)
-            node->SetScaleSilent(newScale);
+            node->SetScaleSilent(newTransform.scale_);
     }
     else
     {
         if (channelMask & CHANNEL_POSITION)
-            node->SetPosition(newPosition);
+            node->SetPosition(newTransform.position_);
         if (channelMask & CHANNEL_ROTATION)
-            node->SetRotation(newRotation);
+            node->SetRotation(newTransform.rotation_);
         if (channelMask & CHANNEL_SCALE)
-            node->SetScale(newScale);
+            node->SetScale(newTransform.scale_);
+    }
+}
+
+void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrack, float weight)
+{
+    const VariantAnimationTrack& track = *stateTrack.track_;
+    Serializable* serializable = stateTrack.serializable_;
+    if (track.keyFrames_.empty() || !serializable)
+        return;
+
+    Variant newValue = track.Sample(time_, animation_->GetLength(), looped_, stateTrack.keyFrame_);
+
+    // Apply blending
+    if (blendingMode_ == ABM_ADDITIVE || !Equals(weight, 1.0f))
+    {
+        Variant oldValue;
+        if (stateTrack.variableName_ == StringHash{})
+            oldValue = serializable->GetAttribute(stateTrack.attributeIndex_);
+        else
+        {
+            assert(dynamic_cast<Node*>(serializable));
+            auto node = static_cast<Node*>(serializable);
+            oldValue = node->GetVar(stateTrack.variableName_);
+        }
+
+        if (blendingMode_ == ABM_ADDITIVE)
+            newValue = BlendAdditive(oldValue, newValue, track.baseValue_, weight);
+        else
+            newValue = oldValue.Lerp(newValue, weight);
+    }
+
+    // Apply final value
+    if (stateTrack.variableName_ == StringHash{})
+        serializable->SetAttribute(stateTrack.attributeIndex_, newValue);
+    else
+    {
+        assert(dynamic_cast<Node*>(serializable));
+        auto node = static_cast<Node*>(serializable);
+        node->SetVar(stateTrack.variableName_, newValue);
     }
 }
 

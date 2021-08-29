@@ -40,6 +40,7 @@ class Node;
 class Serializer;
 class Skeleton;
 struct AnimationTrack;
+struct VariantAnimationTrack;
 struct Bone;
 
 /// %Animation blending mode.
@@ -69,6 +70,16 @@ struct URHO3D_API NodeAnimationStateTrack
     unsigned keyFrame_{};
 };
 
+/// Per-track data of attribute animation.
+struct URHO3D_API AttributeAnimationStateTrack
+{
+    const VariantAnimationTrack* track_{};
+    WeakPtr<Serializable> serializable_;
+    unsigned attributeIndex_{};
+    StringHash variableName_;
+    unsigned keyFrame_{};
+};
+
 /// %Animation instance.
 class URHO3D_API AnimationState : public RefCounted
 {
@@ -87,6 +98,7 @@ public:
     void ClearAllTracks();
     void AddModelTrack(const ModelAnimationStateTrack& track);
     void AddNodeTrack(const NodeAnimationStateTrack& track);
+    void AddAttributeTrack(const AttributeAnimationStateTrack& track);
     void OnTracksReady();
     /// @}
 
@@ -158,11 +170,15 @@ public:
     void ApplyModelTracks();
     /// Apply animation to a scene node hierarchy.
     void ApplyNodeTracks();
+    /// Apply animation to attributes.
+    void ApplyAttributeTracks();
 
 private:
     /// Apply single transformation track to target object. Key frame hint is updated on call.
     void ApplyTransformTrack(const AnimationTrack& track,
         Node* node, Bone* bone, unsigned& frame, float weight, bool silent);
+    /// Apply single attribute track to target object. Key frame hint is updated on call.
+    void ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrack, float weight);
 
     /// Owner controller.
     WeakPtr<AnimationController> controller_;
@@ -190,6 +206,7 @@ private:
     /// @{
     ea::vector<ModelAnimationStateTrack> modelTracks_;
     ea::vector<NodeAnimationStateTrack> nodeTracks_;
+    ea::vector<AttributeAnimationStateTrack> attributeTracks_;
     /// @}
 };
 
