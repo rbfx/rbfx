@@ -32,7 +32,11 @@ namespace Tests
 /// Serialize and deserialize Scene. Should preserve functional state of nodes and components.
 void SerializeAndDeserializeScene(Scene* scene);
 
-/// Weak reference to Scene node by name. Useful for tests with serialization when actual objects are recreated.
+/// Return attribute value as variant.
+Variant GetAttributeValue(const ea::pair<Serializable*, unsigned>& ref);
+
+/// Weak reference to Scene node by name.
+/// Useful for tests with serialization when actual objects are recreated.
 struct NodeRef
 {
     WeakPtr<Scene> scene_;
@@ -43,6 +47,26 @@ struct NodeRef
     Node* operator*() const { return GetNode(); }
     Node* operator->() const { return GetNode(); }
     bool operator!() const { return GetNode() == nullptr; }
+    explicit operator bool() const { return !!*this; }
+};
+
+/// Weak reference to Scene component by node name and component type.
+/// Useful for tests with serialization when actual objects are recreated.
+template <class T>
+struct ComponentRef
+{
+    WeakPtr<Scene> scene_;
+    ea::string name_;
+
+    T* GetComponent() const
+    {
+        Node* node = scene_ ? scene_->GetChild(name_, true) : nullptr;
+        return node ? node->GetComponent<T>() : nullptr;
+    }
+
+    T* operator*() const { return GetComponent(); }
+    T* operator->() const { return GetComponent(); }
+    bool operator!() const { return GetComponent() == nullptr; }
     explicit operator bool() const { return !!*this; }
 };
 

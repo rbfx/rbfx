@@ -28,64 +28,6 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/ModelView.h>
 
-namespace
-{
-
-ModelVertex MakeModelVertex(const Vector3& position, const Vector3& normal, const Color& color)
-{
-    ModelVertex vertex;
-    vertex.SetPosition(position);
-    vertex.SetNormal(normal);
-    vertex.color_[0] = color.ToVector4();
-    return vertex;
-}
-
-void AppendQuad(GeometryLODView& dest,
-    const Vector3& position, const Quaternion& rotation, const Vector2& size, const Color& color)
-{
-    static constexpr unsigned NumVertices = 4;
-    static constexpr unsigned NumIndices = 2 * 3;
-
-    const Vector3 vertexPositions[NumVertices] = {
-        { -size.x_ / 2, -size.y_ / 2, 0.0f },
-        {  size.x_ / 2, -size.y_ / 2, 0.0f },
-        { -size.x_ / 2,  size.y_ / 2, 0.0f },
-        {  size.x_ / 2,  size.y_ / 2, 0.0f },
-    };
-    const Vector3 vertexNorm = { 0.0f, 0.0f, -1.0f };
-
-    const unsigned baseIndex = dest.vertices_.size();
-    for (unsigned i = 0; i < NumVertices; ++i)
-    {
-        const Vector3 pos = rotation * vertexPositions[i] + position;
-        const Vector3 norm = rotation * vertexNorm;
-        dest.vertices_.push_back(MakeModelVertex(pos, norm, color));
-    }
-
-    const unsigned indices[NumIndices] = {
-        0, 2, 1,
-        1, 2, 3
-    };
-    for (unsigned i = 0; i < NumIndices; ++i)
-        dest.indices_.push_back(baseIndex + indices[i]);
-}
-
-void AppendSkinnedQuad(GeometryLODView& dest, const Vector4& blendIndices, const Vector4& blendWeights,
-    const Vector3& position, const Quaternion& rotation, const Vector2& size, const Color& color)
-{
-    const unsigned beginVertex = dest.vertices_.size();
-    AppendQuad(dest, position, rotation, size, color);
-    const unsigned endVertex = dest.vertices_.size();
-
-    for (unsigned i = beginVertex; i < endVertex; ++i)
-    {
-        dest.vertices_[i].blendIndices_ = blendIndices;
-        dest.vertices_[i].blendWeights_ = blendWeights;
-    }
-}
-
-}
-
 TEST_CASE("Simple model constructed and desconstructed")
 {
     auto context = Tests::CreateCompleteTestContext();
@@ -111,10 +53,10 @@ TEST_CASE("Simple model constructed and desconstructed")
         geometries[1].lods_.resize(2);
 
         // Set geometry data
-        AppendQuad(geometries[0].lods_[0], { 0.0f, 0.5f, 0.0f }, { 0.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::WHITE);
-        AppendQuad(geometries[0].lods_[0], { 0.0f, 0.5f, 0.0f }, { 90.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::BLACK);
-        AppendQuad(geometries[1].lods_[0], { 0.0f, 0.5f, 1.0f }, Quaternion::IDENTITY, { 2.0f, 2.0f }, Color::RED);
-        AppendQuad(geometries[1].lods_[1], { 0.0f, 0.5f, 1.0f }, Quaternion::IDENTITY, { 2.0f, 2.0f }, Color::BLUE);
+        Tests::AppendQuad(geometries[0].lods_[0], { 0.0f, 0.5f, 0.0f }, { 0.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::WHITE);
+        Tests::AppendQuad(geometries[0].lods_[0], { 0.0f, 0.5f, 0.0f }, { 90.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::BLACK);
+        Tests::AppendQuad(geometries[1].lods_[0], { 0.0f, 0.5f, 1.0f }, Quaternion::IDENTITY, { 2.0f, 2.0f }, Color::RED);
+        Tests::AppendQuad(geometries[1].lods_[1], { 0.0f, 0.5f, 1.0f }, Quaternion::IDENTITY, { 2.0f, 2.0f }, Color::BLUE);
 
         geometries[1].lods_[0].lodDistance_ = 10.0f;
         geometries[1].lods_[1].lodDistance_ = 20.0f;
@@ -276,5 +218,90 @@ TEST_CASE("Skeletal model constructed and desconstructed")
         CHECK(modelView->GetVertexFormat() == secondModelView->GetVertexFormat());
         CHECK(modelView->GetGeometries() == secondModelView->GetGeometries());
         CHECK(modelView->GetBones() == secondModelView->GetBones());
+    }
+}
+
+TEST_CASE("Animation serialized")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto animation = MakeShared<Animation>(context);
+
+    VectorBuffer animationData;
+    {
+        animation->SetAnimationName("Test Animation");
+        animation->SetLength(2.0f);
+
+        {
+            AnimationTrack* track = animation->CreateTrack("Track 1");
+            track->channelMask_ = CHANNEL_POSITION;
+
+            track->AddKeyFrame(AnimationKeyFrame{ 0.0f, Vector3::ONE });
+            track->AddKeyFrame(AnimationKeyFrame{ 1.0f, Vector3::ONE * 1.5f });
+            track->AddKeyFrame(AnimationKeyFrame{ 2.0f, Vector3::ONE * 2.0f });
+        }
+
+        {
+            AnimationTrack* track = animation->CreateTrack("Track 2");
+            track->channelMask_ = CHANNEL_POSITION | CHANNEL_ROTATION | CHANNEL_SCALE;
+
+            track->AddKeyFrame(AnimationKeyFrame{ 0.0f, Vector3::ONE,
+                Quaternion{ 30.0f, Vector3::UP }, Vector3::ONE * 0.2f });
+            track->AddKeyFrame(AnimationKeyFrame{ 1.0f, Vector3::ONE * 1.5f,
+                Quaternion{ 60.0f, Vector3::UP }, Vector3::ONE * 0.5f });
+            track->AddKeyFrame(AnimationKeyFrame{ 2.0f, Vector3::ONE * 2.0f,
+                Quaternion{ 90.0f, Vector3::UP }, Vector3::ONE * 0.8f });
+        }
+
+        {
+            VariantAnimationTrack* track = animation->CreateVariantTrack("Track 3");
+
+            track->AddKeyFrame(VariantAnimationKeyFrame{ 0.0f, Variant("A") });
+            track->AddKeyFrame(VariantAnimationKeyFrame{ 1.0f, Variant("B") });
+            track->AddKeyFrame(VariantAnimationKeyFrame{ 2.0f, Variant("C") });
+        }
+
+        const bool animationSaved = animation->Save(animationData);
+        REQUIRE(animationSaved);
+
+        animationData.Seek(0);
+    }
+
+    {
+        auto secondAnimation = MakeShared<Animation>(context);
+        const bool animationLoaded = secondAnimation->Load(animationData);
+        REQUIRE(animationLoaded);
+
+        CHECK(secondAnimation->GetAnimationName() == animation->GetAnimationName());
+        CHECK(secondAnimation->GetLength() == animation->GetLength());
+        CHECK(secondAnimation->GetNumTracks() == animation->GetNumTracks());
+        CHECK(secondAnimation->GetNumVariantTracks() == animation->GetNumVariantTracks());
+
+        {
+            auto track = secondAnimation->GetTrack(ea::string{ "Track 1" });
+            REQUIRE(track);
+            REQUIRE(track->keyFrames_.size() == 3);
+            CHECK(track->channelMask_ == CHANNEL_POSITION);
+            CHECK(track->keyFrames_[2].time_ == 2.0f);
+            CHECK(track->keyFrames_[2].position_.Equals(Vector3::ONE * 2.0f));
+        }
+
+        {
+            auto track = secondAnimation->GetTrack(ea::string{ "Track 2" });
+            REQUIRE(track);
+            REQUIRE(track->keyFrames_.size() == 3);
+            CHECK(track->channelMask_ == (CHANNEL_POSITION | CHANNEL_ROTATION | CHANNEL_SCALE));
+            CHECK(track->keyFrames_[1].time_ == 1.0f);
+            CHECK(track->keyFrames_[1].position_.Equals(Vector3::ONE * 1.5f));
+            CHECK(track->keyFrames_[1].rotation_.Equals(Quaternion{ 60.0f, Vector3::UP }));
+            CHECK(track->keyFrames_[1].scale_.Equals(Vector3::ONE * 0.5f));
+        }
+
+        {
+            auto track = secondAnimation->GetVariantTrack(ea::string{ "Track 3" });
+            REQUIRE(track);
+            REQUIRE(track->keyFrames_.size() == 3);
+            CHECK(track->keyFrames_[1].time_ == 1.0f);
+            CHECK(track->keyFrames_[1].value_ == Variant("B"));
+        }
     }
 }

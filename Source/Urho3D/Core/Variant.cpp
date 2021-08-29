@@ -1058,6 +1058,75 @@ VariantType Variant::GetTypeFromName(const char* typeName)
     return (VariantType)GetStringListIndex(typeName, typeNames, VAR_NONE);
 }
 
+Variant Variant::Lerp(const Variant& rhs, float t) const
+{
+    switch (type_)
+    {
+    case VAR_FLOAT:
+        return Urho3D::Lerp(GetFloat(), rhs.GetFloat(), t);
+
+    case VAR_DOUBLE:
+        return Urho3D::Lerp(GetDouble(), rhs.GetDouble(), t);
+
+    case VAR_INT:
+        return Urho3D::Lerp(GetInt(), rhs.GetInt(), t);
+
+    case VAR_INT64:
+        return Urho3D::Lerp(GetInt64(), rhs.GetInt64(), t);
+
+    case VAR_VECTOR2:
+        return GetVector2().Lerp(rhs.GetVector2(), t);
+
+    case VAR_VECTOR3:
+        return GetVector3().Lerp(rhs.GetVector3(), t);
+
+    case VAR_VECTOR4:
+        return GetVector4().Lerp(rhs.GetVector4(), t);
+
+    case VAR_QUATERNION:
+        return GetQuaternion().Slerp(rhs.GetQuaternion(), t);
+
+    case VAR_COLOR:
+        return GetColor().Lerp(rhs.GetColor(), t);
+
+    case VAR_INTRECT:
+        {
+            const float s = 1.0f - t;
+            const IntRect& r1 = GetIntRect();
+            const IntRect& r2 = rhs.GetIntRect();
+            return IntRect(
+                static_cast<int>(r1.left_ * s + r2.left_ * t),
+                static_cast<int>(r1.top_ * s + r2.top_ * t),
+                static_cast<int>(r1.right_ * s + r2.right_ * t),
+                static_cast<int>(r1.bottom_ * s + r2.bottom_ * t));
+        }
+
+    case VAR_INTVECTOR2:
+        {
+            const float s = 1.0f - t;
+            const IntVector2& v1 = GetIntVector2();
+            const IntVector2& v2 = rhs.GetIntVector2();
+            return IntVector2(
+                static_cast<int>(v1.x_ * s + v2.x_ * t),
+                static_cast<int>(v1.y_ * s + v2.y_ * t));
+        }
+
+    case VAR_INTVECTOR3:
+        {
+            const float s = 1.0f - t;
+            const IntVector3& v1 = GetIntVector3();
+            const IntVector3& v2 = rhs.GetIntVector3();
+            return IntVector3(
+                static_cast<int>(v1.x_ * s + v2.x_ * t),
+                static_cast<int>(v1.y_ * s + v2.y_ * t),
+                static_cast<int>(v1.z_ * s + v2.z_ * t));
+        }
+
+    default:
+        return *this;
+    }
+}
+
 unsigned Variant::ToHash() const
 {
     switch (GetType())

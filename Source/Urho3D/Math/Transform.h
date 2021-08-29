@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2021 the rbfx project.
+// Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,19 @@
 
 #pragma once
 
-#include "SceneUtils.h"
+#include "../Math/Vector3.h"
+#include "../Math/Quaternion.h"
 
-#include <Urho3D/Resource/XMLFile.h>
-
-namespace Tests
+namespace Urho3D
 {
 
-void SerializeAndDeserializeScene(Scene* scene)
+/// Position, rotation and scale in 3D.
+/// TODO: Expand it into something more user-friendly.
+struct Transform
 {
-    auto xmlFile = MakeShared<XMLFile>(scene->GetContext());
-    auto xmlRoot = xmlFile->GetOrCreateRoot("scene");
-    scene->SaveXML(xmlRoot);
-    scene->Clear();
-    scene->LoadXML(xmlRoot);
-}
-
-Variant GetAttributeValue(const ea::pair<Serializable*, unsigned>& ref)
-{
-    return ref.first->GetAttribute(ref.second);
-}
-
-Node* NodeRef::GetNode() const
-{
-    return scene_ ? scene_->GetChild(name_, true) : nullptr;
-}
+    Vector3 position_;
+    Quaternion rotation_;
+    Vector3 scale_{ Vector3::ONE };
+};
 
 }

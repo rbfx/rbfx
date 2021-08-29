@@ -594,6 +594,12 @@ public:
     Node* GetChild(const char* name, bool recursive = false) const;
     /// Return child scene node by name hash.
     Node* GetChild(StringHash nameHash, bool recursive = false) const;
+    /// Find child node by path string in format "Parent Name/Child Name/Grandchild Name/..."
+    /// Node index may be used instead of name: ".../#10/..."
+    Node* FindChild(ea::string_view path) const;
+    /// Find attribute of itself or owned component by path string in format "@ComponentName/Attribute Name".
+    /// If component name is not specified, attribute is searched in the node itself: "@/Position".
+    ea::pair<Serializable*, unsigned> FindComponentAttribute(ea::string_view path) const;
 
     /// Return number of components.
     /// @property
@@ -734,6 +740,11 @@ private:
     void RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i);
     /// Handle attribute animation update event.
     void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
+    /// Find child node by index if name is an integer starting with "#" (like "#12" or "#0").
+    /// Find child by name otherwise. Empty name is considered invalid.
+    Node* GetChildByNameOrIndex(ea::string_view name) const;
+    /// Find component by name. If name is empty, returns the owner node itself.
+    Serializable* GetSerializableByName(ea::string_view name) const;
 
     /// World-space transform matrix.
     mutable Matrix3x4 worldTransform_;

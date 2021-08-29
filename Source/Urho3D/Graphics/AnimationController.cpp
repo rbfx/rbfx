@@ -186,7 +186,10 @@ void AnimationController::Update(float timeStep)
 
     // Node hierarchy animations need to be applied manually
     for (AnimationState* state : animationStates_)
+    {
         state->ApplyNodeTracks();
+        state->ApplyAttributeTracks();
+    }
 }
 
 bool AnimationController::Play(const ea::string& name, unsigned char layer, bool looped, float fadeInTime)
@@ -964,6 +967,60 @@ void AnimationController::MarkAnimationStateTracksDirty()
         state->MarkTracksDirty();
 }
 
+bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startNode,
+    WeakPtr<Serializable>& serializable, unsigned& attributeIndex, StringHash& variableName)
+{
+    if (path.empty())
+    {
+        URHO3D_LOGWARNING("Variant animation track name must not be empty");
+        return false;
+    }
+
+    Node* animatedNode = startNode;
+    ea::string_view attributePath = path;
+
+    // Resolve path to node if necessary
+    if (path[0] != '@')
+    {
+        const auto sep = path.find_first_of("/@");
+        if (sep == ea::string_view::npos)
+        {
+            URHO3D_LOGWARNING("Path must end with attribute reference like /@StaticModel/Model");
+            return false;
+        }
+
+        const ea::string_view nodePath = path.substr(0, sep);
+        animatedNode = startNode->FindChild(nodePath);
+        if (!animatedNode)
+        {
+            URHO3D_LOGWARNING("Path to node \"{}\" cannot be resolved", nodePath);
+            return false;
+        }
+
+        attributePath = path.substr(sep + 1);
+    }
+
+    // Special case: if Node variables are referenced, individual variables are supported
+    static const ea::string_view variablesPath = "@/Variables/";
+    if (attributePath.starts_with(variablesPath))
+    {
+        variableName = attributePath.substr(variablesPath.size());
+        attributePath = attributePath.substr(0, variablesPath.size() - 1);
+    }
+
+    // Parse path to component and attribute
+    const auto& serializableAndAttribute = animatedNode->FindComponentAttribute(attributePath);
+    if (!serializableAndAttribute.first)
+    {
+        URHO3D_LOGWARNING("Path to attribute \"{}\" cannot be resolved", attributePath);
+        return false;
+    }
+
+    serializable = serializableAndAttribute.first;
+    attributeIndex = serializableAndAttribute.second;
+    return true;
+}
+
 void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
 {
     // TODO(animation): Cache lookups?
@@ -1007,7 +1064,21 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     }
 
     // Setup generic tracks
-    // TODO(animation): Implement me
+    const auto& variantTracks = animation->GetVariantTracks();
+    for (const auto& item : variantTracks)
+    {
+        const VariantAnimationTrack& track = item.second;
+        const ea::string& trackName = track.name_;
+
+        AttributeAnimationStateTrack stateTrack;
+        stateTrack.track_ = &track;
+
+        if (ParseAnimatablePath(trackName, startNode,
+            stateTrack.serializable_, stateTrack.attributeIndex_, stateTrack.variableName_))
+        {
+            state->AddAttributeTrack(stateTrack);
+        }
+    }
 }
 
 void AnimationController::ConnectToAnimatedModel()
