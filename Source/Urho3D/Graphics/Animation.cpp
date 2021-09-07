@@ -43,6 +43,14 @@ namespace Urho3D
 namespace
 {
 
+const ea::string keyFrameInterpolationNames[] =
+{
+    "none",
+    "linear",
+    "spline",
+    ""
+};
+
 inline bool CompareTriggers(const AnimationTriggerPoint& lhs, const AnimationTriggerPoint& rhs)
 {
     return lhs.time_ < rhs.time_;
@@ -68,192 +76,6 @@ void WriteTransform(Serializer& dest, const Transform& transform, AnimationChann
         dest.WriteVector3(transform.scale_);
 }
 
-Variant InterpolateSpline(VariantType type,
-    const Variant& v1, const Variant& v2, const Variant& t1, const Variant& t2, float t)
-{
-    const float tt = t * t;
-    const float ttt = t * tt;
-
-    const float h1 = 2.0f * ttt - 3.0f * tt + 1.0f;
-    const float h2 = -2.0f * ttt + 3.0f * tt;
-    const float h3 = ttt - 2.0f * tt + t;
-    const float h4 = ttt - tt;
-
-    switch (type)
-    {
-    case VAR_FLOAT:
-        return v1.GetFloat() * h1 + v2.GetFloat() * h2 + t1.GetFloat() * h3 + t2.GetFloat() * h4;
-
-    case VAR_VECTOR2:
-        return v1.GetVector2() * h1 + v2.GetVector2() * h2 + t1.GetVector2() * h3 + t2.GetVector2() * h4;
-
-    case VAR_VECTOR3:
-        return v1.GetVector3() * h1 + v2.GetVector3() * h2 + t1.GetVector3() * h3 + t2.GetVector3() * h4;
-
-    case VAR_VECTOR4:
-        return v1.GetVector4() * h1 + v2.GetVector4() * h2 + t1.GetVector4() * h3 + t2.GetVector4() * h4;
-
-    case VAR_QUATERNION:
-        return v1.GetQuaternion() * h1 + v2.GetQuaternion() * h2 + t1.GetQuaternion() * h3 + t2.GetQuaternion() * h4;
-
-    case VAR_COLOR:
-        return v1.GetColor() * h1 + v2.GetColor() * h2 + t1.GetColor() * h3 + t2.GetColor() * h4;
-
-    case VAR_DOUBLE:
-        return v1.GetDouble() * h1 + v2.GetDouble() * h2 + t1.GetDouble() * h3 + t2.GetDouble() * h4;
-
-    default:
-        return v1;
-    }
-}
-
-Variant SubstractAndMultiply(VariantType type, const Variant& v1, const Variant& v2, float t)
-{
-    switch (type)
-    {
-    case VAR_FLOAT:
-        return (v1.GetFloat() - v2.GetFloat()) * t;
-
-    case VAR_VECTOR2:
-        return (v1.GetVector2() - v2.GetVector2()) * t;
-
-    case VAR_VECTOR3:
-        return (v1.GetVector3() - v2.GetVector3()) * t;
-
-    case VAR_VECTOR4:
-        return (v1.GetVector4() - v2.GetVector4()) * t;
-
-    case VAR_QUATERNION:
-        return (v1.GetQuaternion() - v2.GetQuaternion()) * t;
-
-    case VAR_COLOR:
-        return (v1.GetColor() - v2.GetColor()) * t;
-
-    case VAR_DOUBLE:
-        return (v1.GetDouble() - v2.GetDouble()) * t;
-
-    default:
-        return Variant(type);
-    }
-}
-
-}
-
-void AnimationTrack::Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& value) const
-{
-    float blendFactor{};
-    unsigned nextFrameIndex{};
-    GetKeyFrames(time, duration, isLooped, frameIndex, nextFrameIndex, blendFactor);
-
-    const AnimationKeyFrame& keyFrame = keyFrames_[frameIndex];
-    const AnimationKeyFrame& nextKeyFrame = keyFrames_[nextFrameIndex];
-
-    if (blendFactor >= M_EPSILON)
-    {
-        if (channelMask_ & CHANNEL_POSITION)
-            value.position_ = keyFrame.position_.Lerp(nextKeyFrame.position_, blendFactor);
-        if (channelMask_ & CHANNEL_ROTATION)
-            value.rotation_ = keyFrame.rotation_.Slerp(nextKeyFrame.rotation_, blendFactor);
-        if (channelMask_ & CHANNEL_SCALE)
-            value.scale_ = keyFrame.scale_.Lerp(nextKeyFrame.scale_, blendFactor);
-    }
-    else
-    {
-        if (channelMask_ & CHANNEL_POSITION)
-            value.position_ = keyFrame.position_;
-        if (channelMask_ & CHANNEL_ROTATION)
-            value.rotation_ = keyFrame.rotation_;
-        if (channelMask_ & CHANNEL_SCALE)
-            value.scale_ = keyFrame.scale_;
-    }
-}
-
-void VariantAnimationTrack::Commit()
-{
-    type_ = GetType();
-
-    switch (type_)
-    {
-    case VAR_FLOAT:
-    case VAR_VECTOR2:
-    case VAR_VECTOR3:
-    case VAR_VECTOR4:
-    case VAR_QUATERNION:
-    case VAR_COLOR:
-    case VAR_DOUBLE:
-        // Floating point compounds may have any interpolation type.
-        // Calculate tangents if spline interpolation is used.
-        if (interpolation_ == KeyFrameInterpolation::Spline)
-        {
-            const unsigned numKeyFrames = keyFrames_.size();
-            splineTangents_.resize(numKeyFrames);
-
-            for (unsigned i = 1; i + 1 < numKeyFrames; ++i)
-            {
-                splineTangents_[i] = SubstractAndMultiply(
-                    type_, keyFrames_[i + 1].value_, keyFrames_[i - 1].value_, splineTension_);
-            }
-
-            // If spline is not closed, make end point's tangent zero
-            if (numKeyFrames <= 2 || keyFrames_[0].value_ != keyFrames_[numKeyFrames - 1].value_)
-            {
-                splineTangents_[0] = Variant(type_);
-                if (numKeyFrames >= 2)
-                    splineTangents_[numKeyFrames - 1] = Variant(type_);
-            }
-            else
-            {
-                const Variant tangent = SubstractAndMultiply(
-                    type_, keyFrames_[1].value_, keyFrames_[numKeyFrames - 2].value_, splineTension_);
-                splineTangents_[0] = tangent;
-                splineTangents_[numKeyFrames - 1] = tangent;
-            }
-        }
-        break;
-
-    case VAR_INT:
-    case VAR_INT64:
-    case VAR_INTRECT:
-    case VAR_INTVECTOR2:
-    case VAR_INTVECTOR3:
-        // Integer compounds cannot have spline interpolation, fallback to linear.
-        if (interpolation_ == KeyFrameInterpolation::Spline)
-            interpolation_ = KeyFrameInterpolation::Linear;
-        break;
-
-    default:
-        // Other types don't support interpolation at all, fallback to none.
-        interpolation_ = KeyFrameInterpolation::None;
-        break;
-    }
-}
-
-Variant VariantAnimationTrack::Sample(float time, float duration, bool isLooped, unsigned& frameIndex) const
-{
-    float blendFactor{};
-    unsigned nextFrameIndex{};
-    GetKeyFrames(time, duration, isLooped, frameIndex, nextFrameIndex, blendFactor);
-
-    const VariantAnimationKeyFrame& keyFrame = keyFrames_[frameIndex];
-    const VariantAnimationKeyFrame& nextKeyFrame = keyFrames_[nextFrameIndex];
-
-    if (blendFactor >= M_EPSILON)
-    {
-        if (interpolation_ == KeyFrameInterpolation::Spline && splineTangents_.size() == keyFrames_.size())
-        {
-            return InterpolateSpline(type_, keyFrame.value_, nextKeyFrame.value_,
-                splineTangents_[frameIndex], splineTangents_[nextFrameIndex], blendFactor);
-        }
-        else if (interpolation_ == KeyFrameInterpolation::Linear)
-            return keyFrame.value_.Lerp(nextKeyFrame.value_, blendFactor);
-    }
-
-    return keyFrame.value_;
-}
-
-VariantType VariantAnimationTrack::GetType() const
-{
-    return keyFrames_.empty() ? VAR_NONE : keyFrames_[0].value_.GetType();
 }
 
 Animation::Animation(Context* context) :
@@ -269,9 +91,116 @@ void Animation::RegisterObject(Context* context)
     context->RegisterFactory<Animation>();
 }
 
+void Animation::ResetToDefault()
+{
+    animationName_.clear();
+    length_ = 0.0f;
+    RemoveAllTracks();
+    RemoveAllTriggers();
+}
+
+bool Animation::LoadXML(const XMLElement& source)
+{
+    ResetToDefault();
+
+    if (!source.HasAttribute("length"))
+    {
+        URHO3D_LOGERROR("Animation length is missing");
+        return false;
+    }
+
+    animationName_ = source.GetAttribute("name");
+    length_ = source.GetFloat("length");
+
+    for (XMLElement trackElem = source.GetChild("transform"); trackElem; trackElem = trackElem.GetNext("transform"))
+    {
+        if (!trackElem.HasAttribute("name"))
+        {
+            URHO3D_LOGERROR("Animation track name is missing");
+            return false;
+        }
+
+        AnimationTrack* newTrack = CreateTrack(trackElem.GetAttribute("name"));
+        if (trackElem.GetBool("position"))
+            newTrack->channelMask_ |= CHANNEL_POSITION;
+        if (trackElem.GetBool("rotation"))
+            newTrack->channelMask_ |= CHANNEL_ROTATION;
+        if (trackElem.GetBool("scale"))
+            newTrack->channelMask_ |= CHANNEL_SCALE;
+
+        for (XMLElement keyFrameElem = trackElem.GetChild("keyframe"); keyFrameElem; keyFrameElem = keyFrameElem.GetNext("keyframe"))
+        {
+            AnimationKeyFrame keyFrame;
+            keyFrame.time_ = keyFrameElem.GetFloat("time");
+            if (newTrack->channelMask_.Test(CHANNEL_POSITION))
+                keyFrame.position_ = keyFrameElem.GetVector3("position");
+            if (newTrack->channelMask_.Test(CHANNEL_ROTATION))
+                keyFrame.rotation_ = keyFrameElem.GetQuaternion("rotation");
+            if (newTrack->channelMask_.Test(CHANNEL_SCALE))
+                keyFrame.scale_ = keyFrameElem.GetVector3("scale");
+            newTrack->keyFrames_.push_back(keyFrame);
+        }
+
+        newTrack->SortKeyFrames();
+    }
+
+    for (XMLElement trackElem = source.GetChild("variant"); trackElem; trackElem = trackElem.GetNext("variant"))
+    {
+        if (!trackElem.HasAttribute("name"))
+        {
+            URHO3D_LOGERROR("Animation track name is missing");
+            return false;
+        }
+
+        VariantAnimationTrack* newTrack = CreateVariantTrack(trackElem.GetAttribute("name"));
+        const VariantType type = Variant::GetTypeFromName(trackElem.GetAttribute("type"));
+
+        if (trackElem.HasAttribute("interpolation"))
+        {
+            newTrack->interpolation_ = static_cast<KeyFrameInterpolation>(GetStringListIndex(
+                trackElem.GetAttribute("interpolation"), keyFrameInterpolationNames,
+                static_cast<unsigned>(KeyFrameInterpolation::Linear)));
+        }
+
+        if (trackElem.HasAttribute("tension"))
+            newTrack->splineTension_ = trackElem.GetFloat("tension");
+
+        if (XMLElement baseValueElem = trackElem.GetChild("base"))
+            newTrack->baseValue_ = trackElem.GetVariantValue(type);
+
+        for (XMLElement keyFrameElem = trackElem.GetChild("keyframe"); keyFrameElem; keyFrameElem = keyFrameElem.GetNext("keyframe"))
+        {
+            VariantAnimationKeyFrame keyFrame;
+            keyFrame.time_ = keyFrameElem.GetFloat("time");
+            keyFrame.value_ = keyFrameElem.GetVariantValue(type);
+            newTrack->keyFrames_.push_back(keyFrame);
+        }
+
+        newTrack->SortKeyFrames();
+        newTrack->Commit();
+    }
+
+    LoadTriggersFromXML(source);
+    LoadMetadataFromXML(source);
+
+    return true;
+}
+
 bool Animation::BeginLoad(Deserializer& source)
 {
+    ResetToDefault();
+
+    auto* cache = GetSubsystem<ResourceCache>();
     unsigned memoryUse = sizeof(Animation);
+
+    // Try to load as XML if possible
+    if (source.GetName().ends_with(".xml", false))
+    {
+        auto xmlFile = MakeShared<XMLFile>(context_);
+        if (!xmlFile->Load(source))
+            return false;
+        return LoadXML(xmlFile->GetRoot());
+    }
 
     // Check ID
     const ea::string fileID = source.ReadFileID();
@@ -288,7 +217,6 @@ bool Animation::BeginLoad(Deserializer& source)
     animationName_ = source.ReadString();
     animationNameHash_ = animationName_;
     length_ = source.ReadFloat();
-    tracks_.clear();
 
     const unsigned tracks = source.ReadUInt();
     memoryUse += tracks * sizeof(AnimationTrack);
@@ -347,21 +275,13 @@ bool Animation::BeginLoad(Deserializer& source)
     }
 
     // Optionally read triggers from an XML file
-    auto* cache = GetSubsystem<ResourceCache>();
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
 
     SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
     {
         XMLElement rootElem = file->GetRoot();
-        for (XMLElement triggerElem = rootElem.GetChild("trigger"); triggerElem; triggerElem = triggerElem.GetNext("trigger"))
-        {
-            if (triggerElem.HasAttribute("normalizedtime"))
-                AddTrigger(triggerElem.GetFloat("normalizedtime"), true, triggerElem.GetVariant());
-            else if (triggerElem.HasAttribute("time"))
-                AddTrigger(triggerElem.GetFloat("time"), false, triggerElem.GetVariant());
-        }
-
+        LoadTriggersFromXML(rootElem);
         LoadMetadataFromXML(rootElem);
 
         memoryUse += triggers_.size() * sizeof(AnimationTriggerPoint);
@@ -371,6 +291,17 @@ bool Animation::BeginLoad(Deserializer& source)
 
     SetMemoryUse(memoryUse);
     return true;
+}
+
+void Animation::LoadTriggersFromXML(const XMLElement& source)
+{
+    for (XMLElement triggerElem = source.GetChild("trigger"); triggerElem; triggerElem = triggerElem.GetNext("trigger"))
+    {
+        if (triggerElem.HasAttribute("normalizedtime"))
+            AddTrigger(triggerElem.GetFloat("normalizedtime"), true, triggerElem.GetVariant());
+        else if (triggerElem.HasAttribute("time"))
+            AddTrigger(triggerElem.GetFloat("time"), false, triggerElem.GetVariant());
+    }
 }
 
 bool Animation::Save(Serializer& dest) const
@@ -497,19 +428,17 @@ VariantAnimationTrack* Animation::CreateVariantTrack(const ea::string& name)
 
 bool Animation::RemoveTrack(const ea::string& name)
 {
-    auto i = tracks_.find(StringHash(name));
-    if (i != tracks_.end())
-    {
-        tracks_.erase(i);
-        return true;
-    }
-    else
-        return false;
+    const StringHash nameHash(name);
+    unsigned numRemoved = 0;
+    numRemoved += tracks_.erase(nameHash);
+    numRemoved += variantTracks_.erase(nameHash);
+    return numRemoved > 0;
 }
 
 void Animation::RemoveAllTracks()
 {
     tracks_.clear();
+    variantTracks_.clear();
 }
 
 void Animation::SetTrigger(unsigned index, const AnimationTriggerPoint& trigger)

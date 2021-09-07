@@ -24,102 +24,12 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Container/KeyFrameSet.h"
+#include "../Graphics/AnimationTrack.h"
 #include "../Container/Ptr.h"
-#include "../Math/Transform.h"
 #include "../Resource/Resource.h"
 
 namespace Urho3D
 {
-
-enum AnimationChannel : unsigned char
-{
-    CHANNEL_NONE = 0x0,
-    CHANNEL_POSITION = 0x1,
-    CHANNEL_ROTATION = 0x2,
-    CHANNEL_SCALE = 0x4,
-};
-URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
-
-/// Method of interpolation between keyframes.
-enum class KeyFrameInterpolation
-{
-    None,
-    Linear,
-    Spline,
-};
-
-/// Skeletal animation keyframe.
-/// TODO: Replace inheritance with composition?
-struct AnimationKeyFrame : public Transform
-{
-    /// Keyframe time.
-    float time_{};
-
-    AnimationKeyFrame() = default;
-    AnimationKeyFrame(float time, const Vector3& position,
-        const Quaternion& rotation = Quaternion::IDENTITY, const Vector3& scale = Vector3::ONE)
-        : Transform{ position, rotation, scale }
-        , time_(time)
-    {
-    }
-};
-
-/// Skeletal animation track, stores keyframes of a single bone.
-/// @fakeref
-struct URHO3D_API AnimationTrack : public KeyFrameSet<AnimationKeyFrame>
-{
-    /// Bone or scene node name.
-    ea::string name_;
-    /// Name hash.
-    StringHash nameHash_;
-    /// Bitmask of included data (position, rotation, scale).
-    AnimationChannelFlags channelMask_{};
-    /// Base transform for additive animations.
-    /// If animation is applied to bones, bone initial transform is used instead.
-    Transform baseValue_;
-
-    /// Sample value at given time.
-    void Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& transform) const;
-};
-
-/// Generic variant animation keyframe.
-struct VariantAnimationKeyFrame
-{
-    /// Keyframe time.
-    float time_{};
-    /// Attribute value.
-    Variant value_;
-};
-
-/// Generic animation track, stores keyframes of single animatable entity.
-struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKeyFrame>
-{
-    /// Annotated recursive name of animatable entity.
-    ea::string name_;
-    /// Name hash.
-    StringHash nameHash_;
-    /// Base transform for additive animations.
-    Variant baseValue_;
-    /// Interpolation mode.
-    KeyFrameInterpolation interpolation_{ KeyFrameInterpolation::Linear };
-    /// Spline tension for spline interpolation.
-    float splineTension_{ 0.5f };
-
-    /// Cached data (never serialized, recalculated on commit).
-    /// @{
-    VariantType type_{};
-    ea::vector<Variant> splineTangents_;
-    /// @}
-
-    /// Commit changes and recalculate derived members. May change interpolation mode.
-    void Commit();
-    /// Sample value at given time.
-    Variant Sample(float time, float duration, bool isLooped, unsigned& frameIndex) const;
-    /// Return type of animation track. Defined by the type of the first keyframe.
-    VariantType GetType() const;
-};
 
 /// %Animation trigger point.
 struct AnimationTriggerPoint
@@ -145,6 +55,10 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Reset resource state to default.
+    void ResetToDefault();
+    /// Load resource from XML file.
+    bool LoadXML(const XMLElement& source);
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
     /// Save resource. Return true if successful.
@@ -231,6 +145,8 @@ public:
     void SetTracks(const ea::vector<AnimationTrack>& tracks);
 
 private:
+    void LoadTriggersFromXML(const XMLElement& source);
+
     /// Class versions (used for serialization)
     /// @{
     static const unsigned legacyVersion = 1; // Fake version for legacy unversioned UANI file
