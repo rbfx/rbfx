@@ -1009,6 +1009,23 @@ void Node::AddChild(Node* node, unsigned index)
     }
 }
 
+void Node::SetIndexInParent(unsigned index)
+{
+    Node* parent = GetParent();
+    if (parent == nullptr)
+        return;
+    
+    SharedPtr<Node> nodeShared(this);
+    size_t old_index = parent->children_.index_of(nodeShared);
+    if (old_index == index)
+        return;
+    if (old_index > index)
+        parent->children_.erase_at(old_index);
+    parent->children_.insert_at(index, nodeShared);
+    if (old_index < index)
+        parent->children_.erase_at(old_index);
+}
+
 void Node::RemoveChild(Node* node)
 {
     if (!node)
