@@ -100,7 +100,7 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     args.emplace_back(resourceBaseName);
 
     args.emplace_back("-mb");
-    args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_MAX_BONES).GetUInt()));
+    args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_MAX_BONES).GetInt()));
 
     args.emplace_back("-f");
     args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_ANIM_TICK).GetInt()));
