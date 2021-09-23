@@ -23,11 +23,23 @@ uniform vec4 cLightPos;
 uniform vec3 cLightDir;
 uniform vec4 cNormalOffsetScale;
 uniform mat4 cModel;
+#ifdef SPHERICALHARMONICS
+uniform vec4 cSHAr;
+uniform vec4 cSHAg;
+uniform vec4 cSHAb;
+uniform vec4 cSHBr;
+uniform vec4 cSHBg;
+uniform vec4 cSHBb;
+uniform vec4 cSHC;
+#else
+uniform vec4 cAmbient;
+#endif
 uniform mat4 cView;
 uniform mat4 cViewInv;
 uniform mat4 cViewProj;
 uniform vec4 cUOffset;
 uniform vec4 cVOffset;
+uniform vec4 cLMOffset;
 uniform mat4 cZone;
 #if !defined(GL_ES) || defined(WEBGL)
     uniform mat4 cLightMatrices[4];
@@ -145,6 +157,17 @@ uniform MaterialVS
 uniform ObjectVS
 {
     mat4 cModel;
+#ifdef SPHERICALHARMONICS
+    vec4 cSHAr;
+    vec4 cSHAg;
+    vec4 cSHAb;
+    vec4 cSHBr;
+    vec4 cSHBg;
+    vec4 cSHBb;
+    vec4 cSHC;
+#else
+    vec4 cAmbient;
+#endif
 #ifdef BILLBOARD
     mat3 cBillboardRot;
 #endif
