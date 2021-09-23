@@ -118,6 +118,7 @@
 #include "53_LANDiscovery/LANDiscovery.h"
 #endif
 #include "54_WindowSettingsDemo/WindowSettingsDemo.h"
+#include "55_StateMachine/StateMachineSample.h"
 #if URHO3D_SYSTEMUI
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
@@ -155,8 +156,8 @@ void SamplesManager::Setup()
     engineParameters_[EP_FULL_SCREEN]  = false;
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
-    engineParameters_[EP_HIGH_DPI]     = false;
-    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
+    engineParameters_[EP_HIGH_DPI]     = true;
+    engineParameters_[EP_RESOURCE_PATHS] = "HouseScene;CoreData;Data";
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
@@ -321,6 +322,7 @@ void SamplesManager::Start()
 #if URHO3D_RMLUI
     RegisterSample<HelloRmlUI>();
 #endif
+    RegisterSample<StateMachineSample>();
     RegisterSample<RenderingShowcase>();
 #if URHO3D_PHYSICS
     RegisterSample<KinematicCharacterDemo>();
