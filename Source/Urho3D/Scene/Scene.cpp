@@ -46,6 +46,8 @@
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
+#include "../Graphics/StateMachine.h"
+#include "../Graphics/StateMachineRunner.h"
 
 #include "../DebugNew.h"
 
@@ -1630,6 +1632,8 @@ void RegisterSceneLibrary(Context* context)
     SplinePath::RegisterObject(context);
     SceneManager::RegisterObject(context);
     CameraViewport::RegisterObject(context);
+    StateMachineConfig::RegisterObject(context);
+    StateMachineRunner::RegisterObject(context);
 }
 
 }

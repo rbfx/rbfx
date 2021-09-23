@@ -1,0 +1,81 @@
+{
+    "states": [
+        {
+            "name": "Locked",
+            "transitions": [
+                {
+                    "destinationState": "Closed",
+                    "duration": 0.0,
+                    "conditions": [
+                        {
+                            "mode": 2,
+                            "parameter": "Locked"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Closed",
+            "transitions": [
+                {
+                    "destinationState": "Locked",
+                    "duration": 0.0,
+                    "conditions": [
+                        {
+                            "mode": 1,
+                            "parameter": "Locked"
+                        }
+                    ]
+                },
+                {
+                    "destinationState": "Opening",
+                    "duration": 1.0,
+                    "conditions": [
+                        {
+                            "mode": 1,
+                            "parameter": "Opened"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Opened",
+            "transitions": [
+                {
+                    "destinationState": "Closing",
+                    "duration": 1.0,
+                    "conditions": [
+                        {
+                            "mode": 2,
+                            "parameter": "Opened"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Opening",
+            "transitions": [
+                {
+                    "destinationState": "Opened",
+                    "duration": 0.0,
+                    "conditions": []
+                }
+            ]
+        },
+        {
+            "name": "Closing",
+            "transitions": [
+                {
+                    "destinationState": "Closed",
+                    "duration": 0.0,
+                    "conditions": []
+                }
+            ]
+        }
+    ],
+    "anyStateTransitions": [],
+    "defaultState": "Locked"
+}
