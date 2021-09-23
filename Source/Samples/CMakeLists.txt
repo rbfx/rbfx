@@ -42,6 +42,24 @@ file (GLOB SAMPLE_MANAGER_SOURCE_CODE *.h *.cpp)
 
 if (ANDROID)
     add_library(Samples MODULE ${SAMPLE_MANAGER_SOURCE_CODE} ${SOURCE_CODE})
+elseif (XCODE)
+    set(DIR_Data ${CMAKE_SOURCE_DIR}/bin/Data)
+    set(DIR_CoreData ${CMAKE_SOURCE_DIR}/bin/CoreData)
+    set(DIR_Autoload ${CMAKE_SOURCE_DIR}/bin/Autoload)
+    set(DIR_HouseScene ${CMAKE_SOURCE_DIR}/bin/HouseScene)
+
+    set_source_files_properties(${DIR_Data} PROPERTIES MACOSX_PACKAGE_LOCATION "")
+    set_source_files_properties(${DIR_CoreData} PROPERTIES MACOSX_PACKAGE_LOCATION "")
+    set_source_files_properties(${DIR_Autoload} PROPERTIES MACOSX_PACKAGE_LOCATION "")
+    set_source_files_properties(${DIR_HouseScene} PROPERTIES MACOSX_PACKAGE_LOCATION "")
+
+    add_executable(Samples ${PLATFORM} MACOSX_BUNDLE 
+        ${DIR_Data}
+        ${DIR_CoreData}
+        ${DIR_Autoload}
+        ${DIR_HouseScene}
+        ${SAMPLE_MANAGER_SOURCE_CODE}
+        ${SOURCE_CODE})
 else ()
     add_executable(Samples ${PLATFORM} MACOSX_BUNDLE ${SAMPLE_MANAGER_SOURCE_CODE} ${SOURCE_CODE})
 endif ()
