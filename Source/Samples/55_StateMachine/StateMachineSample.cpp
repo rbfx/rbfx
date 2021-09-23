@@ -103,7 +103,7 @@ void StateMachineSample::CreateInstructions()
 
 void StateMachineSample::UpdateTextLocked()
 {
-    textLockedValue_->SetText(ea::string("\"Locked\": ") + (parameterSource_->Get("Lockad") ? "true" : "false"));
+    textLockedValue_->SetText(ea::string("\"Locked\": ") + (parameterSource_->Get("Locked") ? "true" : "false"));
 }
 
 void StateMachineSample::UpdateTextOpened()
@@ -340,9 +340,9 @@ void StateMachineSample::HandleUpdate(StringHash eventType, VariantMap& eventDat
 void StateMachineSample::SwitchRoofs()
 {
     roofsShown_ = !roofsShown_;
-//    for (size_t i = 0; i < sceneData_->_roofs.size(); i++) {
-//        sceneData_->_roofs[i]->GetComponent<ProjectNMetaData>()->setRoofVisible(roofsShown_, roofHiddenMaterials_, roofHiddenTechniques_);
-//    }
+    for (size_t i = 0; i < sceneData_->_roofs.size(); i++) {
+        sceneData_->_roofs[i]->GetComponent<ProjectNMetaData>()->setRoofVisible(roofsShown_, roofHiddenMaterials_, roofHiddenTechniques_);
+    }
 }
 
 void StateMachineSample::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)

@@ -65,8 +65,8 @@ private:
     
     std::shared_ptr<GameSceneData> sceneData_;
     
-    std::map<SharedPtr<Material>, SharedPtr<Material>> roofHiddenMaterials_;
-    std::map<SharedPtr<Technique>, SharedPtr<Technique>> roofHiddenTechniques_;
+    ea::map<SharedPtr<Material>, SharedPtr<Material>> roofHiddenMaterials_;
+    ea::map<SharedPtr<Technique>, SharedPtr<Technique>> roofHiddenTechniques_;
     
     bool mouseDown_ = false;
     bool rDown_ = false;
