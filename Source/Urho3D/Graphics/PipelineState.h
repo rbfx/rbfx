@@ -69,7 +69,9 @@ private:
     template <class Container>
     void Initialize(Container&& vertexBuffers, IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
     {
-        using namespace ea;
+        using eastl::size;
+        using eastl::begin;
+        using eastl::end;
 
         const unsigned numVertexBuffers = size(vertexBuffers);
         assert(numVertexBuffers + !!instancingBuffer <= MAX_VERTEX_STREAMS);
