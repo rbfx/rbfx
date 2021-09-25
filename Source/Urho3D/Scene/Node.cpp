@@ -1530,7 +1530,7 @@ Serializable* Node::GetSerializableByName(ea::string_view name) const
 
 Node* Node::FindChild(ea::string_view path) const
 {
-    const auto sep = path.find_first_of('/');
+    const auto sep = path.find('/');
     const bool isLast = sep == ea::string_view::npos;
     const ea::string_view childName = isLast ? path : path.substr(0, sep);
     if (childName.empty())
@@ -1542,7 +1542,7 @@ Node* Node::FindChild(ea::string_view path) const
 
 ea::pair<Serializable*, unsigned> Node::FindComponentAttribute(ea::string_view path) const
 {
-    const auto sep = path.find_first_of('/');
+    const auto sep = path.find('/');
     if (path.empty() || path[0] != '@' || sep == ea::string_view::npos)
         return {};
 

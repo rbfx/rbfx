@@ -982,7 +982,7 @@ bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startN
     // Resolve path to node if necessary
     if (path[0] != '@')
     {
-        const auto sep = path.find_first_of("/@");
+        const auto sep = path.find("/@");
         if (sep == ea::string_view::npos)
         {
             URHO3D_LOGWARNING("Path must end with attribute reference like /@StaticModel/Model");
