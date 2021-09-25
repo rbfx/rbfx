@@ -70,6 +70,7 @@ private:
     void Initialize(Container&& vertexBuffers, IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
     {
         using namespace ea;
+        using eastl::size;
 
         const unsigned numVertexBuffers = size(vertexBuffers);
         assert(numVertexBuffers + !!instancingBuffer <= MAX_VERTEX_STREAMS);
