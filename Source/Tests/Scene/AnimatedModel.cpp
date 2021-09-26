@@ -41,11 +41,11 @@ TEST_CASE("Lerp animation blending")
     cache->AddManualResource(model);
 
     auto animationRotate = Tests::CreateLoopedRotationAnimation(context,
-        "@/Rotate.ani", "Quad 1", Vector3::UP, 2.0f);
+        "Tests/Rotate.ani", "Quad 1", Vector3::UP, 2.0f);
     auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
-        "@/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+        "Tests/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
     auto animationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "@/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
+        "Tests/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
 
     cache->AddManualResource(animationRotate);
     cache->AddManualResource(animationTranslateX);
@@ -62,10 +62,10 @@ TEST_CASE("Lerp animation blending")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/Rotate.ani", 0, true);
-        animationController->Play("@/TranslateX.ani", 0, true);
-        animationController->Play("@/TranslateZ.ani", 1, true);
-        animationController->SetWeight("@/TranslateZ.ani", 0.75f);
+        animationController->Play("Tests/Rotate.ani", 0, true);
+        animationController->Play("Tests/TranslateX.ani", 0, true);
+        animationController->Play("Tests/TranslateZ.ani", 1, true);
+        animationController->SetWeight("Tests/TranslateZ.ani", 0.75f);
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -99,10 +99,10 @@ TEST_CASE("Lerp animation blending")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/Rotate.ani", 0, true);
-        animationController->Play("@/TranslateX.ani", 0, true);
-        animationController->Play("@/TranslateZ.ani", 1, true);
-        animationController->SetWeight("@/TranslateZ.ani", 0.75f);
+        animationController->Play("Tests/Rotate.ani", 0, true);
+        animationController->Play("Tests/TranslateX.ani", 0, true);
+        animationController->Play("Tests/TranslateZ.ani", 1, true);
+        animationController->SetWeight("Tests/TranslateZ.ani", 0.75f);
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -135,11 +135,11 @@ TEST_CASE("Additive animation blending")
     cache->AddManualResource(model);
 
     auto modelAnimationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
-        "@/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+        "Tests/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
     auto modelAnimationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "@/TranslateZ_Model.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
+        "Tests/TranslateZ_Model.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
     auto nodeAnimationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "@/TranslateZ_Node.ani", "Quad 2", { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
+        "Tests/TranslateZ_Node.ani", "Quad 2", { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
 
     cache->AddManualResource(modelAnimationTranslateX);
     cache->AddManualResource(modelAnimationTranslateZ);
@@ -156,10 +156,10 @@ TEST_CASE("Additive animation blending")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/TranslateX.ani", 0, true);
-        animationController->Play("@/TranslateZ_Model.ani", 1, true);
-        animationController->SetWeight("@/TranslateZ_Model.ani", 0.75f);
-        animationController->SetBlendMode("@/TranslateZ_Model.ani", ABM_ADDITIVE);
+        animationController->Play("Tests/TranslateX.ani", 0, true);
+        animationController->Play("Tests/TranslateZ_Model.ani", 1, true);
+        animationController->SetWeight("Tests/TranslateZ_Model.ani", 0.75f);
+        animationController->SetBlendMode("Tests/TranslateZ_Model.ani", ABM_ADDITIVE);
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -193,10 +193,10 @@ TEST_CASE("Additive animation blending")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/TranslateX.ani", 0, true);
-        animationController->Play("@/TranslateZ_Node.ani", 1, true);
-        animationController->SetWeight("@/TranslateZ_Node.ani", 0.75f);
-        animationController->SetBlendMode("@/TranslateZ_Node.ani", ABM_ADDITIVE);
+        animationController->Play("Tests/TranslateX.ani", 0, true);
+        animationController->Play("Tests/TranslateZ_Node.ani", 1, true);
+        animationController->SetWeight("Tests/TranslateZ_Node.ani", 0.75f);
+        animationController->SetBlendMode("Tests/TranslateZ_Node.ani", ABM_ADDITIVE);
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -229,11 +229,11 @@ TEST_CASE("Animation start bone")
     cache->AddManualResource(model);
 
     auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
-        "@/TranslateX.ani", "Quad 1", { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+        "Tests/TranslateX.ani", "Quad 1", { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
     auto animationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "@/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
+        "Tests/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
     auto animation = Tests::CreateCombinedAnimation(context,
-        "@/TranslateXZ.ani", { animationTranslateX, animationTranslateZ });
+        "Tests/TranslateXZ.ani", { animationTranslateX, animationTranslateZ });
 
     cache->AddManualResource(animation);
 
@@ -248,8 +248,8 @@ TEST_CASE("Animation start bone")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 1");
+        animationController->Play("Tests/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 1");
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -275,8 +275,8 @@ TEST_CASE("Animation start bone")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 2");
+        animationController->Play("Tests/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 2");
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -302,8 +302,8 @@ TEST_CASE("Animation start bone")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 1");
+        animationController->Play("Tests/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 1");
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -329,8 +329,8 @@ TEST_CASE("Animation start bone")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("@/TranslateXZ.ani", "Quad 2");
+        animationController->Play("Tests/TranslateXZ.ani", 0, true);
+        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 2");
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -357,7 +357,7 @@ TEST_CASE("Variant animation tracks")
 
     {
         auto animation = MakeShared<Animation>(context);
-        animation->SetName("@/Animation1.ani");
+        animation->SetName("Tests/Animation1.ani");
         animation->SetLength(1.0f);
         {
             AnimationTrack* track = animation->CreateTrack("Quad 2");
@@ -388,7 +388,7 @@ TEST_CASE("Variant animation tracks")
     }
     {
         auto animation = MakeShared<Animation>(context);
-        animation->SetName("@/Animation2.ani");
+        animation->SetName("Tests/Animation2.ani");
         animation->SetLength(1.0f);
         {
             VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
@@ -406,7 +406,7 @@ TEST_CASE("Variant animation tracks")
     }
     {
         auto animation = MakeShared<Animation>(context);
-        animation->SetName("@/Animation3.ani");
+        animation->SetName("Tests/Animation3.ani");
         animation->SetLength(1.0f);
         {
             VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
@@ -439,12 +439,12 @@ TEST_CASE("Variant animation tracks")
         auto text = childNode->CreateComponent<Text3D>();
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("@/Animation1.ani", 0, false);
-        animationController->Play("@/Animation2.ani", 1, false);
-        animationController->SetWeight("@/Animation2.ani", 0.5f);
-        animationController->Play("@/Animation3.ani", 2, false);
-        animationController->SetBlendMode("@/Animation3.ani", ABM_ADDITIVE);
-        animationController->SetWeight("@/Animation3.ani", 0.5f);
+        animationController->Play("Tests/Animation1.ani", 0, false);
+        animationController->Play("Tests/Animation2.ani", 1, false);
+        animationController->SetWeight("Tests/Animation2.ani", 0.5f);
+        animationController->Play("Tests/Animation3.ani", 2, false);
+        animationController->SetBlendMode("Tests/Animation3.ani", ABM_ADDITIVE);
+        animationController->SetWeight("Tests/Animation3.ani", 0.5f);
     }
 
     // Assert
