@@ -66,7 +66,7 @@ static const unsigned MAX_NODE_ANIMATION_STATES = 256;
 extern const char* LOGIC_CATEGORY;
 
 AnimationController::AnimationController(Context* context) :
-    Component(context)
+    AnimationStateSource(context)
 {
 }
 
@@ -1085,7 +1085,7 @@ void AnimationController::ConnectToAnimatedModel()
 {
     auto model = GetComponent<AnimatedModel>();
     if (model)
-        model->ConnectToAnimationController(this);
+        model->ConnectToAnimationStateSource(this);
 }
 
 }

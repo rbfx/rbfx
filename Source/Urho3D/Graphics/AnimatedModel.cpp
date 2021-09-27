@@ -28,7 +28,6 @@
 #include "../Core/Profiler.h"
 #include "../Graphics/AnimatedModel.h"
 #include "../Graphics/Animation.h"
-#include "../Graphics/AnimationController.h"
 #include "../Graphics/AnimationState.h"
 #include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
@@ -615,8 +614,8 @@ void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
         }
 
         // Notify animation controller about model change so it can reconnect tracks
-        if (animationController_)
-            animationController_->MarkAnimationStateTracksDirty();
+        if (animationStateSource_)
+            animationStateSource_->MarkAnimationStateTracksDirty();
 
         // Detach the rootbone of the previous model if any
         if (createBones)
@@ -825,9 +824,9 @@ void AnimatedModel::AssignBoneNodes()
     if (!boneFound && model_)
         SetSkeleton(model_->GetSkeleton(), true);
 
-    // Notify AnimationController so it can reconnect to new bone nodes
-    if (animationController_)
-        animationController_->MarkAnimationStateTracksDirty();
+    // Notify AnimationStateSource so it can reconnect to new bone nodes
+    if (animationStateSource_)
+        animationStateSource_->MarkAnimationStateTracksDirty();
 }
 
 void AnimatedModel::FinalizeBoneBoundingBoxes()
@@ -991,10 +990,10 @@ void AnimatedModel::ApplyAnimation()
     {
         skeleton_.ResetSilent();
 
-        // AnimationController is a weak pointer which may or may not be an issue
-        if (AnimationController* animationController = animationController_)
+        // AnimationStateSource is a weak pointer which may or may not be an issue
+        if (AnimationStateSource* animationStateSource = animationStateSource_)
         {
-            for (AnimationState* state : animationController->GetAnimationStates())
+            for (AnimationState* state : animationStateSource->GetAnimationStates())
                 state->ApplyModelTracks();
         }
 
@@ -1008,9 +1007,9 @@ void AnimatedModel::ApplyAnimation()
     animationDirty_ = false;
 }
 
-void AnimatedModel::ConnectToAnimationController(AnimationController* controller)
+void AnimatedModel::ConnectToAnimationStateSource(AnimationStateSource* source)
 {
-    animationController_ = controller;
+    animationStateSource_ = source;
 }
 
 void AnimatedModel::UpdateSkinning()
