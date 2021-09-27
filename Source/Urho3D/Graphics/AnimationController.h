@@ -25,6 +25,7 @@
 #include "../IO/VectorBuffer.h"
 #include "../Scene/Component.h"
 #include "../Graphics/AnimationState.h"
+#include "../Graphics/AnimationStateSource.h"
 
 namespace Urho3D
 {
@@ -94,9 +95,9 @@ struct URHO3D_API AnimationControl
 };
 
 /// %Component that drives an AnimatedModel's animations.
-class URHO3D_API AnimationController : public Component
+class URHO3D_API AnimationController : public AnimationStateSource
 {
-    URHO3D_OBJECT(AnimationController, Component);
+    URHO3D_OBJECT(AnimationController, AnimationStateSource);
 
 public:
     /// Construct.
@@ -111,6 +112,9 @@ public:
     void ApplyAttributes() override;
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
+    /// Mark that animation state tracks are dirty and should be reconnected.
+    /// Should be called on every substantial change in animated structure.
+    void MarkAnimationStateTracksDirty() override;
 
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep);
@@ -202,16 +206,12 @@ public:
 
     /// Array of AnimationState objects created by AnimationController.
     /// @{
-    const AnimationStateVector& GetAnimationStates() const { return animationStates_; }
     void SetAnimationStatesAttr(const VariantVector& value);
     VariantVector GetAnimationStatesAttr() const;
     /// @}
 
     /// Mark animation state order dirty. For internal use only.
     void MarkAnimationStateOrderDirty() { animationStateOrderDirty_ = true; }
-    /// Mark that animation state tracks are dirty and should be reconnected.
-    /// Should be called on every substantial change in animated structure.
-    void MarkAnimationStateTracksDirty();
 
 protected:
     /// Handle node being assigned.
@@ -238,8 +238,6 @@ private:
 
     /// Animation control structures.
     ea::vector<AnimationControl> animations_;
-    /// Animation states. Shared with AnimatedModel when possible.
-    AnimationStateVector animationStates_;
     /// Attribute buffer for network replication.
     mutable VectorBuffer attrBuffer_;
 

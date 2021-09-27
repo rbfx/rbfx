@@ -38,6 +38,7 @@ class AnimatedModel;
 class Deserializer;
 class Node;
 class Serializer;
+class Serializable;
 class Skeleton;
 struct AnimationTrack;
 struct VariantAnimationTrack;

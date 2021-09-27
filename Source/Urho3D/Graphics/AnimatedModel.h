@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Graphics/AnimationStateSource.h"
 #include "../Graphics/Model.h"
 #include "../Graphics/Skeleton.h"
 #include "../Graphics/StaticModel.h"
@@ -30,7 +31,6 @@ namespace Urho3D
 {
 
 class Animation;
-class AnimationController;
 class AnimationState;
 class SoftwareModelAnimator;
 
@@ -95,8 +95,8 @@ public:
     void ResetMorphWeights();
     /// Apply all animation states to nodes.
     void ApplyAnimation();
-    /// Connect to AnimationController that provides animation data.
-    void ConnectToAnimationController(AnimationController* controller);
+    /// Connect to AnimationStateSource that provides animation states.
+    void ConnectToAnimationStateSource(AnimationStateSource* source);
 
     /// Return skeleton.
     /// @property
@@ -189,8 +189,8 @@ private:
 
     /// Skeleton.
     Skeleton skeleton_;
-    /// Controller that provides animation states for the model.
-    WeakPtr<AnimationController> animationController_;
+    /// Component that provides animation states for the model.
+    WeakPtr<AnimationStateSource> animationStateSource_;
     /// Software model animator.
     SharedPtr<SoftwareModelAnimator> modelAnimator_;
     /// Vertex morphs.
