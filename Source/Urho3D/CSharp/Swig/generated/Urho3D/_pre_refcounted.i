@@ -142,6 +142,7 @@ URHO3D_REFCOUNTED(Urho3D::StaticModel);
 URHO3D_REFCOUNTED(Urho3D::AnimatedModel);
 URHO3D_REFCOUNTED(Urho3D::Animation);
 URHO3D_REFCOUNTED(Urho3D::AnimationState);
+URHO3D_REFCOUNTED(Urho3D::AnimationStateSource);
 URHO3D_REFCOUNTED(Urho3D::AnimationController);
 URHO3D_REFCOUNTED(Urho3D::BillboardSet);
 URHO3D_REFCOUNTED(Urho3D::CustomGeometry);

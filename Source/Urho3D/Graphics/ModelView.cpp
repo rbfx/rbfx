@@ -26,6 +26,7 @@
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Model.h"
 #include "../Graphics/VertexBuffer.h"
+#include "../IO/Log.h"
 
 namespace Urho3D
 {
@@ -109,7 +110,13 @@ ModelVertexFormat ParseVertexElements(const ea::vector<VertexElement>& elements)
             break;
 
         case SEM_BLENDWEIGHTS:
+            result.blendWeights_ = element.type_;
+            break;
+
         case SEM_BLENDINDICES:
+            result.blendIndices_ = element.type_;
+            break;
+
         case SEM_OBJECTINDEX:
         default:
             assert(0);
@@ -135,6 +142,12 @@ ea::vector<VertexElement> CollectVertexElements(const ModelVertexFormat& vertexF
 
     if (vertexFormat.tangent_ != ModelVertexFormat::Undefined)
         elements.push_back({ vertexFormat.tangent_, SEM_TANGENT, 0 });
+
+    if (vertexFormat.blendWeights_ != ModelVertexFormat::Undefined)
+        elements.push_back({ vertexFormat.blendWeights_, SEM_BLENDWEIGHTS, 0 });
+
+    if (vertexFormat.blendIndices_ != ModelVertexFormat::Undefined)
+        elements.push_back({ vertexFormat.blendIndices_, SEM_BLENDINDICES, 0 });
 
     for (unsigned i = 0; i < ModelVertex::MaxUVs; ++i)
     {
@@ -170,8 +183,7 @@ bool CheckVertexElements(const ea::vector<VertexElement>& elements)
 {
     for (const VertexElement& element : elements)
     {
-        if (element.semantic_ == SEM_BLENDWEIGHTS || element.semantic_ == SEM_BLENDINDICES
-            || element.semantic_ == SEM_OBJECTINDEX)
+        if (element.semantic_ == SEM_OBJECTINDEX)
         {
             return false;
         }
@@ -211,6 +223,8 @@ const ea::vector<VertexElement> ModelVertex::VertexElements =
     VertexElement{ TYPE_VECTOR4, SEM_NORMAL },
     VertexElement{ TYPE_VECTOR4, SEM_TANGENT },
     VertexElement{ TYPE_VECTOR4, SEM_BINORMAL },
+    VertexElement{ TYPE_VECTOR4, SEM_BLENDINDICES },
+    VertexElement{ TYPE_VECTOR4, SEM_BLENDWEIGHTS },
     VertexElement{ TYPE_VECTOR4, SEM_COLOR, 0 },
     VertexElement{ TYPE_VECTOR4, SEM_COLOR, 1 },
     VertexElement{ TYPE_VECTOR4, SEM_COLOR, 2 },
@@ -238,6 +252,8 @@ bool ModelVertex::operator ==(const ModelVertex& rhs) const
     return position_.Equals(rhs.position_)
         && normal_.Equals(rhs.normal_)
         && tangent_.Equals(rhs.tangent_)
+        && blendIndices_.Equals(rhs.blendIndices_)
+        && blendWeights_.Equals(rhs.blendWeights_)
         && binormal_.Equals(rhs.binormal_);
 }
 
@@ -247,6 +263,8 @@ bool ModelVertexFormat::operator ==(const ModelVertexFormat& rhs) const
         && normal_ == rhs.normal_
         && tangent_ == rhs.tangent_
         && binormal_ == rhs.binormal_
+        && blendIndices_ == rhs.blendIndices_
+        && blendWeights_ == rhs.blendWeights_
         && color_ == rhs.color_
         && uv_ == rhs.uv_;
 }
@@ -261,6 +279,46 @@ bool GeometryLODView::operator ==(const GeometryLODView& rhs) const
 bool GeometryView::operator ==(const GeometryView& rhs) const
 {
     return lods_ == rhs.lods_;
+}
+
+void BoneView::SetInitialTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale)
+{
+    position_ = position;
+    rotation_ = rotation;
+    scale_ = scale;
+}
+
+void BoneView::RecalculateOffsetMatrix()
+{
+    offsetMatrix_ = Matrix3x4(position_, rotation_, scale_).Inverse();
+}
+
+void BoneView::SetLocalBoundingBox(const BoundingBox& boundingBox)
+{
+    shapeFlags_ = BONECOLLISION_BOX;
+    localBoundingBox_ = boundingBox;
+}
+
+void BoneView::SetLocalBoundingSphere(float radius)
+{
+    shapeFlags_ = BONECOLLISION_SPHERE;
+    boundingSphereRadius_ = radius;
+}
+
+bool BoneView::operator ==(const BoneView& rhs) const
+{
+    return name_ == rhs.name_
+        && parentIndex_ == rhs.parentIndex_
+
+        && position_.Equals(rhs.position_)
+        && rotation_.Equals(rhs.rotation_)
+        && scale_.Equals(rhs.scale_)
+        && offsetMatrix_.Equals(rhs.offsetMatrix_)
+
+        && shapeFlags_ == rhs.shapeFlags_
+        && Equals(boundingSphereRadius_, rhs.boundingSphereRadius_)
+        && localBoundingBox_.min_.Equals(rhs.localBoundingBox_.min_)
+        && localBoundingBox_.max_.Equals(rhs.localBoundingBox_.max_);
 }
 
 bool ModelVertex::ReplaceElement(const ModelVertex& source, const VertexElement& element)
@@ -296,7 +354,13 @@ bool ModelVertex::ReplaceElement(const ModelVertex& source, const VertexElement&
         return true;
 
     case SEM_BLENDWEIGHTS:
+        blendWeights_ = source.blendWeights_;
+        return true;
+
     case SEM_BLENDINDICES:
+        blendIndices_ = source.blendIndices_;
+        return true;
+
     case SEM_OBJECTINDEX:
     default:
         assert(0);
@@ -356,8 +420,18 @@ Vector3 GeometryLODView::CalculateCenter() const
     return vertices_.empty() ? Vector3::ZERO : center / static_cast<float>(vertices_.size());
 }
 
+void ModelView::Clear()
+{
+    vertexFormat_ = {};
+    geometries_.clear();
+    bones_.clear();
+    metadata_.clear();
+}
+
 bool ModelView::ImportModel(const Model* model)
 {
+    Clear();
+
     // Read vertex format
     vertexFormat_ = ParseVertexElements(GetEffectiveVertexElements(model));
 
@@ -369,6 +443,7 @@ bool ModelView::ImportModel(const Model* model)
     const auto& modelIndexBuffers = model->GetIndexBuffers();
     const auto& modelGeometries = model->GetGeometries();
 
+    // Read geometries
     const unsigned numGeometries = modelGeometries.size();
     geometries_.resize(numGeometries);
     for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
@@ -382,9 +457,16 @@ bool ModelView::ImportModel(const Model* model)
             GeometryLODView geometry;
             geometry.lodDistance_ = modelGeometry->GetLodDistance();
 
+            if (modelGeometry->GetPrimitiveType() != TRIANGLE_LIST)
+            {
+                URHO3D_LOGERROR("Only TriangleList models are supported now.");
+                return false;
+            }
+
             // Copy indices
             if (modelGeometry->GetIndexCount() % 3 != 0)
             {
+                URHO3D_LOGERROR("Incorrect number of geometry indices");
                 return false;
             }
 
@@ -404,6 +486,7 @@ bool ModelView::ImportModel(const Model* model)
             {
                 if (!CheckVertexElements(modelVertexBuffer->GetElements()))
                 {
+                    URHO3D_LOGERROR("Unsupported vertex elements are present");
                     return false;
                 }
 
@@ -420,6 +503,44 @@ bool ModelView::ImportModel(const Model* model)
             geometries_[geometryIndex].lods_[lodIndex] = ea::move(geometry);
         }
     }
+
+    // Read bones
+    const Skeleton& skeleton = model->GetSkeleton();
+    const auto& modelBones = skeleton.GetBones();
+    const unsigned numBones = modelBones.size();
+
+    bool hasRootBone = false;
+    bones_.resize(numBones);
+    for (unsigned boneIndex = 0; boneIndex < numBones; ++boneIndex)
+    {
+        const Bone& modelBone = modelBones[boneIndex];
+        const bool isRootBone = modelBone.parentIndex_ == boneIndex;
+
+        if (isRootBone)
+        {
+            if (hasRootBone)
+            {
+                URHO3D_LOGERROR("Multiple root bones are present");
+                return false;
+            }
+
+            hasRootBone = true;
+        }
+
+        BoneView& bone = bones_[boneIndex];
+        bone.name_ = modelBone.name_;
+        bone.parentIndex_ = isRootBone ? M_MAX_UNSIGNED : modelBone.parentIndex_;
+
+        bone.position_ = modelBone.initialPosition_;
+        bone.rotation_ = modelBone.initialRotation_;
+        bone.scale_ = modelBone.initialScale_;
+        bone.offsetMatrix_ = modelBone.offsetMatrix_;
+
+        bone.shapeFlags_ = modelBone.collisionMask_;
+        bone.boundingSphereRadius_ = modelBone.radius_;
+        bone.localBoundingBox_ = modelBone.boundingBox_;
+    }
+
     return true;
 }
 
@@ -500,11 +621,43 @@ void ModelView::ExportModel(Model* model) const
             vertexStart += vertexCount;
         }
     }
+
+    // Write bones
+    const unsigned numBones = bones_.size();
+
+    Skeleton skeleton;
+    skeleton.SetNumBones(numBones);
+
+    for (unsigned boneIndex = 0; boneIndex < numBones; ++boneIndex)
+    {
+        const BoneView& sourceBone = bones_[boneIndex];
+        const bool isRootBone = sourceBone.parentIndex_ == M_MAX_UNSIGNED;
+        Bone& bone = *skeleton.GetBone(boneIndex);
+
+        bone.name_ = sourceBone.name_;
+        bone.nameHash_ = sourceBone.name_;
+        bone.parentIndex_ = isRootBone ? boneIndex : sourceBone.parentIndex_;
+
+        bone.initialPosition_ = sourceBone.position_;
+        bone.initialRotation_ = sourceBone.rotation_;
+        bone.initialScale_ = sourceBone.scale_;
+        bone.offsetMatrix_ = sourceBone.offsetMatrix_;
+
+        bone.collisionMask_ = sourceBone.shapeFlags_;
+        bone.radius_ = sourceBone.boundingSphereRadius_;
+        bone.boundingBox_ = sourceBone.localBoundingBox_;
+
+        if (isRootBone)
+            skeleton.SetRootBoneIndex(boneIndex);
+    }
+
+    model->SetSkeleton(skeleton);
 }
 
-SharedPtr<Model> ModelView::ExportModel() const
+SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
 {
     auto model = MakeShared<Model>(context_);
+    model->SetName(name);
     ExportModel(model);
     return model;
 }

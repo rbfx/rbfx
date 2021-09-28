@@ -1,6 +1,8 @@
 <Project>
   <!-- Works when building on windows using cmake-generated VS solution -->
-  <Import Project="$(SolutionDir)/CMake.props" Condition=" '$(SolutionDir)' != '' And Exists('$(SolutionDir)/CMake.props')" />
+  <Import Project="$(SolutionDir)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(SolutionDir)' != '' And Exists('$(SolutionDir)/CMake.props')" />
+  <!-- Works when building with VSCode, however cmake cache directory should be ./cmake-build -->
+  <Import Project="./cmake-build/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And Exists('./cmake-build/CMake.props')" />
   <!-- When separate .csproj projects are built by make/ninja -->
   <Import Project="$(CMAKE_BINARY_DIR)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(CMAKE_BINARY_DIR)' != '' And Exists('$(CMAKE_BINARY_DIR)/CMake.props') " />
   <!-- Azure pipelines for some reason have SolutionDir undefined however -->
@@ -17,7 +19,7 @@
     <PlatformTarget>$(URHO3D_PLATFORM)</PlatformTarget>
 	<Platforms>$(PlatformTarget)</Platforms>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-	<GenerateProjectSpecificOutputFolder>false</GenerateProjectSpecificOutputFolder>                                    <!-- Fixes linker errors for UWP -->
+    <GenerateProjectSpecificOutputFolder>false</GenerateProjectSpecificOutputFolder>                                    <!-- Fixes linker errors for UWP -->
     <TargetFramework>$(URHO3D_NETFX)</TargetFramework>
     <UseAppHost>True</UseAppHost>                                                                                       <!-- Produce a native executable -->
     <SelfContained>False</SelfContained>                                                                                <!-- Do not include entire runtime in bin dir -->

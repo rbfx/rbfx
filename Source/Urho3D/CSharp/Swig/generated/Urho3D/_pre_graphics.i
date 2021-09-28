@@ -792,7 +792,7 @@ using AnimationChannelFlags = Urho3D::AnimationChannel;
 %csattribute(Urho3D::AnimationState, %arg(Urho3D::Animation *), Animation, GetAnimation);
 %csattribute(Urho3D::AnimationState, %arg(Urho3D::AnimatedModel *), Model, GetModel);
 %csattribute(Urho3D::AnimationState, %arg(Urho3D::Node *), Node, GetNode);
-%csattribute(Urho3D::AnimationState, %arg(Urho3D::Bone *), StartBone, GetStartBone, SetStartBone);
+%csattribute(Urho3D::AnimationState, %arg(ea::string), StartBone, GetStartBone, SetStartBone);
 %csattribute(Urho3D::AnimationState, %arg(bool), IsEnabled, IsEnabled);
 %csattribute(Urho3D::AnimationState, %arg(bool), IsLooped, IsLooped, SetLooped);
 %csattribute(Urho3D::AnimationState, %arg(float), Weight, GetWeight, SetWeight);

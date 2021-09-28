@@ -174,6 +174,9 @@ public:
     /// @property
     Skeleton& GetSkeleton() { return skeleton_; }
 
+    /// Return skeleton.
+    const Skeleton& GetSkeleton() const { return skeleton_; }
+
     /// Return vertex buffers.
     const ea::vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
 

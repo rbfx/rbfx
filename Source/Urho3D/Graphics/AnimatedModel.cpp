@@ -53,22 +53,6 @@ namespace Urho3D
 
 extern const char* GEOMETRY_CATEGORY;
 
-static const StringVector animationStatesStructureElementNames =
-{
-    "Anim State Count",
-    "   Animation",
-    "   Start Bone",
-    "   Is Looped",
-    "   Weight",
-    "   Time",
-    "   Layer"
-};
-
-static bool CompareAnimationOrder(const SharedPtr<AnimationState>& lhs, const SharedPtr<AnimationState>& rhs)
-{
-    return lhs->GetLayer() < rhs->GetLayer();
-}
-
 static const unsigned MAX_ANIMATION_STATES = 256;
 
 AnimatedModel::AnimatedModel(Context* context) :
@@ -79,7 +63,6 @@ AnimatedModel::AnimatedModel(Context* context) :
     animationLodDistance_(0.0f),
     updateInvisible_(false),
     animationDirty_(false),
-    animationOrderDirty_(false),
     morphsDirty_(false),
     skinningDirty_(true),
     boneBoundingBoxDirty_(true),
@@ -126,9 +109,6 @@ void AnimatedModel::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Bone Animation Enabled", GetBonesEnabledAttr, SetBonesEnabledAttr, VariantVector,
         Variant::emptyVariantVector, AM_FILE | AM_NOEDIT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animation States", GetAnimationStatesAttr, SetAnimationStatesAttr,
-        VariantVector, Variant::emptyVariantVector, AM_FILE)
-        .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, animationStatesStructureElementNames);
     URHO3D_ACCESSOR_ATTRIBUTE("Morphs", GetMorphsAttr, SetMorphsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_DEFAULT | AM_NOEDIT);
 }
@@ -275,7 +255,7 @@ void AnimatedModel::Update(const FrameInfo& frame)
         animationLodDistance_ = frame.camera_->GetLodDistance(distance, scale, lodBias_);
     }
 
-    if (animationDirty_ || animationOrderDirty_)
+    if (animationDirty_)
         UpdateAnimation(frame);
     else if (boneBoundingBoxDirty_)
         UpdateBoneBoundingBox();
@@ -470,102 +450,6 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
     MarkNetworkUpdate();
 }
 
-AnimationState* AnimatedModel::AddAnimationState(Animation* animation)
-{
-    if (!isMaster_)
-    {
-        URHO3D_LOGERROR("Can not add animation state to non-master model");
-        return nullptr;
-    }
-
-    if (!animation || !skeleton_.GetNumBones())
-        return nullptr;
-
-    // Check for not adding twice
-    AnimationState* existing = GetAnimationState(animation);
-    if (existing)
-        return existing;
-
-    SharedPtr<AnimationState> newState(new AnimationState(this, animation));
-    animationStates_.push_back(newState);
-    MarkAnimationOrderDirty();
-    return newState;
-}
-
-void AnimatedModel::RemoveAnimationState(Animation* animation)
-{
-    if (animation)
-        RemoveAnimationState(animation->GetNameHash());
-    else
-    {
-        for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
-        {
-            AnimationState* state = *i;
-            if (!state->GetAnimation())
-            {
-                animationStates_.erase(i);
-                MarkAnimationDirty();
-                return;
-            }
-        }
-    }
-}
-
-void AnimatedModel::RemoveAnimationState(const ea::string& animationName)
-{
-    RemoveAnimationState(StringHash(animationName));
-}
-
-void AnimatedModel::RemoveAnimationState(StringHash animationNameHash)
-{
-    for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
-    {
-        AnimationState* state = *i;
-        Animation* animation = state->GetAnimation();
-        if (animation)
-        {
-            // Check both the animation and the resource name
-            if (animation->GetNameHash() == animationNameHash || animation->GetAnimationNameHash() == animationNameHash)
-            {
-                animationStates_.erase(i);
-                MarkAnimationDirty();
-                return;
-            }
-        }
-    }
-}
-
-void AnimatedModel::RemoveAnimationState(AnimationState* state)
-{
-    for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
-    {
-        if (*i == state)
-        {
-            animationStates_.erase(i);
-            MarkAnimationDirty();
-            return;
-        }
-    }
-}
-
-void AnimatedModel::RemoveAnimationState(unsigned index)
-{
-    if (index < animationStates_.size())
-    {
-        animationStates_.erase_at(index);
-        MarkAnimationDirty();
-    }
-}
-
-void AnimatedModel::RemoveAllAnimationStates()
-{
-    if (animationStates_.size())
-    {
-        animationStates_.clear();
-        MarkAnimationDirty();
-    }
-}
-
 void AnimatedModel::SetAnimationLodBias(float bias)
 {
     animationLodBias_ = Max(bias, 0.0f);
@@ -690,43 +574,6 @@ float AnimatedModel::GetMorphWeight(StringHash nameHash) const
     return 0.0f;
 }
 
-AnimationState* AnimatedModel::GetAnimationState(Animation* animation) const
-{
-    for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
-    {
-        if ((*i)->GetAnimation() == animation)
-            return *i;
-    }
-
-    return nullptr;
-}
-
-AnimationState* AnimatedModel::GetAnimationState(const ea::string& animationName) const
-{
-    return GetAnimationState(StringHash(animationName));
-}
-
-AnimationState* AnimatedModel::GetAnimationState(StringHash animationNameHash) const
-{
-    for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
-    {
-        Animation* animation = (*i)->GetAnimation();
-        if (animation)
-        {
-            // Check both the animation and the resource name
-            if (animation->GetNameHash() == animationNameHash || animation->GetAnimationNameHash() == animationNameHash)
-                return *i;
-        }
-    }
-
-    return nullptr;
-}
-
-AnimationState* AnimatedModel::GetAnimationState(unsigned index) const
-{
-    return index < animationStates_.size() ? animationStates_[index] : nullptr;
-}
-
 void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
 {
     if (!node_ && createBones)
@@ -766,7 +613,9 @@ void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
                 return;
         }
 
-        RemoveAllAnimationStates();
+        // Notify animation controller about model change so it can reconnect tracks
+        if (animationStateSource_)
+            animationStateSource_->MarkAnimationStateTracksDirty();
 
         // Detach the rootbone of the previous model if any
         if (createBones)
@@ -846,49 +695,6 @@ void AnimatedModel::SetBonesEnabledAttr(const VariantVector& value)
         bones[i].animated_ = value[i].GetBool();
 }
 
-void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
-{
-    auto* cache = GetSubsystem<ResourceCache>();
-    RemoveAllAnimationStates();
-    unsigned index = 0;
-    unsigned numStates = index < value.size() ? value[index++].GetUInt() : 0;
-    // Prevent negative or overly large value being assigned from the editor
-    if (numStates > M_MAX_INT)
-        numStates = 0;
-    if (numStates > MAX_ANIMATION_STATES)
-        numStates = MAX_ANIMATION_STATES;
-
-    animationStates_.reserve(numStates);
-    while (numStates--)
-    {
-        if (index + 5 < value.size())
-        {
-            // Note: null animation is allowed here for editing
-            const ResourceRef& animRef = value[index++].GetResourceRef();
-            SharedPtr<AnimationState> newState(new AnimationState(this, cache->GetResource<Animation>(animRef.name_)));
-            animationStates_.push_back(newState);
-
-            newState->SetStartBone(skeleton_.GetBone(value[index++].GetString()));
-            newState->SetLooped(value[index++].GetBool());
-            newState->SetWeight(value[index++].GetFloat());
-            newState->SetTime(value[index++].GetFloat());
-            newState->SetLayer((unsigned char)value[index++].GetInt());
-        }
-        else
-        {
-            // If not enough data, just add an empty animation state
-            SharedPtr<AnimationState> newState(new AnimationState(this, nullptr));
-            animationStates_.push_back(newState);
-        }
-    }
-
-    if (animationStates_.size())
-    {
-        MarkAnimationDirty();
-        MarkAnimationOrderDirty();
-    }
-}
-
 void AnimatedModel::SetMorphsAttr(const ea::vector<unsigned char>& value)
 {
     for (unsigned index = 0; index < value.size(); ++index)
@@ -907,26 +713,6 @@ VariantVector AnimatedModel::GetBonesEnabledAttr() const
     ret.reserve(bones.size());
     for (auto i = bones.begin(); i != bones.end(); ++i)
         ret.push_back(i->animated_);
-    return ret;
-}
-
-VariantVector AnimatedModel::GetAnimationStatesAttr() const
-{
-    VariantVector ret;
-    ret.reserve(animationStates_.size() * 6 + 1);
-    ret.push_back((int)animationStates_.size());
-    for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
-    {
-        AnimationState* state = *i;
-        Animation* animation = state->GetAnimation();
-        Bone* startBone = state->GetStartBone();
-        ret.push_back(GetResourceRef(animation, Animation::GetTypeStatic()));
-        ret.push_back(startBone ? startBone->name_ : EMPTY_STRING);
-        ret.push_back(state->IsLooped());
-        ret.push_back(state->GetWeight());
-        ret.push_back(state->GetTime());
-        ret.push_back((int) state->GetLayer());
-    }
     return ret;
 }
 
@@ -1038,12 +824,9 @@ void AnimatedModel::AssignBoneNodes()
     if (!boneFound && model_)
         SetSkeleton(model_->GetSkeleton(), true);
 
-    // Re-assign the same start bone to animations to get the proper bone node this time
-    for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
-    {
-        AnimationState* state = *i;
-        state->SetStartBone(state->GetStartBone());
-    }
+    // Notify AnimationStateSource so it can reconnect to new bone nodes
+    if (animationStateSource_)
+        animationStateSource_->MarkAnimationStateTracksDirty();
 }
 
 void AnimatedModel::FinalizeBoneBoundingBoxes()
@@ -1120,15 +903,6 @@ void AnimatedModel::MarkAnimationDirty()
     if (isMaster_)
     {
         animationDirty_ = true;
-        MarkForUpdate();
-    }
-}
-
-void AnimatedModel::MarkAnimationOrderDirty()
-{
-    if (isMaster_)
-    {
-        animationOrderDirty_ = true;
         MarkForUpdate();
     }
 }
@@ -1210,21 +984,18 @@ void AnimatedModel::UpdateAnimation(const FrameInfo& frame)
 
 void AnimatedModel::ApplyAnimation()
 {
-    // Make sure animations are in ascending priority order
-    if (animationOrderDirty_)
-    {
-        ea::quick_sort(animationStates_.begin(), animationStates_.end(), CompareAnimationOrder);
-        animationOrderDirty_ = false;
-    }
-
     // Reset skeleton, apply all animations, calculate bones' bounding box. Make sure this is only done for the master model
     // (first AnimatedModel in a node)
     if (isMaster_)
     {
         skeleton_.ResetSilent();
-        for (auto i = animationStates_.begin(); i !=
-            animationStates_.end(); ++i)
-            (*i)->Apply();
+
+        // AnimationStateSource is a weak pointer which may or may not be an issue
+        if (AnimationStateSource* animationStateSource = animationStateSource_)
+        {
+            for (AnimationState* state : animationStateSource->GetAnimationStates())
+                state->ApplyModelTracks();
+        }
 
         // Skeleton reset and animations apply the node transforms "silently" to avoid repeated marking dirty. Mark dirty now
         node_->MarkDirty();
@@ -1234,6 +1005,11 @@ void AnimatedModel::ApplyAnimation()
     }
 
     animationDirty_ = false;
+}
+
+void AnimatedModel::ConnectToAnimationStateSource(AnimationStateSource* source)
+{
+    animationStateSource_ = source;
 }
 
 void AnimatedModel::UpdateSkinning()

@@ -307,6 +307,9 @@ if (URHO3D_CSHARP)
     if (NOT URHO3D_NETFX_RUNTIME_VERSION)
         list (GET DOTNET_SDKS 0 URHO3D_NETFX_RUNTIME_VERSION)
     endif ()
+
+    # Trim extra elements that may be preset in version string. Eg. "6.0.100-preview.6.21355.2" is converted to "6.0".
+    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)(.+)?" "\\1.\\2" URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
     if (URHO3D_NETFX_RUNTIME_VERSION VERSION_LESS "5.0")
         set (NETCORE core)
     endif ()

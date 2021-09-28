@@ -547,6 +547,7 @@ void SceneTab::RenderHierarchy()
 
 void SceneTab::RenderNodeTree(Node* node)
 {
+    ImGuiStyle& style = ui::GetStyle();
     if (node == nullptr)
         return;
 
@@ -719,6 +720,27 @@ void SceneTab::RenderNodeTree(Node* node)
 
                 //recursive call.
                 RenderNodeTree(child);
+
+                // Reorder nodes: add after current child node.
+                ui::SetCursorPosY(ui::GetCursorPosY() - 2 * style.PointSize);
+                ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 0));
+                ui::Dummy(ImVec2(ui::GetItemRectSize().x, 3 * style.PointSize));
+                ui::PopStyleVar();
+                if (ui::BeginDragDropTarget())
+                {
+                    // TODO: This is a workaround for imgui expanding drop rect by fixed amount that we cant control.
+                    float point_size_bkp = style.PointSize;
+                    style.PointSize = 0;
+                    const Variant& payload = ui::AcceptDragDropVariant(Node::GetTypeStatic().ToString());
+                    style.PointSize = point_size_bkp;
+                    if (!payload.IsEmpty())
+                    {
+                        SharedPtr<Node> dropped(dynamic_cast<Node*>(payload.GetPtr()));
+                        node->AddChild(dropped);
+                        dropped->SetIndexInParent(node->GetChildIndex(child) + 1);
+                    }
+                    ui::EndDragDropTarget();
+                }
             }
         }
         ui::TreePop();

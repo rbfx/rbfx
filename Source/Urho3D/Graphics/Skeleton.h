@@ -39,7 +39,6 @@ enum BoneCollisionShape : unsigned char
 URHO3D_FLAGSET(BoneCollisionShape, BoneCollisionShapeFlags);
 
 class Deserializer;
-class ResourceCache;
 class Serializer;
 
 /// %Bone in a skeleton.
@@ -113,6 +112,8 @@ public:
     void Define(const Skeleton& src);
     /// Set root bone's index.
     void SetRootBoneIndex(unsigned index);
+    /// Set number of bones.
+    void SetNumBones(unsigned numBones);
     /// Clear bones.
     void ClearBones();
     /// Reset all animating bones to initial positions.

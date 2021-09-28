@@ -25,6 +25,7 @@
 #include "../IO/VectorBuffer.h"
 #include "../Scene/Component.h"
 #include "../Graphics/AnimationState.h"
+#include "../Graphics/AnimationStateSource.h"
 
 namespace Urho3D
 {
@@ -94,9 +95,9 @@ struct URHO3D_API AnimationControl
 };
 
 /// %Component that drives an AnimatedModel's animations.
-class URHO3D_API AnimationController : public Component
+class URHO3D_API AnimationController : public AnimationStateSource
 {
-    URHO3D_OBJECT(AnimationController, Component);
+    URHO3D_OBJECT(AnimationController, AnimationStateSource);
 
 public:
     /// Construct.
@@ -107,8 +108,13 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
+    void ApplyAttributes() override;
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
+    /// Mark that animation state tracks are dirty and should be reconnected.
+    /// Should be called on every substantial change in animated structure.
+    void MarkAnimationStateTracksDirty() override;
 
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep);
@@ -158,10 +164,6 @@ public:
     bool IsAtEnd(const ea::string& name) const;
     /// Return animation blending layer.
     unsigned char GetLayer(const ea::string& name) const;
-    /// Return animation start bone, or null if no such animation.
-    Bone* GetStartBone(const ea::string& name) const;
-    /// Return animation start bone name, or empty string if no such animation.
-    const ea::string& GetStartBoneName(const ea::string& name) const;
     /// Return animation time position.
     float GetTime(const ea::string& name) const;
     /// Return animation weight.
@@ -202,7 +204,18 @@ public:
     /// Return node animation states attribute.
     VariantVector GetNodeAnimationStatesAttr() const;
 
+    /// Array of AnimationState objects created by AnimationController.
+    /// @{
+    void SetAnimationStatesAttr(const VariantVector& value);
+    VariantVector GetAnimationStatesAttr() const;
+    /// @}
+
+    /// Mark animation state order dirty. For internal use only.
+    void MarkAnimationStateOrderDirty() { animationStateOrderDirty_ = true; }
+
 protected:
+    /// Handle node being assigned.
+    void OnNodeSet(Node* node) override;
     /// Handle scene being assigned.
     void OnSceneSet(Scene* scene) override;
 
@@ -215,13 +228,23 @@ private:
     void FindAnimation(const ea::string& name, unsigned& index, AnimationState*& state) const;
     /// Handle scene post-update event.
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
+    /// Update animation state tracks so they are connected to correct animatable objects.
+    void UpdateAnimationStateTracks(AnimationState* state);
+    /// Connect to AnimatedModel if possible.
+    void ConnectToAnimatedModel();
+    /// Parse animatable path from starting node.
+    bool ParseAnimatablePath(ea::string_view path, Node* startNode,
+        WeakPtr<Serializable>& serializable, unsigned& attributeIndex, StringHash& variableName);
 
     /// Animation control structures.
     ea::vector<AnimationControl> animations_;
-    /// Node hierarchy mode animation states.
-    ea::vector<SharedPtr<AnimationState> > nodeAnimationStates_;
     /// Attribute buffer for network replication.
     mutable VectorBuffer attrBuffer_;
+
+    /// Internal dirty flags cleaned on Update.
+    /// @{
+    bool animationStateOrderDirty_{};
+    /// @}
 };
 
 }

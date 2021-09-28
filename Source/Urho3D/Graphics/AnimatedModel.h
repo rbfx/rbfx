@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Graphics/AnimationStateSource.h"
 #include "../Graphics/Model.h"
 #include "../Graphics/Skeleton.h"
 #include "../Graphics/StaticModel.h"
@@ -77,20 +78,6 @@ public:
 
     /// Set model.
     void SetModel(Model* model, bool createBones = true);
-    /// Add an animation.
-    AnimationState* AddAnimationState(Animation* animation);
-    /// Remove an animation by animation pointer.
-    void RemoveAnimationState(Animation* animation);
-    /// Remove an animation by animation name.
-    void RemoveAnimationState(const ea::string& animationName);
-    /// Remove an animation by animation name hash.
-    void RemoveAnimationState(StringHash animationNameHash);
-    /// Remove an animation by AnimationState pointer.
-    void RemoveAnimationState(AnimationState* state);
-    /// Remove an animation by index.
-    void RemoveAnimationState(unsigned index);
-    /// Remove all animations.
-    void RemoveAllAnimationStates();
     /// Set animation LOD bias.
     /// @property
     void SetAnimationLodBias(float bias);
@@ -108,27 +95,12 @@ public:
     void ResetMorphWeights();
     /// Apply all animation states to nodes.
     void ApplyAnimation();
+    /// Connect to AnimationStateSource that provides animation states.
+    void ConnectToAnimationStateSource(AnimationStateSource* source);
 
     /// Return skeleton.
     /// @property
     Skeleton& GetSkeleton() { return skeleton_; }
-
-    /// Return all animation states.
-    const ea::vector<SharedPtr<AnimationState> >& GetAnimationStates() const { return animationStates_; }
-
-    /// Return number of animation states.
-    /// @property
-    unsigned GetNumAnimationStates() const { return animationStates_.size(); }
-
-    /// Return animation state by animation pointer.
-    AnimationState* GetAnimationState(Animation* animation) const;
-    /// Return animation state by animation name.
-    /// @property{get_animationStates}
-    AnimationState* GetAnimationState(const ea::string& animationName) const;
-    /// Return animation state by animation name hash.
-    AnimationState* GetAnimationState(StringHash animationNameHash) const;
-    /// Return animation state by index.
-    AnimationState* GetAnimationState(unsigned index) const;
 
     /// Return animation LOD bias.
     /// @property
@@ -163,16 +135,12 @@ public:
     void SetModelAttr(const ResourceRef& value);
     /// Set bones' animation enabled attribute.
     void SetBonesEnabledAttr(const VariantVector& value);
-    /// Set animation states attribute.
-    void SetAnimationStatesAttr(const VariantVector& value);
     /// Set morphs attribute.
     void SetMorphsAttr(const ea::vector<unsigned char>& value);
     /// Return model attribute.
     ResourceRef GetModelAttr() const;
     /// Return bones' animation enabled attribute.
     VariantVector GetBonesEnabledAttr() const;
-    /// Return animation states attribute.
-    VariantVector GetAnimationStatesAttr() const;
     /// Return morphs attribute.
     const ea::vector<unsigned char>& GetMorphsAttr() const;
 
@@ -202,8 +170,6 @@ private:
     void RemoveRootBone();
     /// Mark animation and skinning to require an update.
     void MarkAnimationDirty();
-    /// Mark animation and skinning to require a forced update (blending order changed).
-    void MarkAnimationOrderDirty();
     /// Mark morphs to require an update.
     void MarkMorphsDirty();
     /// Set skeleton.
@@ -223,12 +189,12 @@ private:
 
     /// Skeleton.
     Skeleton skeleton_;
+    /// Component that provides animation states for the model.
+    WeakPtr<AnimationStateSource> animationStateSource_;
     /// Software model animator.
     SharedPtr<SoftwareModelAnimator> modelAnimator_;
     /// Vertex morphs.
     ea::vector<ModelMorph> morphs_;
-    /// Animation states.
-    ea::vector<SharedPtr<AnimationState> > animationStates_;
     /// Skinning matrices.
     ea::vector<Matrix3x4> skinMatrices_;
     /// Mapping of subgeometry bone indices, used if more bones than skinning shader can manage.
@@ -253,8 +219,6 @@ private:
     bool updateInvisible_;
     /// Animation dirty flag.
     bool animationDirty_;
-    /// Animation order dirty flag.
-    bool animationOrderDirty_;
     /// Vertex morphs dirty flag.
     bool morphsDirty_;
     /// Skinning dirty flag.

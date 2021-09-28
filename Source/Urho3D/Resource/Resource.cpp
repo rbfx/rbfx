@@ -156,12 +156,14 @@ bool ResourceWithMetadata::HasMetadata() const
 
 void ResourceWithMetadata::LoadMetadataFromXML(const XMLElement& source)
 {
+    RemoveAllMetadata();
     for (XMLElement elem = source.GetChild("metadata"); elem; elem = elem.GetNext("metadata"))
         AddMetadata(elem.GetAttribute("name"), elem.GetVariant());
 }
 
 void ResourceWithMetadata::LoadMetadataFromJSON(const JSONArray& array)
 {
+    RemoveAllMetadata();
     for (unsigned i = 0; i < array.size(); i++)
     {
         const JSONValue& value = array.at(i);

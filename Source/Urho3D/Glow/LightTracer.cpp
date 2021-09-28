@@ -49,47 +49,61 @@ float CalculateBiasScale(const Vector3& position)
 /// Generate random 3D direction.
 void RandomDirection3(Vector3& result)
 {
-    float len;
+    float len2;
 
     do
     {
         result.x_ = Random(-1.0f, 1.0f);
         result.y_ = Random(-1.0f, 1.0f);
         result.z_ = Random(-1.0f, 1.0f);
-        len = result.Length();
+        len2 = result.LengthSquared();
 
-    } while (len > 1.0f);
+    } while (len2 > 1.0f || len2 == 0.0f);
 
-    result /= len;
+    result /= Sqrt(len2);
 }
 
 /// Generate random offset within 2D circle.
 Vector2 RandomCircleOffset()
 {
     Vector2 result;
-    float len;
+    float len2;
 
     do
     {
         result.x_ = Random(-1.0f, 1.0f);
         result.y_ = Random(-1.0f, 1.0f);
-        len = result.Length();
+        len2 = result.LengthSquared();
 
-    } while (len > 1.0f);
+    } while (len2 > 1.0f);
 
     return result;
 }
 
-/// Generate random hemisphere direction.
-Vector3 RandomHemisphereDirection(const Vector3& normal)
+/// Make an orthonormal basis for e3.
+void GetBasis(const Vector3& e3, Vector3& e1, Vector3& e2)
 {
-    Vector3 result;
-    RandomDirection3(result);
+    e2 = Abs(e3.x_) > Abs(e3.y_)
+        ? Vector3(-e3.z_, 0.0, e3.x_).Normalized()
+        : Vector3(0.0, e3.z_, -e3.y_).Normalized();
+    e1 = e2.CrossProduct(e3);
+}
 
-    if (result.DotProduct(normal) < 0)
-        result = -result;
+/// Generate a cosine-weighted hemisphere direction sample.
+Vector3 RandomHemisphereDirectionCos(const Vector3& normal)
+{
+    const float pi2 = 2.0f * M_PI;  
+    float fi = Random() * pi2;
+    // Hope the compiler uses sincos if available.
+    float sfi = sin(fi);
+    float cfi = cos(fi);
 
-    return result;
+    float stheta2 = Random();
+    float stheta = sqrt(stheta2);
+
+    Vector3 e1, e2;
+    GetBasis(normal, e1, e2);
+    return e1 * (cfi * stheta) + e2 * (sfi * stheta) + normal * sqrt(1.0f - stheta2);
 }
 
 /// Return number of samples to use for light.
@@ -713,7 +727,7 @@ struct ChartIndirectTracingKernel
         faceNormal = currentFaceNormal_;
         smoothNormal = currentSmoothNormal_;
         albedo = Vector3::ONE;
-        currentSampleDirection_ = RandomHemisphereDirection(currentFaceNormal_);
+        currentSampleDirection_ = RandomHemisphereDirectionCos(currentFaceNormal_);
         rayDirection = currentSampleDirection_;
     }
 
@@ -790,9 +804,7 @@ struct LightProbeIndirectTracingKernel
     /// End tracing element.
     void EndElement(unsigned elementIndex)
     {
-        // BRDF assumes flat surface and multiplies light by 2 to compensate N.L variation.
-        // Light probe N.L is constant (1.0) so we have to revert this compensation now.
-        const float weight = 0.5f * 4.0f * M_PI / GetNumSamples();
+        const float weight = 4.0f * M_PI / GetNumSamples();
         const SphericalHarmonicsDot9 sh{ accumulatedLightSH_ * weight };
         bakedData_->sphericalHarmonics_[elementIndex] += sh;
     }
@@ -815,10 +827,6 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
         const auto& geometryIndex = raytracerScene.GetGeometries();
         const auto& backgrounds = raytracerScene.GetBackgrounds();
 
-        Vector3 albedo[IndirectLightTracingSettings::MaxBounces];
-        Vector3 incomingSamples[IndirectLightTracingSettings::MaxBounces];
-        float incomingFactors[IndirectLightTracingSettings::MaxBounces];
-
         RTCRayHit rayHit;
         IndirectTracingContext rayContext;
         rtcInitIntersectContext(&rayContext);
@@ -837,15 +845,16 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                 continue;
 
             const BakedSceneBackground& background = (*backgrounds)[kernel.GetElementBackgroundIndex()];
-
             for (unsigned sampleIndex = 0; sampleIndex < kernel.GetNumSamples(); ++sampleIndex)
             {
                 Vector3 currentPosition;
                 Vector3 currentFaceNormal;
                 Vector3 currentSmoothNormal;
                 Vector3 currentRayDirection;
+                Vector3 sampleColor;
+                Vector3 incomingFactor;
                 kernel.BeginSample(sampleIndex,
-                    currentPosition, currentFaceNormal, currentSmoothNormal, currentRayDirection, albedo[0]);
+                    currentPosition, currentFaceNormal, currentSmoothNormal, currentRayDirection, incomingFactor);
 
                 int numBounces = 0;
                 for (unsigned bounceIndex = 0; bounceIndex < settings.maxBounces_; ++bounceIndex)
@@ -860,14 +869,10 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                     rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
                     rtcIntersect1(scene, &rayContext, &rayHit);
 
-                    // Apply angle between receiving surface and ray, multiply by two to normalize
-                    const float cosTheta = ea::max(0.0f, currentRayDirection.DotProduct(currentSmoothNormal));
-                    incomingFactors[bounceIndex] = cosTheta * 2.0f;
-
                     // If hit background, pick light and break
                     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
                     {
-                        incomingSamples[bounceIndex] = background.SampleLinear(currentRayDirection);
+                        sampleColor += incomingFactor * background.SampleLinear(currentRayDirection);
                         ++numBounces;
                         break;
                     }
@@ -885,14 +890,14 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                     // Modify incoming flux
                     const unsigned lightmapIndex = geometry.lightmapIndex_;
                     const IntVector2 sampleLocation = bakedDirect[lightmapIndex]->GetNearestLocation(lightmapUV);
-                    incomingSamples[bounceIndex] = bakedDirect[lightmapIndex]->GetSurfaceLight(sampleLocation);
+                    sampleColor += incomingFactor * bakedDirect[lightmapIndex]->GetSurfaceLight(sampleLocation);
                     ++numBounces;
 
                     // Go to next hemisphere
                     if (numBounces < settings.maxBounces_)
                     {
                         // Update albedo for hit surface
-                        albedo[bounceIndex + 1] = bakedDirect[lightmapIndex]->GetAlbedo(sampleLocation);
+                        incomingFactor *= bakedDirect[lightmapIndex]->GetAlbedo(sampleLocation);
 
                         // Move to hit position
                         currentPosition.x_ = rayHit.ray.org_x + rayHit.ray.dir_x * rayHit.ray.tfar;
@@ -913,20 +918,12 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
 
                         // Update face normal and find new direction to sample
                         currentFaceNormal = hitNormal;
-                        currentRayDirection = RandomHemisphereDirection(currentFaceNormal);
+                        currentRayDirection = RandomHemisphereDirectionCos(currentFaceNormal);
                     }
                 }
 
-                // Accumulate samples back-to-front
-                Vector3 sampleIndirectLight;
-                for (int bounceIndex = numBounces - 1; bounceIndex >= 0; --bounceIndex)
-                {
-                    sampleIndirectLight += incomingSamples[bounceIndex];
-                    sampleIndirectLight *= incomingFactors[bounceIndex];
-                    sampleIndirectLight *= albedo[bounceIndex];
-                }
-
-                kernel.EndSample(sampleIndirectLight);
+                // Accumulate samples
+                kernel.EndSample(sampleColor);
             }
             kernel.EndElement(elementIndex);
         }

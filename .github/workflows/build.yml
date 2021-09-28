@@ -79,6 +79,16 @@ jobs:
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )                                             &&
+                        (matrix.ci_build_type == 'rel')               &&
+                        (matrix.ci_arch == 'x64')                     &&
+                        (matrix.ci_lib_type == 'dll')                 &&
+                        (matrix.ci_compiler == 'msvc')
+                    }}
 
     steps:
       - uses: actions/checkout@v2
@@ -90,7 +100,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ hashFiles('**/source-code/Source/**') }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
@@ -132,9 +142,9 @@ jobs:
         run: ctest -C Release
 
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   UWP:
@@ -163,6 +173,16 @@ jobs:
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )                                             &&
+                        (matrix.ci_build_type == 'rel')               &&
+                        (matrix.ci_arch == 'x64')                     &&
+                        (matrix.ci_lib_type == 'dll')                 &&
+                        (matrix.ci_compiler == 'msvc')
+                    }}
 
     steps:
       - uses: actions/checkout@v2
@@ -174,7 +194,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CLCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ hashFiles('**/source-code/Source/**') }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
 
@@ -206,9 +226,9 @@ jobs:
         run: ${{ env.ci_build_script }} install
 
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   Linux:
@@ -237,6 +257,16 @@ jobs:
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )                                             &&
+                        (matrix.ci_build_type == 'rel')               &&
+                        (matrix.ci_arch == 'x64')                     &&
+                        (matrix.ci_lib_type == 'dll')                 &&
+                        (matrix.ci_compiler == 'gcc')
+                    }}
 
     steps:
       - uses: actions/checkout@v2
@@ -280,9 +310,9 @@ jobs:
         run: ${{ env.ci_build_script }} install
 
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   MacOS:
@@ -310,6 +340,16 @@ jobs:
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )                                             &&
+                        (matrix.ci_build_type == 'rel')               &&
+                        (matrix.ci_arch == 'x64')                     &&
+                        (matrix.ci_lib_type == 'dll')                 &&
+                        (matrix.ci_compiler == 'clang')
+                    }}
 
     steps:
       - uses: actions/checkout@v2
@@ -357,9 +397,9 @@ jobs:
         run: ${{ env.ci_build_script }} install
 
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   Android:
@@ -379,6 +419,13 @@ jobs:
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )                                             &&
+                        (matrix.ci_build_type == 'rel')
+                    }}
 
     steps:
       - uses: actions/checkout@v2
@@ -418,9 +465,9 @@ jobs:
         run: ${{ env.ci_build_script }} build-android
 
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: '**/*.apk'
 
   iOS:
@@ -443,6 +490,13 @@ jobs:
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )                                             &&
+                        (matrix.ci_build_type == 'rel')
+                    }}
 
     steps:
       - uses: actions/checkout@v2
@@ -486,9 +540,9 @@ jobs:
         run: ${{ env.ci_build_script }} build
 
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.build_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: '**/*.app'
 
   Web:
@@ -510,6 +564,13 @@ jobs:
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )                                             &&
+                        (matrix.ci_build_type == 'rel')
+                    }}
 
     steps:
       - uses: mymindstorm/setup-emsdk@v9
@@ -551,7 +612,42 @@ jobs:
         run: ${{ env.ci_build_script }} install
 
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master' && matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.build_type }}-${{ github.sha }}'
-          path: SDK
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          path: ${{ env.ci_sdk_dir }}
+
+  NuGet:
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/nuget/') || startsWith(github.ref, 'refs/heads/nuget/') }}
+    needs:
+      - Windows
+      - UWP
+      - MacOS
+      - Android
+      - iOS
+      - Web
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: source-code
+          fetch-depth: 1
+
+      - name: Get short SHA
+        id: vars
+        run: echo "::set-output name=sha_short::$(echo ${GITHUB_SHA} | cut -c1-7)"
+
+      - uses: actions/download-artifact@v2
+        with:
+          path: source-code/packaging/nuget/
+
+      - name: Nuget
+        shell: bash
+        working-directory: source-code/packaging/nuget/
+        run: |
+          ./package.sh
+          for pkg in out/*.nupkg;
+          do
+            dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+          done

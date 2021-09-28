@@ -35,10 +35,22 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
+#include <EASTL/sort.h>
+
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+bool CompareLayers(const SharedPtr<AnimationState>& lhs, const SharedPtr<AnimationState>& rhs)
+{
+    return lhs->GetLayer() < rhs->GetLayer();
+}
+
+}
 
 static const unsigned char CTRL_LOOPED = 0x1;
 static const unsigned char CTRL_STARTBONE = 0x2;
@@ -54,7 +66,7 @@ static const unsigned MAX_NODE_ANIMATION_STATES = 256;
 extern const char* LOGIC_CATEGORY;
 
 AnimationController::AnimationController(Context* context) :
-    Component(context)
+    AnimationStateSource(context)
 {
 }
 
@@ -70,7 +82,14 @@ void AnimationController::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Network Animations", GetNetAnimationsAttr, SetNetAnimationsAttr, ea::vector<unsigned char>,
         Variant::emptyBuffer, AM_NET | AM_LATESTDATA | AM_NOEDIT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Node Animation States", GetNodeAnimationStatesAttr, SetNodeAnimationStatesAttr, VariantVector,
+        Variant::emptyVariantVector, AM_FILE | AM_NOEDIT | AM_READONLY);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animation States", GetAnimationStatesAttr, SetAnimationStatesAttr, VariantVector,
         Variant::emptyVariantVector, AM_FILE | AM_NOEDIT);
+}
+
+void AnimationController::ApplyAttributes()
+{
+    ConnectToAnimatedModel();
 }
 
 void AnimationController::OnSetEnabled()
@@ -151,9 +170,26 @@ void AnimationController::Update(float timeStep)
             ++i;
     }
 
+    // Sort animation states if necessary
+    if (animationStateOrderDirty_)
+    {
+        ea::sort(animationStates_.begin(), animationStates_.end(), CompareLayers);
+        animationStateOrderDirty_ = false;
+    }
+
+    // Update animation tracks if necessary
+    for (AnimationState* state : animationStates_)
+    {
+        if (state->AreTracksDirty())
+            UpdateAnimationStateTracks(state);
+    }
+
     // Node hierarchy animations need to be applied manually
-    for (auto i = nodeAnimationStates_.begin(); i != nodeAnimationStates_.end(); ++i)
-        (*i)->Apply();
+    for (AnimationState* state : animationStates_)
+    {
+        state->ApplyNodeTracks();
+        state->ApplyAttributeTracks();
+    }
 }
 
 bool AnimationController::Play(const ea::string& name, unsigned char layer, bool looped, float fadeInTime)
@@ -310,17 +346,11 @@ bool AnimationController::SetLayer(const ea::string& name, unsigned char layer)
 
 bool AnimationController::SetStartBone(const ea::string& name, const ea::string& startBoneName)
 {
-    // Start bone can only be set in model mode
-    auto* model = GetComponent<AnimatedModel>();
-    if (!model)
-        return false;
-
-    AnimationState* state = model->GetAnimationState(name);
+    AnimationState* state = GetAnimationState(name);
     if (!state)
         return false;
 
-    Bone* bone = model->GetSkeleton().GetBone(startBoneName);
-    state->SetStartBone(bone);
+    state->SetStartBone(startBoneName);
     MarkNetworkUpdate();
     return true;
 }
@@ -486,18 +516,6 @@ unsigned char AnimationController::GetLayer(const ea::string& name) const
     return (unsigned char)(state ? state->GetLayer() : 0);
 }
 
-Bone* AnimationController::GetStartBone(const ea::string& name) const
-{
-    AnimationState* state = GetAnimationState(name);
-    return state ? state->GetStartBone() : nullptr;
-}
-
-const ea::string& AnimationController::GetStartBoneName(const ea::string& name) const
-{
-    Bone* bone = GetStartBone(name);
-    return bone ? bone->name_ : EMPTY_STRING;
-}
-
 float AnimationController::GetTime(const ea::string& name) const
 {
     AnimationState* state = GetAnimationState(name);
@@ -575,13 +593,7 @@ AnimationState* AnimationController::GetAnimationState(const ea::string& name) c
 
 AnimationState* AnimationController::GetAnimationState(StringHash nameHash) const
 {
-    // Model mode
-    auto* model = GetComponent<AnimatedModel>();
-    if (model)
-        return model->GetAnimationState(nameHash);
-
-    // Node hierarchy mode
-    for (auto i = nodeAnimationStates_.begin(); i != nodeAnimationStates_.end(); ++i)
+    for (auto i = animationStates_.begin(); i != animationStates_.end(); ++i)
     {
         Animation* animation = (*i)->GetAnimation();
         if (animation->GetNameHash() == nameHash || animation->GetAnimationNameHash() == nameHash)
@@ -661,12 +673,11 @@ void AnimationController::SetNetAnimationsAttr(const ea::vector<unsigned char>& 
         animations_[index].fadeTime_ = (float)buf.ReadUByte() / 64.0f; // 6 bits of decimal precision, max. 4 seconds fade
         if (ctrl & CTRL_STARTBONE)
         {
-            StringHash boneHash = buf.ReadStringHash();
-            if (model)
-                state->SetStartBone(model->GetSkeleton().GetBone(boneHash));
+            const ea::string startBoneName = buf.ReadString();
+            state->SetStartBone(startBoneName);
         }
         else
-            state->SetStartBone(nullptr);
+            state->SetStartBone("");
         if (ctrl & CTRL_AUTOFADE)
             animations_[index].autoFadeTime_ = (float)buf.ReadUByte() / 64.0f; // 6 bits of decimal precision, max. 4 seconds fade
         else
@@ -712,7 +723,7 @@ void AnimationController::SetNetAnimationsAttr(const ea::vector<unsigned char>& 
 void AnimationController::SetNodeAnimationStatesAttr(const VariantVector& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    nodeAnimationStates_.clear();
+    animationStates_.clear();
     unsigned index = 0;
     unsigned numStates = index < value.size() ? value[index++].GetUInt() : 0;
     // Prevent negative or overly large value being assigned from the editor
@@ -721,15 +732,15 @@ void AnimationController::SetNodeAnimationStatesAttr(const VariantVector& value)
     if (numStates > MAX_NODE_ANIMATION_STATES)
         numStates = MAX_NODE_ANIMATION_STATES;
 
-    nodeAnimationStates_.reserve(numStates);
+    animationStates_.reserve(numStates);
     while (numStates--)
     {
         if (index + 2 < value.size())
         {
             // Note: null animation is allowed here for editing
             const ResourceRef& animRef = value[index++].GetResourceRef();
-            SharedPtr<AnimationState> newState(new AnimationState(GetNode(), cache->GetResource<Animation>(animRef.name_)));
-            nodeAnimationStates_.push_back(newState);
+            SharedPtr<AnimationState> newState(new AnimationState(this, GetNode(), cache->GetResource<Animation>(animRef.name_)));
+            animationStates_.push_back(newState);
 
             newState->SetLooped(value[index++].GetBool());
             newState->SetTime(value[index++].GetFloat());
@@ -737,10 +748,13 @@ void AnimationController::SetNodeAnimationStatesAttr(const VariantVector& value)
         else
         {
             // If not enough data, just add an empty animation state
-            SharedPtr<AnimationState> newState(new AnimationState(GetNode(), nullptr));
-            nodeAnimationStates_.push_back(newState);
+            SharedPtr<AnimationState> newState(new AnimationState(this, GetNode(), nullptr));
+            animationStates_.push_back(newState);
         }
     }
+
+    MarkAnimationStateOrderDirty();
+    MarkAnimationStateTracksDirty();
 }
 
 VariantVector AnimationController::GetAnimationsAttr() const
@@ -779,12 +793,11 @@ const ea::vector<unsigned char>& AnimationController::GetNetAnimationsAttr() con
             continue;
 
         unsigned char ctrl = 0;
-        Bone* startBone = state->GetStartBone();
         if (state->IsLooped())
             ctrl |= CTRL_LOOPED;
         if (state->GetBlendMode() == ABM_ADDITIVE)
             ctrl |= CTRL_ADDITIVE;
-        if (startBone && model && startBone != model->GetSkeleton().GetRootBone())
+        if (!state->GetStartBone().empty())
             ctrl |= CTRL_STARTBONE;
         if (i->autoFadeTime_ > 0.0f)
             ctrl |= CTRL_AUTOFADE;
@@ -802,7 +815,7 @@ const ea::vector<unsigned char>& AnimationController::GetNetAnimationsAttr() con
         attrBuffer_.WriteUByte((unsigned char)(i->targetWeight_ * 255.0f));
         attrBuffer_.WriteUByte((unsigned char)Clamp(i->fadeTime_ * 64.0f, 0.0f, 255.0f));
         if (ctrl & CTRL_STARTBONE)
-            attrBuffer_.WriteStringHash(startBone->nameHash_);
+            attrBuffer_.WriteString(state->GetStartBone());
         if (ctrl & CTRL_AUTOFADE)
             attrBuffer_.WriteUByte((unsigned char)Clamp(i->autoFadeTime_ * 64.0f, 0.0f, 255.0f));
         if (ctrl & CTRL_SETTIME)
@@ -822,18 +835,66 @@ const ea::vector<unsigned char>& AnimationController::GetNetAnimationsAttr() con
 
 VariantVector AnimationController::GetNodeAnimationStatesAttr() const
 {
-    VariantVector ret;
-    ret.reserve(nodeAnimationStates_.size() * 3 + 1);
-    ret.push_back((int)nodeAnimationStates_.size());
-    for (auto i = nodeAnimationStates_.begin(); i != nodeAnimationStates_.end(); ++i)
+    URHO3D_LOGERROR("AnimationController::GetNodeAnimationStatesAttr is deprecated");
+    return Variant::emptyVariantVector;
+}
+
+void AnimationController::SetAnimationStatesAttr(const VariantVector& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* model = GetComponent<AnimatedModel>();
+
+    animationStates_.clear();
+    animationStates_.reserve(value.size() / 7);
+    unsigned index = 0;
+    while (index + 6 < value.size())
     {
-        AnimationState* state = *i;
+        const ResourceRef& animRef = value[index++].GetResourceRef();
+        const ea::string& startBoneName = value[index++].GetString();
+        const bool isLooped = value[index++].GetBool();
+        const float weight = value[index++].GetFloat();
+        const float time = value[index++].GetFloat();
+        const auto layer = static_cast<unsigned char>(value[index++].GetInt());
+        const auto blendMode = static_cast<AnimationBlendMode>(value[index++].GetInt());
+
+        // Create new animation state
+        const auto animation = cache->GetResource<Animation>(animRef.name_);
+        AnimationState* newState = AddAnimationState(animation);
+
+        // Setup new animation state
+        newState->SetStartBone(startBoneName);
+        newState->SetLooped(isLooped);
+        newState->SetWeight(weight);
+        newState->SetTime(time);
+        newState->SetLayer(layer);
+        newState->SetBlendMode(blendMode);
+    }
+
+    MarkAnimationStateOrderDirty();
+    MarkAnimationStateTracksDirty();
+}
+
+VariantVector AnimationController::GetAnimationStatesAttr() const
+{
+    VariantVector ret;
+    ret.reserve(animationStates_.size() * 7);
+    for (AnimationState* state : animationStates_)
+    {
         Animation* animation = state->GetAnimation();
         ret.push_back(GetResourceRef(animation, Animation::GetTypeStatic()));
+        ret.push_back(state->GetStartBone());
         ret.push_back(state->IsLooped());
+        ret.push_back(state->GetWeight());
         ret.push_back(state->GetTime());
+        ret.push_back((int) state->GetLayer());
+        ret.push_back((int) state->GetBlendMode());
     }
     return ret;
+}
+
+void AnimationController::OnNodeSet(Node* node)
+{
+    ConnectToAnimatedModel();
 }
 
 void AnimationController::OnSceneSet(Scene* scene)
@@ -849,15 +910,14 @@ AnimationState* AnimationController::AddAnimationState(Animation* animation)
     if (!animation)
         return nullptr;
 
-    // Model mode
     auto* model = GetComponent<AnimatedModel>();
     if (model)
-        return model->AddAnimationState(animation);
+        animationStates_.emplace_back(new AnimationState(this, model, animation));
+    else
+        animationStates_.emplace_back(new AnimationState(this, node_, animation));
 
-    // Node hierarchy mode
-    SharedPtr<AnimationState> newState(new AnimationState(node_, animation));
-    nodeAnimationStates_.push_back(newState);
-    return newState;
+    MarkAnimationStateOrderDirty();
+    return animationStates_.back();
 }
 
 void AnimationController::RemoveAnimationState(AnimationState* state)
@@ -865,23 +925,9 @@ void AnimationController::RemoveAnimationState(AnimationState* state)
     if (!state)
         return;
 
-    // Model mode
-    auto* model = GetComponent<AnimatedModel>();
-    if (model)
-    {
-        model->RemoveAnimationState(state);
-        return;
-    }
-
-    // Node hierarchy mode
-    for (auto i = nodeAnimationStates_.begin(); i != nodeAnimationStates_.end(); ++i)
-    {
-        if ((*i) == state)
-        {
-            nodeAnimationStates_.erase(i);
-            return;
-        }
-    }
+    const auto iter = ea::find(animationStates_.begin(), animationStates_.end(), state);
+    if (iter != animationStates_.end())
+        animationStates_.erase(iter);
 }
 
 void AnimationController::FindAnimation(const ea::string& name, unsigned& index, AnimationState*& state) const
@@ -913,6 +959,133 @@ void AnimationController::HandleScenePostUpdate(StringHash eventType, VariantMap
     using namespace ScenePostUpdate;
 
     Update(eventData[P_TIMESTEP].GetFloat());
+}
+
+void AnimationController::MarkAnimationStateTracksDirty()
+{
+    for (AnimationState* state : animationStates_)
+        state->MarkTracksDirty();
+}
+
+bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startNode,
+    WeakPtr<Serializable>& serializable, unsigned& attributeIndex, StringHash& variableName)
+{
+    if (path.empty())
+    {
+        URHO3D_LOGWARNING("Variant animation track name must not be empty");
+        return false;
+    }
+
+    Node* animatedNode = startNode;
+    ea::string_view attributePath = path;
+
+    // Resolve path to node if necessary
+    if (path[0] != '@')
+    {
+        const auto sep = path.find("/@");
+        if (sep == ea::string_view::npos)
+        {
+            URHO3D_LOGWARNING("Path must end with attribute reference like /@StaticModel/Model");
+            return false;
+        }
+
+        const ea::string_view nodePath = path.substr(0, sep);
+        animatedNode = startNode->FindChild(nodePath);
+        if (!animatedNode)
+        {
+            URHO3D_LOGWARNING("Path to node \"{}\" cannot be resolved", nodePath);
+            return false;
+        }
+
+        attributePath = path.substr(sep + 1);
+    }
+
+    // Special case: if Node variables are referenced, individual variables are supported
+    static const ea::string_view variablesPath = "@/Variables/";
+    if (attributePath.starts_with(variablesPath))
+    {
+        variableName = attributePath.substr(variablesPath.size());
+        attributePath = attributePath.substr(0, variablesPath.size() - 1);
+    }
+
+    // Parse path to component and attribute
+    const auto& serializableAndAttribute = animatedNode->FindComponentAttribute(attributePath);
+    if (!serializableAndAttribute.first)
+    {
+        URHO3D_LOGWARNING("Path to attribute \"{}\" cannot be resolved", attributePath);
+        return false;
+    }
+
+    serializable = serializableAndAttribute.first;
+    attributeIndex = serializableAndAttribute.second;
+    return true;
+}
+
+void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
+{
+    // TODO(animation): Cache lookups?
+    auto model = GetComponent<AnimatedModel>();
+    const Animation* animation = state->GetAnimation();
+
+    // Reset internal state. Shouldn't cause any reallocations due to simple vectors inside.
+    state->ClearAllTracks();
+
+    // Use root node or start bone node if specified
+    const ea::string& startBoneName = state->GetStartBone();
+    Node* startNode = !startBoneName.empty() ? node_->GetChild(startBoneName, true) : nullptr;
+    if (!startNode)
+        startNode = node_;
+
+    // Setup model and node tracks
+    const auto& tracks = animation->GetTracks();
+    for (const auto& item : tracks)
+    {
+        const AnimationTrack& track = item.second;
+        Node* trackNode = track.nameHash_ == startNode->GetNameHash() ? startNode
+            : startNode->GetChild(track.nameHash_, true);
+        Bone* trackBone = model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
+
+        // Add model track
+        if (trackBone && trackBone->node_)
+        {
+            ModelAnimationStateTrack stateTrack;
+            stateTrack.track_ = &track;
+            stateTrack.node_ = trackNode;
+            stateTrack.bone_ = trackBone;
+            state->AddModelTrack(stateTrack);
+        }
+        else if (trackNode)
+        {
+            NodeAnimationStateTrack stateTrack;
+            stateTrack.track_ = &track;
+            stateTrack.node_ = trackNode;
+            state->AddNodeTrack(stateTrack);
+        }
+    }
+
+    // Setup generic tracks
+    const auto& variantTracks = animation->GetVariantTracks();
+    for (const auto& item : variantTracks)
+    {
+        const VariantAnimationTrack& track = item.second;
+        const ea::string& trackName = track.name_;
+
+        AttributeAnimationStateTrack stateTrack;
+        stateTrack.track_ = &track;
+
+        if (ParseAnimatablePath(trackName, startNode,
+            stateTrack.serializable_, stateTrack.attributeIndex_, stateTrack.variableName_))
+        {
+            state->AddAttributeTrack(stateTrack);
+        }
+    }
+}
+
+void AnimationController::ConnectToAnimatedModel()
+{
+    auto model = GetComponent<AnimatedModel>();
+    if (model)
+        model->ConnectToAnimationStateSource(this);
 }
 
 }

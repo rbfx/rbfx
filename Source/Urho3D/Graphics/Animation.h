@@ -24,135 +24,24 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
+#include "../Graphics/AnimationTrack.h"
 #include "../Container/Ptr.h"
-#include "../Math/Quaternion.h"
-#include "../Math/Vector3.h"
 #include "../Resource/Resource.h"
 
 namespace Urho3D
 {
 
-enum AnimationChannel : unsigned char
-{
-    CHANNEL_NONE = 0x0,
-    CHANNEL_POSITION = 0x1,
-    CHANNEL_ROTATION = 0x2,
-    CHANNEL_SCALE = 0x4,
-};
-URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
-
-/// Skeletal animation keyframe.
-struct AnimationKeyFrame
-{
-    /// Construct.
-    AnimationKeyFrame() :
-        time_(0.0f),
-        scale_(Vector3::ONE)
-    {
-    }
-
-    /// Instance equality operator.
-    bool operator ==(const AnimationKeyFrame& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const AnimationKeyFrame& rhs) const
-    {
-        return this != &rhs;
-    }
-
-    /// Keyframe time.
-    float time_;
-    /// Bone position.
-    Vector3 position_;
-    /// Bone rotation.
-    Quaternion rotation_;
-    /// Bone scale.
-    Vector3 scale_;
-};
-
-/// Skeletal animation track, stores keyframes of a single bone.
-/// @fakeref
-struct URHO3D_API AnimationTrack
-{
-    /// Construct.
-    AnimationTrack()
-    {
-    }
-
-    /// Assign keyframe at index.
-    /// @property{set_keyFrames}
-    void SetKeyFrame(unsigned index, const AnimationKeyFrame& keyFrame);
-    /// Add a keyframe at the end.
-    void AddKeyFrame(const AnimationKeyFrame& keyFrame);
-    /// Insert a keyframe at index.
-    void InsertKeyFrame(unsigned index, const AnimationKeyFrame& keyFrame);
-    /// Remove a keyframe at index.
-    void RemoveKeyFrame(unsigned index);
-    /// Remove all keyframes.
-    void RemoveAllKeyFrames();
-
-    /// Return keyframe at index, or null if not found.
-    AnimationKeyFrame* GetKeyFrame(unsigned index);
-    /// Return number of keyframes.
-    /// @property
-    unsigned GetNumKeyFrames() const { return keyFrames_.size(); }
-    /// Return keyframe index based on time and previous index. Return false if animation is empty.
-    bool GetKeyFrameIndex(float time, unsigned& index) const;
-
-    /// Bone or scene node name.
-    ea::string name_;
-    /// Name hash.
-    StringHash nameHash_;
-    /// Bitmask of included data (position, rotation, scale).
-    AnimationChannelFlags channelMask_{};
-    /// Keyframes.
-    ea::vector<AnimationKeyFrame> keyFrames_;
-
-    /// Instance equality operator.
-    bool operator ==(const AnimationTrack& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const AnimationTrack& rhs) const
-    {
-        return this != &rhs;
-    }
-};
-
 /// %Animation trigger point.
 struct AnimationTriggerPoint
 {
-    /// Construct.
-    AnimationTriggerPoint() :
-        time_(0.0f)
-    {
-    }
-
     /// Trigger time.
-    float time_;
+    float time_{};
     /// Trigger data.
     Variant data_;
-
-    /// Instance equality operator.
-    bool operator ==(const AnimationTriggerPoint& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const AnimationTriggerPoint& rhs) const
-    {
-        return this != &rhs;
-    }
 };
 
 /// Skeletal animation resource.
+/// Don't use bone tracks and generic variant tracks with the same names.
 class URHO3D_API Animation : public ResourceWithMetadata
 {
     URHO3D_OBJECT(Animation, ResourceWithMetadata);
@@ -166,6 +55,10 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Reset resource state to default.
+    void ResetToDefault();
+    /// Load resource from XML file.
+    bool LoadXML(const XMLElement& source);
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
     /// Save resource. Return true if successful.
@@ -179,6 +72,8 @@ public:
     void SetLength(float length);
     /// Create and return a track by name. If track by same name already exists, returns the existing.
     AnimationTrack* CreateTrack(const ea::string& name);
+    /// Create and return generic variant track by name. If variant track by same name already exists, returns the existing.
+    VariantAnimationTrack* CreateVariantTrack(const ea::string& name);
     /// Remove a track by name. Return true if was found and removed successfully. This is unsafe if the animation is currently used in playback.
     bool RemoveTrack(const ea::string& name);
     /// Remove all tracks. This is unsafe if the animation is currently used in playback.
@@ -227,6 +122,15 @@ public:
     /// Return animation track by name hash.
     AnimationTrack* GetTrack(StringHash nameHash);
 
+    /// Return generic variant animation tracks.
+    /// @{
+    const ea::unordered_map<StringHash, VariantAnimationTrack>& GetVariantTracks() const { return variantTracks_; }
+    unsigned GetNumVariantTracks() const { return variantTracks_.size(); }
+    VariantAnimationTrack* GetVariantTrack(unsigned index);
+    VariantAnimationTrack* GetVariantTrack(const ea::string& name);
+    VariantAnimationTrack* GetVariantTrack(StringHash nameHash);
+    /// @}
+
     /// Return animation trigger points.
     const ea::vector<AnimationTriggerPoint>& GetTriggers() const { return triggers_; }
 
@@ -239,7 +143,18 @@ public:
 
     /// Set all animation tracks.
     void SetTracks(const ea::vector<AnimationTrack>& tracks);
+
 private:
+    void LoadTriggersFromXML(const XMLElement& source);
+
+    /// Class versions (used for serialization)
+    /// @{
+    static const unsigned legacyVersion = 1; // Fake version for legacy unversioned UANI file
+    static const unsigned variantTrackVersion = 2; // VariantAnimationTrack support added here
+
+    static const unsigned currentVersion = variantTrackVersion;
+    /// @}
+
     /// Animation name.
     ea::string animationName_;
     /// Animation name hash.
@@ -248,6 +163,8 @@ private:
     float length_;
     /// Animation tracks.
     ea::unordered_map<StringHash, AnimationTrack> tracks_;
+    /// Generic variant animation tracks.
+    ea::unordered_map<StringHash, VariantAnimationTrack> variantTracks_;
     /// Animation trigger points.
     ea::vector<AnimationTriggerPoint> triggers_;
 };

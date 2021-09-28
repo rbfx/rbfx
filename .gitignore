@@ -135,3 +135,8 @@ __pycache__
 CMakeDoxyFile.in
 CMakeDoxygenDefaults.cmake
 
+# Packaging
+packaging/nuget/local-repository/
+packaging/nuget/out/
+packaging/nuget/SDK-*
+packaging/nuget/rbfx-*.zip

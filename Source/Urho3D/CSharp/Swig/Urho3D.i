@@ -645,6 +645,7 @@ public:
 %include "Urho3D/Graphics/StaticModelGroup.h"
 %include "Urho3D/Graphics/Animation.h"
 %include "Urho3D/Graphics/AnimationState.h"
+%include "Urho3D/Graphics/AnimationStateSource.h"
 %include "Urho3D/Graphics/AnimationController.h"
 %include "Urho3D/Graphics/AnimatedModel.h"
 %include "Urho3D/Graphics/BillboardSet.h"

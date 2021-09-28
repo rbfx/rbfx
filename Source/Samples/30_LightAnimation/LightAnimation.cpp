@@ -22,6 +22,7 @@
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Material.h>
@@ -31,7 +32,6 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Scene/ObjectAnimation.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/ValueAnimation.h>
 #include <Urho3D/UI/Font.h>
@@ -97,22 +97,9 @@ void LightAnimation::CreateScene()
     light->SetLightType(LIGHT_POINT);
     light->SetRange(10.0f);
 
-    // Create light animation
-    SharedPtr<ObjectAnimation> lightAnimation(new ObjectAnimation(context_));
-
-    // Create light position animation
-    SharedPtr<ValueAnimation> positionAnimation(new ValueAnimation(context_));
-    // Use spline interpolation method
-    positionAnimation->SetInterpolationMethod(IM_SPLINE);
-    // Set spline tension
-    positionAnimation->SetSplineTension(0.7f);
-    positionAnimation->SetKeyFrame(0.0f, Vector3(-30.0f, 5.0f, -30.0f));
-    positionAnimation->SetKeyFrame(1.0f, Vector3( 30.0f, 5.0f, -30.0f));
-    positionAnimation->SetKeyFrame(2.0f, Vector3( 30.0f, 5.0f,  30.0f));
-    positionAnimation->SetKeyFrame(3.0f, Vector3(-30.0f, 5.0f,  30.0f));
-    positionAnimation->SetKeyFrame(4.0f, Vector3(-30.0f, 5.0f, -30.0f));
-    // Set position animation
-    lightAnimation->AddAttributeAnimation("Position", positionAnimation);
+    // Apply light animation to light node
+    auto* animationController = lightNode->CreateComponent<AnimationController>();
+    animationController->Play("Animations/LightAnimation.xml", 0, true);
 
     // Create text animation
     SharedPtr<ValueAnimation> textAnimation(new ValueAnimation(context_));
@@ -133,19 +120,6 @@ void LightAnimation::CreateScene()
     spriteAnimation->SetKeyFrame(0.4f, ResourceRef("Texture2D", "Urho2D/GoldIcon/5.png"));
     spriteAnimation->SetKeyFrame(0.5f, ResourceRef("Texture2D", "Urho2D/GoldIcon/1.png"));
     GetSubsystem<UI>()->GetRoot()->GetChild(ea::string("animatingSprite"))->SetAttributeAnimation("Texture", spriteAnimation);
-
-    // Create light color animation
-    SharedPtr<ValueAnimation> colorAnimation(new ValueAnimation(context_));
-    colorAnimation->SetKeyFrame(0.0f, Color::WHITE);
-    colorAnimation->SetKeyFrame(1.0f, Color::RED);
-    colorAnimation->SetKeyFrame(2.0f, Color::YELLOW);
-    colorAnimation->SetKeyFrame(3.0f, Color::GREEN);
-    colorAnimation->SetKeyFrame(4.0f, Color::WHITE);
-    // Set Light component's color animation
-    lightAnimation->AddAttributeAnimation("@Light/Color", colorAnimation);
-
-    // Apply light animation to light node
-    lightNode->SetObjectAnimation(lightAnimation);
 
     // Create more StaticModel objects to the scene, randomly positioned, rotated and scaled. For rotation, we construct a
     // quaternion from Euler angles where the Y angle (rotation about the Y axis) is randomized. The mushroom model contains

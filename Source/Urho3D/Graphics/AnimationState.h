@@ -33,12 +33,15 @@ namespace Urho3D
 {
 
 class Animation;
+class AnimationController;
 class AnimatedModel;
 class Deserializer;
 class Node;
 class Serializer;
+class Serializable;
 class Skeleton;
 struct AnimationTrack;
+struct VariantAnimationTrack;
 struct Bone;
 
 /// %Animation blending mode.
@@ -50,36 +53,32 @@ enum AnimationBlendMode
     ABM_ADDITIVE
 };
 
-/// %Animation instance per-track data.
-struct URHO3D_API AnimationStateTrack
+/// Per-track data of skinned model animation.
+/// TODO(animation): Do we want per-bone weights?
+struct URHO3D_API ModelAnimationStateTrack
 {
-    /// Construct with defaults.
-    AnimationStateTrack();
-    /// Destruct.
-    ~AnimationStateTrack();
-
-    /// Instance equality operator.
-    bool operator ==(const AnimationStateTrack& rhs) const
-    {
-        return this == &rhs;
-    }
-
-    /// Instance inequality operator.
-    bool operator !=(const AnimationStateTrack& rhs) const
-    {
-        return this != &rhs;
-    }
-
-    /// Animation track.
-    const AnimationTrack* track_;
-    /// Bone pointer.
-    Bone* bone_;
-    /// Scene node pointer.
+    const AnimationTrack* track_{};
+    Bone* bone_{};
     WeakPtr<Node> node_;
-    /// Blending weight.
-    float weight_;
-    /// Last key frame.
-    unsigned keyFrame_;
+    unsigned keyFrame_{};
+};
+
+/// Per-track data of node model animation.
+struct URHO3D_API NodeAnimationStateTrack
+{
+    const AnimationTrack* track_{};
+    WeakPtr<Node> node_;
+    unsigned keyFrame_{};
+};
+
+/// Per-track data of attribute animation.
+struct URHO3D_API AttributeAnimationStateTrack
+{
+    const VariantAnimationTrack* track_{};
+    WeakPtr<Serializable> serializable_;
+    unsigned attributeIndex_{};
+    StringHash variableName_;
+    unsigned keyFrame_{};
 };
 
 /// %Animation instance.
@@ -87,15 +86,23 @@ class URHO3D_API AnimationState : public RefCounted
 {
 public:
     /// Construct with animated model and animation pointers.
-    AnimationState(AnimatedModel* model, Animation* animation);
+    AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation);
     /// Construct with root scene node and animation pointers.
-    AnimationState(Node* node, Animation* animation);
+    AnimationState(AnimationController* controller, Node* node, Animation* animation);
     /// Destruct.
     ~AnimationState() override;
 
-    /// Set start bone. Not supported in node animation mode. Resets any assigned per-bone weights.
-    /// @property
-    void SetStartBone(Bone* startBone);
+    /// Modify tracks. For internal use only.
+    /// @{
+    bool AreTracksDirty() const;
+    void MarkTracksDirty();
+    void ClearAllTracks();
+    void AddModelTrack(const ModelAnimationStateTrack& track);
+    void AddNodeTrack(const NodeAnimationStateTrack& track);
+    void AddAttributeTrack(const AttributeAnimationStateTrack& track);
+    void OnTracksReady();
+    /// @}
+
     /// Set looping enabled/disabled.
     /// @property
     void SetLooped(bool looped);
@@ -108,12 +115,8 @@ public:
     /// Set time position. Does not fire animation triggers.
     /// @property
     void SetTime(float time);
-    /// Set per-bone blending weight by track index. Default is 1.0 (full), is multiplied  with the state's blending weight when applying the animation. Optionally recurses to child bones.
-    void SetBoneWeight(unsigned index, float weight, bool recursive = false);
-    /// Set per-bone blending weight by name.
-    void SetBoneWeight(const ea::string& name, float weight, bool recursive = false);
-    /// Set per-bone blending weight by name hash.
-    void SetBoneWeight(StringHash nameHash, float weight, bool recursive = false);
+    /// Set start bone name.
+    void SetStartBone(const ea::string& name);
     /// Modify blending weight.
     void AddWeight(float delta);
     /// Modify time position. %Animation triggers will be fired.
@@ -132,22 +135,9 @@ public:
     /// Return root scene node this state controls (node hierarchy mode).
     /// @property
     Node* GetNode() const;
-    /// Return start bone.
-    /// @property
-    Bone* GetStartBone() const;
-    /// Return per-bone blending weight by track index.
-    float GetBoneWeight(unsigned index) const;
-    /// Return per-bone blending weight by name.
-    /// @property{get_boneWeights}
-    float GetBoneWeight(const ea::string& name) const;
-    /// Return per-bone blending weight by name.
-    float GetBoneWeight(StringHash nameHash) const;
-    /// Return track index with matching bone node, or M_MAX_UNSIGNED if not found.
-    unsigned GetTrackIndex(Node* node) const;
-    /// Return track index by bone name, or M_MAX_UNSIGNED if not found.
-    unsigned GetTrackIndex(const ea::string& name) const;
-    /// Return track index by bone name hash, or M_MAX_UNSIGNED if not found.
-    unsigned GetTrackIndex(StringHash nameHash) const;
+
+    /// Return name of start bone.
+    const ea::string& GetStartBone() const { return startBone_; }
 
     /// Return whether weight is nonzero.
     /// @property
@@ -177,37 +167,50 @@ public:
     /// @property
     unsigned char GetLayer() const { return layer_; }
 
-    /// Apply the animation at the current time position.
-    void Apply();
+    /// Apply animation to a skeleton. Transform changes are applied silently, so the model needs to dirty its root model afterward.
+    void ApplyModelTracks();
+    /// Apply animation to a scene node hierarchy.
+    void ApplyNodeTracks();
+    /// Apply animation to attributes.
+    void ApplyAttributeTracks();
 
 private:
-    /// Apply animation to a skeleton. Transform changes are applied silently, so the model needs to dirty its root model afterward.
-    void ApplyToModel();
-    /// Apply animation to a scene node hierarchy.
-    void ApplyToNodes();
-    /// Apply track.
-    void ApplyTrack(AnimationStateTrack& stateTrack, float weight, bool silent);
+    /// Apply single transformation track to target object. Key frame hint is updated on call.
+    void ApplyTransformTrack(const AnimationTrack& track,
+        Node* node, Bone* bone, unsigned& frame, float weight, bool silent);
+    /// Apply single attribute track to target object. Key frame hint is updated on call.
+    void ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrack, float weight);
 
+    /// Owner controller.
+    WeakPtr<AnimationController> controller_;
     /// Animated model (model mode).
     WeakPtr<AnimatedModel> model_;
     /// Root scene node (node hierarchy mode).
     WeakPtr<Node> node_;
     /// Animation.
     SharedPtr<Animation> animation_;
-    /// Start bone.
-    Bone* startBone_;
-    /// Per-track data.
-    ea::vector<AnimationStateTrack> stateTracks_;
-    /// Looped flag.
-    bool looped_;
-    /// Blending weight.
-    float weight_;
-    /// Time position.
-    float time_;
-    /// Blending layer.
-    unsigned char layer_;
-    /// Blending mode.
-    AnimationBlendMode blendingMode_;
+
+    /// Whether the animation state tracks are dirty and should be updated.
+    bool tracksDirty_{ true };
+
+    /// Dynamic properties of AnimationState.
+    /// @{
+    bool looped_{};
+    float weight_{};
+    float time_{};
+    unsigned char layer_{};
+    AnimationBlendMode blendingMode_{};
+    ea::string startBone_;
+    /// @}
+
+    /// Tracks that are actually applied to the objects.
+    /// @{
+    ea::vector<ModelAnimationStateTrack> modelTracks_;
+    ea::vector<NodeAnimationStateTrack> nodeTracks_;
+    ea::vector<AttributeAnimationStateTrack> attributeTracks_;
+    /// @}
 };
+
+using AnimationStateVector = ea::vector<SharedPtr<AnimationState>>;
 
 }

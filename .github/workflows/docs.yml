@@ -1,8 +1,14 @@
 name: Documentation
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Build
     branches:
       - master
+    tags:
+      - '*'
+    types:
+      - completed
     paths:
       - Docs/**
       - Source/Urho3D/**.h

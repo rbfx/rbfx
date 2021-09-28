@@ -26,6 +26,7 @@
 
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Resource/XMLFile.h>
 
 namespace Tests
 {
@@ -40,6 +41,19 @@ SharedPtr<Context> CreateCompleteTestContext()
     const bool engineInitialized = engine->Initialize(parameters);
     REQUIRE(engineInitialized);
     return context;
+}
+
+void RunFrame(Context* context, float timeStep, float maxTimeStep)
+{
+    auto engine = context->GetSubsystem<Engine>();
+    do
+    {
+        const float subTimeStep = ea::min(timeStep, maxTimeStep);
+        engine->SetNextTimeStep(subTimeStep);
+        engine->RunFrame();
+        timeStep -= subTimeStep;
+    }
+    while (timeStep > 0.0f);
 }
 
 }

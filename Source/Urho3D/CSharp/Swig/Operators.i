@@ -12,7 +12,7 @@
         {
             if (!ReferenceEquals(a, null))
                 return !ReferenceEquals(b, null) && a.Equals(b);     // Equality checked when both not null.
-            return b == null;                                        // true when both are null
+            return b is null;                                        // true when both are null
         }
 
         public static bool operator !=($typemap(cstype, fqn) a, $typemap(cstype, fqn) b)

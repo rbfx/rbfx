@@ -1486,6 +1486,9 @@ public:
         return nullptr;
     }
 
+    /// Linear interpolation. Supported for scalars, vectors and some other types.
+    Variant Lerp(const Variant& rhs, float t) const;
+
     /// Hash function for containers.
     unsigned ToHash() const;
 

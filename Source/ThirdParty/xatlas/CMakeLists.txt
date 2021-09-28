@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+#cmake_minimum_required(VERSION 2.8.8)
 project(xatlas)
 
 # Urho3D: Removed all extra things
