@@ -244,11 +244,18 @@ SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFuncti
     [](const ClassName& self, Urho3D::Variant& value) { value = static_cast<int>(self.getFunction()); }, \
     [](ClassName& self, const Urho3D::Variant& value) { self.setFunction(static_cast<typeName>(value.Get<int>())); })
 
+/// Make fake accessor for an action.
+#define URHO3D_MAKE_ACTION_LABEL_ACCESSOR(action, label) Urho3D::MakeVariantAttributeAccessor<ClassName>( \
+    [](const ClassName& self, Urho3D::Variant& value) { value = (self.label); }, \
+    [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) (self.action); })
+
 /// Attribute metadata.
 namespace AttributeMetadata
 {
     /// Names of vector struct elements. StringVector.
     static const StringHash P_VECTOR_STRUCT_ELEMENTS = "VectorStructElements";
+    /// Flag that indicates that attribute is an action.
+    static const StringHash P_ACTION = "Action";
 }
 
 // The following macros need to be used within a class member function such as ClassName::RegisterObject().
@@ -291,6 +298,10 @@ namespace AttributeMetadata
 /// Define an object member attribute of any type.
 #define URHO3D_ATTRIBUTE_CUSTOM(name, typeName, variable, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
     Urho3D::VAR_CUSTOM, name, URHO3D_MAKE_CUSTOM_MEMBER_ATTRIBUTE_ACCESSOR(typeName, variable), nullptr, defaultValue, mode))
+
+/// Define an action as fake attribute.
+#define URHO3D_ACTION_LABEL_ATTRIBUTE(name, action, label) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
+    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(action, label), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::P_ACTION, true)
 
 /// Deprecated. Use URHO3D_ACCESSOR_ATTRIBUTE instead.
 #define URHO3D_MIXED_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) URHO3D_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode)

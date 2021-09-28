@@ -101,9 +101,7 @@ void LightBaker::RegisterObject(Context* context)
     static const LightBakingSettings defaultSettings;
     context->RegisterFactory<LightBaker>(SUBSYSTEM_CATEGORY);
 
-    auto getBake = [](const ClassName& self, Urho3D::Variant& value) { value = self.state_ != InternalState::NotStarted; };
-    auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.BakeAsync(); };
-    URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake!", getBake, setBake, bool, false, AM_EDIT);
+    URHO3D_ACTION_LABEL_ATTRIBUTE("Bake!", BakeAsync(), GetBakeLabel());
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, settings_.incremental_.outputDirectory_, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Lightmap Size", unsigned, settings_.charting_.lightmapSize_, defaultSettings.charting_.lightmapSize_, AM_DEFAULT);
@@ -274,6 +272,20 @@ void LightBaker::Update()
         state_ = InternalState::NotStarted;
         taskData_ = nullptr;
     }
+}
+
+const ea::string& LightBaker::GetBakeLabel() const
+{
+    if (taskData_)
+    {
+        const IncrementalLightBakerStatus& status = taskData_->baker_.GetStatus();
+        static thread_local ea::string statusText;
+        statusText = status.ToString();
+        return statusText;
+    }
+
+    static const ea::string defaultLabel = "Re-bake lightmaps and light probes!";
+    return defaultLabel;
 }
 
 }

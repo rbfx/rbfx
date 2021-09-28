@@ -247,9 +247,11 @@ struct IncrementalLightBaker::Impl
     /// Generate baking chunks.
     void GenerateBakingChunks()
     {
+        numLightmapsTotal_ = 0;
         for (const IntVector3& chunk : chunks_)
         {
             BakedSceneChunk bakedChunk = CreateBakedSceneChunk(context_, *collector_, chunk, settings_);
+            numLightmapsTotal_ += bakedChunk.lightmaps_.size();
             cache_->StoreBakedChunk(chunk, ea::move(bakedChunk));
         }
     }
@@ -257,6 +259,10 @@ struct IncrementalLightBaker::Impl
     /// Step direct light for charts.
     bool BakeDirectCharts(StopToken stopToken)
     {
+        status_.phase_.store(IncrementalLightBakerPhase::BakingDirectLighting, std::memory_order_relaxed);
+        status_.processedElements_.store(0, std::memory_order_relaxed);
+        status_.totalElements_.store(numLightmapsTotal_, std::memory_order_relaxed);
+
         for (const IntVector3 chunk : chunks_)
         {
             const ea::shared_ptr<const BakedSceneChunk> bakedChunk = cache_->LoadBakedChunk(chunk);
@@ -284,6 +290,8 @@ struct IncrementalLightBaker::Impl
 
                 // Store direct light
                 cache_->StoreDirectLight(lightmapIndex, ea::move(bakedDirect));
+
+                status_.processedElements_.fetch_add(1u, std::memory_order_relaxed);
             }
         }
 
@@ -293,6 +301,10 @@ struct IncrementalLightBaker::Impl
     /// Bake indirect light, filter baked direct and indirect, bake direct light probes.
     bool BakeIndirectAndFilter(StopToken stopToken)
     {
+        status_.phase_.store(IncrementalLightBakerPhase::BakingIndirectLighting, std::memory_order_relaxed);
+        status_.processedElements_.store(0, std::memory_order_relaxed);
+        status_.totalElements_.store(numLightmapsTotal_, std::memory_order_relaxed);
+
         const unsigned numTexels = settings_.charting_.lightmapSize_ * settings_.charting_.lightmapSize_;
         ea::vector<Vector3> directFilterBuffer(numTexels);
         ea::vector<Vector4> indirectFilterBuffer(numTexels);
@@ -371,6 +383,8 @@ struct IncrementalLightBaker::Impl
 
                 // Store lightmap
                 cache_->StoreLightmap(lightmapIndex, ea::move(bakedLightmap));
+
+                status_.processedElements_.fetch_add(1u, std::memory_order_relaxed);
             }
 
             // Bake direct lights for light probes
@@ -395,6 +409,8 @@ struct IncrementalLightBaker::Impl
                 }
             }
         }
+
+        status_.phase_.store(IncrementalLightBakerPhase::Finalizing, std::memory_order_relaxed);
         return true;
     }
 
@@ -462,6 +478,8 @@ struct IncrementalLightBaker::Impl
         }
     }
 
+    const IncrementalLightBakerStatus& GetStatus() const { return status_; }
+
 private:
     /// Return lightmap file name.
     ea::string GetLightmapFileName(unsigned lightmapIndex)
@@ -496,7 +514,29 @@ private:
     ea::vector<IntVector3> chunks_;
     /// Number of lightmap charts.
     unsigned numLightmapCharts_{};
+
+    IncrementalLightBakerStatus status_;
+    unsigned numLightmapsTotal_{};
 };
+
+ea::string IncrementalLightBakerStatus::ToString() const
+{
+    const unsigned current = processedElements_.load(std::memory_order_relaxed);
+    const unsigned total = totalElements_.load(std::memory_order_relaxed);
+
+    switch (phase_.load(std::memory_order_relaxed))
+    {
+    case IncrementalLightBakerPhase::Finalizing:
+        return "Finalizing...";
+    case IncrementalLightBakerPhase::BakingDirectLighting:
+        return Format("Baking direct lighting: {}/{} lightmaps...", current, total);
+    case IncrementalLightBakerPhase::BakingIndirectLighting:
+        return Format("Baking indirect lighting: {}/{} lightmaps...", current, total);
+    case IncrementalLightBakerPhase::NotStarted:
+    default:
+        return "Not started.";
+    }
+}
 
 IncrementalLightBaker::~IncrementalLightBaker()
 {
@@ -529,6 +569,11 @@ bool IncrementalLightBaker::Bake(StopToken stopToken)
 void IncrementalLightBaker::CommitScene()
 {
     impl_->StitchAndSaveImages();
+}
+
+const IncrementalLightBakerStatus& IncrementalLightBaker::GetStatus() const
+{
+    return impl_->GetStatus();
 }
 
 }

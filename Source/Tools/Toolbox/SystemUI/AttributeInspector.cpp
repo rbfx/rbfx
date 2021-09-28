@@ -103,6 +103,23 @@ const char* supportedVariantNames[] = {
     "Int64",
 };
 
+void RenderActionAttribute(Serializable* serializable, const AttributeInfo& info, float itemWidth)
+{
+    if (itemWidth != 0)
+        ui::PushItemWidth(itemWidth);
+
+    if (ui::Button(info.name_.c_str()))
+    {
+        serializable->OnSetAttribute(info, true);
+    }
+
+    ui::SameLine();
+
+    static Variant label;
+    serializable->OnGetAttribute(info, label);
+    ui::Text(label.GetString().c_str());
+}
+
 bool RenderResourceRef(ResourceRef& ref, Object* eventSender)
 {
     SharedPtr<Resource> resource;
@@ -658,6 +675,12 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
         if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
             continue;
         ui::IdScope attributeNameId(info.name_.c_str());
+
+        if (info.GetMetadata(AttributeMetadata::P_ACTION).GetBool())
+        {
+            RenderActionAttribute(item, info, 0.0f);
+            continue;
+        }
 
         Color color = Color::TRANSPARENT_BLACK;                                 // No change, determine automatically later.
         auto& modification = ValueHistory<Variant>::Get(item->GetAttribute(info.name_));

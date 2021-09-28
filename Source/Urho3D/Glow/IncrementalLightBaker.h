@@ -30,9 +30,27 @@
 #include "../Graphics/LightBakingSettings.h"
 
 #include <EASTL/string.h>
+#include <atomic>
 
 namespace Urho3D
 {
+
+enum class IncrementalLightBakerPhase
+{
+    NotStarted,
+    BakingDirectLighting,
+    BakingIndirectLighting,
+    Finalizing
+};
+
+struct IncrementalLightBakerStatus
+{
+    std::atomic<IncrementalLightBakerPhase> phase_{ IncrementalLightBakerPhase::NotStarted };
+    std::atomic_uint32_t processedElements_{ 0 };
+    std::atomic_uint32_t totalElements_{ 0 };
+
+    ea::string ToString() const;
+};
 
 /// Incremental light baker.
 class URHO3D_API IncrementalLightBaker
@@ -54,6 +72,9 @@ public:
     bool Bake(StopToken stopToken);
     /// Commit the rest of changes to scene. Scene collector is used here.
     void CommitScene();
+
+    /// Return current status. Thread-safe.
+    const IncrementalLightBakerStatus& GetStatus() const;
 
 private:
     struct Impl;

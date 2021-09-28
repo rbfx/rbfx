@@ -94,6 +94,8 @@ private:
     bool UpdateSettings();
     /// Update baker. May start or finish baking depending on current state.
     void Update();
+    /// Return baking status.
+    const ea::string& GetBakeLabel() const;
 
     /// Quality.
     LightBakingQuality quality_{};
