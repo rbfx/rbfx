@@ -160,6 +160,38 @@ bool RenderResourceRef(ResourceRef& ref, Object* eventSender)
     return modified;
 }
 
+bool RenderStructVariantVectorAttribute(VariantVector& value, const StringVector& elementNames, Object* eventSender)
+{
+    if (elementNames.size() < 2)
+        return false;
+
+    const ui::IdScope idScope(VAR_VARIANTVECTOR);
+    const unsigned numStructFields = elementNames.size() - 1;
+
+    bool modified = false;
+    unsigned nameIndex = 0;
+    for (unsigned index = 0; index < value.size(); ++index)
+    {
+        const ea::string& elementName = elementNames[nameIndex];
+        if (!elementName.empty())
+        {
+            if (nameIndex == 1)
+                ui::Separator();
+
+            const ui::IdScope elementIdScope(index);
+            ui::ItemLabel(elementName);
+            modified |= RenderAttribute("", value[index], Color::WHITE, "", nullptr, eventSender,
+                ui::CalcItemWidth() - ui::IconButtonSize());
+        }
+
+        nameIndex = (nameIndex % numStructFields) + 1;
+    }
+
+    if (!value.empty())
+        ui::Separator();
+    return modified;
+}
+
 bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, ea::string_view tooltip,
     const AttributeInfo* info, Object* eventSender, float item_width)
 {
@@ -604,6 +636,20 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
                 ui::Separator();
             break;
         }
+        case VAR_VARIANTVECTOR:
+        {
+            // Variant vector should have metadata for structure rendering
+            const auto& elementNames = info
+                ? info->GetMetadata<StringVector>(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS)
+                : Variant::emptyStringVector;
+
+            if (!elementNames.empty())
+            {
+                modified |= RenderStructVariantVectorAttribute(
+                    *value.GetVariantVectorPtr(), elementNames, eventSender);
+            }
+            break;
+        }
         case VAR_RECT:
         {
             auto& v = value.GetRect();
@@ -672,11 +718,11 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
         if (!filter.empty() && !info.name_.contains(filter, false))
             continue;
         // Ignore not supported variant types.
-        if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
+        if (info.type_ == VAR_BUFFER || info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
             continue;
         ui::IdScope attributeNameId(info.name_.c_str());
 
-        if (info.GetMetadata(AttributeMetadata::P_ACTION).GetBool())
+        if (info.GetMetadata<bool>(AttributeMetadata::P_IS_ACTION))
         {
             RenderActionAttribute(item, info, 0.0f);
             continue;
