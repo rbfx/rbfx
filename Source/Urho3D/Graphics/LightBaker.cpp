@@ -276,6 +276,7 @@ void LightBaker::Update()
 
 const ea::string& LightBaker::GetBakeLabel() const
 {
+#if URHO3D_GLOW
     if (taskData_)
     {
         const IncrementalLightBakerStatus& status = taskData_->baker_.GetStatus();
@@ -286,6 +287,10 @@ const ea::string& LightBaker::GetBakeLabel() const
 
     static const ea::string defaultLabel = "Re-bake lightmaps and light probes!";
     return defaultLabel;
+#else
+    static const ea::string defaultLabel = "Baking is disabled in build options.";
+    return defaultLabel;
+#endif
 }
 
 }
