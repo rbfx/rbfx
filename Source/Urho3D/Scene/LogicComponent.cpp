@@ -64,6 +64,11 @@ void LogicComponent::FixedPostUpdate(float timeStep)
 {
 }
 
+StringHash LogicComponent::GetPostUpdateEvent() const
+{
+    return E_SCENEPOSTUPDATE;
+}
+
 void LogicComponent::SetUpdateEventMask(UpdateEventFlags mask)
 {
     if (updateEventMask_ != mask)
@@ -94,7 +99,7 @@ void LogicComponent::OnSceneSet(Scene* scene)
     else
     {
         UnsubscribeFromEvent(E_SCENEUPDATE);
-        UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
+        UnsubscribeFromEvent(GetPostUpdateEvent());
 #if defined(URHO3D_PHYSICS) || defined(URHO3D_URHO2D)
         UnsubscribeFromEvent(E_PHYSICSPRESTEP);
         UnsubscribeFromEvent(E_PHYSICSPOSTSTEP);
@@ -126,12 +131,12 @@ void LogicComponent::UpdateEventSubscription()
     bool needPostUpdate = enabled && (updateEventMask_ & USE_POSTUPDATE);
     if (needPostUpdate && !(currentEventMask_ & USE_POSTUPDATE))
     {
-        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(LogicComponent, HandleScenePostUpdate));
+        SubscribeToEvent(scene, GetPostUpdateEvent(), URHO3D_HANDLER(LogicComponent, HandleScenePostUpdate));
         currentEventMask_ |= USE_POSTUPDATE;
     }
     else if (!needPostUpdate && (currentEventMask_ & USE_POSTUPDATE))
     {
-        UnsubscribeFromEvent(scene, E_SCENEPOSTUPDATE);
+        UnsubscribeFromEvent(scene, GetPostUpdateEvent());
         currentEventMask_ &= ~USE_POSTUPDATE;
     }
 

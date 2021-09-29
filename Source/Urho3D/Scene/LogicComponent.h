@@ -76,6 +76,9 @@ class URHO3D_API LogicComponent : public Component
     /// Called on physics post-update, fixed timestep.
     virtual void FixedPostUpdate(float timeStep);
 
+    /// Return post update event type. Should stay the same for any given instance of the component.
+    virtual StringHash GetPostUpdateEvent() const;
+
     /// Set what update events should be subscribed to. Use this for optimization: by default all are in use. Note that this is not an attribute and is not saved or network-serialized, therefore it should always be called eg. in the subclass constructor.
     void SetUpdateEventMask(UpdateEventFlags mask);
 
