@@ -32,6 +32,7 @@ namespace Urho3D
 {
 
 const Quaternion Quaternion::IDENTITY;
+const Quaternion Quaternion::ZERO{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
 {

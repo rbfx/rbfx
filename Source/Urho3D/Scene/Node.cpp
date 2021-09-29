@@ -1644,6 +1644,20 @@ bool Node::IsChildOf(Node* node) const
     return false;
 }
 
+Node* Node::GetDirectChildFor(Node* indirectChild) const
+{
+    Node* parent = indirectChild->GetParent();
+    while (parent)
+    {
+        if (parent == this)
+            return indirectChild;
+
+        indirectChild = parent;
+        parent = indirectChild->GetParent();
+    }
+    return nullptr;
+}
+
 const Variant& Node::GetVar(StringHash key) const
 {
     auto i = vars_.find(key);
@@ -2495,6 +2509,10 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
 
 void Node::RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i)
 {
+    // Keep a shared pointer to the component to make sure
+    // the erase from container completes before component destruction
+    SharedPtr<Component> component(*i);
+
     // Send node change event. Do not send when already being destroyed
     if (Refs() > 0 && scene_)
     {

@@ -31,6 +31,23 @@ class BoundingBox;
 class Polyhedron;
 class Frustum;
 
+/// Circle in three-dimensional space.
+class URHO3D_API Circle
+{
+public:
+    /// Return whether the circle is valid.
+    bool IsValid() const { return radius_ >= 0.0f; }
+    /// Return point on the sphere closest to given direction.
+    Vector3 GetPoint(const Vector3& directionHint) const;
+
+    /// Center of the circle.
+    Vector3 center_{};
+    /// Normal of the plane containing the circle.
+    Vector3 normal_{};
+    /// Radius of the circle. Negative is invalid.
+    float radius_{ -M_INFINITY };
+};
+
 /// %Sphere in three-dimensional space.
 /// @allfloats
 class URHO3D_API Sphere
@@ -191,6 +208,11 @@ public:
     Intersection IsInside(const BoundingBox& box) const;
     /// Test if a bounding box is (partially) inside or outside.
     Intersection IsInsideFast(const BoundingBox& box) const;
+
+    /// Intersect with another sphere.
+    /// Return optional distance from the center of this sphere to intersection circle.
+    /// If there's no intersection, return closest point to another sphere.
+    Circle Intersect(const Sphere& sphere, float* distanceFromCenter = nullptr) const;
 
     /// Return distance of a point to the surface, or 0 if inside.
     float Distance(const Vector3& point) const { return Max((point - center_).Length() - radius_, 0.0f); }

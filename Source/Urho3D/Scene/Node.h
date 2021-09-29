@@ -400,6 +400,9 @@ public:
     /// Return whether is a direct or indirect child of specified node.
     bool IsChildOf(Node* node) const;
 
+    /// Return direct child of this node which contains specified indirect child.
+    Node* GetDirectChildFor(Node* indirectChild) const;
+
     /// Return whether is enabled. Disables nodes effectively disable all their components.
     /// @property
     bool IsEnabled() const { return enabled_; }

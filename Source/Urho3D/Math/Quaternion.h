@@ -487,6 +487,8 @@ public:
 
     /// Identity quaternion.
     static const Quaternion IDENTITY;
+    /// Zero quaternion.
+    static const Quaternion ZERO;
 };
 
 }

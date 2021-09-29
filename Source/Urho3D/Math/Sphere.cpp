@@ -30,6 +30,15 @@
 namespace Urho3D
 {
 
+Vector3 Circle::GetPoint(const Vector3& directionHint) const
+{
+    if (!IsValid())
+        return center_;
+
+    const Vector3 direction = directionHint.Orthogonalize(normal_);
+    return center_ + direction * radius_;
+}
+
 void Sphere::Define(const Vector3* vertices, unsigned count)
 {
     if (!count)
@@ -261,6 +270,31 @@ Vector3 Sphere::GetLocalPoint(float theta, float phi) const
         radius_ * Cos(phi),
         radius_ * Cos(theta) * Sin(phi)
     );
+}
+
+Circle Sphere::Intersect(const Sphere& sphere, float* distanceFromCenter) const
+{
+    const Vector3 offset = sphere.center_ - center_;
+    const float distance = offset.Length();
+
+    // http://mathworld.wolfram.com/Sphere-SphereIntersection.html
+    const float R = radius_;
+    const float r = sphere.radius_;
+    const float d = Min(R + r, distance);
+    const float a2 = (-d + r - R) * (-d - r + R) * (-d + r + R) * (d + r + R);
+    const float a = Sqrt(Max(0.0f, a2)) / (2 * d);
+
+    const bool isOutside = distance > R + r;
+    const bool isInside = a2 < 0.0f;
+
+    const float distanceToCircle = Sqrt(R * R - a * a);
+    if (distanceFromCenter)
+        *distanceFromCenter = distanceToCircle;
+
+    const Vector3 normal = offset / distance;
+    const Vector3 center = center_ + distanceToCircle * normal;
+    const float effectiveRadius = isInside || isOutside ? -M_INFINITY : a;
+    return Circle{ center, normal, effectiveRadius };
 }
 
 }
