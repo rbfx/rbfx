@@ -323,8 +323,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
         }
         case VAR_QUATERNION:
         {
-            Vector3 currentAngles = value.GetQuaternion().EulerAngles();
-            Vector3& angles = *ui::GetUIState<Vector3>(currentAngles);
+            Vector3 angles = value.GetQuaternion().EulerAngles();
             Vector3 anglesInitial = angles;
             if (showHelperLabels)
             {
