@@ -375,6 +375,9 @@ void Editor::OnUpdate(VariantMap& args)
             loadDefaultLayout_ = false;
             LoadDefaultLayout();
         }
+
+        if (showMetricsWindow_)
+            ui::ShowMetricsWindow(&showMetricsWindow_);
     }
     else
     {

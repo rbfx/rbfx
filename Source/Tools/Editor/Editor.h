@@ -175,6 +175,8 @@ protected:
     IntVector2 windowSize_{1920, 1080};
     /// All instances of type-specific inspectors.
     ea::vector<SharedPtr<RefCounted>> inspectors_;
+    /// Show imgui metrics window.
+    bool showMetricsWindow_ = false;
 };
 
 }

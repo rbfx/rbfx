@@ -140,6 +140,9 @@ void Editor::RenderMenuBar()
 #endif
                         , {});
                 }
+
+                ui::MenuItem("Metrics", NULL, &showMetricsWindow_);
+
                 ui::EndMenu();
             }
 #endif
