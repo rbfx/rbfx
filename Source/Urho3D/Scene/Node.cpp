@@ -1011,23 +1011,6 @@ void Node::AddChild(Node* node, unsigned index)
     }
 }
 
-void Node::SetIndexInParent(unsigned index)
-{
-    Node* parent = GetParent();
-    if (parent == nullptr)
-        return;
-    
-    SharedPtr<Node> nodeShared(this);
-    size_t old_index = parent->children_.index_of(nodeShared);
-    if (old_index == index)
-        return;
-    if (old_index > index)
-        parent->children_.erase_at(old_index);
-    parent->children_.insert_at(index, nodeShared);
-    if (old_index < index)
-        parent->children_.erase_at(old_index);
-}
-
 void Node::RemoveChild(Node* node)
 {
     if (!node)
@@ -1245,21 +1228,58 @@ void Node::RemoveAllComponents()
     RemoveComponents(true, true);
 }
 
+void Node::ReorderChild(Node* child, unsigned index)
+{
+    if (!child || child->GetParent() != this)
+        return;
+
+    if (index >= children_.size())
+        return;
+
+    // Need shared ptr to insert. Also, prevent destruction when removing first
+    SharedPtr<Node> childShared(child);
+    unsigned i = children_.index_of(childShared);
+
+    if (i > index)
+    {
+        // Inserting node before it's old index. No special handling needed.
+        children_.erase_at(i);
+        children_.insert_at(index, childShared);
+    }
+    else if (i < index)
+    {
+        // Inserting node after it's current position. To maintain expected
+        // position we insert it at index offset by 1, then erasing old node
+        // shifts all indices down by one.
+        children_.insert_at(index + 1, childShared);
+        children_.erase_at(i);
+    }
+}
+
 void Node::ReorderComponent(Component* component, unsigned index)
 {
     if (!component || component->GetNode() != this)
         return;
 
-    for (auto i = components_.begin(); i != components_.end(); ++i)
+    if (index >= components_.size())
+        return;
+
+    SharedPtr<Component> componentShared(component);
+    unsigned i = components_.index_of(componentShared);
+
+    if (i > index)
     {
-        if (i->Get() == component)
-        {
-            // Need shared ptr to insert. Also, prevent destruction when removing first
-            SharedPtr<Component> componentShared(component);
-            components_.erase(i);
-            components_.insert_at(index, componentShared);
-            return;
-        }
+        // Inserting node before it's old index. No special handling needed.
+        components_.erase_at(i);
+        components_.insert_at(index, componentShared);
+    }
+    else if (i < index)
+    {
+        // Inserting component after it's current position. To maintain expected
+        // position we insert it at index offset by 1, then erasing old component
+        // shifts all indices down by one.
+        components_.insert_at(index + 1, componentShared);
+        components_.erase_at(i);
     }
 }
 

@@ -242,6 +242,8 @@ protected:
     ImDrawListSplitter viewportSplitter_{};
     /// Distance from the camera that manipulator will rotate around.
     float rotateAroundDistance_ = 1;
+    /// ID of node or component that is currently being reordered.
+    unsigned reorderingId_ = M_MAX_UNSIGNED;
 };
 
 };

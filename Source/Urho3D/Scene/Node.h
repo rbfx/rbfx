@@ -315,8 +315,6 @@ public:
     Node* CreateTemporaryChild(const ea::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0);
     /// Add a child scene node at a specific index. If index is not explicitly specified or is greater than current children size, append the new child at the end.
     void AddChild(Node* node, unsigned index = M_MAX_UNSIGNED);
-    /// Move node to specified index in the parent node.
-    void SetIndexInParent(unsigned index = M_MAX_UNSIGNED);
     /// Remove a child scene node.
     void RemoveChild(Node* node);
     /// Remove all child scene nodes.
@@ -341,6 +339,8 @@ public:
     void RemoveComponents(StringHash type);
     /// Remove all components from this node.
     void RemoveAllComponents();
+    /// Adjust index order of an existing child node in this node.
+    void ReorderChild(Node* child, unsigned index);
     /// Adjust index order of an existing component in this node.
     void ReorderComponent(Component* component, unsigned index);
     /// Clone scene node, components and child nodes. Return the clone.

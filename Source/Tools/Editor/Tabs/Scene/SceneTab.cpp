@@ -529,9 +529,15 @@ void SceneTab::RenderHierarchy()
     if (performRangeSelectionFrame_ != ui::GetFrameCount())
         selectionRect_ = {ui::GetMousePos(), ui::GetMousePos()};
 
+    // Clear ID of currently reordered item.
+    if (!ui::IsMouseDown(MOUSEB_LEFT))
+        reorderingId_ = M_MAX_UNSIGNED;
+
     if (auto* scene = GetScene())
     {
+        ImGuiStyle& style = ui::GetStyle();
         ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
+        ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 0));
         RenderNodeTree(scene);
         ui::PopStyleVar();
     }
@@ -553,7 +559,8 @@ void SceneTab::RenderNodeTree(Node* node)
 
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick
-        | ImGuiTreeNodeFlags_SpanAvailWidth;
+        | ImGuiTreeNodeFlags_SpanAvailWidth
+        | ImGuiTreeNodeFlags_AllowItemOverlap;
     if (node->GetParent() == nullptr)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
@@ -604,6 +611,27 @@ void SceneTab::RenderNodeTree(Node* node)
             }
         }
         ui::EndDragDropTarget();
+    }
+
+    // Node reordering.
+    Node* parent = node->GetParent();
+    float utility_buttons_width = ui::CalcTextSize(ICON_FA_ARROWS_ALT_V).x;
+    if (parent != nullptr && (ui::IsItemHovered() || reorderingId_ == node->GetID()))
+    {
+        ui::SameLine();
+        ui::SetCursorPosX(ui::GetContentRegionMax().x - utility_buttons_width - style.ItemInnerSpacing.x);
+        ui::SmallButton(ICON_FA_ARROWS_ALT_V);
+        if (ui::IsItemActive())
+        {
+            reorderingId_ = node->GetID();
+            ImVec2 mouse_pos = ui::GetMousePos();
+            if (mouse_pos.y < ui::GetItemRectMin().y)
+                parent->ReorderChild(node, parent->GetChildIndex(node) - 1);
+            else if (mouse_pos.y > ui::GetItemRectMax().y)
+                parent->ReorderChild(node, parent->GetChildIndex(node) + 1);
+        }
+        else if (ui::IsItemHovered())
+            ui::SetTooltip("Reorder");
     }
 
     if (!opened)
@@ -673,7 +701,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 ui::SameLine();
 
                 bool selected = selectedComponents_.contains(component);
-                ui::Selectable(component->GetTypeName().c_str(), selected);
+                ui::Selectable(component->GetTypeName().c_str(), selected, ImGuiSelectableFlags_AllowItemOverlap);
 
                 if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
                 {
@@ -694,6 +722,24 @@ void SceneTab::RenderNodeTree(Node* node)
                     }
                 }
 
+                // Component reordering.
+                if (ui::IsItemHovered() || reorderingId_ == component->GetID())
+                {
+                    ui::SameLine();
+                    ui::SetCursorPosX(ui::GetContentRegionMax().x - utility_buttons_width - style.ItemInnerSpacing.x);
+                    ui::SmallButton(ICON_FA_ARROWS_ALT_V);
+                    if (ui::IsItemActive())
+                    {
+                        reorderingId_ = component->GetID();
+                        ImVec2 mouse_pos = ui::GetMousePos();
+                        if (mouse_pos.y < ui::GetItemRectMin().y)
+                            node->ReorderComponent(component, node->GetComponentIndex(component) - 1);
+                        else if (mouse_pos.y > ui::GetItemRectMax().y)
+                            node->ReorderComponent(component, node->GetComponentIndex(component) + 1);
+                    }
+                    else if (ui::IsItemHovered())
+                        ui::SetTooltip("Reorder");
+                }
 
                 RenderNodeContextMenu();
 
@@ -720,27 +766,6 @@ void SceneTab::RenderNodeTree(Node* node)
 
                 //recursive call.
                 RenderNodeTree(child);
-
-                // Reorder nodes: add after current child node.
-                ui::SetCursorPosY(ui::GetCursorPosY() - 2 * style.PointSize);
-                ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 0));
-                ui::Dummy(ImVec2(ui::GetItemRectSize().x, 3 * style.PointSize));
-                ui::PopStyleVar();
-                if (ui::BeginDragDropTarget())
-                {
-                    // TODO: This is a workaround for imgui expanding drop rect by fixed amount that we cant control.
-                    float point_size_bkp = style.PointSize;
-                    style.PointSize = 0;
-                    const Variant& payload = ui::AcceptDragDropVariant(Node::GetTypeStatic().ToString());
-                    style.PointSize = point_size_bkp;
-                    if (!payload.IsEmpty())
-                    {
-                        SharedPtr<Node> dropped(dynamic_cast<Node*>(payload.GetPtr()));
-                        node->AddChild(dropped);
-                        dropped->SetIndexInParent(node->GetChildIndex(child) + 1);
-                    }
-                    ui::EndDragDropTarget();
-                }
             }
         }
         ui::TreePop();
