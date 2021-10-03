@@ -246,8 +246,8 @@ SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFuncti
 
 /// Make fake accessor for an action.
 #define URHO3D_MAKE_ACTION_LABEL_ACCESSOR(action, label) Urho3D::MakeVariantAttributeAccessor<ClassName>( \
-    [](const ClassName& self, Urho3D::Variant& value) { value = (self.label); }, \
-    [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) (self.action); })
+    [](const ClassName& self, Urho3D::Variant& value) { value = (label); }, \
+    [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) (action); })
 
 /// Attribute metadata.
 namespace AttributeMetadata
@@ -299,9 +299,12 @@ namespace AttributeMetadata
 #define URHO3D_ATTRIBUTE_CUSTOM(name, typeName, variable, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
     Urho3D::VAR_CUSTOM, name, URHO3D_MAKE_CUSTOM_MEMBER_ATTRIBUTE_ACCESSOR(typeName, variable), nullptr, defaultValue, mode))
 
-/// Define an action as fake attribute.
-#define URHO3D_ACTION_LABEL_ATTRIBUTE(name, action, label) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
-    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(action, label), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::P_IS_ACTION, true)
+/// Define an action as fake attribute with static label.
+#define URHO3D_ACTION_STATIC_LABEL(name, action, label) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
+    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(self.action(), label), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::P_IS_ACTION, true)
+/// Define an action as fake attribute with dynamic label.
+#define URHO3D_ACTION_DYNAMIC_LABEL(name, action, label) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
+    Urho3D::VAR_BOOL, name, URHO3D_MAKE_ACTION_LABEL_ACCESSOR(self.action(), self.label()), nullptr, false, AM_EDIT)).SetMetadata(Urho3D::AttributeMetadata::P_IS_ACTION, true)
 
 /// Deprecated. Use URHO3D_ACCESSOR_ATTRIBUTE instead.
 #define URHO3D_MIXED_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) URHO3D_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode)

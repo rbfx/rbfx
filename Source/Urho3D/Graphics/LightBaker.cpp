@@ -101,7 +101,7 @@ void LightBaker::RegisterObject(Context* context)
     static const LightBakingSettings defaultSettings;
     context->RegisterFactory<LightBaker>(SUBSYSTEM_CATEGORY);
 
-    URHO3D_ACTION_LABEL_ATTRIBUTE("Bake!", BakeAsync(), GetBakeLabel());
+    URHO3D_ACTION_DYNAMIC_LABEL("Bake", BakeAsync, GetBakeLabel);
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, settings_.incremental_.outputDirectory_, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Lightmap Size", unsigned, settings_.charting_.lightmapSize_, defaultSettings.charting_.lightmapSize_, AM_DEFAULT);

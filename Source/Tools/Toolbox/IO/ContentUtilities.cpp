@@ -253,6 +253,7 @@ bool GetContentResourceType(Context* context, const ea::string& resourcePath, Re
     }
     default:
         types.emplace_back(BinaryFile::GetTypeStatic());
+        types.emplace_back(XMLFile::GetTypeStatic());
         return false;
     }
     return true;
