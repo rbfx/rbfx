@@ -539,7 +539,7 @@ void SceneTab::RenderHierarchy()
         ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
         ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 0));
         RenderNodeTree(scene);
-        ui::PopStyleVar();
+        ui::PopStyleVar(2);
     }
 
     // Perform range selection on next frame. Only then we can have a rectangle covering selection ends
