@@ -613,27 +613,6 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::EndDragDropTarget();
     }
 
-    // Node reordering.
-    Node* parent = node->GetParent();
-    float utility_buttons_width = ui::CalcTextSize(ICON_FA_ARROWS_ALT_V).x;
-    if (parent != nullptr && (ui::IsItemHovered() || reorderingId_ == node->GetID()))
-    {
-        ui::SameLine();
-        ui::SetCursorPosX(ui::GetContentRegionMax().x - utility_buttons_width - style.ItemInnerSpacing.x);
-        ui::SmallButton(ICON_FA_ARROWS_ALT_V);
-        if (ui::IsItemActive())
-        {
-            reorderingId_ = node->GetID();
-            ImVec2 mouse_pos = ui::GetMousePos();
-            if (mouse_pos.y < ui::GetItemRectMin().y)
-                parent->ReorderChild(node, parent->GetChildIndex(node) - 1);
-            else if (mouse_pos.y > ui::GetItemRectMax().y)
-                parent->ReorderChild(node, parent->GetChildIndex(node) + 1);
-        }
-        else if (ui::IsItemHovered())
-            ui::SetTooltip("Reorder");
-    }
-
     if (!opened)
     {
         // If TreeNode above is opened, it pushes it's label as an ID to the stack. However if it is not open then no
@@ -684,6 +663,27 @@ void SceneTab::RenderNodeTree(Node* node)
     }
 
     RenderNodeContextMenu();
+
+    // Node reordering.
+    Node* parent = node->GetParent();
+    float utility_buttons_width = ui::CalcTextSize(ICON_FA_ARROWS_ALT_V).x;
+    if (parent != nullptr && (ui::IsItemHovered() || reorderingId_ == node->GetID()))
+    {
+        ui::SameLine();
+        ui::SetCursorPosX(ui::GetContentRegionMax().x - utility_buttons_width - style.ItemInnerSpacing.x);
+        ui::SmallButton(ICON_FA_ARROWS_ALT_V);
+        if (ui::IsItemActive())
+        {
+            reorderingId_ = node->GetID();
+            ImVec2 mouse_pos = ui::GetMousePos();
+            if (mouse_pos.y < ui::GetItemRectMin().y)
+                parent->ReorderChild(node, parent->GetChildIndex(node) - 1);
+            else if (mouse_pos.y > ui::GetItemRectMax().y)
+                parent->ReorderChild(node, parent->GetChildIndex(node) + 1);
+        }
+        else if (ui::IsItemHovered())
+            ui::SetTooltip("Reorder");
+    }
 
     if (opened)
     {
