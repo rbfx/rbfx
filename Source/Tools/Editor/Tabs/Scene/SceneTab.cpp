@@ -529,10 +529,6 @@ void SceneTab::RenderHierarchy()
     if (performRangeSelectionFrame_ != ui::GetFrameCount())
         selectionRect_ = {ui::GetMousePos(), ui::GetMousePos()};
 
-    // Clear ID of currently reordered item.
-    if (!ui::IsMouseDown(MOUSEB_LEFT))
-        reorderingId_ = M_MAX_UNSIGNED;
-
     if (auto* scene = GetScene())
     {
         ImGuiStyle& style = ui::GetStyle();
@@ -674,12 +670,22 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::SmallButton(ICON_FA_ARROWS_ALT_V);
         if (ui::IsItemActive())
         {
-            reorderingId_ = node->GetID();
+            if (ui::IsItemActivated())
+            {
+                reorderingInitialPos_ = parent->GetChildIndex(node);
+                reorderingId_ = node->GetID();
+            }
             ImVec2 mouse_pos = ui::GetMousePos();
             if (mouse_pos.y < ui::GetItemRectMin().y)
                 parent->ReorderChild(node, parent->GetChildIndex(node) - 1);
             else if (mouse_pos.y > ui::GetItemRectMax().y)
                 parent->ReorderChild(node, parent->GetChildIndex(node) + 1);
+        }
+        else if (reorderingId_ == node->GetID())    // Deactivated
+        {
+            undo_->Add<UndoNodeReorder>(node, reorderingInitialPos_);
+            undo_->SetModifiedObject(this);
+            reorderingId_ = reorderingInitialPos_ = M_MAX_UNSIGNED;
         }
         else if (ui::IsItemHovered())
             ui::SetTooltip("Reorder");
@@ -730,12 +736,22 @@ void SceneTab::RenderNodeTree(Node* node)
                     ui::SmallButton(ICON_FA_ARROWS_ALT_V);
                     if (ui::IsItemActive())
                     {
-                        reorderingId_ = component->GetID();
+                        if (ui::IsItemActivated())
+                        {
+                            reorderingInitialPos_ = node->GetComponentIndex(component);
+                            reorderingId_ = component->GetID();
+                        }
                         ImVec2 mouse_pos = ui::GetMousePos();
                         if (mouse_pos.y < ui::GetItemRectMin().y)
                             node->ReorderComponent(component, node->GetComponentIndex(component) - 1);
                         else if (mouse_pos.y > ui::GetItemRectMax().y)
                             node->ReorderComponent(component, node->GetComponentIndex(component) + 1);
+                    }
+                    else if (reorderingId_ == component->GetID())   // Deactivated
+                    {
+                        undo_->Add<UndoComponentReorder>(component, reorderingInitialPos_);
+                        undo_->SetModifiedObject(this);
+                        reorderingId_ = reorderingInitialPos_ = M_MAX_UNSIGNED;
                     }
                     else if (ui::IsItemHovered())
                         ui::SetTooltip("Reorder");

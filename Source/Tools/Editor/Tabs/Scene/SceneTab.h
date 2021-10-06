@@ -244,6 +244,8 @@ protected:
     float rotateAroundDistance_ = 1;
     /// ID of node or component that is currently being reordered.
     unsigned reorderingId_ = M_MAX_UNSIGNED;
+    ///
+    unsigned reorderingInitialPos_ = M_MAX_UNSIGNED;
 };
 
 };

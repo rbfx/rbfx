@@ -279,7 +279,7 @@ public:
                 Node* parent = scene_->GetNode(oldParentID);
                 Node* node = scene_->GetNode(nodeID);
                 if (parent != nullptr && node != nullptr)
-                node->SetParent(parent);
+                    node->SetParent(parent);
             }
         }
         else
@@ -287,7 +287,7 @@ public:
             Node* parent = scene_->GetNode(oldParentID_);
             Node* node = scene_->GetNode(nodeID_);
             if (parent != nullptr && node != nullptr)
-            node->SetParent(parent);
+                node->SetParent(parent);
         }
         return true;
     }
@@ -308,7 +308,7 @@ public:
                 unsigned nodeID = nodeList_[i];
                 Node* node = scene_->GetNode(nodeID);
                 if (node != nullptr)
-                node->SetParent(parent);
+                    node->SetParent(parent);
             }
         }
         else
@@ -316,7 +316,7 @@ public:
             Node* parent = scene_->GetNode(newParentID_);
             Node* node = scene_->GetNode(nodeID_);
             if (parent != nullptr && node != nullptr)
-            node->SetParent(parent);
+                node->SetParent(parent);
         }
         return true;
     }
@@ -557,6 +557,84 @@ public:
     }
 };
 
+class URHO3D_TOOLBOX_API UndoNodeReorder : public UndoAction
+{
+    WeakPtr<Scene> scene_;
+    unsigned nodeId_ = M_MAX_UNSIGNED;
+    unsigned oldPos_ = M_MAX_UNSIGNED;
+    unsigned newPos_ = M_MAX_UNSIGNED;
+public:
+    UndoNodeReorder(Node* node, unsigned oldPos)
+    {
+        assert(node != nullptr);
+        assert(node->GetParent() != nullptr);
+        scene_ = node->GetScene();
+        nodeId_ = node->GetID();
+        oldPos_ = oldPos;
+        newPos_ = node->GetParent()->GetChildIndex(node);
+    }
+
+    bool Undo(Context* context) override
+    {
+        Node* node = scene_ ? scene_->GetNode(nodeId_) : nullptr;
+        Node* parent = node ? node->GetParent() : nullptr;
+        if (node == nullptr || parent == nullptr)
+            return false;
+        parent->ReorderChild(node, oldPos_);
+        return true;
+    }
+
+    bool Redo(Context* context) override
+    {
+        Node* node = scene_ ? scene_->GetNode(nodeId_) : nullptr;
+        Node* parent = node ? node->GetParent() : nullptr;
+        if (node == nullptr || parent == nullptr)
+            return false;
+        parent->ReorderChild(node, newPos_);
+        return true;
+    }
+};
+
+class URHO3D_TOOLBOX_API UndoComponentReorder : public UndoAction
+{
+    WeakPtr<Scene> scene_;
+    unsigned nodeId_ = M_MAX_UNSIGNED;
+    unsigned componentId_ = M_MAX_UNSIGNED;
+    unsigned oldPos_ = M_MAX_UNSIGNED;
+    unsigned newPos_ = M_MAX_UNSIGNED;
+public:
+    UndoComponentReorder(Component* component, unsigned oldPos)
+    {
+        assert(component != nullptr);
+        assert(component->GetNode() != nullptr);
+        scene_ = component->GetScene();
+        nodeId_ = component->GetNode()->GetID();
+        componentId_ = component->GetID();
+        oldPos_ = oldPos;
+        newPos_ = component->GetNode()->GetComponentIndex(component);
+    }
+
+    bool Undo(Context* context) override
+    {
+        Component* component = scene_ ? scene_->GetComponent(componentId_) : nullptr;
+        Node* parent = component ? component->GetNode() : nullptr;
+        if (component == nullptr || parent == nullptr)
+            return false;
+        parent->ReorderComponent(component, oldPos_);
+        return true;
+    }
+
+    bool Redo(Context* context) override
+    {
+        Component* component = scene_ ? scene_->GetComponent(componentId_) : nullptr;
+        Node* parent = component ? component->GetNode() : nullptr;
+        if (component == nullptr || parent == nullptr)
+            return false;
+        parent->ReorderComponent(component, newPos_);
+        return true;
+    }
+};
+
 /// Event sent at the end of frame when document has created undoable action that modifies said document. User should
 /// handle this event by calling `undo_->Add<UndoModifiedState>(this, true)` if current document state is "not modified".
 URHO3D_EVENT(E_DOCUMENTMODIFIEDREQUEST, DocumentModifiedRequest)
@@ -662,11 +740,11 @@ public:
     void Connect(Object* inspector, Object* modified = nullptr);
     /// Track changes performed by this gizmo.
     void Connect(Gizmo* gizmo, Object* modified = nullptr);
+    /// Set an object which enters "modified" state as a consequence of creating undoable actions on this frame.
+    void SetModifiedObject(Object* modifed);
 
 protected:
     using StateCollection = ea::vector<SharedPtr<UndoAction>>;
-    /// Set an object which enters "modified" state as a consequence of creating undoable actions on this frame.
-    void SetModifiedObject(Object* modifed);
 
     /// State stack
     ea::vector<StateCollection> stack_;

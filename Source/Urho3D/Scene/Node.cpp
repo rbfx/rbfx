@@ -1238,22 +1238,8 @@ void Node::ReorderChild(Node* child, unsigned index)
 
     // Need shared ptr to insert. Also, prevent destruction when removing first
     SharedPtr<Node> childShared(child);
-    unsigned i = children_.index_of(childShared);
-
-    if (i > index)
-    {
-        // Inserting node before it's old index. No special handling needed.
-        children_.erase_at(i);
-        children_.insert_at(index, childShared);
-    }
-    else if (i < index)
-    {
-        // Inserting node after it's current position. To maintain expected
-        // position we insert it at index offset by 1, then erasing old node
-        // shifts all indices down by one.
-        children_.insert_at(index + 1, childShared);
-        children_.erase_at(i);
-    }
+    children_.erase_first(childShared);
+    children_.insert_at(index, childShared);
 }
 
 void Node::ReorderComponent(Component* component, unsigned index)
@@ -1265,22 +1251,8 @@ void Node::ReorderComponent(Component* component, unsigned index)
         return;
 
     SharedPtr<Component> componentShared(component);
-    unsigned i = components_.index_of(componentShared);
-
-    if (i > index)
-    {
-        // Inserting node before it's old index. No special handling needed.
-        components_.erase_at(i);
-        components_.insert_at(index, componentShared);
-    }
-    else if (i < index)
-    {
-        // Inserting component after it's current position. To maintain expected
-        // position we insert it at index offset by 1, then erasing old component
-        // shifts all indices down by one.
-        components_.insert_at(index + 1, componentShared);
-        components_.erase_at(i);
-    }
+    components_.erase_first(componentShared);
+    components_.insert_at(index, componentShared);
 }
 
 Node* Node::Clone(CreateMode mode)
