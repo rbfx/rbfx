@@ -169,32 +169,6 @@ void UndoStack::Connect(Object* inspector, Object* modified)
     });
 }
 
-void UndoStack::Connect(UIElement* root, Object* modified)
-{
-    assert(root->IsElementEventSender());
-
-    Connect(static_cast<Object*>(root), modified);
-
-    SubscribeToEvent(root, E_ELEMENTADDED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
-    {
-        if (!trackingEnabled_)
-            return;
-        using namespace ElementAdded;
-        Add<UndoCreateUIElement>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
-
-        SetModifiedObject(modifiedPtr);
-    });
-    SubscribeToEvent(root, E_ELEMENTREMOVED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
-    {
-        if (!trackingEnabled_)
-            return;
-        using namespace ElementRemoved;
-        Add<UndoDeleteUIElement>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
-
-        SetModifiedObject(modifiedPtr);
-    });
-}
-
 void UndoStack::Connect(Gizmo* gizmo, Object* modified)
 {
     SubscribeToEvent(gizmo, E_GIZMONODEMODIFIED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
