@@ -282,7 +282,9 @@ void Editor::ExecuteSubcommand(SubCommand* cmd)
     {
         project_ = new Project(context_);
         context_->RegisterSubsystem(project_);
-        if (!project_->LoadProject(defaultProjectPath_))
+
+        const bool disableAssetImport = true;
+        if (!project_->LoadProject(defaultProjectPath_, disableAssetImport))
         {
             URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.c_str());
             exitCode_ = EXIT_FAILURE;

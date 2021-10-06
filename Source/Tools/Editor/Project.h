@@ -43,7 +43,7 @@ public:
     /// Destruct.
     ~Project() override;
     /// Load existing project. Returns true if project was successfully loaded.
-    bool LoadProject(const ea::string& projectPath);
+    bool LoadProject(const ea::string& projectPath, bool disableAssetImport = false);
     /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
     bool SaveProject();
     /// Serialize project.

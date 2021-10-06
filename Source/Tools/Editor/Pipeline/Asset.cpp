@@ -39,7 +39,6 @@
 #include "Project.h"
 #include "Pipeline/Pipeline.h"
 #include "Pipeline/Asset.h"
-#include "Pipeline/Importers/ModelImporter.h"
 #include "Tabs/InspectorTab.h"
 
 namespace Urho3D

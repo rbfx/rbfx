@@ -105,7 +105,7 @@ Project::~Project()
         editor->UpdateWindowTitle();
 }
 
-bool Project::LoadProject(const ea::string& projectPath)
+bool Project::LoadProject(const ea::string& projectPath, bool disableAssetImport)
 {
     if (!projectFileDir_.empty())
         // Project is already loaded.
@@ -228,8 +228,11 @@ bool Project::LoadProject(const ea::string& projectPath)
     plugins_->Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
 #endif
 #endif
-    pipeline_->EnableWatcher();
-    pipeline_->BuildCache(nullptr, PipelineBuildFlag::SKIP_UP_TO_DATE);
+    if (!disableAssetImport)
+    {
+        pipeline_->EnableWatcher();
+        pipeline_->BuildCache(nullptr, PipelineBuildFlag::SKIP_UP_TO_DATE);
+    }
     return true;
 }
 

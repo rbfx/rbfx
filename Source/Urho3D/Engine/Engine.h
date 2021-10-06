@@ -181,7 +181,9 @@ private:
     bool autoExit_;
     /// Initialized flag.
     bool initialized_;
-    /// Exiting flag.
+    /// Whether the exit is required by operating system.
+    bool exitRequired_{};
+    /// Whether the exiting is in progress.
     bool exiting_;
     /// Headless mode flag.
     bool headless_;
