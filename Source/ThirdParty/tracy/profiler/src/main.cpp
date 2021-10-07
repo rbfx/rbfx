@@ -35,6 +35,7 @@
 #include "../../server/TracyStorage.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyView.hpp"
+#include "../../server/TracyWeb.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/IconsFontAwesome5.h"
@@ -47,6 +48,7 @@
 #include "icon.hpp"
 #include "ResolvService.hpp"
 //#include "NativeWindow.hpp"
+//#include "HttpRequest.hpp"
 
 #include <Urho3D/Urho3D.h>
 #include <Urho3D/Core/CommandLine.h>
@@ -451,7 +453,7 @@ public:
             ImGui::Spacing();
             if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
             {
-                 OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+                 tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
             }
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )
@@ -462,32 +464,32 @@ public:
             {
                 if( ImGui::Selectable( ICON_FA_HOME " Tracy Profiler home page" ) )
                 {
-                    OpenWebpage( "https://github.com/wolfpld/tracy" );
+                    tracy::OpenWebpage( "https://github.com/wolfpld/tracy" );
                 }
                 ImGui::Separator();
                 if( ImGui::Selectable( ICON_FA_VIDEO " Overview of v0.2" ) )
                 {
-                    OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
+                    tracy::OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
                 }
                 if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.3" ) )
                 {
-                    OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
+                    tracy::OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
                 }
                 if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.4" ) )
                 {
-                    OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
+                    tracy::OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
                 }
                 if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.5" ) )
                 {
-                    OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
+                    tracy::OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
                 }
                 if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.6" ) )
                 {
-                    OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
+                    tracy::OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
                 }
                 if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.7" ) )
                 {
-                    OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
+                    tracy::OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
                 }
                 ImGui::EndPopup();
             }

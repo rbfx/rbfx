@@ -455,7 +455,7 @@ bool Autocomplete(ImGuiID id, ea::string* buf, Urho3D::StringVector* suggestions
 bool WasItemActive()
 {
     ImGuiContext& g = *GImGui;
-    ImGuiID lastID = g.CurrentWindow->DC.LastItemId;
+    ImGuiID lastID = g.LastItemData.ID;
     if ((!g.ActiveId || g.ActiveId != lastID) && g.LastActiveId == lastID)
     {
         g.LastActiveId = 0;

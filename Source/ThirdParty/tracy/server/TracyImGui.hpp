@@ -116,9 +116,9 @@ static const ImVec4 SyntaxColorsDimmed[] = {
 {
     if( disabled )
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
-        ImGui::ButtonEx( label, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled );
-        ImGui::PopStyleColor( 1 );
+        ImGui::BeginDisabled();
+        ImGui::Button( label );
+        ImGui::EndDisabled();
         return false;
     }
     else
@@ -131,13 +131,9 @@ static const ImVec4 SyntaxColorsDimmed[] = {
 {
     if( disabled )
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
-        ImGuiContext& g = *GImGui;
-        float backup_padding_y = g.Style.FramePadding.y;
-        g.Style.FramePadding.y = 0.0f;
-        ImGui::ButtonEx( label, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled | ImGuiButtonFlags_AlignTextBaseLine );
-        g.Style.FramePadding.y = backup_padding_y;
-        ImGui::PopStyleColor( 1 );
+        ImGui::BeginDisabled();
+        ImGui::SmallButton( label );
+        ImGui::EndDisabled();
         return false;
     }
     else
@@ -243,6 +239,12 @@ static const ImVec4 SyntaxColorsDimmed[] = {
 {
     const ImVec2 data[2] = { v1, v2 };
     draw->AddPolyline( data, 2, col, 0, thickness );
+}
+
+[[maybe_unused]] static tracy_force_inline void DrawLine( ImDrawList* draw, const ImVec2& v1, const ImVec2& v2, const ImVec2& v3, uint32_t col, float thickness = 1.0f )
+{
+    const ImVec2 data[3] = { v1, v2, v3 };
+    draw->AddPolyline( data, 3, col, 0, thickness );
 }
 
 }

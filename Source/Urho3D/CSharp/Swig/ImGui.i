@@ -158,6 +158,12 @@
     %typemap(csvarout) NAME "get $typemap(csout, NAME)"
 %enddef
 
+%ignore ImGuiColorEditFlags_DefaultOptions_;
+%ignore ImGuiColorEditFlags_DisplayMask_;
+%ignore ImGuiColorEditFlags_DataTypeMask_;
+%ignore ImGuiColorEditFlags_PickerMask_;
+%ignore ImGuiColorEditFlags_InputMask_;
+
 %imgui_enum(ImDrawCornerFlags);
 %imgui_enum(ImGuiCol);
 %imgui_enum(ImGuiComboFlags);

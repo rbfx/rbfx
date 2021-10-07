@@ -64,6 +64,7 @@
 #include "../common/TracyAlign.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
+#include "../common/TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
@@ -117,45 +118,6 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 
 namespace tracy
 {
-
-namespace
-{
-#  if ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
-    BOOL CALLBACK InitOnceCallback( PINIT_ONCE /*initOnce*/, PVOID /*Parameter*/, PVOID* /*Context*/)
-    {
-        rpmalloc_initialize();
-        return TRUE;
-    }
-    INIT_ONCE InitOnce = INIT_ONCE_STATIC_INIT;
-#  elif defined __linux__
-    void InitOnceCallback()
-    {
-        rpmalloc_initialize();
-    }
-    pthread_once_t once_control = PTHREAD_ONCE_INIT;
-#  else
-    void InitOnceCallback()
-    {
-        rpmalloc_initialize();
-    }
-    std::once_flag once_flag;
-#  endif
-}
-
-struct RPMallocInit
-{
-    RPMallocInit()
-    {
-#  if ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
-        InitOnceExecuteOnce( &InitOnce, InitOnceCallback, nullptr, nullptr );
-#  elif defined __linux__
-        pthread_once( &once_control, InitOnceCallback );
-#  else
-        std::call_once( once_flag, InitOnceCallback );
-#  endif
-        rpmalloc_thread_initialize();
-    }
-};
 
 #ifndef TRACY_DELAYED_INIT
 
@@ -964,12 +926,6 @@ TRACY_API int64_t GetFrequencyQpc()
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
-TRACY_API void InitRPMallocThread();
-
-void InitRPMallocThread()
-{
-    RPMallocInit rpinit;
-}
 
 struct ProfilerData
 {
@@ -991,7 +947,6 @@ struct ProducerWrapper
 struct ProfilerThreadData
 {
     ProfilerThreadData( ProfilerData& data ) : token( data ), gpuCtx( { nullptr } ) {}
-    RPMallocInit rpmalloc_init;
     ProducerWrapper token;
     GpuCtxWrapper gpuCtx;
 #  ifdef TRACY_ON_DEMAND
@@ -999,18 +954,23 @@ struct ProfilerThreadData
 #  endif
 };
 
+std::atomic<int> RpInitDone { 0 };
+std::atomic<int> RpInitLock { 0 };
+thread_local bool RpThreadInitDone = false;
+
 #  ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
+static ProfilerThreadData& GetProfilerThreadData();
 TRACY_API void StartupProfiler()
 {
-    RPMallocInit init;
     s_profilerData = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
     new (s_profilerData) ProfilerData();
     s_profilerData->profiler.SpawnWorkerThreads();
+    GetProfilerThreadData().token = ProducerWrapper( *s_profilerData );
 }
 static ProfilerData& GetProfilerData()
 {
-    assert(s_profilerData);
+    assert( s_profilerData );
     return *s_profilerData;
 }
 TRACY_API void ShutdownProfiler()
@@ -1019,6 +979,8 @@ TRACY_API void ShutdownProfiler()
     tracy_free( s_profilerData );
     s_profilerData = nullptr;
     rpmalloc_finalize();
+    RpThreadInitDone = false;
+    RpInitDone.store( 0, std::memory_order_release );
 }
 #  else
 static std::atomic<int> profilerDataLock { 0 };
@@ -1030,11 +992,10 @@ static ProfilerData& GetProfilerData()
     if( !ptr )
     {
         int expected = 0;
-        while( !profilerDataLock.compare_exchange_strong( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; }
+        while( !profilerDataLock.compare_exchange_weak( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; YieldThread(); }
         ptr = profilerData.load( std::memory_order_acquire );
         if( !ptr )
         {
-            RPMallocInit init;
             ptr = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
             new (ptr) ProfilerData();
             profilerData.store( ptr, std::memory_order_release );
@@ -1071,7 +1032,6 @@ public:
         void* p = pthread_getspecific(m_key);
         if (!p)
         {
-            RPMallocInit init;
             p = (ProfilerThreadData*)tracy_malloc( sizeof( ProfilerThreadData ) );
             new (p) ProfilerThreadData(GetProfilerData());
             pthread_setspecific(m_key, p);
@@ -1123,17 +1083,11 @@ namespace
 #  endif
 
 #else
-TRACY_API void InitRPMallocThread()
-{
-    rpmalloc_thread_initialize();
-}
 
 // MSVC static initialization order solution. gcc/clang uses init_order() to avoid all this.
 
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
-
-thread_local RPMallocInit init_order(106) s_rpmalloc_thread_init;
 
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
@@ -1147,7 +1101,9 @@ thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThr
 #  endif
 
 static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
-static RPMallocInit init_order(102) s_rpmalloc_init;
+std::atomic<int> init_order(102) RpInitDone( 0 );
+std::atomic<int> init_order(102) RpInitLock( 0 );
+thread_local bool RpThreadInitDone = false;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
 std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
@@ -1217,6 +1173,7 @@ Profiler::Profiler()
 #endif
     , m_paramCallback( nullptr )
     , m_queryData( nullptr )
+    , m_crashHandlerInstalled( false )
 {
     assert( !s_instance );
     s_instance = this;
@@ -1255,14 +1212,6 @@ Profiler::Profiler()
 
 void Profiler::SpawnWorkerThreads()
 {
-    s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
-    new(s_thread) Thread( LaunchWorker, this );
-
-#ifndef TRACY_NO_FRAME_IMAGE
-    s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
-    new(s_compressThread) Thread( LaunchCompressWorker, this );
-#endif
-
 #ifdef TRACY_HAS_SYSTEM_TRACING
     if( SysTraceStart( m_samplingPeriod ) )
     {
@@ -1272,26 +1221,36 @@ void Profiler::SpawnWorkerThreads()
     }
 #endif
 
+    s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_thread) Thread( LaunchWorker, this );
+
+#ifndef TRACY_NO_FRAME_IMAGE
+    s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_compressThread) Thread( LaunchCompressWorker, this );
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
-    AddVectoredExceptionHandler( 1, CrashFilter );
+    m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
 #ifdef __linux__
     struct sigaction threadFreezer = {};
     threadFreezer.sa_handler = ThreadFreezer;
-    sigaction( SIGPWR, &threadFreezer, nullptr );
+    sigaction( SIGPWR, &threadFreezer, &m_prevSignal.pwr );
 
     struct sigaction crashHandler = {};
     crashHandler.sa_sigaction = CrashHandler;
     crashHandler.sa_flags = SA_SIGINFO;
-    sigaction( SIGILL, &crashHandler, nullptr );
-    sigaction( SIGFPE, &crashHandler, nullptr );
-    sigaction( SIGSEGV, &crashHandler, nullptr );
-    sigaction( SIGPIPE, &crashHandler, nullptr );
-    sigaction( SIGBUS, &crashHandler, nullptr );
-    sigaction( SIGABRT, &crashHandler, nullptr );
+    sigaction( SIGILL, &crashHandler, &m_prevSignal.ill );
+    sigaction( SIGFPE, &crashHandler, &m_prevSignal.fpe );
+    sigaction( SIGSEGV, &crashHandler, &m_prevSignal.segv );
+    sigaction( SIGPIPE, &crashHandler, &m_prevSignal.pipe );
+    sigaction( SIGBUS, &crashHandler, &m_prevSignal.bus );
+    sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
 #endif
+
+    m_crashHandlerInstalled = true;
 
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstack();
@@ -1303,6 +1262,23 @@ void Profiler::SpawnWorkerThreads()
 Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
+
+#if defined _WIN32 || defined __CYGWIN__
+    if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
+#endif
+
+#ifdef __linux__
+    if( m_crashHandlerInstalled )
+    {
+        sigaction( SIGPWR, &m_prevSignal.pwr, nullptr );
+        sigaction( SIGILL, &m_prevSignal.ill, nullptr );
+        sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
+        sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );
+        sigaction( SIGPIPE, &m_prevSignal.pipe, nullptr );
+        sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
+        sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
+    }
+#endif
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
     if( s_sysTraceThread )
@@ -1392,16 +1368,19 @@ void Profiler::Worker()
 
     const uint64_t pid = GetPid();
 
-#ifdef TRACY_ON_DEMAND
-    uint8_t onDemand = 1;
-#else
-    uint8_t onDemand = 0;
-#endif
+    uint8_t flags = 0;
 
+#ifdef TRACY_ON_DEMAND
+    flags |= WelcomeFlag::OnDemand;
+#endif
 #ifdef __APPLE__
-    uint8_t isApple = 1;
-#else
-    uint8_t isApple = 0;
+    flags |= WelcomeFlag::IsApple;
+#endif
+#ifndef TRACY_NO_CODE_TRANSFER
+    flags |= WelcomeFlag::CodeTransfer;
+#endif
+#ifdef _WIN32
+    flags |= WelcomeFlag::CombineSamples;
 #endif
 
 #if defined __i386 || defined _M_IX86
@@ -1414,12 +1393,6 @@ void Profiler::Worker()
     uint8_t cpuArch = CpuArchArm32;
 #else
     uint8_t cpuArch = CpuArchUnknown;
-#endif
-
-#ifdef TRACY_NO_CODE_TRANSFER
-    uint8_t codeTransfer = 0;
-#else
-    uint8_t codeTransfer = 1;
 #endif
 
 #if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
@@ -1447,10 +1420,8 @@ void Profiler::Worker()
     MemWrite( &welcome.exectime, m_exectime );
     MemWrite( &welcome.pid, pid );
     MemWrite( &welcome.samplingPeriod, m_samplingPeriod );
-    MemWrite( &welcome.onDemand, onDemand );
-    MemWrite( &welcome.isApple, isApple );
+    MemWrite( &welcome.flags, flags );
     MemWrite( &welcome.cpuArch, cpuArch );
-    MemWrite( &welcome.codeTransfer, codeTransfer );
     memcpy( welcome.cpuManufacturer, manufacturer, 12 );
     MemWrite( &welcome.cpuId, cpuId );
     memcpy( welcome.programName, procname, pnsz );
@@ -1676,7 +1647,7 @@ void Profiler::Worker()
 
                     keepAlive = 0;
                 }
-                else
+                else if( !m_sock->HasData() )
                 {
                     keepAlive++;
                     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
@@ -1687,10 +1658,12 @@ void Profiler::Worker()
                 keepAlive = 0;
             }
 
+            int quota = 500;
             bool connActive = true;
-            while( m_sock->HasData() && connActive )
+            while( quota-- && m_sock->HasData() )
             {
                 connActive = HandleServerQuery();
+                if( !connActive ) break;
             }
             if( !connActive ) break;
         }
@@ -2015,6 +1988,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         [this, &connectionLost] ( QueueItem* item, size_t sz )
         {
             if( connectionLost ) return;
+            InitRpmalloc();
             assert( sz > 0 );
             int64_t refThread = m_refTimeThread;
             int64_t refCtx = m_refTimeCtx;
@@ -2033,28 +2007,28 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         ptr = MemRead<uint64_t>( &item->zoneTextFat.text );
                         size = MemRead<uint16_t>( &item->zoneTextFat.size );
                         SendSingleString( (const char*)ptr, size );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::Message:
                     case QueueType::MessageCallstack:
                         ptr = MemRead<uint64_t>( &item->messageFat.text );
                         size = MemRead<uint16_t>( &item->messageFat.size );
                         SendSingleString( (const char*)ptr, size );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::MessageColor:
                     case QueueType::MessageColorCallstack:
                         ptr = MemRead<uint64_t>( &item->messageColorFat.text );
                         size = MemRead<uint16_t>( &item->messageColorFat.size );
                         SendSingleString( (const char*)ptr, size );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::MessageAppInfo:
                         ptr = MemRead<uint64_t>( &item->messageFat.text );
                         size = MemRead<uint16_t>( &item->messageFat.size );
                         SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
 #endif
                         break;
                     case QueueType::ZoneBeginAllocSrcLoc:
@@ -2066,13 +2040,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         MemWrite( &item->zoneBegin.time, dt );
                         ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
                         SendSourceLocationPayload( ptr );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     }
                     case QueueType::Callstack:
                         ptr = MemRead<uint64_t>( &item->callstackFat.ptr );
                         SendCallstackPayload( ptr );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::CallstackAlloc:
                         ptr = MemRead<uint64_t>( &item->callstackAllocFat.nativePtr );
@@ -2080,17 +2054,17 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         {
                             CutCallstack( (void*)ptr, "lua_pcall" );
                             SendCallstackPayload( ptr );
-                            tracy_free( (void*)ptr );
+                            tracy_free_fast( (void*)ptr );
                         }
                         ptr = MemRead<uint64_t>( &item->callstackAllocFat.ptr );
                         SendCallstackAlloc( ptr );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::CallstackSample:
                     {
                         ptr = MemRead<uint64_t>( &item->callstackSampleFat.ptr );
                         SendCallstackPayload64( ptr );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         int64_t t = MemRead<int64_t>( &item->callstackSampleFat.time );
                         int64_t dt = t - refCtx;
                         refCtx = t;
@@ -2104,7 +2078,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         const auto h = MemRead<uint16_t>( &item->frameImageFat.h );
                         const auto csz = size_t( w * h / 2 );
                         SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     }
                     case QueueType::ZoneBegin:
@@ -2142,7 +2116,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         MemWrite( &item->gpuZoneBegin.cpuTime, dt );
                         ptr = MemRead<uint64_t>( &item->gpuZoneBegin.srcloc );
                         SendSourceLocationPayload( ptr );
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     }
                     case QueueType::GpuZoneEnd:
@@ -2158,7 +2132,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         size = MemRead<uint16_t>( &item->gpuContextNameFat.size );
                         SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
-                        tracy_free( (void*)ptr );
+                        tracy_free_fast( (void*)ptr );
 #endif
                         break;
                     case QueueType::PlotData:
@@ -2298,6 +2272,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     const auto sz = m_serialDequeue.size();
     if( sz > 0 )
     {
+        InitRpmalloc();
         int64_t refSerial = m_refTimeSerial;
         int64_t refGpu = m_refTimeGpu;
         auto item = m_serialDequeue.data();
@@ -2313,7 +2288,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::CallstackSerial:
                     ptr = MemRead<uint64_t>( &item->callstackFat.ptr );
                     SendCallstackPayload( ptr );
-                    tracy_free( (void*)ptr );
+                    tracy_free_fast( (void*)ptr );
                     break;
                 case QueueType::LockWait:
                 case QueueType::LockSharedWait:
@@ -2348,7 +2323,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     uint16_t size = MemRead<uint16_t>( &item->lockNameFat.size );
                     SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
-                    tracy_free( (void*)ptr );
+                    tracy_free_fast( (void*)ptr );
 #endif
                     break;
                 }
@@ -2392,7 +2367,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     MemWrite( &item->gpuZoneBegin.cpuTime, dt );
                     ptr = MemRead<uint64_t>( &item->gpuZoneBegin.srcloc );
                     SendSourceLocationPayload( ptr );
-                    tracy_free( (void*)ptr );
+                    tracy_free_fast( (void*)ptr );
                     break;
                 }
                 case QueueType::GpuZoneEndSerial:
@@ -2417,7 +2392,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     uint16_t size = MemRead<uint16_t>( &item->gpuContextNameFat.size );
                     SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
-                    tracy_free( (void*)ptr );
+                    tracy_free_fast( (void*)ptr );
 #endif
                     break;
                 }
@@ -2650,6 +2625,7 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
         AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrameSize] );
     }
 
+    InitRpmalloc();
     for( uint8_t i=0; i<frameData.size; i++ )
     {
         const auto& frame = frameData.data[i];
@@ -2665,8 +2641,8 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
 
         AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
 
-        tracy_free( (void*)frame.name );
-        tracy_free( (void*)frame.file );
+        tracy_free_fast( (void*)frame.name );
+        tracy_free_fast( (void*)frame.file );
     }
 #endif
 }
@@ -3261,14 +3237,26 @@ static bool EnsureReadable( uintptr_t address )
 void Profiler::HandleSymbolQuery( uint64_t symbol )
 {
 #ifdef TRACY_HAS_CALLSTACK
-#ifdef __ANDROID__
+    // Special handling for kernel frames
+    if( symbol >> 63 != 0 )
+    {
+        SendSingleString( "<kernel>" );
+        QueueItem item;
+        MemWrite( &item.hdr.type, QueueType::SymbolInformation );
+        MemWrite( &item.symbolInformation.line, 0 );
+        MemWrite( &item.symbolInformation.symAddr, symbol );
+        AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
+        return;
+    }
+#  ifdef __ANDROID__
     // On Android it's common for code to be in mappings that are only executable
     // but not readable.
     if( !EnsureReadable( symbol ) )
     {
+        AckServerQuery();
         return;
     }
-#endif
+#  endif
     const auto sym = DecodeSymbolAddress( symbol );
 
     SendSingleString( sym.file );
@@ -3291,6 +3279,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     // but not readable.
     if( !EnsureReadable( symbol ) )
     {
+        AckServerQuery();
         return;
     }
 #endif
@@ -3302,14 +3291,15 @@ void Profiler::HandleSourceCodeQuery()
     assert( m_exectime != 0 );
     assert( m_queryData );
 
+    InitRpmalloc();
     struct stat st;
     if( stat( m_queryData, &st ) == 0 && (uint64_t)st.st_mtime < m_exectime && st.st_size < ( TargetFrameSize - 16 ) )
     {
         FILE* f = fopen( m_queryData, "rb" );
-        tracy_free( m_queryData );
+        tracy_free_fast( m_queryData );
         if( f )
         {
-            auto ptr = (char*)tracy_malloc( st.st_size );
+            auto ptr = (char*)tracy_malloc_fast( st.st_size );
             auto rd = fread( ptr, 1, st.st_size, f );
             fclose( f );
             if( rd == (size_t)st.st_size )
@@ -3320,7 +3310,7 @@ void Profiler::HandleSourceCodeQuery()
             {
                 AckSourceCodeNotAvailable();
             }
-            tracy_free( ptr );
+            tracy_free_fast( ptr );
         }
         else
         {
@@ -3329,7 +3319,7 @@ void Profiler::HandleSourceCodeQuery()
     }
     else
     {
-        tracy_free( m_queryData );
+        tracy_free_fast( m_queryData );
         AckSourceCodeNotAvailable();
     }
     m_queryData = nullptr;
@@ -3346,6 +3336,7 @@ void Profiler::SendCodeLocation( uint64_t ptr )
     MemWrite( &item.hdr.type, QueueType::CodeInformation );
     MemWrite( &item.codeInformation.ptr, ptr );
     MemWrite( &item.codeInformation.line, sym.line );
+    MemWrite( &item.codeInformation.symAddr, sym.symAddr );
 
     AppendData( &item, QueueDataSize[(int)QueueType::CodeInformation] );
 
@@ -3611,18 +3602,17 @@ TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source
     return tracy::Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
 }
 
-// thread_locals are not initialized on thread creation. At least on GNU/Linux. Instead they are
-// initialized on their first ODR-use. This means that the allocator is not automagically
-// initialized every time a thread is created. As thus, expose to the C API users a simple API to
-// call every time they create a thread. Here we can then put all sorts of per-thread
-// initialization.
-TRACY_API void ___tracy_init_thread(void) {
-#ifdef TRACY_DELAYED_INIT
-    (void)tracy::GetProfilerThreadData();
-#else
-    (void)tracy::s_rpmalloc_thread_init;
-#endif
+#  ifdef TRACY_MANUAL_LIFETIME
+TRACY_API void ___tracy_startup_profiler( void )
+{
+    tracy::StartupProfiler();
 }
+
+TRACY_API void ___tracy_shutdown_profiler( void )
+{
+    tracy::ShutdownProfiler();
+}
+#  endif
 
 #ifdef __cplusplus
 }

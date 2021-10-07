@@ -1592,73 +1592,76 @@ void SceneTab::RenderViewManipulator(ImRect rect)
     if (GetScene()->GetComponent<EditorSceneSettings>()->GetCamera2D())
         return;
 
-    const ImVec2 size{128, 128};
-    const ImVec2 pos{rect.Max.x - 128, rect.Min.y};
-    ui::SetCursorScreenPos(pos);
-    ui::InvisibleButton("##view-manipulator", size);
-    if (ui::ItemMouseActivation(MOUSEB_LEFT, ImGuiItemMouseActivation_Dragging))
-        ui::SetMouseCursor(ImGuiMouseCursor_None);
-    else if (ui::WasItemActive())
-        ui::SetMouseCursor(ImGuiMouseCursor_None);
-
-    Camera* camera = GetCamera();
-    Node* cameraNode = camera->GetNode();
-    if (ui::IsItemClicked(MOUSEB_LEFT))
+    if (!ui::GetActiveID() || ui::GetActiveID() == ui::GetID("##view-manipulator"))
     {
-        rotateAroundDistance_ = 1;
-        if (!selectedNodes_.empty())
-        {
-            Vector3 center;
-            for (Node* node : selectedNodes_)
-            {
-                StaticModel* model = node->GetComponent<StaticModel>();
-                if (model == nullptr)
-                    model = node->GetComponent<AnimatedModel>();
-                if (model)
-                    center += model->GetWorldBoundingBox().Center();
-                else
-                    center += node->GetWorldPosition();
-            }
-            center /= selectedNodes_.size();
+        const ImVec2 size{128, 128};
+        const ImVec2 pos{rect.Max.x - 128, rect.Min.y};
+        ui::SetCursorScreenPos(pos);
+        ui::InvisibleButton("##view-manipulator", size);
+        if (ui::ItemMouseActivation(MOUSEB_LEFT, ImGuiItemMouseActivation_Dragging))
+            ui::SetMouseCursor(ImGuiMouseCursor_None);
+        else if (ui::WasItemActive())
+            ui::SetMouseCursor(ImGuiMouseCursor_None);
 
-            // Smooth look-at.
-            Quaternion newRotation;
-            Vector3 lookDir = center - cameraNode->GetWorldPosition();
-            if (!lookDir.Equals(Vector3::ZERO) && newRotation.FromLookRotation(lookDir, Vector3::UP))
+        Camera* camera = GetCamera();
+        Node* cameraNode = camera->GetNode();
+        if (ui::IsItemClicked(MOUSEB_LEFT))
+        {
+            rotateAroundDistance_ = 1;
+            if (!selectedNodes_.empty())
             {
-                // TODO: Ease-in / ease-out may look good here, but ValueAnimation does not support them.
-                SharedPtr<ValueAnimation> rotationAnimation = context_->CreateObject<ValueAnimation>();
-                rotationAnimation->SetKeyFrame(0.0f, cameraNode->GetRotation());
-                rotationAnimation->SetKeyFrame(0.1f, newRotation);
-                cameraNode->SetAttributeAnimation("Rotation", rotationAnimation, WM_ONCE, 1);
-                rotateAroundDistance_ = Max((center - cameraNode->GetWorldPosition()).Length(), 1);
-                cameraNode->SetEnabled(true);
+                Vector3 center;
+                for (Node* node : selectedNodes_)
+                {
+                    StaticModel* model = node->GetComponent<StaticModel>();
+                    if (model == nullptr)
+                        model = node->GetComponent<AnimatedModel>();
+                    if (model)
+                        center += model->GetWorldBoundingBox().Center();
+                    else
+                        center += node->GetWorldPosition();
+                }
+                center /= selectedNodes_.size();
+
+                // Smooth look-at.
+                Quaternion newRotation;
+                Vector3 lookDir = center - cameraNode->GetWorldPosition();
+                if (!lookDir.Equals(Vector3::ZERO) && newRotation.FromLookRotation(lookDir, Vector3::UP))
+                {
+                    // TODO: Ease-in / ease-out may look good here, but ValueAnimation does not support them.
+                    SharedPtr<ValueAnimation> rotationAnimation = context_->CreateObject<ValueAnimation>();
+                    rotationAnimation->SetKeyFrame(0.0f, cameraNode->GetRotation());
+                    rotationAnimation->SetKeyFrame(0.1f, newRotation);
+                    cameraNode->SetAttributeAnimation("Rotation", rotationAnimation, WM_ONCE, 1);
+                    rotateAroundDistance_ = Max((center - cameraNode->GetWorldPosition()).Length(), 1);
+                    cameraNode->SetEnabled(true);
+                }
             }
         }
+
+        // TODO: Add a limit for vertical rotation angles. Going too high or too low makes camera go crazy.
+        // https://github.com/CedricGuillemet/ImGuizmo/issues/114
+        Matrix4 view = camera->GetView().ToMatrix4();
+        view = (inversionMatrix * view * inversionMatrix).Transpose();
+        ImGuizmo::ViewManipulate(&view.m00_, rotateAroundDistance_, pos, size, 0);
+        view = inversionMatrix * view.Transpose() * inversionMatrix;
+
+        if (cameraNode->GetAttributeAnimation("Rotation") == nullptr)
+            cameraNode->SetWorldTransform(Matrix3x4(view.Inverse()));
+        else
+        {
+            // Editor scene is manually updated therefore we must fire this event ourselves.
+            using namespace AttributeAnimationUpdate;
+            VariantMap& args = GetEventDataMap();
+            args[P_TIMESTEP] = GetSubsystem<Time>()->GetTimeStep();
+            args[P_SCENE] = GetScene();
+            cameraNode->OnEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE, args);
+        }
+
+        // Eat click event so selection does not change.
+        if (ui::IsItemClicked(MOUSEB_LEFT))
+            isClickedLeft_ = isClickedRight_ = isViewportActive_ = false;
     }
-
-    // TODO: Add a limit for vertical rotation angles. Going too high or too low makes camera go crazy.
-    // https://github.com/CedricGuillemet/ImGuizmo/issues/114
-    Matrix4 view = camera->GetView().ToMatrix4();
-    view = (inversionMatrix * view * inversionMatrix).Transpose();
-    ImGuizmo::ViewManipulate(&view.m00_, rotateAroundDistance_, pos, size, 0);
-    view = inversionMatrix * view.Transpose() * inversionMatrix;
-
-    if (cameraNode->GetAttributeAnimation("Rotation") == nullptr)
-        cameraNode->SetWorldTransform(Matrix3x4(view.Inverse()));
-    else
-    {
-        // Editor scene is manually updated therefore we must fire this event ourselves.
-        using namespace AttributeAnimationUpdate;
-        VariantMap& args = GetEventDataMap();
-        args[P_TIMESTEP] = GetSubsystem<Time>()->GetTimeStep();
-        args[P_SCENE] = GetScene();
-        cameraNode->OnEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE, args);
-    }
-
-    // Eat click event so selection does not change.
-    if (ui::IsItemClicked(MOUSEB_LEFT))
-        isClickedLeft_ = isClickedRight_ = isViewportActive_ = false;
 }
 
 void SceneTab::Close()

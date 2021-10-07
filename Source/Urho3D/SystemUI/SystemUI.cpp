@@ -637,7 +637,7 @@ bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
     ImGuiWindow* window = g.CurrentWindow;
     bool hovered = ui::IsItemHovered();
     if (hovered)
-        g.HoveredId = window->DC.LastItemId;
+        g.HoveredId = g.LastItemData.ID;
 
     bool activated = !ui::IsItemActive() && hovered;
     if (flags == ImGuiItemMouseActivation_Dragging)
@@ -646,7 +646,7 @@ bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
         activated &= ui::IsMouseClicked(button);
 
     if (activated)
-        ui::SetActiveID(window->DC.LastItemId, window);
+        ui::SetActiveID(g.LastItemData.ID, window);
     else if (ui::IsItemActive() && !ui::IsMouseDown(button))
         ui::ClearActiveID();
     return ui::IsItemActive();

@@ -82,6 +82,12 @@ enum class QueueType : uint8_t
     CodeInformation,
     SysTimeReport,
     TidToPid,
+    HwSampleCpuCycle,
+    HwSampleInstructionRetired,
+    HwSampleCacheReference,
+    HwSampleCacheMiss,
+    HwSampleBranchRetired,
+    HwSampleBranchMiss,
     PlotConfig,
     ParamSetup,
     AckServerQueryNoop,
@@ -437,6 +443,7 @@ struct QueueCodeInformation
 {
     uint64_t ptr;
     uint32_t line;
+    uint64_t symAddr;
 };
 
 struct QueueCrashReport
@@ -471,6 +478,12 @@ struct QueueTidToPid
 {
     uint64_t tid;
     uint64_t pid;
+};
+
+struct QueueHwSample
+{
+    uint64_t ip;
+    int64_t time;
 };
 
 enum class PlotFormatType : uint8_t
@@ -567,6 +580,7 @@ struct QueueItem
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;
         QueueTidToPid tidToPid;
+        QueueHwSample hwSample;
         QueuePlotConfig plotConfig;
         QueueParamSetup paramSetup;
         QueueCpuTopology cpuTopology;
@@ -653,6 +667,12 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cpu cycle
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // instruction retired
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cache reference
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cache miss
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // branch retired
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // branch miss
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // server query acknowledgement

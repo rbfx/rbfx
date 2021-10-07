@@ -96,7 +96,6 @@ struct ThreadNameData
     ThreadNameData* next;
 };
 std::atomic<ThreadNameData*>& GetThreadNameData();
-TRACY_API void InitRPMallocThread();
 #endif
 
 #ifdef _MSC_VER
@@ -161,12 +160,11 @@ TRACY_API void SetThreadName( const char* name )
 #endif
 #ifdef TRACY_ENABLE
     {
-        InitRPMallocThread();
         const auto sz = strlen( name );
         char* buf = (char*)tracy_malloc( sz+1 );
         memcpy( buf, name, sz );
         buf[sz] = '\0';
-        auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
+        auto data = (ThreadNameData*)tracy_malloc_fast( sizeof( ThreadNameData ) );
         data->id = detail::GetThreadHandleImpl();
         data->name = buf;
         data->next = GetThreadNameData().load( std::memory_order_relaxed );
@@ -243,7 +241,7 @@ TRACY_API const char* GetThreadName( uint64_t id )
 
 TRACY_API const char* GetEnvVar( const char* name )
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     // unfortunately getenv() on Windows is just fundamentally broken.  It caches the entire
     // environment block once on startup, then never refreshes it again.  If any environment
     // strings are added or modified after startup of the CRT, those changes will not be

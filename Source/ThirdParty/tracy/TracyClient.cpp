@@ -19,7 +19,7 @@
 #  pragma warning(push, 0)
 #endif
 
-#include "common/tracy_lz4.cpp"
+//#include "common/tracy_lz4.cpp"
 #include "client/TracyProfiler.cpp"
 #include "client/TracyCallstack.cpp"
 #include "client/TracySysTime.cpp"
@@ -27,6 +27,7 @@
 #include "common/TracySocket.cpp"
 #include "client/tracy_rpmalloc.cpp"
 #include "client/TracyDxt1.cpp"
+#include "client/TracyAlloc.cpp"
 
 #if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
 #  include "libbacktrace/alloc.cpp"
@@ -41,6 +42,11 @@
 #  else
 #    include "libbacktrace/elf.cpp"
 #  endif
+#endif
+
+// rbfx fix
+#if defined(TRACY_HAS_CALLSTACK) && TRACY_HAS_CALLSTACK >= 1
+#  include "common/TracyStackFrames.cpp"
 #endif
 
 #ifdef _MSC_VER

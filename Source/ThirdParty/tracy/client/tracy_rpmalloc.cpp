@@ -130,7 +130,7 @@
 #  include <stdio.h>
 #  include <stdlib.h>
 #  if defined(__APPLE__)
-#    if !defined(TARGET_IPHONE_SIMULATOR)   // rbfx
+#    if !TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
 #      include <mach/mach_vm.h>
 #    endif
 #    include <mach/vm_statistics.h>

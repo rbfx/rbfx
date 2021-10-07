@@ -29,9 +29,12 @@ using TracyVkCtx = void*;
 
 #else
 
+#if !defined VK_NULL_HANDLE
+#  error "You must include Vulkan headers before including TracyVulkan.hpp"
+#endif
+
 #include <assert.h>
 #include <stdlib.h>
-#include <vulkan/vulkan.h>
 #include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
 #include "client/TracyCallstack.hpp"
@@ -456,7 +459,6 @@ private:
 
 static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT gpdctd, PFN_vkGetCalibratedTimestampsEXT gct )
 {
-    InitRPMallocThread();
     auto ctx = (VkCtx*)tracy_malloc( sizeof( VkCtx ) );
     new(ctx) VkCtx( physdev, device, queue, cmdbuf, gpdctd, gct );
     return ctx;

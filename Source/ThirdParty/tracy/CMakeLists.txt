@@ -20,6 +20,7 @@
 # THE SOFTWARE.
 #
 
+set(CMAKE_CXX_STANDARD 17)
 if (URHO3D_PROFILING)
     file (GLOB_RECURSE COMMON_SOURCE_FILES common/*.cpp common/*.hpp common/*.h)
     file (GLOB_RECURSE CLIENT_SOURCE_FILES client/*.cpp client/*.hpp client/*.h)
@@ -79,7 +80,12 @@ if (URHO3D_PROFILING)
         if (NOT URHO3D_WIN32_CONSOLE)
             set (TARGET_TYPE WIN32)
         endif ()
-        add_executable (TracyProfiler ${TARGET_TYPE} ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
+        add_executable (TracyProfiler ${TARGET_TYPE} ${SERVER_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
+        if (BUILD_SHARED_LIBS)
+            # Profiler.cpp already includes these files, but types defined there are not exported from dll,
+            # therefore inclusion of these files is not necessary in static builds, but required in shared builds.
+            target_sources(TracyProfiler PRIVATE ${COMMON_SOURCE_FILES})
+        endif ()
         target_include_directories(TracyProfiler PRIVATE .)
         set_target_properties(TracyProfiler PROPERTIES OUTPUT_NAME Profiler)
         setup_tracy_profiler_target(TracyProfiler)
