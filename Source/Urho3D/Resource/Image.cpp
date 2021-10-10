@@ -883,6 +883,10 @@ bool Image::Save(Serializer& dest) const
 
 bool Image::SaveFile(const ea::string& fileName) const
 {
+    auto fs = GetSubsystem<FileSystem>();
+    if (!fs->CreateDirsRecursive(GetPath(fileName)))
+        return false;
+
     if (fileName.ends_with(".dds", false))
         return SaveDDS(fileName);
     else if (fileName.ends_with(".bmp", false))

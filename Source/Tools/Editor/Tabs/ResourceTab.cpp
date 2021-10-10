@@ -239,6 +239,8 @@ bool ResourceTab::RenderWindowContent()
         ea::string name = GetFileNameAndExtension(asset->GetName());
         ea::string icon = GetFileIcon(asset->GetName());
 
+        const ui::IdScope idScope(name.c_str());
+
         if (scrollToCurrent_ && selectedItem_ == name)
         {
             ui::SetScrollHereY();
@@ -685,7 +687,7 @@ void ResourceTab::RenderContextMenu()
         if (ui::MenuItem("Generate Lightmap UV", nullptr, nullptr))
         {
             auto model = context_->GetSubsystem<ResourceCache>()->GetResource<Model>(currentDir_ + selectedItem_);
-            if (model && !model->GetNativeFileName().empty())
+            if (model && !model->GetAbsoluteFileName().empty())
             {
                 ModelView modelView(context_);
                 if (modelView.ImportModel(model))
@@ -696,7 +698,7 @@ void ResourceTab::RenderContextMenu()
                         modelView.ExportModel(model);
                         model->SendEvent(E_RELOADFINISHED);
 
-                        model->SaveFile(model->GetNativeFileName());
+                        model->SaveFile(model->GetAbsoluteFileName());
                     }
                 }
             }

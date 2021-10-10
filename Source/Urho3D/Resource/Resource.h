@@ -106,15 +106,15 @@ public:
     /// Return the asynchronous loading state.
     AsyncLoadState GetAsyncLoadState() const { return asyncLoadState_; }
 
-    /// Return native file name.
-    const ea::string& GetNativeFileName() const { return absoluteFileName_; }
+    /// Return absolute file name.
+    const ea::string& GetAbsoluteFileName() const { return absoluteFileName_; }
 
 private:
     /// Name.
     ea::string name_;
     /// Name hash.
     StringHash nameHash_;
-    /// Native file name.
+    /// Absolute file name.
     ea::string absoluteFileName_;
     /// Last used timer.
     Timer useTimer_;

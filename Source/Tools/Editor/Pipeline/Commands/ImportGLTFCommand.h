@@ -20,65 +20,28 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#pragma once
 
-#include "../Core/Context.h"
-#include "../IO/Deserializer.h"
-#include "../IO/File.h"
-#include "../IO/Log.h"
-#include "../IO/Serializer.h"
-#include "../Resource/BinaryFile.h"
-
-#include "../DebugNew.h"
+#include "Pipeline/Commands/SubCommand.h"
 
 namespace Urho3D
 {
 
-BinaryFile::BinaryFile(Context* context) :
-    Resource(context)
+class ImportGLTFCommand : public SubCommand
 {
-}
+    URHO3D_OBJECT(ImportGLTFCommand, SubCommand);
 
-BinaryFile::~BinaryFile() = default;
+public:
+    explicit ImportGLTFCommand(Context* context);
+    static void RegisterObject(Context* context);
 
-void BinaryFile::RegisterObject(Context* context)
-{
-    context->RegisterFactory<BinaryFile>();
-}
+    void RegisterCommandLine(CLI::App& cli) override;
+    void Execute() override;
 
-bool BinaryFile::BeginLoad(Deserializer& source)
-{
-    source.Seek(0);
-    buffer_.SetData(source, source.GetSize());
-    SetMemoryUse(buffer_.GetBuffer().capacity());
-    return true;
-}
-
-bool BinaryFile::Save(Serializer& dest) const
-{
-    if (dest.Write(buffer_.GetData(), buffer_.GetSize()) != buffer_.GetSize())
-    {
-        URHO3D_LOGERROR("Can not save binary file" + GetName());
-        return false;
-    }
-
-    return true;
-}
-
-void BinaryFile::Clear()
-{
-    buffer_.Clear();
-}
-
-void BinaryFile::SetData(const ByteVector& data)
-{
-    buffer_.SetData(data);
-    SetMemoryUse(buffer_.GetBuffer().capacity());
-}
-
-const ByteVector& BinaryFile::GetData() const
-{
-    return buffer_.GetBuffer();
-}
+protected:
+    ea::string inputFileName_;
+    ea::string outputDirectory_;
+    ea::string resourceNamePrefix_;
+};
 
 }

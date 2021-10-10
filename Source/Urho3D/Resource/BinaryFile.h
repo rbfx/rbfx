@@ -49,8 +49,6 @@ public:
     bool BeginLoad(Deserializer& source) override;
     /// Save resource to a stream.
     bool Save(Serializer& dest) const override;
-    /// Save resource to a file.
-    bool SaveFile(const ea::string& fileName) const override;
 
     /// Clear data.
     void Clear();

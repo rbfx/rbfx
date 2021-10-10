@@ -20,48 +20,57 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/ProcessUtils.h>
+#include "Editor.h"
+#include "Pipeline/Commands/ImportGLTFCommand.h"
+
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/IO/Log.h>
-#include <Toolbox/IO/ContentUtilities.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/IO/File.h>
-#include "Tabs/Scene/EditorSceneSettings.h"
-#include "Editor.h"
-#include "Project.h"
-#include "Pipeline/Commands/CookScene.h"
-
+#include <Urho3D/Utility/GLTFImporter.h>
 
 namespace Urho3D
 {
 
-CookScene::CookScene(Context* context)
+ImportGLTFCommand::ImportGLTFCommand(Context* context)
     : SubCommand(context)
 {
 }
 
-void CookScene::RegisterObject(Context* context)
+void ImportGLTFCommand::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CookScene>();
+    context->RegisterFactory<ImportGLTFCommand>();
 }
 
-void CookScene::RegisterCommandLine(CLI::App& cli)
+void ImportGLTFCommand::RegisterCommandLine(CLI::App& cli)
 {
     SubCommand::RegisterCommandLine(cli);
-    cli.add_option("--input", input_, "XML scene file.")->required();
-    cli.add_option("--output", output_, "Resulting binary scene file.");
+    cli.add_option("--input", inputFileName_, "GLTF file name.")->required();
+    cli.add_option("--output", outputDirectory_, "Output directory.");
+    cli.add_option("--prefix", resourceNamePrefix_, "Common prefix of output resources.");
 }
 
-void CookScene::Execute()
+void ImportGLTFCommand::Execute()
 {
-    auto* project = GetSubsystem<Project>();
+    auto fs = GetSubsystem<FileSystem>();
+
+    auto importer = MakeShared<GLTFImporter>(context_);
+    if (importer->LoadFile(inputFileName_, outputDirectory_, resourceNamePrefix_))
+    {
+        if (importer->CookResources())
+        {
+            fs->CreateDirsRecursive(outputDirectory_);
+            if (importer->SaveResources())
+            {
+                return;
+            }
+        }
+    }
+    /*auto* project = GetSubsystem<Project>();
     auto* editor = GetSubsystem<Editor>();
     auto* fs = context_->GetSubsystem<FileSystem>();
 
     if (project == nullptr)
     {
-        editor->ErrorExit("CookScene subcommand requires project being loaded.");
+        editor->ErrorExit("ImportGLTFCommand subcommand requires project being loaded.");
         return;
     }
 
@@ -95,7 +104,7 @@ void CookScene::Execute()
             editor->ErrorExit(Format("Could not open load scene '{}'.", input_));
     }
     else
-        editor->ErrorExit(Format("Could not open open '{}' for reading.", input_));
+        editor->ErrorExit(Format("Could not open open '{}' for reading.", input_));*/
 }
 
 }

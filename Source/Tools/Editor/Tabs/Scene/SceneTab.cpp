@@ -339,20 +339,22 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
         auto* file = cache->GetResource<XMLFile>(resourcePath);
         loaded = file && scene->LoadXML(file->GetRoot());
         if (file)
-            scene->SetFileName(file->GetNativeFileName());
+            scene->SetFileName(file->GetAbsoluteFileName());
     }
     else if (resourcePath.ends_with(".json", false))
     {
         auto* file = cache->GetResource<JSONFile>(resourcePath);
         loaded = file && scene->LoadJSON(file->GetRoot());
         if (file)
-            scene->SetFileName(file->GetNativeFileName());
+            scene->SetFileName(file->GetAbsoluteFileName());
     }
     else
     {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).c_str());
         manager->UnloadScene(scene);
         cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+
+        resourceName_.clear();
         return false;
     }
 
@@ -361,6 +363,8 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
         URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).c_str());
         manager->UnloadScene(scene);
         cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+
+        resourceName_.clear();
         return false;
     }
 

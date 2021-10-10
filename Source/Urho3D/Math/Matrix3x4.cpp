@@ -48,20 +48,27 @@ void Matrix3x4::Decompose(Vector3& translation, Quaternion& rotation, Vector3& s
     scale.y_ = sqrtf(m01_ * m01_ + m11_ * m11_ + m21_ * m21_);
     scale.z_ = sqrtf(m02_ * m02_ + m12_ * m12_ + m22_ * m22_);
 
+    // Always mirror X axis to disambiguate decomposition
+    if (Determinant() < 0.0f)
+        scale.x_ = -scale.x_;
+
     Vector3 invScale(1.0f / scale.x_, 1.0f / scale.y_, 1.0f / scale.z_);
     rotation = Quaternion(ToMatrix3().Scaled(invScale));
 }
 
+float Matrix3x4::Determinant() const
+{
+    return m00_ * m11_ * m22_ +
+           m10_ * m21_ * m02_ +
+           m20_ * m01_ * m12_ -
+           m20_ * m11_ * m02_ -
+           m10_ * m01_ * m22_ -
+           m00_ * m21_ * m12_;
+}
+
 Matrix3x4 Matrix3x4::Inverse() const
 {
-    float det = m00_ * m11_ * m22_ +
-                m10_ * m21_ * m02_ +
-                m20_ * m01_ * m12_ -
-                m20_ * m11_ * m02_ -
-                m10_ * m01_ * m22_ -
-                m00_ * m21_ * m12_;
-
-    float invDet = 1.0f / det;
+    const float invDet = 1.0f / Determinant();
     Matrix3x4 ret;
 
     ret.m00_ = (m11_ * m22_ - m21_ * m12_) * invDet;

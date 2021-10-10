@@ -25,6 +25,7 @@
 #include "../Core/Profiler.h"
 #include "../Core/Thread.h"
 #include "../IO/File.h"
+#include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/Resource.h"
 #include "../Resource/XMLElement.h"
@@ -84,6 +85,10 @@ bool Resource::LoadFile(const ea::string& fileName)
 
 bool Resource::SaveFile(const ea::string& fileName) const
 {
+    auto fs = GetSubsystem<FileSystem>();
+    if (!fs->CreateDirsRecursive(GetPath(fileName)))
+        return false;
+
     File file(context_);
     return file.Open(fileName, FILE_WRITE) && Save(file);
 }

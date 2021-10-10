@@ -1115,6 +1115,18 @@ void FileSystem::HandleConsoleCommand(StringHash eventType, VariantMap& eventDat
         SystemCommand(eventData[P_COMMAND].GetString(), true);
 }
 
+TemporaryDir::TemporaryDir(Context* context, const ea::string& path)
+    : fs_(context->GetSubsystem<FileSystem>())
+    , path_(path)
+{
+    fs_->CreateDirsRecursive(path_);
+}
+
+TemporaryDir::~TemporaryDir()
+{
+    fs_->RemoveDir(path_, true);
+}
+
 void SplitPath(const ea::string& fullPath, ea::string& pathName, ea::string& fileName, ea::string& extension, bool lowercaseExtension)
 {
     ea::string fullPathCopy = GetInternalPath(fullPath);

@@ -628,6 +628,9 @@ public:
             1.0f / sqrtf(m02_ * m02_ + m12_ * m12_ + m22_ * m22_)
         );
 
+        if (Determinant() < 0.0f)
+            invScale.x_ = -invScale.x_;
+
         return ToMatrix3().Scaled(invScale);
     }
 
@@ -647,8 +650,9 @@ public:
     /// Return the scaling part.
     Vector3 Scale() const
     {
+        const float detSign = Determinant() < 0.0f ? -1.0f : 1.0f;
         return Vector3(
-            sqrtf(m00_ * m00_ + m10_ * m10_ + m20_ * m20_),
+            sqrtf(m00_ * m00_ + m10_ * m10_ + m20_ * m20_) * detSign,
             sqrtf(m01_ * m01_ + m11_ * m11_ + m21_ * m21_),
             sqrtf(m02_ * m02_ + m12_ * m12_ + m22_ * m22_)
         );
@@ -681,6 +685,9 @@ public:
 
     /// Return decomposition to translation, rotation and scale.
     void Decompose(Vector3& translation, Quaternion& rotation, Vector3& scale) const;
+
+    /// Return determinant.
+    float Determinant() const;
 
     /// Return inverse.
     Matrix3x4 Inverse() const;
