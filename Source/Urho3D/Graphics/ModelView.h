@@ -122,6 +122,8 @@ struct URHO3D_API GeometryLODView
     ea::vector<unsigned> indices_;
     /// LOD distance.
     float lodDistance_{};
+    /// Vertex format for this specific sub-geometry.
+    ModelVertexFormat vertexFormat_;
 
     /// Calculate center of vertices' bounding box.
     Vector3 CalculateCenter() const;
@@ -135,6 +137,8 @@ struct URHO3D_API GeometryView
 {
     /// LODs.
     ea::vector<GeometryLODView> lods_;
+    /// Material resource name.
+    ea::string material_;
 
     bool operator ==(const GeometryView& rhs) const;
     bool operator !=(const GeometryView& rhs) const { return !(*this == rhs); }
@@ -195,6 +199,7 @@ public:
     bool ImportModel(const Model* model);
     void ExportModel(Model* model) const;
     SharedPtr<Model> ExportModel(const ea::string& name = EMPTY_STRING) const;
+    StringVector ExportMaterialList() const;
     /// @}
 
     /// Calculate bounding box.
@@ -202,6 +207,7 @@ public:
 
     /// Set contents
     /// @{
+    void SetName(const ea::string& name) { name_ = name; }
     void SetVertexFormat(const ModelVertexFormat& vertexFormat) { vertexFormat_ = vertexFormat; }
     void SetGeometries(ea::vector<GeometryView> geometries) { geometries_ = ea::move(geometries); }
     void SetBones(ea::vector<BoneView> bones) { bones_ = ea::move(bones); }
@@ -210,6 +216,7 @@ public:
 
     /// Return contents
     /// @{
+    const ea::string& GetName() const { return name_; }
     const ModelVertexFormat& GetVertexFormat() const { return vertexFormat_; }
     const ea::vector<GeometryView>& GetGeometries() const { return geometries_; }
     ea::vector<GeometryView>& GetGeometries() { return geometries_; }
@@ -219,6 +226,7 @@ public:
     /// @}
 
 private:
+    ea::string name_;
     ModelVertexFormat vertexFormat_;
     ea::vector<GeometryView> geometries_;
     ea::vector<BoneView> bones_;

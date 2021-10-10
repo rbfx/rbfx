@@ -278,7 +278,8 @@ bool GeometryLODView::operator ==(const GeometryLODView& rhs) const
 
 bool GeometryView::operator ==(const GeometryView& rhs) const
 {
-    return lods_ == rhs.lods_;
+    return lods_ == rhs.lods_
+        && material_ == rhs.material_;
 }
 
 void BoneView::SetInitialTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale)
@@ -432,6 +433,9 @@ bool ModelView::ImportModel(const Model* model)
 {
     Clear();
 
+    // Read name
+    name_ = model->GetName();
+
     // Read vertex format
     vertexFormat_ = ParseVertexElements(GetEffectiveVertexElements(model));
 
@@ -565,10 +569,14 @@ void ModelView::ExportModel(Model* model) const
         }
     }
 
+    const auto vertexElements = CollectVertexElements(vertexFormat_);
+    if (vertexElements.empty())
+        URHO3D_LOGERROR("No vertex elements in vertex buffer");
+
     // Create vertex and index buffers
     auto modelVertexBuffer = MakeShared<VertexBuffer>(context_);
     modelVertexBuffer->SetShadowed(true);
-    modelVertexBuffer->SetSize(vertexBufferData.size(), CollectVertexElements(vertexFormat_));
+    modelVertexBuffer->SetSize(vertexBufferData.size(), vertexElements);
     SetVertexBufferData(modelVertexBuffer, vertexBufferData);
 
     const bool largeIndices = HasLargeIndices(indexBufferData);
@@ -578,6 +586,7 @@ void ModelView::ExportModel(Model* model) const
     modelIndexBuffer->SetUnpackedData(indexBufferData.data());
 
     // Create model
+    model->SetName(name_);
     for (const auto& var : metadata_)
         model->AddMetadata(var.first, var.second);
 
@@ -657,9 +666,18 @@ void ModelView::ExportModel(Model* model) const
 SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
 {
     auto model = MakeShared<Model>(context_);
-    model->SetName(name);
     ExportModel(model);
+    if (!name.empty())
+        model->SetName(name);
     return model;
+}
+
+StringVector ModelView::ExportMaterialList() const
+{
+    StringVector result;
+    for (const GeometryView& geometry : geometries_)
+        result.push_back(geometry.material_);
+    return result;
 }
 
 const Variant& ModelView::GetMetadata(const ea::string& key) const

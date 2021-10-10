@@ -44,6 +44,7 @@ set (SDL_CMAKE_DEBUG_POSTFIX "" CACHE STRING "" FORCE)
 set (SDL_RENDER OFF CACHE BOOL "" FORCE)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
+add_subdirectory(tinygltf)
 
 if (NOT MINI_URHO)
     if (URHO3D_TESTING)

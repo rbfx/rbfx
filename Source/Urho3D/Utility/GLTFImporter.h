@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,33 +20,37 @@
 // THE SOFTWARE.
 //
 
-#include "Editor.h"
-#include "SubCommand.h"
+/// \file
 
-#include <Urho3D/Engine/EngineDefs.h>
-#include <Urho3D/IO/Log.h>
+#pragma once
+
+#include "../Core/Object.h"
+
+#include <EASTL/unique_ptr.h>
 
 namespace Urho3D
 {
 
-SubCommand::SubCommand(Context* context)
-    : Object(context)
+/// Utility class to load GLTF file and save it as Urho resources.
+class URHO3D_API GLTFImporter : public Object
 {
-}
+    URHO3D_OBJECT(GLTFImporter, Object);
 
-void SubCommand::RegisterCommandLine(CLI::App& cli)
-{
-    cli.set_callback([this]()
-    {
-        Setup();
-    });
-}
+public:
+    GLTFImporter(Context* context);
+    ~GLTFImporter() override;
 
-void SubCommand::Setup()
-{
-    auto& engineParameters = GetSubsystem<Editor>()->GetEngineParameters();
-    engineParameters[EP_HEADLESS] = true;
-    engineParameters[EP_LOG_LEVEL] = LOG_WARNING;
-}
+    /// Load GLTF files and import resources.
+    bool LoadFile(const ea::string& fileName,
+        const ea::string& outputPath, const ea::string& resourceNamePrefix);
+    /// Cook imported resources and assign file and resource names.
+    bool CookResources();
+    /// Save generated resources.
+    bool SaveResources();
+
+private:
+    class Impl;
+    ea::unique_ptr<Impl> impl_;
+};
 
 }

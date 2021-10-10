@@ -55,7 +55,8 @@ public:
     /// Tear down editor application.
     void Stop() override;
 
-    ///
+    /// Run another instance of Editor, block until it exits and return the exit code and output.
+    int RunEditorInstance(const ea::vector<ea::string>& arguments, ea::string& output);
     void ExecuteSubcommand(SubCommand* cmd);
 
     /// Renders UI elements.

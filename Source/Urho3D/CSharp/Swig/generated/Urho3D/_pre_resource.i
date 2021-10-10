@@ -28,7 +28,7 @@
 %csattribute(Urho3D::Resource, %arg(unsigned int), MemoryUse, GetMemoryUse, SetMemoryUse);
 %csattribute(Urho3D::Resource, %arg(unsigned int), UseTimer, GetUseTimer);
 %csattribute(Urho3D::Resource, %arg(Urho3D::AsyncLoadState), AsyncLoadState, GetAsyncLoadState, SetAsyncLoadState);
-%csattribute(Urho3D::Resource, %arg(ea::string), NativeFileName, GetNativeFileName);
+%csattribute(Urho3D::Resource, %arg(ea::string), NativeFileName, GetAbsoluteFileName);
 %csattribute(Urho3D::ResourceWithMetadata, %arg(Urho3D::StringVector), MetadataKeys, GetMetadataKeys);
 %csattribute(Urho3D::Image, %arg(bool), IsCubemap, IsCubemap);
 %csattribute(Urho3D::Image, %arg(bool), IsArray, IsArray);

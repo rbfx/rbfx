@@ -116,7 +116,7 @@ void GlobalIllumination::CompileLightProbes()
         return;
     }
 
-    if (!file->SaveFile(file->GetNativeFileName()))
+    if (!file->SaveFile(file->GetAbsoluteFileName()))
     {
         URHO3D_LOGERROR("Cannot save Global Illumination data: cannot save file");
         return;

@@ -1368,7 +1368,7 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
                     continue;
                 newName = destinationName + resource->GetName().substr(resourceName.length());
 
-                newNativeFileName = resource->GetNativeFileName();
+                newNativeFileName = resource->GetAbsoluteFileName();
                 if (newNativeFileName.starts_with(sourceDir))
                     newNativeFileName.replace(0u, sourceDir.length(), destinationDir);
             }

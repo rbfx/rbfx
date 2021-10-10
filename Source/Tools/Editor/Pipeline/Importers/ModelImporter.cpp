@@ -24,12 +24,22 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Core/ProcessUtils.h>
 
+#include "Editor.h"
 #include "Project.h"
 #include "Pipeline/Asset.h"
 #include "Pipeline/Importers/ModelImporter.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+bool IsFileNameGLTF(const ea::string& fileName)
+{
+    return fileName.ends_with(".gltf")
+        || fileName.ends_with(".glb");
+}
 
 static const char* MODEL_IMPORTER_OUTPUT_ANIM = "Output animations";
 static const char* MODEL_IMPORTER_OUTPUT_MAT = "Output materials";
@@ -40,6 +50,8 @@ static const char* MODEL_IMPORTER_MAX_BONES = "Max number of bones";
 static const char* MODEL_IMPORTER_ANIM_TICK = "Animation tick frequency";
 static const char* MODEL_IMPORTER_EMISSIVE_AO = "Emissive is ambient occlusion";
 static const char* MODEL_IMPORTER_FBX_PIVOT = "Suppress $fbx pivot nodes";
+
+}
 
 ModelImporter::ModelImporter(Context* context)
     : AssetImporter(context)
@@ -76,51 +88,24 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     // Actual output destination AssetImporter will be writing.
     ea::string resourceBaseName = GetPath(input->GetName()) + AddTrailingSlash(GetFileName(input->GetName()));  // Strips file extension
     ea::string tempOutput = tempPath + resourceBaseName;
-    fs->CreateDirsRecursive(tempOutput);
 
-    ea::string output = tempOutput + "Model.mdl";
-    ea::vector<ea::string> args{"model", input->GetResourcePath(), output};
+    const TemporaryDir tempDirectoryHolder(context_, tempOutput);
 
-    if (!GetAttribute(MODEL_IMPORTER_OUTPUT_ANIM).GetBool())
-        args.emplace_back("-na");
-
-    if (!GetAttribute(MODEL_IMPORTER_OUTPUT_MAT).GetBool())
-        args.emplace_back("-nm");
-
-    if (!GetAttribute(MODEL_IMPORTER_OUTPUT_MAT_TEX).GetBool())
-        args.emplace_back("-nt");
-
-    if (!GetAttribute(MODEL_IMPORTER_USE_MAT_DIFFUSE).GetBool())
-        args.emplace_back("-nc");
-
-    if (!GetAttribute(MODEL_IMPORTER_FIX_INFACING_NORMALS).GetBool())
-        args.emplace_back("-nf");
-
-    args.emplace_back("-pp");
-    args.emplace_back(resourceBaseName);
-
-    args.emplace_back("-mb");
-    args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_MAX_BONES).GetUInt()));
-
-    args.emplace_back("-f");
-    args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_ANIM_TICK).GetInt()));
-
-    if (!GetAttribute(MODEL_IMPORTER_EMISSIVE_AO).GetBool())
-        args.emplace_back("-eao");
-
-    if (!GetAttribute(MODEL_IMPORTER_FBX_PIVOT).GetBool())
-        args.emplace_back("-np");
-
-    ea::string cmdOutput;
-    int result = fs->SystemRun(fs->GetProgramDir() + "AssetImporter", args, cmdOutput);
-
-    if (result != 0)
+    ea::string commandOutput;
+    if (!ImportAssetToFolder(input, tempOutput, resourceBaseName, commandOutput))
     {
-        URHO3D_LOGERROR("Importing asset 'res://{}' failed.", input->GetName());
-        for (const auto& line : cmdOutput.split("\n"))
-            URHO3D_LOGERROR(line);
-        fs->RemoveDir(tempPath, true);
+        URHO3D_LOGERROR("Failed to import asset 'res://{}'{}", input->GetName(), commandOutput.empty() ? '.' : ':');
+        for (const auto& line : commandOutput.split("\n"))
+            URHO3D_LOGERROR("> {}", line);
+
         return false;
+    }
+
+    if (!commandOutput.empty())
+    {
+        URHO3D_LOGWARNING("Warnings on importing asset 'res://{}':", input->GetName());
+        for (const auto& line : commandOutput.split("\n"))
+            URHO3D_LOGWARNING("> {}", line);
     }
 
     unsigned mtime = fs->GetLastModifiedTime(input->GetResourcePath());
@@ -144,8 +129,78 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
         AddByproduct(byproduct);
     }
 
-    fs->RemoveDir(tempPath, true);
     return !tmpByproducts.empty();
+}
+
+bool ModelImporter::ImportAssetToFolder(Asset* inputAsset,
+    const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
+{
+    if (IsFileNameGLTF(inputAsset->GetName()))
+        return ExecuteImportGLTF(inputAsset, outputPath, outputResourceNamePrefix, commandOutput);
+    else
+        return ExecuteAssimp(inputAsset, outputPath, outputResourceNamePrefix, commandOutput);
+}
+
+bool ModelImporter::ExecuteAssimp(Asset* inputAsset,
+    const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
+{
+    auto* fs = context_->GetSubsystem<FileSystem>();
+
+    const ea::string outputFileName = outputPath + "Model.mdl";
+    ea::vector<ea::string> args{ "model", inputAsset->GetResourcePath(), outputFileName };
+
+    if (!GetAttribute(MODEL_IMPORTER_OUTPUT_ANIM).GetBool())
+        args.emplace_back("-na");
+
+    if (!GetAttribute(MODEL_IMPORTER_OUTPUT_MAT).GetBool())
+        args.emplace_back("-nm");
+
+    if (!GetAttribute(MODEL_IMPORTER_OUTPUT_MAT_TEX).GetBool())
+        args.emplace_back("-nt");
+
+    if (!GetAttribute(MODEL_IMPORTER_USE_MAT_DIFFUSE).GetBool())
+        args.emplace_back("-nc");
+
+    if (!GetAttribute(MODEL_IMPORTER_FIX_INFACING_NORMALS).GetBool())
+        args.emplace_back("-nf");
+
+    args.emplace_back("-pp");
+    args.emplace_back(outputResourceNamePrefix);
+
+    args.emplace_back("-mb");
+    args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_MAX_BONES).GetUInt()));
+
+    args.emplace_back("-f");
+    args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_ANIM_TICK).GetInt()));
+
+    if (!GetAttribute(MODEL_IMPORTER_EMISSIVE_AO).GetBool())
+        args.emplace_back("-eao");
+
+    if (!GetAttribute(MODEL_IMPORTER_FBX_PIVOT).GetBool())
+        args.emplace_back("-np");
+
+    return fs->SystemRun(fs->GetProgramDir() + "AssetImporter", args, commandOutput) == 0;
+}
+
+bool ModelImporter::ExecuteImportGLTF(Asset* inputAsset,
+    const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
+{
+    auto fs = context_->GetSubsystem<FileSystem>();
+    auto project = GetSubsystem<Project>();
+    auto editor = GetSubsystem<Editor>();
+
+    const StringVector arguments{
+        project->GetProjectPath(),
+        "ImportGLTFCommand",
+        "--input",
+        inputAsset->GetResourcePath(),
+        "--output",
+        outputPath,
+        "--prefix",
+        outputResourceNamePrefix
+    };
+
+    return editor->RunEditorInstance(arguments, commandOutput) == 0;
 }
 
 bool ModelImporter::Accepts(const ea::string& path) const
@@ -155,6 +210,8 @@ bool ModelImporter::Accepts(const ea::string& path) const
     if (path.ends_with(".blend"))
         return true;
     if (path.ends_with(".obj"))
+        return true;
+    if (IsFileNameGLTF(path))
         return true;
     return false;
 }

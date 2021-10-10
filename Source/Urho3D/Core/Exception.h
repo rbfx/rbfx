@@ -20,65 +20,35 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#pragma once
 
-#include "../Core/Context.h"
-#include "../IO/Deserializer.h"
-#include "../IO/File.h"
-#include "../IO/Log.h"
-#include "../IO/Serializer.h"
-#include "../Resource/BinaryFile.h"
+#include "../Core/StringUtils.h"
 
-#include "../DebugNew.h"
+#include <EASTL/string.h>
+
+#include <exception>
 
 namespace Urho3D
 {
 
-BinaryFile::BinaryFile(Context* context) :
-    Resource(context)
+/// Generic runtime exception adapted for usage in Urho.
+/// Note that this exception shouldn't leak into main loop of the engine and should only be used internally.
+class RuntimeException : public std::exception
 {
-}
-
-BinaryFile::~BinaryFile() = default;
-
-void BinaryFile::RegisterObject(Context* context)
-{
-    context->RegisterFactory<BinaryFile>();
-}
-
-bool BinaryFile::BeginLoad(Deserializer& source)
-{
-    source.Seek(0);
-    buffer_.SetData(source, source.GetSize());
-    SetMemoryUse(buffer_.GetBuffer().capacity());
-    return true;
-}
-
-bool BinaryFile::Save(Serializer& dest) const
-{
-    if (dest.Write(buffer_.GetData(), buffer_.GetSize()) != buffer_.GetSize())
+public:
+    /// Construct exception with static message.
+    explicit RuntimeException(ea::string_view message) : message_(message) {}
+    /// Construct exception with formatted message.
+    template <class T, class ... Ts>
+    RuntimeException(ea::string_view format, const T& firstArg, const Ts& ... otherArgs)
+        : message_(Format(format, firstArg, otherArgs...))
     {
-        URHO3D_LOGERROR("Can not save binary file" + GetName());
-        return false;
     }
 
-    return true;
-}
+    virtual char const* what() const { return !message_.empty() ? message_.c_str() : "Unknown exception"; }
 
-void BinaryFile::Clear()
-{
-    buffer_.Clear();
-}
-
-void BinaryFile::SetData(const ByteVector& data)
-{
-    buffer_.SetData(data);
-    SetMemoryUse(buffer_.GetBuffer().capacity());
-}
-
-const ByteVector& BinaryFile::GetData() const
-{
-    return buffer_.GetBuffer();
-}
+private:
+    ea::string message_;
+};
 
 }
