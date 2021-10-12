@@ -44,8 +44,10 @@ public:
         : message_(Format(format, firstArg, otherArgs...))
     {
     }
+    /// Return message.
+    const ea::string& GetMessage() const { return message_; }
 
-    virtual char const* what() const { return !message_.empty() ? message_.c_str() : "Unknown exception"; }
+    const char* what() const noexcept override { return message_.c_str(); }
 
 private:
     ea::string message_;

@@ -29,6 +29,7 @@
 #include "../Graphics/Model.h"
 #include "../Graphics/ModelView.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/Technique.h"
 #include "../Graphics/Texture.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/StaticModel.h"
@@ -185,7 +186,8 @@ public:
     void SaveResource(Scene* scene)
     {
         XMLFile xmlFile(scene->GetContext());
-        scene->SaveXML(xmlFile.GetOrCreateRoot("scene"));
+        XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+        scene->SaveXML(rootElement);
         xmlFile.SaveFile(scene->GetFileName());
     }
 
@@ -314,14 +316,15 @@ private:
     SharedPtr<BinaryFile> ImportImage(unsigned imageIndex, const tg::Image& sourceImage) const
     {
         auto image = MakeShared<BinaryFile>(context_->GetContext());
+        const ea::string imageUri = sourceImage.uri.c_str();
 
-        if (sourceImage.mimeType == "image/jpeg")
+        if (sourceImage.mimeType == "image/jpeg" || imageUri.ends_with(".jpg") || imageUri.ends_with(".jpeg"))
         {
             const ea::string imageName = context_->GetResourceName(
                 sourceImage.name.c_str(), "Textures/", "Texture", ".jpg");
             image->SetName(imageName);
         }
-        else if (sourceImage.mimeType == "image/png")
+        else if (sourceImage.mimeType == "image/png" || imageUri.ends_with(".png"))
         {
             const ea::string imageName = context_->GetResourceName(
                 sourceImage.name.c_str(), "Textures/", "Texture", ".png");
@@ -348,11 +351,6 @@ private:
             throw RuntimeException("Invalid source image #{} of texture #{} '{}'",
                 sourceTexture.source, textureIndex, sourceTexture.name.c_str());
         }
-        if (sourceTexture.sampler >= model.samplers.size())
-        {
-            throw RuntimeException("Invalid sampler #{} of texture #{} '{}'",
-                sourceTexture.sampler, textureIndex, sourceTexture.name.c_str());
-        }
 
         ImportedTexture result;
         result.image_ = ImportImage(sourceTexture.source, model.images[sourceTexture.source]);
@@ -360,6 +358,12 @@ private:
         result.fakeTexture2D_->SetName(result.image_->GetName());
         if (sourceTexture.sampler >= 0)
         {
+            if (sourceTexture.sampler >= model.samplers.size())
+            {
+                throw RuntimeException("Invalid sampler #{} of texture #{} '{}'",
+                    sourceTexture.sampler, textureIndex, sourceTexture.name.c_str());
+            }
+
             const tg::Sampler& sourceSampler = model.samplers[sourceTexture.sampler];
             result.samplerParams_.filterMode_ = GetFilterMode(sourceSampler);
             result.samplerParams_.mipmaps_ = HasMipmaps(sourceSampler);
@@ -449,6 +453,8 @@ public:
         SharedPtr<Material>& material = materials_[key];
         if (!material)
         {
+            auto cache = context_->GetContext()->GetSubsystem<ResourceCache>();
+
             material = MakeShared<Material>(context_->GetContext());
 
             const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
@@ -456,6 +462,18 @@ public:
             material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, baseColor);
             material->SetShaderParameter(ShaderConsts::Material_Metallic, static_cast<float>(pbr.metallicFactor));
             material->SetShaderParameter(ShaderConsts::Material_Roughness, static_cast<float>(pbr.roughnessFactor));
+
+            const ea::string techniqueName = "Techniques/LitOpaque.xml";
+            auto technique = cache->GetResource<Technique>(techniqueName);
+            if (!technique)
+            {
+                throw RuntimeException("Cannot find standard technique '{}' for material '{}'",
+                    techniqueName, sourceMaterial.name.c_str());
+            }
+
+            material->SetTechnique(0, technique);
+            material->SetVertexShaderDefines("PBR");
+            material->SetPixelShaderDefines("PBR");
 
             if (pbr.baseColorTexture.index >= 0)
             {
@@ -712,7 +730,7 @@ private:
         if (!node.matrix.empty())
         {
             Matrix4 sourceMatrix;
-            std::transform(node.matrix.begin(), node.matrix.end(),
+            ea::transform(node.matrix.begin(), node.matrix.end(),
                 &sourceMatrix.m00_, StaticCaster<float>{});
 
             const Matrix3x4 transform{ sourceMatrix.Transpose() };
@@ -722,17 +740,17 @@ private:
         {
             if (!node.translation.empty())
             {
-                std::transform(node.translation.begin(), node.translation.end(),
+                ea::transform(node.translation.begin(), node.translation.end(),
                     &translation.x_, StaticCaster<float>{});
             }
             if (!node.rotation.empty())
             {
-                std::transform(node.rotation.begin(), node.rotation.end(),
-                    &rotation.x_, StaticCaster<float>{});
+                ea::transform(node.rotation.begin(), node.rotation.end(),
+                    &rotation.w_, StaticCaster<float>{});
             }
             if (!node.scale.empty())
             {
-                std::transform(node.scale.begin(), node.scale.end(),
+                ea::transform(node.scale.begin(), node.scale.end(),
                     &scale.x_, StaticCaster<float>{});
             }
         }

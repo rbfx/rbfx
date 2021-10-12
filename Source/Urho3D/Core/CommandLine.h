@@ -33,16 +33,15 @@ namespace CLI
 
 inline std::istringstream& operator>>(std::istringstream &in, ea::string& val)
 {
-    std::string tmp;
-    in >> tmp;
+    const std::string tmp(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>{});
     val = tmp.c_str();
     return in;
 }
 
-inline std::stringstream& operator<<(std::stringstream &in, ea::string& val)
+inline std::stringstream& operator<<(std::stringstream &out, ea::string& val)
 {
-    in << val.c_str();
-    return in;
+    out << val.c_str();
+    return out;
 }
 
 }
