@@ -870,7 +870,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             item->ApplyAttributes();
         }
 
-        if (modification.IsModified() || modifiedReason != AttributeInspectorModified::NO_CHANGE)
+        if (modification.IsModified())
         {
             // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
             // has ended and we can fire attribute modification event.
