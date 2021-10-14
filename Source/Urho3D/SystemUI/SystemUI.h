@@ -167,6 +167,7 @@ URHO3D_API bool IsKeyReleased(Urho3D::Key key);
 URHO3D_API int GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate);
 /// Activate last item if specified mouse button is pressed and held over it, deactivate when released.
 URHO3D_API bool ItemMouseActivation(Urho3D::MouseButton button, unsigned flags = ImGuiItemMouseActivation_Click);
+URHO3D_API void HideCursorWhenActive(bool on_drag = false);
 
 }
 

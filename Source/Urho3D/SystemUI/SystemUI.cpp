@@ -640,11 +640,8 @@ bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
-    bool hovered = ui::IsItemHovered();
-    if (hovered)
-        g.HoveredId = g.LastItemData.ID;
 
-    bool activated = !ui::IsItemActive() && hovered;
+    bool activated = !ui::IsItemActive() && ui::IsItemHovered();
     if (flags == ImGuiItemMouseActivation_Dragging)
         activated &= ui::IsMouseDragging(button);
     else
@@ -655,4 +652,18 @@ bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
     else if (ui::IsItemActive() && !ui::IsMouseDown(button))
         ui::ClearActiveID();
     return ui::IsItemActive();
+}
+
+void ui::HideCursorWhenActive(bool on_drag)
+{
+    using namespace Urho3D;
+    ImGuiContext& g = *GImGui;
+    SystemUI* systemUI = reinterpret_cast<SystemUI*>(g.IO.UserData);
+    if (ui::IsItemActive())
+    {
+        if (!on_drag || ui::IsMouseDragging(MOUSEB_LEFT))
+            systemUI->GetSubsystem<Input>()->SetMouseVisible(false);
+    }
+    else if (ui::IsItemDeactivated())
+        systemUI->GetSubsystem<Input>()->SetMouseVisible(true);
 }
