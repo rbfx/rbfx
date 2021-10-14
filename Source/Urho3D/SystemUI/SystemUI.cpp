@@ -279,7 +279,7 @@ void SystemUI::OnRenderEnd()
     SendEvent(E_ENDRENDERINGSYSTEMUI);
 
     // Disable mouse wrapping automatically if none of mouse buttons are down
-    if (!ui::IsMouseDown(MOUSEB_LEFT) && !ui::IsMouseDown(MOUSEB_MIDDLE) && !ui::IsMouseDown(MOUSEB_RIGHT))
+    if (!ui::IsAnyMouseDown())
         enableWrapping_ = false;
 
     ImGuiIO& io = ui::GetIO();
@@ -301,6 +301,12 @@ void SystemUI::OnRenderEnd()
 
         if (mousePos != io.MousePos)
         {
+            for (int btn = 0; btn < ImGuiMouseButton_COUNT; btn++)
+            {
+                if (io.MouseDown[btn])
+                    io.MouseClickedPos[btn] += mousePos - io.MousePos;
+            }
+
             io.MousePos = mousePos;
             io.MousePosPrev = mousePos;
             io.WantSetMousePos = true;
@@ -654,16 +660,26 @@ bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
     return ui::IsItemActive();
 }
 
-void ui::HideCursorWhenActive(bool on_drag)
+void ui::HideCursorWhenActive(Urho3D::MouseButton button, bool on_drag)
 {
     using namespace Urho3D;
     ImGuiContext& g = *GImGui;
     SystemUI* systemUI = reinterpret_cast<SystemUI*>(g.IO.UserData);
     if (ui::IsItemActive())
     {
-        if (!on_drag || ui::IsMouseDragging(MOUSEB_LEFT))
-            systemUI->GetSubsystem<Input>()->SetMouseVisible(false);
+        if (!on_drag || ui::IsMouseDragging(button))
+        {
+            Input* input = systemUI->GetSubsystem<Input>();
+            if (input->IsMouseVisible())
+            {
+                systemUI->SetMouseWrapping(true, true);
+                input->SetMouseVisible(false);
+            }
+        }
     }
     else if (ui::IsItemDeactivated())
+    {
+        systemUI->SetMouseWrapping(false, true);
         systemUI->GetSubsystem<Input>()->SetMouseVisible(true);
+    }
 }

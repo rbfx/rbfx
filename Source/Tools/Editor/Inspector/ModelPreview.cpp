@@ -93,7 +93,6 @@ void ModelPreview::CreateObjects()
 
 void ModelPreview::RenderPreview()
 {
-    auto* input = GetSubsystem<Input>();
 #if 0
     const float dpi = ui::GetCurrentWindow()->Viewport->DpiScale;
 #else
@@ -102,12 +101,10 @@ void ModelPreview::RenderPreview()
     float size = ui::GetWindowWidth() - ui::GetCursorPosX();
     view_.SetSize({0, 0, static_cast<int>(size * dpi), static_cast<int>(size * dpi)});
     ui::ImageItem(view_.GetTexture(), ImVec2(size, size));
-    bool wasActive = mouseGrabbed_;
-    mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT, ImGuiItemMouseActivation_Dragging);
-    if (wasActive != mouseGrabbed_)
-        input->SetMouseVisible(!mouseGrabbed_);
+    bool mouseGrabbed = ui::ItemMouseActivation(MOUSEB_RIGHT, ImGuiItemMouseActivation_Dragging);
+    ui::HideCursorWhenActive(MOUSEB_RIGHT, true);
 
-    if (mouseGrabbed_)
+    if (mouseGrabbed)
     {
         Node* node = view_.GetCamera()->GetNode();
         if (ui::IsKeyPressed(KEY_ESCAPE))

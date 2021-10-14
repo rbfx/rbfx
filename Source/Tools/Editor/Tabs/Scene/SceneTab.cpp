@@ -167,8 +167,6 @@ bool SceneTab::RenderWindowContent()
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }
 
-    bool wasActive = isViewportActive_;
-
     // Buttons must render above the viewport, but they also should be rendered first in order to take precedence in
     // item activation.
     viewportSplitter_.Split(window->DrawList, 3);
@@ -179,7 +177,8 @@ bool SceneTab::RenderWindowContent()
     viewportSplitter_.SetCurrentChannel(window->DrawList, 0);
     ui::SetCursorPos({0, 0});
     ui::ImageItem(texture_, rect.GetSize());
-    isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
+    isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT);
+    ui::HideCursorWhenActive(MOUSEB_RIGHT, false);
 
     // Left click happens immediately.
     isClickedLeft_ = ui::IsItemClicked(MOUSEB_LEFT) && !ui::IsMouseDragging(MOUSEB_LEFT);
@@ -207,9 +206,6 @@ bool SceneTab::RenderWindowContent()
     viewportSplitter_.Merge(window->DrawList);
 
     RenderViewManipulator(rect);
-
-    if (wasActive != isViewportActive_)
-        GetSubsystem<SystemUI>()->SetMouseWrapping(isViewportActive_, true);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -1596,7 +1592,7 @@ void SceneTab::RenderViewManipulator(ImRect rect)
     const ImVec2 pos{rect.Max.x - 128, rect.Min.y};
     ui::SetCursorScreenPos(pos);
     ui::InvisibleButton("##view-manipulator", size);
-    ui::HideCursorWhenActive(true);
+    ui::HideCursorWhenActive(MOUSEB_LEFT, true);
 
     Camera* camera = GetCamera();
     Node* cameraNode = camera->GetNode();

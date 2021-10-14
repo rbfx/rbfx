@@ -62,8 +62,6 @@ protected:
     SceneView view_;
     /// Node holding figure to which material is applied.
     WeakPtr<Node> node_;
-    /// Flag indicating if this widget grabbed mouse for rotating material node.
-    bool mouseGrabbed_ = false;
     /// Distance from camera to figure.
     float distance_ = 1.5f;
     /// Index of current figure displaying material.
