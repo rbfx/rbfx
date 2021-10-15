@@ -102,7 +102,7 @@ ea::vector<T> RepackFloatArray(const ea::vector<float>& componentsArray, unsigne
     const unsigned numComponents = sizeof(T) / sizeof(float);
     for (unsigned i = 0; i < numObjects; ++i)
     {
-        if ((i + 1) * numComponents >= componentsArray.size())
+        if ((i + 1) * numComponents > componentsArray.size())
             break;
 
         result[i] = T{ &componentsArray[i * numComponents] };
@@ -205,6 +205,18 @@ private:
 
     ea::unordered_set<ea::string> localResourceNames_;
     ea::unordered_map<ea::string, ea::string> resourceNameToAbsoluteFileName_;
+};
+
+class GLTFBufferReader : public NonCopyable
+{
+public:
+    explicit GLTFBufferReader(GLTFImporterContext* context)
+        : context_(context)
+    {
+    }
+
+private:
+    const GLTFImporterContext* context_{};
 };
 
 class GLTFTextureImporter : public NonCopyable
