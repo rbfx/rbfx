@@ -149,6 +149,9 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
+    /// Return 2D vector (z component is ignored).
+    IntVector2 ToVector2() const { return { x_, y_ }; }
+
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return (unsigned)x_ * 31 * 31 + (unsigned)y_ * 31 + (unsigned)z_; }
 

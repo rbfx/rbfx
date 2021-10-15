@@ -41,8 +41,16 @@ public:
     /// Construct exception with formatted message.
     template <class T, class ... Ts>
     RuntimeException(ea::string_view format, const T& firstArg, const Ts& ... otherArgs)
-        : message_(Format(format, firstArg, otherArgs...))
     {
+        try
+        {
+            message_ = Format(format, firstArg, otherArgs...);
+        }
+        catch(const std::exception& e)
+        {
+            message_ = "Failed to format RuntimeException: ";
+            message_ += e.what();
+        }
     }
     /// Return message.
     const ea::string& GetMessage() const { return message_; }
