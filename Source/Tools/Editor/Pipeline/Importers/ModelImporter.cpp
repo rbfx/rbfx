@@ -89,7 +89,7 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     ea::string resourceBaseName = GetPath(input->GetName()) + AddTrailingSlash(GetFileName(input->GetName()));  // Strips file extension
     ea::string tempOutput = tempPath + resourceBaseName;
 
-    const TemporaryDir tempDirectoryHolder(context_, tempOutput);
+    const TemporaryDir tempDirectoryHolder(context_, tempPath);
 
     ea::string commandOutput;
     if (!ImportAssetToFolder(input, tempOutput, resourceBaseName, commandOutput))
