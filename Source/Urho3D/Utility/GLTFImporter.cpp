@@ -32,7 +32,10 @@
 #include "../Graphics/Technique.h"
 #include "../Graphics/Texture.h"
 #include "../Graphics/Texture2D.h"
+#include "../Graphics/TextureCube.h"
+#include "../Graphics/Skybox.h"
 #include "../Graphics/StaticModel.h"
+#include "../Graphics/Zone.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/ShaderConsts.h"
@@ -212,37 +215,123 @@ public:
     {
         const tg::Model& model = context->GetModel();
         const unsigned numTextures = model.textures.size();
-        textures_.resize(numTextures);
+        texturesAsIs_.resize(numTextures);
         for (unsigned i = 0; i < numTextures; ++i)
-            textures_[i] = ImportTexture(i, model.textures[i]);
+            texturesAsIs_[i] = ImportTexture(i, model.textures[i]);
     }
 
-    void CookSamplerParams()
+    void CookTextures()
     {
-        for (ImportedTexture& texture : textures_)
-            texture.cookedSamplerParams_ = CookSamplerParams(texture.image_, texture.samplerParams_);
+        if (texturesCooked_)
+            throw RuntimeException("Textures are already cooking");
+
+        texturesCooked_ = true;
+        for (auto& elem : texturesMRO_)
+        {
+            const auto [metallicRoughnessTextureIndex, occlusionTextureIndex] = elem.first;
+            const ImportedRMOTexture& texture = elem.second;
+
+            elem.second.repackedImage_ = ImportRMOTexture(metallicRoughnessTextureIndex, occlusionTextureIndex,
+                texture.fakeTexture_->GetName());
+        }
     }
 
     void SaveResources()
     {
-        for (const ImportedTexture& texture : textures_)
+        for (const ImportedTexture& texture : texturesAsIs_)
         {
+            if (!texture.isReferenced_)
+                continue;
             context_->SaveResource(texture.image_);
+            if (auto xmlFile = texture.cookedSamplerParams_)
+                xmlFile->SaveFile(xmlFile->GetAbsoluteFileName());
+        }
+
+        for (const auto& elem : texturesMRO_)
+        {
+            const ImportedRMOTexture& texture = elem.second;
+            context_->SaveResource(texture.repackedImage_);
             if (auto xmlFile = texture.cookedSamplerParams_)
                 xmlFile->SaveFile(xmlFile->GetAbsoluteFileName());
         }
     }
 
-    SharedPtr<Texture2D> GetFakeTexture(int textureIndex) const
+    SharedPtr<Texture2D> ReferenceTextureAsIs(int textureIndex)
     {
-        if (textureIndex >= textures_.size())
+        if (texturesCooked_)
+            throw RuntimeException("Cannot reference textures after cooking");
+
+        if (textureIndex >= texturesAsIs_.size())
             throw RuntimeException("Invalid texture #{} is referenced", textureIndex);
-        return textures_[textureIndex].fakeTexture2D_;
+
+        ImportedTexture& texture = texturesAsIs_[textureIndex];
+        texture.isReferenced_ = true;
+        return texture.fakeTexture_;
+    }
+
+    SharedPtr<Texture2D> ReferenceRoughnessMetallicOcclusionTexture(
+        int metallicRoughnessTextureIndex, int occlusionTextureIndex)
+    {
+        if (texturesCooked_)
+            throw RuntimeException("Cannot reference textures after cooking");
+
+        if (metallicRoughnessTextureIndex < 0 && occlusionTextureIndex < 0)
+            throw RuntimeException("At least one texture should be referenced");
+        if (metallicRoughnessTextureIndex >= 0 && metallicRoughnessTextureIndex >= texturesAsIs_.size())
+            throw RuntimeException("Invalid metallic-roughness texture #{} is referenced", metallicRoughnessTextureIndex);
+        if (occlusionTextureIndex >= 0 && occlusionTextureIndex >= texturesAsIs_.size())
+            throw RuntimeException("Invalid occlusion texture #{} is referenced", occlusionTextureIndex);
+
+        const auto key = ea::make_pair(metallicRoughnessTextureIndex, occlusionTextureIndex);
+        const auto partialKeyA = ea::make_pair(metallicRoughnessTextureIndex, -1);
+        const auto partialKeyB = ea::make_pair(-1, occlusionTextureIndex);
+
+        // Try to find exact match
+        auto iter = texturesMRO_.find(key);
+        if (iter != texturesMRO_.end())
+            return iter->second.fakeTexture_;
+
+        // Try to re-purpose partial match A
+        iter = texturesMRO_.find(partialKeyA);
+        if (iter != texturesMRO_.end())
+        {
+            assert(occlusionTextureIndex != -1);
+            const ImportedRMOTexture result = iter->second;
+            texturesMRO_.erase(iter);
+            texturesMRO_.emplace(key, result);
+            return result.fakeTexture_;
+        }
+
+        // Try to re-purpose partial match B
+        iter = texturesMRO_.find(partialKeyB);
+        if (iter != texturesMRO_.end())
+        {
+            assert(metallicRoughnessTextureIndex != -1);
+            const ImportedRMOTexture result = iter->second;
+            texturesMRO_.erase(iter);
+            texturesMRO_.emplace(key, result);
+            return result.fakeTexture_;
+        }
+
+        // Create new texture
+        const ImportedTexture& referenceTexture = metallicRoughnessTextureIndex >= 0
+            ? texturesAsIs_[metallicRoughnessTextureIndex]
+            : texturesAsIs_[occlusionTextureIndex];
+
+        const ea::string imageName = context_->GetResourceName(
+            referenceTexture.nameHint_, "Textures/", "Texture", ".png");
+
+        ImportedRMOTexture& result = texturesMRO_[key];
+        result.fakeTexture_ = MakeShared<Texture2D>(context_->GetContext());
+        result.fakeTexture_->SetName(imageName);
+        result.cookedSamplerParams_ = CookSamplerParams(result.fakeTexture_, referenceTexture.samplerParams_);
+        return result.fakeTexture_;
     }
 
     static bool LoadImageData(tg::Image* image, const int imageIndex, std::string*, std::string*,
         int reqWidth, int reqHeight, const unsigned char* bytes, int size, void*)
     {
+        image->name = GetFileName(image->uri.c_str()).c_str();
         image->as_is = true;
         image->image.resize(size);
         ea::copy_n(bytes, size, image->image.begin());
@@ -260,11 +349,21 @@ private:
 
     struct ImportedTexture
     {
-        SharedPtr<BinaryFile> image_;
-        SharedPtr<Texture2D> fakeTexture2D_;
-        SamplerParams samplerParams_;
+        bool isReferenced_{};
 
+        ea::string nameHint_;
+        SharedPtr<BinaryFile> image_;
+        SharedPtr<Texture2D> fakeTexture_;
+        SamplerParams samplerParams_;
         SharedPtr<XMLFile> cookedSamplerParams_;
+    };
+
+    struct ImportedRMOTexture
+    {
+        SharedPtr<Texture2D> fakeTexture_;
+        SharedPtr<XMLFile> cookedSamplerParams_;
+
+        SharedPtr<Image> repackedImage_;
     };
 
     static TextureFilterMode GetFilterMode(const tg::Sampler& sampler)
@@ -313,7 +412,7 @@ private:
         }
     }
 
-    SharedPtr<BinaryFile> ImportImage(unsigned imageIndex, const tg::Image& sourceImage) const
+    SharedPtr<BinaryFile> ImportImageAsIs(unsigned imageIndex, const tg::Image& sourceImage) const
     {
         auto image = MakeShared<BinaryFile>(context_->GetContext());
         const ea::string imageUri = sourceImage.uri.c_str();
@@ -343,6 +442,17 @@ private:
         return image;
     }
 
+    SharedPtr<Image> DecodeImage(BinaryFile* imageAsIs) const
+    {
+        Deserializer& deserializer = imageAsIs->AsDeserializer();
+        deserializer.Seek(0);
+
+        auto decodedImage = MakeShared<Image>(context_->GetContext());
+        decodedImage->SetName(imageAsIs->GetName());
+        decodedImage->Load(deserializer);
+        return decodedImage;
+    }
+
     ImportedTexture ImportTexture(unsigned textureIndex, const tg::Texture& sourceTexture) const
     {
         const tg::Model& model = context_->GetModel();
@@ -352,10 +462,13 @@ private:
                 sourceTexture.source, textureIndex, sourceTexture.name.c_str());
         }
 
+        const tg::Image& sourceImage = model.images[sourceTexture.source];
+
         ImportedTexture result;
-        result.image_ = ImportImage(sourceTexture.source, model.images[sourceTexture.source]);
-        result.fakeTexture2D_ = MakeShared<Texture2D>(context_->GetContext());
-        result.fakeTexture2D_->SetName(result.image_->GetName());
+        result.nameHint_ = sourceImage.name.c_str();
+        result.image_ = ImportImageAsIs(sourceTexture.source, sourceImage);
+        result.fakeTexture_ = MakeShared<Texture2D>(context_->GetContext());
+        result.fakeTexture_->SetName(result.image_->GetName());
         if (sourceTexture.sampler >= 0)
         {
             if (sourceTexture.sampler >= model.samplers.size())
@@ -370,10 +483,11 @@ private:
             result.samplerParams_.wrapU_ = GetAddressMode(sourceSampler.wrapS);
             result.samplerParams_.wrapV_ = GetAddressMode(sourceSampler.wrapT);
         }
+        result.cookedSamplerParams_ = CookSamplerParams(result.image_, result.samplerParams_);
         return result;
     }
 
-    SharedPtr<XMLFile> CookSamplerParams(const SharedPtr<BinaryFile>& image, const SamplerParams& samplerParams) const
+    SharedPtr<XMLFile> CookSamplerParams(Resource* image, const SamplerParams& samplerParams) const
     {
         static const ea::string addressModeNames[] =
         {
@@ -433,14 +547,78 @@ private:
         return xmlFile;
     }
 
+    SharedPtr<Image> ImportRMOTexture(
+        int metallicRoughnessTextureIndex, int occlusionTextureIndex, const ea::string& name)
+    {
+        // Unpack input images
+        SharedPtr<Image> metallicRoughnessImage = metallicRoughnessTextureIndex >= 0
+            ? DecodeImage(texturesAsIs_[metallicRoughnessTextureIndex].image_)
+            : nullptr;
+
+        SharedPtr<Image> occlusionImage = occlusionTextureIndex >= 0
+            ? DecodeImage(texturesAsIs_[occlusionTextureIndex].image_)
+            : nullptr;
+
+        if (!metallicRoughnessImage && !occlusionImage)
+        {
+            throw RuntimeException("Neither metallic-roughness texture #{} nor occlusion texture #{} can be loaded",
+                metallicRoughnessTextureIndex, occlusionTextureIndex);
+        }
+
+        const IntVector3 metallicRoughnessImageSize = metallicRoughnessImage ? metallicRoughnessImage->GetSize() : IntVector3::ZERO;
+        const IntVector3 occlusionImageSize = occlusionImage ? occlusionImage->GetSize() : IntVector3::ZERO;
+        const IntVector2 repackedImageSize = VectorMax(metallicRoughnessImageSize.ToVector2(), occlusionImageSize.ToVector2());
+
+        if (repackedImageSize.x_ <= 0 || repackedImageSize.y_ <= 0)
+            throw RuntimeException("Repacked metallic-roughness-occlusion texture has invalid size");
+
+        if (metallicRoughnessImage && metallicRoughnessImageSize.ToVector2() != repackedImageSize)
+            metallicRoughnessImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
+
+        if (occlusionImage && occlusionImageSize.ToVector2() != repackedImageSize)
+            occlusionImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
+
+        auto finalImage = MakeShared<Image>(context_->GetContext());
+        finalImage->SetName(name);
+        finalImage->SetSize(repackedImageSize.x_, repackedImageSize.y_, 1, occlusionImage ? 4 : 3);
+
+        for (const IntVector2 texel : IntRect{ IntVector2::ZERO, repackedImageSize })
+        {
+            // 0xOO__MMRR
+            unsigned color{};
+            if (metallicRoughnessImage)
+            {
+                // 0x__MMRR__
+                const unsigned value = metallicRoughnessImage->GetPixelInt(texel.x_, texel.y_);
+                color |= (value >> 8) & 0xffff;
+            }
+            if (occlusionImage)
+            {
+                // 0x______OO
+                const unsigned value = occlusionImage->GetPixelInt(texel.x_, texel.y_);
+                color |= (value & 0xff) << 24;
+            }
+            else
+            {
+                color |= 0xff000000;
+            }
+            finalImage->SetPixelInt(texel.x_, texel.y_, color);
+        }
+
+        return finalImage;
+    }
+
     GLTFImporterContext* context_{};
-    ea::vector<ImportedTexture> textures_;
+    ea::vector<ImportedTexture> texturesAsIs_;
+    ea::unordered_map<ea::pair<int, int>, ImportedRMOTexture> texturesMRO_;
+
+    bool texturesCooked_{};
 };
 
 class GLTFMaterialImporter : public NonCopyable
 {
 public:
-    explicit GLTFMaterialImporter(GLTFImporterContext* context, const GLTFTextureImporter* textureImporter)
+    explicit GLTFMaterialImporter(GLTFImporterContext* context, GLTFTextureImporter* textureImporter)
         : context_(context)
         , textureImporter_(textureImporter)
     {
@@ -478,10 +656,54 @@ public:
             if (pbr.baseColorTexture.index >= 0)
             {
                 if (pbr.baseColorTexture.texCoord != 0)
-                    URHO3D_LOGWARNING("Material '{}' has non-standard UV for diffuse texture");
+                {
+                    URHO3D_LOGWARNING("Material '{}' has non-standard UV for diffuse texture #{}",
+                        sourceMaterial.name.c_str(), pbr.baseColorTexture.index);
+                }
 
-                const SharedPtr<Texture2D> diffuseTexture = textureImporter_->GetFakeTexture(pbr.baseColorTexture.index);
+                const SharedPtr<Texture2D> diffuseTexture = textureImporter_->ReferenceTextureAsIs(
+                    pbr.baseColorTexture.index);
                 material->SetTexture(TU_DIFFUSE, diffuseTexture);
+            }
+
+            // Occlusion and metallic-roughness textures are backed together,
+            // ignore occlusion if is uses different UV.
+            int occlusionTextureIndex = sourceMaterial.occlusionTexture.index;
+            int metallicRoughnessTextureIndex = pbr.metallicRoughnessTexture.index;
+            if (occlusionTextureIndex >= 0 && metallicRoughnessTextureIndex >= 0
+                && sourceMaterial.occlusionTexture.texCoord != pbr.metallicRoughnessTexture.texCoord)
+            {
+                URHO3D_LOGWARNING("Material '{}' uses different UV for metallic-roughness texture #{} "
+                    "and for occlusion texture #{}. Occlusion texture is ignored.",
+                    sourceMaterial.name.c_str(), metallicRoughnessTextureIndex, occlusionTextureIndex);
+                occlusionTextureIndex = -1;
+            }
+
+            if (metallicRoughnessTextureIndex >= 0 || occlusionTextureIndex >= 0)
+            {
+                if (metallicRoughnessTextureIndex >= 0 && pbr.metallicRoughnessTexture.texCoord != 0)
+                {
+                    URHO3D_LOGWARNING("Material '{}' has non-standard UV for metallic-roughness texture #{}",
+                        sourceMaterial.name.c_str(), metallicRoughnessTextureIndex);
+                }
+
+                if (occlusionTextureIndex >= 0)
+                {
+                    if (sourceMaterial.occlusionTexture.texCoord != 0)
+                    {
+                        URHO3D_LOGWARNING("Material '{}' has non-standard UV for occlusion texture #{}",
+                            sourceMaterial.name.c_str(), occlusionTextureIndex);
+                    }
+                    if (sourceMaterial.occlusionTexture.strength != 1.0)
+                    {
+                        URHO3D_LOGWARNING("Material '{}' has non-default occlusion strength for occlusion texture #{}",
+                            sourceMaterial.name.c_str(), occlusionTextureIndex);
+                    }
+                }
+
+                const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_->ReferenceRoughnessMetallicOcclusionTexture(
+                    metallicRoughnessTextureIndex, occlusionTextureIndex);
+                material->SetTexture(TU_SPECULAR, metallicRoughnessTexture);
             }
 
             const ea::string materialName = context_->GetResourceName(
@@ -502,7 +724,6 @@ public:
 private:
     enum ImportedMaterialFlag
     {
-        HasVertexColors = 1 << 0,
     };
 
     using ImportedMaterialKey = ea::pair<const tg::Material*, unsigned>;
@@ -510,13 +731,11 @@ private:
     unsigned GetImportMaterialFlags(const ModelVertexFormat& vertexFormat) const
     {
         unsigned flags{};
-        if (vertexFormat.color_[0] != MAX_VERTEX_ELEMENT_TYPES)
-            flags |= HasVertexColors;
         return flags;
     }
 
     GLTFImporterContext* context_{};
-    const GLTFTextureImporter* textureImporter_{};
+    GLTFTextureImporter* textureImporter_{};
     ea::unordered_map<ImportedMaterialKey, SharedPtr<Material>> materials_;
 };
 
@@ -553,8 +772,7 @@ public:
 
     bool CookResources()
     {
-        textureImporter_.CookSamplerParams();
-
+        textureImporter_.CookTextures();
         auto cache = context_->GetSubsystem<ResourceCache>();
 
         for (ModelView* modelView : meshToModelView_)
@@ -699,6 +917,7 @@ private:
 
     SharedPtr<Scene> ImportScene(const tg::Scene& sourceScene)
     {
+        auto cache = context_->GetSubsystem<ResourceCache>();
         const ea::string sceneName = importerContext_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
 
         auto scene = MakeShared<Scene>(context_);
@@ -718,6 +937,28 @@ private:
             auto light = node->CreateComponent<Light>();
             light->SetLightType(LIGHT_DIRECTIONAL);
         }
+
+        if (!scene->GetComponent<Zone>(true) && !scene->GetComponent<Skybox>(true))
+        {
+            auto skyboxMaterial = cache->GetResource<Material>("Materials/Skybox.xml");
+            auto skyboxTexture = cache->GetResource<TextureCube>("Textures/Skybox.xml");
+            auto boxModel = cache->GetResource<Model>("Models/Box.mdl");
+
+            if (skyboxMaterial && skyboxTexture && boxModel)
+            {
+                Node* zoneNode = scene->CreateChild("Default Zone");
+                auto zone = zoneNode->CreateComponent<Zone>();
+                zone->SetBackgroundBrightness(0.5f);
+                zone->SetZoneTexture(skyboxTexture);
+
+                Node* skyboxNode = scene->CreateChild("Default Skybox");
+                auto skybox = skyboxNode->CreateComponent<Skybox>();
+                skybox->SetModel(boxModel);
+                skybox->SetMaterial(skyboxMaterial);
+            }
+
+        }
+
         return scene;
     }
 
@@ -1023,7 +1264,7 @@ private:
     ea::vector<ea::optional<int>> meshToSkin_;
     ea::vector<SharedPtr<ModelView>> meshToModelView_;
     ea::vector<StringVector> meshToMaterials_;
-    ea::vector<SharedPtr<Image>> texturesToImages_;
+    ea::vector<SharedPtr<Image>> texturesToImageAsIs_;
     ea::vector<SharedPtr<Texture>> texturesToFakeTextures_;
     /// @}
 
