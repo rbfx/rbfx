@@ -34,14 +34,39 @@ namespace Urho3D
 
 class Model;
 
+/// Model vertex format, unpacked for easy editing.
+struct URHO3D_API ModelVertexFormat
+{
+    static const VertexElementType Undefined = MAX_VERTEX_ELEMENT_TYPES;
+    static const unsigned MaxColors = 4;
+    static const unsigned MaxUVs = 4;
+
+    /// Vertex element formats
+    /// @{
+    VertexElementType position_{ Undefined };
+    VertexElementType normal_{ Undefined };
+    VertexElementType tangent_{ Undefined };
+    VertexElementType binormal_{ Undefined };
+    VertexElementType blendIndices_{ Undefined };
+    VertexElementType blendWeights_{ Undefined };
+    ea::array<VertexElementType, MaxColors> color_{ Undefined, Undefined, Undefined, Undefined };
+    ea::array<VertexElementType, MaxUVs> uv_{ Undefined, Undefined, Undefined, Undefined };
+    /// @}
+
+    void MergeFrom(const ModelVertexFormat& rhs);
+    unsigned ToHash() const;
+
+    bool operator ==(const ModelVertexFormat& rhs) const;
+    bool operator !=(const ModelVertexFormat& rhs) const { return !(*this == rhs); }
+};
+
 /// Model vertex, unpacked for easy editing.
+/// Warning: ModelVertex must be equivalent to an array of Vector4.
 struct URHO3D_API ModelVertex
 {
-    /// Max number of colors.
-    static const unsigned MaxColors = 4;
-    /// Max number of UV.
-    static const unsigned MaxUVs = 4;
-    /// Vertex elements.
+    static const unsigned MaxColors = ModelVertexFormat::MaxColors;
+    static const unsigned MaxUVs = ModelVertexFormat::MaxUVs;
+    /// Vertex elements corresponding to full ModelVertex.
     static const ea::vector<VertexElement> VertexElements;
 
     /// Position.
@@ -86,31 +111,11 @@ struct URHO3D_API ModelVertex
     bool ReplaceElement(const ModelVertex& source, const VertexElement& element);
     /// Repair missing vertex elements if possible.
     void Repair();
+    /// Prune vertex elements not represented in the format.
+    void PruneElements(const ModelVertexFormat& format);
 
     bool operator ==(const ModelVertex& rhs) const;
     bool operator !=(const ModelVertex& rhs) const { return !(*this == rhs); }
-};
-
-/// Model vertex format, unpacked for easy editing.
-struct URHO3D_API ModelVertexFormat
-{
-    /// Undefined format used to disable corresponding component.
-    static const VertexElementType Undefined = MAX_VERTEX_ELEMENT_TYPES;
-
-    /// Vertex element formats
-    /// @{
-    VertexElementType position_{ Undefined };
-    VertexElementType normal_{ Undefined };
-    VertexElementType tangent_{ Undefined };
-    VertexElementType binormal_{ Undefined };
-    VertexElementType blendIndices_{ Undefined };
-    VertexElementType blendWeights_{ Undefined };
-    ea::array<VertexElementType, ModelVertex::MaxColors> color_{ Undefined, Undefined, Undefined, Undefined };
-    ea::array<VertexElementType, ModelVertex::MaxUVs> uv_{ Undefined, Undefined, Undefined, Undefined };
-    /// @}
-
-    bool operator ==(const ModelVertexFormat& rhs) const;
-    bool operator !=(const ModelVertexFormat& rhs) const { return !(*this == rhs); }
 };
 
 /// Level of detail of Model geometry, unpacked for easy editing.
@@ -127,6 +132,8 @@ struct URHO3D_API GeometryLODView
 
     /// Calculate center of vertices' bounding box.
     Vector3 CalculateCenter() const;
+    /// Clear vertex elements not represented in vertex format.
+    void PruneVertexElements();
 
     bool operator ==(const GeometryLODView& rhs) const;
     bool operator !=(const GeometryLODView& rhs) const { return !(*this == rhs); }
@@ -139,6 +146,9 @@ struct URHO3D_API GeometryView
     ea::vector<GeometryLODView> lods_;
     /// Material resource name.
     ea::string material_;
+
+    /// Clear vertex elements not represented in vertex format.
+    void PruneVertexElements();
 
     bool operator ==(const GeometryView& rhs) const;
     bool operator !=(const GeometryView& rhs) const { return !(*this == rhs); }
@@ -204,11 +214,12 @@ public:
 
     /// Calculate bounding box.
     BoundingBox CalculateBoundingBox() const;
+    /// Clear vertex elements not represented in vertex format.
+    void PruneVertexElements();
 
     /// Set contents
     /// @{
     void SetName(const ea::string& name) { name_ = name; }
-    void SetVertexFormat(const ModelVertexFormat& vertexFormat) { vertexFormat_ = vertexFormat; }
     void SetGeometries(ea::vector<GeometryView> geometries) { geometries_ = ea::move(geometries); }
     void SetBones(ea::vector<BoneView> bones) { bones_ = ea::move(bones); }
     void AddMetadata(const ea::string& key, const Variant& variant) { metadata_.insert_or_assign(key, variant); }
@@ -217,7 +228,6 @@ public:
     /// Return contents
     /// @{
     const ea::string& GetName() const { return name_; }
-    const ModelVertexFormat& GetVertexFormat() const { return vertexFormat_; }
     const ea::vector<GeometryView>& GetGeometries() const { return geometries_; }
     ea::vector<GeometryView>& GetGeometries() { return geometries_; }
     const ea::vector<BoneView>& GetBones() const { return bones_; }
@@ -227,7 +237,6 @@ public:
 
 private:
     ea::string name_;
-    ModelVertexFormat vertexFormat_;
     ea::vector<GeometryView> geometries_;
     ea::vector<BoneView> bones_;
     StringVariantMap metadata_;

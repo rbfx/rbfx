@@ -40,21 +40,6 @@ static bool CompareVertexElementSemantics(const VertexElement& lhs, const Vertex
     return lhs.semantic_ == rhs.semantic_ && lhs.index_ == rhs.index_;
 }
 
-/// Get vertex elements of all vertex buffers.
-const ea::vector<VertexElement> GetEffectiveVertexElements(const Model* model)
-{
-    ea::vector<VertexElement> elements;
-    for (const VertexBuffer* vertexBuffer : model->GetVertexBuffers())
-    {
-        for (const VertexElement& element : vertexBuffer->GetElements())
-        {
-            if (ea::find(elements.begin(), elements.end(), element, CompareVertexElementSemantics) == elements.end())
-                elements.push_back(element);
-        }
-    }
-    return elements;
-}
-
 /// Read vertex buffer data.
 ea::vector<ModelVertex> GetVertexBufferData(const VertexBuffer* vertexBuffer, unsigned start, unsigned count)
 {
@@ -257,6 +242,42 @@ bool ModelVertex::operator ==(const ModelVertex& rhs) const
         && binormal_.Equals(rhs.binormal_);
 }
 
+void ModelVertexFormat::MergeFrom(const ModelVertexFormat& rhs)
+{
+    static const auto mergeFrom = [](VertexElementType& lhs, const VertexElementType rhs)
+    {
+        if (rhs != Undefined)
+            lhs = rhs;
+    };
+
+    mergeFrom(position_, rhs.position_);
+    mergeFrom(normal_, rhs.normal_);
+    mergeFrom(tangent_, rhs.tangent_);
+    mergeFrom(binormal_, rhs.binormal_);
+    mergeFrom(blendIndices_, rhs.blendIndices_);
+    mergeFrom(blendWeights_, rhs.blendWeights_);
+    for (unsigned i = 0; i < MaxColors; ++i)
+        mergeFrom(color_[i], rhs.color_[i]);
+    for (unsigned i = 0; i < MaxUVs; ++i)
+        mergeFrom(uv_[i], rhs.uv_[i]);
+}
+
+unsigned ModelVertexFormat::ToHash() const
+{
+    unsigned hash = 0;
+    CombineHash(hash, MakeHash(position_));
+    CombineHash(hash, MakeHash(normal_));
+    CombineHash(hash, MakeHash(tangent_));
+    CombineHash(hash, MakeHash(binormal_));
+    CombineHash(hash, MakeHash(blendIndices_));
+    CombineHash(hash, MakeHash(blendWeights_));
+    for (unsigned i = 0; i < MaxColors; ++i)
+        CombineHash(hash, MakeHash(color_[i]));
+    for (unsigned i = 0; i < MaxUVs; ++i)
+        CombineHash(hash, MakeHash(uv_[i]));
+    return hash;
+}
+
 bool ModelVertexFormat::operator ==(const ModelVertexFormat& rhs) const
 {
     return position_ == rhs.position_
@@ -413,6 +434,27 @@ void ModelVertex::Repair()
     }
 }
 
+void ModelVertex::PruneElements(const ModelVertexFormat& format)
+{
+    static const auto pruneElement = [](Vector4& element, VertexElementType type)
+    {
+        if (type == ModelVertexFormat::Undefined)
+            element = Vector4::ZERO;
+    };
+
+    pruneElement(position_, format.position_);
+    pruneElement(normal_, format.normal_);
+    pruneElement(tangent_, format.tangent_);
+    pruneElement(binormal_, format.binormal_);
+    pruneElement(blendIndices_, format.blendIndices_);
+    pruneElement(blendWeights_, format.blendWeights_);
+    pruneElement(position_, format.position_);
+    for (unsigned i = 0; i < MaxColors; ++i)
+        pruneElement(color_[i], format.color_[i]);
+    for (unsigned i = 0; i < MaxUVs; ++i)
+        pruneElement(uv_[i], format.uv_[i]);
+}
+
 Vector3 GeometryLODView::CalculateCenter() const
 {
     Vector3 center;
@@ -421,9 +463,20 @@ Vector3 GeometryLODView::CalculateCenter() const
     return vertices_.empty() ? Vector3::ZERO : center / static_cast<float>(vertices_.size());
 }
 
+void GeometryLODView::PruneVertexElements()
+{
+    for (ModelVertex& vertex : vertices_)
+        vertex.PruneElements(vertexFormat_);
+}
+
+void GeometryView::PruneVertexElements()
+{
+    for (GeometryLODView& lodView : lods_)
+        lodView.PruneVertexElements();
+}
+
 void ModelView::Clear()
 {
-    vertexFormat_ = {};
     geometries_.clear();
     bones_.clear();
     metadata_.clear();
@@ -435,9 +488,6 @@ bool ModelView::ImportModel(const Model* model)
 
     // Read name
     name_ = model->GetName();
-
-    // Read vertex format
-    vertexFormat_ = ParseVertexElements(GetEffectiveVertexElements(model));
 
     // Read metadata
     for (const ea::string& key : model->GetMetadataKeys())
@@ -483,7 +533,7 @@ bool ModelView::ImportModel(const Model* model)
             for (unsigned& index : geometry.indices_)
                 index -= modelGeometry->GetVertexStart();
 
-            // Copy vertices
+            // Copy vertices and read vertex format
             const unsigned vertexCount = modelGeometry->GetVertexCount();
             geometry.vertices_.resize(vertexCount);
             for (const VertexBuffer* modelVertexBuffer : modelGeometry->GetVertexBuffers())
@@ -502,6 +552,9 @@ bool ModelView::ImportModel(const Model* model)
                     for (const VertexElement& element : vertexElements)
                         geometry.vertices_[i].ReplaceElement(vertexBufferData[i], element);
                 }
+
+                const auto vertexFormat = ParseVertexElements(vertexElements);
+                geometry.vertexFormat_.MergeFrom(vertexFormat);
             }
 
             geometries_[geometryIndex].lods_[lodIndex] = ea::move(geometry);
@@ -551,17 +604,17 @@ bool ModelView::ImportModel(const Model* model)
 void ModelView::ExportModel(Model* model) const
 {
     // Collect vertices and indices
-    ea::vector<ModelVertex> vertexBufferData;
+    ea::unordered_map<ModelVertexFormat, ea::vector<ModelVertex>> vertexBufferData;
     ea::vector<unsigned> indexBufferData;
 
     for (const GeometryView& sourceGeometry : geometries_)
     {
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
-            const unsigned startVertex = vertexBufferData.size();
+            const unsigned startVertex = vertexBufferData[sourceGeometryLod.vertexFormat_].size();
             const unsigned startIndex = indexBufferData.size();
 
-            vertexBufferData.append(sourceGeometryLod.vertices_);
+            vertexBufferData[sourceGeometryLod.vertexFormat_].append(sourceGeometryLod.vertices_);
             indexBufferData.append(sourceGeometryLod.indices_);
 
             for (unsigned i = startIndex; i < indexBufferData.size(); ++i)
@@ -569,15 +622,21 @@ void ModelView::ExportModel(Model* model) const
         }
     }
 
-    const auto vertexElements = CollectVertexElements(vertexFormat_);
-    if (vertexElements.empty())
-        URHO3D_LOGERROR("No vertex elements in vertex buffer");
-
     // Create vertex and index buffers
-    auto modelVertexBuffer = MakeShared<VertexBuffer>(context_);
-    modelVertexBuffer->SetShadowed(true);
-    modelVertexBuffer->SetSize(vertexBufferData.size(), vertexElements);
-    SetVertexBufferData(modelVertexBuffer, vertexBufferData);
+    ea::unordered_map<ModelVertexFormat, SharedPtr<VertexBuffer>> modelVertexBuffers;
+    for (const auto& [vertexFormat, vertexData] : vertexBufferData)
+    {
+        const auto vertexElements = CollectVertexElements(vertexFormat);
+        if (vertexElements.empty())
+            URHO3D_LOGERROR("No vertex elements in vertex buffer");
+
+        auto modelVertexBuffer = MakeShared<VertexBuffer>(context_);
+        modelVertexBuffer->SetShadowed(true);
+        modelVertexBuffer->SetSize(vertexData.size(), vertexElements);
+        SetVertexBufferData(modelVertexBuffer, vertexData);
+
+        modelVertexBuffers[vertexFormat] = modelVertexBuffer;
+    }
 
     const bool largeIndices = HasLargeIndices(indexBufferData);
     auto modelIndexBuffer = MakeShared<IndexBuffer>(context_);
@@ -591,12 +650,12 @@ void ModelView::ExportModel(Model* model) const
         model->AddMetadata(var.first, var.second);
 
     model->SetBoundingBox(CalculateBoundingBox());
-    model->SetVertexBuffers({ modelVertexBuffer }, {}, {});
+    model->SetVertexBuffers(modelVertexBuffers.values(), {}, {});
     model->SetIndexBuffers({ modelIndexBuffer });
 
     // Write geometries
     unsigned indexStart = 0;
-    unsigned vertexStart = 0;
+    ea::unordered_map<ModelVertexFormat, unsigned> vertexStart;
 
     const unsigned numGeometries = geometries_.size();
     model->SetNumGeometries(numGeometries);
@@ -613,21 +672,22 @@ void ModelView::ExportModel(Model* model) const
         for (unsigned lodIndex = 0; lodIndex < numLods; ++lodIndex)
         {
             const GeometryLODView& sourceGeometryLod = sourceGeometry.lods_[lodIndex];
+            const ModelVertexFormat& vertexFormat = sourceGeometryLod.vertexFormat_;
             const unsigned indexCount = sourceGeometryLod.indices_.size();
             const unsigned vertexCount = sourceGeometryLod.vertices_.size();
 
             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
 
             geometry->SetNumVertexBuffers(1);
-            geometry->SetVertexBuffer(0, modelVertexBuffer);
+            geometry->SetVertexBuffer(0, modelVertexBuffers[vertexFormat]);
             geometry->SetIndexBuffer(modelIndexBuffer);
             geometry->SetLodDistance(sourceGeometryLod.lodDistance_);
-            geometry->SetDrawRange(TRIANGLE_LIST, indexStart, indexCount, vertexStart, vertexCount);
+            geometry->SetDrawRange(TRIANGLE_LIST, indexStart, indexCount, vertexStart[vertexFormat], vertexCount);
 
             model->SetGeometry(geometryIndex, lodIndex, geometry);
 
             indexStart += indexCount;
-            vertexStart += vertexCount;
+            vertexStart[vertexFormat] += vertexCount;
         }
     }
 
@@ -701,6 +761,12 @@ BoundingBox ModelView::CalculateBoundingBox() const
         }
     }
     return boundingBox;
+}
+
+void ModelView::PruneVertexElements()
+{
+    for (GeometryView& sourceGeometry : geometries_)
+        sourceGeometry.PruneVertexElements();
 }
 
 }

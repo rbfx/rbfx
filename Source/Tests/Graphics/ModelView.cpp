@@ -39,12 +39,11 @@ TEST_CASE("Simple model constructed and desconstructed")
         modelView->AddMetadata("Metadata1", Vector3{ 1.5f, 0.5f, 1.0f });
         modelView->AddMetadata("Metadata2", "[tag]");
 
-        // Set vertex format
+        // Prepare vertex format
         ModelVertexFormat format;
         format.position_ = TYPE_VECTOR3;
         format.normal_ = TYPE_VECTOR3;
         format.color_[0] = TYPE_UBYTE4_NORM;
-        modelView->SetVertexFormat(format);
 
         // Set LODs
         auto& geometries = modelView->GetGeometries();
@@ -60,6 +59,10 @@ TEST_CASE("Simple model constructed and desconstructed")
 
         geometries[1].lods_[0].lodDistance_ = 10.0f;
         geometries[1].lods_[1].lodDistance_ = 20.0f;
+
+        geometries[0].lods_[0].vertexFormat_ = format;
+        geometries[1].lods_[0].vertexFormat_ = format;
+        geometries[1].lods_[1].vertexFormat_ = format;
 
         // Convert
         const auto model = modelView->ExportModel();
@@ -180,7 +183,102 @@ TEST_CASE("Simple model constructed and desconstructed")
         auto secondModelView = MakeShared<ModelView>(context);
         const bool modelImported = secondModelView->ImportModel(model);
         REQUIRE(modelImported);
-        CHECK(modelView->GetVertexFormat() == secondModelView->GetVertexFormat());
+        CHECK(modelView->GetGeometries() == secondModelView->GetGeometries());
+        CHECK(modelView->GetBones() == secondModelView->GetBones());
+    }
+}
+
+TEST_CASE("Simple model with multiple vertex formats")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto modelView = MakeShared<ModelView>(context);
+
+    VectorBuffer modelData;
+    {
+        // Set metadata
+        modelView->AddMetadata("Metadata1", Vector3{ 1.5f, 0.5f, 1.0f });
+        modelView->AddMetadata("Metadata2", "[tag]");
+
+        // Set LODs
+        auto& geometries = modelView->GetGeometries();
+        geometries.resize(2);
+        geometries[0].lods_.resize(1);
+        geometries[1].lods_.resize(3);
+
+        // Set geometry data
+        Tests::AppendQuad(geometries[0].lods_[0], { 0.0f, 0.5f, 0.0f }, { 0.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::WHITE);
+        Tests::AppendQuad(geometries[0].lods_[0], { 0.0f, 0.5f, 0.0f }, { 90.0f, Vector3::UP }, { 1.0f, 1.0f }, Color::BLACK);
+        Tests::AppendQuad(geometries[1].lods_[0], { 0.0f, 0.5f, 1.0f }, Quaternion::IDENTITY, { 2.0f, 2.0f }, Color::RED);
+        Tests::AppendQuad(geometries[1].lods_[1], { 0.0f, 0.5f, 1.0f }, Quaternion::IDENTITY, { 2.0f, 2.0f }, Color::BLUE);
+        Tests::AppendQuad(geometries[1].lods_[2], { 0.0f, 0.5f, 1.0f }, Quaternion::IDENTITY, { 2.0f, 2.0f }, Color::BLUE);
+
+        geometries[1].lods_[0].lodDistance_ = 10.0f;
+        geometries[1].lods_[1].lodDistance_ = 20.0f;
+        geometries[1].lods_[2].lodDistance_ = 30.0f;
+
+        // Prepare vertex format
+        ModelVertexFormat format;
+        format.position_ = TYPE_VECTOR3;
+        format.normal_ = TYPE_VECTOR3;
+        format.color_[0] = TYPE_UBYTE4_NORM;
+
+        geometries[0].lods_[0].vertexFormat_.position_ = TYPE_VECTOR3;
+        geometries[0].lods_[0].vertexFormat_.normal_ = TYPE_VECTOR3;
+        geometries[0].lods_[0].vertexFormat_.color_[0] = TYPE_UBYTE4_NORM;
+
+        geometries[1].lods_[0].vertexFormat_.position_ = TYPE_VECTOR3;
+
+        geometries[1].lods_[1].vertexFormat_.position_ = TYPE_VECTOR3;
+        geometries[1].lods_[1].vertexFormat_.normal_ = TYPE_VECTOR3;
+
+        geometries[1].lods_[2].vertexFormat_.position_ = TYPE_VECTOR3;
+        geometries[1].lods_[2].vertexFormat_.normal_ = TYPE_VECTOR3;
+        geometries[1].lods_[2].vertexFormat_.color_[0] = TYPE_UBYTE4_NORM;
+
+        // Convert
+        const auto model = modelView->ExportModel();
+        REQUIRE(model);
+
+        // Assert metadata here because metadata cannot be serialized to memory buffer
+        CHECK(model->GetMetadata("Metadata1") == Variant(Vector3{ 1.5f, 0.5f, 1.0f }));
+        CHECK(model->GetMetadata("Metadata2") == Variant("[tag]"));
+
+        // Serialize
+        model->RemoveAllMetadata();
+        const bool modelSaved = model->Save(modelData);
+        REQUIRE(modelSaved);
+
+        modelData.Seek(0);
+    }
+
+    // Assert loaded
+    auto model = MakeShared<Model>(context);
+    const bool modelLoaded = model->Load(modelData);
+    REQUIRE(modelLoaded);
+
+    // Assert that there are three different vertex buffers
+    {
+        const auto& vertexBuffers = model->GetVertexBuffers();
+        ea::vector<ea::pair<ea::vector<VertexElement>, VertexBuffer*>> sortedVertexBuffers;
+        for (VertexBuffer* vertexBuffer : vertexBuffers)
+            sortedVertexBuffers.emplace_back(vertexBuffer->GetElements(), vertexBuffer);
+
+        REQUIRE(sortedVertexBuffers.size() == 3);
+        REQUIRE(sortedVertexBuffers[0].first.size() == 1);
+        REQUIRE(sortedVertexBuffers[0].second->GetVertexCount() == 4);
+        REQUIRE(sortedVertexBuffers[1].first.size() == 2);
+        REQUIRE(sortedVertexBuffers[1].second->GetVertexCount() == 4);
+        REQUIRE(sortedVertexBuffers[2].first.size() == 3);
+        REQUIRE(sortedVertexBuffers[2].second->GetVertexCount() == 12);
+    }
+
+    // Assert ModelView parsing
+    {
+        modelView->PruneVertexElements();
+
+        auto secondModelView = MakeShared<ModelView>(context);
+        const bool modelImported = secondModelView->ImportModel(model);
+        REQUIRE(modelImported);
         CHECK(modelView->GetGeometries() == secondModelView->GetGeometries());
         CHECK(modelView->GetBones() == secondModelView->GetBones());
     }
@@ -215,7 +313,6 @@ TEST_CASE("Skeletal model constructed and desconstructed")
         auto secondModelView = MakeShared<ModelView>(context);
         const bool modelImported = secondModelView->ImportModel(model);
         REQUIRE(modelImported);
-        CHECK(modelView->GetVertexFormat() == secondModelView->GetVertexFormat());
         CHECK(modelView->GetGeometries() == secondModelView->GetGeometries());
         CHECK(modelView->GetBones() == secondModelView->GetBones());
     }

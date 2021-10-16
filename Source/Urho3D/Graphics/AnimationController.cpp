@@ -993,7 +993,7 @@ bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startN
         animatedNode = startNode->FindChild(nodePath);
         if (!animatedNode)
         {
-            URHO3D_LOGWARNING("Path to node \"{}\" cannot be resolved", nodePath);
+            URHO3D_LOGWARNING("Path to node '{}' cannot be resolved", nodePath);
             return false;
         }
 
@@ -1012,7 +1012,7 @@ bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startN
     const auto& serializableAndAttribute = animatedNode->FindComponentAttribute(attributePath);
     if (!serializableAndAttribute.first)
     {
-        URHO3D_LOGWARNING("Path to attribute \"{}\" cannot be resolved", attributePath);
+        URHO3D_LOGWARNING("Path to attribute '{}' cannot be resolved", attributePath);
         return false;
     }
 
