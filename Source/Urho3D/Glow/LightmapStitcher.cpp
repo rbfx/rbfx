@@ -203,7 +203,7 @@ void StitchTextureSeams(LightmapStitchingContext& stitchingContext,
 
     if (!graphics->BeginFrame())
     {
-        URHO3D_LOGERROR("Failed to begin lightmap geometry buffer rendering \"{}\"");
+        URHO3D_LOGERROR("Failed to begin lightmap geometry buffer rendering '{}'");
         return;
     }
 

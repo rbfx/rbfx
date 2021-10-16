@@ -162,20 +162,20 @@ SharedPtr<ModelView> CreateSkinnedQuad_Model(Context* context)
 {
     auto modelView = MakeShared<ModelView>(context);
 
-    // Set vertex format
+    // Prepare vertex format
     ModelVertexFormat format;
     format.position_ = TYPE_VECTOR3;
     format.normal_ = TYPE_VECTOR3;
     format.color_[0] = TYPE_UBYTE4_NORM;
     format.blendIndices_ = TYPE_UBYTE4;
     format.blendWeights_ = TYPE_UBYTE4_NORM;
-    modelView->SetVertexFormat(format);
 
     // Create geometry
     auto& geometries = modelView->GetGeometries();
     geometries.resize(1);
     geometries[0].lods_.resize(1);
     auto& geometry = geometries[0].lods_[0];
+    geometry.vertexFormat_ = format;
 
     // Create bones
     auto& bones = modelView->GetBones();

@@ -141,7 +141,7 @@ struct IncrementalLightBaker::Impl
         FileSystem* fs = context_->GetSubsystem<FileSystem>();
         if (!fs->CreateDir(settings_.incremental_.outputDirectory_))
         {
-            URHO3D_LOGERROR("Cannot create output directory \"{}\" for lightmaps", settings_.incremental_.outputDirectory_);
+            URHO3D_LOGERROR("Cannot create output directory '{}' for lightmaps", settings_.incremental_.outputDirectory_);
             return false;
         }
 
@@ -166,14 +166,14 @@ struct IncrementalLightBaker::Impl
         const ea::string giFilePath = GetPath(giFileName);
         if (!fs->CreateDir(giFilePath))
         {
-            URHO3D_LOGERROR("Cannot create output directory \"{}\" for GI data file", giFilePath);
+            URHO3D_LOGERROR("Cannot create output directory '{}' for GI data file", giFilePath);
             return false;
         }
 
         BinaryFile file(context_);
         if (!file.SaveFile(giFileName))
         {
-            URHO3D_LOGERROR("Cannot allocate GI data file at \"{}\"", giFileName);
+            URHO3D_LOGERROR("Cannot allocate GI data file at '{}'", giFileName);
             return false;
         }
         gi->SetFileRef({ BinaryFile::GetTypeStatic(), GetResourceName(context_->GetSubsystem<ResourceCache>(), giFileName) });
@@ -236,7 +236,7 @@ struct IncrementalLightBaker::Impl
 
             if (resourceName.empty())
             {
-                URHO3D_LOGWARNING("Cannot find resource name for lightmap \"{}\", absolute path is used", fileName);
+                URHO3D_LOGWARNING("Cannot find resource name for lightmap '{}', absolute path is used", fileName);
                 scene_->AddLightmap(fileName);
             }
             else

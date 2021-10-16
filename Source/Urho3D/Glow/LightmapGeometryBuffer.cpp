@@ -110,7 +110,7 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
     ModelView modelView(model->GetContext());
     if (!modelView.ImportModel(model))
     {
-        URHO3D_LOGERROR("Cannot import model \"{}\"", model->GetName());
+        URHO3D_LOGERROR("Cannot import model '{}'", model->GetName());
         return {};
     }
 
@@ -131,15 +131,6 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
         return VectorFloorToInt((position - boundingBox.min_) / hashStep);
     };
 
-    const ModelVertexFormat vertexFormat = modelView.GetVertexFormat();
-    if (vertexFormat.position_ == ModelVertexFormat::Undefined
-        || vertexFormat.normal_ == ModelVertexFormat::Undefined
-        || vertexFormat.uv_[uvChannel] == ModelVertexFormat::Undefined)
-    {
-        URHO3D_LOGERROR("Model \"{}\" doesn't have required vertex attributes", model->GetName());
-        return {};
-    }
-
     ea::vector<LightmapSeam> seams;
     for (const GeometryView& geometry : modelView.GetGeometries())
     {
@@ -148,6 +139,15 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
 
         for (const GeometryLODView& geometryLod : geometry.lods_)
         {
+            const ModelVertexFormat& vertexFormat = geometryLod.vertexFormat_;
+            if (vertexFormat.position_ == ModelVertexFormat::Undefined
+                || vertexFormat.normal_ == ModelVertexFormat::Undefined
+                || vertexFormat.uv_[uvChannel] == ModelVertexFormat::Undefined)
+            {
+                URHO3D_LOGERROR("Model '{}' doesn't have required vertex attributes", model->GetName());
+                return {};
+            }
+
             const ea::vector<ModelVertex>& vertices = geometryLod.vertices_;
 
             // Read all edges
@@ -311,7 +311,7 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     Material* bakingMaterial = context->GetSubsystem<ResourceCache>()->GetResource<Material>(settings.materialName_);
     if (!bakingMaterial)
     {
-        URHO3D_LOGERROR("Cannot load material \"{}\"", settings.materialName_);
+        URHO3D_LOGERROR("Cannot load material '{}'", settings.materialName_);
         return {};
     }
 
@@ -450,7 +450,7 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
 
     if (!graphics->BeginFrame())
     {
-        URHO3D_LOGERROR("Failed to begin lightmap geometry buffer rendering \"{}\"");
+        URHO3D_LOGERROR("Failed to begin lightmap geometry buffer rendering '{}'");
         return {};
     }
 

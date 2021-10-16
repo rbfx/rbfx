@@ -71,18 +71,6 @@ struct StaticCaster
     T operator() (U x) const { return static_cast<T>(x); }
 };
 
-int GetByteStride(const tg::BufferView& bufferViewObject, int componentType, int type)
-{
-    const int componentSizeInBytes = tg::GetComponentSizeInBytes(static_cast<uint32_t>(componentType));
-    const int numComponents = tg::GetNumComponentsInType(static_cast<uint32_t>(type));
-    if (componentSizeInBytes <= 0 || numComponents <= 0)
-        return -1;
-
-    return bufferViewObject.byteStride == 0
-        ? componentSizeInBytes * numComponents
-        : static_cast<int>(bufferViewObject.byteStride);
-}
-
 template <class T>
 constexpr bool IsFloatAggregate()
 {
@@ -212,11 +200,141 @@ class GLTFBufferReader : public NonCopyable
 public:
     explicit GLTFBufferReader(GLTFImporterContext* context)
         : context_(context)
+        , model_(context_->GetModel())
     {
     }
 
+    template <class T>
+    ea::vector<T> ReadBufferView(int bufferViewIndex, int byteOffset, int componentType, int type, int count) const
+    {
+        if (bufferViewIndex < 0 || bufferViewIndex >= model_.bufferViews.size())
+            throw RuntimeException("Invalid buffer view #{} is referenced", bufferViewIndex);
+
+        const int numComponents = tg::GetNumComponentsInType(type);
+        if (numComponents <= 0)
+            throw RuntimeException("Unexpected type {} of buffer view elements", type);
+
+        const tg::BufferView& bufferView = model_.bufferViews[bufferViewIndex];
+
+        ea::vector<T> result(count * numComponents);
+        switch (componentType)
+        {
+        case TINYGLTF_COMPONENT_TYPE_BYTE:
+            ReadBufferViewImpl<signed char>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+            ReadBufferViewImpl<unsigned char>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        case TINYGLTF_COMPONENT_TYPE_SHORT:
+            ReadBufferViewImpl<short>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+            ReadBufferViewImpl<unsigned short>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        case TINYGLTF_COMPONENT_TYPE_INT:
+            ReadBufferViewImpl<int>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+            ReadBufferViewImpl<unsigned>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        case TINYGLTF_COMPONENT_TYPE_FLOAT:
+            ReadBufferViewImpl<float>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+            ReadBufferViewImpl<double>(result, bufferView, byteOffset, componentType, type, count);
+            break;
+
+        default:
+            throw RuntimeException("Unsupported component type {} of buffer view elements", componentType);
+        }
+
+        return result;
+    }
+
+    template <class T>
+    ea::vector<T> ReadAccessor(const tg::Accessor& accessor) const
+    {
+        const int numComponents = tg::GetNumComponentsInType(accessor.type);
+        if (numComponents <= 0)
+            throw RuntimeException("Unexpected type {} of buffer view elements", accessor.type);
+
+
+        // Read dense buffer data
+        ea::vector<T> result;
+        if (accessor.bufferView >= 0)
+        {
+            result = ReadBufferView<T>(accessor.bufferView, accessor.byteOffset,
+                accessor.componentType, accessor.type, accessor.count);
+        }
+        else
+        {
+            result.resize(accessor.count * numComponents);
+        }
+
+        // Read sparse buffer data
+        const int numSparseElements = accessor.sparse.count;
+        if (accessor.sparse.isSparse && numSparseElements > 0)
+        {
+            const auto& accessorIndices = accessor.sparse.indices;
+            const auto& accessorValues = accessor.sparse.values;
+
+            const auto indices = ReadBufferView<unsigned>(accessorIndices.bufferView, accessorIndices.byteOffset,
+                accessorIndices.componentType, TINYGLTF_TYPE_SCALAR, numSparseElements);
+
+            const auto values = ReadBufferView<T>(accessorValues.bufferView, accessorValues.byteOffset,
+                accessor.componentType, accessor.type, numSparseElements);
+
+            for (unsigned i = 0; i < indices.size(); ++i)
+                ea::copy_n(&values[i * numComponents], numComponents, &result[indices[i] * numComponents]);
+        }
+
+        return result;
+    }
+
 private:
+    static int GetByteStride(const tg::BufferView& bufferViewObject, int componentType, int type)
+    {
+        const int componentSizeInBytes = tg::GetComponentSizeInBytes(static_cast<uint32_t>(componentType));
+        const int numComponents = tg::GetNumComponentsInType(static_cast<uint32_t>(type));
+        if (componentSizeInBytes <= 0 || numComponents <= 0)
+            return -1;
+
+        return bufferViewObject.byteStride == 0
+            ? componentSizeInBytes * numComponents
+            : static_cast<int>(bufferViewObject.byteStride);
+    }
+
+    template <class T, class U>
+    void ReadBufferViewImpl(ea::vector<U>& result,
+        const tg::BufferView& bufferView, int byteOffset, int componentType, int type, int count) const
+    {
+        const tg::Buffer& buffer = model_.buffers[bufferView.buffer];
+
+        const auto* bufferViewData = buffer.data.data() + bufferView.byteOffset + byteOffset;
+        const int stride = GetByteStride(bufferView, componentType, type);
+
+        const int numComponents = tg::GetNumComponentsInType(type);
+        for (unsigned i = 0; i < count; ++i)
+        {
+            for (unsigned j = 0; j < numComponents; ++j)
+            {
+                T elementValue{};
+                memcpy(&elementValue, bufferViewData + sizeof(T) * j, sizeof(T));
+                result[i * numComponents + j] = static_cast<U>(elementValue);
+            }
+            bufferViewData += stride;
+        }
+    }
+
     const GLTFImporterContext* context_{};
+    const tg::Model& model_;
 };
 
 class GLTFTextureImporter : public NonCopyable
@@ -238,12 +356,11 @@ public:
             throw RuntimeException("Textures are already cooking");
 
         texturesCooked_ = true;
-        for (auto& elem : texturesMRO_)
+        for (auto& [indices, texture] : texturesMRO_)
         {
-            const auto [metallicRoughnessTextureIndex, occlusionTextureIndex] = elem.first;
-            const ImportedRMOTexture& texture = elem.second;
+            const auto [metallicRoughnessTextureIndex, occlusionTextureIndex] = indices;
 
-            elem.second.repackedImage_ = ImportRMOTexture(metallicRoughnessTextureIndex, occlusionTextureIndex,
+            texture.repackedImage_ = ImportRMOTexture(metallicRoughnessTextureIndex, occlusionTextureIndex,
                 texture.fakeTexture_->GetName());
         }
     }
@@ -773,6 +890,7 @@ public:
         const ea::string& outputPath, const ea::string& resourceNamePrefix)
         : context_(context)
         , importerContext_(context, LoadGLTF(fileName), outputPath, resourceNamePrefix)
+        , bufferReader_(&importerContext_)
         , textureImporter_(&importerContext_)
         , materialImporter_(&importerContext_, &textureImporter_)
     {
@@ -914,9 +1032,6 @@ private:
                 if (auto material = materialImporter_.GetOrImportMaterial(model_.materials[primitive.material], geometryLODView.vertexFormat_))
                     geometryView.material_ = material->GetName();
             }
-
-            // TODO: Get rid of this line
-            modelView->SetVertexFormat(geometryLODView.vertexFormat_);
         }
         return modelView;
     }
@@ -1043,118 +1158,6 @@ private:
         }
     }
 
-    template <class T, class U>
-    void ReadBufferViewImpl(ea::vector<U>& result,
-        int bufferViewIndex, int byteOffset, int componentType, int type, int count) const
-    {
-        const tg::BufferView& bufferView = model_.bufferViews[bufferViewIndex];
-        const tg::Buffer& buffer = model_.buffers[bufferView.buffer];
-
-        const auto* bufferViewData = buffer.data.data() + bufferView.byteOffset + byteOffset;
-        const int stride = GetByteStride(bufferView, componentType, type);
-
-        const int numComponents = tg::GetNumComponentsInType(type);
-        for (unsigned i = 0; i < count; ++i)
-        {
-            for (unsigned j = 0; j < numComponents; ++j)
-            {
-                T elementValue{};
-                memcpy(&elementValue, bufferViewData + sizeof(T) * j, sizeof(T));
-                result[i * numComponents + j] = static_cast<U>(elementValue);
-            }
-            bufferViewData += stride;
-        }
-    }
-
-    template <class T>
-    ea::vector<T> ReadBufferView(int bufferViewIndex, int byteOffset, int componentType, int type, int count) const
-    {
-        ea::vector<T> result;
-        if (bufferViewIndex >= 0)
-        {
-            const int numComponents = tg::GetNumComponentsInType(type);
-            result.clear();
-            result.resize(count * numComponents);
-
-            switch (componentType)
-            {
-            case TINYGLTF_COMPONENT_TYPE_BYTE:
-                ReadBufferViewImpl<signed char>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                ReadBufferViewImpl<unsigned char>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            case TINYGLTF_COMPONENT_TYPE_SHORT:
-                ReadBufferViewImpl<short>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                ReadBufferViewImpl<unsigned short>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            case TINYGLTF_COMPONENT_TYPE_INT:
-                ReadBufferViewImpl<int>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                ReadBufferViewImpl<unsigned>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            case TINYGLTF_COMPONENT_TYPE_FLOAT:
-                ReadBufferViewImpl<float>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            case TINYGLTF_COMPONENT_TYPE_DOUBLE:
-                ReadBufferViewImpl<double>(result, bufferViewIndex, byteOffset, componentType, type, count);
-                break;
-
-            default:
-                URHO3D_LOGERROR("Unexpected component type");
-                break;
-            }
-        }
-        return result;
-    }
-
-    template <class T>
-    ea::vector<T> ReadAccessor(const tg::Accessor& accessor) const
-    {
-        ea::vector<T> result;
-
-        const int numComponents = tg::GetNumComponentsInType(accessor.type);
-        result.resize(accessor.count * numComponents);
-
-        // Read dense buffer data
-        if (accessor.bufferView >= 0)
-        {
-            auto bufferData = ReadBufferView<T>(accessor.bufferView, accessor.byteOffset,
-                accessor.componentType, accessor.type, accessor.count);
-            if (!bufferData.empty())
-                result = ea::move(bufferData);
-        }
-
-        // Read sparse buffer data
-        const int numSparseElements = accessor.sparse.count;
-        if (accessor.sparse.isSparse && numSparseElements > 0)
-        {
-            const auto& accessorIndices = accessor.sparse.indices;
-            const auto& accessorValues = accessor.sparse.values;
-
-            const auto indices = ReadBufferView<unsigned>(accessorIndices.bufferView, accessorIndices.byteOffset,
-                accessorIndices.componentType, TINYGLTF_TYPE_SCALAR, numSparseElements);
-
-            const auto values = ReadBufferView<T>(accessorValues.bufferView, accessorValues.byteOffset,
-                accessor.componentType, accessor.type, numSparseElements);
-
-            for (unsigned i = 0; i < indices.size(); ++i)
-                ea::copy_n(&values[i * numComponents], numComponents, &result[indices[i] * numComponents]);
-        }
-
-        return result;
-    }
-
     template <class T>
     ea::vector<T> ReadOptionalAccessor(int accessorIndex) const
     {
@@ -1162,7 +1165,7 @@ private:
         if (accessorIndex >= 0)
         {
             const tg::Accessor& accessor = model_.accessors[accessorIndex];
-            result = ReadAccessor<T>(accessor);
+            result = bufferReader_.ReadAccessor<T>(accessor);
         }
         return result;
     }
@@ -1170,7 +1173,7 @@ private:
     bool ReadVertexData(ModelVertexFormat& vertexFormat, ea::vector<ModelVertex>& vertices,
         const ea::string& semantics, const tg::Accessor& accessor)
     {
-        const auto attributeData = ReadAccessor<float>(accessor);
+        const auto attributeData = bufferReader_.ReadAccessor<float>(accessor);
         if (attributeData.empty())
             return false;
 
@@ -1264,6 +1267,7 @@ private:
     }
 
     GLTFImporterContext importerContext_;
+    GLTFBufferReader bufferReader_;
     GLTFTextureImporter textureImporter_;
     GLTFMaterialImporter materialImporter_;
 

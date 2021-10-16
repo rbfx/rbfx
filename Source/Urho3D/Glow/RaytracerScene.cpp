@@ -144,15 +144,21 @@ ModelModelViewPair ParseModelForRaytracer(Model* model, bool needLightmapUVAndNo
     auto modelView = MakeShared<ModelView>(model->GetContext());
     modelView->ImportModel(model);
 
-    const ModelVertexFormat vertexFormat = modelView->GetVertexFormat();
-    const bool missingPosition = vertexFormat.position_ == ModelVertexFormat::Undefined;
-    const bool missingNormal = vertexFormat.normal_ == ModelVertexFormat::Undefined;
-    const bool missingUv1 = vertexFormat.uv_[uvChannel] == ModelVertexFormat::Undefined;
-
-    if (missingPosition || (needLightmapUVAndNormal && (missingNormal || missingUv1)))
+    for (const auto& geometryView : modelView->GetGeometries())
     {
-        URHO3D_LOGERROR("Model \"{}\" doesn't have required vertex attributes", model->GetName());
-        return {};
+        for (const auto& geometryLODView : geometryView.lods_)
+        {
+            const ModelVertexFormat& vertexFormat = geometryLODView.vertexFormat_;
+            const bool missingPosition = vertexFormat.position_ == ModelVertexFormat::Undefined;
+            const bool missingNormal = vertexFormat.normal_ == ModelVertexFormat::Undefined;
+            const bool missingUv1 = vertexFormat.uv_[uvChannel] == ModelVertexFormat::Undefined;
+
+            if (missingPosition || (needLightmapUVAndNormal && (missingNormal || missingUv1)))
+            {
+                URHO3D_LOGERROR("Model '{}' doesn't have required vertex attributes", model->GetName());
+                return {};
+            }
+        }
     }
 
     return { model, modelView };

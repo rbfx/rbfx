@@ -111,14 +111,10 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
         geometryLodView.vertices_ = ea::move(newVertices);
         geometryLodView.indices_ = ea::move(newIndices);
+        geometryLodView.vertexFormat_.uv_[settings.uvChannel_] = TYPE_VECTOR2;
     }
 
     // Finalize
-    ModelVertexFormat vertexFormat = modelView.GetVertexFormat();
-    vertexFormat.uv_[settings.uvChannel_] = TYPE_VECTOR2;
-
-    modelView.SetVertexFormat(vertexFormat);
-
     modelView.AddMetadata(LightmapUVGenerationSettings::LightmapSizeKey, atlasSize);
     modelView.AddMetadata(LightmapUVGenerationSettings::LightmapDensityKey, settings.texelPerUnit_);
     modelView.AddMetadata(LightmapUVGenerationSettings::LightmapSharedUV, false);
