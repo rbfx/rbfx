@@ -36,9 +36,9 @@ namespace Urho3D
 
 enum GizmoOperation
 {
-    GIZMOOP_TRANSLATE,
-    GIZMOOP_ROTATE,
-    GIZMOOP_SCALE,
+    GIZMOOP_TRANSLATE = ImGuizmo::TRANSLATE,
+    GIZMOOP_ROTATE = ImGuizmo::ROTATE,
+    GIZMOOP_SCALE = ImGuizmo::SCALE,
     GIZMOOP_MAX
 };
 
