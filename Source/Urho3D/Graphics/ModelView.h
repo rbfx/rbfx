@@ -118,6 +118,27 @@ struct URHO3D_API ModelVertex
     bool operator !=(const ModelVertex& rhs) const { return !(*this == rhs); }
 };
 
+/// Morph of ModelVertex.
+struct URHO3D_API ModelVertexMorph
+{
+    unsigned index_{};
+    Vector3 positionDelta_;
+    Vector3 normalDelta_;
+    Vector3 tangentDelta_;
+
+    bool HasPosition() const { return positionDelta_ != Vector3::ZERO; }
+    bool HasNormal() const { return normalDelta_ != Vector3::ZERO; }
+    bool HasTangent() const { return tangentDelta_ != Vector3::ZERO; }
+    bool IsEmpty() const { return !HasPosition() && !HasNormal() && !HasTangent(); }
+
+    bool operator ==(const ModelVertexMorph& rhs) const;
+    bool operator !=(const ModelVertexMorph& rhs) const { return !(*this == rhs); }
+};
+
+using ModelVertexMorphVector = ea::vector<ModelVertexMorph>;
+
+URHO3D_API void NormalizeModelVertexMorphVector(ModelVertexMorphVector& morphVector);
+
 /// Level of detail of Model geometry, unpacked for easy editing.
 struct URHO3D_API GeometryLODView
 {
@@ -129,11 +150,13 @@ struct URHO3D_API GeometryLODView
     float lodDistance_{};
     /// Vertex format for this specific sub-geometry.
     ModelVertexFormat vertexFormat_;
+    /// Vertex morphs for this geometry.
+    ea::unordered_map<unsigned, ModelVertexMorphVector> morphs_;
 
     /// Calculate center of vertices' bounding box.
     Vector3 CalculateCenter() const;
-    /// Clear vertex elements not represented in vertex format.
-    void PruneVertexElements();
+    /// All equivalent views should be literally equal after normalization.
+    void Normalize();
 
     bool operator ==(const GeometryLODView& rhs) const;
     bool operator !=(const GeometryLODView& rhs) const { return !(*this == rhs); }
@@ -147,8 +170,8 @@ struct URHO3D_API GeometryView
     /// Material resource name.
     ea::string material_;
 
-    /// Clear vertex elements not represented in vertex format.
-    void PruneVertexElements();
+    /// All equivalent views should be literally equal after normalization.
+    void Normalize();
 
     bool operator ==(const GeometryView& rhs) const;
     bool operator !=(const GeometryView& rhs) const { return !(*this == rhs); }
@@ -214,8 +237,8 @@ public:
 
     /// Calculate bounding box.
     BoundingBox CalculateBoundingBox() const;
-    /// Clear vertex elements not represented in vertex format.
-    void PruneVertexElements();
+    /// All equivalent views should be literally equal after normalization.
+    void Normalize();
 
     /// Set contents
     /// @{

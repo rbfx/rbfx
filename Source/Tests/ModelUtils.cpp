@@ -27,6 +27,15 @@
 namespace Tests
 {
 
+ModelVertexFormat GetVertexFormat()
+{
+    ModelVertexFormat format;
+    format.position_ = TYPE_VECTOR3;
+    format.normal_ = TYPE_VECTOR3;
+    format.color_[0] = TYPE_UBYTE4_NORM;
+    return format;
+}
+
 ModelVertex MakeModelVertex(const Vector3& position, const Vector3& normal, const Color& color)
 {
     ModelVertex vertex;
@@ -163,10 +172,7 @@ SharedPtr<ModelView> CreateSkinnedQuad_Model(Context* context)
     auto modelView = MakeShared<ModelView>(context);
 
     // Prepare vertex format
-    ModelVertexFormat format;
-    format.position_ = TYPE_VECTOR3;
-    format.normal_ = TYPE_VECTOR3;
-    format.color_[0] = TYPE_UBYTE4_NORM;
+    ModelVertexFormat format = GetVertexFormat();
     format.blendIndices_ = TYPE_UBYTE4;
     format.blendWeights_ = TYPE_UBYTE4_NORM;
 

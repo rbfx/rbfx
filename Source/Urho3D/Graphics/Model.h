@@ -44,9 +44,9 @@ struct VertexBufferMorph
     /// Vertex elements.
     VertexMaskFlags elementMask_;
     /// Number of vertices.
-    unsigned vertexCount_;
+    unsigned vertexCount_{};
     /// Morphed vertices data size as bytes.
-    unsigned dataSize_;
+    unsigned dataSize_{};
     /// Morphed vertices. Stored packed as <index, data> pairs.
     ea::shared_array<unsigned char> morphData_;
 };
@@ -71,7 +71,7 @@ struct ModelMorph
     /// Morph name hash.
     StringHash nameHash_;
     /// Current morph weight.
-    float weight_;
+    float weight_{};
     /// Morph data per vertex buffer.
     ea::unordered_map<unsigned, VertexBufferMorph> buffers_;
 };
