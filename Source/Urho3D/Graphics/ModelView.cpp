@@ -154,7 +154,7 @@ ea::vector<VertexElement> CollectVertexElements(const ModelVertexFormat& vertexF
 /// Check whether the index is large. 0xffff is reserved for triangle strip reset.
 bool IsLargeIndex(unsigned index)
 {
-    return index >= 0xfffe;
+    return index >= 0xffff;
 }
 
 /// Check whether the index buffer has large indices.
@@ -196,6 +196,110 @@ bool CheckVertexElements(const ea::vector<VertexElement>& elements)
         }
     }
     return true;
+}
+
+VertexBufferMorph CreateVertexBufferMorph(ModelVertexMorphVector morphVector)
+{
+    NormalizeModelVertexMorphVector(morphVector);
+
+    const bool hasPosition = ea::any_of(morphVector.begin(), morphVector.end(),
+        ea::mem_fn(&ModelVertexMorph::HasPosition));
+    const bool hasNormal = ea::any_of(morphVector.begin(), morphVector.end(),
+        ea::mem_fn(&ModelVertexMorph::HasNormal));
+    const bool hasTangent = ea::any_of(morphVector.begin(), morphVector.end(),
+        ea::mem_fn(&ModelVertexMorph::HasTangent));
+
+    VertexBufferMorph result;
+    if (!hasPosition && !hasNormal && !hasTangent)
+        return result;
+
+    unsigned stride = sizeof(unsigned);
+    if (hasPosition)
+    {
+        result.elementMask_ |= MASK_POSITION;
+        stride += sizeof(Vector3);
+    }
+    if (hasNormal)
+    {
+        result.elementMask_ |= MASK_NORMAL;
+        stride += sizeof(Vector3);
+    }
+    if (hasTangent)
+    {
+        result.elementMask_ |= MASK_TANGENT;
+        stride += sizeof(Vector3);
+    }
+
+    result.vertexCount_ = morphVector.size();
+    result.dataSize_ = result.vertexCount_ * stride;
+    result.morphData_ = new unsigned char[result.dataSize_];
+
+    for (unsigned i = 0; i < result.vertexCount_; ++i)
+    {
+        const ModelVertexMorph& src = morphVector[i];
+        unsigned char* dest = &result.morphData_[i * stride];
+
+        std::memcpy(dest, &src.index_, sizeof(src.index_));
+        dest += sizeof(src.index_);
+
+        if (hasPosition)
+        {
+            std::memcpy(dest, &src.positionDelta_, sizeof(src.positionDelta_));
+            dest += sizeof(src.positionDelta_);
+        }
+
+        if (hasNormal)
+        {
+            std::memcpy(dest, &src.normalDelta_, sizeof(src.normalDelta_));
+            dest += sizeof(src.normalDelta_);
+        }
+
+        if (hasTangent)
+        {
+            std::memcpy(dest, &src.tangentDelta_, sizeof(src.tangentDelta_));
+            dest += sizeof(src.tangentDelta_);
+        }
+    }
+
+    return result;
+}
+
+ModelVertexMorph ReadVertexMorph(const VertexBufferMorph& vertexBufferMorph, unsigned i)
+{
+    unsigned stride = sizeof(unsigned);
+    if (vertexBufferMorph.elementMask_ & MASK_POSITION)
+        stride += sizeof(Vector3);
+    if (vertexBufferMorph.elementMask_ & MASK_NORMAL)
+        stride += sizeof(Vector3);
+    if (vertexBufferMorph.elementMask_ & MASK_TANGENT)
+        stride += sizeof(Vector3);
+
+    const unsigned char* ptr = &vertexBufferMorph.morphData_[i * stride];
+
+    ModelVertexMorph vertexMorph;
+
+    memcpy(&vertexMorph.index_, ptr, sizeof(unsigned));
+    ptr += sizeof(unsigned);
+
+    if (vertexBufferMorph.elementMask_ & MASK_POSITION)
+    {
+        memcpy(&vertexMorph.positionDelta_, ptr, sizeof(Vector3));
+        ptr += sizeof(Vector3);
+    }
+
+    if (vertexBufferMorph.elementMask_ & MASK_NORMAL)
+    {
+        memcpy(&vertexMorph.normalDelta_, ptr, sizeof(Vector3));
+        ptr += sizeof(Vector3);
+    }
+
+    if (vertexBufferMorph.elementMask_ & MASK_TANGENT)
+    {
+        memcpy(&vertexMorph.tangentDelta_, ptr, sizeof(Vector3));
+        ptr += sizeof(Vector3);
+    }
+
+    return vertexMorph;
 }
 
 }
@@ -240,6 +344,27 @@ bool ModelVertex::operator ==(const ModelVertex& rhs) const
         && blendIndices_.Equals(rhs.blendIndices_)
         && blendWeights_.Equals(rhs.blendWeights_)
         && binormal_.Equals(rhs.binormal_);
+}
+
+bool ModelVertexMorph::operator ==(const ModelVertexMorph& rhs) const
+{
+    return positionDelta_.Equals(rhs.positionDelta_)
+        && normalDelta_.Equals(rhs.normalDelta_)
+        && tangentDelta_.Equals(rhs.tangentDelta_);
+}
+
+void NormalizeModelVertexMorphVector(ModelVertexMorphVector& morphVector)
+{
+    static const auto isLess = [](const ModelVertexMorph& lhs, const ModelVertexMorph& rhs) { return lhs.index_ < rhs.index_; };
+    static const auto isEqual = [](const ModelVertexMorph& lhs, const ModelVertexMorph& rhs)  { return lhs.index_ == rhs.index_; };
+    static const auto isEmpty = ea::mem_fn(&ModelVertexMorph::IsEmpty);
+
+    // Remove duplicate indices
+    ea::sort(morphVector.begin(), morphVector.end(), isLess);
+    morphVector.erase(ea::unique(morphVector.begin(), morphVector.end(), isEqual), morphVector.end());
+
+    // Remove empty elements
+    morphVector.erase(ea::remove_if(morphVector.begin(), morphVector.end(), isEmpty), morphVector.end());
 }
 
 void ModelVertexFormat::MergeFrom(const ModelVertexFormat& rhs)
@@ -294,7 +419,9 @@ bool GeometryLODView::operator ==(const GeometryLODView& rhs) const
 {
     return vertices_ == rhs.vertices_
         && indices_ == rhs.indices_
-        && lodDistance_ == rhs.lodDistance_;
+        && lodDistance_ == rhs.lodDistance_
+        && vertexFormat_ == rhs.vertexFormat_
+        && morphs_ == rhs.morphs_;
 }
 
 bool GeometryView::operator ==(const GeometryView& rhs) const
@@ -463,16 +590,18 @@ Vector3 GeometryLODView::CalculateCenter() const
     return vertices_.empty() ? Vector3::ZERO : center / static_cast<float>(vertices_.size());
 }
 
-void GeometryLODView::PruneVertexElements()
+void GeometryLODView::Normalize()
 {
     for (ModelVertex& vertex : vertices_)
         vertex.PruneElements(vertexFormat_);
+    for (auto& [index, morphVector] : morphs_)
+        NormalizeModelVertexMorphVector(morphVector);
 }
 
-void GeometryView::PruneVertexElements()
+void GeometryView::Normalize()
 {
     for (GeometryLODView& lodView : lods_)
-        lodView.PruneVertexElements();
+        lodView.Normalize();
 }
 
 void ModelView::Clear()
@@ -496,6 +625,7 @@ bool ModelView::ImportModel(const Model* model)
     const auto& modelVertexBuffers = model->GetVertexBuffers();
     const auto& modelIndexBuffers = model->GetIndexBuffers();
     const auto& modelGeometries = model->GetGeometries();
+    const auto& modelMorphs = model->GetMorphs();
 
     // Read geometries
     const unsigned numGeometries = modelGeometries.size();
@@ -534,9 +664,10 @@ bool ModelView::ImportModel(const Model* model)
                 index -= modelGeometry->GetVertexStart();
 
             // Copy vertices and read vertex format
+            const unsigned vertexStart = modelGeometry->GetVertexStart();
             const unsigned vertexCount = modelGeometry->GetVertexCount();
             geometry.vertices_.resize(vertexCount);
-            for (const VertexBuffer* modelVertexBuffer : modelGeometry->GetVertexBuffers())
+            for (VertexBuffer* modelVertexBuffer : modelGeometry->GetVertexBuffers())
             {
                 if (!CheckVertexElements(modelVertexBuffer->GetElements()))
                 {
@@ -545,7 +676,7 @@ bool ModelView::ImportModel(const Model* model)
                 }
 
                 const auto vertexBufferData = GetVertexBufferData(modelVertexBuffer,
-                    modelGeometry->GetVertexStart(), vertexCount);
+                    vertexStart, vertexCount);
                 const auto vertexElements = modelVertexBuffer->GetElements();
                 for (unsigned i = 0; i < vertexCount; ++i)
                 {
@@ -555,7 +686,67 @@ bool ModelView::ImportModel(const Model* model)
 
                 const auto vertexFormat = ParseVertexElements(vertexElements);
                 geometry.vertexFormat_.MergeFrom(vertexFormat);
+
+                // Read morphs for this vertex buffer
+                for (unsigned morphIndex = 0; morphIndex < modelMorphs.size(); ++morphIndex)
+                {
+                    const ModelMorph& modelMorph = modelMorphs[morphIndex];
+
+                    const unsigned vertexBufferIndex = modelVertexBuffers.index_of(
+                        SharedPtr<VertexBuffer>(modelVertexBuffer));
+                    const auto iter = modelMorph.buffers_.find(vertexBufferIndex);
+                    if (iter == modelMorph.buffers_.end())
+                        continue;
+
+                    ModelVertexMorphVector& morphData = geometry.morphs_[morphIndex];
+                    const VertexBufferMorph& vertexBufferMorph = iter->second;
+                    for (unsigned i = 0; i < vertexBufferMorph.vertexCount_; ++i)
+                    {
+                        const ModelVertexMorph vertexMorph = ReadVertexMorph(vertexBufferMorph, i);
+                        if (vertexMorph.index_ >= vertexStart && vertexMorph.index_ < vertexStart + vertexCount)
+                            morphData.push_back(vertexMorph);
+                    }
+                }
             }
+
+            // Cleanup morphs
+            for (auto& [morphIndex, morphVector] : geometry.morphs_)
+            {
+                static const auto isEqual = [](const ModelVertexMorph& lhs, const ModelVertexMorph& rhs)
+                {
+                    return lhs.index_ == rhs.index_;
+                };
+                ea::stable_sort(morphVector.begin(), morphVector.end(), isEqual);
+
+                ModelVertexMorphVector newMorphVector;
+                for (const ModelVertexMorph& vertexMorph : morphVector)
+                {
+                    if (!newMorphVector.empty())
+                    {
+                        ModelVertexMorph& prevVertexMorph = newMorphVector.back();
+                        if (prevVertexMorph.index_ == vertexMorph.index_)
+                        {
+                            if (vertexMorph.HasPosition())
+                                prevVertexMorph.positionDelta_ = vertexMorph.positionDelta_;
+                            if (vertexMorph.HasNormal())
+                                prevVertexMorph.normalDelta_ = vertexMorph.normalDelta_;
+                            if (vertexMorph.HasTangent())
+                                prevVertexMorph.tangentDelta_ = vertexMorph.tangentDelta_;
+                            continue;
+                        }
+                    }
+
+                    newMorphVector.push_back(vertexMorph);
+                }
+
+                morphVector = ea::move(newMorphVector);
+
+                for (ModelVertexMorph& vertexMorph : morphVector)
+                    vertexMorph.index_ -= vertexStart;
+            }
+
+            ea::erase_if(geometry.morphs_,
+                [](const auto& elem) { return elem.second.empty(); });
 
             geometries_[geometryIndex].lods_[lodIndex] = ea::move(geometry);
         }
@@ -603,46 +794,117 @@ bool ModelView::ImportModel(const Model* model)
 
 void ModelView::ExportModel(Model* model) const
 {
+    struct VertexBufferData
+    {
+        ea::vector<ModelVertex> vertices_;
+        ea::vector<ModelVertexMorphVector> morphs_;
+
+        SharedPtr<VertexBuffer> buffer_;
+        unsigned morphRangeStart_{};
+        unsigned morphRangeCount_{};
+    };
+
     // Collect vertices and indices
-    ea::unordered_map<ModelVertexFormat, ea::vector<ModelVertex>> vertexBufferData;
+    ea::unordered_map<ModelVertexFormat, VertexBufferData> vertexBuffersData;
     ea::vector<unsigned> indexBufferData;
 
     for (const GeometryView& sourceGeometry : geometries_)
     {
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
-            const unsigned startVertex = vertexBufferData[sourceGeometryLod.vertexFormat_].size();
+            VertexBufferData& vertexBufferData = vertexBuffersData[sourceGeometryLod.vertexFormat_];
+            const unsigned startVertex = vertexBufferData.vertices_.size();
             const unsigned startIndex = indexBufferData.size();
 
-            vertexBufferData[sourceGeometryLod.vertexFormat_].append(sourceGeometryLod.vertices_);
+            vertexBufferData.vertices_.append(sourceGeometryLod.vertices_);
             indexBufferData.append(sourceGeometryLod.indices_);
 
             for (unsigned i = startIndex; i < indexBufferData.size(); ++i)
                 indexBufferData[i] += startVertex;
+
+            for (const auto& [morphIndex, morphData] : sourceGeometryLod.morphs_)
+            {
+                if (morphIndex >= vertexBufferData.morphs_.size())
+                    vertexBufferData.morphs_.resize(morphIndex + 1);
+
+                ModelVertexMorphVector& vertexBufferMorph = vertexBufferData.morphs_[morphIndex];
+                const unsigned startMorphVertex = vertexBufferMorph.size();
+                vertexBufferMorph.append(morphData);
+
+                for (unsigned i = startMorphVertex; i < vertexBufferMorph.size(); ++i)
+                    vertexBufferMorph[i].index_ += startVertex;
+            }
         }
     }
 
-    // Create vertex and index buffers
-    ea::unordered_map<ModelVertexFormat, SharedPtr<VertexBuffer>> modelVertexBuffers;
-    for (const auto& [vertexFormat, vertexData] : vertexBufferData)
+    // Create vertex buffers
+    for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
     {
         const auto vertexElements = CollectVertexElements(vertexFormat);
         if (vertexElements.empty())
             URHO3D_LOGERROR("No vertex elements in vertex buffer");
 
-        auto modelVertexBuffer = MakeShared<VertexBuffer>(context_);
-        modelVertexBuffer->SetShadowed(true);
-        modelVertexBuffer->SetSize(vertexData.size(), vertexElements);
-        SetVertexBufferData(modelVertexBuffer, vertexData);
+        auto vertexBuffer = MakeShared<VertexBuffer>(context_);
+        vertexBuffer->SetShadowed(true);
+        vertexBuffer->SetSize(vertexBufferData.vertices_.size(), vertexElements);
+        SetVertexBufferData(vertexBuffer, vertexBufferData.vertices_);
 
-        modelVertexBuffers[vertexFormat] = modelVertexBuffer;
+        unsigned minMorphVertex = M_MAX_UNSIGNED;
+        unsigned maxMorphVertex = 0;
+        for (const ModelVertexMorphVector& morphData : vertexBufferData.morphs_)
+        {
+            for (const ModelVertexMorph& vertexMorph : morphData)
+            {
+                minMorphVertex = ea::min(minMorphVertex, vertexMorph.index_);
+                maxMorphVertex = ea::max(maxMorphVertex, vertexMorph.index_);
+            }
+        }
+
+        vertexBufferData.buffer_ = vertexBuffer;
+        if (minMorphVertex <= maxMorphVertex)
+        {
+            vertexBufferData.morphRangeStart_ = minMorphVertex;
+            vertexBufferData.morphRangeCount_ = maxMorphVertex - minMorphVertex + 1;
+        }
     }
 
+    // Extract vertex buffers info
+    ea::vector<SharedPtr<VertexBuffer>> vertexBuffers;
+    ea::vector<unsigned> morphRangeStarts;
+    ea::vector<unsigned> morphRangeCounts;
+    for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
+    {
+        vertexBuffers.push_back(vertexBufferData.buffer_);
+        morphRangeStarts.push_back(vertexBufferData.morphRangeStart_);
+        morphRangeCounts.push_back(vertexBufferData.morphRangeCount_);
+    }
+
+    // Create morphs
+    ea::vector<ModelMorph> morphs;
+    for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
+    {
+        const unsigned numMorphsForVertexBuffer = vertexBufferData.morphs_.size();
+        if (morphs.size() < numMorphsForVertexBuffer)
+            morphs.resize(numMorphsForVertexBuffer);
+
+        for (unsigned i = 0; i < numMorphsForVertexBuffer; ++i)
+        {
+            const ModelVertexMorphVector& morphDataForBuffer = vertexBufferData.morphs_[i];
+            ModelMorph& modelMorph = morphs[i];
+
+            const unsigned vertexBufferIndex = vertexBuffers.index_of(vertexBufferData.buffer_);
+            VertexBufferMorph vertexBufferMorph = CreateVertexBufferMorph(morphDataForBuffer);
+            if (vertexBufferMorph.vertexCount_ > 0)
+                modelMorph.buffers_[vertexBufferIndex] = ea::move(vertexBufferMorph);
+        }
+    }
+
+    // Create index buffer
     const bool largeIndices = HasLargeIndices(indexBufferData);
-    auto modelIndexBuffer = MakeShared<IndexBuffer>(context_);
-    modelIndexBuffer->SetShadowed(true);
-    modelIndexBuffer->SetSize(indexBufferData.size(), largeIndices);
-    modelIndexBuffer->SetUnpackedData(indexBufferData.data());
+    auto indexBuffer = MakeShared<IndexBuffer>(context_);
+    indexBuffer->SetShadowed(true);
+    indexBuffer->SetSize(indexBufferData.size(), largeIndices);
+    indexBuffer->SetUnpackedData(indexBufferData.data());
 
     // Create model
     model->SetName(name_);
@@ -650,8 +912,9 @@ void ModelView::ExportModel(Model* model) const
         model->AddMetadata(var.first, var.second);
 
     model->SetBoundingBox(CalculateBoundingBox());
-    model->SetVertexBuffers(modelVertexBuffers.values(), {}, {});
-    model->SetIndexBuffers({ modelIndexBuffer });
+    model->SetVertexBuffers(vertexBuffers, morphRangeStarts, morphRangeCounts);
+    model->SetIndexBuffers({ indexBuffer });
+    model->SetMorphs(morphs);
 
     // Write geometries
     unsigned indexStart = 0;
@@ -679,8 +942,8 @@ void ModelView::ExportModel(Model* model) const
             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
 
             geometry->SetNumVertexBuffers(1);
-            geometry->SetVertexBuffer(0, modelVertexBuffers[vertexFormat]);
-            geometry->SetIndexBuffer(modelIndexBuffer);
+            geometry->SetVertexBuffer(0, vertexBuffersData[vertexFormat].buffer_);
+            geometry->SetIndexBuffer(indexBuffer);
             geometry->SetLodDistance(sourceGeometryLod.lodDistance_);
             geometry->SetDrawRange(TRIANGLE_LIST, indexStart, indexCount, vertexStart[vertexFormat], vertexCount);
 
@@ -763,10 +1026,10 @@ BoundingBox ModelView::CalculateBoundingBox() const
     return boundingBox;
 }
 
-void ModelView::PruneVertexElements()
+void ModelView::Normalize()
 {
     for (GeometryView& sourceGeometry : geometries_)
-        sourceGeometry.PruneVertexElements();
+        sourceGeometry.Normalize();
 }
 
 }

@@ -156,13 +156,13 @@ void SoftwareModelAnimator::ApplyVertexBufferSkinning(VertexBuffer* clonedBuffer
         Vector3& position = *reinterpret_cast<Vector3*>(positionsData);
         position = matrix * position;
 
-        if (SkinNormals)
+        if constexpr (SkinNormals)
         {
             Vector3& normal = *reinterpret_cast<Vector3*>(normalsData);
             normal = TransformNormal(matrix, normal);
         }
 
-        if (SkinTangents)
+        if constexpr (SkinTangents)
         {
             Vector3& tangent = *reinterpret_cast<Vector3*>(tangentsData);
             tangent = TransformNormal(matrix, tangent);
@@ -173,9 +173,9 @@ void SoftwareModelAnimator::ApplyVertexBufferSkinning(VertexBuffer* clonedBuffer
         weightsData += numBones_;
 
         positionsData += clonedVertexSize;
-        if (SkinNormals)
+        if constexpr (SkinNormals)
             normalsData += clonedVertexSize;
-        if (SkinTangents)
+        if constexpr (SkinTangents)
             tangentsData += clonedVertexSize;
     }
 
