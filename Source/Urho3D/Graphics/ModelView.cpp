@@ -590,12 +590,28 @@ Vector3 GeometryLODView::CalculateCenter() const
     return vertices_.empty() ? Vector3::ZERO : center / static_cast<float>(vertices_.size());
 }
 
+unsigned GeometryLODView::CalculateNumMorphs() const
+{
+    unsigned numMorphs = 0;
+    for (const auto& [morphIndex, morphVector] : morphs_)
+        numMorphs = ea::max(numMorphs, morphIndex + 1);
+    return numMorphs;
+}
+
 void GeometryLODView::Normalize()
 {
     for (ModelVertex& vertex : vertices_)
         vertex.PruneElements(vertexFormat_);
     for (auto& [index, morphVector] : morphs_)
         NormalizeModelVertexMorphVector(morphVector);
+}
+
+unsigned GeometryView::CalculateNumMorphs() const
+{
+    unsigned numMorphs = 0;
+    for (const GeometryLODView& lodView : lods_)
+        numMorphs = ea::max(numMorphs, lodView.CalculateNumMorphs());
+    return numMorphs;
 }
 
 void GeometryView::Normalize()
@@ -626,6 +642,14 @@ bool ModelView::ImportModel(const Model* model)
     const auto& modelIndexBuffers = model->GetIndexBuffers();
     const auto& modelGeometries = model->GetGeometries();
     const auto& modelMorphs = model->GetMorphs();
+
+    // Read morphs metadata
+    morphs_.resize(modelMorphs.size());
+    for (unsigned morphIndex = 0; morphIndex < modelMorphs.size(); ++morphIndex)
+    {
+        morphs_[morphIndex].name_ = modelMorphs[morphIndex].name_;
+        morphs_[morphIndex].initialWeight_ = modelMorphs[morphIndex].weight_;
+    }
 
     // Read geometries
     const unsigned numGeometries = modelGeometries.size();
@@ -880,7 +904,14 @@ void ModelView::ExportModel(Model* model) const
     }
 
     // Create morphs
-    ea::vector<ModelMorph> morphs;
+    ea::vector<ModelMorph> morphs(morphs_.size());
+    for (unsigned i = 0; i < morphs_.size(); ++i)
+    {
+        morphs[i].name_ = morphs_[i].name_;
+        morphs[i].nameHash_ = morphs_[i].name_;
+        morphs[i].weight_ = morphs_[i].initialWeight_;
+    }
+
     for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
     {
         const unsigned numMorphsForVertexBuffer = vertexBufferData.morphs_.size();
@@ -1028,8 +1059,26 @@ BoundingBox ModelView::CalculateBoundingBox() const
 
 void ModelView::Normalize()
 {
-    for (GeometryView& sourceGeometry : geometries_)
-        sourceGeometry.Normalize();
+    for (GeometryView& geometryView : geometries_)
+        geometryView.Normalize();
+
+    unsigned numMorphs = 0;
+    for (GeometryView& geometryView : geometries_)
+        numMorphs = ea::max(numMorphs, geometryView.CalculateNumMorphs());
+    if (morphs_.size() < numMorphs)
+        morphs_.resize(numMorphs);
+}
+
+void ModelView::SetMorph(unsigned index, const ModelMorphView& morph)
+{
+    if (morphs_.size() <= index)
+        morphs_.resize(index + 1);
+    morphs_[index] = morph;
+}
+
+void ModelView::AddMetadata(const ea::string& key, const Variant& variant)
+{
+    metadata_.insert_or_assign(key, variant);
 }
 
 }

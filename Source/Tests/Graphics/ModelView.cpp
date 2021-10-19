@@ -320,10 +320,12 @@ TEST_CASE("Model with morphs is constructed and desconstructed")
         geometries[0].lods_[0].morphs_[0].push_back(ModelVertexMorph{ 2, { 0.5f, 1.0f, 0.0f } });
 
         // Set morph #1 which affects geometry #0 and #1
+        modelView->SetMorph(1, { "Morph #1", 0.5f });
         geometries[0].lods_[0].morphs_[1].push_back(ModelVertexMorph{ 1, { 0.5f, 1.0f, 0.0f } });
         geometries[1].lods_[0].morphs_[1].push_back(ModelVertexMorph{ 2, { 0.5f, 1.0f, 0.0f } });
 
         // Set morph #2 which affects geometry #1
+        modelView->SetMorph(2, { "Morph #2", 0.7f });
         geometries[1].lods_[0].morphs_[2].push_back(ModelVertexMorph{ 2, { 0.5f, 1.0f, 0.0f } });
 
         // Set vertex format
@@ -351,11 +353,17 @@ TEST_CASE("Model with morphs is constructed and desconstructed")
     {
         const auto& morphs = model->GetMorphs();
         REQUIRE(morphs.size() == 3);
+        CHECK(morphs[0].name_ == "");
+        CHECK(morphs[0].weight_ == 0.0f);
         CHECK(morphs[0].buffers_.size() == 1);
         CHECK(morphs[0].buffers_.begin()->second.vertexCount_ == 2);
+        CHECK(morphs[1].name_ == "Morph #1");
+        CHECK(morphs[1].weight_ == 0.5f);
         CHECK(morphs[1].buffers_.size() == 2);
         CHECK(morphs[1].buffers_.begin()->second.vertexCount_ == 1);
         CHECK(ea::next(morphs[1].buffers_.begin())->second.vertexCount_ == 1);
+        CHECK(morphs[2].name_ == "Morph #2");
+        CHECK(morphs[2].weight_ == 0.7f);
         CHECK(morphs[2].buffers_.size() == 1);
         CHECK(morphs[2].buffers_.begin()->second.vertexCount_ == 1);
     }

@@ -110,7 +110,7 @@ void AnimatedModel::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Bone Animation Enabled", GetBonesEnabledAttr, SetBonesEnabledAttr, VariantVector,
         Variant::emptyVariantVector, AM_FILE | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Morphs", GetMorphsAttr, SetMorphsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
-        AM_DEFAULT | AM_NOEDIT);
+        AM_DEFAULT);
 }
 
 bool AnimatedModel::Serialize(Archive& archive)
@@ -374,18 +374,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
 
         // Copy morphs. Note: morph vertex buffers will be created later on-demand
         modelAnimator_ = nullptr;
-        morphs_.clear();
-        const ea::vector<ModelMorph>& morphs = model->GetMorphs();
-        morphs_.reserve(morphs.size());
-        for (unsigned i = 0; i < morphs.size(); ++i)
-        {
-            ModelMorph newMorph;
-            newMorph.name_ = morphs[i].name_;
-            newMorph.nameHash_ = morphs[i].nameHash_;
-            newMorph.weight_ = 0.0f;
-            newMorph.buffers_ = morphs[i].buffers_;
-            morphs_.push_back(newMorph);
-        }
+        morphs_ = model->GetMorphs();
 
         // Copy bounding box & skeleton
         SetBoundingBox(model->GetBoundingBox());

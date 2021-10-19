@@ -155,6 +155,8 @@ struct URHO3D_API GeometryLODView
 
     /// Calculate center of vertices' bounding box.
     Vector3 CalculateCenter() const;
+    /// Calculate number of morphs in the model.
+    unsigned CalculateNumMorphs() const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
 
@@ -170,6 +172,8 @@ struct URHO3D_API GeometryView
     /// Material resource name.
     ea::string material_;
 
+    /// Calculate number of morphs in the model.
+    unsigned CalculateNumMorphs() const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
 
@@ -214,6 +218,13 @@ struct URHO3D_API BoneView
     bool operator !=(const BoneView& rhs) const { return !(*this == rhs); }
 };
 
+/// Represents metadata of model morph.
+struct URHO3D_API ModelMorphView
+{
+    ea::string name_;
+    float initialWeight_{};
+};
+
 /// Represents Model in editable form.
 /// Some features are not supported for sake of API simplicity:
 /// - Multiple vertex and index buffers;
@@ -245,7 +256,9 @@ public:
     void SetName(const ea::string& name) { name_ = name; }
     void SetGeometries(ea::vector<GeometryView> geometries) { geometries_ = ea::move(geometries); }
     void SetBones(ea::vector<BoneView> bones) { bones_ = ea::move(bones); }
-    void AddMetadata(const ea::string& key, const Variant& variant) { metadata_.insert_or_assign(key, variant); }
+    void SetMorphs(ea::vector<ModelMorphView> morphs) { morphs_ = ea::move(morphs); }
+    void SetMorph(unsigned index, const ModelMorphView& morph);
+    void AddMetadata(const ea::string& key, const Variant& variant);
     /// @}
 
     /// Return contents
@@ -255,6 +268,8 @@ public:
     ea::vector<GeometryView>& GetGeometries() { return geometries_; }
     const ea::vector<BoneView>& GetBones() const { return bones_; }
     ea::vector<BoneView>& GetBones() { return bones_; }
+    const ea::vector<ModelMorphView>& GetMorphs() const { return morphs_; }
+    ea::vector<ModelMorphView>& GetMorphs() { return morphs_; }
     const Variant& GetMetadata(const ea::string& key) const;
     /// @}
 
@@ -262,6 +277,7 @@ private:
     ea::string name_;
     ea::vector<GeometryView> geometries_;
     ea::vector<BoneView> bones_;
+    ea::vector<ModelMorphView> morphs_;
     StringVariantMap metadata_;
 };
 
