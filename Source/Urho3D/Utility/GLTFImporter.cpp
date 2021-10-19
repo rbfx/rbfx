@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -291,15 +291,6 @@ public:
         return result;
     }
 
-    template <>
-    ea::vector<Vector2> ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector2>(ReadAccessor<float>(accessor)); }
-
-    template <>
-    ea::vector<Vector3> ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector3>(ReadAccessor<float>(accessor)); }
-
-    template <>
-    ea::vector<Vector4> ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector4>(ReadAccessor<float>(accessor)); }
-
 private:
     static int GetByteStride(const tg::BufferView& bufferViewObject, int componentType, int type)
     {
@@ -354,6 +345,15 @@ private:
     const GLTFImporterContext* context_{};
     const tg::Model& model_;
 };
+
+template <>
+ea::vector<Vector2> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector2>(ReadAccessor<float>(accessor)); }
+
+template <>
+ea::vector<Vector3> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector3>(ReadAccessor<float>(accessor)); }
+
+template <>
+ea::vector<Vector4> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector4>(ReadAccessor<float>(accessor)); }
 
 class GLTFTextureImporter : public NonCopyable
 {
