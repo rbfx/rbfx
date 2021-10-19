@@ -235,6 +235,14 @@ public:
     const ea::vector<unsigned>& GetMorphRangeCounts() const { return morphRangeCounts_; }
 
 private:
+    /// Class versions (used for serialization)
+    /// @{
+    static const unsigned legacyVersion = 1; // Fake version for legacy unversioned UMDL/UMD2 file
+    static const unsigned morphWeightVersion = 2; // Initial morph weights support added here
+
+    static const unsigned currentVersion = morphWeightVersion;
+    /// @}
+
     /// Bounding box.
     BoundingBox boundingBox_;
     /// Skeleton.

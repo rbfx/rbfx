@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Core/Exception.h"
+#include "../Graphics/AnimatedModel.h"
 #include "../Graphics/Light.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Model.h"
@@ -70,34 +71,6 @@ struct StaticCaster
     template <class U>
     T operator() (U x) const { return static_cast<T>(x); }
 };
-
-template <class T>
-constexpr bool IsFloatAggregate()
-{
-    return ea::is_same_v<T, Vector2>
-        || ea::is_same_v<T, Vector3>
-        || ea::is_same_v<T, Vector4>;
-}
-
-template <class T>
-ea::vector<T> RepackFloatArray(const ea::vector<float>& componentsArray, unsigned numObjects)
-{
-    static_assert(IsFloatAggregate<T>(), "Cannot repack to this type");
-
-    ea::vector<T> result;
-    result.resize(numObjects);
-
-    const unsigned numComponents = sizeof(T) / sizeof(float);
-    for (unsigned i = 0; i < numObjects; ++i)
-    {
-        if ((i + 1) * numComponents > componentsArray.size())
-            break;
-
-        result[i] = T{ &componentsArray[i * numComponents] };
-    }
-
-    return result;
-}
 
 template <class T, unsigned N, class U>
 ea::array<T, N> ToArray(const U& vec)
@@ -185,7 +158,19 @@ public:
     const tg::Model& GetModel() const { return model_; }
     Context* GetContext() const { return context_; }
 
+    void CheckAccessor(int index) const { CheckT(index, model_.accessors, "Invalid accessor #{} referenced"); }
+    void CheckBufferView(int index) const { CheckT(index, model_.bufferViews, "Invalid buffer view #{} referenced"); }
+    void CheckImage(int index) const { CheckT(index, model_.images, "Invalid image #{} referenced"); }
+    void CheckSampler(int index) const { CheckT(index, model_.samplers, "Invalid sampler #{} referenced"); }
+
 private:
+    template <class T>
+    void CheckT(int index, const T& container, const char* message) const
+    {
+        if (index < 0 || index >= container.size())
+            throw RuntimeException(message, index);
+    }
+
     Context* const context_{};
     const tg::Model model_;
     const ea::string outputPath_;
@@ -207,8 +192,7 @@ public:
     template <class T>
     ea::vector<T> ReadBufferView(int bufferViewIndex, int byteOffset, int componentType, int type, int count) const
     {
-        if (bufferViewIndex < 0 || bufferViewIndex >= model_.bufferViews.size())
-            throw RuntimeException("Invalid buffer view #{} is referenced", bufferViewIndex);
+        context_->CheckBufferView(bufferViewIndex);
 
         const int numComponents = tg::GetNumComponentsInType(type);
         if (numComponents <= 0)
@@ -259,6 +243,15 @@ public:
     }
 
     template <class T>
+    ea::vector<T> ReadAccessorChecked(const tg::Accessor& accessor) const
+    {
+        const auto result = ReadAccessor<T>(accessor);
+        if (result.size() != accessor.count)
+            throw RuntimeException("Unexpected number of objects in accessor");
+        return result;
+    }
+
+    template <class T>
     ea::vector<T> ReadAccessor(const tg::Accessor& accessor) const
     {
         const int numComponents = tg::GetNumComponentsInType(accessor.type);
@@ -298,6 +291,15 @@ public:
         return result;
     }
 
+    template <>
+    ea::vector<Vector2> ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector2>(ReadAccessor<float>(accessor)); }
+
+    template <>
+    ea::vector<Vector3> ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector3>(ReadAccessor<float>(accessor)); }
+
+    template <>
+    ea::vector<Vector4> ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector4>(ReadAccessor<float>(accessor)); }
+
 private:
     static int GetByteStride(const tg::BufferView& bufferViewObject, int componentType, int type)
     {
@@ -331,6 +333,22 @@ private:
             }
             bufferViewData += stride;
         }
+    }
+
+    template <class T>
+    static ea::vector<T> RepackFloats(const ea::vector<float>& source)
+    {
+        static constexpr unsigned numComponents = sizeof(T) / sizeof(float);
+        if (source.size() % numComponents != 0)
+            throw RuntimeException("Unexpected number of components in array");
+
+        const unsigned numElements = source.size() / numComponents;
+
+        ea::vector<T> result;
+        result.resize(numElements);
+        for (unsigned i = 0; i < numElements; ++i)
+            std::memcpy(&result[i], &source[i * numComponents], sizeof(T));
+        return result;
     }
 
     const GLTFImporterContext* context_{};
@@ -585,11 +603,7 @@ private:
     ImportedTexture ImportTexture(unsigned textureIndex, const tg::Texture& sourceTexture) const
     {
         const tg::Model& model = context_->GetModel();
-        if (sourceTexture.source < 0 || sourceTexture.source >= model.images.size())
-        {
-            throw RuntimeException("Invalid source image #{} of texture #{} '{}'",
-                sourceTexture.source, textureIndex, sourceTexture.name.c_str());
-        }
+        context_->CheckImage(sourceTexture.source);
 
         const tg::Image& sourceImage = model.images[sourceTexture.source];
 
@@ -600,11 +614,7 @@ private:
         result.fakeTexture_->SetName(result.image_->GetName());
         if (sourceTexture.sampler >= 0)
         {
-            if (sourceTexture.sampler >= model.samplers.size())
-            {
-                throw RuntimeException("Invalid sampler #{} of texture #{} '{}'",
-                    sourceTexture.sampler, textureIndex, sourceTexture.name.c_str());
-            }
+            context_->CheckSampler(sourceTexture.sampler);
 
             const tg::Sampler& sourceSampler = model.samplers[sourceTexture.sampler];
             result.samplerParams_.filterMode_ = GetFilterMode(sourceSampler);
@@ -988,6 +998,10 @@ private:
         auto modelView = MakeShared<ModelView>(context_);
         modelView->SetName(modelName);
 
+        const unsigned numMorphWeights = sourceMesh.weights.size();
+        for (unsigned morphIndex = 0; morphIndex < numMorphWeights; ++morphIndex)
+            modelView->SetMorph(morphIndex, { "", static_cast<float>(sourceMesh.weights[morphIndex]) });
+
         auto& geometries = modelView->GetGeometries();
 
         const unsigned numGeometries = sourceMesh.primitives.size();
@@ -1032,7 +1046,21 @@ private:
                 if (auto material = materialImporter_.GetOrImportMaterial(model_.materials[primitive.material], geometryLODView.vertexFormat_))
                     geometryView.material_ = material->GetName();
             }
+
+            if (numMorphWeights > 0 && primitive.targets.size() != numMorphWeights)
+            {
+                throw RuntimeException("Primitive #{} in mesh '{}' has incorrect number of morph weights.",
+                    geometryIndex, sourceMesh.name.c_str());
+            }
+
+            for (unsigned morphIndex = 0; morphIndex < primitive.targets.size(); ++morphIndex)
+            {
+                const auto& morphAttributes = primitive.targets[morphIndex];
+                geometryLODView.morphs_[morphIndex] = ReadVertexMorphs(morphAttributes, numVertices);
+            }
         }
+
+        modelView->Normalize();
         return modelView;
     }
 
@@ -1140,7 +1168,11 @@ private:
         {
             if (Model* model = meshToModel_[sourceNode.mesh])
             {
-                auto staticModel = node->CreateComponent<StaticModel>();
+                const bool needAnimation = model->GetNumMorphs() > 0 || model->GetSkeleton().GetNumBones() > 1;
+                auto staticModel = !needAnimation
+                    ? node->CreateComponent<StaticModel>()
+                    : node->CreateComponent<AnimatedModel>();
+
                 staticModel->SetModel(model);
 
                 const StringVector& meshMaterials = meshToMaterials_[sourceNode.mesh];
@@ -1173,10 +1205,6 @@ private:
     bool ReadVertexData(ModelVertexFormat& vertexFormat, ea::vector<ModelVertex>& vertices,
         const ea::string& semantics, const tg::Accessor& accessor)
     {
-        const auto attributeData = bufferReader_.ReadAccessor<float>(accessor);
-        if (attributeData.empty())
-            return false;
-
         const auto& parsedSemantics = semantics.split('_');
         const ea::string& semanticsName = parsedSemantics[0];
         const unsigned semanticsIndex = parsedSemantics.size() > 1 ? FromString<unsigned>(parsedSemantics[1]) : 0;
@@ -1191,7 +1219,7 @@ private:
 
             vertexFormat.position_ = TYPE_VECTOR3;
 
-            const auto positions = RepackFloatArray<Vector3>(attributeData, accessor.count);
+            const auto positions = bufferReader_.ReadAccessorChecked<Vector3>(accessor);
             for (unsigned i = 0; i < accessor.count; ++i)
                 vertices[i].SetPosition(positions[i]);
         }
@@ -1205,7 +1233,7 @@ private:
 
             vertexFormat.normal_ = TYPE_VECTOR3;
 
-            const auto normals = RepackFloatArray<Vector3>(attributeData, accessor.count);
+            const auto normals = bufferReader_.ReadAccessorChecked<Vector3>(accessor);
             for (unsigned i = 0; i < accessor.count; ++i)
                 vertices[i].SetNormal(normals[i].Normalized());
         }
@@ -1219,7 +1247,7 @@ private:
 
             vertexFormat.tangent_ = TYPE_VECTOR4;
 
-            const auto tangents = RepackFloatArray<Vector4>(attributeData, accessor.count);
+            const auto tangents = bufferReader_.ReadAccessorChecked<Vector4>(accessor);
             for (unsigned i = 0; i < accessor.count; ++i)
                 vertices[i].tangent_ = tangents[i];
         }
@@ -1233,7 +1261,7 @@ private:
 
             vertexFormat.uv_[semanticsIndex] = TYPE_VECTOR2;
 
-            const auto uvs = RepackFloatArray<Vector2>(attributeData, accessor.count);
+            const auto uvs = bufferReader_.ReadAccessorChecked<Vector2>(accessor);
             for (unsigned i = 0; i < accessor.count; ++i)
                 vertices[i].uv_[semanticsIndex] = { uvs[i], Vector2::ZERO };
         }
@@ -1249,7 +1277,7 @@ private:
             {
                 vertexFormat.color_[semanticsIndex] = TYPE_VECTOR3;
 
-                const auto colors = RepackFloatArray<Vector3>(attributeData, accessor.count);
+                const auto colors = bufferReader_.ReadAccessorChecked<Vector3>(accessor);
                 for (unsigned i = 0; i < accessor.count; ++i)
                     vertices[i].color_[semanticsIndex] = { colors[i], 1.0f };
             }
@@ -1257,13 +1285,51 @@ private:
             {
                 vertexFormat.color_[semanticsIndex] = TYPE_VECTOR4;
 
-                const auto colors = RepackFloatArray<Vector4>(attributeData, accessor.count);
+                const auto colors = bufferReader_.ReadAccessorChecked<Vector4>(accessor);
                 for (unsigned i = 0; i < accessor.count; ++i)
                     vertices[i].color_[semanticsIndex] = colors[i];
             }
         }
 
         return true;
+    }
+
+    ModelVertexMorphVector ReadVertexMorphs(const std::map<std::string, int>& accessors, unsigned numVertices)
+    {
+        ea::vector<Vector3> positionDeltas(numVertices);
+        ea::vector<Vector3> normalDeltas(numVertices);
+        ea::vector<Vector3> tangentDeltas(numVertices);
+
+        if (const auto positionIter = accessors.find("POSITION"); positionIter != accessors.end())
+        {
+            importerContext_.CheckAccessor(positionIter->second);
+            positionDeltas = bufferReader_.ReadAccessor<Vector3>(model_.accessors[positionIter->second]);
+        }
+
+        if (const auto normalIter = accessors.find("NORMAL"); normalIter != accessors.end())
+        {
+            importerContext_.CheckAccessor(normalIter->second);
+            normalDeltas = bufferReader_.ReadAccessor<Vector3>(model_.accessors[normalIter->second]);
+        }
+
+        if (const auto tangentIter = accessors.find("TANGENT"); tangentIter != accessors.end())
+        {
+            importerContext_.CheckAccessor(tangentIter->second);
+            tangentDeltas = bufferReader_.ReadAccessor<Vector3>(model_.accessors[tangentIter->second]);
+        }
+
+        if (numVertices != positionDeltas.size() || numVertices != normalDeltas.size() || numVertices != tangentDeltas.size())
+            throw RuntimeException("Morph target has inconsistent sizes of accessors");
+
+        ModelVertexMorphVector vertexMorphs(numVertices);
+        for (unsigned i = 0; i < numVertices; ++i)
+        {
+            vertexMorphs[i].index_ = i;
+            vertexMorphs[i].positionDelta_ = positionDeltas[i];
+            vertexMorphs[i].normalDelta_ = normalDeltas[i];
+            vertexMorphs[i].tangentDelta_ = tangentDeltas[i];
+        }
+        return vertexMorphs;
     }
 
     GLTFImporterContext importerContext_;
