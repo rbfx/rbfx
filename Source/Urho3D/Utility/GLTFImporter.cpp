@@ -81,10 +81,11 @@ ea::array<T, N> ToArray(const U& vec)
     return result;
 }
 
-class GLTFImporterContext : public NonCopyable
+/// Raw imported input, parameters and generic output layout.
+class GLTFImporterBase : public NonCopyable
 {
 public:
-    GLTFImporterContext(Context* context, tg::Model model,
+    GLTFImporterBase(Context* context, tg::Model model,
         const ea::string& outputPath, const ea::string& resourceNamePrefix)
         : context_(context)
         , model_(ea::move(model))
@@ -161,7 +162,10 @@ public:
     void CheckAccessor(int index) const { CheckT(index, model_.accessors, "Invalid accessor #{} referenced"); }
     void CheckBufferView(int index) const { CheckT(index, model_.bufferViews, "Invalid buffer view #{} referenced"); }
     void CheckImage(int index) const { CheckT(index, model_.images, "Invalid image #{} referenced"); }
+    void CheckMaterial(int index) const { CheckT(index, model_.materials, "Invalid material #{} referenced"); }
+    void CheckMesh(int index) const { CheckT(index, model_.meshes, "Invalid mesh #{} referenced"); }
     void CheckSampler(int index) const { CheckT(index, model_.samplers, "Invalid sampler #{} referenced"); }
+    void CheckSkin(int index) const { CheckT(index, model_.skins, "Invalid skin #{} referenced"); }
 
 private:
     template <class T>
@@ -180,19 +184,20 @@ private:
     ea::unordered_map<ea::string, ea::string> resourceNameToAbsoluteFileName_;
 };
 
+/// Utility to parse GLTF buffers.
 class GLTFBufferReader : public NonCopyable
 {
 public:
-    explicit GLTFBufferReader(GLTFImporterContext* context)
-        : context_(context)
-        , model_(context_->GetModel())
+    explicit GLTFBufferReader(GLTFImporterBase& base)
+        : base_(base)
+        , model_(base_.GetModel())
     {
     }
 
     template <class T>
     ea::vector<T> ReadBufferView(int bufferViewIndex, int byteOffset, int componentType, int type, int count) const
     {
-        context_->CheckBufferView(bufferViewIndex);
+        base_.CheckBufferView(bufferViewIndex);
 
         const int numComponents = tg::GetNumComponentsInType(type);
         if (numComponents <= 0)
@@ -342,7 +347,7 @@ private:
         return result;
     }
 
-    const GLTFImporterContext* context_{};
+    const GLTFImporterBase& base_;
     const tg::Model& model_;
 };
 
@@ -355,17 +360,19 @@ ea::vector<Vector3> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor)
 template <>
 ea::vector<Vector4> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector4>(ReadAccessor<float>(accessor)); }
 
+/// Utility to import textures on-demand.
+/// Textures cannot be imported after cooking.
 class GLTFTextureImporter : public NonCopyable
 {
 public:
-    explicit GLTFTextureImporter(GLTFImporterContext* context)
-        : context_(context)
+    explicit GLTFTextureImporter(GLTFImporterBase& base)
+        : base_(base)
+        , model_(base_.GetModel())
     {
-        const tg::Model& model = context->GetModel();
-        const unsigned numTextures = model.textures.size();
+        const unsigned numTextures = model_.textures.size();
         texturesAsIs_.resize(numTextures);
         for (unsigned i = 0; i < numTextures; ++i)
-            texturesAsIs_[i] = ImportTexture(i, model.textures[i]);
+            texturesAsIs_[i] = ImportTexture(i, model_.textures[i]);
     }
 
     void CookTextures()
@@ -389,7 +396,7 @@ public:
         {
             if (!texture.isReferenced_)
                 continue;
-            context_->SaveResource(texture.image_);
+            base_.SaveResource(texture.image_);
             if (auto xmlFile = texture.cookedSamplerParams_)
                 xmlFile->SaveFile(xmlFile->GetAbsoluteFileName());
         }
@@ -397,7 +404,7 @@ public:
         for (const auto& elem : texturesMRO_)
         {
             const ImportedRMOTexture& texture = elem.second;
-            context_->SaveResource(texture.repackedImage_);
+            base_.SaveResource(texture.repackedImage_);
             if (auto xmlFile = texture.cookedSamplerParams_)
                 xmlFile->SaveFile(xmlFile->GetAbsoluteFileName());
         }
@@ -465,11 +472,11 @@ public:
             ? texturesAsIs_[metallicRoughnessTextureIndex]
             : texturesAsIs_[occlusionTextureIndex];
 
-        const ea::string imageName = context_->GetResourceName(
+        const ea::string imageName = base_.GetResourceName(
             referenceTexture.nameHint_, "Textures/", "Texture", ".png");
 
         ImportedRMOTexture& result = texturesMRO_[key];
-        result.fakeTexture_ = MakeShared<Texture2D>(context_->GetContext());
+        result.fakeTexture_ = MakeShared<Texture2D>(base_.GetContext());
         result.fakeTexture_->SetName(imageName);
         result.cookedSamplerParams_ = CookSamplerParams(result.fakeTexture_, referenceTexture.samplerParams_);
         return result.fakeTexture_;
@@ -561,18 +568,18 @@ private:
 
     SharedPtr<BinaryFile> ImportImageAsIs(unsigned imageIndex, const tg::Image& sourceImage) const
     {
-        auto image = MakeShared<BinaryFile>(context_->GetContext());
+        auto image = MakeShared<BinaryFile>(base_.GetContext());
         const ea::string imageUri = sourceImage.uri.c_str();
 
         if (sourceImage.mimeType == "image/jpeg" || imageUri.ends_with(".jpg") || imageUri.ends_with(".jpeg"))
         {
-            const ea::string imageName = context_->GetResourceName(
+            const ea::string imageName = base_.GetResourceName(
                 sourceImage.name.c_str(), "Textures/", "Texture", ".jpg");
             image->SetName(imageName);
         }
         else if (sourceImage.mimeType == "image/png" || imageUri.ends_with(".png"))
         {
-            const ea::string imageName = context_->GetResourceName(
+            const ea::string imageName = base_.GetResourceName(
                 sourceImage.name.c_str(), "Textures/", "Texture", ".png");
             image->SetName(imageName);
         }
@@ -594,7 +601,7 @@ private:
         Deserializer& deserializer = imageAsIs->AsDeserializer();
         deserializer.Seek(0);
 
-        auto decodedImage = MakeShared<Image>(context_->GetContext());
+        auto decodedImage = MakeShared<Image>(base_.GetContext());
         decodedImage->SetName(imageAsIs->GetName());
         decodedImage->Load(deserializer);
         return decodedImage;
@@ -602,21 +609,20 @@ private:
 
     ImportedTexture ImportTexture(unsigned textureIndex, const tg::Texture& sourceTexture) const
     {
-        const tg::Model& model = context_->GetModel();
-        context_->CheckImage(sourceTexture.source);
+        base_.CheckImage(sourceTexture.source);
 
-        const tg::Image& sourceImage = model.images[sourceTexture.source];
+        const tg::Image& sourceImage = model_.images[sourceTexture.source];
 
         ImportedTexture result;
         result.nameHint_ = sourceImage.name.c_str();
         result.image_ = ImportImageAsIs(sourceTexture.source, sourceImage);
-        result.fakeTexture_ = MakeShared<Texture2D>(context_->GetContext());
+        result.fakeTexture_ = MakeShared<Texture2D>(base_.GetContext());
         result.fakeTexture_->SetName(result.image_->GetName());
         if (sourceTexture.sampler >= 0)
         {
-            context_->CheckSampler(sourceTexture.sampler);
+            base_.CheckSampler(sourceTexture.sampler);
 
-            const tg::Sampler& sourceSampler = model.samplers[sourceTexture.sampler];
+            const tg::Sampler& sourceSampler = model_.samplers[sourceTexture.sampler];
             result.samplerParams_.filterMode_ = GetFilterMode(sourceSampler);
             result.samplerParams_.mipmaps_ = HasMipmaps(sourceSampler);
             result.samplerParams_.wrapU_ = GetAddressMode(sourceSampler.wrapS);
@@ -646,7 +652,7 @@ private:
             "default"
         };
 
-        auto xmlFile = MakeShared<XMLFile>(context_->GetContext());
+        auto xmlFile = MakeShared<XMLFile>(base_.GetContext());
 
         XMLElement rootElement = xmlFile->CreateRoot("texture");
 
@@ -682,7 +688,7 @@ private:
 
         const ea::string& imageName = image->GetName();
         xmlFile->SetName(ReplaceExtension(imageName, ".xml"));
-        xmlFile->SetAbsoluteFileName(ReplaceExtension(context_->GetAbsoluteFileName(imageName), ".xml"));
+        xmlFile->SetAbsoluteFileName(ReplaceExtension(base_.GetAbsoluteFileName(imageName), ".xml"));
         return xmlFile;
     }
 
@@ -717,7 +723,7 @@ private:
         if (occlusionImage && occlusionImageSize.ToVector2() != repackedImageSize)
             occlusionImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
 
-        auto finalImage = MakeShared<Image>(context_->GetContext());
+        auto finalImage = MakeShared<Image>(base_.GetContext());
         finalImage->SetName(name);
         finalImage->SetSize(repackedImageSize.x_, repackedImageSize.y_, 1, occlusionImage ? 4 : 3);
 
@@ -747,255 +753,209 @@ private:
         return finalImage;
     }
 
-    GLTFImporterContext* context_{};
+    GLTFImporterBase& base_;
+    const tg::Model& model_;
+
     ea::vector<ImportedTexture> texturesAsIs_;
     ea::unordered_map<ea::pair<int, int>, ImportedRMOTexture> texturesMRO_;
 
     bool texturesCooked_{};
 };
 
+/// Utility to import materials.
 class GLTFMaterialImporter : public NonCopyable
 {
 public:
-    explicit GLTFMaterialImporter(GLTFImporterContext* context, GLTFTextureImporter* textureImporter)
-        : context_(context)
+    explicit GLTFMaterialImporter(GLTFImporterBase& base, GLTFTextureImporter& textureImporter)
+        : base_(base)
+        , model_(base_.GetModel())
         , textureImporter_(textureImporter)
     {
-        // Materials are imported on-demand
+        for (const tg::Material& sourceMaterial : model_.materials)
+            materials_.push_back(ImportMaterial(sourceMaterial));
+        textureImporter_.CookTextures();
     }
 
-    SharedPtr<Material> GetOrImportMaterial(const tg::Material& sourceMaterial, const ModelVertexFormat& vertexFormat)
+    SharedPtr<Material> GetMaterial(int materialIndex) const
     {
-        const ImportedMaterialKey key{ &sourceMaterial, GetImportMaterialFlags(vertexFormat) };
-        SharedPtr<Material>& material = materials_[key];
-        if (!material)
-        {
-            auto cache = context_->GetContext()->GetSubsystem<ResourceCache>();
-
-            material = MakeShared<Material>(context_->GetContext());
-
-            const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
-            const Vector4 baseColor{ ToArray<float, 4>(pbr.baseColorFactor).data() };
-            material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, baseColor);
-            material->SetShaderParameter(ShaderConsts::Material_Metallic, static_cast<float>(pbr.metallicFactor));
-            material->SetShaderParameter(ShaderConsts::Material_Roughness, static_cast<float>(pbr.roughnessFactor));
-
-            const ea::string techniqueName = "Techniques/LitOpaque.xml";
-            auto technique = cache->GetResource<Technique>(techniqueName);
-            if (!technique)
-            {
-                throw RuntimeException("Cannot find standard technique '{}' for material '{}'",
-                    techniqueName, sourceMaterial.name.c_str());
-            }
-
-            material->SetTechnique(0, technique);
-            material->SetVertexShaderDefines("PBR");
-            material->SetPixelShaderDefines("PBR");
-
-            if (pbr.baseColorTexture.index >= 0)
-            {
-                if (pbr.baseColorTexture.texCoord != 0)
-                {
-                    URHO3D_LOGWARNING("Material '{}' has non-standard UV for diffuse texture #{}",
-                        sourceMaterial.name.c_str(), pbr.baseColorTexture.index);
-                }
-
-                const SharedPtr<Texture2D> diffuseTexture = textureImporter_->ReferenceTextureAsIs(
-                    pbr.baseColorTexture.index);
-                material->SetTexture(TU_DIFFUSE, diffuseTexture);
-            }
-
-            // Occlusion and metallic-roughness textures are backed together,
-            // ignore occlusion if is uses different UV.
-            int occlusionTextureIndex = sourceMaterial.occlusionTexture.index;
-            int metallicRoughnessTextureIndex = pbr.metallicRoughnessTexture.index;
-            if (occlusionTextureIndex >= 0 && metallicRoughnessTextureIndex >= 0
-                && sourceMaterial.occlusionTexture.texCoord != pbr.metallicRoughnessTexture.texCoord)
-            {
-                URHO3D_LOGWARNING("Material '{}' uses different UV for metallic-roughness texture #{} "
-                    "and for occlusion texture #{}. Occlusion texture is ignored.",
-                    sourceMaterial.name.c_str(), metallicRoughnessTextureIndex, occlusionTextureIndex);
-                occlusionTextureIndex = -1;
-            }
-
-            if (metallicRoughnessTextureIndex >= 0 || occlusionTextureIndex >= 0)
-            {
-                if (metallicRoughnessTextureIndex >= 0 && pbr.metallicRoughnessTexture.texCoord != 0)
-                {
-                    URHO3D_LOGWARNING("Material '{}' has non-standard UV for metallic-roughness texture #{}",
-                        sourceMaterial.name.c_str(), metallicRoughnessTextureIndex);
-                }
-
-                if (occlusionTextureIndex >= 0)
-                {
-                    if (sourceMaterial.occlusionTexture.texCoord != 0)
-                    {
-                        URHO3D_LOGWARNING("Material '{}' has non-standard UV for occlusion texture #{}",
-                            sourceMaterial.name.c_str(), occlusionTextureIndex);
-                    }
-                    if (sourceMaterial.occlusionTexture.strength != 1.0)
-                    {
-                        URHO3D_LOGWARNING("Material '{}' has non-default occlusion strength for occlusion texture #{}",
-                            sourceMaterial.name.c_str(), occlusionTextureIndex);
-                    }
-                }
-
-                const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_->ReferenceRoughnessMetallicOcclusionTexture(
-                    metallicRoughnessTextureIndex, occlusionTextureIndex);
-                material->SetTexture(TU_SPECULAR, metallicRoughnessTexture);
-            }
-
-            const ea::string materialName = context_->GetResourceName(
-                sourceMaterial.name.c_str(), "Materials/", "Material", ".xml");
-            material->SetName(materialName);
-
-            context_->AddToResourceCache(material);
-        }
-        return material;
+        base_.CheckMaterial(materialIndex);
+        return materials_[materialIndex];
     }
 
     void SaveResources()
     {
-        for (const auto& item : materials_)
-            context_->SaveResource(item.second);
+        for (const auto& material : materials_)
+            base_.SaveResource(material);
     }
 
 private:
-    enum ImportedMaterialFlag
+    SharedPtr<Material> ImportMaterial(const tg::Material& sourceMaterial)
     {
-    };
+        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
 
-    using ImportedMaterialKey = ea::pair<const tg::Material*, unsigned>;
+        auto material = MakeShared<Material>(base_.GetContext());
 
-    unsigned GetImportMaterialFlags(const ModelVertexFormat& vertexFormat) const
-    {
-        unsigned flags{};
-        return flags;
+        const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
+        const Vector4 baseColor{ ToArray<float, 4>(pbr.baseColorFactor).data() };
+        material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, baseColor);
+        material->SetShaderParameter(ShaderConsts::Material_Metallic, static_cast<float>(pbr.metallicFactor));
+        material->SetShaderParameter(ShaderConsts::Material_Roughness, static_cast<float>(pbr.roughnessFactor));
+
+        const ea::string techniqueName = "Techniques/LitOpaque.xml";
+        auto technique = cache->GetResource<Technique>(techniqueName);
+        if (!technique)
+        {
+            throw RuntimeException("Cannot find standard technique '{}' for material '{}'",
+                techniqueName, sourceMaterial.name.c_str());
+        }
+
+        material->SetTechnique(0, technique);
+        material->SetVertexShaderDefines("PBR");
+        material->SetPixelShaderDefines("PBR");
+
+        if (pbr.baseColorTexture.index >= 0)
+        {
+            if (pbr.baseColorTexture.texCoord != 0)
+            {
+                URHO3D_LOGWARNING("Material '{}' has non-standard UV for diffuse texture #{}",
+                    sourceMaterial.name.c_str(), pbr.baseColorTexture.index);
+            }
+
+            const SharedPtr<Texture2D> diffuseTexture = textureImporter_.ReferenceTextureAsIs(
+                pbr.baseColorTexture.index);
+            material->SetTexture(TU_DIFFUSE, diffuseTexture);
+        }
+
+        // Occlusion and metallic-roughness textures are backed together,
+        // ignore occlusion if is uses different UV.
+        int occlusionTextureIndex = sourceMaterial.occlusionTexture.index;
+        int metallicRoughnessTextureIndex = pbr.metallicRoughnessTexture.index;
+        if (occlusionTextureIndex >= 0 && metallicRoughnessTextureIndex >= 0
+            && sourceMaterial.occlusionTexture.texCoord != pbr.metallicRoughnessTexture.texCoord)
+        {
+            URHO3D_LOGWARNING("Material '{}' uses different UV for metallic-roughness texture #{} "
+                "and for occlusion texture #{}. Occlusion texture is ignored.",
+                sourceMaterial.name.c_str(), metallicRoughnessTextureIndex, occlusionTextureIndex);
+            occlusionTextureIndex = -1;
+        }
+
+        if (metallicRoughnessTextureIndex >= 0 || occlusionTextureIndex >= 0)
+        {
+            if (metallicRoughnessTextureIndex >= 0 && pbr.metallicRoughnessTexture.texCoord != 0)
+            {
+                URHO3D_LOGWARNING("Material '{}' has non-standard UV for metallic-roughness texture #{}",
+                    sourceMaterial.name.c_str(), metallicRoughnessTextureIndex);
+            }
+
+            if (occlusionTextureIndex >= 0)
+            {
+                if (sourceMaterial.occlusionTexture.texCoord != 0)
+                {
+                    URHO3D_LOGWARNING("Material '{}' has non-standard UV for occlusion texture #{}",
+                        sourceMaterial.name.c_str(), occlusionTextureIndex);
+                }
+                if (sourceMaterial.occlusionTexture.strength != 1.0)
+                {
+                    URHO3D_LOGWARNING("Material '{}' has non-default occlusion strength for occlusion texture #{}",
+                        sourceMaterial.name.c_str(), occlusionTextureIndex);
+                }
+            }
+
+            const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
+                metallicRoughnessTextureIndex, occlusionTextureIndex);
+            material->SetTexture(TU_SPECULAR, metallicRoughnessTexture);
+        }
+
+        const ea::string materialName = base_.GetResourceName(
+            sourceMaterial.name.c_str(), "Materials/", "Material", ".xml");
+        material->SetName(materialName);
+
+        base_.AddToResourceCache(material);
+        return material;
     }
 
-    GLTFImporterContext* context_{};
-    GLTFTextureImporter* textureImporter_{};
-    ea::unordered_map<ImportedMaterialKey, SharedPtr<Material>> materials_;
+    GLTFImporterBase& base_;
+    const tg::Model& model_;
+    GLTFTextureImporter& textureImporter_;
+
+    ea::vector<SharedPtr<Material>> materials_;
 };
 
-tg::Model LoadGLTF(const ea::string& fileName)
-{
-    tg::TinyGLTF loader;
-    loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
-
-    std::string errorMessage;
-    tg::Model model;
-    if (!loader.LoadASCIIFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
-        throw RuntimeException("Failed to import GLTF file: {}", errorMessage.c_str());
-
-    return model;
-}
-
-}
-
-class GLTFImporter::Impl
+/// Utility to import models.
+class GLTFModelImporter : public NonCopyable
 {
 public:
-    explicit Impl(Context* context, const ea::string& fileName,
-        const ea::string& outputPath, const ea::string& resourceNamePrefix)
-        : context_(context)
-        , importerContext_(context, LoadGLTF(fileName), outputPath, resourceNamePrefix)
-        , bufferReader_(&importerContext_)
-        , textureImporter_(&importerContext_)
-        , materialImporter_(&importerContext_, &textureImporter_)
+    explicit GLTFModelImporter(GLTFImporterBase& base,
+        const GLTFBufferReader& bufferReader, const GLTFMaterialImporter& materialImporter)
+        : base_(base)
+        , model_(base_.GetModel())
+        , bufferReader_(bufferReader)
+        , materialImporter_(materialImporter)
+        , meshSkins_(model_.meshes.size())
     {
-        // TODO: Remove me
-        model_ = importerContext_.GetModel();
+        FillSkins();
 
-        ImportMeshesAndMaterials();
+        for (const tg::Mesh& mesh : model_.meshes)
+        {
+            auto modelView = ImportModelView(mesh);
+            auto model = modelView->ExportModel();
+            base_.AddToResourceCache(model);
+
+            modelViews_.push_back(modelView);
+            models_.push_back(model);
+            modelMaterials_.push_back(modelView->ExportMaterialList());
+        }
     }
 
-    bool CookResources()
+    void SaveResources()
     {
-        textureImporter_.CookTextures();
-        auto cache = context_->GetSubsystem<ResourceCache>();
-
-        for (ModelView* modelView : meshToModelView_)
-        {
-            const auto model = modelView ? CookModelResource(modelView) : nullptr;
-            meshToModel_.push_back(model);
-
-            if (model)
-            {
-                cache->AddManualResource(model);
-                importedModels_.push_back(model);
-            }
-        }
-
-        for (const tg::Scene& sourceScene : model_.scenes)
-        {
-            const auto scene = ImportScene(sourceScene);
-            importedScenes_.push_back(scene);
-        }
-
-        return true;
+        for (Model* model : models_)
+            base_.SaveResource(model);
     }
 
-    bool SaveResources()
+    SharedPtr<Model> GetModel(int meshIndex) const
     {
-        textureImporter_.SaveResources();
-        materialImporter_.SaveResources();
+        base_.CheckMesh(meshIndex);
+        return models_[meshIndex];
+    }
 
-        for (Material* material : importedMaterials_)
-            importerContext_.SaveResource(material);
-
-        for (Model* model : importedModels_)
-            importerContext_.SaveResource(model);
-
-        for (Scene* scene : importedScenes_)
-            importerContext_.SaveResource(scene);
-
-        return true;
+    const StringVector& GetModelMaterials(int meshIndex) const
+    {
+        base_.CheckMesh(meshIndex);
+        return modelMaterials_[meshIndex];
     }
 
 private:
-    void ImportMeshesAndMaterials()
+    void FillSkins()
     {
-        meshToSkin_.clear();
-        meshToSkin_.resize(model_.meshes.size());
-
         for (const tg::Node& node : model_.nodes)
         {
-            if (node.mesh < 0)
+            if (node.mesh < 0 || node.skin < 0)
                 continue;
 
-            auto& meshSkin = meshToSkin_[node.mesh];
+            base_.CheckSkin(node.skin);
+            auto& meshSkin = meshSkins_[node.mesh];
 
-            if (!meshSkin)
-            {
-                if (node.skin >= 0)
-                    meshSkin = node.skin;
-            }
+            if (!meshSkin.has_value())
+                meshSkin = node.skin;
             else
             {
-                URHO3D_LOGWARNING("Mesh #{} '{}' has multiple assigned skins, skin #{} '{}' is used.",
-                    node.mesh, model_.meshes[node.mesh].name.c_str(),
-                    *meshSkin, model_.skins[*meshSkin].name.c_str());
+                const tg::Skin& oldSkin = model_.skins[*meshSkin];
+                const tg::Skin& newSkin = model_.skins[node.skin];
+                if (oldSkin.joints.size() != newSkin.joints.size())
+                {
+                    throw RuntimeException("Mesh #{} is used with incompatible skins #{} and #{}",
+                        node.mesh, *meshSkin, node.skin);
+                }
             }
-        }
-
-        const unsigned numMeshes = model_.meshes.size();
-        meshToModelView_.resize(numMeshes);
-        meshToMaterials_.resize(numMeshes);
-        for (unsigned i = 0; i < numMeshes; ++i)
-        {
-            auto modelView = ImportModelView(model_.meshes[i]);
-            if (modelView)
-                meshToMaterials_[i] = modelView->ExportMaterialList();
-            meshToModelView_[i] = modelView;
         }
     }
 
     SharedPtr<ModelView> ImportModelView(const tg::Mesh& sourceMesh)
     {
-        const ea::string modelName = importerContext_.GetResourceName(sourceMesh.name.c_str(), "", "Model", ".mdl");
+        const ea::string modelName = base_.GetResourceName(sourceMesh.name.c_str(), "", "Model", ".mdl");
 
-        auto modelView = MakeShared<ModelView>(context_);
+        auto modelView = MakeShared<ModelView>(base_.GetContext());
         modelView->SetName(modelName);
 
         const unsigned numMorphWeights = sourceMesh.weights.size();
@@ -1025,11 +985,14 @@ private:
                 return nullptr;
             }
 
+            if (primitive.indices >= 0)
+            {
+                base_.CheckAccessor(primitive.indices);
+                geometryLODView.indices_ = bufferReader_.ReadAccessorChecked<unsigned>(model_.accessors[primitive.indices]);
+            }
+
             const unsigned numVertices = model_.accessors[primitive.attributes.begin()->second].count;
-
-            geometryLODView.indices_ = ReadOptionalAccessor<unsigned>(primitive.indices);
             geometryLODView.vertices_.resize(numVertices);
-
             for (const auto& attribute : primitive.attributes)
             {
                 const tg::Accessor& accessor = model_.accessors[attribute.second];
@@ -1043,7 +1006,7 @@ private:
 
             if (primitive.material >= 0)
             {
-                if (auto material = materialImporter_.GetOrImportMaterial(model_.materials[primitive.material], geometryLODView.vertexFormat_))
+                if (auto material = materialImporter_.GetMaterial(primitive.material))
                     geometryView.material_ = material->GetName();
             }
 
@@ -1062,144 +1025,6 @@ private:
 
         modelView->Normalize();
         return modelView;
-    }
-
-    SharedPtr<Model> CookModelResource(ModelView* modelView)
-    {
-        auto model = modelView->ExportModel();
-        return model;
-    }
-
-    SharedPtr<Scene> ImportScene(const tg::Scene& sourceScene)
-    {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        const ea::string sceneName = importerContext_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
-
-        auto scene = MakeShared<Scene>(context_);
-        scene->SetFileName(importerContext_.GetAbsoluteFileName(sceneName));
-        scene->CreateComponent<Octree>();
-
-        for (int nodeIndex : sourceScene.nodes)
-        {
-            ImportNode(scene, model_.nodes[nodeIndex]);
-        }
-
-        if (!scene->GetComponent<Light>(true))
-        {
-            // Model forward is Z+, make default lighting from top right when looking at forward side of model.
-            Node* node = scene->CreateChild("Default Light");
-            node->SetDirection({ 1.0f, -2.0f, -1.0f });
-            auto light = node->CreateComponent<Light>();
-            light->SetLightType(LIGHT_DIRECTIONAL);
-        }
-
-        if (!scene->GetComponent<Zone>(true) && !scene->GetComponent<Skybox>(true))
-        {
-            auto skyboxMaterial = cache->GetResource<Material>("Materials/Skybox.xml");
-            auto skyboxTexture = cache->GetResource<TextureCube>("Textures/Skybox.xml");
-            auto boxModel = cache->GetResource<Model>("Models/Box.mdl");
-
-            if (skyboxMaterial && skyboxTexture && boxModel)
-            {
-                Node* zoneNode = scene->CreateChild("Default Zone");
-                auto zone = zoneNode->CreateComponent<Zone>();
-                zone->SetBackgroundBrightness(0.5f);
-                zone->SetZoneTexture(skyboxTexture);
-
-                Node* skyboxNode = scene->CreateChild("Default Skybox");
-                auto skybox = skyboxNode->CreateComponent<Skybox>();
-                skybox->SetModel(boxModel);
-                skybox->SetMaterial(skyboxMaterial);
-            }
-
-        }
-
-        return scene;
-    }
-
-    void ExtractTransform(const tg::Node& node, Vector3& translation, Quaternion& rotation, Vector3& scale)
-    {
-        translation = Vector3::ZERO;
-        rotation = Quaternion::IDENTITY;
-        scale = Vector3::ONE;
-
-        if (!node.matrix.empty())
-        {
-            Matrix4 sourceMatrix;
-            ea::transform(node.matrix.begin(), node.matrix.end(),
-                &sourceMatrix.m00_, StaticCaster<float>{});
-
-            const Matrix3x4 transform{ sourceMatrix.Transpose() };
-            transform.Decompose(translation, rotation, scale);
-        }
-        else
-        {
-            if (!node.translation.empty())
-            {
-                ea::transform(node.translation.begin(), node.translation.end(),
-                    &translation.x_, StaticCaster<float>{});
-            }
-            if (!node.rotation.empty())
-            {
-                ea::transform(node.rotation.begin(), node.rotation.end(),
-                    &rotation.w_, StaticCaster<float>{});
-            }
-            if (!node.scale.empty())
-            {
-                ea::transform(node.scale.begin(), node.scale.end(),
-                    &scale.x_, StaticCaster<float>{});
-            }
-        }
-    }
-
-    void ImportNode(Node* parent, const tg::Node& sourceNode)
-    {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-
-        Node* node = parent->CreateChild(sourceNode.name.c_str());
-
-        Vector3 translation;
-        Quaternion rotation;
-        Vector3 scale;
-        ExtractTransform(sourceNode, translation, rotation, scale);
-        node->SetTransform(translation, rotation, scale);
-
-        if (sourceNode.mesh >= 0)
-        {
-            if (Model* model = meshToModel_[sourceNode.mesh])
-            {
-                const bool needAnimation = model->GetNumMorphs() > 0 || model->GetSkeleton().GetNumBones() > 1;
-                auto staticModel = !needAnimation
-                    ? node->CreateComponent<StaticModel>()
-                    : node->CreateComponent<AnimatedModel>();
-
-                staticModel->SetModel(model);
-
-                const StringVector& meshMaterials = meshToMaterials_[sourceNode.mesh];
-                for (unsigned i = 0; i < meshMaterials.size(); ++i)
-                {
-                    auto material = cache->GetResource<Material>(meshMaterials[i]);
-                    staticModel->SetMaterial(i, material);
-                }
-            }
-        }
-
-        for (int childIndex : sourceNode.children)
-        {
-            ImportNode(node, model_.nodes[childIndex]);
-        }
-    }
-
-    template <class T>
-    ea::vector<T> ReadOptionalAccessor(int accessorIndex) const
-    {
-        ea::vector<T> result;
-        if (accessorIndex >= 0)
-        {
-            const tg::Accessor& accessor = model_.accessors[accessorIndex];
-            result = bufferReader_.ReadAccessor<T>(accessor);
-        }
-        return result;
     }
 
     bool ReadVertexData(ModelVertexFormat& vertexFormat, ea::vector<ModelVertex>& vertices,
@@ -1302,19 +1127,19 @@ private:
 
         if (const auto positionIter = accessors.find("POSITION"); positionIter != accessors.end())
         {
-            importerContext_.CheckAccessor(positionIter->second);
+            base_.CheckAccessor(positionIter->second);
             positionDeltas = bufferReader_.ReadAccessor<Vector3>(model_.accessors[positionIter->second]);
         }
 
         if (const auto normalIter = accessors.find("NORMAL"); normalIter != accessors.end())
         {
-            importerContext_.CheckAccessor(normalIter->second);
+            base_.CheckAccessor(normalIter->second);
             normalDeltas = bufferReader_.ReadAccessor<Vector3>(model_.accessors[normalIter->second]);
         }
 
         if (const auto tangentIter = accessors.find("TANGENT"); tangentIter != accessors.end())
         {
-            importerContext_.CheckAccessor(tangentIter->second);
+            base_.CheckAccessor(tangentIter->second);
             tangentDeltas = bufferReader_.ReadAccessor<Vector3>(model_.accessors[tangentIter->second]);
         }
 
@@ -1332,29 +1157,274 @@ private:
         return vertexMorphs;
     }
 
-    GLTFImporterContext importerContext_;
+    GLTFImporterBase& base_;
+    const tg::Model& model_;
+    const GLTFBufferReader& bufferReader_;
+    const GLTFMaterialImporter& materialImporter_;
+
+    ea::vector<ea::optional<int>> meshSkins_;
+    ea::vector<SharedPtr<ModelView>> modelViews_;
+    ea::vector<SharedPtr<Model>> models_;
+    ea::vector<StringVector> modelMaterials_;
+
+};
+
+tg::Model LoadGLTF(const ea::string& fileName)
+{
+    tg::TinyGLTF loader;
+    loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
+
+    std::string errorMessage;
+    tg::Model model;
+    if (!loader.LoadASCIIFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
+        throw RuntimeException("Failed to import GLTF file: {}", errorMessage.c_str());
+
+    return model;
+}
+
+}
+
+class GLTFImporter::Impl
+{
+public:
+    explicit Impl(Context* context, const ea::string& fileName,
+        const ea::string& outputPath, const ea::string& resourceNamePrefix)
+        : context_(context)
+        , importerContext_(context, LoadGLTF(fileName), outputPath, resourceNamePrefix)
+        , bufferReader_(importerContext_)
+        , textureImporter_(importerContext_)
+        , materialImporter_(importerContext_, textureImporter_)
+        , modelImporter_(importerContext_, bufferReader_, materialImporter_)
+    {
+        // TODO: Remove me
+        model_ = importerContext_.GetModel();
+
+        //ImportMeshesAndMaterials();
+    }
+
+    bool CookResources()
+    {
+        //textureImporter_.CookTextures();
+        /*auto cache = context_->GetSubsystem<ResourceCache>();
+
+        for (ModelView* modelView : meshToModelView_)
+        {
+            const auto model = modelView ? CookModelResource(modelView) : nullptr;
+            meshToModel_.push_back(model);
+
+            if (model)
+            {
+                cache->AddManualResource(model);
+                importedModels_.push_back(model);
+            }
+        }*/
+
+        for (const tg::Scene& sourceScene : model_.scenes)
+        {
+            const auto scene = ImportScene(sourceScene);
+            importedScenes_.push_back(scene);
+        }
+
+        return true;
+    }
+
+    bool SaveResources()
+    {
+        textureImporter_.SaveResources();
+        materialImporter_.SaveResources();
+        modelImporter_.SaveResources();
+
+        /*for (Material* material : importedMaterials_)
+            importerContext_.SaveResource(material);
+
+        for (Model* model : importedModels_)
+            importerContext_.SaveResource(model);*/
+
+        for (Scene* scene : importedScenes_)
+            importerContext_.SaveResource(scene);
+
+        return true;
+    }
+
+private:
+    /*void ImportMeshesAndMaterials()
+    {
+        meshToSkin_.clear();
+        meshToSkin_.resize(model_.meshes.size());
+
+        for (const tg::Node& node : model_.nodes)
+        {
+            if (node.mesh < 0)
+                continue;
+
+            auto& meshSkin = meshToSkin_[node.mesh];
+
+            if (!meshSkin)
+            {
+                if (node.skin >= 0)
+                    meshSkin = node.skin;
+            }
+            else
+            {
+                URHO3D_LOGWARNING("Mesh #{} '{}' has multiple assigned skins, skin #{} '{}' is used.",
+                    node.mesh, model_.meshes[node.mesh].name.c_str(),
+                    *meshSkin, model_.skins[*meshSkin].name.c_str());
+            }
+        }
+
+        const unsigned numMeshes = model_.meshes.size();
+        meshToModelView_.resize(numMeshes);
+        meshToMaterials_.resize(numMeshes);
+        for (unsigned i = 0; i < numMeshes; ++i)
+        {
+            auto modelView = ImportModelView(model_.meshes[i]);
+            if (modelView)
+                meshToMaterials_[i] = modelView->ExportMaterialList();
+            meshToModelView_[i] = modelView;
+        }
+    }
+
+    SharedPtr<Model> CookModelResource(ModelView* modelView)
+    {
+        auto model = modelView->ExportModel();
+        return model;
+    }*/
+
+    SharedPtr<Scene> ImportScene(const tg::Scene& sourceScene)
+    {
+        auto cache = context_->GetSubsystem<ResourceCache>();
+        const ea::string sceneName = importerContext_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
+
+        auto scene = MakeShared<Scene>(context_);
+        scene->SetFileName(importerContext_.GetAbsoluteFileName(sceneName));
+        scene->CreateComponent<Octree>();
+
+        for (int nodeIndex : sourceScene.nodes)
+        {
+            ImportNode(scene, model_.nodes[nodeIndex]);
+        }
+
+        if (!scene->GetComponent<Light>(true))
+        {
+            // Model forward is Z+, make default lighting from top right when looking at forward side of model.
+            Node* node = scene->CreateChild("Default Light");
+            node->SetDirection({ 1.0f, -2.0f, -1.0f });
+            auto light = node->CreateComponent<Light>();
+            light->SetLightType(LIGHT_DIRECTIONAL);
+        }
+
+        if (!scene->GetComponent<Zone>(true) && !scene->GetComponent<Skybox>(true))
+        {
+            auto skyboxMaterial = cache->GetResource<Material>("Materials/Skybox.xml");
+            auto skyboxTexture = cache->GetResource<TextureCube>("Textures/Skybox.xml");
+            auto boxModel = cache->GetResource<Model>("Models/Box.mdl");
+
+            if (skyboxMaterial && skyboxTexture && boxModel)
+            {
+                Node* zoneNode = scene->CreateChild("Default Zone");
+                auto zone = zoneNode->CreateComponent<Zone>();
+                zone->SetBackgroundBrightness(0.5f);
+                zone->SetZoneTexture(skyboxTexture);
+
+                Node* skyboxNode = scene->CreateChild("Default Skybox");
+                auto skybox = skyboxNode->CreateComponent<Skybox>();
+                skybox->SetModel(boxModel);
+                skybox->SetMaterial(skyboxMaterial);
+            }
+
+        }
+
+        return scene;
+    }
+
+    void ExtractTransform(const tg::Node& node, Vector3& translation, Quaternion& rotation, Vector3& scale)
+    {
+        translation = Vector3::ZERO;
+        rotation = Quaternion::IDENTITY;
+        scale = Vector3::ONE;
+
+        if (!node.matrix.empty())
+        {
+            Matrix4 sourceMatrix;
+            ea::transform(node.matrix.begin(), node.matrix.end(),
+                &sourceMatrix.m00_, StaticCaster<float>{});
+
+            const Matrix3x4 transform{ sourceMatrix.Transpose() };
+            transform.Decompose(translation, rotation, scale);
+        }
+        else
+        {
+            if (!node.translation.empty())
+            {
+                ea::transform(node.translation.begin(), node.translation.end(),
+                    &translation.x_, StaticCaster<float>{});
+            }
+            if (!node.rotation.empty())
+            {
+                ea::transform(node.rotation.begin(), node.rotation.end(),
+                    &rotation.w_, StaticCaster<float>{});
+            }
+            if (!node.scale.empty())
+            {
+                ea::transform(node.scale.begin(), node.scale.end(),
+                    &scale.x_, StaticCaster<float>{});
+            }
+        }
+    }
+
+    void ImportNode(Node* parent, const tg::Node& sourceNode)
+    {
+        auto cache = context_->GetSubsystem<ResourceCache>();
+
+        Node* node = parent->CreateChild(sourceNode.name.c_str());
+
+        Vector3 translation;
+        Quaternion rotation;
+        Vector3 scale;
+        ExtractTransform(sourceNode, translation, rotation, scale);
+        node->SetTransform(translation, rotation, scale);
+
+        if (sourceNode.mesh >= 0)
+        {
+            if (Model* model = modelImporter_.GetModel(sourceNode.mesh))
+            {
+                const bool needAnimation = model->GetNumMorphs() > 0 || model->GetSkeleton().GetNumBones() > 1;
+                auto staticModel = !needAnimation
+                    ? node->CreateComponent<StaticModel>()
+                    : node->CreateComponent<AnimatedModel>();
+
+                staticModel->SetModel(model);
+
+                const StringVector& meshMaterials = modelImporter_.GetModelMaterials(sourceNode.mesh);
+                for (unsigned i = 0; i < meshMaterials.size(); ++i)
+                {
+                    auto material = cache->GetResource<Material>(meshMaterials[i]);
+                    staticModel->SetMaterial(i, material);
+                }
+            }
+        }
+
+        for (int childIndex : sourceNode.children)
+        {
+            ImportNode(node, model_.nodes[childIndex]);
+        }
+    }
+
+    GLTFImporterBase importerContext_;
     GLTFBufferReader bufferReader_;
     GLTFTextureImporter textureImporter_;
     GLTFMaterialImporter materialImporter_;
+    GLTFModelImporter modelImporter_;
 
     Context* context_{};
 
     /// Initialized after loading
     /// @{
     tg::Model model_;
-
-    ea::vector<ea::optional<int>> meshToSkin_;
-    ea::vector<SharedPtr<ModelView>> meshToModelView_;
-    ea::vector<StringVector> meshToMaterials_;
-    ea::vector<SharedPtr<Image>> texturesToImageAsIs_;
-    ea::vector<SharedPtr<Texture>> texturesToFakeTextures_;
     /// @}
 
     /// Initialized after cooking
     /// @{
-    ea::vector<SharedPtr<Model>> importedModels_;
-    ea::vector<SharedPtr<Material>> importedMaterials_;
-    ea::vector<SharedPtr<Model>> meshToModel_;
     ea::vector<SharedPtr<Scene>> importedScenes_;
     /// @}
 };
