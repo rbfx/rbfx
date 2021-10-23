@@ -164,6 +164,7 @@ public:
     void CheckImage(int index) const { CheckT(index, model_.images, "Invalid image #{} referenced"); }
     void CheckMaterial(int index) const { CheckT(index, model_.materials, "Invalid material #{} referenced"); }
     void CheckMesh(int index) const { CheckT(index, model_.meshes, "Invalid mesh #{} referenced"); }
+    void CheckNode(int index) const { CheckT(index, model_.nodes, "Invalid node #{} referenced"); }
     void CheckSampler(int index) const { CheckT(index, model_.samplers, "Invalid sampler #{} referenced"); }
     void CheckSkin(int index) const { CheckT(index, model_.skins, "Invalid skin #{} referenced"); }
 
@@ -263,7 +264,6 @@ public:
         if (numComponents <= 0)
             throw RuntimeException("Unexpected type {} of buffer view elements", accessor.type);
 
-
         // Read dense buffer data
         ea::vector<T> result;
         if (accessor.bufferView >= 0)
@@ -359,6 +359,338 @@ ea::vector<Vector3> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor)
 
 template <>
 ea::vector<Vector4> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Vector4>(ReadAccessor<float>(accessor)); }
+
+template <>
+ea::vector<Matrix4> GLTFBufferReader::ReadAccessor(const tg::Accessor& accessor) const { return RepackFloats<Matrix4>(ReadAccessor<float>(accessor)); }
+
+/// GLTF node reference used for hierarchy view.
+struct GLTFNode;
+using GLTFNodePtr = ea::shared_ptr<GLTFNode>;
+
+struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
+{
+    GLTFNodePtr root_;
+    GLTFNodePtr parent_;
+    ea::vector<GLTFNodePtr> children_;
+
+    unsigned index_{};
+    ea::string name_;
+    Vector3 position_;
+    Quaternion rotation_;
+    Vector3 scale_{ Vector3::ONE };
+
+    /// Temporary things
+    /// @{
+    ea::optional<unsigned> jointIndex_;
+    ea::string uniqueName_;
+    Matrix3x4 inverseBindMatrix_;
+    /// @}
+
+    template <class T>
+    void ForEach(const T& callback)
+    {
+        callback(*this);
+        for (const GLTFNodePtr& child : children_)
+            child->ForEach(callback);
+    }
+
+    GLTFNodePtr Clone(GLTFNodePtr parent = nullptr, GLTFNodePtr root = nullptr) const
+    {
+        auto node = ea::make_shared<GLTFNode>(*this);
+        node->root_ = root;
+        node->parent_ = parent;
+        for (GLTFNodePtr& child : node->children_)
+            child = child->Clone(node, root ? root : node);
+        return node;
+    }
+
+    void CreateIndex(ea::vector<GLTFNodePtr>& index)
+    {
+        if (index.size() <= index_)
+            index.resize(index_ + 1);
+        index[index_] = shared_from_this();
+        for (GLTFNodePtr& child : children_)
+            child->CreateIndex(index);
+    }
+
+    void StripJointless()
+    {
+        for (GLTFNodePtr& child : children_)
+            child->StripJointless();
+
+        ea::erase_if(children_, [](const GLTFNodePtr& child)
+        {
+            return !child->jointIndex_.has_value() && child->children_.empty();
+        });
+    }
+
+    void NormalizeJointsOrder()
+    {
+        for (GLTFNodePtr& child : children_)
+            child->NormalizeJointsOrder();
+        ea::sort(children_.begin(), children_.end(), DeepCompareLessPtr);
+    }
+
+    static bool DeepCompareLessPtr(const GLTFNodePtr& lhs, const GLTFNodePtr& rhs)
+    {
+        return DeepCompareLess(*lhs, *rhs);
+    }
+
+    static bool DeepCompareLess(const GLTFNode& lhs, const GLTFNode& rhs)
+    {
+        // All nodes with joints go before joints without
+        if (lhs.jointIndex_ || rhs.jointIndex_)
+            return lhs.jointIndex_ < rhs.jointIndex_;
+
+        // Compare joints without nodes by comparing children
+        return ea::lexicographical_compare(
+            lhs.children_.begin(), lhs.children_.end(),
+            rhs.children_.begin(), rhs.children_.end(), DeepCompareLessPtr);
+    }
+
+    static bool DeepCompareEquivalentPtr(const GLTFNodePtr& lhs, const GLTFNodePtr& rhs)
+    {
+        return DeepCompareEquivalent(*lhs, *rhs);
+    }
+
+    static bool DeepCompareEquivalent(const GLTFNode& lhs, const GLTFNode& rhs)
+    {
+        /// Check that skeletons represents same hierarchy:
+        /// - Joint indexes must match;
+        /// - Jointless nodes should be in the same order and amount.
+        if (lhs.jointIndex_ || rhs.jointIndex_)
+            return lhs.jointIndex_ == rhs.jointIndex_;
+
+        return ea::identical(
+            lhs.children_.begin(), lhs.children_.end(),
+            rhs.children_.begin(), rhs.children_.end(),
+            DeepCompareEquivalentPtr);
+    }
+
+    ea::vector<GLTFNodePtr> CreateIndex()
+    {
+        ea::vector<GLTFNodePtr> result;
+        CreateIndex(result);
+        return result;
+    }
+
+    ea::vector<GLTFNodePtr> GetPath(bool includeSelf = false)
+    {
+        ea::vector<GLTFNodePtr> path;
+
+        if (includeSelf)
+            path.push_back(shared_from_this());
+
+        GLTFNodePtr currentParent = parent_;
+        while (currentParent)
+        {
+            path.push_back(currentParent);
+            currentParent = currentParent->parent_;
+        }
+
+        ea::reverse(path.begin(), path.end());
+        return path;
+    }
+};
+
+/// Utility to process scene and node hierarchy of source GLTF asset.
+class GLTFHierarchyAnalyzer : public NonCopyable
+{
+public:
+    explicit GLTFHierarchyAnalyzer(GLTFImporterBase& base, const GLTFBufferReader& bufferReader)
+        : base_(base)
+        , bufferReader_(bufferReader)
+        , model_(base_.GetModel())
+    {
+        InitializeParents();
+        InitializeTrees();
+    }
+
+    GLTFNodePtr ExtractSkeletonSubTree(const tg::Skin& sourceSkin) const
+    {
+        if (sourceSkin.joints.empty())
+            throw RuntimeException("There should be at least one joint in the skin");
+        for (int nodeIndex : sourceSkin.joints)
+            base_.CheckNode(nodeIndex);
+        if (sourceSkin.skeleton >= 0)
+            base_.CheckNode(sourceSkin.skeleton);
+
+        // Create bind matrices
+        ea::vector<Matrix3x4> bindMatrices(sourceSkin.joints.size());
+        if (sourceSkin.inverseBindMatrices >= 0)
+        {
+            base_.CheckAccessor(sourceSkin.inverseBindMatrices);
+            const tg::Accessor& accessor = model_.accessors[sourceSkin.inverseBindMatrices];
+            const auto sourceBindMatrices = bufferReader_.ReadAccessorChecked<Matrix4>(accessor);
+            if (bindMatrices.size() > sourceBindMatrices.size())
+                throw RuntimeException("Unexpected size of bind matrices array");
+
+            for (unsigned i = 0; i < bindMatrices.size(); ++i)
+                bindMatrices[i] = Matrix3x4{ sourceBindMatrices[i].Transpose() };
+        }
+
+        // Find common root
+        GLTFNodePtr commonRootNode = nodeToTreeNode_[sourceSkin.skeleton >= 0 ? sourceSkin.skeleton : sourceSkin.joints[0]];
+        for (int nodeIndex : sourceSkin.joints)
+            commonRootNode = GetCommonParent(commonRootNode, nodeToTreeNode_[nodeIndex]);
+
+        // Clone sub-tree
+        GLTFNodePtr subTree = commonRootNode->Clone();
+        const auto subTreeIndex = subTree->CreateIndex();
+        for (unsigned jointIndex = 0; jointIndex < sourceSkin.joints.size(); ++jointIndex)
+        {
+            const unsigned nodeIndex = sourceSkin.joints[jointIndex];
+            if (nodeIndex >= subTreeIndex.size() || !subTreeIndex[nodeIndex])
+                throw RuntimeException("Invalid skeleton subtree");
+
+            GLTFNode& node = *subTreeIndex[nodeIndex];
+            node.jointIndex_ = jointIndex;
+            node.inverseBindMatrix_ = bindMatrices[jointIndex];
+        }
+
+        // Strip unnecessary branches and normalize
+        subTree->StripJointless();
+        subTree->NormalizeJointsOrder();
+        return subTree;
+    }
+
+private:
+    void InitializeParents()
+    {
+        const unsigned numNodes = model_.nodes.size();
+        nodeToParent_.resize(numNodes);
+        for (unsigned nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex)
+        {
+            const tg::Node& node = model_.nodes[nodeIndex];
+            for (const int childIndex : node.children)
+            {
+                base_.CheckNode(childIndex);
+
+                if (nodeToParent_[childIndex].has_value())
+                {
+                    throw RuntimeException("Node #{} has multiple parents: #{} and #{}",
+                        childIndex, nodeIndex, *nodeToParent_[childIndex]);
+                }
+
+                nodeToParent_[childIndex] = nodeIndex;
+            }
+        }
+    }
+
+    void InitializeTrees()
+    {
+        const unsigned numNodes = model_.nodes.size();
+        nodeToTreeNode_.resize(numNodes);
+        for (unsigned nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex)
+        {
+            if (!nodeToParent_[nodeIndex])
+                trees_.push_back(ImportTree(nodeIndex, nullptr, nullptr));
+        }
+
+        for (const GLTFNodePtr& node : trees_)
+            ReadNodeProperties(*node);
+    }
+
+    GLTFNodePtr ImportTree(unsigned nodeIndex, GLTFNodePtr parent, GLTFNodePtr root)
+    {
+        base_.CheckNode(nodeIndex);
+        const tg::Node& sourceNode = model_.nodes[nodeIndex];
+
+        auto node = ea::make_shared<GLTFNode>();
+        root = root ? root : node;
+
+        node->index_ = nodeIndex;
+        node->root_ = root;
+        node->parent_ = parent;
+        for (const int childIndex : sourceNode.children)
+            node->children_.push_back(ImportTree(childIndex, node, root));
+
+        nodeToTreeNode_[nodeIndex] = node;
+        return node;
+    }
+
+    void ReadNodeProperties(GLTFNode& node)
+    {
+        const tg::Node& sourceNode = model_.nodes[node.index_];
+        node.name_ = sourceNode.name.c_str();
+        if (!sourceNode.matrix.empty())
+        {
+            const Matrix3x4 matrix = ReadMatrix3x4(sourceNode.matrix);
+            matrix.Decompose(node.position_, node.rotation_, node.scale_);
+        }
+        else
+        {
+            if (!sourceNode.translation.empty())
+                node.position_ = ReadVector3(sourceNode.translation);
+            if (!sourceNode.rotation.empty())
+                node.rotation_ = ReadQuaternion(sourceNode.rotation);
+            if (!sourceNode.scale.empty())
+                node.scale_ = ReadVector3(sourceNode.scale);
+        }
+
+        for (const GLTFNodePtr& child : node.children_)
+            ReadNodeProperties(*child);
+    }
+
+    static GLTFNodePtr GetCommonParent(const GLTFNodePtr& lhs, const GLTFNodePtr& rhs)
+    {
+        if (lhs->root_ != rhs->root_)
+            return nullptr;
+
+        const auto lhsPath = lhs->GetPath(true);
+        const auto rhsPath = rhs->GetPath(true);
+
+        const unsigned numCommonParents = ea::min(lhsPath.size(), rhsPath.size());
+        for (int i = numCommonParents - 1; i >= 0; --i)
+        {
+            if (lhsPath[i] == rhsPath[i])
+                return lhsPath[i];
+        }
+
+        assert(0);
+        return nullptr;
+    }
+
+    static Matrix3x4 ReadMatrix3x4(const std::vector<double>& src)
+    {
+        if (src.size() != 16)
+            throw RuntimeException("Unexpected size of matrix object");
+
+        Matrix4 temp;
+        ea::transform(src.begin(), src.end(), &temp.m00_, StaticCaster<float>{});
+
+        return Matrix3x4{ temp.Transpose() };
+    }
+
+    static Vector3 ReadVector3(const std::vector<double>& src)
+    {
+        if (src.size() != 3)
+            throw RuntimeException("Unexpected size of matrix object");
+
+        Vector3 temp;
+        ea::transform(src.begin(), src.end(), &temp.x_, StaticCaster<float>{});
+        return temp;
+    }
+
+    static Quaternion ReadQuaternion(const std::vector<double>& src)
+    {
+        if (src.size() != 4)
+            throw RuntimeException("Unexpected size of matrix object");
+
+        Vector4 temp;
+        ea::transform(src.begin(), src.end(), &temp.x_, StaticCaster<float>{});
+        return { temp.w_, temp.x_, temp.y_, temp.z_ };
+    }
+
+    const GLTFImporterBase& base_;
+    const GLTFBufferReader& bufferReader_;
+    const tg::Model& model_;
+
+    ea::vector<ea::optional<unsigned>> nodeToParent_;
+
+    ea::vector<GLTFNodePtr> trees_;
+    ea::vector<GLTFNodePtr> nodeToTreeNode_;
+};
 
 /// Utility to import textures on-demand.
 /// Textures cannot be imported after cooking.
@@ -886,77 +1218,233 @@ class GLTFModelImporter : public NonCopyable
 {
 public:
     explicit GLTFModelImporter(GLTFImporterBase& base,
-        const GLTFBufferReader& bufferReader, const GLTFMaterialImporter& materialImporter)
+        const GLTFBufferReader& bufferReader, const GLTFHierarchyAnalyzer& hierarchyAnalyzer,
+        const GLTFMaterialImporter& materialImporter)
         : base_(base)
         , model_(base_.GetModel())
         , bufferReader_(bufferReader)
+        , hierarchyAnalyzer_(hierarchyAnalyzer)
         , materialImporter_(materialImporter)
-        , meshSkins_(model_.meshes.size())
     {
-        FillSkins();
-
-        for (const tg::Mesh& mesh : model_.meshes)
-        {
-            auto modelView = ImportModelView(mesh);
-            auto model = modelView->ExportModel();
-            base_.AddToResourceCache(model);
-
-            modelViews_.push_back(modelView);
-            models_.push_back(model);
-            modelMaterials_.push_back(modelView->ExportMaterialList());
-        }
+        InitializeSkeletons();
+        ReferenceModels();
+        InitializeModels();
     }
 
     void SaveResources()
     {
-        for (Model* model : models_)
-            base_.SaveResource(model);
+        for (auto& [meshIndex, importedModels] : meshToUniqueModels_)
+        {
+            for (const ImportedModelPtr& importedModel : importedModels)
+                base_.SaveResource(importedModel->model_);
+        }
     }
 
-    SharedPtr<Model> GetModel(int meshIndex) const
+    SharedPtr<Model> GetModel(int meshIndex, int skinIndex) const
     {
-        base_.CheckMesh(meshIndex);
-        return models_[meshIndex];
+        return GetImportedModel(meshIndex, skinIndex).model_;
     }
 
-    const StringVector& GetModelMaterials(int meshIndex) const
+    const StringVector& GetModelMaterials(int meshIndex, int skinIndex) const
     {
-        base_.CheckMesh(meshIndex);
-        return modelMaterials_[meshIndex];
+        return GetImportedModel(meshIndex, skinIndex).materials_;
     }
 
 private:
-    void FillSkins()
+    struct ImportedModel
     {
+        GLTFNodePtr skeleton_;
+        SharedPtr<ModelView> modelView_;
+        SharedPtr<Model> model_;
+        StringVector materials_;
+    };
+    using ImportedModelPtr = ea::shared_ptr<ImportedModel>;
+
+    void InitializeSkeletons()
+    {
+        for (unsigned skinIndex = 0; skinIndex < model_.skins.size(); ++skinIndex)
+            skinToSkeleton_[skinIndex] = ImportSkeleton(skinIndex);
+    }
+
+    void ReferenceModels()
+    {
+        ea::unordered_set<unsigned> remainingMeshes;
+        for (unsigned meshIndex = 0; meshIndex < model_.meshes.size(); ++meshIndex)
+            remainingMeshes.insert(meshIndex);
+
         for (const tg::Node& node : model_.nodes)
         {
             if (node.mesh < 0 || node.skin < 0)
                 continue;
 
-            base_.CheckSkin(node.skin);
-            auto& meshSkin = meshSkins_[node.mesh];
+            ReferenceOrImportModel(node.mesh, node.skin);
+            remainingMeshes.erase(node.mesh);
+        }
 
-            if (!meshSkin.has_value())
-                meshSkin = node.skin;
-            else
+        for (unsigned meshIndex : remainingMeshes)
+            ReferenceOrImportModel(meshIndex, -1);
+    }
+
+    void InitializeModels()
+    {
+        for (auto& [meshIndex, importedModels] : meshToUniqueModels_)
+        {
+            if (importedModels.size() > 1)
             {
-                const tg::Skin& oldSkin = model_.skins[*meshSkin];
-                const tg::Skin& newSkin = model_.skins[node.skin];
-                if (oldSkin.joints.size() != newSkin.joints.size())
-                {
-                    throw RuntimeException("Mesh #{} is used with incompatible skins #{} and #{}",
-                        node.mesh, *meshSkin, node.skin);
-                }
+                URHO3D_LOGWARNING("Mesh #{} has multiple incompatible skeletons and will be imported {} times",
+                    meshIndex, importedModels.size());
+            }
+            for (const ImportedModelPtr& importedModel : importedModels)
+            {
+                const tg::Mesh& sourceMesh = model_.meshes[meshIndex];
+                importedModel->modelView_ = ImportModelView(sourceMesh, importedModel->skeleton_);
+                importedModel->model_ = importedModel->modelView_->ExportModel();
+                importedModel->materials_ = importedModel->modelView_->ExportMaterialList();
+                base_.AddToResourceCache(importedModel->model_);
             }
         }
     }
 
-    SharedPtr<ModelView> ImportModelView(const tg::Mesh& sourceMesh)
+    GLTFNodePtr ImportSkeleton(int skinIndex) const
+    {
+        base_.CheckSkin(skinIndex);
+        const tg::Skin& sourceSkin = model_.skins[skinIndex];
+        auto skeleton = hierarchyAnalyzer_.ExtractSkeletonSubTree(sourceSkin);
+        return skeleton;
+    }
+
+    void ReferenceOrImportModel(int meshIndex, int skinIndex)
+    {
+        base_.CheckMesh(meshIndex);
+        if (skinIndex >= 0)
+            base_.CheckSkin(skinIndex);
+
+        const GLTFNodePtr skeleton = skinIndex >= 0 ? skinToSkeleton_[skinIndex] : nullptr;
+
+        // Find or add unique model
+        auto& uniqueModelsForMesh = meshToUniqueModels_[meshIndex];
+        auto modelIter = ea::find_if(uniqueModelsForMesh.begin(), uniqueModelsForMesh.end(),
+            [&](const ImportedModelPtr& ptr) { return GLTFNode::DeepCompareEquivalent(*ptr->skeleton_, *skeleton); });
+        if (modelIter == uniqueModelsForMesh.end())
+        {
+            uniqueModelsForMesh.push_back(ea::make_shared<ImportedModel>(ImportedModel{ skeleton }));
+            modelIter = ea::prev(uniqueModelsForMesh.end());
+        }
+
+        // Add lookup reference
+        meshAndSkinToModel_.emplace(ea::make_pair(meshIndex, skinIndex), *modelIter);
+    }
+
+    ImportedModel& GetImportedModel(int meshIndex, int skinIndex) const
+    {
+        base_.CheckMesh(meshIndex);
+        if (skinIndex >= 0)
+            base_.CheckSkin(skinIndex);
+
+        auto iter = meshAndSkinToModel_.find({ meshIndex, skinIndex >= 0 ? skinIndex : -1 });
+        if (iter == meshAndSkinToModel_.end())
+            throw RuntimeException("Cannot find mesh #{} with skin #{}", meshIndex, skinIndex);
+        return *iter->second;
+    }
+
+    ea::vector<BoneView> ConvertSkeletonToBones(const GLTFNodePtr& skeleton) const
+    {
+        ea::vector<GLTFNodePtr> boneNodes;
+
+        // Fill joints first
+        skeleton->ForEach([&](GLTFNode& node)
+        {
+            if (!node.jointIndex_)
+                return;
+
+            const unsigned jointIndex = *node.jointIndex_;
+            if (boneNodes.size() <= jointIndex)
+                boneNodes.resize(jointIndex + 1);
+
+            boneNodes[jointIndex] = node.shared_from_this();
+        });
+
+        // Then fill non-joint bones
+        skeleton->ForEach([&](GLTFNode& node)
+        {
+            if (node.jointIndex_)
+                return;
+
+            boneNodes.push_back(node.shared_from_this());
+        });
+
+        // Assign unique names
+        ea::unordered_map<ea::string, unsigned> nameToBoneIndex_;
+        for (unsigned boneIndex = 0; boneIndex < boneNodes.size(); ++boneIndex)
+        {
+            GLTFNode& node = *boneNodes[boneIndex];
+            const ea::string nameHint = !node.name_.empty() ? node.name_ : "Bone";
+
+            bool success = false;
+            for (unsigned i = 0; i < 16*1024; ++i)
+            {
+                const ea::string_view nameFormat = i != 0 ? "{0}_{1}" : "{0}";
+                const ea::string name = Format(nameFormat, nameHint, i);
+                if (nameToBoneIndex_.contains(name))
+                    continue;
+
+                node.uniqueName_ = name;
+                nameToBoneIndex_.emplace(name, boneIndex);
+                success = true;
+                break;
+            }
+
+            if (!success)
+                throw RuntimeException("Failed to assign name to bone");
+        }
+
+        // Fill bones
+        ea::vector<BoneView> result(boneNodes.size());
+        for (unsigned boneIndex = 0; boneIndex < boneNodes.size(); ++boneIndex)
+        {
+            const GLTFNode& node = *boneNodes[boneIndex];
+            BoneView& bone = result[boneIndex];
+
+            bone.name_ = node.uniqueName_;
+            //bone.SetInitialTransform(node.position_, node.rotation_, node.scale_);
+            bone.parentIndex_ = node.parent_ ? boneNodes.index_of(node.parent_) : M_MAX_UNSIGNED;
+            //bone.offsetMatrix_ = node.inverseBindMatrix_;
+
+            // TODO: Implement me
+            bone.SetLocalBoundingSphere(0.1f);
+        }
+
+        // If there are multiple root bones, add main root bone
+        const unsigned numRoots = ea::count_if(result.begin(), result.end(),
+            [](const BoneView& boneView){ return boneView.parentIndex_ == M_MAX_UNSIGNED; });
+        if (numRoots == 0)
+            throw RuntimeException("Invalid bone hierarchy");
+        if (numRoots > 1)
+        {
+            const unsigned rootBoneIndex = result.size();
+            for (BoneView& otherBone : result)
+            {
+                if (otherBone.parentIndex_ == M_MAX_UNSIGNED)
+                    otherBone.parentIndex_ = rootBoneIndex;
+            }
+
+            BoneView rootBone;
+            // TODO: Fill
+            result.push_back(rootBone);
+        }
+
+        return result;
+    }
+
+    SharedPtr<ModelView> ImportModelView(const tg::Mesh& sourceMesh, const GLTFNodePtr& skeleton)
     {
         const ea::string modelName = base_.GetResourceName(sourceMesh.name.c_str(), "", "Model", ".mdl");
 
         auto modelView = MakeShared<ModelView>(base_.GetContext());
         modelView->SetName(modelName);
+
+        if (skeleton)
+            modelView->SetBones(ConvertSkeletonToBones(skeleton));
 
         const unsigned numMorphWeights = sourceMesh.weights.size();
         for (unsigned morphIndex = 0; morphIndex < numMorphWeights; ++morphIndex)
@@ -1034,7 +1522,7 @@ private:
         const ea::string& semanticsName = parsedSemantics[0];
         const unsigned semanticsIndex = parsedSemantics.size() > 1 ? FromString<unsigned>(parsedSemantics[1]) : 0;
 
-        if (semanticsName == "POSITION")
+        if (semanticsName == "POSITION" && semanticsIndex == 0)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC3)
             {
@@ -1048,7 +1536,7 @@ private:
             for (unsigned i = 0; i < accessor.count; ++i)
                 vertices[i].SetPosition(positions[i]);
         }
-        else if (semanticsName == "NORMAL")
+        else if (semanticsName == "NORMAL" && semanticsIndex == 0)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC3)
             {
@@ -1062,7 +1550,7 @@ private:
             for (unsigned i = 0; i < accessor.count; ++i)
                 vertices[i].SetNormal(normals[i].Normalized());
         }
-        else if (semanticsName == "TANGENT")
+        else if (semanticsName == "TANGENT" && semanticsIndex == 0)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC4)
             {
@@ -1115,6 +1603,28 @@ private:
                     vertices[i].color_[semanticsIndex] = colors[i];
             }
         }
+        else if (semanticsName == "JOINTS" && semanticsIndex == 0)
+        {
+            if (accessor.type != TINYGLTF_TYPE_VEC4)
+                throw RuntimeException("Unexpected type of skin joints");
+
+            vertexFormat.blendIndices_ = TYPE_UBYTE4;
+
+            const auto indices = bufferReader_.ReadAccessorChecked<Vector4>(accessor);
+            for (unsigned i = 0; i < accessor.count; ++i)
+                vertices[i].blendIndices_ = indices[i];
+        }
+        else if (semanticsName == "WEIGHTS" && semanticsIndex == 0)
+        {
+            if (accessor.type != TINYGLTF_TYPE_VEC4)
+                throw RuntimeException("Unexpected type of skin weights");
+
+            vertexFormat.blendWeights_ = TYPE_UBYTE4_NORM;
+
+            const auto weights = bufferReader_.ReadAccessorChecked<Vector4>(accessor);
+            for (unsigned i = 0; i < accessor.count; ++i)
+                vertices[i].blendWeights_ = weights[i];
+        }
 
         return true;
     }
@@ -1160,13 +1670,12 @@ private:
     GLTFImporterBase& base_;
     const tg::Model& model_;
     const GLTFBufferReader& bufferReader_;
+    const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
     const GLTFMaterialImporter& materialImporter_;
 
-    ea::vector<ea::optional<int>> meshSkins_;
-    ea::vector<SharedPtr<ModelView>> modelViews_;
-    ea::vector<SharedPtr<Model>> models_;
-    ea::vector<StringVector> modelMaterials_;
-
+    ea::unordered_map<int, GLTFNodePtr> skinToSkeleton_;
+    ea::unordered_map<int, ea::vector<ImportedModelPtr>> meshToUniqueModels_;
+    ea::unordered_map<ea::pair<int, int>, ImportedModelPtr> meshAndSkinToModel_;
 };
 
 tg::Model LoadGLTF(const ea::string& fileName)
@@ -1192,9 +1701,10 @@ public:
         : context_(context)
         , importerContext_(context, LoadGLTF(fileName), outputPath, resourceNamePrefix)
         , bufferReader_(importerContext_)
+        , hierarchyAnalyzer_(importerContext_, bufferReader_)
         , textureImporter_(importerContext_)
         , materialImporter_(importerContext_, textureImporter_)
-        , modelImporter_(importerContext_, bufferReader_, materialImporter_)
+        , modelImporter_(importerContext_, bufferReader_, hierarchyAnalyzer_, materialImporter_)
     {
         // TODO: Remove me
         model_ = importerContext_.GetModel();
@@ -1304,10 +1814,13 @@ private:
             ImportNode(scene, model_.nodes[nodeIndex]);
         }
 
+        static const Vector3 defaultPosition{ -1.0f, 2.0f, 1.0f };
+
         if (!scene->GetComponent<Light>(true))
         {
             // Model forward is Z+, make default lighting from top right when looking at forward side of model.
             Node* node = scene->CreateChild("Default Light");
+            node->SetPosition(defaultPosition);
             node->SetDirection({ 1.0f, -2.0f, -1.0f });
             auto light = node->CreateComponent<Light>();
             light->SetLightType(LIGHT_DIRECTIONAL);
@@ -1322,11 +1835,13 @@ private:
             if (skyboxMaterial && skyboxTexture && boxModel)
             {
                 Node* zoneNode = scene->CreateChild("Default Zone");
+                zoneNode->SetPosition(defaultPosition);
                 auto zone = zoneNode->CreateComponent<Zone>();
                 zone->SetBackgroundBrightness(0.5f);
                 zone->SetZoneTexture(skyboxTexture);
 
                 Node* skyboxNode = scene->CreateChild("Default Skybox");
+                skyboxNode->SetPosition(defaultPosition);
                 auto skybox = skyboxNode->CreateComponent<Skybox>();
                 skybox->SetModel(boxModel);
                 skybox->SetMaterial(skyboxMaterial);
@@ -1386,7 +1901,7 @@ private:
 
         if (sourceNode.mesh >= 0)
         {
-            if (Model* model = modelImporter_.GetModel(sourceNode.mesh))
+            if (Model* model = modelImporter_.GetModel(sourceNode.mesh, sourceNode.skin))
             {
                 const bool needAnimation = model->GetNumMorphs() > 0 || model->GetSkeleton().GetNumBones() > 1;
                 auto staticModel = !needAnimation
@@ -1395,7 +1910,7 @@ private:
 
                 staticModel->SetModel(model);
 
-                const StringVector& meshMaterials = modelImporter_.GetModelMaterials(sourceNode.mesh);
+                const StringVector& meshMaterials = modelImporter_.GetModelMaterials(sourceNode.mesh, sourceNode.skin);
                 for (unsigned i = 0; i < meshMaterials.size(); ++i)
                 {
                     auto material = cache->GetResource<Material>(meshMaterials[i]);
@@ -1411,7 +1926,8 @@ private:
     }
 
     GLTFImporterBase importerContext_;
-    GLTFBufferReader bufferReader_;
+    const GLTFBufferReader bufferReader_;
+    const GLTFHierarchyAnalyzer hierarchyAnalyzer_;
     GLTFTextureImporter textureImporter_;
     GLTFMaterialImporter materialImporter_;
     GLTFModelImporter modelImporter_;
