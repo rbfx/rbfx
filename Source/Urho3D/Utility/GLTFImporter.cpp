@@ -528,7 +528,7 @@ public:
     {
         InitializeParents();
         InitializeTrees();
-        AnalyzeMirroring();
+        ConvertToLeftHandedCoordinates();
         InitializeSkins();
     }
 
@@ -666,7 +666,7 @@ private:
             ReadNodeProperties(*child);
     }
 
-    void AnalyzeMirroring()
+    void ConvertToLeftHandedCoordinates()
     {
         isDeepMirrored_ = HasMirroredMeshes(trees_, true);
         if (!isDeepMirrored_)
@@ -703,7 +703,7 @@ private:
         return HasMirroredMeshes(node.children_, isMirroredWorld);
     }
 
-    void DeepMirror(GLTFNode& node)
+    void DeepMirror(GLTFNode& node) const
     {
         node.position_ = MirrorX(node.position_);
         node.rotation_ = MirrorX(node.rotation_);
@@ -713,7 +713,10 @@ private:
 
     void InitializeSkins()
     {
-        //for (unsigned skinIndex = 0; skinIndex < model_.skins.size(); ++skinIndex)
+        for (unsigned skinIndex = 0; skinIndex < model_.skins.size(); ++skinIndex)
+        {
+
+        }
     }
 
     static GLTFNodePtr GetCommonParent(const GLTFNodePtr& lhs, const GLTFNodePtr& rhs)
@@ -1599,6 +1602,7 @@ private:
         if (hierarchyAnalyzer_.IsDeepMirrored())
             modelView->MirrorGeometriesX();
 
+        modelView->CalculateMissingNormalsSmooth(); // TODO: Should be flat
         modelView->Normalize();
         return modelView;
     }

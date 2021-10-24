@@ -252,6 +252,8 @@ public:
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
     void MirrorGeometriesX();
+    /// Calculate smooth normals for geometries without normals in vertex format.
+    void CalculateMissingNormalsSmooth();
 
     /// Set contents
     /// @{
