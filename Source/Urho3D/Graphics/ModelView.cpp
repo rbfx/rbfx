@@ -1099,6 +1099,41 @@ void ModelView::MirrorGeometriesX()
     }
 }
 
+void ModelView::CalculateMissingNormalsSmooth()
+{
+    for (GeometryView& geometryView : geometries_)
+    {
+        for (GeometryLODView& lodView : geometryView.lods_)
+        {
+            if (lodView.vertexFormat_.normal_ != ModelVertexFormat::Undefined)
+                continue;
+
+            lodView.vertexFormat_.normal_ = TYPE_VECTOR3;
+
+            for (ModelVertex& vertex : lodView.vertices_)
+                vertex.normal_ = Vector4::ZERO;
+
+            const unsigned numPrimitives = lodView.indices_.size() / 3;
+            for (unsigned i = 0; i < numPrimitives; ++i)
+            {
+                ModelVertex& v0 = lodView.vertices_[lodView.indices_[i * 3]];
+                ModelVertex& v1 = lodView.vertices_[lodView.indices_[i * 3 + 1]];
+                ModelVertex& v2 = lodView.vertices_[lodView.indices_[i * 3 + 2]];
+                const auto p0 = static_cast<Vector3>(v0.position_);
+                const auto p1 = static_cast<Vector3>(v1.position_);
+                const auto p2 = static_cast<Vector3>(v2.position_);
+                const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0);
+                v0.normal_ += Vector4(normal, 0.0f);
+                v1.normal_ += Vector4(normal, 0.0f);
+                v2.normal_ += Vector4(normal, 0.0f);
+            }
+
+            for (ModelVertex& vertex : lodView.vertices_)
+                vertex.normal_ = Vector4(static_cast<Vector3>(vertex.normal_).Normalized(), 0.0f);
+        }
+    }
+}
+
 void ModelView::SetMorph(unsigned index, const ModelMorphView& morph)
 {
     if (morphs_.size() <= index)
