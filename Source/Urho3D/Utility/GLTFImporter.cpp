@@ -81,6 +81,20 @@ ea::array<T, N> ToArray(const U& vec)
     return result;
 }
 
+bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.y_ < 0.0f; }
+
+Vector3 MirrorX(const Vector3& vec) { return { -vec.x_, vec.y_, vec.z_ }; }
+
+Quaternion MirrorX(const Quaternion& rotation)
+{
+    Matrix3 mat = rotation.RotationMatrix();
+    mat.m01_ = -mat.m01_;
+    mat.m10_ = -mat.m10_;
+    mat.m02_ = -mat.m02_;
+    mat.m20_ = -mat.m20_;
+    return Quaternion{ mat };
+}
+
 /// Raw imported input, parameters and generic output layout.
 class GLTFImporterBase : public NonCopyable
 {
@@ -369,9 +383,12 @@ using GLTFNodePtr = ea::shared_ptr<GLTFNode>;
 
 struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
 {
+    /// Hierarchy metadata
+    /// @}
     GLTFNodePtr root_;
     GLTFNodePtr parent_;
     ea::vector<GLTFNodePtr> children_;
+    /// @}
 
     unsigned index_{};
     ea::string name_;
@@ -494,6 +511,13 @@ struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
 };
 
 /// Utility to process scene and node hierarchy of source GLTF asset.
+/// Mirrors the scene to convert from right-handed to left-handed coordinates.
+///
+/// Implements simple heuristics: if no models are actually mirrored after initial mirror,
+/// then GLTF exporter implemented lazy export from left-handed to right-handed coordinate system
+/// by adding top-level mirroring. In this case, keep scene as is.
+/// TODO: Cleanup redundant mirrors?
+/// Otherwise scene is truly left-handed and deep mirroring is needed.
 class GLTFHierarchyAnalyzer : public NonCopyable
 {
 public:
@@ -504,6 +528,16 @@ public:
     {
         InitializeParents();
         InitializeTrees();
+        AnalyzeMirroring();
+        InitializeSkins();
+    }
+
+    bool IsDeepMirrored() const { return isDeepMirrored_; }
+
+    const GLTFNode& GetNode(int nodeIndex) const
+    {
+        base_.CheckNode(nodeIndex);
+        return *nodeToTreeNode_[nodeIndex];
     }
 
     GLTFNodePtr ExtractSkeletonSubTree(const tg::Skin& sourceSkin) const
@@ -609,7 +643,7 @@ private:
         return node;
     }
 
-    void ReadNodeProperties(GLTFNode& node)
+    void ReadNodeProperties(GLTFNode& node) const
     {
         const tg::Node& sourceNode = model_.nodes[node.index_];
         node.name_ = sourceNode.name.c_str();
@@ -630,6 +664,56 @@ private:
 
         for (const GLTFNodePtr& child : node.children_)
             ReadNodeProperties(*child);
+    }
+
+    void AnalyzeMirroring()
+    {
+        isDeepMirrored_ = HasMirroredMeshes(trees_, true);
+        if (!isDeepMirrored_)
+        {
+            for (const GLTFNodePtr& node : trees_)
+            {
+                node->position_ = MirrorX(node->position_);
+                node->rotation_ = MirrorX(node->rotation_);
+                node->scale_ = MirrorX(node->scale_);
+            }
+        }
+        else
+        {
+            for (const GLTFNodePtr& node : trees_)
+                DeepMirror(*node);
+        }
+    }
+
+    bool HasMirroredMeshes(const ea::vector<GLTFNodePtr>& nodes, bool isParentMirrored) const
+    {
+        return ea::any_of(nodes.begin(), nodes.end(),
+            [&](const GLTFNodePtr& node) { return HasMirroredMeshes(*node, isParentMirrored); });
+    }
+
+    bool HasMirroredMeshes(GLTFNode& node, bool isParentMirrored) const
+    {
+        const tg::Node& sourceNode = model_.nodes[node.index_];
+        const bool hasMesh = sourceNode.mesh >= 0;
+        const bool isMirroredLocal = IsNegativeScale(node.scale_);
+        const bool isMirroredWorld = (isParentMirrored != isMirroredLocal);
+        if (isMirroredWorld && hasMesh)
+            return true;
+
+        return HasMirroredMeshes(node.children_, isMirroredWorld);
+    }
+
+    void DeepMirror(GLTFNode& node)
+    {
+        node.position_ = MirrorX(node.position_);
+        node.rotation_ = MirrorX(node.rotation_);
+        for (const GLTFNodePtr& node : node.children_)
+            DeepMirror(*node);
+    }
+
+    void InitializeSkins()
+    {
+        //for (unsigned skinIndex = 0; skinIndex < model_.skins.size(); ++skinIndex)
     }
 
     static GLTFNodePtr GetCommonParent(const GLTFNodePtr& lhs, const GLTFNodePtr& rhs)
@@ -690,6 +774,7 @@ private:
 
     ea::vector<GLTFNodePtr> trees_;
     ea::vector<GLTFNodePtr> nodeToTreeNode_;
+    bool isDeepMirrored_{};
 };
 
 /// Utility to import textures on-demand.
@@ -1511,6 +1596,9 @@ private:
             }
         }
 
+        if (hierarchyAnalyzer_.IsDeepMirrored())
+            modelView->MirrorGeometriesX();
+
         modelView->Normalize();
         return modelView;
     }
@@ -1852,52 +1940,15 @@ private:
         return scene;
     }
 
-    void ExtractTransform(const tg::Node& node, Vector3& translation, Quaternion& rotation, Vector3& scale)
-    {
-        translation = Vector3::ZERO;
-        rotation = Quaternion::IDENTITY;
-        scale = Vector3::ONE;
-
-        if (!node.matrix.empty())
-        {
-            Matrix4 sourceMatrix;
-            ea::transform(node.matrix.begin(), node.matrix.end(),
-                &sourceMatrix.m00_, StaticCaster<float>{});
-
-            const Matrix3x4 transform{ sourceMatrix.Transpose() };
-            transform.Decompose(translation, rotation, scale);
-        }
-        else
-        {
-            if (!node.translation.empty())
-            {
-                ea::transform(node.translation.begin(), node.translation.end(),
-                    &translation.x_, StaticCaster<float>{});
-            }
-            if (!node.rotation.empty())
-            {
-                ea::transform(node.rotation.begin(), node.rotation.end(),
-                    &rotation.w_, StaticCaster<float>{});
-            }
-            if (!node.scale.empty())
-            {
-                ea::transform(node.scale.begin(), node.scale.end(),
-                    &scale.x_, StaticCaster<float>{});
-            }
-        }
-    }
-
     void ImportNode(Node* parent, const tg::Node& sourceNode)
     {
         auto cache = context_->GetSubsystem<ResourceCache>();
 
         Node* node = parent->CreateChild(sourceNode.name.c_str());
 
-        Vector3 translation;
-        Quaternion rotation;
-        Vector3 scale;
-        ExtractTransform(sourceNode, translation, rotation, scale);
-        node->SetTransform(translation, rotation, scale);
+        // TODO: It sucks
+        const GLTFNode& hierarchyNode = hierarchyAnalyzer_.GetNode(&sourceNode - &model_.nodes.front());
+        node->SetTransform(hierarchyNode.position_, hierarchyNode.rotation_, hierarchyNode.scale_);
 
         if (sourceNode.mesh >= 0)
         {

@@ -250,6 +250,8 @@ public:
     BoundingBox CalculateBoundingBox() const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
+    /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
+    void MirrorGeometriesX();
 
     /// Set contents
     /// @{

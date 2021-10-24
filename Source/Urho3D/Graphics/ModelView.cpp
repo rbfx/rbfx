@@ -1069,6 +1069,36 @@ void ModelView::Normalize()
         morphs_.resize(numMorphs);
 }
 
+void ModelView::MirrorGeometriesX()
+{
+    for (GeometryView& geometryView : geometries_)
+    {
+        for (GeometryLODView& lodView : geometryView.lods_)
+        {
+            for (ModelVertex& vertex : lodView.vertices_)
+            {
+                vertex.position_.x_ = -vertex.position_.x_;
+                vertex.normal_.x_ = -vertex.normal_.x_;
+                vertex.tangent_.x_ = -vertex.tangent_.x_;
+            }
+
+            for (auto& [morphIndex, morphVector] : lodView.morphs_)
+            {
+                for (ModelVertexMorph& vertexMorph : morphVector)
+                {
+                    vertexMorph.positionDelta_.x_ = -vertexMorph.positionDelta_.x_;
+                    vertexMorph.normalDelta_.x_ = -vertexMorph.normalDelta_.x_;
+                    vertexMorph.tangentDelta_.x_ = -vertexMorph.tangentDelta_.x_;
+                }
+            }
+
+            const unsigned numPrimitives = lodView.indices_.size() / 3;
+            for (unsigned i = 0; i < numPrimitives; ++i)
+                ea::swap(lodView.indices_[i * 3 + 1], lodView.indices_[i * 3 + 2]);
+        }
+    }
+}
+
 void ModelView::SetMorph(unsigned index, const ModelMorphView& morph)
 {
     if (morphs_.size() <= index)
