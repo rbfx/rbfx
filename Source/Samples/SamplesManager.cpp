@@ -129,6 +129,9 @@
 #include "107_HelloRmlUI/HelloRmlUI.h"
 #endif
 #include "108_RenderingShowcase/RenderingShowcase.h"
+#if URHO3D_PHYSICS
+#include "109_KinematicCharacter/KinematicCharacterDemo.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -319,6 +322,9 @@ void SamplesManager::Start()
     RegisterSample<HelloRmlUI>();
 #endif
     RegisterSample<RenderingShowcase>();
+#if URHO3D_PHYSICS
+    RegisterSample<KinematicCharacterDemo>();
+#endif
 
     if (!startSample_.empty())
         StartSample(startSample_);
