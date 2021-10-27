@@ -141,19 +141,15 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         }
     }
 
-    URHO3D_LOGINFO("FixedUpdate {} {}", onGround_, jumpStarted_);
-
     if (onGround_)
     {
         // Play walk animation if moving on ground, otherwise fade it out
         if ((softGrounded) && !moveDir.Equals(Vector3::ZERO))
         {
-            //URHO3D_LOGINFO("Mutant_Run.ani");
             animController_->PlayExclusive("Models/Mutant/Mutant_Run.ani", 0, true, 0.2f);
         }
         else
         {
-            //URHO3D_LOGINFO("Mutant_Idle0.ani");
             animController_->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true, 0.2f);
         }
     }

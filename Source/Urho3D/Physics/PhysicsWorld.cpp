@@ -176,8 +176,8 @@ PhysicsWorld::PhysicsWorld(Context* context) :
     world_->setSynchronizeAllMotionStates(true);
 
     // Add ghost pair callback
-    ghostPairCallback = new btGhostPairCallback();
-    world_->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(ghostPairCallback);
+    ghostPairCallback_ = new btGhostPairCallback();
+    world_->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(ghostPairCallback_);
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -207,10 +207,10 @@ PhysicsWorld::~PhysicsWorld()
 
 
     // Delete GhostPair callback
-    if (ghostPairCallback)
+    if (ghostPairCallback_)
     {
-        delete ghostPairCallback;
-        ghostPairCallback = nullptr;
+        delete ghostPairCallback_;
+        ghostPairCallback_ = nullptr;
     }
 }
 

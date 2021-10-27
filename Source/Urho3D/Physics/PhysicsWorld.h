@@ -380,7 +380,7 @@ private:
     /// Debug draw flags.
     int debugMode_{};
     /// GhostPair Callback
-    btGhostPairCallback* ghostPairCallback{nullptr};
+    btGhostPairCallback* ghostPairCallback_{nullptr};
 };
 
 /// Register Physics library objects.
