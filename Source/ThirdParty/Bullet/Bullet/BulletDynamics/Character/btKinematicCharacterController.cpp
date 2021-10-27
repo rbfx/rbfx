@@ -257,7 +257,8 @@ bool btKinematicCharacterController::recoverFromPenetration(btCollisionWorld* co
 void btKinematicCharacterController::stepUp(btCollisionWorld* world)
 {
 	btScalar stepHeight = 0.0f;
-	if (m_verticalVelocity < 0.0)
+    // Urho3D/rbfx: Step up only if we going down and was standing on ground. Don't try to step up while jumping.
+	if (m_verticalVelocity < 0.0 && m_wasOnGround)
 		stepHeight = m_stepHeight;
 
 	// phase 1: up
