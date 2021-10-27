@@ -57,8 +57,6 @@ KinematicCharacterDemo::KinematicCharacterDemo(Context* context) :
     , firstPerson_(false)
     , drawDebug_(false)
 {
-    // Register factory and attributes for the Character component so it can be created via CreateComponent, and loaded / saved
-    KinematicCharacter::RegisterObject(context);
 }
 
 KinematicCharacterDemo::~KinematicCharacterDemo() = default;

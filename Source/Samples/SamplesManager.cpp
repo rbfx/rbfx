@@ -130,6 +130,7 @@
 #endif
 #include "108_RenderingShowcase/RenderingShowcase.h"
 #if URHO3D_PHYSICS
+#include <Urho3D/Physics/KinematicCharacterController.h>
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
 #include "Rotator.h"
@@ -247,6 +248,8 @@ void SamplesManager::Start()
     RegisterSample<PhysicsStressTest>();
     RegisterSample<Ragdolls>();
     RegisterSample<KinematicCharacterDemo>();
+    context_->RegisterFactory<KinematicCharacterController>();
+    KinematicCharacter::RegisterObject(context_);
 #endif
     RegisterSample<SoundEffects>();
 #if URHO3D_NAVIGATION
