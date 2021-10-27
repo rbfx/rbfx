@@ -141,40 +141,38 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         }
     }
 
-    if (!onGround_ || jumpStarted_)
-    {
-        if (jumpStarted_)
-        {
-            if (animController_->IsAtEnd("Models/Mutant/Mutant_Jump1.ani"))
-            {
-                animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.3f);
-                animController_->SetTime("Models/Mutant/Mutant_Jump1.ani", 0);
-                jumpStarted_ = false;
-            }
-        }
-        else
-        {
-            const float maxDistance = 50.0f;
-            const float segmentDistance = 10.01f;
-            PhysicsRaycastResult result;
-            GetScene()->GetComponent<PhysicsWorld>()->RaycastSingleSegmented(result, Ray(node_->GetPosition(), Vector3::DOWN),
-                                                                             maxDistance, segmentDistance, 0xffff);
-            if (result.body_ && result.distance_ > 0.7f )
-            {
-                animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.2f);
-            }
-        }
-    }
-    else
+    URHO3D_LOGINFO("FixedUpdate {} {}", onGround_, jumpStarted_);
+
+    if (onGround_)
     {
         // Play walk animation if moving on ground, otherwise fade it out
         if ((softGrounded) && !moveDir.Equals(Vector3::ZERO))
         {
+            //URHO3D_LOGINFO("Mutant_Run.ani");
             animController_->PlayExclusive("Models/Mutant/Mutant_Run.ani", 0, true, 0.2f);
         }
         else
         {
+            //URHO3D_LOGINFO("Mutant_Idle0.ani");
             animController_->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true, 0.2f);
+        }
+    }
+    else if (jumpStarted_)
+    {
+        animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.3f);
+        animController_->SetTime("Models/Mutant/Mutant_Jump1.ani", 0);
+        jumpStarted_ = false;
+    }
+    else
+    {
+        const float maxDistance = 50.0f;
+        const float segmentDistance = 10.01f;
+        PhysicsRaycastResult result;
+        GetScene()->GetComponent<PhysicsWorld>()->RaycastSingleSegmented(result, Ray(node_->GetPosition(), Vector3::DOWN),
+                                                                         maxDistance, segmentDistance, 0xffff);
+        if (result.body_ && result.distance_ > 0.7f )
+        {
+            animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.2f);
         }
     }
 }
