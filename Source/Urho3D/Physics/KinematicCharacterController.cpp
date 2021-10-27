@@ -40,15 +40,6 @@
 namespace Urho3D
 {
 
-//=============================================================================
-// NOTE! declare these function before #include <Urho3D/DebugNew> 
-// otherwise you'll get a compile error for _DEBUG build
-//=============================================================================
-btPairCachingGhostObject* newPairCachingGhostObj()
-{
-    return new btPairCachingGhostObject();
-}
-
 btKinematicCharacterController* newKinematicCharCtrl(btPairCachingGhostObject *ghostCGO,
                                                      btConvexShape *shape, float stepHeight, const btVector3 &upVec)
 {
@@ -62,7 +53,7 @@ btKinematicCharacterController* newKinematicCharCtrl(btPairCachingGhostObject *g
 KinematicCharacterController::KinematicCharacterController(Context* context)
     : Component(context)
 {
-    pairCachingGhostObject_.reset( newPairCachingGhostObj() );
+    pairCachingGhostObject_ = ea::make_unique<btPairCachingGhostObject>();
     pairCachingGhostObject_->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
 }
 
@@ -166,9 +157,9 @@ void KinematicCharacterController::AddKinematicToWorld()
             pairCachingGhostObject_->setCollisionShape(btColShape);
             colShapeOffset_ = colShape->GetPosition();
 
-            kinematicController_.reset( newKinematicCharCtrl(pairCachingGhostObject_.get(), 
+            kinematicController_ = ea::make_unique<btKinematicCharacterController>(pairCachingGhostObject_.get(), 
                                                        dynamic_cast<btConvexShape*>(colShape->GetCollisionShape()),
-                                                       stepHeight_, ToBtVector3(Vector3::UP)));
+                                                       stepHeight_, ToBtVector3(Vector3::UP));
             // apply default settings
             ApplySettings();
 
