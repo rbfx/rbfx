@@ -127,6 +127,9 @@ public:
 	///btActionInterface interface
 	void debugDraw(btIDebugDraw * debugDrawer);
 
+    // RBFX: Setting new collision shape
+    void setCollisionShape(btConvexShape* shape);
+
 	void setUp(const btVector3& up);
 
 	const btVector3& getUp() { return m_up; }

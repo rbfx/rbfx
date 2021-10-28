@@ -26,12 +26,12 @@
 #include "../Physics/CollisionShape.h"
 #include "../Physics/PhysicsUtils.h"
 #include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
 #include "../IO/Log.h"
 
 #include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <BulletCollision/CollisionShapes/btConvexShape.h>
+#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 #include <Bullet/BulletDynamics/Character/btKinematicCharacterController.h>
 #include <cassert>
 
@@ -69,6 +69,9 @@ void KinematicCharacterController::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Collision Mask", int, colMask_, 0xffff, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Linear Damping", GetLinearDamping, SetLinearDamping, float, 0.2f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angular Damping", GetAngularDamping, SetAngularDamping, float, 0.2f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Height", GetHeight, SetHeight, float, 1.8f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Diameter", GetDiameter, SetDiameter, float, 0.7f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Offset", GetOffset, SetOffset, Vector3, Vector3(0.0f, 0.9f, 0.0f), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Step Height", GetStepHeight, SetStepHeight, float, 0.4f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Max Jump Height", GetMaxJumpHeight, SetMaxJumpHeight, float, 2.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Fall Speed", GetFallSpeed, SetFallSpeed, float, 55.0f, AM_DEFAULT);
@@ -137,26 +140,39 @@ void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, V
     node_->SetWorldPosition(GetPosition());
 }
 
+btCapsuleShape* KinematicCharacterController::GetOrCreateShape()
+{
+    if (!shape_)
+    {
+        ResetShape();
+    }
+    return shape_.get();
+}
+
+void KinematicCharacterController::ResetShape()
+{
+    shape_ = ea::make_unique<btCapsuleShape>(diameter_ * 0.5f, Max(height_ - diameter_, 0.0f));
+    if (pairCachingGhostObject_)
+    {
+        pairCachingGhostObject_->setCollisionShape(shape_.get());
+    }
+    if (kinematicController_)
+    {
+        kinematicController_->setCollisionShape(shape_.get());
+    }
+}
+
 void KinematicCharacterController::AddKinematicToWorld()
 {
     if (physicsWorld_)
     {
         if (kinematicController_ == nullptr)
         {
-            CollisionShape *colShape = GetComponent<CollisionShape>();
-            assert(colShape && "missing Collision Shape");
-
-            btCollisionShape* btColShape = colShape->GetCollisionShape();
-            //Skip kinematicController_ creation is collision shape is not yet created.
-            if (!btColShape)
-            {
-                return;
-            }
+            btCapsuleShape* btColShape = GetOrCreateShape();
             pairCachingGhostObject_->setCollisionShape(btColShape);
-            colShapeOffset_ = colShape->GetPosition();
 
             kinematicController_ = ea::make_unique<btKinematicCharacterController>(pairCachingGhostObject_.get(), 
-                                                       dynamic_cast<btConvexShape*>(colShape->GetCollisionShape()),
+                                                       btColShape,
                                                        stepHeight_, ToBtVector3(Vector3::UP));
             // apply default settings
             ApplySettings();
@@ -296,6 +312,42 @@ void KinematicCharacterController::SetGravity(const Vector3 &gravity)
     {
         gravity_ = gravity;
         kinematicController_->setGravity(ToBtVector3(gravity_));
+        MarkNetworkUpdate();
+    }
+}
+
+void KinematicCharacterController::SetHeight(float height)
+{
+    if (height != height_)
+    {
+        height_ = height;
+        ResetShape();
+        MarkNetworkUpdate();
+    }
+}
+
+void KinematicCharacterController::SetDiameter(float diameter)
+{
+    if (diameter != diameter_)
+    {
+        diameter_ = diameter;
+        ResetShape();
+        MarkNetworkUpdate();
+    }
+}
+
+void KinematicCharacterController::SetOffset(const Vector3& offset)
+{
+    if (offset != colShapeOffset_)
+    {
+        auto diff = offset - colShapeOffset_;
+        colShapeOffset_ = offset;
+        if (pairCachingGhostObject_)
+        {
+            auto transform = pairCachingGhostObject_->getWorldTransform();
+            transform.setOrigin(transform.getOrigin() + ToBtVector3(diff));
+            pairCachingGhostObject_->setWorldTransform(transform);
+        }
         MarkNetworkUpdate();
     }
 }

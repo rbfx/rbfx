@@ -951,6 +951,12 @@ void btKinematicCharacterController::setUpInterpolate(bool value)
 	m_interpolateUp = value;
 }
 
+// RBFX: Setting new collision shape
+void btKinematicCharacterController::setCollisionShape(btConvexShape* shape)
+{
+    m_convexShape = shape;
+}
+
 void btKinematicCharacterController::setUp(const btVector3& up)
 {
 	if (up.length2() > 0 && m_gravity > 0.0f)

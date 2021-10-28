@@ -212,15 +212,14 @@ void KinematicCharacterDemo::CreateCharacter()
     // Set the rigidbody to signal collision also when in rest, so that we get ground collisions properly
     body->SetCollisionEventMode(COLLISION_ALWAYS);
 
-    // Set a capsule shape for collision
-    auto* shape = objectNode->CreateComponent<CollisionShape>();
-    shape->SetCapsule(0.7f, 1.8f, Vector3(0.0f, 0.9f, 0.0f));
-
     // Create the character logic component, which takes care of steering the rigidbody
     // Remember it so that we can set the controls. Use a ea::weak_ptr because the scene hierarchy already owns it
     // and keeps it alive as long as it's not removed from the hierarchy
     character_ = objectNode->CreateComponent<KinematicCharacter>();
     kinematicCharacter_ = objectNode->CreateComponent<KinematicCharacterController>();
+    kinematicCharacter_->SetDiameter(0.7f);
+    kinematicCharacter_->SetHeight(1.8f);
+    kinematicCharacter_->SetOffset(Vector3(0.0f, 0.9f, 0.0f));
 }
 
 void KinematicCharacterDemo::CreateInstructions()
@@ -255,6 +254,11 @@ void KinematicCharacterDemo::SubscribeToEvents()
 
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
+
+    // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
+    // debug geometry
+    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(KinematicCharacterDemo, HandlePostRenderUpdate));
+
 }
 
 void KinematicCharacterDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
@@ -282,6 +286,7 @@ void KinematicCharacterDemo::HandleUpdate(StringHash eventType, VariantMap& even
                 character_->controls_.Set(CTRL_BACK, input->GetKeyDown(KEY_S));
                 character_->controls_.Set(CTRL_LEFT, input->GetKeyDown(KEY_A));
                 character_->controls_.Set(CTRL_RIGHT, input->GetKeyDown(KEY_D));
+                character_->controls_.Set(CTRL_CROUCH, input->GetKeyDown(KEY_SHIFT));
             }
             character_->controls_.Set(CTRL_JUMP, input->GetKeyDown(KEY_SPACE));
 
@@ -342,7 +347,13 @@ void KinematicCharacterDemo::HandleUpdate(StringHash eventType, VariantMap& even
 
     // Toggle debug geometry with space
     if (input->GetKeyPress(KEY_M))
+    {
         drawDebug_ = !drawDebug_;
+        if (drawDebug_ && scene_)
+        {
+            scene_->GetOrCreateComponent<DebugRenderer>();
+        }
+    }
 }
 
 void KinematicCharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData)

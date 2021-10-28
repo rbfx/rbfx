@@ -40,6 +40,7 @@ const unsigned CTRL_BACK = 2;
 const unsigned CTRL_LEFT = 4;
 const unsigned CTRL_RIGHT = 8;
 const unsigned CTRL_JUMP = 16;
+const unsigned CTRL_CROUCH = 32;
 
 const float MOVE_FORCE = 0.2f;
 const float INAIR_MOVE_FORCE = 0.2f;

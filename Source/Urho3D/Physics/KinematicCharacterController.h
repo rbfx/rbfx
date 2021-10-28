@@ -24,6 +24,7 @@
 
 #include "../Scene/Component.h"
 
+class btCapsuleShape;
 class btPairCachingGhostObject;
 class btKinematicCharacterController;
 
@@ -81,6 +82,18 @@ public:
     void SetAngularDamping(float angularDamping);
     /// Return linear velocity damping factor.
     float GetAngularDamping() const { return angularDamping_; }
+    /// Set character height.
+    void SetHeight(float height);
+    /// Return character height.
+    float GetHeight() const { return height_; }
+    /// Set character diameter.
+    void SetDiameter(float diameter);
+    /// Return character diameter.
+    float GetDiameter() const { return diameter_; }
+    /// Set character collider offset.
+    void SetOffset(const Vector3& offset);
+    /// Return character collider offset.
+    const Vector3& GetOffset() const { return colShapeOffset_; }
     /// Set step height.
     void SetStepHeight(float stepHeight);
     /// Return step height.
@@ -125,6 +138,8 @@ public:
     virtual void DrawDebugGeometry();
 
 protected:
+    btCapsuleShape* GetOrCreateShape();
+    void ResetShape();
     void ReleaseKinematic();
     void ApplySettings(bool reapply=false);
     void OnNodeSet(Node* node) override;
@@ -138,6 +153,8 @@ protected:
     unsigned colLayer_{ 1 };
     unsigned colMask_{ 0xffff };
 
+    float height_{ 1.8f };
+    float diameter_{ 0.7f };
     float stepHeight_{ 0.4f };
     float maxJumpHeight_{ 2.0f };
     float jumpSpeed_{ 9.0f };
@@ -148,6 +165,8 @@ protected:
     Vector3 gravity_{ Vector3(0.0f, -14.0f, 0.0f) };
 
     WeakPtr<PhysicsWorld> physicsWorld_;
+    /// Bullet collision shape.
+    ea::unique_ptr<btCapsuleShape> shape_;
     ea::unique_ptr<btPairCachingGhostObject> pairCachingGhostObject_;
     ea::unique_ptr<btKinematicCharacterController> kinematicController_;
 

@@ -95,6 +95,16 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         moveDir += Vector3::LEFT;
     if (controls_.IsDown(CTRL_RIGHT))
         moveDir += Vector3::RIGHT;
+    if (controls_.IsDown(CTRL_CROUCH))
+    {
+        kinematicController_->SetHeight(0.9f);
+        kinematicController_->SetOffset(Vector3(0.0f, 0.45f, 0.0f));
+    }
+    else
+    {
+        kinematicController_->SetHeight(1.8f);
+        kinematicController_->SetOffset(Vector3(0.0f, 0.9f, 0.0f));
+    }
 
     // Normalize move vector so that diagonal strafing is not faster
     if (moveDir.LengthSquared() > 0.0f)
