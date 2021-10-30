@@ -35,6 +35,7 @@ target_compile_definitions(EASTL
             -DEASTDC_GLOBALPTR_SUPPORT_ENABLED=0
             -DEASTDC_THREADING_SUPPORTED=0
             -DEASTL_STD_ITERATOR_CATEGORY_ENABLED=1
+            -DEASTL_DEBUG=$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>
     PRIVATE -D_CHAR16T
 )
 if (MSVC)
