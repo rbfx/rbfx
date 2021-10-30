@@ -175,9 +175,9 @@ bool ResourceTab::RenderWindowContent()
         else if (clicks == 2 && name != ".")
         {
             if (name == "..")
-                currentDir_ = GetParentPath(currentDir_);
+                cd_ = GetParentPath(currentDir_);
             else
-                currentDir_ += AddTrailingSlash(name);
+                cd_ = currentDir_ + AddTrailingSlash(name);
             selectedItem_.clear();
             rescan_ = true;
             isRenamingFrame_ = 0;
@@ -533,6 +533,8 @@ void ResourceTab::ScanAssets()
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     Pipeline* pipeline = GetSubsystem<Pipeline>();
+    currentDir_ = cd_;
+    cd_.clear();
 
     // Gather directories from project resource paths.
     currentDirs_.clear();
@@ -765,7 +767,7 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
         }
         else if (ui::IsItemClicked(MOUSEB_LEFT) || ui::IsItemClicked(MOUSEB_RIGHT))
         {
-            currentDir_ = childDir;
+            cd_ = childDir;
             selectedItem_.clear();
             isRenamingFrame_ = 0;
             openContextMenu |= ui::IsItemClicked(MOUSEB_RIGHT);
@@ -773,7 +775,7 @@ void ResourceTab::RenderDirectoryTree(const eastl::string& path)
             rescan_ = true;
         }
 
-        if (!isOpen && currentDir_.starts_with(childDir) && currentDir_.length() > childDir.length())
+        if (!isOpen && cd_.starts_with(childDir) && cd_.length() > childDir.length())
         {
             // Open tree nodes when navigating file system in files panel.
             isOpen = true;
@@ -938,7 +940,7 @@ bool ResourceTab::RenderRenameWidget(const ea::string& icon)
                 if (!selectedItem_.empty())
                     selectedItem_ = renameBuffer_;
                 else
-                    currentDir_ = newPath;
+                    cd_ = newPath;
             }
         }
         renameBuffer_.clear();

@@ -90,6 +90,8 @@ protected:
     ///
     bool RenderRenameWidget(const ea::string& icon = "");
 
+    /// Current dir navigation request.
+    ea::string cd_;
     /// Current open resource path.
     ea::string currentDir_;
     /// Current selected resource file name.
