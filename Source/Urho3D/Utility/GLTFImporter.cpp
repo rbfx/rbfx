@@ -98,6 +98,16 @@ Quaternion MirrorX(const Quaternion& rotation)
     return Quaternion{ mat };
 }
 
+Matrix3x4 MirrorX(Matrix3x4 mat)
+{
+    mat.m01_ = -mat.m01_;
+    mat.m10_ = -mat.m10_;
+    mat.m02_ = -mat.m02_;
+    mat.m20_ = -mat.m20_;
+    mat.m03_ = -mat.m03_;
+    return mat;
+}
+
 /// Raw imported input, parameters and generic output layout.
 class GLTFImporterBase : public NonCopyable
 {
@@ -907,7 +917,11 @@ private:
                 throw RuntimeException("Unexpected size of bind matrices array");
 
             for (unsigned i = 0; i < sourceSkin.joints.size(); ++i)
+            {
                 skin.inverseBindMatrices_[i] = Matrix3x4{ sourceBindMatrices[i].Transpose() };
+                if (isDeepMirrored_)
+                    skin.inverseBindMatrices_[i] = MirrorX(skin.inverseBindMatrices_[i]);
+            }
         }
 
         // Generate skeleton bones
