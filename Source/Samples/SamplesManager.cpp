@@ -138,14 +138,7 @@
 #include "SamplesManager.h"
 
 // Expands to this example's entry-point
-int RunApplication()
-{
-Urho3D::OpenConsoleWindow();
-Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());
-Urho3D::SharedPtr<SamplesManager> application(new SamplesManager(context));
-return application->Run();
-}
-URHO3D_DEFINE_MAIN(RunApplication())
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::SamplesManager);
 
 namespace Urho3D
 {
@@ -159,7 +152,7 @@ void SamplesManager::Setup()
 {
     // Modify engine startup parameters
     engineParameters_[EP_WINDOW_TITLE] = "rbfx samples";
-    //engineParameters_[EP_LOG_NAME]     = GetSubsystem<FileSystem>()->GetAppPreferencesDir("rbfx", "samples") + GetTypeName() + ".log";
+    engineParameters_[EP_LOG_NAME]     = GetSubsystem<FileSystem>()->GetAppPreferencesDir("rbfx", "samples") + GetTypeName() + ".log";
     engineParameters_[EP_FULL_SCREEN]  = false;
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
