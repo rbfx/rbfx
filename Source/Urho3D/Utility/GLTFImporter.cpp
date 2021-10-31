@@ -414,119 +414,6 @@ struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
     ea::optional<ea::string> uniqueBoneName_;
     ea::vector<unsigned> skinnedMeshNodes_;
     /// @}
-
-    /// Temporary things
-    /// @{
-    ea::optional<unsigned> jointIndex2_;
-    ea::string uniqueName2_;
-    Matrix3x4 inverseBindMatrix2_;
-    /// @}
-
-    template <class T>
-    void ForEach(const T& callback)
-    {
-        callback(*this);
-        for (const GLTFNodePtr& child : children_)
-            child->ForEach(callback);
-    }
-
-    GLTFNodePtr Clone(GLTFNode* parent = nullptr, GLTFNode* root = nullptr) const
-    {
-        auto node = ea::make_shared<GLTFNode>(*this);
-        node->root_ = root;
-        node->parent_ = parent;
-        for (GLTFNodePtr& child : node->children_)
-            child = child->Clone(node.get(), root ? root : node.get());
-        return node;
-    }
-
-    void CreateIndex(ea::vector<GLTFNodePtr>& index)
-    {
-        if (index.size() <= index_)
-            index.resize(index_ + 1);
-        index[index_] = shared_from_this();
-        for (GLTFNodePtr& child : children_)
-            child->CreateIndex(index);
-    }
-
-    void StripJointless()
-    {
-        for (GLTFNodePtr& child : children_)
-            child->StripJointless();
-
-        ea::erase_if(children_, [](const GLTFNodePtr& child)
-        {
-            return !child->jointIndex2_.has_value() && child->children_.empty();
-        });
-    }
-
-    void NormalizeJointsOrder()
-    {
-        for (GLTFNodePtr& child : children_)
-            child->NormalizeJointsOrder();
-        ea::sort(children_.begin(), children_.end(), DeepCompareLessPtr);
-    }
-
-    static bool DeepCompareLessPtr(const GLTFNodePtr& lhs, const GLTFNodePtr& rhs)
-    {
-        return DeepCompareLess(*lhs, *rhs);
-    }
-
-    static bool DeepCompareLess(const GLTFNode& lhs, const GLTFNode& rhs)
-    {
-        // All nodes with joints go before joints without
-        if (lhs.jointIndex2_ || rhs.jointIndex2_)
-            return lhs.jointIndex2_ < rhs.jointIndex2_;
-
-        // Compare joints without nodes by comparing children
-        return ea::lexicographical_compare(
-            lhs.children_.begin(), lhs.children_.end(),
-            rhs.children_.begin(), rhs.children_.end(), DeepCompareLessPtr);
-    }
-
-    static bool DeepCompareEquivalentPtr(const GLTFNodePtr& lhs, const GLTFNodePtr& rhs)
-    {
-        return DeepCompareEquivalent(*lhs, *rhs);
-    }
-
-    static bool DeepCompareEquivalent(const GLTFNode& lhs, const GLTFNode& rhs)
-    {
-        /// Check that skeletons represents same hierarchy:
-        /// - Joint indexes must match;
-        /// - Jointless nodes should be in the same order and amount.
-        if (lhs.jointIndex2_ || rhs.jointIndex2_)
-            return lhs.jointIndex2_ == rhs.jointIndex2_;
-
-        return ea::identical(
-            lhs.children_.begin(), lhs.children_.end(),
-            rhs.children_.begin(), rhs.children_.end(),
-            DeepCompareEquivalentPtr);
-    }
-
-    ea::vector<GLTFNodePtr> CreateIndex()
-    {
-        ea::vector<GLTFNodePtr> result;
-        CreateIndex(result);
-        return result;
-    }
-
-    ea::vector<GLTFNode*> GetPath(bool includeSelf = false)
-    {
-        ea::vector<GLTFNode*> path;
-
-        if (includeSelf)
-            path.push_back(this);
-
-        GLTFNode* currentParent = parent_;
-        while (currentParent)
-        {
-            path.push_back(currentParent);
-            currentParent = currentParent->parent_;
-        }
-
-        ea::reverse(path.begin(), path.end());
-        return path;
-    }
 };
 
 /// Represents Urho skeleton which may be composed from one or more GLTF skins.
@@ -650,54 +537,6 @@ public:
             throw RuntimeException("Invalid skeleton #{} is referenced", skeletonIndex);
         return skeletons_[skeletonIndex];
     }
-
-    /*GLTFNodePtr ExtractSkeletonSubTree(const tg::Skin& sourceSkin) const
-    {
-        if (sourceSkin.joints.empty())
-            throw RuntimeException("There should be at least one joint in the skin");
-        for (int nodeIndex : sourceSkin.joints)
-            base_.CheckNode(nodeIndex);
-        if (sourceSkin.skeleton >= 0)
-            base_.CheckNode(sourceSkin.skeleton);
-
-        // Create bind matrices
-        ea::vector<Matrix3x4> bindMatrices(sourceSkin.joints.size());
-        if (sourceSkin.inverseBindMatrices >= 0)
-        {
-            base_.CheckAccessor(sourceSkin.inverseBindMatrices);
-            const tg::Accessor& accessor = model_.accessors[sourceSkin.inverseBindMatrices];
-            const auto sourceBindMatrices = bufferReader_.ReadAccessorChecked<Matrix4>(accessor);
-            if (bindMatrices.size() > sourceBindMatrices.size())
-                throw RuntimeException("Unexpected size of bind matrices array");
-
-            for (unsigned i = 0; i < bindMatrices.size(); ++i)
-                bindMatrices[i] = Matrix3x4{ sourceBindMatrices[i].Transpose() };
-        }
-
-        // Find common root
-        GLTFNode* commonRootNode = nodeToTreeNode_[sourceSkin.skeleton >= 0 ? sourceSkin.skeleton : sourceSkin.joints[0]];
-        for (int nodeIndex : sourceSkin.joints)
-            commonRootNode = GetCommonParent(*commonRootNode, *nodeToTreeNode_[nodeIndex]);
-
-        // Clone sub-tree
-        GLTFNodePtr subTree = commonRootNode->Clone();
-        const auto subTreeIndex = subTree->CreateIndex();
-        for (unsigned jointIndex = 0; jointIndex < sourceSkin.joints.size(); ++jointIndex)
-        {
-            const unsigned nodeIndex = sourceSkin.joints[jointIndex];
-            if (nodeIndex >= subTreeIndex.size() || !subTreeIndex[nodeIndex])
-                throw RuntimeException("Invalid skeleton subtree");
-
-            GLTFNode& node = *subTreeIndex[nodeIndex];
-            node.jointIndex2_ = jointIndex;
-            node.inverseBindMatrix2_ = bindMatrices[jointIndex];
-        }
-
-        // Strip unnecessary branches and normalize
-        subTree->StripJointless();
-        subTree->NormalizeJointsOrder();
-        return subTree;
-    }*/
 
 private:
     void InitializeParents()
@@ -1131,7 +970,6 @@ private:
 
     unsigned GetOrCreateMatchingMeshSkinPair(unsigned meshIndex, ea::optional<unsigned> skinIndex)
     {
-        // TODO: Remove redundant pairs
         for (unsigned pairIndex = 0; pairIndex < uniqueMeshSkinPairs_.size(); ++pairIndex)
         {
             const GLTFMeshSkinPair& existingMeshSkin = *uniqueMeshSkinPairs_[pairIndex];
@@ -1180,13 +1018,29 @@ private:
         return child.parent_ == &parent || (child.parent_ && IsChildOf(*child.parent_, parent));
     }
 
+    static ea::vector<GLTFNode*> GetPathIncludingSelf(GLTFNode& node)
+    {
+        ea::vector<GLTFNode*> path;
+        path.push_back(&node);
+
+        GLTFNode* currentParent = node.parent_;
+        while (currentParent)
+        {
+            path.push_back(currentParent);
+            currentParent = currentParent->parent_;
+        }
+
+        ea::reverse(path.begin(), path.end());
+        return path;
+    }
+
     static GLTFNode* GetCommonParent(GLTFNode& lhs, GLTFNode& rhs)
     {
         if (lhs.root_ != rhs.root_)
             return nullptr;
 
-        const auto lhsPath = lhs.GetPath(true);
-        const auto rhsPath = rhs.GetPath(true);
+        const auto lhsPath = GetPathIncludingSelf(lhs);
+        const auto rhsPath = GetPathIncludingSelf(rhs);
 
         const unsigned numCommonParents = ea::min(lhsPath.size(), rhsPath.size());
         for (int i = numCommonParents - 1; i >= 0; --i)
@@ -1227,7 +1081,7 @@ private:
         for (const GLTFNodePtr& child : parent.children_)
         {
             callback(*child);
-            child->ForEach(callback);
+            ForEachChild(*child, callback);
         }
     }
 
@@ -1843,22 +1697,13 @@ public:
         , hierarchyAnalyzer_(hierarchyAnalyzer)
         , materialImporter_(materialImporter)
     {
-        //InitializeSkeletons();
-        //ReferenceModels();
         InitializeModels();
     }
 
     void SaveResources()
     {
         for (const ImportedModel& model : models_)
-        {
             base_.SaveResource(model.model_);
-        }
-        /*for (auto& [meshIndex, importedModels] : meshToUniqueModels_)
-        {
-            for (const ImportedModelPtr& importedModel : importedModels)
-                base_.SaveResource(importedModel->model_);
-        }*/
     }
 
     SharedPtr<Model> GetModel(int meshIndex, int skinIndex) const
@@ -1881,31 +1726,6 @@ private:
     };
     using ImportedModelPtr = ea::shared_ptr<ImportedModel>;
 
-    /*void InitializeSkeletons()
-    {
-        for (unsigned skinIndex = 0; skinIndex < model_.skins.size(); ++skinIndex)
-            skinToSkeleton_[skinIndex] = ImportSkeleton(skinIndex);
-    }
-
-    void ReferenceModels()
-    {
-        ea::unordered_set<unsigned> remainingMeshes;
-        for (unsigned meshIndex = 0; meshIndex < model_.meshes.size(); ++meshIndex)
-            remainingMeshes.insert(meshIndex);
-
-        for (const tg::Node& node : model_.nodes)
-        {
-            if (node.mesh < 0 || node.skin < 0)
-                continue;
-
-            ReferenceOrImportModel(node.mesh, node.skin);
-            remainingMeshes.erase(node.mesh);
-        }
-
-        for (unsigned meshIndex : remainingMeshes)
-            ReferenceOrImportModel(meshIndex, -1);
-    }*/
-
     void InitializeModels()
     {
         for (const GLTFMeshSkinPairPtr& pair : hierarchyAnalyzer_.GetUniqueMeshSkinPairs())
@@ -1919,157 +1739,13 @@ private:
             base_.AddToResourceCache(model.model_);
             models_.push_back(model);
         }
-        /*for (auto& [meshIndex, importedModels] : meshToUniqueModels_)
-        {
-            if (importedModels.size() > 1)
-            {
-                URHO3D_LOGWARNING("Mesh #{} has multiple incompatible skeletons and will be imported {} times",
-                    meshIndex, importedModels.size());
-            }
-            for (const ImportedModelPtr& importedModel : importedModels)
-            {
-                const tg::Mesh& sourceMesh = model_.meshes[meshIndex];
-                importedModel->modelView_ = ImportModelView(sourceMesh, importedModel->skeleton_);
-                importedModel->model_ = importedModel->modelView_->ExportModel();
-                importedModel->materials_ = importedModel->modelView_->ExportMaterialList();
-                base_.AddToResourceCache(importedModel->model_);
-            }
-        }*/
     }
-
-    /*GLTFNodePtr ImportSkeleton(int skinIndex) const
-    {
-        base_.CheckSkin(skinIndex);
-        const tg::Skin& sourceSkin = model_.skins[skinIndex];
-        auto skeleton = hierarchyAnalyzer_.ExtractSkeletonSubTree(sourceSkin);
-        return skeleton;
-    }
-
-    void ReferenceOrImportModel(int meshIndex, int skinIndex)
-    {
-        base_.CheckMesh(meshIndex);
-        if (skinIndex >= 0)
-            base_.CheckSkin(skinIndex);
-
-        const GLTFNodePtr skeleton = skinIndex >= 0 ? skinToSkeleton_[skinIndex] : nullptr;
-
-        // Find or add unique model
-        auto& uniqueModelsForMesh = meshToUniqueModels_[meshIndex];
-        auto modelIter = ea::find_if(uniqueModelsForMesh.begin(), uniqueModelsForMesh.end(),
-            [&](const ImportedModelPtr& ptr) { return GLTFNode::DeepCompareEquivalent(*ptr->skeleton_, *skeleton); });
-        if (modelIter == uniqueModelsForMesh.end())
-        {
-            uniqueModelsForMesh.push_back(ea::make_shared<ImportedModel>(ImportedModel{ skeleton }));
-            modelIter = ea::prev(uniqueModelsForMesh.end());
-        }
-
-        // Add lookup reference
-        meshAndSkinToModel_.emplace(ea::make_pair(meshIndex, skinIndex), *modelIter);
-    }*/
 
     const ImportedModel& GetImportedModel(int meshIndex, int skinIndex) const
     {
         const unsigned modelIndex = hierarchyAnalyzer_.GetUniqueMeshSkin(meshIndex, skinIndex);
         return models_[modelIndex];
-        /*base_.CheckMesh(meshIndex);
-        if (skinIndex >= 0)
-            base_.CheckSkin(skinIndex);
-
-        auto iter = meshAndSkinToModel_.find({ meshIndex, skinIndex >= 0 ? skinIndex : -1 });
-        if (iter == meshAndSkinToModel_.end())
-            throw RuntimeException("Cannot find mesh #{} with skin #{}", meshIndex, skinIndex);
-        return *iter->second;*/
     }
-
-    /*ea::vector<BoneView> ConvertSkeletonToBones(const GLTFNodePtr& skeleton) const
-    {
-        ea::vector<GLTFNodePtr> boneNodes;
-
-        // Fill joints first
-        skeleton->ForEach([&](GLTFNode& node)
-        {
-            if (!node.jointIndex2_)
-                return;
-
-            const unsigned jointIndex = *node.jointIndex2_;
-            if (boneNodes.size() <= jointIndex)
-                boneNodes.resize(jointIndex + 1);
-
-            boneNodes[jointIndex] = node.shared_from_this();
-        });
-
-        // Then fill non-joint bones
-        skeleton->ForEach([&](GLTFNode& node)
-        {
-            if (node.jointIndex2_)
-                return;
-
-            boneNodes.push_back(node.shared_from_this());
-        });
-
-        // Assign unique names
-        ea::unordered_map<ea::string, unsigned> nameToBoneIndex_;
-        for (unsigned boneIndex = 0; boneIndex < boneNodes.size(); ++boneIndex)
-        {
-            GLTFNode& node = *boneNodes[boneIndex];
-            const ea::string nameHint = !node.name_.empty() ? node.name_ : "Bone";
-
-            bool success = false;
-            for (unsigned i = 0; i < MaxNameAssignTries; ++i)
-            {
-                const ea::string_view nameFormat = i != 0 ? "{0}_{1}" : "{0}";
-                const ea::string name = Format(nameFormat, nameHint, i);
-                if (nameToBoneIndex_.contains(name))
-                    continue;
-
-                node.uniqueName2_ = name;
-                nameToBoneIndex_.emplace(name, boneIndex);
-                success = true;
-                break;
-            }
-
-            if (!success)
-                throw RuntimeException("Failed to assign name to bone");
-        }
-
-        // Fill bones
-        ea::vector<BoneView> result(boneNodes.size());
-        for (unsigned boneIndex = 0; boneIndex < boneNodes.size(); ++boneIndex)
-        {
-            const GLTFNode& node = *boneNodes[boneIndex];
-            BoneView& bone = result[boneIndex];
-
-            bone.name_ = node.uniqueName2_;
-            // TODO: Fix me
-            //bone.SetInitialTransform(node.position_, node.rotation_, node.scale_);
-            bone.parentIndex_ = node.parent_ ? boneNodes.index_of(node.parent_->shared_from_this()) : M_MAX_UNSIGNED;
-            //bone.offsetMatrix_ = node.inverseBindMatrix2_;
-
-            // TODO: Implement me
-            bone.SetLocalBoundingSphere(0.1f);
-        }
-
-        // If there are multiple root bones, add main root bone
-        const unsigned numRoots = ea::count_if(result.begin(), result.end(),
-            [](const BoneView& boneView){ return boneView.parentIndex_ == M_MAX_UNSIGNED; });
-        if (numRoots == 0)
-            throw RuntimeException("Invalid bone hierarchy");
-        if (numRoots > 1)
-        {
-            const unsigned rootBoneIndex = result.size();
-            for (BoneView& otherBone : result)
-            {
-                if (otherBone.parentIndex_ == M_MAX_UNSIGNED)
-                    otherBone.parentIndex_ = rootBoneIndex;
-            }
-
-            BoneView rootBone;
-            // TODO: Fill
-            result.push_back(rootBone);
-        }
-
-        return result;
-    }*/
 
     SharedPtr<ModelView> ImportModelView(const tg::Mesh& sourceMesh, const ea::vector<BoneView>& bones)
     {
@@ -2310,10 +1986,6 @@ private:
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
     const GLTFMaterialImporter& materialImporter_;
 
-    //ea::unordered_map<int, GLTFNodePtr> skinToSkeleton_;
-    //ea::unordered_map<int, ea::vector<ImportedModelPtr>> meshToUniqueModels_;
-    //ea::unordered_map<ea::pair<int, int>, ImportedModelPtr> meshAndSkinToModel_;
-
     ea::vector<ImportedModel> models_;
 };
 
@@ -2347,27 +2019,10 @@ public:
     {
         // TODO: Remove me
         model_ = importerContext_.GetModel();
-
-        //ImportMeshesAndMaterials();
     }
 
     bool CookResources()
     {
-        //textureImporter_.CookTextures();
-        /*auto cache = context_->GetSubsystem<ResourceCache>();
-
-        for (ModelView* modelView : meshToModelView_)
-        {
-            const auto model = modelView ? CookModelResource(modelView) : nullptr;
-            meshToModel_.push_back(model);
-
-            if (model)
-            {
-                cache->AddManualResource(model);
-                importedModels_.push_back(model);
-            }
-        }*/
-
         for (const tg::Scene& sourceScene : model_.scenes)
         {
             const auto scene = ImportScene(sourceScene);
@@ -2383,12 +2038,6 @@ public:
         materialImporter_.SaveResources();
         modelImporter_.SaveResources();
 
-        /*for (Material* material : importedMaterials_)
-            importerContext_.SaveResource(material);
-
-        for (Model* model : importedModels_)
-            importerContext_.SaveResource(model);*/
-
         for (Scene* scene : importedScenes_)
             importerContext_.SaveResource(scene);
 
@@ -2396,49 +2045,6 @@ public:
     }
 
 private:
-    /*void ImportMeshesAndMaterials()
-    {
-        meshToSkin_.clear();
-        meshToSkin_.resize(model_.meshes.size());
-
-        for (const tg::Node& node : model_.nodes)
-        {
-            if (node.mesh < 0)
-                continue;
-
-            auto& meshSkin = meshToSkin_[node.mesh];
-
-            if (!meshSkin)
-            {
-                if (node.skin >= 0)
-                    meshSkin = node.skin;
-            }
-            else
-            {
-                URHO3D_LOGWARNING("Mesh #{} '{}' has multiple assigned skins, skin #{} '{}' is used.",
-                    node.mesh, model_.meshes[node.mesh].name.c_str(),
-                    *meshSkin, model_.skins[*meshSkin].name.c_str());
-            }
-        }
-
-        const unsigned numMeshes = model_.meshes.size();
-        meshToModelView_.resize(numMeshes);
-        meshToMaterials_.resize(numMeshes);
-        for (unsigned i = 0; i < numMeshes; ++i)
-        {
-            auto modelView = ImportModelView(model_.meshes[i]);
-            if (modelView)
-                meshToMaterials_[i] = modelView->ExportMaterialList();
-            meshToModelView_[i] = modelView;
-        }
-    }
-
-    SharedPtr<Model> CookModelResource(ModelView* modelView)
-    {
-        auto model = modelView->ExportModel();
-        return model;
-    }*/
-
     SharedPtr<Scene> ImportScene(const tg::Scene& sourceScene)
     {
         nodeToIndex_.clear();
