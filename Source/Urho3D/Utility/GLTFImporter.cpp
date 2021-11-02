@@ -507,11 +507,18 @@ struct GLTFBoneTrack
     ea::vector<Vector3> scaleValues_;
 };
 
+/// Represents attribute track.
+struct GLTFAttributeTrack
+{
+    ea::vector<float> keys_;
+    ea::vector<Variant> values_;
+};
+
 /// Represents subset of animation tracks of single GLTF animation that corresponds to single Urho animation.
 struct GLTFAnimationTrackGroup
 {
     ea::unordered_map<ea::string, GLTFBoneTrack> boneTracksByBoneName_;
-    //ea::vector<VariantAnimationTrack> nodeTracks_;
+    ea::unordered_map<ea::string, GLTFAttributeTrack> attributeTracksByPath_;
 };
 
 /// Represents preprocessed GLTF animation which may correspond to one or more Urho animations.
@@ -765,7 +772,7 @@ private:
         for (unsigned skinIndex = 0; skinIndex < numSkins; ++skinIndex)
         {
             const tg::Skin& sourceSkin = model_.skins[skinIndex];
-            GLTFNode& rootNode = GetSkinRoot(sourceSkin);
+            GLTFNode& rootNode = *nodeByIndex_[GetSkinRoot(sourceSkin).index_];
 
             MarkInSkin(rootNode, skinIndex);
             for (const int jointNodeIndex : sourceSkin.joints)
@@ -780,12 +787,12 @@ private:
         }
     }
 
-    GLTFNode& GetSkinRoot(const tg::Skin& sourceSkin) const
+    const GLTFNode& GetSkinRoot(const tg::Skin& sourceSkin) const
     {
         if (sourceSkin.skeleton >= 0)
         {
             base_.CheckNode(sourceSkin.skeleton);
-            GLTFNode& skeletonNode = *nodeByIndex_[sourceSkin.skeleton];
+            const GLTFNode& skeletonNode = *nodeByIndex_[sourceSkin.skeleton];
 
             for (int nodeIndex : sourceSkin.joints)
             {
@@ -799,11 +806,11 @@ private:
         }
         else
         {
-            GLTFNode* rootNode = nullptr;
+            const GLTFNode* rootNode = nullptr;
             for (int nodeIndex : sourceSkin.joints)
             {
                 base_.CheckNode(nodeIndex);
-                GLTFNode& node = *nodeByIndex_[nodeIndex];
+                const GLTFNode& node = *nodeByIndex_[nodeIndex];
 
                 if (!rootNode)
                     rootNode = nodeByIndex_[nodeIndex];
@@ -901,8 +908,8 @@ private:
         {
             if (!skeleton.rootNode_)
                 skeleton.rootNode_ = skinToRootNode_[skinIndex];
-            else
-                skeleton.rootNode_ = GetCommonParent(*skeleton.rootNode_, *skinToRootNode_[skinIndex]);
+            else if (const GLTFNode* skeletonRoot = GetCommonParent(*skeleton.rootNode_, *skinToRootNode_[skinIndex]))
+                skeleton.rootNode_ = nodeByIndex_[skeletonRoot->index_];
 
             if (!skeleton.rootNode_ || (skeleton.rootNode_->skeletonIndex_ != skeleton.index_))
                 throw RuntimeException("Cannot find root of the skeleton when processing skin #{}", skinIndex);
@@ -1118,7 +1125,8 @@ private:
         {
             base_.CheckNode(sourceChannel.target_node);
             const GLTFNode& targetNode = *nodeByIndex_[sourceChannel.target_node];
-            GLTFAnimationTrackGroup& animationGroup = animation.animationGroups_[GetNearestParentSkeleton(targetNode)];
+            const auto parentSkeletonIndex = GetNearestParentSkeleton(targetNode);
+            GLTFAnimationTrackGroup& animationGroup = animation.animationGroups_[parentSkeletonIndex];
 
             // TODO: Support weights
             if (sourceChannel.target_path == "weights")
@@ -1154,24 +1162,98 @@ private:
                     track.positionKeys_ = channelKeys;
                     track.positionValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
                     MirrorIfNecessary(track.positionValues_);
+
+                    if (track.positionValues_.size() != channelKeys.size())
+                        throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
                 }
                 else if (newChannel == CHANNEL_ROTATION)
                 {
                     track.rotationKeys_ = channelKeys;
                     track.rotationValues_ = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
                     MirrorIfNecessary(track.rotationValues_);
+
+                    if (track.positionValues_.size() != channelKeys.size())
+                        throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
                 }
                 else if (newChannel == CHANNEL_SCALE)
                 {
                     track.scaleKeys_ = channelKeys;
                     track.scaleValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
+
+                    if (track.positionValues_.size() != channelKeys.size())
+                        throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
                 }
             }
             else
             {
-                URHO3D_LOGWARNING("Node animation is ignored in animation #{}", animation.index_);
+                const AnimationChannel newChannel = ReadAnimationChannel(sourceChannel.target_path);
+                const ea::string nodePath = GetNodePathRelativeToSkeleton(targetNode, parentSkeletonIndex);
+                const ea::string trackPath = nodePath + "/" + ReadAttributeTrackName(newChannel);
+
+                GLTFAttributeTrack& track = animationGroup.attributeTracksByPath_[trackPath];
+                track.keys_ = channelKeys;
+
+                if (newChannel == CHANNEL_POSITION)
+                {
+                    auto positionValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
+                    MirrorIfNecessary(positionValues);
+                    ea::copy(positionValues.begin(), positionValues.end(), ea::back_inserter(track.values_));
+                }
+                else if (newChannel == CHANNEL_ROTATION)
+                {
+                    auto rotationValues = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
+                    MirrorIfNecessary(rotationValues);
+                    ea::copy(rotationValues.begin(), rotationValues.end(), ea::back_inserter(track.values_));
+                }
+                else if (newChannel == CHANNEL_SCALE)
+                {
+                    auto scaleValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
+                    ea::copy(scaleValues.begin(), scaleValues.end(), ea::back_inserter(track.values_));
+                }
+
+                if (track.values_.size() != channelKeys.size())
+                    throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
             }
         }
+    }
+
+    bool IsUniquelyNamedSibling(const GLTFNode& node) const
+    {
+        if (!node.parent_)
+            return true;
+
+        const ea::string name = GetEffectiveNodeName(node);
+        for (const GLTFNodePtr& child : node.parent_->children_)
+        {
+            if (child.get() == &node)
+                continue;
+            if (GetEffectiveNodeName(*child) == name)
+                return false;
+        }
+        return true;
+    }
+
+    ea::string GetNodePathRelativeToSkeleton(const GLTFNode& node, ea::optional<unsigned> skeletonIndex)
+    {
+        const auto path = GetPathIncludingSelf(node);
+        const GLTFNode* skeletonRoot = skeletonIndex ? nodeByIndex_[*skeletonIndex]->root_ : nullptr;
+        if (skeletonRoot && !path.contains(skeletonRoot))
+            throw RuntimeException("Skeleton doesn't contain required node");
+
+        const unsigned startIndex = skeletonRoot ? path.index_of(skeletonRoot) + 1 : 0;
+        const unsigned endIndex = path.size();
+
+        ea::string pathString;
+        for (unsigned i = startIndex; i < endIndex; ++i)
+        {
+            const GLTFNode& pathNode = *path[i];
+            if (!pathString.empty())
+                pathString += '/';
+            pathString += IsUniquelyNamedSibling(pathNode)
+                ? GetEffectiveNodeName(pathNode)
+                : Format("#{}", GetChildIndex(pathNode));
+        }
+        return pathString;
     }
 
     template <class T>
@@ -1187,12 +1269,12 @@ private:
         return child.parent_ == &parent || (child.parent_ && IsChildOf(*child.parent_, parent));
     }
 
-    static ea::vector<GLTFNode*> GetPathIncludingSelf(GLTFNode& node)
+    static ea::vector<const GLTFNode*> GetPathIncludingSelf(const GLTFNode& node)
     {
-        ea::vector<GLTFNode*> path;
+        ea::vector<const GLTFNode*> path;
         path.push_back(&node);
 
-        GLTFNode* currentParent = node.parent_;
+        const GLTFNode* currentParent = node.parent_;
         while (currentParent)
         {
             path.push_back(currentParent);
@@ -1203,7 +1285,7 @@ private:
         return path;
     }
 
-    static GLTFNode* GetCommonParent(GLTFNode& lhs, GLTFNode& rhs)
+    static const GLTFNode* GetCommonParent(const GLTFNode& lhs, const GLTFNode& rhs)
     {
         if (lhs.root_ != rhs.root_)
             return nullptr;
@@ -1322,6 +1404,17 @@ private:
         throw RuntimeException("Unknown animation channel '{}'", targetPath.c_str());
     }
 
+    static ea::string ReadAttributeTrackName(AnimationChannel channel)
+    {
+        if (channel == CHANNEL_POSITION)
+            return "@/Position";
+        else if (channel == CHANNEL_ROTATION)
+            return "@/Rotation";
+        else if (channel == CHANNEL_SCALE)
+            return "@/Scale";
+        throw RuntimeException("Invalid animation channel '{}'", channel);
+    }
+
     static ea::optional<unsigned> GetNearestParentSkeleton(const GLTFNode& node)
     {
         const GLTFNode* currentNode = &node;
@@ -1332,6 +1425,20 @@ private:
             currentNode = currentNode->parent_;
         }
         return ea::nullopt;
+    }
+
+    static unsigned GetChildIndex(const GLTFNode& node)
+    {
+        if (!node.parent_)
+            return 0;
+
+        const auto& children = node.parent_->children_;
+        const auto iter = ea::find_if(children.begin(), children.end(),
+            [&](const GLTFNodePtr& child) { return child.get() == &node; });
+        if (iter == children.end())
+            throw RuntimeException("Cannot find child in parent node");
+
+        return static_cast<unsigned>(iter - children.begin());
     }
 
 private:
@@ -2200,16 +2307,14 @@ public:
             base_.SaveResource(animation);
     }
 
-    bool HasAnimations()
-    {
-        return !animations_.empty();
-    }
-
     Animation* FindAnimation(unsigned animationIndex, ea::optional<unsigned> groupIndex) const
     {
         const auto iter = animations_.find(ea::make_pair(animationIndex, groupIndex));
         return iter != animations_.end() ? iter->second : nullptr;
     }
+
+    bool HasAnimations() const { return !animations_.empty(); }
+    bool HasSceneAnimations() const { return hasSceneAnimations_; }
 
 private:
     using AnimationKey = ea::pair<unsigned, ea::optional<unsigned>>;
@@ -2234,6 +2339,8 @@ private:
                 auto animation = ImportAnimation(animationName, group);
                 base_.AddToResourceCache(animation);
                 animations_[{ animationIndex, groupIndex }] = animation;
+                if (!groupIndex)
+                    hasSceneAnimations_ = true;
             }
         }
     }
@@ -2250,8 +2357,6 @@ private:
             const bool hasScales = boneTrack.channelMask_.Test(CHANNEL_SCALE);
 
             AnimationTrack* track = animation->CreateTrack(boneName);
-            track->name_ = boneName;
-            track->nameHash_ = boneName;
             track->channelMask_ = boneTrack.channelMask_;
 
             const auto keyTimes = MergeTimes({ &boneTrack.positionKeys_, &boneTrack.rotationKeys_, &boneTrack.scaleKeys_ });
@@ -2278,6 +2383,13 @@ private:
                     keyFrame.scale_ = (*keyScales)[i];
                 track->AddKeyFrame(keyFrame);
             }
+        }
+
+        for (const auto& [attributePath, attributeTrack] : sourceGroup.attributeTracksByPath_)
+        {
+            VariantAnimationTrack* track = animation->CreateVariantTrack(attributePath);
+            for (unsigned i = 0; i < attributeTrack.keys_.size(); ++i)
+                track->AddKeyFrame({ attributeTrack.keys_[i], attributeTrack.values_[i] });
         }
 
         animation->SetLength(CalculateLength(*animation));
@@ -2366,6 +2478,7 @@ private:
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
 
     ea::unordered_map<AnimationKey, SharedPtr<Animation>> animations_;
+    bool hasSceneAnimations_{};
 };
 
 tg::Model LoadGLTF(const ea::string& fileName)
@@ -2437,6 +2550,13 @@ private:
         auto scene = MakeShared<Scene>(context_);
         scene->SetFileName(importerContext_.GetAbsoluteFileName(sceneName));
         scene->CreateComponent<Octree>();
+
+        if (animationImporter_.HasSceneAnimations())
+        {
+            auto animationController = scene->CreateComponent<AnimationController>();
+            if (Animation* animation = animationImporter_.FindAnimation(defaultAnimationIndex_, ea::nullopt))
+                animationController->Play(animation->GetName(), 0, true);
+        }
 
         for (int nodeIndex : sourceScene.nodes)
         {
@@ -2532,7 +2652,7 @@ private:
             if (animationImporter_.HasAnimations())
             {
                 auto animationController = node->CreateComponent<AnimationController>();
-                if (Animation* animation = animationImporter_.FindAnimation(0, skeleton.index_))
+                if (Animation* animation = animationImporter_.FindAnimation(defaultAnimationIndex_, skeleton.index_))
                     animationController->Play(animation->GetName(), 0, true);
             }
 
@@ -2613,6 +2733,7 @@ private:
     ea::unordered_map<Node*, unsigned> nodeToIndex_;
     ea::unordered_map<unsigned, Node*> indexToNode_;
     /// @}
+    unsigned defaultAnimationIndex_{};
 };
 
 GLTFImporter::GLTFImporter(Context* context)
