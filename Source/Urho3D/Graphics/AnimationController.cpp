@@ -858,16 +858,18 @@ void AnimationController::SetAnimationStatesAttr(const VariantVector& value)
         const auto blendMode = static_cast<AnimationBlendMode>(value[index++].GetInt());
 
         // Create new animation state
-        const auto animation = cache->GetResource<Animation>(animRef.name_);
-        AnimationState* newState = AddAnimationState(animation);
+        if (const auto animation = cache->GetResource<Animation>(animRef.name_))
+        {
+            AnimationState* newState = AddAnimationState(animation);
 
-        // Setup new animation state
-        newState->SetStartBone(startBoneName);
-        newState->SetLooped(isLooped);
-        newState->SetWeight(weight);
-        newState->SetTime(time);
-        newState->SetLayer(layer);
-        newState->SetBlendMode(blendMode);
+            // Setup new animation state
+            newState->SetStartBone(startBoneName);
+            newState->SetLooped(isLooped);
+            newState->SetWeight(weight);
+            newState->SetTime(time);
+            newState->SetLayer(layer);
+            newState->SetBlendMode(blendMode);
+        }
     }
 
     MarkAnimationStateOrderDirty();
