@@ -1516,8 +1516,15 @@ Serializable* Node::GetSerializableByName(ea::string_view name) const
     if (name.empty())
         return const_cast<Node*>(this);
 
-    // TODO(animation): Support multiple components of the same type
-    return GetComponent(StringHash(name));
+    unsigned index = 0;
+    const unsigned sep = name.find('#');
+    if (sep != ea::string_view::npos)
+    {
+        // TODO(string): Refactor StringUtils
+        index = ToUInt(ea::string(name.substr(sep + 1)));
+        name = name.substr(0, sep);
+    }
+    return GetNthComponent(StringHash(name), index);
 }
 
 Node* Node::FindChild(ea::string_view path) const
@@ -1674,6 +1681,21 @@ Component* Node::GetComponent(StringHash type, bool recursive) const
         }
     }
 
+    return nullptr;
+}
+
+Component* Node::GetNthComponent(StringHash type, unsigned index) const
+{
+    for (const auto& component : components_)
+    {
+        if (component->GetType() == type)
+        {
+            if (index == 0)
+                return component;
+            else
+                --index;
+        }
+    }
     return nullptr;
 }
 

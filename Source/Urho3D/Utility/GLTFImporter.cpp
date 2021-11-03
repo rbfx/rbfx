@@ -1034,7 +1034,10 @@ private:
             {
                 const unsigned skeletonIndex = skinToSkeleton_[*node.skin_];
                 GLTFSkeleton& skeleton = skeletons_[skeletonIndex];
-                skeleton.rootNode_->skinnedMeshNodes_.emplace_back(node.index_);
+                GLTFNode& skeletonRoot = *skeleton.rootNode_;
+
+                skeletonRoot.skinnedMeshNodes_.emplace_back(node.index_);
+                skinnedMeshNodeRemapping_[node.index_] = skeletonRoot.index_;
             }
         });
     }
@@ -1123,17 +1126,9 @@ private:
 
         for (const tg::AnimationChannel& sourceChannel : sourceAnimation.channels)
         {
-            base_.CheckNode(sourceChannel.target_node);
-            const GLTFNode& targetNode = *nodeByIndex_[sourceChannel.target_node];
+            const GLTFNode& targetNode = GetEffectiveTargetNode(sourceChannel);
             const auto parentSkeletonIndex = GetNearestParentSkeleton(targetNode);
             GLTFAnimationTrackGroup& animationGroup = animation.animationGroups_[parentSkeletonIndex];
-
-            // TODO: Support weights
-            if (sourceChannel.target_path == "weights")
-            {
-                URHO3D_LOGWARNING("Morph weights animation is ignored in animation #{}", animation.index_);
-                continue;
-            }
 
             if (sourceChannel.sampler >= sourceAnimation.samplers.size())
                 throw RuntimeException("Unknown animation sampler #{} is referenced", sourceChannel.sampler);
@@ -1145,7 +1140,29 @@ private:
             const tg::Accessor& channelValuesAccessor = model_.accessors[sourceSampler.output];
 
             // Handle bones and nodes separately, mainly because bones have unique names and nodes don't
-            if (targetNode.skeletonIndex_)
+            if (sourceChannel.target_path == "weights")
+            {
+                const unsigned numMorphs = GetNumMorphsForNode(sourceChannel.target_node);
+                if (numMorphs == 0)
+                    throw RuntimeException("Animation #{} weights channel targets node #{} without morphs", animation.index_, targetNode.index_);
+
+                const ea::string nodePath = GetNodePathRelativeToSkeleton(targetNode, parentSkeletonIndex);
+                if (!targetNode.skinnedMeshNodes_.empty() && !targetNode.skinnedMeshNodes_.contains(sourceChannel.target_node))
+                    throw RuntimeException("Cannot connect morph weights animation to skinned mesh at node #{}", sourceChannel.target_node);
+                const unsigned componentIndex = targetNode.skinnedMeshNodes_.empty() ? 0 : targetNode.skinnedMeshNodes_.index_of(sourceChannel.target_node);
+
+                const auto weightsValues = bufferReader_.ReadAccessorChecked<float>(channelValuesAccessor);
+                for (unsigned morphIndex = 0; morphIndex < numMorphs; ++morphIndex)
+                {
+                    const ea::string trackPath = nodePath + Format("/@AnimatedModel#{}/Morphs/{}", componentIndex, morphIndex);
+                    const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex, numMorphs);
+
+                    GLTFAttributeTrack& track = animationGroup.attributeTracksByPath_[trackPath];
+                    track.keys_ = channelKeys;
+                    ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
+                }
+            }
+            else if (targetNode.skeletonIndex_)
             {
                 if (!targetNode.uniqueBoneName_)
                     throw RuntimeException("Cannot connect animation track to node");
@@ -1217,8 +1234,32 @@ private:
         }
     }
 
+    unsigned GetNumMorphsForNode(unsigned nodeIndex) const
+    {
+        const GLTFNode& node = *nodeByIndex_[nodeIndex];
+        if (!node.mesh_)
+            throw RuntimeException("Animation weights channel targets node #{} without mesh", node.index_);
+
+        base_.CheckMesh(*node.mesh_);
+        const tg::Mesh& mesh = model_.meshes[*node.mesh_];
+
+        if (mesh.primitives.empty() || mesh.primitives[0].targets.empty())
+            throw RuntimeException("Animation weights channel targets node #{} without primitives", node.index_);
+        return mesh.primitives[0].targets.size();
+    }
+
+    const GLTFNode& GetEffectiveTargetNode(const tg::AnimationChannel& channel) const
+    {
+        base_.CheckNode(channel.target_node);
+        if (channel.target_path == "weights" && skinnedMeshNodeRemapping_.contains(channel.target_node))
+            return *nodeByIndex_[skinnedMeshNodeRemapping_.find(channel.target_node)->second];
+        return *nodeByIndex_[channel.target_node];
+    }
+
     bool IsUniquelyNamedSibling(const GLTFNode& node) const
     {
+        if (node.name_.empty())
+            return false;
         if (!node.parent_)
             return true;
 
@@ -1441,6 +1482,19 @@ private:
         return static_cast<unsigned>(iter - children.begin());
     }
 
+    template <class T>
+    static ea::vector<T> ReadVericalSlice(const ea::vector<T>& source, unsigned index, unsigned count)
+    {
+        if (source.size() % count != 0 || index >= count)
+            throw RuntimeException("Invalid array slice specified");
+
+        const unsigned numElements = source.size() / count;
+        ea::vector<T> result(numElements);
+        for (unsigned i = 0; i < numElements; ++i)
+            result[i] = source[i * count + index];
+        return result;
+    }
+
 private:
     const GLTFImporterBase& base_;
     const GLTFBufferReader& bufferReader_;
@@ -1454,6 +1508,8 @@ private:
 
     ea::vector<GLTFNode*> skinToRootNode_;
     ea::vector<unsigned> skinToSkeleton_;
+
+    ea::unordered_map<unsigned, unsigned> skinnedMeshNodeRemapping_;
 
     ea::vector<GLTFSkeleton> skeletons_;
     ea::vector<GLTFSkin> skins_;
@@ -2633,12 +2689,14 @@ private:
 
             for (const unsigned nodeIndex : sourceNode.skinnedMeshNodes_)
             {
+                // Always create animated model in order to preserve moprh animation order
+                auto animatedModel = node->CreateComponent<AnimatedModel>();
+
                 const GLTFNode& meshNode = hierarchyAnalyzer_.GetNode(nodeIndex);
                 Model* model = modelImporter_.GetModel(*meshNode.mesh_, *meshNode.skin_);
                 if (!model)
                     continue;
 
-                auto animatedModel = node->CreateComponent<AnimatedModel>();
                 animatedModel->SetModel(model);
 
                 const StringVector& meshMaterials = modelImporter_.GetModelMaterials(*meshNode.mesh_, *meshNode.skin_);

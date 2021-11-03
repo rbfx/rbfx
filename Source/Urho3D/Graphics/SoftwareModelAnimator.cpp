@@ -221,23 +221,28 @@ void SoftwareModelAnimator::CloneModelGeometries()
 
         // Validate formats
         VertexBuffer* originalVertexBuffer = originalVertexBuffers[i];
+        const VertexMaskFlags clonedBufferMask = morphElementMask & originalVertexBuffer->GetElementMask();
+
+        const bool needPosition = clonedBufferMask & MASK_POSITION;
+        const bool needNormal = clonedBufferMask & MASK_NORMAL;
+        const bool needTangent = clonedBufferMask & MASK_TANGENT;
+
         const bool hasPositionVector3 = originalVertexBuffer->HasElement(TYPE_VECTOR3, SEM_POSITION);
         const bool hasPositionVector4 = originalVertexBuffer->HasElement(TYPE_VECTOR4, SEM_POSITION);
         const bool hasNormalVector3 = originalVertexBuffer->HasElement(TYPE_VECTOR3, SEM_NORMAL);
         const bool hasTangentVector4 = originalVertexBuffer->HasElement(TYPE_VECTOR4, SEM_TANGENT);
 
-        const VertexMaskFlags clonedBufferMask = morphElementMask & originalVertexBuffer->GetElementMask();
-        if ((clonedBufferMask & MASK_POSITION) && !(hasPositionVector3 || hasPositionVector4))
+        if (needPosition && !(hasPositionVector3 || hasPositionVector4))
         {
             URHO3D_LOGERROR("Position must be Vector3 or Vector4 for software skinning and morphing");
             continue;
         }
-        if ((clonedBufferMask & MASK_NORMAL) && !hasNormalVector3)
+        if (needNormal && !hasNormalVector3)
         {
             URHO3D_LOGERROR("Normal must be Vector3 for software skinning and morphing");
             continue;
         }
-        if ((clonedBufferMask & MASK_TANGENT) && !hasTangentVector4)
+        if (needTangent && !hasTangentVector4)
         {
             URHO3D_LOGERROR("Tangent must be Vector4 for software skinning and morphing");
             continue;
@@ -247,7 +252,7 @@ void SoftwareModelAnimator::CloneModelGeometries()
             continue;
 
         // Validate offsets
-        if (originalVertexBuffer->GetElementOffset(SEM_POSITION) != 0)
+        if (needPosition && originalVertexBuffer->GetElementOffset(SEM_POSITION) != 0)
         {
             URHO3D_LOGERROR("Position must be at offest 0 for software skinning and morphing");
             continue;
@@ -257,12 +262,12 @@ void SoftwareModelAnimator::CloneModelGeometries()
             URHO3D_LOGERROR("Vertex size must be aligned to 4 for software skinning and morphing");
             continue;
         }
-        if (originalVertexBuffer->GetElementOffset(SEM_NORMAL) % alignof(float) != 0)
+        if (needNormal && (originalVertexBuffer->GetElementOffset(SEM_NORMAL) % alignof(float) != 0))
         {
             URHO3D_LOGERROR("Normal offset within vertex must be aligned to 4 for software skinning and morphing");
             continue;
         }
-        if (originalVertexBuffer->GetElementOffset(SEM_TANGENT) % alignof(float) != 0)
+        if (needTangent && (originalVertexBuffer->GetElementOffset(SEM_TANGENT) % alignof(float) != 0))
         {
             URHO3D_LOGERROR("Tangent offset within vertex must be aligned to 4 for software skinning and morphing");
             continue;
