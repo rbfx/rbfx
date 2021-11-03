@@ -71,13 +71,28 @@ struct URHO3D_API NodeAnimationStateTrack
     unsigned keyFrame_{};
 };
 
+/// Custom attribute type, used to support sub-attribute animation in special cases.
+enum class AnimatedAttributeType
+{
+    Default,
+    NodeVariables,
+    AnimatedModelMorphs
+};
+
+/// Reference to attribute or sub-attribute;
+struct AnimatedAttributeReference
+{
+    WeakPtr<Serializable> serializable_;
+    unsigned attributeIndex_{};
+    AnimatedAttributeType attributeType_{};
+    unsigned subAttributeKey_{};
+};
+
 /// Per-track data of attribute animation.
 struct URHO3D_API AttributeAnimationStateTrack
 {
     const VariantAnimationTrack* track_{};
-    WeakPtr<Serializable> serializable_;
-    unsigned attributeIndex_{};
-    StringHash variableName_;
+    AnimatedAttributeReference attribute_;
     unsigned keyFrame_{};
 };
 

@@ -969,13 +969,12 @@ void AnimationController::MarkAnimationStateTracksDirty()
         state->MarkTracksDirty();
 }
 
-bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startNode,
-    WeakPtr<Serializable>& serializable, unsigned& attributeIndex, StringHash& variableName)
+AnimatedAttributeReference AnimationController::ParseAnimatablePath(ea::string_view path, Node* startNode)
 {
     if (path.empty())
     {
         URHO3D_LOGWARNING("Variant animation track name must not be empty");
-        return false;
+        return {};
     }
 
     Node* animatedNode = startNode;
@@ -988,7 +987,7 @@ bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startN
         if (sep == ea::string_view::npos)
         {
             URHO3D_LOGWARNING("Path must end with attribute reference like /@StaticModel/Model");
-            return false;
+            return {};
         }
 
         const ea::string_view nodePath = path.substr(0, sep);
@@ -996,31 +995,51 @@ bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startN
         if (!animatedNode)
         {
             URHO3D_LOGWARNING("Path to node '{}' cannot be resolved", nodePath);
-            return false;
+            return {};
         }
 
         attributePath = path.substr(sep + 1);
     }
 
-    // Special case: if Node variables are referenced, individual variables are supported
+    AnimatedAttributeReference result;
+
+    // Special cases:
+    // 1) if Node variables are referenced, individual variables are supported
+    // 2) if AnimatedModel morphs are referenced, individual morphs are supported
     static const ea::string_view variablesPath = "@/Variables/";
+    static const ea::string_view animatedModelPath = "@AnimatedModel";
     if (attributePath.starts_with(variablesPath))
     {
-        variableName = attributePath.substr(variablesPath.size());
+        const StringHash variableNameHash = attributePath.substr(variablesPath.size());
+        result.attributeType_ = AnimatedAttributeType::NodeVariables;
+        result.subAttributeKey_ = variableNameHash.Value();
         attributePath = attributePath.substr(0, variablesPath.size() - 1);
+    }
+    else if (attributePath.starts_with(animatedModelPath))
+    {
+        if (const auto sep1 = attributePath.find('/'); sep1 != ea::string_view::npos)
+        {
+            if (const auto sep2 = attributePath.find('/', sep1 + 1); sep2 != ea::string_view::npos)
+            {
+                // TODO(string): Refactor StringUtils
+                result.attributeType_ = AnimatedAttributeType::AnimatedModelMorphs;
+                result.subAttributeKey_ = ToUInt(ea::string(attributePath.substr(sep2 + 1)));
+                attributePath = attributePath.substr(0, sep2);
+            }
+        }
     }
 
     // Parse path to component and attribute
-    const auto& serializableAndAttribute = animatedNode->FindComponentAttribute(attributePath);
-    if (!serializableAndAttribute.first)
+    const auto& [serializable, attributeIndex] = animatedNode->FindComponentAttribute(attributePath);
+    if (!serializable)
     {
         URHO3D_LOGWARNING("Path to attribute '{}' cannot be resolved", attributePath);
-        return false;
+        return {};
     }
 
-    serializable = serializableAndAttribute.first;
-    attributeIndex = serializableAndAttribute.second;
-    return true;
+    result.serializable_ = serializable;
+    result.attributeIndex_ = attributeIndex;
+    return result;
 }
 
 void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
@@ -1074,13 +1093,16 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
 
         AttributeAnimationStateTrack stateTrack;
         stateTrack.track_ = &track;
+        stateTrack.attribute_ = ParseAnimatablePath(trackName, startNode);
 
-        if (ParseAnimatablePath(trackName, startNode,
-            stateTrack.serializable_, stateTrack.attributeIndex_, stateTrack.variableName_))
+        if (stateTrack.attribute_.serializable_)
         {
             state->AddAttributeTrack(stateTrack);
         }
     }
+
+    // Mark tracks as ready
+    state->OnTracksReady();
 }
 
 void AnimationController::ConnectToAnimatedModel()

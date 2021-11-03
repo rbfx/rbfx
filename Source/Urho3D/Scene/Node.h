@@ -620,6 +620,8 @@ public:
     unsigned GetComponentIndex(const Component* component) const;
     /// Return component by type. If there are several, returns the first.
     Component* GetComponent(StringHash type, bool recursive = false) const;
+    /// Return N-th component of given type.
+    Component* GetNthComponent(StringHash type, unsigned index) const;
     /// Return component in parent node. If there are several, returns the first. May optional traverse up to the root node.
     Component* GetParentComponent(StringHash type, bool fullTraversal = false) const;
     /// Return whether has a specific component.

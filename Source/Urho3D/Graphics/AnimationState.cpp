@@ -443,7 +443,7 @@ void AnimationState::ApplyTransformTrack(const AnimationTrack& track,
 void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrack, float weight)
 {
     const VariantAnimationTrack& track = *stateTrack.track_;
-    Serializable* serializable = stateTrack.serializable_;
+    Serializable* serializable = stateTrack.attribute_.serializable_;
     if (track.keyFrames_.empty() || !serializable)
         return;
 
@@ -453,13 +453,27 @@ void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrac
     if (blendingMode_ == ABM_ADDITIVE || !Equals(weight, 1.0f))
     {
         Variant oldValue;
-        if (stateTrack.variableName_ == StringHash{})
-            oldValue = serializable->GetAttribute(stateTrack.attributeIndex_);
-        else
+        switch (stateTrack.attribute_.attributeType_)
+        {
+        case AnimatedAttributeType::Default:
+            oldValue = serializable->GetAttribute(stateTrack.attribute_.attributeIndex_);
+            break;
+
+        case AnimatedAttributeType::NodeVariables:
         {
             assert(dynamic_cast<Node*>(serializable));
             auto node = static_cast<Node*>(serializable);
-            oldValue = node->GetVar(stateTrack.variableName_);
+            oldValue = node->GetVar(StringHash(stateTrack.attribute_.subAttributeKey_));
+            break;
+        }
+
+        case AnimatedAttributeType::AnimatedModelMorphs:
+        {
+            assert(dynamic_cast<AnimatedModel*>(serializable));
+            auto animatedModel = static_cast<AnimatedModel*>(serializable);
+            oldValue = animatedModel->GetMorphWeight(stateTrack.attribute_.subAttributeKey_);
+            break;
+        }
         }
 
         if (blendingMode_ == ABM_ADDITIVE)
@@ -469,13 +483,26 @@ void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrac
     }
 
     // Apply final value
-    if (stateTrack.variableName_ == StringHash{})
-        serializable->SetAttribute(stateTrack.attributeIndex_, newValue);
-    else
+    switch (stateTrack.attribute_.attributeType_)
+    {
+    case AnimatedAttributeType::Default:
+        serializable->SetAttribute(stateTrack.attribute_.attributeIndex_, newValue);
+        break;
+
+    case AnimatedAttributeType::NodeVariables:
     {
         assert(dynamic_cast<Node*>(serializable));
         auto node = static_cast<Node*>(serializable);
-        node->SetVar(stateTrack.variableName_, newValue);
+        node->SetVar(StringHash(stateTrack.attribute_.subAttributeKey_), newValue);
+        break;
+    }
+    case AnimatedAttributeType::AnimatedModelMorphs:
+    {
+        assert(dynamic_cast<AnimatedModel*>(serializable));
+        auto animatedModel = static_cast<AnimatedModel*>(serializable);
+        animatedModel->SetMorphWeight(stateTrack.attribute_.subAttributeKey_, newValue.GetFloat());
+        break;
+    }
     }
 }
 
