@@ -50,7 +50,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
         unsigned lodIndex = 0;
         for (const GeometryLODView& geometryLodView : geometryView.lods_)
         {
-            if (!geometryLodView.vertices_.empty())
+            if (!geometryLodView.vertices_.empty() && geometryLodView.primitiveType_ == TRIANGLE_LIST)
             {
                 xatlas::MeshDecl meshDecl;
                 meshDecl.vertexCount = geometryLodView.vertices_.size();

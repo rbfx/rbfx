@@ -142,16 +142,20 @@ URHO3D_API void NormalizeModelVertexMorphVector(ModelVertexMorphVector& morphVec
 /// Level of detail of Model geometry, unpacked for easy editing.
 struct URHO3D_API GeometryLODView
 {
-    /// Vertices.
+    PrimitiveType primitiveType_{};
     ea::vector<ModelVertex> vertices_;
-    /// Faces: 3 indices per triangle.
     ea::vector<unsigned> indices_;
-    /// LOD distance.
     float lodDistance_{};
-    /// Vertex format for this specific sub-geometry.
     ModelVertexFormat vertexFormat_;
-    /// Vertex morphs for this geometry.
     ea::unordered_map<unsigned, ModelVertexMorphVector> morphs_;
+
+    /// Getters
+    /// @{
+    unsigned GetNumPrimitives() const;
+    bool IsTriangleGeometry() const;
+    bool IsLineGeometry() const;
+    bool IsPointGeometry() const;
+    /// @}
 
     /// Calculate center of vertices' bounding box.
     Vector3 CalculateCenter() const;
@@ -159,6 +163,50 @@ struct URHO3D_API GeometryLODView
     unsigned CalculateNumMorphs() const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
+    /// Invalidate geometry normals (and tangents).
+    void InvalidateNormals();
+    /// Recaluclate flat normals.
+    void RecalculateFlatNormals();
+    /// Recaluclate smooth normals.
+    void RecalculateSmoothNormals();
+
+    /// Iterate all triangles in primitive. Callback is called with three vertex indices.
+    template <class T>
+    void ForEachTriangle(T callback)
+    {
+        if (!IsTriangleGeometry())
+        {
+            assert(0);
+            return;
+        }
+
+        const unsigned numPrimitives = GetNumPrimitives();
+        switch (primitiveType_)
+        {
+        case TRIANGLE_LIST:
+            for (unsigned i = 0; i < numPrimitives; ++i)
+                callback(indices_[i * 3], indices_[i * 3 + 1], indices_[i * 3 + 2]);
+            break;
+
+        case TRIANGLE_STRIP:
+            for (unsigned i = 0; i < numPrimitives; ++i)
+            {
+                if (i % 2 == 0)
+                    callback(indices_[i], indices_[i + 1], indices_[i + 2]);
+                else
+                    callback(indices_[i], indices_[i + 2], indices_[i + 1]);
+            }
+            break;
+
+        case TRIANGLE_FAN:
+            for (unsigned i = 0; i < numPrimitives; ++i)
+                callback(indices_[0], indices_[i + 1], indices_[i + 2]);
+            break;
+
+        default:
+            break;
+        }
+    }
 
     bool operator ==(const GeometryLODView& rhs) const;
     bool operator !=(const GeometryLODView& rhs) const { return !(*this == rhs); }
@@ -252,8 +300,8 @@ public:
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
     void MirrorGeometriesX();
-    /// Calculate smooth normals for geometries without normals in vertex format.
-    void CalculateMissingNormalsSmooth();
+    /// Calculate normals for geometries without normals in vertex format.
+    void CalculateMissingNormals(bool flatNormals = false);
 
     /// Set contents
     /// @{

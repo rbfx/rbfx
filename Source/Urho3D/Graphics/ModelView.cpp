@@ -28,6 +28,8 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/Log.h"
 
+#include <EASTL/numeric.h>
+
 namespace Urho3D
 {
 
@@ -196,6 +198,26 @@ bool CheckVertexElements(const ea::vector<VertexElement>& elements)
         }
     }
     return true;
+}
+
+bool CheckIndexCount(PrimitiveType primitiveType, unsigned count)
+{
+    switch (primitiveType)
+    {
+    case TRIANGLE_LIST:
+        return count % 3 == 0;
+    case LINE_LIST:
+        return count % 2 == 0;
+    case POINT_LIST:
+        return true;
+    case TRIANGLE_STRIP:
+    case TRIANGLE_FAN:
+        return count == 0 || count >= 3;
+    case LINE_STRIP:
+        return count == 0 || count >= 2;
+    default:
+        return false;
+    }
 }
 
 VertexBufferMorph CreateVertexBufferMorph(ModelVertexMorphVector morphVector)
@@ -582,6 +604,50 @@ void ModelVertex::PruneElements(const ModelVertexFormat& format)
         pruneElement(uv_[i], format.uv_[i]);
 }
 
+unsigned GeometryLODView::GetNumPrimitives() const
+{
+    assert(CheckIndexCount(primitiveType_, indices_.size()));
+    switch (primitiveType_)
+    {
+    case TRIANGLE_LIST:
+        return indices_.size() / 3;
+
+    case LINE_LIST:
+        return indices_.size() / 2;
+
+    case POINT_LIST:
+        return indices_.size();
+
+    case TRIANGLE_STRIP:
+    case TRIANGLE_FAN:
+        return indices_.size() >= 3 ? indices_.size() - 2 : 0;
+
+    case LINE_STRIP:
+        return indices_.size() >= 2 ? indices_.size() - 1 : 0;
+
+    default:
+        return 0;
+    }
+}
+
+bool GeometryLODView::IsTriangleGeometry() const
+{
+    return primitiveType_ == TRIANGLE_LIST
+        || primitiveType_ == TRIANGLE_STRIP
+        || primitiveType_ == TRIANGLE_FAN;
+}
+
+bool GeometryLODView::IsLineGeometry() const
+{
+    return primitiveType_ == LINE_LIST
+        || primitiveType_ == LINE_STRIP;
+}
+
+bool GeometryLODView::IsPointGeometry() const
+{
+    return primitiveType_ == POINT_LIST;
+}
+
 Vector3 GeometryLODView::CalculateCenter() const
 {
     Vector3 center;
@@ -604,6 +670,115 @@ void GeometryLODView::Normalize()
         vertex.PruneElements(vertexFormat_);
     for (auto& [index, morphVector] : morphs_)
         NormalizeModelVertexMorphVector(morphVector);
+}
+
+void GeometryLODView::InvalidateNormals()
+{
+    for (ModelVertex& vertex : vertices_)
+    {
+        vertex.normal_ = Vector4::ZERO;
+        vertex.tangent_ = Vector4::ZERO;
+    }
+
+    for (auto& [morphIndex, morphData] : morphs_)
+    {
+        for (ModelVertexMorph& vertexMorph : morphData)
+        {
+            vertexMorph.normalDelta_ = Vector3::ZERO;
+            vertexMorph.tangentDelta_ = Vector3::ZERO;
+        }
+    }
+}
+
+void GeometryLODView::RecalculateFlatNormals()
+{
+    if (!IsTriangleGeometry())
+    {
+        assert(0);
+        return;
+    }
+
+    InvalidateNormals();
+
+    ea::vector<ModelVertex> newVertices;
+    ea::unordered_multimap<unsigned, unsigned> oldToNewVertex;
+    ForEachTriangle([&](unsigned i0, unsigned i1, unsigned i2)
+    {
+        ModelVertex v0 = vertices_[i0];
+        ModelVertex v1 = vertices_[i1];
+        ModelVertex v2 = vertices_[i2];
+
+        const auto p0 = static_cast<Vector3>(v0.position_);
+        const auto p1 = static_cast<Vector3>(v1.position_);
+        const auto p2 = static_cast<Vector3>(v2.position_);
+        const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
+
+        v0.normal_ = Vector4(normal, 0.0f);
+        v1.normal_ = Vector4(normal, 0.0f);
+        v2.normal_ = Vector4(normal, 0.0f);
+
+        const unsigned newIndex = newVertices.size();
+        newVertices.push_back(v0);
+        newVertices.push_back(v1);
+        newVertices.push_back(v2);
+
+        oldToNewVertex.emplace(i0, newIndex);
+        oldToNewVertex.emplace(i1, newIndex + 1);
+        oldToNewVertex.emplace(i2, newIndex + 2);
+    });
+
+    primitiveType_ = TRIANGLE_LIST;
+    vertices_ = newVertices;
+    indices_.resize(vertices_.size());
+    ea::iota(indices_.begin(), indices_.end(), 0);
+
+    for (auto& [morphIndex, morphVector] : morphs_)
+    {
+        ModelVertexMorphVector newMorphVector;
+        for (const ModelVertexMorph& vertexMorph : morphVector)
+        {
+            const auto range = oldToNewVertex.equal_range(vertexMorph.index_);
+            if (range.first == range.second)
+                continue;
+
+            for (auto iter = range.first; iter != range.second; ++iter)
+            {
+                ModelVertexMorph newVertexMorph = vertexMorph;
+                newVertexMorph.index_ = iter->second;
+                newMorphVector.push_back(newVertexMorph);
+            }
+        }
+        morphVector = newMorphVector;
+    }
+}
+
+void GeometryLODView::RecalculateSmoothNormals()
+{
+    if (!IsTriangleGeometry())
+    {
+        assert(0);
+        return;
+    }
+
+    InvalidateNormals();
+    ForEachTriangle([&](unsigned i0, unsigned i1, unsigned i2)
+    {
+        ModelVertex& v0 = vertices_[i0];
+        ModelVertex& v1 = vertices_[i1];
+        ModelVertex& v2 = vertices_[i2];
+
+        const auto p0 = static_cast<Vector3>(v0.position_);
+        const auto p1 = static_cast<Vector3>(v1.position_);
+        const auto p2 = static_cast<Vector3>(v2.position_);
+        const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0).Normalized();
+
+        v0.normal_ += Vector4(normal, 0.0f);
+        v1.normal_ += Vector4(normal, 0.0f);
+        v2.normal_ += Vector4(normal, 0.0f);
+    });
+
+    for (ModelVertex& vertex : vertices_)
+        vertex.normal_ = Vector4(static_cast<Vector3>(vertex.normal_).Normalized(), 0.0f);
 }
 
 unsigned GeometryView::CalculateNumMorphs() const
@@ -664,24 +839,33 @@ bool ModelView::ImportModel(const Model* model)
 
             GeometryLODView geometry;
             geometry.lodDistance_ = modelGeometry->GetLodDistance();
-
-            if (modelGeometry->GetPrimitiveType() != TRIANGLE_LIST)
-            {
-                URHO3D_LOGERROR("Only TriangleList models are supported now.");
-                return false;
-            }
+            geometry.primitiveType_ = modelGeometry->GetPrimitiveType();
 
             // Copy indices
-            if (modelGeometry->GetIndexCount() % 3 != 0)
+            if (const IndexBuffer* modelIndexBuffer = modelGeometry->GetIndexBuffer())
             {
-                URHO3D_LOGERROR("Incorrect number of geometry indices");
-                return false;
-            }
+                const unsigned numIndices = modelGeometry->GetIndexCount();
+                if (!CheckIndexCount(geometry.primitiveType_, numIndices))
+                {
+                    URHO3D_LOGERROR("Incorrect number of geometry indices");
+                    return false;
+                }
 
-            const IndexBuffer* modelIndexBuffer = modelGeometry->GetIndexBuffer();
-            const unsigned numIndices = modelGeometry->GetIndexCount();
-            geometry.indices_ = modelIndexBuffer->GetUnpackedData(
-                modelGeometry->GetIndexStart(), modelGeometry->GetIndexCount());
+                geometry.indices_ = modelIndexBuffer->GetUnpackedData(
+                    modelGeometry->GetIndexStart(), modelGeometry->GetIndexCount());
+            }
+            else
+            {
+                const unsigned numIndices = modelGeometry->GetVertexCount();
+                if (!CheckIndexCount(geometry.primitiveType_, numIndices))
+                {
+                    URHO3D_LOGERROR("Incorrect number of geometry vertices");
+                    return false;
+                }
+
+                geometry.indices_.resize(numIndices);
+                ea::iota(geometry.indices_.begin(), geometry.indices_.end(), 0);
+            }
 
             // Adjust indices
             for (unsigned& index : geometry.indices_)
@@ -1099,37 +1283,22 @@ void ModelView::MirrorGeometriesX()
     }
 }
 
-void ModelView::CalculateMissingNormalsSmooth()
+void ModelView::CalculateMissingNormals(bool flatNormals)
 {
     for (GeometryView& geometryView : geometries_)
     {
         for (GeometryLODView& lodView : geometryView.lods_)
         {
+            if (!lodView.IsTriangleGeometry())
+                continue;
             if (lodView.vertexFormat_.normal_ != ModelVertexFormat::Undefined)
                 continue;
 
             lodView.vertexFormat_.normal_ = TYPE_VECTOR3;
-
-            for (ModelVertex& vertex : lodView.vertices_)
-                vertex.normal_ = Vector4::ZERO;
-
-            const unsigned numPrimitives = lodView.indices_.size() / 3;
-            for (unsigned i = 0; i < numPrimitives; ++i)
-            {
-                ModelVertex& v0 = lodView.vertices_[lodView.indices_[i * 3]];
-                ModelVertex& v1 = lodView.vertices_[lodView.indices_[i * 3 + 1]];
-                ModelVertex& v2 = lodView.vertices_[lodView.indices_[i * 3 + 2]];
-                const auto p0 = static_cast<Vector3>(v0.position_);
-                const auto p1 = static_cast<Vector3>(v1.position_);
-                const auto p2 = static_cast<Vector3>(v2.position_);
-                const Vector3 normal = (p1 - p0).CrossProduct(p2 - p0);
-                v0.normal_ += Vector4(normal, 0.0f);
-                v1.normal_ += Vector4(normal, 0.0f);
-                v2.normal_ += Vector4(normal, 0.0f);
-            }
-
-            for (ModelVertex& vertex : lodView.vertices_)
-                vertex.normal_ = Vector4(static_cast<Vector3>(vertex.normal_).Normalized(), 0.0f);
+            if (flatNormals)
+                lodView.RecalculateFlatNormals();
+            else
+                lodView.RecalculateSmoothNormals();
         }
     }
 }
