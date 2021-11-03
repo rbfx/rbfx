@@ -510,6 +510,7 @@ struct GLTFBoneTrack
 /// Represents attribute track.
 struct GLTFAttributeTrack
 {
+    KeyFrameInterpolation interpolation_{ KeyFrameInterpolation::Linear };
     ea::vector<float> keys_;
     ea::vector<Variant> values_;
 };
@@ -567,6 +568,8 @@ public:
         base_.CheckNode(nodeIndex);
         return *nodeByIndex_[nodeIndex];
     }
+
+    const auto& GetRootNodes() const { return trees_; }
 
     ea::string GetEffectiveNodeName(const GLTFNode& node) const
     {
@@ -1133,6 +1136,7 @@ private:
             if (sourceChannel.sampler >= sourceAnimation.samplers.size())
                 throw RuntimeException("Unknown animation sampler #{} is referenced", sourceChannel.sampler);
             const tg::AnimationSampler& sourceSampler = sourceAnimation.samplers[sourceChannel.sampler];
+            const KeyFrameInterpolation interpolation = GetInterpolationMode(sourceSampler);
 
             base_.CheckAccessor(sourceSampler.input);
             base_.CheckAccessor(sourceSampler.output);
@@ -1158,6 +1162,7 @@ private:
                     const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex, numMorphs);
 
                     GLTFAttributeTrack& track = animationGroup.attributeTracksByPath_[trackPath];
+                    track.interpolation_ = interpolation;
                     track.keys_ = channelKeys;
                     ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
                 }
@@ -1207,7 +1212,11 @@ private:
                 const ea::string nodePath = GetNodePathRelativeToSkeleton(targetNode, parentSkeletonIndex);
                 const ea::string trackPath = nodePath + "/" + ReadAttributeTrackName(newChannel);
 
+                if (animationGroup.attributeTracksByPath_.contains(trackPath))
+                    throw RuntimeException("Duplicate animation track '{}'", trackPath);
+
                 GLTFAttributeTrack& track = animationGroup.attributeTracksByPath_[trackPath];
+                track.interpolation_ = interpolation;
                 track.keys_ = channelKeys;
 
                 if (newChannel == CHANNEL_POSITION)
@@ -1302,6 +1311,26 @@ private:
     {
         if (isDeepMirrored_)
             ea::transform(vec.begin(), vec.end(), vec.begin(), transformMirrorX);
+    }
+
+    unsigned GetChildIndex(const GLTFNode& node) const
+    {
+        if (!node.parent_)
+        {
+            const auto iter = ea::find_if(trees_.begin(), trees_.end(),
+                [&](const GLTFNodePtr& rootNode) { return rootNode.get() == &node; });
+            if (iter == trees_.end())
+                throw RuntimeException("Cannot get index of root node");
+            return static_cast<unsigned>(iter - trees_.begin());
+        }
+
+        const auto& children = node.parent_->children_;
+        const auto iter = ea::find_if(children.begin(), children.end(),
+            [&](const GLTFNodePtr& child) { return child.get() == &node; });
+        if (iter == children.end())
+            throw RuntimeException("Cannot find child in parent node");
+
+        return static_cast<unsigned>(iter - children.begin());
     }
 
 private:
@@ -1468,20 +1497,6 @@ private:
         return ea::nullopt;
     }
 
-    static unsigned GetChildIndex(const GLTFNode& node)
-    {
-        if (!node.parent_)
-            return 0;
-
-        const auto& children = node.parent_->children_;
-        const auto iter = ea::find_if(children.begin(), children.end(),
-            [&](const GLTFNodePtr& child) { return child.get() == &node; });
-        if (iter == children.end())
-            throw RuntimeException("Cannot find child in parent node");
-
-        return static_cast<unsigned>(iter - children.begin());
-    }
-
     template <class T>
     static ea::vector<T> ReadVericalSlice(const ea::vector<T>& source, unsigned index, unsigned count)
     {
@@ -1493,6 +1508,15 @@ private:
         for (unsigned i = 0; i < numElements; ++i)
             result[i] = source[i * count + index];
         return result;
+    }
+
+    static KeyFrameInterpolation GetInterpolationMode(const tg::AnimationSampler& sourceSampler)
+    {
+        if (sourceSampler.interpolation == "STEP")
+            return KeyFrameInterpolation::None;
+        else if (sourceSampler.interpolation == "LINEAR")
+            return KeyFrameInterpolation::Linear;
+        throw RuntimeException("Unsupported interpolation mode '{}'", sourceSampler.interpolation.c_str());
     }
 
 private:
@@ -2468,6 +2492,7 @@ private:
         for (const auto& [attributePath, attributeTrack] : sourceGroup.attributeTracksByPath_)
         {
             VariantAnimationTrack* track = animation->CreateVariantTrack(attributePath);
+            track->interpolation_ = attributeTrack.interpolation_;
             for (unsigned i = 0; i < attributeTrack.keys_.size(); ++i)
                 track->AddKeyFrame({ attributeTrack.keys_[i], attributeTrack.values_[i] });
         }
@@ -2631,16 +2656,22 @@ private:
         scene->SetFileName(importerContext_.GetAbsoluteFileName(sceneName));
         scene->CreateComponent<Octree>();
 
+        Node* rootNode = scene->CreateChild("Imported Scene");
+
         if (animationImporter_.HasSceneAnimations())
         {
-            auto animationController = scene->CreateComponent<AnimationController>();
+            auto animationController = rootNode->CreateComponent<AnimationController>();
             if (Animation* animation = animationImporter_.FindAnimation(defaultAnimationIndex_, ea::nullopt))
                 animationController->Play(animation->GetName(), 0, true);
         }
 
-        for (int nodeIndex : sourceScene.nodes)
+        for (const GLTFNodePtr& sourceRootNode : hierarchyAnalyzer_.GetRootNodes())
         {
-            ImportNode(scene, hierarchyAnalyzer_.GetNode(nodeIndex));
+            // Preserve order and insert placeholders if Scene has root animations to keep animation track paths valid
+            if (ea::find(sourceScene.nodes.begin(), sourceScene.nodes.end(), sourceRootNode->index_) != sourceScene.nodes.end())
+                ImportNode(rootNode, *sourceRootNode);
+            else if (animationImporter_.HasSceneAnimations())
+                scene->CreateChild("Disabled Node Placeholder");
         }
 
         static const Vector3 defaultPosition{ -1.0f, 2.0f, 1.0f };
