@@ -158,6 +158,12 @@ ModelModelViewPair ParseModelForRaytracer(Model* model, bool needLightmapUVAndNo
                 URHO3D_LOGERROR("Model '{}' doesn't have required vertex attributes", model->GetName());
                 return {};
             }
+
+            if (geometryLODView.primitiveType_ != TRIANGLE_LIST)
+            {
+                URHO3D_LOGERROR("Model '{}' has unsupported primitive types", model->GetName());
+                return {};
+            }
         }
     }
 

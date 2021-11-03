@@ -1189,7 +1189,7 @@ private:
                     track.rotationValues_ = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
                     MirrorIfNecessary(track.rotationValues_);
 
-                    if (track.positionValues_.size() != channelKeys.size())
+                    if (track.rotationValues_.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
                 }
                 else if (newChannel == CHANNEL_SCALE)
@@ -1197,7 +1197,7 @@ private:
                     track.scaleKeys_ = channelKeys;
                     track.scaleValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
 
-                    if (track.positionValues_.size() != channelKeys.size())
+                    if (track.scaleValues_.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
                 }
             }
@@ -2127,23 +2127,10 @@ private:
             GeometryLODView& geometryLODView = geometryView.lods_[0];
 
             const tg::Primitive& primitive = sourceMesh.primitives[geometryIndex];
-            if (primitive.mode != TINYGLTF_MODE_TRIANGLES)
-            {
-                URHO3D_LOGWARNING("Unsupported geometry type {} in mesh '{}'.", primitive.mode, sourceMesh.name.c_str());
-                return nullptr;
-            }
+            geometryLODView.primitiveType_ = GetPrimitiveType(primitive.mode);
 
             if (primitive.attributes.empty())
-            {
-                URHO3D_LOGWARNING("No attributes in primitive #{} in mesh '{}'.", geometryIndex, sourceMesh.name.c_str());
-                return nullptr;
-            }
-
-            if (primitive.indices >= 0)
-            {
-                base_.CheckAccessor(primitive.indices);
-                geometryLODView.indices_ = bufferReader_.ReadAccessorChecked<unsigned>(model_.accessors[primitive.indices]);
-            }
+                throw RuntimeException("No attributes in primitive #{} in mesh '{}'.", geometryIndex, sourceMesh.name.c_str());
 
             const unsigned numVertices = model_.accessors[primitive.attributes.begin()->second].count;
             geometryLODView.vertices_.resize(numVertices);
@@ -2157,6 +2144,21 @@ private:
                     return nullptr;
                 }
             }
+
+            if (primitive.indices >= 0)
+            {
+                base_.CheckAccessor(primitive.indices);
+                geometryLODView.indices_ = bufferReader_.ReadAccessorChecked<unsigned>(model_.accessors[primitive.indices]);
+            }
+            else
+            {
+                geometryLODView.indices_.resize(geometryLODView.vertices_.size());
+                ea::iota(geometryLODView.indices_.begin(), geometryLODView.indices_.end(), 0);
+            }
+
+            // Manually connect line loop to convert it to line strip
+            if (primitive.mode == TINYGLTF_MODE_LINE_LOOP)
+                geometryLODView.indices_.push_back(0);
 
             if (primitive.material >= 0)
             {
@@ -2180,9 +2182,31 @@ private:
         if (hierarchyAnalyzer_.IsDeepMirrored())
             modelView->MirrorGeometriesX();
 
-        modelView->CalculateMissingNormalsSmooth(); // TODO: Should be flat
+        modelView->CalculateMissingNormals(true);
         modelView->Normalize();
         return modelView;
+    }
+
+    static PrimitiveType GetPrimitiveType(int primitiveMode)
+    {
+        switch (primitiveMode)
+        {
+        case TINYGLTF_MODE_POINTS:
+            return POINT_LIST;
+        case TINYGLTF_MODE_LINE:
+            return LINE_LIST;
+        case TINYGLTF_MODE_LINE_LOOP:
+        case TINYGLTF_MODE_LINE_STRIP:
+            return LINE_STRIP;
+        case TINYGLTF_MODE_TRIANGLES:
+            return TRIANGLE_LIST;
+        case TINYGLTF_MODE_TRIANGLE_STRIP:
+            return TRIANGLE_STRIP;
+        case TINYGLTF_MODE_TRIANGLE_FAN:
+            return TRIANGLE_FAN;
+        default:
+            throw RuntimeException("Unknown primitive type #{}", primitiveMode);
+        }
     }
 
     bool ReadVertexData(ModelVertexFormat& vertexFormat, ea::vector<ModelVertex>& vertices,
