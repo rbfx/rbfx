@@ -571,7 +571,7 @@ public:
         return *nodeByIndex_[nodeIndex];
     }
 
-    const auto& GetRootNodes() const { return trees_; }
+    const auto& GetRootNodes() const { return rootNodes_; }
 
     ea::string GetEffectiveNodeName(const GLTFNode& node) const
     {
@@ -642,10 +642,10 @@ private:
         for (unsigned nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex)
         {
             if (!nodeToParent_[nodeIndex])
-                trees_.push_back(ImportTree(nodeIndex, nullptr, nullptr));
+                rootNodes_.push_back(ImportTree(nodeIndex, nullptr, nullptr));
         }
 
-        for (const GLTFNodePtr& node : trees_)
+        for (const GLTFNodePtr& node : rootNodes_)
             ReadNodeProperties(*node);
     }
 
@@ -705,10 +705,10 @@ private:
 
     void ConvertToLeftHandedCoordinates()
     {
-        isDeepMirrored_ = HasMirroredMeshes(trees_, true);
+        isDeepMirrored_ = HasMirroredMeshes(rootNodes_, true);
         if (!isDeepMirrored_)
         {
-            for (const GLTFNodePtr& node : trees_)
+            for (const GLTFNodePtr& node : rootNodes_)
             {
                 node->position_ = MirrorX(node->position_);
                 node->rotation_ = MirrorX(node->rotation_);
@@ -717,7 +717,7 @@ private:
         }
         else
         {
-            for (const GLTFNodePtr& node : trees_)
+            for (const GLTFNodePtr& node : rootNodes_)
                 DeepMirror(*node);
         }
     }
@@ -818,7 +818,7 @@ private:
         ea::vector<unsigned> skinToGroup(numSkins);
         ea::iota(skinToGroup.begin(), skinToGroup.end(), 0);
 
-        ForEach(trees_, [&](const GLTFNode& child)
+        ForEach(rootNodes_, [&](const GLTFNode& child)
         {
             if (child.containedInSkins_.size() <= 1)
                 return;
@@ -869,7 +869,7 @@ private:
     {
         // Every skeleton is a subtree.
         // A set of overlapping subtrees is a subtree as well.
-        ForEach(trees_, [&](GLTFNode& child)
+        ForEach(rootNodes_, [&](GLTFNode& child)
         {
             if (child.containedInSkins_.empty())
                 return;
@@ -1011,7 +1011,7 @@ private:
 
     void AssignSkinnedModelsToNodes()
     {
-        ForEach(trees_, [&](GLTFNode& node)
+        ForEach(rootNodes_, [&](GLTFNode& node)
         {
             if (node.mesh_ && node.skin_)
             {
@@ -1027,7 +1027,7 @@ private:
 
     void EnumerateUniqueMeshSkinPairs()
     {
-        ForEach(trees_, [&](const GLTFNode& node)
+        ForEach(rootNodes_, [&](const GLTFNode& node)
         {
             if (node.mesh_ && node.skin_)
             {
@@ -1036,7 +1036,7 @@ private:
             }
         });
 
-        ForEach(trees_, [&](const GLTFNode& node)
+        ForEach(rootNodes_, [&](const GLTFNode& node)
         {
             if (node.mesh_ && !node.skin_)
             {
@@ -1092,7 +1092,7 @@ private:
 
     void AssignNamesToSkeletonRoots()
     {
-        ForEach(trees_, [&](GLTFNode& node)
+        ForEach(rootNodes_, [&](GLTFNode& node)
         {
             if (node.skinnedMeshNodes_.empty())
                 return;
@@ -1324,11 +1324,11 @@ private:
     {
         if (!node.parent_)
         {
-            const auto iter = ea::find_if(trees_.begin(), trees_.end(),
+            const auto iter = ea::find_if(rootNodes_.begin(), rootNodes_.end(),
                 [&](const GLTFNodePtr& rootNode) { return rootNode.get() == &node; });
-            if (iter == trees_.end())
+            if (iter == rootNodes_.end())
                 throw RuntimeException("Cannot get index of root node");
-            return static_cast<unsigned>(iter - trees_.begin());
+            return static_cast<unsigned>(iter - rootNodes_.begin());
         }
 
         const auto& children = node.parent_->children_;
@@ -1533,7 +1533,7 @@ private:
 
     ea::vector<ea::optional<unsigned>> nodeToParent_;
 
-    ea::vector<GLTFNodePtr> trees_;
+    ea::vector<GLTFNodePtr> rootNodes_;
     ea::vector<GLTFNode*> nodeByIndex_;
     bool isDeepMirrored_{};
 
