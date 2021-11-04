@@ -58,7 +58,7 @@ Variant InterpolateSpline(VariantType type,
         return v1.GetVector4() * h1 + v2.GetVector4() * h2 + t1.GetVector4() * h3 + t2.GetVector4() * h4;
 
     case VAR_QUATERNION:
-        return v1.GetQuaternion() * h1 + v2.GetQuaternion() * h2 + t1.GetQuaternion() * h3 + t2.GetQuaternion() * h4;
+        return (v1.GetQuaternion() * h1 + v2.GetQuaternion() * h2 + t1.GetQuaternion() * h3 + t2.GetQuaternion() * h4).Normalized();
 
     case VAR_COLOR:
         return v1.GetColor() * h1 + v2.GetColor() * h2 + t1.GetColor() * h3 + t2.GetColor() * h4;
@@ -147,31 +147,33 @@ void VariantAnimationTrack::Commit()
     case VAR_DOUBLE:
         // Floating point compounds may have any interpolation type.
         // Calculate tangents if spline interpolation is used.
-        if (interpolation_ == KeyFrameInterpolation::Spline)
+        if (interpolation_ == KeyFrameInterpolation::TensionSpline)
         {
             const unsigned numKeyFrames = keyFrames_.size();
-            splineTangents_.resize(numKeyFrames);
+            inTangents_.resize(numKeyFrames);
 
             for (unsigned i = 1; i + 1 < numKeyFrames; ++i)
             {
-                splineTangents_[i] = SubstractAndMultiply(
+                inTangents_[i] = SubstractAndMultiply(
                     type_, keyFrames_[i + 1].value_, keyFrames_[i - 1].value_, splineTension_);
             }
 
             // If spline is not closed, make end point's tangent zero
             if (numKeyFrames <= 2 || keyFrames_[0].value_ != keyFrames_[numKeyFrames - 1].value_)
             {
-                splineTangents_[0] = Variant(type_);
+                inTangents_[0] = Variant(type_);
                 if (numKeyFrames >= 2)
-                    splineTangents_[numKeyFrames - 1] = Variant(type_);
+                    inTangents_[numKeyFrames - 1] = Variant(type_);
             }
             else
             {
                 const Variant tangent = SubstractAndMultiply(
                     type_, keyFrames_[1].value_, keyFrames_[numKeyFrames - 2].value_, splineTension_);
-                splineTangents_[0] = tangent;
-                splineTangents_[numKeyFrames - 1] = tangent;
+                inTangents_[0] = tangent;
+                inTangents_[numKeyFrames - 1] = tangent;
             }
+
+            outTangents_ = inTangents_;
         }
         break;
 
@@ -181,7 +183,7 @@ void VariantAnimationTrack::Commit()
     case VAR_INTVECTOR2:
     case VAR_INTVECTOR3:
         // Integer compounds cannot have spline interpolation, fallback to linear.
-        if (interpolation_ == KeyFrameInterpolation::Spline)
+        if (interpolation_ == KeyFrameInterpolation::TensionSpline || interpolation_ == KeyFrameInterpolation::TangentSpline)
             interpolation_ = KeyFrameInterpolation::Linear;
         break;
 
@@ -203,10 +205,11 @@ Variant VariantAnimationTrack::Sample(float time, float duration, bool isLooped,
 
     if (blendFactor >= M_EPSILON)
     {
-        if (interpolation_ == KeyFrameInterpolation::Spline && splineTangents_.size() == keyFrames_.size())
+        const bool isSplineInterpolation = interpolation_ == KeyFrameInterpolation::TensionSpline || interpolation_ == KeyFrameInterpolation::TangentSpline;
+        if (isSplineInterpolation && inTangents_.size() == keyFrames_.size() && outTangents_.size() == keyFrames_.size())
         {
             return InterpolateSpline(type_, keyFrame.value_, nextKeyFrame.value_,
-                splineTangents_[frameIndex], splineTangents_[nextFrameIndex], blendFactor);
+                outTangents_[frameIndex], inTangents_[nextFrameIndex], blendFactor);
         }
         else if (interpolation_ == KeyFrameInterpolation::Linear)
             return keyFrame.value_.Lerp(nextKeyFrame.value_, blendFactor);

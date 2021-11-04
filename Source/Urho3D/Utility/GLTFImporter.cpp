@@ -93,15 +93,7 @@ Vector3 MirrorX(const Vector3& vec) { return { -vec.x_, vec.y_, vec.z_ }; }
 
 Quaternion RotationFromVector(const Vector4& vec) { return { vec.w_, vec.x_, vec.y_, vec.z_ }; }
 
-Quaternion MirrorX(const Quaternion& rotation)
-{
-    Matrix3 mat = rotation.RotationMatrix();
-    mat.m01_ = -mat.m01_;
-    mat.m10_ = -mat.m10_;
-    mat.m02_ = -mat.m02_;
-    mat.m20_ = -mat.m20_;
-    return Quaternion{ mat };
-}
+Quaternion MirrorX(const Quaternion& rotation) { return { rotation.w_, rotation.x_, -rotation.y_, -rotation.z_ }; }
 
 Matrix3x4 MirrorX(Matrix3x4 mat)
 {
@@ -513,6 +505,8 @@ struct GLTFAttributeTrack
     KeyFrameInterpolation interpolation_{ KeyFrameInterpolation::Linear };
     ea::vector<float> keys_;
     ea::vector<Variant> values_;
+    ea::vector<Variant> inTangents_;
+    ea::vector<Variant> outTangents_;
 };
 
 /// Represents subset of animation tracks of single GLTF animation that corresponds to single Urho animation.
@@ -1166,12 +1160,25 @@ private:
                 for (unsigned morphIndex = 0; morphIndex < numMorphs; ++morphIndex)
                 {
                     const ea::string trackPath = nodePath + Format("/@AnimatedModel#{}/Morphs/{}", componentIndex, morphIndex);
-                    const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex, numMorphs);
 
                     GLTFAttributeTrack& track = animationGroup.attributeTracksByPath_[trackPath];
                     track.interpolation_ = interpolation;
                     track.keys_ = channelKeys;
-                    ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
+
+                    if (interpolation == KeyFrameInterpolation::TangentSpline)
+                    {
+                        const auto morphWeightInTangents = ReadVericalSlice(weightsValues, morphIndex * 3, numMorphs * 3);
+                        const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex * 3 + 1, numMorphs * 3);
+                        const auto morphWeightOutTangents = ReadVericalSlice(weightsValues, morphIndex * 3 + 2, numMorphs * 3);
+                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
+                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.inTangents_));
+                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.outTangents_));
+                    }
+                    else
+                    {
+                        const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex, numMorphs);
+                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
+                    }
                 }
             }
             else if (targetNode.skeletonIndex_)
@@ -1192,6 +1199,9 @@ private:
                     track.positionValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
                     MirrorIfNecessary(track.positionValues_);
 
+                    if (interpolation == KeyFrameInterpolation::TangentSpline)
+                        track.positionValues_ = ReadVericalSlice(track.positionValues_, 1, 3);
+
                     if (track.positionValues_.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
                 }
@@ -1201,6 +1211,9 @@ private:
                     track.rotationValues_ = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
                     MirrorIfNecessary(track.rotationValues_);
 
+                    if (interpolation == KeyFrameInterpolation::TangentSpline)
+                        track.rotationValues_ = ReadVericalSlice(track.rotationValues_, 1, 3);
+
                     if (track.rotationValues_.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
                 }
@@ -1208,6 +1221,9 @@ private:
                 {
                     track.scaleKeys_ = channelKeys;
                     track.scaleValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
+
+                    if (interpolation == KeyFrameInterpolation::TangentSpline)
+                        track.scaleValues_ = ReadVericalSlice(track.scaleValues_, 1, 3);
 
                     if (track.scaleValues_.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
@@ -1242,6 +1258,13 @@ private:
                 {
                     auto scaleValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
                     ea::copy(scaleValues.begin(), scaleValues.end(), ea::back_inserter(track.values_));
+                }
+
+                if (interpolation == KeyFrameInterpolation::TangentSpline)
+                {
+                    track.inTangents_ = ReadVericalSlice(track.values_, 0, 3);
+                    track.outTangents_ = ReadVericalSlice(track.values_, 2, 3);
+                    track.values_ = ReadVericalSlice(track.values_, 1, 3);
                 }
 
                 if (track.values_.size() != channelKeys.size())
@@ -1523,6 +1546,8 @@ private:
             return KeyFrameInterpolation::None;
         else if (sourceSampler.interpolation == "LINEAR")
             return KeyFrameInterpolation::Linear;
+        else if (sourceSampler.interpolation == "CUBICSPLINE")
+            return KeyFrameInterpolation::TangentSpline;
         throw RuntimeException("Unsupported interpolation mode '{}'", sourceSampler.interpolation.c_str());
     }
 
@@ -2501,7 +2526,14 @@ private:
             VariantAnimationTrack* track = animation->CreateVariantTrack(attributePath);
             track->interpolation_ = attributeTrack.interpolation_;
             for (unsigned i = 0; i < attributeTrack.keys_.size(); ++i)
-                track->AddKeyFrame({ attributeTrack.keys_[i], attributeTrack.values_[i] });
+            {
+                track->keyFrames_.push_back({ attributeTrack.keys_[i], attributeTrack.values_[i] });
+                if (track->interpolation_ == KeyFrameInterpolation::TangentSpline)
+                {
+                    track->inTangents_.push_back(attributeTrack.inTangents_[i]);
+                    track->outTangents_.push_back(attributeTrack.outTangents_[i]);
+                }
+            }
         }
 
         animation->SetLength(CalculateLength(*animation));

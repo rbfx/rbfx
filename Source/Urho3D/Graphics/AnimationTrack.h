@@ -43,9 +43,14 @@ URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
 /// Method of interpolation between keyframes.
 enum class KeyFrameInterpolation
 {
+    /// No interpolation, value is snapped to next one.
     None,
+    /// Linear interpolation between values. Spherical interpolation for quaternions.
     Linear,
-    Spline,
+    /// Cubic spline with fixed tension.
+    TensionSpline,
+    /// Cubic spline with tangents.
+    TangentSpline
 };
 
 /// Skeletal animation keyframe.
@@ -102,14 +107,15 @@ struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKey
     Variant baseValue_;
     /// Interpolation mode.
     KeyFrameInterpolation interpolation_{ KeyFrameInterpolation::Linear };
+
     /// Spline tension for spline interpolation.
     float splineTension_{ 0.5f };
+    /// Tangents for cubic spline. Recalculated on commit for tension spline.
+    ea::vector<Variant> inTangents_;
+    ea::vector<Variant> outTangents_;
 
-    /// Cached data (never serialized, recalculated on commit).
-    /// @{
+    /// Type of values, deduced from key frames.
     VariantType type_{};
-    ea::vector<Variant> splineTangents_;
-    /// @}
 
     /// Commit changes and recalculate derived members. May change interpolation mode.
     void Commit();
