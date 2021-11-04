@@ -194,6 +194,7 @@ public:
     void CheckNode(int index) const { CheckT(index, model_.nodes, "Invalid node #{} referenced"); }
     void CheckSampler(int index) const { CheckT(index, model_.samplers, "Invalid sampler #{} referenced"); }
     void CheckSkin(int index) const { CheckT(index, model_.skins, "Invalid skin #{} referenced"); }
+    void CheckTexture(int index) const { CheckT(index, model_.textures, "Invalid texture #{} referenced"); }
 
 private:
     template <class T>
@@ -1854,7 +1855,7 @@ private:
         {
             "wrap",
             "mirror",
-            "",
+            "clamp",
             "border"
         };
 
@@ -2017,7 +2018,9 @@ private:
         material->SetShaderParameter(ShaderConsts::Material_Metallic, static_cast<float>(pbr.metallicFactor));
         material->SetShaderParameter(ShaderConsts::Material_Roughness, static_cast<float>(pbr.roughnessFactor));
 
-        const ea::string techniqueName = "Techniques/LitOpaque.xml";
+        const ea::string techniqueName = sourceMaterial.normalTexture.index >= 0
+            ? "Techniques/LitOpaqueNormalMap.xml"
+            : "Techniques/LitOpaque.xml";
         auto technique = cache->GetResource<Technique>(techniqueName);
         if (!technique)
         {
@@ -2080,6 +2083,20 @@ private:
             const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
                 metallicRoughnessTextureIndex, occlusionTextureIndex);
             material->SetTexture(TU_SPECULAR, metallicRoughnessTexture);
+        }
+
+        if (sourceMaterial.normalTexture.index >= 0)
+        {
+            base_.CheckTexture(sourceMaterial.normalTexture.index);
+            if (sourceMaterial.normalTexture.texCoord != 0)
+            {
+                URHO3D_LOGWARNING("Material '{}' has non-standard UV for normal texture #{}",
+                    sourceMaterial.name.c_str(), sourceMaterial.normalTexture.index);
+            }
+
+            const SharedPtr<Texture2D> normalTexture = textureImporter_.ReferenceTextureAsIs(
+                sourceMaterial.normalTexture.index);
+            material->SetTexture(TU_NORMAL, normalTexture);
         }
 
         const ea::string materialName = base_.GetResourceName(
@@ -2239,6 +2256,7 @@ private:
             modelView->MirrorGeometriesX();
 
         modelView->CalculateMissingNormals(true);
+        modelView->CalculateMissingTangents();
         modelView->Normalize();
         return modelView;
     }
