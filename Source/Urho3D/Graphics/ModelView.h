@@ -163,12 +163,10 @@ struct URHO3D_API GeometryLODView
     unsigned CalculateNumMorphs() const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
-    /// Invalidate geometry normals (and tangents).
-    void InvalidateNormals();
-    /// Recaluclate flat normals.
+    void InvalidateNormalsAndTangents();
     void RecalculateFlatNormals();
-    /// Recaluclate smooth normals.
     void RecalculateSmoothNormals();
+    void RecalculateTangents();
 
     /// Iterate all triangles in primitive. Callback is called with three vertex indices.
     template <class T>
@@ -300,8 +298,10 @@ public:
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
     void MirrorGeometriesX();
-    /// Calculate normals for geometries without normals in vertex format.
+    /// Calculate normals for geometries without normals in vertex format. Resets tangents for affected geometries.
     void CalculateMissingNormals(bool flatNormals = false);
+    /// Calculate tangents for geometries without tangents in vertex format.
+    void CalculateMissingTangents();
 
     /// Set contents
     /// @{

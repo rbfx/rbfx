@@ -25,6 +25,7 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Model.h"
+#include "../Graphics/Tangent.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/Log.h"
 
@@ -672,7 +673,7 @@ void GeometryLODView::Normalize()
         NormalizeModelVertexMorphVector(morphVector);
 }
 
-void GeometryLODView::InvalidateNormals()
+void GeometryLODView::InvalidateNormalsAndTangents()
 {
     for (ModelVertex& vertex : vertices_)
     {
@@ -698,7 +699,7 @@ void GeometryLODView::RecalculateFlatNormals()
         return;
     }
 
-    InvalidateNormals();
+    InvalidateNormalsAndTangents();
 
     ea::vector<ModelVertex> newVertices;
     ea::unordered_multimap<unsigned, unsigned> oldToNewVertex;
@@ -760,7 +761,7 @@ void GeometryLODView::RecalculateSmoothNormals()
         return;
     }
 
-    InvalidateNormals();
+    InvalidateNormalsAndTangents();
     ForEachTriangle([&](unsigned i0, unsigned i1, unsigned i2)
     {
         ModelVertex& v0 = vertices_[i0];
@@ -779,6 +780,19 @@ void GeometryLODView::RecalculateSmoothNormals()
 
     for (ModelVertex& vertex : vertices_)
         vertex.normal_ = Vector4(static_cast<Vector3>(vertex.normal_).Normalized(), 0.0f);
+}
+
+void GeometryLODView::RecalculateTangents()
+{
+    if (!IsTriangleGeometry())
+    {
+        assert(0);
+        return;
+    }
+
+    GenerateTangents(vertices_.data(), sizeof(ModelVertex),
+        indices_.data(), sizeof(unsigned), 0, indices_.size(),
+        offsetof(ModelVertex, normal_), offsetof(ModelVertex, uv_), offsetof(ModelVertex, tangent_));
 }
 
 unsigned GeometryView::CalculateNumMorphs() const
@@ -1295,10 +1309,28 @@ void ModelView::CalculateMissingNormals(bool flatNormals)
                 continue;
 
             lodView.vertexFormat_.normal_ = TYPE_VECTOR3;
+            lodView.vertexFormat_.tangent_ = ModelVertexFormat::Undefined;
             if (flatNormals)
                 lodView.RecalculateFlatNormals();
             else
                 lodView.RecalculateSmoothNormals();
+        }
+    }
+}
+
+void ModelView::CalculateMissingTangents()
+{
+    for (GeometryView& geometryView : geometries_)
+    {
+        for (GeometryLODView& lodView : geometryView.lods_)
+        {
+            if (!lodView.IsTriangleGeometry())
+                continue;
+            if (lodView.vertexFormat_.tangent_ != ModelVertexFormat::Undefined)
+                continue;
+
+            lodView.vertexFormat_.tangent_ = TYPE_VECTOR4;
+            lodView.RecalculateTangents();
         }
     }
 }
