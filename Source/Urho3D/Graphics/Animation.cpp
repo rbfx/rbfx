@@ -48,6 +48,7 @@ const ea::string keyFrameInterpolationNames[] =
     "none",
     "linear",
     "spline",
+    "cubicspline",
     ""
 };
 
@@ -174,6 +175,12 @@ bool Animation::LoadXML(const XMLElement& source)
             keyFrame.time_ = keyFrameElem.GetFloat("time");
             keyFrame.value_ = keyFrameElem.GetVariantValue(type);
             newTrack->keyFrames_.push_back(keyFrame);
+
+            if (newTrack->interpolation_ == KeyFrameInterpolation::TangentSpline)
+            {
+                newTrack->inTangents_.push_back(keyFrameElem.GetChild("intangent").GetVariantValue(type));
+                newTrack->outTangents_.push_back(keyFrameElem.GetChild("outtangent").GetVariantValue(type));
+            }
         }
 
         newTrack->SortKeyFrames();
@@ -270,6 +277,18 @@ bool Animation::BeginLoad(Deserializer& source)
                 newKeyFrame.value_ = source.ReadVariant(trackType);
             }
 
+            // Read tangents
+            if (newTrack->interpolation_ == KeyFrameInterpolation::TangentSpline)
+            {
+                newTrack->inTangents_.resize(keyFrames);
+                newTrack->outTangents_.resize(keyFrames);
+                for (unsigned j = 0; j < keyFrames; ++j)
+                {
+                    newTrack->inTangents_[j] = source.ReadVariant(trackType);
+                    newTrack->outTangents_[j] = source.ReadVariant(trackType);
+                }
+            }
+
             newTrack->Commit();
         }
     }
@@ -352,6 +371,16 @@ bool Animation::Save(Serializer& dest) const
             const VariantAnimationKeyFrame& keyFrame = track.keyFrames_[j];
             dest.WriteFloat(keyFrame.time_);
             dest.WriteVariantData(keyFrame.value_.GetType() == trackType ? keyFrame.value_ : defaultValue);
+        }
+
+        // Write tangents
+        if (track.interpolation_ == KeyFrameInterpolation::TangentSpline)
+        {
+            for (unsigned j = 0; j < track.keyFrames_.size(); ++j)
+            {
+                dest.WriteVariantData(track.inTangents_[j].GetType() == trackType ? track.inTangents_[j] : defaultValue);
+                dest.WriteVariantData(track.outTangents_[j].GetType() == trackType ? track.outTangents_[j] : defaultValue);
+            }
         }
     }
 
