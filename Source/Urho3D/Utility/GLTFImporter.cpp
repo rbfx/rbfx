@@ -558,6 +558,8 @@ public:
         InitializeSkins();
         AssignSkinnedModelsToNodes();
         EnumerateUniqueMeshSkinPairs();
+        AssignNamesToSkeletonRoots();
+
         ImportAnimations();
     }
 
@@ -573,29 +575,7 @@ public:
 
     ea::string GetEffectiveNodeName(const GLTFNode& node) const
     {
-        if (!node.skinnedMeshNodes_.empty())
-        {
-            ea::string name;
-            for (int meshNodeIndex : node.skinnedMeshNodes_)
-            {
-                base_.CheckNode(meshNodeIndex);
-                const GLTFNode& meshNode = *nodeByIndex_[meshNodeIndex];
-                if (!meshNode.name_.empty())
-                {
-                    if (!name.empty())
-                        name += '_';
-                    name += meshNode.name_;
-                }
-            }
-            if (name.empty())
-                name = "SkinnedMesh";
-            return name;
-        }
-
-        if (node.uniqueBoneName_)
-            return *node.uniqueBoneName_;
-
-        return node.name_;
+        return node.uniqueBoneName_ ? *node.uniqueBoneName_ : node.name_;
     }
 
     const ea::vector<GLTFMeshSkinPairPtr>& GetUniqueMeshSkinPairs() const { return uniqueMeshSkinPairs_; }
@@ -1110,6 +1090,33 @@ private:
         return pairIndex;
     }
 
+    void AssignNamesToSkeletonRoots()
+    {
+        ForEach(trees_, [&](GLTFNode& node)
+        {
+            if (node.skinnedMeshNodes_.empty())
+                return;
+
+            ea::string name;
+            for (int meshNodeIndex : node.skinnedMeshNodes_)
+            {
+                base_.CheckNode(meshNodeIndex);
+                const GLTFNode& meshNode = *nodeByIndex_[meshNodeIndex];
+                if (!meshNode.name_.empty())
+                {
+                    if (!name.empty())
+                        name += '_';
+                    name += meshNode.name_;
+                }
+            }
+
+            if (!name.empty())
+                node.name_ = name;
+            else if (node.name_.empty())
+                node.name_ = "SkinnedMesh";
+        });
+    }
+
     void ImportAnimations()
     {
         const unsigned numAnimations = model_.animations.size();
@@ -1286,7 +1293,7 @@ private:
     ea::string GetNodePathRelativeToSkeleton(const GLTFNode& node, ea::optional<unsigned> skeletonIndex)
     {
         const auto path = GetPathIncludingSelf(node);
-        const GLTFNode* skeletonRoot = skeletonIndex ? nodeByIndex_[*skeletonIndex]->root_ : nullptr;
+        const GLTFNode* skeletonRoot = skeletonIndex ? skeletons_[*skeletonIndex].rootNode_ : nullptr;
         if (skeletonRoot && !path.contains(skeletonRoot))
             throw RuntimeException("Skeleton doesn't contain required node");
 
