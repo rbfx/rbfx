@@ -52,9 +52,9 @@ void main()
 
     // Water doesn't accept diffuse lighting, set albedo to zero
     surfaceData.albedo = vec4(0.0);
-    surfaceData.specular = cMatSpecColor.rgb * (1.0 - surfaceData.oneMinusReflectivity);
+    surfaceData.specular = GammaToLightSpace(cMatSpecColor.rgb) * (1.0 - surfaceData.oneMinusReflectivity);
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
-    surfaceData.emission = cMatEmissiveColor;
+    surfaceData.emission = GammaToLightSpace(cMatEmissiveColor);
 #endif
 
 #ifdef URHO3D_AMBIENT_PASS

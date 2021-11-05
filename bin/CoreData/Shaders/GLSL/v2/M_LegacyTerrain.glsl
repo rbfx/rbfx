@@ -39,16 +39,15 @@ void main()
     half3 weights = texture2D(sDiffMap, vTexCoord).rgb;
     half sumWeights = weights.r + weights.g + weights.b;
     weights /= sumWeights;
-    surfaceData.albedo = cMatDiffColor * (
+    surfaceData.albedo =
         weights.r * texture2D(sNormalMap, vDetailTexCoord) +
         weights.g * texture2D(sSpecMap, vDetailTexCoord) +
-        weights.b * texture2D(sEmissiveMap, vDetailTexCoord)
-    );
-    surfaceData.albedo.rgb = GammaToLightSpace(surfaceData.albedo.rgb);
+        weights.b * texture2D(sEmissiveMap, vDetailTexCoord);
+    surfaceData.albedo.rgb = GammaToLightSpaceAlpha(cMatDiffColor) * GammaToLightSpace(surfaceData.albedo.rgb);
 
-    surfaceData.specular = cMatSpecColor.rgb;
+    surfaceData.specular = GammaToLightSpace(cMatSpecColor.rgb);
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
-    surfaceData.emission = cMatEmissiveColor;
+    surfaceData.emission = GammaToLightSpace(cMatEmissiveColor);
 #endif
 
     half3 finalColor = GetFinalColor(surfaceData);
