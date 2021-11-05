@@ -1174,7 +1174,7 @@ void ModelView::ExportModel(Model* model) const
             geometry->SetVertexBuffer(0, vertexBuffersData[vertexFormat].buffer_);
             geometry->SetIndexBuffer(indexBuffer);
             geometry->SetLodDistance(sourceGeometryLod.lodDistance_);
-            geometry->SetDrawRange(TRIANGLE_LIST, indexStart, indexCount, vertexStart[vertexFormat], vertexCount);
+            geometry->SetDrawRange(sourceGeometryLod.primitiveType_, indexStart, indexCount, vertexStart[vertexFormat], vertexCount);
 
             model->SetGeometry(geometryIndex, lodIndex, geometry);
 
@@ -1290,9 +1290,31 @@ void ModelView::MirrorGeometriesX()
                 }
             }
 
-            const unsigned numPrimitives = lodView.indices_.size() / 3;
-            for (unsigned i = 0; i < numPrimitives; ++i)
-                ea::swap(lodView.indices_[i * 3 + 1], lodView.indices_[i * 3 + 2]);
+            if (lodView.IsTriangleGeometry())
+            {
+                const unsigned numPrimitives = lodView.GetNumPrimitives();
+                switch (lodView.primitiveType_)
+                {
+                case TRIANGLE_LIST:
+                    for (unsigned i = 0; i < numPrimitives; ++i)
+                        ea::swap(lodView.indices_[i * 3 + 1], lodView.indices_[i * 3 + 2]);
+                    break;
+
+                case TRIANGLE_STRIP:
+                    if (numPrimitives > 0 && numPrimitives % 2 == 0)
+                        lodView.indices_.push_back(lodView.indices_.back());
+                    ea::reverse(lodView.indices_.begin(), lodView.indices_.end());
+                    break;
+
+                case TRIANGLE_FAN:
+                    if (numPrimitives >= 1)
+                        ea::reverse(lodView.indices_.begin() + 1, lodView.indices_.end());
+                    break;
+
+                default:
+                    break;
+                }
+            }
         }
     }
 }
