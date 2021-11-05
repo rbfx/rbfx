@@ -430,6 +430,7 @@ private:
 
         if (drawQueue_.BeginShaderParameterGroup(SP_MATERIAL, dirty_.material_ || dirty_.lightmapConstants_))
         {
+            // TODO: This block may be cached for some APIs
             const auto& materialParameters = current_.material_->GetShaderParameters();
             for (const auto& parameter : materialParameters)
             {
