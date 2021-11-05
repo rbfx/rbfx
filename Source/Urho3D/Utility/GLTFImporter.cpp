@@ -2028,6 +2028,10 @@ private:
         litOpaqueNormalMapTechnique_ = LoadTechnique("Techniques/LitOpaqueNormalMap.xml");
         litOpaqueTechnique_ = LoadTechnique("Techniques/LitOpaque.xml");
         unlitOpaqueTechnique_ = LoadTechnique("Techniques/UnlitOpaque.xml");
+
+        litTransparentFadeNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentFadeNormalMap.xml");
+        litTransparentFadeTechnique_ = LoadTechnique("Techniques/LitTransparentFade.xml");
+        unlitTransparentTechnique_ = LoadTechnique("Techniques/UnlitTransparent.xml");
     }
 
     Technique* LoadTechnique(const ea::string& name)
@@ -2101,22 +2105,47 @@ private:
         auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
 
         const bool isLit = !IsUnlitMaterial(sourceMaterial);
+        const bool isOpaque = sourceMaterial.alphaMode == "OPAQUE";
+        const bool isAlphaMask = sourceMaterial.alphaMode == "MASK";
+        const bool isTransparent = sourceMaterial.alphaMode == "BLEND";
+
+        if (!isOpaque && !isAlphaMask && !isTransparent)
+            throw RuntimeException("Unknown alpha mode '{}'", sourceMaterial.alphaMode.c_str());
+
+        Technique* litNormalMapTechnique = isOpaque || isAlphaMask ? litOpaqueNormalMapTechnique_ : litTransparentFadeNormalMapTechnique_;
+        Technique* litTechnique = isOpaque || isAlphaMask ? litOpaqueTechnique_ : litTransparentFadeTechnique_;
+        Technique* unlitTechnique = isOpaque || isAlphaMask ? unlitOpaqueTechnique_ : unlitTransparentTechnique_;
+
+        ea::string shaderDefines;
+        if (isAlphaMask)
+            shaderDefines += "ALPHAMASK ";
+
+        if (isAlphaMask && sourceMaterial.alphaCutoff != 0.5)
+            URHO3D_LOGWARNING("Material '{}' has non-standard alpha cutoff", sourceMaterial.name.c_str());
+
         if (variant == LitNormalMapMaterial && sourceMaterial.normalTexture.index >= 0 && isLit)
         {
-            material.SetTechnique(0, litOpaqueNormalMapTechnique_, QUALITY_MEDIUM);
-            material.SetTechnique(1, litOpaqueTechnique_, QUALITY_LOW);
-            material.SetVertexShaderDefines("PBR");
-            material.SetPixelShaderDefines("PBR");
+            shaderDefines += "PBR ";
+            material.SetTechnique(0, litNormalMapTechnique, QUALITY_MEDIUM);
+            material.SetTechnique(1, litTechnique, QUALITY_LOW);
         }
         else if (variant == LitMaterial && isLit)
         {
-            material.SetTechnique(0, litOpaqueTechnique_, QUALITY_LOW);
-            material.SetVertexShaderDefines("PBR");
-            material.SetPixelShaderDefines("PBR");
+            shaderDefines += "PBR ";
+            material.SetTechnique(0, litTechnique, QUALITY_LOW);
         }
         else
         {
-            material.SetTechnique(0, unlitOpaqueTechnique_, QUALITY_LOW);
+            material.SetTechnique(0, unlitTechnique, QUALITY_LOW);
+        }
+
+        material.SetVertexShaderDefines(shaderDefines);
+        material.SetPixelShaderDefines(shaderDefines);
+
+        if (sourceMaterial.doubleSided)
+        {
+            material.SetCullMode(CULL_NONE);
+            material.SetShadowCullMode(CULL_NONE);
         }
     }
 
@@ -2249,6 +2278,10 @@ private:
     Technique* litOpaqueTechnique_{};
     Technique* unlitOpaqueTechnique_{};
 
+    Technique* litTransparentFadeNormalMapTechnique_{};
+    Technique* litTransparentFadeTechnique_{};
+    Technique* unlitTransparentTechnique_{};
+
     struct ImportedMaterial
     {
         SharedPtr<Material> variants_[NumMaterialVariants];
@@ -2354,12 +2387,7 @@ private:
             for (const auto& attribute : primitive.attributes)
             {
                 const tg::Accessor& accessor = model_.accessors[attribute.second];
-                if (!ReadVertexData(geometryLODView.vertexFormat_, geometryLODView.vertices_,
-                    attribute.first.c_str(), accessor))
-                {
-                    URHO3D_LOGWARNING("Cannot read primitive #{} in mesh '{}'.", geometryIndex, sourceMesh.name.c_str());
-                    return nullptr;
-                }
+                ReadVertexData(geometryLODView.vertexFormat_, geometryLODView.vertices_, attribute.first.c_str(), accessor);
             }
 
             if (primitive.indices >= 0)
@@ -2437,7 +2465,7 @@ private:
         }
     }
 
-    bool ReadVertexData(ModelVertexFormat& vertexFormat, ea::vector<ModelVertex>& vertices,
+    void ReadVertexData(ModelVertexFormat& vertexFormat, ea::vector<ModelVertex>& vertices,
         const ea::string& semantics, const tg::Accessor& accessor)
     {
         const auto& parsedSemantics = semantics.split('_');
@@ -2447,10 +2475,7 @@ private:
         if (semanticsName == "POSITION" && semanticsIndex == 0)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC3)
-            {
-                URHO3D_LOGERROR("Unexpected type of vertex position");
-                return false;
-            }
+                throw RuntimeException("Unexpected type of vertex position");
 
             vertexFormat.position_ = TYPE_VECTOR3;
 
@@ -2461,10 +2486,7 @@ private:
         else if (semanticsName == "NORMAL" && semanticsIndex == 0)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC3)
-            {
-                URHO3D_LOGERROR("Unexpected type of vertex normal");
-                return false;
-            }
+                throw RuntimeException("Unexpected type of vertex normal");
 
             vertexFormat.normal_ = TYPE_VECTOR3;
 
@@ -2475,10 +2497,7 @@ private:
         else if (semanticsName == "TANGENT" && semanticsIndex == 0)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC4)
-            {
-                URHO3D_LOGERROR("Unexpected type of vertex tangent");
-                return false;
-            }
+                throw RuntimeException("Unexpected type of vertex tangent");
 
             vertexFormat.tangent_ = TYPE_VECTOR4;
 
@@ -2489,10 +2508,7 @@ private:
         else if (semanticsName == "TEXCOORD" && semanticsIndex < ModelVertex::MaxUVs)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC2)
-            {
-                URHO3D_LOGERROR("Unexpected type of vertex uv");
-                return false;
-            }
+                throw RuntimeException("Unexpected type of vertex uv");
 
             vertexFormat.uv_[semanticsIndex] = TYPE_VECTOR2;
 
@@ -2503,10 +2519,7 @@ private:
         else if (semanticsName == "COLOR" && semanticsIndex < ModelVertex::MaxColors)
         {
             if (accessor.type != TINYGLTF_TYPE_VEC3 && accessor.type != TINYGLTF_TYPE_VEC4)
-            {
-                URHO3D_LOGERROR("Unexpected type of vertex color");
-                return false;
-            }
+                throw RuntimeException("Unexpected type of vertex color");
 
             if (accessor.type == TINYGLTF_TYPE_VEC3)
             {
@@ -2547,8 +2560,6 @@ private:
             for (unsigned i = 0; i < accessor.count; ++i)
                 vertices[i].blendWeights_ = weights[i];
         }
-
-        return true;
     }
 
     ModelVertexMorphVector ReadVertexMorphs(const std::map<std::string, int>& accessors, unsigned numVertices)
@@ -2633,12 +2644,6 @@ private:
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
             const GLTFAnimation& sourceAnimation = hierarchyAnalyzer_.GetAnimation(animationIndex);
-            if (sourceAnimation.animationGroups_.size() != 1)
-            {
-                URHO3D_LOGWARNING("Cannot import animation with more than one group affected");
-                continue;
-            }
-
             for (const auto& [groupIndex, group] : sourceAnimation.animationGroups_)
             {
                 const ea::string animationNameHint = GetAnimationGroupName(sourceAnimation, groupIndex);

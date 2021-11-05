@@ -169,7 +169,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
 #endif
 
 #ifdef URHO3D_PIXEL_NEED_VERTEX_COLOR
-    albedo *= vColor;
+    albedo *= LinearToLightSpaceAlpha(vColor);
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
