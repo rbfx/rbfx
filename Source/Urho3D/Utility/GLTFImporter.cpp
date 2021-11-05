@@ -2809,8 +2809,18 @@ tg::Model LoadGLTF(const ea::string& fileName)
 
     std::string errorMessage;
     tg::Model model;
-    if (!loader.LoadASCIIFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
-        throw RuntimeException("Failed to import GLTF file: {}", errorMessage.c_str());
+    if (fileName.ends_with(".gltf"))
+    {
+        if (!loader.LoadASCIIFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
+            throw RuntimeException("Failed to import GLTF file '{}' due to error: {}", fileName, errorMessage.c_str());
+    }
+    else if (fileName.ends_with(".glb"))
+    {
+        if (!loader.LoadBinaryFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
+            throw RuntimeException("Failed to import GLTF file '{}' due to error: {}", fileName, errorMessage.c_str());
+    }
+    else
+        throw RuntimeException("Unknown extension of file '{}'", fileName);
 
     return model;
 }
