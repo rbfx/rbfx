@@ -116,6 +116,7 @@
     {
     #ifdef URHO3D_MATERIAL_HAS_SPECULAR
         half3 rmo = texture2D(sSpecMap, vTexCoord).rga;
+        rmo.xy *= vec2(cRoughness, cMetallic);
     #else
         half3 rmo = vec3(cRoughness, cMetallic, 1.0);
     #endif

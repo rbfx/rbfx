@@ -1306,8 +1306,8 @@ void Material::ResetToDefaults()
     SetShaderParameter("MatEmissiveColor", Vector3::ZERO);
     SetShaderParameter("MatEnvMapColor", Vector3::ONE);
     SetShaderParameter("MatSpecColor", Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-    SetShaderParameter("Roughness", 0.5f);
-    SetShaderParameter("Metallic", 0.0f);
+    SetShaderParameter("Roughness", 1.0f);
+    SetShaderParameter("Metallic", 1.0f);
     SetShaderParameter("DielectricReflectance", 0.5f);
     SetShaderParameter("NormalScale", 1.0f);
     batchedParameterUpdate_ = false;

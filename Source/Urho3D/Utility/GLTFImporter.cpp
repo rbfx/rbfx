@@ -1954,6 +1954,10 @@ private:
                 const unsigned value = metallicRoughnessImage->GetPixelInt(texel.x_, texel.y_);
                 color |= (value >> 8) & 0xffff;
             }
+            else
+            {
+                color |= 0x0000ffff;
+            }
             if (occlusionImage)
             {
                 // 0x______OO
@@ -2121,7 +2125,7 @@ private:
         const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
 
         const Vector4 baseColor{ ToArray<float, 4>(pbr.baseColorFactor).data() };
-        material.SetShaderParameter(ShaderConsts::Material_MatDiffColor, baseColor);
+        material.SetShaderParameter(ShaderConsts::Material_MatDiffColor, Color(baseColor).LinearToGamma().ToVector4());
 
         if (pbr.baseColorTexture.index >= 0)
         {
@@ -2196,11 +2200,8 @@ private:
                 URHO3D_LOGWARNING("Material '{}' has non-standard UV for normal texture #{}",
                     sourceMaterial.name.c_str(), normalTextureIndex);
             }
-            if (sourceMaterial.normalTexture.scale != 1.0)
-            {
-                URHO3D_LOGWARNING("Material '{}' has non-default normal scale for normal texture #{}",
-                    sourceMaterial.name.c_str(), normalTextureIndex);
-            }
+
+            material.SetShaderParameter(ShaderConsts::Material_NormalScale, static_cast<float>(sourceMaterial.normalTexture.scale));
 
             const SharedPtr<Texture2D> normalTexture = textureImporter_.ReferenceTextureAsIs(
                 normalTextureIndex);
@@ -2211,7 +2212,7 @@ private:
     void InitializeEmissiveMap(Material& material, const tg::Material& sourceMaterial)
     {
         const Vector3 emissiveColor{ ToArray<float, 3>(sourceMaterial.emissiveFactor).data() };
-        material.SetShaderParameter(ShaderConsts::Material_MatEmissiveColor, emissiveColor);
+        material.SetShaderParameter(ShaderConsts::Material_MatEmissiveColor, Color(emissiveColor).LinearToGamma().ToVector3());
 
         const int emissiveTextureIndex = sourceMaterial.emissiveTexture.index;
         if (emissiveTextureIndex >= 0)
