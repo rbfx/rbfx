@@ -162,17 +162,13 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
         if (albedoInput.a < 0.5)
             discard;
     #endif
-    albedo = cMatDiffColor * DiffMap_ToLight(albedoInput);
+    albedo = GammaToLightSpaceAlpha(cMatDiffColor) * DiffMap_ToLight(albedoInput);
 #else
-    albedo = cMatDiffColor;
+    albedo = GammaToLightSpaceAlpha(cMatDiffColor);
 #endif
 
 #ifdef URHO3D_PIXEL_NEED_VERTEX_COLOR
     albedo *= vColor;
-#endif
-
-#ifndef URHO3D_MATERIAL_HAS_DIFFUSE
-    albedo = GammaToLightSpaceAlpha(albedo);
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
@@ -180,9 +176,9 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
     albedo.rgb *= oneMinusReflectivity;
 #else
     #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        specular = cMatSpecColor.rgb * texture2D(sSpecMap, vTexCoord).rgb;
+        specular = GammaToLightSpace(cMatSpecColor.rgb * texture2D(sSpecMap, vTexCoord).rgb);
     #else
-        specular = cMatSpecColor.rgb;
+        specular = GammaToLightSpace(cMatSpecColor.rgb);
     #endif
 #endif
 
@@ -203,7 +199,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
     #ifndef URHO3D_HAS_LIGHTMAP
         #if defined(URHO3D_MATERIAL_HAS_EMISSIVE) && !defined(AO)
             #define FillSurfaceEmission(surfaceData) \
-                surfaceData.emission = EmissiveMap_ToLight(cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord).rgb)
+                surfaceData.emission = GammaToLightSpace(cMatEmissiveColor) * EmissiveMap_ToLight(texture2D(sEmissiveMap, vTexCoord).rgb)
         #else
             #define FillSurfaceEmission(surfaceData) \
                 surfaceData.emission = GammaToLightSpace(cMatEmissiveColor)
