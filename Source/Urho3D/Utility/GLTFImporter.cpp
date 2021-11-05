@@ -1983,67 +1983,166 @@ private:
 class GLTFMaterialImporter : public NonCopyable
 {
 public:
+    /// Specifies material variant of specific material.
+    /// If specific variant is not supported, highest available variant is selected.
+    enum MaterialVariant
+    {
+        LitNormalMapMaterial,
+        LitMaterial,
+        UnlitMaterial,
+
+        NumMaterialVariants
+    };
+
     explicit GLTFMaterialImporter(GLTFImporterBase& base, GLTFTextureImporter& textureImporter)
         : base_(base)
         , model_(base_.GetModel())
         , textureImporter_(textureImporter)
     {
-        for (const tg::Material& sourceMaterial : model_.materials)
-            materials_.push_back(ImportMaterial(sourceMaterial));
+        InitializeStandardTechniques();
+        InitializeMaterials();
         textureImporter_.CookTextures();
     }
 
-    SharedPtr<Material> GetMaterial(int materialIndex) const
+    SharedPtr<Material> GetMaterial(int materialIndex, MaterialVariant variant)
     {
         base_.CheckMaterial(materialIndex);
-        return materials_[materialIndex];
+        const SharedPtr<Material> material = materials_[materialIndex].variants_[variant];
+        referencedMaterials_.insert(material);
+        return material;
     }
 
     void SaveResources()
     {
-        for (const auto& material : materials_)
+        for (const auto& material : referencedMaterials_)
             base_.SaveResource(material);
     }
 
 private:
-    SharedPtr<Material> ImportMaterial(const tg::Material& sourceMaterial)
+    void InitializeStandardTechniques()
+    {
+        litOpaqueNormalMapTechnique_ = LoadTechnique("Techniques/LitOpaqueNormalMap.xml");
+        litOpaqueTechnique_ = LoadTechnique("Techniques/LitOpaque.xml");
+        unlitOpaqueTechnique_ = LoadTechnique("Techniques/UnlitOpaque.xml");
+    }
+
+    Technique* LoadTechnique(const ea::string& name)
+    {
+        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
+        auto technique = cache->GetResource<Technique>(name);
+        if (!technique)
+            throw RuntimeException("Cannot find standard technique '{}'", name);
+        return technique;
+    }
+
+    void InitializeMaterials()
+    {
+        materials_.resize(model_.materials.size());
+        for (unsigned i = 0; i < model_.materials.size(); ++i)
+        {
+            const tg::Material& sourceMaterial = model_.materials[i];
+            ImportedMaterial& result = materials_[i];
+
+            const bool isLit = !IsUnlitMaterial(sourceMaterial);
+            if (isLit && sourceMaterial.normalTexture.index >= 0)
+                result.variants_[LitNormalMapMaterial] = ImportMaterial(sourceMaterial, LitNormalMapMaterial);
+            if (isLit)
+                result.variants_[LitMaterial] = ImportMaterial(sourceMaterial, LitMaterial);
+            result.variants_[UnlitMaterial] = ImportMaterial(sourceMaterial, UnlitMaterial);
+
+            if (!result.variants_[LitMaterial])
+                result.variants_[LitMaterial] = result.variants_[UnlitMaterial];
+
+            if (!result.variants_[LitNormalMapMaterial])
+                result.variants_[LitNormalMapMaterial] = result.variants_[LitMaterial];
+        }
+    }
+
+    SharedPtr<Material> ImportMaterial(const tg::Material& sourceMaterial, MaterialVariant variant)
+    {
+        auto material = MakeShared<Material>(base_.GetContext());
+
+        InitializeTechnique(*material, sourceMaterial, variant);
+        InitializeBaseColor(*material, sourceMaterial);
+
+        switch (variant)
+        {
+        case UnlitMaterial:
+            InitializeMaterialName(*material, sourceMaterial, "_Unlit");
+            break;
+
+        case LitMaterial:
+            InitializeMaterialName(*material, sourceMaterial, "_Lit");
+            InitializeRoughnessMetallicOcclusion(*material, sourceMaterial);
+            InitializeEmissiveMap(*material, sourceMaterial);
+            break;
+
+        case LitNormalMapMaterial:
+            InitializeMaterialName(*material, sourceMaterial, "_LitNormalMap");
+            InitializeRoughnessMetallicOcclusion(*material, sourceMaterial);
+            InitializeNormalMap(*material, sourceMaterial);
+            InitializeEmissiveMap(*material, sourceMaterial);
+            break;
+
+        default:
+            break;
+        }
+
+        base_.AddToResourceCache(material);
+        return material;
+    }
+
+    void InitializeTechnique(Material& material, const tg::Material& sourceMaterial, MaterialVariant variant) const
     {
         auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
 
-        auto material = MakeShared<Material>(base_.GetContext());
-
-        const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
-        const Vector4 baseColor{ ToArray<float, 4>(pbr.baseColorFactor).data() };
-        material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, baseColor);
-        material->SetShaderParameter(ShaderConsts::Material_Metallic, static_cast<float>(pbr.metallicFactor));
-        material->SetShaderParameter(ShaderConsts::Material_Roughness, static_cast<float>(pbr.roughnessFactor));
-
-        const ea::string techniqueName = sourceMaterial.normalTexture.index >= 0
-            ? "Techniques/LitOpaqueNormalMap.xml"
-            : "Techniques/LitOpaque.xml";
-        auto technique = cache->GetResource<Technique>(techniqueName);
-        if (!technique)
+        const bool isLit = !IsUnlitMaterial(sourceMaterial);
+        if (variant == LitNormalMapMaterial && sourceMaterial.normalTexture.index >= 0 && isLit)
         {
-            throw RuntimeException("Cannot find standard technique '{}' for material '{}'",
-                techniqueName, sourceMaterial.name.c_str());
+            material.SetTechnique(0, litOpaqueNormalMapTechnique_, QUALITY_MEDIUM);
+            material.SetTechnique(1, litOpaqueTechnique_, QUALITY_LOW);
+            material.SetVertexShaderDefines("PBR");
+            material.SetPixelShaderDefines("PBR");
         }
+        else if (variant == LitMaterial && isLit)
+        {
+            material.SetTechnique(0, litOpaqueTechnique_, QUALITY_LOW);
+            material.SetVertexShaderDefines("PBR");
+            material.SetPixelShaderDefines("PBR");
+        }
+        else
+        {
+            material.SetTechnique(0, unlitOpaqueTechnique_, QUALITY_LOW);
+        }
+    }
 
-        material->SetTechnique(0, technique);
-        material->SetVertexShaderDefines("PBR");
-        material->SetPixelShaderDefines("PBR");
+    void InitializeBaseColor(Material& material, const tg::Material& sourceMaterial) const
+    {
+        const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
+
+        const Vector4 baseColor{ ToArray<float, 4>(pbr.baseColorFactor).data() };
+        material.SetShaderParameter(ShaderConsts::Material_MatDiffColor, baseColor);
 
         if (pbr.baseColorTexture.index >= 0)
         {
+            base_.CheckTexture(pbr.baseColorTexture.index);
             if (pbr.baseColorTexture.texCoord != 0)
             {
                 URHO3D_LOGWARNING("Material '{}' has non-standard UV for diffuse texture #{}",
                     sourceMaterial.name.c_str(), pbr.baseColorTexture.index);
             }
 
-            const SharedPtr<Texture2D> diffuseTexture = textureImporter_.ReferenceTextureAsIs(
-                pbr.baseColorTexture.index);
-            material->SetTexture(TU_DIFFUSE, diffuseTexture);
+            const SharedPtr<Texture2D> diffuseTexture = textureImporter_.ReferenceTextureAsIs(pbr.baseColorTexture.index);
+            material.SetTexture(TU_DIFFUSE, diffuseTexture);
         }
+    }
+
+    void InitializeRoughnessMetallicOcclusion(Material& material, const tg::Material& sourceMaterial) const
+    {
+        const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
+
+        material.SetShaderParameter(ShaderConsts::Material_Metallic, static_cast<float>(pbr.metallicFactor));
+        material.SetShaderParameter(ShaderConsts::Material_Roughness, static_cast<float>(pbr.roughnessFactor));
 
         // Occlusion and metallic-roughness textures are backed together,
         // ignore occlusion if is uses different UV.
@@ -2082,36 +2181,80 @@ private:
 
             const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
                 metallicRoughnessTextureIndex, occlusionTextureIndex);
-            material->SetTexture(TU_SPECULAR, metallicRoughnessTexture);
+            material.SetTexture(TU_SPECULAR, metallicRoughnessTexture);
         }
+    }
 
-        if (sourceMaterial.normalTexture.index >= 0)
+    void InitializeNormalMap(Material& material, const tg::Material& sourceMaterial) const
+    {
+        const int normalTextureIndex = sourceMaterial.normalTexture.index;
+        if (normalTextureIndex >= 0)
         {
-            base_.CheckTexture(sourceMaterial.normalTexture.index);
+            base_.CheckTexture(normalTextureIndex);
             if (sourceMaterial.normalTexture.texCoord != 0)
             {
                 URHO3D_LOGWARNING("Material '{}' has non-standard UV for normal texture #{}",
-                    sourceMaterial.name.c_str(), sourceMaterial.normalTexture.index);
+                    sourceMaterial.name.c_str(), normalTextureIndex);
+            }
+            if (sourceMaterial.normalTexture.scale != 1.0)
+            {
+                URHO3D_LOGWARNING("Material '{}' has non-default normal scale for normal texture #{}",
+                    sourceMaterial.name.c_str(), normalTextureIndex);
             }
 
             const SharedPtr<Texture2D> normalTexture = textureImporter_.ReferenceTextureAsIs(
-                sourceMaterial.normalTexture.index);
-            material->SetTexture(TU_NORMAL, normalTexture);
+                normalTextureIndex);
+            material.SetTexture(TU_NORMAL, normalTexture);
         }
+    }
 
+    void InitializeEmissiveMap(Material& material, const tg::Material& sourceMaterial)
+    {
+        const Vector3 emissiveColor{ ToArray<float, 3>(sourceMaterial.emissiveFactor).data() };
+        material.SetShaderParameter(ShaderConsts::Material_MatEmissiveColor, emissiveColor);
+
+        const int emissiveTextureIndex = sourceMaterial.emissiveTexture.index;
+        if (emissiveTextureIndex >= 0)
+        {
+            base_.CheckTexture(emissiveTextureIndex);
+            if (sourceMaterial.emissiveTexture.texCoord != 0)
+            {
+                URHO3D_LOGWARNING("Material '{}' has non-standard UV for emissive texture #{}",
+                    sourceMaterial.name.c_str(), emissiveTextureIndex);
+            }
+
+            const SharedPtr<Texture2D> emissiveTexture = textureImporter_.ReferenceTextureAsIs(emissiveTextureIndex);
+            material.SetTexture(TU_EMISSIVE, emissiveTexture);
+        }
+    }
+
+    void InitializeMaterialName(Material& material, const tg::Material& sourceMaterial, const ea::string& suffix) const
+    {
         const ea::string materialName = base_.GetResourceName(
-            sourceMaterial.name.c_str(), "Materials/", "Material", ".xml");
-        material->SetName(materialName);
+            sourceMaterial.name.c_str(), "Materials/", "Material", suffix + ".xml");
+        material.SetName(materialName);
+    }
 
-        base_.AddToResourceCache(material);
-        return material;
+    static bool IsUnlitMaterial(const tg::Material& sourceMaterial)
+    {
+        return sourceMaterial.extensions.find("KHR_materials_unlit") != sourceMaterial.extensions.end();
     }
 
     GLTFImporterBase& base_;
     const tg::Model& model_;
     GLTFTextureImporter& textureImporter_;
 
-    ea::vector<SharedPtr<Material>> materials_;
+    Technique* litOpaqueNormalMapTechnique_{};
+    Technique* litOpaqueTechnique_{};
+    Technique* unlitOpaqueTechnique_{};
+
+    struct ImportedMaterial
+    {
+        SharedPtr<Material> variants_[NumMaterialVariants];
+    };
+
+    ea::vector<ImportedMaterial> materials_;
+    ea::unordered_set<SharedPtr<Material>> referencedMaterials_;
 };
 
 /// Utility to import models.
@@ -2120,7 +2263,7 @@ class GLTFModelImporter : public NonCopyable
 public:
     explicit GLTFModelImporter(GLTFImporterBase& base,
         const GLTFBufferReader& bufferReader, const GLTFHierarchyAnalyzer& hierarchyAnalyzer,
-        const GLTFMaterialImporter& materialImporter)
+        GLTFMaterialImporter& materialImporter)
         : base_(base)
         , model_(base_.GetModel())
         , bufferReader_(bufferReader)
@@ -2235,7 +2378,7 @@ private:
 
             if (primitive.material >= 0)
             {
-                if (auto material = materialImporter_.GetMaterial(primitive.material))
+                if (auto material = materialImporter_.GetMaterial(primitive.material, GetMaterialVariant(geometryLODView)))
                     geometryView.material_ = material->GetName();
             }
 
@@ -2259,6 +2402,16 @@ private:
         modelView->CalculateMissingTangents();
         modelView->Normalize();
         return modelView;
+    }
+
+    static GLTFMaterialImporter::MaterialVariant GetMaterialVariant(const GeometryLODView& lodView)
+    {
+        if (lodView.IsTriangleGeometry() || lodView.vertexFormat_.tangent_ != ModelVertexFormat::Undefined)
+            return GLTFMaterialImporter::LitNormalMapMaterial;
+        else if (lodView.vertexFormat_.normal_ != ModelVertexFormat::Undefined)
+            return GLTFMaterialImporter::LitMaterial;
+        else
+            return GLTFMaterialImporter::UnlitMaterial;
     }
 
     static PrimitiveType GetPrimitiveType(int primitiveMode)
@@ -2439,7 +2592,7 @@ private:
     const tg::Model& model_;
     const GLTFBufferReader& bufferReader_;
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
-    const GLTFMaterialImporter& materialImporter_;
+    GLTFMaterialImporter& materialImporter_;
 
     ea::vector<ImportedModel> models_;
 };
