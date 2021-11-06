@@ -452,6 +452,8 @@ struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
     ea::optional<ea::string> uniqueBoneName_;
     ea::vector<unsigned> skinnedMeshNodes_;
     /// @}
+
+    const ea::string& GetEffectiveName() const { return uniqueBoneName_ ? *uniqueBoneName_ : name_; }
 };
 
 /// Represents Urho skeleton which may be composed from one or more GLTF skins.
@@ -545,6 +547,7 @@ public:
         , bufferReader_(bufferReader)
         , model_(base_.GetModel())
     {
+        ProcessMeshMorphs();
         InitializeParents();
         InitializeTrees();
         ConvertToLeftHandedCoordinates();
@@ -568,12 +571,13 @@ public:
 
     const auto& GetRootNodes() const { return rootNodes_; }
 
-    ea::string GetEffectiveNodeName(const GLTFNode& node) const
-    {
-        return node.uniqueBoneName_ ? *node.uniqueBoneName_ : node.name_;
-    }
-
     const ea::vector<GLTFMeshSkinPairPtr>& GetUniqueMeshSkinPairs() const { return uniqueMeshSkinPairs_; }
+
+    unsigned GetNumMorphsInMesh(int meshIndex) const
+    {
+        base_.CheckMesh(meshIndex);
+        return numMorphsInMesh_[meshIndex];
+    }
 
     unsigned GetUniqueMeshSkin(int meshIndex, int skinIndex) const
     {
@@ -608,6 +612,19 @@ public:
     }
 
 private:
+    void ProcessMeshMorphs()
+    {
+        const unsigned numMeshes = model_.meshes.size();
+        numMorphsInMesh_.resize(numMeshes);
+        for (unsigned meshIndex = 0; meshIndex < numMeshes; ++meshIndex)
+        {
+            const tg::Mesh& mesh = model_.meshes[meshIndex];
+            if (mesh.primitives.empty())
+                throw RuntimeException("Mesh #{} has no primitives", meshIndex);
+            numMorphsInMesh_[meshIndex] = mesh.primitives[0].targets.size();
+        }
+    }
+
     void InitializeParents()
     {
         const unsigned numNodes = model_.nodes.size();
@@ -1281,11 +1298,7 @@ private:
             throw RuntimeException("Animation weights channel targets node #{} without mesh", node.index_);
 
         base_.CheckMesh(*node.mesh_);
-        const tg::Mesh& mesh = model_.meshes[*node.mesh_];
-
-        if (mesh.primitives.empty() || mesh.primitives[0].targets.empty())
-            throw RuntimeException("Animation weights channel targets node #{} without primitives", node.index_);
-        return mesh.primitives[0].targets.size();
+        return numMorphsInMesh_[*node.mesh_];
     }
 
     const GLTFNode& GetEffectiveTargetNode(const tg::AnimationChannel& channel) const
@@ -1303,12 +1316,12 @@ private:
         if (!node.parent_)
             return true;
 
-        const ea::string name = GetEffectiveNodeName(node);
+        const ea::string name = node.GetEffectiveName();
         for (const GLTFNodePtr& child : node.parent_->children_)
         {
             if (child.get() == &node)
                 continue;
-            if (GetEffectiveNodeName(*child) == name)
+            if (child->GetEffectiveName() == name)
                 return false;
         }
         return true;
@@ -1331,7 +1344,7 @@ private:
             if (!pathString.empty())
                 pathString += '/';
             pathString += IsUniquelyNamedSibling(pathNode)
-                ? GetEffectiveNodeName(pathNode)
+                ? pathNode.GetEffectiveName()
                 : Format("#{}", GetChildIndex(pathNode));
         }
         return pathString;
@@ -1556,6 +1569,8 @@ private:
     const GLTFImporterBase& base_;
     const GLTFBufferReader& bufferReader_;
     const tg::Model& model_;
+
+    ea::vector<unsigned> numMorphsInMesh_;
 
     ea::vector<ea::optional<unsigned>> nodeToParent_;
 
@@ -2356,7 +2371,7 @@ private:
 
     SharedPtr<ModelView> ImportModelView(const tg::Mesh& sourceMesh, const ea::vector<BoneView>& bones)
     {
-        const ea::string modelName = base_.GetResourceName(sourceMesh.name.c_str(), "", "Model", ".mdl");
+        const ea::string modelName = base_.GetResourceName(sourceMesh.name.c_str(), "Models/", "Model", ".mdl");
 
         auto modelView = MakeShared<ModelView>(base_.GetContext());
         modelView->SetName(modelName);
@@ -2647,7 +2662,7 @@ private:
             for (const auto& [groupIndex, group] : sourceAnimation.animationGroups_)
             {
                 const ea::string animationNameHint = GetAnimationGroupName(sourceAnimation, groupIndex);
-                const ea::string animationName = base_.GetResourceName(animationNameHint, "", "Animation", ".ani");
+                const ea::string animationName = base_.GetResourceName(animationNameHint, "Animations/", "Animation", ".ani");
 
                 auto animation = ImportAnimation(animationName, group);
                 base_.AddToResourceCache(animation);
@@ -2809,6 +2824,7 @@ public:
     GLTFSceneImporter(GLTFImporterBase& base, const GLTFHierarchyAnalyzer& hierarchyAnalyzer,
         const GLTFModelImporter& modelImporter, const GLTFAnimationImporter& animationImporter)
         : base_(base)
+        , model_(base_.GetModel())
         , hierarchyAnalyzer_(hierarchyAnalyzer)
         , modelImporter_(modelImporter)
         , animationImporter_(animationImporter)
@@ -2818,51 +2834,164 @@ public:
 
     void SaveResources()
     {
-        for (Scene* scene : importedScenes_)
-            base_.SaveResource(scene);
+        for (const ImportedScene& scene : scenes_)
+            base_.SaveResource(scene.scene_);
     }
 
 private:
+    struct ImportedScene
+    {
+        unsigned index_{};
+        SharedPtr<Scene> scene_;
+        ea::unordered_map<Node*, unsigned> nodeToIndex_;
+        ea::unordered_map<unsigned, Node*> indexToNode_;
+    };
+
     void ImportScenes()
     {
-        for (const tg::Scene& sourceScene : base_.GetModel().scenes)
+        const unsigned numScenes = model_.scenes.size();
+        scenes_.resize(numScenes);
+        for (unsigned sceneIndex = 0; sceneIndex < numScenes; ++sceneIndex)
         {
-            const auto scene = ImportScene(sourceScene);
-            importedScenes_.push_back(scene);
+            const tg::Scene& sourceScene = model_.scenes[sceneIndex];
+            ImportedScene& scene = scenes_[sceneIndex];
+            scene.index_ = sceneIndex;
+            scene.scene_ = MakeShared<Scene>(base_.GetContext());
+            ImportScene(scene);
         }
     }
 
-    SharedPtr<Scene> ImportScene(const tg::Scene& sourceScene)
+    void ImportScene(ImportedScene& importedScene)
     {
-        nodeToIndex_.clear();
-        indexToNode_.clear();
+        const tg::Scene& sourceScene = model_.scenes[importedScene.index_];
+        auto scene = importedScene.scene_;
 
-        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
         const ea::string sceneName = base_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
-
-        auto scene = MakeShared<Scene>(base_.GetContext());
         scene->SetFileName(base_.GetAbsoluteFileName(sceneName));
         scene->CreateComponent<Octree>();
 
         Node* rootNode = scene->CreateChild("Imported Scene");
 
         if (animationImporter_.HasSceneAnimations())
-        {
-            auto animationController = rootNode->CreateComponent<AnimationController>();
-            if (Animation* animation = animationImporter_.FindAnimation(defaultAnimationIndex_, ea::nullopt))
-                animationController->Play(animation->GetName(), 0, true);
-        }
+            InitializeAnimationController(*rootNode, ea::nullopt);
 
         for (const GLTFNodePtr& sourceRootNode : hierarchyAnalyzer_.GetRootNodes())
         {
             // Preserve order and insert placeholders if Scene has root animations to keep animation track paths valid
             if (ea::find(sourceScene.nodes.begin(), sourceScene.nodes.end(), sourceRootNode->index_) != sourceScene.nodes.end())
-                ImportNode(rootNode, *sourceRootNode);
+                ImportNode(importedScene, *rootNode, *sourceRootNode);
             else if (animationImporter_.HasSceneAnimations())
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
+        InitializeDefaultSceneContent(importedScene);
+    }
+
+    void ImportNode(ImportedScene& importedScene, Node& parent, const GLTFNode& sourceNode)
+    {
+        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
+
+        // Skip skinned mesh nodes w/o children because Urho instantiates such nodes at skeleton root.
+        if (sourceNode.mesh_ && sourceNode.skin_ && sourceNode.children_.empty() && sourceNode.skinnedMeshNodes_.empty())
+            return;
+
+        Node* node = GetOrCreateNode(importedScene, parent, sourceNode);
+        if (!sourceNode.skinnedMeshNodes_.empty())
+        {
+            const GLTFSkeleton& skeleton = hierarchyAnalyzer_.GetSkeleton(*sourceNode.skeletonIndex_);
+
+            for (const unsigned nodeIndex : sourceNode.skinnedMeshNodes_)
+            {
+                const GLTFNode& skinnedMeshNode = hierarchyAnalyzer_.GetNode(nodeIndex);
+                // Always create animated model in order to preserve moprh animation order
+                auto animatedModel = node->CreateComponent<AnimatedModel>();
+                InitializeComponentModelAndMaterials(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_);
+            }
+
+            if (animationImporter_.HasAnimations())
+                InitializeAnimationController(*node, skeleton.index_);
+
+            if (node->GetNumChildren() != 1)
+                throw RuntimeException("Cannot connect node #{} to its children", sourceNode.index_);
+
+            // Connect bone nodes to GLTF nodes
+            Node* skeletonRootNode = node->GetChild(0u);
+            skeletonRootNode->SetTransform(sourceNode.position_, sourceNode.rotation_, sourceNode.scale_);
+
+            for (const auto& [boneName, boneSourceNode] : skeleton.boneNameToNode_)
+            {
+                Node* boneNode = skeletonRootNode->GetName() == boneName ? skeletonRootNode : skeletonRootNode->GetChild(boneName, true);
+                if (!boneNode)
+                    throw RuntimeException("Cannot connect node #{} to skeleton bone", boneSourceNode->index_, boneName);
+
+                RegisterNode(importedScene, *boneNode, *boneSourceNode);
+            }
+
+            for (const GLTFNodePtr& childNode : sourceNode.children_)
+            {
+                ImportNode(importedScene, *node->GetChild(0u), *childNode);
+            }
+        }
+        else
+        {
+            // Skip skinned mesh nodes w/o children because Urho instantiates such nodes at skeleton root.
+            if (sourceNode.mesh_ && sourceNode.skin_ && sourceNode.children_.empty())
+                return;
+
+            node->SetTransform(sourceNode.position_, sourceNode.rotation_, sourceNode.scale_);
+
+            if (sourceNode.mesh_ && !sourceNode.skin_)
+            {
+                if (hierarchyAnalyzer_.GetNumMorphsInMesh(*sourceNode.mesh_) > 0)
+                {
+                    auto animatedModel = node->CreateComponent<AnimatedModel>();
+                    InitializeComponentModelAndMaterials(*animatedModel, *sourceNode.mesh_, -1);
+                }
+                else
+                {
+                    auto staticModel = node->CreateComponent<StaticModel>();
+                    InitializeComponentModelAndMaterials(*staticModel, *sourceNode.mesh_, -1);
+                }
+            }
+
+            for (const GLTFNodePtr& childNode : sourceNode.children_)
+            {
+                ImportNode(importedScene, *node, *childNode);
+            }
+        }
+    }
+
+    void InitializeComponentModelAndMaterials(StaticModel& staticModel, int meshIndex, int skinIndex) const
+    {
+        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
+
+        Model* model = modelImporter_.GetModel(meshIndex, skinIndex);
+        if (!model)
+            return;
+
+        staticModel.SetModel(model);
+
+        const StringVector& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
+        for (unsigned i = 0; i < materialList.size(); ++i)
+        {
+            auto material = cache->GetResource<Material>(materialList[i]);
+            staticModel.SetMaterial(i, material);
+        }
+    }
+
+    void InitializeAnimationController(Node& node, ea::optional<unsigned> groupIndex)
+    {
+        auto animationController = node.CreateComponent<AnimationController>();
+        if (Animation* animation = animationImporter_.FindAnimation(defaultAnimationIndex_, groupIndex))
+            animationController->Play(animation->GetName(), 0, true);
+    }
+
+    void InitializeDefaultSceneContent(ImportedScene& importedScene)
+    {
         static const Vector3 defaultPosition{ -1.0f, 2.0f, 1.0f };
+
+        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
+        auto scene = importedScene.scene_;
 
         if (!scene->GetComponent<Light>(true))
         {
@@ -2894,135 +3023,43 @@ private:
                 skybox->SetModel(boxModel);
                 skybox->SetMaterial(skyboxMaterial);
             }
-
         }
-
-        return scene;
     }
 
-    void RegisterNode(Node& node, const GLTFNode& sourceNode)
+    static void RegisterNode(ImportedScene& importedScene, Node& node, const GLTFNode& sourceNode)
     {
-        indexToNode_[sourceNode.index_] = &node;
-        nodeToIndex_[&node] = sourceNode.index_;
+        importedScene.indexToNode_[sourceNode.index_] = &node;
+        importedScene.nodeToIndex_[&node] = sourceNode.index_;
     }
 
-    void ImportNode(Node* parent, const GLTFNode& sourceNode)
+    static Node* GetOrCreateNode(ImportedScene& importedScene, Node& parentNode, const GLTFNode& sourceNode)
     {
-        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
-
-        // Skip skinned mesh nodes w/o children because Urho instantiates such nodes at skeleton root.
-        if (sourceNode.mesh_ && sourceNode.skin_ && sourceNode.children_.empty() && sourceNode.skinnedMeshNodes_.empty())
-            return;
-
-        Node* node = nullptr;
+        // If node is not in the skeleton, or it is skeleton root node, create as is.
+        // Otherwise, node should be already created by AnimatedModel, connect to it.
         if (!sourceNode.skeletonIndex_ || !sourceNode.skinnedMeshNodes_.empty())
-            node = parent->CreateChild(hierarchyAnalyzer_.GetEffectiveNodeName(sourceNode));
+        {
+            Node* node = parentNode.CreateChild(sourceNode.GetEffectiveName());
+            RegisterNode(importedScene, *node, sourceNode);
+            return node;
+        }
         else
         {
-            node = indexToNode_[sourceNode.index_];
+            Node* node = importedScene.indexToNode_[sourceNode.index_];
             if (!node)
                 throw RuntimeException("Cannot find bone node #{}", sourceNode.index_);
-        }
-
-        RegisterNode(*node, sourceNode);
-
-        if (!sourceNode.skinnedMeshNodes_.empty())
-        {
-            const GLTFSkeleton& skeleton = hierarchyAnalyzer_.GetSkeleton(*sourceNode.skeletonIndex_);
-
-            for (const unsigned nodeIndex : sourceNode.skinnedMeshNodes_)
-            {
-                // Always create animated model in order to preserve moprh animation order
-                auto animatedModel = node->CreateComponent<AnimatedModel>();
-
-                const GLTFNode& meshNode = hierarchyAnalyzer_.GetNode(nodeIndex);
-                Model* model = modelImporter_.GetModel(*meshNode.mesh_, *meshNode.skin_);
-                if (!model)
-                    continue;
-
-                animatedModel->SetModel(model);
-
-                const StringVector& meshMaterials = modelImporter_.GetModelMaterials(*meshNode.mesh_, *meshNode.skin_);
-                for (unsigned i = 0; i < meshMaterials.size(); ++i)
-                {
-                    auto material = cache->GetResource<Material>(meshMaterials[i]);
-                    animatedModel->SetMaterial(i, material);
-                }
-            }
-
-            if (animationImporter_.HasAnimations())
-            {
-                auto animationController = node->CreateComponent<AnimationController>();
-                if (Animation* animation = animationImporter_.FindAnimation(defaultAnimationIndex_, skeleton.index_))
-                    animationController->Play(animation->GetName(), 0, true);
-            }
-
-            if (node->GetNumChildren() != 1)
-                throw RuntimeException("Cannot connect node #{} to its children", sourceNode.index_);
-
-            // Connect bone nodes to GLTF nodes
-            Node* skeletonRootNode = node->GetChild(0u);
-            skeletonRootNode->SetTransform(sourceNode.position_, sourceNode.rotation_, sourceNode.scale_);
-
-            for (const auto& [boneName, boneSourceNode] : skeleton.boneNameToNode_)
-            {
-                Node* boneNode = skeletonRootNode->GetName() == boneName ? skeletonRootNode : skeletonRootNode->GetChild(boneName, true);
-                if (!boneNode)
-                    throw RuntimeException("Cannot connect node #{} to skeleton bone", boneSourceNode->index_, boneName);
-
-                RegisterNode(*boneNode, *boneSourceNode);
-            }
-
-            for (const GLTFNodePtr& childNode : sourceNode.children_)
-            {
-                ImportNode(node->GetChild(0u), *childNode);
-            }
-        }
-        else
-        {
-            // Skip skinned mesh nodes because Urho instantiates such nodes at skeleton root.
-            if (sourceNode.mesh_ && sourceNode.skin_ && sourceNode.children_.empty())
-                return;
-
-            node->SetTransform(sourceNode.position_, sourceNode.rotation_, sourceNode.scale_);
-
-            if (sourceNode.mesh_ && !sourceNode.skin_)
-            {
-                if (Model* model = modelImporter_.GetModel(*sourceNode.mesh_, -1))
-                {
-                    const bool needAnimation = model->GetNumMorphs() > 0;// || model->GetSkeleton().GetNumBones() > 1;
-                    auto staticModel = !needAnimation
-                        ? node->CreateComponent<StaticModel>()
-                        : node->CreateComponent<AnimatedModel>();
-
-                    staticModel->SetModel(model);
-
-                    const StringVector& meshMaterials = modelImporter_.GetModelMaterials(*sourceNode.mesh_, -1);
-                    for (unsigned i = 0; i < meshMaterials.size(); ++i)
-                    {
-                        auto material = cache->GetResource<Material>(meshMaterials[i]);
-                        staticModel->SetMaterial(i, material);
-                    }
-                }
-            }
-
-            for (const GLTFNodePtr& childNode : sourceNode.children_)
-            {
-                ImportNode(node, *childNode);
-            }
+            return node;
         }
     }
 
     GLTFImporterBase& base_;
+    const tg::Model& model_;
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
     const GLTFModelImporter& modelImporter_;
     const GLTFAnimationImporter& animationImporter_;
 
     unsigned defaultAnimationIndex_{};
 
-    ea::vector<SharedPtr<Scene>> importedScenes_;
-    ea::unordered_map<Node*, unsigned> nodeToIndex_;
-    ea::unordered_map<unsigned, Node*> indexToNode_;
+    ea::vector<ImportedScene> scenes_;
 };
 
 tg::Model LoadGLTF(const ea::string& fileName)
