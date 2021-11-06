@@ -493,6 +493,21 @@ bool BoneView::operator ==(const BoneView& rhs) const
         && localBoundingBox_.max_.Equals(rhs.localBoundingBox_.max_);
 }
 
+ModelVertex::BoneArray ModelVertex::GetBlendIndicesAndWeights() const
+{
+    BoneArray result;
+    for (unsigned i = 0; i < MaxBones; ++i)
+    {
+        const float index = blendIndices_.Data()[i];
+        const float weight = blendWeights_.Data()[i];
+        if (index >= 0 && index <= M_MAX_UNSIGNED)
+            result[i] = { static_cast<unsigned>(index), weight };
+        else
+            result[i] = { 0, 0.0f };
+    }
+    return result;
+}
+
 bool ModelVertex::ReplaceElement(const ModelVertex& source, const VertexElement& element)
 {
     switch (element.semantic_)
@@ -669,6 +684,13 @@ void GeometryLODView::Normalize()
 {
     for (ModelVertex& vertex : vertices_)
         vertex.PruneElements(vertexFormat_);
+
+    if (indices_.empty())
+    {
+        indices_.resize(vertices_.size());
+        ea::iota(indices_.begin(), indices_.end(), 0);
+    }
+
     for (auto& [index, morphVector] : morphs_)
         NormalizeModelVertexMorphVector(morphVector);
 }
@@ -1353,6 +1375,33 @@ void ModelView::CalculateMissingTangents()
 
             lodView.vertexFormat_.tangent_ = TYPE_VECTOR4;
             lodView.RecalculateTangents();
+        }
+    }
+}
+
+void ModelView::RecalculateBoneBoundingBoxes()
+{
+    if (bones_.empty())
+        return;
+
+    for (BoneView& bone : bones_)
+        bone.SetLocalBoundingBox(BoundingBox{});
+
+    for (const GeometryView& geometryView : geometries_)
+    {
+        for (const GeometryLODView& lodView : geometryView.lods_)
+        {
+            for (const ModelVertex& vertex : lodView.vertices_)
+            {
+                for (auto [boneIndex, boneWeight] : vertex.GetBlendIndicesAndWeights())
+                {
+                    if (boneIndex >= bones_.size() || boneWeight < M_LARGE_EPSILON)
+                        continue;
+
+                    BoneView& bone = bones_[boneIndex];
+                    bone.localBoundingBox_.Merge(bone.offsetMatrix_ * vertex.GetPosition());
+                }
+            }
         }
     }
 }
