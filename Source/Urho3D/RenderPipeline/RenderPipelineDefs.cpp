@@ -48,6 +48,9 @@ int GetClosestMutliSampleLevel(Graphics* graphics, int level)
 void RenderPipelineSettings::AdjustToSupported(Context* context)
 {
     auto graphics = context->GetSubsystem<Graphics>();
+    if (!graphics)
+        return;
+
     const GraphicsCaps& caps = Graphics::GetCaps();
 
     // RenderBufferManagerSettings
