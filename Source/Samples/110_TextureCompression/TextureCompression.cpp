@@ -76,17 +76,21 @@ void TextureCompression::InitControls()
 
     // Add controls to Window
     const char* sprites[] = {
-        //"Textures/Compressed/RGBA.dds",
-        //"Textures/Compressed/DXT1.dds",
-        //"Textures/Compressed/DXT3.dds",
-        //"Textures/Compressed/DXT5.dds",
-        //"Textures/Compressed/ETC1.dds",
-        //"Textures/Compressed/ETC2.dds",
+        "Textures/Compressed/RGBA.dds",
+        "Textures/Compressed/DXT1.dds",
+        "Textures/Compressed/DXT3.dds",
+        "Textures/Compressed/DXT5.dds",
+        "Textures/Compressed/ETC1.dds",
+        "Textures/Compressed/ETC2.dds",
         "Textures/Compressed/PTC2.dds",
         "Textures/Compressed/PTC4.dds",
         nullptr
     };
 
+    auto row = new UIElement(context_);
+    row->SetLayout(LM_HORIZONTAL, 6, IntRect(6, 6, 6, 6));
+    row->SetMinSize(64*4, 64);
+   window_->AddChild(row);
     for (int i=0; ; ++i)
     {
         if (!sprites[i])
@@ -97,7 +101,14 @@ void TextureCompression::InitControls()
         sprite->SetLayoutMode(LM_HORIZONTAL);
         sprite->SetTexture(cache->GetResource<Texture2D>(sprites[i]));
         sprite->SetName(sprites[i]);
-        window_->AddChild(sprite);
+        row->AddChild(sprite);
+        if (row->GetNumChildren() == 4)
+        {
+            row = new UIElement(context_);
+            row->SetLayout(LM_HORIZONTAL, 6, IntRect(6, 6, 6, 6));
+            row->SetMinSize(64 * 4, 64);
+            window_->AddChild(row);
+        }
     }
 }
 

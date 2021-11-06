@@ -132,7 +132,7 @@
 #if URHO3D_PHYSICS
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
-#include "200_TextureCompression/TextureCompression.h"
+#include "110_TextureCompression/TextureCompression.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -235,7 +235,6 @@ void SamplesManager::Start()
 
     RegisterSample<HelloWorld>();
     RegisterSample<HelloGUI>();
-    RegisterSample<TextureCompression>();
     RegisterSample<Sprites>();
     RegisterSample<StaticScene>();
     RegisterSample<AnimatingScene>();
@@ -325,6 +324,7 @@ void SamplesManager::Start()
     RegisterSample<HelloRmlUI>();
 #endif
     RegisterSample<RenderingShowcase>();
+    RegisterSample<TextureCompression>();
 
     if (!startSample_.empty())
         StartSample(startSample_);
