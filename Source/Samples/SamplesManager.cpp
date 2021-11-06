@@ -132,6 +132,7 @@
 #if URHO3D_PHYSICS
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
+#include "200_TextureCompression/TextureCompression.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -161,7 +162,7 @@ void SamplesManager::Setup()
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../../";
 
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", startSample_);
@@ -234,6 +235,7 @@ void SamplesManager::Start()
 
     RegisterSample<HelloWorld>();
     RegisterSample<HelloGUI>();
+    RegisterSample<TextureCompression>();
     RegisterSample<Sprites>();
     RegisterSample<StaticScene>();
     RegisterSample<AnimatingScene>();
@@ -246,6 +248,7 @@ void SamplesManager::Start()
     RegisterSample<Physics>();
     RegisterSample<PhysicsStressTest>();
     RegisterSample<Ragdolls>();
+    RegisterSample<KinematicCharacterDemo>();
 #endif
     RegisterSample<SoundEffects>();
 #if URHO3D_NAVIGATION
@@ -322,9 +325,6 @@ void SamplesManager::Start()
     RegisterSample<HelloRmlUI>();
 #endif
     RegisterSample<RenderingShowcase>();
-#if URHO3D_PHYSICS
-    RegisterSample<KinematicCharacterDemo>();
-#endif
 
     if (!startSample_.empty())
         StartSample(startSample_);
