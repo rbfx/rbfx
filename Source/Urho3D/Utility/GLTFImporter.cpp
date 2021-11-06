@@ -814,39 +814,46 @@ private:
             base_.CheckNode(sourceSkin.skeleton);
             const GLTFNode& skeletonNode = *nodeByIndex_[sourceSkin.skeleton];
 
-            for (int nodeIndex : sourceSkin.joints)
-            {
-                base_.CheckNode(nodeIndex);
-                GLTFNode& node = *nodeByIndex_[nodeIndex];
-                if (!IsChildOf(node, skeletonNode) && &node != &skeletonNode)
-                    throw RuntimeException("Skeleton node #{} is not a parent of joint node #{}", sourceSkin.skeleton, nodeIndex);
-            }
-
-            return skeletonNode;
+            if (IsValidSkeletonRootNode(skeletonNode, sourceSkin))
+                return skeletonNode;
         }
-        else
-        {
-            const GLTFNode* rootNode = nullptr;
-            for (int nodeIndex : sourceSkin.joints)
-            {
-                base_.CheckNode(nodeIndex);
-                const GLTFNode& node = *nodeByIndex_[nodeIndex];
 
-                if (!rootNode)
-                    rootNode = nodeByIndex_[nodeIndex];
-                else
-                {
-                    rootNode = GetCommonParent(*rootNode, node);
-                    if (!rootNode)
-                        throw RuntimeException("Skin doesn't have common root node");
-                }
-            }
+        const GLTFNode* rootNode = nullptr;
+        for (int nodeIndex : sourceSkin.joints)
+        {
+            base_.CheckNode(nodeIndex);
+            const GLTFNode& node = *nodeByIndex_[nodeIndex];
 
             if (!rootNode)
-                throw RuntimeException("Skin doesn't have joints");
-
-            return *rootNode;
+                rootNode = nodeByIndex_[nodeIndex];
+            else
+            {
+                rootNode = GetCommonParent(*rootNode, node);
+                if (!rootNode)
+                    throw RuntimeException("Skin doesn't have common root node");
+            }
         }
+
+        if (!rootNode)
+            throw RuntimeException("Skin doesn't have joints");
+
+        return *rootNode;
+    }
+
+    bool IsValidSkeletonRootNode(const GLTFNode& skeletonNode, const tg::Skin& sourceSkin) const
+    {
+        for (int nodeIndex : sourceSkin.joints)
+        {
+            base_.CheckNode(nodeIndex);
+            GLTFNode& node = *nodeByIndex_[nodeIndex];
+            if (!IsChildOf(node, skeletonNode) && &node != &skeletonNode)
+            {
+                URHO3D_LOGWARNING("Skeleton node #{} is not a parent of joint node #{}", sourceSkin.skeleton, nodeIndex);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     void InitializeSkeletons()
