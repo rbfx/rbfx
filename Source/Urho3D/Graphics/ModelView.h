@@ -64,10 +64,12 @@ struct URHO3D_API ModelVertexFormat
 /// Warning: ModelVertex must be equivalent to an array of Vector4.
 struct URHO3D_API ModelVertex
 {
+    static const unsigned MaxBones = 4;
     static const unsigned MaxColors = ModelVertexFormat::MaxColors;
     static const unsigned MaxUVs = ModelVertexFormat::MaxUVs;
     /// Vertex elements corresponding to full ModelVertex.
     static const ea::vector<VertexElement> VertexElements;
+    using BoneArray = ea::array<ea::pair<unsigned, float>, MaxBones>;
 
     /// Position.
     Vector4 position_;
@@ -97,6 +99,8 @@ struct URHO3D_API ModelVertex
     Vector3 GetPosition() const { return static_cast<Vector3>(position_); }
     /// Return color from given channel.
     Color GetColor(unsigned i = 0) const { return static_cast<Color>(color_[i]); }
+    /// Return blend indices as integers.
+    BoneArray GetBlendIndicesAndWeights() const;
 
     /// Return whether the vertex has normal.
     bool HasNormal() const { return normal_ != Vector4::ZERO; }
@@ -163,6 +167,7 @@ struct URHO3D_API GeometryLODView
     unsigned CalculateNumMorphs() const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
+
     void InvalidateNormalsAndTangents();
     void RecalculateFlatNormals();
     void RecalculateSmoothNormals();
@@ -297,11 +302,14 @@ public:
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
+    /// Note: Does not mirror bones!
     void MirrorGeometriesX();
     /// Calculate normals for geometries without normals in vertex format. Resets tangents for affected geometries.
     void CalculateMissingNormals(bool flatNormals = false);
     /// Calculate tangents for geometries without tangents in vertex format.
     void CalculateMissingTangents();
+    /// Recalculate bounding boxes for bones.
+    void RecalculateBoneBoundingBoxes();
 
     /// Set contents
     /// @{

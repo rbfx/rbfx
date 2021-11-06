@@ -1042,7 +1042,6 @@ private:
             bone.SetInitialTransform(boneNode.position_, boneNode.rotation_, boneNode.scale_);
             if (boneIndex < skin.inverseBindMatrices_.size())
                 bone.offsetMatrix_ = skin.inverseBindMatrices_[boneIndex];
-            bone.SetLocalBoundingSphere(0.1f); // TODO: Remove this hack
         }
     }
 
@@ -2469,6 +2468,7 @@ private:
 
         modelView->CalculateMissingNormals(true);
         modelView->CalculateMissingTangents();
+        modelView->RecalculateBoneBoundingBoxes();
         modelView->Normalize();
         return modelView;
     }
@@ -3108,6 +3108,19 @@ private:
     ea::vector<ImportedScene> scenes_;
 };
 
+void ValidateExtensions(const tg::Model& model)
+{
+    static const ea::unordered_set<ea::string> supportedExtensions = {
+        "KHR_materials_unlit"
+    };
+
+    for (const std::string& extension : model.extensionsUsed)
+    {
+        if (!supportedExtensions.contains(extension.c_str()))
+            URHO3D_LOGWARNING("Unsupported extension used: '{}'", extension.c_str());
+    }
+}
+
 tg::Model LoadGLTF(const ea::string& fileName)
 {
     tg::TinyGLTF loader;
@@ -3128,6 +3141,7 @@ tg::Model LoadGLTF(const ea::string& fileName)
     else
         throw RuntimeException("Unknown extension of file '{}'", fileName);
 
+    ValidateExtensions(model);
     return model;
 }
 
