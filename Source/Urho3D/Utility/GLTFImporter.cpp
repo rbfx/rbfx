@@ -2723,7 +2723,7 @@ private:
         if (animation.animationGroups_.size() <= 1)
             return namePrefix;
 
-        const ea::string groupSuffix = groupIndex ? ea::to_string(*groupIndex) : "_R";
+        const ea::string groupSuffix = groupIndex ? Format("_{}", *groupIndex) : "_R";
         return namePrefix + groupSuffix;
     }
 
