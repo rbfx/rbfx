@@ -442,6 +442,7 @@ struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
 
     ea::optional<unsigned> mesh_;
     ea::optional<unsigned> skin_;
+    ea::vector<float> morphWeights_;
 
     ea::vector<unsigned> containedInSkins_;
     /// @}
@@ -688,6 +689,18 @@ private:
         {
             base_.CheckMesh(sourceNode.mesh);
             node.mesh_ = sourceNode.mesh;
+
+            const unsigned numMorphs = numMorphsInMesh_[sourceNode.mesh];
+            if (numMorphs > 0)
+            {
+                const auto& morphWeights = !sourceNode.weights.empty()
+                    ? sourceNode.weights
+                    : model_.meshes[sourceNode.mesh].weights;
+
+                node.morphWeights_.resize(numMorphs);
+                if (!morphWeights.empty())
+                    ea::copy(morphWeights.begin(), morphWeights.end(), node.morphWeights_.begin());
+            }
         }
 
         if (sourceNode.skin >= 0)
@@ -2906,6 +2919,7 @@ private:
                 // Always create animated model in order to preserve moprh animation order
                 auto animatedModel = node->CreateComponent<AnimatedModel>();
                 InitializeComponentModelAndMaterials(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_);
+                InitializeDefaultMorphWeights(*animatedModel, skinnedMeshNode);
             }
 
             if (animationImporter_.HasAnimations())
@@ -2946,6 +2960,7 @@ private:
                 {
                     auto animatedModel = node->CreateComponent<AnimatedModel>();
                     InitializeComponentModelAndMaterials(*animatedModel, *sourceNode.mesh_, -1);
+                    InitializeDefaultMorphWeights(*animatedModel, sourceNode);
                 }
                 else
                 {
@@ -3024,6 +3039,16 @@ private:
                 skybox->SetMaterial(skyboxMaterial);
             }
         }
+    }
+
+    void InitializeDefaultMorphWeights(AnimatedModel& animatedModel, const GLTFNode& sourceNode)
+    {
+        const unsigned numMorphs = animatedModel.GetNumMorphs();
+        if (numMorphs != sourceNode.morphWeights_.size())
+            throw RuntimeException("Cannot setup mesh morphs");
+
+        for (unsigned morphIndex = 0; morphIndex < numMorphs; ++morphIndex)
+            animatedModel.SetMorphWeight(morphIndex, sourceNode.morphWeights_[morphIndex]);
     }
 
     static void RegisterNode(ImportedScene& importedScene, Node& node, const GLTFNode& sourceNode)
