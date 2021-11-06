@@ -567,7 +567,7 @@ float AnimationController::GetFadeTime(const ea::string& name) const
     unsigned index;
     AnimationState* state;
     FindAnimation(name, index, state);
-    return index != M_MAX_UNSIGNED ? animations_[index].targetWeight_ : 0.0f;
+    return index != M_MAX_UNSIGNED ? animations_[index].fadeTime_ : 0.0f;
 }
 
 float AnimationController::GetAutoFade(const ea::string& name) const
