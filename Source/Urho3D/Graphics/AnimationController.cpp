@@ -1055,7 +1055,13 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     const ea::string& startBoneName = state->GetStartBone();
     Node* startNode = !startBoneName.empty() ? node_->GetChild(startBoneName, true) : nullptr;
     if (!startNode)
-        startNode = node_;
+        startNode = model ? model->GetSkeleton().GetRootBone()->node_ : node_;
+
+    if (!startNode)
+    {
+        URHO3D_LOGWARNING("AnimatedModel skeleton is not initialized");
+        return;
+    }
 
     // Setup model and node tracks
     const auto& tracks = animation->GetTracks();

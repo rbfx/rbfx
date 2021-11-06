@@ -43,6 +43,7 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/ShaderConsts.h"
+#include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/BinaryFile.h"
 #include "../Resource/Image.h"
 #include "../Resource/ResourceCache.h"
@@ -123,7 +124,7 @@ public:
     ea::string CreateLocalResourceName(const ea::string& nameHint,
         const ea::string& prefix, const ea::string& defaultName, const ea::string& suffix)
     {
-        const ea::string body = !nameHint.empty() ? nameHint : defaultName;
+        const ea::string body = !nameHint.empty() ? SanitizeName(nameHint) : defaultName;
         for (unsigned i = 0; i < MaxNameAssignTries; ++i)
         {
             const ea::string_view nameFormat = i != 0 ? "{0}{1}_{2}{3}" : "{0}{1}{3}";
@@ -197,6 +198,18 @@ public:
     void CheckTexture(int index) const { CheckT(index, model_.textures, "Invalid texture #{} referenced"); }
 
 private:
+    static ea::string SanitizeName(const ea::string& name)
+    {
+        static const ea::string32 forbiddenSymbols = U"<>:\"/\\|?*";
+
+        ea::string32 unicodeString{ ea::string32::CtorConvert{}, name };
+        for (char32_t ch = 0; ch < 31; ++ch)
+            unicodeString.replace(ch, ' ');
+        for (char32_t ch : forbiddenSymbols)
+            unicodeString.replace(ch, '_');
+        return { ea::string::CtorConvert{}, unicodeString };
+    }
+
     template <class T>
     void CheckT(int index, const T& container, const char* message) const
     {
@@ -521,7 +534,6 @@ struct GLTFAnimationTrackGroup
 };
 
 /// Represents preprocessed GLTF animation which may correspond to one or more Urho animations.
-/// TODO: Animation tracks may have duplicate names, conflicts will be resolved later?
 struct GLTFAnimation
 {
     unsigned index_{};
@@ -2883,6 +2895,13 @@ private:
         scene->SetFileName(base_.GetAbsoluteFileName(sceneName));
         scene->CreateComponent<Octree>();
 
+        // TODO: Make configurable
+        auto renderPipeline = scene->CreateComponent<RenderPipeline>();
+        auto settings = renderPipeline->GetSettings();
+        settings.sceneProcessor_.pcfKernelSize_ = 5;
+        settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
+        renderPipeline->SetSettings(settings);
+
         Node* rootNode = scene->CreateChild("Imported Scene");
 
         if (animationImporter_.HasSceneAnimations())
@@ -2985,6 +3004,7 @@ private:
             return;
 
         staticModel.SetModel(model);
+        staticModel.SetCastShadows(true);
 
         const StringVector& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
         for (unsigned i = 0; i < materialList.size(); ++i)
@@ -3016,6 +3036,7 @@ private:
             node->SetDirection({ 1.0f, -2.0f, -1.0f });
             auto light = node->CreateComponent<Light>();
             light->SetLightType(LIGHT_DIRECTIONAL);
+            light->SetCastShadows(true);
         }
 
         if (!scene->GetComponent<Zone>(true) && !scene->GetComponent<Skybox>(true))
