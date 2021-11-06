@@ -239,6 +239,7 @@ bool ModelImporter::ExecuteImportFBX(const ea::string& inputFileName,
     if (fs->SystemRun("FBX2glTF", arguments, commandOutput) != 0)
         return false;
 
+    commandOutput.clear();
     return ExecuteImportGLTF(tempGltfFile, outputPath, outputResourceNamePrefix, commandOutput);
 }
 
