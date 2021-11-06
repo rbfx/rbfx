@@ -1983,7 +1983,7 @@ private:
     bool texturesCooked_{};
 };
 
-/// Utility to import materials.
+/// Utility to import materials. Only referenced materials are saved.
 class GLTFMaterialImporter : public NonCopyable
 {
 public:
@@ -2802,84 +2802,46 @@ private:
     bool hasSceneAnimations_{};
 };
 
-tg::Model LoadGLTF(const ea::string& fileName)
-{
-    tg::TinyGLTF loader;
-    loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
-
-    std::string errorMessage;
-    tg::Model model;
-    if (fileName.ends_with(".gltf"))
-    {
-        if (!loader.LoadASCIIFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
-            throw RuntimeException("Failed to import GLTF file '{}' due to error: {}", fileName, errorMessage.c_str());
-    }
-    else if (fileName.ends_with(".glb"))
-    {
-        if (!loader.LoadBinaryFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
-            throw RuntimeException("Failed to import GLTF file '{}' due to error: {}", fileName, errorMessage.c_str());
-    }
-    else
-        throw RuntimeException("Unknown extension of file '{}'", fileName);
-
-    return model;
-}
-
-}
-
-class GLTFImporter::Impl
+/// Utility to import scenes.
+class GLTFSceneImporter : public NonCopyable
 {
 public:
-    explicit Impl(Context* context, const ea::string& fileName,
-        const ea::string& outputPath, const ea::string& resourceNamePrefix)
-        : context_(context)
-        , importerContext_(context, LoadGLTF(fileName), outputPath, resourceNamePrefix)
-        , bufferReader_(importerContext_)
-        , hierarchyAnalyzer_(importerContext_, bufferReader_)
-        , textureImporter_(importerContext_)
-        , materialImporter_(importerContext_, textureImporter_)
-        , modelImporter_(importerContext_, bufferReader_, hierarchyAnalyzer_, materialImporter_)
-        , animationImporter_(importerContext_, hierarchyAnalyzer_)
+    GLTFSceneImporter(GLTFImporterBase& base, const GLTFHierarchyAnalyzer& hierarchyAnalyzer,
+        const GLTFModelImporter& modelImporter, const GLTFAnimationImporter& animationImporter)
+        : base_(base)
+        , hierarchyAnalyzer_(hierarchyAnalyzer)
+        , modelImporter_(modelImporter)
+        , animationImporter_(animationImporter)
     {
-        // TODO: Remove me
-        model_ = importerContext_.GetModel();
+        ImportScenes();
     }
 
-    bool CookResources()
+    void SaveResources()
     {
-        for (const tg::Scene& sourceScene : model_.scenes)
+        for (Scene* scene : importedScenes_)
+            base_.SaveResource(scene);
+    }
+
+private:
+    void ImportScenes()
+    {
+        for (const tg::Scene& sourceScene : base_.GetModel().scenes)
         {
             const auto scene = ImportScene(sourceScene);
             importedScenes_.push_back(scene);
         }
-
-        return true;
     }
 
-    bool SaveResources()
-    {
-        textureImporter_.SaveResources();
-        materialImporter_.SaveResources();
-        modelImporter_.SaveResources();
-        animationImporter_.SaveResources();
-
-        for (Scene* scene : importedScenes_)
-            importerContext_.SaveResource(scene);
-
-        return true;
-    }
-
-private:
     SharedPtr<Scene> ImportScene(const tg::Scene& sourceScene)
     {
         nodeToIndex_.clear();
         indexToNode_.clear();
 
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        const ea::string sceneName = importerContext_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
+        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
+        const ea::string sceneName = base_.GetResourceName(sourceScene.name.c_str(), "", "Scene", ".xml");
 
-        auto scene = MakeShared<Scene>(context_);
-        scene->SetFileName(importerContext_.GetAbsoluteFileName(sceneName));
+        auto scene = MakeShared<Scene>(base_.GetContext());
+        scene->SetFileName(base_.GetAbsoluteFileName(sceneName));
         scene->CreateComponent<Octree>();
 
         Node* rootNode = scene->CreateChild("Imported Scene");
@@ -2946,7 +2908,7 @@ private:
 
     void ImportNode(Node* parent, const GLTFNode& sourceNode)
     {
-        auto cache = context_->GetSubsystem<ResourceCache>();
+        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
 
         // Skip skinned mesh nodes w/o children because Urho instantiates such nodes at skeleton root.
         if (sourceNode.mesh_ && sourceNode.skin_ && sourceNode.children_.empty() && sourceNode.skinnedMeshNodes_.empty())
@@ -3051,6 +3013,70 @@ private:
         }
     }
 
+    GLTFImporterBase& base_;
+    const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
+    const GLTFModelImporter& modelImporter_;
+    const GLTFAnimationImporter& animationImporter_;
+
+    unsigned defaultAnimationIndex_{};
+
+    ea::vector<SharedPtr<Scene>> importedScenes_;
+    ea::unordered_map<Node*, unsigned> nodeToIndex_;
+    ea::unordered_map<unsigned, Node*> indexToNode_;
+};
+
+tg::Model LoadGLTF(const ea::string& fileName)
+{
+    tg::TinyGLTF loader;
+    loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
+
+    std::string errorMessage;
+    tg::Model model;
+    if (fileName.ends_with(".gltf"))
+    {
+        if (!loader.LoadASCIIFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
+            throw RuntimeException("Failed to import GLTF file '{}' due to error: {}", fileName, errorMessage.c_str());
+    }
+    else if (fileName.ends_with(".glb"))
+    {
+        if (!loader.LoadBinaryFromFile(&model, &errorMessage, nullptr, fileName.c_str()))
+            throw RuntimeException("Failed to import GLTF file '{}' due to error: {}", fileName, errorMessage.c_str());
+    }
+    else
+        throw RuntimeException("Unknown extension of file '{}'", fileName);
+
+    return model;
+}
+
+}
+
+class GLTFImporter::Impl
+{
+public:
+    explicit Impl(Context* context, const ea::string& fileName,
+        const ea::string& outputPath, const ea::string& resourceNamePrefix)
+        : importerContext_(context, LoadGLTF(fileName), outputPath, resourceNamePrefix)
+        , bufferReader_(importerContext_)
+        , hierarchyAnalyzer_(importerContext_, bufferReader_)
+        , textureImporter_(importerContext_)
+        , materialImporter_(importerContext_, textureImporter_)
+        , modelImporter_(importerContext_, bufferReader_, hierarchyAnalyzer_, materialImporter_)
+        , animationImporter_(importerContext_, hierarchyAnalyzer_)
+        , sceneImporter_(importerContext_, hierarchyAnalyzer_, modelImporter_, animationImporter_)
+    {
+    }
+
+    void SaveResources()
+    {
+        textureImporter_.SaveResources();
+        materialImporter_.SaveResources();
+        modelImporter_.SaveResources();
+        animationImporter_.SaveResources();
+        sceneImporter_.SaveResources();
+    }
+
+private:
+
     GLTFImporterBase importerContext_;
     const GLTFBufferReader bufferReader_;
     const GLTFHierarchyAnalyzer hierarchyAnalyzer_;
@@ -3058,21 +3084,7 @@ private:
     GLTFMaterialImporter materialImporter_;
     GLTFModelImporter modelImporter_;
     GLTFAnimationImporter animationImporter_;
-
-    Context* context_{};
-
-    /// Initialized after loading
-    /// @{
-    tg::Model model_;
-    /// @}
-
-    /// Initialized after cooking
-    /// @{
-    ea::vector<SharedPtr<Scene>> importedScenes_;
-    ea::unordered_map<Node*, unsigned> nodeToIndex_;
-    ea::unordered_map<unsigned, Node*> indexToNode_;
-    /// @}
-    unsigned defaultAnimationIndex_{};
+    GLTFSceneImporter sceneImporter_;
 };
 
 GLTFImporter::GLTFImporter(Context* context)
@@ -3101,22 +3113,6 @@ bool GLTFImporter::LoadFile(const ea::string& fileName,
     }
 }
 
-bool GLTFImporter::CookResources()
-{
-    try
-    {
-        if (!impl_)
-            throw RuntimeException("GLTF file wasn't loaded");
-
-        return impl_->CookResources();
-    }
-    catch(const RuntimeException& e)
-    {
-        URHO3D_LOGERROR("{}", e.what());
-        return false;
-    }
-}
-
 bool GLTFImporter::SaveResources()
 {
     try
@@ -3124,7 +3120,8 @@ bool GLTFImporter::SaveResources()
         if (!impl_)
             throw RuntimeException("Imported asserts weren't cooked");
 
-        return impl_->SaveResources();
+        impl_->SaveResources();
+        return true;
     }
     catch(const RuntimeException& e)
     {

@@ -55,56 +55,12 @@ void ImportGLTFCommand::Execute()
     auto importer = MakeShared<GLTFImporter>(context_);
     if (importer->LoadFile(inputFileName_, outputDirectory_, resourceNamePrefix_))
     {
-        if (importer->CookResources())
+        fs->CreateDirsRecursive(outputDirectory_);
+        if (importer->SaveResources())
         {
-            fs->CreateDirsRecursive(outputDirectory_);
-            if (importer->SaveResources())
-            {
-                return;
-            }
+            return;
         }
     }
-    /*auto* project = GetSubsystem<Project>();
-    auto* editor = GetSubsystem<Editor>();
-    auto* fs = context_->GetSubsystem<FileSystem>();
-
-    if (project == nullptr)
-    {
-        editor->ErrorExit("ImportGLTFCommand subcommand requires project being loaded.");
-        return;
-    }
-
-    Scene scene(context_);
-    File file(context_);
-    if (file.Open(input_, FILE_READ))
-    {
-        if (scene.LoadXML(file))
-        {
-            // Remove components that should not be shipped in the final product
-            if (auto* component = scene.GetComponent<EditorSceneSettings>())
-                component->Remove();
-
-            // Cook scene
-            assert(input_.starts_with(project->GetResourcePath()));
-            auto resourceName = input_.substr(project->GetResourcePath().length());
-            fs->CreateDirsRecursive(GetPath(output_));
-
-            File output(context_);
-            if (output.Open(output_, FILE_WRITE))
-            {
-                if (!scene.Save(output))
-                    editor->ErrorExit(Format("Could not convert '{}' to binary version.", input_));
-                else
-                    fs->SetLastModifiedTime(output_, fs->GetLastModifiedTime(input_));
-            }
-            else
-                editor->ErrorExit(Format("Could not open '{}' for writing.", output_));
-        }
-        else
-            editor->ErrorExit(Format("Could not open load scene '{}'.", input_));
-    }
-    else
-        editor->ErrorExit(Format("Could not open open '{}' for reading.", input_));*/
 }
 
 }
