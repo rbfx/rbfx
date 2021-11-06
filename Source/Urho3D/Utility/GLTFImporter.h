@@ -32,6 +32,8 @@ namespace Urho3D
 {
 
 /// Utility class to load GLTF file and save it as Urho resources.
+/// It may modify Context singletons, so it's better to use this utility from separate executable.
+/// TODO: Remove imported resources from cache on destruction?
 class URHO3D_API GLTFImporter : public Object
 {
     URHO3D_OBJECT(GLTFImporter, Object);
@@ -40,11 +42,9 @@ public:
     GLTFImporter(Context* context);
     ~GLTFImporter() override;
 
-    /// Load GLTF files and import resources.
+    /// Load GLTF files and import resources. Injects resources into resource cache!
     bool LoadFile(const ea::string& fileName,
         const ea::string& outputPath, const ea::string& resourceNamePrefix);
-    /// Cook imported resources and assign file and resource names.
-    bool CookResources();
     /// Save generated resources.
     bool SaveResources();
 
