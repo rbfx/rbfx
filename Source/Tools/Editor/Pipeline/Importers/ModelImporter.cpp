@@ -35,10 +35,27 @@ namespace Urho3D
 namespace
 {
 
+bool IsFileNameFBX(const ea::string& fileName)
+{
+    return fileName.ends_with(".fbx");
+}
+
 bool IsFileNameGLTF(const ea::string& fileName)
 {
     return fileName.ends_with(".gltf")
         || fileName.ends_with(".glb");
+}
+
+bool IsFbxToGltfAvailable()
+{
+    auto context = Context::GetInstance();
+    if (!context)
+        return false;
+
+    ea::string dummy;
+    auto fs = context->GetSubsystem<FileSystem>();
+    static const bool result = fs->SystemRun("FBX2glTF", {}, dummy) >= 0;
+    return result;
 }
 
 static const char* MODEL_IMPORTER_OUTPUT_ANIM = "Output animations";
@@ -84,10 +101,10 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 
     // A path mimicking structure of cache directory, but with byproducts of this import procedure only. It serves us to allow easy
     // detection of all byproducts of this import procedure.
-    ea::string tempPath = Format("{}Temp.{}/", AddTrailingSlash(project->GetProjectPath()), GenerateUUID());
+    const ea::string tempPath = GenerateTemporaryPath();
     // Actual output destination AssetImporter will be writing.
-    ea::string resourceBaseName = GetPath(input->GetName()) + AddTrailingSlash(GetFileName(input->GetName()));  // Strips file extension
-    ea::string tempOutput = tempPath + resourceBaseName;
+    const ea::string resourceBaseName = GetPath(input->GetName()) + AddTrailingSlash(GetFileName(input->GetName()));  // Strips file extension
+    const ea::string tempOutput = tempPath + resourceBaseName;
 
     const TemporaryDir tempDirectoryHolder(context_, tempPath);
 
@@ -136,18 +153,20 @@ bool ModelImporter::ImportAssetToFolder(Asset* inputAsset,
     const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
 {
     if (IsFileNameGLTF(inputAsset->GetName()))
-        return ExecuteImportGLTF(inputAsset, outputPath, outputResourceNamePrefix, commandOutput);
+        return ExecuteImportGLTF(inputAsset->GetResourcePath(), outputPath, outputResourceNamePrefix, commandOutput);
+    else if (IsFileNameFBX(inputAsset->GetName()) && IsFbxToGltfAvailable())
+        return ExecuteImportFBX(inputAsset->GetResourcePath(), outputPath, outputResourceNamePrefix, commandOutput);
     else
-        return ExecuteAssimp(inputAsset, outputPath, outputResourceNamePrefix, commandOutput);
+        return ExecuteAssimp(inputAsset->GetResourcePath(), outputPath, outputResourceNamePrefix, commandOutput);
 }
 
-bool ModelImporter::ExecuteAssimp(Asset* inputAsset,
+bool ModelImporter::ExecuteAssimp(const ea::string& inputFileName,
     const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
 {
     auto* fs = context_->GetSubsystem<FileSystem>();
 
     const ea::string outputFileName = outputPath + "Model.mdl";
-    ea::vector<ea::string> args{ "model", inputAsset->GetResourcePath(), outputFileName };
+    ea::vector<ea::string> args{ "model", inputFileName, outputFileName };
 
     if (!GetAttribute(MODEL_IMPORTER_OUTPUT_ANIM).GetBool())
         args.emplace_back("-na");
@@ -182,7 +201,7 @@ bool ModelImporter::ExecuteAssimp(Asset* inputAsset,
     return fs->SystemRun(fs->GetProgramDir() + "AssetImporter", args, commandOutput) == 0;
 }
 
-bool ModelImporter::ExecuteImportGLTF(Asset* inputAsset,
+bool ModelImporter::ExecuteImportGLTF(const ea::string& inputFileName,
     const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
 {
     auto fs = context_->GetSubsystem<FileSystem>();
@@ -193,7 +212,7 @@ bool ModelImporter::ExecuteImportGLTF(Asset* inputAsset,
         project->GetProjectPath(),
         "ImportGLTFCommand",
         "--input",
-        inputAsset->GetResourcePath(),
+        inputFileName,
         "--output",
         outputPath,
         "--prefix",
@@ -203,15 +222,41 @@ bool ModelImporter::ExecuteImportGLTF(Asset* inputAsset,
     return editor->RunEditorInstance(arguments, commandOutput) == 0;
 }
 
+bool ModelImporter::ExecuteImportFBX(const ea::string& inputFileName,
+    const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
+{
+    const ea::string tempPath = GenerateTemporaryPath();
+    const ea::string tempGltfFile = tempPath + "model.gltf";
+    const TemporaryDir tempDirectoryHolder(context_, tempPath);
+    const StringVector arguments{
+        "--input",
+        inputFileName,
+        "--output",
+        tempGltfFile
+    };
+
+    auto fs = context_->GetSubsystem<FileSystem>();
+    if (fs->SystemRun("FBX2glTF", arguments, commandOutput) != 0)
+        return false;
+
+    return ExecuteImportGLTF(tempGltfFile, outputPath, outputResourceNamePrefix, commandOutput);
+}
+
+ea::string ModelImporter::GenerateTemporaryPath() const
+{
+    auto project = GetSubsystem<Project>();
+    return Format("{}Temp.{}/", AddTrailingSlash(project->GetProjectPath()), GenerateUUID());
+}
+
 bool ModelImporter::Accepts(const ea::string& path) const
 {
-    if (path.ends_with(".fbx"))
+    if (IsFileNameFBX(path) && IsFbxToGltfAvailable())
+        return true;
+    if (IsFileNameGLTF(path))
         return true;
     if (path.ends_with(".blend"))
         return true;
     if (path.ends_with(".obj"))
-        return true;
-    if (IsFileNameGLTF(path))
         return true;
     return false;
 }

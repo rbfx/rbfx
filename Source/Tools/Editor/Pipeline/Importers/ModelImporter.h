@@ -42,10 +42,13 @@ public:
 protected:
     bool ImportAssetToFolder(Asset* inputAsset,
         const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
-    bool ExecuteAssimp(Asset* inputAsset,
+    bool ExecuteAssimp(const ea::string& inputFileName,
         const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
-    bool ExecuteImportGLTF(Asset* inputAsset,
+    bool ExecuteImportGLTF(const ea::string& inputFileName,
         const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    bool ExecuteImportFBX(const ea::string& inputFileName,
+        const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    ea::string GenerateTemporaryPath() const;
 
     ///
     bool outputAnimations_ = true;
