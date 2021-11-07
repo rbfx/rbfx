@@ -42,6 +42,11 @@ bool IsFileNameFBX(const ea::string& fileName)
     return fileName.ends_with(".fbx");
 }
 
+bool IsFileNameBlend(const ea::string& fileName)
+{
+    return fileName.ends_with(".blend");
+}
+
 bool IsFileNameGLTF(const ea::string& fileName)
 {
     return fileName.ends_with(".gltf")
@@ -56,7 +61,19 @@ bool IsFbxToGltfAvailable()
 
     ea::string dummy;
     auto fs = context->GetSubsystem<FileSystem>();
-    static const bool result = fs->SystemRun("FBX2glTF", {}, dummy) >= 0;
+    static const bool result = fs->SystemRun("FBX2glTF", {"-h"}, dummy) >= 0;
+    return result;
+}
+
+bool IsBlenderAvailable()
+{
+    auto context = Context::GetInstance();
+    if (!context)
+        return false;
+
+    ea::string dummy;
+    auto fs = context->GetSubsystem<FileSystem>();
+    static const bool result = fs->SystemRun("blender", {"-b", "-noaudio", "--python-expr", "import bpy; bpy.ops.wm.quit_blender()"}, dummy) >= 0;
     return result;
 }
 
@@ -155,11 +172,32 @@ bool ModelImporter::ImportAssetToFolder(Asset* inputAsset,
     const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
 {
     if (IsFileNameGLTF(inputAsset->GetName()))
+    {
         return ExecuteImportGLTF(inputAsset->GetResourcePath(), outputPath, outputResourceNamePrefix, commandOutput);
-    else if (IsFileNameFBX(inputAsset->GetName()) && IsFbxToGltfAvailable())
+    }
+    else if (IsFileNameFBX(inputAsset->GetName()))
+    {
+        if (!IsFbxToGltfAvailable())
+        {
+            commandOutput = "Cannot import FBX model without 'FBX2glTF' available in system path";
+            return false;
+        }
         return ExecuteImportFBX(inputAsset->GetResourcePath(), outputPath, outputResourceNamePrefix, commandOutput);
+    }
+    else if (IsFileNameBlend(inputAsset->GetName()))
+    {
+        if (!IsBlenderAvailable())
+        {
+            commandOutput = "Cannot import Blend model without 'blender' available in system path";
+            return false;
+        }
+        return ExecuteImportBlend(inputAsset->GetResourcePath(), outputPath, outputResourceNamePrefix, commandOutput);
+    }
     else
+    {
+        // Legacy fallback, remove it later
         return ExecuteAssimp(inputAsset->GetResourcePath(), outputPath, outputResourceNamePrefix, commandOutput);
+    }
 }
 
 bool ModelImporter::ExecuteAssimp(const ea::string& inputFileName,
@@ -258,6 +296,27 @@ bool ModelImporter::ExecuteImportFBX(const ea::string& inputFileName,
     return ExecuteImportGLTF(tempGltfFile, outputPath, outputResourceNamePrefix, commandOutput);
 }
 
+bool ModelImporter::ExecuteImportBlend(const ea::string& inputFileName,
+    const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput)
+{
+    const ea::string tempPath = GenerateTemporaryPath();
+    const ea::string tempGltfFile = tempPath + "model.gltf";
+    const TemporaryDir tempDirectoryHolder(context_, tempPath);
+    const StringVector arguments{
+        "-b",
+        inputFileName,
+        "--python-expr",
+        Format("import bpy; bpy.ops.export_scene.gltf(filepath='{}', export_format='GLTF_EMBEDDED')", tempGltfFile)
+    };
+
+    auto fs = context_->GetSubsystem<FileSystem>();
+    if (fs->SystemRun("blender", arguments, commandOutput) != 0)
+        return false;
+
+    commandOutput.clear();
+    return ExecuteImportGLTF(tempGltfFile, outputPath, outputResourceNamePrefix, commandOutput);
+}
+
 ea::string ModelImporter::GenerateTemporaryPath() const
 {
     auto project = GetSubsystem<Project>();
@@ -266,11 +325,11 @@ ea::string ModelImporter::GenerateTemporaryPath() const
 
 bool ModelImporter::Accepts(const ea::string& path) const
 {
-    if (IsFileNameFBX(path) && IsFbxToGltfAvailable())
+    if (IsFileNameFBX(path))
         return true;
     if (IsFileNameGLTF(path))
         return true;
-    if (path.ends_with(".blend"))
+    if (IsFileNameBlend(path))
         return true;
     if (path.ends_with(".obj"))
         return true;
