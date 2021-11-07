@@ -23,6 +23,8 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/Resource/JSONArchive.h>
+#include <Urho3D/Utility/GLTFImporter.h>
 
 #include "Editor.h"
 #include "Project.h"
@@ -208,6 +210,17 @@ bool ModelImporter::ExecuteImportGLTF(const ea::string& inputFileName,
     auto project = GetSubsystem<Project>();
     auto editor = GetSubsystem<Editor>();
 
+    GLTFImporterSettings settings;
+    ea::string settingsString;
+    {
+        auto jsonFile = MakeShared<JSONFile>(context_);
+        JSONOutputArchive archive(jsonFile);
+        SerializeValue(archive, "settings", settings);
+        settingsString = jsonFile->ToString("");
+        settingsString.replace("\n", "");
+        settingsString.replace('"', '\'');
+    }
+
     const StringVector arguments{
         project->GetProjectPath(),
         "ImportGLTFCommand",
@@ -216,7 +229,9 @@ bool ModelImporter::ExecuteImportGLTF(const ea::string& inputFileName,
         "--output",
         outputPath,
         "--prefix",
-        outputResourceNamePrefix
+        outputResourceNamePrefix,
+        "--settings",
+        settingsString
     };
 
     return editor->RunEditorInstance(arguments, commandOutput) == 0;

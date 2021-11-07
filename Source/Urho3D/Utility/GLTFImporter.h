@@ -25,11 +25,32 @@
 #pragma once
 
 #include "../Core/Object.h"
+#include "../IO/Archive.h"
 
 #include <EASTL/unique_ptr.h>
 
 namespace Urho3D
 {
+
+struct GLTFImporterSettings
+{
+    /// Whether to add directional light source if scene doesn't contain any light sources.
+    bool addLights_{ true };
+
+    /// Whether to add skybox background. Doesn't affect object reflections!
+    bool addSkybox_{ true };
+    ea::string skyboxMaterial_{ "Materials/Skybox.xml" };
+
+    /// Whether to add cubemap for reflections
+    bool addReflectionProbe_{ true };
+    ea::string reflectionProbeCubemap_{ "Textures/Skybox.xml" };
+
+    bool highRenderQuality_{ true };
+    float offsetMatrixError_{ 0.00002f };
+    float keyFrameTimeError_{ M_EPSILON };
+};
+
+URHO3D_API bool SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
 
 /// Utility class to load GLTF file and save it as Urho resources.
 /// It may modify Context singletons, so it's better to use this utility from separate executable.
@@ -39,7 +60,7 @@ class URHO3D_API GLTFImporter : public Object
     URHO3D_OBJECT(GLTFImporter, Object);
 
 public:
-    GLTFImporter(Context* context);
+    GLTFImporter(Context* context, const GLTFImporterSettings& settings);
     ~GLTFImporter() override;
 
     /// Load GLTF files and import resources. Injects resources into resource cache!
@@ -50,6 +71,7 @@ public:
 
 private:
     class Impl;
+    const GLTFImporterSettings settings_;
     ea::unique_ptr<Impl> impl_;
 };
 

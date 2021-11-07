@@ -40,6 +40,7 @@
 #include "../Graphics/Skybox.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Zone.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/ShaderConsts.h"
@@ -112,9 +113,10 @@ static auto transformMirrorX = [](const auto& value) { return MirrorX(value); };
 class GLTFImporterBase : public NonCopyable
 {
 public:
-    GLTFImporterBase(Context* context, tg::Model model,
+    GLTFImporterBase(Context* context, const GLTFImporterSettings& settings, tg::Model model,
         const ea::string& outputPath, const ea::string& resourceNamePrefix)
         : context_(context)
+        , settings_(settings)
         , model_(ea::move(model))
         , outputPath_(outputPath)
         , resourceNamePrefix_(resourceNamePrefix)
@@ -185,6 +187,7 @@ public:
 
     const tg::Model& GetModel() const { return model_; }
     Context* GetContext() const { return context_; }
+    const GLTFImporterSettings& GetSettings() const { return settings_; }
 
     void CheckAnimation(int index) const { CheckT(index, model_.animations, "Invalid animation #{} referenced"); }
     void CheckAccessor(int index) const { CheckT(index, model_.accessors, "Invalid accessor #{} referenced"); }
@@ -218,6 +221,7 @@ private:
     }
 
     Context* const context_{};
+    const GLTFImporterSettings settings_;
     const tg::Model model_;
     const ea::string outputPath_;
     const ea::string resourceNamePrefix_;
@@ -1111,13 +1115,13 @@ private:
             const bool areBonesMatching = ea::identical(
                 existingSkin.cookedBones_.begin(), existingSkin.cookedBones_.end(),
                 newSkin.cookedBones_.begin(), newSkin.cookedBones_.end(),
-                [](const BoneView& lhs, const BoneView& rhs)
+                [&](const BoneView& lhs, const BoneView& rhs)
             {
                 if (lhs.name_ != rhs.name_)
                     return false;
                 if (lhs.parentIndex_ != rhs.parentIndex_)
                     return false;
-                if (!lhs.offsetMatrix_.Equals(rhs.offsetMatrix_, 0.00002f)) // TODO: Make configurable
+                if (!lhs.offsetMatrix_.Equals(rhs.offsetMatrix_, base_.GetSettings().offsetMatrixError_))
                     return false;
                 // Don't compare initial transforms and bounding shapes
                 return true;
@@ -2719,7 +2723,8 @@ private:
             AnimationTrack* track = animation->CreateTrack(boneName);
             track->channelMask_ = boneTrack.channelMask_;
 
-            const auto keyTimes = MergeTimes({ &boneTrack.positionKeys_, &boneTrack.rotationKeys_, &boneTrack.scaleKeys_ });
+            const float epsilon = base_.GetSettings().keyFrameTimeError_;
+            const auto keyTimes = MergeTimes({ &boneTrack.positionKeys_, &boneTrack.rotationKeys_, &boneTrack.scaleKeys_ }, epsilon);
             const auto keyPositions = RemapAnimationVector(keyTimes, boneTrack.positionKeys_, boneTrack.positionValues_);
             const auto keyRotations = RemapAnimationVector(keyTimes, boneTrack.rotationKeys_, boneTrack.rotationValues_);
             const auto keyScales = RemapAnimationVector(keyTimes, boneTrack.scaleKeys_, boneTrack.scaleValues_);
@@ -2774,7 +2779,7 @@ private:
         return namePrefix + groupSuffix;
     }
 
-    static ea::vector<float> MergeTimes(std::initializer_list<const ea::vector<float>*> vectors)
+    static ea::vector<float> MergeTimes(std::initializer_list<const ea::vector<float>*> vectors, float epsilon)
     {
         ea::vector<float> result;
         for (const auto* input : vectors)
@@ -2784,7 +2789,7 @@ private:
         unsigned lastValidIndex = 0;
         for (unsigned i = 1; i < result.size(); ++i)
         {
-            if (result[i] - result[lastValidIndex] < M_EPSILON)
+            if (result[i] - result[lastValidIndex] < epsilon)
                 result[i] = -M_LARGE_VALUE;
             else
                 lastValidIndex = i;
@@ -2902,12 +2907,14 @@ private:
         scene->SetFileName(base_.GetAbsoluteFileName(sceneName));
         scene->CreateComponent<Octree>();
 
-        // TODO: Make configurable
         auto renderPipeline = scene->CreateComponent<RenderPipeline>();
-        auto settings = renderPipeline->GetSettings();
-        settings.sceneProcessor_.pcfKernelSize_ = 5;
-        settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
-        renderPipeline->SetSettings(settings);
+        if (base_.GetSettings().highRenderQuality_)
+        {
+            auto settings = renderPipeline->GetSettings();
+            settings.sceneProcessor_.pcfKernelSize_ = 5;
+            settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
+            renderPipeline->SetSettings(settings);
+        }
 
         Node* rootNode = scene->CreateChild("Imported Scene");
 
@@ -3034,8 +3041,9 @@ private:
 
         auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
         auto scene = importedScene.scene_;
+        const GLTFImporterSettings& settings = base_.GetSettings();
 
-        if (!scene->GetComponent<Light>(true))
+        if (settings.addLights_ && !scene->GetComponent<Light>(true))
         {
             // Model forward is Z+, make default lighting from top right when looking at forward side of model.
             Node* node = scene->CreateChild("Default Light");
@@ -3046,25 +3054,39 @@ private:
             light->SetCastShadows(true);
         }
 
-        if (!scene->GetComponent<Zone>(true) && !scene->GetComponent<Skybox>(true))
+        if (settings.addSkybox_ && !scene->GetComponent<Skybox>(true))
         {
-            auto skyboxMaterial = cache->GetResource<Material>("Materials/Skybox.xml");
-            auto skyboxTexture = cache->GetResource<TextureCube>("Textures/Skybox.xml");
-            auto boxModel = cache->GetResource<Model>("Models/Box.mdl");
+            static const ea::string skyboxModelName = "Models/Box.mdl";
 
-            if (skyboxMaterial && skyboxTexture && boxModel)
+            auto skyboxMaterial = cache->GetResource<Material>("Materials/Skybox.xml");
+            auto boxModel = cache->GetResource<Model>(skyboxModelName);
+
+            if (!skyboxMaterial)
+                URHO3D_LOGWARNING("Cannot add default skybox with material '{}'", settings.skyboxMaterial_);
+            else if (!boxModel)
+                URHO3D_LOGWARNING("Cannot add default skybox with model '{}'", skyboxModelName);
+            else
+            {
+                Node* skyboxNode = scene->CreateChild("Default Skybox");
+                skyboxNode->SetPosition(defaultPosition);
+                auto skybox = skyboxNode->CreateComponent<Skybox>();
+                skybox->SetModel(boxModel);
+                skybox->SetMaterial(skyboxMaterial);
+            }
+        }
+
+        if (settings.addReflectionProbe_ && !scene->GetComponent<Zone>(true))
+        {
+            auto skyboxTexture = cache->GetResource<TextureCube>(settings.reflectionProbeCubemap_);
+            if (!skyboxTexture)
+                URHO3D_LOGWARNING("Cannot add default reflection probe with material '{}'", settings.reflectionProbeCubemap_);
+            else
             {
                 Node* zoneNode = scene->CreateChild("Default Zone");
                 zoneNode->SetPosition(defaultPosition);
                 auto zone = zoneNode->CreateComponent<Zone>();
                 zone->SetBackgroundBrightness(0.5f);
                 zone->SetZoneTexture(skyboxTexture);
-
-                Node* skyboxNode = scene->CreateChild("Default Skybox");
-                skyboxNode->SetPosition(defaultPosition);
-                auto skybox = skyboxNode->CreateComponent<Skybox>();
-                skybox->SetModel(boxModel);
-                skybox->SetMaterial(skyboxMaterial);
             }
         }
     }
@@ -3157,9 +3179,9 @@ tg::Model LoadGLTF(const ea::string& fileName)
 class GLTFImporter::Impl
 {
 public:
-    explicit Impl(Context* context, const ea::string& fileName,
+    explicit Impl(Context* context, const GLTFImporterSettings& settings, const ea::string& fileName,
         const ea::string& outputPath, const ea::string& resourceNamePrefix)
-        : importerContext_(context, LoadGLTF(fileName), outputPath, resourceNamePrefix)
+        : importerContext_(context, settings, LoadGLTF(fileName), outputPath, resourceNamePrefix)
         , bufferReader_(importerContext_)
         , hierarchyAnalyzer_(importerContext_, bufferReader_)
         , textureImporter_(importerContext_)
@@ -3180,7 +3202,6 @@ public:
     }
 
 private:
-
     GLTFImporterBase importerContext_;
     const GLTFBufferReader bufferReader_;
     const GLTFHierarchyAnalyzer hierarchyAnalyzer_;
@@ -3191,8 +3212,25 @@ private:
     GLTFSceneImporter sceneImporter_;
 };
 
-GLTFImporter::GLTFImporter(Context* context)
+bool SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+    {
+        SerializeValue(archive, "addLights", value.addLights_);
+        SerializeValue(archive, "addSkybox", value.addSkybox_);
+        SerializeValue(archive, "skyboxMaterial", value.skyboxMaterial_);
+        SerializeValue(archive, "addReflectionProbe", value.addReflectionProbe_);
+        SerializeValue(archive, "reflectionProbeCubemap", value.reflectionProbeCubemap_);
+        SerializeValue(archive, "highRenderQuality", value.highRenderQuality_);
+        SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
+        SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
+    }
+    return !archive.HasError();
+}
+
+GLTFImporter::GLTFImporter(Context* context, const GLTFImporterSettings& settings)
     : Object(context)
+    , settings_(settings)
 {
 
 }
@@ -3207,7 +3245,7 @@ bool GLTFImporter::LoadFile(const ea::string& fileName,
 {
     try
     {
-        impl_ = ea::make_unique<Impl>(context_, fileName, outputPath, resourceNamePrefix);
+        impl_ = ea::make_unique<Impl>(context_, settings_, fileName, outputPath, resourceNamePrefix);
         return true;
     }
     catch(const RuntimeException& e)

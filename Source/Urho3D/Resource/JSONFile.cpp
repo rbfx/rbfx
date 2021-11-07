@@ -258,7 +258,7 @@ ea::string JSONFile::ToString(const ea::string& indendation) const
 
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
-    writer.SetIndent(!indendation.empty() ? indendation.front() : '\0', indendation.length());
+    writer.SetIndent(!indendation.empty() ? indendation.front() : ' ', indendation.length());
 
     document.Accept(writer);
     return buffer.GetString();
