@@ -119,7 +119,7 @@ bool ResourceTab::RenderWindowContent()
     if (ui::BeginChild("##DirectoryTree", ui::GetContentRegionAvail()))
     {
         URHO3D_PROFILE("ResourceTab::DirectoryTree");
-        if (ui::TreeNodeEx("Root", ImGuiTreeNodeFlags_Leaf|ImGuiTreeNodeFlags_SpanFullWidth|(currentDir_.empty() ? ImGuiTreeNodeFlags_Selected : 0)))
+        if (ui::TreeNodeEx("Root", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanFullWidth | (currentDir_.empty() ? ImGuiTreeNodeFlags_Selected : 0)))
         {
             if (ui::IsItemClicked(MOUSEB_LEFT))
             {
@@ -144,6 +144,8 @@ bool ResourceTab::RenderWindowContent()
     int i = 0;
     for (const ea::string& name : currentDirs_)
     {
+        ui::PushID(name.c_str());
+
         if (scrollToCurrent_ && selectedItem_ == name)
         {
             ui::SetScrollHereY();
@@ -183,15 +185,12 @@ bool ResourceTab::RenderWindowContent()
             isRenamingFrame_ = 0;
             SelectCurrentItemInspector();
         }
-        else if (ui::IsItemActive())
+        else if (ui::BeginDragDropSource())
         {
-            if (ui::BeginDragDropSource())
-            {
-                ea::string resourceName = currentDir_ + name;
-                ui::SetDragDropVariant("path", resourceName);
-                ui::TextUnformatted(resourceName.c_str());
-                ui::EndDragDropSource();
-            }
+            ea::string resourceName = currentDir_ + name;
+            ui::SetDragDropVariant("path", resourceName);
+            ui::TextUnformatted(resourceName.c_str());
+            ui::EndDragDropSource();
         }
         else if (ui::BeginDragDropTarget())
         {
@@ -226,6 +225,8 @@ bool ResourceTab::RenderWindowContent()
             }
             ui::EndDragDropTarget();
         }
+
+        ui::PopID();    // ui::PushID(name.c_str());
     }
 
     // Render files
@@ -235,6 +236,7 @@ bool ResourceTab::RenderWindowContent()
         // Asset may get deleted.
         if (asset == nullptr)
             continue;
+        ui::PushID(asset);
 
         ea::string name = GetFileNameAndExtension(asset->GetName());
         ea::string icon = GetFileIcon(asset->GetName());
@@ -273,23 +275,20 @@ bool ResourceTab::RenderWindowContent()
             isRenamingFrame_ = 0;
             SelectCurrentItemInspector();
         }
-        else if (ui::IsItemActive())
+        else if (ui::BeginDragDropSource())
         {
-            if (ui::BeginDragDropSource())
+            ea::string resourceName = currentDir_ + name;
+            ResourceContentTypes contentTypes;
+            GetContentResourceType(context_, resourceName, contentTypes);
+            ea::string dragType = "path";
+            for (StringHash type : contentTypes)
             {
-                ea::string resourceName = currentDir_ + name;
-                ResourceContentTypes contentTypes;
-                GetContentResourceType(context_, resourceName, contentTypes);
-                ea::string dragType = "path";
-                for (StringHash type : contentTypes)
-                {
-                    dragType += ",";
-                    dragType += type.ToString();
-                }
-                ui::SetDragDropVariant(dragType, resourceName);
-                ui::TextUnformatted(resourceName.c_str());
-                ui::EndDragDropSource();
+                dragType += ",";
+                dragType += type.ToString();
             }
+            ui::SetDragDropVariant(dragType, resourceName);
+            ui::TextUnformatted(resourceName.c_str());
+            ui::EndDragDropSource();
         }
 
         // Render asset byproducts
@@ -298,6 +297,8 @@ bool ResourceTab::RenderWindowContent()
         {
             for (ea::string byproduct : importer->GetByproducts())
             {
+                ui::PushID(byproduct.c_str());
+
                 ea::string byproductWithDir = byproduct.substr(currentDir_.size());
                 if (!indented)
                 {
@@ -336,28 +337,28 @@ bool ResourceTab::RenderWindowContent()
                     isRenamingFrame_ = 0;
                     SelectCurrentItemInspector();
                 }
-                else if (ui::IsItemActive())
+                else if (ui::BeginDragDropSource())
                 {
-                    if (ui::BeginDragDropSource())
+                    ea::string resourceName = currentDir_ + byproductWithDir;
+                    ResourceContentTypes contentTypes;
+                    GetContentResourceType(context_, resourceName, contentTypes);
+                    ea::string dragType = "path";
+                    for (StringHash type : contentTypes)
                     {
-                        ea::string resourceName = currentDir_ + byproductWithDir;
-                        ResourceContentTypes contentTypes;
-                        GetContentResourceType(context_, resourceName, contentTypes);
-                        ea::string dragType = "path";
-                        for (StringHash type : contentTypes)
-                        {
-                            dragType += ",";
-                            dragType += type.ToString();
-                        }
-                        ui::SetDragDropVariant(dragType, resourceName);
-                        ui::TextUnformatted(resourceName.c_str());
-                        ui::EndDragDropSource();
+                        dragType += ",";
+                        dragType += type.ToString();
                     }
+                    ui::SetDragDropVariant(dragType, resourceName);
+                    ui::TextUnformatted(resourceName.c_str());
+                    ui::EndDragDropSource();
                 }
+
+                ui::PopID();    // ui::PushID(byproduct.c_str());
             }
         }
         if (indented)
             ui::Unindent();
+        ui::PopID();    // ui::PushID(asset)
     }
 
     // Context menu when clicking empty area
@@ -550,20 +551,34 @@ void ResourceTab::ScanAssets()
             currentDirs_.insert_at(0, "..");
     }
 
+    // Remove dirs with no asset object (internal editor resource dirs)
+    for (auto it = currentDirs_.begin(); it != currentDirs_.end();)
+    {
+        if (pipeline->GetAsset(currentDir_ + *it) == nullptr)
+            it = currentDirs_.erase(it);
+        else
+            ++it;
+    }
+
     // Gather files from project resource paths and CoreData.
     currentFiles_.clear();
     cache->Scan(currentFiles_, currentDir_, "", SCAN_FILES, false);
     ea::sort(currentFiles_.begin(), currentFiles_.end());
     currentFiles_.erase(ea::unique(currentFiles_.begin(), currentFiles_.end()), currentFiles_.end());
 
-    // Gather assets
+    // Gather assets, or remove internal editor resource file names
     assets_.clear();
-    for (const ea::string& fileName : currentFiles_)
+    for (auto it = currentFiles_.begin(); it != currentFiles_.end();)
     {
-        ea::string resourceName = currentDir_ + fileName;
+        ea::string resourceName = currentDir_ + *it;
         // We may hit file names in resource cache, they would yield no asset.
         if (Asset* asset = pipeline->GetAsset(resourceName))
+        {
             assets_.emplace_back(asset);
+            ++it;
+        }
+        else
+            it = currentFiles_.erase(it);
     }
 }
 
@@ -803,12 +818,22 @@ void ResourceTab::ScanDirTree(StringVector& result, const eastl::string& path)
 {
     URHO3D_PROFILE("ResourceTab::ScanDirTree");
     ResourceCache* cache = GetSubsystem<ResourceCache>();
+    Pipeline* pipeline = GetSubsystem<Pipeline>();
     result.clear();
     cache->Scan(result, path, "", SCAN_DIRS, false);
     ea::sort(result.begin(), result.end());
     result.erase(ea::unique(result.begin(), result.end()), result.end());
     result.erase_first(".");
     result.erase_first("..");
+
+    // Remove dirs with no asset object (internal editor resource dirs)
+    for (auto it = result.begin(); it != result.end();)
+    {
+        if (pipeline->GetAsset(path + *it) == nullptr)
+            it = result.erase(it);
+        else
+            ++it;
+    }
 }
 
 void ResourceTab::RenderDeletionDialog()
