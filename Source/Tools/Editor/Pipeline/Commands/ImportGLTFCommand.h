@@ -42,6 +42,7 @@ protected:
     ea::string inputFileName_;
     ea::string outputDirectory_;
     ea::string resourceNamePrefix_;
+    ea::string settingsString_;
 };
 
 }

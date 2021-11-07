@@ -25,6 +25,7 @@
 
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Utility/GLTFImporter.h>
 
 namespace Urho3D
@@ -46,13 +47,26 @@ void ImportGLTFCommand::RegisterCommandLine(CLI::App& cli)
     cli.add_option("--input", inputFileName_, "GLTF file name.")->required();
     cli.add_option("--output", outputDirectory_, "Output directory.");
     cli.add_option("--prefix", resourceNamePrefix_, "Common prefix of output resources.");
+    cli.add_option("--settings", settingsString_, "JSON line with settings.");
 }
 
 void ImportGLTFCommand::Execute()
 {
     auto fs = GetSubsystem<FileSystem>();
 
-    auto importer = MakeShared<GLTFImporter>(context_);
+    GLTFImporterSettings settings;
+    if (!settingsString_.empty())
+    {
+        settingsString_.replace('\'', '"');
+        auto jsonFile = MakeShared<JSONFile>(context_);
+        if (!jsonFile->FromString(settingsString_))
+            return;
+
+        JSONInputArchive archive(jsonFile);
+        SerializeValue(archive, "settings", settings);
+    }
+
+    auto importer = MakeShared<GLTFImporter>(context_, settings);
     if (importer->LoadFile(inputFileName_, outputDirectory_, resourceNamePrefix_))
     {
         fs->CreateDirsRecursive(outputDirectory_);
