@@ -48,6 +48,8 @@ protected:
         const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
     bool ExecuteImportFBX(const ea::string& inputFileName,
         const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    bool ExecuteImportBlend(const ea::string& inputFileName,
+        const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
     ea::string GenerateTemporaryPath() const;
 
     ///
