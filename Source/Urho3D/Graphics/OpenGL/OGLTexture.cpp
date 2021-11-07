@@ -197,7 +197,7 @@ unsigned Texture::GetDataSize(int width, int height) const
             format_ == COMPRESSED_RGBA_PVRTC_2BPPV1_IMG)
         {
             const unsigned bpp = (format_ == COMPRESSED_RGB_PVRTC_2BPPV1_IMG ||
-                                format_ == COMPRESSED_RGBA_PVRTC_2BPPV1_IMG)?2:4;
+                                format_ == COMPRESSED_RGBA_PVRTC_2BPPV1_IMG) ? 2 : 4;
             
             const unsigned xSize =  (bpp == 2) ? 8 : 4;
             const unsigned blockSize = 8;
