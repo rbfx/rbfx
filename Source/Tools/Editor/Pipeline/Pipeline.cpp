@@ -174,30 +174,37 @@ Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
     auto* project = GetSubsystem<Project>();
     auto* fs = GetSubsystem<FileSystem>();
 
+    bool isVirtual = true;
+    bool isDirectory = false;
+    ea::string resourcePath, resourceDirName, actualResourceName;
     for (const ea::string& resourceDir : project->GetResourcePaths())
     {
-        ea::string resourcePath = Format("{}{}{}", project->GetProjectPath(), resourceDir, resourceName);
-        ea::string resourceDirName;
-        if (fs->DirExists(resourcePath))
+        resourcePath = Format("{}{}{}", project->GetProjectPath(), resourceDir, resourceName);
+        isDirectory = fs->DirExists(resourcePath);
+        if (fs->Exists(resourcePath))
         {
-            resourcePath = AddTrailingSlash(resourcePath);
-            resourceDirName = AddTrailingSlash(resourceName);
+            isVirtual = false;
+            break;
         }
-        const ea::string& actualResourceName = !resourceDirName.empty() ? resourceDirName : resourceName;
+    }
 
-        if (!fs->Exists(resourcePath) && !cache->Exists(actualResourceName))
-            continue;
+    if (isDirectory)
+    {
+        resourcePath = AddTrailingSlash(resourcePath);
+        actualResourceName = AddTrailingSlash(resourceName);
+    }
+    else
+        actualResourceName = resourceName;
 
-        auto it = assets_.find(actualResourceName);
-        if (it != assets_.end())
-            return it->second;
+    auto it = assets_.find(actualResourceName);
+    if (it != assets_.end())
+        return it->second;
 
-        if (!autoCreate)
-            return nullptr;
-
+    if (autoCreate && (isDirectory || !isVirtual))
+    {
         SharedPtr<Asset> asset(context_->CreateObject<Asset>());
         asset->SetName(actualResourceName);
-        asset->virtual_ = !fs->Exists(resourcePath);
+        asset->virtual_ = isVirtual;
         asset->resourcePath_ = resourcePath;    // TODO: Clean this up!
         asset->Load();
         assert(asset->GetName() == actualResourceName);
