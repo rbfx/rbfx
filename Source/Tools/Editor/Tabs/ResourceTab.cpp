@@ -551,20 +551,34 @@ void ResourceTab::ScanAssets()
             currentDirs_.insert_at(0, "..");
     }
 
+    // Remove dirs with no asset object (internal editor resource dirs)
+    for (auto it = currentDirs_.begin(); it != currentDirs_.end();)
+    {
+        if (pipeline->GetAsset(currentDir_ + *it) == nullptr)
+            it = currentDirs_.erase(it);
+        else
+            ++it;
+    }
+
     // Gather files from project resource paths and CoreData.
     currentFiles_.clear();
     cache->Scan(currentFiles_, currentDir_, "", SCAN_FILES, false);
     ea::sort(currentFiles_.begin(), currentFiles_.end());
     currentFiles_.erase(ea::unique(currentFiles_.begin(), currentFiles_.end()), currentFiles_.end());
 
-    // Gather assets
+    // Gather assets, or remove internal editor resource file names
     assets_.clear();
-    for (const ea::string& fileName : currentFiles_)
+    for (auto it = currentFiles_.begin(); it != currentFiles_.end();)
     {
-        ea::string resourceName = currentDir_ + fileName;
+        ea::string resourceName = currentDir_ + *it;
         // We may hit file names in resource cache, they would yield no asset.
         if (Asset* asset = pipeline->GetAsset(resourceName))
+        {
             assets_.emplace_back(asset);
+            ++it;
+        }
+        else
+            it = currentFiles_.erase(it);
     }
 }
 
@@ -804,12 +818,22 @@ void ResourceTab::ScanDirTree(StringVector& result, const eastl::string& path)
 {
     URHO3D_PROFILE("ResourceTab::ScanDirTree");
     ResourceCache* cache = GetSubsystem<ResourceCache>();
+    Pipeline* pipeline = GetSubsystem<Pipeline>();
     result.clear();
     cache->Scan(result, path, "", SCAN_DIRS, false);
     ea::sort(result.begin(), result.end());
     result.erase(ea::unique(result.begin(), result.end()), result.end());
     result.erase_first(".");
     result.erase_first("..");
+
+    // Remove dirs with no asset object (internal editor resource dirs)
+    for (auto it = result.begin(); it != result.end();)
+    {
+        if (pipeline->GetAsset(path + *it) == nullptr)
+            it = result.erase(it);
+        else
+            ++it;
+    }
 }
 
 void ResourceTab::RenderDeletionDialog()
