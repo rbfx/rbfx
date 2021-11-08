@@ -1,8 +1,8 @@
-<technique vs="PBRVegetation" ps="PBRLitSolid" psdefines="DIFFMAP PBR IBL">
+<technique vs="PBRVegetation" ps="PBRVegetation" psdefines="DIFFMAP IBL">
     <pass name="base" />
     <pass name="light" depthtest="equal" depthwrite="false" blend="add" />
     <pass name="material" psdefines="MATERIAL" depthtest="equal" depthwrite="false" />
     <pass name="deferred" psdefines="DEFERRED" />
-    <pass name="depth" vs="VegetationDepth" ps="Depth" />
-    <pass name="shadow" vs="VegetationShadow" ps="Shadow" />
+    <pass name="depth" vs="PBRVegetation" ps="PBRVegetation" />
+    <pass name="shadow" vs="PBRVegetation" ps="PBRVegetation" />
 </technique>
