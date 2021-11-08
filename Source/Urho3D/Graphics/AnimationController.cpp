@@ -1052,12 +1052,15 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     state->ClearAllTracks();
 
     // Use root node or start bone node if specified
+    // Note: bone tracks are resolved starting from root bone node,
+    // variant tracks are resolved from the node itself.
     const ea::string& startBoneName = state->GetStartBone();
     Node* startNode = !startBoneName.empty() ? node_->GetChild(startBoneName, true) : nullptr;
     if (!startNode)
-        startNode = model ? model->GetSkeleton().GetRootBone()->node_ : node_;
+        startNode = node_;
 
-    if (!startNode)
+    Node* startBone = startNode == node_ && model ? model->GetSkeleton().GetRootBone()->node_ : startNode;
+    if (!startBone)
     {
         URHO3D_LOGWARNING("AnimatedModel skeleton is not initialized");
         return;
@@ -1068,8 +1071,8 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     for (const auto& item : tracks)
     {
         const AnimationTrack& track = item.second;
-        Node* trackNode = track.nameHash_ == startNode->GetNameHash() ? startNode
-            : startNode->GetChild(track.nameHash_, true);
+        Node* trackNode = track.nameHash_ == startBone->GetNameHash() ? startBone
+            : startBone->GetChild(track.nameHash_, true);
         Bone* trackBone = model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
 
         // Add model track
