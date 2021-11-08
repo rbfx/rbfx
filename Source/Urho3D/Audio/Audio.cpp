@@ -168,6 +168,8 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, SpeakerMode speakerMode, 
             auto nextMode = AUDIO_MODE_DOWNGRADE[speakerMode];
             if (nextMode == speakerMode)
                 break;
+
+            speakerMode = nextMode;
         }
         if (deviceID_ == 0)
         {
@@ -207,6 +209,11 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, SpeakerMode speakerMode, 
             (interpolation_ ? "interpolated" : ""));
 
     return Play();
+}
+
+bool Audio::RefreshMode()
+{
+    return SetMode(bufferLengthMSec_, mixRate_, speakerMode_, interpolation_);
 }
 
 void Audio::Close()
