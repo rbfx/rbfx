@@ -2168,7 +2168,11 @@ private:
 
         ea::string shaderDefines;
         if (isAlphaMask)
+        {
             shaderDefines += "ALPHAMASK ";
+            // TODO: Add support in standard shader
+            material.SetShaderParameter("AlphaCutoff", static_cast<float>(sourceMaterial.alphaCutoff));
+        }
 
         if (isAlphaMask && sourceMaterial.alphaCutoff != 0.5)
             URHO3D_LOGWARNING("Material '{}' has non-standard alpha cutoff", sourceMaterial.name.c_str());
@@ -2260,6 +2264,9 @@ private:
                     URHO3D_LOGWARNING("Material '{}' has non-default occlusion strength for occlusion texture #{}",
                         sourceMaterial.name.c_str(), occlusionTextureIndex);
                 }
+
+                // TODO: Add support in standard shader
+                material.SetShaderParameter("OcclusionStrength", static_cast<float>(sourceMaterial.occlusionTexture.strength));
             }
 
             const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
