@@ -90,6 +90,7 @@ if (NOT MINI_URHO)
         set (ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "")
         set (BUILD_EXTERNAL OFF CACHE BOOL "")
         set (SKIP_GLSLANG_INSTALL ON CACHE BOOL "")
+        set (BUILD_TESTING OFF)
         add_subdirectory(glslang)
 
         set (SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "")
