@@ -24,7 +24,6 @@ if (NOT URHO3D_TESTING)
     return ()
 endif ()
 
-enable_testing ()
 include (CTest)
 include (../ThirdParty/catch2/Catch.cmake)
 

@@ -57,6 +57,11 @@ include(UrhoOptions)
 # Include common utilitles
 include(UrhoCommon)
 
+# Enable testing
+if (URHO3D_TESTING)
+    enable_testing ()
+endif ()
+
 # Enable common build options
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 17)

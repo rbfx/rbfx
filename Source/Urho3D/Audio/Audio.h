@@ -51,6 +51,8 @@ public:
 
     /// Initialize sound output with specified buffer length and output mode.
     bool SetMode(int bufferLengthMSec, int mixRate, SpeakerMode mode, bool interpolation = true);
+    /// Re-initialize sound output with same parameters.
+    bool RefreshMode();
     /// Shutdown this audio device, likely because we've lost it.
     void Close();
     /// Run update on sound sources. Not required for continued playback, but frees unused sound sources & sounds and updates 3D positions.
@@ -176,7 +178,7 @@ private:
     ea::vector<SoundSource*> soundSources_;
     /// Sound listener.
     WeakPtr<SoundListener> listener_;
-    /// List of microphones being tracked.   
+    /// List of microphones being tracked.
     ea::vector< WeakPtr<Microphone> > microphones_;
 };
 
