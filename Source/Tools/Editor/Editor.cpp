@@ -235,6 +235,7 @@ void Editor::Start()
     {
         if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().c_str()))
         {
+            context_->GetSubsystem<Log>()->SetLogFormat("%v");
             ExecuteSubcommand(cmd);
             engine_->Exit();
             return;
