@@ -2919,6 +2919,7 @@ private:
         if (base_.GetSettings().highRenderQuality_)
         {
             auto settings = renderPipeline->GetSettings();
+            settings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
             settings.sceneProcessor_.pcfKernelSize_ = 5;
             settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
             renderPipeline->SetSettings(settings);
