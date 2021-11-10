@@ -76,13 +76,15 @@ bool Model::BeginLoad(Deserializer& source)
 {
     // Check ID
     ea::string fileID = source.ReadFileID();
-    if (fileID != "UMDL" && fileID != "UMD2")
+    if (fileID != "UMDL" && fileID != "UMD2" && fileID != "UMD3")
     {
         URHO3D_LOGERROR(source.GetName() + " is not a valid model file");
         return false;
     }
 
-    bool hasVertexDeclarations = (fileID == "UMD2");
+    // Read version
+    const unsigned version = fileID == "UMD3" ? source.ReadUInt() : legacyVersion;
+    const bool hasVertexDeclarations = (fileID != "UMDL");
 
     geometries_.clear();
     geometryBoneMappings_.clear();
@@ -260,7 +262,8 @@ bool Model::BeginLoad(Deserializer& source)
 
         newMorph.name_ = source.ReadString();
         newMorph.nameHash_ = newMorph.name_;
-        newMorph.weight_ = 0.0f;
+        if (version >= morphWeightVersion)
+            newMorph.weight_ = source.ReadFloat();
         unsigned numBuffers = source.ReadUInt();
 
         for (unsigned j = 0; j < numBuffers; ++j)
@@ -368,8 +371,9 @@ bool Model::EndLoad()
 bool Model::Save(Serializer& dest) const
 {
     // Write ID
-    if (!dest.WriteFileID("UMD2"))
+    if (!dest.WriteFileID("UMD3"))
         return false;
+    dest.WriteUInt(currentVersion);
 
     // Write vertex buffers
     dest.WriteUInt(vertexBuffers_.size());
@@ -427,6 +431,7 @@ bool Model::Save(Serializer& dest) const
     for (unsigned i = 0; i < morphs_.size(); ++i)
     {
         dest.WriteString(morphs_[i].name_);
+        dest.WriteFloat(morphs_[i].weight_);
         dest.WriteUInt(morphs_[i].buffers_.size());
 
         // Write morph vertex buffers

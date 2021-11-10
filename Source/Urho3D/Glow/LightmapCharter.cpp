@@ -47,7 +47,7 @@ IntVector2 CalculateModelLightmapSize(float texelDensity, float minObjectScale,
 
     if (modelLightmapSizeVar.IsEmpty() || modelLightmapDensityVar.IsEmpty())
     {
-        URHO3D_LOGWARNING("Cannot calculate chart size for model \"{}\", fallback to default.",
+        URHO3D_LOGWARNING("Cannot calculate chart size for model '{}', fallback to default.",
             model->GetName());
         return defaultChartSize;
     }
@@ -169,7 +169,7 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
 
         if (regionSize != adjustedRegionSize)
         {
-            URHO3D_LOGWARNING("Object \"{}\" doesn't fit the lightmap chart, texel density is lowered.",
+            URHO3D_LOGWARNING("Object '{}' doesn't fit the lightmap chart, texel density is lowered.",
                 node->GetName());
         }
 

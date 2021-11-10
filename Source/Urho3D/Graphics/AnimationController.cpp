@@ -567,7 +567,7 @@ float AnimationController::GetFadeTime(const ea::string& name) const
     unsigned index;
     AnimationState* state;
     FindAnimation(name, index, state);
-    return index != M_MAX_UNSIGNED ? animations_[index].targetWeight_ : 0.0f;
+    return index != M_MAX_UNSIGNED ? animations_[index].fadeTime_ : 0.0f;
 }
 
 float AnimationController::GetAutoFade(const ea::string& name) const
@@ -858,16 +858,18 @@ void AnimationController::SetAnimationStatesAttr(const VariantVector& value)
         const auto blendMode = static_cast<AnimationBlendMode>(value[index++].GetInt());
 
         // Create new animation state
-        const auto animation = cache->GetResource<Animation>(animRef.name_);
-        AnimationState* newState = AddAnimationState(animation);
+        if (const auto animation = cache->GetResource<Animation>(animRef.name_))
+        {
+            AnimationState* newState = AddAnimationState(animation);
 
-        // Setup new animation state
-        newState->SetStartBone(startBoneName);
-        newState->SetLooped(isLooped);
-        newState->SetWeight(weight);
-        newState->SetTime(time);
-        newState->SetLayer(layer);
-        newState->SetBlendMode(blendMode);
+            // Setup new animation state
+            newState->SetStartBone(startBoneName);
+            newState->SetLooped(isLooped);
+            newState->SetWeight(weight);
+            newState->SetTime(time);
+            newState->SetLayer(layer);
+            newState->SetBlendMode(blendMode);
+        }
     }
 
     MarkAnimationStateOrderDirty();
@@ -967,13 +969,12 @@ void AnimationController::MarkAnimationStateTracksDirty()
         state->MarkTracksDirty();
 }
 
-bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startNode,
-    WeakPtr<Serializable>& serializable, unsigned& attributeIndex, StringHash& variableName)
+AnimatedAttributeReference AnimationController::ParseAnimatablePath(ea::string_view path, Node* startNode)
 {
     if (path.empty())
     {
         URHO3D_LOGWARNING("Variant animation track name must not be empty");
-        return false;
+        return {};
     }
 
     Node* animatedNode = startNode;
@@ -986,39 +987,59 @@ bool AnimationController::ParseAnimatablePath(ea::string_view path, Node* startN
         if (sep == ea::string_view::npos)
         {
             URHO3D_LOGWARNING("Path must end with attribute reference like /@StaticModel/Model");
-            return false;
+            return {};
         }
 
         const ea::string_view nodePath = path.substr(0, sep);
         animatedNode = startNode->FindChild(nodePath);
         if (!animatedNode)
         {
-            URHO3D_LOGWARNING("Path to node \"{}\" cannot be resolved", nodePath);
-            return false;
+            URHO3D_LOGWARNING("Path to node '{}' cannot be resolved", nodePath);
+            return {};
         }
 
         attributePath = path.substr(sep + 1);
     }
 
-    // Special case: if Node variables are referenced, individual variables are supported
+    AnimatedAttributeReference result;
+
+    // Special cases:
+    // 1) if Node variables are referenced, individual variables are supported
+    // 2) if AnimatedModel morphs are referenced, individual morphs are supported
     static const ea::string_view variablesPath = "@/Variables/";
+    static const ea::string_view animatedModelPath = "@AnimatedModel";
     if (attributePath.starts_with(variablesPath))
     {
-        variableName = attributePath.substr(variablesPath.size());
+        const StringHash variableNameHash = attributePath.substr(variablesPath.size());
+        result.attributeType_ = AnimatedAttributeType::NodeVariables;
+        result.subAttributeKey_ = variableNameHash.Value();
         attributePath = attributePath.substr(0, variablesPath.size() - 1);
+    }
+    else if (attributePath.starts_with(animatedModelPath))
+    {
+        if (const auto sep1 = attributePath.find('/'); sep1 != ea::string_view::npos)
+        {
+            if (const auto sep2 = attributePath.find('/', sep1 + 1); sep2 != ea::string_view::npos)
+            {
+                // TODO(string): Refactor StringUtils
+                result.attributeType_ = AnimatedAttributeType::AnimatedModelMorphs;
+                result.subAttributeKey_ = ToUInt(ea::string(attributePath.substr(sep2 + 1)));
+                attributePath = attributePath.substr(0, sep2);
+            }
+        }
     }
 
     // Parse path to component and attribute
-    const auto& serializableAndAttribute = animatedNode->FindComponentAttribute(attributePath);
-    if (!serializableAndAttribute.first)
+    const auto& [serializable, attributeIndex] = animatedNode->FindComponentAttribute(attributePath);
+    if (!serializable)
     {
-        URHO3D_LOGWARNING("Path to attribute \"{}\" cannot be resolved", attributePath);
-        return false;
+        URHO3D_LOGWARNING("Path to attribute '{}' cannot be resolved", attributePath);
+        return {};
     }
 
-    serializable = serializableAndAttribute.first;
-    attributeIndex = serializableAndAttribute.second;
-    return true;
+    result.serializable_ = serializable;
+    result.attributeIndex_ = attributeIndex;
+    return result;
 }
 
 void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
@@ -1031,18 +1052,27 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     state->ClearAllTracks();
 
     // Use root node or start bone node if specified
+    // Note: bone tracks are resolved starting from root bone node,
+    // variant tracks are resolved from the node itself.
     const ea::string& startBoneName = state->GetStartBone();
     Node* startNode = !startBoneName.empty() ? node_->GetChild(startBoneName, true) : nullptr;
     if (!startNode)
         startNode = node_;
+
+    Node* startBone = startNode == node_ && model ? model->GetSkeleton().GetRootBone()->node_ : startNode;
+    if (!startBone)
+    {
+        URHO3D_LOGWARNING("AnimatedModel skeleton is not initialized");
+        return;
+    }
 
     // Setup model and node tracks
     const auto& tracks = animation->GetTracks();
     for (const auto& item : tracks)
     {
         const AnimationTrack& track = item.second;
-        Node* trackNode = track.nameHash_ == startNode->GetNameHash() ? startNode
-            : startNode->GetChild(track.nameHash_, true);
+        Node* trackNode = track.nameHash_ == startBone->GetNameHash() ? startBone
+            : startBone->GetChild(track.nameHash_, true);
         Bone* trackBone = model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
 
         // Add model track
@@ -1072,13 +1102,16 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
 
         AttributeAnimationStateTrack stateTrack;
         stateTrack.track_ = &track;
+        stateTrack.attribute_ = ParseAnimatablePath(trackName, startNode);
 
-        if (ParseAnimatablePath(trackName, startNode,
-            stateTrack.serializable_, stateTrack.attributeIndex_, stateTrack.variableName_))
+        if (stateTrack.attribute_.serializable_)
         {
             state->AddAttributeTrack(stateTrack);
         }
     }
+
+    // Mark tracks as ready
+    state->OnTracksReady();
 }
 
 void AnimationController::ConnectToAnimatedModel()

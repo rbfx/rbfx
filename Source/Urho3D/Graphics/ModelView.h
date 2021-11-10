@@ -34,15 +34,42 @@ namespace Urho3D
 
 class Model;
 
+/// Model vertex format, unpacked for easy editing.
+struct URHO3D_API ModelVertexFormat
+{
+    static const VertexElementType Undefined = MAX_VERTEX_ELEMENT_TYPES;
+    static const unsigned MaxColors = 4;
+    static const unsigned MaxUVs = 4;
+
+    /// Vertex element formats
+    /// @{
+    VertexElementType position_{ Undefined };
+    VertexElementType normal_{ Undefined };
+    VertexElementType tangent_{ Undefined };
+    VertexElementType binormal_{ Undefined };
+    VertexElementType blendIndices_{ Undefined };
+    VertexElementType blendWeights_{ Undefined };
+    ea::array<VertexElementType, MaxColors> color_{ Undefined, Undefined, Undefined, Undefined };
+    ea::array<VertexElementType, MaxUVs> uv_{ Undefined, Undefined, Undefined, Undefined };
+    /// @}
+
+    void MergeFrom(const ModelVertexFormat& rhs);
+    unsigned ToHash() const;
+
+    bool operator ==(const ModelVertexFormat& rhs) const;
+    bool operator !=(const ModelVertexFormat& rhs) const { return !(*this == rhs); }
+};
+
 /// Model vertex, unpacked for easy editing.
+/// Warning: ModelVertex must be equivalent to an array of Vector4.
 struct URHO3D_API ModelVertex
 {
-    /// Max number of colors.
-    static const unsigned MaxColors = 4;
-    /// Max number of UV.
-    static const unsigned MaxUVs = 4;
-    /// Vertex elements.
+    static const unsigned MaxBones = 4;
+    static const unsigned MaxColors = ModelVertexFormat::MaxColors;
+    static const unsigned MaxUVs = ModelVertexFormat::MaxUVs;
+    /// Vertex elements corresponding to full ModelVertex.
     static const ea::vector<VertexElement> VertexElements;
+    using BoneArray = ea::array<ea::pair<unsigned, float>, MaxBones>;
 
     /// Position.
     Vector4 position_;
@@ -72,6 +99,8 @@ struct URHO3D_API ModelVertex
     Vector3 GetPosition() const { return static_cast<Vector3>(position_); }
     /// Return color from given channel.
     Color GetColor(unsigned i = 0) const { return static_cast<Color>(color_[i]); }
+    /// Return blend indices as integers.
+    BoneArray GetBlendIndicesAndWeights() const;
 
     /// Return whether the vertex has normal.
     bool HasNormal() const { return normal_ != Vector4::ZERO; }
@@ -86,45 +115,101 @@ struct URHO3D_API ModelVertex
     bool ReplaceElement(const ModelVertex& source, const VertexElement& element);
     /// Repair missing vertex elements if possible.
     void Repair();
+    /// Prune vertex elements not represented in the format.
+    void PruneElements(const ModelVertexFormat& format);
 
     bool operator ==(const ModelVertex& rhs) const;
     bool operator !=(const ModelVertex& rhs) const { return !(*this == rhs); }
 };
 
-/// Model vertex format, unpacked for easy editing.
-struct URHO3D_API ModelVertexFormat
+/// Morph of ModelVertex.
+struct URHO3D_API ModelVertexMorph
 {
-    /// Undefined format used to disable corresponding component.
-    static const VertexElementType Undefined = MAX_VERTEX_ELEMENT_TYPES;
+    unsigned index_{};
+    Vector3 positionDelta_;
+    Vector3 normalDelta_;
+    Vector3 tangentDelta_;
 
-    /// Vertex element formats
-    /// @{
-    VertexElementType position_{ Undefined };
-    VertexElementType normal_{ Undefined };
-    VertexElementType tangent_{ Undefined };
-    VertexElementType binormal_{ Undefined };
-    VertexElementType blendIndices_{ Undefined };
-    VertexElementType blendWeights_{ Undefined };
-    ea::array<VertexElementType, ModelVertex::MaxColors> color_{ Undefined, Undefined, Undefined, Undefined };
-    ea::array<VertexElementType, ModelVertex::MaxUVs> uv_{ Undefined, Undefined, Undefined, Undefined };
-    /// @}
+    bool HasPosition() const { return positionDelta_ != Vector3::ZERO; }
+    bool HasNormal() const { return normalDelta_ != Vector3::ZERO; }
+    bool HasTangent() const { return tangentDelta_ != Vector3::ZERO; }
+    bool IsEmpty() const { return !HasPosition() && !HasNormal() && !HasTangent(); }
 
-    bool operator ==(const ModelVertexFormat& rhs) const;
-    bool operator !=(const ModelVertexFormat& rhs) const { return !(*this == rhs); }
+    bool operator ==(const ModelVertexMorph& rhs) const;
+    bool operator !=(const ModelVertexMorph& rhs) const { return !(*this == rhs); }
 };
+
+using ModelVertexMorphVector = ea::vector<ModelVertexMorph>;
+
+URHO3D_API void NormalizeModelVertexMorphVector(ModelVertexMorphVector& morphVector);
 
 /// Level of detail of Model geometry, unpacked for easy editing.
 struct URHO3D_API GeometryLODView
 {
-    /// Vertices.
+    PrimitiveType primitiveType_{};
     ea::vector<ModelVertex> vertices_;
-    /// Faces: 3 indices per triangle.
     ea::vector<unsigned> indices_;
-    /// LOD distance.
     float lodDistance_{};
+    ModelVertexFormat vertexFormat_;
+    ea::unordered_map<unsigned, ModelVertexMorphVector> morphs_;
+
+    /// Getters
+    /// @{
+    unsigned GetNumPrimitives() const;
+    bool IsTriangleGeometry() const;
+    bool IsLineGeometry() const;
+    bool IsPointGeometry() const;
+    /// @}
 
     /// Calculate center of vertices' bounding box.
     Vector3 CalculateCenter() const;
+    /// Calculate number of morphs in the model.
+    unsigned CalculateNumMorphs() const;
+    /// All equivalent views should be literally equal after normalization.
+    void Normalize();
+
+    void InvalidateNormalsAndTangents();
+    void RecalculateFlatNormals();
+    void RecalculateSmoothNormals();
+    void RecalculateTangents();
+
+    /// Iterate all triangles in primitive. Callback is called with three vertex indices.
+    template <class T>
+    void ForEachTriangle(T callback)
+    {
+        if (!IsTriangleGeometry())
+        {
+            assert(0);
+            return;
+        }
+
+        const unsigned numPrimitives = GetNumPrimitives();
+        switch (primitiveType_)
+        {
+        case TRIANGLE_LIST:
+            for (unsigned i = 0; i < numPrimitives; ++i)
+                callback(indices_[i * 3], indices_[i * 3 + 1], indices_[i * 3 + 2]);
+            break;
+
+        case TRIANGLE_STRIP:
+            for (unsigned i = 0; i < numPrimitives; ++i)
+            {
+                if (i % 2 == 0)
+                    callback(indices_[i], indices_[i + 1], indices_[i + 2]);
+                else
+                    callback(indices_[i], indices_[i + 2], indices_[i + 1]);
+            }
+            break;
+
+        case TRIANGLE_FAN:
+            for (unsigned i = 0; i < numPrimitives; ++i)
+                callback(indices_[0], indices_[i + 1], indices_[i + 2]);
+            break;
+
+        default:
+            break;
+        }
+    }
 
     bool operator ==(const GeometryLODView& rhs) const;
     bool operator !=(const GeometryLODView& rhs) const { return !(*this == rhs); }
@@ -135,6 +220,13 @@ struct URHO3D_API GeometryView
 {
     /// LODs.
     ea::vector<GeometryLODView> lods_;
+    /// Material resource name.
+    ea::string material_;
+
+    /// Calculate number of morphs in the model.
+    unsigned CalculateNumMorphs() const;
+    /// All equivalent views should be literally equal after normalization.
+    void Normalize();
 
     bool operator ==(const GeometryView& rhs) const;
     bool operator !=(const GeometryView& rhs) const { return !(*this == rhs); }
@@ -177,6 +269,13 @@ struct URHO3D_API BoneView
     bool operator !=(const BoneView& rhs) const { return !(*this == rhs); }
 };
 
+/// Represents metadata of model morph.
+struct URHO3D_API ModelMorphView
+{
+    ea::string name_;
+    float initialWeight_{};
+};
+
 /// Represents Model in editable form.
 /// Some features are not supported for sake of API simplicity:
 /// - Multiple vertex and index buffers;
@@ -195,33 +294,52 @@ public:
     bool ImportModel(const Model* model);
     void ExportModel(Model* model) const;
     SharedPtr<Model> ExportModel(const ea::string& name = EMPTY_STRING) const;
+    StringVector ExportMaterialList() const;
     /// @}
 
     /// Calculate bounding box.
     BoundingBox CalculateBoundingBox() const;
+    /// All equivalent views should be literally equal after normalization.
+    void Normalize();
+    /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
+    /// Note: Does not mirror bones!
+    void MirrorGeometriesX();
+    /// Calculate normals for geometries without normals in vertex format. Resets tangents for affected geometries.
+    void CalculateMissingNormals(bool flatNormals = false);
+    /// Calculate tangents for geometries without tangents in vertex format.
+    void CalculateMissingTangents();
+    /// Normalize bone weights and cleanup invalid bones. Ignored if there's no bones.
+    void RepairBoneWeights();
+    /// Recalculate bounding boxes for bones.
+    void RecalculateBoneBoundingBoxes();
 
     /// Set contents
     /// @{
-    void SetVertexFormat(const ModelVertexFormat& vertexFormat) { vertexFormat_ = vertexFormat; }
+    void SetName(const ea::string& name) { name_ = name; }
     void SetGeometries(ea::vector<GeometryView> geometries) { geometries_ = ea::move(geometries); }
     void SetBones(ea::vector<BoneView> bones) { bones_ = ea::move(bones); }
-    void AddMetadata(const ea::string& key, const Variant& variant) { metadata_.insert_or_assign(key, variant); }
+    void SetMorphs(ea::vector<ModelMorphView> morphs) { morphs_ = ea::move(morphs); }
+    void SetMorph(unsigned index, const ModelMorphView& morph);
+    void AddMetadata(const ea::string& key, const Variant& variant);
     /// @}
 
     /// Return contents
     /// @{
-    const ModelVertexFormat& GetVertexFormat() const { return vertexFormat_; }
+    const ea::string& GetName() const { return name_; }
     const ea::vector<GeometryView>& GetGeometries() const { return geometries_; }
     ea::vector<GeometryView>& GetGeometries() { return geometries_; }
     const ea::vector<BoneView>& GetBones() const { return bones_; }
     ea::vector<BoneView>& GetBones() { return bones_; }
+    const ea::vector<ModelMorphView>& GetMorphs() const { return morphs_; }
+    ea::vector<ModelMorphView>& GetMorphs() { return morphs_; }
     const Variant& GetMetadata(const ea::string& key) const;
     /// @}
 
 private:
-    ModelVertexFormat vertexFormat_;
+    ea::string name_;
     ea::vector<GeometryView> geometries_;
     ea::vector<BoneView> bones_;
+    ea::vector<ModelMorphView> morphs_;
     StringVariantMap metadata_;
 };
 

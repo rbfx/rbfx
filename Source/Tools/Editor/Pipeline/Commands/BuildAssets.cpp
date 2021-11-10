@@ -41,9 +41,7 @@ void BuildAssets::RegisterObject(Context* context)
 
 void BuildAssets::RegisterCommandLine(CLI::App& cli)
 {
-    cli.set_callback([this]() {
-        GetSubsystem<Editor>()->GetEngineParameters()[EP_HEADLESS] = true;
-    });
+    SubCommand::RegisterCommandLine(cli);
     cli.add_flag("--full", full_, "Disable out-of-date checks and rebuild cache completely.");
     cli.add_option("flavor", flavor_, "Flavor to build.");
 }

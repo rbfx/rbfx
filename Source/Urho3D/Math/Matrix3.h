@@ -256,6 +256,9 @@ public:
         return true;
     }
 
+    /// Return determinant.
+    float Determinant() const;
+
     /// Return inverse.
     Matrix3 Inverse() const;
 

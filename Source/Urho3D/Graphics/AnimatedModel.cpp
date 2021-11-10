@@ -71,11 +71,7 @@ AnimatedModel::AnimatedModel(Context* context) :
     assignBonesPending_(false),
     forceAnimationUpdate_(false)
 {
-    if (auto renderer = context_->GetSubsystem<Renderer>())
-    {
-        softwareSkinning_ = !renderer->GetUseHardwareSkinning();
-        numSoftwareSkinningBones_ = renderer->GetNumSoftwareSkinningBones();
-    }
+    UpdateSoftwareSkinningState();
 }
 
 AnimatedModel::~AnimatedModel()
@@ -110,7 +106,7 @@ void AnimatedModel::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Bone Animation Enabled", GetBonesEnabledAttr, SetBonesEnabledAttr, VariantVector,
         Variant::emptyVariantVector, AM_FILE | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Morphs", GetMorphsAttr, SetMorphsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
-        AM_DEFAULT | AM_NOEDIT);
+        AM_DEFAULT);
 }
 
 bool AnimatedModel::Serialize(Archive& archive)
@@ -236,9 +232,9 @@ void AnimatedModel::Update(const FrameInfo& frame)
     // If headless, retain the current animation distance (should be 0)
     if (frame.camera_ && abs((int)frame.frameNumber_ - (int)viewFrameNumber_) > 1)
     {
-        // First check for no update at all when invisible. In that case reset LOD timer to ensure update
+        // First check for no update at all when invisible, except on first update. In that case reset LOD timer to ensure update
         // next time the model is in view
-        if (!updateInvisible_)
+        if (viewFrameNumber_ && !updateInvisible_)
         {
             if (animationDirty_)
             {
@@ -247,6 +243,10 @@ void AnimatedModel::Update(const FrameInfo& frame)
             }
             return;
         }
+
+        // Force view frame number to be valid
+        viewFrameNumber_ = ea::max(1u, viewFrameNumber_);
+
         float distance = frame.camera_->GetDistance(node_->GetWorldPosition());
         // If distance is greater than draw distance, no need to update at all
         if (drawDistance_ > 0.0f && distance > drawDistance_)
@@ -374,18 +374,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
 
         // Copy morphs. Note: morph vertex buffers will be created later on-demand
         modelAnimator_ = nullptr;
-        morphs_.clear();
-        const ea::vector<ModelMorph>& morphs = model->GetMorphs();
-        morphs_.reserve(morphs.size());
-        for (unsigned i = 0; i < morphs.size(); ++i)
-        {
-            ModelMorph newMorph;
-            newMorph.name_ = morphs[i].name_;
-            newMorph.nameHash_ = morphs[i].nameHash_;
-            newMorph.weight_ = 0.0f;
-            newMorph.buffers_ = morphs[i].buffers_;
-            morphs_.push_back(newMorph);
-        }
+        morphs_ = model->GetMorphs();
 
         // Copy bounding box & skeleton
         SetBoundingBox(model->GetBoundingBox());
@@ -398,6 +387,9 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         // Reserve space for skinning matrices
         skinMatrices_.resize(skeleton_.GetNumBones());
         SetGeometryBoneMappings();
+
+        // Reconsider software skinning
+        UpdateSoftwareSkinningState();
 
         // Enable skinning in batches
         for (unsigned i = 0; i < batches_.size(); ++i)
@@ -1078,6 +1070,23 @@ void AnimatedModel::HandleModelReloadFinished(StringHash eventType, VariantMap& 
     Model* currentModel = model_;
     model_.Reset(); // Set null to allow to be re-set
     SetModel(currentModel);
+}
+
+void AnimatedModel::UpdateSoftwareSkinningState()
+{
+    auto renderer = context_->GetSubsystem<Renderer>();
+    if (!renderer)
+        return;
+
+    softwareSkinning_ = !renderer->GetUseHardwareSkinning();
+    numSoftwareSkinningBones_ = renderer->GetNumSoftwareSkinningBones();
+
+    if (renderer->GetSkinningMode() == SKINNING_AUTO && model_)
+    {
+        // Fallback to software skinning if too many bones affect the model
+        if (geometrySkinMatrices_.empty() && model_->GetSkeleton().GetNumBones() > Graphics::GetMaxBones())
+            softwareSkinning_ = true;
+    }
 }
 
 }

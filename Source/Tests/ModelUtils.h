@@ -32,6 +32,7 @@ namespace Tests
 
 /// Create simple primitives for ModelView
 /// @{
+ModelVertexFormat GetVertexFormat();
 ModelVertex MakeModelVertex(const Vector3& position, const Vector3& normal, const Color& color);
 void AppendQuad(GeometryLODView& dest,
     const Vector3& position, const Quaternion& rotation, const Vector2& size, const Color& color);

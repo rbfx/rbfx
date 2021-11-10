@@ -32,6 +32,7 @@
 #include "../Math/MathDefs.h"
 
 #include <EASTL/array.h>
+#include <EASTL/numeric.h>
 
 #include "../DebugNew.h"
 
@@ -86,6 +87,20 @@ Ubyte4 Vector4ToUbyte4(const Vector4& value)
         FloatToUByte(value.z_),
         FloatToUByte(value.w_)
     };
+}
+
+/// Convert float weight vector to unsigned byte vector. Result is guaranteed to sum up to 255.
+Ubyte4 Vector4WeightsToUbyte4Norm(const Vector4& value)
+{
+    const float weightSum = value.DotProduct(Vector4::ONE);
+    if (weightSum < M_EPSILON)
+        return { 255, 0, 0, 0 };
+
+    Ubyte4 result = Vector4ToUbyte4(value * 255.0f / weightSum);
+    const int underflowError = 255 - ea::accumulate(result.begin(), result.end(), 0);
+    const unsigned patchIndex = ea::max_element(result.begin(), result.end()) - result.begin();
+    result[patchIndex] += underflowError;
+    return result;
 }
 
 /// No-op converter from float vector to float vector.
@@ -394,7 +409,10 @@ void VertexBuffer::PackVertexData(const Vector4 source[], unsigned sourceStride,
         ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToUbyte4);
         break;
     case TYPE_UBYTE4_NORM:
-        ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToUbyte4Norm);
+        if (element.semantic_ == SEM_BLENDWEIGHTS)
+            ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4WeightsToUbyte4Norm);
+        else
+            ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToUbyte4Norm);
         break;
     default:
         assert(0);

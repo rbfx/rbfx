@@ -77,7 +77,9 @@ public:
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
     /// Set model.
-    void SetModel(Model* model, bool createBones = true);
+    void SetModel(Model* model, bool createBones);
+    /// Set model and create bone nodes.
+    void SetModel(Model* model) override { SetModel(model, true); }
     /// Set animation LOD bias.
     /// @property
     void SetAnimationLodBias(float bias);
@@ -186,6 +188,8 @@ private:
     void UpdateMorphs();
     /// Handle model reload finished.
     void HandleModelReloadFinished(StringHash eventType, VariantMap& eventData);
+    /// Reconsider whether to use software skinning.
+    void UpdateSoftwareSkinningState();
 
     /// Skeleton.
     Skeleton skeleton_;

@@ -25,6 +25,7 @@
 #include <EASTL/list.h>
 #include <EASTL/hash_set.h>
 
+#include "../Core/NonCopyable.h"
 #include "../Core/Object.h"
 
 namespace Urho3D
@@ -150,6 +151,18 @@ private:
     unsigned nextAsyncExecID_{1};
     /// Flag for executing engine console commands as OS-specific system command. Default to true.
     bool executeConsoleCommands_{};
+};
+
+/// Helper class to create and destory temporary directory.
+class URHO3D_API TemporaryDir : public NonCopyable
+{
+public:
+    TemporaryDir(Context* context, const ea::string& path);
+    ~TemporaryDir();
+
+private:
+    FileSystem* fs_{};
+    ea::string path_;
 };
 
 /// Split a full path to path, filename and extension. The extension will be converted to lowercase by default.

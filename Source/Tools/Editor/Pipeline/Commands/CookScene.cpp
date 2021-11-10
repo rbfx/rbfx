@@ -48,11 +48,9 @@ void CookScene::RegisterObject(Context* context)
 
 void CookScene::RegisterCommandLine(CLI::App& cli)
 {
+    SubCommand::RegisterCommandLine(cli);
     cli.add_option("--input", input_, "XML scene file.")->required();
     cli.add_option("--output", output_, "Resulting binary scene file.");
-    cli.set_callback([this]() {
-        GetSubsystem<Editor>()->GetEngineParameters()[EP_HEADLESS] = true;
-    });
 }
 
 void CookScene::Execute()

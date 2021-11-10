@@ -22,25 +22,26 @@
 
 #pragma once
 
-
 #include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/Object.h>
 
 namespace Urho3D
 {
 
-/// A base class for editor sub-commands. They are executed by passing `--cmd ClassName` command line parameters.
+/// A base class for editor subcommands.
+/// Subcommand is executed by passing class name as command line parameter.
 class SubCommand : public Object
 {
     URHO3D_OBJECT(SubCommand, Object);
+
 public:
-    ///
     explicit SubCommand(Context* context);
-    ///
-    static void RegisterObject(Context* context);
-    ///
-    virtual void RegisterCommandLine(CLI::App& cli) = 0;
-    ///
+
+    /// Register subcommand so it can be parsed from command line.
+    virtual void RegisterCommandLine(CLI::App& cli);
+    /// Prepare for subcommand execution before engine initialization.
+    virtual void Setup();
+    /// Execute subcommand after engine and project initialization.
     virtual void Execute() = 0;
 };
 
