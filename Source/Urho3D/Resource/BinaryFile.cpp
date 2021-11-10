@@ -65,15 +65,6 @@ bool BinaryFile::Save(Serializer& dest) const
     return true;
 }
 
-bool BinaryFile::SaveFile(const ea::string& fileName) const
-{
-    File outFile(context_, fileName, FILE_WRITE);
-    if (outFile.IsOpen())
-        return Save(outFile);
-    else
-        return false;
-}
-
 void BinaryFile::Clear()
 {
     buffer_.Clear();

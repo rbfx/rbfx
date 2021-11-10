@@ -131,6 +131,8 @@ void EditorSceneSettings::OnSceneSet(Scene* scene)
     {
         camera = parent->CreateChild("__EditorCamera__", LOCAL);
         camera->AddTag("__EDITOR_OBJECT__");
+        camera->SetPosition({ 0.0f, 5.0f, 10.0f });
+        camera->LookAt({ 0.0f, 0.0f, 0.0f });
     }
 
     auto* cameraComponent = camera->GetOrCreateComponent<Camera>();

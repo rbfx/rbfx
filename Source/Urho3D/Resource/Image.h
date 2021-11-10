@@ -172,6 +172,9 @@ public:
     /// @property
     int GetDepth() const { return depth_; }
 
+    /// Return size of the image.
+    IntVector3 GetSize() const { return { width_, height_, depth_ }; }
+
     /// Return number of color components.
     /// @property
     unsigned GetComponents() const { return components_; }

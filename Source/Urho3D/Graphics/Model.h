@@ -44,9 +44,9 @@ struct VertexBufferMorph
     /// Vertex elements.
     VertexMaskFlags elementMask_;
     /// Number of vertices.
-    unsigned vertexCount_;
+    unsigned vertexCount_{};
     /// Morphed vertices data size as bytes.
-    unsigned dataSize_;
+    unsigned dataSize_{};
     /// Morphed vertices. Stored packed as <index, data> pairs.
     ea::shared_array<unsigned char> morphData_;
 };
@@ -71,7 +71,7 @@ struct ModelMorph
     /// Morph name hash.
     StringHash nameHash_;
     /// Current morph weight.
-    float weight_;
+    float weight_{};
     /// Morph data per vertex buffer.
     ea::unordered_map<unsigned, VertexBufferMorph> buffers_;
 };
@@ -235,6 +235,14 @@ public:
     const ea::vector<unsigned>& GetMorphRangeCounts() const { return morphRangeCounts_; }
 
 private:
+    /// Class versions (used for serialization)
+    /// @{
+    static const unsigned legacyVersion = 1; // Fake version for legacy unversioned UMDL/UMD2 file
+    static const unsigned morphWeightVersion = 2; // Initial morph weights support added here
+
+    static const unsigned currentVersion = morphWeightVersion;
+    /// @}
+
     /// Bounding box.
     BoundingBox boundingBox_;
     /// Skeleton.

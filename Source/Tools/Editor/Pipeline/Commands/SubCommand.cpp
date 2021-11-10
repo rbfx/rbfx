@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
+#include "Editor.h"
 #include "SubCommand.h"
 
+#include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/IO/Log.h>
 
 namespace Urho3D
 {
@@ -31,13 +34,19 @@ SubCommand::SubCommand(Context* context)
 {
 }
 
-void SubCommand::RegisterObject(Context* context)
-{
-}
-
 void SubCommand::RegisterCommandLine(CLI::App& cli)
 {
+    cli.set_callback([this]()
+    {
+        Setup();
+    });
+}
 
+void SubCommand::Setup()
+{
+    auto& engineParameters = GetSubsystem<Editor>()->GetEngineParameters();
+    engineParameters[EP_HEADLESS] = true;
+    engineParameters[EP_LOG_LEVEL] = LOG_WARNING;
 }
 
 }

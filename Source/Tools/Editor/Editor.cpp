@@ -58,6 +58,7 @@
 #include "Pipeline/Asset.h"
 #include "Pipeline/Commands/CookScene.h"
 #include "Pipeline/Commands/BuildAssets.h"
+#include "Pipeline/Commands/ImportGLTFCommand.h"
 #include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
 #include "Pipeline/Importers/TextureImporter.h"
@@ -221,6 +222,7 @@ void Editor::Setup()
     // Subcommands
     RegisterSubcommand<CookScene>();
     RegisterSubcommand<BuildAssets>();
+    RegisterSubcommand<ImportGLTFCommand>();
 
     keyBindings_.Bind(ActionType::OpenProject, this, &Editor::OpenOrCreateProject);
     keyBindings_.Bind(ActionType::Exit, this, &Editor::OnExitHotkeyPressed);
@@ -274,6 +276,20 @@ void Editor::Start()
 
     // Hud will be rendered manually.
     context_->GetSubsystem<Engine>()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
+}
+
+int Editor::RunEditorInstance(const ea::vector<ea::string>& arguments, ea::string& output)
+{
+    auto fs = context_->GetSubsystem<FileSystem>();
+
+#if URHO3D_CSHARP && !_WIN32
+    // Editor executable is a C# program interpreted by .net runtime.
+    auto argumentsCopy = arguments;
+    argumentsCopy.push_front(fs->GetProgramFileName());
+    return fs->SystemRun(fs->GetInterpreterFileName(), argumentsCopy, output);
+#else
+    return fs->SystemRun(fs->GetProgramFileName(), arguments, output);
+#endif
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)

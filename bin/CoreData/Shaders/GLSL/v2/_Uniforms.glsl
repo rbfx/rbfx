@@ -151,13 +151,13 @@ UNIFORM_BUFFER_END(3, Light)
 #endif
 
 /// Unifroms needed for material surface evaluation.
-/// cMatDiffColor.rgb: Material diffuse color in gamma space, or base color for PBR rendering.
+/// cMatDiffColor.rgb: Material diffuse or base color in gamma space.
 /// cMatDiffColor.a: Material transparency.
 /// cMatEmissiveColor: Material emissive color in gamma space.
 /// cRoughness: Perceptual roughness of PBR material.
-/// cMatEnvMapColor: Environment reflection color for non-PBR material.
+/// cMatEnvMapColor: Environment reflection color for non-PBR material in gamma space.
 /// cMetallic: Metallness of PBR material.
-/// cMatSpecColor.rgb: Color of specular reflection for non-PBR material.
+/// cMatSpecColor.rgb: Color of specular reflection for non-PBR material in gamma space.
 /// cMatSpecColor.a: Specular reflection power for non-PBR material.
 /// cFadeOffsetScale.x: Difference in linear depth between background surface and geometry
 ///                     where geometry with soft fade out is completely transparent.

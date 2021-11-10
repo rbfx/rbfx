@@ -37,9 +37,21 @@ public:
     ///
     bool Accepts(const ea::string& path) const override;
     ///
-    bool Execute(Urho3D::Asset* input, const ea::string& outputPath) override;
+    bool Execute(Asset* input, const ea::string& outputPath) override;
 
 protected:
+    bool ImportAssetToFolder(Asset* inputAsset,
+        const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    bool ExecuteAssimp(const ea::string& inputFileName,
+        const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    bool ExecuteImportGLTF(const ea::string& inputFileName,
+        const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    bool ExecuteImportFBX(const ea::string& inputFileName,
+        const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    bool ExecuteImportBlend(const ea::string& inputFileName,
+        const ea::string& outputPath, const ea::string& outputResourceNamePrefix, ea::string& commandOutput);
+    ea::string GenerateTemporaryPath() const;
+
     ///
     bool outputAnimations_ = true;
     ///

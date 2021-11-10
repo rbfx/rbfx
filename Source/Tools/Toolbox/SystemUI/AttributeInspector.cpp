@@ -192,6 +192,26 @@ bool RenderStructVariantVectorAttribute(VariantVector& value, const StringVector
     return modified;
 }
 
+bool RenderAnimatedModelMorphsAttribute(ByteVector& value, Object* eventSender)
+{
+    const ui::IdScope idScope(VAR_BUFFER);
+
+    if (!value.empty())
+        ui::NewLine();
+
+    bool modified = false;
+    for (unsigned morphIndex = 0; morphIndex < value.size(); ++morphIndex)
+    {
+        const ui::IdScope elementIdScope(morphIndex);
+        ui::ItemLabel(Format("> Morph #{}", morphIndex));
+
+        float weight = value[morphIndex] / 255.0f;
+        modified |= ui::DragFloat("", &weight, 1.0f / 255.0f, 0.0f, 1.0f, "%.3f");
+        value[morphIndex] = static_cast<unsigned char>(Round(weight * 255.0f));
+    }
+    return modified;
+}
+
 bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, ea::string_view tooltip,
     const AttributeInfo* info, Object* eventSender, float item_width)
 {
@@ -649,6 +669,13 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             }
             break;
         }
+        case VAR_BUFFER:
+        {
+            // TODO: Get rid of this hack
+            if (info && info->name_ == "Morphs")
+                modified |= RenderAnimatedModelMorphsAttribute(*value.GetBufferPtr(), eventSender);
+            break;
+        }
         case VAR_RECT:
         {
             auto& v = value.GetRect();
@@ -717,7 +744,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
         if (!filter.empty() && !info.name_.contains(filter, false))
             continue;
         // Ignore not supported variant types.
-        if (info.type_ == VAR_BUFFER || info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
+        if (info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
             continue;
         ui::IdScope attributeNameId(info.name_.c_str());
 

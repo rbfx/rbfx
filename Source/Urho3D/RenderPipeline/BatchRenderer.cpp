@@ -197,7 +197,7 @@ public:
         {
         case GEOM_SKINNED:
             drawQueue.AddShaderParameter(ShaderConsts::Object_SkinMatrices,
-                ea::span<const Matrix3x4>(sourceBatch.worldTransform_, sourceBatch.numWorldTransforms_));
+                ea::span<const Matrix3x4>(sourceBatch.worldTransform_, ea::min(sourceBatch.numWorldTransforms_, Graphics::GetMaxBones())));
             break;
 
         case GEOM_BILLBOARD:
@@ -430,6 +430,7 @@ private:
 
         if (drawQueue_.BeginShaderParameterGroup(SP_MATERIAL, dirty_.material_ || dirty_.lightmapConstants_))
         {
+            // TODO: This block may be cached for some APIs
             const auto& materialParameters = current_.material_->GetShaderParameters();
             for (const auto& parameter : materialParameters)
             {
