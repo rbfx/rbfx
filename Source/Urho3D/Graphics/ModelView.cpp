@@ -1379,6 +1379,49 @@ void ModelView::CalculateMissingTangents()
     }
 }
 
+void ModelView::RepairBoneWeights()
+{
+    if (bones_.empty())
+        return;
+
+    for (GeometryView& geometryView : geometries_)
+    {
+        for (GeometryLODView& lodView : geometryView.lods_)
+        {
+            for (ModelVertex& vertex : lodView.vertices_)
+            {
+                // Reset invalid bones
+                for (unsigned i = 0; i < ModelVertex::MaxBones; ++i)
+                {
+                    const float index = vertex.blendIndices_[i];
+                    const float weight = vertex.blendWeights_[i];
+                    if (index < 0 || index >= bones_.size() || weight < 0.0f)
+                    {
+                        vertex.blendIndices_[i] = 0;
+                        vertex.blendWeights_[i] = 0.0f;
+                    }
+                }
+
+                // Skip if okay
+                const float weightSum = vertex.blendWeights_.DotProduct(Vector4::ONE);
+                if (Equals(weightSum, 1.0f))
+                    continue;
+
+                // Revert if degenerate
+                if (weightSum < M_EPSILON)
+                {
+                    vertex.blendIndices_ = Vector4::ZERO;
+                    vertex.blendWeights_ = { 1.0f, 0.0f, 0.0f, 0.0f };
+                    continue;
+                }
+
+                // Normalize otherwise
+                vertex.blendWeights_ /= weightSum;
+            }
+        }
+    }
+}
+
 void ModelView::RecalculateBoneBoundingBoxes()
 {
     if (bones_.empty())
