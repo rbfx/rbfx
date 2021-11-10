@@ -24,137 +24,146 @@
 
 #include "../CommonUtils.h"
 #include "Urho3D/IO/MemoryBuffer.h"
-
+#include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Resource/Image.h>
 
 namespace Tests
 {
 namespace
 {
-uint8_t DXT1[256]{68,  68,  83,  32,  124, 0,   0,   0,   7,   16,  8,   0,   16,  0,   0,   0,   16,  0,   0,   0,
-                  128, 0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  85,  86,  69,  82,  0,   0,   0,   0,   78,  86,  84,  84,  2,   1,   2,   0,   32,  0,   0,   0,
-                  4,   0,   0,   0,   68,  88,  84,  49,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   0,   16,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   51,  10,  33,  10,  170, 170, 170, 170, 31,  159, 17,  47,
-                  170, 170, 170, 170, 59,  123, 56,  67,  170, 170, 170, 170, 223, 30,  202, 30,  170, 170, 170, 170,
-                  171, 177, 160, 9,   170, 170, 170, 170, 32,  252, 32,  220, 170, 170, 170, 170, 32,  139, 32,  3,
-                  170, 170, 170, 170, 130, 157, 128, 133, 170, 170, 170, 170, 83,  89,  69,  17,  170, 170, 170, 170,
-                  98,  123, 97,  99,  170, 170, 170, 170, 14,  254, 0,   62,  170, 170, 170, 170, 110, 7,   96,  7,
-                  170, 170, 170, 170, 247, 223, 207, 15,  170, 170, 170, 170, 70,  251, 64,  35,  170, 170, 170, 170,
-                  31,  92,  30,  36,  170, 170, 170, 170, 5,   252, 225, 155, 170, 170, 170, 170};
+const char* DXT1 = "RERTIHwAAAAHEAgAEAAAABAAAACAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgE"
+                   "CACAAAAAEAAAARFhUMQAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAzCiEKqqqqqh+fES+"
+                   "qqqqqO3s4Q6qqqqrfHsoeqqqqqquxoAmqqqqqIPwg3KqqqqogiyADqqqqqoKdgIWqqqqqU1lFEaqqqqpie2Fjqqqqqg7+"
+                   "AD6qqqqqbgdgB6qqqqr3388Pqqqqqkb7QCOqqqqqH1weJKqqqqoF/OGbqqqqqg==";
+const char* DXT3 =
+    "RERTIHwAAAAHEAgAEAAAABAAAAAAAQAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgECACAAAAAEAAAARF"
+    "hUMwAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAiIiIiIiIiIi0KDQqqqqqqVVVVVVVVVVXbfbp3/////"
+    "6qqqqqqqqqqGmy6Yv/////u7u7u7u7u7lgf2B2qqqqqMzMzMzMzMzOoead5/////zMzMzMzMzMzIPQg7Kqqqqru7u7u7u7u7gBjIFv/////"
+    "VVVVVVVVVVWClYGVqqqqqkRERERERERETkFPOaqqqqrMzMzMzMzMzAF0AnP/////"
+    "7u7u7u7u7u4Jvuq9qqqqqiIiIiIiIiIiaQdJB6qqqqq7u7u7u7u7u/Sf1JeqqqqqREREREREREQitMWy/////"
+    "4iIiIiIiIiIH0z+Q6qqqqoREREREREREQPc5Nv/////";
+const char* DXT5 =
+    "RERTIHwAAAAHEAgAEAAAABAAAAAAAQAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgECACAAAAAEAAAARF"
+    "hUNQAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAaGgAAAAAAAC0KDQqqqqqqXV0AAAAAAADbfbp3/////"
+    "62tAAAAAAAAGmy6Yv/////19QAAAAAAAFgf2B2qqqqqKysAAAAAAACoead5/////zc3AAAAAAAAIPQg7Kqqqqrs7AAAAAAAAABjIFv/////"
+    "U1MAAAAAAACClYGVqqqqqkpKAAAAAAAATkFPOaqqqqrPzwAAAAAAAAF0AnP/////"
+    "9PQAAAAAAAAJvuq9qqqqqh4eAAAAAAAAaQdJB6qqqqq1tQAAAAAAAPSf1JeqqqqqRkYAAAAAAAAitMWy/////"
+    "4aGAAAAAAAAH0z+Q6qqqqoQEAAAAAAAAAPc5Nv/////";
+const char* ETC1 = "RERTIHwAAAAHEAgAEAAAABAAAACAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgE"
+                   "CACAAAAAEAAAARVRDMQAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAIQGgCAAAAAHDg0AL//"
+                   "wAAYGDQAgAAAAAY2MAC//8AAHgwOAIAAAAA8IAAAv//AABYYAACAAAAAJCwEAL//wAAQChwAgAAAABwaBAC//8AALjASAL//"
+                   "wAAAOhIAgAAAACZ/6oA//8AALBoIAL//wAASID4Av//AADYeCACAAAAAA==";
+const char* ETC2 = "RERTIHwAAAAHEAgAEAAAABAAAACAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgE"
+                   "CACAAAAAEAAAARVRDMgAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAACERPmGRNBImztj8rvjq7x1MmXytm"
+                   "ejLLWNWxSO24jbMT406782e+aPe4YEe4YHkIAuZAQvZALsgEkyBcqwHJZDICj6oirqBR06bAW7bCONg19AFd/"
+                   "CnfgTAWwVgu6YHZOZ/6oA//8AAFpoDFtqRa0IIwH7o4HyMD9ufgxvgEbvyA==";
+const char* PTC2 = "RERTIHwAAAAHEAgAEAAAABAAAABAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgE"
+                   "CACAAAAAEAAAAUFRDMgAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAADw8PDwKADMKPH08LAFF3Af/////"
+                   "4IjmJIPDw8PwDpgofDw8PAINGB1Dw8PD3Ar+1oPDx8P9QCv7w8PDw9yD39C";
+const char* PTC4 = "RERTIHwAAAAHEAgAEAAAABAAAACAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgE"
+                   "CACAAAAAEAAAAUFRDNAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJwDaNlBQUFAGFnAf/////"
+                   "3M03Dj/////oaFwHwAAAAAZIudn/////2UV+ltRm5ZqgGnArAAAAABjLc81/////2F3XWUAAAAAYXagHf////"
+                   "+EJLmDAAECAcAq5yAAAAAAj+u8IP////9hC29F/////1Mo8gAAAAAAgw/rdQ==";
 
-uint8_t DXT3[384]{
-    68,  68,  83,  32,  124, 0,   0,   0,   7,   16,  8,   0,   16,  0,   0,   0,   16,  0,   0,   0,   0,   1,   0,
-    0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   85,  86,  69,  82,  0,   0,   0,   0,   78,
-    86,  84,  84,  2,   1,   2,   0,   32,  0,   0,   0,   4,   0,   0,   0,   68,  88,  84,  51,  0,   0,   0,   0,
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   16,  0,   0,   0,   0,   0,
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   34,  34,  34,  34,  34,  34,  34,  34,  45,  10,
-    13,  10,  170, 170, 170, 170, 85,  85,  85,  85,  85,  85,  85,  85,  219, 125, 186, 119, 255, 255, 255, 255, 170,
-    170, 170, 170, 170, 170, 170, 170, 26,  108, 186, 98,  255, 255, 255, 255, 238, 238, 238, 238, 238, 238, 238, 238,
-    88,  31,  216, 29,  170, 170, 170, 170, 51,  51,  51,  51,  51,  51,  51,  51,  168, 121, 167, 121, 255, 255, 255,
-    255, 51,  51,  51,  51,  51,  51,  51,  51,  32,  244, 32,  236, 170, 170, 170, 170, 238, 238, 238, 238, 238, 238,
-    238, 238, 0,   99,  32,  91,  255, 255, 255, 255, 85,  85,  85,  85,  85,  85,  85,  85,  130, 149, 129, 149, 170,
-    170, 170, 170, 68,  68,  68,  68,  68,  68,  68,  68,  78,  65,  79,  57,  170, 170, 170, 170, 204, 204, 204, 204,
-    204, 204, 204, 204, 1,   116, 2,   115, 255, 255, 255, 255, 238, 238, 238, 238, 238, 238, 238, 238, 9,   190, 234,
-    189, 170, 170, 170, 170, 34,  34,  34,  34,  34,  34,  34,  34,  105, 7,   73,  7,   170, 170, 170, 170, 187, 187,
-    187, 187, 187, 187, 187, 187, 244, 159, 212, 151, 170, 170, 170, 170, 68,  68,  68,  68,  68,  68,  68,  68,  34,
-    180, 197, 178, 255, 255, 255, 255, 136, 136, 136, 136, 136, 136, 136, 136, 31,  76,  254, 67,  170, 170, 170, 170,
-    17,  17,  17,  17,  17,  17,  17,  17,  3,   220, 228, 219, 255, 255, 255, 255};
-
-uint8_t DXT5[384]{
-    68,  68,  83,  32,  124, 0,   0,   0,   7,   16,  8,   0,   16,  0,   0,   0,   16,  0,   0,   0,   0,   1,   0,
-    0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   85,  86,  69,  82,  0,   0,   0,   0,   78,
-    86,  84,  84,  2,   1,   2,   0,   32,  0,   0,   0,   4,   0,   0,   0,   68,  88,  84,  53,  0,   0,   0,   0,
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   16,  0,   0,   0,   0,   0,
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   26,  26,  0,   0,   0,   0,   0,   0,   45,  10,
-    13,  10,  170, 170, 170, 170, 93,  93,  0,   0,   0,   0,   0,   0,   219, 125, 186, 119, 255, 255, 255, 255, 173,
-    173, 0,   0,   0,   0,   0,   0,   26,  108, 186, 98,  255, 255, 255, 255, 245, 245, 0,   0,   0,   0,   0,   0,
-    88,  31,  216, 29,  170, 170, 170, 170, 43,  43,  0,   0,   0,   0,   0,   0,   168, 121, 167, 121, 255, 255, 255,
-    255, 55,  55,  0,   0,   0,   0,   0,   0,   32,  244, 32,  236, 170, 170, 170, 170, 236, 236, 0,   0,   0,   0,
-    0,   0,   0,   99,  32,  91,  255, 255, 255, 255, 83,  83,  0,   0,   0,   0,   0,   0,   130, 149, 129, 149, 170,
-    170, 170, 170, 74,  74,  0,   0,   0,   0,   0,   0,   78,  65,  79,  57,  170, 170, 170, 170, 207, 207, 0,   0,
-    0,   0,   0,   0,   1,   116, 2,   115, 255, 255, 255, 255, 244, 244, 0,   0,   0,   0,   0,   0,   9,   190, 234,
-    189, 170, 170, 170, 170, 30,  30,  0,   0,   0,   0,   0,   0,   105, 7,   73,  7,   170, 170, 170, 170, 181, 181,
-    0,   0,   0,   0,   0,   0,   244, 159, 212, 151, 170, 170, 170, 170, 70,  70,  0,   0,   0,   0,   0,   0,   34,
-    180, 197, 178, 255, 255, 255, 255, 134, 134, 0,   0,   0,   0,   0,   0,   31,  76,  254, 67,  170, 170, 170, 170,
-    16,  16,  0,   0,   0,   0,   0,   0,   3,   220, 228, 219, 255, 255, 255, 255};
-
-uint8_t ETC1[256]{
-    68,  68,  83,  32, 124, 0,   0, 0, 7,   16,  8,   0, 16,  0,   0,  0,  16,  0,   0,   0, 128, 0,   0,  0,
-    0,   0,   0,   0,  1,   0,   0, 0, 0,   0,   0,   0, 0,   0,   0,  0,  0,   0,   0,   0, 0,   0,   0,  0,
-    0,   0,   0,   0,  0,   0,   0, 0, 0,   0,   0,   0, 85,  86,  69, 82, 0,   0,   0,   0, 78,  86,  84, 84,
-    2,   1,   2,   0,  32,  0,   0, 0, 4,   0,   0,   0, 69,  84,  67, 49, 0,   0,   0,   0, 0,   0,   0,  0,
-    0,   0,   0,   0,  0,   0,   0, 0, 0,   0,   0,   0, 0,   16,  0,  0,  0,   0,   0,   0, 0,   0,   0,  0,
-    0,   0,   0,   0,  0,   0,   0, 0, 8,   64,  104, 2, 0,   0,   0,  0,  112, 224, 208, 2, 255, 255, 0,  0,
-    96,  96,  208, 2,  0,   0,   0, 0, 24,  216, 192, 2, 255, 255, 0,  0,  120, 48,  56,  2, 0,   0,   0,  0,
-    240, 128, 0,   2,  255, 255, 0, 0, 88,  96,  0,   2, 0,   0,   0,  0,  144, 176, 16,  2, 255, 255, 0,  0,
-    64,  40,  112, 2,  0,   0,   0, 0, 112, 104, 16,  2, 255, 255, 0,  0,  184, 192, 72,  2, 255, 255, 0,  0,
-    0,   232, 72,  2,  0,   0,   0, 0, 153, 255, 170, 0, 255, 255, 0,  0,  176, 104, 32,  2, 255, 255, 0,  0,
-    72,  128, 248, 2,  255, 255, 0, 0, 216, 120, 32,  2, 0,   0,   0,  0};
-
-uint8_t ETC2[256]{68,  68,  83,  32,  124, 0,   0,   0,   7,   16,  8,   0,   16,  0,   0,   0,   16,  0,   0,   0,
-                  128, 0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  85,  86,  69,  82,  0,   0,   0,   0,   78,  86,  84,  84,  2,   1,   2,   0,   32,  0,   0,   0,
-                  4,   0,   0,   0,   69,  84,  67,  50,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   0,   16,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   132, 68,  249, 134, 68,  208, 72,  155, 59,  99,  242, 187,
-                  227, 171, 188, 117, 50,  101, 242, 182, 103, 163, 44,  181, 141, 91,  20,  142, 219, 136, 219, 49,
-                  62,  52,  235, 191, 54,  123, 230, 143, 123, 134, 4,   123, 134, 7,   144, 128, 46,  100, 4,   47,
-                  100, 2,   236, 128, 73,  50,  5,   202, 176, 28,  150, 67,  32,  40,  250, 162, 42,  234, 5,   29,
-                  58,  108, 5,   187, 108, 35,  141, 131, 95,  64,  21,  223, 194, 157, 248, 19,  1,   108, 21,  130,
-                  238, 152, 29,  147, 153, 255, 170, 0,   255, 255, 0,   0,   90,  104, 12,  91,  106, 69,  173, 8,
-                  35,  1,   251, 163, 129, 242, 48,  63,  110, 126, 12,  111, 128, 70,  239, 200};
-
-uint8_t PTC2[192]{
-    68,  68,  83,  32,  124, 0,  0,   0,   7,   16,  8,   0,   16,  0,  0,   0,   16,  0,   0,   0,   64,  0,  0,   0,
-    0,   0,   0,   0,   1,   0,  0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,  0,   0,
-    0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   85,  86, 69,  82,  0,   0,   0,   0,   78,  86, 84,  84,
-    2,   1,   2,   0,   32,  0,  0,   0,   4,   0,   0,   0,   80,  84, 67,  50,  0,   0,   0,   0,   0,   0,  0,   0,
-    0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   16, 0,   0,   0,   0,   0,   0,   0,   0,  0,   0,
-    0,   0,   0,   0,   0,   0,  0,   0,   240, 240, 240, 240, 40,  0,  204, 40,  241, 244, 240, 176, 5,   23, 112, 31,
-    255, 255, 255, 255, 130, 35, 152, 146, 15,  15,  15,  15,  192, 58, 96,  161, 240, 240, 240, 240, 8,   52, 96,  117,
-    15,  15,  15,  15,  112, 43, 251, 90,  15,  15,  31,  15,  245, 0,  175, 239, 15,  15,  15,  15,  114, 15, 127, 66};
-
-uint8_t PTC4[256]{68,  68,  83,  32,  124, 0,   0,   0,   7,   16,  8,   0,   16,  0,   0,   0,   16,  0,   0,   0,
-                  128, 0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  85,  86,  69,  82,  0,   0,   0,   0,   78,  86,  84,  84,  2,   1,   2,   0,   32,  0,   0,   0,
-                  4,   0,   0,   0,   80,  84,  67,  52,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   0,   16,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   39,  0,   218, 54,  80,  80,  80,  80,
-                  6,   22,  112, 31,  255, 255, 255, 255, 115, 52,  220, 56,  255, 255, 255, 255, 161, 161, 112, 31,
-                  0,   0,   0,   0,   25,  34,  231, 103, 255, 255, 255, 255, 101, 21,  250, 91,  81,  155, 150, 106,
-                  128, 105, 192, 172, 0,   0,   0,   0,   99,  45,  207, 53,  255, 255, 255, 255, 97,  119, 93,  101,
-                  0,   0,   0,   0,   97,  118, 160, 29,  255, 255, 255, 255, 132, 36,  185, 131, 0,   1,   2,   1,
-                  192, 42,  231, 32,  0,   0,   0,   0,   143, 235, 188, 32,  255, 255, 255, 255, 97,  11,  111, 69,
-                  255, 255, 255, 255, 83,  40,  242, 0,   0,   0,   0,   0,   131, 15,  235, 117};
-
-void TestTexture(SharedPtr<Context> context, unsigned char* data, size_t size, CompressedFormat format)
+// Compare texture area color with expected color
+void TestRGBARect(const unsigned char* data, int row, int col, Vector4 expected, bool hasAlpha, float eps, int size = 4)
 {
+    Vector4 average(0.0f, 0.0f, 0.0f, 0.0f);
+    float scale = 0.0f;
+    for (int y = 0; y < size; ++y)
+    {
+        for (int x = 0; x < size; ++x)
+        {
+            const int offset = ((y + row) * 16 + x + col) * 4;
+            average += Vector4(data[offset], data[offset + 1], data[offset + 2], data[offset + 3]);
+            scale += 255;
+        }
+    }
+    average /= scale;
+    const float diff = hasAlpha ? (average - expected).Length() : Vector3(average - expected).Length();
+    REQUIRE(diff <= eps);
+};
+
+// Decompress texture and require certain format
+SharedPtr<Image> Decompress(SharedPtr<Context> context, const char* data, CompressedFormat format)
+{
+    auto encodedBytes = DecodeBase64(data);
     auto image = MakeShared<Image>(context);
-    MemoryBuffer dds(data, size);
+    MemoryBuffer dds(encodedBytes);
     REQUIRE(image->BeginLoad(dds));
     REQUIRE(image->GetCompressedFormat() == format);
-    auto decompressed = image->GetDecompressedImageLevel(0);
+    auto decompressed = image->GetDecompressedImageLevel(0)->ConvertToRGBA();
     REQUIRE(decompressed->GetWidth() == 16);
     REQUIRE(decompressed->GetHeight() == 16);
+    return decompressed;
+}
+
+// Test default texture areas
+void TestTexture(SharedPtr<Context> context, const char* data, CompressedFormat format)
+{
+    auto decompressed = Decompress(context, data, format);
+    const unsigned char* bytes = decompressed->GetData();
+    float eps = 3 / 255.0f;
+    auto hasA = decompressed->HasAlphaChannel();
+    switch (format)
+    {
+    case CF_DXT3:
+    case CF_ETC1:
+        eps = 9 / 255.0f;
+        break;
+    }
+    TestRGBARect(bytes, 0, 0, Vector4(0.03529412f, 0.2666667f, 0.4196078f, 0.1019608f), hasA, eps);
+    TestRGBARect(bytes, 0, 4, Vector4(0.4588235f, 0.8901961f, 0.8470588f, 0.3647059f), hasA, eps);
+    TestRGBARect(bytes, 0, 8, Vector4(0.4039216f, 0.3960784f, 0.8352941f, 0.6784314f), hasA, eps);
+    TestRGBARect(bytes, 0, 12, Vector4(0.09411765f, 0.854902f, 0.7803922f, 0.9607843f), hasA, eps);
+    TestRGBARect(bytes, 4, 0, Vector4(0.4862745f, 0.2078431f, 0.2313726f, 0.1686275f), hasA, eps);
+    TestRGBARect(bytes, 4, 4, Vector4(0.9607843f, 0.5254902f, 0.0f, 0.2156863f), hasA, eps);
+    TestRGBARect(bytes, 4, 8, Vector4(0.3686275f, 0.3921569f, 0.0f, 0.9254902f), hasA, eps);
+    TestRGBARect(bytes, 4, 12, Vector4(0.5764706f, 0.6980392f, 0.04705882f, 0.3254902f), hasA, eps);
+    TestRGBARect(bytes, 8, 0, Vector4(0.254902f, 0.1607843f, 0.4588235f, 0.2901961f), hasA, eps);
+    TestRGBARect(bytes, 8, 4, Vector4(0.4509804f, 0.4235294f, 0.05490196f, 0.8117647f), hasA, eps);
+    TestRGBARect(bytes, 8, 8, Vector4(0.7450981f, 0.7607843f, 0.3019608f, 0.9568627f), hasA, eps);
+    TestRGBARect(bytes, 8, 12, Vector4(0.0f, 0.9333333f, 0.2980392f, 0.1176471f), hasA, eps);
+    TestRGBARect(bytes, 12, 0, Vector4(0.5960785f, 0.9921569f, 0.654902f, 0.7098039f), hasA, eps);
+    TestRGBARect(bytes, 12, 4, Vector4(0.7137255f, 0.4117647f, 0.1254902f, 0.2745098f), hasA, eps);
+    TestRGBARect(bytes, 12, 8, Vector4(0.2745098f, 0.5058824f, 0.9921569f, 0.5254902f), hasA, eps);
+    TestRGBARect(bytes, 12, 12, Vector4(0.8745098f, 0.4980392f, 0.1215686f, 0.0627451f), hasA, eps);
 }
 
 } // namespace
+
+// Testing compressed images except PVRTC formats due to low image quality at PVRTC samples
 TEST_CASE("Image Decompression")
 {
     auto context = Tests::CreateCompleteTestContext();
-    TestTexture(context, DXT1, sizeof(DXT1), CF_DXT1);
-    TestTexture(context, DXT3, sizeof(DXT3), CF_DXT3);
-    TestTexture(context, DXT5, sizeof(DXT5), CF_DXT5);
-    TestTexture(context, ETC1, sizeof(ETC1), CF_ETC1);
-    TestTexture(context, ETC2, sizeof(ETC2), CF_ETC2_RGB);
-    TestTexture(context, PTC2, sizeof(PTC2), CF_PVRTC_RGBA_2BPP);
-    TestTexture(context, PTC4, sizeof(PTC4), CF_PVRTC_RGBA_4BPP);
+    TestTexture(context, DXT1, CF_DXT1);
+    TestTexture(context, DXT3, CF_DXT3);
+    TestTexture(context, DXT5, CF_DXT5);
+    TestTexture(context, ETC1, CF_ETC1);
+    TestTexture(context, ETC2, CF_ETC2_RGB);
+}
+
+// Testing few points in the CF_PVRTC_RGBA_2BPP image
+TEST_CASE("PVRTC_2BPP Image Decompression")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto decompressed = Decompress(context, PTC2, CF_PVRTC_RGBA_2BPP);
+    const unsigned char* bytes = decompressed->GetData();
+    float eps = 4 / 255.0f;
+    auto hasA = decompressed->HasAlphaChannel();
+    TestRGBARect(bytes, 0, 0, Vector4(123, 101, 53, 34) / 255.0f, hasA, eps, 1);
+    TestRGBARect(bytes, 8, 3, Vector4(89, 28, 102, 65) / 255.0f, hasA, eps, 1);
+}
+
+// Testing few points in the CF_PVRTC_RGBA_4BPP image
+TEST_CASE("PVRTC_4BPP Image Decompression")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto decompressed = Decompress(context, PTC4, CF_PVRTC_RGBA_4BPP);
+    const unsigned char* bytes = decompressed->GetData();
+    float eps = 5 / 255.0f;
+    auto hasA = decompressed->HasAlphaChannel();
+    TestRGBARect(bytes, 0, 0, Vector4(101, 103, 72, 25) / 255.0f, hasA, eps, 1);
+    TestRGBARect(bytes, 8, 3, Vector4(77, 37, 95, 95) / 255.0f, hasA, eps, 1);
 }
 } // namespace Tests
