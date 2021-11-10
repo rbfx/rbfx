@@ -2487,6 +2487,7 @@ private:
         modelView->CalculateMissingNormals(true);
         modelView->CalculateMissingTangents();
         modelView->RecalculateBoneBoundingBoxes();
+        modelView->RepairBoneWeights();
         modelView->Normalize();
         return modelView;
     }

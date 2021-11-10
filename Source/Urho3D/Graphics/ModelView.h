@@ -308,6 +308,8 @@ public:
     void CalculateMissingNormals(bool flatNormals = false);
     /// Calculate tangents for geometries without tangents in vertex format.
     void CalculateMissingTangents();
+    /// Normalize bone weights and cleanup invalid bones. Ignored if there's no bones.
+    void RepairBoneWeights();
     /// Recalculate bounding boxes for bones.
     void RecalculateBoneBoundingBoxes();
 

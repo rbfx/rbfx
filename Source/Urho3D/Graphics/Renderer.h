@@ -425,6 +425,9 @@ public:
     /// Return whether to enable spherical harmonics.
     float GetSphericalHarmonics() const { return sphericalHarmonics_; }
 
+    /// Return skinning mode.
+    SkinningMode GetSkinningMode() const { return skinningMode_; }
+
     /// Return whether hardware skinning is used.
     bool GetUseHardwareSkinning() const { return (skinningMode_ == SKINNING_AUTO && hardwareSkinningSupported_) || skinningMode_ == SKINNING_HARDWARE; }
 

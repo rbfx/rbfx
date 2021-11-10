@@ -188,6 +188,8 @@ private:
     void UpdateMorphs();
     /// Handle model reload finished.
     void HandleModelReloadFinished(StringHash eventType, VariantMap& eventData);
+    /// Reconsider whether to use software skinning.
+    void UpdateSoftwareSkinningState();
 
     /// Skeleton.
     Skeleton skeleton_;
