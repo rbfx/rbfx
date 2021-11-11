@@ -1,4 +1,4 @@
-<technique vs="PBRTerrainBlend" ps="PBRTerrainBlend" psdefines="PBR IBL">
+<technique vs="PBRTerrainBlend" ps="PBRTerrainBlend" psdefines="IBL">
     <pass name="base" />
     <pass name="light" depthtest="equal" depthwrite="false" blend="add" />
     <pass name="material" psdefines="MATERIAL" depthtest="equal" depthwrite="false" />

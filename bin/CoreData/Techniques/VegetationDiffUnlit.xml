@@ -1,8 +1,8 @@
-<technique vs="Vegetation" ps="Unlit" psdefines="DIFFMAP" >
+<technique vs="Vegetation" ps="Vegetation" vsdefines="UNLIT" psdefines="DIFFMAP UNLIT" >
     <pass name="base" />
     <pass name="prepass" psdefines="PREPASS" />
     <pass name="material" />
     <pass name="deferred" psdefines="DEFERRED" />
-    <pass name="depth" vs="VegetationDepth" ps="Depth" />
-    <pass name="shadow" vs="VegetationShadow" ps="Shadow" />
+    <pass name="depth" vs="Vegetation" ps="Vegetation" />
+    <pass name="shadow" vs="Vegetation" ps="Vegetation" />
 </technique>
