@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # build.sh <action> ...
-# ci_action:       dependencies|generate|build|install
+# ci_action:       dependencies|generate|build|install|test
 # ci_platform:     windows|linux|macos|android|ios|web
 # ci_arch:         x86|x64|arm|arm64
 # ci_compiler:     msvc|gcc|gcc-*|clang|clang-*|mingw
@@ -247,6 +247,11 @@ function action-build-android() {
 function action-install() {
     cd $ci_build_dir
     cmake --install . --config "${types[$ci_build_type]}"
+}
+
+function action-test() {
+    cd $ci_build_dir
+    ctest --output-on-failure -C "${types[$ci_build_type]}"
 }
 
 # Invoke requested action.

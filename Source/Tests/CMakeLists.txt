@@ -24,7 +24,6 @@ if (NOT URHO3D_TESTING)
     return ()
 endif ()
 
-include (CTest)
 include (../ThirdParty/catch2/Catch.cmake)
 
 file (GLOB_RECURSE TEST_SOURCE_CODE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" *.cpp)
