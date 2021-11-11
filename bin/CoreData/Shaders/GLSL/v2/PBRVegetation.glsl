@@ -2,4 +2,4 @@
     #define PBR
 #endif
 
-#include "M_LegacyTerrain.glsl"
+#include "M_LegacyVegetation.glsl"
