@@ -11,6 +11,7 @@ env:
   URHO3D_ENABLE_ALL: ON
   URHO3D_SAMPLES: ON
   URHO3D_TESTING: ON
+  URHO3D_PROFILING_FALLBACK: ON
   DOTNET_VERSION: 5.0.x
   CMAKE_VERSION: 3.19.x
   # ccache configuration
@@ -133,13 +134,10 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - name: Run Tests
+      - name: Test
+        if: matrix.ci_compiler == 'msvc'
         shell: bash
-        env:
-          CTEST_OUTPUT_ON_FAILURE: 1
-        if: matrix.ci_compiler == 'msvc' && matrix.ci_build_type == 'rel'
-        working-directory: ${{ env.ci_build_dir }}
-        run: ctest -C Release
+        run: ${{ env.ci_build_script }} test
 
       - uses: actions/upload-artifact@v2
         if: env.ci_artifacts == 'true'
@@ -304,6 +302,10 @@ jobs:
       - name: Build
         shell: bash
         run: ${{ env.ci_build_script }} build
+
+      - name: Test
+        shell: bash
+        run: ${{ env.ci_build_script }} test
 
       - name: Install
         shell: bash

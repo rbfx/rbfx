@@ -59,7 +59,7 @@ include(UrhoCommon)
 
 # Enable testing
 if (URHO3D_TESTING)
-    enable_testing ()
+    include (CTest)
 endif ()
 
 # Enable common build options
