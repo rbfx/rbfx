@@ -130,14 +130,14 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build-${{ env.ci_compiler }}
 
-      - name: Install
-        shell: bash
-        run: ${{ env.ci_build_script }} install
-
       - name: Test
         if: matrix.ci_compiler == 'msvc'
         shell: bash
         run: ${{ env.ci_build_script }} test
+
+      - name: Install
+        shell: bash
+        run: ${{ env.ci_build_script }} install
 
       - uses: actions/upload-artifact@v2
         if: env.ci_artifacts == 'true'

@@ -176,6 +176,14 @@ public:
     /// Return mutable value by index.
     float& operator[](unsigned index) { return (&x_)[index]; }
 
+    /// Return length.
+    /// @property
+    float Length() const { return sqrtf(x_ * x_ + y_ * y_ + z_ * z_ + w_ * w_); }
+
+    /// Return squared length.
+    /// @property
+    float LengthSquared() const { return x_ * x_ + y_ * y_ + z_ * z_ + w_ * w_; }
+
     /// Calculate dot product.
     float DotProduct(const Vector4& rhs) const { return x_ * rhs.x_ + y_ * rhs.y_ + z_ * rhs.z_ + w_ * rhs.w_; }
 
