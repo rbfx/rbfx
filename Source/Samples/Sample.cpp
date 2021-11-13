@@ -40,7 +40,7 @@ Sample::Sample(Context* context) :
 
 void Sample::Start(const ea::vector<ea::string>& args)
 {
-    Sample::Start();
+    Start();
 }
 
 void Sample::Start()
