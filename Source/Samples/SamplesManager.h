@@ -25,6 +25,9 @@
 
 #include "Sample.h"
 
+#include <string>
+#include <vector>
+
 namespace Urho3D
 {
 
@@ -78,7 +81,7 @@ private:
     ///
     bool isClosing_ = false;
     /// Array of sample command line args. Use STL for compatibility with CLI.
-    std::vector<std::string> commandLineArgsTemp_;
+    std::vector<std::string> commandLineArgsTemp_; // TODO: Get rid of it
     ea::vector<ea::string> commandLineArgs_;
 
     /// Generic Serializable inspector.
