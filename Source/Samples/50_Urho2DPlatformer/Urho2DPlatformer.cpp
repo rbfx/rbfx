@@ -71,11 +71,6 @@ Urho2DPlatformer::Urho2DPlatformer(Context* context) :
     Mover::RegisterObject(context);
 }
 
-void Urho2DPlatformer::Setup()
-{
-    Sample::Setup();
-}
-
 void Urho2DPlatformer::Start()
 {
     // Execute base class startup

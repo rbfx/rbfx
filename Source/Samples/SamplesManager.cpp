@@ -164,7 +164,7 @@ void SamplesManager::Setup()
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
 
 #if DESKTOP
-    GetCommandLineParser().add_option("--sample", startSample_);
+    GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
 #endif
 }
 
@@ -172,6 +172,10 @@ void SamplesManager::Start()
 {
     Input* input = context_->GetSubsystem<Input>();
     UI* ui = context_->GetSubsystem<UI>();
+
+    // Parse command line arguments
+    ea::transform(commandLineArgsTemp_.begin(), commandLineArgsTemp_.end(), ea::back_inserter(commandLineArgs_),
+        [](const std::string& str) { return ea::string(str.c_str()); });
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
     context_->RegisterFactory<Rotator>();
@@ -326,8 +330,8 @@ void SamplesManager::Start()
     RegisterSample<KinematicCharacterDemo>();
 #endif
 
-    if (!startSample_.empty())
-        StartSample(startSample_);
+    if (!commandLineArgs_.empty())
+        StartSample(commandLineArgs_[0]);
 }
 
 void SamplesManager::Stop()
@@ -357,9 +361,9 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    runningSample_.StaticCast<Object>(context_->CreateObject(sampleType));
-    if (runningSample_.NotNull())
-        runningSample_->Start();
+    runningSample_.DynamicCast(context_->CreateObject(sampleType));
+    if (runningSample_)
+        runningSample_->Start(commandLineArgs_);
     else
         ErrorExit("Specified sample does not exist.");
 }

@@ -38,8 +38,9 @@ Sample::Sample(Context* context) :
 {
 }
 
-void Sample::Setup()
+void Sample::Start(const ea::vector<ea::string>& args)
 {
+    Sample::Start();
 }
 
 void Sample::Start()
