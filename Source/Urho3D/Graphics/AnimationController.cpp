@@ -1085,7 +1085,7 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     {
         const AnimationTrack& track = item.second;
         Node* trackNode = GetTrackNodeByNameHash(track.nameHash_, startBone);
-        Bone* trackBone = model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
+        Bone* trackBone = trackNode && model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
 
         // Add model track
         if (trackBone && trackBone->node_)
