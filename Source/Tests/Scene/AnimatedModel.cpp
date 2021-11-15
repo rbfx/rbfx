@@ -312,12 +312,12 @@ TEST_CASE("Animation start bone")
         Tests::NodeRef quad2{ scene, "Quad 2" };
         // Time 0.5: Translate Z to -2
         Tests::RunFrame(context, 0.5f, 0.05f);
-        REQUIRE(quad2->GetWorldPosition().Equals({ -1.0f, 1.0f, -2.0f }, M_LARGE_EPSILON));
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, -2.0f }, M_LARGE_EPSILON));
 
         // Time 1.5: Translate Z to 2
         Tests::SerializeAndDeserializeScene(scene);
         Tests::RunFrame(context, 1.0f, 0.05f);
-        REQUIRE(quad2->GetWorldPosition().Equals({ 1.0f, 1.0f, 2.0f }, M_LARGE_EPSILON));
+        REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 2.0f }, M_LARGE_EPSILON));
     }
 
     // Test Node mode: both animations
