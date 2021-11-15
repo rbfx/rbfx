@@ -1080,7 +1080,7 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
         {
             ModelAnimationStateTrack stateTrack;
             stateTrack.track_ = &track;
-            stateTrack.node_ = trackNode;
+            stateTrack.node_ = trackBone->node_;
             stateTrack.bone_ = trackBone;
             state->AddModelTrack(stateTrack);
         }
