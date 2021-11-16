@@ -220,6 +220,74 @@ TEST_CASE("Additive animation blending")
     }
 }
 
+TEST_CASE("Animation empty track name")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto cache = context->GetSubsystem<ResourceCache>();
+
+    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
+    cache->AddManualResource(model);
+
+    auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context, "Tests/TranslateSelf.ani", "",
+                    {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, 2.0f);
+    cache->AddManualResource(animationTranslateX);
+
+    // Test AnimatedModel mode
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto animatedModel = node->CreateComponent<AnimatedModel>();
+        animatedModel->SetModel(model);
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        REQUIRE(animationController->Play(animationTranslateX->GetName(), 0, true));
+
+        Tests::NodeRef nodeRef{ scene, "Node" };
+        Tests::NodeRef rootRef{ scene, "Root" };
+
+        // Time 0.5: Translate X to -1
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(nodeRef->GetPosition().Equals({-1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 1.0f, 0.05f);
+        REQUIRE(nodeRef->GetPosition().Equals({1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+    }
+
+    // Test Node mode
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto child = node->CreateChild();
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        REQUIRE(animationController->Play(animationTranslateX->GetName(), 0, true));
+
+        Tests::NodeRef nodeRef{ scene, "Node" };
+        Tests::NodeRef childRef{ scene, "" };
+
+        // Time 0.5: Translate X to -1
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(nodeRef->GetPosition().Equals({-1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(childRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 1.0f, 0.05f);
+        REQUIRE(nodeRef->GetPosition().Equals({1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(childRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+    }
+}
+
 TEST_CASE("Animation start bone")
 {
     auto context = Tests::CreateCompleteTestContext();
