@@ -1042,6 +1042,19 @@ AnimatedAttributeReference AnimationController::ParseAnimatablePath(ea::string_v
     return result;
 }
 
+Node* AnimationController::GetTrackNodeByNameHash(StringHash trackNameHash, Node* startBone) const
+{
+    //Empty track name means that we animate the node itself
+    if (!trackNameHash)
+        return node_;
+
+    //If track name hash matches start bone name hash then we animate the start bone
+    if (trackNameHash == startBone->GetNameHash())
+        return startBone;
+
+    return startBone->GetChild(trackNameHash, true);
+}
+
 void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
 {
     // TODO(animation): Cache lookups?
@@ -1071,8 +1084,7 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     for (const auto& item : tracks)
     {
         const AnimationTrack& track = item.second;
-        Node* trackNode = track.nameHash_ == startBone->GetNameHash() ? startBone
-            : startBone->GetChild(track.nameHash_, true);
+        Node* trackNode = GetTrackNodeByNameHash(track.nameHash_, startBone);
         Bone* trackBone = trackNode && model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
 
         // Add model track

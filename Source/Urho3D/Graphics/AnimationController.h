@@ -234,6 +234,9 @@ private:
     void ConnectToAnimatedModel();
     /// Parse animatable path from starting node.
     AnimatedAttributeReference ParseAnimatablePath(ea::string_view path, Node* startNode);
+    /// Get animated node (bone or owner node) by track name hash
+    Node* GetTrackNodeByNameHash(StringHash trackNameHash, Node* startBone) const;
+
 
     /// Animation control structures.
     ea::vector<AnimationControl> animations_;
