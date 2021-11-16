@@ -37,6 +37,7 @@ namespace Urho3D
 {
 
 class File;
+class NetworkManager;
 class PackageFile;
 class Texture2D;
 
@@ -143,6 +144,9 @@ public:
     void AddLightmap(const ea::string& lightmapTextureName);
     /// Return lightmap texture.
     Texture2D* GetLightmapTexture(unsigned index) const;
+
+    /// Get or lazily create network manager.
+    NetworkManager* GetNetworkManager();
 
     /// Load from an XML file. Return true if successful.
     bool LoadXML(Deserializer& source);
@@ -405,6 +409,9 @@ private:
     ResourceRefList lightmaps_;
     /// Loaded lightmap textures.
     ea::vector<SharedPtr<Texture2D>> lightmapTextures_;
+
+    /// Network replication manager.
+    SharedPtr<NetworkManager> networkManager_;
 };
 
 /// Register Scene library objects.

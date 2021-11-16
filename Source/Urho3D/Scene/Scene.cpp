@@ -31,6 +31,7 @@
 #include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
+#include "../Network/NetworkManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
@@ -274,6 +275,13 @@ void Scene::ReloadLightmaps()
 Texture2D* Scene::GetLightmapTexture(unsigned index) const
 {
     return index < lightmapTextures_.size() ? lightmapTextures_[index] : nullptr;
+}
+
+NetworkManager* Scene::GetNetworkManager()
+{
+    if (!networkManager_)
+        networkManager_ = MakeShared<NetworkManager>(this);
+    return networkManager_;
 }
 
 bool Scene::LoadXML(Deserializer& source)
