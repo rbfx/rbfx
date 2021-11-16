@@ -35,6 +35,8 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkPriority.h"
+#include "../Network/NetworkComponent.h"
+#include "../Network/NetworkManager.h"
 #include "../Network/Protocol.h"
 #include "../Scene/Scene.h"
 
@@ -572,6 +574,12 @@ void Network::BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrde
 
 void Network::SetUpdateFps(int fps)
 {
+    if (IsServerRunning())
+    {
+        URHO3D_LOGERROR("Cannot change update frequency of running server. Attempted to change frequency from {} to {}.", updateFps_, fps);
+        return;
+    }
+
     updateFps_ = Max(fps, 1);
     updateInterval_ = 1.0f / (float)updateFps_;
     updateAcc_ = 0.0f;
@@ -1034,6 +1042,7 @@ unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
 
 void RegisterNetworkLibrary(Context* context)
 {
+    NetworkComponent::RegisterObject(context);
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
 }

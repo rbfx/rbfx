@@ -30,6 +30,7 @@
 #include "../Core/Timer.h"
 #include "../Input/Controls.h"
 #include "../IO/VectorBuffer.h"
+#include "../Network/AbstractConnection.h"
 #include "../Scene/ReplicationState.h"
 
 namespace SLNet
@@ -47,6 +48,7 @@ namespace Urho3D
 
 class File;
 class MemoryBuffer;
+class NetworkManager;
 class Node;
 class Scene;
 class Serializable;
@@ -116,11 +118,13 @@ enum PacketType {
 };
 
 /// %Connection to a remote network host.
-class URHO3D_API Connection : public Object
+class URHO3D_API Connection : public AbstractConnection
 {
-    URHO3D_OBJECT(Connection, Object);
+    URHO3D_OBJECT(Connection, AbstractConnection);
 
 public:
+    using AbstractConnection::SendMessage;
+
     /// Construct with context, RakNet connection address and Raknet peer pointer.
     Connection(Context* context);
     /// Destruct.
@@ -134,9 +138,7 @@ public:
     /// Get packet type based on the message parameters
     PacketType GetPacketType(bool reliable, bool inOrder);
     /// Send a message.
-    void SendMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID = 0);
-    /// Send a message.
-    void SendMessage(int msgID, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes, unsigned contentID = 0);
+    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     /// Send a remote event.
     void SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Send a remote event with the specified node as sender.
@@ -257,7 +259,7 @@ public:
     int GetPacketsOutPerSec() const;
 
     /// Return an address:port string.
-    ea::string ToString() const;
+    ea::string ToString() const override;
     /// Return number of package downloads remaining.
     /// @property
     unsigned GetNumDownloads() const;
@@ -326,6 +328,7 @@ private:
 
     /// Scene.
     WeakPtr<Scene> scene_;
+    WeakPtr<NetworkManager> networkManager_;
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.
@@ -338,8 +341,6 @@ private:
     ea::unordered_map<unsigned, ea::vector<unsigned char> > componentLatestData_;
     /// Node ID's to process during a replication update.
     ea::hash_set<unsigned> nodesToProcess_;
-    /// Reusable message buffer.
-    VectorBuffer msg_;
     /// Queued remote events.
     ea::vector<RemoteEvent> remoteEvents_;
     /// Scene file to load once all packages (if any) have been downloaded.

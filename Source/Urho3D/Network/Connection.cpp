@@ -32,6 +32,7 @@
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
+#include "../Network/NetworkManager.h"
 #include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
 #include "../Resource/ResourceCache.h"
@@ -72,7 +73,7 @@ PackageUpload::PackageUpload() :
 }
 
 Connection::Connection(Context* context) :
-    Object(context),
+    AbstractConnection(context),
     timeStamp_(0),
     peer_(nullptr),
     sendMode_(OPSM_NONE),
@@ -123,13 +124,7 @@ PacketType Connection::GetPacketType(bool reliable, bool inOrder)
     return PT_UNRELIABLE_UNORDERED;
 }
 
-void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID)
-{
-    SendMessage(msgID, reliable, inOrder, msg.GetData(), msg.GetSize(), contentID);
-}
-
-void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes,
-    unsigned contentID)
+void Connection::SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
 {
     if (numBytes && !data)
     {
@@ -149,7 +144,7 @@ void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const unsig
         buffer.WriteUInt((unsigned int)MSG_PACKED_MESSAGE);
     }
 
-    buffer.WriteUInt((unsigned int) msgID);
+    buffer.WriteUInt((unsigned int)messageId);
     buffer.WriteUInt(numBytes);
     buffer.Write(data, numBytes);
 }
@@ -196,6 +191,9 @@ void Connection::SetScene(Scene* newScene)
     {
         // Remove replication states and owner references from the previous scene
         scene_->CleanupConnection(this);
+        if (isClient_ && networkManager_)
+            networkManager_->AsServer().RemoveConnection(this);
+        networkManager_ = nullptr;
     }
 
     scene_ = newScene;
@@ -275,6 +273,7 @@ void Connection::SendServerUpdate()
 {
     if (!scene_ || !sceneLoaded_)
         return;
+    networkManager_->AsServer().SendUpdate(this);
 
     // Always check the root node (scene) first so that the scene-wide components get sent first,
     // and all other replicated nodes get added to the dirty set for sending the initial state
@@ -308,7 +307,7 @@ void Connection::SendClientUpdate()
         msg_.WriteVector3(position_);
     if (sendMode_ >= OPSM_POSITION_ROTATION)
         msg_.WritePackedQuaternion(rotation_);
-    SendMessage(MSG_CONTROLS, false, false, msg_, CONTROLS_CONTENT_ID);
+    SendMessage(MSG_CONTROLS, false, false, msg_);
 
     ++timeStamp_;
 }
@@ -525,7 +524,10 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
                 ProcessPackageInfo(msgID, msg);
                 break;
             default:
-                ProcessUnknownMessage(msgID, msg);
+                if (networkManager_ && FIRST_NETWORK_MANAGER_MSG <= msgID && msgID < LAST_NETWORK_MANAGER_MSG)
+                    networkManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg);
+                else
+                    ProcessUnknownMessage(msgID, msg);
                 break;
         }
     }
@@ -1020,6 +1022,9 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
     }
     else
     {
+        networkManager_ = scene_->GetNetworkManager();
+        networkManager_->MarkAsServer();
+        networkManager_->AsServer().AddConnection(this);
         sceneLoaded_ = true;
 
         using namespace ClientSceneLoaded;
@@ -1203,6 +1208,8 @@ void Connection::SetPacketSizeLimit(int limit)
 
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
+    networkManager_ = scene_->GetNetworkManager();
+    networkManager_->MarkAsClient();
     sceneLoaded_ = true;
 
     // Clear all replicated nodes
@@ -1356,7 +1363,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
             msg_.WriteNetID(node->GetID());
             node->WriteLatestDataUpdate(msg_, timeStamp_);
 
-            SendMessage(MSG_NODELATESTDATA, true, false, msg_, node->GetID());
+            SendMessage(MSG_NODELATESTDATA, true, false, msg_);
         }
 
         // Send deltaupdate if remaining dirty bits, or vars have changed
@@ -1434,7 +1441,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
                     msg_.WriteNetID(component->GetID());
                     component->WriteLatestDataUpdate(msg_, timeStamp_);
 
-                    SendMessage(MSG_COMPONENTLATESTDATA, true, false, msg_, component->GetID());
+                    SendMessage(MSG_COMPONENTLATESTDATA, true, false, msg_);
                 }
 
                 // Send deltaupdate if remaining dirty bits
@@ -1622,6 +1629,9 @@ void Connection::OnPackagesReady()
     {
         // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
         scene_->Clear(true, false);
+
+        networkManager_ = scene_->GetNetworkManager();
+        networkManager_->MarkAsClient();
         sceneLoaded_ = true;
 
         msg_.Clear();
