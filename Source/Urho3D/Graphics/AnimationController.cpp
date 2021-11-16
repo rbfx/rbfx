@@ -1073,14 +1073,14 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
         const AnimationTrack& track = item.second;
         Node* trackNode = track.nameHash_ == startBone->GetNameHash() ? startBone
             : startBone->GetChild(track.nameHash_, true);
-        Bone* trackBone = model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
+        Bone* trackBone = trackNode && model ? model->GetSkeleton().GetBone(track.nameHash_) : nullptr;
 
         // Add model track
         if (trackBone && trackBone->node_)
         {
             ModelAnimationStateTrack stateTrack;
             stateTrack.track_ = &track;
-            stateTrack.node_ = trackNode;
+            stateTrack.node_ = trackBone->node_;
             stateTrack.bone_ = trackBone;
             state->AddModelTrack(stateTrack);
         }

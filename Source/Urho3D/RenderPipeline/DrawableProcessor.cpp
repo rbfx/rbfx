@@ -381,7 +381,6 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
     const unsigned threadIndex = WorkQueue::GetThreadIndex();
 
     drawable->UpdateBatches(frameInfo_);
-    drawable->MarkInView(frameInfo_);
 
     isDrawableUpdated_[drawableIndex].test_and_set(std::memory_order_relaxed);
 
@@ -389,6 +388,8 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
     const float maxDistance = drawable->GetDrawDistance();
     if (maxDistance > 0.0f && drawable->GetDistance() > maxDistance)
         return;
+
+    drawable->MarkInView(frameInfo_);
 
     // For geometries, find zone, clear lights and calculate view space Z range
     if (drawable->GetDrawableFlags() & DRAWABLE_GEOMETRY)
@@ -407,6 +408,10 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
             geometryZRanges_[drawableIndex] = zRange;
             sceneZRangeTemp_[threadIndex] |= zRange;
         }
+
+        // Always reset lights in case of material change
+        LightAccumulator& lightAccumulator = geometryLighting_[drawableIndex];
+        lightAccumulator.ResetLights();
 
         // Collect batches
         bool isForwardLit = false;
@@ -442,12 +447,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
         // Process lighting
         if (needAmbient)
         {
-            LightAccumulator& lightAccumulator = geometryLighting_[drawableIndex];
             const GlobalIlluminationType giType = drawable->GetGlobalIlluminationType();
-
-            // Reset lights
-            if (isForwardLit)
-                lightAccumulator.ResetLights();
 
             // Reset SH from GI if possible/needed, reset to zero otherwise
             if (gi_ && giType >= GlobalIlluminationType::BlendLightProbes)

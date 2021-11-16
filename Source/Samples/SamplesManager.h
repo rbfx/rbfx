@@ -23,6 +23,11 @@
 
 #include <Urho3D/Engine/Application.h>
 
+#include "Sample.h"
+
+#include <string>
+#include <vector>
+
 namespace Urho3D
 {
 
@@ -68,15 +73,16 @@ private:
     void StartSample(StringHash sampleType);
 
     ///
-    SharedPtr<Application> runningSample_;
+    SharedPtr<Sample> runningSample_;
     ///
     SharedPtr<UIElement> listViewHolder_;
     /// Logo sprite.
     SharedPtr<Sprite> logoSprite_;
     ///
     bool isClosing_ = false;
-    /// Sample which will be started automatically.
-    ea::string startSample_;
+    /// Array of sample command line args. Use STL for compatibility with CLI.
+    std::vector<std::string> commandLineArgsTemp_; // TODO: Get rid of it
+    ea::vector<ea::string> commandLineArgs_;
 
     /// Generic Serializable inspector.
     /// @{

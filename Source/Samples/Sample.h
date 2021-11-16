@@ -73,8 +73,8 @@ public:
     /// Construct.
     explicit Sample(Context* context);
 
-    /// Setup before engine initialization. Modifies the engine parameters.
-    virtual void Setup();
+    /// Setup after engine initialization with optional command line parameters.
+    virtual void Start(const ea::vector<ea::string>& args);
     /// Setup after engine initialization. Creates the logo, console & debug HUD.
     virtual void Start();
     /// Cleanup after the main loop. Called by Application.

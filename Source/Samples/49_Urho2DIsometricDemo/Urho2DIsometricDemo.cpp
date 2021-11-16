@@ -68,11 +68,6 @@ Urho2DIsometricDemo::Urho2DIsometricDemo(Context* context) :
     Mover::RegisterObject(context);
 }
 
-void Urho2DIsometricDemo::Setup()
-{
-    Sample::Setup();
-}
-
 void Urho2DIsometricDemo::Start()
 {
     // Execute base class startup
