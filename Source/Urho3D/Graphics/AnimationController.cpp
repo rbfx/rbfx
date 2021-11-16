@@ -991,8 +991,7 @@ AnimatedAttributeReference AnimationController::ParseAnimatablePath(ea::string_v
         }
 
         const ea::string_view nodePath = path.substr(0, sep);
-        //Empty node path references start node in case when path starts with /@
-        animatedNode = nodePath.empty() ? startNode : startNode->FindChild(nodePath);
+        animatedNode = startNode->FindChild(nodePath);
         if (!animatedNode)
         {
             URHO3D_LOGWARNING("Path to node '{}' cannot be resolved", nodePath);
@@ -1043,7 +1042,8 @@ AnimatedAttributeReference AnimationController::ParseAnimatablePath(ea::string_v
     return result;
 }
 
-Node* AnimationController::GetTrackNodeByNameHash(StringHash trackNameHash, Node* startBone) const {
+Node* AnimationController::GetTrackNodeByNameHash(StringHash trackNameHash, Node* startBone) const
+{
     //Empty track name means that we animate the node itself
     if (!trackNameHash)
         return node_;
