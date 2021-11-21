@@ -55,7 +55,7 @@ public:
     /// Switch network manager to server mode. It's not supposed to be called on NetworkManager in client mode.
     void MarkAsServer();
     /// Switch network manager to client mode. It's not supposed to be called on NetworkManager in server mode.
-    void MarkAsClient();
+    void MarkAsClient(AbstractConnection* connectionToServer);
     /// Return expected client or server network manager.
     ServerNetworkManager& AsServer();
     ClientNetworkManager& AsClient();

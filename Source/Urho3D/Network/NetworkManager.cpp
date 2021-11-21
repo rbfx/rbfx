@@ -57,7 +57,7 @@ void NetworkManager::MarkAsServer()
     }
 }
 
-void NetworkManager::MarkAsClient()
+void NetworkManager::MarkAsClient(AbstractConnection* connectionToServer)
 {
     if (server_)
     {
@@ -66,9 +66,16 @@ void NetworkManager::MarkAsClient()
         assert(0);
     }
 
+    if (client_ && client_->GetConnection() != connectionToServer)
+    {
+        URHO3D_LOGWARNING("Swiching NetworkManager from one server to another without scene recreation");
+        client_ = nullptr;
+        assert(0);
+    }
+
     if (!client_)
     {
-        client_ = MakeShared<ClientNetworkManager>(scene_);
+        client_ = MakeShared<ClientNetworkManager>(scene_, connectionToServer);
     }
 }
 

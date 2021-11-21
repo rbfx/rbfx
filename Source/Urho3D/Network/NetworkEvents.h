@@ -80,6 +80,11 @@ URHO3D_EVENT(E_NETWORKMESSAGE, NetworkMessage)
     URHO3D_PARAM(P_DATA, Data);                    // Buffer
 }
 
+/// Incoming network messages are processed on the client or server.
+URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
+{
+}
+
 /// About to send network update on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
 {
