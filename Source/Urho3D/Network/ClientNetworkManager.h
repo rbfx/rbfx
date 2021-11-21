@@ -30,14 +30,32 @@
 #include "../Network/ProtocolMessages.h"
 
 #include <EASTL/optional.h>
+#include <EASTL/bonus/ring_buffer.h>
 
 namespace Urho3D
 {
 
-class Connection;
+class AbstractConnection;
 class Network;
 class NetworkComponent;
 class Scene;
+
+/// Client clock synchronized with server.
+struct ClientClock
+{
+    unsigned updateFrequency_{};
+    unsigned latestServerFrame_{};
+    unsigned ping_{};
+
+    unsigned currentFrame_{};
+    float frameDuration_{};
+    float subFrameTime_{};
+
+    unsigned lastSynchronizationFrame_{};
+    ea::ring_buffer<double> synchronizationErrors_{};
+    ea::vector<double> synchronizationErrorsSorted_{};
+    unsigned skippedTailsLength_{};
+};
 
 /// Client part of NetworkManager subsystem.
 class URHO3D_API ClientNetworkManager : public Object
@@ -45,19 +63,33 @@ class URHO3D_API ClientNetworkManager : public Object
     URHO3D_OBJECT(ClientNetworkManager, Object);
 
 public:
-    explicit ClientNetworkManager(Scene* scene);
+    static constexpr double DefaultClockErrorTolerance = 0.7;
+
+    ClientNetworkManager(Scene* scene, AbstractConnection* connection);
 
     void ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
 
     ea::string ToString() const;
-    unsigned GetLatestServerFrame() const { return latestServerFrame_; }
+    AbstractConnection* GetConnection() const { return connection_; }
+
+    unsigned GetPingInFrames() const;
+    unsigned GetPingInMs() const { return clock_ ? clock_->ping_ : 0; }
+    bool IsSynchronized() const { return clock_.has_value(); }
+    unsigned GetCurrentFrame() const { return clock_ ? clock_->currentFrame_ : 0; }
+    unsigned GetLastSynchronizationFrame() const { return clock_ ? clock_->lastSynchronizationFrame_ : 0; }
+    float GetSubFrameTime() const { return clock_ ? clock_->subFrameTime_ : 0.0f; }
+    double GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const;
 
 private:
+    void OnInputProcessed();
+    void ProcessTimeCorrection();
+
     Network* network_{};
     Scene* scene_{};
+    AbstractConnection* connection_{};
 
-    unsigned updateFrequency_{};
-    unsigned latestServerFrame_{};
+    double clockErrorTolerance_{ DefaultClockErrorTolerance };
+    ea::optional<ClientClock> clock_;
 };
 
 }

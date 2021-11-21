@@ -73,9 +73,17 @@ enum NetworkMessageId
     /// @{
     FIRST_NETWORK_MANAGER_MSG = MSG_PACKED_MESSAGE + 1,
 
-    MSG_FRAME_SYNC = FIRST_NETWORK_MANAGER_MSG,
-    MSG_FRAME_PING,
-    MSG_FRAME_PONG,
+    /// TODO: Move MSG_PING and MSG_PONG out of NetworkManager, these messages may be useful w/o a Scene.
+    /// Server->client: request ping.
+    MSG_PING = FIRST_NETWORK_MANAGER_MSG,
+    /// Client->Server: reply to ping.
+    MSG_PONG,
+    /// Server->client: synchronize clocks on client and server.
+    MSG_SYNCHRONIZE,
+    /// Client->Server: clock synchronization is acknowledged.
+    MSG_SYNCHRONIZE_ACK,
+    /// Server->client: information about current time and client's ping.
+    MSG_CLOCK,
 
     LAST_NETWORK_MANAGER_MSG,
     /// @}

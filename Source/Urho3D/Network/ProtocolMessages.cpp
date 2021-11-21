@@ -22,19 +22,82 @@
 
 #include "../Network/ProtocolMessages.h"
 
+#include "../Core/StringUtils.h"
+
 namespace Urho3D
 {
 
-void MsgFrameSync::Save(VectorBuffer& dest) const
+void MsgPingPong::Save(VectorBuffer& dest) const
 {
-    dest.WriteUInt(lastFrame_);
-    dest.WriteVLE(updateFrequency_);
+    dest.WriteUInt(magic_);
 }
 
-void MsgFrameSync::Load(MemoryBuffer& src)
+void MsgPingPong::Load(MemoryBuffer& src)
+{
+    magic_ = src.ReadUInt();
+}
+
+ea::string MsgPingPong::ToString() const
+{
+    return Format("{{magic={}}}", magic_);
+}
+
+void MsgSynchronize::Save(VectorBuffer& dest) const
+{
+    dest.WriteUInt(magic_);
+    dest.WriteUInt(lastFrame_);
+    dest.WriteVLE(ping_);
+    dest.WriteVLE(updateFrequency_);
+    dest.WriteVLE(clockBufferSize_);
+    dest.WriteVLE(clockBufferSkippedTailsLength_);
+}
+
+void MsgSynchronize::Load(MemoryBuffer& src)
+{
+    magic_ = src.ReadUInt();
+    lastFrame_ = src.ReadUInt();
+    ping_ = src.ReadVLE();
+    updateFrequency_ = src.ReadVLE();
+    clockBufferSize_ = src.ReadVLE();
+    clockBufferSkippedTailsLength_ = src.ReadVLE();
+}
+
+ea::string MsgSynchronize::ToString() const
+{
+    return Format("{{magic={}, lastFrame={} ping={} updateFrequency={}}}",
+        magic_, lastFrame_, ping_, updateFrequency_);
+}
+
+void MsgSynchronizeAck::Save(VectorBuffer& dest) const
+{
+    dest.WriteUInt(magic_);
+}
+
+void MsgSynchronizeAck::Load(MemoryBuffer& src)
+{
+    magic_ = src.ReadUInt();
+}
+
+ea::string MsgSynchronizeAck::ToString() const
+{
+    return Format("{{magic={}}}", magic_);
+}
+
+void MsgClock::Save(VectorBuffer& dest) const
+{
+    dest.WriteUInt(lastFrame_);
+    dest.WriteVLE(ping_);
+}
+
+void MsgClock::Load(MemoryBuffer& src)
 {
     lastFrame_ = src.ReadUInt();
-    updateFrequency_ = src.ReadVLE();
+    ping_ = src.ReadVLE();
+}
+
+ea::string MsgClock::ToString() const
+{
+    return Format("{{lastFrame={}, ping={}}}", lastFrame_, ping_);
 }
 
 }

@@ -37,15 +37,46 @@ T ReadNetworkMessage(MemoryBuffer& src)
     return msg;
 }
 
-struct MsgFrameSync
+struct MsgPingPong
 {
-    static const NetworkMessageId Id = MSG_FRAME_SYNC;
-
-    unsigned lastFrame_{};
-    unsigned updateFrequency_{};
+    unsigned magic_{};
 
     void Save(VectorBuffer& dest) const;
     void Load(MemoryBuffer& src);
+    ea::string ToString() const;
+};
+
+struct MsgSynchronize
+{
+    unsigned magic_{};
+    unsigned lastFrame_{};
+    unsigned ping_{};
+    unsigned updateFrequency_{};
+    unsigned clockBufferSize_{};
+    unsigned clockBufferSkippedTailsLength_{};
+
+    void Save(VectorBuffer& dest) const;
+    void Load(MemoryBuffer& src);
+    ea::string ToString() const;
+};
+
+struct MsgSynchronizeAck
+{
+    unsigned magic_{};
+
+    void Save(VectorBuffer& dest) const;
+    void Load(MemoryBuffer& src);
+    ea::string ToString() const;
+};
+
+struct MsgClock
+{
+    unsigned lastFrame_{};
+    unsigned ping_{};
+
+    void Save(VectorBuffer& dest) const;
+    void Load(MemoryBuffer& src);
+    ea::string ToString() const;
 };
 
 }

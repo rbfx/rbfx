@@ -138,7 +138,7 @@ public:
     /// Get packet type based on the message parameters
     PacketType GetPacketType(bool reliable, bool inOrder);
     /// Send a message.
-    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
+    void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     /// Send a remote event.
     void SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Send a remote event with the specified node as sender.

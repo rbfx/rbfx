@@ -24,14 +24,26 @@
 
 #pragma once
 
+#include "../Container/FlagSet.h"
 #include "../Core/Object.h"
+#include "../IO/Log.h"
+#include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/Protocol.h"
 
 namespace Urho3D
 {
 
-/// %Connection to a remote network host.
+enum class NetworkMessageFlag
+{
+    None = 0,
+    InOrder = 1 << 0,
+    Reliable = 1 << 1
+};
+URHO3D_FLAGSET(NetworkMessageFlag, NetworkMessageFlags);
+
+/// Interface of connection to another host.
+/// Virtual for easier unit testing.
 class URHO3D_API AbstractConnection : public Object
 {
     URHO3D_OBJECT(AbstractConnection, Object);
@@ -40,23 +52,75 @@ public:
     AbstractConnection(Context* context) : Object(context) {}
 
     /// Send message to the other end of the connection.
-    virtual void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) = 0;
+    virtual void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) = 0;
     /// Return debug connection string for logging.
     virtual ea::string ToString() const = 0;
 
     /// Syntax sugar for SendMessage
     /// @{
-    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const VectorBuffer& msg)
+    void SendLoggedMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes, ea::string_view debugInfo = {})
     {
-        SendMessage(messageId, reliable, inOrder, msg.GetData(), msg.GetSize());
+        SendMessageInternal(messageId, reliable, inOrder, data, numBytes);
+
+        URHO3D_LOGDEBUG("{}: Message #{} ({} bytes) sent{}{}{}{}",
+            ToString(),
+            static_cast<unsigned>(messageId),
+            numBytes,
+            reliable ? ", reliable" : "",
+            inOrder ? ", ordered" : "",
+            debugInfo.empty() ? "" : ": ",
+            debugInfo);
+    }
+
+    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes, ea::string_view debugInfo = {})
+    {
+        SendLoggedMessage(messageId, reliable, inOrder, data, numBytes);
+    }
+
+    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const VectorBuffer& msg, ea::string_view debugInfo = {})
+    {
+        SendLoggedMessage(messageId, reliable, inOrder, msg.GetData(), msg.GetSize());
+    }
+
+    void SendMessage(NetworkMessageId messageId, NetworkMessageFlags flags, const VectorBuffer& msg)
+    {
+        const bool reliable = flags.Test(NetworkMessageFlag::Reliable);
+        const bool inOrder = flags.Test(NetworkMessageFlag::InOrder);
+        SendLoggedMessage(messageId, reliable, inOrder, msg.GetData(), msg.GetSize());
     }
 
     template <class T>
-    void SendMessage(const T& message, bool reliable, bool inOrder)
+    void SendMessage(NetworkMessageId messageId, const T& message, NetworkMessageFlags flags)
     {
+        const bool reliable = flags.Test(NetworkMessageFlag::Reliable);
+        const bool inOrder = flags.Test(NetworkMessageFlag::InOrder);
+
+    #ifdef URHO3D_LOGGING
+        const ea::string debugInfo = message.ToString();
+    #else
+        static const ea::string debugInfo;
+    #endif
+
         msg_.Clear();
         message.Save(msg_);
-        SendMessage(T::Id, reliable, inOrder, msg_.GetData(), msg_.GetSize());
+        SendLoggedMessage(messageId, reliable, inOrder, msg_.GetData(), msg_.GetSize(), debugInfo);
+    }
+
+    void OnMessageReceived(NetworkMessageId messageId, MemoryBuffer& messageData) const
+    {
+        URHO3D_LOGDEBUG("{}: Message #{} received: {} bytes",
+            ToString(),
+            static_cast<unsigned>(messageId),
+            messageData.GetSize());
+    }
+
+    template <class T>
+    void OnMessageReceived(NetworkMessageId messageId, const T& message) const
+    {
+        URHO3D_LOGDEBUG("{}: Message #{} received: {}",
+            ToString(),
+            static_cast<unsigned>(messageId),
+            message.ToString());
     }
     /// @}
 

@@ -915,6 +915,8 @@ void Network::Update(float timeStep)
             rakPeerClient_->DeallocatePacket(packet);
         }
     }
+
+    SendEvent(E_NETWORKINPUTPROCESSED);
 }
 
 void Network::PostUpdate(float timeStep)

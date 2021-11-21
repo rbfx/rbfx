@@ -26,6 +26,7 @@
 #include "CommonUtils.h"
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -47,7 +48,7 @@ void ManualConnection::IncrementTime(unsigned delta)
         {
             ea::erase_if(messages, [&](const InternalMessage& msg)
             {
-                if (msg.sendingTime_ + ping_ >= currentTime_)
+                if (msg.sendingTime_ >= currentTime_)
                     return false;
 
                 MemoryBuffer memoryBuffer(msg.data_);
@@ -58,10 +59,10 @@ void ManualConnection::IncrementTime(unsigned delta)
     }
 }
 
-void ManualConnection::SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
+void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
 {
     InternalMessage& msg = messages_[reliable][inOrder].emplace_back();
-    msg.sendingTime_ = currentTime_;
+    msg.sendingTime_ = currentTime_ + random_.GetUInt(minPing_, maxPing_);
     msg.messageId_ = messageId;
     msg.data_.assign(data, data + numBytes);
 }
@@ -75,42 +76,67 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene)
     serverNetworkManager_->MarkAsServer();
 }
 
-void NetworkSimulator::AddClient(Scene* clientScene)
+void NetworkSimulator::AddClient(Scene* clientScene, float minPing, float maxPing)
 {
     PerClient data;
     data.clientScene_ = clientScene;
-    data.clientToServer_ = MakeShared<ManualConnection>(context_, serverScene_->GetNetworkManager());
-    data.serverToClient_ = MakeShared<ManualConnection>(context_, clientScene->GetNetworkManager());
+    data.clientNetworkManager_ = clientScene->GetNetworkManager();
+    data.clientToServer_ = MakeShared<ManualConnection>(context_, serverNetworkManager_);
+    data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_);
 
-    clientScene->GetNetworkManager()->MarkAsClient();
+    const auto minPingMs = static_cast<unsigned>(minPing * MillisecondsInFrame * FramesInSecond);
+    const auto maxPingMs = static_cast<unsigned>(maxPing * MillisecondsInFrame * FramesInSecond);
+    data.clientToServer_->SetSinkConnection(data.serverToClient_);
+    data.clientToServer_->SetPing(minPingMs, maxPingMs);
+    data.serverToClient_->SetSinkConnection(data.clientToServer_);
+    data.serverToClient_->SetPing(minPingMs, maxPingMs);
+
+    data.clientNetworkManager_->MarkAsClient(data.clientToServer_);
     serverNetworkManager_->AsServer().AddConnection(data.serverToClient_);
+    serverNetworkManager_->AsServer().SetTestPing(data.serverToClient_, RoundToInt((maxPing + minPing) / 2 * 1000));
 
     clientScenes_.push_back(data);
 }
 
-void NetworkSimulator::SimulateFrame()
+void NetworkSimulator::SimulateEngineFrame(float timeStep)
 {
-    network_->PostUpdate(1.0f / network_->GetUpdateFps());
+    auto time = context_->GetSubsystem<Time>();
+    auto engine = context_->GetSubsystem<Engine>();
 
+    const unsigned elapsedNetworkMilliseconds = static_cast<unsigned>(timeStep * MillisecondsInFrame * FramesInSecond);
+
+    // Process client-to-server messages first so server can process them
     for (PerClient& data : clientScenes_)
-    {
-        serverNetworkManager_->AsServer().SendUpdate(data.serverToClient_);
-        data.serverToClient_->IncrementTime(QuantsInFrame);
-    }
+        data.clientToServer_->IncrementTime(elapsedNetworkMilliseconds);
+
+    // Proces server-to-client messages after.
+    // This may result in more client-to-server messages which will be ignored until next frame.
+    for (PerClient& data : clientScenes_)
+        data.serverToClient_->IncrementTime(elapsedNetworkMilliseconds);
+
+    // Update client time
+    engine->SetNextTimeStep(timeStep);
+    time->BeginFrame(timeStep);
+
+    // Process new frame on server if applicable
+    engine->Update();
+
+    time->EndFrame();
 }
 
-void NetworkSimulator::SimulateFrames(unsigned count)
+void NetworkSimulator::SimulateTime(float time)
 {
-    for (unsigned i = 0; i < count; ++i)
-        SimulateFrame();
+    const float timeStep = 1.0f / (FramesInSecond * MillisecondsInFrame);
+    for (unsigned i = 0; i < time / timeStep; ++i)
+        SimulateEngineFrame(timeStep);
 }
 
 SharedPtr<Context> CreateNetworkSimulatorContext()
 {
     auto context = Tests::CreateCompleteTestContext();
     auto network = context->GetSubsystem<Network>();
-    network->SetUpdateFps(NetworkSimulator::TestFrequency);
-    network->PostUpdate(0.5f / NetworkSimulator::TestFrequency);
+    network->SetUpdateFps(NetworkSimulator::FramesInSecond);
+    network->PostUpdate(0.5f / NetworkSimulator::FramesInSecond);
     return context;
 }
 

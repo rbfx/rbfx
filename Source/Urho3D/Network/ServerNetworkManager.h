@@ -25,11 +25,13 @@
 #pragma once
 
 #include "../Container/IndexAllocator.h"
+#include "../Core/Timer.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/ProtocolMessages.h"
 
 #include <EASTL/optional.h>
+#include <EASTL/bonus/ring_buffer.h>
 
 namespace Urho3D
 {
@@ -39,11 +41,41 @@ class Network;
 class NetworkComponent;
 class Scene;
 
+struct ClientPing
+{
+    unsigned magic_{};
+    HiresTimer timer_;
+};
+
 /// Per-connection data for server.
 struct ClientConnectionData
 {
     AbstractConnection* connection_{};
-    ea::optional<unsigned> synchronizationFrameIndex_;
+
+    ea::ring_buffer<unsigned> comfirmedPings_{};
+    ea::vector<unsigned> comfirmedPingsSorted_;
+    ea::ring_buffer<ClientPing> pendingPings_{};
+    ea::optional<unsigned> overridePing_;
+    unsigned averagePing_{ M_MAX_UNSIGNED };
+
+    bool synchronized_{};
+    ea::optional<unsigned> pendingSynchronization_{};
+
+    float pingAccumulator_{};
+    float clockAccumulator_{};
+};
+
+/// Server settings for NetworkManager.
+struct ServerNetworkManagerSettings
+{
+    unsigned numInitialPings_{ 11 };
+    unsigned pingsBufferSkippedTailsLength_{ 3 };
+    unsigned pingIntervalMs_{ 1000 };
+    unsigned maxOngoingPings_{ 11 };
+
+    unsigned clockIntervalMs_{ 250 };
+    unsigned clockBufferSize_{ 11 };
+    unsigned clockBufferSkippedTailsLength_{ 2 };
 };
 
 /// Server part of NetworkManager subsystem.
@@ -56,23 +88,30 @@ public:
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
-
     void SendUpdate(AbstractConnection* connection);
     void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+
+    void SetTestPing(AbstractConnection* connection, unsigned ping);
+    void SetCurrentFrame(unsigned frame);
 
     ea::string ToString() const;
     unsigned GetCurrentFrame() const { return currentFrame_; }
 
 private:
-    void BeginFrame();
+    void BeginNetworkFrame();
+    ClientConnectionData& GetConnection(AbstractConnection* connection);
+
+    void RecalculateAvergagePing(ClientConnectionData& data);
+    unsigned GetMagic(bool reliable = false) const;
 
     Network* network_{};
     Scene* scene_{};
+    const ServerNetworkManagerSettings settings_; // TODO: Make mutable
 
     unsigned updateFrequency_{};
     unsigned currentFrame_{};
 
-    ea::unordered_map<AbstractConnection*, ClientConnectionData> clientConnections_;
+    ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
 };
 
 }

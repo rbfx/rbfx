@@ -23,6 +23,7 @@
 #pragma once
 
 #include <Urho3D/Container/ByteVector.h>
+#include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/AbstractConnection.h>
 #include <Urho3D/Network/NetworkManager.h>
 
@@ -41,9 +42,9 @@ public:
     ManualConnection(Context* context, NetworkManager* sink);
 
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
-    void SetPing(unsigned ping) { ping_ = ping; }
+    void SetPing(unsigned minPing, unsigned maxPing) { minPing_ = minPing; maxPing_ = maxPing; }
 
-    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
+    void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     ea::string ToString() const override { return "Manual Connection"; }
 
     void IncrementTime(unsigned delta);
@@ -58,32 +59,36 @@ private:
 
     NetworkManager* sink_{};
     AbstractConnection* sinkConnection_{};
+    RandomEngine random_{ 0 };
 
-    unsigned ping_{};
+    unsigned minPing_{};
+    unsigned maxPing_{};
 
     unsigned currentTime_{};
     ea::vector<InternalMessage> messages_[2][2];
 };
 
 /// Network simulator for tests.
+/// There are 1024 "milliseconds" in a "second" to avoid dealing with floating point precision issues.
 class NetworkSimulator
 {
 public:
-    /// Use power of 2 to avoid float precision issues.
-    static const unsigned TestFrequency = 2;
-    /// Number of time quants in one server frame. Use decently big value to have e.g. sub-frame ping values.
-    static const unsigned QuantsInFrame = 10;
+    /// Number of frames per second.
+    static const unsigned FramesInSecond = 32;
+    /// Number of "milliseconds" in one server frame. Use decently big value to have sub-frame control over execution.
+    static const unsigned MillisecondsInFrame = 32;
 
     explicit NetworkSimulator(Scene* serverScene);
-    void AddClient(Scene* clientScene);
+    void AddClient(Scene* clientScene, float minPing, float maxPing);
 
-    void SimulateFrame();
-    void SimulateFrames(unsigned count);
+    void SimulateEngineFrame(float timeStep);
+    void SimulateTime(float time);
 
 private:
     struct PerClient
     {
         Scene* clientScene_;
+        NetworkManager* clientNetworkManager_{};
         SharedPtr<Tests::ManualConnection> clientToServer_;
         SharedPtr<Tests::ManualConnection> serverToClient_;
     };

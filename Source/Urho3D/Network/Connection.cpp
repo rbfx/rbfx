@@ -124,7 +124,7 @@ PacketType Connection::GetPacketType(bool reliable, bool inOrder)
     return PT_UNRELIABLE_UNORDERED;
 }
 
-void Connection::SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
+void Connection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
 {
     if (numBytes && !data)
     {
@@ -273,7 +273,6 @@ void Connection::SendServerUpdate()
 {
     if (!scene_ || !sceneLoaded_)
         return;
-    networkManager_->AsServer().SendUpdate(this);
 
     // Always check the root node (scene) first so that the scene-wide components get sent first,
     // and all other replicated nodes get added to the dirty set for sending the initial state
@@ -1209,7 +1208,7 @@ void Connection::SetPacketSizeLimit(int limit)
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
     networkManager_ = scene_->GetNetworkManager();
-    networkManager_->MarkAsClient();
+    networkManager_->MarkAsClient(this);
     sceneLoaded_ = true;
 
     // Clear all replicated nodes
@@ -1631,7 +1630,7 @@ void Connection::OnPackagesReady()
         scene_->Clear(true, false);
 
         networkManager_ = scene_->GetNetworkManager();
-        networkManager_->MarkAsClient();
+        networkManager_->MarkAsClient(this);
         sceneLoaded_ = true;
 
         msg_.Clear();
