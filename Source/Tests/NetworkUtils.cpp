@@ -33,9 +33,10 @@
 namespace Tests
 {
 
-ManualConnection::ManualConnection(Context* context, NetworkManager* sink)
+ManualConnection::ManualConnection(Context* context, NetworkManager* sink, unsigned seed)
     : AbstractConnection(context)
     , sink_(sink)
+    , random_(seed)
 {
 }
 
@@ -67,9 +68,10 @@ void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reli
     msg.data_.assign(data, data + numBytes);
 }
 
-NetworkSimulator::NetworkSimulator(Scene* serverScene)
+NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
     : context_(serverScene->GetContext())
     , network_(context_->GetSubsystem<Network>())
+    , random_(seed)
     , serverScene_(serverScene)
     , serverNetworkManager_(serverScene_->GetNetworkManager())
 {
@@ -81,8 +83,8 @@ void NetworkSimulator::AddClient(Scene* clientScene, float minPing, float maxPin
     PerClient data;
     data.clientScene_ = clientScene;
     data.clientNetworkManager_ = clientScene->GetNetworkManager();
-    data.clientToServer_ = MakeShared<ManualConnection>(context_, serverNetworkManager_);
-    data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_);
+    data.clientToServer_ = MakeShared<ManualConnection>(context_, serverNetworkManager_, random_.GetUInt());
+    data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_, random_.GetUInt());
 
     const auto minPingMs = static_cast<unsigned>(minPing * MillisecondsInFrame * FramesInSecond);
     const auto maxPingMs = static_cast<unsigned>(maxPing * MillisecondsInFrame * FramesInSecond);

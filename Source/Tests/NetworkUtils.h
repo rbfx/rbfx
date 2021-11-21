@@ -39,7 +39,7 @@ namespace Tests
 class ManualConnection : public AbstractConnection
 {
 public:
-    ManualConnection(Context* context, NetworkManager* sink);
+    ManualConnection(Context* context, NetworkManager* sink, unsigned seed);
 
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
     void SetPing(unsigned minPing, unsigned maxPing) { minPing_ = minPing; maxPing_ = maxPing; }
@@ -59,7 +59,7 @@ private:
 
     NetworkManager* sink_{};
     AbstractConnection* sinkConnection_{};
-    RandomEngine random_{ 0 };
+    RandomEngine random_;
 
     unsigned minPing_{};
     unsigned maxPing_{};
@@ -78,7 +78,7 @@ public:
     /// Number of "milliseconds" in one server frame. Use decently big value to have sub-frame control over execution.
     static const unsigned MillisecondsInFrame = 32;
 
-    explicit NetworkSimulator(Scene* serverScene);
+    NetworkSimulator(Scene* serverScene, unsigned seed);
     void AddClient(Scene* clientScene, float minPing, float maxPing);
 
     void SimulateEngineFrame(float timeStep);
@@ -95,6 +95,7 @@ private:
 
     Context* context_{};
     Network* network_{};
+    RandomEngine random_;
 
     Scene* serverScene_{};
     NetworkManager* serverNetworkManager_{};

@@ -74,7 +74,7 @@ struct ServerNetworkManagerSettings
     unsigned maxOngoingPings_{ 11 };
 
     unsigned clockIntervalMs_{ 250 };
-    unsigned clockBufferSize_{ 11 };
+    unsigned clockBufferSize_{ 17 };
     unsigned clockBufferSkippedTailsLength_{ 2 };
 };
 
