@@ -736,6 +736,7 @@ public:
 %ignore Urho3D::Network::HandleIncomingPacket;
 
 %include "generated/Urho3D/_pre_network.i"
+%include "Urho3D/Network/AbstractConnection.h"
 %include "Urho3D/Network/Connection.h"
 %include "Urho3D/Network/Network.h"
 %include "Urho3D/Network/NetworkPriority.h"

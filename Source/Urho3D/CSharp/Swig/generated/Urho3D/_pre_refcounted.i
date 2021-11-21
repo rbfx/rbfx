@@ -190,6 +190,7 @@ URHO3D_REFCOUNTED(Urho3D::NavArea);
 URHO3D_REFCOUNTED(Urho3D::Navigable);
 URHO3D_REFCOUNTED(Urho3D::Obstacle);
 URHO3D_REFCOUNTED(Urho3D::OffMeshConnection);
+URHO3D_REFCOUNTED(Urho3D::AbstractConnection);
 URHO3D_REFCOUNTED(Urho3D::Connection);
 URHO3D_REFCOUNTED(Urho3D::HttpRequest);
 URHO3D_REFCOUNTED(Urho3D::Network);

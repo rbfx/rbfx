@@ -63,7 +63,7 @@ class URHO3D_API ClientNetworkManager : public Object
     URHO3D_OBJECT(ClientNetworkManager, Object);
 
 public:
-    static constexpr double DefaultClockErrorTolerance = 0.7;
+    static constexpr double DefaultClockErrorTolerance = 0.6;
 
     ClientNetworkManager(Scene* scene, AbstractConnection* connection);
 

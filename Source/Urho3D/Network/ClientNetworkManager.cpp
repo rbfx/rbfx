@@ -97,7 +97,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
 
         clock_->currentFrame_ = clock_->latestServerFrame_ + GetPingInFrames();
         clock_->frameDuration_ = 1.0f / clock_->updateFrequency_;
-        clock_->subFrameTime_ = clock_->frameDuration_ * 0.5f;
+        clock_->subFrameTime_ = 0.0f;
 
         clock_->lastSynchronizationFrame_ = clock_->currentFrame_;
         clock_->synchronizationErrors_.set_capacity(msg.clockBufferSize_);

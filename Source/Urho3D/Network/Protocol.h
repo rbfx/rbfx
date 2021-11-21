@@ -71,11 +71,12 @@ enum NetworkMessageId
 
     /// Messages processed by NetworkManager
     /// @{
-    FIRST_NETWORK_MANAGER_MSG = MSG_PACKED_MESSAGE + 1,
+    FIRST_NETWORK_MANAGER_MSG = 200,
 
     /// TODO: Move MSG_PING and MSG_PONG out of NetworkManager, these messages may be useful w/o a Scene.
+    /// TODO: Reuse constant when SWIG supports it.
     /// Server->client: request ping.
-    MSG_PING = FIRST_NETWORK_MANAGER_MSG,
+    MSG_PING = 200,
     /// Client->Server: reply to ping.
     MSG_PONG,
     /// Server->client: synchronize clocks on client and server.
