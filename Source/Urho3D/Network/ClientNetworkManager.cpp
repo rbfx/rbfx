@@ -40,23 +40,94 @@ namespace Urho3D
 namespace
 {
 
-template <class T, class Iterator>
-T StandardDeviation(Iterator begin, Iterator end, T mean)
+void ResetClock(ClientClock& clock, unsigned currentFrame)
 {
-    const auto size = ea::distance(begin, end);
-    if (size <= 1)
-        return M_LARGE_VALUE;
+    clock.currentFrame_ = currentFrame;
+    clock.subFrameTime_ = 0.0;
 
-    T accum = 0.0;
-    for (auto iter = begin; iter != end; ++iter)
-    {
-        const T delta = *iter - mean;
-        accum += delta * delta;
-    }
-
-    return std::sqrt(accum / (size - 1));
+    clock.lastSynchronizationFrame_ = clock.currentFrame_;
+    clock.synchronizationErrors_.clear();
+    clock.synchronizationErrorsSorted_.clear();
 }
 
+bool IsClockInitializing(const ClientClock& clock)
+{
+    return clock.synchronizationErrors_.size() == clock.numStartSamples_;
+}
+
+bool DoesClockNeedRewind(const ClientClock& clock, double rewindThreshold)
+{
+    return clock.synchronizationErrors_.full() && std::abs(clock.averageError_) >= rewindThreshold;
+}
+
+double GetPingInFrames(const ClientClock& clock)
+{
+    // ms * (frames / s) * (s / ms)
+    return clock.ping_ * clock.updateFrequency_ * 0.001;
+}
+
+void AddClockError(ClientClock& clock, double clockError)
+{
+    auto& buffer = clock.synchronizationErrors_;
+    auto& bufferSorted = clock.synchronizationErrorsSorted_;
+
+    if (buffer.full())
+        buffer.pop_front();
+    buffer.push_back(clockError);
+
+    bufferSorted.assign(buffer.begin(), buffer.end());
+    ea::sort(bufferSorted.begin(), bufferSorted.end());
+
+    // Skip first elements because highest pings cause lowest errors
+    const auto beginIter = std::next(bufferSorted.begin(), ea::min(buffer.size() - 1, clock.numTrimmedSamples_));
+    const auto endIter = bufferSorted.end();
+    clock.averageError_ = ea::accumulate(beginIter, endIter, 0.0) / ea::distance(beginIter, endIter);
+}
+
+void RewindClock(ClientClock& clock, double deltaFrames)
+{
+    const int integerError = RoundToInt(deltaFrames);
+    const float subFrameError = static_cast<float>(deltaFrames - integerError) * clock.frameDuration_;
+    clock.currentFrame_ += integerError;
+    clock.subFrameTime_ += subFrameError;
+    if (clock.subFrameTime_ < 0.0f)
+    {
+        clock.subFrameTime_ += clock.frameDuration_;
+        --clock.currentFrame_;
+    }
+    else if (clock.subFrameTime_ >= clock.frameDuration_)
+    {
+        clock.subFrameTime_ -= clock.frameDuration_;
+        ++clock.currentFrame_;
+    }
+
+    for (double& error : clock.synchronizationErrors_)
+        error -= deltaFrames;
+    clock.averageError_ -= deltaFrames;
+
+    clock.lastSynchronizationFrame_ = clock.currentFrame_;
+}
+
+void AdvanceClockTime(ClientClock& clock, double timeStep)
+{
+    clock.subFrameTime_ += timeStep;
+    while (clock.subFrameTime_ >= clock.frameDuration_)
+    {
+        clock.subFrameTime_ -= clock.frameDuration_;
+        ++clock.currentFrame_;
+    }
+}
+
+}
+
+ClientClock::ClientClock(unsigned updateFrequency, unsigned numStartSamples, unsigned numTrimmedSamples, unsigned numOngoingSamples)
+    : updateFrequency_(updateFrequency)
+    , numStartSamples_(numStartSamples)
+    , numTrimmedSamples_(numTrimmedSamples)
+    , numOngoingSamples_(ea::max(numOngoingSamples, numStartSamples + 1))
+{
+    synchronizationErrors_.set_capacity(numOngoingSamples_);
+    synchronizationErrorsSorted_.set_capacity(numOngoingSamples_);
 }
 
 ClientNetworkManager::ClientNetworkManager(Scene* scene, AbstractConnection* connection)
@@ -90,19 +161,15 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         const auto msg = ReadNetworkMessage<MsgSynchronize>(messageData);
         connection_->OnMessageReceived(messageId, msg);
 
-        clock_ = ClientClock{};
-        clock_->updateFrequency_ = msg.updateFrequency_;
+        clock_.emplace(ClientClock{ msg.updateFrequency_, msg.numStartClockSamples_, msg.numTrimmedClockSamples_, msg.numOngoingClockSamples_ });
+
         clock_->latestServerFrame_ = msg.lastFrame_;
         clock_->ping_ = msg.ping_;
 
-        clock_->currentFrame_ = clock_->latestServerFrame_ + GetPingInFrames();
+        clock_->currentFrame_ = clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_));
         clock_->frameDuration_ = 1.0f / clock_->updateFrequency_;
         clock_->subFrameTime_ = 0.0f;
-
         clock_->lastSynchronizationFrame_ = clock_->currentFrame_;
-        clock_->synchronizationErrors_.set_capacity(msg.clockBufferSize_);
-        clock_->synchronizationErrorsSorted_.set_capacity(msg.clockBufferSize_);
-        clock_->skippedTailsLength_ = msg.clockBufferSkippedTailsLength_;
 
         connection_->SendMessage(MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{ msg.magic_ }, NetworkMessageFlag::Reliable);
         URHO3D_LOGINFO("Client clock is started from frame #{}", clock_->currentFrame_);
@@ -118,8 +185,9 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
             break;
         }
 
+        const auto delta = static_cast<int>(msg.lastFrame_ - clock_->latestServerFrame_);
         clock_->ping_ = msg.ping_;
-        clock_->latestServerFrame_ = msg.lastFrame_;
+        clock_->latestServerFrame_ += ea::max(0, delta);
         ProcessTimeCorrection();
         break;
     }
@@ -131,75 +199,45 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
 
 void ClientNetworkManager::ProcessTimeCorrection()
 {
-    // Difference between client predicted time and server time
-    const unsigned currentServerTime = clock_->latestServerFrame_ + GetPingInFrames();
+    // Accumulate between client predicted time and server time
+    const unsigned currentServerTime = clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_));
     const double clockError = GetCurrentFrameDeltaRelativeTo(currentServerTime);
+    AddClockError(*clock_, clockError);
 
-    auto& buffer = clock_->synchronizationErrors_;
-    if (buffer.full())
-        buffer.pop_front();
-    buffer.push_back(clockError);
-
-    // If buffer is filled, try to synchronize
-    if (buffer.full())
+    // Snap to new time if error is too big
+    const bool needForwardSnap = std::abs(clockError) >= clockSnapThresholdSec_ * clock_->updateFrequency_;
+    const bool needRewind = DoesClockNeedRewind(*clock_, clockRewindThresholdFrames_);
+    if (needForwardSnap || needRewind)
     {
-        auto& bufferSorted = clock_->synchronizationErrorsSorted_;
-        bufferSorted.assign(buffer.begin(), buffer.end());
-        ea::sort(bufferSorted.begin(), bufferSorted.end());
+        ResetClock(*clock_, currentServerTime);
+        return;
+    }
 
-        const auto beginIter = std::next(bufferSorted.begin(), clock_->skippedTailsLength_);
-        const auto endIter = std::prev(bufferSorted.end(), clock_->skippedTailsLength_);
-        const double averageError = ea::accumulate(beginIter, endIter, 0.0) / ea::distance(beginIter, endIter);
-        const double errorDeviation = StandardDeviation(beginIter, endIter, averageError);
+    // Adjust time if (re)initializing
+    if (IsClockInitializing(*clock_))
+    {
+        const unsigned oldCurrentFrame = clock_->currentFrame_;
+        const float oldSubFrameTime = clock_->subFrameTime_;
 
-        // Adjust time if error is too big
-        if (std::abs(averageError) > ea::max(errorDeviation, clockErrorTolerance_))
-        {
-            const unsigned oldCurrentFrame = clock_->currentFrame_;
-            const float oldSubFrameTime = clock_->subFrameTime_;
+        RewindClock(*clock_, clock_->averageError_);
 
-            const int integerError = RoundToInt(averageError);
-            const float subFrameError = static_cast<float>(averageError - integerError) * clock_->frameDuration_;
-            clock_->currentFrame_ += integerError;
-            clock_->subFrameTime_ += subFrameError;
-            if (clock_->subFrameTime_ < 0.0f)
-            {
-                clock_->subFrameTime_ += clock_->frameDuration_;
-                --clock_->currentFrame_;
-            }
-            else if (clock_->subFrameTime_ >= clock_->frameDuration_)
-            {
-                clock_->subFrameTime_ -= clock_->frameDuration_;
-                ++clock_->currentFrame_;
-            }
-
-            for (double& error : buffer)
-                error -= averageError;
-
-            clock_->lastSynchronizationFrame_ = clock_->currentFrame_;
-            URHO3D_LOGINFO("Client clock is rewound from frame #{}:{} to frame #{}:{}",
-                oldCurrentFrame, oldSubFrameTime,
-                clock_->currentFrame_, clock_->subFrameTime_);
-        }
+        URHO3D_LOGINFO("Client clock is rewound from frame #{}:{} to frame #{}:{}",
+            oldCurrentFrame, oldSubFrameTime,
+            clock_->currentFrame_, clock_->subFrameTime_);
     }
 }
 
-unsigned ClientNetworkManager::GetPingInFrames() const
-{
-    if (!clock_)
-        return 0;
-
-    // ms * (frames / s) * (s / ms)
-    return RoundToInt(clock_->ping_ * clock_->updateFrequency_ * 0.001f);
-}
-
-double ClientNetworkManager::GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const
+double ClientNetworkManager::GetCurrentFrameDeltaRelativeTo(double referenceFrame) const
 {
     if (!clock_)
         return M_LARGE_VALUE;
 
-    const auto frameDeltaInt = static_cast<int>(referenceFrame - clock_->currentFrame_);
-    return static_cast<double>(frameDeltaInt) - clock_->subFrameTime_ * clock_->updateFrequency_;
+    // Cast to integers to support time wrap
+    const auto referenceFrameUint = static_cast<unsigned>(std::floor(std::fmod(referenceFrame, 4294967296.0)));
+    const auto frameDeltaInt = static_cast<int>(referenceFrameUint - clock_->currentFrame_);
+    const double referenceFrameFract = referenceFrame - referenceFrameUint;
+    const double currentFrameFract = clock_->subFrameTime_ * clock_->updateFrequency_;
+    return frameDeltaInt + referenceFrameFract - currentFrameFract;
 }
 
 ea::string ClientNetworkManager::ToString() const
@@ -217,13 +255,7 @@ void ClientNetworkManager::OnInputProcessed()
 
     auto time = GetSubsystem<Time>();
     const float timeStep = time->GetTimeStep();
-
-    clock_->subFrameTime_ += timeStep;
-    while (clock_->subFrameTime_ >= clock_->frameDuration_)
-    {
-        clock_->subFrameTime_ -= clock_->frameDuration_;
-        ++clock_->currentFrame_;
-    }
+    AdvanceClockTime(*clock_, timeStep);
 }
 
 }

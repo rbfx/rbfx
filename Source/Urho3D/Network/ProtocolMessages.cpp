@@ -45,21 +45,27 @@ ea::string MsgPingPong::ToString() const
 void MsgSynchronize::Save(VectorBuffer& dest) const
 {
     dest.WriteUInt(magic_);
+
+    dest.WriteVLE(updateFrequency_);
+    dest.WriteVLE(numStartClockSamples_);
+    dest.WriteVLE(numTrimmedClockSamples_);
+    dest.WriteVLE(numOngoingClockSamples_);
+
     dest.WriteUInt(lastFrame_);
     dest.WriteVLE(ping_);
-    dest.WriteVLE(updateFrequency_);
-    dest.WriteVLE(clockBufferSize_);
-    dest.WriteVLE(clockBufferSkippedTailsLength_);
 }
 
 void MsgSynchronize::Load(MemoryBuffer& src)
 {
     magic_ = src.ReadUInt();
+
+    updateFrequency_ = src.ReadVLE();
+    numStartClockSamples_ = src.ReadVLE();
+    numTrimmedClockSamples_ = src.ReadVLE();
+    numOngoingClockSamples_ = src.ReadVLE();
+
     lastFrame_ = src.ReadUInt();
     ping_ = src.ReadVLE();
-    updateFrequency_ = src.ReadVLE();
-    clockBufferSize_ = src.ReadVLE();
-    clockBufferSkippedTailsLength_ = src.ReadVLE();
 }
 
 ea::string MsgSynchronize::ToString() const

@@ -63,9 +63,20 @@ void ManualConnection::IncrementTime(unsigned delta)
 void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
 {
     InternalMessage& msg = messages_[reliable][inOrder].emplace_back();
-    msg.sendingTime_ = currentTime_ + random_.GetUInt(minPing_, maxPing_);
+    msg.sendingTime_ = currentTime_ + GetPing();
     msg.messageId_ = messageId;
     msg.data_.assign(data, data + numBytes);
+}
+
+unsigned ManualConnection::GetPing()
+{
+    const float mean = (ping_.minPing_ + ping_.maxPing_) / 2;
+    const float sigma = (ping_.maxPing_ - ping_.minPing_) / 2;
+    // Take two to avoid clustering on min ping
+    const float source1 = random_.GetNormalFloat(mean, sigma / 1.5);
+    const float source2 = random_.GetNormalFloat(mean, sigma / 1.5);
+    const float value = Clamp(source1 >= ping_.minPing_ ? source1 : source2, ping_.minPing_, ping_.spikePing_);
+    return static_cast<unsigned>(value * NetworkSimulator::MillisecondsInFrame * NetworkSimulator::FramesInSecond);
 }
 
 NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
@@ -78,7 +89,7 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
     serverNetworkManager_->MarkAsServer();
 }
 
-void NetworkSimulator::AddClient(Scene* clientScene, float minPing, float maxPing)
+void NetworkSimulator::AddClient(Scene* clientScene, const PingDistribution& ping)
 {
     PerClient data;
     data.clientScene_ = clientScene;
@@ -86,16 +97,14 @@ void NetworkSimulator::AddClient(Scene* clientScene, float minPing, float maxPin
     data.clientToServer_ = MakeShared<ManualConnection>(context_, serverNetworkManager_, random_.GetUInt());
     data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_, random_.GetUInt());
 
-    const auto minPingMs = static_cast<unsigned>(minPing * MillisecondsInFrame * FramesInSecond);
-    const auto maxPingMs = static_cast<unsigned>(maxPing * MillisecondsInFrame * FramesInSecond);
     data.clientToServer_->SetSinkConnection(data.serverToClient_);
-    data.clientToServer_->SetPing(minPingMs, maxPingMs);
+    data.clientToServer_->SetPing(ping);
     data.serverToClient_->SetSinkConnection(data.clientToServer_);
-    data.serverToClient_->SetPing(minPingMs, maxPingMs);
+    data.serverToClient_->SetPing(ping);
 
     data.clientNetworkManager_->MarkAsClient(data.clientToServer_);
     serverNetworkManager_->AsServer().AddConnection(data.serverToClient_);
-    serverNetworkManager_->AsServer().SetTestPing(data.serverToClient_, RoundToInt((maxPing + minPing) / 2 * 1000));
+    serverNetworkManager_->AsServer().SetTestPing(data.serverToClient_, RoundToInt((ping.maxPing_ + ping.minPing_) / 2 * 1000));
 
     clientScenes_.push_back(data);
 }

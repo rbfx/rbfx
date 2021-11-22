@@ -69,13 +69,14 @@ struct ClientConnectionData
 struct ServerNetworkManagerSettings
 {
     unsigned numInitialPings_{ 11 };
-    unsigned pingsBufferSkippedTailsLength_{ 3 };
+    unsigned numTrimmedMaxPings_{ 3 };
     unsigned pingIntervalMs_{ 1000 };
     unsigned maxOngoingPings_{ 11 };
 
     unsigned clockIntervalMs_{ 250 };
-    unsigned clockBufferSize_{ 17 };
-    unsigned clockBufferSkippedTailsLength_{ 2 };
+    unsigned numStartClockSamples_{ 17 };
+    unsigned numOngoingClockSamples_{ 41 };
+    unsigned numTrimmedClockSamples_{ 3 };
 };
 
 /// Server part of NetworkManager subsystem.
