@@ -117,8 +117,17 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
             const unsigned ping = data.averagePing_;
 
             data.pendingSynchronization_ = magic;
-            const MsgSynchronize msg{ magic, currentFrame_, ping, updateFrequency_,
-                settings_.clockBufferSize_, settings_.clockBufferSkippedTailsLength_ };
+
+            MsgSynchronize msg{ magic };
+
+            msg.updateFrequency_ = updateFrequency_;
+            msg.numStartClockSamples_ = settings_.numStartClockSamples_;
+            msg.numTrimmedClockSamples_ = settings_.numTrimmedClockSamples_;
+            msg.numOngoingClockSamples_ = settings_.numOngoingClockSamples_;
+
+            msg.lastFrame_ = currentFrame_;
+            msg.ping_ = ping;
+
             connection->SendMessage(MSG_SYNCHRONIZE, msg, NetworkMessageFlag::Reliable);
         }
         return;
@@ -232,9 +241,8 @@ void ServerNetworkManager::RecalculateAvergagePing(ClientConnectionData& data)
     ea::sort(data.comfirmedPingsSorted_.begin(), data.comfirmedPingsSorted_.end());
 
     const unsigned numPings = data.comfirmedPingsSorted_.size();
-    const unsigned tailsLength = ea::min(settings_.pingsBufferSkippedTailsLength_, (numPings - 1) / 2);
-    const auto beginIter = std::next(data.comfirmedPingsSorted_.begin(), tailsLength);
-    const auto endIter = std::prev(data.comfirmedPingsSorted_.end(), tailsLength);
+    const auto beginIter = data.comfirmedPingsSorted_.begin();
+    const auto endIter = std::prev(data.comfirmedPingsSorted_.end(), ea::min(numPings - 1, settings_.numTrimmedMaxPings_));
     data.averagePing_ = ea::accumulate(beginIter, endIter, 0) / ea::distance(beginIter, endIter);
 }
 

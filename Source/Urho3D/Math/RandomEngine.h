@@ -102,6 +102,8 @@ public:
     ea::pair<float, float> GetStandardNormalFloatPair();
     /// Return random float with standard normal distribution.
     float GetStandardNormalFloat() { return GetStandardNormalFloatPair().first; }
+    /// Return random float with normal distribution.
+    float GetNormalFloat(float mean, float sigma) { return GetStandardNormalFloat() * sigma + mean; }
 
     /// Return random 2D direction (normalized).
     Vector2 GetDirectionVector2();

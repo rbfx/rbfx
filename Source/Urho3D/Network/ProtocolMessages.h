@@ -49,11 +49,14 @@ struct MsgPingPong
 struct MsgSynchronize
 {
     unsigned magic_{};
+
+    unsigned updateFrequency_{};
+    unsigned numStartClockSamples_{};
+    unsigned numTrimmedClockSamples_{};
+    unsigned numOngoingClockSamples_{};
+
     unsigned lastFrame_{};
     unsigned ping_{};
-    unsigned updateFrequency_{};
-    unsigned clockBufferSize_{};
-    unsigned clockBufferSkippedTailsLength_{};
 
     void Save(VectorBuffer& dest) const;
     void Load(MemoryBuffer& src);

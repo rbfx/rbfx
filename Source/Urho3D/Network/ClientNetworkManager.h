@@ -43,18 +43,24 @@ class Scene;
 /// Client clock synchronized with server.
 struct ClientClock
 {
-    unsigned updateFrequency_{};
+    ClientClock(unsigned updateFrequency, unsigned numStartSamples, unsigned numTrimmedSamples, unsigned numOngoingSamples);
+
+    const unsigned updateFrequency_{};
+    const unsigned numStartSamples_{};
+    const unsigned numTrimmedSamples_{};
+    const unsigned numOngoingSamples_{};
+
     unsigned latestServerFrame_{};
     unsigned ping_{};
 
     unsigned currentFrame_{};
     float frameDuration_{};
     float subFrameTime_{};
-
     unsigned lastSynchronizationFrame_{};
+
     ea::ring_buffer<double> synchronizationErrors_{};
     ea::vector<double> synchronizationErrorsSorted_{};
-    unsigned skippedTailsLength_{};
+    double averageError_{};
 };
 
 /// Client part of NetworkManager subsystem.
@@ -63,8 +69,6 @@ class URHO3D_API ClientNetworkManager : public Object
     URHO3D_OBJECT(ClientNetworkManager, Object);
 
 public:
-    static constexpr double DefaultClockErrorTolerance = 0.6;
-
     ClientNetworkManager(Scene* scene, AbstractConnection* connection);
 
     void ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
@@ -72,13 +76,12 @@ public:
     ea::string ToString() const;
     AbstractConnection* GetConnection() const { return connection_; }
 
-    unsigned GetPingInFrames() const;
     unsigned GetPingInMs() const { return clock_ ? clock_->ping_ : 0; }
     bool IsSynchronized() const { return clock_.has_value(); }
     unsigned GetCurrentFrame() const { return clock_ ? clock_->currentFrame_ : 0; }
     unsigned GetLastSynchronizationFrame() const { return clock_ ? clock_->lastSynchronizationFrame_ : 0; }
     float GetSubFrameTime() const { return clock_ ? clock_->subFrameTime_ : 0.0f; }
-    double GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const;
+    double GetCurrentFrameDeltaRelativeTo(double referenceFrame) const;
 
 private:
     void OnInputProcessed();
@@ -88,7 +91,8 @@ private:
     Scene* scene_{};
     AbstractConnection* connection_{};
 
-    double clockErrorTolerance_{ DefaultClockErrorTolerance };
+    double clockRewindThresholdFrames_{ 0.6 };
+    double clockSnapThresholdSec_{ 10.0 };
     ea::optional<ClientClock> clock_;
 };
 

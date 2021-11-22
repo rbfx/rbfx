@@ -35,6 +35,13 @@ using namespace Urho3D;
 namespace Tests
 {
 
+struct PingDistribution
+{
+    float minPing_{};
+    float maxPing_{};
+    float spikePing_{};
+};
+
 /// Test implementation of AbstractConnection with manual control over message transmission.
 class ManualConnection : public AbstractConnection
 {
@@ -42,7 +49,7 @@ public:
     ManualConnection(Context* context, NetworkManager* sink, unsigned seed);
 
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
-    void SetPing(unsigned minPing, unsigned maxPing) { minPing_ = minPing; maxPing_ = maxPing; }
+    void SetPing(const PingDistribution& ping) { ping_ = ping; }
 
     void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     ea::string ToString() const override { return "Manual Connection"; }
@@ -50,6 +57,8 @@ public:
     void IncrementTime(unsigned delta);
 
 private:
+    unsigned GetPing();
+
     struct InternalMessage
     {
         unsigned sendingTime_{};
@@ -61,8 +70,7 @@ private:
     AbstractConnection* sinkConnection_{};
     RandomEngine random_;
 
-    unsigned minPing_{};
-    unsigned maxPing_{};
+    PingDistribution ping_;
 
     unsigned currentTime_{};
     ea::vector<InternalMessage> messages_[2][2];
@@ -79,7 +87,7 @@ public:
     static const unsigned MillisecondsInFrame = 32;
 
     NetworkSimulator(Scene* serverScene, unsigned seed);
-    void AddClient(Scene* clientScene, float minPing, float maxPing);
+    void AddClient(Scene* clientScene, const PingDistribution& ping);
 
     void SimulateEngineFrame(float timeStep);
     void SimulateTime(float time);
