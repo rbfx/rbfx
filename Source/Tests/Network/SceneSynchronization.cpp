@@ -30,13 +30,12 @@
 
 TEST_CASE("Time is synchronized between client and server")
 {
-    auto context = Tests::CreateNetworkSimulatorContext();
+    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateNetworkSimulatorContext);
 
     // Prepare test parameters
     const float frameErrorTolarance = 1.0f;
-    const auto retry = GENERATE(range(0, 10));
+    const auto retry = GENERATE(range(0, 5));
     const auto ping = GENERATE(
-        Tests::PingDistribution{ 0.1f, 0.1f, 0.1f },
         Tests::PingDistribution{ 0.08f, 0.12f, 0.20f },
         Tests::PingDistribution{ 0.22f, 0.28f, 0.50f }
     );
