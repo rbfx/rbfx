@@ -144,7 +144,7 @@ void NetworkSimulator::SimulateTime(float time)
 
 SharedPtr<Context> CreateNetworkSimulatorContext()
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateCompleteContext);
     auto network = context->GetSubsystem<Network>();
     network->SetUpdateFps(NetworkSimulator::FramesInSecond);
     network->PostUpdate(0.5f / NetworkSimulator::FramesInSecond);
