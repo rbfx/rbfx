@@ -62,7 +62,28 @@ void ManualConnection::IncrementTime(unsigned delta)
 
 void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
 {
-    InternalMessage& msg = messages_[reliable][inOrder].emplace_back();
+    const double currentDropRatio = droppedMessages_ / ea::max(1.0, static_cast<double>(totalMessages_));
+    const double currentShuffleRatio = shuffledMessages_ / ea::max(1.0, static_cast<double>(totalMessages_));
+
+    ++totalMessages_;
+
+    // Simulate message loss
+    if (!reliable && currentDropRatio < quality_.dropRate_)
+    {
+        ++droppedMessages_;
+        return;
+    }
+
+    // Simulate shuffle
+    auto& outgoingQueue = messages_[reliable][inOrder];
+    unsigned index = outgoingQueue.size();
+    if (!inOrder && currentShuffleRatio < quality_.shuffleRate_)
+    {
+        index = random_.GetUInt(0, index);
+        ++shuffledMessages_;
+    }
+
+    InternalMessage& msg = *outgoingQueue.emplace(outgoingQueue.begin() + index);
     msg.sendingTime_ = currentTime_ + GetPing();
     msg.messageId_ = messageId;
     msg.data_.assign(data, data + numBytes);
@@ -70,12 +91,12 @@ void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reli
 
 unsigned ManualConnection::GetPing()
 {
-    const float mean = (ping_.minPing_ + ping_.maxPing_) / 2;
-    const float sigma = (ping_.maxPing_ - ping_.minPing_) / 2;
+    const float mean = (quality_.minPing_ + quality_.maxPing_) / 2;
+    const float sigma = (quality_.maxPing_ - quality_.minPing_) / 2;
     // Take two to avoid clustering on min ping
     const float source1 = random_.GetNormalFloat(mean, sigma / 1.5);
     const float source2 = random_.GetNormalFloat(mean, sigma / 1.5);
-    const float value = Clamp(source1 >= ping_.minPing_ ? source1 : source2, ping_.minPing_, ping_.spikePing_);
+    const float value = Clamp(source1 >= quality_.minPing_ ? source1 : source2, quality_.minPing_, quality_.spikePing_);
     return static_cast<unsigned>(value * NetworkSimulator::MillisecondsInFrame * NetworkSimulator::FramesInSecond);
 }
 
@@ -89,7 +110,7 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
     serverNetworkManager_->MarkAsServer();
 }
 
-void NetworkSimulator::AddClient(Scene* clientScene, const PingDistribution& ping)
+void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& quality)
 {
     PerClient data;
     data.clientScene_ = clientScene;
@@ -98,13 +119,13 @@ void NetworkSimulator::AddClient(Scene* clientScene, const PingDistribution& pin
     data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_, random_.GetUInt());
 
     data.clientToServer_->SetSinkConnection(data.serverToClient_);
-    data.clientToServer_->SetPing(ping);
+    data.clientToServer_->SetPing(quality);
     data.serverToClient_->SetSinkConnection(data.clientToServer_);
-    data.serverToClient_->SetPing(ping);
+    data.serverToClient_->SetPing(quality);
 
     data.clientNetworkManager_->MarkAsClient(data.clientToServer_);
     serverNetworkManager_->AsServer().AddConnection(data.serverToClient_);
-    serverNetworkManager_->AsServer().SetTestPing(data.serverToClient_, RoundToInt((ping.maxPing_ + ping.minPing_) / 2 * 1000));
+    serverNetworkManager_->AsServer().SetTestPing(data.serverToClient_, RoundToInt((quality.maxPing_ + quality.minPing_) / 2 * 1000));
 
     clientScenes_.push_back(data);
 }
@@ -140,15 +161,6 @@ void NetworkSimulator::SimulateTime(float time)
     const float timeStep = 1.0f / (FramesInSecond * MillisecondsInFrame);
     for (unsigned i = 0; i < time / timeStep; ++i)
         SimulateEngineFrame(timeStep);
-}
-
-SharedPtr<Context> CreateNetworkSimulatorContext()
-{
-    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateCompleteContext);
-    auto network = context->GetSubsystem<Network>();
-    network->SetUpdateFps(NetworkSimulator::FramesInSecond);
-    network->PostUpdate(0.5f / NetworkSimulator::FramesInSecond);
-    return context;
 }
 
 }
