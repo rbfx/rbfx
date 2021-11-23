@@ -30,14 +30,15 @@
 
 TEST_CASE("Time is synchronized between client and server")
 {
-    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateNetworkSimulatorContext);
+    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateCompleteContext);
+    context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
     // Prepare test parameters
     const float frameErrorTolarance = 1.0f;
     const auto retry = GENERATE(range(0, 5));
     const auto ping = GENERATE(
-        Tests::PingDistribution{ 0.08f, 0.12f, 0.20f },
-        Tests::PingDistribution{ 0.22f, 0.28f, 0.50f }
+        Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f },
+        Tests::ConnectionQuality{ 0.22f, 0.28f, 0.50f, 0.10f, 0.10f }
     );
 
     unsigned seed = retry;

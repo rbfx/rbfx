@@ -35,11 +35,13 @@ using namespace Urho3D;
 namespace Tests
 {
 
-struct PingDistribution
+struct ConnectionQuality
 {
     float minPing_{};
     float maxPing_{};
     float spikePing_{};
+    float dropRate_{};
+    float shuffleRate_{};
 };
 
 /// Test implementation of AbstractConnection with manual control over message transmission.
@@ -49,7 +51,7 @@ public:
     ManualConnection(Context* context, NetworkManager* sink, unsigned seed);
 
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
-    void SetPing(const PingDistribution& ping) { ping_ = ping; }
+    void SetPing(const ConnectionQuality& quality) { quality_ = quality; }
 
     void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     ea::string ToString() const override { return "Manual Connection"; }
@@ -70,10 +72,14 @@ private:
     AbstractConnection* sinkConnection_{};
     RandomEngine random_;
 
-    PingDistribution ping_;
+    ConnectionQuality quality_;
 
     unsigned currentTime_{};
     ea::vector<InternalMessage> messages_[2][2];
+
+    unsigned totalMessages_{};
+    unsigned droppedMessages_{};
+    unsigned shuffledMessages_{};
 };
 
 /// Network simulator for tests.
@@ -87,7 +93,7 @@ public:
     static const unsigned MillisecondsInFrame = 32;
 
     NetworkSimulator(Scene* serverScene, unsigned seed);
-    void AddClient(Scene* clientScene, const PingDistribution& ping);
+    void AddClient(Scene* clientScene, const ConnectionQuality& quality);
 
     void SimulateEngineFrame(float timeStep);
     void SimulateTime(float time);
@@ -110,7 +116,5 @@ private:
 
     ea::vector<PerClient> clientScenes_;
 };
-
-SharedPtr<Context> CreateNetworkSimulatorContext();
 
 }
