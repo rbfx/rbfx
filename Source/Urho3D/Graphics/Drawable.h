@@ -418,6 +418,8 @@ public:
 protected:
     /// Recalculate hash. Shall be save to call from multiple threads as long as the object is not changing.
     unsigned RecalculatePipelineStateHash() const override;
+    /// Get Geometry pointer if the source one is not null or empty.
+    static Geometry* GetGeometryIfNotEmpty(Geometry* geometry);
 
     /// Handle node being assigned.
     void OnNodeSet(Node* node) override;
