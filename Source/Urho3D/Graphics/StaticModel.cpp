@@ -417,7 +417,7 @@ void StaticModel::ResetLodLevels()
     {
         if (!geometries_[i].size())
             geometries_[i].resize(1);
-        batches_[i].geometry_ = geometries_[i][0];
+        batches_[i].geometry_ = GetGeometryIfNotEmpty(geometries_[i][0]);
         geometryData_[i].lodLevel_ = 0;
     }
 
@@ -446,7 +446,7 @@ void StaticModel::CalculateLodLevels()
         if (geometryData_[i].lodLevel_ != newLodLevel)
         {
             geometryData_[i].lodLevel_ = newLodLevel;
-            batches_[i].geometry_ = batchGeometries[newLodLevel];
+            batches_[i].geometry_ = GetGeometryIfNotEmpty(batchGeometries[newLodLevel]);
         }
     }
 }
