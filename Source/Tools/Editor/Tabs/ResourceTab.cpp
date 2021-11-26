@@ -144,7 +144,7 @@ bool ResourceTab::RenderWindowContent()
     int i = 0;
     for (const ea::string& name : currentDirs_)
     {
-        ui::PushID(name.c_str());
+        const ui::IdScope idScope(name.c_str());
 
         if (scrollToCurrent_ && selectedItem_ == name)
         {
@@ -225,8 +225,6 @@ bool ResourceTab::RenderWindowContent()
             }
             ui::EndDragDropTarget();
         }
-
-        ui::PopID();    // ui::PushID(name.c_str());
     }
 
     // Render files
@@ -236,12 +234,12 @@ bool ResourceTab::RenderWindowContent()
         // Asset may get deleted.
         if (asset == nullptr)
             continue;
-        ui::PushID(asset);
+        const ui::IdScope assetIdScope(asset);
 
         ea::string name = GetFileNameAndExtension(asset->GetName());
         ea::string icon = GetFileIcon(asset->GetName());
 
-        const ui::IdScope idScope(name.c_str());
+        const ui::IdScope nameIdScope(name.c_str());
 
         if (scrollToCurrent_ && selectedItem_ == name)
         {
@@ -299,7 +297,7 @@ bool ResourceTab::RenderWindowContent()
         {
             for (ea::string byproduct : importer->GetByproducts())
             {
-                ui::PushID(byproduct.c_str());
+                const ui::IdScope idScope(byproduct.c_str());
 
                 ea::string byproductWithDir = byproduct.substr(currentDir_.size());
                 if (!indented)
@@ -354,13 +352,10 @@ bool ResourceTab::RenderWindowContent()
                     ui::TextUnformatted(resourceName.c_str());
                     ui::EndDragDropSource();
                 }
-
-                ui::PopID();    // ui::PushID(byproduct.c_str());
             }
         }
         if (indented)
             ui::Unindent();
-        ui::PopID();    // ui::PushID(asset)
     }
 
     // Context menu when clicking empty area
@@ -604,15 +599,27 @@ void ResourceTab::RenderContextMenu()
     {
         if (ui::MenuItem(ICON_FA_FOLDER " Folder"))
         {
+            auto* fs = context_->GetSubsystem<FileSystem>();
             selectedItem_ = "New Folder";
-            ea::string path = GetNewResourcePath(currentDir_ + selectedItem_);
-            if (context_->GetSubsystem<FileSystem>()->CreateDir(path))
+
+            for (int i = 0; i < 999; i++)
             {
-                scrollToCurrent_ = true;
-                StartRename();
+                selectedItem_ = "New Folder";
+                if (i > 0)
+                    selectedItem_ += Format(" ({})", i);
+                ea::string path = GetNewResourcePath(currentDir_ + selectedItem_);
+                if (!fs->DirExists(path))
+                {
+                    if (!fs->CreateDir(path))
+                        URHO3D_LOGERRORF("Failed creating folder '%s'.", path.c_str());
+                    else
+                    {
+                        scrollToCurrent_ = true;
+                        StartRename();
+                    }
+                    break;
+                }
             }
-            else
-                URHO3D_LOGERRORF("Failed creating folder '%s'.", path.c_str());
         }
 
         if (ui::MenuItem("Scene"))
