@@ -1,0 +1,68 @@
+//
+// Copyright (c) 2021 the rbfx project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR rhs
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR rhsWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR rhs DEALINGS IN
+// THE SOFTWARE.
+//
+
+#include "../CommonUtils.h"
+#include "../ModelUtils.h"
+
+#include <Urho3D/Graphics/ParticleGraphNodes.h>
+
+using namespace Urho3D;
+
+TEST_CASE("Test Add")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    ParticleGraphNodes::Add add;
+    auto& pin0 = add.GetPin(0);
+    pin0.containerType_ = ParticleGraphContainerType::Span;
+    pin0.offset_ = sizeof(float)*0;
+    pin0.size_ = sizeof(float);
+    auto& pin1 = add.GetPin(1);
+    pin1.containerType_ = ParticleGraphContainerType::Span;
+    pin1.offset_ = sizeof(float) * 1;
+    pin1.size_ = sizeof(float);
+    auto& pin2 = add.GetPin(2);
+    pin2.containerType_ = ParticleGraphContainerType::Span;
+    pin2.offset_ = sizeof(float) * 2;
+    pin2.size_ = sizeof(float);
+
+    ea::vector<uint8_t> buffer;
+    buffer.resize(add.EvalueInstanceSize());
+
+    UpdateContext updateContext;
+    ea::vector<unsigned> indices {0};
+    ea::vector<uint8_t> values;
+    values.resize(sizeof(float) * 3);
+    updateContext.indices_ = ea::span<unsigned>(indices.begin(), indices.end());
+    updateContext.timeStep_ = 0.0f;
+    updateContext.tempBuffer_ = ea::span<uint8_t>(values.begin(), values.end());
+
+    updateContext.GetSpan<float>(pin0)[0] = 40.0f;
+    updateContext.GetSpan<float>(pin1)[0] = 2.0f;
+
+    auto* instance = add.CreateInstanceAt(buffer.begin());
+    instance->Update(updateContext);
+
+    CHECK(updateContext.GetSpan<float>(pin2)[0] == Catch::Approx(42.0f));
+
+    instance->~ParticleGraphNodeInstance();
+}
