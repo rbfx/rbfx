@@ -66,3 +66,51 @@ TEST_CASE("Test Add")
 
     instance->~ParticleGraphNodeInstance();
 }
+
+TEST_CASE("Test simple particle graph")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    const auto effect = MakeShared<ParticleGraphEffect>(context);
+    effect->SetNumLayers(1);
+    auto layer = effect->GetLayer(0);
+    auto emitGraph = layer.GetEmitGraph();
+    auto updateGraph = layer.GetUpdateGraph();
+
+    //effect->Add(MakeShared<ParticleGraphNodes::Add>());
+
+    //ParticleGraphNodes::Add add;
+    //auto& pin0 = add.GetPin(0);
+    //pin0.containerType_ = ParticleGraphContainerType::Span;
+    //pin0.offset_ = sizeof(float) * 0;
+    //pin0.size_ = sizeof(float);
+    //auto& pin1 = add.GetPin(1);
+    //pin1.containerType_ = ParticleGraphContainerType::Span;
+    //pin1.offset_ = sizeof(float) * 1;
+    //pin1.size_ = sizeof(float);
+    //auto& pin2 = add.GetPin(2);
+    //pin2.containerType_ = ParticleGraphContainerType::Span;
+    //pin2.offset_ = sizeof(float) * 2;
+    //pin2.size_ = sizeof(float);
+
+    //ea::vector<uint8_t> buffer;
+    //buffer.resize(add.EvalueInstanceSize());
+
+    //UpdateContext updateContext;
+    //ea::vector<unsigned> indices{0};
+    //ea::vector<uint8_t> values;
+    //values.resize(sizeof(float) * 3);
+    //updateContext.indices_ = ea::span<unsigned>(indices.begin(), indices.end());
+    //updateContext.timeStep_ = 0.0f;
+    //updateContext.tempBuffer_ = ea::span<uint8_t>(values.begin(), values.end());
+
+    //updateContext.GetSpan<float>(pin0)[0] = 40.0f;
+    //updateContext.GetSpan<float>(pin1)[0] = 2.0f;
+
+    //auto* instance = add.CreateInstanceAt(buffer.begin());
+    //instance->Update(updateContext);
+
+    //CHECK(updateContext.GetSpan<float>(pin2)[0] == Catch::Approx(42.0f));
+
+    //instance->~ParticleGraphNodeInstance();
+}

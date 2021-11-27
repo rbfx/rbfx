@@ -27,6 +27,38 @@
 
 namespace Urho3D
 {
+/// Construct ParticleGraphLayer.
+ParticleGraph::ParticleGraph() = default;
+
+/// Destruct ParticleGraphLayer.
+ParticleGraph::~ParticleGraph() = default;
+
+/// Add node to the graph.
+/// Returns node index;
+unsigned ParticleGraph::Add(const SharedPtr<ParticleGraphNode> node)
+{
+    const auto index = static_cast<unsigned>(nodes_.size());
+    nodes_.push_back(node);
+    return index;
+}
+
+/// Construct ParticleGraphLayer.
+ParticleGraphLayer::ParticleGraphLayer() = default;
+
+/// Destruct ParticleGraphLayer.
+ParticleGraphLayer::~ParticleGraphLayer() = default;
+
+/// Get emit graph.
+ParticleGraph& ParticleGraphLayer::GetEmitGraph()
+{
+    return emit_;
+}
+
+/// Get update graph.
+ParticleGraph& ParticleGraphLayer::GetUpdateGraph()
+{
+    return update_;
+}
 
 ParticleGraphNode::ParticleGraphNode() = default;
 
@@ -39,7 +71,19 @@ ParticleGraphEffect::ParticleGraphEffect(Context* context)
 
 ParticleGraphEffect::~ParticleGraphEffect() = default;
 
-void ParticleGraphEffect::RegisterObject(Context* context) { context->RegisterFactory<ParticleGraphEffect>(); }
+void ParticleGraphEffect::RegisterObject(Context* context)
+{
+    context->RegisterFactory<ParticleGraphEffect>();
+}
+/// Set number of layers.
+void ParticleGraphEffect::SetNumLayers(unsigned numLayers)
+{
+    layers_.resize(numLayers);
+}
 
-
+/// Get layer by index.
+ParticleGraphLayer& ParticleGraphEffect::GetLayer(unsigned layerIndex)
+{
+    return layers_[layerIndex];
+}
 }

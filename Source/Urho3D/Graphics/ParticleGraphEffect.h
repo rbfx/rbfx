@@ -34,18 +34,12 @@ enum class ParticleGraphContainerType
     Auto
 };
 
-enum class ParticleGraphValueType
-{
-    Auto,
-    Float
-};
-
 struct ParticleGraphNodePin
 {
     /// Container type: span, sparse or scalar.
     ParticleGraphContainerType containerType_{ParticleGraphContainerType::Auto};
     /// Value type (float, vector3, etc).
-    ParticleGraphValueType valueType_ { ParticleGraphValueType::Auto };
+    VariantType valueType_{ VariantType::VAR_NONE };
     /// Buffer offset.
     size_t offset_{};
     /// Buffer size.
@@ -76,6 +70,40 @@ public:
     virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) = 0;
 };
 
+class URHO3D_API ParticleGraph
+{
+public:
+    /// Construct.
+    explicit ParticleGraph();
+    /// Destruct.
+    virtual ~ParticleGraph();
+
+    /// Add node to the graph.
+    /// Returns node index;
+    unsigned Add(const SharedPtr<ParticleGraphNode> node);
+private:
+    /// Nodes in the graph;
+    ea::vector<SharedPtr<ParticleGraphNode>> nodes_;
+};
+
+class URHO3D_API ParticleGraphLayer
+{
+public:
+    /// Construct.
+    explicit ParticleGraphLayer();
+    /// Destruct.
+    virtual ~ParticleGraphLayer();
+
+    /// Get emit graph.
+    ParticleGraph& GetEmitGraph();
+
+    /// Get update graph.
+    ParticleGraph& GetUpdateGraph();
+private:
+    ParticleGraph emit_;
+    ParticleGraph update_;
+};
+
 /// %Particle graph effect definition.
 class URHO3D_API ParticleGraphEffect : public Resource
 {
@@ -89,6 +117,14 @@ public:
     /// Register object factory.
     /// @nobind
     static void RegisterObject(Context* context);
+
+    /// Set number of layers.
+    void SetNumLayers(unsigned numLayers);
+
+    /// Get layer by index.
+    ParticleGraphLayer& GetLayer(unsigned layerIndex);
+private:
+    ea::vector<ParticleGraphLayer> layers_;
 };
 
 }

@@ -92,16 +92,6 @@ public:
 namespace ParticleGraphNodes
 {
 
-template <typename Value> class GetValueType
-{
-};
-
-template <> struct GetValueType<float>
-{
-    static constexpr ParticleGraphValueType ValueType = ParticleGraphValueType::Float;
-};
-
-
 template <typename Node, typename Value0, typename Value1, typename Value2> class AbstractNode : public ParticleGraphNode
 {
 protected:
@@ -109,9 +99,9 @@ protected:
     explicit AbstractNode()
         : ParticleGraphNode()
     {
-        pins_[0].valueType_ = GetValueType<Value0>::ValueType;
-        pins_[1].valueType_ = GetValueType<Value1>::ValueType;
-        pins_[2].valueType_ = GetValueType<Value2>::ValueType;
+        pins_[0].valueType_ = GetVariantType<Value0>();
+        pins_[1].valueType_ = GetVariantType<Value1>();
+        pins_[2].valueType_ = GetVariantType<Value2>();
     }
 
     class Instance : public ParticleGraphNodeInstance
@@ -165,7 +155,7 @@ protected:
     ParticleGraphNodePin pins_[3];
 };
 
-class Add : public AbstractNode<Add,float, float, float>
+class URHO3D_API Add : public AbstractNode<Add, float, float, float>
 {
     template <typename Span0, typename Span1, typename Span2>
     static void Op(const unsigned numParticles, Span0 pin0, Span1 pin1, Span2 pin2)
