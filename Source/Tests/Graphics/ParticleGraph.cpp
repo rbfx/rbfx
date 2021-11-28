@@ -24,6 +24,7 @@
 #include "../ModelUtils.h"
 
 #include <Urho3D/Graphics/ParticleGraphNodes.h>
+#include <Urho3D/Scene/Scene.h>
 
 using namespace Urho3D;
 
@@ -94,6 +95,11 @@ TEST_CASE("Test simple particle graph")
         auto setIndex = updateGraph.Add(get);
     }
 
+    const auto scene = MakeShared<Scene>(context);
+    const auto node = scene->CreateChild();
+    const auto emitter = node->CreateComponent<ParticleGraphEmitter>();
+    emitter->SetEffect(effect);
+     
     //effect->Add(MakeShared<ParticleGraphNodes::Add>());
 
     //ParticleGraphNodes::Add add;

@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "Drawable.h"
 #include "../Scene/Component.h"
 #include "ParticleGraphEffect.h"
 #include "EASTL/span.h"
@@ -44,6 +45,39 @@ public:
     /// Register object factory.
     /// @nobind
     static void RegisterObject(Context* context);
+
+    /// Handle enabled/disabled state change.
+    void OnSetEnabled() override;
+
+    /// Set particle effect.
+    /// @property
+    void SetEffect(ParticleGraphEffect* effect);
+    /// Reset the particle emitter completely. Removes current particles, sets emitting state on, and resets the
+    /// emission timer.
+    void Reset();
+    /// Apply not continuously updated values such as the material, the number of particles and sorting mode from the
+    /// particle effect. Call this if you change the effect programmatically.
+    void ApplyEffect();
+
+    /// Return particle effect.
+    /// @property
+    ParticleGraphEffect* GetEffect() const;
+
+    /// Set particles effect attribute.
+    void SetEffectAttr(const ResourceRef& value);
+    /// Set particles effect attribute.
+    ResourceRef GetEffectAttr() const;
+
+private:
+    /// Handle scene post-update event.
+    void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle live reload of the particle effect.
+    void HandleEffectReloadFinished(StringHash eventType, VariantMap& eventData);
+
+    /// Particle effect.
+    SharedPtr<ParticleGraphEffect> effect_;
+    /// Last scene timestep.
+    float lastTimeStep_{};
 };
 
 
