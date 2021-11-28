@@ -29,6 +29,7 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkComponent.h"
 #include "../Network/NetworkEvents.h"
+#include "../Network/NetworkManager.h"
 #include "../Network/ClientNetworkManager.h"
 #include "../Scene/Scene.h"
 
@@ -130,9 +131,10 @@ ClientClock::ClientClock(unsigned updateFrequency, unsigned numStartSamples, uns
     synchronizationErrorsSorted_.set_capacity(numOngoingSamples_);
 }
 
-ClientNetworkManager::ClientNetworkManager(Scene* scene, AbstractConnection* connection)
+ClientNetworkManager::ClientNetworkManager(NetworkManagerBase* base, Scene* scene, AbstractConnection* connection)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
+    , base_(base)
     , scene_(scene)
     , connection_(connection)
 {
@@ -152,7 +154,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         connection_->OnMessageReceived(messageId, msg);
 
         const bool isReliable = !!(msg.magic_ & 1u);
-        connection_->SendMessage(MSG_PONG, MsgPingPong{ msg.magic_ }, isReliable ? NetworkMessageFlag::Reliable : NetworkMessageFlag::None);
+        connection_->SendSerializedMessage(MSG_PONG, MsgPingPong{ msg.magic_ }, isReliable ? NetworkMessageFlag::Reliable : NetworkMessageFlag::None);
         break;
     }
 
@@ -171,7 +173,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         clock_->subFrameTime_ = 0.0f;
         clock_->lastSynchronizationFrame_ = clock_->currentFrame_;
 
-        connection_->SendMessage(MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{ msg.magic_ }, NetworkMessageFlag::Reliable);
+        connection_->SendSerializedMessage(MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{ msg.magic_ }, NetworkMessageFlag::Reliable);
         URHO3D_LOGINFO("Client clock is started from frame #{}", clock_->currentFrame_);
         break;
     }
@@ -179,6 +181,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
     case MSG_CLOCK:
     {
         const auto msg = ReadNetworkMessage<MsgClock>(messageData);
+        connection_->OnMessageReceived(messageId, msg);
         if (!clock_)
         {
             URHO3D_LOGWARNING("Client clock update received before synchronization");
@@ -189,6 +192,46 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         clock_->ping_ = msg.ping_;
         clock_->latestServerFrame_ += ea::max(0, delta);
         ProcessTimeCorrection();
+        break;
+    }
+
+    case MSG_REMOVE_COMPONENTS:
+    {
+        connection_->OnMessageReceived(messageId, messageData);
+        while (!messageData.IsEof())
+        {
+            const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+            WeakPtr<NetworkComponent> networkComponent{ base_->GetNetworkComponent(networkId) };
+            if (!networkComponent)
+            {
+                URHO3D_LOGWARNING("Cannot find NetworkComponent {} to remove", NetworkManagerBase::FormatNetworkId(networkId));
+                continue;
+            }
+            networkComponent->OnRemovedOnClient();
+            if (networkComponent)
+                networkComponent->Remove();
+        }
+        break;
+    }
+    case MSG_UPDATE_COMPONENTS:
+    {
+        connection_->OnMessageReceived(messageId, messageData);
+        while (!messageData.IsEof())
+        {
+            const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+            const StringHash componentType = messageData.ReadStringHash();
+            messageData.ReadBuffer(componentBuffer_.GetBuffer());
+            componentBuffer_.Seek(0);
+
+            if (NetworkComponent* networkComponent = GetOrCreateNetworkComponent(networkId, componentType))
+            {
+                const bool isSnapshot = componentType != StringHash{};
+                if (isSnapshot)
+                    networkComponent->ReadSnapshot(componentBuffer_);
+                else
+                    networkComponent->ReadReliableDelta(componentBuffer_);
+            }
+        }
         break;
     }
 
@@ -224,6 +267,35 @@ void ClientNetworkManager::ProcessTimeCorrection()
         URHO3D_LOGINFO("Client clock is rewound from frame #{}:{} to frame #{}:{}",
             oldCurrentFrame, oldSubFrameTime,
             clock_->currentFrame_, clock_->subFrameTime_);
+    }
+}
+
+NetworkComponent* ClientNetworkManager::GetOrCreateNetworkComponent(NetworkId networkId, StringHash componentType)
+{
+    if (componentType != StringHash{})
+    {
+        auto networkComponent = DynamicCast<NetworkComponent>(context_->CreateObject(componentType));
+        if (!networkComponent)
+        {
+            URHO3D_LOGWARNING("Cannot create NetworkComponent {} of type #{} '{}'",
+                NetworkManagerBase::FormatNetworkId(networkId), componentType.Value(), componentType.Reverse());
+            return nullptr;
+        }
+        networkComponent->SetNetworkId(networkId);
+
+        Node* newNode = scene_->CreateChild(EMPTY_STRING, LOCAL);
+        newNode->AddComponent(networkComponent, 0, LOCAL);
+        return networkComponent;
+    }
+    else
+    {
+        NetworkComponent* networkComponent = base_->GetNetworkComponent(networkId);
+        if (!networkComponent)
+        {
+            URHO3D_LOGWARNING("Cannot find existing NetworkComponent {}", NetworkManagerBase::FormatNetworkId(networkId));
+            return nullptr;
+        }
+        return networkComponent;
     }
 }
 

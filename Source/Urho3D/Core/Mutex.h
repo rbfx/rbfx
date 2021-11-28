@@ -135,19 +135,28 @@ private:
 using ProfiledMutex = Mutex;
 #endif
 
+/// No-op mutex. Useful for template code.
+class DummyMutex
+{
+public:
+    void Acquire() {}
+    bool TryAcquire() { return true; }
+    void Release() {}
+ };
+
 /// Lock that automatically acquires and releases a mutex.
-template<typename Mutex>
+template<typename T>
 class MutexLock : private NonCopyable
 {
 public:
     /// Construct and acquire the mutex.
-    explicit MutexLock(Mutex& mutex) : mutex_(mutex) { mutex_.Acquire(); }
+    explicit MutexLock(T& mutex) : mutex_(mutex) { mutex_.Acquire(); }
     /// Destruct. Release the mutex.
     ~MutexLock() { mutex_.Release(); }
 
 private:
     /// Mutex reference.
-    Mutex& mutex_;
+    T& mutex_;
 };
 
 }

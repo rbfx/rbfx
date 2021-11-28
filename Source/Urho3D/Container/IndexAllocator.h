@@ -33,16 +33,26 @@ namespace Urho3D
 {
 
 /// Utility to assign unique non-zero IDs to objects. Thread-safe.
+template <class T>
 class IndexAllocator
 {
 public:
+    using MutexType = T;
+
     /// Return upper bound of allocated indices.
     unsigned GetNextFreeIndex() const { return nextIndex_.load(std::memory_order_relaxed); }
+
+    /// Return number of currently allocated indices.
+    unsigned GetSize() const
+    {
+        MutexLock<MutexType> lock(mutex_);
+        return GetNextFreeIndex() - unusedIndices_.size();
+    }
 
     /// Allocate index.
     unsigned Allocate()
     {
-        MutexLock<Mutex> lock(mutex_);
+        MutexLock<MutexType> lock(mutex_);
 
         unsigned index{};
         if (unusedIndices_.empty())
@@ -62,7 +72,7 @@ public:
     /// Release index. Index should be previously returned from Allocate and not released yet.
     void Release(unsigned index)
     {
-        MutexLock<Mutex> lock(mutex_);
+        MutexLock<MutexType> lock(mutex_);
 
         if (index + 1 == GetNextFreeIndex())
             nextIndex_.fetch_sub(1, std::memory_order_relaxed);
@@ -73,7 +83,7 @@ public:
     /// Shrink collection to minimum possible size preserving currently allocated indices.
     void Shrink()
     {
-        MutexLock<Mutex> lock(mutex_);
+        MutexLock<MutexType> lock(mutex_);
 
         ea::sort(unusedIndices_.begin(), unusedIndices_.end());
         while (!unusedIndices_.empty() && unusedIndices_.back() + 1 == GetNextFreeIndex())
@@ -84,9 +94,17 @@ public:
         unusedIndices_.shrink_to_fit();
     }
 
+    /// Reset to default state.
+    void Clear()
+    {
+        MutexLock<MutexType> lock(mutex_);
+        nextIndex_ = 1;
+        unusedIndices_.clear();
+    }
+
 private:
     /// Mutex that protects list and index.
-    Mutex mutex_;
+    mutable MutexType mutex_;
     /// Next unused index.
     std::atomic_uint32_t nextIndex_{ 1 };
     /// Unused indices.
@@ -129,11 +147,11 @@ public:
 
 private:
     /// Shared allocator for this family.
-    static IndexAllocator indexAllocator;
+    static IndexAllocator<Mutex> indexAllocator;
     /// Unique object ID.
     unsigned objectId_{};
 };
 
-template <class T> IndexAllocator IDFamily<T>::indexAllocator;
+template <class T> IndexAllocator<Mutex> IDFamily<T>::indexAllocator;
 
 }

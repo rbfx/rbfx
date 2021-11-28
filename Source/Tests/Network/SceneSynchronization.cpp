@@ -25,6 +25,7 @@
 #include "../SceneUtils.h"
 
 #include <Urho3D/Network/Network.h>
+#include <Urho3D/Network/NetworkComponent.h>
 #include <Urho3D/Network/NetworkManager.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -36,22 +37,22 @@ TEST_CASE("Time is synchronized between client and server")
     // Prepare test parameters
     const float frameErrorTolarance = 1.0f;
     const auto retry = GENERATE(range(0, 5));
-    const auto ping = GENERATE(
+    const auto quality = GENERATE(
         Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f },
         Tests::ConnectionQuality{ 0.22f, 0.28f, 0.50f, 0.10f, 0.10f }
     );
 
     unsigned seed = retry;
-    CombineHash(seed, MakeHash(ping.minPing_));
-    CombineHash(seed, MakeHash(ping.maxPing_));
-    CombineHash(seed, MakeHash(ping.spikePing_));
+    CombineHash(seed, MakeHash(quality.minPing_));
+    CombineHash(seed, MakeHash(quality.maxPing_));
+    CombineHash(seed, MakeHash(quality.spikePing_));
 
     // Setup scenes
     auto serverScene = MakeShared<Scene>(context);
     auto clientScene = MakeShared<Scene>(context);
 
     Tests::NetworkSimulator sim(serverScene, seed);
-    sim.AddClient(clientScene, ping);
+    sim.AddClient(clientScene, quality);
 
     auto& serverNetworkManager = serverScene->GetNetworkManager()->AsServer();
     auto& clientNetworkManager = clientScene->GetNetworkManager()->AsClient();
@@ -64,9 +65,9 @@ TEST_CASE("Time is synchronized between client and server")
     sim.SimulateTime(1000 / 1024.0f);
 
     REQUIRE(clientNetworkManager.IsSynchronized());
-    REQUIRE(clientNetworkManager.GetPingInMs() == RoundToInt((ping.maxPing_ + ping.minPing_) * 1000 / 2));
+    REQUIRE(clientNetworkManager.GetPingInMs() == RoundToInt((quality.maxPing_ + quality.minPing_) * 1000 / 2));
 
-    const float syncError = ea::max(0.5f, (ping.maxPing_ - ping.minPing_) * Tests::NetworkSimulator::FramesInSecond);
+    const float syncError = ea::max(0.5f, (quality.maxPing_ - quality.minPing_) * Tests::NetworkSimulator::FramesInSecond);
     REQUIRE(serverNetworkManager.GetCurrentFrame() == 32);
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(32)) < syncError);
 
@@ -119,4 +120,32 @@ TEST_CASE("Time is synchronized between client and server")
     REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * 120);
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * 120)) < frameErrorTolarance);
     REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame3);
+}
+
+TEST_CASE("Scene is synchronized between client and server")
+{
+    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateCompleteContext);
+    context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
+
+    // Setup scenes
+    const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
+    auto serverScene = MakeShared<Scene>(context);
+    auto clientScene = MakeShared<Scene>(context);
+
+    auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
+    auto replicatedNodeA = serverScene->CreateChild("Replicated Node A");
+    replicatedNodeA->CreateComponent<NetworkComponent>();
+    auto replicatedNodeB = serverScene->CreateChild("Replicated Node B");
+    replicatedNodeB->CreateComponent<NetworkComponent>();
+    auto replicatedNodeChild = serverScene->CreateChild("Replicated Node Child");
+    replicatedNodeChild->CreateComponent<NetworkComponent>();
+
+    // Spend some time alone
+    Tests::NetworkSimulator sim(serverScene);
+    sim.SimulateTime(10.0f);
+
+    // Add client and wait for a while
+    sim.AddClient(clientScene, quality);
+    sim.SimulateTime(10.0f);
+
 }

@@ -92,7 +92,7 @@ public:
     /// Number of "milliseconds" in one server frame. Use decently big value to have sub-frame control over execution.
     static const unsigned MillisecondsInFrame = 32;
 
-    NetworkSimulator(Scene* serverScene, unsigned seed);
+    explicit NetworkSimulator(Scene* serverScene, unsigned seed = 0);
     void AddClient(Scene* clientScene, const ConnectionQuality& quality);
 
     void SimulateEngineFrame(float timeStep);

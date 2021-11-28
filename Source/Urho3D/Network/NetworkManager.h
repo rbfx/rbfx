@@ -32,6 +32,7 @@
 #include "../Network/ServerNetworkManager.h"
 
 #include <EASTL/optional.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
@@ -40,11 +41,71 @@ class Connection;
 class Network;
 class NetworkComponent;
 
+/// Part of NetworkManager used by both client and server, and referenced by components.
+class URHO3D_API NetworkManagerBase : public Object
+{
+    URHO3D_OBJECT(NetworkManagerBase, Object);
+
+public:
+    static constexpr unsigned IndexBits = 24;
+    static constexpr unsigned VersionBits = 8;
+    static constexpr unsigned IndexMask = (1u << IndexBits) - 1;
+    static constexpr unsigned VersionMask = (1u << VersionBits) - 1;
+    static constexpr unsigned IndexOffset = 0;
+    static constexpr unsigned VersionOffset = IndexOffset + IndexBits;
+    static_assert(VersionOffset + VersionBits == 32, "Unexpected mask layout");
+
+    explicit NetworkManagerBase(Scene* scene);
+
+    /// Process components
+    /// @{
+    void AddComponent(NetworkComponent* networkComponent);
+    void RemoveComponent(NetworkComponent* networkComponent);
+    void RemoveAllComponents();
+
+    void ClearRecentActions();
+    const auto& GetRecentlyRemovedComponents() const { return recentlyRemovedComponents_; }
+    /// @}
+
+    bool IsReplicatedClient() const { return !!client_; }
+    Scene* GetScene() const { return scene_; }
+    const auto& GetUnorderedNetworkComponents() const { return networkComponents_; }
+    ea::string ToString() const;
+    NetworkComponent* GetNetworkComponent(NetworkId networkId) const;
+
+    /// NetworkId utilities
+    /// @{
+    static NetworkId ComposeNetworkId(unsigned index, unsigned version);
+    static ea::pair<unsigned, unsigned> DecomposeNetworkId(NetworkId networkId);
+    static ea::string FormatNetworkId(NetworkId networkId);
+    /// @}
+
+private:
+    unsigned AllocateNewIndex();
+    void EnsureIndex(unsigned index);
+    bool IsValidComponent(unsigned index, unsigned version, NetworkComponent* networkComponent) const;
+    bool IsValidComponent(unsigned index, unsigned version) const;
+
+    Scene* scene_{};
+
+    unsigned numComponents_{};
+    ea::vector<NetworkComponent*> networkComponents_;
+    ea::vector<unsigned> networkComponentVersions_;
+    IndexAllocator<DummyMutex> indexAllocator_;
+
+    ea::unordered_set<NetworkId> recentlyRemovedComponents_;
+    ea::unordered_set<NetworkId> recentlyAddedComponents_;
+
+protected:
+    SharedPtr<ServerNetworkManager> server_;
+    SharedPtr<ClientNetworkManager> client_;
+};
+
 /// Subsystem that keeps trace of all NetworkComponent in the Scene.
 /// Built-in in Scene instead of being independent component for quick access and easier management.
-class URHO3D_API NetworkManager : public Object
+class URHO3D_API NetworkManager : public NetworkManagerBase
 {
-    URHO3D_OBJECT(NetworkManager, Object);
+    URHO3D_OBJECT(NetworkManager, NetworkManagerBase);
 
 public:
     using NetworkComponentById = ea::unordered_map<unsigned, NetworkComponent*>;
@@ -60,30 +121,8 @@ public:
     ServerNetworkManager& AsServer();
     ClientNetworkManager& AsClient();
 
-    /// Add new NetworkComponent and allocate ID for it.
-    void AddNetworkComponent(NetworkComponent* networkComponent);
-    /// Remove existing NetworkComponent and deallocate its ID.
-    void RemoveNetworkComponent(NetworkComponent* networkComponent);
-
     /// Process network message either as client or as server.
     void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
-
-    /// Getters
-    /// @{
-    const NetworkComponentById& GetNetworkComponents() const { return networkComponents_; }
-    Scene* GetScene() const { return scene_; }
-    ea::string ToString() const;
-    /// @}
-
-private:
-    Network* network_{};
-    Scene* scene_{};
-
-    SharedPtr<ServerNetworkManager> server_;
-    SharedPtr<ClientNetworkManager> client_;
-
-    IndexAllocator idAllocator_;
-    NetworkComponentById networkComponents_;
 };
 
 }

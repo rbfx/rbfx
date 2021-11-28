@@ -30,7 +30,9 @@
 #include "../IO/VectorBuffer.h"
 #include "../Network/ProtocolMessages.h"
 
+#include <EASTL/bitvector.h>
 #include <EASTL/optional.h>
+#include <EASTL/vector.h>
 #include <EASTL/bonus/ring_buffer.h>
 
 namespace Urho3D
@@ -39,6 +41,7 @@ namespace Urho3D
 class AbstractConnection;
 class Network;
 class NetworkComponent;
+class NetworkManagerBase;
 class Scene;
 
 struct ClientPing
@@ -63,6 +66,12 @@ struct ClientConnectionData
 
     float pingAccumulator_{};
     float clockAccumulator_{};
+
+    ea::bitvector<> isComponentReplicated_;
+    ea::vector<float> componentsRelevanceTimeouts_;
+
+    ea::vector<NetworkId> pendingRemovedComponents_;
+    ea::vector<ea::pair<NetworkComponent*, bool>> pendingUpdatedComponents_;
 };
 
 /// Server settings for NetworkManager.
@@ -77,6 +86,8 @@ struct ServerNetworkManagerSettings
     unsigned numStartClockSamples_{ 17 };
     unsigned numOngoingClockSamples_{ 41 };
     unsigned numTrimmedClockSamples_{ 3 };
+
+    float relevanceTimeout_{ 5.0f };
 };
 
 /// Server part of NetworkManager subsystem.
@@ -85,7 +96,7 @@ class URHO3D_API ServerNetworkManager : public Object
     URHO3D_OBJECT(ServerNetworkManager, Object);
 
 public:
-    explicit ServerNetworkManager(Scene* scene);
+    ServerNetworkManager(NetworkManagerBase* base, Scene* scene);
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
@@ -106,6 +117,7 @@ private:
     unsigned GetMagic(bool reliable = false) const;
 
     Network* network_{};
+    NetworkManagerBase* base_{};
     Scene* scene_{};
     const ServerNetworkManagerSettings settings_; // TODO: Make mutable
 
@@ -113,6 +125,7 @@ private:
     unsigned currentFrame_{};
 
     ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
+    VectorBuffer componentBuffer_;
 };
 
 }

@@ -82,15 +82,8 @@ public:
         SendLoggedMessage(messageId, reliable, inOrder, msg.GetData(), msg.GetSize());
     }
 
-    void SendMessage(NetworkMessageId messageId, NetworkMessageFlags flags, const VectorBuffer& msg)
-    {
-        const bool reliable = flags.Test(NetworkMessageFlag::Reliable);
-        const bool inOrder = flags.Test(NetworkMessageFlag::InOrder);
-        SendLoggedMessage(messageId, reliable, inOrder, msg.GetData(), msg.GetSize());
-    }
-
     template <class T>
-    void SendMessage(NetworkMessageId messageId, const T& message, NetworkMessageFlags flags)
+    void SendSerializedMessage(NetworkMessageId messageId, const T& message, NetworkMessageFlags flags)
     {
         const bool reliable = flags.Test(NetworkMessageFlag::Reliable);
         const bool inOrder = flags.Test(NetworkMessageFlag::InOrder);
@@ -103,6 +96,25 @@ public:
 
         msg_.Clear();
         message.Save(msg_);
+        SendLoggedMessage(messageId, reliable, inOrder, msg_.GetData(), msg_.GetSize(), debugInfo);
+    }
+
+    template <class T>
+    void SendGeneratedMessage(NetworkMessageId messageId, NetworkMessageFlags flags, T generator)
+    {
+        const bool reliable = flags.Test(NetworkMessageFlag::Reliable);
+        const bool inOrder = flags.Test(NetworkMessageFlag::InOrder);
+
+    #ifdef URHO3D_LOGGING
+        ea::string debugInfo;
+        ea::string* debugInfoPtr = &debugInfo;
+    #else
+        static const ea::string debugInfo;
+        ea::string* debugInfoPtr = nullptr;
+    #endif
+
+        msg_.Clear();
+        generator(msg_, debugInfoPtr);
         SendLoggedMessage(messageId, reliable, inOrder, msg_.GetData(), msg_.GetSize(), debugInfo);
     }
 
