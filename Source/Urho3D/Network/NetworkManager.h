@@ -39,7 +39,7 @@ namespace Urho3D
 
 class Connection;
 class Network;
-class NetworkComponent;
+class NetworkObject;
 
 /// Part of NetworkManager used by both client and server, and referenced by components.
 class URHO3D_API NetworkManagerBase : public Object
@@ -59,8 +59,8 @@ public:
 
     /// Process components
     /// @{
-    void AddComponent(NetworkComponent* networkComponent);
-    void RemoveComponent(NetworkComponent* networkComponent);
+    void AddComponent(NetworkObject* networkObject);
+    void RemoveComponent(NetworkObject* networkObject);
     void RemoveAllComponents();
 
     void ClearRecentActions();
@@ -69,9 +69,9 @@ public:
 
     bool IsReplicatedClient() const { return !!client_; }
     Scene* GetScene() const { return scene_; }
-    const auto& GetUnorderedNetworkComponents() const { return networkComponents_; }
+    const auto& GetUnorderedNetworkObjects() const { return networkObjects_; }
     ea::string ToString() const;
-    NetworkComponent* GetNetworkComponent(NetworkId networkId) const;
+    NetworkObject* GetNetworkObject(NetworkId networkId) const;
 
     /// NetworkId utilities
     /// @{
@@ -83,14 +83,14 @@ public:
 private:
     unsigned AllocateNewIndex();
     void EnsureIndex(unsigned index);
-    bool IsValidComponent(unsigned index, unsigned version, NetworkComponent* networkComponent) const;
+    bool IsValidComponent(unsigned index, unsigned version, NetworkObject* networkObject) const;
     bool IsValidComponent(unsigned index, unsigned version) const;
 
     Scene* scene_{};
 
     unsigned numComponents_{};
-    ea::vector<NetworkComponent*> networkComponents_;
-    ea::vector<unsigned> networkComponentVersions_;
+    ea::vector<NetworkObject*> networkObjects_;
+    ea::vector<unsigned> networkObjectVersions_;
     IndexAllocator<DummyMutex> indexAllocator_;
 
     ea::unordered_set<NetworkId> recentlyRemovedComponents_;
@@ -101,14 +101,14 @@ protected:
     SharedPtr<ClientNetworkManager> client_;
 };
 
-/// Subsystem that keeps trace of all NetworkComponent in the Scene.
+/// Subsystem that keeps trace of all NetworkObject in the Scene.
 /// Built-in in Scene instead of being independent component for quick access and easier management.
 class URHO3D_API NetworkManager : public NetworkManagerBase
 {
     URHO3D_OBJECT(NetworkManager, NetworkManagerBase);
 
 public:
-    using NetworkComponentById = ea::unordered_map<unsigned, NetworkComponent*>;
+    using NetworkObjectById = ea::unordered_map<unsigned, NetworkObject*>;
 
     explicit NetworkManager(Scene* scene);
     ~NetworkManager() override;

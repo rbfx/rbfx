@@ -40,7 +40,7 @@ namespace Urho3D
 
 class AbstractConnection;
 class Network;
-class NetworkComponent;
+class NetworkObject;
 class NetworkManagerBase;
 class Scene;
 
@@ -71,7 +71,7 @@ struct ClientConnectionData
     ea::vector<float> componentsRelevanceTimeouts_;
 
     ea::vector<NetworkId> pendingRemovedComponents_;
-    ea::vector<ea::pair<NetworkComponent*, bool>> pendingUpdatedComponents_;
+    ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
 };
 
 /// Server settings for NetworkManager.

@@ -35,7 +35,7 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkPriority.h"
-#include "../Network/NetworkComponent.h"
+#include "../Network/NetworkObject.h"
 #include "../Network/NetworkManager.h"
 #include "../Network/Protocol.h"
 #include "../Scene/Scene.h"
@@ -1044,7 +1044,7 @@ unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
 
 void RegisterNetworkLibrary(Context* context)
 {
-    NetworkComponent::RegisterObject(context);
+    NetworkObject::RegisterObject(context);
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
 }

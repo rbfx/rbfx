@@ -28,7 +28,7 @@
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
-#include "../Network/NetworkComponent.h"
+#include "../Network/NetworkObject.h"
 #include "../Network/NetworkManager.h"
 #include "../Network/ServerNetworkManager.h"
 #include "../Scene/Scene.h"
@@ -77,7 +77,7 @@ void ServerNetworkManager::BeginNetworkFrame()
         data.clockAccumulator_ += timeStep;
     }
 
-    const auto& unorderedComponents = base_->GetUnorderedNetworkComponents();
+    const auto& unorderedComponents = base_->GetUnorderedNetworkObjects();
     for (auto& [connection, data] : connections_)
     {
         if (!data.synchronized_)
@@ -102,22 +102,22 @@ void ServerNetworkManager::BeginNetworkFrame()
         }
 
         // Process active components
-        for (NetworkComponent* networkComponent : unorderedComponents)
+        for (NetworkObject* networkObject : unorderedComponents)
         {
-            if (!networkComponent)
+            if (!networkObject)
                 continue;
 
-            const NetworkId networkId = networkComponent->GetNetworkId();
+            const NetworkId networkId = networkObject->GetNetworkId();
             const unsigned index = GetIndex(networkId);
 
             if (!data.isComponentReplicated_[index])
             {
-                if (networkComponent->IsRelevantForClient(connection))
+                if (networkObject->IsRelevantForClient(connection))
                 {
                     // Begin replication of component, queue snapshot
                     data.componentsRelevanceTimeouts_[index] = settings_.relevanceTimeout_;
                     data.isComponentReplicated_[index] = true;
-                    data.pendingUpdatedComponents_.push_back({ networkComponent, true });
+                    data.pendingUpdatedComponents_.push_back({ networkObject, true });
                 }
             }
             else
@@ -125,7 +125,7 @@ void ServerNetworkManager::BeginNetworkFrame()
                 data.componentsRelevanceTimeouts_[index] -= timeStep;
                 if (data.componentsRelevanceTimeouts_[index] < 0.0f)
                 {
-                    if (!networkComponent->IsRelevantForClient(connection))
+                    if (!networkObject->IsRelevantForClient(connection))
                     {
                         // Remove irrelevant component
                         data.isComponentReplicated_[index] = false;
@@ -137,7 +137,7 @@ void ServerNetworkManager::BeginNetworkFrame()
                 }
 
                 // Queue non-snapshot update
-                data.pendingUpdatedComponents_.push_back({ networkComponent, false });
+                data.pendingUpdatedComponents_.push_back({ networkObject, false });
             }
         }
     }
@@ -254,19 +254,19 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
     connection->SendGeneratedMessage(MSG_UPDATE_COMPONENTS, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
-        for (const auto& [networkComponent, isSnapshot] : data.pendingUpdatedComponents_)
+        for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
         {
             componentBuffer_.Clear();
             if (isSnapshot)
-                networkComponent->WriteSnapshot(componentBuffer_);
+                networkObject->WriteSnapshot(componentBuffer_);
             else
             {
-                if (!networkComponent->WriteReliableDelta(componentBuffer_))
+                if (!networkObject->WriteReliableDelta(componentBuffer_))
                     continue;
             }
 
-            msg.WriteUInt(static_cast<unsigned>(networkComponent->GetNetworkId()));
-            msg.WriteStringHash(isSnapshot ? networkComponent->GetType() : StringHash());
+            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+            msg.WriteStringHash(isSnapshot ? networkObject->GetType() : StringHash());
             msg.WriteBuffer(componentBuffer_.GetBuffer());
 
             if (debugInfo)
@@ -275,7 +275,7 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
                     debugInfo->append(", ");
                 if (isSnapshot)
                     debugInfo->append("*");
-                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkComponent->GetNetworkId()));
+                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkObject->GetNetworkId()));
             }
         }
     });

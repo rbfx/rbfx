@@ -27,7 +27,7 @@
 #include "../IO/Log.h"
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
-#include "../Network/NetworkComponent.h"
+#include "../Network/NetworkObject.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkManager.h"
 #include "../Network/ClientNetworkManager.h"
@@ -201,15 +201,15 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         while (!messageData.IsEof())
         {
             const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
-            WeakPtr<NetworkComponent> networkComponent{ base_->GetNetworkComponent(networkId) };
-            if (!networkComponent)
+            WeakPtr<NetworkObject> networkObject{ base_->GetNetworkObject(networkId) };
+            if (!networkObject)
             {
-                URHO3D_LOGWARNING("Cannot find NetworkComponent {} to remove", NetworkManagerBase::FormatNetworkId(networkId));
+                URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", NetworkManagerBase::FormatNetworkId(networkId));
                 continue;
             }
-            networkComponent->OnRemovedOnClient();
-            if (networkComponent)
-                networkComponent->Remove();
+            networkObject->OnRemovedOnClient();
+            if (networkObject)
+                networkObject->Remove();
         }
         break;
     }
@@ -223,13 +223,13 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
             messageData.ReadBuffer(componentBuffer_.GetBuffer());
             componentBuffer_.Seek(0);
 
-            if (NetworkComponent* networkComponent = GetOrCreateNetworkComponent(networkId, componentType))
+            if (NetworkObject* networkObject = GetOrCreateNetworkObject(networkId, componentType))
             {
                 const bool isSnapshot = componentType != StringHash{};
                 if (isSnapshot)
-                    networkComponent->ReadSnapshot(componentBuffer_);
+                    networkObject->ReadSnapshot(componentBuffer_);
                 else
-                    networkComponent->ReadReliableDelta(componentBuffer_);
+                    networkObject->ReadReliableDelta(componentBuffer_);
             }
         }
         break;
@@ -270,32 +270,32 @@ void ClientNetworkManager::ProcessTimeCorrection()
     }
 }
 
-NetworkComponent* ClientNetworkManager::GetOrCreateNetworkComponent(NetworkId networkId, StringHash componentType)
+NetworkObject* ClientNetworkManager::GetOrCreateNetworkObject(NetworkId networkId, StringHash componentType)
 {
     if (componentType != StringHash{})
     {
-        auto networkComponent = DynamicCast<NetworkComponent>(context_->CreateObject(componentType));
-        if (!networkComponent)
+        auto networkObject = DynamicCast<NetworkObject>(context_->CreateObject(componentType));
+        if (!networkObject)
         {
-            URHO3D_LOGWARNING("Cannot create NetworkComponent {} of type #{} '{}'",
+            URHO3D_LOGWARNING("Cannot create NetworkObject {} of type #{} '{}'",
                 NetworkManagerBase::FormatNetworkId(networkId), componentType.Value(), componentType.Reverse());
             return nullptr;
         }
-        networkComponent->SetNetworkId(networkId);
+        networkObject->SetNetworkId(networkId);
 
         Node* newNode = scene_->CreateChild(EMPTY_STRING, LOCAL);
-        newNode->AddComponent(networkComponent, 0, LOCAL);
-        return networkComponent;
+        newNode->AddComponent(networkObject, 0, LOCAL);
+        return networkObject;
     }
     else
     {
-        NetworkComponent* networkComponent = base_->GetNetworkComponent(networkId);
-        if (!networkComponent)
+        NetworkObject* networkObject = base_->GetNetworkObject(networkId);
+        if (!networkObject)
         {
-            URHO3D_LOGWARNING("Cannot find existing NetworkComponent {}", NetworkManagerBase::FormatNetworkId(networkId));
+            URHO3D_LOGWARNING("Cannot find existing NetworkObject {}", NetworkManagerBase::FormatNetworkId(networkId));
             return nullptr;
         }
-        return networkComponent;
+        return networkObject;
     }
 }
 

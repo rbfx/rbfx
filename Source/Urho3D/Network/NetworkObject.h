@@ -34,13 +34,13 @@ namespace Urho3D
 class AbstractConnection;
 
 /// Helper base class for user-defined network replication logic.
-class URHO3D_API NetworkComponent : public Component
+class URHO3D_API NetworkObject : public Component
 {
-    URHO3D_OBJECT(NetworkComponent, Component);
+    URHO3D_OBJECT(NetworkObject, Component);
 
 public:
-    explicit NetworkComponent(Context* context);
-    ~NetworkComponent() override;
+    explicit NetworkObject(Context* context);
+    ~NetworkObject() override;
 
     static void RegisterObject(Context* context);
 
@@ -71,9 +71,9 @@ protected:
     /// @}
 
 private:
-    /// NetworkManager corresponding to the NetworkComponent.
+    /// NetworkManager corresponding to the NetworkObject.
     WeakPtr<NetworkManager> networkManager_;
-    /// Network ID, unique within Scene. May contain outdated value if NetworkComponent is not registered in any NetworkManager.
+    /// Network ID, unique within Scene. May contain outdated value if NetworkObject is not registered in any NetworkManager.
     NetworkId networkId_{ InvalidNetworkId };
 };
 

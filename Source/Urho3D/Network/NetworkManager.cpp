@@ -27,7 +27,7 @@
 #include "../IO/Log.h"
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
-#include "../Network/NetworkComponent.h"
+#include "../Network/NetworkObject.h"
 #include "../Network/NetworkManager.h"
 #include "../Scene/Scene.h"
 
@@ -47,7 +47,7 @@ unsigned NetworkManagerBase::AllocateNewIndex()
     {
         const unsigned index = indexAllocator_.Allocate();
         EnsureIndex(index);
-        if (!networkComponents_[index])
+        if (!networkObjects_[index])
             return index;
     }
 
@@ -58,34 +58,34 @@ unsigned NetworkManagerBase::AllocateNewIndex()
 
 void NetworkManagerBase::EnsureIndex(unsigned index)
 {
-    assert(networkComponents_.size() == networkComponentVersions_.size());
-    if (index >= networkComponents_.size())
+    assert(networkObjects_.size() == networkObjectVersions_.size());
+    if (index >= networkObjects_.size())
     {
-        networkComponents_.resize(index + 1);
-        networkComponentVersions_.resize(index + 1);
+        networkObjects_.resize(index + 1);
+        networkObjectVersions_.resize(index + 1);
     }
 }
 
-bool NetworkManagerBase::IsValidComponent(unsigned index, unsigned version, NetworkComponent* networkComponent) const
+bool NetworkManagerBase::IsValidComponent(unsigned index, unsigned version, NetworkObject* networkObject) const
 {
-    return index < networkComponents_.size()
-        && networkComponentVersions_[index] == version
-        && networkComponents_[index] == networkComponent;
+    return index < networkObjects_.size()
+        && networkObjectVersions_[index] == version
+        && networkObjects_[index] == networkObject;
 }
 
 bool NetworkManagerBase::IsValidComponent(unsigned index, unsigned version) const
 {
-    return index < networkComponents_.size()
-        && networkComponentVersions_[index] == version
-        && networkComponents_[index];
+    return index < networkObjects_.size()
+        && networkObjectVersions_[index] == version
+        && networkObjects_[index];
 }
 
-void NetworkManagerBase::AddComponent(NetworkComponent* networkComponent)
+void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
 {
-    const bool needNewIndex = networkComponent->GetNetworkId() == InvalidNetworkId;
+    const bool needNewIndex = networkObject->GetNetworkId() == InvalidNetworkId;
     if (numComponents_ >= IndexMask && needNewIndex)
     {
-        URHO3D_LOGERROR("Failed to register NetworkComponent due to index overflow");
+        URHO3D_LOGERROR("Failed to register NetworkObject due to index overflow");
         assert(0);
         return;
     }
@@ -94,37 +94,37 @@ void NetworkManagerBase::AddComponent(NetworkComponent* networkComponent)
     if (needNewIndex)
     {
         const unsigned index = AllocateNewIndex();
-        const unsigned version = networkComponentVersions_[index];
-        networkComponent->SetNetworkId(ComposeNetworkId(index, version));
+        const unsigned version = networkObjectVersions_[index];
+        networkObject->SetNetworkId(ComposeNetworkId(index, version));
     }
     else
     {
-        const unsigned index = networkComponent->GetNetworkIndex();
+        const unsigned index = networkObject->GetNetworkIndex();
         EnsureIndex(index);
     }
 
     // Remove old component on collision
-    const NetworkId networkId = networkComponent->GetNetworkId();
+    const NetworkId networkId = networkObject->GetNetworkId();
     const auto [index, version] = DecomposeNetworkId(networkId);
-    NetworkComponent* oldNetworkComponent = networkComponents_[index];
-    if (oldNetworkComponent)
+    NetworkObject* oldNetworkObject = networkObjects_[index];
+    if (oldNetworkObject)
     {
-        URHO3D_LOGWARNING("NetworkComponent {} is overriden by NetworkComponent {}",
-            FormatNetworkId(oldNetworkComponent->GetNetworkId()),
+        URHO3D_LOGWARNING("NetworkObject {} is overriden by NetworkObject {}",
+            FormatNetworkId(oldNetworkObject->GetNetworkId()),
             FormatNetworkId(networkId));
-        RemoveComponent(oldNetworkComponent);
+        RemoveComponent(oldNetworkObject);
     }
 
     // Add new component
     ++numComponents_;
     recentlyAddedComponents_.insert(networkId);
-    networkComponents_[index] = networkComponent;
-    URHO3D_LOGINFO("NetworkComponent {} is added", FormatNetworkId(networkId));
+    networkObjects_[index] = networkObject;
+    URHO3D_LOGINFO("NetworkObject {} is added", FormatNetworkId(networkId));
 }
 
-void NetworkManagerBase::RemoveComponent(NetworkComponent* networkComponent)
+void NetworkManagerBase::RemoveComponent(NetworkObject* networkObject)
 {
-    const NetworkId networkId = networkComponent->GetNetworkId();
+    const NetworkId networkId = networkObject->GetNetworkId();
     if (networkId == InvalidNetworkId)
     {
         URHO3D_LOGERROR("Unexpected call to RemoveComponentAsServer");
@@ -132,9 +132,9 @@ void NetworkManagerBase::RemoveComponent(NetworkComponent* networkComponent)
         return;
     }
 
-    if (GetNetworkComponent(networkId) != networkComponent)
+    if (GetNetworkObject(networkId) != networkObject)
     {
-        URHO3D_LOGWARNING("Cannot remove unknown NetworkComponent {}", FormatNetworkId(networkId));
+        URHO3D_LOGWARNING("Cannot remove unknown NetworkObject {}", FormatNetworkId(networkId));
         return;
     }
 
@@ -143,20 +143,20 @@ void NetworkManagerBase::RemoveComponent(NetworkComponent* networkComponent)
         recentlyRemovedComponents_.insert(networkId);
 
     const auto [index, version] = DecomposeNetworkId(networkId);
-    networkComponents_[index] = nullptr;
-    networkComponentVersions_[index] = (networkComponentVersions_[index] + 1) & VersionMask;
+    networkObjects_[index] = nullptr;
+    networkObjectVersions_[index] = (networkObjectVersions_[index] + 1) & VersionMask;
     indexAllocator_.Release(index);
 
-    URHO3D_LOGINFO("NetworkComponent {} is removed", FormatNetworkId(networkId));
+    URHO3D_LOGINFO("NetworkObject {} is removed", FormatNetworkId(networkId));
 }
 
 void NetworkManagerBase::RemoveAllComponents()
 {
     ea::vector<WeakPtr<Node>> nodesToRemove;
-    for (NetworkComponent* networkComponent : networkComponents_)
+    for (NetworkObject* networkObject : networkObjects_)
     {
-        if (networkComponent)
-            nodesToRemove.emplace_back(networkComponent->GetNode());
+        if (networkObject)
+            nodesToRemove.emplace_back(networkObject->GetNode());
     }
     unsigned numRemovedNodes = 0;
     for (Node* node : nodesToRemove)
@@ -169,12 +169,12 @@ void NetworkManagerBase::RemoveAllComponents()
     }
 
     numComponents_ = 0;
-    networkComponents_.clear();
-    networkComponentVersions_.clear();
+    networkObjects_.clear();
+    networkObjectVersions_.clear();
     indexAllocator_.Clear();
     ClearRecentActions();
 
-    URHO3D_LOGINFO("{} nodes removed on NetworkComponent cleanup", numRemovedNodes);
+    URHO3D_LOGINFO("{} nodes removed on NetworkObject cleanup", numRemovedNodes);
 }
 
 void NetworkManagerBase::ClearRecentActions()
@@ -193,11 +193,11 @@ ea::string NetworkManagerBase::ToString() const
         return "";
 }
 
-NetworkComponent* NetworkManagerBase::GetNetworkComponent(NetworkId networkId) const
+NetworkObject* NetworkManagerBase::GetNetworkObject(NetworkId networkId) const
 {
     const auto [index, version] = DecomposeNetworkId(networkId);
-    const bool isValidId = index < networkComponents_.size() && networkComponentVersions_[index] == version;
-    return isValidId ? networkComponents_[index] : nullptr;
+    const bool isValidId = index < networkObjects_.size() && networkObjectVersions_[index] == version;
+    return isValidId ? networkObjects_[index] : nullptr;
 }
 
 NetworkId NetworkManagerBase::ComposeNetworkId(unsigned index, unsigned version)
