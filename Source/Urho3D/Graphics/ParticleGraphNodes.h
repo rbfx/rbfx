@@ -27,11 +27,13 @@
 namespace Urho3D
 {
 
-template <typename T>
-struct ScalarSpan
+template <typename T> struct ScalarSpan
 {
     ScalarSpan(void* ptr)
-        : data_(reinterpret_cast<T*>(ptr)) {}
+        : data_(reinterpret_cast<T*>(ptr))
+    {
+    }
+    inline T& operator[](unsigned index) { return *data_;}
     T* data_;
 };
 
@@ -40,7 +42,10 @@ template <typename T> struct SparseSpan
     SparseSpan(void* ptr, size_t size, const ea::span<unsigned>& indices)
         : data_(static_cast<T*>(ptr))
         , size(size)
-        , indices_(indices) {}
+        , indices_(indices)
+    {
+    }
+    inline T& operator[](unsigned index) { return data_[indices_[index]]; }
     T* data_;
     size_t size;
     ea::span<unsigned> indices_;
@@ -55,13 +60,15 @@ struct UpdateContext
 
     template <typename ValueType> ea::span<ValueType> GetSpan(const ParticleGraphNodePin& pin);
     template <typename ValueType> ScalarSpan<ValueType> GetScalar(const ParticleGraphNodePin& pin);
-    template <typename ValueType> SparseSpan<ValueType> GetSparse(const ParticleGraphNodePin& pin, const ea::span<unsigned>& indices);
+    template <typename ValueType>
+    SparseSpan<ValueType> GetSparse(const ParticleGraphNodePin& pin, const ea::span<unsigned>& indices);
 };
 
 template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphNodePin& pin)
 {
     const auto subspan = tempBuffer_.subspan(pin.offset_, pin.size_);
-    return ea::span<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()), reinterpret_cast<ValueType*>(subspan.end()));
+    return ea::span<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
+                               reinterpret_cast<ValueType*>(subspan.end()));
 }
 template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphNodePin& pin)
 {
@@ -73,8 +80,7 @@ SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphNodePin& pin, 
 {
     const auto subspan = tempBuffer_.subspan(pin.offset_, pin.size_);
     return SparseSpan<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
-                               reinterpret_cast<ValueType*>(subspan.end()),
-                               indices);
+                                 reinterpret_cast<ValueType*>(subspan.end()), indices);
 }
 
 class URHO3D_API ParticleGraphNodeInstance
@@ -89,56 +95,55 @@ public:
     virtual void Update(UpdateContext& context) = 0;
 };
 
+} // namespace ParticleGraphNodes
+
+#include "ParticleGraphNodes.inl"
+
+namespace Urho3D
+{
+
 namespace ParticleGraphNodes
 {
+URHO3D_PARTICLE_NODE3_BEGIN(AddFloat, "x", float, "y", float, "out", float)
+    pin2[index] = pin0[index] + pin1[index];
+URHO3D_PARTICLE_NODE_END()
 
-template <typename Node, typename Value0, typename Value1, typename Value2> class AbstractNode : public ParticleGraphNode
+/// Operation on attribute
+class URHO3D_API Const : public ParticleGraphNode
 {
-protected:
+public:
     /// Construct.
-    explicit AbstractNode()
+    explicit Const()
         : ParticleGraphNode()
     {
-        pins_[0].valueType_ = GetVariantType<Value0>();
-        pins_[1].valueType_ = GetVariantType<Value1>();
-        pins_[2].valueType_ = GetVariantType<Value2>();
+        pins_[0].containerType_ = ParticleGraphContainerType::Scalar;
     }
-
+protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(Node* node)
+        Instance(Const* node)
             : node_(node)
         {
         }
         void Update(UpdateContext& context) override
         {
             const auto& pin0 = node_->pins_[0];
-            const auto& pin1 = node_->pins_[1];
-            const auto& pin2 = node_->pins_[2];
-            const auto permutation = static_cast<unsigned>(pin0.containerType_) +
-                                     static_cast<unsigned>(pin1.containerType_) * 3 +
-                                     static_cast<unsigned>(pin2.containerType_) * 9;
-
-            const unsigned numParticles = context.indices_.size();
-            switch (permutation)
+            switch (node_->value_.GetType())
             {
-            case 0:
-                Node::Op(numParticles, context.GetSpan<Value0>(pin0),
-                         context.GetSpan<Value1>(pin1),
-                   context.GetSpan<Value2>(pin2));
-                break;
-            default:
-                assert(!"Invalid pin container type permutation");
+            case VAR_FLOAT:
+                context.GetScalar<float>(pin0)[0] = node_->value_.GetFloat();
                 break;
             }
-        }
+        };
+
     protected:
-        Node* node_;
+        Const* node_;
     };
-public:
+
+    public:
     /// Get number of pins.
-    unsigned NumPins() const override { return 3; }
+    unsigned NumPins() const override { return 1; }
 
     /// Get pin by index.
     ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
@@ -147,28 +152,75 @@ public:
     unsigned EvalueInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(static_cast<Node*>(this)); }
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(this); }
+
+    const Variant& GetValue();
+
+    void SetValue(const Variant&);
 
 protected:
-
     /// Pins
-    ParticleGraphNodePin pins_[3];
+    ParticleGraphNodePin pins_[1];
+
+    /// Value
+    Variant value_;
 };
 
-class URHO3D_API Add : public AbstractNode<Add, float, float, float>
+/// Operation on attribute
+class URHO3D_API Attribute : public ParticleGraphNode
 {
-    template <typename Span0, typename Span1, typename Span2>
-    static void Op(const unsigned numParticles, Span0 pin0, Span1 pin1, Span2 pin2)
+protected:
+    /// Construct.
+    explicit Attribute()
+        : ParticleGraphNode()
     {
-        for (unsigned i = 0; i < numParticles; ++i)
-        {
-            pin2[i] = pin0[i] + pin1[i];
-        }
+        pins_[0].containerType_ = ParticleGraphContainerType::Sparse;
     }
 
-    friend class AbstractNode<Add, float, float, float>;
+    class Instance : public ParticleGraphNodeInstance
+    {
+    public:
+        void Update(UpdateContext& context) override
+        {
+        }
+    };
+
+public:
+    /// Get number of pins.
+    unsigned NumPins() const override { return 1; }
+
+    /// Get pin by index.
+    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
+
+    /// Evaluate size required to place new node instance.
+    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
+
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override
+    {
+        return new (ptr) Instance();
+    }
+
+protected:
+    /// Pins
+    ParticleGraphNodePin pins_[1];
 };
 
+/// Get particle attribute value.
+class URHO3D_API GetAttribute : public Attribute
+{
+public:
+    /// Construct.
+    explicit GetAttribute();
+};
+
+/// Set particle attribute value.
+class URHO3D_API SetAttribute : public Attribute
+{
+public:
+    /// Construct.
+    explicit SetAttribute();
+};
 
 } // namespace ParticleGraphNodes
 

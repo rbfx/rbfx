@@ -31,7 +31,7 @@ TEST_CASE("Test Add")
 {
     auto context = Tests::CreateCompleteTestContext();
 
-    ParticleGraphNodes::Add add;
+    ParticleGraphNodes::AddFloat add;
     auto& pin0 = add.GetPin(0);
     pin0.containerType_ = ParticleGraphContainerType::Span;
     pin0.offset_ = sizeof(float)*0;
@@ -74,8 +74,25 @@ TEST_CASE("Test simple particle graph")
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     effect->SetNumLayers(1);
     auto layer = effect->GetLayer(0);
-    auto emitGraph = layer.GetEmitGraph();
-    auto updateGraph = layer.GetUpdateGraph();
+    {
+        auto emitGraph = layer.GetEmitGraph();
+
+        auto c = MakeShared<ParticleGraphNodes::Const>();
+        c->SetValue(40.0f);
+        auto constIndex = emitGraph.Add(c);
+        auto set = MakeShared<ParticleGraphNodes::SetAttribute>();
+        auto setPin = set->GetPin(0);
+        setPin.name_ = "size";
+        setPin.sourceNode_ = constIndex;
+        auto setIndex = emitGraph.Add(set);
+    }
+    {
+        auto updateGraph = layer.GetUpdateGraph();
+        auto get = MakeShared<ParticleGraphNodes::GetAttribute>();
+        auto getPin = get->GetPin(0);
+        getPin.name_ = "size";
+        auto setIndex = updateGraph.Add(get);
+    }
 
     //effect->Add(MakeShared<ParticleGraphNodes::Add>());
 

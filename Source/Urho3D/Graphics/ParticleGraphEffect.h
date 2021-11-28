@@ -36,14 +36,24 @@ enum class ParticleGraphContainerType
 
 struct ParticleGraphNodePin
 {
+    /// Name of the pin for visual editor.
+    ea::string name_;
     /// Container type: span, sparse or scalar.
     ParticleGraphContainerType containerType_{ParticleGraphContainerType::Auto};
     /// Value type (float, vector3, etc).
     VariantType valueType_{ VariantType::VAR_NONE };
+
+    /// Source node 
+    unsigned sourceNode_{};
+
+    /// Source node pin index
+    unsigned sourcePin_{};
+
     /// Buffer offset.
     size_t offset_{};
     /// Buffer size.
     size_t size_{};
+
 };
 
 class ParticleGraphNodeInstance;

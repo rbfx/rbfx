@@ -34,6 +34,27 @@ ParticleGraphNodeInstance::~ParticleGraphNodeInstance() = default;
 
 namespace ParticleGraphNodes
 {
+
+GetAttribute::GetAttribute()
+    : Attribute()
+{
+}
+
+SetAttribute::SetAttribute()
+    : Attribute()
+{
+}
+
+const Variant& Const::GetValue()
+{
+    return value_;
+}
+
+void Const::SetValue(const Variant& value)
+{
+    value_ = value;
+}
+
 }
 
 } // namespace Urho3D
