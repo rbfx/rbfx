@@ -25,7 +25,7 @@
 #include "../SceneUtils.h"
 
 #include <Urho3D/Network/Network.h>
-#include <Urho3D/Network/NetworkComponent.h>
+#include <Urho3D/Network/NetworkObject.h>
 #include <Urho3D/Network/NetworkManager.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -134,11 +134,11 @@ TEST_CASE("Scene is synchronized between client and server")
 
     auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
     auto replicatedNodeA = serverScene->CreateChild("Replicated Node A");
-    replicatedNodeA->CreateComponent<NetworkComponent>();
+    replicatedNodeA->CreateComponent<NetworkObject>();
     auto replicatedNodeB = serverScene->CreateChild("Replicated Node B");
-    replicatedNodeB->CreateComponent<NetworkComponent>();
+    replicatedNodeB->CreateComponent<NetworkObject>();
     auto replicatedNodeChild = serverScene->CreateChild("Replicated Node Child");
-    replicatedNodeChild->CreateComponent<NetworkComponent>();
+    replicatedNodeChild->CreateComponent<NetworkObject>();
 
     // Spend some time alone
     Tests::NetworkSimulator sim(serverScene);
@@ -147,5 +147,7 @@ TEST_CASE("Scene is synchronized between client and server")
     // Add client and wait for a while
     sim.AddClient(clientScene, quality);
     sim.SimulateTime(10.0f);
+
+    sim.SimulateTime(1.0f);
 
 }

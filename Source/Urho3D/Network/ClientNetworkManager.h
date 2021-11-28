@@ -37,7 +37,7 @@ namespace Urho3D
 
 class AbstractConnection;
 class Network;
-class NetworkComponent;
+class NetworkObject;
 class NetworkManagerBase;
 class Scene;
 
@@ -87,7 +87,7 @@ public:
 private:
     void OnInputProcessed();
     void ProcessTimeCorrection();
-    NetworkComponent* GetOrCreateNetworkComponent(NetworkId networkId, StringHash componentType);
+    NetworkObject* GetOrCreateNetworkObject(NetworkId networkId, StringHash componentType);
 
     Network* network_{};
     NetworkManagerBase* base_{};

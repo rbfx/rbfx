@@ -27,23 +27,23 @@
 #if defined(URHO3D_PHYSICS) || defined(URHO3D_URHO2D)
 #include "../Physics/PhysicsEvents.h"
 #endif
-#include "../Network/NetworkComponent.h"
+#include "../Network/NetworkObject.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
 namespace Urho3D
 {
 
-NetworkComponent::NetworkComponent(Context* context) : Component(context) {}
+NetworkObject::NetworkObject(Context* context) : Component(context) {}
 
-NetworkComponent::~NetworkComponent() = default;
+NetworkObject::~NetworkObject() = default;
 
-void NetworkComponent::RegisterObject(Context* context)
+void NetworkObject::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NetworkComponent>();
+    context->RegisterFactory<NetworkObject>();
 }
 
-void NetworkComponent::OnSceneSet(Scene* scene)
+void NetworkObject::OnSceneSet(Scene* scene)
 {
     if (networkManager_)
     {
@@ -58,31 +58,31 @@ void NetworkComponent::OnSceneSet(Scene* scene)
     }
 }
 
-bool NetworkComponent::IsRelevantForClient(AbstractConnection* connection)
+bool NetworkObject::IsRelevantForClient(AbstractConnection* connection)
 {
     return true;
 }
 
-void NetworkComponent::OnRemovedOnClient()
+void NetworkObject::OnRemovedOnClient()
 {
     if (node_)
         node_->Remove();
 }
 
-void NetworkComponent::WriteSnapshot(VectorBuffer& dest)
+void NetworkObject::WriteSnapshot(VectorBuffer& dest)
 {
 }
 
-bool NetworkComponent::WriteReliableDelta(VectorBuffer& dest)
+bool NetworkObject::WriteReliableDelta(VectorBuffer& dest)
 {
     return false;
 }
 
-void NetworkComponent::ReadSnapshot(VectorBuffer& src)
+void NetworkObject::ReadSnapshot(VectorBuffer& src)
 {
 }
 
-void NetworkComponent::ReadReliableDelta(VectorBuffer& src)
+void NetworkObject::ReadReliableDelta(VectorBuffer& src)
 {
 }
 
