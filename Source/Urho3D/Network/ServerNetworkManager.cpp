@@ -29,6 +29,7 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkComponent.h"
+#include "../Network/NetworkManager.h"
 #include "../Network/ServerNetworkManager.h"
 #include "../Scene/Scene.h"
 
@@ -37,9 +38,20 @@
 namespace Urho3D
 {
 
-ServerNetworkManager::ServerNetworkManager(Scene* scene)
+namespace
+{
+
+unsigned GetIndex(NetworkId networkId)
+{
+    return NetworkManager::DecomposeNetworkId(networkId).first;
+}
+
+}
+
+ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
+    , base_(base)
     , scene_(scene)
 {
     SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
@@ -64,6 +76,73 @@ void ServerNetworkManager::BeginNetworkFrame()
         data.pingAccumulator_ += timeStep;
         data.clockAccumulator_ += timeStep;
     }
+
+    const auto& unorderedComponents = base_->GetUnorderedNetworkComponents();
+    for (auto& [connection, data] : connections_)
+    {
+        if (!data.synchronized_)
+            continue;
+
+        const unsigned maxIndex = unorderedComponents.size();
+        data.isComponentReplicated_.resize(maxIndex);
+        data.componentsRelevanceTimeouts_.resize(maxIndex);
+
+        data.pendingRemovedComponents_.clear();
+        data.pendingUpdatedComponents_.clear();
+
+        // Process removed components first
+        for (NetworkId networkId : base_->GetRecentlyRemovedComponents())
+        {
+            const unsigned index = GetIndex(networkId);
+            if (data.isComponentReplicated_[index])
+            {
+                data.isComponentReplicated_[index] = false;
+                data.pendingRemovedComponents_.push_back(networkId);
+            }
+        }
+
+        // Process active components
+        for (NetworkComponent* networkComponent : unorderedComponents)
+        {
+            if (!networkComponent)
+                continue;
+
+            const NetworkId networkId = networkComponent->GetNetworkId();
+            const unsigned index = GetIndex(networkId);
+
+            if (!data.isComponentReplicated_[index])
+            {
+                if (networkComponent->IsRelevantForClient(connection))
+                {
+                    // Begin replication of component, queue snapshot
+                    data.componentsRelevanceTimeouts_[index] = settings_.relevanceTimeout_;
+                    data.isComponentReplicated_[index] = true;
+                    data.pendingUpdatedComponents_.push_back({ networkComponent, true });
+                }
+            }
+            else
+            {
+                data.componentsRelevanceTimeouts_[index] -= timeStep;
+                if (data.componentsRelevanceTimeouts_[index] < 0.0f)
+                {
+                    if (!networkComponent->IsRelevantForClient(connection))
+                    {
+                        // Remove irrelevant component
+                        data.isComponentReplicated_[index] = false;
+                        data.pendingRemovedComponents_.push_back(networkId);
+                        continue;
+                    }
+
+                    data.componentsRelevanceTimeouts_[index] = settings_.relevanceTimeout_;
+                }
+
+                // Queue non-snapshot update
+                data.pendingUpdatedComponents_.push_back({ networkComponent, false });
+            }
+        }
+    }
+
+    base_->ClearRecentActions();
 }
 
 void ServerNetworkManager::AddConnection(AbstractConnection* connection)
@@ -99,12 +178,15 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
     ClientConnectionData& data = GetConnection(connection);
 
     // Initialization phase: send "reliable" pings one by one
-    if (!data.comfirmedPings_.full() && data.pendingPings_.empty())
+    if (!data.comfirmedPings_.full())
     {
-        const unsigned magic = GetMagic(true);
-        data.pendingPings_.push_back(ClientPing{ magic });
+        if (data.pendingPings_.empty())
+        {
+            const unsigned magic = GetMagic(true);
+            data.pendingPings_.push_back(ClientPing{ magic });
 
-        connection->SendMessage(MSG_PING, MsgPingPong{ magic }, NetworkMessageFlag::Reliable);
+            connection->SendSerializedMessage(MSG_PING, MsgPingPong{ magic }, NetworkMessageFlag::Reliable);
+        }
         return;
     }
 
@@ -128,7 +210,7 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
             msg.lastFrame_ = currentFrame_;
             msg.ping_ = ping;
 
-            connection->SendMessage(MSG_SYNCHRONIZE, msg, NetworkMessageFlag::Reliable);
+            connection->SendSerializedMessage(MSG_SYNCHRONIZE, msg, NetworkMessageFlag::Reliable);
         }
         return;
     }
@@ -141,15 +223,62 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
         const unsigned magic = GetMagic();
         data.pendingPings_.push_back(ClientPing{ magic });
 
-        connection->SendMessage(MSG_PING, MsgPingPong{ magic }, NetworkMessageFlag::None);
+        connection->SendSerializedMessage(MSG_PING, MsgPingPong{ magic }, NetworkMessageFlag::None);
     }
 
     // Send periodic clock
     if (data.clockAccumulator_ >= settings_.clockIntervalMs_ / 1000.0f)
     {
         data.clockAccumulator_ = 0.0f;
-        connection->SendMessage(MSG_CLOCK, MsgClock{ currentFrame_, data.averagePing_ }, NetworkMessageFlag::None);
+        connection->SendSerializedMessage(MSG_CLOCK, MsgClock{ currentFrame_, data.averagePing_ }, NetworkMessageFlag::None);
     }
+
+    // Send scene updates
+    connection->SendGeneratedMessage(MSG_REMOVE_COMPONENTS, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        if (debugInfo)
+        {
+            for (NetworkId networkId : data.pendingRemovedComponents_)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkId));
+            }
+        }
+
+        for (NetworkId networkId : data.pendingRemovedComponents_)
+            msg.WriteUInt(static_cast<unsigned>(networkId));
+    });
+
+    connection->SendGeneratedMessage(MSG_UPDATE_COMPONENTS, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        for (const auto& [networkComponent, isSnapshot] : data.pendingUpdatedComponents_)
+        {
+            componentBuffer_.Clear();
+            if (isSnapshot)
+                networkComponent->WriteSnapshot(componentBuffer_);
+            else
+            {
+                if (!networkComponent->WriteReliableDelta(componentBuffer_))
+                    continue;
+            }
+
+            msg.WriteUInt(static_cast<unsigned>(networkComponent->GetNetworkId()));
+            msg.WriteStringHash(isSnapshot ? networkComponent->GetType() : StringHash());
+            msg.WriteBuffer(componentBuffer_.GetBuffer());
+
+            if (debugInfo)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                if (isSnapshot)
+                    debugInfo->append("*");
+                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkComponent->GetNetworkId()));
+            }
+        }
+    });
 }
 
 void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)

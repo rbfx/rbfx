@@ -31,6 +31,8 @@
 namespace Urho3D
 {
 
+class AbstractConnection;
+
 /// Helper base class for user-defined network replication logic.
 class URHO3D_API NetworkComponent : public Component
 {
@@ -42,13 +44,25 @@ public:
 
     static void RegisterObject(Context* context);
 
-    /// Set network ID. For internal use only.
-    void SetNetworkID(unsigned networkId) { networkId_ = networkId; }
-    /// Return current network ID or M_MAX_UNSIGNED if not registered.
-    unsigned GetNetworkID() const { return networkId_; }
+    /// Assign network ID. On the Server, it's better to let the Server assign ID, to avoid unwanted side effects.
+    void SetNetworkId(NetworkId networkId) { networkId_ = networkId; }
+    /// Return current or last network ID. Return InvalidNetworkId if not registered.
+    NetworkId GetNetworkId() const { return networkId_; }
+    /// Return current or last network index. Return M_MAX_UNSIGNED if not registered.
+    unsigned GetNetworkIndex() const { return networkId_ != InvalidNetworkId ? NetworkManager::DecomposeNetworkId(networkId_).first : M_MAX_UNSIGNED; }
 
-    /// Prepare network update at server side.
-    //virtual void PrepareServerUpdate();
+    /// Return whether the component should be replicated for specified client connection.
+    virtual bool IsRelevantForClient(AbstractConnection* connection);
+    /// Callen when component is removed by server.
+    virtual void OnRemovedOnClient();
+    /// Write full snapshot on server.
+    virtual void WriteSnapshot(VectorBuffer& dest);
+    /// Write delta update on server. Delta is applied to previous delta or snapshot message.
+    virtual bool WriteReliableDelta(VectorBuffer& dest);
+    /// Read full snapshot on client.
+    virtual void ReadSnapshot(VectorBuffer& src);
+    /// Read delta update on client. Delta is applied to previous delta or snapshot message.
+    virtual void ReadReliableDelta(VectorBuffer& src);
 
 protected:
     /// Component implementation
@@ -57,8 +71,10 @@ protected:
     /// @}
 
 private:
-    /// Network ID. Unique withing Scene.
-    unsigned networkId_{ M_MAX_UNSIGNED };
+    /// NetworkManager corresponding to the NetworkComponent.
+    WeakPtr<NetworkManager> networkManager_;
+    /// Network ID, unique within Scene. May contain outdated value if NetworkComponent is not registered in any NetworkManager.
+    NetworkId networkId_{ InvalidNetworkId };
 };
 
 }

@@ -45,11 +45,45 @@ void NetworkComponent::RegisterObject(Context* context)
 
 void NetworkComponent::OnSceneSet(Scene* scene)
 {
-    if (Scene* oldScene = GetScene())
-        oldScene->GetNetworkManager()->RemoveNetworkComponent(this);
+    if (networkManager_)
+    {
+        networkManager_->RemoveComponent(this);
+        networkManager_ = nullptr;
+    }
 
     if (scene)
-        scene->GetNetworkManager()->AddNetworkComponent(this);
+    {
+        networkManager_ = scene->GetNetworkManager();
+        networkManager_->AddComponent(this);
+    }
+}
+
+bool NetworkComponent::IsRelevantForClient(AbstractConnection* connection)
+{
+    return true;
+}
+
+void NetworkComponent::OnRemovedOnClient()
+{
+    if (node_)
+        node_->Remove();
+}
+
+void NetworkComponent::WriteSnapshot(VectorBuffer& dest)
+{
+}
+
+bool NetworkComponent::WriteReliableDelta(VectorBuffer& dest)
+{
+    return false;
+}
+
+void NetworkComponent::ReadSnapshot(VectorBuffer& src)
+{
+}
+
+void NetworkComponent::ReadReliableDelta(VectorBuffer& src)
+{
 }
 
 }

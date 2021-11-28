@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/ByteVector.h"
 #include "../Core/Variant.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/Rect.h"
@@ -128,7 +129,9 @@ public:
     /// Read a 32-bit StringHash.
     StringHash ReadStringHash();
     /// Read a buffer with size encoded as VLE.
-    ea::vector<unsigned char> ReadBuffer();
+    ByteVector ReadBuffer();
+    /// Read a buffer with size encoded as VLE (inplace).
+    void ReadBuffer(ByteVector& byteVector);
     /// Read a resource reference.
     ResourceRef ReadResourceRef();
     /// Read a resource reference list.

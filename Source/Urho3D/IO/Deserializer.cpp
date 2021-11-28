@@ -276,12 +276,18 @@ StringHash Deserializer::ReadStringHash()
     return StringHash(ReadUInt());
 }
 
-ea::vector<unsigned char> Deserializer::ReadBuffer()
+ByteVector Deserializer::ReadBuffer()
 {
-    ea::vector<unsigned char> ret(ReadVLE());
-    if (ret.size())
-        Read(&ret[0], ret.size());
+    ByteVector ret;
+    ReadBuffer(ret);
     return ret;
+}
+
+void Deserializer::ReadBuffer(ByteVector& byteVector)
+{
+    byteVector.resize(ReadVLE());
+    if (!byteVector.empty())
+        Read(byteVector.data(), byteVector.size());
 }
 
 ResourceRef Deserializer::ReadResourceRef()

@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "../Math/MathDefs.h"
+
 namespace Urho3D
 {
 
@@ -75,16 +77,20 @@ enum NetworkMessageId
 
     /// TODO: Move MSG_PING and MSG_PONG out of NetworkManager, these messages may be useful w/o a Scene.
     /// TODO: Reuse constant when SWIG supports it.
-    /// Server->client: request ping.
+    /// Server->Client: request ping.
     MSG_PING = 200,
     /// Client->Server: reply to ping.
     MSG_PONG,
-    /// Server->client: synchronize clocks on client and server.
+    /// Server->Client: synchronize clocks on client and server.
     MSG_SYNCHRONIZE,
     /// Client->Server: clock synchronization is acknowledged.
     MSG_SYNCHRONIZE_ACK,
-    /// Server->client: information about current time and client's ping.
+    /// Server->Client: information about current time and client's ping.
     MSG_CLOCK,
+    /// Server->Client:
+    MSG_REMOVE_COMPONENTS,
+    /// Server->Client:
+    MSG_UPDATE_COMPONENTS,
 
     LAST_NETWORK_MANAGER_MSG,
     /// @}
@@ -92,6 +98,10 @@ enum NetworkMessageId
     /// Message IDs starting from MSG_USER are reserved for the end user.
     MSG_USER = 512
 };
+
+/// ID used to identify replicated component within Scene.
+enum class NetworkId : unsigned {};
+static const NetworkId InvalidNetworkId = static_cast<NetworkId>(M_MAX_UNSIGNED);
 
 /// Package file fragment size.
 static const unsigned PACKAGE_FRAGMENT_SIZE = 1024;

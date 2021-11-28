@@ -38,6 +38,7 @@ namespace Urho3D
 class AbstractConnection;
 class Network;
 class NetworkComponent;
+class NetworkManagerBase;
 class Scene;
 
 /// Client clock synchronized with server.
@@ -69,7 +70,7 @@ class URHO3D_API ClientNetworkManager : public Object
     URHO3D_OBJECT(ClientNetworkManager, Object);
 
 public:
-    ClientNetworkManager(Scene* scene, AbstractConnection* connection);
+    ClientNetworkManager(NetworkManagerBase* base, Scene* scene, AbstractConnection* connection);
 
     void ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
 
@@ -86,14 +87,18 @@ public:
 private:
     void OnInputProcessed();
     void ProcessTimeCorrection();
+    NetworkComponent* GetOrCreateNetworkComponent(NetworkId networkId, StringHash componentType);
 
     Network* network_{};
+    NetworkManagerBase* base_{};
     Scene* scene_{};
     AbstractConnection* connection_{};
 
     double clockRewindThresholdFrames_{ 0.6 };
     double clockSnapThresholdSec_{ 10.0 };
     ea::optional<ClientClock> clock_;
+
+    VectorBuffer componentBuffer_;
 };
 
 }
