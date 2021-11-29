@@ -22,46 +22,53 @@
 
 #pragma once
 
-#define URHO3D_PARTICLE_NODE1_BEGIN(Name, Pin0Name, Pin0)                                                                                 \
-    class URHO3D_API Name : public AbstractNode1<Name, Pin0>                                                           \
-    {                                                                                                                  \
-    public:                                                                                                            \
-        Name()                                                                                                         \
-        {                                                                                                              \
-            pins_[0].name_ = Pin0Name;                                                                                 \
-        }                                                                                                              \
-                                                                                                                       \
-    private:                                                                                                           \
-        friend class AbstractNode1<Name, Pin0Name, Pin0>;                                                              \
-        template <typename Span0> static void Op(const unsigned numParticles, Span0 pin0)                              \
-        {                                                                                                              \
-            for (unsigned index = 0; index < numParticles; ++index)                                                    \
-            {
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Graphics/ParticleGraphEffect.h>
+#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
 
-#define URHO3D_PARTICLE_NODE3_BEGIN(Name, Pin0Name, Pin0, Pin1Name, Pin1, Pin2Name, Pin2)                              \
-    class URHO3D_API Name : public AbstractNode3<Name, Pin0, Pin1, Pin2>                                               \
-    {                                                                                                                  \
-    public:                                                                                                            \
-        Name()                                                                                                         \
-        {                                                                                                              \
-            pins_[0].name_ = Pin0Name;                                                                                 \
-            pins_[1].name_ = Pin1Name;                                                                                 \
-            pins_[2].name_ = Pin2Name;                                                                                 \
-        }                                                                                                              \
-                                                                                                                       \
-    private:                                                                                                           \
-        friend class AbstractNode3<Name, Pin0, Pin1, Pin2>;                                                            \
-        template <typename Span0, typename Span1, typename Span2>                                                      \
-        static void Op(const unsigned numParticles, Span0 pin0, Span1 pin1, Span2 pin2)                                \
-        {                                                                                                              \
-            for (unsigned index = 0; index < numParticles; ++index)                                                    \
-            {
-
-
-#define URHO3D_PARTICLE_NODE_END()                                                                                              \
-            }                                                                                                          \
-        }                                                                                                              \
-    };
+//
+//#define URHO3D_PARTICLE_NODE1_BEGIN(Name, Pin0Name, Pin0) \
+//    class URHO3D_API Name : public AbstractNode1<Name, Pin0> \
+//    { \
+//    public: \
+//        Name(Context* context) \
+//            : AbstractNode1(context) \
+//        { \
+//            pins_[0].name_ = Pin0Name; \
+//        } \
+//                                                                                                                       \
+//    private: \
+//        friend class AbstractNode1<Name, Pin0Name, Pin0>; \
+//        template <typename Span0> static void Op(const unsigned numParticles, Span0 pin0) \
+//        { \
+//            for (unsigned index = 0; index < numParticles; ++index) \
+//            {
+//
+//#define URHO3D_PARTICLE_NODE3_BEGIN(Name, Pin0Name, Pin0, Pin1Name, Pin1, Pin2Name, Pin2) \
+//    class URHO3D_API Name : public AbstractNode3<Name, Pin0, Pin1, Pin2> \
+//    { \
+//    public: \
+//        Name(Context* context) \
+//            : AbstractNode3(context) \
+//        { \
+//            pins_[0].SetName(Pin0Name); \
+//            pins_[1].SetName(Pin1Name); \
+//            pins_[2].SetName(Pin2Name); \
+//        } \
+//                                                                                                                       \
+//    private: \
+//        friend class AbstractNode3<Name, Pin0, Pin1, Pin2>; \
+//        template <typename Span0, typename Span1, typename Span2> \
+//        static void Op(const unsigned numParticles, Span0 pin0, Span1 pin1, Span2 pin2) \
+//        { \
+//            for (unsigned index = 0; index < numParticles; ++index) \
+//            {
+//
+//
+//#define URHO3D_PARTICLE_NODE_END() \
+//            } \
+//        } \
+//    };
 
 namespace Urho3D
 {
@@ -73,8 +80,8 @@ template <typename Node, typename Value0> class AbstractNode1 : public ParticleG
 {
 protected:
     /// Construct.
-    explicit AbstractNode1()
-        : ParticleGraphNode()
+    explicit AbstractNode1(Context* context)
+        : ParticleGraphNode(context)
     {
         pins_[0].valueType_ = GetVariantType<Value0>();
     }
@@ -139,8 +146,8 @@ class AbstractNode3 : public ParticleGraphNode
 {
 protected:
     /// Construct.
-    explicit AbstractNode3()
-        : ParticleGraphNode()
+    explicit AbstractNode3(Context* context)
+        : ParticleGraphNode(context)
     {
         pins_[0].valueType_ = GetVariantType<Value0>();
         pins_[1].valueType_ = GetVariantType<Value1>();

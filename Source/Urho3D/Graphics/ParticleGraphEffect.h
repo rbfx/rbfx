@@ -60,35 +60,52 @@ struct ParticleGraphSpan
 class ParticleGraphNodePin
 {
 public:
+    /// Construct default pin.
     ParticleGraphNodePin();
-    ParticleGraphNodePin(bool isInput, const ea::string name);
+    /// Construct pin.
+    ParticleGraphNodePin(
+        bool isInput,
+        const ea::string name,
+        VariantType type = VariantType::VAR_NONE,
+        ParticleGraphContainerType container = ParticleGraphContainerType::Auto);
 
     /// Container type: span, sparse or scalar.
     ParticleGraphContainerType containerType_{ParticleGraphContainerType::Auto};
-    /// Value type (float, vector3, etc).
-    VariantType valueType_{ VariantType::VAR_NONE };
 
     /// Source node.
     unsigned sourceNode_{};
     /// Source node pin index.
     unsigned sourcePin_{};
 
-    /// Is input pin.
+    /// Get input pin flag.
     /// @property 
-    bool IsInput() const { return isInput_; }
+    bool GetIsInput() const { return isInput_; }
 
     /// Name of the pin for visual editor.
-    const ea::string& GetName() const { return name_; };
+    /// @property 
+    const ea::string& GetName() const { return name_; }
 
-    /// Is input pin.
-    bool isInput_{true};
-    /// Name of the pin for visual editor.
-    ea::string name_;
+    /// Name hash of the pin.
+    /// @property
+    StringHash GetNameHash() const { return nameHash_; }
+
+    /// Value type of the pin. VAR_NONE for autodetected value type.
+    /// @property
+    VariantType GetValueType() const { return valueType_; }
 
     template <typename T> ea::span<T> MakeSpan(ea::span<uint8_t> buffer) const
     {
         return (isInput_ ? sourceSpan_ : outputSpan_).MakeSpan<T>(buffer);
     }
+protected:
+    /// Set pin name and hash.
+    void SetName(const ea::string& name);
+    /// Set pin value type.
+    void SetValueType(VariantType valueType);
+
+    /// Get input pin flag.
+    /// @property
+    void SetIsInput(bool isInput);
 
 private:
     /// Source pin container type: span, sparse or scalar.
@@ -100,23 +117,32 @@ private:
     /// Memory layout if the pin belongs to attribute or if it is an output pin.
     ParticleGraphSpan outputSpan_;
 
+    /// Value type at runtime.
+    VariantType runtimeValueType_{VAR_NONE};
+
+    /// Name of the pin for visual editor.
+    ea::string name_;
+    /// Pin name hash.
+    StringHash nameHash_;
+
+    /// Is input pin.
+    bool isInput_{true};
+    /// Value type (float, vector3, etc).
+    VariantType valueType_{VariantType::VAR_NONE};
+
     friend class ParticleGraphAttributeBuilder;
+    friend class ParticleGraphNode;
 };
 
 class ParticleGraphNodeInstance;
 
-class URHO3D_API ParticleGraphNode : public RefCounted
+class URHO3D_API ParticleGraphNode : public Object
 {
-protected:
-    virtual const ea::string& GetTypeName() const
-    {
-        static const ea::string typeName{"ParticleGraphNode"};
-        return typeName;
-    }
+    URHO3D_OBJECT(ParticleGraphNode, Object)
     
 public:
     /// Construct.
-    explicit ParticleGraphNode();
+    explicit ParticleGraphNode(Context* context);
 
     /// Destruct.
     ~ParticleGraphNode() override;
@@ -135,6 +161,20 @@ public:
 
     /// Save to an XML element. Return true if successful.
     virtual bool Save(XMLElement& dest) const;
+
+protected:
+    /// Evaluate runtime output pin type.
+    virtual bool EvaluateOutputPinType(ParticleGraphNodePin& pin);
+
+    /// Set pin name.
+    /// This method is protected so it can only be accessable to nodes that allow pin renaming.
+    void SetPinName(unsigned pinIndex, const ea::string& name);
+
+    /// Set pin type.
+    /// This method is protected so it can only be accessable to nodes that allow pin renaming.
+    void SetPinValueType(unsigned pinIndex, VariantType type);
+
+    friend class ParticleGraphAttributeBuilder;
 };
 
 class URHO3D_API ParticleGraph
@@ -209,8 +249,8 @@ public:
     /// Call this method when something is changed in the layer graphs and it requires new preparation.
     void Invalidate();
 
-    /// Prepare layer for execution.
-    void Prepare();
+    /// Prepare layer for execution. Returns false if graph is invalid. See output logs for errors.
+    bool Prepare();
 
     /// Return attribute buffer layout.
     /// @property

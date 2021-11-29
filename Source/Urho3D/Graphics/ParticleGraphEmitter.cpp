@@ -26,8 +26,8 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Graphics/ParticleGraphEmitter.h"
+#include "../Graphics/ParticleGraphNodeInstance.h"
 
-#include "ParticleGraphNodes.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 
@@ -55,7 +55,9 @@ ParticleGraphLayerInstance::~ParticleGraphLayerInstance()
 
 void ParticleGraphLayerInstance::Apply(ParticleGraphLayer& layer)
 {
-    layer.Prepare();
+    if (!layer.Prepare())
+        return;
+
     auto layout = layer.GetAttributeBufferLayout();
     if (layout.attributeBufferSize_ > 0)
         attributes_.resize(layout.attributeBufferSize_);
@@ -66,21 +68,28 @@ void ParticleGraphLayerInstance::Apply(ParticleGraphLayer& layer)
     // Initialize indices
     emitNodeInstances_ = layout.emitNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
     auto emit = layer.GetEmitGraph();
+    unsigned instanceOffset = 0;
     for (unsigned i=0; i<emit.GetNumNodes(); ++i)
     {
         const auto node = emit.GetNode(i);
         const auto size = node->EvalueInstanceSize();
-        emitNodeInstances_[i] = node->CreateInstanceAt(nodeInstances.begin());
-        nodeInstances = nodeInstances.subspan(size, nodeInstances.size() - size);
+        assert(instanceOffset + size <= nodeInstances.size());
+        uint8_t* ptr = nodeInstances.begin() + instanceOffset;
+        emitNodeInstances_[i] = node->CreateInstanceAt(ptr);
+        assert(emitNodeInstances_[i] == (ParticleGraphNodeInstance*)ptr);
+        instanceOffset += size;
     }
     updateNodeInstances_ = layout.updateNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
-    auto update = layer.GetEmitGraph();
+    auto update = layer.GetUpdateGraph();
     for (unsigned i = 0; i < update.GetNumNodes(); ++i)
     {
         const auto node = update.GetNode(i);
         const auto size = node->EvalueInstanceSize();
-        updateNodeInstances_[i] = node->CreateInstanceAt(nodeInstances.begin());
-        nodeInstances = nodeInstances.subspan(size, nodeInstances.size() - size);
+        assert(instanceOffset + size <= nodeInstances.size());
+        uint8_t* ptr = nodeInstances.begin() + instanceOffset;
+        updateNodeInstances_[i] = node->CreateInstanceAt(ptr);
+        assert(updateNodeInstances_[i] == (ParticleGraphNodeInstance*)ptr);
+        instanceOffset += size;
     }
     // Initialize indices
     indices_ = layout.indices_.MakeSpan<unsigned>(attributes_);

@@ -32,6 +32,7 @@
 #include "../Core/Thread.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
+#include "../Graphics/ParticleGraphEffect.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
@@ -56,6 +57,7 @@
 
 namespace Urho3D
 {
+class ParticleGraphNode;
 
 #ifndef MINI_URHO
 // Keeps track of how many times SDL was initialised so we know when to call SDL_Quit().
@@ -175,6 +177,7 @@ Context::~Context()
 
     subsystems_.Clear();
     factories_.clear();
+    particleNodeFactories_.clear();
 
     // Delete allocated event data maps
     for (auto i = eventDataMaps_.begin(); i != eventDataMaps_.end(); ++i)
@@ -193,27 +196,23 @@ Context* Context::GetInstance()
 
 SharedPtr<Object> Context::CreateObject(StringHash objectType)
 {
-    auto i = factories_.find(objectType);
-    if (i != factories_.end())
-        return i->second->CreateObject();
-    else
-        return SharedPtr<Object>();
+    return CreateObject(objectType, factories_);
+}
+
+SharedPtr<ParticleGraphNode> Context::CreateParticleGraphNode(StringHash objectType)
+{
+    SharedPtr<Object> node = CreateObject(objectType, particleNodeFactories_);
+    return SharedPtr<ParticleGraphNode>(dynamic_cast<ParticleGraphNode*>(&(*node)));
 }
 
 void Context::RegisterFactory(ObjectFactory* factory)
 {
-    if (!factory)
-        return;
+    RegisterFactory(factory, factories_);
+}
 
-    auto it = factories_.find(factory->GetType());
-    if (it != factories_.end())
-    {
-        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
-            factory->GetTypeName().c_str(), it->second->GetTypeName().c_str());
-        assert(false);
-        return;
-    }
-    factories_[factory->GetType()] = factory;
+void Context::RegisterParticleGraphNodeFactory(ObjectFactory* factory)
+{
+    RegisterFactory(factory, particleNodeFactories_);
 }
 
 void Context::RegisterFactory(ObjectFactory* factory, const char* category)
@@ -476,6 +475,31 @@ AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
     }
 
     return nullptr;
+}
+
+SharedPtr<Object> Context::CreateObject(StringHash objectType, const FactoryMap& factoryMap) const
+{
+    auto i = factoryMap.find(objectType);
+    if (i != factoryMap.end())
+        return i->second->CreateObject();
+    else
+        return SharedPtr<Object>();
+}
+
+void Context::RegisterFactory(ObjectFactory* factory, FactoryMap& factoryMap)
+{
+    if (!factory)
+        return;
+
+    auto it = factoryMap.find(factory->GetType());
+    if (it != factoryMap.end())
+    {
+        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
+                         factory->GetTypeName().c_str(), it->second->GetTypeName().c_str());
+        assert(false);
+        return;
+    }
+    factoryMap[factory->GetType()] = factory;
 }
 
 void Context::AddEventReceiver(Object* receiver, StringHash eventType)

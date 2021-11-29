@@ -23,7 +23,8 @@
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
 
-#include <Urho3D/Graphics/ParticleGraphNodes.h>
+#include <Urho3D/Graphics/ParticleGraphEffect.h>
+#include <Urho3D/Graphics/ParticleGraph/All.h>
 #include <Urho3D/Scene/Scene.h>
 
 using namespace Urho3D;
@@ -78,22 +79,22 @@ TEST_CASE("Test simple particle graph")
     {
         auto& emitGraph = layer.GetEmitGraph();
 
-        auto c = MakeShared<ParticleGraphNodes::Const>();
+        auto c = MakeShared<ParticleGraphNodes::Constant>(context);
         c->SetValue(40.0f);
         auto constIndex = emitGraph.Add(c);
-        auto set = MakeShared<ParticleGraphNodes::SetAttribute>();
+        auto set = MakeShared<ParticleGraphNodes::SetAttribute>(context);
         auto& setPin = set->GetPin(0);
         set->SetAttributeName("size");
         setPin.sourceNode_ = constIndex;
-        setPin.valueType_ = VAR_FLOAT;
+        set->SetAttributeType(VAR_FLOAT);
         auto setIndex = emitGraph.Add(set);
     }
     {
         auto& updateGraph = layer.GetUpdateGraph();
-        auto get = MakeShared<ParticleGraphNodes::GetAttribute>();
+        auto get = MakeShared<ParticleGraphNodes::GetAttribute>(context);
         auto& getPin = get->GetPin(0);
         get->SetAttributeName("size");
-        getPin.valueType_ = VAR_FLOAT;
+        get->SetAttributeType(VAR_FLOAT);
         auto getIndex = updateGraph.Add(get);
     }
 
@@ -105,6 +106,5 @@ TEST_CASE("Test simple particle graph")
     const auto node = scene->CreateChild();
     const auto emitter = node->CreateComponent<ParticleGraphEmitter>();
     emitter->SetEffect(effect);
-
     CHECK(emitter->EmitNewParticle(0));
 }

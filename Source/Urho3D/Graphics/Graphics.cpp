@@ -73,6 +73,10 @@
 
 namespace Urho3D
 {
+namespace ParticleGraphNodes
+{
+void RegisterGraphNodes(Context* context);
+} // namespace ParticleGraphNodes
 
 GraphicsCaps Graphics::caps;
 
@@ -660,6 +664,7 @@ void RegisterGraphicsLibrary(Context* context)
     View::RegisterObject(context);
     Viewport::RegisterObject(context);
     OcclusionBuffer::RegisterObject(context);
+    ParticleGraphNodes::RegisterGraphNodes(context);
 }
 
 

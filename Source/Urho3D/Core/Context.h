@@ -31,6 +31,7 @@
 
 namespace Urho3D
 {
+class ParticleGraphNode;
 
 /// Tracking structure for event receivers.
 class URHO3D_API EventReceiverGroup : public RefCounted
@@ -70,6 +71,8 @@ class URHO3D_API Context : public RefCounted
 {
     friend class Object;
 
+    typedef ea::unordered_map<StringHash, SharedPtr<ObjectFactory> > FactoryMap;
+
 public:
     /// Construct.
     Context();
@@ -86,8 +89,12 @@ public:
     }
     /// Create an object by type hash. Return pointer to it or null if no factory found.
     SharedPtr<Object> CreateObject(StringHash objectType);
+    /// Create a particle graph node by type hash. Return pointer to it or null if no factory found.
+    SharedPtr<ParticleGraphNode> CreateParticleGraphNode(StringHash objectType);
     /// Register a factory for an object type.
     void RegisterFactory(ObjectFactory* factory);
+    /// Register a factory for an particle graph node type.
+    void RegisterParticleGraphNodeFactory(ObjectFactory* factory);
     /// Register a factory for an object type and specify the object category.
     void RegisterFactory(ObjectFactory* factory, const char* category);
     /// Remove object factory.
@@ -125,6 +132,8 @@ public:
     void CopyBaseAttributes(StringHash baseType, StringHash derivedType);
     /// Template version of registering an object factory.
     template <class T = void, class... Rest> void RegisterFactory();
+    /// Template version of registering a particle node factory.
+    template <class T = void, class... Rest> void RegisterParticleGraphNodeFactory();
     /// Template version of registering an object factory with category.
     template <class T = void, class... Rest> void RegisterFactory(const char* category);
     /// Template version of unregistering an object factory.
@@ -222,6 +231,11 @@ public:
     }
 
 private:
+    /// Create an object by type hash. Return pointer to it or null if no factory found.
+    SharedPtr<Object> CreateObject(StringHash objectType, const FactoryMap& factoryMap) const;
+    /// Register a factory for an object type.
+    void RegisterFactory(ObjectFactory* factory, FactoryMap& factoryMap);
+
     /// Add event receiver.
     void AddEventReceiver(Object* receiver, StringHash eventType);
     /// Add event receiver for specific event.
@@ -241,7 +255,9 @@ private:
     void SetEventHandler(EventHandler* handler) { eventHandler_ = handler; }
 
     /// Object factories.
-    ea::unordered_map<StringHash, SharedPtr<ObjectFactory> > factories_;
+    FactoryMap factories_;
+    /// Particle graph node factories.
+    FactoryMap particleNodeFactories_;
     /// Subsystems.
     SubsystemCache subsystems_;
     /// Attribute descriptions per object type.
@@ -267,7 +283,8 @@ private:
 // Helper functions that terminate looping of argument list.
 template <> inline void Context::RegisterFactory() { }
 template <> inline void Context::RegisterFactory(const char* category) { }
-template <> inline void Context::RemoveFactory<>() { }
+template <> inline void Context::RegisterParticleGraphNodeFactory() {}
+template <> inline void Context::RemoveFactory<>() {}
 template <> inline void Context::RemoveFactory<>(const char* category) { }
 
 template <class T, class... Rest> void Context::RegisterFactory()
@@ -280,6 +297,13 @@ template <class T, class... Rest> void Context::RegisterFactory(const char* cate
 {
     RegisterFactory(new ObjectFactoryImpl<T>(this), category);
     RegisterFactory<Rest...>(category);
+}
+
+
+template <class T, class... Rest> void Context::RegisterParticleGraphNodeFactory()
+{
+    RegisterParticleGraphNodeFactory(new ObjectFactoryImpl<T>(this));
+    RegisterParticleGraphNodeFactory<Rest...>();
 }
 
 

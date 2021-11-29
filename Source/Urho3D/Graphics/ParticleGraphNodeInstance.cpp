@@ -23,9 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
-#include "../Graphics/ParticleGraphNodes.h"
-
-#include "Urho3D/Resource/XMLElement.h"
+#include "../Graphics/ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
@@ -33,48 +31,6 @@ namespace Urho3D
 ParticleGraphNodeInstance::ParticleGraphNodeInstance() = default;
 
 ParticleGraphNodeInstance::~ParticleGraphNodeInstance() = default;
-
-namespace ParticleGraphNodes
-{
-Attribute::Attribute()
-    : ParticleGraphNode()
-{
-    pins_[0].containerType_ = ParticleGraphContainerType::Sparse;
-}
-
-GetAttribute::GetAttribute()
-    : Attribute()
-{
-    pins_[0].isInput_ = false;
-}
-
-SetAttribute::SetAttribute()
-    : Attribute()
-{
-}
-
-const Variant& Const::GetValue()
-{
-    return value_;
-}
-
-void Const::SetValue(const Variant& value)
-{
-    value_ = value;
-    pins_[0].valueType_ = value.GetType();
-}
-/// Save to an XML element. Return true if successful.
-bool Const::Save(XMLElement& dest) const
-{
-    if (!ParticleGraphNode::Save(dest))
-        return false;
-    auto elem = dest.CreateChild("value");
-    elem.SetAttribute("type", value_.GetTypeName());
-    elem.SetAttribute("value", value_.ToString());
-    return true;
-}
-
-}
 
 } // namespace Urho3D
 
