@@ -30,6 +30,53 @@
 namespace Urho3D
 {
 
+class ParticleGraphInstance
+{
+};
+
+class UpdateContext;
+
+class ParticleGraphLayerInstance
+{
+public:
+    /// Construct.
+    ParticleGraphLayerInstance();
+
+    /// Destruct.
+    ~ParticleGraphLayerInstance();
+
+    /// Apply layer settings to the layer instance
+    void Apply(ParticleGraphLayer& layer);
+
+    /// Return whether has active particles.
+    bool CheckActiveParticles() const;
+
+    /// Create a new particle. Return true if there was room.
+    bool EmitNewParticle(unsigned numParticles = 1);
+
+protected:
+    /// Initialize update context.
+    UpdateContext MakeUpdateContext(float timeStep);
+
+    /// Run graph.
+    void RunGraph(ea::span<ParticleGraphNodeInstance*>& nodes, UpdateContext& updateContext);
+
+private:
+    /// Memory used to store all layer related arrays: nodes, indices, attributes.
+    ea::vector<uint8_t> attributes_;
+    /// Temp memory needed for graph calculation.
+    /// TODO: Should be replaced with memory pool as it could be shared between multiple emitter instancies.
+    ea::vector<uint8_t> temp_;
+    /// Node instances for emit graph
+    ea::span<ParticleGraphNodeInstance*> emitNodeInstances_;
+    /// Node instances for update graph
+    ea::span<ParticleGraphNodeInstance*> updateNodeInstances_;
+    /// All indices of the particle system.
+    ea::span<unsigned> indices_;
+    /// Number of active particles.
+    unsigned activeParticles_;
+};
+
 class ParticleGraphNodeInstance;
 
 /// %Particle graph emitter component.
@@ -68,6 +115,15 @@ public:
     /// Set particles effect attribute.
     ResourceRef GetEffectAttr() const;
 
+    /// Create a new particle. Return true if there was room.
+    bool EmitNewParticle(unsigned layer);
+protected:
+    /// Handle scene being assigned.
+    void OnSceneSet(Scene* scene) override;
+
+    /// Return whether has active particles.
+    bool CheckActiveParticles() const;
+
 private:
     /// Handle scene post-update event.
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
@@ -76,6 +132,9 @@ private:
 
     /// Particle effect.
     SharedPtr<ParticleGraphEffect> effect_;
+
+    ea::vector<ParticleGraphLayerInstance> layers_;
+
     /// Last scene timestep.
     float lastTimeStep_{};
 };

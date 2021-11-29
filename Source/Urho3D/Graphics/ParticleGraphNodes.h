@@ -66,19 +66,19 @@ struct UpdateContext
 
 template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphNodePin& pin)
 {
-    const auto subspan = tempBuffer_.subspan(pin.offset_, pin.size_);
+    const auto subspan = pin.MakeSpan<ValueType>(tempBuffer_);
     return ea::span<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
                                reinterpret_cast<ValueType*>(subspan.end()));
 }
 template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphNodePin& pin)
 {
-    const auto subspan = tempBuffer_.subspan(pin.offset_, sizeof(ValueType));
+    const ea::span<ValueType> subspan = pin.MakeSpan<ValueType>(tempBuffer_);
     return ScalarSpan<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()));
 }
 template <typename ValueType>
 SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphNodePin& pin, const ea::span<unsigned>& indices)
 {
-    const auto subspan = tempBuffer_.subspan(pin.offset_, pin.size_);
+    const auto subspan = pin.MakeSpan<ValueType>(attributes_);
     return SparseSpan<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
                                  reinterpret_cast<ValueType*>(subspan.end()), indices);
 }
@@ -111,12 +111,18 @@ URHO3D_PARTICLE_NODE_END()
 /// Operation on attribute
 class URHO3D_API Const : public ParticleGraphNode
 {
+    const ea::string& GetTypeName() const override
+    {
+        static const ea::string typeName{"Const"};
+        return typeName;
+    }
 public:
     /// Construct.
     explicit Const()
         : ParticleGraphNode()
     {
         pins_[0].containerType_ = ParticleGraphContainerType::Scalar;
+        pins_[0].isInput_ = false;
     }
 protected:
     class Instance : public ParticleGraphNodeInstance
@@ -133,6 +139,9 @@ protected:
             {
             case VAR_FLOAT:
                 context.GetScalar<float>(pin0)[0] = node_->value_.GetFloat();
+                break;
+            default:
+                assert(!"Not implemented yet");
                 break;
             }
         };
@@ -159,6 +168,9 @@ protected:
     void SetValue(const Variant&);
 
 protected:
+    /// Save to an XML element. Return true if successful.
+    bool Save(XMLElement& dest) const override;
+
     /// Pins
     ParticleGraphNodePin pins_[1];
 
@@ -171,11 +183,7 @@ class URHO3D_API Attribute : public ParticleGraphNode
 {
 protected:
     /// Construct.
-    explicit Attribute()
-        : ParticleGraphNode()
-    {
-        pins_[0].containerType_ = ParticleGraphContainerType::Sparse;
-    }
+    explicit Attribute();
 
     class Instance : public ParticleGraphNodeInstance
     {
@@ -200,6 +208,9 @@ public:
     {
         return new (ptr) Instance();
     }
+
+    /// Set attribute name
+    void SetAttributeName(const ea::string& name) { pins_[0].name_ = name; }
 
 protected:
     /// Pins

@@ -26,11 +26,110 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Graphics/ParticleGraphEmitter.h"
+
+#include "ParticleGraphNodes.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 
 namespace Urho3D
 {
+
+ParticleGraphLayerInstance::ParticleGraphLayerInstance()
+    : activeParticles_(0)
+{
+    
+}
+
+ParticleGraphLayerInstance::~ParticleGraphLayerInstance()
+{
+    for (unsigned i = 0; i < emitNodeInstances_.size(); ++i)
+    {
+        emitNodeInstances_[i]->~ParticleGraphNodeInstance();
+    }
+    for (unsigned i = 0; i < updateNodeInstances_.size(); ++i)
+    {
+        updateNodeInstances_[i]->~ParticleGraphNodeInstance();
+    }
+}
+
+
+void ParticleGraphLayerInstance::Apply(ParticleGraphLayer& layer)
+{
+    layer.Prepare();
+    auto layout = layer.GetAttributeBufferLayout();
+    if (layout.attributeBufferSize_ > 0)
+        attributes_.resize(layout.attributeBufferSize_);
+    if (layer.GetTempBufferSize() > 0)
+        temp_.resize(layer.GetTempBufferSize());
+
+    auto nodeInstances = layout.nodeInstances_.MakeSpan<uint8_t>(attributes_);
+    // Initialize indices
+    emitNodeInstances_ = layout.emitNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
+    auto emit = layer.GetEmitGraph();
+    for (unsigned i=0; i<emit.GetNumNodes(); ++i)
+    {
+        const auto node = emit.GetNode(i);
+        const auto size = node->EvalueInstanceSize();
+        emitNodeInstances_[i] = node->CreateInstanceAt(nodeInstances.begin());
+        nodeInstances = nodeInstances.subspan(size, nodeInstances.size() - size);
+    }
+    updateNodeInstances_ = layout.updateNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
+    auto update = layer.GetEmitGraph();
+    for (unsigned i = 0; i < update.GetNumNodes(); ++i)
+    {
+        const auto node = update.GetNode(i);
+        const auto size = node->EvalueInstanceSize();
+        updateNodeInstances_[i] = node->CreateInstanceAt(nodeInstances.begin());
+        nodeInstances = nodeInstances.subspan(size, nodeInstances.size() - size);
+    }
+    // Initialize indices
+    indices_ = layout.indices_.MakeSpan<unsigned>(attributes_);
+    for (unsigned i = 0; i < indices_.size(); ++i)
+    {
+        indices_[i] = i;
+    }
+}
+
+bool ParticleGraphLayerInstance::CheckActiveParticles() const
+{
+    return activeParticles_ != 0;
+}
+
+bool ParticleGraphLayerInstance::EmitNewParticle(unsigned numParticles)
+{
+    if (activeParticles_ == indices_.size())
+        return false;
+    if (!numParticles)
+        return true;
+
+    const auto startIndex = activeParticles_;
+    ++activeParticles_;
+
+    auto autoContext = MakeUpdateContext(0.0f);
+    autoContext.indices_ = autoContext.indices_.subspan(startIndex, numParticles);
+    RunGraph(emitNodeInstances_, autoContext);
+
+    return true;
+}
+
+UpdateContext ParticleGraphLayerInstance::MakeUpdateContext(float timeStep)
+{
+    UpdateContext context;
+    context.indices_ = indices_.subspan(0, activeParticles_);
+    context.attributes_ = attributes_;
+    context.tempBuffer_ = temp_;
+    context.timeStep_ = timeStep;
+    return context;
+}
+
+void ParticleGraphLayerInstance::RunGraph(ea::span<ParticleGraphNodeInstance*>& nodes, UpdateContext& updateContext)
+{
+    for (ParticleGraphNodeInstance* node: nodes)
+    {
+        node->Update(updateContext);
+    }
+}
+
 ParticleGraphEmitter::ParticleGraphEmitter(Context* context)
     : Component(context)
 {
@@ -63,10 +162,21 @@ void ParticleGraphEmitter::OnSetEnabled()
 
 void ParticleGraphEmitter::Reset()
 {
+    layers_.clear();
 }
 
 void ParticleGraphEmitter::ApplyEffect()
 {
+    if (!effect_)
+        return;
+
+    const auto numLayers = effect_->GetNumLayers();
+    layers_.resize(numLayers);
+
+    for (unsigned i = 0; i < numLayers; ++i)
+    {
+        layers_[i].Apply(effect_->GetLayer(i));
+    }
 }
 
 void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
@@ -103,6 +213,38 @@ void ParticleGraphEmitter::SetEffectAttr(const ResourceRef& value)
 ResourceRef ParticleGraphEmitter::GetEffectAttr() const
 {
     return GetResourceRef(effect_, ParticleGraphEffect::GetTypeStatic());
+}
+
+
+void ParticleGraphEmitter::OnSceneSet(Scene* scene)
+{
+    Component::OnSceneSet(scene);
+
+    if (scene && IsEnabledEffective())
+        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleGraphEmitter, HandleScenePostUpdate));
+    else if (!scene)
+        UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
+}
+
+bool ParticleGraphEmitter::EmitNewParticle(unsigned layer)
+{
+    if (layer >= layers_.size())
+        return false;
+
+    layers_[layer].EmitNewParticle();
+
+    return true;
+}
+
+bool ParticleGraphEmitter::CheckActiveParticles() const
+{
+    for (unsigned i = 0; i < layers_.size(); ++i)
+    {
+        if (layers_[i].CheckActiveParticles())
+            return true;
+    }
+
+    return false;
 }
 
 void ParticleGraphEmitter::HandleScenePostUpdate(StringHash eventType, VariantMap& eventData)
