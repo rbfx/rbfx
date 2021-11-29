@@ -78,8 +78,13 @@ public:
     ea::string GetUniqueTitle() const { return uniqueTitle_;}
     /// Returns title which uniquely identifies scene tab in imgui.
     ea::string GetUniqueName() const { return uniqueName_;}
-    /// Return true if scene tab is active and focused.
+    /// Return true if current tab is active and focused.
     bool IsActive() const { return isActive_; }
+    /// Return true if specified tab is active and focused.
+    bool IsActive(StringHash tabType) const;
+    /// Return true if specified tab is active and focused.
+    template<typename T>
+    bool IsActive() const { return IsActive(T::GetTypeStatic()); }
     /// Return true if scene view was rendered on this frame.
     bool IsRendered() const { return isRendered_; }
     /// Return unique object id.

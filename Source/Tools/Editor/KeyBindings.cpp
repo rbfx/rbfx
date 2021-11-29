@@ -45,6 +45,12 @@ KeyBindings::KeyBindings(Context* context)
     actions_[ActionType::Exit] = {"Exit", KEY_F4, QUAL_ALT};
     actions_[ActionType::Undo] = {"Undo", KEY_Z, QUAL_CTRL};
     actions_[ActionType::Redo] = {"Redo", KEY_Z, QUAL_CTRL | QUAL_SHIFT};
+    actions_[ActionType::Copy] = {"Copy", KEY_C, QUAL_CTRL};
+    actions_[ActionType::Cut] = {"Cut", KEY_X, QUAL_CTRL};
+    actions_[ActionType::Paste] = {"Paste", KEY_V, QUAL_CTRL};
+    actions_[ActionType::PasteInto] = {"Paste Into", KEY_V, QUAL_CTRL | QUAL_SHIFT};
+    actions_[ActionType::Delete] = {"Delete", KEY_DELETE, QUAL_NONE};
+    actions_[ActionType::ClearSelection] = {"Clear Selection", KEY_ESCAPE, QUAL_NONE};
 
     for (int i = 0; i < ActionType::MaxCount; i++)
     {
