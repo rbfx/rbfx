@@ -177,11 +177,12 @@ protected:
     friend class ParticleGraphAttributeBuilder;
 };
 
-class URHO3D_API ParticleGraph
+class URHO3D_API ParticleGraph: public Object
 {
+    URHO3D_OBJECT(ParticleGraph, Object);
 public:
     /// Construct.
-    explicit ParticleGraph();
+    explicit ParticleGraph(Context* context);
     /// Destruct.
     virtual ~ParticleGraph();
 
@@ -196,23 +197,17 @@ public:
     /// Get node by index.
     SharedPtr<ParticleGraphNode> GetNode(unsigned index) const;
 
-    /// Load from an XML element. Return true if successful.
-    bool Load(const XMLElement& source);
-    /// Save to an XML element. Return true if successful.
-    bool Save(XMLElement& dest) const;
-
-    /// Load from a JSON value. Return true if successful.
-    bool Load(const JSONValue& source);
-    /// Save to a JSON value. Return true if successful.
-    bool Save(JSONValue& dest) const;
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, const char* blockName);
 
 private:
     /// Nodes in the graph;
     ea::vector<SharedPtr<ParticleGraphNode>> nodes_;
 };
 
-class URHO3D_API ParticleGraphLayer
+class URHO3D_API ParticleGraphLayer: public Object
 {
+    URHO3D_OBJECT(ParticleGraphLayer, Object)
 public:
 
     /// Layout of attribute buffer
@@ -235,7 +230,7 @@ public:
     };
 
     /// Construct.
-    explicit ParticleGraphLayer();
+    explicit ParticleGraphLayer(Context* context);
     /// Destruct.
     virtual ~ParticleGraphLayer();
 
@@ -260,15 +255,8 @@ public:
     /// @property
     unsigned GetTempBufferSize() const;
 
-    /// Load from an XML element. Return true if successful.
-    bool Load(const XMLElement& source);
-    /// Save to an XML element. Return true if successful.
-    bool Save(XMLElement& dest) const;
-
-    /// Load from a JSON value. Return true if successful.
-    bool Load(const JSONValue& source);
-    /// Save to a JSON value. Return true if successful.
-    bool Save(JSONValue& dest) const;
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive);
 
 private:
     /// Maximum number of particles.
@@ -303,43 +291,29 @@ public:
     unsigned GetNumLayers() const;
 
     /// Get layer by index.
-    ParticleGraphLayer& GetLayer(unsigned layerIndex);
+    SharedPtr<ParticleGraphLayer> GetLayer(unsigned layerIndex) const;
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
     /// Finish resource loading. Always called from the main thread. Return true if successful.
     bool EndLoad() override;
+    
     /// Save resource. Return true if successful.
     bool Save(Serializer& dest) const override;
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
 
-    using Resource::Load;
-
-    /// Load from an XML element. Return true if successful.
-    bool Load(const XMLElement& source);
-    /// Save to an XML element. Return true if successful.
-    bool Save(XMLElement& dest) const;
-
-    /// Load from a JSON value. Return true if successful.
-    bool Load(const JSONValue& source);
-    /// Save to a JSON value. Return true if successful.
-    bool Save(JSONValue& dest) const;
 
 private:
-    /// Helper function for loading JSON files.
-    bool BeginLoadJSON(Deserializer& source);
-    /// Helper function for loading XML files.
-    bool BeginLoadXML(Deserializer& source);
 
     /// Reset to defaults.
     void ResetToDefaults();
 
 private:
-    ea::vector<ParticleGraphLayer> layers_;
+    ea::vector<SharedPtr<ParticleGraphLayer>> layers_;
 
     /// XML file used while loading.
     SharedPtr<XMLFile> loadXMLFile_;
-    /// JSON file used while loading.
-    SharedPtr<JSONFile> loadJSONFile_;
 };
 
 }

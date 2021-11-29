@@ -27,11 +27,13 @@
 
 #include "Graphics.h"
 #include "Urho3D/Core/Thread.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
 #include "Urho3D/IO/Deserializer.h"
 #include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Resource/JSONFile.h"
 #include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Resource/XMLArchive.h"
 
 namespace Urho3D
 {
@@ -234,7 +236,10 @@ void ParticleGraphNodePin::SetIsInput(bool isInput)
 }
 
 /// Construct ParticleGraphLayer.
-ParticleGraph::ParticleGraph() = default;
+ParticleGraph::ParticleGraph(Context* context)
+    : Object(context)
+{
+}
 
 /// Destruct ParticleGraphLayer.
 ParticleGraph::~ParticleGraph() = default;
@@ -267,47 +272,58 @@ SharedPtr<ParticleGraphNode> ParticleGraph::GetNode(unsigned index) const
     }
     return nodes_[index];
 }
-
-
-/// Load from an XML element. Return true if successful.
-bool ParticleGraph::Load(const XMLElement& source)
+/// Serialize from/to archive. Return true if successful.
+bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
 {
-    return true;
-}
-
-/// Save to an XML element. Return true if successful.
-bool ParticleGraph::Save(XMLElement& dest) const
-{
-    for (unsigned i=0; i<nodes_.size(); ++i)
+    if (ArchiveBlock block = archive.OpenArrayBlock(blockName))
     {
-        ParticleGraphNode* node = nodes_[i];
-        XMLElement emitElem = dest.CreateChild("node");
-        if (!node->Save(emitElem))
+        if (archive.IsInput())
         {
-            return false;
+            nodes_.resize(block.GetSizeHint());
+            for (unsigned i = 0; i < nodes_.size(); ++i)
+            {
+                if (ArchiveBlock node = archive.OpenArrayBlock("node"))
+                {
+                    ea::string type = nodes_[i]->GetTypeName();
+                    SerializeValue(archive, "type", type);
+                    nodes_[i]->Serialize(archive, node);
+                }
+            }
         }
+        else
+        {
+            for (unsigned i = 0; i < nodes_.size(); ++i)
+            {
+                if (ArchiveBlock node = archive.OpenUnorderedBlock("node"))
+                {
+                    ea::string type;
+                    SerializeValue(archive, "type", type);
+                    nodes_[i] = GetContext()->CreateParticleGraphNode(StringHash(type));
+                    if (!nodes_[i])
+                    {
+                        return false;
+                    }
+                    nodes_[i]->Serialize(archive, node);
+                }
+            }
+        }
+    }
+    else
+    {
+        return false;
     }
 
     return true;
 }
 
-/// Load from a JSON value. Return true if successful.
-bool ParticleGraph::Load(const JSONValue& source)
-{
-    return true;
-}
-
-/// Save to a JSON value. Return true if successful.
-bool ParticleGraph::Save(JSONValue& dest) const
-{
-    return true;
-}
-
 /// Construct ParticleGraphLayer.
-ParticleGraphLayer::ParticleGraphLayer()
-    : isPrepared_(false)
-    , tempBufferSize_(0)
+ParticleGraphLayer::ParticleGraphLayer(Context* context)
+    : Object(context)
     , capacity_(16)
+    , emit_(context)
+    , update_(context)
+    , isPrepared_(false)
+    , tempBufferSize_(0)
 {
     Invalidate();
 }
@@ -389,38 +405,25 @@ unsigned ParticleGraphLayer::GetTempBufferSize() const {
     return tempBufferSize_;
 }
 
-/// Load from an XML element. Return true if successful.
-bool ParticleGraphLayer::Load(const XMLElement& source)
+/// Serialize from/to archive. Return true if successful.
+bool ParticleGraphLayer::Serialize(Archive& archive)
 {
-    return true;
-}
-
-/// Save to an XML element. Return true if successful.
-bool ParticleGraphLayer::Save(XMLElement& dest) const
-{
-    XMLElement emitElem = dest.CreateChild("emit");
-    if (!emit_.Save(emitElem))
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("layer"))
+    {
+        if (!emit_.Serialize(archive, "emit"))
+        {
+            return false;
+        }
+        if (!update_.Serialize(archive, "update"))
+        {
+            return false;
+        }
+    }
+    else
     {
         return false;
     }
-    XMLElement updateElem = dest.CreateChild("update");
-    if (!update_.Save(updateElem))
-    {
-        return false;
-    }
 
-    return true;
-}
-
-/// Load from a JSON value. Return true if successful.
-bool ParticleGraphLayer::Load(const JSONValue& source)
-{
-    return true;
-}
-
-/// Save to a JSON value. Return true if successful.
-bool ParticleGraphLayer::Save(JSONValue& dest) const
-{
     return true;
 }
 
@@ -504,7 +507,15 @@ void ParticleGraphEffect::RegisterObject(Context* context)
 /// Set number of layers.
 void ParticleGraphEffect::SetNumLayers(unsigned numLayers)
 {
-    layers_.resize(numLayers);
+    while (numLayers < layers_.size())
+    {
+        layers_.pop_back();
+    }
+    layers_.reserve(numLayers);
+    while (numLayers > layers_.size())
+    {
+        layers_.push_back(MakeShared<ParticleGraphLayer>(context_));
+    }
 }
 
 /// Get number of layers.
@@ -514,7 +525,7 @@ unsigned ParticleGraphEffect::GetNumLayers() const
 }
 
 /// Get layer by index.
-ParticleGraphLayer& ParticleGraphEffect::GetLayer(unsigned layerIndex)
+SharedPtr<ParticleGraphLayer> ParticleGraphEffect::GetLayer(unsigned layerIndex) const
 {
     return layers_[layerIndex];
 }
@@ -531,73 +542,19 @@ bool ParticleGraphEffect::BeginLoad(Deserializer& source)
     ea::string extension = GetExtension(source.GetName());
 
     bool success = false;
-    if (extension == ".xml")
-    {
-        success = BeginLoadXML(source);
-        if (!success)
-            success = BeginLoadJSON(source);
 
-        if (success)
-            return true;
-    }
-    else // Load JSON file
-    {
-        success = BeginLoadJSON(source);
-        if (!success)
-            success = BeginLoadXML(source);
-
-        if (success)
-            return true;
-    }
-
-    // All loading failed
     ResetToDefaults();
-    loadJSONFile_.Reset();
-    return false;
-}
 
-
-bool ParticleGraphEffect::BeginLoadXML(Deserializer& source)
-{
-    ResetToDefaults();
     loadXMLFile_ = context_->CreateObject<XMLFile>();
-    if (loadXMLFile_->Load(source))
-    {
-        // If async loading, scan the XML content beforehand for technique & texture resources
-        // and request them to also be loaded. Can not do anything else at this point
-        if (GetAsyncLoadState() == ASYNC_LOADING)
-        {
-            // TODO
-        }
+    if (!loadXMLFile_->Load(source))
+        return false;
 
-        return true;
-    }
+    return true;
 
-    return false;
-}
-
-bool ParticleGraphEffect::BeginLoadJSON(Deserializer& source)
-{
-    // Attempt to load a JSON file
-    ResetToDefaults();
-    loadXMLFile_.Reset();
-
-    // Attempt to load from JSON file instead
-    loadJSONFile_ = context_->CreateObject<JSONFile>();
-    if (loadJSONFile_->Load(source))
-    {
-        // If async loading, scan the XML content beforehand for technique & texture resources
-        // and request them to also be loaded. Can not do anything else at this point
-        if (GetAsyncLoadState() == ASYNC_LOADING)
-        {
-            // TODO
-        }
-
-        // JSON material was successfully loaded
-        return true;
-    }
-
-    return false;
+    //// All loading failed
+    //ResetToDefaults();
+    //loadJSONFile_.Reset();
+    //return false;
 }
 
 void ParticleGraphEffect::ResetToDefaults()
@@ -616,80 +573,48 @@ bool ParticleGraphEffect::EndLoad()
     if (!graphics)
         return true;
 
-    bool success = false;
-    if (loadXMLFile_)
-    {
-        // If async loading, get the techniques / textures which should be ready now
-        XMLElement rootElem = loadXMLFile_->GetRoot();
-        success = Load(rootElem);
-    }
-
-    if (loadJSONFile_)
-    {
-        JSONValue rootVal = loadJSONFile_->GetRoot();
-        success = Load(rootVal);
-    }
-
-    loadXMLFile_.Reset();
-    loadJSONFile_.Reset();
-    return success;
+    XMLInputArchive archive(loadXMLFile_);
+    return Serialize(archive);
 }
 
 bool ParticleGraphEffect::Save(Serializer& dest) const
 {
     SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement graphElem = xml->CreateRoot("particleGraph");
-
-    Save(graphElem);
+    XMLOutputArchive archive(xml);
+    if (!const_cast<ParticleGraphEffect*>(this)->Serialize(archive))
+        return false;
     return xml->Save(dest);
 }
 
-bool ParticleGraphEffect::Load(const XMLElement& source)
+bool ParticleGraphEffect::Serialize(Archive& archive)
 {
-    ResetToDefaults();
-
-    return true;
-}
-
-bool ParticleGraphEffect::Load(const JSONValue& source)
-{
-    ResetToDefaults();
-
-    return true;
-}
-
-bool ParticleGraphEffect::Save(XMLElement& dest) const
-{
-    if (dest.IsNull())
+    if (ArchiveBlock block = archive.OpenArrayBlock("particleGraphEffect"))
     {
-        URHO3D_LOGERROR("Can not save material to null XML element");
-        return false;
-    }
-
-    // Write layers
-    for (unsigned i = 0; i < layers_.size(); ++i)
-    {
-        const auto& entry = layers_[i];
-
-        XMLElement layerElem = dest.CreateChild("layer");
-        if (!entry.Save(layerElem))
+        if (archive.IsInput())
         {
-            return false;
+            layers_.resize(block.GetSizeHint());
+            for (unsigned i = 0; i < layers_.size(); ++i)
+            {
+                layers_[i] = MakeShared<ParticleGraphLayer>(context_);
+            }
+        }
+
+        for (unsigned i = 0; i < layers_.size(); ++i)
+        {
+            if (!SerializeValue(archive, "layer", layers_[i]))
+            {
+                return false;
+            }
         }
     }
-
-    return true;
-}
-
-bool ParticleGraphEffect::Save(JSONValue& dest) const
-{
-    if (dest.IsNull())
+    else
     {
-        URHO3D_LOGERROR("Can not save material to null XML element");
         return false;
     }
 
     return true;
 }
+
 
 }

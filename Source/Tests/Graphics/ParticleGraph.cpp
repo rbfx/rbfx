@@ -77,7 +77,7 @@ TEST_CASE("Test simple particle graph")
     effect->SetNumLayers(1);
     auto& layer = effect->GetLayer(0);
     {
-        auto& emitGraph = layer.GetEmitGraph();
+        auto& emitGraph = layer->GetEmitGraph();
 
         auto c = MakeShared<ParticleGraphNodes::Constant>(context);
         c->SetValue(40.0f);
@@ -90,7 +90,7 @@ TEST_CASE("Test simple particle graph")
         auto setIndex = emitGraph.Add(set);
     }
     {
-        auto& updateGraph = layer.GetUpdateGraph();
+        auto& updateGraph = layer->GetUpdateGraph();
         auto get = MakeShared<ParticleGraphNodes::GetAttribute>(context);
         auto& getPin = get->GetPin(0);
         get->SetAttributeName("size");
@@ -98,9 +98,9 @@ TEST_CASE("Test simple particle graph")
         auto getIndex = updateGraph.Add(get);
     }
 
-    VectorBuffer buf;
-    effect->Save(buf);
-    ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+    //VectorBuffer buf;
+    //effect->Save(buf);
+    //ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
 
     const auto scene = MakeShared<Scene>(context);
     const auto node = scene->CreateChild();

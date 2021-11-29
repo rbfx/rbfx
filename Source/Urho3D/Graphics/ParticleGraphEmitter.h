@@ -46,7 +46,7 @@ public:
     ~ParticleGraphLayerInstance();
 
     /// Apply layer settings to the layer instance
-    void Apply(ParticleGraphLayer& layer);
+    void Apply(const SharedPtr<ParticleGraphLayer>& layer);
 
     /// Return whether has active particles.
     bool CheckActiveParticles() const;
@@ -75,6 +75,8 @@ private:
     ea::span<unsigned> indices_;
     /// Number of active particles.
     unsigned activeParticles_;
+    /// Reference to layer.
+    SharedPtr<ParticleGraphLayer> layer_;
 };
 
 class ParticleGraphNodeInstance;

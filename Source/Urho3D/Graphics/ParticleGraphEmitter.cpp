@@ -53,21 +53,24 @@ ParticleGraphLayerInstance::~ParticleGraphLayerInstance()
 }
 
 
-void ParticleGraphLayerInstance::Apply(ParticleGraphLayer& layer)
+void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& layer)
 {
-    if (!layer.Prepare())
+    if (!layer)
         return;
+    if (!layer->Prepare())
+        return;
+    layer_ = layer;
 
-    auto layout = layer.GetAttributeBufferLayout();
+    auto layout = layer_->GetAttributeBufferLayout();
     if (layout.attributeBufferSize_ > 0)
         attributes_.resize(layout.attributeBufferSize_);
-    if (layer.GetTempBufferSize() > 0)
-        temp_.resize(layer.GetTempBufferSize());
+    if (layer_->GetTempBufferSize() > 0)
+        temp_.resize(layer_->GetTempBufferSize());
 
     auto nodeInstances = layout.nodeInstances_.MakeSpan<uint8_t>(attributes_);
     // Initialize indices
     emitNodeInstances_ = layout.emitNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
-    auto emit = layer.GetEmitGraph();
+    auto& emit = layer_->GetEmitGraph();
     unsigned instanceOffset = 0;
     for (unsigned i=0; i<emit.GetNumNodes(); ++i)
     {
@@ -80,7 +83,7 @@ void ParticleGraphLayerInstance::Apply(ParticleGraphLayer& layer)
         instanceOffset += size;
     }
     updateNodeInstances_ = layout.updateNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
-    auto update = layer.GetUpdateGraph();
+    auto& update = layer_->GetUpdateGraph();
     for (unsigned i = 0; i < update.GetNumNodes(); ++i)
     {
         const auto node = update.GetNode(i);
