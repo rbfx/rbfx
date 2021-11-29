@@ -33,7 +33,13 @@ namespace Urho3D
 
 class AbstractConnection;
 
-/// Helper base class for user-defined network replication logic.
+/// Base component of Network-replicated object.
+///
+/// Each NetworkObject has ID unique within the owner Scene.
+/// Derive from NetworkObject to have custom network logic.
+/// Don't create more than one NetworkObject per Node.
+///
+/// Hierarchy is updated after NetworkObject node is dirtied.
 class URHO3D_API NetworkObject : public Component
 {
     URHO3D_OBJECT(NetworkObject, Component);
@@ -44,12 +50,18 @@ public:
 
     static void RegisterObject(Context* context);
 
-    /// Assign network ID. On the Server, it's better to let the Server assign ID, to avoid unwanted side effects.
+    /// Update pointer to the parent NetworkObject.
+    void UpdateParent();
+    /// Assign NetworkId. On the Server, it's better to let the Server assign ID, to avoid unwanted side effects.
     void SetNetworkId(NetworkId networkId) { networkId_ = networkId; }
-    /// Return current or last network ID. Return InvalidNetworkId if not registered.
+    /// Return current or last NetworkId. Return InvalidNetworkId if not registered.
     NetworkId GetNetworkId() const { return networkId_; }
-    /// Return current or last network index. Return M_MAX_UNSIGNED if not registered.
-    unsigned GetNetworkIndex() const { return networkId_ != InvalidNetworkId ? NetworkManager::DecomposeNetworkId(networkId_).first : M_MAX_UNSIGNED; }
+    /// Return NetworkId of parent NetworkObject.
+    NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
+    /// Return parent NetworkObject.
+    NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
+    /// Return children NetworkObject.
+    const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
 
     /// Return whether the component should be replicated for specified client connection.
     virtual bool IsRelevantForClient(AbstractConnection* connection);
@@ -67,14 +79,55 @@ public:
 protected:
     /// Component implementation
     /// @{
-    void OnSceneSet(Scene* scene) override;
+    void OnNodeSet(Node* node) override;
+    void OnMarkedDirty(Node* node) override;
     /// @}
 
+    NetworkObject* GetOtherNetworkObject(NetworkId networkId) const;
+    void SetParentNetworkObject(NetworkId parentNetworkId);
+
 private:
+    void UpdateCurrentScene(Scene* scene);
+    NetworkObject* FindParentNetworkObject() const;
+    void AddChildNetworkObject(NetworkObject* networkObject);
+    void RemoveChildNetworkObject(NetworkObject* networkObject);
+
     /// NetworkManager corresponding to the NetworkObject.
     WeakPtr<NetworkManager> networkManager_;
     /// Network ID, unique within Scene. May contain outdated value if NetworkObject is not registered in any NetworkManager.
     NetworkId networkId_{ InvalidNetworkId };
+
+    /// NetworkObject hierarchy
+    /// @{
+    WeakPtr<NetworkObject> parentNetworkObject_;
+    ea::vector<WeakPtr<NetworkObject>> childrenNetworkObjects_;
+    /// @}
+};
+
+/// Default implementation of NetworkObject that does some basic replication.
+class URHO3D_API DefaultNetworkObject : public NetworkObject
+{
+    URHO3D_OBJECT(DefaultNetworkObject, NetworkObject);
+
+public:
+    explicit DefaultNetworkObject(Context* context);
+    ~DefaultNetworkObject() override;
+
+    static void RegisterObject(Context* context);
+
+    /// Implementation of NetworkObject
+    /// @{
+    void WriteSnapshot(VectorBuffer& dest) override;
+    bool WriteReliableDelta(VectorBuffer& dest) override;
+    void ReadSnapshot(VectorBuffer& src) override;
+    void ReadReliableDelta(VectorBuffer& src) override;
+    /// @}
+
+private:
+    /// Delta updates cache
+    /// @{
+    NetworkId lastParentNetworkId_{ InvalidNetworkId };
+    /// @}
 };
 
 }

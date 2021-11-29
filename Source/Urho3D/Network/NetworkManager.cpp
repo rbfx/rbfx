@@ -59,10 +59,12 @@ unsigned NetworkManagerBase::AllocateNewIndex()
 void NetworkManagerBase::EnsureIndex(unsigned index)
 {
     assert(networkObjects_.size() == networkObjectVersions_.size());
+    assert(networkObjects_.size() == networkObjectsDirty_.size());
     if (index >= networkObjects_.size())
     {
         networkObjects_.resize(index + 1);
         networkObjectVersions_.resize(index + 1);
+        networkObjectsDirty_.resize(index + 1);
     }
 }
 
@@ -99,7 +101,7 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
     }
     else
     {
-        const unsigned index = networkObject->GetNetworkIndex();
+        const unsigned index = DecomposeNetworkId(networkObject->GetNetworkId()).first;
         EnsureIndex(index);
     }
 
@@ -145,9 +147,23 @@ void NetworkManagerBase::RemoveComponent(NetworkObject* networkObject)
     const auto [index, version] = DecomposeNetworkId(networkId);
     networkObjects_[index] = nullptr;
     networkObjectVersions_[index] = (networkObjectVersions_[index] + 1) & VersionMask;
+    networkObjectsDirty_[index] = true;
     indexAllocator_.Release(index);
 
     URHO3D_LOGINFO("NetworkObject {} is removed", FormatNetworkId(networkId));
+}
+
+void NetworkManagerBase::QueueComponentUpdate(NetworkObject* networkObject)
+{
+    const NetworkId networkId = networkObject->GetNetworkId();
+    if (GetNetworkObject(networkId) != networkObject)
+    {
+        URHO3D_LOGWARNING("Cannot queue update for unknown NetworkObject {}", FormatNetworkId(networkId));
+        return;
+    }
+
+    const auto index = DecomposeNetworkId(networkId).first;
+    networkObjectsDirty_[index] = true;
 }
 
 void NetworkManagerBase::RemoveAllComponents()
@@ -181,6 +197,38 @@ void NetworkManagerBase::ClearRecentActions()
 {
     recentlyAddedComponents_.clear();
     recentlyRemovedComponents_.clear();
+}
+
+void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const
+{
+    networkObjects.clear();
+
+    // Update hierarchy
+    for (unsigned index = 0; index < networkObjectsDirty_.size(); ++index)
+    {
+        if (!networkObjectsDirty_[index])
+            continue;
+
+        if (NetworkObject* networkObject = networkObjects_[index])
+        {
+            networkObject->UpdateParent();
+            networkObject->GetNode()->GetWorldTransform();
+        }
+    }
+
+    // Enumerate roots
+    for (NetworkObject* networkObject : networkObjects_)
+    {
+        if (networkObject && !networkObject->GetParentNetworkObject())
+            networkObjects.push_back(networkObject);
+    }
+
+    // Enumerate children: array may grow on iteration!
+    for (unsigned i = 0; i < networkObjects.size(); ++i)
+    {
+        for (NetworkObject* childNetworkObject : networkObjects[i]->GetChildrenNetworkObjects())
+            networkObjects.push_back(childNetworkObject);
+    }
 }
 
 ea::string NetworkManagerBase::ToString() const

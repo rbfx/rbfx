@@ -77,13 +77,13 @@ void ServerNetworkManager::BeginNetworkFrame()
         data.clockAccumulator_ += timeStep;
     }
 
-    const auto& unorderedComponents = base_->GetUnorderedNetworkObjects();
+    base_->UpdateAndSortNetworkObjects(orderedNetworkObjects_);
     for (auto& [connection, data] : connections_)
     {
         if (!data.synchronized_)
             continue;
 
-        const unsigned maxIndex = unorderedComponents.size();
+        const unsigned maxIndex = base_->GetUnorderedNetworkObjects().size();
         data.isComponentReplicated_.resize(maxIndex);
         data.componentsRelevanceTimeouts_.resize(maxIndex);
 
@@ -102,11 +102,8 @@ void ServerNetworkManager::BeginNetworkFrame()
         }
 
         // Process active components
-        for (NetworkObject* networkObject : unorderedComponents)
+        for (NetworkObject* networkObject : orderedNetworkObjects_)
         {
-            if (!networkObject)
-                continue;
-
             const NetworkId networkId = networkObject->GetNetworkId();
             const unsigned index = GetIndex(networkId);
 

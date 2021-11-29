@@ -43,19 +43,118 @@ void NetworkObject::RegisterObject(Context* context)
     context->RegisterFactory<NetworkObject>();
 }
 
-void NetworkObject::OnSceneSet(Scene* scene)
+void NetworkObject::UpdateParent()
+{
+    NetworkObject* newParentNetworkObject = FindParentNetworkObject();
+    if (newParentNetworkObject != parentNetworkObject_)
+    {
+        if (parentNetworkObject_)
+            parentNetworkObject_->RemoveChildNetworkObject(this);
+
+        parentNetworkObject_ = newParentNetworkObject;
+
+        if (parentNetworkObject_)
+            parentNetworkObject_->AddChildNetworkObject(this);
+    }
+}
+
+void NetworkObject::OnNodeSet(Node* node)
+{
+    if (node)
+    {
+        UpdateCurrentScene(node->GetScene());
+        node->AddListener(this);
+        node->MarkDirty();
+    }
+    else
+    {
+        UpdateCurrentScene(nullptr);
+        for (NetworkObject* childNetworkObject : childrenNetworkObjects_)
+        {
+            if (!childNetworkObject)
+                continue;
+
+            childNetworkObject->GetNode()->MarkDirty();
+        }
+    }
+}
+
+void NetworkObject::UpdateCurrentScene(Scene* scene)
+{
+    NetworkManager* newNetworkManager = scene ? scene->GetNetworkManager() : nullptr;
+    if (newNetworkManager != networkManager_)
+    {
+        if (networkManager_)
+        {
+            networkManager_->RemoveComponent(this);
+            networkManager_ = nullptr;
+        }
+
+        if (scene)
+        {
+            networkManager_ = scene->GetNetworkManager();
+            networkManager_->AddComponent(this);
+        }
+    }
+}
+
+void NetworkObject::OnMarkedDirty(Node* node)
 {
     if (networkManager_)
-    {
-        networkManager_->RemoveComponent(this);
-        networkManager_ = nullptr;
-    }
+        networkManager_->QueueComponentUpdate(this);
+}
 
-    if (scene)
+NetworkObject* NetworkObject::GetOtherNetworkObject(NetworkId networkId) const
+{
+    return networkManager_ ? networkManager_->GetNetworkObject(networkId) : nullptr;
+}
+
+void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
+{
+    if (parentNetworkId != InvalidNetworkId)
     {
-        networkManager_ = scene->GetNetworkManager();
-        networkManager_->AddComponent(this);
+        if (auto parentNetworkObject = GetOtherNetworkObject(parentNetworkId))
+        {
+            Node* parentNode = parentNetworkObject->GetNode();
+            if (node_->GetParent() != parentNode)
+                node_->SetParent(parentNode);
+        }
+        else
+        {
+            URHO3D_LOGERROR("Cannot assign NetworkObject {} to unknown parent NetworkObject {}",
+                NetworkManagerBase::FormatNetworkId(GetNetworkId()), NetworkManagerBase::FormatNetworkId(parentNetworkId));
+        }
     }
+    else
+    {
+        Node* parentNode = GetScene();
+        if (node_->GetParent() != parentNode)
+            node_->SetParent(parentNode);
+    }
+}
+
+NetworkObject* NetworkObject::FindParentNetworkObject() const
+{
+    Node* parent = node_->GetParent();
+    while (parent)
+    {
+        if (auto networkObject = parent->GetDerivedComponent<NetworkObject>())
+            return networkObject;
+        parent = parent->GetParent();
+    }
+    return nullptr;
+}
+
+void NetworkObject::AddChildNetworkObject(NetworkObject* networkObject)
+{
+    childrenNetworkObjects_.emplace_back(networkObject);
+}
+
+void NetworkObject::RemoveChildNetworkObject(NetworkObject* networkObject)
+{
+    const auto iter = childrenNetworkObjects_.find(WeakPtr<NetworkObject>(networkObject));
+    if (iter != childrenNetworkObjects_.end())
+        childrenNetworkObjects_.erase(iter);
 }
 
 bool NetworkObject::IsRelevantForClient(AbstractConnection* connection)
@@ -84,6 +183,50 @@ void NetworkObject::ReadSnapshot(VectorBuffer& src)
 
 void NetworkObject::ReadReliableDelta(VectorBuffer& src)
 {
+}
+
+DefaultNetworkObject::DefaultNetworkObject(Context* context) : NetworkObject(context) {}
+
+DefaultNetworkObject::~DefaultNetworkObject() = default;
+
+void DefaultNetworkObject::RegisterObject(Context* context)
+{
+    context->RegisterFactory<DefaultNetworkObject>();
+}
+
+void DefaultNetworkObject::WriteSnapshot(VectorBuffer& dest)
+{
+    const auto parentNetworkId = GetParentNetworkId();
+    dest.WriteUInt(static_cast<unsigned>(parentNetworkId));
+    lastParentNetworkId_ = parentNetworkId;
+
+    dest.WriteString(node_->GetName());
+}
+
+bool DefaultNetworkObject::WriteReliableDelta(VectorBuffer& dest)
+{
+    const auto parentNetworkId = GetParentNetworkId();
+    if (lastParentNetworkId_ != parentNetworkId)
+    {
+        lastParentNetworkId_ = parentNetworkId;
+        dest.WriteUInt(static_cast<unsigned>(parentNetworkId));
+    }
+
+    return dest.Tell() != 0;
+}
+
+void DefaultNetworkObject::ReadSnapshot(VectorBuffer& src)
+{
+    const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
+    SetParentNetworkObject(parentNetworkId);
+
+    node_->SetName(src.ReadString());
+}
+
+void DefaultNetworkObject::ReadReliableDelta(VectorBuffer& src)
+{
+    const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
+    SetParentNetworkObject(parentNetworkId);
 }
 
 }
