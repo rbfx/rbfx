@@ -126,6 +126,7 @@ private:
 
     ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
     VectorBuffer componentBuffer_;
+    ea::vector<NetworkObject*> orderedNetworkObjects_;
 };
 
 }

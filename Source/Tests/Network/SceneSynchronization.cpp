@@ -126,27 +126,142 @@ TEST_CASE("Scene is synchronized between client and server")
 {
     auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
+    const float syncDelay = 0.25f;
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
     auto serverScene = MakeShared<Scene>(context);
     auto clientScene = MakeShared<Scene>(context);
 
-    auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
-    auto replicatedNodeA = serverScene->CreateChild("Replicated Node A");
-    replicatedNodeA->CreateComponent<NetworkObject>();
-    auto replicatedNodeB = serverScene->CreateChild("Replicated Node B");
-    replicatedNodeB->CreateComponent<NetworkObject>();
-    auto replicatedNodeChild = serverScene->CreateChild("Replicated Node Child");
-    replicatedNodeChild->CreateComponent<NetworkObject>();
+    {
+        auto clientOnlyNode = clientScene->CreateChild("Client Only Node");
+        auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
+        auto replicatedNodeA = serverScene->CreateChild("Replicated Node A");
+        replicatedNodeA->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeB = serverScene->CreateChild("Replicated Node B");
+        replicatedNodeB->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeChild1 = replicatedNodeA->CreateChild("Replicated Node Child 1");
+        replicatedNodeChild1->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeChild2 = replicatedNodeChild1->CreateChild("Replicated Node Child 2");
+        replicatedNodeChild2->CreateComponent<DefaultNetworkObject>();
+        auto serverOnlyChild3 = replicatedNodeB->CreateChild("Server Only Child 3");
+        auto replicatedNodeChild4 = serverOnlyChild3->CreateChild("Replicated Node Child 4");
+        replicatedNodeChild4->CreateComponent<DefaultNetworkObject>();
+    }
 
     // Spend some time alone
     Tests::NetworkSimulator sim(serverScene);
     sim.SimulateTime(10.0f);
 
-    // Add client and wait for a while
+    // Add client and wait for synchronization
     sim.AddClient(clientScene, quality);
     sim.SimulateTime(10.0f);
+
+    {
+        auto clientOnlyNode = clientScene->GetChild("Client Only Node", true);
+        auto replicatedNodeA = clientScene->GetChild("Replicated Node A", true);
+        auto replicatedNodeB = clientScene->GetChild("Replicated Node B", true);
+        auto replicatedNodeChild1 = clientScene->GetChild("Replicated Node Child 1", true);
+        auto replicatedNodeChild2 = clientScene->GetChild("Replicated Node Child 2", true);
+        auto replicatedNodeChild4 = clientScene->GetChild("Replicated Node Child 4", true);
+
+        REQUIRE(clientScene->GetNumChildren() == 3);
+        REQUIRE(clientScene == clientOnlyNode->GetParent());
+        REQUIRE(clientScene == replicatedNodeA->GetParent());
+        REQUIRE(clientScene == replicatedNodeB->GetParent());
+
+        REQUIRE(clientOnlyNode->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeA->GetNumChildren() == 1);
+        REQUIRE(replicatedNodeA == replicatedNodeChild1->GetParent());
+
+        REQUIRE(replicatedNodeChild1->GetNumChildren() == 1);
+        REQUIRE(replicatedNodeChild1 == replicatedNodeChild2->GetParent());
+
+        REQUIRE(replicatedNodeChild2->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeB->GetNumChildren() == 1);
+        REQUIRE(replicatedNodeB == replicatedNodeChild4->GetParent());
+
+        REQUIRE(replicatedNodeChild4->GetNumChildren() == 0);
+    }
+
+    // Re-parent "Server Only Child 3" to "Replicated Node A"
+    // Re-parent "Replicated Node Child 1" to Scene
+    // Wait for synchronization
+    {
+        auto serverOnlyChild3 = serverScene->GetChild("Server Only Child 3", true);
+        auto replicatedNodeA = serverScene->GetChild("Replicated Node A", true);
+        auto replicatedNodeChild1 = serverScene->GetChild("Replicated Node Child 1", true);
+
+        serverOnlyChild3->SetParent(replicatedNodeA);
+        replicatedNodeChild1->SetParent(serverScene);
+    }
+
+    sim.SimulateTime(syncDelay);
+
+    {
+        auto clientOnlyNode = clientScene->GetChild("Client Only Node", true);
+        auto replicatedNodeA = clientScene->GetChild("Replicated Node A", true);
+        auto replicatedNodeB = clientScene->GetChild("Replicated Node B", true);
+        auto replicatedNodeChild1 = clientScene->GetChild("Replicated Node Child 1", true);
+        auto replicatedNodeChild2 = clientScene->GetChild("Replicated Node Child 2", true);
+        auto replicatedNodeChild4 = clientScene->GetChild("Replicated Node Child 4", true);
+
+        REQUIRE(clientScene->GetNumChildren() == 4);
+        REQUIRE(clientScene == clientOnlyNode->GetParent());
+        REQUIRE(clientScene == replicatedNodeA->GetParent());
+        REQUIRE(clientScene == replicatedNodeB->GetParent());
+        REQUIRE(clientScene == replicatedNodeChild1->GetParent());
+
+        REQUIRE(clientOnlyNode->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeA->GetNumChildren() == 1);
+        REQUIRE(replicatedNodeA == replicatedNodeChild4->GetParent());
+
+        REQUIRE(replicatedNodeChild4->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeB->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeChild1->GetNumChildren() == 1);
+        REQUIRE(replicatedNodeChild1 == replicatedNodeChild2->GetParent());
+
+        REQUIRE(replicatedNodeChild2->GetNumChildren() == 0);
+    }
+
+    // Remove "Replicated Node A"
+    // Add "Replicated Node C"
+    {
+        auto replicatedNodeA = serverScene->GetChild("Replicated Node A", true);
+        replicatedNodeA->Remove();
+        auto replicatedNodeC = serverScene->CreateChild("Replicated Node C");
+        replicatedNodeC->CreateComponent<DefaultNetworkObject>();
+    }
+
+    sim.SimulateTime(syncDelay);
+
+    {
+        auto clientOnlyNode = clientScene->GetChild("Client Only Node", true);
+        auto replicatedNodeB = clientScene->GetChild("Replicated Node B", true);
+        auto replicatedNodeC = clientScene->GetChild("Replicated Node C", true);
+        auto replicatedNodeChild1 = clientScene->GetChild("Replicated Node Child 1", true);
+        auto replicatedNodeChild2 = clientScene->GetChild("Replicated Node Child 2", true);
+
+        REQUIRE(clientScene->GetNumChildren() == 4);
+        REQUIRE(clientScene == clientOnlyNode->GetParent());
+        REQUIRE(clientScene == replicatedNodeB->GetParent());
+        REQUIRE(clientScene == replicatedNodeC->GetParent());
+        REQUIRE(clientScene == replicatedNodeChild1->GetParent());
+
+        REQUIRE(clientOnlyNode->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeB->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeChild1->GetNumChildren() == 1);
+        REQUIRE(replicatedNodeChild1 == replicatedNodeChild2->GetParent());
+
+        REQUIRE(replicatedNodeChild2->GetNumChildren() == 0);
+    }
 
     sim.SimulateTime(1.0f);
 

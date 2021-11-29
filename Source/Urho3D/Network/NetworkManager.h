@@ -61,10 +61,13 @@ public:
     /// @{
     void AddComponent(NetworkObject* networkObject);
     void RemoveComponent(NetworkObject* networkObject);
+    void QueueComponentUpdate(NetworkObject* networkObject);
     void RemoveAllComponents();
 
     void ClearRecentActions();
     const auto& GetRecentlyRemovedComponents() const { return recentlyRemovedComponents_; }
+
+    void UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
     /// @}
 
     bool IsReplicatedClient() const { return !!client_; }
@@ -91,6 +94,7 @@ private:
     unsigned numComponents_{};
     ea::vector<NetworkObject*> networkObjects_;
     ea::vector<unsigned> networkObjectVersions_;
+    ea::vector<bool> networkObjectsDirty_;
     IndexAllocator<DummyMutex> indexAllocator_;
 
     ea::unordered_set<NetworkId> recentlyRemovedComponents_;

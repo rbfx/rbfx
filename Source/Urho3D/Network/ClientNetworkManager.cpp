@@ -221,6 +221,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
             const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
             const StringHash componentType = messageData.ReadStringHash();
             messageData.ReadBuffer(componentBuffer_.GetBuffer());
+            componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
             componentBuffer_.Seek(0);
 
             if (NetworkObject* networkObject = GetOrCreateNetworkObject(networkId, componentType))
