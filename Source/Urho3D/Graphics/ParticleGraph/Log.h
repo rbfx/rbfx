@@ -22,27 +22,36 @@
 
 #pragma once
 
-#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
 #include <Urho3D/Graphics/ParticleGraphEffect.h>
+#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
 
 namespace Urho3D
 {
-    
+
 namespace ParticleGraphNodes
 {
+
 /// Operation on attribute
-class URHO3D_API Attribute : public ParticleGraphNode
+class URHO3D_API Log : public ParticleGraphNode
 {
-    URHO3D_OBJECT(Attribute, ParticleGraphNode);
+    URHO3D_OBJECT(Log, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit Log(Context* context)
+        : ParticleGraphNode(context)
+        , pins_{ParticleGraphNodePin(true, "value")}
+    {
+    }
 
 protected:
-    /// Construct.
-    explicit Attribute(Context* context, const ParticleGraphNodePin& pin);
-
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        void Update(UpdateContext& context) override {}
+        Instance(Log* node);
+        void Update(UpdateContext& context) override;
+
+    protected:
+        Log* node_;
     };
 
 public:
@@ -56,61 +65,12 @@ public:
     unsigned EvalueInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(); }
-
-    /// Set attribute name
-    /// @property
-    void SetAttributeName(const ea::string& name) { SetPinName(0, name); }
-
-    /// Get attribute name
-    /// @property
-    const ea::string& GetAttributeName() const { return  pins_[0].GetName(); }
-
-    /// Set attribute type
-    /// @property
-    void SetAttributeType(VariantType valueType) { SetPinValueType(0, valueType); }
-
-    /// Get attribute type
-    /// @property
-    VariantType GetAttributeType() const { return pins_[0].GetRequestedType(); }
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(this); }
 
 protected:
+
     /// Pins
     ParticleGraphNodePin pins_[1];
-};
-
-/// Get particle attribute value.
-class URHO3D_API GetAttribute : public Attribute
-{
-    URHO3D_OBJECT(GetAttribute, Attribute);
-
-public:
-    /// Construct.
-    explicit GetAttribute(Context* context);
-};
-
-/// Set particle attribute value.
-class URHO3D_API SetAttribute : public Attribute
-{
-    URHO3D_OBJECT(SetAttribute, Attribute);
-    class Instance : public ParticleGraphNodeInstance
-    {
-    public:
-        Instance(SetAttribute* node);
-        void Update(UpdateContext& context) override;
-    protected:
-        SetAttribute* node_;
-    };
-
-public:
-    /// Construct.
-    explicit SetAttribute(Context* context);
-
-    /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
-
-    /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(this); }
 };
 
 } // namespace ParticleGraphNodes

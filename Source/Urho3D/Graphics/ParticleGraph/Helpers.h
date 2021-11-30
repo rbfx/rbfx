@@ -26,7 +26,6 @@
 #include <Urho3D/Graphics/ParticleGraphEffect.h>
 #include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
 
-//
 //#define URHO3D_PARTICLE_NODE1_BEGIN(Name, Pin0Name, Pin0) \
 //    class URHO3D_API Name : public AbstractNode1<Name, Pin0> \
 //    { \
@@ -83,7 +82,7 @@ protected:
     explicit AbstractNode1(Context* context)
         : ParticleGraphNode(context)
     {
-        pins_[0].valueType_ = GetVariantType<Value0>();
+        pins_[0].requestedValueType_ = GetVariantType<Value0>();
     }
 
     class Instance : public ParticleGraphNodeInstance
@@ -98,7 +97,7 @@ protected:
             const auto& pin0 = node_->pins_[0];
 
             const unsigned numParticles = context.indices_.size();
-            switch (pin0.containerType_)
+            switch (pin0.valueType_)
             {
             case ParticleGraphContainerType::Span:
                 Node::Op(numParticles, context.GetSpan<Value0>(pin0));
@@ -149,9 +148,9 @@ protected:
     explicit AbstractNode3(Context* context)
         : ParticleGraphNode(context)
     {
-        pins_[0].valueType_ = GetVariantType<Value0>();
-        pins_[1].valueType_ = GetVariantType<Value1>();
-        pins_[2].valueType_ = GetVariantType<Value2>();
+        pins_[0].requestedValueType_ = GetVariantType<Value0>();
+        pins_[1].requestedValueType_ = GetVariantType<Value1>();
+        pins_[2].requestedValueType_ = GetVariantType<Value2>();
     }
 
     class Instance : public ParticleGraphNodeInstance
@@ -207,6 +206,22 @@ protected:
     /// Pins
     ParticleGraphNodePin pins_[3];
 };
+
+template <template <typename> typename T, typename Arg0, typename Arg1>
+void SelectByVariantType(VariantType variantType, Arg0 arg0, Arg1 arg1)
+{
+    switch (variantType)
+    {
+    case VAR_FLOAT:
+    {
+        T<float> fn;
+        fn(arg0, arg1);
+        break;
+    }
+    default:
+        assert(!"Not implemented");
+    }
+}
 
 } // namespace ParticleGraphNodes
 

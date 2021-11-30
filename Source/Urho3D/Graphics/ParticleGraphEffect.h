@@ -69,9 +69,6 @@ public:
         VariantType type = VariantType::VAR_NONE,
         ParticleGraphContainerType container = ParticleGraphContainerType::Auto);
 
-    /// Container type: span, sparse or scalar.
-    ParticleGraphContainerType containerType_{ParticleGraphContainerType::Auto};
-
     /// Source node.
     unsigned sourceNode_{};
     /// Source node pin index.
@@ -89,7 +86,11 @@ public:
     /// @property
     StringHash GetNameHash() const { return nameHash_; }
 
-    /// Value type of the pin. VAR_NONE for autodetected value type.
+    /// Requested value type of the pin. VAR_NONE for autodetected value type.
+    /// @property
+    VariantType GetRequestedType() const { return requestedValueType_; }
+
+    /// Value type of the pin evaluated at the runtime.
     /// @property
     VariantType GetValueType() const { return valueType_; }
 
@@ -97,6 +98,20 @@ public:
     {
         return (isInput_ ? sourceSpan_ : outputSpan_).MakeSpan<T>(buffer);
     }
+
+    /// Make span based on output pin settings.
+    /// Only valid for SetAttribute node.
+    /// TODO: Refactor this
+    template <typename T> ea::span<T> MakeOutputSpan(ea::span<uint8_t> buffer) const
+    {
+        return outputSpan_.MakeSpan<T>(buffer);
+    }
+
+    ParticleGraphContainerType GetContainerType() const
+    {
+        return isInput_?sourceContainerType_:containerType_;
+    }
+
 protected:
     /// Set pin name and hash.
     void SetName(const ea::string& name);
@@ -108,6 +123,10 @@ protected:
     void SetIsInput(bool isInput);
 
 private:
+
+    /// Container type: span, sparse or scalar.
+    ParticleGraphContainerType containerType_{ParticleGraphContainerType::Auto};
+
     /// Source pin container type: span, sparse or scalar.
     ParticleGraphContainerType sourceContainerType_{ParticleGraphContainerType::Auto};
 
@@ -118,7 +137,7 @@ private:
     ParticleGraphSpan outputSpan_;
 
     /// Value type at runtime.
-    VariantType runtimeValueType_{VAR_NONE};
+    VariantType valueType_{VAR_NONE};
 
     /// Name of the pin for visual editor.
     ea::string name_;
@@ -127,8 +146,9 @@ private:
 
     /// Is input pin.
     bool isInput_{true};
+
     /// Value type (float, vector3, etc).
-    VariantType valueType_{VariantType::VAR_NONE};
+    VariantType requestedValueType_{VariantType::VAR_NONE};
 
     friend class ParticleGraphAttributeBuilder;
     friend class ParticleGraphNode;
@@ -160,7 +180,7 @@ public:
     virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) = 0;
 
     /// Save to an XML element. Return true if successful.
-    virtual bool Save(XMLElement& dest) const;
+    virtual bool Serialize(Archive& archive) const;
 
 protected:
     /// Evaluate runtime output pin type.

@@ -96,6 +96,12 @@ TEST_CASE("Test simple particle graph")
         get->SetAttributeName("size");
         get->SetAttributeType(VAR_FLOAT);
         auto getIndex = updateGraph.Add(get);
+
+        auto log = MakeShared<ParticleGraphNodes::Log>(context);
+        auto& logPin = get->GetPin(0);
+        logPin.sourceNode_ = getIndex;
+        logPin.sourcePin_ = 0;
+        auto logIndex = updateGraph.Add(log);
     }
 
     //VectorBuffer buf;
@@ -107,4 +113,5 @@ TEST_CASE("Test simple particle graph")
     const auto emitter = node->CreateComponent<ParticleGraphEmitter>();
     emitter->SetEffect(effect);
     CHECK(emitter->EmitNewParticle(0));
+    emitter->Tick(0.1f);
 }

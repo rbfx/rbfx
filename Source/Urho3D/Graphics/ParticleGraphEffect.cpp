@@ -57,7 +57,7 @@ template <typename T> ParticleGraphSpan Append(ParticleGraphLayer::AttributeBuff
 
 struct ParticleGraphAttributeBuilder
 {
-    ParticleGraphAttributeBuilder(ea::map<StringHash, ParticleGraphSpan> attributes,
+    ParticleGraphAttributeBuilder(ea::map<StringHash, ParticleGraphSpan>& attributes,
                                   ParticleGraphLayer::AttributeBufferLayout* layout, unsigned capacity,
                                   unsigned& tempSize)
         : attributes_(attributes)
@@ -130,15 +130,18 @@ struct ParticleGraphAttributeBuilder
 
         for (unsigned i = 0; i < graphNodes; ++i)
         {
+            // Configure pin nodes
             auto node = graph.GetNode(i);
             for (unsigned pinIndex = 0; pinIndex < node->NumPins(); ++pinIndex)
             {
-                auto pin = node->GetPin(pinIndex);
-                pin.runtimeValueType_ = pin.valueType_;
-                if (pin.runtimeValueType_ == VAR_NONE && !pin.GetIsInput())
+                auto& pin = node->GetPin(pinIndex);
+
+                // Evaluate output pin value for output pins.
+                pin.valueType_ = pin.requestedValueType_;
+                if (pin.valueType_ == VAR_NONE && !pin.GetIsInput())
                 {
                     node->EvaluateOutputPinType(pin);
-                    if (pin.runtimeValueType_ == VAR_NONE)
+                    if (pin.valueType_ == VAR_NONE)
                     {
                         URHO3D_LOGERROR("Can't detect output pin type");
                         return false;
@@ -151,7 +154,7 @@ struct ParticleGraphAttributeBuilder
                     auto& span = attributes_[nameHash];
                     if (!span.size_)
                     {
-                        span = Append(layout_, GetSize(pin.valueType_) * capacity_);
+                        span = Append(layout_, GetSize(pin.requestedValueType_) * capacity_);
                     }
                     pin.outputSpan_ = span;
                 }
@@ -159,7 +162,7 @@ struct ParticleGraphAttributeBuilder
                 else if (!pin.GetIsInput())
                 {
                     // Allocate temp buffer
-                    const auto elementSize = GetSize(pin.valueType_);
+                    const auto elementSize = GetSize(pin.requestedValueType_);
                     pin.outputSpan_.offset_ = tempSize_;
                     pin.outputSpan_.size_ =
                         elementSize * ((pin.containerType_ == ParticleGraphContainerType::Scalar) ? 1 : capacity_);
@@ -181,16 +184,28 @@ struct ParticleGraphAttributeBuilder
                         return false;
                     }
                     const auto& sourcePin = sourceNode->GetPin(pin.sourcePin_);
-                    assert(!sourcePin.GetIsInput());
+                    if(sourcePin.GetIsInput())
+                    {
+                        URHO3D_LOGERROR("Source pin isn't output pin");
+                        return false;
+                    }
                     pin.sourceSpan_ = sourcePin.outputSpan_;
-                    pin.sourceContainerType_ = sourcePin.sourceContainerType_;
-                    pin.runtimeValueType_ = sourcePin.runtimeValueType_;
+                    pin.sourceContainerType_ = sourcePin.GetContainerType();
+                    if (pin.requestedValueType_ == VAR_NONE)
+                    {
+                        pin.valueType_ = sourcePin.valueType_;
+                    }
+                    else if (pin.requestedValueType_ != sourcePin.valueType_)
+                    {
+                        URHO3D_LOGERROR("Source pin type doesn't match input pin type");
+                        return false;
+                    }
                 }
             }
         }
         return true;
     }
-    ea::map<StringHash, ParticleGraphSpan> attributes_;
+    ea::map<StringHash, ParticleGraphSpan>& attributes_;
     ParticleGraphLayer::AttributeBufferLayout* layout_;
     unsigned capacity_;
     unsigned& tempSize_;
@@ -213,7 +228,7 @@ ParticleGraphNodePin::ParticleGraphNodePin(
     VariantType type,
     ParticleGraphContainerType container)
     : isInput_(isInput)
-    , valueType_(type)
+    , requestedValueType_(type)
     , containerType_(container)
 {
     SetName(name);
@@ -227,7 +242,7 @@ void ParticleGraphNodePin::SetName(const ea::string& name)
 
 void ParticleGraphNodePin::SetValueType(VariantType valueType)
 {
-    valueType_ = valueType;
+    requestedValueType_ = valueType;
 }
 
 void ParticleGraphNodePin::SetIsInput(bool isInput)
@@ -286,7 +301,7 @@ bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
                 {
                     ea::string type = nodes_[i]->GetTypeName();
                     SerializeValue(archive, "type", type);
-                    nodes_[i]->Serialize(archive, node);
+                    nodes_[i]->Serialize(archive);
                 }
             }
         }
@@ -303,7 +318,7 @@ bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
                     {
                         return false;
                     }
-                    nodes_[i]->Serialize(archive, node);
+                    nodes_[i]->Serialize(archive);
                 }
             }
         }
@@ -450,40 +465,40 @@ void ParticleGraphNode::SetPinValueType(unsigned pinIndex, VariantType type)
 
 ParticleGraphNode::~ParticleGraphNode() = default;
 
-bool ParticleGraphNode::Save(XMLElement& dest) const
+bool ParticleGraphNode::Serialize(Archive& archive) const
 {
-    dest.SetAttribute("type", GetTypeName());
-    for (unsigned i = 0; i < NumPins(); ++i)
-    {
-        auto& pin = const_cast<ParticleGraphNode*>(this)->GetPin(i);
-        XMLElement pinElem = dest.CreateChild("pin");
-        pinElem.SetAttribute("name", pin.name_);
-        //pinElem.SetAttribute("type", Variant::GetTypeNameList()[pin.valueType_]);
-        //switch (pin.containerType_)
-        //{
-        //case ParticleGraphContainerType::Span:
-        //    pinElem.SetAttribute("container", "span");
-        //    break;
-        //case ParticleGraphContainerType::Sparse:
-        //    pinElem.SetAttribute("container", "sparse");
-        //    break;
-        //case ParticleGraphContainerType::Scalar:
-        //    pinElem.SetAttribute("container", "scalar");
-        //    break;
-        //case ParticleGraphContainerType::Auto:
-        //    break;
-        //default: ;
-        //}
-        if (pin.GetIsInput())
-        {
-            pinElem.SetAttribute("sourceNode", ea::to_string(pin.sourceNode_));
-            if (pin.sourcePin_ != 0)
-            {
-                pinElem.SetAttribute("sourcePin", ea::to_string(pin.sourcePin_));
-            }
-        }
+    //dest.SetAttribute("type", GetTypeName());
+    //for (unsigned i = 0; i < NumPins(); ++i)
+    //{
+    //    auto& pin = const_cast<ParticleGraphNode*>(this)->GetPin(i);
+    //    XMLElement pinElem = dest.CreateChild("pin");
+    //    pinElem.SetAttribute("name", pin.name_);
+    //    //pinElem.SetAttribute("type", Variant::GetTypeNameList()[pin.valueType_]);
+    //    //switch (pin.containerType_)
+    //    //{
+    //    //case ParticleGraphContainerType::Span:
+    //    //    pinElem.SetAttribute("container", "span");
+    //    //    break;
+    //    //case ParticleGraphContainerType::Sparse:
+    //    //    pinElem.SetAttribute("container", "sparse");
+    //    //    break;
+    //    //case ParticleGraphContainerType::Scalar:
+    //    //    pinElem.SetAttribute("container", "scalar");
+    //    //    break;
+    //    //case ParticleGraphContainerType::Auto:
+    //    //    break;
+    //    //default: ;
+    //    //}
+    //    if (pin.GetIsInput())
+    //    {
+    //        pinElem.SetAttribute("sourceNode", ea::to_string(pin.sourceNode_));
+    //        if (pin.sourcePin_ != 0)
+    //        {
+    //            pinElem.SetAttribute("sourcePin", ea::to_string(pin.sourcePin_));
+    //        }
+    //    }
 
-    }
+    //}
     return true;
 }
 

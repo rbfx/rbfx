@@ -22,47 +22,63 @@
 
 #include "../../Precompiled.h"
 
-#include "Constant.h"
+#include "Log.h"
+#include "Urho3D/IO/Log.h"
+
+#include "Helpers.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-
-const Variant& Constant::GetValue() { return value_; }
-
-void Constant::SetValue(const Variant& value)
+namespace 
 {
-    value_ = value;
-    SetPinValueType(0, value.GetType());
+    template <typename T>
+    void LogSpan(unsigned numParticles, T span)
+    {
+        for (unsigned i=0; i<numParticles;++i)
+        {
+            Urho3D::Log::GetLogger().Error(ea::to_string(span[i]));
+        }
+    }
+
+
+    template <typename T> struct LogPin
+    {
+        void operator()(UpdateContext& context, const ParticleGraphNodePin& pin0)
+        {
+            const unsigned numParticles = context.indices_.size();
+
+            switch (pin0.GetContainerType())
+            {
+            case ParticleGraphContainerType::Span:
+                LogSpan(numParticles, context.GetSpan<T>(pin0));
+                break;
+            case ParticleGraphContainerType::Scalar:
+                LogSpan(1, context.GetScalar<T>(pin0));
+                break;
+            case ParticleGraphContainerType::Sparse:
+                LogSpan(numParticles, context.GetSparse<T>(pin0));
+                break;
+            default:
+                assert(!"Invalid pin container type");
+                break;
+            }
+        }
+    };
+
 }
 
-Constant::Instance::Instance(Constant* node)
+Log::Instance::Instance(Log* node)
     : node_(node)
 {
 }
 
-void Constant::Instance::Update(UpdateContext& context)
+void Log::Instance::Update(UpdateContext& context)
 {
     const auto& pin0 = node_->pins_[0];
-    switch (node_->value_.GetType())
-    {
-    case VAR_FLOAT:
-        context.GetScalar<float>(pin0)[0] = node_->value_.GetFloat();
-        break;
-    case VAR_VECTOR2:
-        context.GetScalar<Vector2>(pin0)[0] = node_->value_.GetVector2();
-        break;
-    case VAR_VECTOR3:
-        context.GetScalar<Vector3>(pin0)[0] = node_->value_.GetVector3();
-        break;
-    case VAR_VECTOR4:
-        context.GetScalar<Vector4>(pin0)[0] = node_->value_.GetVector4();
-        break;
-    default:
-        assert(!"Not implemented yet");
-        break;
-    }
+    SelectByVariantType<LogPin>(pin0.GetValueType(), context, pin0);
 };
+
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

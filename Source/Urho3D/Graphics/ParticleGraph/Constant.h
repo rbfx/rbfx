@@ -47,32 +47,8 @@ protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(Constant* node)
-            : node_(node)
-        {
-        }
-        void Update(UpdateContext& context) override
-        {
-            const auto& pin0 = node_->pins_[0];
-            switch (node_->value_.GetType())
-            {
-            case VAR_FLOAT:
-                context.GetScalar<float>(pin0)[0] = node_->value_.GetFloat();
-                break;
-            case VAR_VECTOR2:
-                context.GetScalar<Vector2>(pin0)[0] = node_->value_.GetVector2();
-                break;
-            case VAR_VECTOR3:
-                context.GetScalar<Vector3>(pin0)[0] = node_->value_.GetVector3();
-                break;
-            case VAR_VECTOR4:
-                context.GetScalar<Vector4>(pin0)[0] = node_->value_.GetVector4();
-                break;
-            default:
-                assert(!"Not implemented yet");
-                break;
-            }
-        };
+        Instance(Constant* node);
+        void Update(UpdateContext& context) override;
 
     protected:
         Constant* node_;
@@ -96,8 +72,6 @@ public:
     void SetValue(const Variant&);
 
 protected:
-    /// Save to an XML element. Return true if successful.
-    bool Save(XMLElement& dest) const override;
 
     /// Pins
     ParticleGraphNodePin pins_[1];

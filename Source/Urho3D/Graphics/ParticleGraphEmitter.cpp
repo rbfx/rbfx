@@ -37,7 +37,6 @@ namespace Urho3D
 ParticleGraphLayerInstance::ParticleGraphLayerInstance()
     : activeParticles_(0)
 {
-    
 }
 
 ParticleGraphLayerInstance::~ParticleGraphLayerInstance()
@@ -124,10 +123,17 @@ bool ParticleGraphLayerInstance::EmitNewParticle(unsigned numParticles)
     return true;
 }
 
+void ParticleGraphLayerInstance::Update(float timeStep)
+{
+    auto autoContext = MakeUpdateContext(timeStep);
+    RunGraph(updateNodeInstances_, autoContext);
+}
+
 UpdateContext ParticleGraphLayerInstance::MakeUpdateContext(float timeStep)
 {
     UpdateContext context;
-    context.indices_ = indices_.subspan(0, activeParticles_);
+    if (activeParticles_ > 0)
+        context.indices_ = indices_.subspan(0, activeParticles_);
     context.attributes_ = attributes_;
     context.tempBuffer_ = temp_;
     context.timeStep_ = timeStep;
@@ -248,6 +254,13 @@ bool ParticleGraphEmitter::EmitNewParticle(unsigned layer)
     return true;
 }
 
+void ParticleGraphEmitter::Tick(float timeStep)
+{
+    for (unsigned i = 0; i < layers_.size(); ++i)
+    {
+        layers_[i].Update(timeStep);
+    }
+}
 bool ParticleGraphEmitter::CheckActiveParticles() const
 {
     for (unsigned i = 0; i < layers_.size(); ++i)
@@ -265,6 +278,9 @@ void ParticleGraphEmitter::HandleScenePostUpdate(StringHash eventType, VariantMa
     using namespace ScenePostUpdate;
 
     lastTimeStep_ = eventData[P_TIMESTEP].GetFloat();
+
+
+    Tick(lastTimeStep_);
 
     //// If no invisible update, check that the billboardset is in view (framenumber has changed)
     //if ((effect_ && effect_->GetUpdateInvisible()) || viewFrameNumber_ != lastUpdateFrameNumber_)

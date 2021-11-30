@@ -54,6 +54,9 @@ public:
     /// Create a new particle. Return true if there was room.
     bool EmitNewParticle(unsigned numParticles = 1);
 
+    /// Run update step.
+    void Update(float timeStep);
+
 protected:
     /// Initialize update context.
     UpdateContext MakeUpdateContext(float timeStep);
@@ -119,6 +122,9 @@ public:
 
     /// Create a new particle. Return true if there was room.
     bool EmitNewParticle(unsigned layer);
+
+    void Tick(float timeStep);
+
 protected:
     /// Handle scene being assigned.
     void OnSceneSet(Scene* scene) override;
