@@ -39,7 +39,7 @@ public:
     /// Construct.
     explicit Constant(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(false, "value", VAR_NONE, ParticleGraphContainerType::Scalar)}
+        , pins_{ParticleGraphNodePin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, ParticleGraphContainerType::Scalar)}
     {
     }
 

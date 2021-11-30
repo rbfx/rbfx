@@ -218,6 +218,18 @@ void SelectByVariantType(VariantType variantType, Arg0 arg0, Arg1 arg1)
         fn(arg0, arg1);
         break;
     }
+    case VAR_VECTOR2:
+    {
+        T<Vector2> fn;
+        fn(arg0, arg1);
+        break;
+    }
+    case VAR_VECTOR3:
+    {
+        T<Vector3> fn;
+        fn(arg0, arg1);
+        break;
+    }
     default:
         assert(!"Not implemented");
     }

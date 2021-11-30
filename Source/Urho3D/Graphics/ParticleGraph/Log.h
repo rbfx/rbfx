@@ -39,7 +39,7 @@ public:
     /// Construct.
     explicit Log(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(true, "value")}
+        , pins_{ParticleGraphNodePin(PGPIN_INPUT, "value")}
     {
     }
 

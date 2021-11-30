@@ -34,11 +34,12 @@ namespace ParticleGraphNodes
 namespace 
 {
     template <typename T>
-    void LogSpan(unsigned numParticles, T span)
+    void LogSpan(LogLevel level, unsigned numParticles, T span)
     {
         for (unsigned i=0; i<numParticles;++i)
         {
-            Urho3D::Log::GetLogger().Error(ea::to_string(span[i]));
+            Variant v{span[i]};
+            Urho3D::Log::GetLogger().Write(level, v.ToString());
         }
     }
 
@@ -52,13 +53,13 @@ namespace
             switch (pin0.GetContainerType())
             {
             case ParticleGraphContainerType::Span:
-                LogSpan(numParticles, context.GetSpan<T>(pin0));
+                LogSpan(LOG_INFO, numParticles, context.GetSpan<T>(pin0));
                 break;
             case ParticleGraphContainerType::Scalar:
-                LogSpan(1, context.GetScalar<T>(pin0));
+                LogSpan(LOG_INFO, 1, context.GetScalar<T>(pin0));
                 break;
             case ParticleGraphContainerType::Sparse:
-                LogSpan(numParticles, context.GetSparse<T>(pin0));
+                LogSpan(LOG_INFO, numParticles, context.GetSparse<T>(pin0));
                 break;
             default:
                 assert(!"Invalid pin container type");

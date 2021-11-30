@@ -58,6 +58,19 @@ struct ParticleGraphSpan
     }
 };
 
+enum ParticleGraphPinFlagValues
+{
+    /// No flags set.
+    PGPIN_NONE = 0x0,
+    /// Input pin.
+    PGPIN_INPUT = 0x1,
+    /// Pin name defined in runtime.
+    PGPIN_NAME_MUTABLE = 0x2,
+    /// Pin value type defined in runtime.
+    PGPIN_TYPE_MUTABLE = 0x4,
+};
+URHO3D_FLAGSET(ParticleGraphPinFlagValues, ParticleGraphPinFlags);
+
 class ParticleGraphNodePin
 {
 public:
@@ -65,7 +78,7 @@ public:
     ParticleGraphNodePin();
     /// Construct pin.
     ParticleGraphNodePin(
-        bool isInput,
+        ParticleGraphPinFlags flags,
         const ea::string name,
         VariantType type = VariantType::VAR_NONE,
         ParticleGraphContainerType container = ParticleGraphContainerType::Auto);
@@ -77,7 +90,7 @@ public:
 
     /// Get input pin flag.
     /// @property 
-    bool GetIsInput() const { return isInput_; }
+    bool GetIsInput() const { return flags_.Test(PGPIN_INPUT); }
 
     /// Name of the pin for visual editor.
     /// @property 
@@ -97,7 +110,7 @@ public:
 
     template <typename T> ea::span<T> MakeSpan(ea::span<uint8_t> buffer) const
     {
-        return (isInput_ ? sourceSpan_ : outputSpan_).MakeSpan<T>(buffer);
+        return (GetIsInput() ? sourceSpan_ : outputSpan_).MakeSpan<T>(buffer);
     }
 
     /// Make span based on output pin settings.
@@ -110,7 +123,7 @@ public:
 
     ParticleGraphContainerType GetContainerType() const
     {
-        return isInput_?sourceContainerType_:containerType_;
+        return GetIsInput()?sourceContainerType_:containerType_;
     }
 
     /// Save to an XML element. Return true if successful.
@@ -149,7 +162,7 @@ private:
     StringHash nameHash_;
 
     /// Is input pin.
-    bool isInput_{true};
+    ParticleGraphPinFlags flags_{PGPIN_INPUT};
 
     /// Value type (float, vector3, etc).
     VariantType requestedValueType_{VariantType::VAR_NONE};

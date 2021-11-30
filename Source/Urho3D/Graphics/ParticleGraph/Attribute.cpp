@@ -91,12 +91,14 @@ Attribute::Attribute(Context* context, const ParticleGraphNodePin& pin)
 }
 
 GetAttribute::GetAttribute(Context* context)
-    : Attribute(context, ParticleGraphNodePin(false, "", VAR_NONE, ParticleGraphContainerType::Sparse))
+    : Attribute(context, ParticleGraphNodePin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
+                                              ParticleGraphContainerType::Sparse))
 {
 }
 
 SetAttribute::SetAttribute(Context* context)
-    : Attribute(context, ParticleGraphNodePin(true, "", VAR_NONE, ParticleGraphContainerType::Sparse))
+    : Attribute(context, ParticleGraphNodePin(PGPIN_INPUT | PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
+                                              ParticleGraphContainerType::Sparse))
 {
 }
 

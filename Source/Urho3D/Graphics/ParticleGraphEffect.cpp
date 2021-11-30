@@ -218,16 +218,16 @@ ParticleGraphSpan::ParticleGraphSpan()
 {
 }
 ParticleGraphNodePin::ParticleGraphNodePin()
-    : isInput_(true)
+    : flags_(PGPIN_INPUT)
 {
     
 }
 ParticleGraphNodePin::ParticleGraphNodePin(
-    bool isInput,
+    ParticleGraphPinFlags flags,
     const ea::string name,
     VariantType type,
     ParticleGraphContainerType container)
-    : isInput_(isInput)
+    : flags_(flags)
     , requestedValueType_(type)
     , containerType_(container)
 {
@@ -267,7 +267,7 @@ bool ParticleGraphNodePin::Serialize(Archive& archive)
             }
         }
     }
-    if (isInput_)
+    if (GetIsInput())
     {
         if (!SerializeValue(archive, "sourceNode", sourceNode_))
         {
@@ -294,12 +294,12 @@ void ParticleGraphNodePin::SetValueType(VariantType valueType)
 
 void ParticleGraphNodePin::SetIsInput(bool isInput)
 {
-    isInput_ = isInput;
+    flags_.Set(PGPIN_INPUT, isInput);
 }
 
 bool SerializeValue(Archive& archive, const char* name, ParticleGraphNodePin& value)
 {
-    if (auto block = archive.OpenSequentialBlock(name))
+    if (auto block = archive.OpenUnorderedBlock(name))
     {
         return value.Serialize(archive);
     }
@@ -492,41 +492,7 @@ namespace
 bool ParticleGraphNode::Serialize(Archive& archive)
 {
     PinArrayAdapter adapter(*this);
-    return SerializeArrayAsObjects<>(archive, "pins", "pin", adapter);
-
-    //dest.SetAttribute("type", GetTypeName());
-    //for (unsigned i = 0; i < NumPins(); ++i)
-    //{
-    //    auto& pin = const_cast<ParticleGraphNode*>(this)->GetPin(i);
-    //    XMLElement pinElem = dest.CreateChild("pin");
-    //    pinElem.SetAttribute("name", pin.name_);
-    //    //pinElem.SetAttribute("type", Variant::GetTypeNameList()[pin.valueType_]);
-    //    //switch (pin.containerType_)
-    //    //{
-    //    //case ParticleGraphContainerType::Span:
-    //    //    pinElem.SetAttribute("container", "span");
-    //    //    break;
-    //    //case ParticleGraphContainerType::Sparse:
-    //    //    pinElem.SetAttribute("container", "sparse");
-    //    //    break;
-    //    //case ParticleGraphContainerType::Scalar:
-    //    //    pinElem.SetAttribute("container", "scalar");
-    //    //    break;
-    //    //case ParticleGraphContainerType::Auto:
-    //    //    break;
-    //    //default: ;
-    //    //}
-    //    if (pin.GetIsInput())
-    //    {
-    //        pinElem.SetAttribute("sourceNode", ea::to_string(pin.sourceNode_));
-    //        if (pin.sourcePin_ != 0)
-    //        {
-    //            pinElem.SetAttribute("sourcePin", ea::to_string(pin.sourcePin_));
-    //        }
-    //    }
-
-    //}
-    return true;
+    return SerializeArrayAsObjects(archive, "pins", "pin", adapter);
 }
 
 bool ParticleGraphNode::EvaluateOutputPinType(ParticleGraphNodePin& pin)
