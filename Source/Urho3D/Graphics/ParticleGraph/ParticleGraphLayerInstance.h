@@ -53,6 +53,11 @@ public:
     /// Get attribute memory by attribute index.
     ea::span<uint8_t> GetAttributeMemory(unsigned attributeIndex);
 
+    template <typename ValueType>
+    SparseSpan<ValueType> GetSparse(unsigned attributeIndex, const ea::span<unsigned>& indices);
+    template <typename ValueType> ScalarSpan<ValueType> GetScalar(unsigned pinIndex);
+    template <typename ValueType> ea::span<ValueType> GetSpan(unsigned pinIndex);
+
 protected:
     /// Initialize update context.
     UpdateContext MakeUpdateContext(float timeStep);
@@ -77,5 +82,23 @@ private:
     /// Reference to layer.
     SharedPtr<ParticleGraphLayer> layer_;
 };
+
+template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::GetSparse(unsigned attributeIndex, const ea::span<unsigned>& indices)
+{
+    const auto& attr = layer_->GetAttributes().GetSpan(attributeIndex);
+    const auto values = attr.MakeSpan<ValueType>(attributes_);
+    return SparseSpan<ValueType>(values, indices);
+}
+template <typename ValueType> ScalarSpan<ValueType> ParticleGraphLayerInstance::GetScalar(unsigned pinIndex)
+{
+    const auto& attr = layer_->GetIntermediateValues()[pinIndex];
+    const auto values = attr.MakeSpan<ValueType>(temp_);
+    return ScalarSpan<ValueType>(values);
+}
+template <typename ValueType> ea::span<ValueType> ParticleGraphLayerInstance::GetSpan(unsigned pinIndex)
+{
+    const auto& attr = layer_->GetIntermediateValues()[pinIndex];
+    return  attr.MakeSpan<ValueType>(temp_);
+}
 
 } // namespace Urho3D

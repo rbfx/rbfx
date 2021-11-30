@@ -68,4 +68,19 @@ unsigned ParticleGraphAttributeLayout::GetOrAddAttribute(const ea::string& name,
     return i;
 }
 
+void ParticleGraphBufferLayout::Reset(unsigned capacity)
+{
+    position_ = 0;
+    capacity_ = capacity;
+}
+
+unsigned ParticleGraphBufferLayout::Allocate(ParticleGraphContainerType container, VariantType type)
+{
+    unsigned index = spans_.size();
+    unsigned size = ((container == PGCONTAINER_SCALAR) ? 1 : capacity_) * GetVariantSize(type);
+    spans_.push_back(PinSpan{container, type, ParticleGraphSpan(position_, size)});
+    position_ += size;
+    return index;
+}
+
 } // namespace Urho3D

@@ -23,6 +23,7 @@
 #include "../../Precompiled.h"
 
 #include "Constant.h"
+#include "ParticleGraphLayerInstance.h"
 
 namespace Urho3D
 {
@@ -48,16 +49,16 @@ void Constant::Instance::Update(UpdateContext& context)
     switch (node_->value_.GetType())
     {
     case VAR_FLOAT:
-        context.GetScalar<float>(pin0)[0] = node_->value_.GetFloat();
+        context.GetScalar<float>(pin0.GetMemoryReference())[0] = node_->value_.GetFloat();
         break;
     case VAR_VECTOR2:
-        context.GetScalar<Vector2>(pin0)[0] = node_->value_.GetVector2();
+        context.GetScalar<Vector2>(pin0.GetMemoryReference())[0] = node_->value_.GetVector2();
         break;
     case VAR_VECTOR3:
-        context.GetScalar<Vector3>(pin0)[0] = node_->value_.GetVector3();
+        context.GetScalar<Vector3>(pin0.GetMemoryReference())[0] = node_->value_.GetVector3();
         break;
     case VAR_VECTOR4:
-        context.GetScalar<Vector4>(pin0)[0] = node_->value_.GetVector4();
+        context.GetScalar<Vector4>(pin0.GetMemoryReference())[0] = node_->value_.GetVector4();
         break;
     default:
         assert(!"Not implemented yet");

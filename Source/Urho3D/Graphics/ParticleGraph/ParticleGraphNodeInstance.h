@@ -24,39 +24,10 @@
 
 #include "../ParticleGraphEmitter.h"
 #include "ParticleGraphNodePin.h"
+#include "ParticleGraphLayerInstance.h"
 
 namespace Urho3D
 {
-
-template <typename T> struct ScalarSpan
-{
-    ScalarSpan(T* ptr)
-        : data_(ptr)
-    {
-    }
-    inline T& operator[](unsigned index) { return *data_;}
-    T* data_;
-};
-
-template <typename T> struct SparseSpan
-{
-    SparseSpan(T* ptr, size_t size, const ea::span<unsigned>& indices)
-        : data_(ptr)
-        , size_(size)
-        , indices_(indices)
-    {
-    }
-    SparseSpan(T* begin, T* end, const ea::span<unsigned>& indices)
-        : data_(begin)
-        , size_(end-begin)
-        , indices_(indices)
-    {
-    }
-    inline T& operator[](unsigned index) { return data_[indices_[index]]; }
-    T* data_;
-    size_t size_;
-    ea::span<unsigned> indices_;
-};
 
 struct UpdateContext
 {
@@ -64,31 +35,30 @@ struct UpdateContext
     ea::span<unsigned> indices_;
     ea::span<uint8_t> attributes_;
     ea::span<uint8_t> tempBuffer_;
+    ParticleGraphLayerInstance* layer_;
 
-    template <typename ValueType> ea::span<ValueType> GetSpan(const ParticleGraphNodePin& pin);
-    template <typename ValueType> ScalarSpan<ValueType> GetScalar(const ParticleGraphNodePin& pin);
-    template <typename ValueType> SparseSpan<ValueType> GetSparse(const ParticleGraphNodePin& pin);
+    template <typename ValueType> ea::span<ValueType> GetSpan(const ParticleGraphPinRef& pin);
+    template <typename ValueType> ScalarSpan<ValueType> GetScalar(const ParticleGraphPinRef& pin);
+    template <typename ValueType> SparseSpan<ValueType> GetSparse(const ParticleGraphPinRef& pin);
 };
 
-template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphNodePin& pin)
+template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin)
 {
-    const auto subspan = pin.MakeSpan<ValueType>(tempBuffer_);
-    return ea::span<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
-                               reinterpret_cast<ValueType*>(subspan.end()));
+    assert(pin.type_ == PGCONTAINER_SPAN);
+    return layer_->GetSpan<ValueType>(pin.index_);
 }
 
-template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphNodePin& pin)
+template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphPinRef& pin)
 {
-    const ea::span<ValueType> subspan = pin.MakeSpan<ValueType>(tempBuffer_);
-    return ScalarSpan<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()));
+    assert(pin.type_ == PGCONTAINER_SCALAR);
+    return layer_->GetScalar<ValueType>(pin.index_);
 }
 
 template <typename ValueType>
-SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphNodePin& pin)
+SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphPinRef& pin)
 {
-    const auto subspan = pin.MakeSpan<ValueType>(attributes_);
-    return SparseSpan<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
-                                 reinterpret_cast<ValueType*>(subspan.end()), indices_);
+    assert(pin.type_ == PGCONTAINER_SPARSE);
+    return layer_->GetSparse<ValueType>(pin.index_, indices_);
 }
 
 class URHO3D_API ParticleGraphNodeInstance

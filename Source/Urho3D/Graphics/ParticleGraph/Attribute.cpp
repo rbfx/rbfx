@@ -51,8 +51,8 @@ template <typename T> struct CopyValues
         {
         case PGCONTAINER_SCALAR:
             {
-                auto src = context.GetScalar<T>(pin0);
-                auto dst = GetOutputSparse<T>(context, pin0);
+                auto src = context.GetScalar<T>(pin0.GetMemoryReference());
+                auto dst = context.GetSparse<T>(ParticleGraphPinRef(PGCONTAINER_SPARSE, pin0.GetAttributeIndex()));
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     dst[i] = src[i];
@@ -61,8 +61,8 @@ template <typename T> struct CopyValues
             break;
             case PGCONTAINER_SPAN:
             {
-                auto src = context.GetSpan<T>(pin0);
-                auto dst = GetOutputSparse<T>(context, pin0);
+                auto src = context.GetSpan<T>(pin0.GetMemoryReference());
+                auto dst = context.GetSparse<T>(ParticleGraphPinRef(PGCONTAINER_SPARSE, pin0.GetAttributeIndex()));
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     dst[i] = src[i];
@@ -71,8 +71,8 @@ template <typename T> struct CopyValues
             break;
             case PGCONTAINER_SPARSE:
             {
-                auto src = context.GetSparse<T>(pin0);
-                auto dst = GetOutputSparse<T>(context, pin0);
+                auto src = context.GetSparse<T>(pin0.GetMemoryReference());
+                auto dst = context.GetSparse<T>(ParticleGraphPinRef(PGCONTAINER_SPARSE, pin0.GetAttributeIndex()));
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     dst[i] = src[i];

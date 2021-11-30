@@ -43,7 +43,6 @@ namespace
         }
     }
 
-
     template <typename T> struct LogPin
     {
         void operator()(UpdateContext& context, const ParticleGraphNodePin& pin0)
@@ -53,13 +52,13 @@ namespace
             switch (pin0.GetContainerType())
             {
             case PGCONTAINER_SPAN:
-                LogSpan(LOG_INFO, numParticles, context.GetSpan<T>(pin0));
+                LogSpan(LOG_INFO, numParticles, context.GetSpan<T>(pin0.GetMemoryReference()));
                 break;
             case PGCONTAINER_SCALAR:
-                LogSpan(LOG_INFO, 1, context.GetScalar<T>(pin0));
+                LogSpan(LOG_INFO, 1, context.GetScalar<T>(pin0.GetMemoryReference()));
                 break;
             case PGCONTAINER_SPARSE:
-                LogSpan(LOG_INFO, numParticles, context.GetSparse<T>(pin0));
+                LogSpan(LOG_INFO, numParticles, context.GetSparse<T>(pin0.GetMemoryReference()));
                 break;
             default:
                 assert(!"Invalid pin container type");

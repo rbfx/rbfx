@@ -22,12 +22,43 @@
 
 #pragma once
 
+#include "ParticleGraphMemory.h"
 #include "../../Core/Variant.h"
 
 #include <EASTL/span.h>
 
 namespace Urho3D
 {
+enum ParticleGraphContainerType
+{
+    PGCONTAINER_SPAN,
+    PGCONTAINER_SPARSE,
+    PGCONTAINER_SCALAR,
+    PGCONTAINER_AUTO
+};
+
+
+template <typename T> struct ScalarSpan
+{
+    ScalarSpan(const ea::span<T>& data)
+        : data_(data)
+    {
+    }
+    inline T& operator[](unsigned index) { return data_.front(); }
+    ea::span<T> data_;
+};
+
+template <typename T> struct SparseSpan
+{
+    SparseSpan(const ea::span<T>& data, const ea::span<unsigned>& indices)
+        : data_(data)
+        , indices_(indices)
+    {
+    }
+    inline T& operator[](unsigned index) { return data_[indices_[index]]; }
+    ea::span<T> data_;
+    ea::span<unsigned> indices_;
+};
 
 /// Memory layout definition.
 struct ParticleGraphSpan
@@ -101,9 +132,42 @@ private:
 /// Memory layout for intermediate values.
 class ParticleGraphBufferLayout
 {
+    /// Attribute layout.
+    struct PinSpan
+    {
+        /// Container type of attribute.
+        ParticleGraphContainerType container_;
+        /// Type of attribute.
+        VariantType type_;
+        /// Location at emitter attribute buffer.
+        ParticleGraphSpan span_;
+    };
+
 public:
-    ParticleGraphBufferLayout();
+    /// Reset layout.
+    void Reset(unsigned capacity);
+
+    /// Allocate span. Returns allocated span index.
+    unsigned Allocate(ParticleGraphContainerType container, VariantType type);
+
+    /// Get amount of required memory to host intermediate values.
+    unsigned GetRequiredMemory() const { return position_; }
+
+    /// Get span by index.
+    const ParticleGraphSpan& operator[](unsigned index) const
+    {
+        return spans_[index].span_;
+    }
+
 private:
+    /// Allocated spans.
+    ea::vector<PinSpan> spans_;
+
+    /// Size of required attribute buffer.
+    unsigned position_;
+
+    /// Maximal number of particles.
+    unsigned capacity_;
 };
 
 } // namespace Urho3D

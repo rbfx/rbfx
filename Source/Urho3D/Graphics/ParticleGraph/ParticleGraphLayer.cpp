@@ -55,7 +55,7 @@ struct ParticleGraphAttributeBuilder
 {
     ParticleGraphAttributeBuilder(ParticleGraphAttributeLayout& attributes,
                                   ParticleGraphLayer::AttributeBufferLayout* layout, unsigned capacity,
-                                  unsigned& tempSize)
+                                  ParticleGraphBufferLayout& tempSize)
         : attributes_(attributes)
         , layout_(layout)
         , capacity_(capacity)
@@ -89,20 +89,19 @@ struct ParticleGraphAttributeBuilder
                 // Allocate attribute buffer if this is a new attribute
                 if (pin.containerType_ == PGCONTAINER_SPARSE)
                 {
-                    const auto nameHash = StringHash(pin.name_);
-                    unsigned attrIndex = attributes_.GetOrAddAttribute(pin.name_, pin.requestedValueType_);
-                    pin.outputSpan_ = attributes_.GetSpan(attrIndex);
+                    pin.attributeIndex_ = attributes_.GetOrAddAttribute(pin.name_, pin.requestedValueType_);
+
+                    // For output sparse pin the memory is the same as the attribute memory
+                    if (!pin.GetIsInput())
+                    {
+                        pin.memory_ = ParticleGraphPinRef(PGCONTAINER_SPARSE, pin.attributeIndex_);
+                    }
                 }
                 // Allocate temp buffer for an output pin
                 else if (!pin.GetIsInput())
                 {
                     // Allocate temp buffer
-                    const auto elementSize = GetVariantSize(pin.requestedValueType_);
-                    pin.outputSpan_.offset_ = tempSize_;
-                    pin.outputSpan_.size_ =
-                        elementSize * ((pin.containerType_ == PGCONTAINER_SCALAR) ? 1 : capacity_);
-                    pin.sourceSpan_ = pin.outputSpan_;
-                    tempSize_ += pin.outputSpan_.size_;
+                    pin.memory_ = ParticleGraphPinRef(pin.containerType_, tempSize_.Allocate(pin.containerType_, pin.requestedValueType_));
                 }
                 // Connect input pin
                 if (pin.GetIsInput())
@@ -124,8 +123,8 @@ struct ParticleGraphAttributeBuilder
                         URHO3D_LOGERROR("Source pin isn't output pin");
                         return false;
                     }
-                    pin.sourceSpan_ = sourcePin.outputSpan_;
-                    pin.sourceContainerType_ = sourcePin.GetContainerType();
+                    pin.memory_ = sourcePin.memory_;
+
                     if (pin.requestedValueType_ == VAR_NONE)
                     {
                         pin.valueType_ = sourcePin.valueType_;
@@ -142,8 +141,8 @@ struct ParticleGraphAttributeBuilder
     }
     ParticleGraphAttributeLayout& attributes_;
     ParticleGraphLayer::AttributeBufferLayout* layout_;
+    ParticleGraphBufferLayout& tempSize_;
     unsigned capacity_;
-    unsigned& tempSize_;
 };
 
 /// Construct ParticleGraphLayer.
@@ -153,7 +152,6 @@ ParticleGraphLayer::ParticleGraphLayer(Context* context)
     , emit_(context)
     , update_(context)
     , isPrepared_(false)
-    , tempBufferSize_(0)
 {
     Invalidate();
 }
@@ -171,7 +169,8 @@ void ParticleGraphLayer::Invalidate()
 {
     isPrepared_ = false;
     memset(&attributeBufferLayout_, 0, sizeof(AttributeBufferLayout));
-    tempBufferSize_ = 0;
+    tempMemory_.Reset(0);
+    attributes_.Reset(0, 0);
 }
 
 void ParticleGraphLayer::AttributeBufferLayout::Apply(ParticleGraphLayer& layer)
@@ -204,14 +203,15 @@ bool ParticleGraphLayer::Prepare()
     attributeBufferLayout_.Apply(*this);
 
     attributes_.Reset(attributeBufferLayout_.attributeBufferSize_, capacity_);
+    tempMemory_.Reset(capacity_);
     // Allocate memory for each pin.
     {
-        ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempBufferSize_);
+        ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempMemory_);
         if (!builder.Build(emit_))
             return false;
     }
     {
-        ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempBufferSize_);
+        ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempMemory_);
         if (!builder.Build(update_))
             return false;
     }
@@ -225,7 +225,7 @@ const ParticleGraphLayer::AttributeBufferLayout& ParticleGraphLayer::GetAttribut
     return attributeBufferLayout_;
 }
 
-unsigned ParticleGraphLayer::GetTempBufferSize() const { return tempBufferSize_; }
+unsigned ParticleGraphLayer::GetTempBufferSize() const { return tempMemory_.GetRequiredMemory(); }
 
 /// Serialize from/to archive. Return true if successful.
 bool ParticleGraphLayer::Serialize(Archive& archive)

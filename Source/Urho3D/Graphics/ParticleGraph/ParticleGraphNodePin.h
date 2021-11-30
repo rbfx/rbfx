@@ -29,14 +29,7 @@
 
 namespace Urho3D
 {
-
-enum ParticleGraphContainerType
-{
-    PGCONTAINER_SPAN,
-    PGCONTAINER_SPARSE,
-    PGCONTAINER_SCALAR,
-    PGCONTAINER_AUTO
-};
+class ParticleGraphLayerInstance;
 
 enum ParticleGraphPinFlagValues
 {
@@ -51,6 +44,24 @@ enum ParticleGraphPinFlagValues
 };
 URHO3D_FLAGSET(ParticleGraphPinFlagValues, ParticleGraphPinFlags);
 
+/// Reference to a pin buffer in a particle graph.
+struct ParticleGraphPinRef
+{
+    ParticleGraphPinRef()
+        : type_(PGCONTAINER_AUTO)
+        , index_(0)
+    {
+    }
+    ParticleGraphPinRef(ParticleGraphContainerType type, unsigned index)
+        : type_(type)
+        , index_(index)
+    {
+    }
+    ParticleGraphContainerType type_;
+    unsigned index_;
+};
+
+/// Pin of a node in particle graph.
 class ParticleGraphNodePin
 {
 public:
@@ -85,20 +96,13 @@ public:
     /// @property
     VariantType GetValueType() const { return valueType_; }
 
-    template <typename T> ea::span<T> MakeSpan(ea::span<uint8_t> buffer) const
-    {
-        return (GetIsInput() ? sourceSpan_ : outputSpan_).MakeSpan<T>(buffer);
-    }
+    /// Get attribute index for sparse span.
+    unsigned GetAttributeIndex() const { return attributeIndex_; }
 
-    /// Make span based on output pin settings.
-    /// Only valid for SetAttribute node.
-    /// TODO: Refactor this
-    template <typename T> ea::span<T> MakeOutputSpan(ea::span<uint8_t> buffer) const
-    {
-        return outputSpan_.MakeSpan<T>(buffer);
-    }
+    /// Get reference to memory descriptor for the pin.
+    ParticleGraphPinRef GetMemoryReference() const { return memory_; }
 
-    ParticleGraphContainerType GetContainerType() const { return GetIsInput() ? sourceContainerType_ : containerType_; }
+    ParticleGraphContainerType GetContainerType() const { return memory_.type_; }
 
     /// Serialize from/to archive. Return true if successful.
     virtual bool Serialize(Archive& archive);
@@ -117,15 +121,6 @@ private:
     /// Container type: span, sparse or scalar.
     ParticleGraphContainerType containerType_{PGCONTAINER_AUTO};
 
-    /// Source pin container type: span, sparse or scalar.
-    ParticleGraphContainerType sourceContainerType_{PGCONTAINER_AUTO};
-
-    /// Source node pin memory layout.
-    ParticleGraphSpan sourceSpan_;
-
-    /// Memory layout if the pin belongs to attribute or if it is an output pin.
-    ParticleGraphSpan outputSpan_;
-
     /// Value type at runtime.
     VariantType valueType_{VAR_NONE};
 
@@ -139,6 +134,12 @@ private:
 
     /// Value type (float, vector3, etc).
     VariantType requestedValueType_{VAR_NONE};
+
+    /// Index of attribute. Only valid for sparse pins.
+    unsigned attributeIndex_;
+
+    /// Reference to a memory block that corresponds to the pin value.
+    ParticleGraphPinRef memory_;
 
     friend class ParticleGraphAttributeBuilder;
     friend class ParticleGraphNode;
