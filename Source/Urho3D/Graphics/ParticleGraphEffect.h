@@ -114,7 +114,7 @@ public:
     }
 
     /// Save to an XML element. Return true if successful.
-    virtual bool Serialize(Archive& archive) const;
+    virtual bool Serialize(Archive& archive);
 
 protected:
     /// Set pin name and hash.
@@ -187,7 +187,7 @@ public:
     virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) = 0;
 
     /// Save to an XML element. Return true if successful.
-    virtual bool Serialize(Archive& archive) const;
+    virtual bool Serialize(Archive& archive);
 
 protected:
     /// Evaluate runtime output pin type.

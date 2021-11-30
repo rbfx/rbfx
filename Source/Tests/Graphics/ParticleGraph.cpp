@@ -108,6 +108,7 @@ TEST_CASE("Test simple particle graph")
     effect->Save(buf);
     ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
 
+
     const auto scene = MakeShared<Scene>(context);
     const auto node = scene->CreateChild();
     const auto emitter = node->CreateComponent<ParticleGraphEmitter>();

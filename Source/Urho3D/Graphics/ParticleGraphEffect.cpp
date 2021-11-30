@@ -234,8 +234,50 @@ ParticleGraphNodePin::ParticleGraphNodePin(
     SetName(name);
 }
 
-bool ParticleGraphNodePin::Serialize(Archive& archive) const
+bool ParticleGraphNodePin::Serialize(Archive& archive)
 {
+    if (archive.IsInput())
+    {
+        ea::string name;
+        if (!SerializeValue(archive, "name", name))
+        {
+            return false;
+        }
+        if (name != name_)
+        {
+            URHO3D_LOGERROR("Pin name mismatch");
+            return false;
+        }
+        if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), requestedValueType_))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (!SerializeValue(archive, "name", name_))
+        {
+            return false;
+        }
+        if (requestedValueType_ != VAR_NONE)
+        {
+            if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), requestedValueType_))
+            {
+                return false;
+            }
+        }
+    }
+    if (isInput_)
+    {
+        if (!SerializeValue(archive, "sourceNode", sourceNode_))
+        {
+            return false;
+        }
+        if (!SerializeValue(archive, "sourcePin", sourcePin_))
+        {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -438,14 +480,19 @@ namespace
 {
     struct PinArrayAdapter
     {
-        
+        typedef ParticleGraphNodePin value_type;
+        PinArrayAdapter(ParticleGraphNode& node): node_(node){}
+        size_t size() const { return node_.NumPins(); }
+        ParticleGraphNodePin& operator[](size_t index) { return node_.GetPin(index); }
+
+        ParticleGraphNode& node_;
     };
 }
 
-bool ParticleGraphNode::Serialize(Archive& archive) const
+bool ParticleGraphNode::Serialize(Archive& archive)
 {
-    ea::array<ParticleGraphNodePin,2> pins {};
-    return SerializeArrayAsObjects<>(archive, "pins", "pin", pins);
+    PinArrayAdapter adapter(*this);
+    return SerializeArrayAsObjects<>(archive, "pins", "pin", adapter);
 
     //dest.SetAttribute("type", GetTypeName());
     //for (unsigned i = 0; i < NumPins(); ++i)
