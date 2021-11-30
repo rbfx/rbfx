@@ -104,9 +104,9 @@ TEST_CASE("Test simple particle graph")
         auto logIndex = updateGraph.Add(log);
     }
 
-    //VectorBuffer buf;
-    //effect->Save(buf);
-    //ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+    VectorBuffer buf;
+    effect->Save(buf);
+    ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
 
     const auto scene = MakeShared<Scene>(context);
     const auto node = scene->CreateChild();
@@ -114,4 +114,7 @@ TEST_CASE("Test simple particle graph")
     emitter->SetEffect(effect);
     CHECK(emitter->EmitNewParticle(0));
     emitter->Tick(0.1f);
+
+    auto l = emitter->GetLayer(0);
+    //l->
 }

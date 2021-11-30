@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../IO/Log.h"
 #include "../Core/Object.h"
 #include "../Core/StringUtils.h"
 #include "../Core/Variant.h"
@@ -415,6 +416,41 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
             for (ValueType& value : vector)
             {
                 if (!SerializeValue(archive, element, value))
+                    return false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/// Serialize array with standard interface (compatible with ea::span, ea::array, etc). Content is serialized as separate objects.
+template <class T>
+inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array)
+{
+    using ValueType = typename T::value_type;
+    if (auto block = archive.OpenArrayBlock(name, array.size()))
+    {
+        if (archive.IsInput())
+        {
+            if (array.size() != block.GetSizeHint())
+            {
+                URHO3D_LOGERROR("Expected array size doesn't match block size");
+                return false;
+            }
+            for (unsigned i = 0; i < array.size(); ++i)
+            {
+                if (!SerializeValue(archive, element, array[i]))
+                    return false;
+            }
+            return true;
+        }
+        else
+        {
+            for (unsigned i = 0; i < array.size(); ++i)
+            {
+                if (!SerializeValue(archive, element, array[i]))
                     return false;
             }
             return true;

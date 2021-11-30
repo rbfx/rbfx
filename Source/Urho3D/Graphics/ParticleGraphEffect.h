@@ -24,6 +24,7 @@
 
 #include "../Resource/Resource.h"
 #include "EASTL/span.h"
+#include "Urho3D/IO/Archive.h"
 
 namespace Urho3D
 {
@@ -112,6 +113,9 @@ public:
         return isInput_?sourceContainerType_:containerType_;
     }
 
+    /// Save to an XML element. Return true if successful.
+    virtual bool Serialize(Archive& archive) const;
+
 protected:
     /// Set pin name and hash.
     void SetName(const ea::string& name);
@@ -153,6 +157,9 @@ private:
     friend class ParticleGraphAttributeBuilder;
     friend class ParticleGraphNode;
 };
+
+/// Serialize pin.
+bool SerializeValue(Archive& archive, const char* name, ParticleGraphNodePin& value);
 
 class ParticleGraphNodeInstance;
 

@@ -234,6 +234,11 @@ ParticleGraphNodePin::ParticleGraphNodePin(
     SetName(name);
 }
 
+bool ParticleGraphNodePin::Serialize(Archive& archive) const
+{
+    return true;
+}
+
 void ParticleGraphNodePin::SetName(const ea::string& name)
 {
     name_ = name;
@@ -248,6 +253,15 @@ void ParticleGraphNodePin::SetValueType(VariantType valueType)
 void ParticleGraphNodePin::SetIsInput(bool isInput)
 {
     isInput_ = isInput;
+}
+
+bool SerializeValue(Archive& archive, const char* name, ParticleGraphNodePin& value)
+{
+    if (auto block = archive.OpenSequentialBlock(name))
+    {
+        return value.Serialize(archive);
+    }
+    return false;
 }
 
 /// Construct ParticleGraphLayer.
@@ -287,48 +301,11 @@ SharedPtr<ParticleGraphNode> ParticleGraph::GetNode(unsigned index) const
     }
     return nodes_[index];
 }
+
 /// Serialize from/to archive. Return true if successful.
 bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
 {
-    if (ArchiveBlock block = archive.OpenArrayBlock(blockName))
-    {
-        if (archive.IsInput())
-        {
-            nodes_.resize(block.GetSizeHint());
-            for (unsigned i = 0; i < nodes_.size(); ++i)
-            {
-                if (ArchiveBlock node = archive.OpenArrayBlock("node"))
-                {
-                    ea::string type = nodes_[i]->GetTypeName();
-                    SerializeValue(archive, "type", type);
-                    nodes_[i]->Serialize(archive);
-                }
-            }
-        }
-        else
-        {
-            for (unsigned i = 0; i < nodes_.size(); ++i)
-            {
-                if (ArchiveBlock node = archive.OpenUnorderedBlock("node"))
-                {
-                    ea::string type;
-                    SerializeValue(archive, "type", type);
-                    nodes_[i] = GetContext()->CreateParticleGraphNode(StringHash(type));
-                    if (!nodes_[i])
-                    {
-                        return false;
-                    }
-                    nodes_[i]->Serialize(archive);
-                }
-            }
-        }
-    }
-    else
-    {
-        return false;
-    }
-
-    return true;
+    return SerializeVectorAsObjects(archive, blockName, "node", nodes_);
 }
 
 /// Construct ParticleGraphLayer.
@@ -423,22 +400,14 @@ unsigned ParticleGraphLayer::GetTempBufferSize() const {
 /// Serialize from/to archive. Return true if successful.
 bool ParticleGraphLayer::Serialize(Archive& archive)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock("layer"))
-    {
-        if (!emit_.Serialize(archive, "emit"))
-        {
-            return false;
-        }
-        if (!update_.Serialize(archive, "update"))
-        {
-            return false;
-        }
-    }
-    else
+    if (!emit_.Serialize(archive, "emit"))
     {
         return false;
     }
-
+    if (!update_.Serialize(archive, "update"))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -465,8 +434,19 @@ void ParticleGraphNode::SetPinValueType(unsigned pinIndex, VariantType type)
 
 ParticleGraphNode::~ParticleGraphNode() = default;
 
+namespace 
+{
+    struct PinArrayAdapter
+    {
+        
+    };
+}
+
 bool ParticleGraphNode::Serialize(Archive& archive) const
 {
+    ea::array<ParticleGraphNodePin,2> pins {};
+    return SerializeArrayAsObjects<>(archive, "pins", "pin", pins);
+
     //dest.SetAttribute("type", GetTypeName());
     //for (unsigned i = 0; i < NumPins(); ++i)
     //{
@@ -604,31 +584,7 @@ bool ParticleGraphEffect::Save(Serializer& dest) const
 
 bool ParticleGraphEffect::Serialize(Archive& archive)
 {
-    if (ArchiveBlock block = archive.OpenArrayBlock("particleGraphEffect"))
-    {
-        if (archive.IsInput())
-        {
-            layers_.resize(block.GetSizeHint());
-            for (unsigned i = 0; i < layers_.size(); ++i)
-            {
-                layers_[i] = MakeShared<ParticleGraphLayer>(context_);
-            }
-        }
-
-        for (unsigned i = 0; i < layers_.size(); ++i)
-        {
-            if (!SerializeValue(archive, "layer", layers_[i]))
-            {
-                return false;
-            }
-        }
-    }
-    else
-    {
-        return false;
-    }
-
-    return true;
+    return SerializeVectorAsObjects(archive, "particleGraphEffect", "layer", layers_);
 }
 
 

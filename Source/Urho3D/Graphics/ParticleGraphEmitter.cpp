@@ -261,6 +261,14 @@ void ParticleGraphEmitter::Tick(float timeStep)
         layers_[i].Update(timeStep);
     }
 }
+
+const ParticleGraphLayerInstance* ParticleGraphEmitter::GetLayer(unsigned layer) const
+{
+    if (layer >= layers_.size())
+        return nullptr;
+    return &layers_[layer];
+}
+
 bool ParticleGraphEmitter::CheckActiveParticles() const
 {
     for (unsigned i = 0; i < layers_.size(); ++i)

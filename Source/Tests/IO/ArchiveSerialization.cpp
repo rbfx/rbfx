@@ -132,6 +132,7 @@ struct ContainerTypesAggregate
 
     SharedPtr<Object> emptySerializable_;
     SharedPtr<SerializableObject> serializableObject_;
+    ea::vector<SharedPtr<SerializableObject>> serializableObjectVector_{};
 
     auto Tie() const
     {
@@ -156,7 +157,16 @@ struct ContainerTypesAggregate
             if (serializableObject_->member_ != rhs.serializableObject_->member_)
                 return false;
         }
+        if (serializableObjectVector_.size() != rhs.serializableObjectVector_.size())
+            return false;
 
+        for (size_t i = 0; i < serializableObjectVector_.size(); ++i)
+        {
+            if (serializableObjectVector_[i]->GetType() != rhs.serializableObjectVector_[i]->GetType())
+                return false;
+            if (serializableObjectVector_[i]->member_ != rhs.serializableObjectVector_[i]->member_)
+                return false;
+        }
         return true;
     }
 };
@@ -219,6 +229,7 @@ bool SerializeValue(Archive& archive, const char* name, ContainerTypesAggregate&
         SerializeValue(archive, "variantBuffer_", value.variantBuffer_);
         SerializeValue(archive, "emptySerializable_", value.emptySerializable_);
         SerializeValue(archive, "serializableObject_", value.serializableObject_);
+        SerializeVectorAsObjects(archive, "serializableObjectVector_", "elem", value.serializableObjectVector_);
         return true;
     }
     return false;
@@ -285,6 +296,13 @@ SerializationTestStruct CreateTestStruct(Context* context)
 
     result.container_.serializableObject_ = MakeShared<SerializableObject>(context);
     result.container_.serializableObject_->member_ = 12;
+    result.container_.serializableObjectVector_.resize(3);
+    for (SharedPtr<SerializableObject>& obj : result.container_.serializableObjectVector_)
+    {
+        obj = MakeShared<SerializableObject>(context);
+        result.container_.serializableObject_->member_ = 42;
+    }
+
 
     result.variant_ = MakeCustomValue(result.container_);
 

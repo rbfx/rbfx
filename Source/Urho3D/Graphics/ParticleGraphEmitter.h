@@ -25,6 +25,7 @@
 #include "Drawable.h"
 #include "../Scene/Component.h"
 #include "ParticleGraphEffect.h"
+#include "ParticleGraphNodeInstance.h"
 #include "EASTL/span.h"
 
 namespace Urho3D
@@ -57,6 +58,9 @@ public:
     /// Run update step.
     void Update(float timeStep);
 
+    /// Get attribute values.
+    //template <typename T> SparseSpan<T> GetAttribute(StringHash attributeName);
+    
 protected:
     /// Initialize update context.
     UpdateContext MakeUpdateContext(float timeStep);
@@ -123,7 +127,11 @@ public:
     /// Create a new particle. Return true if there was room.
     bool EmitNewParticle(unsigned layer);
 
+    /// Manually update emitter.
     void Tick(float timeStep);
+
+    /// Get layer by index.
+    const ParticleGraphLayerInstance* GetLayer(unsigned layer) const;
 
 protected:
     /// Handle scene being assigned.
