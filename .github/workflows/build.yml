@@ -55,6 +55,7 @@ jobs:
           discord-username: GitHub
 
   Windows:
+    if: github.event.pull_request.draft == false
     runs-on: windows-latest
     needs: [CheckSkipCI]
 
@@ -146,6 +147,7 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   UWP:
+    if: github.event.pull_request.draft == false
     runs-on: windows-latest
     needs: [CheckSkipCI]
 
@@ -230,6 +232,7 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   Linux:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
     needs: [CheckSkipCI]
 
@@ -318,6 +321,7 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   MacOS:
+    if: github.event.pull_request.draft == false
     runs-on: macos-latest
     needs: [CheckSkipCI]
 
@@ -405,6 +409,7 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   Android:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
     needs: [CheckSkipCI]
 
@@ -473,6 +478,7 @@ jobs:
           path: '**/*.apk'
 
   iOS:
+    if: github.event.pull_request.draft == false
     runs-on: macos-latest
     needs: [CheckSkipCI]
 
@@ -548,6 +554,7 @@ jobs:
           path: '**/*.app'
 
   Web:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
     needs: [CheckSkipCI]
 
