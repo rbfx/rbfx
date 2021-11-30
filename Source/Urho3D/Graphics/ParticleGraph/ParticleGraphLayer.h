@@ -77,6 +77,10 @@ public:
     /// @property
     const AttributeBufferLayout& GetAttributeBufferLayout() const;
 
+    /// Return attributes memory layout.
+    /// @property
+    const ParticleGraphAttributeLayout& GetAttributes() const { return attributes_; }
+
     /// Return size of temp buffer in bytes.
     /// @property
     unsigned GetTempBufferSize() const;
@@ -95,6 +99,8 @@ private:
     AttributeBufferLayout attributeBufferLayout_;
     /// Required temp buffer size.
     unsigned tempBufferSize_;
+    /// Attributes memory layout.
+    ParticleGraphAttributeLayout attributes_;
 };
 
 } // namespace Urho3D

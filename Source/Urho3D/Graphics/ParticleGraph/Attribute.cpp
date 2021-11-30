@@ -49,7 +49,7 @@ template <typename T> struct CopyValues
         const unsigned numParticles = context.indices_.size();
         switch (pin0.GetContainerType())
         {
-        case ParticleGraphContainerType::Scalar:
+        case PGCONTAINER_SCALAR:
             {
                 auto src = context.GetScalar<T>(pin0);
                 auto dst = GetOutputSparse<T>(context, pin0);
@@ -59,7 +59,7 @@ template <typename T> struct CopyValues
                 }
             }
             break;
-            case ParticleGraphContainerType::Span:
+            case PGCONTAINER_SPAN:
             {
                 auto src = context.GetSpan<T>(pin0);
                 auto dst = GetOutputSparse<T>(context, pin0);
@@ -69,7 +69,7 @@ template <typename T> struct CopyValues
                 }
             }
             break;
-            case ParticleGraphContainerType::Sparse:
+            case PGCONTAINER_SPARSE:
             {
                 auto src = context.GetSparse<T>(pin0);
                 auto dst = GetOutputSparse<T>(context, pin0);
@@ -92,13 +92,13 @@ Attribute::Attribute(Context* context, const ParticleGraphNodePin& pin)
 
 GetAttribute::GetAttribute(Context* context)
     : Attribute(context, ParticleGraphNodePin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
-                                              ParticleGraphContainerType::Sparse))
+                                              PGCONTAINER_SPARSE))
 {
 }
 
 SetAttribute::SetAttribute(Context* context)
     : Attribute(context, ParticleGraphNodePin(PGPIN_INPUT | PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
-                                              ParticleGraphContainerType::Sparse))
+                                              PGCONTAINER_SPARSE))
 {
 }
 

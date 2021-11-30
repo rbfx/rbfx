@@ -1192,4 +1192,63 @@ unsigned Variant::ToHash() const
     }
 }
 
+unsigned GetVariantSize(VariantType variant)
+{
+    switch (variant)
+    {
+    case VAR_NONE:
+        return 0;
+    case VAR_INT:
+        return sizeof(int);
+    case VAR_INT64:
+        return sizeof(long long);
+    case VAR_BOOL:
+        return sizeof(bool);
+    case VAR_FLOAT:
+        return sizeof(float);
+    case VAR_DOUBLE:
+        return sizeof(double);
+    case VAR_VECTOR2:
+        return sizeof(Vector2);
+    case VAR_VECTOR3:
+        return sizeof(Vector3);
+    case VAR_VECTOR4:
+        return sizeof(Vector4);
+    case VAR_QUATERNION:
+        return sizeof(Quaternion);
+    case VAR_COLOR:
+        return sizeof(Color);
+    case VAR_STRING:
+        return sizeof(ea::string);
+    case VAR_BUFFER:
+        return sizeof(VariantBuffer);
+    case VAR_RESOURCEREF:
+        return sizeof(ResourceRef);
+    case VAR_RESOURCEREFLIST:
+        return sizeof(ResourceRefList);
+    case VAR_VARIANTVECTOR:
+        return sizeof(VariantVector);
+    case VAR_STRINGVECTOR:
+        return sizeof(StringVector);
+    case VAR_VARIANTMAP:
+        return sizeof(VariantMap);
+    case VAR_RECT:
+        return sizeof(Rect);
+    case VAR_INTRECT:
+        return sizeof(IntRect);
+    case VAR_INTVECTOR2:
+        return sizeof(IntVector2);
+    case VAR_INTVECTOR3:
+        return sizeof(IntVector3);
+    case VAR_MATRIX3:
+        return sizeof(Matrix3);
+    case VAR_MATRIX3X4:
+        return sizeof(Matrix3x4);
+    case VAR_MATRIX4:
+        return sizeof(Matrix4);
+    }
+    assert(!"Unsupported value type");
+    return 0;
+}
+
 }

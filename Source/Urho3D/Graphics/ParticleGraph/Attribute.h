@@ -23,8 +23,7 @@
 #pragma once
 
 #include "ParticleGraphNode.h"
-
-#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {

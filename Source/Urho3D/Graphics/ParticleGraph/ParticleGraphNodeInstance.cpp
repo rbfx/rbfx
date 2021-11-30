@@ -20,10 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/ParticleGraphNodeInstance.h"
+#include "../../Precompiled.h"
+
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {

@@ -26,129 +26,15 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Graphics/ParticleGraphEmitter.h"
-#include "../Graphics/ParticleGraphNodeInstance.h"
 
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 #include "ParticleGraph/ParticleGraphLayer.h"
-#include "ParticleGraph/ParticleGraphNode.h"
+#include "ParticleGraph/ParticleGraphLayerInstance.h"
 
 namespace Urho3D
 {
 
-ParticleGraphLayerInstance::ParticleGraphLayerInstance()
-    : activeParticles_(0)
-{
-}
-
-ParticleGraphLayerInstance::~ParticleGraphLayerInstance()
-{
-    for (unsigned i = 0; i < emitNodeInstances_.size(); ++i)
-    {
-        emitNodeInstances_[i]->~ParticleGraphNodeInstance();
-    }
-    for (unsigned i = 0; i < updateNodeInstances_.size(); ++i)
-    {
-        updateNodeInstances_[i]->~ParticleGraphNodeInstance();
-    }
-}
-
-
-void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& layer)
-{
-    if (!layer)
-        return;
-    if (!layer->Prepare())
-        return;
-    layer_ = layer;
-
-    auto layout = layer_->GetAttributeBufferLayout();
-    if (layout.attributeBufferSize_ > 0)
-        attributes_.resize(layout.attributeBufferSize_);
-    if (layer_->GetTempBufferSize() > 0)
-        temp_.resize(layer_->GetTempBufferSize());
-
-    auto nodeInstances = layout.nodeInstances_.MakeSpan<uint8_t>(attributes_);
-    // Initialize indices
-    emitNodeInstances_ = layout.emitNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
-    auto& emit = layer_->GetEmitGraph();
-    unsigned instanceOffset = 0;
-    for (unsigned i=0; i<emit.GetNumNodes(); ++i)
-    {
-        const auto node = emit.GetNode(i);
-        const auto size = node->EvalueInstanceSize();
-        assert(instanceOffset + size <= nodeInstances.size());
-        uint8_t* ptr = nodeInstances.begin() + instanceOffset;
-        emitNodeInstances_[i] = node->CreateInstanceAt(ptr);
-        assert(emitNodeInstances_[i] == (ParticleGraphNodeInstance*)ptr);
-        instanceOffset += size;
-    }
-    updateNodeInstances_ = layout.updateNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
-    auto& update = layer_->GetUpdateGraph();
-    for (unsigned i = 0; i < update.GetNumNodes(); ++i)
-    {
-        const auto node = update.GetNode(i);
-        const auto size = node->EvalueInstanceSize();
-        assert(instanceOffset + size <= nodeInstances.size());
-        uint8_t* ptr = nodeInstances.begin() + instanceOffset;
-        updateNodeInstances_[i] = node->CreateInstanceAt(ptr);
-        assert(updateNodeInstances_[i] == (ParticleGraphNodeInstance*)ptr);
-        instanceOffset += size;
-    }
-    // Initialize indices
-    indices_ = layout.indices_.MakeSpan<unsigned>(attributes_);
-    for (unsigned i = 0; i < indices_.size(); ++i)
-    {
-        indices_[i] = i;
-    }
-}
-
-bool ParticleGraphLayerInstance::CheckActiveParticles() const
-{
-    return activeParticles_ != 0;
-}
-
-bool ParticleGraphLayerInstance::EmitNewParticle(unsigned numParticles)
-{
-    if (activeParticles_ == indices_.size())
-        return false;
-    if (!numParticles)
-        return true;
-
-    const auto startIndex = activeParticles_;
-    ++activeParticles_;
-
-    auto autoContext = MakeUpdateContext(0.0f);
-    autoContext.indices_ = autoContext.indices_.subspan(startIndex, numParticles);
-    RunGraph(emitNodeInstances_, autoContext);
-
-    return true;
-}
-
-void ParticleGraphLayerInstance::Update(float timeStep)
-{
-    auto autoContext = MakeUpdateContext(timeStep);
-    RunGraph(updateNodeInstances_, autoContext);
-}
-
-UpdateContext ParticleGraphLayerInstance::MakeUpdateContext(float timeStep)
-{
-    UpdateContext context;
-    if (activeParticles_ > 0)
-        context.indices_ = indices_.subspan(0, activeParticles_);
-    context.attributes_ = attributes_;
-    context.tempBuffer_ = temp_;
-    context.timeStep_ = timeStep;
-    return context;
-}
-
-void ParticleGraphLayerInstance::RunGraph(ea::span<ParticleGraphNodeInstance*>& nodes, UpdateContext& updateContext)
-{
-    for (ParticleGraphNodeInstance* node: nodes)
-    {
-        node->Update(updateContext);
-    }
-}
 
 ParticleGraphEmitter::ParticleGraphEmitter(Context* context)
     : Component(context)
@@ -265,6 +151,13 @@ void ParticleGraphEmitter::Tick(float timeStep)
 }
 
 const ParticleGraphLayerInstance* ParticleGraphEmitter::GetLayer(unsigned layer) const
+{
+    if (layer >= layers_.size())
+        return nullptr;
+    return &layers_[layer];
+}
+
+ParticleGraphLayerInstance* ParticleGraphEmitter::GetLayer(unsigned layer)
 {
     if (layer >= layers_.size())
         return nullptr;

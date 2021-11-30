@@ -24,9 +24,7 @@
 
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodePin.h"
-
-#include <Urho3D/Graphics/ParticleGraphEffect.h>
-#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {

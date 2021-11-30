@@ -53,7 +53,7 @@ template <typename T> ParticleGraphSpan Append(ParticleGraphLayer::AttributeBuff
 
 struct ParticleGraphAttributeBuilder
 {
-    ParticleGraphAttributeBuilder(ea::map<StringHash, ParticleGraphSpan>& attributes,
+    ParticleGraphAttributeBuilder(ParticleGraphAttributeLayout& attributes,
                                   ParticleGraphLayer::AttributeBufferLayout* layout, unsigned capacity,
                                   unsigned& tempSize)
         : attributes_(attributes)
@@ -61,63 +61,6 @@ struct ParticleGraphAttributeBuilder
         , capacity_(capacity)
         , tempSize_(tempSize)
     {
-    }
-
-    unsigned GetSize(VariantType variant)
-    {
-        switch (variant)
-        {
-        case VAR_INT:
-            return sizeof(int);
-        case VAR_INT64:
-            return sizeof(long long);
-        case VAR_BOOL:
-            return sizeof(bool);
-        case VAR_FLOAT:
-            return sizeof(float);
-        case VAR_DOUBLE:
-            return sizeof(double);
-        case VAR_VECTOR2:
-            return sizeof(Vector2);
-        case VAR_VECTOR3:
-            return sizeof(Vector3);
-        case VAR_VECTOR4:
-            return sizeof(Vector4);
-        case VAR_QUATERNION:
-            return sizeof(Quaternion);
-        case VAR_COLOR:
-            return sizeof(Color);
-        case VAR_STRING:
-            return sizeof(ea::string);
-        case VAR_BUFFER:
-            return sizeof(VariantBuffer);
-        case VAR_RESOURCEREF:
-            return sizeof(ResourceRef);
-        case VAR_RESOURCEREFLIST:
-            return sizeof(ResourceRefList);
-        case VAR_VARIANTVECTOR:
-            return sizeof(VariantVector);
-        case VAR_STRINGVECTOR:
-            return sizeof(StringVector);
-        case VAR_VARIANTMAP:
-            return sizeof(VariantMap);
-        case VAR_RECT:
-            return sizeof(Rect);
-        case VAR_INTRECT:
-            return sizeof(IntRect);
-        case VAR_INTVECTOR2:
-            return sizeof(IntVector2);
-        case VAR_INTVECTOR3:
-            return sizeof(IntVector3);
-        case VAR_MATRIX3:
-            return sizeof(Matrix3);
-        case VAR_MATRIX3X4:
-            return sizeof(Matrix3x4);
-        case VAR_MATRIX4:
-            return sizeof(Matrix4);
-        }
-        assert(!"Unsupported value type");
-        return 0;
     }
 
     bool Build(ParticleGraph& graph)
@@ -144,24 +87,20 @@ struct ParticleGraphAttributeBuilder
                     }
                 }
                 // Allocate attribute buffer if this is a new attribute
-                if (pin.containerType_ == ParticleGraphContainerType::Sparse)
+                if (pin.containerType_ == PGCONTAINER_SPARSE)
                 {
                     const auto nameHash = StringHash(pin.name_);
-                    auto& span = attributes_[nameHash];
-                    if (!span.size_)
-                    {
-                        span = Append(layout_, GetSize(pin.requestedValueType_) * capacity_);
-                    }
-                    pin.outputSpan_ = span;
+                    unsigned attrIndex = attributes_.GetOrAddAttribute(pin.name_, pin.requestedValueType_);
+                    pin.outputSpan_ = attributes_.GetSpan(attrIndex);
                 }
                 // Allocate temp buffer for an output pin
                 else if (!pin.GetIsInput())
                 {
                     // Allocate temp buffer
-                    const auto elementSize = GetSize(pin.requestedValueType_);
+                    const auto elementSize = GetVariantSize(pin.requestedValueType_);
                     pin.outputSpan_.offset_ = tempSize_;
                     pin.outputSpan_.size_ =
-                        elementSize * ((pin.containerType_ == ParticleGraphContainerType::Scalar) ? 1 : capacity_);
+                        elementSize * ((pin.containerType_ == PGCONTAINER_SCALAR) ? 1 : capacity_);
                     pin.sourceSpan_ = pin.outputSpan_;
                     tempSize_ += pin.outputSpan_.size_;
                 }
@@ -201,7 +140,7 @@ struct ParticleGraphAttributeBuilder
         }
         return true;
     }
-    ea::map<StringHash, ParticleGraphSpan>& attributes_;
+    ParticleGraphAttributeLayout& attributes_;
     ParticleGraphLayer::AttributeBufferLayout* layout_;
     unsigned capacity_;
     unsigned& tempSize_;
@@ -264,19 +203,19 @@ bool ParticleGraphLayer::Prepare()
     // Evaluate attribute buffer layout except attributes size.
     attributeBufferLayout_.Apply(*this);
 
-    // TODO: attribute key should be name + type!
-    ea::map<StringHash, ParticleGraphSpan> attributes;
+    attributes_.Reset(attributeBufferLayout_.attributeBufferSize_, capacity_);
     // Allocate memory for each pin.
     {
-        ParticleGraphAttributeBuilder builder(attributes, &attributeBufferLayout_, capacity_, tempBufferSize_);
+        ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempBufferSize_);
         if (!builder.Build(emit_))
             return false;
     }
     {
-        ParticleGraphAttributeBuilder builder(attributes, &attributeBufferLayout_, capacity_, tempBufferSize_);
+        ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempBufferSize_);
         if (!builder.Build(update_))
             return false;
     }
+    attributeBufferLayout_.attributeBufferSize_ += attributes_.GetRequiredMemory();
     isPrepared_ = true;
     return true;
 }

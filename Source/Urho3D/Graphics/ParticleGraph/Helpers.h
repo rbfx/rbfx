@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include <Urho3D/Core/Context.h>
+#include "../../Core/Context.h"
+#include "../ParticleGraphEffect.h"
 #include "ParticleGraphNode.h"
-#include <Urho3D/Graphics/ParticleGraphEffect.h>
-#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
+#include "ParticleGraphNodeInstance.h"
 
 //#define URHO3D_PARTICLE_NODE1_BEGIN(Name, Pin0Name, Pin0) \
 //    class URHO3D_API Name : public AbstractNode1<Name, Pin0> \
@@ -100,13 +100,13 @@ protected:
             const unsigned numParticles = context.indices_.size();
             switch (pin0.valueType_)
             {
-            case ParticleGraphContainerType::Span:
+            case PGCONTAINER_SPAN:
                 Node::Op(numParticles, context.GetSpan<Value0>(pin0));
                 break;
-            case ParticleGraphContainerType::Scalar:
+            case PGCONTAINER_SCALAR:
                 Node::Op(numParticles, context.GetScalar<Value0>(pin0));
                 break;
-            case ParticleGraphContainerType::Sparse:
+            case PGCONTAINER_SPARSE:
                 Node::Op(numParticles, context.GetSparse<Value0>(pin0));
                 break;
             default:

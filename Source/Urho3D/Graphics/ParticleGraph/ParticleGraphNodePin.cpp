@@ -29,16 +29,6 @@
 namespace Urho3D
 {
 
-/// Construct ParticleGraphSpan.
-ParticleGraphSpan::ParticleGraphSpan()
-    : offset_(0)
-    , size_(0)
-{
-}
-
-
-
-
 ParticleGraphNodePin::ParticleGraphNodePin()
     : flags_(PGPIN_INPUT)
 {

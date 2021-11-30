@@ -23,9 +23,9 @@
 #pragma once
 
 #include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
-#include <Urho3D/Graphics/ParticleGraphEffect.h>
-#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
+#include "../ParticleGraphEffect.h"
 
 namespace Urho3D
 {
@@ -41,7 +41,7 @@ public:
     /// Construct.
     explicit Constant(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, ParticleGraphContainerType::Scalar)}
+        , pins_{ParticleGraphNodePin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, PGCONTAINER_SCALAR)}
     {
     }
 

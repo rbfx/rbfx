@@ -23,10 +23,12 @@
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
 #include "Urho3D/Graphics/ParticleGraph/ParticleGraphLayer.h"
+#include "Urho3D/Graphics/ParticleGraph/ParticleGraphLayerInstance.h"
 
 #include <Urho3D/Graphics/ParticleGraphEffect.h>
 #include <Urho3D/Graphics/ParticleGraph/All.h>
 #include <Urho3D/Scene/Scene.h>
+#include <EASTL/span.h>
 
 using namespace Urho3D;
 
@@ -112,11 +114,12 @@ TEST_CASE("Test simple particle graph")
 
     const auto scene = MakeShared<Scene>(context);
     const auto node = scene->CreateChild();
-    const auto emitter = node->CreateComponent<ParticleGraphEmitter>();
+    auto emitter = node->CreateComponent<ParticleGraphEmitter>();
     emitter->SetEffect(effect);
     CHECK(emitter->EmitNewParticle(0));
     emitter->Tick(0.1f);
 
     auto l = emitter->GetLayer(0);
-    //l->
+    //auto sizeMem = l->GetAttributeMemory(0);
+    //CHECK(((float*)sizeMem.data())[0] == 40.0);
 }

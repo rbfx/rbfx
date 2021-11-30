@@ -22,38 +22,20 @@
 
 #pragma once
 
-#include <EASTL/span.h>
+#include "ParticleGraphMemory.h"
+
 #include <Urho3D/Resource/Resource.h>
 #include <Urho3D/IO/Archive.h>
 
 namespace Urho3D
 {
 
-enum class ParticleGraphContainerType
+enum ParticleGraphContainerType
 {
-    Span,
-    Sparse,
-    Scalar,
-    Auto
-};
-
-/// Memory layout definition.
-struct ParticleGraphSpan
-{
-    /// Construct.
-    ParticleGraphSpan();
-
-    /// Offset in the buffer.
-    unsigned offset_;
-    /// Size in bytes.
-    unsigned size_;
-
-    /// Make a span of type T from memory buffer.
-    template <typename T> ea::span<T> MakeSpan(ea::span<uint8_t> buffer) const
-    {
-        const auto slice = buffer.subspan(offset_, size_);
-        return ea::span<T>(reinterpret_cast<T*>(slice.begin()), reinterpret_cast<T*>(slice.end()));
-    }
+    PGCONTAINER_SPAN,
+    PGCONTAINER_SPARSE,
+    PGCONTAINER_SCALAR,
+    PGCONTAINER_AUTO
 };
 
 enum ParticleGraphPinFlagValues
@@ -75,8 +57,8 @@ public:
     /// Construct default pin.
     ParticleGraphNodePin();
     /// Construct pin.
-    ParticleGraphNodePin(ParticleGraphPinFlags flags, const ea::string name, VariantType type = VariantType::VAR_NONE,
-                         ParticleGraphContainerType container = ParticleGraphContainerType::Auto);
+    ParticleGraphNodePin(ParticleGraphPinFlags flags, const ea::string name, VariantType type = VAR_NONE,
+                         ParticleGraphContainerType container = PGCONTAINER_AUTO);
 
     /// Source node.
     unsigned sourceNode_{};
@@ -133,10 +115,10 @@ protected:
 
 private:
     /// Container type: span, sparse or scalar.
-    ParticleGraphContainerType containerType_{ParticleGraphContainerType::Auto};
+    ParticleGraphContainerType containerType_{PGCONTAINER_AUTO};
 
     /// Source pin container type: span, sparse or scalar.
-    ParticleGraphContainerType sourceContainerType_{ParticleGraphContainerType::Auto};
+    ParticleGraphContainerType sourceContainerType_{PGCONTAINER_AUTO};
 
     /// Source node pin memory layout.
     ParticleGraphSpan sourceSpan_;
@@ -156,7 +138,7 @@ private:
     ParticleGraphPinFlags flags_{PGPIN_INPUT};
 
     /// Value type (float, vector3, etc).
-    VariantType requestedValueType_{VariantType::VAR_NONE};
+    VariantType requestedValueType_{VAR_NONE};
 
     friend class ParticleGraphAttributeBuilder;
     friend class ParticleGraphNode;
