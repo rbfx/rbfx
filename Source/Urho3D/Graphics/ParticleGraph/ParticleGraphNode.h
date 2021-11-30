@@ -22,66 +22,55 @@
 
 #pragma once
 
-#include "ParticleGraphNode.h"
+#include <EASTL/span.h>
+#include <Urho3D/Resource/Resource.h>
+#include <Urho3D/IO/Archive.h>
 
-#include <Urho3D/Graphics/ParticleGraphEffect.h>
-#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
+#include "ParticleGraphNodePin.h"
 
 namespace Urho3D
 {
+class ParticleGraphNodePin;
+class ParticleGraphNodeInstance;
 
-namespace ParticleGraphNodes
+class URHO3D_API ParticleGraphNode : public Object
 {
+    URHO3D_OBJECT(ParticleGraphNode, Object)
 
-/// Operation on attribute
-class URHO3D_API Constant : public ParticleGraphNode
-{
-    URHO3D_OBJECT(Constant, ParticleGraphNode)
 public:
     /// Construct.
-    explicit Constant(Context* context)
-        : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, ParticleGraphContainerType::Scalar)}
-    {
-    }
+    explicit ParticleGraphNode(Context* context);
 
-protected:
-    class Instance : public ParticleGraphNodeInstance
-    {
-    public:
-        Instance(Constant* node);
-        void Update(UpdateContext& context) override;
+    /// Destruct.
+    ~ParticleGraphNode() override;
 
-    protected:
-        Constant* node_;
-    };
-
-public:
     /// Get number of pins.
-    unsigned NumPins() const override { return 1; }
+    virtual unsigned NumPins() const = 0;
 
     /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
+    virtual ParticleGraphNodePin& GetPin(unsigned index) = 0;
 
     /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
+    virtual unsigned EvalueInstanceSize() = 0;
 
     /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(this); }
+    virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) = 0;
 
-    const Variant& GetValue();
-
-    void SetValue(const Variant&);
+    /// Serialize from/to archive. Return true if successful.
+    virtual bool Serialize(Archive& archive);
 
 protected:
+    /// Evaluate runtime output pin type.
+    virtual bool EvaluateOutputPinType(ParticleGraphNodePin& pin);
 
-    /// Pins
-    ParticleGraphNodePin pins_[1];
+    /// Set pin name.
+    /// This method is protected so it can only be accessable to nodes that allow pin renaming.
+    void SetPinName(unsigned pinIndex, const ea::string& name);
 
-    /// Value
-    Variant value_;
+    /// Set pin type.
+    /// This method is protected so it can only be accessable to nodes that allow pin renaming.
+    void SetPinValueType(unsigned pinIndex, VariantType type);
+
+    friend class ParticleGraphAttributeBuilder;
 };
-
-} // namespace ParticleGraphNodes
-
-} // namespace Urho3D
+}

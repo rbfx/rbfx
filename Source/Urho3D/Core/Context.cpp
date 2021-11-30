@@ -32,7 +32,7 @@
 #include "../Core/Thread.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
-#include "../Graphics/ParticleGraphEffect.h"
+#include "../Graphics/ParticleGraph/ParticleGraphNode.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"

@@ -30,6 +30,8 @@
 
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
+#include "ParticleGraph/ParticleGraphLayer.h"
+#include "ParticleGraph/ParticleGraphNode.h"
 
 namespace Urho3D
 {

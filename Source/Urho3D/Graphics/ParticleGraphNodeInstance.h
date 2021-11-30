@@ -23,6 +23,7 @@
 #pragma once
 
 #include "ParticleGraphEmitter.h"
+#include "ParticleGraph/ParticleGraphNodePin.h"
 
 namespace Urho3D
 {

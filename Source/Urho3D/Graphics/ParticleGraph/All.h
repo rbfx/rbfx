@@ -26,7 +26,7 @@
 
 #include "Attribute.h"
 #include "Constant.h"
-#include "Log.h"
+#include "Print.h"
 #include "Math.h"
 
 namespace Urho3D

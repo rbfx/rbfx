@@ -23,6 +23,7 @@
 #pragma once
 
 #include "ParticleGraphNode.h"
+#include "ParticleGraphNodePin.h"
 
 #include <Urho3D/Graphics/ParticleGraphEffect.h>
 #include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
@@ -34,14 +35,14 @@ namespace ParticleGraphNodes
 {
 
 /// Operation on attribute
-class URHO3D_API Constant : public ParticleGraphNode
+class URHO3D_API Print : public ParticleGraphNode
 {
-    URHO3D_OBJECT(Constant, ParticleGraphNode)
+    URHO3D_OBJECT(Print, ParticleGraphNode)
 public:
     /// Construct.
-    explicit Constant(Context* context)
+    explicit Print(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, ParticleGraphContainerType::Scalar)}
+        , pins_{ParticleGraphNodePin(PGPIN_INPUT, "value")}
     {
     }
 
@@ -49,11 +50,11 @@ protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(Constant* node);
+        Instance(Print* node);
         void Update(UpdateContext& context) override;
 
     protected:
-        Constant* node_;
+        Print* node_;
     };
 
 public:
@@ -69,17 +70,10 @@ public:
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(this); }
 
-    const Variant& GetValue();
-
-    void SetValue(const Variant&);
-
 protected:
 
     /// Pins
     ParticleGraphNodePin pins_[1];
-
-    /// Value
-    Variant value_;
 };
 
 } // namespace ParticleGraphNodes

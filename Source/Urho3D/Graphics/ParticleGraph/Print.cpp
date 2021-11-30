@@ -22,7 +22,7 @@
 
 #include "../../Precompiled.h"
 
-#include "Log.h"
+#include "Print.h"
 #include "Urho3D/IO/Log.h"
 
 #include "Helpers.h"
@@ -70,12 +70,12 @@ namespace
 
 }
 
-Log::Instance::Instance(Log* node)
+Print::Instance::Instance(Print* node)
     : node_(node)
 {
 }
 
-void Log::Instance::Update(UpdateContext& context)
+void Print::Instance::Update(UpdateContext& context)
 {
     const auto& pin0 = node_->pins_[0];
     SelectByVariantType<LogPin>(pin0.GetValueType(), context, pin0);

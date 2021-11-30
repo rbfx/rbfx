@@ -36,6 +36,7 @@ class ParticleGraphInstance
 };
 
 class UpdateContext;
+class ParticleGraphNodeInstance;
 
 class ParticleGraphLayerInstance
 {

@@ -22,6 +22,7 @@
 
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
+#include "Urho3D/Graphics/ParticleGraph/ParticleGraphLayer.h"
 
 #include <Urho3D/Graphics/ParticleGraphEffect.h>
 #include <Urho3D/Graphics/ParticleGraph/All.h>
@@ -97,7 +98,7 @@ TEST_CASE("Test simple particle graph")
         get->SetAttributeType(VAR_FLOAT);
         auto getIndex = updateGraph.Add(get);
 
-        auto log = MakeShared<ParticleGraphNodes::Log>(context);
+        auto log = MakeShared<ParticleGraphNodes::Print>(context);
         auto& logPin = get->GetPin(0);
         logPin.sourceNode_ = getIndex;
         logPin.sourcePin_ = 0;

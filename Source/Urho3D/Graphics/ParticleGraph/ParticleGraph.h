@@ -22,57 +22,40 @@
 
 #pragma once
 
-#include <Urho3D/Graphics/ParticleGraphEffect.h>
-#include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
+#include <EASTL/span.h>
+#include <Urho3D/IO/Archive.h>
+#include <Urho3D/Resource/Resource.h>
 
 namespace Urho3D
 {
 
-namespace ParticleGraphNodes
+class URHO3D_API ParticleGraph : public Object
 {
+    URHO3D_OBJECT(ParticleGraph, Object);
 
-/// Operation on attribute
-class URHO3D_API Log : public ParticleGraphNode
-{
-    URHO3D_OBJECT(Log, ParticleGraphNode)
 public:
     /// Construct.
-    explicit Log(Context* context)
-        : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_INPUT, "value")}
-    {
-    }
+    explicit ParticleGraph(Context* context);
+    /// Destruct.
+    virtual ~ParticleGraph();
 
-protected:
-    class Instance : public ParticleGraphNodeInstance
-    {
-    public:
-        Instance(Log* node);
-        void Update(UpdateContext& context) override;
+    /// Add node to the graph.
+    /// Returns node index;
+    unsigned Add(const SharedPtr<ParticleGraphNode> node);
 
-    protected:
-        Log* node_;
-    };
+    /// Get number of nodes.
+    /// @property
+    unsigned GetNumNodes() const;
 
-public:
-    /// Get number of pins.
-    unsigned NumPins() const override { return 1; }
+    /// Get node by index.
+    SharedPtr<ParticleGraphNode> GetNode(unsigned index) const;
 
-    /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, const char* blockName);
 
-    /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
-
-    /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(this); }
-
-protected:
-
-    /// Pins
-    ParticleGraphNodePin pins_[1];
+private:
+    /// Nodes in the graph;
+    ea::vector<SharedPtr<ParticleGraphNode>> nodes_;
 };
-
-} // namespace ParticleGraphNodes
 
 } // namespace Urho3D

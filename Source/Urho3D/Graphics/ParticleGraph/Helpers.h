@@ -23,6 +23,7 @@
 #pragma once
 
 #include <Urho3D/Core/Context.h>
+#include "ParticleGraphNode.h"
 #include <Urho3D/Graphics/ParticleGraphEffect.h>
 #include <Urho3D/Graphics/ParticleGraphNodeInstance.h>
 
