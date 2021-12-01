@@ -23,9 +23,9 @@
 #pragma once
 
 #include <EASTL/span.h>
-#include <Urho3D/Resource/Resource.h>
-#include <Urho3D/IO/Archive.h>
-#include <Urho3D/IO/ArchiveSerialization.h>
+#include "../../Resource/Resource.h"
+#include "../../IO/Archive.h"
+#include "../../IO/ArchiveSerialization.h"
 #include "ParticleGraphPin.h"
 
 namespace Urho3D
@@ -49,6 +49,12 @@ public:
 
     /// Get pin by index.
     virtual ParticleGraphPin& GetPin(unsigned index) = 0;
+
+    /// Set pin source node and pin.
+    void SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex = 0);
+
+    /// Get pin by name.
+    ParticleGraphPin& GetPin(const ea::string& name);
 
     /// Evaluate size required to place new node instance.
     virtual unsigned EvaluateInstanceSize() = 0;

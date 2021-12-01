@@ -54,6 +54,26 @@ void ParticleGraphNode::SetPinValueType(unsigned pinIndex, VariantType type)
 
 ParticleGraphNode::~ParticleGraphNode() = default;
 
+void ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex)
+{
+    if (pinIndex >= NumPins())
+        return;
+    auto& pin = GetPin(pinIndex);
+    pin.SetSource(nodeIndex, nodePinIndex);
+}
+
+ParticleGraphPin& ParticleGraphNode::GetPin(const ea::string& name)
+{
+    for (unsigned i=0; i<NumPins(); ++i)
+    {
+        ParticleGraphPin& pin = GetPin(i);
+        if (pin.GetName() == name)
+            return pin;
+    }
+    static ParticleGraphPin err;
+    return err;
+}
+
 namespace
 {
 struct PinArrayAdapter

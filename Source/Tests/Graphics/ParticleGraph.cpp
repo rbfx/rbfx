@@ -91,32 +91,33 @@ TEST_CASE("Test simple particle graph")
         auto c = MakeShared<ParticleGraphNodes::Constant>(context);
         c->SetValue(Vector3(1,2,3));
         auto constIndex = emitGraph.Add(c);
+
         auto set = MakeShared<ParticleGraphNodes::SetAttribute>(context);
-        auto& setPin = set->GetPin(0);
+        set->SetPinSource(0, constIndex);
         set->SetAttributeName("pos");
-        setPin.sourceNode_ = constIndex;
         set->SetAttributeType(VAR_VECTOR3);
         auto setIndex = emitGraph.Add(set);
     }
     {
         auto& updateGraph = layer->GetUpdateGraph();
         auto get = MakeShared<ParticleGraphNodes::GetAttribute>(context);
-        auto& getPin = get->GetPin(0);
         get->SetAttributeName("pos");
         get->SetAttributeType(VAR_VECTOR3);
         auto getIndex = updateGraph.Add(get);
 
+        auto c = MakeShared<ParticleGraphNodes::Constant>(context);
+        c->SetValue(Vector2(1, 2));
+        auto constIndex = updateGraph.Add(c);
+
+
         auto log = MakeShared<ParticleGraphNodes::Print>(context);
-        auto& logPin = get->GetPin(0);
-        logPin.sourceNode_ = getIndex;
-        logPin.sourcePin_ = 0;
+        log->SetPinSource(0, getIndex);
         auto logIndex = updateGraph.Add(log);
 
         auto render = MakeShared<ParticleGraphNodes::RenderBillboard>(context);
         render->SetMaterial(material);
-        auto& renderPin = get->GetPin(0);
-        renderPin.sourceNode_ = getIndex;
-        renderPin.sourcePin_ = 0;
+        render->SetPinSource(0 ,getIndex);
+        render->SetPinSource(1, constIndex);
         auto renderIndex = updateGraph.Add(render);
 
     }

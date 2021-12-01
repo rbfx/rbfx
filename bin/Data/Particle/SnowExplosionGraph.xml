@@ -20,6 +20,12 @@
 					<pin name="pos" valueType="Vector3" />
 				</pins>
 			</node>
+			<node type="Constant">
+				<value type="Vector2" value="0.5 1" />
+				<pins>
+					<pin name="value" valueType="Vector2" />
+				</pins>
+			</node>
 			<node type="Print">
 				<pins>
 					<pin name="value" valueType="None" sourceNode="0" sourcePin="0" />
@@ -28,6 +34,7 @@
 			<node type="RenderBillboard" isWorldSpace="false" material="Material;Materials/Particle.xml">
 				<pins>
 					<pin name="pos" valueType="Vector3" sourceNode="0" sourcePin="0" />
+					<pin name="size" valueType="Vector2" sourceNode="1" sourcePin="0" />
 				</pins>
 			</node>
 		</update>

@@ -79,7 +79,8 @@ namespace ParticleGraphNodes
 /// Abstract node
 template <typename Node, typename ... Values> class AbstractNode : public ParticleGraphNode
 {
-    //typedef AbstractNode<Node, Values...> BaseType;
+protected:
+    typedef AbstractNode<Node, Values...> AbstractNodeType;
     static constexpr unsigned NumberOfPins = sizeof...(Values);
     typedef ea::array<ParticleGraphPin, NumberOfPins> PinArray;
 
@@ -99,30 +100,7 @@ protected:
         SetPinTypes<0, Values...>(pins_, pins);
     }
 
-public:
-    /// Get number of pins.
-    unsigned NumPins() const override { return NumberOfPins; }
-
-    /// Get pin by index.
-    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
-
-protected:
-    /// Pins
-    PinArray pins_;
-};
-
-/// Abstract node with 1 pin
-template <typename Node, typename Value0> class AbstractNode1 : public AbstractNode<Node, Value0>
-{
-protected:
-    typedef AbstractNode1<Node, Value0> BaseType;
-
-    /// Construct.
-    explicit AbstractNode1(Context* context, const ea::array<ParticleGraphPin, 1>& pins)
-        : AbstractNode<Node, Value0>(context, pins)
-    {
-    }
-
+    
     class Instance : public ParticleGraphNodeInstance
     {
     public:
@@ -130,22 +108,23 @@ protected:
             : node_(node)
         {
         }
-        void Update(UpdateContext& context) override
+        template <typename Value0>
+        void UpdatePermutaion(UpdateContext& context, unsigned permutation, ParticleGraphPinRef* pinRefs)
         {
-            const auto& pin0 = node_->pins_[0];
-
             const unsigned numParticles = context.indices_.size();
-            auto pinRef = pin0.GetMemoryReference();
-            switch (pinRef.type_)
+            switch (permutation)
             {
             case PGCONTAINER_SPAN:
-                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRef));
-                break;
-            case PGCONTAINER_SCALAR:
-                Node::Op(static_cast<typename Node::Instance*>(this), 1, context.GetScalar<Value0>(pinRef));
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSpan<Value0>(pinRefs[0]));
                 break;
             case PGCONTAINER_SPARSE:
-                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSparse<Value0>(pinRef));
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]));
+                break;
+            case PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), 1,
+                         context.GetScalar<Value0>(pinRefs[0]));
                 break;
             default:
                 assert(!"Invalid pin container type permutation");
@@ -153,11 +132,215 @@ protected:
             }
         }
 
+        template <typename Value0, typename Value1>
+        void UpdatePermutaion(UpdateContext& context, unsigned permutation, ParticleGraphPinRef* pinRefs)
+        {
+            const unsigned numParticles = context.indices_.size();
+            switch (permutation)
+            {
+            case PGCONTAINER_SPAN * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSpan<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SPAN * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSparse<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SPAN * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetScalar<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SPARSE * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]));
+                break;
+            case PGCONTAINER_SCALAR * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), 1,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]));
+                break;
+            default:
+                assert(!"Invalid pin container type permutation");
+                break;
+            }
+        }
+
+        template <typename Value0, typename Value1, typename Value2>
+        void UpdatePermutaion(UpdateContext& context, unsigned permutation, ParticleGraphPinRef* pinRefs)
+        {
+            const unsigned numParticles = context.indices_.size();
+            switch (permutation)
+            {
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSpan<Value1>(pinRefs[1]), context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSpan<Value1>(pinRefs[1]), context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSpan<Value1>(pinRefs[1]), context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSparse<Value1>(pinRefs[1]), context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSparse<Value1>(pinRefs[1]), context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetSparse<Value1>(pinRefs[1]), context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetScalar<Value1>(pinRefs[1]), context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetScalar<Value1>(pinRefs[1]), context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPAN * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRefs[0]),
+                         context.GetScalar<Value1>(pinRefs[1]), context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]),
+                         context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]),
+                         context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]),
+                         context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]),
+                         context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]),
+                         context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]),
+                         context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]),
+                         context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]),
+                         context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SPARSE * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetSparse<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]),
+                         context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]),
+                         context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]),
+                         context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SPAN * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSpan<Value1>(pinRefs[1]),
+                         context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]),
+                         context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]),
+                         context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SPARSE * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetSparse<Value1>(pinRefs[1]),
+                         context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPAN:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]),
+                         context.GetSpan<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SPARSE:
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]),
+                         context.GetSparse<Value2>(pinRefs[2]));
+                break;
+            case PGCONTAINER_SCALAR * 9 + PGCONTAINER_SCALAR * 3 + PGCONTAINER_SCALAR:
+                Node::Op(static_cast<typename Node::Instance*>(this), 1,
+                         context.GetScalar<Value0>(pinRefs[0]), context.GetScalar<Value1>(pinRefs[1]),
+                         context.GetScalar<Value2>(pinRefs[2]));
+                break;
+            default:
+                assert(!"Invalid pin container type permutation");
+                break;
+            }
+        }
+
+        void Update(UpdateContext& context) override
+        {
+            ParticleGraphPinRef pinRefs[NumberOfPins];
+            unsigned permutation = 0;
+            for (unsigned i = 0; i < NumberOfPins; ++i)
+            {
+                pinRefs[i] = node_->pins_[i].GetMemoryReference();
+                permutation = permutation * 3 + pinRefs[i].type_;
+            }
+            UpdatePermutaion<Values...>(context, permutation, pinRefs);
+
+        }
+
     protected:
         Node* node_;
     };
 
 public:
+    /// Get number of pins.
+    unsigned NumPins() const override { return NumberOfPins; }
+
+    /// Get pin by index.
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
     unsigned EvaluateInstanceSize() override { return sizeof(typename Node::Instance); }
@@ -167,7 +350,12 @@ public:
     {
         return new (ptr) typename Node::Instance(static_cast<Node*>(this), layer);
     }
+
+protected:
+    /// Pins
+    PinArray pins_;
 };
+
 
 template <template <typename> typename T, typename Arg0, typename Arg1>
 void SelectByVariantType(VariantType variantType, Arg0 arg0, Arg1 arg1)

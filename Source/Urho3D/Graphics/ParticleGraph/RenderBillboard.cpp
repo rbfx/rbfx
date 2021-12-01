@@ -35,7 +35,10 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 RenderBillboard::RenderBillboard(Context* context)
-    : BaseType(context, ea::array<ParticleGraphPin>{ParticleGraphPin(PGPIN_INPUT, "pos", VAR_VECTOR3)})
+    : AbstractNodeType(context, PinArray{
+   ParticleGraphPin(PGPIN_INPUT, "pos"),
+            ParticleGraphPin(PGPIN_INPUT, "size")
+    })
     , isWorldSpace_(false)
 {
 }
@@ -45,11 +48,11 @@ bool RenderBillboard::Serialize(Archive& archive)
     SerializeValue(archive, "isWorldSpace", isWorldSpace_);
     SerializeResource(archive, "material", material_, materialRef_);
     
-    return BaseType::Serialize(archive);
+    return AbstractNodeType::Serialize(archive);
 }
 
 RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer)
-    : BaseType::Instance(node, layer)
+    : AbstractNodeType::Instance(node, layer)
 {
     auto emitter = layer->GetEmitter();
     auto scene = emitter->GetScene();
@@ -79,11 +82,12 @@ void RenderBillboard::Instance::Prepare(unsigned numParticles)
     }
 }
 
-void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos)
+void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size)
 {
     auto* billboard = billboardSet_->GetBillboard(index);
     billboard->enabled_ = true;
     billboard->position_ = pos;
+    billboard->size_ = size;
 }
 
 void RenderBillboard::Instance::Commit()

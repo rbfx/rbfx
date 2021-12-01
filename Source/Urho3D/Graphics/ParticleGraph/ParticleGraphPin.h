@@ -23,9 +23,10 @@
 #pragma once
 
 #include "ParticleGraphMemory.h"
+#include "../ParticleGraphEffect.h"
 
-#include <Urho3D/Resource/Resource.h>
-#include <Urho3D/IO/Archive.h>
+#include "../../Resource/Resource.h"
+#include "../../IO/Archive.h"
 
 namespace Urho3D
 {
@@ -71,11 +72,6 @@ public:
     ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string name, VariantType type = VAR_NONE,
                          ParticleGraphContainerType container = PGCONTAINER_AUTO);
 
-    /// Source node.
-    unsigned sourceNode_{};
-    /// Source node pin index.
-    unsigned sourcePin_{};
-
     /// Get input pin flag.
     /// @property
     bool GetIsInput() const { return flags_.Test(PGPIN_INPUT); }
@@ -110,6 +106,9 @@ public:
     /// Get a copy of the pin setup but with a different value type.
     ParticleGraphPin WithType(VariantType type) const;
 
+    /// Set source node and pin indices.
+    void SetSource(unsigned nodeIndex, unsigned pinIndex = 0);
+
 protected:
     /// Set pin name and hash.
     void SetName(const ea::string& name);
@@ -131,6 +130,12 @@ private:
     ea::string name_;
     /// Pin name hash.
     StringHash nameHash_;
+
+    /// Source node.
+    unsigned sourceNode_{};
+    /// Source node pin index.
+    unsigned sourcePin_{};
+
 
     /// Is input pin.
     ParticleGraphPinFlags flags_{PGPIN_INPUT};

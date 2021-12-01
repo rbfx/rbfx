@@ -102,6 +102,12 @@ ParticleGraphPin ParticleGraphPin::WithType(VariantType type) const
     return ParticleGraphPin(flags_, name_, type, containerType_);
 }
 
+void ParticleGraphPin::SetSource(unsigned nodeIndex, unsigned pinIndex)
+{
+    sourceNode_ = nodeIndex;
+    sourcePin_ = pinIndex;
+}
+
 void ParticleGraphPin::SetName(const ea::string& name)
 {
     name_ = name;

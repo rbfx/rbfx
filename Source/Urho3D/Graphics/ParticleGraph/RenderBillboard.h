@@ -32,7 +32,7 @@ namespace ParticleGraphNodes
 {
 
 /// Operation on attribute
-class URHO3D_API RenderBillboard : public AbstractNode1<RenderBillboard, Vector3>
+class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3, Vector2>
 {
     URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
@@ -41,13 +41,13 @@ public:
 
 protected:
 
-    class Instance : public AbstractNode1<RenderBillboard, Vector3>::Instance
+    class Instance : public AbstractNodeType::Instance
     {
     public:
         Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer);
         ~Instance() override;
         void Prepare(unsigned numParticles);
-        void UpdateParticle(unsigned index, const Vector3& pos);
+        void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size);
         void Commit();
 
     protected:
@@ -56,12 +56,13 @@ protected:
         SharedPtr<Urho3D::BillboardSet> billboardSet_;
         SharedPtr<Urho3D::Octree> octree_;
     };
-    template <typename Pin0> static void Op(Instance* instance, unsigned numParticles, Pin0 pin0)
+    template <typename Pin0, typename Pin1>
+    static void Op(Instance* instance, unsigned numParticles, Pin0 pin0, Pin1 pin1)
     {
         instance->Prepare(numParticles);
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            instance->UpdateParticle(i, pin0[i]);
+            instance->UpdateParticle(i, pin0[i], pin1[i]);
         }
         instance->Commit();
     }
@@ -86,7 +87,7 @@ protected:
     /// Reference to material.
     ResourceRef materialRef_;
 
-    friend class BaseType;
+    friend class AbstractNodeType;
 };
 
 } // namespace ParticleGraphNodes
