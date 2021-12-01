@@ -25,7 +25,7 @@
 #include "ParticleGraphLayer.h"
 #include "ParticleGraph.h"
 #include "ParticleGraphNode.h"
-#include "ParticleGraphNodePin.h"
+#include "ParticleGraphPin.h"
 
 #include <Urho3D/IO/Log.h>
 
@@ -48,8 +48,6 @@ template <typename T> ParticleGraphSpan Append(ParticleGraphLayer::AttributeBuff
 }
 
 } // namespace
-
-
 
 struct ParticleGraphAttributeBuilder
 {
@@ -144,7 +142,10 @@ struct ParticleGraphAttributeBuilder
     ParticleGraphBufferLayout& tempSize_;
     unsigned capacity_;
 };
-
+void ParticleGraphLayer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<ParticleGraphLayer>();
+}
 /// Construct ParticleGraphLayer.
 ParticleGraphLayer::ParticleGraphLayer(Context* context)
     : Object(context)
@@ -184,12 +185,12 @@ void ParticleGraphLayer::AttributeBufferLayout::Apply(ParticleGraphLayer& layer)
     for (unsigned i = 0; i < emitGraphNodes; ++i)
     {
         auto node = layer.emit_.GetNode(i);
-        instanceSize += node->EvalueInstanceSize();
+        instanceSize += node->EvaluateInstanceSize();
     }
     for (unsigned i = 0; i < updateGraphNodes; ++i)
     {
         auto node = layer.update_.GetNode(i);
-        instanceSize += node->EvalueInstanceSize();
+        instanceSize += node->EvaluateInstanceSize();
     }
     nodeInstances_ = Append(this, instanceSize);
     indices_ = Append<unsigned>(this, layer.capacity_);

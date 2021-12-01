@@ -70,7 +70,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     for (unsigned i = 0; i < emit.GetNumNodes(); ++i)
     {
         const auto node = emit.GetNode(i);
-        const auto size = node->EvalueInstanceSize();
+        const auto size = node->EvaluateInstanceSize();
         assert(instanceOffset + size <= nodeInstances.size());
         uint8_t* ptr = nodeInstances.begin() + instanceOffset;
         emitNodeInstances_[i] = node->CreateInstanceAt(ptr, this);
@@ -82,7 +82,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     for (unsigned i = 0; i < update.GetNumNodes(); ++i)
     {
         const auto node = update.GetNode(i);
-        const auto size = node->EvalueInstanceSize();
+        const auto size = node->EvaluateInstanceSize();
         assert(instanceOffset + size <= nodeInstances.size());
         uint8_t* ptr = nodeInstances.begin() + instanceOffset;
         updateNodeInstances_[i] = node->CreateInstanceAt(ptr, this);

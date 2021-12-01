@@ -23,7 +23,7 @@
 #pragma once
 
 #include "ParticleGraph.h"
-#include "ParticleGraphNodePin.h"
+#include "ParticleGraphPin.h"
 
 #include <EASTL/span.h>
 #include <Urho3D/IO/Archive.h>
@@ -59,6 +59,9 @@ public:
     explicit ParticleGraphLayer(Context* context);
     /// Destruct.
     virtual ~ParticleGraphLayer();
+    /// Register object factory.
+    /// @nobind
+    static void RegisterObject(Context* context);
 
     /// Get emit graph.
     ParticleGraph& GetEmitGraph();

@@ -62,13 +62,13 @@ struct ParticleGraphPinRef
 };
 
 /// Pin of a node in particle graph.
-class ParticleGraphNodePin
+class ParticleGraphPin
 {
 public:
     /// Construct default pin.
-    ParticleGraphNodePin();
+    ParticleGraphPin();
     /// Construct pin.
-    ParticleGraphNodePin(ParticleGraphPinFlags flags, const ea::string name, VariantType type = VAR_NONE,
+    ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string name, VariantType type = VAR_NONE,
                          ParticleGraphContainerType container = PGCONTAINER_AUTO);
 
     /// Source node.
@@ -108,7 +108,7 @@ public:
     virtual bool Serialize(Archive& archive);
 
     /// Get a copy of the pin setup but with a different value type.
-    ParticleGraphNodePin WithType(VariantType type) const;
+    ParticleGraphPin WithType(VariantType type) const;
 
 protected:
     /// Set pin name and hash.
@@ -149,6 +149,6 @@ private:
 };
 
 /// Serialize pin.
-bool SerializeValue(Archive& archive, const char* name, ParticleGraphNodePin& value);
+bool SerializeValue(Archive& archive, const char* name, ParticleGraphPin& value);
 
 }

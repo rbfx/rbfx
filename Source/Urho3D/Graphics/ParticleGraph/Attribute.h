@@ -37,7 +37,7 @@ class URHO3D_API Attribute : public ParticleGraphNode
 
 protected:
     /// Construct.
-    explicit Attribute(Context* context, const ParticleGraphNodePin& pin);
+    explicit Attribute(Context* context, const ParticleGraphPin& pin);
 
     class Instance : public ParticleGraphNodeInstance
     {
@@ -50,10 +50,10 @@ public:
     unsigned NumPins() const override { return 1; }
 
     /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
@@ -79,7 +79,7 @@ public:
 
 protected:
     /// Pins
-    ParticleGraphNodePin pins_[1];
+    ParticleGraphPin pins_[1];
 };
 
 /// Get particle attribute value.
@@ -110,7 +110,7 @@ public:
     explicit SetAttribute(Context* context);
 
     /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override

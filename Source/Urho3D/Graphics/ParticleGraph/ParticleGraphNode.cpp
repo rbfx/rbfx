@@ -23,9 +23,9 @@
 #include "../../Precompiled.h"
 
 #include "ParticleGraphNode.h"
-#include "ParticleGraphNodePin.h"
+#include "ParticleGraphPin.h"
 
-#include <Urho3D/IO/ArchiveSerialization.h>
+#include "../../IO/ArchiveSerialization.h"
 
 
 namespace Urho3D
@@ -58,13 +58,13 @@ namespace
 {
 struct PinArrayAdapter
 {
-    typedef ParticleGraphNodePin value_type;
+    typedef ParticleGraphPin value_type;
     PinArrayAdapter(ParticleGraphNode& node)
         : node_(node)
     {
     }
     size_t size() const { return node_.NumPins(); }
-    ParticleGraphNodePin& operator[](size_t index) { return node_.GetPin(index); }
+    ParticleGraphPin& operator[](size_t index) { return node_.GetPin(index); }
 
     ParticleGraphNode& node_;
 };
@@ -76,5 +76,48 @@ bool ParticleGraphNode::Serialize(Archive& archive)
     return SerializeArrayAsObjects(archive, "pins", "pin", adapter);
 }
 
-bool ParticleGraphNode::EvaluateOutputPinType(ParticleGraphNodePin& pin) { return false; }
+bool ParticleGraphNode::EvaluateOutputPinType(ParticleGraphPin& pin) { return false; }
+
+bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        // Serialize type
+        StringHash type = value ? value->GetType() : StringHash{};
+        const ea::string_view typeName = value ? ea::string_view{value->GetTypeName()} : "";
+        if (!SerializeStringHash(archive, "type", type, typeName))
+            return false;
+
+        // Serialize empty object
+        if (type == StringHash{})
+        {
+            value = nullptr;
+            return true;
+        }
+
+        // Create instance if loading
+        if (archive.IsInput())
+        {
+            Context* context = archive.GetContext();
+            if (!context)
+            {
+                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
+                return false;
+            }
+
+            value.StaticCast(context->CreateParticleGraphNode(type));
+
+            if (!value)
+            {
+                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
+                return false;
+            }
+        }
+
+        // Serialize object
+        return value->Serialize(archive);
+    }
+    return false;
+}
+
 } // namespace Urho3D

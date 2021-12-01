@@ -24,20 +24,19 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/ParticleGraphEffect.h"
-#include "../Graphics/ParticleGraph/ParticleGraphLayer.h"
+
+#include "ParticleGraph/ParticleGraphLayer.h"
 
 #include "Graphics.h"
-#include "Urho3D/Core/Thread.h"
-#include "Urho3D/IO/ArchiveSerialization.h"
-#include "Urho3D/IO/Deserializer.h"
-#include "Urho3D/IO/FileSystem.h"
-#include "Urho3D/Resource/XMLFile.h"
-#include "Urho3D/Resource/XMLArchive.h"
+#include "../Core/Thread.h"
+#include "../IO/ArchiveSerialization.h"
+#include "../IO/Deserializer.h"
+#include "../IO/FileSystem.h"
+#include "../Resource/XMLFile.h"
+#include "../Resource/XMLArchive.h"
 
 namespace Urho3D
 {
-
-
 
 ParticleGraphEffect::ParticleGraphEffect(Context* context)
     : Resource(context)

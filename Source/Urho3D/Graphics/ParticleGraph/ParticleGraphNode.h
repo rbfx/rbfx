@@ -25,12 +25,12 @@
 #include <EASTL/span.h>
 #include <Urho3D/Resource/Resource.h>
 #include <Urho3D/IO/Archive.h>
-
-#include "ParticleGraphNodePin.h"
+#include <Urho3D/IO/ArchiveSerialization.h>
+#include "ParticleGraphPin.h"
 
 namespace Urho3D
 {
-class ParticleGraphNodePin;
+class ParticleGraphPin;
 class ParticleGraphNodeInstance;
 
 class URHO3D_API ParticleGraphNode : public Object
@@ -48,10 +48,10 @@ public:
     virtual unsigned NumPins() const = 0;
 
     /// Get pin by index.
-    virtual ParticleGraphNodePin& GetPin(unsigned index) = 0;
+    virtual ParticleGraphPin& GetPin(unsigned index) = 0;
 
     /// Evaluate size required to place new node instance.
-    virtual unsigned EvalueInstanceSize() = 0;
+    virtual unsigned EvaluateInstanceSize() = 0;
 
     /// Place new instance at the provided address.
     virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) = 0;
@@ -61,7 +61,7 @@ public:
 
 protected:
     /// Evaluate runtime output pin type.
-    virtual bool EvaluateOutputPinType(ParticleGraphNodePin& pin);
+    virtual bool EvaluateOutputPinType(ParticleGraphPin& pin);
 
     /// Set pin name.
     /// This method is protected so it can only be accessable to nodes that allow pin renaming.
@@ -73,4 +73,16 @@ protected:
 
     friend class ParticleGraphAttributeBuilder;
 };
+
+/// Serialize Object.
+bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value);
+
+///// Serialize Object.
+//template <>
+//inline bool SerializeValue<ParticleGraphNode>(
+//    Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value)
+//{
+//    return SerializeValueImpl(archive, name, value);
+//}
+
 }

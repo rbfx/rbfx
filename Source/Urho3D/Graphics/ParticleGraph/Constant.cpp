@@ -23,7 +23,7 @@
 #include "../../Precompiled.h"
 
 #include "Constant.h"
-#include "ParticleGraphLayerInstance.h"
+#include "../../IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {
@@ -42,7 +42,11 @@ Constant::Instance::Instance(Constant* node)
     : node_(node)
 {
 }
-
+bool Constant::Serialize(Archive& archive)
+{
+    SerializeValue(archive, "value", value_);
+    return ParticleGraphNode::Serialize(archive);
+}
 void Constant::Instance::Update(UpdateContext& context)
 {
     const auto& pin0 = node_->pins_[0];

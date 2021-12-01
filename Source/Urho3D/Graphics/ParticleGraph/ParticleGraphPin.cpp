@@ -22,18 +22,18 @@
 
 #include "../../Precompiled.h"
 
-#include "ParticleGraphNodePin.h"
+#include "ParticleGraphPin.h"
 
 #include "Urho3D/IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {
 
-ParticleGraphNodePin::ParticleGraphNodePin()
+ParticleGraphPin::ParticleGraphPin()
     : flags_(PGPIN_INPUT)
 {
 }
-ParticleGraphNodePin::ParticleGraphNodePin(ParticleGraphPinFlags flags, const ea::string name, VariantType type,
+ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string name, VariantType type,
                                            ParticleGraphContainerType container)
     : flags_(flags)
     , requestedValueType_(type)
@@ -42,22 +42,33 @@ ParticleGraphNodePin::ParticleGraphNodePin(ParticleGraphPinFlags flags, const ea
     SetName(name);
 }
 
-bool ParticleGraphNodePin::Serialize(Archive& archive)
+bool ParticleGraphPin::Serialize(Archive& archive)
 {
     if (archive.IsInput())
     {
+        // Load name.
         ea::string name;
         if (!SerializeValue(archive, "name", name))
+            return false;
+        // Set name if it is mutable or check it.
+        if (flags_.Test(PGPIN_NAME_MUTABLE))
+            name_ = name;
+        else if (name != name_)
         {
+            archive.SetError("Pin name mismatch");
             return false;
         }
-        if (name != name_)
+        // Load type.
+        VariantType type{VAR_NONE};
+
+      if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), type))
+          return false;
+        // Set type if it is mutable or check it.
+        if (flags_.Test(PGPIN_TYPE_MUTABLE))
+            requestedValueType_ = type;
+        else if (requestedValueType_ != type)
         {
-            URHO3D_LOGERROR("Pin name mismatch");
-            return false;
-        }
-        if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), requestedValueType_))
-        {
+            archive.SetError("Pin type mismatch");
             return false;
         }
     }
@@ -67,12 +78,9 @@ bool ParticleGraphNodePin::Serialize(Archive& archive)
         {
             return false;
         }
-        if (requestedValueType_ != VAR_NONE)
+        if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), requestedValueType_))
         {
-            if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), requestedValueType_))
-            {
-                return false;
-            }
+            return false;
         }
     }
     if (GetIsInput())
@@ -89,22 +97,22 @@ bool ParticleGraphNodePin::Serialize(Archive& archive)
     return true;
 }
 
-ParticleGraphNodePin ParticleGraphNodePin::WithType(VariantType type) const
+ParticleGraphPin ParticleGraphPin::WithType(VariantType type) const
 {
-    return ParticleGraphNodePin(flags_, name_, type, containerType_);
+    return ParticleGraphPin(flags_, name_, type, containerType_);
 }
 
-void ParticleGraphNodePin::SetName(const ea::string& name)
+void ParticleGraphPin::SetName(const ea::string& name)
 {
     name_ = name;
     nameHash_ = StringHash(name_);
 }
 
-void ParticleGraphNodePin::SetValueType(VariantType valueType) { requestedValueType_ = valueType; }
+void ParticleGraphPin::SetValueType(VariantType valueType) { requestedValueType_ = valueType; }
 
-void ParticleGraphNodePin::SetIsInput(bool isInput) { flags_.Set(PGPIN_INPUT, isInput); }
+void ParticleGraphPin::SetIsInput(bool isInput) { flags_.Set(PGPIN_INPUT, isInput); }
 
-bool SerializeValue(Archive& archive, const char* name, ParticleGraphNodePin& value)
+bool SerializeValue(Archive& archive, const char* name, ParticleGraphPin& value)
 {
     if (auto block = archive.OpenUnorderedBlock(name))
     {

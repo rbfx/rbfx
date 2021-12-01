@@ -35,7 +35,7 @@ namespace
 {
 
 template <typename ValueType>
-SparseSpan<ValueType> GetOutputSparse(UpdateContext& context, const ParticleGraphNodePin& pin)
+SparseSpan<ValueType> GetOutputSparse(UpdateContext& context, const ParticleGraphPin& pin)
 {
     const auto subspan = pin.MakeOutputSpan<ValueType>(context.attributes_);
     return SparseSpan<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
@@ -44,7 +44,7 @@ SparseSpan<ValueType> GetOutputSparse(UpdateContext& context, const ParticleGrap
 
 template <typename T> struct CopyValues
 {
-    void operator()(UpdateContext& context, const ParticleGraphNodePin& pin0)
+    void operator()(UpdateContext& context, const ParticleGraphPin& pin0)
     {
         const unsigned numParticles = context.indices_.size();
         switch (pin0.GetContainerType())
@@ -84,20 +84,20 @@ template <typename T> struct CopyValues
 };
 
 }
-Attribute::Attribute(Context* context, const ParticleGraphNodePin& pin)
+Attribute::Attribute(Context* context, const ParticleGraphPin& pin)
     : ParticleGraphNode(context)
     , pins_{pin}
 {
 }
 
 GetAttribute::GetAttribute(Context* context)
-    : Attribute(context, ParticleGraphNodePin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
+    : Attribute(context, ParticleGraphPin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
                                               PGCONTAINER_SPARSE))
 {
 }
 
 SetAttribute::SetAttribute(Context* context)
-    : Attribute(context, ParticleGraphNodePin(PGPIN_INPUT | PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
+    : Attribute(context, ParticleGraphPin(PGPIN_INPUT | PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
                                               PGCONTAINER_SPARSE))
 {
 }
@@ -108,7 +108,7 @@ SetAttribute::Instance::Instance(SetAttribute* node)
 }
 void SetAttribute::Instance::Update(UpdateContext& context)
 {
-    const ParticleGraphNodePin& pin0 = node_->pins_[0];
+    const ParticleGraphPin& pin0 = node_->pins_[0];
     SelectByVariantType<CopyValues>(pin0.GetValueType(), context, pin0);
 };
 

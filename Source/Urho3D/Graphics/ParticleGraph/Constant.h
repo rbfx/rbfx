@@ -39,7 +39,7 @@ public:
     /// Construct.
     explicit Constant(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, PGCONTAINER_SCALAR)}
+        , pins_{ParticleGraphPin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, PGCONTAINER_SCALAR)}
     {
     }
 
@@ -59,16 +59,19 @@ public:
     unsigned NumPins() const override { return 1; }
 
     /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
     {
         return new (ptr) Instance(this);
     }
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
 
     const Variant& GetValue();
 
@@ -77,7 +80,7 @@ public:
 protected:
 
     /// Pins
-    ParticleGraphNodePin pins_[1];
+    ParticleGraphPin pins_[1];
 
     /// Value
     Variant value_;

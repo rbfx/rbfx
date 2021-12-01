@@ -32,24 +32,23 @@ namespace ParticleGraphNodes
 {
 
 /// Operation on attribute
-class URHO3D_API RenderBillboard : public ParticleGraphNode
+class URHO3D_API RenderBillboard : public AbstractNode1<RenderBillboard, Vector3>
 {
     URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
     /// Construct.
-    explicit RenderBillboard(Context* context)
-        : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_INPUT, "pos", VAR_VECTOR3)}
-    {
-    }
+    explicit RenderBillboard(Context* context);
 
 protected:
-    class Instance : public ParticleGraphNodeInstance
+
+    class Instance : public AbstractNode1<RenderBillboard, Vector3>::Instance
     {
     public:
         Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer);
-        ~Instance();
-        void Update(UpdateContext& context) override;
+        ~Instance() override;
+        void Prepare(unsigned numParticles);
+        void UpdateParticle(unsigned index, const Vector3& pos);
+        void Commit();
 
     protected:
         RenderBillboard* node_;
@@ -57,26 +56,37 @@ protected:
         SharedPtr<Urho3D::BillboardSet> billboardSet_;
         SharedPtr<Urho3D::Octree> octree_;
     };
-
-public:
-    /// Get number of pins.
-    unsigned NumPins() const override { return 1; }
-
-    /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
-
-    /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
-
-    /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
+    template <typename Pin0> static void Op(Instance* instance, unsigned numParticles, Pin0 pin0)
     {
-        return new (ptr) Instance(this, layer);
+        instance->Prepare(numParticles);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            instance->UpdateParticle(i, pin0[i]);
+        }
+        instance->Commit();
     }
 
+public:
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
+
+    /// Return material.
+    /// @property
+    Material* GetMaterial() const;
+
+    /// Set material.
+    /// @property
+    void SetMaterial(Material* material);
+
 protected:
-    /// Pins
-    ParticleGraphNodePin pins_[1];
+    /// Is the billboards attached to the node or rendered in a absolute world space coordinates.
+    bool isWorldSpace_;
+    /// Selected material.
+    SharedPtr<Material> material_;
+    /// Reference to material.
+    ResourceRef materialRef_;
+
+    friend class BaseType;
 };
 
 } // namespace ParticleGraphNodes

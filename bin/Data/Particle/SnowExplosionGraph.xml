@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<particleGraphEffect>
+	<layer type="ParticleGraphLayer">
+		<emit>
+			<node type="Constant">
+				<value type="Vector3" value="1 2 3" />
+				<pins>
+					<pin name="value" valueType="Vector3" />
+				</pins>
+			</node>
+			<node type="SetAttribute">
+				<pins>
+					<pin name="pos" valueType="Vector3" sourceNode="0" sourcePin="0" />
+				</pins>
+			</node>
+		</emit>
+		<update>
+			<node type="GetAttribute">
+				<pins>
+					<pin name="pos" valueType="Vector3" />
+				</pins>
+			</node>
+			<node type="Print">
+				<pins>
+					<pin name="value" valueType="None" sourceNode="0" sourcePin="0" />
+				</pins>
+			</node>
+			<node type="RenderBillboard" isWorldSpace="false" material="Material;Materials/Particle.xml">
+				<pins>
+					<pin name="pos" valueType="Vector3" sourceNode="0" sourcePin="0" />
+				</pins>
+			</node>
+		</update>
+	</layer>
+</particleGraphEffect>

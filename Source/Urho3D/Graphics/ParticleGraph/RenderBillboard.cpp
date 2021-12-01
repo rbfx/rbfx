@@ -24,20 +24,37 @@
 
 #include "RenderBillboard.h"
 #include "ParticleGraphLayerInstance.h"
-#include "Urho3D/Graphics/Octree.h"
-#include "Urho3D/Scene/Scene.h"
+#include "../Material.h"
+#include "../../Graphics/Octree.h"
+#include "../../Scene/Scene.h"
+#include "../../IO/ArchiveSerialization.h"
+#include "../../Resource/ResourceCache.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+RenderBillboard::RenderBillboard(Context* context)
+    : BaseType(context, ea::array<ParticleGraphPin>{ParticleGraphPin(PGPIN_INPUT, "pos", VAR_VECTOR3)})
+    , isWorldSpace_(false)
+{
+}
 
-RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer): node_(node)
+bool RenderBillboard::Serialize(Archive& archive)
+{
+    SerializeValue(archive, "isWorldSpace", isWorldSpace_);
+    SerializeResource(archive, "material", material_, materialRef_);
+    
+    return BaseType::Serialize(archive);
+}
+
+RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer)
+    : BaseType::Instance(node, layer)
 {
     auto emitter = layer->GetEmitter();
     auto scene = emitter->GetScene();
 
-    sceneNode_ = MakeShared<Node>(scene->GetContext());
+    sceneNode_ = node->isWorldSpace_ ? MakeShared<Node>(scene->GetContext()) : emitter->GetNode();
     billboardSet_ = sceneNode_->CreateComponent<BillboardSet>();
     octree_ = scene->GetOrCreateComponent<Octree>();
     octree_->AddManualDrawable(billboardSet_);
@@ -47,26 +64,48 @@ RenderBillboard::Instance::~Instance()
 {
     octree_->RemoveManualDrawable(billboardSet_);
 }
-
-void RenderBillboard::Instance::Update(UpdateContext& context)
+void RenderBillboard::Instance::Prepare(unsigned numParticles)
 {
-    const unsigned numParticles = context.indices_.size();
     unsigned numBillboards = billboardSet_->GetNumBillboards();
     if (numBillboards < numParticles)
     {
-        billboardSet_->SetNumBillboards(numBillboards);
+        billboardSet_->SetNumBillboards(numParticles);
         numBillboards = numParticles;
     }
     auto& billboards = billboardSet_->GetBillboards();
-    unsigned i; 
-    for (i = 0; i < numParticles; ++i)
-    {
-        billboards[i].enabled_ = true;
-        //TODO: Copy values
-    }
-    for (; i < numBillboards; ++i)
+    for (unsigned i = numParticles; i < numBillboards; ++i)
     {
         billboards[i].enabled_ = false;
+    }
+}
+
+void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos)
+{
+    auto* billboard = billboardSet_->GetBillboard(index);
+    billboard->enabled_ = true;
+    billboard->position_ = pos;
+}
+
+void RenderBillboard::Instance::Commit()
+{
+    billboardSet_->Commit();
+}
+
+Material* RenderBillboard::GetMaterial() const
+{
+    return context_->GetSubsystem<ResourceCache>()->GetResource<Material>(materialRef_.name_);
+}
+
+void RenderBillboard::SetMaterial(Material* material)
+{
+    material_ = material;
+    if (material)
+    {
+        materialRef_ = ResourceRef(material->GetType(), material->GetName());
+    }
+    else
+    {
+        materialRef_ = ResourceRef();
     }
 }
 

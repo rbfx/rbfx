@@ -23,7 +23,7 @@
 #pragma once
 
 #include "ParticleGraphNode.h"
-#include "ParticleGraphNodePin.h"
+#include "ParticleGraphPin.h"
 #include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
@@ -40,7 +40,7 @@ public:
     /// Construct.
     explicit Print(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_INPUT, "value")}
+        , pins_{ParticleGraphPin(PGPIN_INPUT, "value")}
     {
     }
 
@@ -60,10 +60,10 @@ public:
     unsigned NumPins() const override { return 1; }
 
     /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
@@ -74,7 +74,7 @@ public:
 protected:
 
     /// Pins
-    ParticleGraphNodePin pins_[1];
+    ParticleGraphPin pins_[1];
 };
 
 } // namespace ParticleGraphNodes

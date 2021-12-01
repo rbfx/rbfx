@@ -79,8 +79,10 @@ namespace ParticleGraphNodes
 template <typename Node, typename Value0> class AbstractNode1 : public ParticleGraphNode
 {
 protected:
+    typedef AbstractNode1<Node, Value0> BaseType;
+
     /// Construct.
-    explicit AbstractNode1(Context* context, const ea::array<ParticleGraphNodePin, 1>& pins)
+    explicit AbstractNode1(Context* context, const ea::array<ParticleGraphPin, 1>& pins)
         : ParticleGraphNode(context)
         , pins_{pins[0].WithType(GetVariantType<Value0>())}
     {
@@ -89,7 +91,7 @@ protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(Node* node)
+        Instance(Node* node, ParticleGraphLayerInstance* layer)
             : node_(node)
         {
         }
@@ -102,13 +104,13 @@ protected:
             switch (pinRef.type_)
             {
             case PGCONTAINER_SPAN:
-                Node::Op(numParticles, context.GetSpan<Value0>(pinRef));
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSpan<Value0>(pinRef));
                 break;
             case PGCONTAINER_SCALAR:
-                Node::Op(numParticles, context.GetScalar<Value0>(pinRef));
+                Node::Op(static_cast<typename Node::Instance*>(this), 1, context.GetScalar<Value0>(pinRef));
                 break;
             case PGCONTAINER_SPARSE:
-                Node::Op(numParticles, context.GetSparse<Value0>(pinRef));
+                Node::Op(static_cast<typename Node::Instance*>(this), numParticles, context.GetSparse<Value0>(pinRef));
                 break;
             default:
                 assert(!"Invalid pin container type permutation");
@@ -125,88 +127,20 @@ public:
     unsigned NumPins() const override { return 1; }
 
     /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() override { return sizeof(typename Node::Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
     {
-        return new (ptr) Instance(static_cast<Node*>(this));
+        return new (ptr) typename Node::Instance(static_cast<Node*>(this), layer);
     }
 
 protected:
     /// Pins
-    ParticleGraphNodePin pins_[1];
-};
-
-/// Abstract node with 3 pins
-template <typename Node, typename Value0, typename Value1, typename Value2>
-class AbstractNode3 : public ParticleGraphNode
-{
-protected:
-    /// Construct.
-    explicit AbstractNode3(Context* context)
-        : ParticleGraphNode(context)
-    {
-        pins_[0].requestedValueType_ = GetVariantType<Value0>();
-        pins_[1].requestedValueType_ = GetVariantType<Value1>();
-        pins_[2].requestedValueType_ = GetVariantType<Value2>();
-    }
-
-    class Instance : public ParticleGraphNodeInstance
-    {
-    public:
-        Instance(Node* node)
-            : node_(node)
-        {
-        }
-        void Update(UpdateContext& context) override
-        {
-            const auto& pin0 = node_->pins_[0];
-            const auto& pin1 = node_->pins_[1];
-            const auto& pin2 = node_->pins_[2];
-            const auto permutation = static_cast<unsigned>(pin0.containerType_) +
-                                     static_cast<unsigned>(pin1.containerType_) * 3 +
-                                     static_cast<unsigned>(pin2.containerType_) * 9;
-
-            const unsigned numParticles = context.indices_.size();
-            switch (permutation)
-            {
-            case 0:
-                Node::Op(numParticles, context.GetSpan<Value0>(pin0), context.GetSpan<Value1>(pin1),
-                         context.GetSpan<Value2>(pin2));
-                break;
-            default:
-                assert(!"Invalid pin container type permutation");
-                break;
-            }
-        }
-
-    protected:
-        Node* node_;
-    };
-
-public:
-    /// Get number of pins.
-    unsigned NumPins() const override { return 3; }
-
-    /// Get pin by index.
-    ParticleGraphNodePin& GetPin(unsigned index) override { return pins_[index]; }
-
-    /// Evaluate size required to place new node instance.
-    unsigned EvalueInstanceSize() override { return sizeof(Instance); }
-
-    /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
-    {
-        return new (ptr) Instance(static_cast<Node*>(this));
-    }
-
-protected:
-    /// Pins
-    ParticleGraphNodePin pins_[3];
+    ParticleGraphPin pins_[1];
 };
 
 template <template <typename> typename T, typename Arg0, typename Arg1>

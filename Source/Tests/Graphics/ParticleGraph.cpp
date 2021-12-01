@@ -22,9 +22,11 @@
 
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
-#include "Urho3D/Graphics/ParticleGraph/ParticleGraphLayer.h"
-#include "Urho3D/Graphics/ParticleGraph/ParticleGraphLayerInstance.h"
 
+#include <Urho3D/Graphics/ParticleGraph/ParticleGraphLayer.h>
+#include <Urho3D/Graphics/ParticleGraph/ParticleGraphLayerInstance.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Graphics/ParticleGraphEffect.h>
 #include <Urho3D/Graphics/ParticleGraph/All.h>
 #include <Urho3D/Scene/Scene.h>
@@ -75,6 +77,10 @@ using namespace Urho3D;
 TEST_CASE("Test simple particle graph")
 {
     auto context = Tests::CreateCompleteTestContext();
+    auto resourceCache = context->GetSubsystem<ResourceCache>();
+    auto material = MakeShared<Material>(context);
+    material->SetName("Materials/DefaultGrey.xml");
+    resourceCache->AddManualResource(material);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     effect->SetNumLayers(1);
@@ -83,21 +89,21 @@ TEST_CASE("Test simple particle graph")
         auto& emitGraph = layer->GetEmitGraph();
 
         auto c = MakeShared<ParticleGraphNodes::Constant>(context);
-        c->SetValue(40.0f);
+        c->SetValue(Vector3(1,2,3));
         auto constIndex = emitGraph.Add(c);
         auto set = MakeShared<ParticleGraphNodes::SetAttribute>(context);
         auto& setPin = set->GetPin(0);
-        set->SetAttributeName("size");
+        set->SetAttributeName("pos");
         setPin.sourceNode_ = constIndex;
-        set->SetAttributeType(VAR_FLOAT);
+        set->SetAttributeType(VAR_VECTOR3);
         auto setIndex = emitGraph.Add(set);
     }
     {
         auto& updateGraph = layer->GetUpdateGraph();
         auto get = MakeShared<ParticleGraphNodes::GetAttribute>(context);
         auto& getPin = get->GetPin(0);
-        get->SetAttributeName("size");
-        get->SetAttributeType(VAR_FLOAT);
+        get->SetAttributeName("pos");
+        get->SetAttributeType(VAR_VECTOR3);
         auto getIndex = updateGraph.Add(get);
 
         auto log = MakeShared<ParticleGraphNodes::Print>(context);
@@ -105,6 +111,14 @@ TEST_CASE("Test simple particle graph")
         logPin.sourceNode_ = getIndex;
         logPin.sourcePin_ = 0;
         auto logIndex = updateGraph.Add(log);
+
+        auto render = MakeShared<ParticleGraphNodes::RenderBillboard>(context);
+        render->SetMaterial(material);
+        auto& renderPin = get->GetPin(0);
+        renderPin.sourceNode_ = getIndex;
+        renderPin.sourcePin_ = 0;
+        auto renderIndex = updateGraph.Add(render);
+
     }
 
     VectorBuffer buf;
@@ -117,7 +131,9 @@ TEST_CASE("Test simple particle graph")
     auto emitter = node->CreateComponent<ParticleGraphEmitter>();
     emitter->SetEffect(effect);
     CHECK(emitter->EmitNewParticle(0));
-    emitter->Tick(0.1f);
+
+    Tests::RunFrame(context, 0.1f, 0.1f);
+    //emitter->Tick(0.1f);
 
     auto l = emitter->GetLayer(0);
     //auto sizeMem = l->GetAttributeMemory(0);

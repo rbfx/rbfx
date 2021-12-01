@@ -20,29 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "All.h"
-
-#include "../Material.h"
-
-#include "../../Core/Context.h"
-
 namespace Urho3D
 {
-
-namespace ParticleGraphNodes
-{
-
-void RegisterGraphNodes(Context* context)
-{
-    context->RegisterParticleGraphNodeFactory<GetAttribute>();
-    context->RegisterParticleGraphNodeFactory<SetAttribute>();
-    context->RegisterParticleGraphNodeFactory<Constant>();
-    context->RegisterParticleGraphNodeFactory<Print>();
-    context->RegisterParticleGraphNodeFactory<RenderBillboard>();
 }
-
-}
-
-} // namespace Urho3D

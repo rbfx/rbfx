@@ -45,7 +45,7 @@ namespace
 
     template <typename T> struct LogPin
     {
-        void operator()(UpdateContext& context, const ParticleGraphNodePin& pin0)
+        void operator()(UpdateContext& context, const ParticleGraphPin& pin0)
         {
             const unsigned numParticles = context.indices_.size();
 

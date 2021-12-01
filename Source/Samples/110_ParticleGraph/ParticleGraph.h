@@ -24,11 +24,19 @@
 
 #include "Sample.h"
 
-/// This first example, maintaining tradition, prints a "Hello World" message.
-/// Furthermore it shows:
-///     - Using the Sample / Application classes, which initialize the Urho3D engine and run the main loop
-///     - Adding a Text element to the graphical user interface
-///     - Subscribing to and handling of update events
+namespace Urho3D
+{
+
+class Node;
+class Scene;
+
+} // namespace Urho3D
+
+/// Billboard example.
+/// This sample demonstrates:
+///     - Populating a 3D scene with billboard sets and several shadow casting spotlights
+///     - Parenting scene nodes to allow more intuitive creation of groups of objects
+///     - Examining rendering performance with a somewhat large object and light count
 class ParticleGraph : public Sample
 {
     URHO3D_OBJECT(ParticleGraph, Sample);
@@ -42,19 +50,41 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    ea::string GetScreenJoystickPatchString() const override { return
-        "<patch>"
-        "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
-        "        <attribute name=\"Is Visible\" value=\"false\" />"
-        "    </add>"
-        "</patch>";
+    ea::string GetScreenJoystickPatchString() const override
+    {
+        return "<patch>"
+               "    <remove sel=\"/element/element[./attribute[@name='Name' and @value='Button1']]/attribute[@name='Is "
+               "Visible']\" />"
+               "    <replace sel=\"/element/element[./attribute[@name='Name' and "
+               "@value='Button1']]/element[./attribute[@name='Name' and "
+               "@value='Label']]/attribute[@name='Text']/@value\">Debug</replace>"
+               "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button1']]\">"
+               "        <element type=\"Text\">"
+               "            <attribute name=\"Name\" value=\"KeyBinding\" />"
+               "            <attribute name=\"Text\" value=\"SPACE\" />"
+               "        </element>"
+               "    </add>"
+               "</patch>";
     }
 
 private:
-    /// Construct a new Text instance, containing the 'Hello World' String, and add it to the UI root element.
-    void CreateText();
-    /// Subscribe to application-wide logic update events.
+    /// Construct the scene content.
+    void CreateScene();
+    /// Construct an instruction text to the UI.
+    void CreateInstructions();
+    /// Set up a viewport for displaying the scene.
+    void SetupViewport();
+    /// Subscribe to application-wide logic update and post-render update events.
     void SubscribeToEvents();
+    /// Read input and moves the camera.
+    void MoveCamera(float timeStep);
+    /// Animate the scene.
+    void AnimateScene(float timeStep);
     /// Handle the logic update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle the post-render update event.
+    void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
+
+    /// Flag for drawing debug geometry.
+    bool drawDebug_;
 };
