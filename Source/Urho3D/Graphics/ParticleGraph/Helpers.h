@@ -75,16 +75,51 @@ namespace Urho3D
 
 namespace ParticleGraphNodes
 {
+
+/// Abstract node
+template <typename Node, typename ... Values> class AbstractNode : public ParticleGraphNode
+{
+    //typedef AbstractNode<Node, Values...> BaseType;
+    static constexpr unsigned NumberOfPins = sizeof...(Values);
+    typedef ea::array<ParticleGraphPin, NumberOfPins> PinArray;
+
+protected:
+    /// Helper methods to assign pin types based on template argument types
+    template <int Index> void SetPinTypes(PinArray& pins, const PinArray& src)    {    }
+    template <int Index, typename T, typename... PinTypes> void SetPinTypes(PinArray& pins, const PinArray& src)
+    {
+        pins[Index] = src[Index].WithType(GetVariantType<T>());
+        SetPinTypes<Index + 1, PinTypes...>(pins, src);
+    }
+
+    /// Construct.
+    explicit AbstractNode(Context* context, const PinArray& pins)
+        : ParticleGraphNode(context)
+    {
+        SetPinTypes<0, Values...>(pins_, pins);
+    }
+
+public:
+    /// Get number of pins.
+    unsigned NumPins() const override { return NumberOfPins; }
+
+    /// Get pin by index.
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
+
+protected:
+    /// Pins
+    PinArray pins_;
+};
+
 /// Abstract node with 1 pin
-template <typename Node, typename Value0> class AbstractNode1 : public ParticleGraphNode
+template <typename Node, typename Value0> class AbstractNode1 : public AbstractNode<Node, Value0>
 {
 protected:
     typedef AbstractNode1<Node, Value0> BaseType;
 
     /// Construct.
     explicit AbstractNode1(Context* context, const ea::array<ParticleGraphPin, 1>& pins)
-        : ParticleGraphNode(context)
-        , pins_{pins[0].WithType(GetVariantType<Value0>())}
+        : AbstractNode<Node, Value0>(context, pins)
     {
     }
 
@@ -123,11 +158,6 @@ protected:
     };
 
 public:
-    /// Get number of pins.
-    unsigned NumPins() const override { return 1; }
-
-    /// Get pin by index.
-    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
     unsigned EvaluateInstanceSize() override { return sizeof(typename Node::Instance); }
@@ -137,10 +167,6 @@ public:
     {
         return new (ptr) typename Node::Instance(static_cast<Node*>(this), layer);
     }
-
-protected:
-    /// Pins
-    ParticleGraphPin pins_[1];
 };
 
 template <template <typename> typename T, typename Arg0, typename Arg1>
