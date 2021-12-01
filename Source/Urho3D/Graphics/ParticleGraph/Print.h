@@ -66,7 +66,10 @@ public:
     unsigned EvalueInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override { return new (ptr) Instance(this); }
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
+    {
+        return new (ptr) Instance(this);
+    }
 
 protected:
 

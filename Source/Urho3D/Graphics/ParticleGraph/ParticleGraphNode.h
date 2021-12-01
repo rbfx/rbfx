@@ -54,7 +54,7 @@ public:
     virtual unsigned EvalueInstanceSize() = 0;
 
     /// Place new instance at the provided address.
-    virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) = 0;
+    virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) = 0;
 
     /// Serialize from/to archive. Return true if successful.
     virtual bool Serialize(Archive& archive);

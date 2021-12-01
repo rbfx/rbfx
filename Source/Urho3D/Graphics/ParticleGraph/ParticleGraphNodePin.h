@@ -107,6 +107,9 @@ public:
     /// Serialize from/to archive. Return true if successful.
     virtual bool Serialize(Archive& archive);
 
+    /// Get a copy of the pin setup but with a different value type.
+    ParticleGraphNodePin WithType(VariantType type) const;
+
 protected:
     /// Set pin name and hash.
     void SetName(const ea::string& name);

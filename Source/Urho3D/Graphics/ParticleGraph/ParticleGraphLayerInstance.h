@@ -58,7 +58,13 @@ public:
     template <typename ValueType> ScalarSpan<ValueType> GetScalar(unsigned pinIndex);
     template <typename ValueType> ea::span<ValueType> GetSpan(unsigned pinIndex);
 
+    /// Get emitter.
+    ParticleGraphEmitter* GetEmitter() const { return emitter_; }
+
 protected:
+    /// Set emitter reference.
+    void SetEmitter(ParticleGraphEmitter* emitter);
+
     /// Initialize update context.
     UpdateContext MakeUpdateContext(float timeStep);
 
@@ -81,6 +87,10 @@ private:
     unsigned activeParticles_;
     /// Reference to layer.
     SharedPtr<ParticleGraphLayer> layer_;
+    /// Emitter that owns the layer instance.
+    ParticleGraphEmitter* emitter_{};
+
+    friend class ParticleGraphEmitter;
 };
 
 template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::GetSparse(unsigned attributeIndex, const ea::span<unsigned>& indices)

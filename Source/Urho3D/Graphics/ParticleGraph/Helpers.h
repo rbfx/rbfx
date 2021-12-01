@@ -80,10 +80,10 @@ template <typename Node, typename Value0> class AbstractNode1 : public ParticleG
 {
 protected:
     /// Construct.
-    explicit AbstractNode1(Context* context)
+    explicit AbstractNode1(Context* context, const ea::array<ParticleGraphNodePin, 1>& pins)
         : ParticleGraphNode(context)
+        , pins_{pins[0].WithType(GetVariantType<Value0>())}
     {
-        pins_[0].requestedValueType_ = GetVariantType<Value0>();
     }
 
     class Instance : public ParticleGraphNodeInstance
@@ -98,16 +98,17 @@ protected:
             const auto& pin0 = node_->pins_[0];
 
             const unsigned numParticles = context.indices_.size();
-            switch (pin0.valueType_)
+            auto pinRef = pin0.GetMemoryReference();
+            switch (pinRef.type_)
             {
             case PGCONTAINER_SPAN:
-                Node::Op(numParticles, context.GetSpan<Value0>(pin0));
+                Node::Op(numParticles, context.GetSpan<Value0>(pinRef));
                 break;
             case PGCONTAINER_SCALAR:
-                Node::Op(numParticles, context.GetScalar<Value0>(pin0));
+                Node::Op(numParticles, context.GetScalar<Value0>(pinRef));
                 break;
             case PGCONTAINER_SPARSE:
-                Node::Op(numParticles, context.GetSparse<Value0>(pin0));
+                Node::Op(numParticles, context.GetSparse<Value0>(pinRef));
                 break;
             default:
                 assert(!"Invalid pin container type permutation");
@@ -130,7 +131,7 @@ public:
     unsigned EvalueInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
     {
         return new (ptr) Instance(static_cast<Node*>(this));
     }
@@ -198,7 +199,7 @@ public:
     unsigned EvalueInstanceSize() override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr) override
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
     {
         return new (ptr) Instance(static_cast<Node*>(this));
     }

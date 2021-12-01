@@ -28,6 +28,7 @@
 #include "Constant.h"
 #include "Print.h"
 #include "Math.h"
+#include "RenderBillboard.h"
 
 namespace Urho3D
 {

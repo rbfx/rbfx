@@ -73,7 +73,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
         const auto size = node->EvalueInstanceSize();
         assert(instanceOffset + size <= nodeInstances.size());
         uint8_t* ptr = nodeInstances.begin() + instanceOffset;
-        emitNodeInstances_[i] = node->CreateInstanceAt(ptr);
+        emitNodeInstances_[i] = node->CreateInstanceAt(ptr, this);
         assert(emitNodeInstances_[i] == (ParticleGraphNodeInstance*)ptr);
         instanceOffset += size;
     }
@@ -85,7 +85,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
         const auto size = node->EvalueInstanceSize();
         assert(instanceOffset + size <= nodeInstances.size());
         uint8_t* ptr = nodeInstances.begin() + instanceOffset;
-        updateNodeInstances_[i] = node->CreateInstanceAt(ptr);
+        updateNodeInstances_[i] = node->CreateInstanceAt(ptr, this);
         assert(updateNodeInstances_[i] == (ParticleGraphNodeInstance*)ptr);
         instanceOffset += size;
     }
@@ -130,6 +130,11 @@ ea::span<uint8_t> ParticleGraphLayerInstance::GetAttributeMemory(unsigned attrib
         return ea::span<uint8_t>();
     }
     return attributes.GetSpan(attributeIndex).MakeSpan<uint8_t>(attributes_);
+}
+
+void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)
+{
+    emitter_ = emitter;
 }
 
 UpdateContext ParticleGraphLayerInstance::MakeUpdateContext(float timeStep)

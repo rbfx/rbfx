@@ -81,6 +81,7 @@ void ParticleGraphEmitter::ApplyEffect()
 
     for (unsigned i = 0; i < numLayers; ++i)
     {
+        layers_[i].SetEmitter(this);
         layers_[i].Apply(effect_->GetLayer(i));
     }
 }

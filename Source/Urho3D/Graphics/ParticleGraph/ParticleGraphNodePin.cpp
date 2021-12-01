@@ -89,6 +89,11 @@ bool ParticleGraphNodePin::Serialize(Archive& archive)
     return true;
 }
 
+ParticleGraphNodePin ParticleGraphNodePin::WithType(VariantType type) const
+{
+    return ParticleGraphNodePin(flags_, name_, type, containerType_);
+}
+
 void ParticleGraphNodePin::SetName(const ea::string& name)
 {
     name_ = name;

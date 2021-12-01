@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "ParticleGraphNode.h"
-#include "ParticleGraphNodeInstance.h"
+#include "Helpers.h"
+#include "Urho3D/Graphics/BillboardSet.h"
 
 namespace Urho3D
 {
@@ -32,14 +32,14 @@ namespace ParticleGraphNodes
 {
 
 /// Operation on attribute
-class URHO3D_API Constant : public ParticleGraphNode
+class URHO3D_API RenderBillboard : public ParticleGraphNode
 {
-    URHO3D_OBJECT(Constant, ParticleGraphNode)
+    URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
     /// Construct.
-    explicit Constant(Context* context)
+    explicit RenderBillboard(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphNodePin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, PGCONTAINER_SCALAR)}
+        , pins_{ParticleGraphNodePin(PGPIN_INPUT, "pos", VAR_VECTOR3)}
     {
     }
 
@@ -47,11 +47,15 @@ protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(Constant* node);
+        Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer);
+        ~Instance();
         void Update(UpdateContext& context) override;
 
     protected:
-        Constant* node_;
+        RenderBillboard* node_;
+        SharedPtr<Urho3D::Node> sceneNode_;
+        SharedPtr<Urho3D::BillboardSet> billboardSet_;
+        SharedPtr<Urho3D::Octree> octree_;
     };
 
 public:
@@ -67,20 +71,12 @@ public:
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
     {
-        return new (ptr) Instance(this);
+        return new (ptr) Instance(this, layer);
     }
 
-    const Variant& GetValue();
-
-    void SetValue(const Variant&);
-
 protected:
-
     /// Pins
     ParticleGraphNodePin pins_[1];
-
-    /// Value
-    Variant value_;
 };
 
 } // namespace ParticleGraphNodes
