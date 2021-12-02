@@ -73,8 +73,10 @@ public:
     bool IsReplicatedClient() const { return !!client_; }
     Scene* GetScene() const { return scene_; }
     const auto& GetUnorderedNetworkObjects() const { return networkObjects_; }
+    unsigned GetNetworkIndexUpperBound() const { return networkObjects_.size(); }
     ea::string ToString() const;
     NetworkObject* GetNetworkObject(NetworkId networkId) const;
+    NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const { return networkObjects_[networkIndex]; }
 
     /// NetworkId utilities
     /// @{

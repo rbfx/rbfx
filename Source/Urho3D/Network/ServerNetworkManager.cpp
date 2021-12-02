@@ -77,13 +77,17 @@ void ServerNetworkManager::BeginNetworkFrame()
         data.clockAccumulator_ += timeStep;
     }
 
+    const unsigned maxIndex = base_->GetNetworkIndexUpperBound();
+    needDeltaUpdates_.clear();
+    needDeltaUpdates_.resize(maxIndex);
+    deltaUpdates_.resize(maxIndex);
+
     base_->UpdateAndSortNetworkObjects(orderedNetworkObjects_);
     for (auto& [connection, data] : connections_)
     {
         if (!data.synchronized_)
             continue;
 
-        const unsigned maxIndex = base_->GetUnorderedNetworkObjects().size();
         data.isComponentReplicated_.resize(maxIndex);
         data.componentsRelevanceTimeouts_.resize(maxIndex);
 
@@ -134,12 +138,32 @@ void ServerNetworkManager::BeginNetworkFrame()
                 }
 
                 // Queue non-snapshot update
+                needDeltaUpdates_[index] = true;
                 data.pendingUpdatedComponents_.push_back({ networkObject, false });
             }
         }
     }
-
     base_->ClearRecentActions();
+
+    deltaUpdateBuffer_.Clear();
+    for (unsigned index = 0; index < maxIndex; ++index)
+    {
+        if (!needDeltaUpdates_[index])
+            continue;
+
+        NetworkObject* networkObject = base_->GetNetworkObjectByIndex(index);
+        const unsigned beginOffset = deltaUpdateBuffer_.Tell();
+        if (networkObject->WriteReliableDelta(deltaUpdateBuffer_))
+        {
+            const unsigned endOffset = deltaUpdateBuffer_.Tell();
+            deltaUpdates_[index] = { beginOffset, endOffset };
+        }
+        else
+        {
+            deltaUpdateBuffer_.Seek(beginOffset);
+            needDeltaUpdates_[index] = false;
+        }
+    }
 }
 
 void ServerNetworkManager::AddConnection(AbstractConnection* connection)
@@ -253,18 +277,29 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
     {
         for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
         {
-            componentBuffer_.Clear();
-            if (isSnapshot)
-                networkObject->WriteSnapshot(componentBuffer_);
-            else
-            {
-                if (!networkObject->WriteReliableDelta(componentBuffer_))
-                    continue;
-            }
+            // Skip redundant updates
+            const unsigned index = GetIndex(networkObject->GetNetworkId());
+            if (!isSnapshot && !needDeltaUpdates_[index])
+                continue;
 
             msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(isSnapshot ? networkObject->GetType() : StringHash());
-            msg.WriteBuffer(componentBuffer_.GetBuffer());
+            if (isSnapshot)
+            {
+                msg.WriteStringHash(networkObject->GetType());
+
+                componentBuffer_.Clear();
+                networkObject->WriteSnapshot(componentBuffer_);
+                msg.WriteBuffer(componentBuffer_.GetBuffer());
+            }
+            else
+            {
+                msg.WriteStringHash(StringHash{});
+
+                const auto [beginOffset, endOffset] = deltaUpdates_[index];
+                const unsigned deltaSize = endOffset - beginOffset;
+                msg.WriteVLE(deltaSize);
+                msg.Write(deltaUpdateBuffer_.GetData() + beginOffset, deltaSize);
+            }
 
             if (debugInfo)
             {
