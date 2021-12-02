@@ -84,7 +84,7 @@ TEST_CASE("Test simple particle graph")
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     effect->SetNumLayers(1);
-    auto& layer = effect->GetLayer(0);
+    auto layer = effect->GetLayer(0);
     {
         auto& emitGraph = layer->GetEmitGraph();
 

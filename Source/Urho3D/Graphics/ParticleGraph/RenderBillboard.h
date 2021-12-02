@@ -88,7 +88,7 @@ protected:
     /// Reference to material.
     ResourceRef materialRef_;
 
-    friend class AbstractNodeType;
+    //friend class AbstractNodeType;
 };
 
 } // namespace ParticleGraphNodes

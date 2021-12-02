@@ -24,7 +24,6 @@
 
 #include "../ParticleGraphEmitter.h"
 #include "ParticleGraphPin.h"
-#include "ParticleGraphLayerInstance.h"
 
 namespace Urho3D
 {
@@ -41,25 +40,6 @@ struct UpdateContext
     template <typename ValueType> ScalarSpan<ValueType> GetScalar(const ParticleGraphPinRef& pin);
     template <typename ValueType> SparseSpan<ValueType> GetSparse(const ParticleGraphPinRef& pin);
 };
-
-template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == PGCONTAINER_SPAN);
-    return layer_->GetSpan<ValueType>(pin.index_);
-}
-
-template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == PGCONTAINER_SCALAR);
-    return layer_->GetScalar<ValueType>(pin.index_);
-}
-
-template <typename ValueType>
-SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == PGCONTAINER_SPARSE);
-    return layer_->GetSparse<ValueType>(pin.index_, indices_);
-}
 
 class URHO3D_API ParticleGraphNodeInstance
 {

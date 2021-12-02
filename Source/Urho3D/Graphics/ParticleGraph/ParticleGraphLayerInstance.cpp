@@ -156,4 +156,16 @@ void ParticleGraphLayerInstance::RunGraph(ea::span<ParticleGraphNodeInstance*>& 
         node->Update(updateContext);
     }
 }
+
+#define InstantiateSpan(Span, FuncName) \
+    template Span<float> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                     \
+    template Span<Vector2> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
+    template Span<Vector3> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
+    template Span<Vector4> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
+    template Span<Quaternion> UpdateContext::FuncName(const ParticleGraphPinRef& pin)
+
+InstantiateSpan(ea::span, GetSpan);
+InstantiateSpan(ScalarSpan, GetScalar);
+InstantiateSpan(SparseSpan, GetSparse);
+
 } // namespace Urho3D

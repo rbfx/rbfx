@@ -108,7 +108,25 @@ template <typename ValueType> ScalarSpan<ValueType> ParticleGraphLayerInstance::
 template <typename ValueType> ea::span<ValueType> ParticleGraphLayerInstance::GetSpan(unsigned pinIndex)
 {
     const auto& attr = layer_->GetIntermediateValues()[pinIndex];
-    return  attr.MakeSpan<ValueType>(temp_);
+    return attr.MakeSpan<ValueType>(temp_);
+}
+
+template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin)
+{
+    assert(pin.type_ == PGCONTAINER_SPAN);
+    return layer_->GetSpan<ValueType>(pin.index_);
+}
+
+template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphPinRef& pin)
+{
+    assert(pin.type_ == PGCONTAINER_SCALAR);
+    return layer_->GetScalar<ValueType>(pin.index_);
+}
+
+template <typename ValueType> SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphPinRef& pin)
+{
+    assert(pin.type_ == PGCONTAINER_SPARSE);
+    return layer_->GetSparse<ValueType>(pin.index_, indices_);
 }
 
 } // namespace Urho3D

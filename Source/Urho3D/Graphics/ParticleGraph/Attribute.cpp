@@ -34,14 +34,6 @@ namespace ParticleGraphNodes
 namespace 
 {
 
-template <typename ValueType>
-SparseSpan<ValueType> GetOutputSparse(UpdateContext& context, const ParticleGraphPin& pin)
-{
-    const auto subspan = pin.MakeOutputSpan<ValueType>(context.attributes_);
-    return SparseSpan<ValueType>(reinterpret_cast<ValueType*>(subspan.begin()),
-                                 reinterpret_cast<ValueType*>(subspan.end()), context.indices_);
-}
-
 template <typename T> struct CopyValues
 {
     void operator()(UpdateContext& context, const ParticleGraphPin& pin0)
