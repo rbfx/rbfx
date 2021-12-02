@@ -127,6 +127,10 @@ private:
     ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
     VectorBuffer componentBuffer_;
     ea::vector<NetworkObject*> orderedNetworkObjects_;
+
+    VectorBuffer deltaUpdateBuffer_;
+    ea::vector<bool> needDeltaUpdates_;
+    ea::vector<ea::pair<unsigned, unsigned>> deltaUpdates_;
 };
 
 }

@@ -131,10 +131,15 @@ TEST_CASE("Scene is synchronized between client and server")
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
     auto serverScene = MakeShared<Scene>(context);
-    auto clientScene = MakeShared<Scene>(context);
+    SharedPtr<Scene> clientScenes[] = {
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context)
+    };
 
     {
-        auto clientOnlyNode = clientScene->CreateChild("Client Only Node");
+        for (Scene* clientScene : clientScenes)
+            clientScene->CreateChild("Client Only Node");
         auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
         auto replicatedNodeA = serverScene->CreateChild("Replicated Node A");
         replicatedNodeA->CreateComponent<DefaultNetworkObject>();
@@ -154,9 +159,11 @@ TEST_CASE("Scene is synchronized between client and server")
     sim.SimulateTime(10.0f);
 
     // Add client and wait for synchronization
-    sim.AddClient(clientScene, quality);
+    for (Scene* clientScene : clientScenes)
+        sim.AddClient(clientScene, quality);
     sim.SimulateTime(10.0f);
 
+    for (Scene* clientScene : clientScenes)
     {
         auto clientOnlyNode = clientScene->GetChild("Client Only Node", true);
         auto replicatedNodeA = clientScene->GetChild("Replicated Node A", true);
@@ -200,6 +207,7 @@ TEST_CASE("Scene is synchronized between client and server")
 
     sim.SimulateTime(syncDelay);
 
+    for (Scene* clientScene : clientScenes)
     {
         auto clientOnlyNode = clientScene->GetChild("Client Only Node", true);
         auto replicatedNodeA = clientScene->GetChild("Replicated Node A", true);
@@ -240,6 +248,7 @@ TEST_CASE("Scene is synchronized between client and server")
 
     sim.SimulateTime(syncDelay);
 
+    for (Scene* clientScene : clientScenes)
     {
         auto clientOnlyNode = clientScene->GetChild("Client Only Node", true);
         auto replicatedNodeB = clientScene->GetChild("Replicated Node B", true);
