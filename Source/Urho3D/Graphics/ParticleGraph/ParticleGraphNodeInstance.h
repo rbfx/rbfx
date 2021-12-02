@@ -64,6 +64,7 @@ SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphPinRef& pin)
 class URHO3D_API ParticleGraphNodeInstance
 {
 public:
+    /// Construct.
     ParticleGraphNodeInstance();
 
     /// Destruct.

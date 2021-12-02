@@ -28,6 +28,8 @@
 
 #include "../../Core/Context.h"
 
+#include <EASTL/tuple.h>
+
 namespace Urho3D
 {
 
@@ -41,6 +43,9 @@ void RegisterGraphNodes(Context* context)
     context->RegisterParticleGraphNodeFactory<Constant>();
     context->RegisterParticleGraphNodeFactory<Print>();
     context->RegisterParticleGraphNodeFactory<RenderBillboard>();
+
+    context->RegisterParticleGraphNodeFactory<Add>();
+    context->RegisterParticleGraphNodeFactory<Slerp>();
 }
 
 }

@@ -57,7 +57,10 @@ ParticleGraphNode::~ParticleGraphNode() = default;
 void ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex)
 {
     if (pinIndex >= NumPins())
+    {
+        URHO3D_LOGERROR("Pin index out of bounds");
         return;
+    }
     auto& pin = GetPin(pinIndex);
     pin.SetSource(nodeIndex, nodePinIndex);
 }
@@ -96,7 +99,7 @@ bool ParticleGraphNode::Serialize(Archive& archive)
     return SerializeArrayAsObjects(archive, "pins", "pin", adapter);
 }
 
-bool ParticleGraphNode::EvaluateOutputPinType(ParticleGraphPin& pin) { return false; }
+VariantType ParticleGraphNode::EvaluateOutputPinType(ParticleGraphPin& pin) { return VAR_NONE; }
 
 bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value)
 {

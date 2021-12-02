@@ -67,7 +67,7 @@ public:
 
 protected:
     /// Evaluate runtime output pin type.
-    virtual bool EvaluateOutputPinType(ParticleGraphPin& pin);
+    virtual VariantType EvaluateOutputPinType(ParticleGraphPin& pin);
 
     /// Set pin name.
     /// This method is protected so it can only be accessable to nodes that allow pin renaming.

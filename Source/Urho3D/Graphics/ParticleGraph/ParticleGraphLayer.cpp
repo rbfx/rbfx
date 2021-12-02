@@ -77,7 +77,7 @@ struct ParticleGraphAttributeBuilder
                 pin.valueType_ = pin.requestedValueType_;
                 if (pin.valueType_ == VAR_NONE && !pin.GetIsInput())
                 {
-                    node->EvaluateOutputPinType(pin);
+                    pin.valueType_ = node->EvaluateOutputPinType(pin);
                     if (pin.valueType_ == VAR_NONE)
                     {
                         URHO3D_LOGERROR("Can't detect output pin type");

@@ -31,15 +31,13 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 
-/// Operation on attribute
+/// Render billboard
 class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3, Vector2>
 {
     URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
     /// Construct.
     explicit RenderBillboard(Context* context);
-
-protected:
 
     class Instance : public AbstractNodeType::Instance
     {
@@ -56,10 +54,13 @@ protected:
         SharedPtr<Urho3D::BillboardSet> billboardSet_;
         SharedPtr<Urho3D::Octree> octree_;
     };
-    template <typename Pin0, typename Pin1>
-    static void Op(Instance* instance, unsigned numParticles, Pin0 pin0, Pin1 pin1)
+
+    template <typename Tuple>
+    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         instance->Prepare(numParticles);
+        auto& pin0 = ea::get<0>(spans);
+        auto& pin1 = ea::get<1>(spans);
         for (unsigned i = 0; i < numParticles; ++i)
         {
             instance->UpdateParticle(i, pin0[i], pin1[i]);
