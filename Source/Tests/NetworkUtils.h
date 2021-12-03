@@ -78,6 +78,8 @@ private:
     ea::vector<InternalMessage> messages_[2][2];
 
     unsigned totalMessages_{};
+    unsigned totalUnorderedMessages_{};
+    unsigned totalUnreliableMessages_{};
     unsigned droppedMessages_{};
     unsigned shuffledMessages_{};
 };

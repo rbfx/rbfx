@@ -62,10 +62,14 @@ void ManualConnection::IncrementTime(unsigned delta)
 
 void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
 {
-    const double currentDropRatio = droppedMessages_ / ea::max(1.0, static_cast<double>(totalMessages_));
-    const double currentShuffleRatio = shuffledMessages_ / ea::max(1.0, static_cast<double>(totalMessages_));
+    const double currentDropRatio = droppedMessages_ / ea::max(1.0, static_cast<double>(totalUnreliableMessages_));
+    const double currentShuffleRatio = shuffledMessages_ / ea::max(1.0, static_cast<double>(totalUnorderedMessages_));
 
     ++totalMessages_;
+    if (!reliable)
+        ++totalUnreliableMessages_;
+    if (!inOrder)
+        ++totalUnorderedMessages_;
 
     // Simulate message loss
     if (!reliable && currentDropRatio < quality_.dropRate_)
