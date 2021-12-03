@@ -114,8 +114,8 @@ public:
     #endif
 
         msg_.Clear();
-        generator(msg_, debugInfoPtr);
-        SendLoggedMessage(messageId, reliable, inOrder, msg_.GetData(), msg_.GetSize(), debugInfo);
+        if (generator(msg_, debugInfoPtr))
+            SendLoggedMessage(messageId, reliable, inOrder, msg_.GetData(), msg_.GetSize(), debugInfo);
     }
 
     void OnMessageReceived(NetworkMessageId messageId, MemoryBuffer& messageData) const
