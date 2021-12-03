@@ -270,11 +270,15 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
 
         for (NetworkId networkId : data.pendingRemovedComponents_)
             msg.WriteUInt(static_cast<unsigned>(networkId));
+
+        const bool sendMessage = !data.pendingRemovedComponents_.empty();
+        return sendMessage;
     });
 
     connection->SendGeneratedMessage(MSG_UPDATE_COMPONENTS, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
+        bool sendMessage = false;
         for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
         {
             // Skip redundant updates
@@ -282,6 +286,7 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
             if (!isSnapshot && !needDeltaUpdates_[index])
                 continue;
 
+            sendMessage = true;
             msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
             if (isSnapshot)
             {
@@ -310,6 +315,7 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
                 debugInfo->append(NetworkManagerBase::FormatNetworkId(networkObject->GetNetworkId()));
             }
         }
+        return sendMessage;
     });
 }
 
