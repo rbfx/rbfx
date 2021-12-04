@@ -43,21 +43,12 @@ ManualConnection::ManualConnection(Context* context, NetworkManager* sink, unsig
 void ManualConnection::IncrementTime(unsigned delta)
 {
     currentTime_ += delta;
-    for (auto& messagesByOrder : messages_)
-    {
-        for (auto& messages : messagesByOrder)
-        {
-            ea::erase_if(messages, [&](const InternalMessage& msg)
-            {
-                if (msg.sendingTime_ >= currentTime_)
-                    return false;
 
-                MemoryBuffer memoryBuffer(msg.data_);
-                sink_->ProcessMessage(sinkConnection_, msg.messageId_, memoryBuffer);
-                return true;
-            });
-        }
-    }
+    SendOrderedMessages(messages_[false][true]);
+    SendOrderedMessages(messages_[true][true]);
+
+    SendUnorderedMessages(messages_[false][false]);
+    SendUnorderedMessages(messages_[true][false]);
 }
 
 void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
@@ -88,7 +79,7 @@ void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reli
     }
 
     InternalMessage& msg = *outgoingQueue.emplace(outgoingQueue.begin() + index);
-    msg.sendingTime_ = currentTime_ + GetPing();
+    msg.receiveTime_ = currentTime_ + GetPing();
     msg.messageId_ = messageId;
     msg.data_.assign(data, data + numBytes);
 }
@@ -102,6 +93,33 @@ unsigned ManualConnection::GetPing()
     const float source2 = random_.GetNormalFloat(mean, sigma / 1.5);
     const float value = Clamp(source1 >= quality_.minPing_ ? source1 : source2, quality_.minPing_, quality_.spikePing_);
     return static_cast<unsigned>(value * NetworkSimulator::MillisecondsInFrame * NetworkSimulator::FramesInSecond);
+}
+
+void ManualConnection::DeliverMessage(const InternalMessage& msg)
+{
+    MemoryBuffer memoryBuffer(msg.data_);
+    sink_->ProcessMessage(sinkConnection_, msg.messageId_, memoryBuffer);
+}
+
+void ManualConnection::SendOrderedMessages(ea::vector<InternalMessage>& messages)
+{
+    const auto firstIgnoredMessageIter = ea::find_if(messages.begin(), messages.end(),
+        [&](const InternalMessage& msg) { return msg.receiveTime_ >= currentTime_; });
+    ea::for_each(messages.begin(), firstIgnoredMessageIter,
+        [&](const InternalMessage& msg) { DeliverMessage(msg); });
+    messages.erase(messages.begin(), firstIgnoredMessageIter);
+}
+
+void ManualConnection::SendUnorderedMessages(ea::vector<InternalMessage>& messages)
+{
+    ea::erase_if(messages, [&](const InternalMessage& msg)
+    {
+        if (msg.receiveTime_ >= currentTime_)
+            return false;
+
+        DeliverMessage(msg);
+        return true;
+    });
 }
 
 NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)

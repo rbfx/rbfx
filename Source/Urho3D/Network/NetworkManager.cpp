@@ -114,6 +114,7 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
         URHO3D_LOGWARNING("NetworkObject {} is overriden by NetworkObject {}",
             FormatNetworkId(oldNetworkObject->GetNetworkId()),
             FormatNetworkId(networkId));
+
         RemoveComponent(oldNetworkObject);
     }
 
@@ -121,6 +122,10 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
     ++numComponents_;
     recentlyAddedComponents_.insert(networkId);
     networkObjects_[index] = networkObject;
+
+    if (!IsReplicatedClient())
+        networkObject->InitializeReliableDelta();
+
     URHO3D_LOGINFO("NetworkObject {} is added", FormatNetworkId(networkId));
 }
 
@@ -246,6 +251,11 @@ NetworkObject* NetworkManagerBase::GetNetworkObject(NetworkId networkId) const
     const auto [index, version] = DecomposeNetworkId(networkId);
     const bool isValidId = index < networkObjects_.size() && networkObjectVersions_[index] == version;
     return isValidId ? networkObjects_[index] : nullptr;
+}
+
+NetworkObject* NetworkManagerBase::GetNetworkObjectByIndex(unsigned networkIndex) const
+{
+    return networkIndex < networkObjects_.size() ? networkObjects_[networkIndex] : nullptr;
 }
 
 NetworkId NetworkManagerBase::ComposeNetworkId(unsigned index, unsigned version)
