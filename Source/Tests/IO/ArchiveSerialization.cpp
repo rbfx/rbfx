@@ -23,6 +23,7 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/IO/MemoryBuffer.h>
+#include <Urho3D/Scene/ValueAnimation.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
 
@@ -432,6 +433,50 @@ TEST_CASE("Test structure is serialized as part of the file")
 
         JSONInputArchive jsonInputArchive{ context, root.Get("child") };
         SerializationTestStruct objectFromJSON;
+        SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
+
+        REQUIRE(sourceObject == objectFromJSON);
+    }
+}
+
+TEST_CASE("Variant map serilization")
+{
+    auto context = CreateTestContext();
+    VariantMap sourceObject;
+
+    sourceObject["Int"] = 1;
+    sourceObject["Float"] = 42.0f;
+    sourceObject["ValueAnimation"] = MakeShared<ValueAnimation>(context);
+
+    SECTION("XML file")
+    {
+        auto xmlFile = MakeShared<XMLFile>(context);
+        XMLElement root = xmlFile->CreateRoot("root");
+
+        XMLOutputArchive xmlOutputArchive{context, root.CreateChild("child")};
+        SerializeValue(xmlOutputArchive, "SerializationTestStruct", sourceObject);
+        REQUIRE_FALSE(xmlOutputArchive.HasError());
+
+        XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
+        VariantMap objectFromXML;
+        SerializeValue(xmlInputArchive, "SerializationTestStruct", objectFromXML);
+        REQUIRE_FALSE(xmlInputArchive.HasError());
+
+        REQUIRE(sourceObject == objectFromXML);
+    }
+
+    SECTION("JSON file")
+    {
+        auto jsonFile = MakeShared<JSONFile>(context);
+        JSONValue& root = jsonFile->GetRoot();
+
+        JSONValue child;
+        JSONOutputArchive jsonOutputArchive{context, child};
+        SerializeValue(jsonOutputArchive, "SerializationTestStruct", sourceObject);
+        root.Set("child", child);
+
+        JSONInputArchive jsonInputArchive{context, root.Get("child")};
+        VariantMap objectFromJSON;
         SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
 
         REQUIRE(sourceObject == objectFromJSON);

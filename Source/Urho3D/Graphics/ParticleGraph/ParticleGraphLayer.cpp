@@ -57,7 +57,7 @@ struct ParticleGraphAttributeBuilder
         : attributes_(attributes)
         , layout_(layout)
         , capacity_(capacity)
-        , tempSize_(tempSize)
+        , tempBufferLayout_(tempSize)
     {
     }
 
@@ -99,7 +99,7 @@ struct ParticleGraphAttributeBuilder
                 else if (!pin.GetIsInput())
                 {
                     // Allocate temp buffer
-                    pin.memory_ = ParticleGraphPinRef(pin.containerType_, tempSize_.Allocate(pin.containerType_, pin.requestedValueType_));
+                    pin.memory_ = ParticleGraphPinRef(pin.containerType_, tempBufferLayout_.Allocate(pin.containerType_, pin.requestedValueType_));
                 }
                 // Connect input pin
                 if (pin.GetIsInput())
@@ -139,7 +139,7 @@ struct ParticleGraphAttributeBuilder
     }
     ParticleGraphAttributeLayout& attributes_;
     ParticleGraphLayer::AttributeBufferLayout* layout_;
-    ParticleGraphBufferLayout& tempSize_;
+    ParticleGraphBufferLayout& tempBufferLayout_;
     unsigned capacity_;
 };
 void ParticleGraphLayer::RegisterObject(Context* context)
@@ -199,6 +199,7 @@ void ParticleGraphLayer::AttributeBufferLayout::Apply(ParticleGraphLayer& layer)
 
 bool ParticleGraphLayer::Prepare()
 {
+    //TODO: prepare once!
     Invalidate();
     // Evaluate attribute buffer layout except attributes size.
     attributeBufferLayout_.Apply(*this);
