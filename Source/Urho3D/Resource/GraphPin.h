@@ -53,9 +53,6 @@ public:
     /// @property
     const ea::string& GetName() { return name_; }
 
-    /// Serialize from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive);
-
     /// Get pin direction.
     GraphPinDirection GetDirection() const { return direction_; }
 
@@ -63,6 +60,9 @@ public:
     GraphNode* GetNode() const { return node_; }
 
 protected:
+    /// Serialize from/to archive. Return true if successful.
+    virtual bool Serialize(Archive& archive);
+
     /// Set name of the pin. Executed by GraphNode.
     /// @property
     void SetName(const ea::string_view name);
@@ -93,12 +93,12 @@ protected:
     /// Construct.
     GraphInPin(GraphNode* node, GraphPinDirection direction);
 
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
+
 public:
     /// Connect to other pin.
     bool ConnectTo(GraphOutPin& pin);
-
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
 
 private:
     /// Target node.

@@ -33,7 +33,27 @@ namespace
 
 static char* DirectionEnumConstants[]{"In", "Out", "Enter", "Exit", nullptr};
 
-template <typename Iterator> bool SerializePins(Archive& archive, Iterator begin, Iterator end)
+}
+
+GraphNode::GraphNode(Context* context)
+    : Object(context)
+    , graph_(nullptr)
+    , id_(0)
+    , name_()
+    , nameHash_()
+{
+}
+
+GraphNode::~GraphNode() = default;
+
+void GraphNode::RegisterObject(Context* context)
+{
+    context->RegisterFactory<GraphNode>();
+}
+
+
+template <typename Iterator>
+bool GraphNode::SerializePins(Archive& archive, Iterator begin, Iterator end)
 {
     while (begin != end)
     {
@@ -55,24 +75,6 @@ template <typename Iterator> bool SerializePins(Archive& archive, Iterator begin
         }
     }
     return true;
-}
-
-}
-
-GraphNode::GraphNode(Context* context)
-    : Object(context)
-    , graph_(nullptr)
-    , id_(0)
-    , name_()
-    , nameHash_()
-{
-}
-
-GraphNode::~GraphNode() = default;
-
-void GraphNode::RegisterObject(Context* context)
-{
-    context->RegisterFactory<GraphNode>();
 }
 
 

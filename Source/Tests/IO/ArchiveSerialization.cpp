@@ -20,6 +20,10 @@
 // THE SOFTWARE.
 //
 
+#include "Urho3D/Graphics/AnimationTrack.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Model.h"
+
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/IO/MemoryBuffer.h>
@@ -439,14 +443,18 @@ TEST_CASE("Test structure is serialized as part of the file")
     }
 }
 
-TEST_CASE("Variant map serilization")
+TEST_CASE("Variant unique_ptr serilization")
 {
     auto context = CreateTestContext();
-    VariantMap sourceObject;
 
-    sourceObject["Int"] = 1;
-    sourceObject["Float"] = 42.0f;
-    sourceObject["ValueAnimation"] = MakeShared<ValueAnimation>(context);
+    Variant sourceObject;
+    auto track = ea::make_unique<VariantAnimationTrack>();
+    track->interpolation_ = KeyFrameInterpolation::TensionSpline;
+    track->AddKeyFrame(VariantAnimationKeyFrame{0, 0.0f});
+    track->AddKeyFrame(VariantAnimationKeyFrame{0.5f, 1.0f});
+    track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 0.0f});
+    track->Commit();
+    sourceObject.SetCustom(ea::move(track));
 
     SECTION("XML file")
     {
@@ -457,12 +465,21 @@ TEST_CASE("Variant map serilization")
         SerializeValue(xmlOutputArchive, "SerializationTestStruct", sourceObject);
         REQUIRE_FALSE(xmlOutputArchive.HasError());
 
+        {
+            VectorBuffer buf;
+            xmlFile->Save(buf);
+            ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+        }
+
         XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
-        VariantMap objectFromXML;
+        Variant objectFromXML;
+        objectFromXML.SetCustom(ea::make_unique<VariantAnimationTrack>());
         SerializeValue(xmlInputArchive, "SerializationTestStruct", objectFromXML);
         REQUIRE_FALSE(xmlInputArchive.HasError());
 
-        REQUIRE(sourceObject == objectFromXML);
+        auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        auto xmlTrack = objectFromXML.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        REQUIRE((*sourceTrack)->GetNumKeyFrames() == (*xmlTrack)->GetNumKeyFrames());
     }
 
     SECTION("JSON file")
@@ -475,10 +492,20 @@ TEST_CASE("Variant map serilization")
         SerializeValue(jsonOutputArchive, "SerializationTestStruct", sourceObject);
         root.Set("child", child);
 
+        {
+            VectorBuffer buf;
+            jsonFile->Save(buf);
+            ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+        }
+
         JSONInputArchive jsonInputArchive{context, root.Get("child")};
-        VariantMap objectFromJSON;
+        Variant objectFromJSON;
+        objectFromJSON.SetCustom(ea::make_unique<VariantAnimationTrack>());
         SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
 
-        REQUIRE(sourceObject == objectFromJSON);
+        auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        auto jsonTrack = objectFromJSON.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        REQUIRE((*sourceTrack)->GetNumKeyFrames() == (*jsonTrack)->GetNumKeyFrames());
     }
 }
+

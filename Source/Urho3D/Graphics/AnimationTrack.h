@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2021 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -123,6 +123,12 @@ struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKey
     Variant Sample(float time, float duration, bool isLooped, unsigned& frameIndex) const;
     /// Return type of animation track. Defined by the type of the first keyframe.
     VariantType GetType() const;
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive);
 };
+
+/// Serialize VariantAnimationTrack.
+bool URHO3D_API SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value);
 
 }

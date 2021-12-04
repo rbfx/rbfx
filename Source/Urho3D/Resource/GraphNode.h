@@ -86,6 +86,8 @@ protected:
     /// Set graph and id. Called by Graph.
     void SetGraph(Graph* scene, unsigned id);
 
+    template <typename Iterator> bool SerializePins(Archive& archive, Iterator begin, Iterator end);
+
 private:
     /// Name.
     ea::string name_;
