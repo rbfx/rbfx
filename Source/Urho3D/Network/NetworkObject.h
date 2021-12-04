@@ -28,6 +28,8 @@
 #include "../Scene/Component.h"
 #include "../Network/NetworkManager.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -65,8 +67,10 @@ public:
 
     /// Return whether the component should be replicated for specified client connection.
     virtual bool IsRelevantForClient(AbstractConnection* connection);
-    /// Callen when component is removed by server.
+    /// Called when component is removed by server.
     virtual void OnRemovedOnClient();
+    /// Called when component is added on server. Reset delta values here.
+    virtual void InitializeReliableDelta();
     /// Write full snapshot on server.
     virtual void WriteSnapshot(VectorBuffer& dest);
     /// Write delta update on server. Delta is applied to previous delta or snapshot message.
@@ -117,6 +121,7 @@ public:
 
     /// Implementation of NetworkObject
     /// @{
+    void InitializeReliableDelta() override;
     void WriteSnapshot(VectorBuffer& dest) override;
     bool WriteReliableDelta(VectorBuffer& dest) override;
     void ReadSnapshot(VectorBuffer& src) override;

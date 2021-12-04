@@ -76,7 +76,7 @@ public:
     unsigned GetNetworkIndexUpperBound() const { return networkObjects_.size(); }
     ea::string ToString() const;
     NetworkObject* GetNetworkObject(NetworkId networkId) const;
-    NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const { return networkObjects_[networkIndex]; }
+    NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
 
     /// NetworkId utilities
     /// @{

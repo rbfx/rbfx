@@ -59,14 +59,17 @@ public:
     void IncrementTime(unsigned delta);
 
 private:
-    unsigned GetPing();
-
     struct InternalMessage
     {
-        unsigned sendingTime_{};
+        unsigned receiveTime_{};
         NetworkMessageId messageId_{};
         ByteVector data_;
     };
+
+    unsigned GetPing();
+    void DeliverMessage(const InternalMessage& msg);
+    void SendOrderedMessages(ea::vector<InternalMessage>& messages);
+    void SendUnorderedMessages(ea::vector<InternalMessage>& messages);
 
     NetworkManager* sink_{};
     AbstractConnection* sinkConnection_{};

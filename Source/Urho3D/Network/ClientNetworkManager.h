@@ -88,6 +88,7 @@ private:
     void OnInputProcessed();
     void ProcessTimeCorrection();
     NetworkObject* GetOrCreateNetworkObject(NetworkId networkId, StringHash componentType);
+    void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
 
     Network* network_{};
     NetworkManagerBase* base_{};

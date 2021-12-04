@@ -284,6 +284,14 @@ NetworkObject* ClientNetworkManager::GetOrCreateNetworkObject(NetworkId networkI
         }
         networkObject->SetNetworkId(networkId);
 
+        const unsigned networkIndex = NetworkManagerBase::DecomposeNetworkId(networkId).first;
+        if (NetworkObject* oldNetworkObject = base_->GetNetworkObjectByIndex(networkIndex))
+        {
+            URHO3D_LOGWARNING("NetworkObject {} overwrites existing NetworkObject {}",
+                NetworkManagerBase::FormatNetworkId(networkId), NetworkManagerBase::FormatNetworkId(oldNetworkObject->GetNetworkId()));
+            RemoveNetworkObject(WeakPtr<NetworkObject>(oldNetworkObject));
+        }
+
         Node* newNode = scene_->CreateChild(EMPTY_STRING, LOCAL);
         newNode->AddComponent(networkObject, 0, LOCAL);
         return networkObject;
@@ -298,6 +306,13 @@ NetworkObject* ClientNetworkManager::GetOrCreateNetworkObject(NetworkId networkI
         }
         return networkObject;
     }
+}
+
+void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
+{
+    networkObject->OnRemovedOnClient();
+    if (networkObject)
+        networkObject->Remove();
 }
 
 double ClientNetworkManager::GetCurrentFrameDeltaRelativeTo(double referenceFrame) const

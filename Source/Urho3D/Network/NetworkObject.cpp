@@ -86,7 +86,9 @@ void NetworkObject::UpdateCurrentScene(Scene* scene)
     {
         if (networkManager_)
         {
-            networkManager_->RemoveComponent(this);
+            // Remove only if still valid
+            if (networkManager_->GetNetworkObject(networkId_) == this)
+                networkManager_->RemoveComponent(this);
             networkManager_ = nullptr;
         }
 
@@ -162,6 +164,10 @@ bool NetworkObject::IsRelevantForClient(AbstractConnection* connection)
     return true;
 }
 
+void NetworkObject::InitializeReliableDelta()
+{
+}
+
 void NetworkObject::OnRemovedOnClient()
 {
     if (node_)
@@ -194,11 +200,15 @@ void DefaultNetworkObject::RegisterObject(Context* context)
     context->RegisterFactory<DefaultNetworkObject>();
 }
 
+void DefaultNetworkObject::InitializeReliableDelta()
+{
+    lastParentNetworkId_ = GetParentNetworkId();
+}
+
 void DefaultNetworkObject::WriteSnapshot(VectorBuffer& dest)
 {
     const auto parentNetworkId = GetParentNetworkId();
     dest.WriteUInt(static_cast<unsigned>(parentNetworkId));
-    lastParentNetworkId_ = parentNetworkId;
 
     dest.WriteString(node_->GetName());
 }
@@ -206,6 +216,7 @@ void DefaultNetworkObject::WriteSnapshot(VectorBuffer& dest)
 bool DefaultNetworkObject::WriteReliableDelta(VectorBuffer& dest)
 {
     const auto parentNetworkId = GetParentNetworkId();
+
     if (lastParentNetworkId_ != parentNetworkId)
     {
         lastParentNetworkId_ = parentNetworkId;
