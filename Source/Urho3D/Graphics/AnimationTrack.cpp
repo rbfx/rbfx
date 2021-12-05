@@ -25,57 +25,57 @@
 #include "../Graphics/AnimationTrack.h"
 
 #include "../DebugNew.h"
+
 #include "../IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {
-
 namespace
 {
 const char* interpMethodNames[] = {"None", "Linear", "TensionSpline", "TangentSpline", nullptr};
 
+    /// Iterator.
+struct KeyframeAdapterIterator
+{
+    /// Construct.
+    KeyframeAdapterIterator(VariantAnimationTrack& track, unsigned index)
+        : track_(track)
+        , index_(index)
+    {
+    }
+
+    /// Compare equal.
+    bool operator==(const KeyframeAdapterIterator& rhs) const { return index_ == rhs.index_; }
+    /// Compare not equal.
+    bool operator!=(const KeyframeAdapterIterator& rhs) const { return index_ != rhs.index_; }
+
+    /// Pre-increment.
+    KeyframeAdapterIterator& operator++()
+    {
+        ++index_;
+        return *this;
+    }
+
+    /// Post-increment.
+    KeyframeAdapterIterator operator++(int)
+    {
+        KeyframeAdapterIterator temp = *this;
+        ++index_;
+        return temp;
+    }
+    /// Dereferencing.
+    KeyframeAdapterIterator& operator*() { return *this; }
+    /// Serialized track.
+    VariantAnimationTrack& track_;
+    /// Serialized keyframe index.
+    unsigned index_;
+};
+
 /// Adapter for keyframe serialization.
 struct KeyframeAdapter
 {
-    /// Iterator.
-    struct Iterator
-    {
-        /// Construct.
-        Iterator(VariantAnimationTrack& track, unsigned index)
-            : track_(track)
-            , index_(index)
-        {
-        }
-
-        /// Compare equal.
-        bool operator==(const Iterator& rhs) const { return index_ == rhs.index_; }
-        /// Compare not equal.
-        bool operator!=(const Iterator& rhs) const { return index_ != rhs.index_; }
-
-        /// Pre-increment.
-        Iterator& operator++()
-        {
-            ++index_;
-            return *this;
-        }
-
-        /// Post-increment.
-        Iterator operator++(int)
-        {
-            Iterator temp = *this;
-            ++index_;
-            return temp;
-        }
-        /// Dereferencing.
-        Iterator& operator*() { return *this; }
-        /// Serialized track.
-        VariantAnimationTrack& track_;
-        /// Serialized keyframe index.
-        unsigned index_;
-    };
-
     /// Value type for vector compatibility.
-    typedef Iterator value_type;
+    typedef KeyframeAdapterIterator value_type;
 
     /// Construct.
     KeyframeAdapter(VariantAnimationTrack& track)
@@ -104,50 +104,19 @@ struct KeyframeAdapter
     }
 
     /// Index operator for vector compatibility.
-    Iterator operator[](unsigned index)
-    {
-        return Iterator(track_, index);
+    KeyframeAdapterIterator operator[](unsigned index)
+    { return KeyframeAdapterIterator(track_, index);
     }
 
     /// Begin method for vector compatibility.
-    Iterator begin() { return Iterator(track_, 0); }
+    KeyframeAdapterIterator begin() { return KeyframeAdapterIterator(track_, 0); }
     /// End method for vector compatibility.
-    Iterator end() { return Iterator(track_, track_.keyFrames_.size()); }
+    KeyframeAdapterIterator end() { return KeyframeAdapterIterator(track_, track_.keyFrames_.size()); }
 
     /// Serialized track.
     VariantAnimationTrack& track_;
 };
 
-bool SerializeValue(Archive& archive, const char* name, KeyframeAdapter::Iterator& value)
-{
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        if (!SerializeValue(archive, "time", value.track_.keyFrames_[value.index_].time_))
-            return false;
-        if (!SerializeValue(archive, "value", value.track_.keyFrames_[value.index_].value_))
-            return false;
-        if (!SerializeValue(archive, "in", value.track_.inTangents_[value.index_]))
-            return false;
-        if (!SerializeValue(archive, "out", value.track_.outTangents_[value.index_]))
-            return false;
-
-        return true;
-    }
-    return false;
-}
-bool SerializeValue(Archive& archive, const char* name, VariantAnimationKeyFrame& value)
-{
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        if (!SerializeValue(archive, "time", value.time_))
-            return false;
-        if (!SerializeValue(archive, "value", value.value_))
-            return false;
-
-        return true;
-    }
-    return false;
-}
 Variant InterpolateSpline(VariantType type,
     const Variant& v1, const Variant& v2, const Variant& t1, const Variant& t2, float t)
 {
@@ -361,6 +330,38 @@ bool VariantAnimationTrack::Serialize(Archive& archive)
     }
  
     return true;
+}
+
+bool SerializeValue(Archive& archive, const char* name, KeyframeAdapterIterator value)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+    {
+        if (!SerializeValue(archive, "time", value.track_.keyFrames_[value.index_].time_))
+            return false;
+        if (!SerializeValue(archive, "value", value.track_.keyFrames_[value.index_].value_))
+            return false;
+        if (!SerializeValue(archive, "in", value.track_.inTangents_[value.index_]))
+            return false;
+        if (!SerializeValue(archive, "out", value.track_.outTangents_[value.index_]))
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool SerializeValue(Archive& archive, const char* name, VariantAnimationKeyFrame& value)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+    {
+        if (!SerializeValue(archive, "time", value.time_))
+            return false;
+        if (!SerializeValue(archive, "value", value.value_))
+            return false;
+
+        return true;
+    }
+    return false;
 }
 
 bool SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value)
