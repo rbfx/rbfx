@@ -20,16 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "Urho3D/Graphics/AnimationTrack.h"
-#include "Urho3D/Graphics/Material.h"
-#include "Urho3D/Graphics/Model.h"
+#include "../CommonUtils.h"
 
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
-#include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Graphics/AnimationTrack.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
+#include <Urho3D/Graphics/Material.h>
 
 #include <catch2/catch_amalgamated.hpp>
 
@@ -440,6 +439,59 @@ TEST_CASE("Test structure is serialized as part of the file")
         SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
 
         REQUIRE(sourceObject == objectFromJSON);
+    }
+}
+
+TEST_CASE("Test resource is serialized as part of the file")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    ResourceCache* cache (context->GetSubsystem<ResourceCache>());
+    SharedPtr<Material> resource = MakeShared<Material>(context);
+    resource->SetName("@/TestResource.mdl");
+    cache->AddManualResource(resource);
+    ResourceRef resourceRef(resource->GetTypeName(), resource->GetName());
+    SerializationTestStruct sourceObject = CreateTestStruct(context);
+
+    SECTION("XML file")
+    {
+        auto xmlFile = MakeShared<XMLFile>(context);
+        XMLElement root = xmlFile->CreateRoot("root");
+
+        XMLOutputArchive xmlOutputArchive{context, root.CreateChild("child")};
+        if (auto block = xmlOutputArchive.OpenUnorderedBlock("block"))
+            SerializeResource(xmlOutputArchive, "MaterialRef", resource, resourceRef);
+        REQUIRE_FALSE(xmlOutputArchive.HasError());
+
+        XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
+        SharedPtr<Material> resourceFromXML;
+        ResourceRef resourceRefFromXML;
+        if (auto block = xmlInputArchive.OpenUnorderedBlock("block"))
+            SerializeResource(xmlInputArchive, "MaterialRef", resourceFromXML, resourceRefFromXML);
+        REQUIRE_FALSE(xmlInputArchive.HasError());
+
+        REQUIRE(resource == resourceFromXML);
+        REQUIRE(resourceRef == resourceRefFromXML);
+    }
+
+    SECTION("JSON file")
+    {
+        auto jsonFile = MakeShared<JSONFile>(context);
+        JSONValue& root = jsonFile->GetRoot();
+
+        JSONValue child;
+        JSONOutputArchive jsonOutputArchive{context, child};
+        if (auto block = jsonOutputArchive.OpenUnorderedBlock("block"))
+            SerializeResource(jsonOutputArchive, "MaterialRef", resource, resourceRef);
+        root.Set("child", child);
+
+        JSONInputArchive jsonInputArchive{context, root.Get("child")};
+        SharedPtr<Material> resourceFromJSON;
+        ResourceRef resourceRefFromJSON;
+        if (auto block = jsonInputArchive.OpenUnorderedBlock("block"))
+            SerializeResource(jsonInputArchive, "MaterialRef", resourceFromJSON, resourceRefFromJSON);
+
+        REQUIRE(resource == resourceFromJSON);
+        REQUIRE(resourceRef == resourceRefFromJSON);
     }
 }
 
