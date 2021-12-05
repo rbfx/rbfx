@@ -23,53 +23,98 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/AnimationTrack.h"
+#include "../IO/ArchiveSerialization.h"
 
 #include "../DebugNew.h"
-#include "../IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {
-
 namespace
 {
 const char* interpMethodNames[] = {"None", "Linear", "TensionSpline", "TangentSpline", nullptr};
 
-struct SerializedKeyframe
+    /// Iterator.
+struct KeyframeAdapterIterator
 {
-    /// Is spline.
-    bool isSplineInterpolation_;
-
-    /// Keyframe time.
-    float time_{};
-    /// Attribute value.
-    Variant value_;
-
-    /// Tangents for cubic spline.
-    Variant inTangent_;
-    /// Attribute value.
-    Variant outTangent_;
-
-    bool hasTangents_ {false};
-
-    bool Serialize(Archive& archive)
+    /// Construct.
+    KeyframeAdapterIterator(VariantAnimationTrack& track, unsigned index)
+        : track_(track)
+        , index_(index)
     {
-        if (!SerializeValue(archive, "time", time_))
-            return false;
-        if (!SerializeValue(archive, "value", value_))
-            return false;
-        if (isSplineInterpolation_)
-        {
-            hasTangents_ = SerializeValue(archive, "in", inTangent_) && SerializeValue(archive, "out", outTangent_);
-        }
-        return true;
-    };
+    }
+
+    /// Compare equal.
+    bool operator==(const KeyframeAdapterIterator& rhs) const { return index_ == rhs.index_; }
+    /// Compare not equal.
+    bool operator!=(const KeyframeAdapterIterator& rhs) const { return index_ != rhs.index_; }
+
+    /// Pre-increment.
+    KeyframeAdapterIterator& operator++()
+    {
+        ++index_;
+        return *this;
+    }
+
+    /// Post-increment.
+    KeyframeAdapterIterator operator++(int)
+    {
+        KeyframeAdapterIterator temp = *this;
+        ++index_;
+        return temp;
+    }
+    /// Dereferencing.
+    KeyframeAdapterIterator& operator*() { return *this; }
+    /// Serialized track.
+    VariantAnimationTrack& track_;
+    /// Serialized keyframe index.
+    unsigned index_;
 };
-bool SerializeValue(Archive& archive, const char* name, SerializedKeyframe& value)
+
+/// Adapter for keyframe serialization.
+struct KeyframeAdapter
 {
-    if (auto block = archive.OpenUnorderedBlock(name))
-        return value.Serialize(archive);
-    return false;
-}
+    /// Value type for vector compatibility.
+    typedef KeyframeAdapterIterator value_type;
+
+    /// Construct.
+    KeyframeAdapter(VariantAnimationTrack& track)
+        : track_(track)
+    {
+        
+    }
+
+    /// Size method for vector compatibility.
+    size_t size() const { return track_.keyFrames_.size(); }
+
+    /// Clear method for vector compatibility.
+    void clear()
+    {
+        track_.keyFrames_.clear();
+        track_.inTangents_.clear();
+        track_.outTangents_.clear();
+    }
+
+    /// Resize method for vector compatibility.
+    void resize(size_t size)
+    {
+        track_.keyFrames_.resize(size);
+        track_.inTangents_.resize(size);
+        track_.outTangents_.resize(size);
+    }
+
+    /// Index operator for vector compatibility.
+    KeyframeAdapterIterator operator[](unsigned index)
+    { return KeyframeAdapterIterator(track_, index);
+    }
+
+    /// Begin method for vector compatibility.
+    KeyframeAdapterIterator begin() { return KeyframeAdapterIterator(track_, 0); }
+    /// End method for vector compatibility.
+    KeyframeAdapterIterator end() { return KeyframeAdapterIterator(track_, track_.keyFrames_.size()); }
+
+    /// Serialized track.
+    VariantAnimationTrack& track_;
+};
 
 Variant InterpolateSpline(VariantType type,
     const Variant& v1, const Variant& v2, const Variant& t1, const Variant& t2, float t)
@@ -270,73 +315,53 @@ bool VariantAnimationTrack::Serialize(Archive& archive)
     SerializeValue(archive, "baseValue", baseValue_);
     SerializeEnum(archive, "interpolation", interpMethodNames, interpolation_);
     SerializeValue(archive, "splineTension", splineTension_);
-
-    if (auto block = archive.OpenArrayBlock("keyframes", keyFrames_.size()))
+    if (interpolation_ == KeyFrameInterpolation::TangentSpline
+        && keyFrames_.size() == inTangents_.size()
+        && keyFrames_.size() == outTangents_.size())
     {
-        if (archive.IsInput())
-        {
-            keyFrames_.clear();
-            inTangents_.clear();
-            outTangents_.clear();
-            keyFrames_.reserve(block.GetSizeHint());
-            const bool isSplineInterpolation = interpolation_ == KeyFrameInterpolation::TensionSpline ||
-                                               interpolation_ == KeyFrameInterpolation::TangentSpline;
-            if (isSplineInterpolation)
-            {
-                inTangents_.reserve(block.GetSizeHint());
-                outTangents_.reserve(block.GetSizeHint());
-            }
-            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-            {
-                SerializedKeyframe kf;
-                kf.isSplineInterpolation_ = isSplineInterpolation;
-                if (!SerializeValue(archive, "keyframe", kf))
-                    return false;
-                keyFrames_.push_back(VariantAnimationKeyFrame { kf.time_, kf.value_ });
-                if (isSplineInterpolation)
-                {
-                    inTangents_.push_back(kf.inTangent_);
-                    outTangents_.push_back(kf.outTangent_);
-                }
-            }
-            return true;
-        }
-        else
-        {
-            const bool isSplineInterpolation = (interpolation_ == KeyFrameInterpolation::TensionSpline ||
-                                                interpolation_ == KeyFrameInterpolation::TangentSpline) &&
-                                               keyFrames_.size() == inTangents_.size() &&
-                                               keyFrames_.size() == outTangents_.size();
-
-            for (unsigned i=0; i<keyFrames_.size(); ++i)
-            {
-                SerializedKeyframe kf;
-                kf.isSplineInterpolation_ = isSplineInterpolation;
-                kf.time_ = keyFrames_[i].time_;
-                kf.value_ = keyFrames_[i].value_;
-                if (isSplineInterpolation)
-                {
-                    kf.inTangent_ = inTangents_[i];
-                    kf.outTangent_ = outTangents_[i];
-                }
-                if (!SerializeValue(archive, "keyframe", kf))
-                    return false;
-            }
-            return true;
-        }
-    }
-    if (archive.IsInput())
-    {
-        nameHash_ = name_;
-
-
-
+        KeyframeAdapter adapter(*this);
+        SerializeVectorAsObjects(archive, "keyframes", "keyframe", adapter);
     }
     else
     {
-        
+        SerializeVectorAsObjects(archive, "keyframes", "keyframe", keyFrames_);
+        if (archive.IsInput() && interpolation_ == KeyFrameInterpolation::TensionSpline)
+            Commit();
     }
+ 
     return true;
+}
+
+bool SerializeValue(Archive& archive, const char* name, KeyframeAdapterIterator value)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+    {
+        if (!SerializeValue(archive, "time", value.track_.keyFrames_[value.index_].time_))
+            return false;
+        if (!SerializeValue(archive, "value", value.track_.keyFrames_[value.index_].value_))
+            return false;
+        if (!SerializeValue(archive, "in", value.track_.inTangents_[value.index_]))
+            return false;
+        if (!SerializeValue(archive, "out", value.track_.outTangents_[value.index_]))
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool SerializeValue(Archive& archive, const char* name, VariantAnimationKeyFrame& value)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+    {
+        if (!SerializeValue(archive, "time", value.time_))
+            return false;
+        if (!SerializeValue(archive, "value", value.value_))
+            return false;
+
+        return true;
+    }
+    return false;
 }
 
 bool SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value)

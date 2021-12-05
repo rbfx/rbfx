@@ -172,25 +172,28 @@ protected:
 
             auto receiver = static_cast<Receiver*>(receiverPtr);
             // MinGW build fails at ea::invoke ATM, call as member function
-#ifdef __MINGW32__
-            if constexpr (INVOKE_SENDER_ARGS(bool))
-                return (receiver->*handler)(sender, args...);
-            else if constexpr (INVOKE_SENDER_ARGS(void))
-                return (receiver->*handler)(sender, args...), true;
-            else if constexpr (INVOKE_ARGS(bool))
-                return (receiver->*handler)(args...);
-            else if constexpr (INVOKE_ARGS(void))
-                return (receiver->*handler)(args...), true;
-#else
-            if constexpr (INVOKE_SENDER_ARGS(bool))
-                return ea::invoke(handler, receiver, sender, args...);
-            else if constexpr (INVOKE_SENDER_ARGS(void))
-                return ea::invoke(handler, receiver, sender, args...), true;
-            else if constexpr (INVOKE_ARGS(bool))
-                return ea::invoke(handler, receiver, args...);
-            else if constexpr (INVOKE_ARGS(void))
-                return ea::invoke(handler, receiver, args...), true;
-#endif
+            if constexpr (ea::is_member_function_pointer_v<decltype(handler)>)
+            {
+                if constexpr (INVOKE_SENDER_ARGS(bool))
+                    return (receiver->*handler)(sender, args...);
+                else if constexpr (INVOKE_SENDER_ARGS(void))
+                    return (receiver->*handler)(sender, args...), true;
+                else if constexpr (INVOKE_ARGS(bool))
+                    return (receiver->*handler)(args...);
+                else if constexpr (INVOKE_ARGS(void))
+                    return (receiver->*handler)(args...), true;
+            }
+            else
+            {
+                if constexpr (INVOKE_SENDER_ARGS(bool))
+                    return ea::invoke(handler, receiver, sender, args...);
+                else if constexpr (INVOKE_SENDER_ARGS(void))
+                    return ea::invoke(handler, receiver, sender, args...), true;
+                else if constexpr (INVOKE_ARGS(bool))
+                    return ea::invoke(handler, receiver, args...);
+                else if constexpr (INVOKE_ARGS(void))
+                    return ea::invoke(handler, receiver, args...), true;
+            }
 #undef INVOKE_SENDER_ARGS
 #undef INVOKE_ARGS
         };

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2021 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -94,6 +94,17 @@ struct VariantAnimationKeyFrame
     float time_{};
     /// Attribute value.
     Variant value_;
+
+    /// Compare equal.
+    bool operator==(const VariantAnimationKeyFrame& rhs) const
+    {
+        return time_ == rhs.time_ && value_ == rhs.value_;
+    }
+    /// Compare unequal.
+    bool operator!=(const VariantAnimationKeyFrame& rhs) const
+    {
+        return !(*this == rhs);
+    }
 };
 
 /// Generic animation track, stores keyframes of single animatable entity.
@@ -127,6 +138,9 @@ struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKey
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive);
 };
+
+/// Serialize VariantAnimationKeyFrame.
+bool URHO3D_API SerializeValue(Archive& archive, const char* name, VariantAnimationKeyFrame& value);
 
 /// Serialize VariantAnimationTrack.
 bool URHO3D_API SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value);

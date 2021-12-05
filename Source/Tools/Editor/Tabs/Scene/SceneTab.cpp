@@ -115,6 +115,15 @@ SceneTab::SceneTab(Context* context)
     undo_->Connect(&gizmo_, this);
 
     UpdateUniqueTitle();
+
+    // Key bindings
+    Editor* editor = GetSubsystem<Editor>();
+    editor->keyBindings_.Bind(ActionType::Copy,           this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; CopySelection(); });
+    editor->keyBindings_.Bind(ActionType::Cut,            this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; CopySelection(); RemoveSelection(); });
+    editor->keyBindings_.Bind(ActionType::Paste,          this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; PasteIntuitive(); });
+    editor->keyBindings_.Bind(ActionType::PasteInto,      this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; PasteIntoSelection(); });
+    editor->keyBindings_.Bind(ActionType::Delete,         this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; RemoveSelection(); });
+    editor->keyBindings_.Bind(ActionType::ClearSelection, this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; ClearSelection(); });
 }
 
 SceneTab::~SceneTab()
@@ -789,6 +798,8 @@ void SceneTab::RenderNodeTree(Node* node)
     else
         ui::PopID();
     ui::PopID();
+
+    scrollTo_ = nullptr;
 }
 
 void SceneTab::RemoveSelection()
@@ -849,51 +860,15 @@ void SceneTab::OnUpdate(VariantMap& args)
         }
     }
 
-    if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
+    if (IsActive() && !isViewportActive_)
     {
-        StringHash activeTabType = tab->GetType();
-        if (activeTabType == GetType() || activeTabType == HierarchyTab::GetTypeStatic())
-        {
-            if (!ui::IsAnyItemActive())
-            {
-                // Global view hotkeys
-                if (ui::IsKeyPressed(KEY_DELETE))
-                    RemoveSelection();
-                else if (ui::IsKeyPressed(KEY_CTRL))
-                {
-                    if (ui::IsKeyPressed(KEY_C))
-                        CopySelection();
-                    else if (ui::IsKeyPressed(KEY_V))
-                    {
-                        if (ui::IsKeyDown(KEY_SHIFT))
-                            PasteIntoSelection();
-                        else
-                            PasteIntuitive();
-                    }
-                }
-                else if (ui::IsKeyPressed(KEY_ESCAPE))
-                    ClearSelection();
-            }
-        }
-
-        if (tab == this)
-        {
-            if (!isViewportActive_)
-            {
-                if (ui::IsKeyPressed(KEY_W))
-                {
-                    gizmo_.SetOperation(GIZMOOP_TRANSLATE);
-                }
-                else if (ui::IsKeyPressed(KEY_E))
-                {
-                    gizmo_.SetOperation(GIZMOOP_ROTATE);
-                }
-                else if (ui::IsKeyPressed(KEY_R))
-                {
-                    gizmo_.SetOperation(GIZMOOP_SCALE);
-                }
-            }
-        }
+        // TODO: Make these bindable.
+        if (ui::IsKeyPressed(KEY_W))
+            gizmo_.SetOperation(GIZMOOP_TRANSLATE);
+        else if (ui::IsKeyPressed(KEY_E))
+            gizmo_.SetOperation(GIZMOOP_ROTATE);
+        else if (ui::IsKeyPressed(KEY_R))
+            gizmo_.SetOperation(GIZMOOP_SCALE);
     }
 }
 
@@ -1510,7 +1485,11 @@ void SceneTab::PasteIntoSelection()
     if (selection.empty())
         result = clipboard_.Paste(GetScene());
     else
+    {
         result = clipboard_.Paste(selection);
+        for (Node* node : selection)
+            openHierarchyNodes_.push_back(node);
+    }
 
     ClearSelection();
     OnNodeSelectionChanged();
@@ -1520,6 +1499,11 @@ void SceneTab::PasteIntoSelection()
 
     for (Component* component : result.components_)
         Select(WeakPtr<Component>(component));
+
+    // Scroll to newly pasted node.
+    // TODO: Handle components.
+    if (!result.nodes_.empty())
+        scrollTo_ = *result.nodes_.begin();
 }
 
 void SceneTab::PasteIntuitive()

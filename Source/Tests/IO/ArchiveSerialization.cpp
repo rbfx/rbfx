@@ -27,7 +27,7 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/IO/MemoryBuffer.h>
-#include <Urho3D/Scene/ValueAnimation.h>
+#include <Urho3D/Graphics/AnimationTrack.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
 
@@ -449,10 +449,19 @@ TEST_CASE("Variant unique_ptr serilization")
 
     Variant sourceObject;
     auto track = ea::make_unique<VariantAnimationTrack>();
-    track->interpolation_ = KeyFrameInterpolation::TensionSpline;
+    track->interpolation_ = GENERATE(
+        KeyFrameInterpolation::None,
+        KeyFrameInterpolation::Linear,
+        KeyFrameInterpolation::TensionSpline,
+        KeyFrameInterpolation::TangentSpline);
     track->AddKeyFrame(VariantAnimationKeyFrame{0, 0.0f});
     track->AddKeyFrame(VariantAnimationKeyFrame{0.5f, 1.0f});
     track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 0.0f});
+    if (track->interpolation_ == KeyFrameInterpolation::TangentSpline)
+    {
+        track->inTangents_ = {0.1f, -0.1f, 0.0f};
+        track->outTangents_ = {0.2f, -0.2f, 0.0f};
+    }
     track->Commit();
     sourceObject.SetCustom(ea::move(track));
 
@@ -479,7 +488,10 @@ TEST_CASE("Variant unique_ptr serilization")
 
         auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
         auto xmlTrack = objectFromXML.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
-        REQUIRE((*sourceTrack)->GetNumKeyFrames() == (*xmlTrack)->GetNumKeyFrames());
+        REQUIRE((*sourceTrack)->keyFrames_ == (*xmlTrack)->keyFrames_);
+        REQUIRE((*sourceTrack)->interpolation_ == (*xmlTrack)->interpolation_);
+        REQUIRE((*sourceTrack)->outTangents_ == (*xmlTrack)->outTangents_);
+        REQUIRE((*sourceTrack)->inTangents_ == (*xmlTrack)->inTangents_);
     }
 
     SECTION("JSON file")
@@ -505,7 +517,10 @@ TEST_CASE("Variant unique_ptr serilization")
 
         auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
         auto jsonTrack = objectFromJSON.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
-        REQUIRE((*sourceTrack)->GetNumKeyFrames() == (*jsonTrack)->GetNumKeyFrames());
+        REQUIRE((*sourceTrack)->keyFrames_ == (*jsonTrack)->keyFrames_);
+        REQUIRE((*sourceTrack)->interpolation_ == (*jsonTrack)->interpolation_);
+        REQUIRE((*sourceTrack)->outTangents_ == (*jsonTrack)->outTangents_);
+        REQUIRE((*sourceTrack)->inTangents_ == (*jsonTrack)->inTangents_);
     }
 }
 

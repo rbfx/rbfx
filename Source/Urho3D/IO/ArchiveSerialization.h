@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../IO/Log.h"
 #include "../Core/Object.h"
 #include "../Core/StringUtils.h"
 #include "../Core/Variant.h"
@@ -36,7 +35,6 @@
 #include "../Math/Vector3.h"
 #include "../Math/Vector4.h"
 #include "../Math/Quaternion.h"
-#include "../Resource/ResourceCache.h"
 
 #include <EASTL/string.h>
 
@@ -843,27 +841,6 @@ inline bool SerializeValue(Archive& archive, const char* name, SharedPtr<T>& val
         return value->Serialize(archive);
     }
     return false;
-}
-
-/// Serialize reference to a resource.
-template <class T, std::enable_if_t<std::is_base_of<Resource, T>::value, int> = 0>
-inline bool SerializeResource(Archive& archive, const char* name, SharedPtr<T>& value, ResourceRef& resourceRef)
-{
-    if (!SerializeValue(archive, name, resourceRef))
-        return false;
-
-    if (archive.IsInput())
-    {
-        if (resourceRef.name_.empty())
-        {
-            value = nullptr;
-        }
-        else
-        {
-            value = archive.GetContext()->GetSubsystem<ResourceCache>()->GetResource<T>(resourceRef.name_);
-        }
-    }
-    return true;
 }
 
 /// Serialize optional element or block.

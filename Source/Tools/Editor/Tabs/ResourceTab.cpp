@@ -225,6 +225,7 @@ bool ResourceTab::RenderWindowContent()
             }
             ui::EndDragDropTarget();
         }
+        RenderContextMenu();
     }
 
     // Render files
@@ -354,6 +355,9 @@ bool ResourceTab::RenderWindowContent()
                 }
             }
         }
+
+        RenderContextMenu();
+
         if (indented)
             ui::Unindent();
     }

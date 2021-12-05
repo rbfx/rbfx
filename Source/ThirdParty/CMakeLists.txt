@@ -165,6 +165,7 @@ if (NOT MINI_URHO)
     add_subdirectory (tracy)
 
     if (URHO3D_TOOLS)
+        set (ASSIMP_BUILD_IFC_IMPORTER OFF)
         add_subdirectory(Assimp)
     endif ()
 endif ()
