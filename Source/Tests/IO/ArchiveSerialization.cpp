@@ -23,6 +23,7 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/IO/MemoryBuffer.h>
+#include <Urho3D/Graphics/AnimationTrack.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
 
@@ -419,3 +420,64 @@ TEST_CASE("Test structure is serialized as part of the file")
         REQUIRE(sourceObject == objectFromJSON);
     }
 }
+
+TEST_CASE("Variant unique_ptr serilization")
+{
+    auto context = CreateTestContext();
+
+    Variant sourceObject;
+    auto track = ea::make_unique<VariantAnimationTrack>();
+    track->interpolation_ = KeyFrameInterpolation::TensionSpline;
+    track->AddKeyFrame(VariantAnimationKeyFrame{0, 0.0f});
+    track->AddKeyFrame(VariantAnimationKeyFrame{0.5f, 1.0f});
+    track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 0.0f});
+    track->Commit();
+    sourceObject.SetCustom(ea::move(track));
+
+    SECTION("XML file")
+    {
+        auto xmlFile = MakeShared<XMLFile>(context);
+        XMLElement root = xmlFile->CreateRoot("root");
+
+        XMLOutputArchive xmlOutputArchive{context, root.CreateChild("child")};
+        SerializeValue(xmlOutputArchive, "SerializationTestStruct", sourceObject);
+        REQUIRE_FALSE(xmlOutputArchive.HasError());
+
+        XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
+        Variant objectFromXML;
+        objectFromXML.SetCustom(ea::make_unique<VariantAnimationTrack>());
+        SerializeValue(xmlInputArchive, "SerializationTestStruct", objectFromXML);
+        REQUIRE_FALSE(xmlInputArchive.HasError());
+
+        auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        auto xmlTrack = objectFromXML.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        REQUIRE((*sourceTrack)->keyFrames_ == (*xmlTrack)->keyFrames_);
+        REQUIRE((*sourceTrack)->interpolation_ == (*xmlTrack)->interpolation_);
+        REQUIRE((*sourceTrack)->outTangents_ == (*xmlTrack)->outTangents_);
+        REQUIRE((*sourceTrack)->inTangents_ == (*xmlTrack)->inTangents_);
+    }
+
+    SECTION("JSON file")
+    {
+        auto jsonFile = MakeShared<JSONFile>(context);
+        JSONValue& root = jsonFile->GetRoot();
+
+        JSONValue child;
+        JSONOutputArchive jsonOutputArchive{context, child};
+        SerializeValue(jsonOutputArchive, "SerializationTestStruct", sourceObject);
+        root.Set("child", child);
+
+        JSONInputArchive jsonInputArchive{context, root.Get("child")};
+        Variant objectFromJSON;
+        objectFromJSON.SetCustom(ea::make_unique<VariantAnimationTrack>());
+        SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
+
+        auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        auto jsonTrack = objectFromJSON.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
+        REQUIRE((*sourceTrack)->keyFrames_ == (*jsonTrack)->keyFrames_);
+        REQUIRE((*sourceTrack)->interpolation_ == (*jsonTrack)->interpolation_);
+        REQUIRE((*sourceTrack)->outTangents_ == (*jsonTrack)->outTangents_);
+        REQUIRE((*sourceTrack)->inTangents_ == (*jsonTrack)->inTangents_);
+    }
+}
+

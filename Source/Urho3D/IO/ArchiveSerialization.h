@@ -423,6 +423,41 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
     return false;
 }
 
+
+/// Serialize array with standard interface (compatible with ea::span, ea::array, etc). Content is serialized as separate objects.
+template <class T>
+inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array)
+{
+    using ValueType = typename T::value_type;
+    if (auto block = archive.OpenArrayBlock(name, array.size()))
+    {
+        if (archive.IsInput())
+        {
+            if (array.size() != block.GetSizeHint())
+            {
+                archive.SetError("Expected array size doesn't match block size");
+                return false;
+            }
+            for (unsigned i = 0; i < array.size(); ++i)
+            {
+                if (!SerializeValue(archive, element, array[i]))
+                    return false;
+            }
+            return true;
+        }
+        else
+        {
+            for (unsigned i = 0; i < array.size(); ++i)
+            {
+                if (!SerializeValue(archive, element, array[i]))
+                    return false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 /// Serialize vector with standard interface. Content is serialized as bytes.
 template <class T>
 inline bool SerializeVectorAsBytes(Archive& archive, const char* name, T& vector)
@@ -803,8 +838,7 @@ inline bool SerializeValue(Archive& archive, const char* name, SharedPtr<T>& val
         }
 
         // Serialize object
-        if (ArchiveBlock valueBlock = archive.OpenUnorderedBlock("value"))
-            return value->Serialize(archive);
+        return value->Serialize(archive);
     }
     return false;
 }

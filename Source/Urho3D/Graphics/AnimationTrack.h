@@ -94,6 +94,17 @@ struct VariantAnimationKeyFrame
     float time_{};
     /// Attribute value.
     Variant value_;
+
+    /// Compare equal.
+    bool operator==(const VariantAnimationKeyFrame& rhs) const
+    {
+        return time_ == rhs.time_ && value_ == rhs.value_;
+    }
+    /// Compare unequal.
+    bool operator!=(const VariantAnimationKeyFrame& rhs) const
+    {
+        return !(*this == rhs);
+    }
 };
 
 /// Generic animation track, stores keyframes of single animatable entity.
@@ -123,6 +134,12 @@ struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKey
     Variant Sample(float time, float duration, bool isLooped, unsigned& frameIndex) const;
     /// Return type of animation track. Defined by the type of the first keyframe.
     VariantType GetType() const;
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive);
 };
+
+/// Serialize VariantAnimationTrack.
+bool URHO3D_API SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value);
 
 }
