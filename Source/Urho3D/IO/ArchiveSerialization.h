@@ -440,7 +440,7 @@ inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const ch
         {
             if (array.size() != block.GetSizeHint())
             {
-                URHO3D_LOGERROR("Expected array size doesn't match block size");
+                archive.SetError("Expected array size doesn't match block size");
                 return false;
             }
             for (unsigned i = 0; i < array.size(); ++i)

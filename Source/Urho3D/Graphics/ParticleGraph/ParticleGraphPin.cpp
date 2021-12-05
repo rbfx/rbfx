@@ -24,7 +24,8 @@
 
 #include "ParticleGraphPin.h"
 
-#include "Urho3D/IO/ArchiveSerialization.h"
+#include "../../IO/ArchiveSerialization.h"
+#include "../../IO/Log.h"
 
 namespace Urho3D
 {
