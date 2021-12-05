@@ -43,6 +43,8 @@
 namespace Urho3D
 {
 
+class Resource;
+
 namespace Detail
 {
 
@@ -170,6 +172,9 @@ inline ea::string FormatResourceRefList(ea::string_view typeString, const ea::st
     }
     return result;
 }
+
+/// Fetch resource by reference.
+URHO3D_API Resource* FetchResource(Archive& archive, ResourceRef& resourceRef);
 
 }
 
@@ -807,6 +812,20 @@ inline bool SerializeValue(Archive& archive, const char* name, SharedPtr<T>& val
             return value->Serialize(archive);
     }
     return false;
+}
+
+/// Serialize reference to a resource.
+template <class T, std::enable_if_t<std::is_base_of_v<Resource, T>, int> = 0>
+inline bool SerializeResource(Archive& archive, const char* name, SharedPtr<T>& value, ResourceRef& resourceRef)
+{
+    if (!SerializeValue(archive, name, resourceRef))
+        return false;
+
+    if (archive.IsInput())
+    {
+        value = SharedPtr<T>(dynamic_cast<T*>(Detail::FetchResource(archive, resourceRef)));
+    }
+    return true;
 }
 
 /// Serialize optional element or block.
