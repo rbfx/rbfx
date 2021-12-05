@@ -427,10 +427,19 @@ TEST_CASE("Variant unique_ptr serilization")
 
     Variant sourceObject;
     auto track = ea::make_unique<VariantAnimationTrack>();
-    track->interpolation_ = KeyFrameInterpolation::TensionSpline;
+    track->interpolation_ = GENERATE(
+        KeyFrameInterpolation::None,
+        KeyFrameInterpolation::Linear,
+        KeyFrameInterpolation::TensionSpline,
+        KeyFrameInterpolation::TangentSpline);
     track->AddKeyFrame(VariantAnimationKeyFrame{0, 0.0f});
     track->AddKeyFrame(VariantAnimationKeyFrame{0.5f, 1.0f});
     track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 0.0f});
+    if (track->interpolation_ == KeyFrameInterpolation::TangentSpline)
+    {
+        track->inTangents_ = {0.1f, -0.1f, 0.0f};
+        track->outTangents_ = {0.2f, -0.2f, 0.0f};
+    }
     track->Commit();
     sourceObject.SetCustom(ea::move(track));
 

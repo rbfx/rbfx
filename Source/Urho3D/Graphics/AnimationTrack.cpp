@@ -23,10 +23,9 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/AnimationTrack.h"
+#include "../IO/ArchiveSerialization.h"
 
 #include "../DebugNew.h"
-
-#include "../IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {
@@ -316,8 +315,7 @@ bool VariantAnimationTrack::Serialize(Archive& archive)
     SerializeValue(archive, "baseValue", baseValue_);
     SerializeEnum(archive, "interpolation", interpMethodNames, interpolation_);
     SerializeValue(archive, "splineTension", splineTension_);
-    if ((interpolation_ == KeyFrameInterpolation::TensionSpline ||
-        interpolation_ == KeyFrameInterpolation::TangentSpline)
+    if (interpolation_ == KeyFrameInterpolation::TangentSpline
         && keyFrames_.size() == inTangents_.size()
         && keyFrames_.size() == outTangents_.size())
     {
@@ -327,6 +325,8 @@ bool VariantAnimationTrack::Serialize(Archive& archive)
     else
     {
         SerializeVectorAsObjects(archive, "keyframes", "keyframe", keyFrames_);
+        if (archive.IsInput() && interpolation_ == KeyFrameInterpolation::TensionSpline)
+            Commit();
     }
  
     return true;
