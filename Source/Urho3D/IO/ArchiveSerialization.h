@@ -803,8 +803,7 @@ inline bool SerializeValue(Archive& archive, const char* name, SharedPtr<T>& val
         }
 
         // Serialize object
-        if (ArchiveBlock valueBlock = archive.OpenUnorderedBlock("value"))
-            return value->Serialize(archive);
+        return value->Serialize(archive);
     }
     return false;
 }
