@@ -21,6 +21,8 @@
 //
 
 #include "../IO/ArchiveSerialization.h"
+
+#include "VariantTypeRegistry.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Resource.h"
 
@@ -120,13 +122,32 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         archive.SetError(Format("Unsupported Variant type of element '{0}'", name));
         return false;
     case VAR_CUSTOM:
+    {
         // Even if loading, value should be initialized to default value.
-        // It's the only way to know type.
+        const auto reg = archive.GetContext()->GetSubsystem<VariantTypeRegistry>();
+        if (reg)
+        {
+            ea::string hint;
+            if (!archive.IsInput())
+            {
+                auto hint = reg->GetHint(value);
+                if (hint)
+                    SerializeValue(archive, "hint", *const_cast<ea::string*>(hint));
+            }
+            else
+            {
+                SerializeValue(archive, "hint", hint);
+            }
+            if (archive.IsInput())
+                reg->InitializeValue(hint, value);
+        }
+
         if (CustomVariantValue* ptr = value.GetCustomVariantValuePtr())
             return ptr->Serialize(archive);
 
         archive.SetError(Format("Custom Variant is not initialized for element '{0}'", name));
         return false;
+    }
     case MAX_VAR_TYPES:
     default:
         assert(0);

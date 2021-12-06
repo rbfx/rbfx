@@ -23,11 +23,11 @@
 #include "../CommonUtils.h"
 #include "Urho3D/Graphics/AnimationTrack.h"
 #include "Urho3D/Graphics/Material.h"
+#include "Urho3D/IO/VariantTypeRegistry.h"
 #include "Urho3D/IO/VectorBuffer.h"
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Resource/XMLArchive.h"
 #include "Urho3D/Resource/XMLFile.h"
-#include "Urho3D/Scene/ValueAnimation.h"
 
 #include <Urho3D/Resource/Graph.h>
 #include <Urho3D/Resource/GraphNode.h>
@@ -83,6 +83,9 @@ TEST_CASE("Validate graph node id when added to scene")
 TEST_CASE("Graph serialization roundtrip")
 {
     auto context = Tests::CreateCompleteTestContext();
+    auto reg = context->RegisterSubsystem<VariantTypeRegistry>();
+    reg->RegisterInitializer<ea::unique_ptr<VariantAnimationTrack>>("VariantAnimationTrack");
+
     auto resourceCache = context->GetSubsystem<ResourceCache>();
     auto material = MakeShared<Material>(context);
     material->SetName("Materials/DefaultGrey.xml");

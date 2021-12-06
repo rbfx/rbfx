@@ -106,24 +106,6 @@ bool GraphNodeProperty::Serialize(Archive& archive)
     if (!SerializeValue(archive, "name", name_))
         return false;
 
-    if (archive.IsInput())
-    {
-        ea::string customHint;
-        SerializeValue(archive, "hint", customHint);
-        if (customHint == "...")
-        {
-            // value_.SetCustom()
-        }
-    }
-    else
-    {
-        if (value_.GetType() == VAR_CUSTOM)
-        {
-            //TODO: add custom type hints
-            ea::string customHint = "...";
-            SerializeValue(archive, "hint", customHint);
-        }
-    }
     SerializeValue(archive, "value", value_);
 
     return true;

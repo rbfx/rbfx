@@ -21,6 +21,7 @@
 //
 
 #include "../CommonUtils.h"
+#include <Urho3D/IO/VariantTypeRegistry.h>
 
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
@@ -499,6 +500,8 @@ TEST_CASE("Test resource is serialized as part of the file")
 TEST_CASE("Variant unique_ptr serilization")
 {
     auto context = CreateTestContext();
+    auto reg = context->RegisterSubsystem<VariantTypeRegistry>();
+    reg->RegisterInitializer<ea::unique_ptr<VariantAnimationTrack>>("VariantAnimationTrack");
 
     Variant sourceObject;
     auto track = ea::make_unique<VariantAnimationTrack>();
@@ -524,7 +527,7 @@ TEST_CASE("Variant unique_ptr serilization")
         XMLElement root = xmlFile->CreateRoot("root");
 
         XMLOutputArchive xmlOutputArchive{context, root.CreateChild("child")};
-        SerializeValue(xmlOutputArchive, "SerializationTestStruct", sourceObject);
+        SerializeValue(xmlOutputArchive, "VariantAnimationTrack", sourceObject);
         REQUIRE_FALSE(xmlOutputArchive.HasError());
 
         {
@@ -535,8 +538,8 @@ TEST_CASE("Variant unique_ptr serilization")
 
         XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
         Variant objectFromXML;
-        objectFromXML.SetCustom(ea::make_unique<VariantAnimationTrack>());
-        SerializeValue(xmlInputArchive, "SerializationTestStruct", objectFromXML);
+        //objectFromXML.SetCustom(ea::make_unique<VariantAnimationTrack>());
+        SerializeValue(xmlInputArchive, "VariantAnimationTrack", objectFromXML);
         REQUIRE_FALSE(xmlInputArchive.HasError());
 
         auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
@@ -554,7 +557,7 @@ TEST_CASE("Variant unique_ptr serilization")
 
         JSONValue child;
         JSONOutputArchive jsonOutputArchive{context, child};
-        SerializeValue(jsonOutputArchive, "SerializationTestStruct", sourceObject);
+        SerializeValue(jsonOutputArchive, "VariantAnimationTrack", sourceObject);
         root.Set("child", child);
 
         {
@@ -565,8 +568,8 @@ TEST_CASE("Variant unique_ptr serilization")
 
         JSONInputArchive jsonInputArchive{context, root.Get("child")};
         Variant objectFromJSON;
-        objectFromJSON.SetCustom(ea::make_unique<VariantAnimationTrack>());
-        SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
+        //objectFromJSON.SetCustom(ea::make_unique<VariantAnimationTrack>());
+        SerializeValue(jsonInputArchive, "VariantAnimationTrack", objectFromJSON);
 
         auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
         auto jsonTrack = objectFromJSON.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
