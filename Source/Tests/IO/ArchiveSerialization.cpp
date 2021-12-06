@@ -25,6 +25,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
+#include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Graphics/AnimationTrack.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
