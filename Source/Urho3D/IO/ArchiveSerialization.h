@@ -36,6 +36,7 @@
 #include "../Math/Vector4.h"
 #include "../Math/Quaternion.h"
 
+#include <EASTL/functional.h>
 #include <EASTL/string.h>
 
 #include <type_traits>
@@ -175,6 +176,46 @@ inline ea::string FormatResourceRefList(ea::string_view typeString, const ea::st
 
 /// Fetch resource by reference.
 URHO3D_API Resource* FetchResource(Archive& archive, ResourceRef& resourceRef);
+
+/// Serialize tie of vectors of the same size. Each tie of elements is serialized as separate object.
+template <class T, size_t... Is>
+inline bool SerializeVectorTie(Archive& archive, const char* name, const char* element, T& vectorTuple, ea::index_sequence<Is...>)
+{
+    const unsigned sizes[] = { ea::get<Is>(vectorTuple).size()... };
+    const unsigned outputSize = sizes[0];
+    if (auto block = archive.OpenArrayBlock(name, outputSize))
+    {
+        if (archive.IsInput())
+        {
+            const unsigned inputSize = block.GetSizeHint();
+            (ea::get<Is>(vectorTuple).clear(), ...);
+            (ea::get<Is>(vectorTuple).resize(inputSize), ...);
+            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
+            {
+                const auto elementTuple = ea::tie(ea::get<Is>(vectorTuple)[i]...);
+                if (!SerializeValue(archive, element, elementTuple))
+                    return false;
+            }
+            return true;
+        }
+        else
+        {
+            if (ea::adjacent_find(ea::begin(sizes), ea::end(sizes), ea::not_equal_to<unsigned>{}) != ea::end(sizes))
+            {
+                archive.SetError("Vector sizes don't match");
+                return false;
+            }
+
+            for (unsigned i = 0; i < outputSize; ++i)
+            {
+                const auto elementTuple = ea::tie(ea::get<Is>(vectorTuple)[i]...);
+                if (!SerializeValue(archive, element, elementTuple))
+                    return false;
+            }
+        }
+    }
+    return false;
+}
 
 }
 
@@ -428,12 +469,10 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
     return false;
 }
 
-
 /// Serialize array with standard interface (compatible with ea::span, ea::array, etc). Content is serialized as separate objects.
 template <class T>
 inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array)
 {
-    using ValueType = typename T::value_type;
     if (auto block = archive.OpenArrayBlock(name, array.size()))
     {
         if (archive.IsInput())
@@ -461,6 +500,13 @@ inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const ch
         }
     }
     return false;
+}
+
+template <class T>
+inline bool SerializeVectorTieAsObjects(Archive& archive, const char* name, const char* element, T vectorTuple)
+{
+    static constexpr auto tupleSize = ea::tuple_size_v<T>;
+    return Detail::SerializeVectorTie(archive, name, element, vectorTuple, ea::make_index_sequence<tupleSize>{});
 }
 
 /// Serialize vector with standard interface. Content is serialized as bytes.
