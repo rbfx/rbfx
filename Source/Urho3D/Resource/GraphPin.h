@@ -28,6 +28,7 @@
 namespace Urho3D
 {
 class GraphNode;
+template <typename T, size_t nodeCount> struct GraphNodeMapHelper;
 
 enum GraphPinDirection
 {
@@ -74,9 +75,10 @@ protected:
     GraphPinDirection direction_;
 
     friend class GraphNode;
+    template <typename T, size_t nodeCount> friend class GraphNodeMapHelper;
 };
 
-/// Abstract graph node pin that connects to other pins.
+/// Graph node pin that connects to other pins.
 class URHO3D_API GraphOutPin : public GraphPin
 {
 protected:
@@ -86,7 +88,7 @@ protected:
     friend class GraphNode;
 };
 
-/// Abstract graph node pin with connection.
+/// Graph node pin with connection.
 class URHO3D_API GraphInPin : public GraphPin
 {
 protected:
@@ -110,4 +112,20 @@ private:
     friend class GraphNode;
 };
 
+/// Graph data flow node pin with connection and default value.
+class URHO3D_API GraphDataInPin : public GraphInPin
+{
+protected:
+    /// Construct.
+    GraphDataInPin(GraphNode* node, GraphPinDirection direction);
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
+
+private:
+    /// Target node.
+    Variant defaultValue_;
+
+    friend class GraphNode;
+};
 } // namespace Urho3D

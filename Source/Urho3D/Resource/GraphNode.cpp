@@ -28,11 +28,105 @@
 
 namespace Urho3D
 {
+
+/// Container implementation that stores elements in a fixed vector.
+template <typename T, size_t nodeCount> struct GraphNodeMapHelper
+{
+    GraphNodeMapHelper(ea::fixed_vector<T, nodeCount>& vector)
+        : vector_(vector)
+    {
+    }
+
+    T& GetOrAdd(const ea::string_view name, ea::function<T()> add)
+    {
+        for (T& val : vector_)
+        {
+            if (val.GetName() == name)
+                return val;
+        }
+        T value = add();
+        value.SetName(name);
+        vector_.push_back(ea::move(value));
+        return vector_.back();
+    }
+
+    T& GetOrAdd(const ea::string_view name)
+    {
+        for (T& val : vector_)
+        {
+            if (val.GetName() == name)
+                return val;
+        }
+        vector_.push_back();
+        T& value = vector_.back();
+        value.SetName(name);
+        return value;
+    }
+
+    bool Add(T&& value)
+    {
+        for (T& val : vector_)
+        {
+            if (val.GetName() == value.GetName())
+                return false;
+        }
+        vector_.push_back(ea::move(value));
+        return true;
+    }
+
+    ea::fixed_vector<T, nodeCount>& vector_;
+};
+
 namespace
 {
 
 static char* DirectionEnumConstants[]{"In", "Out", "Enter", "Exit", nullptr};
 
+template <typename T, size_t nodeCount>
+GraphNodeMapHelper<T, nodeCount> MakeMapHelper(ea::fixed_vector<T, nodeCount>& vector)
+{
+    return GraphNodeMapHelper<T, nodeCount>(vector);
+}
+
+
+bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+    {
+        return value.Serialize(archive);
+    }
+    return false;
+}
+
+
+}
+
+bool GraphNodeProperty::Serialize(Archive& archive)
+{
+    if (!SerializeValue(archive, "name", name_))
+        return false;
+
+    if (archive.IsInput())
+    {
+        ea::string customHint;
+        SerializeValue(archive, "hint", customHint);
+        if (customHint == "...")
+        {
+            // value_.SetCustom()
+        }
+    }
+    else
+    {
+        if (value_.GetType() == VAR_CUSTOM)
+        {
+            //TODO: add custom type hints
+            ea::string customHint = "...";
+            SerializeValue(archive, "hint", customHint);
+        }
+    }
+    SerializeValue(archive, "value", value_);
+
+    return true;
 }
 
 GraphNode::GraphNode(Context* context)
@@ -77,65 +171,29 @@ bool GraphNode::SerializePins(Archive& archive, Iterator begin, Iterator end)
     return true;
 }
 
-
-GraphInPin& GraphNode::GetOrAddInput(const ea::string_view name)
+Variant& GraphNode::GetOrAddProperty(const ea::string_view name)
 {
-    for (auto& pin : inputPins_)
-    {
-        if (pin.GetName() == name)
-        {
-            return pin;
-        }
-    }
-    inputPins_.push_back(GraphInPin(this, PINDIR_INPUT));
-    auto& pin = inputPins_.back();
-    pin.SetName(name);
-    return pin;
+    return MakeMapHelper(properties_).GetOrAdd(name).value_;
+}
+
+GraphDataInPin& GraphNode::GetOrAddInput(const ea::string_view name)
+{
+    return MakeMapHelper(inputPins_).GetOrAdd(name, [this]() { return GraphDataInPin(this, PINDIR_INPUT); });
 }
 
 GraphOutPin& GraphNode::GetOrAddOutput(const ea::string_view name)
 {
-    for (auto& pin : outputPins_)
-    {
-        if (pin.GetName() == name)
-        {
-            return pin;
-        }
-    }
-    outputPins_.push_back(GraphOutPin(this, PINDIR_OUTPUT));
-    auto& pin = outputPins_.back();
-    pin.SetName(name);
-    return pin;
+    return MakeMapHelper(outputPins_).GetOrAdd(name, [this]() { return GraphOutPin(this, PINDIR_OUTPUT); });
 }
 
 GraphInPin& GraphNode::GetOrAddExit(const ea::string_view name)
 {
-    for (auto& pin : exitPins_)
-    {
-        if (pin.GetName() == name)
-        {
-            return pin;
-        }
-    }
-    exitPins_.push_back(GraphInPin(this, PINDIR_EXIT));
-    auto& pin = exitPins_.back();
-    pin.SetName(name);
-    return pin;
+    return MakeMapHelper(exitPins_).GetOrAdd(name, [this]() { return GraphInPin(this, PINDIR_EXIT); });
 }
 
 GraphOutPin& GraphNode::GetOrAddEnter(const ea::string_view name)
 {
-    for (auto& pin : enterPins_)
-    {
-        if (pin.GetName() == name)
-        {
-            return pin;
-        }
-    }
-    enterPins_.push_back(GraphOutPin(this, PINDIR_ENTER));
-    auto& pin = enterPins_.back();
-    pin.SetName(name);
-    return pin;
+    return MakeMapHelper(enterPins_).GetOrAdd(name, [this]() { return GraphOutPin(this, PINDIR_ENTER); });
 }
 
 void GraphNode::SetName(const ea::string& name)
@@ -154,13 +212,13 @@ bool GraphNode::Serialize(Archive& archive)
     if (archive.IsInput())
     {
         // TODO: check if properties present
-        SerializeValue(archive, "properties", properties_);
+        SerializeVectorAsObjects(archive, "properties", "property", properties_);
     }
     else
     {
         if (!properties_.empty())
         {
-            SerializeValue(archive, "properties", properties_);
+            SerializeVectorAsObjects(archive, "properties", "property", properties_);
         }
     }
 
@@ -186,30 +244,30 @@ bool GraphNode::Serialize(Archive& archive)
                     {
                     case PINDIR_INPUT:
                     {
-                        GraphInPin pin(this, direction);
-                        inputPins_.emplace_back(std::move(pin));
+                        GraphDataInPin pin(this, direction);
                         pin.Serialize(archive);
+                        MakeMapHelper(inputPins_).Add(ea::move(pin));
                         break;
                     }
                     case PINDIR_OUTPUT:
                     {
                         GraphOutPin pin(this, direction);
-                        outputPins_.emplace_back(std::move(pin));
                         pin.Serialize(archive);
+                        MakeMapHelper(outputPins_).Add(ea::move(pin));
                         break;
                     }
                     case PINDIR_ENTER:
                     {
                         GraphOutPin pin(this, direction);
-                        enterPins_.emplace_back(std::move(pin));
                         pin.Serialize(archive);
+                        MakeMapHelper(enterPins_).Add(ea::move(pin));
                         break;
                     }
                     case PINDIR_EXIT:
                     {
                         GraphInPin pin(this, direction);
-                        exitPins_.emplace_back(std::move(pin));
                         pin.Serialize(archive);
+                        MakeMapHelper(exitPins_).Add(ea::move(pin));
                         break;
                     }
                     }

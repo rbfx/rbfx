@@ -21,6 +21,7 @@
 //
 
 #include "../CommonUtils.h"
+#include "Urho3D/Graphics/AnimationTrack.h"
 #include "Urho3D/Graphics/Material.h"
 #include "Urho3D/IO/VectorBuffer.h"
 #include "Urho3D/Resource/ResourceCache.h"
@@ -97,12 +98,13 @@ TEST_CASE("Graph serialization roundtrip")
     graph->Add(nodeB);
     graph->Add(nodeC);
 
-    nodeA->GetProperties()["material"] = Variant(ResourceRef(StringHash("Material"), material->GetName()));
-    //SharedPtr<ValueAnimation> valueAnim = MakeShared<ValueAnimation>(context);
-    //valueAnim->SetKeyFrame(0.0f, Variant(0.0f));
-    //valueAnim->SetKeyFrame(0.5f, Variant(1.0f));
-    //valueAnim->SetKeyFrame(1.5f, Variant(0.0f));
-    //nodeB->GetProperties()["spline"] = Variant(valueAnim);
+    nodeA->GetOrAddProperty("material") = Variant(ResourceRef(StringHash("Material"), material->GetName()));
+    ea::unique_ptr<VariantAnimationTrack> track = ea::make_unique<VariantAnimationTrack>();
+    track->AddKeyFrame(VariantAnimationKeyFrame{0.0f, 0.5f});
+    track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 1.0f});
+    track->Commit();
+    nodeC->GetOrAddProperty("spline").SetCustom<ea::unique_ptr<VariantAnimationTrack>>(ea::move(track));
+    
 
     auto& out = nodeA->GetOrAddOutput("out");
     auto& enter = nodeC->GetOrAddEnter("enter");

@@ -30,6 +30,22 @@ namespace Urho3D
 {
 class Graph;
 
+struct URHO3D_API GraphNodeProperty
+{
+    /// Property name.
+    ea::string name_;
+    /// Property value.
+    Variant value_;
+
+    /// Get property name.
+    const ea::string GetName() const { return name_; }
+    /// Set property name.
+    void SetName(const ea::string_view name) { name_ = name; }
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive);
+};
+
 /// Abstract graph to store connected nodes.
 class URHO3D_API GraphNode : public Object
 {
@@ -58,8 +74,11 @@ public:
     /// Return name hash.
     StringHash GetNameHash() const { return nameHash_; }
 
+    /// Get or add node property.
+    Variant& GetOrAddProperty(const ea::string_view name);
+
     /// Get or add input pin.
-    GraphInPin& GetOrAddInput(const ea::string_view name);
+    GraphDataInPin& GetOrAddInput(const ea::string_view name);
 
     /// Get or add output pin.
     GraphOutPin& GetOrAddOutput(const ea::string_view name);
@@ -76,10 +95,6 @@ public:
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive);
-
-    /// Get node properties.
-    /// @property
-    VariantMap& GetProperties() { return properties_; }
 
 protected:
 
@@ -100,7 +115,7 @@ private:
     unsigned id_;
 
     /// User defined properties of the node.
-    VariantMap properties_;
+    ea::fixed_vector<GraphNodeProperty, 1> properties_;
 
     /// Enter pins. Define execution flow.
     ea::fixed_vector<GraphOutPin, 1> enterPins_;
@@ -108,7 +123,7 @@ private:
     ea::fixed_vector<GraphInPin, 1> exitPins_;
 
     /// Input pins. Define source pin for the data flow.
-    ea::fixed_vector<GraphInPin, 3> inputPins_;
+    ea::fixed_vector<GraphDataInPin, 3> inputPins_;
     /// Output pins. Define data flow.
     ea::fixed_vector<GraphOutPin, 1> outputPins_;
 

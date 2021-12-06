@@ -114,6 +114,29 @@ bool GraphInPin::Serialize(Archive& archive)
     return true;
 }
 
+bool GraphDataInPin::Serialize(Archive& archive)
+{
+    if (!GraphInPin::Serialize(archive))
+        return false;
+    if (archive.IsInput())
+    {
+        SerializeValue(archive, "default", defaultValue_);
+    }
+    else
+    {
+        if (defaultValue_.GetType() != VAR_NONE)
+        {
+            if (!SerializeValue(archive, "default", defaultValue_))
+                return false;
+        }
+    }
+    return true;
+}
+GraphDataInPin::GraphDataInPin(GraphNode* node, GraphPinDirection direction)
+    : GraphInPin(node, direction)
+{
+}
+
 GraphOutPin::GraphOutPin(GraphNode* node, GraphPinDirection direction)
     : GraphPin(node, direction)
 {
