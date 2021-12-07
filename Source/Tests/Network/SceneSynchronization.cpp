@@ -140,21 +140,44 @@ TEST_CASE("Scene is synchronized between client and server")
         MakeShared<Scene>(context)
     };
 
+    // Reference transforms, should stay the same
+    Matrix3x4 transformReplicatedNodeA;
+    Matrix3x4 transformReplicatedNodeB;
+    Matrix3x4 transformReplicatedNodeChild1;
+    Matrix3x4 transformReplicatedNodeChild2;
+    Matrix3x4 transformReplicatedNodeChild4;
+
     {
         for (Scene* clientScene : clientScenes)
             clientScene->CreateChild("Client Only Node");
         auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
+
         auto replicatedNodeA = serverScene->CreateChild("Replicated Node A");
         replicatedNodeA->CreateComponent<DefaultNetworkObject>();
+        replicatedNodeA->SetScale(2.0f);
+        transformReplicatedNodeA = replicatedNodeA->GetWorldTransform();
+
         auto replicatedNodeB = serverScene->CreateChild("Replicated Node B");
         replicatedNodeB->CreateComponent<DefaultNetworkObject>();
+        replicatedNodeB->SetPosition({ -1.0f, 2.0f, 0.5f });
+        transformReplicatedNodeB = replicatedNodeB->GetWorldTransform();
+
         auto replicatedNodeChild1 = replicatedNodeA->CreateChild("Replicated Node Child 1");
         replicatedNodeChild1->CreateComponent<DefaultNetworkObject>();
+        replicatedNodeChild1->SetPosition({ -2.0f, 3.0f, 1.5f });
+        transformReplicatedNodeChild1 = replicatedNodeChild1->GetWorldTransform();
+
         auto replicatedNodeChild2 = replicatedNodeChild1->CreateChild("Replicated Node Child 2");
         replicatedNodeChild2->CreateComponent<DefaultNetworkObject>();
+        replicatedNodeChild2->SetRotation({ 90.0f, Vector3::UP });
+        transformReplicatedNodeChild2 = replicatedNodeChild2->GetWorldTransform();
+
         auto serverOnlyChild3 = replicatedNodeB->CreateChild("Server Only Child 3");
+        serverOnlyChild3->SetPosition({ -1.0f, 0.0f, 0.0f });
+
         auto replicatedNodeChild4 = serverOnlyChild3->CreateChild("Replicated Node Child 4");
         replicatedNodeChild4->CreateComponent<DefaultNetworkObject>();
+        transformReplicatedNodeChild4 = replicatedNodeChild4->GetWorldTransform();
     }
 
     // Spend some time alone
@@ -194,6 +217,12 @@ TEST_CASE("Scene is synchronized between client and server")
         REQUIRE(replicatedNodeB == replicatedNodeChild4->GetParent());
 
         REQUIRE(replicatedNodeChild4->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeA->GetWorldTransform().Equals(transformReplicatedNodeA));
+        REQUIRE(replicatedNodeB->GetWorldTransform().Equals(transformReplicatedNodeB));
+        REQUIRE(replicatedNodeChild1->GetWorldTransform().Equals(transformReplicatedNodeChild1));
+        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2));
+        REQUIRE(replicatedNodeChild4->GetWorldTransform().Equals(transformReplicatedNodeChild4));
     }
 
     // Re-parent "Server Only Child 3" to "Replicated Node A"
@@ -238,6 +267,12 @@ TEST_CASE("Scene is synchronized between client and server")
         REQUIRE(replicatedNodeChild1 == replicatedNodeChild2->GetParent());
 
         REQUIRE(replicatedNodeChild2->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeA->GetWorldTransform().Equals(transformReplicatedNodeA));
+        REQUIRE(replicatedNodeB->GetWorldTransform().Equals(transformReplicatedNodeB));
+        REQUIRE(replicatedNodeChild1->GetWorldTransform().Equals(transformReplicatedNodeChild1));
+        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2));
+        REQUIRE(replicatedNodeChild4->GetWorldTransform().Equals(transformReplicatedNodeChild4));
     }
 
     // Remove "Replicated Node A"
@@ -273,6 +308,11 @@ TEST_CASE("Scene is synchronized between client and server")
         REQUIRE(replicatedNodeChild1 == replicatedNodeChild2->GetParent());
 
         REQUIRE(replicatedNodeChild2->GetNumChildren() == 0);
+
+        REQUIRE(replicatedNodeB->GetWorldTransform().Equals(transformReplicatedNodeB));
+        REQUIRE(replicatedNodeC->GetWorldTransform().Equals(Matrix3x4::IDENTITY));
+        REQUIRE(replicatedNodeChild1->GetWorldTransform().Equals(transformReplicatedNodeChild1));
+        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2));
     }
 
     sim.SimulateTime(1.0f);

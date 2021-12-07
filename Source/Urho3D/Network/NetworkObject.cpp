@@ -211,6 +211,10 @@ void DefaultNetworkObject::WriteSnapshot(VectorBuffer& dest)
     dest.WriteUInt(static_cast<unsigned>(parentNetworkId));
 
     dest.WriteString(node_->GetName());
+
+    dest.WriteVector3(node_->GetWorldPosition());
+    dest.WritePackedQuaternion(node_->GetWorldRotation());
+    dest.WriteVector3(node_->GetSignedWorldScale());
 }
 
 bool DefaultNetworkObject::WriteReliableDelta(VectorBuffer& dest)
@@ -232,6 +236,15 @@ void DefaultNetworkObject::ReadSnapshot(VectorBuffer& src)
     SetParentNetworkObject(parentNetworkId);
 
     node_->SetName(src.ReadString());
+
+    const Vector3 worldPosition = src.ReadVector3();
+    const Quaternion worldRotation = src.ReadPackedQuaternion();
+    const Vector3 worldScale = src.ReadVector3();
+    const Matrix3x4 worldTransform{ worldPosition, worldRotation, worldScale };
+    const Matrix3x4 localTransform = node_->IsTransformHierarchyRoot()
+        ? worldTransform
+        : node_->GetParent()->GetWorldTransform().Inverse() * worldTransform;
+    node_->SetTransform(localTransform);
 }
 
 void DefaultNetworkObject::ReadReliableDelta(VectorBuffer& src)

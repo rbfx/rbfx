@@ -636,17 +636,17 @@ void Node::SetTransform(const Matrix3x4& matrix)
 
 void Node::SetWorldPosition(const Vector3& position)
 {
-    SetPosition((parent_ == scene_ || !parent_) ? position : parent_->GetWorldTransform().Inverse() * position);
+    SetPosition(IsTransformHierarchyRoot() ? position : parent_->GetWorldTransform().Inverse() * position);
 }
 
 void Node::SetWorldRotation(const Quaternion& rotation)
 {
-    SetRotation((parent_ == scene_ || !parent_) ? rotation : parent_->GetWorldRotation().Inverse() * rotation);
+    SetRotation(IsTransformHierarchyRoot() ? rotation : parent_->GetWorldRotation().Inverse() * rotation);
 }
 
 void Node::SetWorldDirection(const Vector3& direction)
 {
-    Vector3 localDirection = (parent_ == scene_ || !parent_) ? direction : parent_->GetWorldRotation().Inverse() * direction;
+    Vector3 localDirection = IsTransformHierarchyRoot() ? direction : parent_->GetWorldRotation().Inverse() * direction;
     SetRotation(Quaternion(Vector3::FORWARD, localDirection));
 }
 
@@ -657,7 +657,7 @@ void Node::SetWorldScale(float scale)
 
 void Node::SetWorldScale(const Vector3& scale)
 {
-    SetScale((parent_ == scene_ || !parent_) ? scale : scale / parent_->GetWorldScale());
+    SetScale(IsTransformHierarchyRoot() ? scale : scale / parent_->GetWorldScale());
 }
 
 void Node::SetWorldTransform(const Vector3& position, const Quaternion& rotation)
@@ -699,7 +699,7 @@ void Node::Translate(const Vector3& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        position_ += (parent_ == scene_ || !parent_) ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
+        position_ += IsTransformHierarchyRoot() ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
         break;
     }
 
@@ -721,7 +721,7 @@ void Node::Rotate(const Quaternion& delta, TransformSpace space)
         break;
 
     case TS_WORLD:
-        if (parent_ == scene_ || !parent_)
+        if (IsTransformHierarchyRoot())
             rotation_ = (delta * rotation_).Normalized();
         else
         {
@@ -754,7 +754,7 @@ void Node::RotateAround(const Vector3& point, const Quaternion& delta, Transform
         break;
 
     case TS_WORLD:
-        if (parent_ == scene_ || !parent_)
+        if (IsTransformHierarchyRoot())
         {
             parentSpacePoint = point;
             rotation_ = (delta * rotation_).Normalized();
@@ -802,7 +802,7 @@ bool Node::LookAt(const Vector3& target, const Vector3& up, TransformSpace space
         break;
 
     case TS_PARENT:
-        worldSpaceTarget = (parent_ == scene_ || !parent_) ? target : parent_->GetWorldTransform() * target;
+        worldSpaceTarget = IsTransformHierarchyRoot() ? target : parent_->GetWorldTransform() * target;
         break;
 
     case TS_WORLD:
@@ -1635,6 +1635,11 @@ Node* Node::GetDirectChildFor(Node* indirectChild) const
     return nullptr;
 }
 
+bool Node::IsTransformHierarchyRoot() const
+{
+    return !parent_ || parent_ == scene_;
+}
+
 const Variant& Node::GetVar(StringHash key) const
 {
     auto i = vars_.find(key);
@@ -2352,7 +2357,7 @@ void Node::UpdateWorldTransform() const
     Matrix3x4 transform = GetTransform();
 
     // Assume the root node (scene) has identity transform
-    if (parent_ == scene_ || !parent_)
+    if (IsTransformHierarchyRoot())
     {
         worldTransform_ = transform;
         worldRotation_ = rotation_;
