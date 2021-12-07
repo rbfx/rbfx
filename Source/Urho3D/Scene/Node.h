@@ -403,6 +403,9 @@ public:
     /// Return direct child of this node which contains specified indirect child.
     Node* GetDirectChildFor(Node* indirectChild) const;
 
+    /// Return whether the node is the root of the transform hierarchy. If true, local transform and world transform are the same.
+    bool IsTransformHierarchyRoot() const;
+
     /// Return whether is enabled. Disables nodes effectively disable all their components.
     /// @property
     bool IsEnabled() const { return enabled_; }
