@@ -139,9 +139,6 @@ struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKey
     bool Serialize(Archive& archive);
 };
 
-/// Serialize VariantAnimationKeyFrame.
-bool URHO3D_API SerializeValue(Archive& archive, const char* name, VariantAnimationKeyFrame& value);
-
 /// Serialize VariantAnimationTrack.
 bool URHO3D_API SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value);
 

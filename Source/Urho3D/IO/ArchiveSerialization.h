@@ -178,8 +178,8 @@ inline ea::string FormatResourceRefList(ea::string_view typeString, const ea::st
 URHO3D_API Resource* FetchResource(Archive& archive, ResourceRef& resourceRef);
 
 /// Serialize tie of vectors of the same size. Each tie of elements is serialized as separate object.
-template <class T, size_t... Is>
-inline bool SerializeVectorTie(Archive& archive, const char* name, const char* element, T& vectorTuple, ea::index_sequence<Is...>)
+template <class T, class U, size_t... Is>
+inline bool SerializeVectorTie(Archive& archive, const char* name, const char* element, T& vectorTuple, const U& serializeValue, ea::index_sequence<Is...>)
 {
     const unsigned sizes[] = { ea::get<Is>(vectorTuple).size()... };
     const unsigned outputSize = sizes[0];
@@ -193,7 +193,7 @@ inline bool SerializeVectorTie(Archive& archive, const char* name, const char* e
             for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
                 const auto elementTuple = ea::tie(ea::get<Is>(vectorTuple)[i]...);
-                if (!SerializeValue(archive, element, elementTuple))
+                if (!serializeValue(archive, element, elementTuple))
                     return false;
             }
             return true;
@@ -209,13 +209,20 @@ inline bool SerializeVectorTie(Archive& archive, const char* name, const char* e
             for (unsigned i = 0; i < outputSize; ++i)
             {
                 const auto elementTuple = ea::tie(ea::get<Is>(vectorTuple)[i]...);
-                if (!SerializeValue(archive, element, elementTuple))
+                if (!serializeValue(archive, element, elementTuple))
                     return false;
             }
         }
     }
     return false;
 }
+
+/// Default callback for value serialization.
+struct DefaultSerializer
+{
+    template <class T>
+    bool operator()(Archive& archive, const char* name, T& value) const { return SerializeValue(archive, name, value); }
+};
 
 }
 
@@ -439,8 +446,8 @@ inline bool SerializeStringHashKey(Archive& archive, StringHash& value, const ea
 }
 
 /// Serialize vector with standard interface. Content is serialized as separate objects.
-template <class T>
-inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const char* element, T& vector)
+template <class T, class U = Detail::DefaultSerializer>
+inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const char* element, T& vector, const U& serializeValue = Detail::DefaultSerializer{})
 {
     using ValueType = typename T::value_type;
     if (auto block = archive.OpenArrayBlock(name, vector.size()))
@@ -451,7 +458,7 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
             vector.resize(block.GetSizeHint());
             for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
-                if (!SerializeValue(archive, element, vector[i]))
+                if (!serializeValue(archive, element, vector[i]))
                     return false;
             }
             return true;
@@ -460,7 +467,7 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
         {
             for (ValueType& value : vector)
             {
-                if (!SerializeValue(archive, element, value))
+                if (!serializeValue(archive, element, value))
                     return false;
             }
             return true;
@@ -470,8 +477,8 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
 }
 
 /// Serialize array with standard interface (compatible with ea::span, ea::array, etc). Content is serialized as separate objects.
-template <class T>
-inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array)
+template <class T, class U = Detail::DefaultSerializer>
+inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array, const U& serializeValue = Detail::DefaultSerializer{})
 {
     if (auto block = archive.OpenArrayBlock(name, array.size()))
     {
@@ -484,7 +491,7 @@ inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const ch
             }
             for (unsigned i = 0; i < array.size(); ++i)
             {
-                if (!SerializeValue(archive, element, array[i]))
+                if (!serializeValue(archive, element, array[i]))
                     return false;
             }
             return true;
@@ -493,7 +500,7 @@ inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const ch
         {
             for (unsigned i = 0; i < array.size(); ++i)
             {
-                if (!SerializeValue(archive, element, array[i]))
+                if (!serializeValue(archive, element, array[i]))
                     return false;
             }
             return true;
@@ -502,11 +509,11 @@ inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const ch
     return false;
 }
 
-template <class T>
-inline bool SerializeVectorTieAsObjects(Archive& archive, const char* name, const char* element, T vectorTuple)
+template <class T, class U = Detail::DefaultSerializer>
+inline bool SerializeVectorTieAsObjects(Archive& archive, const char* name, const char* element, T vectorTuple, const U& serializeValue = Detail::DefaultSerializer{})
 {
     static constexpr auto tupleSize = ea::tuple_size_v<T>;
-    return Detail::SerializeVectorTie(archive, name, element, vectorTuple, ea::make_index_sequence<tupleSize>{});
+    return Detail::SerializeVectorTie(archive, name, element, vectorTuple, serializeValue, ea::make_index_sequence<tupleSize>{});
 }
 
 /// Serialize vector with standard interface. Content is serialized as bytes.
@@ -833,6 +840,12 @@ inline bool SerializeValue(Archive& archive, const char* name, ResourceRefList& 
     }
 }
 
+/// Serialize type of the Variant.
+inline bool SerializeValue(Archive& archive, const char* name, VariantType& value)
+{
+    return SerializeEnum(archive, name, Variant::GetTypeNameList(), value);
+}
+
 /// Serialize value of the Variant.
 URHO3D_API bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value);
 
@@ -842,7 +855,7 @@ inline bool SerializeValue(Archive& archive, const char* name, Variant& value)
     if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
     {
         VariantType variantType = value.GetType();
-        if (!SerializeEnum(archive, "type", Variant::GetTypeNameList(), variantType))
+        if (!SerializeValue(archive, "type", variantType))
             return false;
 
         return SerializeVariantValue(archive, variantType, "value", value);
