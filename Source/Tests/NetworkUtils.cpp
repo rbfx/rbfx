@@ -180,8 +180,15 @@ void NetworkSimulator::SimulateEngineFrame(float timeStep)
 
 void NetworkSimulator::SimulateTime(float time)
 {
-    const float timeStep = 1.0f / (FramesInSecond * MillisecondsInFrame);
-    for (unsigned i = 0; i < time / timeStep; ++i)
+    static constexpr unsigned millisecondsInQuant = 8;
+    static_assert(MillisecondsInFrame % millisecondsInQuant == 0, "Quants don't match frames");
+
+    const float timeStep = static_cast<float>(millisecondsInQuant) / (FramesInSecond * MillisecondsInFrame);
+    const float numStepsRaw = time / timeStep;
+    const auto numSteps = static_cast<unsigned>(numStepsRaw);
+    REQUIRE(numSteps == numStepsRaw);
+
+    for (unsigned i = 0; i < numSteps; ++i)
         SimulateEngineFrame(timeStep);
 }
 
