@@ -447,7 +447,7 @@ inline bool SerializeStringHashKey(Archive& archive, StringHash& value, const ea
 
 /// Serialize vector with standard interface. Content is serialized as separate objects.
 template <class T, class U = Detail::DefaultSerializer>
-inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const char* element, T& vector, const U& serializeValue = Detail::DefaultSerializer{})
+inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const char* element, T& vector, const U& serializeValue = U{})
 {
     using ValueType = typename T::value_type;
     if (auto block = archive.OpenArrayBlock(name, vector.size()))
@@ -478,7 +478,7 @@ inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const c
 
 /// Serialize array with standard interface (compatible with ea::span, ea::array, etc). Content is serialized as separate objects.
 template <class T, class U = Detail::DefaultSerializer>
-inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array, const U& serializeValue = Detail::DefaultSerializer{})
+inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array, const U& serializeValue = U{})
 {
     if (auto block = archive.OpenArrayBlock(name, array.size()))
     {
@@ -510,7 +510,7 @@ inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const ch
 }
 
 template <class T, class U = Detail::DefaultSerializer>
-inline bool SerializeVectorTieAsObjects(Archive& archive, const char* name, const char* element, T vectorTuple, const U& serializeValue = Detail::DefaultSerializer{})
+inline bool SerializeVectorTieAsObjects(Archive& archive, const char* name, const char* element, T vectorTuple, const U& serializeValue = U{})
 {
     static constexpr auto tupleSize = ea::tuple_size_v<T>;
     return Detail::SerializeVectorTie(archive, name, element, vectorTuple, serializeValue, ea::make_index_sequence<tupleSize>{});
