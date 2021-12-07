@@ -23,14 +23,23 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/AnimationTrack.h"
+#include "../IO/ArchiveSerialization.h"
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
-
 namespace
 {
+
+const char* const keyFrameInterpolationNames[] =
+{
+    "none",
+    "linear",
+    "spline",
+    "cubicspline",
+    nullptr
+};
 
 Variant InterpolateSpline(VariantType type,
     const Variant& v1, const Variant& v2, const Variant& t1, const Variant& t2, float t)
@@ -135,6 +144,7 @@ void AnimationTrack::Sample(float time, float duration, bool isLooped, unsigned&
 void VariantAnimationTrack::Commit()
 {
     type_ = GetType();
+    nameHash_ = name_;
 
     switch (type_)
     {
@@ -221,6 +231,68 @@ Variant VariantAnimationTrack::Sample(float time, float duration, bool isLooped,
 VariantType VariantAnimationTrack::GetType() const
 {
     return keyFrames_.empty() ? VAR_NONE : keyFrames_[0].value_.GetType();
+}
+
+bool VariantAnimationTrack::Serialize(Archive& archive)
+{
+    SerializeValue(archive, "name", name_);
+    SerializeValue(archive, "type", type_);
+    SerializeEnum(archive, "interpolation", keyFrameInterpolationNames, interpolation_);
+    SerializeValue(archive, "splineTension", splineTension_);
+
+    if (interpolation_ == KeyFrameInterpolation::TangentSpline)
+    {
+        SerializeVectorTieAsObjects(archive, "keyframes", "keyframe", ea::tie(keyFrames_, inTangents_, outTangents_),
+            [&](Archive& archive, const char* name, ea::tuple<VariantAnimationKeyFrame&, Variant&, Variant&> value)
+        {
+            if (auto block = archive.OpenUnorderedBlock(name))
+            {
+                auto& keyFrame = ea::get<0>(value);
+                auto& inTangent = ea::get<1>(value);
+                auto& outTangent = ea::get<2>(value);
+                if (!SerializeValue(archive, "time", keyFrame.time_))
+                    return false;
+                if (!SerializeVariantValue(archive, type_, "value", keyFrame.value_))
+                    return false;
+                if (!SerializeVariantValue(archive, type_, "in", inTangent))
+                    return false;
+                if (!SerializeVariantValue(archive, type_, "out", outTangent))
+                    return false;
+
+                return true;
+            }
+            return false;
+        });
+    }
+    else
+    {
+        SerializeVectorAsObjects(archive, "keyframes", "keyframe", keyFrames_,
+            [&](Archive& archive, const char* name, VariantAnimationKeyFrame& value)
+        {
+            if (auto block = archive.OpenUnorderedBlock(name))
+            {
+                if (!SerializeValue(archive, "time", value.time_))
+                    return false;
+                if (!SerializeVariantValue(archive, type_, "value", value.value_))
+                    return false;
+
+                return true;
+            }
+            return false;
+        });
+    }
+
+    if (archive.IsInput())
+        Commit();
+
+    return true;
+}
+
+bool SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+        return value.Serialize(archive);
+    return false;
 }
 
 }
