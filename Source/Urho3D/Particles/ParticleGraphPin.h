@@ -100,14 +100,20 @@ public:
 
     ParticleGraphContainerType GetContainerType() const { return memory_.type_; }
 
-    /// Serialize from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive);
-
     /// Get a copy of the pin setup but with a different value type.
     ParticleGraphPin WithType(VariantType type) const;
 
     /// Set source node and pin indices.
     void SetSource(unsigned nodeIndex, unsigned pinIndex = 0);
+
+    /// Get true if connected to node.
+    bool GetConnected() const;
+
+    /// Get connected node index.
+    unsigned GetConnectedNodeIndex() const { return sourceNode_; }
+
+    /// Get connected pin index.
+    unsigned GetConnectedPinIndex() const { return sourcePin_; }
 
 protected:
     /// Set pin name and hash.
@@ -132,7 +138,7 @@ private:
     StringHash nameHash_;
 
     /// Source node.
-    unsigned sourceNode_{};
+    unsigned sourceNode_;
     /// Source node pin index.
     unsigned sourcePin_{};
 
@@ -154,6 +160,6 @@ private:
 };
 
 /// Serialize pin.
-bool SerializeValue(Archive& archive, const char* name, ParticleGraphPin& value);
+//bool SerializeValue(Archive& archive, const char* name, ParticleGraphPin& value);
 
 }

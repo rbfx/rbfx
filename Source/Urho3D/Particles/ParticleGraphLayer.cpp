@@ -26,6 +26,7 @@
 #include "ParticleGraph.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphPin.h"
+#include "Urho3D/Resource/Graph.h"
 
 #include <Urho3D/IO/Log.h>
 
@@ -239,6 +240,10 @@ bool ParticleGraphLayer::Serialize(Archive& archive)
     if (!update_.Serialize(archive, "update"))
     {
         return false;
+    }
+    if (archive.IsInput())
+    {
+        Prepare();
     }
     return true;
 }

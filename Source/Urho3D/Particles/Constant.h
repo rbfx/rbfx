@@ -39,7 +39,7 @@ public:
     /// Construct.
     explicit Constant(Context* context)
         : ParticleGraphNode(context)
-        , pins_{ParticleGraphPin(PGPIN_TYPE_MUTABLE, "value", VAR_NONE, PGCONTAINER_SCALAR)}
+        , pins_{ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out", VAR_NONE, PGCONTAINER_SCALAR)}
     {
     }
 
@@ -71,11 +71,15 @@ public:
     }
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
+    //bool Serialize(Archive& archive) override;
 
     const Variant& GetValue();
 
     void SetValue(const Variant&);
+
+    bool LoadProperties(ParticleGraphReader& reader, GraphNode& node) override;
+
+    bool SaveProperties(ParticleGraphWriter& writer, GraphNode& node) override;
 
 protected:
 

@@ -20,15 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../../Precompiled.h"
+#include "../Precompiled.h"
 
 #include "RenderBillboard.h"
 #include "ParticleGraphLayerInstance.h"
-#include "../Material.h"
-#include "../../Graphics/Octree.h"
-#include "../../Scene/Scene.h"
-#include "../../IO/ArchiveSerialization.h"
-#include "../../Resource/ResourceCache.h"
+#include "../Graphics/Material.h"
+#include "../Graphics/Octree.h"
+#include "../Scene/Scene.h"
+#include "../IO/ArchiveSerialization.h"
+#include "../Resource/ResourceCache.h"
 
 namespace Urho3D
 {
@@ -43,13 +43,13 @@ RenderBillboard::RenderBillboard(Context* context)
 {
 }
 
-bool RenderBillboard::Serialize(Archive& archive)
-{
-    SerializeValue(archive, "isWorldSpace", isWorldSpace_);
-    SerializeResource(archive, "material", material_, materialRef_);
-    
-    return AbstractNodeType::Serialize(archive);
-}
+//bool RenderBillboard::Serialize(Archive& archive)
+//{
+//    SerializeValue(archive, "isWorldSpace", isWorldSpace_);
+//    SerializeResource(archive, "material", material_, materialRef_);
+//    
+//    return AbstractNodeType::Serialize(archive);
+//}
 
 RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer)
     : AbstractNodeType::Instance(node, layer)

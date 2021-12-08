@@ -23,6 +23,8 @@
 #include "../Precompiled.h"
 
 #include "ParticleGraphNode.h"
+
+#include "ParticleGraph.h"
 #include "ParticleGraphPin.h"
 #include "ParticleGraphSystem.h"
 
@@ -35,6 +37,8 @@ namespace Urho3D
 
 ParticleGraphNode::ParticleGraphNode(Context* context)
     : Object(context)
+    , graph_(nullptr)
+    , index_(0)
 {
 }
 
@@ -67,83 +71,196 @@ void ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsi
     pin.SetSource(nodeIndex, nodePinIndex);
 }
 
-ParticleGraphPin& ParticleGraphNode::GetPin(const ea::string& name)
+unsigned ParticleGraphNode::GetPinIndex(const ea::string& name)
 {
-    for (unsigned i=0; i<NumPins(); ++i)
+    for (unsigned i = 0; i < NumPins(); ++i)
     {
         ParticleGraphPin& pin = GetPin(i);
         if (pin.GetName() == name)
-            return pin;
+            return i;
     }
-    static ParticleGraphPin err;
-    return err;
+    return INVALID_PIN;
 }
 
-namespace
+ParticleGraphPin* ParticleGraphNode::GetPin(const ea::string& name)
 {
-struct PinArrayAdapter
+    auto index = GetPinIndex(name);
+    if (index == INVALID_PIN)
+        return nullptr;
+    return &GetPin(index);
+}
+
+bool ParticleGraphNode::Load(ParticleGraphReader& reader, GraphNode& node)
 {
-    typedef ParticleGraphPin value_type;
-    PinArrayAdapter(ParticleGraphNode& node)
-        : node_(node)
+    if (!LoadProperties(reader, node))
+        return false;
+    if (!LoadPins(reader, node))
+        return false;
+
+    return true;
+}
+
+bool ParticleGraphNode::Save(ParticleGraphWriter& writer, GraphNode& node)
+{
+    node.SetName(GetTypeName());
+
+    if (!SaveProperties(writer, node))
+        return false;
+    if (!SavePins(writer, node))
+        return false;
+    
+    return true;
+}
+
+bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
+{
+    // First pass: validate and connect pins input pins.
+    for (auto& inputPin : node.GetInputs())
     {
+        auto pin = GetPin(inputPin.GetName());
+        if (pin)
+        {
+            pin->SetValueType(inputPin.type_);
+        }
+        else
+        {
+            URHO3D_LOGERROR(Format("Unknown input pin {}", inputPin.GetName()));
+            return false;
+        }
+
+        if (inputPin.GetConnected())
+        {
+            auto source = inputPin.GetConnectedPin();
+            if (source == nullptr)
+            {
+                URHO3D_LOGERROR(Format("Can't resolve connected pin for {}", inputPin.GetName()));
+                return false;
+            }
+            auto connectedNode = reader.ReadNode(source->GetNode()->GetID());
+            if (connectedNode == ParticleGraph::INVALID_NODE_INDEX)
+            {
+                return false;
+            }
+            unsigned pinIndex = reader.GetInputPinIndex(connectedNode, source->GetName());
+            pin->SetSource(connectedNode, pinIndex);
+        }
     }
-    size_t size() const { return node_.NumPins(); }
-    ParticleGraphPin& operator[](size_t index) { return node_.GetPin(index); }
+    // Second pass: create constant nodes.
+    for (auto& inputPin : node.GetInputs())
+    {
+        auto pin = GetPin(inputPin.GetName());
+        if (!inputPin.GetConnected())
+        {
+            auto constValue = inputPin.GetDefaultValue();
+            if (constValue.GetType() == VAR_NONE)
+            {
+                URHO3D_LOGERROR(Format("Pin {} is not connected and doesn't have default value.", inputPin.GetName()));
+                return false;
+            }
+            auto connectedNode = reader.GetOrAddConstant(constValue);
+            pin->SetSource(connectedNode, 0);
+        }
+    }
 
-    ParticleGraphNode& node_;
-};
-} // namespace
+    for (auto& outputPin : node.GetOutputs())
+    {
+        auto pin = GetPin(outputPin.GetName());
+        if (pin)
+        {
+            pin->SetValueType(outputPin.type_);
+        }
+        else
+        {
+            URHO3D_LOGERROR(Format("Unknown output pin {}", outputPin.GetName()));
+        }
+    }
+    return true;
+}
 
-bool ParticleGraphNode::Serialize(Archive& archive)
+bool ParticleGraphNode::LoadProperties(ParticleGraphReader& reader, GraphNode& node)
 {
-    PinArrayAdapter adapter(*this);
-    return SerializeArrayAsObjects(archive, "pins", "pin", adapter);
+    return true;
+}
+
+bool ParticleGraphNode::SavePins(ParticleGraphWriter& writer, GraphNode& node)
+{
+    for (unsigned i = 0; i < NumPins(); ++i)
+    {
+        ParticleGraphPin& pin = GetPin(i);
+        if (pin.GetIsInput())
+        {
+            auto& inputPin = node.GetOrAddInput(pin.GetName());
+            inputPin.type_ = pin.GetValueType();
+
+            if (pin.GetConnected())
+            {
+                auto connectedNode = pin.GetConnectedNodeIndex();
+                inputPin.ConnectTo(writer.GetSourcePin(connectedNode, pin.GetConnectedPinIndex()));
+            }
+        }
+        else
+        {
+            auto outputPin = node.GetOrAddOutput(pin.GetName());
+            outputPin.type_ = pin.GetValueType();
+        }
+    }
+    return true;
+}
+
+bool ParticleGraphNode::SaveProperties(ParticleGraphWriter& writer, GraphNode& node)
+{
+    return true;
 }
 
 VariantType ParticleGraphNode::EvaluateOutputPinType(ParticleGraphPin& pin) { return VAR_NONE; }
 
-bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value)
+void ParticleGraphNode::SetGraph(ParticleGraph* graph, unsigned index)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        // Serialize type
-        StringHash type = value ? value->GetType() : StringHash{};
-        const ea::string_view typeName = value ? ea::string_view{value->GetTypeName()} : "";
-        if (!SerializeStringHash(archive, "type", type, typeName))
-            return false;
-
-        // Serialize empty object
-        if (type == StringHash{})
-        {
-            value = nullptr;
-            return true;
-        }
-
-        // Create instance if loading
-        if (archive.IsInput())
-        {
-            Context* context = archive.GetContext();
-            if (!context)
-            {
-                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
-                return false;
-            }
-            auto system = context->GetSubsystem<ParticleGraphSystem>();
-            
-            value = system->CreateParticleGraphNode(type);
-
-            if (!value)
-            {
-                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
-                return false;
-            }
-        }
-
-        // Serialize object
-        return value->Serialize(archive);
-    }
-    return false;
+    graph_ = graph;
+    index_ = index;
 }
+//
+//bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value)
+//{
+//    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+//    {
+//        // Serialize type
+//        StringHash type = value ? value->GetType() : StringHash{};
+//        const ea::string_view typeName = value ? ea::string_view{value->GetTypeName()} : "";
+//        if (!SerializeStringHash(archive, "type", type, typeName))
+//            return false;
+//
+//        // Serialize empty object
+//        if (type == StringHash{})
+//        {
+//            value = nullptr;
+//            return true;
+//        }
+//
+//        // Create instance if loading
+//        if (archive.IsInput())
+//        {
+//            Context* context = archive.GetContext();
+//            if (!context)
+//            {
+//                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
+//                return false;
+//            }
+//            auto system = context->GetSubsystem<ParticleGraphSystem>();
+//            
+//            value = system->CreateParticleGraphNode(type);
+//
+//            if (!value)
+//            {
+//                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
+//                return false;
+//            }
+//        }
+//
+//        // Serialize object
+//        return value->Serialize(archive);
+//    }
+//    return false;
+//}
 
 } // namespace Urho3D

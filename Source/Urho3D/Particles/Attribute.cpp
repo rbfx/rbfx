@@ -20,12 +20,12 @@
 // THE SOFTWARE.
 //
 
-#include "../../Precompiled.h"
+#include "../Precompiled.h"
 
 #include "Attribute.h"
 #include "Helpers.h"
 
-#include "Urho3D/Resource/XMLElement.h"
+#include "../Resource/XMLElement.h"
 
 namespace Urho3D
 {

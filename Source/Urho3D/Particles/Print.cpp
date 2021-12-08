@@ -20,10 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include "../../Precompiled.h"
+#include "../Precompiled.h"
 
 #include "Print.h"
-#include "Urho3D/IO/Log.h"
+#include "../IO/Log.h"
 
 #include "Helpers.h"
 

@@ -25,6 +25,7 @@
 #include "GraphPin.h"
 #include "../Core/Context.h"
 #include <EASTL/fixed_vector.h>
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
@@ -77,14 +78,44 @@ public:
     /// Get or add node property.
     Variant& GetOrAddProperty(const ea::string_view name);
 
+    /// Get node property. Returns nullptr if property is not found.
+    Variant* GetProperty(const ea::string_view name);
+
+    /// Add property with value.
+    GraphNode* WithProperty(const ea::string_view name, const Variant& value);
+
+    /// Get input pins.
+    ea::span<GraphDataInPin> GetInputs() { return ea::span(inputPins_); }
+
     /// Get or add input pin.
     GraphDataInPin& GetOrAddInput(const ea::string_view name);
+
+    /// Add input pin.
+    GraphNode* WithInput(const ea::string_view name, VariantType type = VAR_NONE);
+
+    /// Add input pin with default value.
+    GraphNode* WithInput(const ea::string_view name, const Variant& value);
+
+    /// Add input pin connected to the output pin.
+    GraphNode* GraphNode::WithInput(const ea::string_view name, GraphOutPin* pin);
 
     /// Get or add output pin.
     GraphOutPin& GetOrAddOutput(const ea::string_view name);
 
+    /// Add output pin.
+    GraphNode* WithOutput(const ea::string_view name, VariantType type = VAR_NONE);
+
+    /// Get output pin.
+    GraphOutPin* GetOutput(const ea::string_view name);
+
+    /// Get output pins.
+    ea::span<GraphOutPin> GetOutputs() { return ea::span(outputPins_); }
+
     /// Get or add enter pin.
     GraphOutPin& GetOrAddEnter(const ea::string_view name);
+
+    /// Get enter pin.
+    GraphOutPin* GetEnter(const ea::string_view name);
 
     /// Get or add exit pin.
     GraphInPin& GetOrAddExit(const ea::string_view name);

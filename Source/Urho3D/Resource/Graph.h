@@ -47,11 +47,20 @@ public:
     /// Get number of nodes in the graph.
     unsigned GetNumNodes() const { return nodes_.size(); }
 
+    /// Get node ids.
+    void GetNodeIds(ea::vector<unsigned>& ids) const;
+
+    /// Get node by id.
+    GraphNode* GetNode(unsigned id) const;
+
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive);
 
     /// Add node to the graph.
     void Add(GraphNode*);
+
+    /// Create node at the graph.
+    GraphNode* Create(const ea::string& name);
 
     /// Add node to the graph.
     void Remove(GraphNode*);

@@ -22,6 +22,7 @@
 
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
+#include "Urho3D/Resource/XMLArchive.h"
 
 #include <Urho3D/Particles//ParticleGraphLayer.h>
 #include <Urho3D/Particles/ParticleGraphLayerInstance.h>
@@ -73,6 +74,33 @@ using namespace Urho3D;
 //
 //    instance->~ParticleGraphNodeInstance();
 //}
+TEST_CASE("Test particle graph serialization")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    const auto graph = MakeShared<Graph>(context);
+
+    auto const1 = graph->Create("Constant")->WithProperty("value", 1.0f)->WithOutput("out");
+    auto add = graph->Create("Add")->
+        WithInput("x", 0.5f)->
+        WithInput("y", const1->GetOutput("out"));
+
+    const auto particleGraph = MakeShared<ParticleGraph>(context);
+    CHECK(particleGraph->LoadGraph(*graph));
+
+    const auto outGraph = MakeShared<Graph>(context);
+    CHECK(particleGraph->SaveGraph(*outGraph));
+
+    {
+        VectorBuffer buf;
+        auto xmlFile = MakeShared<XMLFile>(context);
+        XMLElement root = xmlFile->CreateRoot("root");
+        XMLOutputArchive xmlOutputArchive{context, root};
+        outGraph->Serialize(xmlOutputArchive);
+        xmlFile->Save(buf);
+        ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+    }
+}
 
 TEST_CASE("Test simple particle graph")
 {

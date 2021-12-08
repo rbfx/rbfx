@@ -36,6 +36,16 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper
         : vector_(vector)
     {
     }
+    T* Get(const ea::string_view name)
+    {
+        for (T& val : vector_)
+        {
+            if (val.GetName() == name)
+                return &val;
+        }
+        return nullptr;
+    }
+
 
     T& GetOrAdd(const ea::string_view name, ea::function<T()> add)
     {
@@ -143,6 +153,7 @@ bool GraphNode::SerializePins(Archive& archive, Iterator begin, Iterator end)
             }
             if (!begin->Serialize(archive))
                 return false;
+
             ++begin;
         }
         else
@@ -158,14 +169,70 @@ Variant& GraphNode::GetOrAddProperty(const ea::string_view name)
     return MakeMapHelper(properties_).GetOrAdd(name).value_;
 }
 
+Variant* GraphNode::GetProperty(const ea::string_view name)
+{
+    auto res  = MakeMapHelper(properties_).Get(name);
+    if (res)
+        return &res->value_;
+    return nullptr;
+}
+
+GraphNode* GraphNode::WithProperty(const ea::string_view name, const Variant& value)
+{
+    auto& prop = GetOrAddProperty(name);
+    prop = value;
+    return this;
+}
+
 GraphDataInPin& GraphNode::GetOrAddInput(const ea::string_view name)
 {
     return MakeMapHelper(inputPins_).GetOrAdd(name, [this]() { return GraphDataInPin(this, PINDIR_INPUT); });
 }
 
+GraphNode* GraphNode::WithInput(const ea::string_view name, VariantType type)
+{
+    auto& pin = GetOrAddInput(name);
+    pin.SetName(name);
+    pin.type_ = type;
+    return this;
+}
+
+GraphNode* GraphNode::WithInput(const ea::string_view name, const Variant& value)
+{
+    auto& pin = GetOrAddInput(name);
+    pin.SetName(name);
+    pin.type_ = value.GetType();
+    pin.SetDefaultValue(value);
+    return this;
+}
+
+GraphNode* GraphNode::WithInput(const ea::string_view name, GraphOutPin* outputPin)
+{
+    auto& pin = GetOrAddInput(name);
+    pin.SetName(name);
+    if (outputPin)
+    {
+        pin.ConnectTo(*outputPin);
+    }
+    return this;
+}
+
 GraphOutPin& GraphNode::GetOrAddOutput(const ea::string_view name)
 {
     return MakeMapHelper(outputPins_).GetOrAdd(name, [this]() { return GraphOutPin(this, PINDIR_OUTPUT); });
+}
+
+GraphNode* GraphNode::WithOutput(const ea::string_view name, VariantType type)
+{
+    auto& pin = GetOrAddOutput(name);
+    pin.SetName(name);
+    pin.type_ = type;
+    return this;
+}
+
+GraphOutPin* GraphNode::GetOutput(const ea::string_view name)
+{
+    return MakeMapHelper(outputPins_).Get(name);
 }
 
 GraphInPin& GraphNode::GetOrAddExit(const ea::string_view name)
@@ -176,6 +243,11 @@ GraphInPin& GraphNode::GetOrAddExit(const ea::string_view name)
 GraphOutPin& GraphNode::GetOrAddEnter(const ea::string_view name)
 {
     return MakeMapHelper(enterPins_).GetOrAdd(name, [this]() { return GraphOutPin(this, PINDIR_ENTER); });
+}
+
+GraphOutPin* GraphNode::GetEnter(const ea::string_view name)
+{
+    return MakeMapHelper(enterPins_).Get(name);
 }
 
 void GraphNode::SetName(const ea::string& name)
@@ -191,8 +263,12 @@ bool GraphNode::Serialize(Archive& archive)
 {
     unsigned numPins = archive.IsInput() ? 0 : enterPins_.size() + exitPins_.size() + inputPins_.size() + outputPins_.size();
 
+    SerializeValue(archive, "name", name_);
+
     if (archive.IsInput())
     {
+        nameHash_ = name_;
+
         // TODO: check if properties present
         SerializeVectorAsObjects(archive, "properties", "property", properties_);
     }
@@ -270,7 +346,7 @@ bool GraphNode::Serialize(Archive& archive)
             return true;
         }
     }
-    return false;
+    return true;
 }
 
 void GraphNode::SetGraph(Graph* scene, unsigned id)

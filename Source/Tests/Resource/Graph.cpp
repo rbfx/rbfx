@@ -93,13 +93,10 @@ TEST_CASE("Graph serialization roundtrip")
 
 
     auto graph = MakeShared<Graph>(context);
-    auto nodeA = MakeShared<GraphNode>(context);
-    auto nodeB = MakeShared<GraphNode>(context);
-    auto nodeC = MakeShared<GraphNode>(context);
 
-    graph->Add(nodeA);
-    graph->Add(nodeB);
-    graph->Add(nodeC);
+    auto nodeA = graph->Create("A");
+    auto nodeB = graph->Create("B");
+    auto nodeC = graph->Create("C");
 
     nodeA->GetOrAddProperty("material") = Variant(ResourceRef(StringHash("Material"), material->GetName()));
     ea::unique_ptr<VariantAnimationTrack> track = ea::make_unique<VariantAnimationTrack>();
@@ -107,7 +104,6 @@ TEST_CASE("Graph serialization roundtrip")
     track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 1.0f});
     track->Commit();
     nodeC->GetOrAddProperty("spline").SetCustom<ea::unique_ptr<VariantAnimationTrack>>(ea::move(track));
-    
 
     auto& out = nodeA->GetOrAddOutput("out");
     auto& enter = nodeC->GetOrAddEnter("enter");
@@ -137,4 +133,14 @@ TEST_CASE("Graph serialization roundtrip")
         CHECK(restoredGraph->Serialize(archive));
     }
     CHECK(restoredGraph->GetNumNodes() == graph->GetNumNodes());
+    ea::vector<unsigned> ids;
+    graph->GetNodeIds(ids);
+    for (unsigned id: ids)
+    {
+        auto srcNode = graph->GetNode(id);
+        CHECK(srcNode);
+        auto dstNode = restoredGraph->GetNode(id);
+        CHECK(dstNode);
+        CHECK(srcNode->GetName() == dstNode->GetName());
+    }
 }

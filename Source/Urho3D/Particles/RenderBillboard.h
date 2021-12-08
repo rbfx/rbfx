@@ -69,8 +69,6 @@ public:
     }
 
 public:
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
 
     /// Return material.
     /// @property

@@ -27,22 +27,32 @@
 #include "../IO/Archive.h"
 #include "../IO/ArchiveSerialization.h"
 #include "ParticleGraphPin.h"
+#include "Urho3D/Resource/GraphNode.h"
 
 namespace Urho3D
 {
 class ParticleGraphPin;
 class ParticleGraphNodeInstance;
+class ParticleGraphReader;
+class ParticleGraphWriter;
+class ParticleGraph;
 
 class URHO3D_API ParticleGraphNode : public Object
 {
     URHO3D_OBJECT(ParticleGraphNode, Object)
 
 public:
+    static constexpr unsigned INVALID_PIN = std::numeric_limits<unsigned>::max();
+
     /// Construct.
     explicit ParticleGraphNode(Context* context);
 
     /// Destruct.
     ~ParticleGraphNode() override;
+
+    /// Get graph.
+    /// @property 
+    ParticleGraph* GetGraph() { return graph_; }
 
     /// Get number of pins.
     virtual unsigned NumPins() const = 0;
@@ -54,7 +64,10 @@ public:
     void SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex = 0);
 
     /// Get pin by name.
-    ParticleGraphPin& GetPin(const ea::string& name);
+    ParticleGraphPin* GetPin(const ea::string& name);
+
+    /// Get pin index by name.
+    unsigned GetPinIndex(const ea::string& name);
 
     /// Evaluate size required to place new node instance.
     virtual unsigned EvaluateInstanceSize() = 0;
@@ -62,12 +75,26 @@ public:
     /// Place new instance at the provided address.
     virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) = 0;
 
-    /// Serialize from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive);
+    /// Load node.
+    virtual bool Load(ParticleGraphReader& reader, GraphNode& node);
+    /// Save node.
+    virtual bool Save(ParticleGraphWriter& writer, GraphNode& node);
 
 protected:
+    /// Save node.
+    virtual bool LoadPins(ParticleGraphReader& reader, GraphNode& node);
+    /// Save node.
+    virtual bool LoadProperties(ParticleGraphReader& reader, GraphNode& node);
+    /// Save node.
+    virtual bool SavePins(ParticleGraphWriter& writer, GraphNode& node);
+    /// Save node.
+    virtual bool SaveProperties(ParticleGraphWriter& writer, GraphNode& node);
+
     /// Evaluate runtime output pin type.
     virtual VariantType EvaluateOutputPinType(ParticleGraphPin& pin);
+
+    /// Set graph reference. Called by ParticleGraph.
+    void SetGraph(ParticleGraph* graph, unsigned index);
 
     /// Set pin name.
     /// This method is protected so it can only be accessable to nodes that allow pin renaming.
@@ -77,18 +104,13 @@ protected:
     /// This method is protected so it can only be accessable to nodes that allow pin renaming.
     void SetPinValueType(unsigned pinIndex, VariantType type);
 
+    /// Parent graph.
+    ParticleGraph* graph_;
+    /// This node index in the graph.
+    unsigned index_;
+
     friend class ParticleGraphAttributeBuilder;
+    friend class ParticleGraph;
 };
-
-/// Serialize Object.
-bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value);
-
-///// Serialize Object.
-//template <>
-//inline bool SerializeValue<ParticleGraphNode>(
-//    Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value)
-//{
-//    return SerializeValueImpl(archive, name, value);
-//}
 
 }

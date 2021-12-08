@@ -102,6 +102,12 @@ public:
     /// Connect to other pin.
     bool ConnectTo(GraphOutPin& pin);
 
+    /// Get pin connected to the current pin.
+    GraphOutPin* GraphInPin::GetConnectedPin() const;
+
+    /// Get true if pin is connected.
+    bool GetConnected() const { return targetNode_; }
+
 private:
     /// Target node.
     unsigned targetNode_;
@@ -121,6 +127,15 @@ protected:
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive) override;
+
+public:
+    /// Get default value.
+    /// @property
+    const Variant& GetDefaultValue();
+
+    /// Set default value.
+    /// @property 
+    void SetDefaultValue(const Variant& variant);
 
 private:
     /// Target node.

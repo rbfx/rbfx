@@ -55,6 +55,16 @@ void Graph::Clear()
 }
 
 
+void Graph::GetNodeIds(ea::vector<unsigned>& ids) const
+{
+    ids.clear();
+    ids.reserve(nodes_.size());
+    for (auto& node: nodes_)
+    {
+        ids.push_back(node.first);
+    }
+}
+
 bool Graph::Serialize(Archive& archive)
 {
     if (auto block = archive.OpenArrayBlock("nodes", GetNumNodes()))
@@ -75,6 +85,10 @@ bool Graph::Serialize(Archive& archive)
                     if (!node->Serialize(archive))
                         return false;
                 }
+                else
+                {
+                    return false;
+                }
             }
             return true;
         }
@@ -87,13 +101,36 @@ bool Graph::Serialize(Archive& archive)
                     unsigned id = value.first;
                     if (!SerializeValue(archive, "id", id))
                         return false;
-                    value.second->Serialize(archive);
+                    if (!value.second->Serialize(archive))
+                        return false;
+                }
+                else
+                {
+                    return false;
                 }
             }
             return true;
         }
     }
     return false;
+}
+
+GraphNode* Graph::GetNode(unsigned id) const
+{
+    const auto i = nodes_.find(id);
+    if (i == nodes_.end())
+    {
+        return nullptr;
+    }
+    return i->second;
+}
+
+GraphNode* Graph::Create(const ea::string& name)
+{
+    auto node = MakeShared<GraphNode>(context_);
+    node->SetName(name);
+    Add(node);
+    return node;
 }
 
 void Graph::Add(GraphNode* node)

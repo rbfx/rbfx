@@ -21,6 +21,8 @@
 //
 
 #include "GraphPin.h"
+
+#include "Graph.h"
 #include "GraphNode.h"
 
 #include "GraphNode.h"
@@ -83,6 +85,21 @@ bool GraphInPin::ConnectTo(GraphOutPin& pin)
     return true;
 }
 
+GraphOutPin* GraphInPin::GetConnectedPin() const
+{
+    if (!targetNode_)
+        return nullptr;
+
+    auto node = GetNode()->GetGraph()->GetNode(targetNode_);
+    if (!node)
+        return nullptr;
+
+    if (direction_ == PINDIR_INPUT)
+        return node->GetOutput(targetPin_);
+    return node->GetEnter(targetPin_);
+}
+
+
 bool GraphInPin::Serialize(Archive& archive)
 {
     if (!GraphPin::Serialize(archive))
@@ -132,6 +149,18 @@ bool GraphDataInPin::Serialize(Archive& archive)
     }
     return true;
 }
+
+const Variant& GraphDataInPin::GetDefaultValue()
+{
+    return defaultValue_;
+}
+
+void GraphDataInPin::SetDefaultValue(const Variant& variant)
+{
+    defaultValue_ = variant;
+}
+
+
 GraphDataInPin::GraphDataInPin(GraphNode* node, GraphPinDirection direction)
     : GraphInPin(node, direction)
 {

@@ -38,15 +38,30 @@ void Constant::SetValue(const Variant& value)
     SetPinValueType(0, value.GetType());
 }
 
+bool Constant::LoadProperties(ParticleGraphReader& reader, GraphNode& node)
+{
+    auto val = node.GetProperty("value");
+    if (val)
+        value_ = *val;
+
+    return ParticleGraphNode::LoadProperties(reader, node);
+}
+
+bool Constant::SaveProperties(ParticleGraphWriter& writer, GraphNode& node)
+{
+    node.GetOrAddProperty("value") = value_;
+    return ParticleGraphNode::SaveProperties(writer, node);
+}
+
 Constant::Instance::Instance(Constant* node)
     : node_(node)
 {
 }
-bool Constant::Serialize(Archive& archive)
-{
-    SerializeValue(archive, "value", value_);
-    return ParticleGraphNode::Serialize(archive);
-}
+//bool Constant::Serialize(Archive& archive)
+//{
+//    SerializeValue(archive, "value", value_);
+//    return ParticleGraphNode::Serialize(archive);
+//}
 void Constant::Instance::Update(UpdateContext& context)
 {
     const auto& pin0 = node_->pins_[0];
