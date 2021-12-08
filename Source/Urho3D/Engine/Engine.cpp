@@ -73,6 +73,7 @@
 #include "../Urho2D/Urho2D.h"
 #endif
 #include "../Engine/EngineEvents.h"
+#include "../Particles/ParticleGraphSystem.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -217,6 +218,7 @@ bool Engine::Initialize(const VariantMap& parameters)
         // Register graphics library objects explicitly in headless mode to allow them to work without using actual GPU resources
         RegisterGraphicsLibrary(context_);
     }
+    context_->RegisterSubsystem(new ParticleGraphSystem(context_));
 
 #ifdef URHO3D_URHO2D
     // 2D graphics library is dependent on 3D graphics library

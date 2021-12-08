@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "../../Core/Context.h"
-#include "../ParticleGraphEffect.h"
+#include "../Core/Context.h"
+#include "ParticleGraphEffect.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
 #include <EASTL/tuple.h>

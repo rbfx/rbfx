@@ -23,9 +23,9 @@
 #pragma once
 
 #include <EASTL/span.h>
-#include "../../Resource/Resource.h"
-#include "../../IO/Archive.h"
-#include "../../IO/ArchiveSerialization.h"
+#include "../Resource/Resource.h"
+#include "../IO/Archive.h"
+#include "../IO/ArchiveSerialization.h"
 #include "ParticleGraphPin.h"
 
 namespace Urho3D

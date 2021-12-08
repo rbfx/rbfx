@@ -32,7 +32,6 @@
 #include "../Core/Thread.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
-#include "../Graphics/ParticleGraph/ParticleGraphNode.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
@@ -177,7 +176,6 @@ Context::~Context()
 
     subsystems_.Clear();
     factories_.clear();
-    particleNodeFactories_.clear();
 
     // Delete allocated event data maps
     for (auto i = eventDataMaps_.begin(); i != eventDataMaps_.end(); ++i)
@@ -199,20 +197,20 @@ SharedPtr<Object> Context::CreateObject(StringHash objectType)
     return CreateObject(objectType, factories_);
 }
 
-SharedPtr<ParticleGraphNode> Context::CreateParticleGraphNode(StringHash objectType)
-{
-    SharedPtr<Object> node = CreateObject(objectType, particleNodeFactories_);
-    return SharedPtr<ParticleGraphNode>(dynamic_cast<ParticleGraphNode*>(&(*node)));
-}
-
 void Context::RegisterFactory(ObjectFactory* factory)
 {
-    RegisterFactory(factory, factories_);
-}
+    if (!factory)
+        return;
 
-void Context::RegisterParticleGraphNodeFactory(ObjectFactory* factory)
-{
-    RegisterFactory(factory, particleNodeFactories_);
+    auto it = factories_.find(factory->GetType());
+    if (it != factories_.end())
+    {
+        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
+                         factory->GetTypeName().c_str(), it->second->GetTypeName().c_str());
+        assert(false);
+        return;
+    }
+    factories_[factory->GetType()] = factory;
 }
 
 void Context::RegisterFactory(ObjectFactory* factory, const char* category)
@@ -486,21 +484,6 @@ SharedPtr<Object> Context::CreateObject(StringHash objectType, const FactoryMap&
         return SharedPtr<Object>();
 }
 
-void Context::RegisterFactory(ObjectFactory* factory, FactoryMap& factoryMap)
-{
-    if (!factory)
-        return;
-
-    auto it = factoryMap.find(factory->GetType());
-    if (it != factoryMap.end())
-    {
-        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
-                         factory->GetTypeName().c_str(), it->second->GetTypeName().c_str());
-        assert(false);
-        return;
-    }
-    factoryMap[factory->GetType()] = factory;
-}
 
 void Context::AddEventReceiver(Object* receiver, StringHash eventType)
 {

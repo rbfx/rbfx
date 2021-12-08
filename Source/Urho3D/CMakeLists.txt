@@ -56,7 +56,7 @@ define_engine_source_files (Container Core IO Math)
 if (NOT MINI_URHO)
     define_engine_source_files (Audio Engine Input RenderPipeline Resource Scene UI Utility)
     define_engine_source_files (NORECURSE . Graphics)
-    define_engine_source_files (Graphics/ParticleGraph)
+    define_engine_source_files (NORECURSE . Particles)
     list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
     if (URHO3D_OPENGL)
         define_engine_source_files (Graphics/OpenGL)

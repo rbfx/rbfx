@@ -44,9 +44,6 @@
 #include "../Graphics/Octree.h"
 #include "../Graphics/ParticleEffect.h"
 #include "../Graphics/ParticleEmitter.h"
-#include "../Graphics/ParticleGraphEffect.h"
-#include "../Graphics/ParticleGraphEmitter.h"
-#include "../Graphics/ParticleGraph/ParticleGraphLayer.h"
 #include "../Graphics/RibbonTrail.h"
 #include "../Graphics/Shader.h"
 #include "../Graphics/ShaderPrecache.h"
@@ -648,9 +645,6 @@ void RegisterGraphicsLibrary(Context* context)
     BillboardSet::RegisterObject(context);
     ParticleEffect::RegisterObject(context);
     ParticleEmitter::RegisterObject(context);
-    ParticleGraphEffect::RegisterObject(context);
-    ParticleGraphLayer::RegisterObject(context);
-    ParticleGraphEmitter::RegisterObject(context);
     RibbonTrail::RegisterObject(context);
     CustomGeometry::RegisterObject(context);
     DecalSet::RegisterObject(context);
@@ -666,7 +660,6 @@ void RegisterGraphicsLibrary(Context* context)
     View::RegisterObject(context);
     Viewport::RegisterObject(context);
     OcclusionBuffer::RegisterObject(context);
-    ParticleGraphNodes::RegisterGraphNodes(context);
 }
 
 

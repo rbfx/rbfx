@@ -20,10 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include "../../Precompiled.h"
+#include "../Precompiled.h"
 
 #include "Constant.h"
-#include "../../IO/ArchiveSerialization.h"
+#include "../IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {

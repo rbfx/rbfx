@@ -22,40 +22,21 @@
 
 #pragma once
 
-#include <EASTL/span.h>
-#include <Urho3D/IO/Archive.h>
-#include <Urho3D/Resource/Resource.h>
+#include "Helpers.h"
+
+#include "Attribute.h"
+#include "Constant.h"
+#include "Print.h"
+#include "Math.h"
+#include "RenderBillboard.h"
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
 
-class URHO3D_API ParticleGraph : public Object
+namespace ParticleGraphNodes
 {
-    URHO3D_OBJECT(ParticleGraph, Object);
-
-public:
-    /// Construct.
-    explicit ParticleGraph(Context* context);
-    /// Destruct.
-    virtual ~ParticleGraph();
-
-    /// Add node to the graph.
-    /// Returns node index;
-    unsigned Add(const SharedPtr<ParticleGraphNode> node);
-
-    /// Get number of nodes.
-    /// @property
-    unsigned GetNumNodes() const;
-
-    /// Get node by index.
-    SharedPtr<ParticleGraphNode> GetNode(unsigned index) const;
-
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, const char* blockName);
-
-private:
-    /// Nodes in the graph;
-    ea::vector<SharedPtr<ParticleGraphNode>> nodes_;
-};
+void RegisterGraphNodes(ParticleGraphSystem* context);
+}
 
 } // namespace Urho3D

@@ -23,7 +23,7 @@
 #pragma once
 
 #include "ParticleGraphMemory.h"
-#include "../../Core/Variant.h"
+#include "../Core/Variant.h"
 
 #include <EASTL/span.h>
 

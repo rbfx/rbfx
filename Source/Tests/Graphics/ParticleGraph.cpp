@@ -23,12 +23,12 @@
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
 
-#include <Urho3D/Graphics/ParticleGraph/ParticleGraphLayer.h>
-#include <Urho3D/Graphics/ParticleGraph/ParticleGraphLayerInstance.h>
+#include <Urho3D/Particles//ParticleGraphLayer.h>
+#include <Urho3D/Particles/ParticleGraphLayerInstance.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Graphics/ParticleGraphEffect.h>
-#include <Urho3D/Graphics/ParticleGraph/All.h>
+#include <Urho3D/Particles/ParticleGraphEffect.h>
+#include <Urho3D/Particles/All.h>
 #include <Urho3D/Scene/Scene.h>
 #include <EASTL/span.h>
 

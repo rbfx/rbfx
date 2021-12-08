@@ -497,7 +497,7 @@ TEST_CASE("Test resource is serialized as part of the file")
     }
 }
 
-TEST_CASE("Variant unique_ptr serilization")
+TEST_CASE("Variant unique_ptr serialization")
 {
     auto context = CreateTestContext();
     auto reg = context->RegisterSubsystem<VariantTypeRegistry>();

@@ -23,10 +23,10 @@
 #pragma once
 
 #include "ParticleGraphMemory.h"
-#include "../ParticleGraphEffect.h"
+#include "ParticleGraphEffect.h"
 
-#include "../../Resource/Resource.h"
-#include "../../IO/Archive.h"
+#include "../Resource/Resource.h"
+#include "../IO/Archive.h"
 
 namespace Urho3D
 {

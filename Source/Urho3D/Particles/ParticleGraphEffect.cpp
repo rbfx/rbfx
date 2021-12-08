@@ -22,12 +22,12 @@
 
 #include "../Precompiled.h"
 
+#include "ParticleGraphEffect.h"
+#include "ParticleGraphLayer.h"
+
 #include "../Core/Context.h"
-#include "../Graphics/ParticleGraphEffect.h"
 
-#include "ParticleGraph/ParticleGraphLayer.h"
-
-#include "Graphics.h"
+#include "../Graphics//Graphics.h"
 #include "../Core/Thread.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/Deserializer.h"

@@ -46,7 +46,7 @@ struct URHO3D_API GraphNodeProperty
     bool Serialize(Archive& archive);
 };
 
-/// Abstract graph to store connected nodes.
+/// Graph node.
 class URHO3D_API GraphNode : public Object
 {
     URHO3D_OBJECT(GraphNode, Object);

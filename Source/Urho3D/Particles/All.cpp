@@ -22,36 +22,32 @@
 
 #pragma once
 
-#include "../ParticleGraphEmitter.h"
-#include "ParticleGraphPin.h"
+#include "ParticleGraphSystem.h"
+#include "All.h"
+#include "../Graphics/Material.h"
+
+#include "../Core/Context.h"
+
+#include <EASTL/tuple.h>
 
 namespace Urho3D
 {
 
-struct UpdateContext
+namespace ParticleGraphNodes
 {
-    float timeStep_{};
-    ea::span<unsigned> indices_;
-    ea::span<uint8_t> attributes_;
-    ea::span<uint8_t> tempBuffer_;
-    ParticleGraphLayerInstance* layer_;
 
-    template <typename ValueType> ea::span<ValueType> GetSpan(const ParticleGraphPinRef& pin);
-    template <typename ValueType> ScalarSpan<ValueType> GetScalar(const ParticleGraphPinRef& pin);
-    template <typename ValueType> SparseSpan<ValueType> GetSparse(const ParticleGraphPinRef& pin);
-};
-
-class URHO3D_API ParticleGraphNodeInstance
+void RegisterGraphNodes(ParticleGraphSystem* system)
 {
-public:
-    /// Construct.
-    ParticleGraphNodeInstance();
+    system->RegisterParticleGraphNodeFactory<GetAttribute>();
+    system->RegisterParticleGraphNodeFactory<SetAttribute>();
+    system->RegisterParticleGraphNodeFactory<Constant>();
+    system->RegisterParticleGraphNodeFactory<Print>();
+    system->RegisterParticleGraphNodeFactory<RenderBillboard>();
 
-    /// Destruct.
-    virtual ~ParticleGraphNodeInstance();
+    system->RegisterParticleGraphNodeFactory<Add>();
+    system->RegisterParticleGraphNodeFactory<Slerp>();
+}
 
-    /// Update.
-    virtual void Update(UpdateContext& context) = 0;
-};
+}
 
 } // namespace Urho3D

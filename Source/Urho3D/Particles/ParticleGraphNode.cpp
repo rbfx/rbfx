@@ -20,13 +20,14 @@
 // THE SOFTWARE.
 //
 
-#include "../../Precompiled.h"
+#include "../Precompiled.h"
 
 #include "ParticleGraphNode.h"
 #include "ParticleGraphPin.h"
+#include "ParticleGraphSystem.h"
 
-#include "../../IO/ArchiveSerialization.h"
-#include "../../IO/Log.h"
+#include "../IO/ArchiveSerialization.h"
+#include "../IO/Log.h"
 
 
 namespace Urho3D
@@ -128,8 +129,9 @@ bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphN
                 archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
                 return false;
             }
-
-            value.StaticCast(context->CreateParticleGraphNode(type));
+            auto system = context->GetSubsystem<ParticleGraphSystem>();
+            
+            value = system->CreateParticleGraphNode(type);
 
             if (!value)
             {

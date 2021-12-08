@@ -20,6 +20,38 @@
 // THE SOFTWARE.
 //
 
+#pragma once
+
+#include "ParticleGraphEmitter.h"
+#include "ParticleGraphPin.h"
+
 namespace Urho3D
 {
-}
+
+struct UpdateContext
+{
+    float timeStep_{};
+    ea::span<unsigned> indices_;
+    ea::span<uint8_t> attributes_;
+    ea::span<uint8_t> tempBuffer_;
+    ParticleGraphLayerInstance* layer_;
+
+    template <typename ValueType> ea::span<ValueType> GetSpan(const ParticleGraphPinRef& pin);
+    template <typename ValueType> ScalarSpan<ValueType> GetScalar(const ParticleGraphPinRef& pin);
+    template <typename ValueType> SparseSpan<ValueType> GetSparse(const ParticleGraphPinRef& pin);
+};
+
+class URHO3D_API ParticleGraphNodeInstance
+{
+public:
+    /// Construct.
+    ParticleGraphNodeInstance();
+
+    /// Destruct.
+    virtual ~ParticleGraphNodeInstance();
+
+    /// Update.
+    virtual void Update(UpdateContext& context) = 0;
+};
+
+} // namespace Urho3D
