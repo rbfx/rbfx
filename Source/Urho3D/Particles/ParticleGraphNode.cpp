@@ -60,6 +60,11 @@ void ParticleGraphNode::SetPinValueType(unsigned pinIndex, VariantType type)
 
 ParticleGraphNode::~ParticleGraphNode() = default;
 
+const ParticleGraphPin& ParticleGraphNode::GetPin(unsigned index) const
+{
+    return const_cast<ParticleGraphNode*>(this)->GetPin(index);
+}
+
 void ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex)
 {
     if (pinIndex >= NumPins())
@@ -82,9 +87,19 @@ unsigned ParticleGraphNode::GetPinIndex(const ea::string& name)
     return INVALID_PIN;
 }
 
+const ea::string& ParticleGraphNode::GetPinName(unsigned pinIndex) const
+{
+    return GetPin(pinIndex).GetName();
+}
+
+VariantType ParticleGraphNode::GetPinValueType(unsigned pinIndex) const
+{
+    return GetPin(pinIndex).GetRequestedType();
+}
+
 ParticleGraphPin* ParticleGraphNode::GetPin(const ea::string& name)
 {
-    auto index = GetPinIndex(name);
+    const auto index = GetPinIndex(name);
     if (index == INVALID_PIN)
         return nullptr;
     return &GetPin(index);
@@ -112,36 +127,62 @@ bool ParticleGraphNode::Save(ParticleGraphWriter& writer, GraphNode& node)
     return true;
 }
 
+ParticleGraphPin* ParticleGraphNode::LoadInputPin(ParticleGraphReader& reader, GraphDataInPin& inputPin)
+{
+    const auto pin = GetPin(inputPin.GetName());
+    if (pin)
+    {
+        pin->SetValueType(inputPin.GetType());
+    }
+    else
+    {
+        URHO3D_LOGERROR(Format("Unknown input pin {}.{}", GetTypeName(), inputPin.GetName()));
+        return nullptr;
+    }
+    return pin;
+}
+
+ParticleGraphPin* ParticleGraphNode::LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& outputPin)
+{
+    const auto pin = GetPin(outputPin.GetName());
+    if (pin)
+    {
+        pin->SetValueType(outputPin.GetType());
+    }
+    else
+    {
+        URHO3D_LOGERROR(Format("Unknown output pin {}.{}", GetTypeName(), outputPin.GetName()));
+        return nullptr;
+    }
+    return pin;
+}
+
 bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
 {
     // First pass: validate and connect pins input pins.
     for (auto& inputPin : node.GetInputs())
     {
-        auto pin = GetPin(inputPin.GetName());
-        if (pin)
-        {
-            pin->SetValueType(inputPin.type_);
-        }
-        else
-        {
-            URHO3D_LOGERROR(Format("Unknown input pin {}", inputPin.GetName()));
+        const auto pin = LoadInputPin(reader, inputPin);
+
+        if (!pin)
             return false;
-        }
+
+        assert(pin->GetName() == inputPin.GetName());
 
         if (inputPin.GetConnected())
         {
-            auto source = inputPin.GetConnectedPin();
+            const auto source = inputPin.GetConnectedPin();
             if (source == nullptr)
             {
                 URHO3D_LOGERROR(Format("Can't resolve connected pin for {}", inputPin.GetName()));
                 return false;
             }
-            auto connectedNode = reader.ReadNode(source->GetNode()->GetID());
+            const auto connectedNode = reader.ReadNode(source->GetNode()->GetID());
             if (connectedNode == ParticleGraph::INVALID_NODE_INDEX)
             {
                 return false;
             }
-            unsigned pinIndex = reader.GetInputPinIndex(connectedNode, source->GetName());
+            const unsigned pinIndex = reader.GetInputPinIndex(connectedNode, source->GetName());
             pin->SetSource(connectedNode, pinIndex);
         }
     }
@@ -164,15 +205,12 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
 
     for (auto& outputPin : node.GetOutputs())
     {
-        auto pin = GetPin(outputPin.GetName());
-        if (pin)
-        {
-            pin->SetValueType(outputPin.type_);
-        }
-        else
-        {
-            URHO3D_LOGERROR(Format("Unknown output pin {}", outputPin.GetName()));
-        }
+        auto pin = LoadOutputPin(reader, outputPin);
+
+        if (!pin)
+            return false;
+
+        assert(pin->GetName() == outputPin.GetName());
     }
     return true;
 }
@@ -190,18 +228,18 @@ bool ParticleGraphNode::SavePins(ParticleGraphWriter& writer, GraphNode& node)
         if (pin.GetIsInput())
         {
             auto& inputPin = node.GetOrAddInput(pin.GetName());
-            inputPin.type_ = pin.GetValueType();
+            inputPin.SetType(pin.GetRequestedType());
 
             if (pin.GetConnected())
             {
-                auto connectedNode = pin.GetConnectedNodeIndex();
+                const auto connectedNode = pin.GetConnectedNodeIndex();
                 inputPin.ConnectTo(writer.GetSourcePin(connectedNode, pin.GetConnectedPinIndex()));
             }
         }
         else
         {
-            auto outputPin = node.GetOrAddOutput(pin.GetName());
-            outputPin.type_ = pin.GetValueType();
+            auto& outputPin = node.GetOrAddOutput(pin.GetName());
+            outputPin.SetType(pin.GetRequestedType());
         }
     }
     return true;
@@ -219,48 +257,5 @@ void ParticleGraphNode::SetGraph(ParticleGraph* graph, unsigned index)
     graph_ = graph;
     index_ = index;
 }
-//
-//bool SerializeValue(Archive& archive, const char* name, SharedPtr<ParticleGraphNode>& value)
-//{
-//    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-//    {
-//        // Serialize type
-//        StringHash type = value ? value->GetType() : StringHash{};
-//        const ea::string_view typeName = value ? ea::string_view{value->GetTypeName()} : "";
-//        if (!SerializeStringHash(archive, "type", type, typeName))
-//            return false;
-//
-//        // Serialize empty object
-//        if (type == StringHash{})
-//        {
-//            value = nullptr;
-//            return true;
-//        }
-//
-//        // Create instance if loading
-//        if (archive.IsInput())
-//        {
-//            Context* context = archive.GetContext();
-//            if (!context)
-//            {
-//                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
-//                return false;
-//            }
-//            auto system = context->GetSubsystem<ParticleGraphSystem>();
-//            
-//            value = system->CreateParticleGraphNode(type);
-//
-//            if (!value)
-//            {
-//                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
-//                return false;
-//            }
-//        }
-//
-//        // Serialize object
-//        return value->Serialize(archive);
-//    }
-//    return false;
-//}
 
 } // namespace Urho3D

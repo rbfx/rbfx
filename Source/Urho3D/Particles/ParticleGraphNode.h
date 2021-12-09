@@ -60,6 +60,9 @@ public:
     /// Get pin by index.
     virtual ParticleGraphPin& GetPin(unsigned index) = 0;
 
+    /// Get pin by index.
+    const ParticleGraphPin& GetPin(unsigned index) const;
+
     /// Set pin source node and pin.
     void SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex = 0);
 
@@ -68,6 +71,12 @@ public:
 
     /// Get pin index by name.
     unsigned GetPinIndex(const ea::string& name);
+
+    /// Get pin name.
+    const ea::string& GetPinName(unsigned pinIndex) const;
+
+    /// Get pin type.
+    VariantType GetPinValueType(unsigned pinIndex) const;
 
     /// Evaluate size required to place new node instance.
     virtual unsigned EvaluateInstanceSize() = 0;
@@ -81,11 +90,15 @@ public:
     virtual bool Save(ParticleGraphWriter& writer, GraphNode& node);
 
 protected:
-    /// Save node.
+    /// Load input pin.
+    virtual ParticleGraphPin* LoadInputPin(ParticleGraphReader& reader, GraphDataInPin& pin);
+    /// Load input pin.
+    virtual ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin);
+    /// Load pins.
     virtual bool LoadPins(ParticleGraphReader& reader, GraphNode& node);
-    /// Save node.
+    /// Load node.
     virtual bool LoadProperties(ParticleGraphReader& reader, GraphNode& node);
-    /// Save node.
+    /// Save pins.
     virtual bool SavePins(ParticleGraphWriter& writer, GraphNode& node);
     /// Save node.
     virtual bool SaveProperties(ParticleGraphWriter& writer, GraphNode& node);

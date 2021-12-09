@@ -83,7 +83,19 @@ TEST_CASE("Test particle graph serialization")
     auto const1 = graph->Create("Constant")->WithProperty("value", 1.0f)->WithOutput("out");
     auto add = graph->Create("Add")->
         WithInput("x", 0.5f)->
-        WithInput("y", const1->GetOutput("out"));
+        WithInput("y", const1->GetOutput("out"))->WithOutput("out");
+    auto setAttr = graph->Create("SetAttribute")->WithInput("attr1", add->GetOutput("out"), VAR_FLOAT)->WithOutput("", VAR_FLOAT);
+    auto getAttr = graph->Create("GetAttribute")->WithOutput("attr1", VAR_FLOAT);
+
+    {
+        VectorBuffer buf;
+        auto xmlFile = MakeShared<XMLFile>(context);
+        XMLElement root = xmlFile->CreateRoot("root");
+        XMLOutputArchive xmlOutputArchive{context, root};
+        graph->Serialize(xmlOutputArchive);
+        xmlFile->Save(buf);
+        ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+    }
 
     const auto particleGraph = MakeShared<ParticleGraph>(context);
     CHECK(particleGraph->LoadGraph(*graph));
@@ -91,6 +103,19 @@ TEST_CASE("Test particle graph serialization")
     const auto outGraph = MakeShared<Graph>(context);
     CHECK(particleGraph->SaveGraph(*outGraph));
 
+    {
+        VectorBuffer buf;
+        auto xmlFile = MakeShared<XMLFile>(context);
+        XMLElement root = xmlFile->CreateRoot("root");
+        XMLOutputArchive xmlOutputArchive{context, root};
+        outGraph->Serialize(xmlOutputArchive);
+        xmlFile->Save(buf);
+        ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+    }
+
+    const auto restoredGraph = MakeShared<ParticleGraph>(context);
+    CHECK(restoredGraph->LoadGraph(*outGraph));
+    CHECK(particleGraph->SaveGraph(*outGraph));
     {
         VectorBuffer buf;
         auto xmlFile = MakeShared<XMLFile>(context);

@@ -151,6 +151,12 @@ bool GraphNode::SerializePins(Archive& archive, Iterator begin, Iterator end)
                 if (!SerializeEnum(archive, "direction", DirectionEnumConstants, dir))
                     return false;
             }
+            auto type = begin->type_;
+            if (type != VAR_NONE)
+            {
+                if (!SerializeEnum(archive, "type", Variant::GetTypeNameList(), type))
+                    return false;
+            }
             if (!begin->Serialize(archive))
                 return false;
 
@@ -206,10 +212,11 @@ GraphNode* GraphNode::WithInput(const ea::string_view name, const Variant& value
     return this;
 }
 
-GraphNode* GraphNode::WithInput(const ea::string_view name, GraphOutPin* outputPin)
+GraphNode* GraphNode::WithInput(const ea::string_view name, GraphOutPin* outputPin, VariantType type)
 {
     auto& pin = GetOrAddInput(name);
     pin.SetName(name);
+    pin.type_ = type;
     if (outputPin)
     {
         pin.ConnectTo(*outputPin);

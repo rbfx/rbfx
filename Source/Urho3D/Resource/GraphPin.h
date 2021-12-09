@@ -46,9 +46,13 @@ protected:
     GraphPin(GraphNode* node, GraphPinDirection direction);
 
 public:
+    /// Get pin type.
+    /// @property 
+    VariantType GetType() const { return type_; }
 
-    /// Pin type;
-    VariantType type_;
+    /// Set pin type.
+    /// @property
+    void SetType(VariantType type);
 
     /// Get name of the pin.
     /// @property
@@ -68,8 +72,12 @@ protected:
     /// @property
     void SetName(const ea::string_view name);
 
-    /// Pin name;
+    /// Pin name.
     ea::string name_;
+
+    /// Pin type.
+    VariantType type_;
+
 
     GraphNode* node_;
     GraphPinDirection direction_;

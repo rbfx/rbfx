@@ -97,7 +97,7 @@ public:
     GraphNode* WithInput(const ea::string_view name, const Variant& value);
 
     /// Add input pin connected to the output pin.
-    GraphNode* GraphNode::WithInput(const ea::string_view name, GraphOutPin* pin);
+    GraphNode* WithInput(const ea::string_view name, GraphOutPin* pin, VariantType type = VAR_NONE);
 
     /// Get or add output pin.
     GraphOutPin& GetOrAddOutput(const ea::string_view name);

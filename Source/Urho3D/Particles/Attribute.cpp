@@ -76,22 +76,49 @@ template <typename T> struct CopyValues
 };
 
 }
-Attribute::Attribute(Context* context, const ParticleGraphPin& pin)
+Attribute::Attribute(Context* context)
     : ParticleGraphNode(context)
-    , pins_{pin}
 {
+}
+
+void Attribute::SetAttributeType(VariantType valueType)
+{
+    SetPinValueType(0, valueType);
 }
 
 GetAttribute::GetAttribute(Context* context)
-    : Attribute(context, ParticleGraphPin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
-                                              PGCONTAINER_SPARSE))
+    : Attribute(context)
+    , pins_{ ParticleGraphPin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "attr", VAR_FLOAT,
+                                              PGCONTAINER_SPARSE)}
 {
 }
 
-SetAttribute::SetAttribute(Context* context)
-    : Attribute(context, ParticleGraphPin(PGPIN_INPUT | PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "", VAR_NONE,
-                                              PGCONTAINER_SPARSE))
+ParticleGraphPin* GetAttribute::LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin)
 {
+    SetPinName(0, pin.GetName());
+    SetPinValueType(0, pin.GetType());
+    return &pins_[0];
+}
+
+SetAttribute::SetAttribute(Context* context)
+    : Attribute(context)
+    , pins_{ParticleGraphPin(PGPIN_INPUT | PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "attr", VAR_FLOAT),
+            ParticleGraphPin(PGPIN_TYPE_MUTABLE, "", VAR_FLOAT, PGCONTAINER_SPARSE)
+    }
+{
+}
+
+void SetAttribute::SetAttributeType(VariantType valueType)
+{
+    SetPinValueType(0, valueType);
+    SetPinValueType(1, valueType);
+}
+
+ParticleGraphPin* SetAttribute::LoadInputPin(ParticleGraphReader& reader, GraphDataInPin& pin)
+{
+    SetPinName(0, pin.GetName());
+    SetPinValueType(0, pin.GetType());
+    return &pins_[0];
 }
 
 SetAttribute::Instance::Instance(SetAttribute* node)

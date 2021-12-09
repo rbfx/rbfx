@@ -38,6 +38,11 @@ GraphPin::GraphPin(GraphNode* node, GraphPinDirection direction)
 {
 }
 
+void GraphPin::SetType(VariantType type)
+{
+    type_ = type;
+}
+
 bool GraphPin::Serialize(Archive& archive)
 {
     if (!SerializeValue(archive, "name", name_))

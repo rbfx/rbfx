@@ -37,8 +37,33 @@ class URHO3D_API Attribute : public ParticleGraphNode
 
 protected:
     /// Construct.
-    explicit Attribute(Context* context, const ParticleGraphPin& pin);
+    explicit Attribute(Context* context);
 
+public:
+    /// Set attribute name
+    /// @property
+    void SetAttributeName(const ea::string& name) { SetPinName(0, name); }
+
+    /// Get attribute name
+    /// @property
+    const ea::string& GetAttributeName() const { return GetPinName(0); }
+
+    /// Set attribute type
+    /// @property
+    virtual void SetAttributeType(VariantType valueType);
+
+    /// Get attribute type
+    /// @property
+    VariantType GetAttributeType() const { return GetPinValueType(0); }
+
+};
+
+/// Get particle attribute value.
+class URHO3D_API GetAttribute : public Attribute
+{
+    URHO3D_OBJECT(GetAttribute, Attribute);
+
+protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
@@ -46,6 +71,9 @@ protected:
     };
 
 public:
+    /// Construct.
+    explicit GetAttribute(Context* context);
+
     /// Get number of pins.
     unsigned NumPins() const override { return 1; }
 
@@ -61,35 +89,11 @@ public:
         return new (ptr) Instance();
     }
 
-    /// Set attribute name
-    /// @property
-    void SetAttributeName(const ea::string& name) { SetPinName(0, name); }
-
-    /// Get attribute name
-    /// @property
-    const ea::string& GetAttributeName() const { return  pins_[0].GetName(); }
-
-    /// Set attribute type
-    /// @property
-    void SetAttributeType(VariantType valueType) { SetPinValueType(0, valueType); }
-
-    /// Get attribute type
-    /// @property
-    VariantType GetAttributeType() const { return pins_[0].GetRequestedType(); }
-
 protected:
+    ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin) override;
+
     /// Pins
     ParticleGraphPin pins_[1];
-};
-
-/// Get particle attribute value.
-class URHO3D_API GetAttribute : public Attribute
-{
-    URHO3D_OBJECT(GetAttribute, Attribute);
-
-public:
-    /// Construct.
-    explicit GetAttribute(Context* context);
 };
 
 /// Set particle attribute value.
@@ -109,6 +113,16 @@ public:
     /// Construct.
     explicit SetAttribute(Context* context);
 
+    /// Get number of pins.
+    unsigned NumPins() const override { return 2; }
+
+    /// Get pin by index.
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
+
+    /// Set attribute type
+    /// @property
+    void SetAttributeType(VariantType valueType) override;
+
     /// Evaluate size required to place new node instance.
     unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
 
@@ -117,6 +131,11 @@ public:
     {
         return new (ptr) Instance(this);
     }
+
+protected:
+    ParticleGraphPin* LoadInputPin(ParticleGraphReader& reader, GraphDataInPin& pin) override;
+    /// Pins
+    ParticleGraphPin pins_[2];
 };
 
 } // namespace ParticleGraphNodes
