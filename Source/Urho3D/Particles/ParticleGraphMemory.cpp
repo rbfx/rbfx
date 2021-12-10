@@ -65,6 +65,7 @@ unsigned ParticleGraphAttributeLayout::GetOrAddAttribute(const ea::string& name,
     unsigned i = attributes_.size();
     unsigned size = GetVariantSize(type) * capacity_;
     attributes_.push_back(AttrSpan{name, nameHash, type, ParticleGraphSpan(position_, size)});
+    position_ += size;
     return i;
 }
 

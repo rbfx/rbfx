@@ -23,8 +23,11 @@
 
 #include "Graph.h"
 #include "GraphNode.h"
+#include "XMLArchive.h"
+#include "XMLFile.h"
 
 #include "../IO/ArchiveSerialization.h"
+#include "Urho3D/IO/MemoryBuffer.h"
 
 namespace Urho3D
 {
@@ -123,6 +126,18 @@ GraphNode* Graph::GetNode(unsigned id) const
         return nullptr;
     }
     return i->second;
+}
+
+bool Graph::LoadXML(const ea::string_view xml)
+{
+    MemoryBuffer buffer(xml);
+    XMLFile file(context_);
+    if (!file.Load(buffer))
+    {
+        return false;
+    }
+    XMLInputArchive archive(&file);
+    return Serialize(archive);
 }
 
 GraphNode* Graph::Create(const ea::string& name)

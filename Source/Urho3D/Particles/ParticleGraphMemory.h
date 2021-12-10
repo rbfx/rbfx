@@ -50,6 +50,7 @@ template <typename T> struct ScalarSpan
 
 template <typename T> struct SparseSpan
 {
+    SparseSpan() = default;
     SparseSpan(const ea::span<T>& data, const ea::span<unsigned>& indices)
         : data_(data)
         , indices_(indices)

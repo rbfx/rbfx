@@ -53,6 +53,12 @@ public:
     /// Get node by id.
     GraphNode* GetNode(unsigned id) const;
 
+    /// Load graph from xml. Return true if successful.
+    bool LoadXML(const ea::string_view xml);
+
+    /// Load graph from json. Return true if successful.
+    bool LoadJSON(const ea::string_view json);
+
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive);
 

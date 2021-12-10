@@ -35,6 +35,7 @@ namespace Urho3D
 GraphPin::GraphPin(GraphNode* node, GraphPinDirection direction)
     : node_(node)
     , direction_(direction)
+    , type_(VAR_NONE)
 {
 }
 
@@ -49,6 +50,8 @@ bool GraphPin::Serialize(Archive& archive)
     {
         return false;
     }
+    //TODO: check if element is missing properly
+    SerializeEnum(archive, "type", Variant::GetTypeNameList(), type_);
     return true;
 }
 

@@ -110,9 +110,9 @@ void ParticleGraphEffect::ResetToDefaults()
 bool ParticleGraphEffect::EndLoad()
 {
     // In headless mode, do not actually load the material, just return success
-    auto* graphics = GetSubsystem<Graphics>();
-    if (!graphics)
-        return true;
+    //auto* graphics = GetSubsystem<Graphics>();
+    //if (!graphics)
+    //    return true;
 
     XMLInputArchive archive(loadXMLFile_);
     return Serialize(archive);

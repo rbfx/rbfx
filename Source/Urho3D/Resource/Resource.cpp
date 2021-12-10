@@ -29,6 +29,7 @@
 #include "../IO/Log.h"
 #include "../Resource/Resource.h"
 #include "../Resource/XMLElement.h"
+#include "Urho3D/IO/MemoryBuffer.h"
 
 namespace Urho3D
 {

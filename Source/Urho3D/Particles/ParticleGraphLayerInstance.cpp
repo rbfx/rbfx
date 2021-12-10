@@ -56,7 +56,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
         return;
     layer_ = layer;
 
-    auto layout = layer_->GetAttributeBufferLayout();
+    const auto& layout = layer_->GetAttributeBufferLayout();
     if (layout.attributeBufferSize_ > 0)
         attributes_.resize(layout.attributeBufferSize_);
     if (layer_->GetTempBufferSize() > 0)
@@ -122,14 +122,9 @@ void ParticleGraphLayerInstance::Update(float timeStep)
     RunGraph(updateNodeInstances_, autoContext);
 }
 
-ea::span<uint8_t> ParticleGraphLayerInstance::GetAttributeMemory(unsigned attributeIndex)
+unsigned ParticleGraphLayerInstance::GetNumAttributes() const
 {
-    auto& attributes = layer_->GetAttributes();
-    if (attributeIndex >= attributes.GetNumAttributes())
-    {
-        return ea::span<uint8_t>();
-    }
-    return attributes.GetSpan(attributeIndex).MakeSpan<uint8_t>(attributes_);
+    return layer_->GetAttributes().GetNumAttributes();
 }
 
 void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)

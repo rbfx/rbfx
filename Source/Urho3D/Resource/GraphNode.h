@@ -103,6 +103,9 @@ public:
     /// Add property with value.
     GraphNode* WithProperty(const ea::string_view name, const Variant& value);
 
+    /// Get input pin by name.
+    GraphDataInPin* GetInput(const ea::string_view name);
+
     /// Get input pins.
     ea::span<GraphDataInPin> GetInputs() { return ea::span(inputPins_); }
 
@@ -136,8 +139,17 @@ public:
     /// Get enter pin.
     GraphOutPin* GetEnter(const ea::string_view name);
 
+    /// Get output pins.
+    ea::span<GraphOutPin> GetEnters() { return ea::span(enterPins_); }
+
+    /// Get exit pin.
+    GraphInPin* GetExit(const ea::string_view name);
+
     /// Get or add exit pin.
     GraphInPin& GetOrAddExit(const ea::string_view name);
+
+    /// Get exit pins.
+    ea::span<GraphInPin> GetExits() { return ea::span(exitPins_); }
 
     /// Set name of the graph node.
     /// @property

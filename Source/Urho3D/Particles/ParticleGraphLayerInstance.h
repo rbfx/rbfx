@@ -29,7 +29,7 @@ namespace Urho3D
 {
 
 /// Instance of particle graph layer in emitter.
-class ParticleGraphLayerInstance
+class URHO3D_API ParticleGraphLayerInstance
 {
 public:
     /// Construct.
@@ -50,8 +50,13 @@ public:
     /// Run update step.
     void Update(float timeStep);
 
-    /// Get attribute memory by attribute index.
-    ea::span<uint8_t> GetAttributeMemory(unsigned attributeIndex);
+    /// Get number of attributes.
+    /// @property 
+    unsigned GetNumAttributes() const;
+
+    /// Get attribute values.
+    template <typename T>
+    SparseSpan<T> GetAttributeValues(unsigned attributeIndex);
 
     template <typename ValueType>
     SparseSpan<ValueType> GetSparse(unsigned attributeIndex, const ea::span<unsigned>& indices);
@@ -92,6 +97,14 @@ private:
 
     friend class ParticleGraphEmitter;
 };
+
+/// Get attribute values.
+template <typename T> inline SparseSpan<T> ParticleGraphLayerInstance::GetAttributeValues(unsigned attributeIndex)
+{
+    if (activeParticles_ == 0)
+        return {};
+    return GetSparse<T>(attributeIndex, indices_.subspan(0, activeParticles_));
+}
 
 template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::GetSparse(unsigned attributeIndex, const ea::span<unsigned>& indices)
 {

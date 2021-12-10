@@ -22,6 +22,7 @@
 
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
+#include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/Resource/XMLArchive.h"
 
 #include <Urho3D/Particles//ParticleGraphLayer.h>
@@ -156,4 +157,52 @@ TEST_CASE("Test simple particle graph")
     auto l = emitter->GetLayer(0);
     //auto sizeMem = l->GetAttributeMemory(0);
     //CHECK(((float*)sizeMem.data())[0] == 40.0);
+}
+
+TEST_CASE("Test const")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    const auto effect = MakeShared<ParticleGraphEffect>(context);
+    auto xml = R"(<particleGraphEffect>
+	<layer type="ParticleGraphLayer" capacity="10">
+		<emit>
+			<nodes>
+				<node id="1" name="Constant">
+					<properties>
+						<property name="value">
+							<value type="Vector3" value="1 2 3" />
+						</property>
+					</properties>
+					<pins>
+						<pin direction="Out" type="Vector3" name="out" />
+					</pins>
+				</node>
+				<node id="2" name="SetAttribute">
+					<pins>
+						<pin type="Vector3" name="" node="1" pin="out" />
+						<pin direction="Out" type="Vector3" name="pos" />
+					</pins>
+				</node>
+			</nodes>
+		</emit>
+		<update>
+			<nodes>
+			</nodes>
+		</update>
+	</layer>
+</particleGraphEffect>)";
+    REQUIRE(effect->Load(MemoryBuffer(xml)));
+
+    const auto scene = MakeShared<Scene>(context);
+    const auto node = scene->CreateChild();
+    auto emitter = node->CreateComponent<ParticleGraphEmitter>();
+    emitter->SetEffect(effect);
+    REQUIRE(emitter->EmitNewParticle(0));
+
+    Tests::RunFrame(context, 0.1f, 0.1f);
+
+    REQUIRE(emitter->GetLayer(0)->GetNumAttributes() > 0);
+    auto attributeSpan = emitter->GetLayer(0)->GetAttributeValues<Vector3>(0);
+    CHECK(attributeSpan[0] == Vector3(1, 2, 3));
 }

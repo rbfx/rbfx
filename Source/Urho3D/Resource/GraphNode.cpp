@@ -190,6 +190,11 @@ GraphNode* GraphNode::WithProperty(const ea::string_view name, const Variant& va
     return this;
 }
 
+GraphDataInPin* GraphNode::GetInput(const ea::string_view name)
+{
+    return MakeMapHelper(inputPins_).Get(name);
+}
+
 GraphDataInPin& GraphNode::GetOrAddInput(const ea::string_view name)
 {
     return MakeMapHelper(inputPins_).GetOrAdd(name, [this]() { return GraphDataInPin(this, PINDIR_INPUT); });
@@ -240,6 +245,11 @@ GraphNode* GraphNode::WithOutput(const ea::string_view name, VariantType type)
 GraphOutPin* GraphNode::GetOutput(const ea::string_view name)
 {
     return MakeMapHelper(outputPins_).Get(name);
+}
+
+GraphInPin* GraphNode::GetExit(const ea::string_view name)
+{
+    return MakeMapHelper(exitPins_).Get(name);
 }
 
 GraphInPin& GraphNode::GetOrAddExit(const ea::string_view name)

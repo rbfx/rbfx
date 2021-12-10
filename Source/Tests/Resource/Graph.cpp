@@ -79,6 +79,39 @@ TEST_CASE("Validate graph node id when added to scene")
     graph->Add(node);
 }
 
+TEST_CASE("Test pins deserialization")
+{
+    auto context = Tests::CreateCompleteTestContext();
+    auto graph = MakeShared<Graph>(context);
+    REQUIRE(graph->LoadXML(
+        R"(
+        <nodes>
+            <node id="42" name="Test">
+				<pins>
+					<pin name="in" />
+					<pin direction="In" type="Vector2" name="in2" />
+					<pin direction="Out" type="Vector3" name="out" />
+					<pin direction="Enter" name="enter" />
+					<pin direction="Exit" name="exit" />
+				</pins>
+            </node>
+        </nodes>
+    )"));
+
+    auto node = graph->GetNode(42);
+    REQUIRE(node);
+
+    REQUIRE(node->GetInputs().size() == 2);
+    REQUIRE(node->GetOutputs().size() == 1);
+    REQUIRE(node->GetEnters().size() == 1);
+    REQUIRE(node->GetExits().size() == 1);
+
+    CHECK(node->GetInput("in")->GetType() == VAR_NONE);
+    CHECK(node->GetInput("in2")->GetType() == VAR_VECTOR2);
+    CHECK(node->GetOutput("out")->GetType() == VAR_VECTOR3);
+    CHECK(node->GetEnter("enter")->GetType() == VAR_NONE);
+    CHECK(node->GetExit("exit")->GetType() == VAR_NONE);
+}
 
 TEST_CASE("Graph serialization roundtrip")
 {

@@ -223,7 +223,9 @@ bool ParticleGraphLayer::Commit()
         if (!builder.Build(update_))
             return false;
     }
-    attributeBufferLayout_.attributeBufferSize_ += attributes_.GetRequiredMemory();
+    attributeBufferLayout_.attributeBufferSize_ = attributes_.GetRequiredMemory();
+    ParticleGraphSpan& values = attributeBufferLayout_.values_;
+    values = ParticleGraphSpan(values.offset_, attributeBufferLayout_.attributeBufferSize_ - values.offset_);
     isPrepared_ = true;
     return true;
 }
@@ -238,17 +240,16 @@ unsigned ParticleGraphLayer::GetTempBufferSize() const { return tempMemory_.GetR
 /// Serialize from/to archive. Return true if successful.
 bool ParticleGraphLayer::Serialize(Archive& archive)
 {
+    if (!SerializeValue(archive, "capacity", capacity_))
+        return false;
     if (!emit_.Serialize(archive, "emit"))
-    {
         return false;
-    }
     if (!update_.Serialize(archive, "update"))
-    {
         return false;
-    }
     if (archive.IsInput())
     {
-        Commit();
+        if (!Commit())
+            return false;
     }
     return true;
 }
