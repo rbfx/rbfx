@@ -35,45 +35,6 @@
 
 using namespace Urho3D;
 
-//TEST_CASE("Test Add")
-//{
-//    auto context = Tests::CreateCompleteTestContext();
-//
-//    ParticleGraphNodes::AddFloat add;
-//    auto& pin0 = add.GetPin(0);
-//    pin0.containerType_ = ParticleGraphContainerType::Span;
-//    pin0.offset_ = sizeof(float)*0;
-//    pin0.size_ = sizeof(float);
-//    auto& pin1 = add.GetPin(1);
-//    pin1.containerType_ = ParticleGraphContainerType::Span;
-//    pin1.offset_ = sizeof(float) * 1;
-//    pin1.size_ = sizeof(float);
-//    auto& pin2 = add.GetPin(2);
-//    pin2.containerType_ = ParticleGraphContainerType::Span;
-//    pin2.offset_ = sizeof(float) * 2;
-//    pin2.size_ = sizeof(float);
-//
-//    ea::vector<uint8_t> buffer;
-//    buffer.resize(add.EvalueInstanceSize());
-//
-//    UpdateContext updateContext;
-//    ea::vector<unsigned> indices {0};
-//    ea::vector<uint8_t> values;
-//    values.resize(sizeof(float) * 3);
-//    updateContext.indices_ = ea::span<unsigned>(indices.begin(), indices.end());
-//    updateContext.timeStep_ = 0.0f;
-//    updateContext.tempBuffer_ = ea::span<uint8_t>(values.begin(), values.end());
-//
-//    updateContext.GetSpan<float>(pin0)[0] = 40.0f;
-//    updateContext.GetSpan<float>(pin1)[0] = 2.0f;
-//
-//    auto* instance = add.CreateInstanceAt(buffer.begin());
-//    instance->Update(updateContext);
-//
-//    CHECK(updateContext.GetSpan<float>(pin2)[0] == Catch::Approx(42.0f));
-//
-//    instance->~ParticleGraphNodeInstance();
-//}
 TEST_CASE("Test particle graph serialization")
 {
     auto context = Tests::CreateCompleteTestContext();
@@ -84,7 +45,7 @@ TEST_CASE("Test particle graph serialization")
     auto add = graph->Create("Add")->
         WithInput("x", 0.5f)->
         WithInput("y", const1->GetOutput("out"))->WithOutput("out");
-    auto setAttr = graph->Create("SetAttribute")->WithInput("attr1", add->GetOutput("out"), VAR_FLOAT)->WithOutput("", VAR_FLOAT);
+    auto setAttr = graph->Create("SetAttribute")->WithInput("", add->GetOutput("out"), VAR_FLOAT)->WithOutput("attr", VAR_FLOAT);
     auto getAttr = graph->Create("GetAttribute")->WithOutput("attr1", VAR_FLOAT);
 
     {
@@ -146,9 +107,9 @@ TEST_CASE("Test simple particle graph")
         auto constIndex = emitGraph.Add(c);
 
         auto set = MakeShared<ParticleGraphNodes::SetAttribute>(context);
-        set->SetPinSource(0, constIndex);
         set->SetAttributeName("pos");
         set->SetAttributeType(VAR_VECTOR3);
+        set->SetPinSource(set->GetPinIndex(""), constIndex);
         auto setIndex = emitGraph.Add(set);
     }
     {
@@ -162,14 +123,17 @@ TEST_CASE("Test simple particle graph")
         c->SetValue(Vector2(1, 2));
         auto constIndex = updateGraph.Add(c);
 
-
         auto log = MakeShared<ParticleGraphNodes::Print>(context);
         log->SetPinSource(0, getIndex);
         auto logIndex = updateGraph.Add(log);
 
+        auto curve = MakeShared<ParticleGraphNodes::Curve>(context);
+        curve->SetPinSource(0, getIndex);
+        auto curveIndex = updateGraph.Add(curve);
+
         auto render = MakeShared<ParticleGraphNodes::RenderBillboard>(context);
         render->SetMaterial(material);
-        render->SetPinSource(0 ,getIndex);
+        render->SetPinSource(0, curveIndex, 1);
         render->SetPinSource(1, constIndex);
         auto renderIndex = updateGraph.Add(render);
 

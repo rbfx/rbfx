@@ -65,15 +65,15 @@ const ParticleGraphPin& ParticleGraphNode::GetPin(unsigned index) const
     return const_cast<ParticleGraphNode*>(this)->GetPin(index);
 }
 
-void ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex)
+bool ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex)
 {
     if (pinIndex >= NumPins())
     {
         URHO3D_LOGERROR("Pin index out of bounds");
-        return;
+        return false;
     }
     auto& pin = GetPin(pinIndex);
-    pin.SetSource(nodeIndex, nodePinIndex);
+    return pin.SetSource(nodeIndex, nodePinIndex);
 }
 
 unsigned ParticleGraphNode::GetPinIndex(const ea::string& name)
@@ -174,7 +174,7 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
             const auto source = inputPin.GetConnectedPin();
             if (source == nullptr)
             {
-                URHO3D_LOGERROR(Format("Can't resolve connected pin for {}", inputPin.GetName()));
+                URHO3D_LOGERROR(Format("Can't resolve connected pin for {}.{}", GetTypeName(), inputPin.GetName()));
                 return false;
             }
             const auto connectedNode = reader.ReadNode(source->GetNode()->GetID());
@@ -195,7 +195,8 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
             auto constValue = inputPin.GetDefaultValue();
             if (constValue.GetType() == VAR_NONE)
             {
-                URHO3D_LOGERROR(Format("Pin {} is not connected and doesn't have default value.", inputPin.GetName()));
+                URHO3D_LOGERROR(Format("Pin {}.{} is not connected and doesn't have default value.", GetTypeName(),
+                                       inputPin.GetName()));
                 return false;
             }
             auto connectedNode = reader.GetOrAddConstant(constValue);
@@ -215,8 +216,21 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
     return true;
 }
 
+bool ParticleGraphNode::LoadProperty(GraphNodeProperty& prop)
+{
+    URHO3D_LOGERROR(Format("Unknown property {}.{}.", GetTypeName(), prop.GetName()));
+    return false;
+}
+
 bool ParticleGraphNode::LoadProperties(ParticleGraphReader& reader, GraphNode& node)
 {
+    for (auto& prop : node.GetProperties())
+    {
+        if (!LoadProperty(prop))
+        {
+            return false;
+        }
+    }
     return true;
 }
 

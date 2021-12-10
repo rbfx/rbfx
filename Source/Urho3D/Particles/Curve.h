@@ -21,7 +21,51 @@
 //
 
 #pragma once
+#include "Helpers.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
+#include "../Graphics/AnimationTrack.h"
 
 namespace Urho3D
 {
-}
+
+namespace ParticleGraphNodes
+{
+/// Sample curve operator.
+class URHO3D_API Curve : public AbstractNode<Curve, float, float>
+{
+    URHO3D_OBJECT(Curve, ParticleGraphNode);
+
+public:
+    template <typename Tuple>
+    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto* node = instance->GetNodeInstace();
+        auto& t = ea::get<0>(spans);
+        auto& out = ea::get<1>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = node->Sample(t[i]).Get<ea::remove_reference_t<decltype(out[0])>>();
+        }
+    }
+
+public:
+    /// Construct.
+    explicit Curve(Context* context);
+
+    Variant Sample(float time) const;
+
+    bool LoadProperty(GraphNodeProperty& prop) override;
+
+    bool SaveProperties(ParticleGraphWriter& writer, GraphNode& node) override;
+
+private:
+    float duration_;
+    bool isLooped_;
+    VariantAnimationTrack curve_;
+};
+
+
+} // namespace ParticleGraphNodes
+
+} // namespace Urho3D

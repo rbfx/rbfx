@@ -38,13 +38,14 @@ void Constant::SetValue(const Variant& value)
     SetPinValueType(0, value.GetType());
 }
 
-bool Constant::LoadProperties(ParticleGraphReader& reader, GraphNode& node)
+bool Constant::LoadProperty(GraphNodeProperty& prop)
 {
-    auto val = node.GetProperty("value");
-    if (val)
-        value_ = *val;
-
-    return ParticleGraphNode::LoadProperties(reader, node);
+    if (prop.GetName() == "value")
+    {
+        value_ = prop.value_;
+        return true;
+    }
+    return ParticleGraphNode::LoadProperty(prop);
 }
 
 bool Constant::SaveProperties(ParticleGraphWriter& writer, GraphNode& node)

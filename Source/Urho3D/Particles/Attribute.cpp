@@ -36,15 +36,15 @@ namespace
 
 template <typename T> struct CopyValues
 {
-    void operator()(UpdateContext& context, const ParticleGraphPin& pin0)
+    void operator()(UpdateContext& context, const ParticleGraphPin& pin0, const ParticleGraphPin& pin1)
     {
         const unsigned numParticles = context.indices_.size();
-        switch (pin0.GetContainerType())
+        switch (pin1.GetContainerType())
         {
         case PGCONTAINER_SCALAR:
             {
-                auto src = context.GetScalar<T>(pin0.GetMemoryReference());
-                auto dst = context.GetSparse<T>(ParticleGraphPinRef(PGCONTAINER_SPARSE, pin0.GetAttributeIndex()));
+                auto src = context.GetScalar<T>(pin1.GetMemoryReference());
+                auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     dst[i] = src[i];
@@ -53,8 +53,8 @@ template <typename T> struct CopyValues
             break;
             case PGCONTAINER_SPAN:
             {
-                auto src = context.GetSpan<T>(pin0.GetMemoryReference());
-                auto dst = context.GetSparse<T>(ParticleGraphPinRef(PGCONTAINER_SPARSE, pin0.GetAttributeIndex()));
+                auto src = context.GetSpan<T>(pin1.GetMemoryReference());
+                auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     dst[i] = src[i];
@@ -63,8 +63,8 @@ template <typename T> struct CopyValues
             break;
             case PGCONTAINER_SPARSE:
             {
-                auto src = context.GetSparse<T>(pin0.GetMemoryReference());
-                auto dst = context.GetSparse<T>(ParticleGraphPinRef(PGCONTAINER_SPARSE, pin0.GetAttributeIndex()));
+                auto src = context.GetSparse<T>(pin1.GetMemoryReference());
+                auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     dst[i] = src[i];
@@ -102,8 +102,9 @@ ParticleGraphPin* GetAttribute::LoadOutputPin(ParticleGraphReader& reader, Graph
 
 SetAttribute::SetAttribute(Context* context)
     : Attribute(context)
-    , pins_{ParticleGraphPin(PGPIN_INPUT | PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "attr", VAR_FLOAT),
-            ParticleGraphPin(PGPIN_TYPE_MUTABLE, "", VAR_FLOAT, PGCONTAINER_SPARSE)
+    , pins_{
+          ParticleGraphPin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "attr", VAR_FLOAT, PGCONTAINER_SPARSE),
+          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "", VAR_FLOAT),
     }
 {
 }
@@ -114,7 +115,7 @@ void SetAttribute::SetAttributeType(VariantType valueType)
     SetPinValueType(1, valueType);
 }
 
-ParticleGraphPin* SetAttribute::LoadInputPin(ParticleGraphReader& reader, GraphDataInPin& pin)
+ParticleGraphPin* SetAttribute::LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin)
 {
     SetPinName(0, pin.GetName());
     SetPinValueType(0, pin.GetType());
@@ -128,7 +129,8 @@ SetAttribute::Instance::Instance(SetAttribute* node)
 void SetAttribute::Instance::Update(UpdateContext& context)
 {
     const ParticleGraphPin& pin0 = node_->pins_[0];
-    SelectByVariantType<CopyValues>(pin0.GetValueType(), context, pin0);
+    const ParticleGraphPin& pin1 = node_->pins_[1];
+    SelectByVariantType<CopyValues>(pin0.GetValueType(), context, pin0, pin1);
 };
 
 } // namespace ParticleGraphNodes

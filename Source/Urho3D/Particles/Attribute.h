@@ -133,7 +133,8 @@ public:
     }
 
 protected:
-    ParticleGraphPin* LoadInputPin(ParticleGraphReader& reader, GraphDataInPin& pin) override;
+    ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin) override;
+    
     /// Pins
     ParticleGraphPin pins_[2];
 };

@@ -77,7 +77,7 @@ public:
 
     void SetValue(const Variant&);
 
-    bool LoadProperties(ParticleGraphReader& reader, GraphNode& node) override;
+    bool LoadProperty(GraphNodeProperty& prop) override;
 
     bool SaveProperties(ParticleGraphWriter& writer, GraphNode& node) override;
 

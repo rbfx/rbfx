@@ -26,6 +26,7 @@
 
 #include "Attribute.h"
 #include "Constant.h"
+#include "Curve.h"
 #include "Print.h"
 #include "Math.h"
 #include "RenderBillboard.h"

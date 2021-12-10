@@ -199,6 +199,8 @@ public:
             RunUpdate<Node, Instance, Values...>(context, this, context.indices_.size(), pinRefs);
         }
 
+        Node* GetNodeInstace() { return node_; }
+
     protected:
         Node* node_;
     };
@@ -225,29 +227,27 @@ protected:
 };
 
 
-template <template <typename> typename T, typename Arg0, typename Arg1>
-void SelectByVariantType(VariantType variantType, Arg0 arg0, Arg1 arg1)
+template <template <typename> typename T, typename ... Args>
+void SelectByVariantType(VariantType variantType, Args... args)
 {
     switch (variantType)
     {
-    case VAR_FLOAT:
-    {
-        T<float> fn;
-        fn(arg0, arg1);
-        break;
-    }
-    case VAR_VECTOR2:
-    {
-        T<Vector2> fn;
-        fn(arg0, arg1);
-        break;
-    }
-    case VAR_VECTOR3:
-    {
-        T<Vector3> fn;
-        fn(arg0, arg1);
-        break;
-    }
+    case VAR_INT: { T<int> fn; fn(args...); break; }
+    case VAR_INT64: { T<long long> fn; fn(args...); break; }
+    case VAR_BOOL: { T<bool> fn; fn(args...); break; }
+    case VAR_FLOAT: { T<float> fn; fn(args...); break; }
+    case VAR_DOUBLE: { T<double> fn; fn(args...); break; }
+    case VAR_VECTOR2: { T<Vector2> fn; fn(args...); break; }
+    case VAR_VECTOR3: { T<Vector3> fn; fn(args...); break; }
+    case VAR_VECTOR4: { T<Vector4> fn; fn(args...); break; }
+    case VAR_QUATERNION: { T<Quaternion> fn; fn(args...); break; }
+    case VAR_COLOR: { T<Color> fn; fn(args...); break; }
+    case VAR_STRING: { T<ea::string> fn; fn(args...); break; }
+    case VAR_BUFFER: { T<VariantBuffer> fn; fn(args...); break; }
+    case VAR_RESOURCEREF: { T<ResourceRef> fn; fn(args...); break; }
+    case VAR_RESOURCEREFLIST: { T<ResourceRefList> fn; fn(args...); break; }
+    case VAR_INTVECTOR2: { T<IntVector2> fn; fn(args...); break; }
+    case VAR_INTVECTOR3: { T<IntVector2> fn; fn(args...); break; }
     default:
         assert(!"Not implemented");
     }

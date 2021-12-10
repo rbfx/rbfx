@@ -104,7 +104,7 @@ public:
     ParticleGraphPin WithType(VariantType type) const;
 
     /// Set source node and pin indices.
-    void SetSource(unsigned nodeIndex, unsigned pinIndex = 0);
+    bool SetSource(unsigned nodeIndex, unsigned pinIndex = 0);
 
     /// Get true if connected to node.
     bool GetConnected() const;

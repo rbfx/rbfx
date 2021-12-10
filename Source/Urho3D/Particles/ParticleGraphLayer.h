@@ -74,7 +74,7 @@ public:
     void Invalidate();
 
     /// Prepare layer for execution. Returns false if graph is invalid. See output logs for errors.
-    bool Prepare();
+    bool Commit();
 
     /// Return attribute buffer layout.
     /// @property

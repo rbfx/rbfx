@@ -105,6 +105,11 @@ struct ParticleGraphAttributeBuilder
                 // Connect input pin
                 if (pin.GetIsInput())
                 {
+                    if (pin.sourceNode_ == ParticleGraph::INVALID_NODE_INDEX)
+                    {
+                        URHO3D_LOGERROR(Format("Source node is not set for {}.{}", node->GetTypeName(), pin.GetName()));
+                        return false;
+                    }
                     if (pin.sourceNode_ >= i)
                     {
                         URHO3D_LOGERROR("Graph can't forward reference nodes");
@@ -198,7 +203,7 @@ void ParticleGraphLayer::AttributeBufferLayout::Apply(ParticleGraphLayer& layer)
     values_ = Append(this, 0);
 }
 
-bool ParticleGraphLayer::Prepare()
+bool ParticleGraphLayer::Commit()
 {
     //TODO: prepare once!
     Invalidate();
@@ -243,7 +248,7 @@ bool ParticleGraphLayer::Serialize(Archive& archive)
     }
     if (archive.IsInput())
     {
-        Prepare();
+        Commit();
     }
     return true;
 }

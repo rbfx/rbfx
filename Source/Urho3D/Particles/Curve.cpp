@@ -20,6 +20,59 @@
 // THE SOFTWARE.
 //
 
+#include "Curve.h"
+
 namespace Urho3D
 {
+namespace ParticleGraphNodes
+{
+Curve::Curve(Context* context)
+    : AbstractNodeType(context, PinArray{
+                                    ParticleGraphPin(PGPIN_INPUT, "t"),
+                                    ParticleGraphPin(PGPIN_NONE, "out"),
+                                })
+    , duration_(1)
+    , isLooped_(false)
+{
 }
+
+
+Variant Curve::Sample(float time) const
+{
+    unsigned frameIndex;
+    return curve_.Sample(time, duration_, isLooped_, frameIndex);
+}
+
+bool Curve::LoadProperty(GraphNodeProperty& prop)
+{
+    auto nameHash = prop.GetNameHash();
+    if (nameHash == StringHash("duration"))
+    {
+        duration_ = prop.value_.GetFloat();
+        return true;
+    }
+    if (nameHash == StringHash("isLooped"))
+    {
+        isLooped_ = prop.value_.GetBool();
+        return true;
+    }
+    if (nameHash == StringHash("curve"))
+    {
+        curve_ = *(prop.value_.GetCustomVariantValuePtr()->GetValuePtr<ea::unique_ptr<VariantAnimationTrack>>()->get());
+        return true;
+    }
+
+    return AbstractNodeType::LoadProperty(prop);
+}
+
+bool Curve::SaveProperties(ParticleGraphWriter& writer, GraphNode& node)
+{
+    node.GetOrAddProperty("duration") = duration_;
+    node.GetOrAddProperty("isLooped") = isLooped_;
+    node.GetOrAddProperty("curve").SetCustom(ea::make_unique<VariantAnimationTrack>(curve_));
+
+    return AbstractNodeType::SaveProperties(writer, node);
+}
+} // namespace ParticleGraphNodes
+
+} // namespace Urho3D

@@ -31,20 +31,36 @@ namespace Urho3D
 {
 class Graph;
 
-struct URHO3D_API GraphNodeProperty
+class URHO3D_API GraphNodeProperty
 {
-    /// Property name.
-    ea::string name_;
+public:
     /// Property value.
     Variant value_;
 
     /// Get property name.
-    const ea::string GetName() const { return name_; }
+    /// @property
+    const ea::string& GetName() const { return name_; }
+
+    /// Get property name hash.
+    /// @property
+    StringHash GetNameHash() const { return nameHash_; }
+
     /// Set property name.
-    void SetName(const ea::string_view name) { name_ = name; }
+    /// @property 
+    void SetName(const ea::string_view name)
+    {
+        name_ = name;
+        nameHash_ = name;
+    }
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive);
+
+private:
+    /// Property name.
+    ea::string name_;
+    /// Property name hash.
+    StringHash nameHash_;
 };
 
 /// Graph node.
@@ -80,6 +96,9 @@ public:
 
     /// Get node property. Returns nullptr if property is not found.
     Variant* GetProperty(const ea::string_view name);
+
+    /// Get properties.
+    ea::span<GraphNodeProperty> GetProperties() { return ea::span(properties_); }
 
     /// Add property with value.
     GraphNode* WithProperty(const ea::string_view name, const Variant& value);

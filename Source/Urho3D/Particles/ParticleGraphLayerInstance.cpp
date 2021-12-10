@@ -52,7 +52,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
 {
     if (!layer)
         return;
-    if (!layer->Prepare())
+    if (!layer->Commit())
         return;
     layer_ = layer;
 
@@ -157,12 +157,31 @@ void ParticleGraphLayerInstance::RunGraph(ea::span<ParticleGraphNodeInstance*>& 
     }
 }
 
-#define InstantiateSpan(Span, FuncName) \
-    template Span<float> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                     \
+#define InstantiateSpan(Span, FuncName)                                                                                \
+    template Span<int> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                        \
+    template Span<long long> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                  \
+    template Span<bool> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                       \
+    template Span<float> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                      \
+    template Span<double> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                     \
     template Span<Vector2> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
     template Span<Vector3> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
     template Span<Vector4> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
-    template Span<Quaternion> UpdateContext::FuncName(const ParticleGraphPinRef& pin)
+    template Span<Quaternion> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                 \
+    template Span<Color> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                      \
+    template Span<ea::string> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                 \
+    template Span<VariantBuffer> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                              \
+    template Span<ResourceRef> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                \
+    template Span<ResourceRefList> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                            \
+    template Span<VariantVector> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                              \
+    template Span<StringVector> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                               \
+    template Span<VariantMap> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                 \
+    template Span<Rect> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                       \
+    template Span<IntRect> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
+    template Span<IntVector2> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                 \
+    template Span<IntVector3> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                 \
+    template Span<Matrix3> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
+    template Span<Matrix3x4> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                  \
+    template Span<Matrix4> UpdateContext::FuncName(const ParticleGraphPinRef& pin)
 
 InstantiateSpan(ea::span, GetSpan);
 InstantiateSpan(ScalarSpan, GetScalar);

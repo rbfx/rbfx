@@ -64,7 +64,7 @@ public:
     const ParticleGraphPin& GetPin(unsigned index) const;
 
     /// Set pin source node and pin.
-    void SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex = 0);
+    bool SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex = 0);
 
     /// Get pin by name.
     ParticleGraphPin* GetPin(const ea::string& name);
@@ -96,7 +96,9 @@ protected:
     virtual ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin);
     /// Load pins.
     virtual bool LoadPins(ParticleGraphReader& reader, GraphNode& node);
-    /// Load node.
+    /// Load property value.
+    virtual bool LoadProperty(GraphNodeProperty& prop);
+    /// Load properties.
     virtual bool LoadProperties(ParticleGraphReader& reader, GraphNode& node);
     /// Save pins.
     virtual bool SavePins(ParticleGraphWriter& writer, GraphNode& node);
