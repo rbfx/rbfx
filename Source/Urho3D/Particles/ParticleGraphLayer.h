@@ -26,6 +26,7 @@
 #include "ParticleGraphPin.h"
 
 #include <EASTL/span.h>
+#include <EASTL/optional.h>
 #include <Urho3D/IO/Archive.h>
 #include <Urho3D/Resource/Resource.h>
 
@@ -96,12 +97,12 @@ public:
     bool Serialize(Archive& archive);
 
 private:
+    /// is the effect committed.
+    ea::optional<bool> committed_;
     /// Maximum number of particles.
     unsigned capacity_;
     ParticleGraph emit_;
     ParticleGraph update_;
-    /// Is prepared.
-    bool isPrepared_;
     /// Attribure buffer layout.
     AttributeBufferLayout attributeBufferLayout_;
     /// Attributes memory layout.

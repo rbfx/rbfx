@@ -145,13 +145,13 @@ bool GraphDataInPin::Serialize(Archive& archive)
         return false;
     if (archive.IsInput())
     {
-        SerializeValue(archive, "default", defaultValue_);
+        SerializeVariantValue(archive, type_, "value", defaultValue_);
     }
     else
     {
         if (defaultValue_.GetType() != VAR_NONE)
         {
-            if (!SerializeValue(archive, "default", defaultValue_))
+            if (!SerializeVariantValue(archive, defaultValue_.GetType(), "value", defaultValue_))
                 return false;
         }
     }

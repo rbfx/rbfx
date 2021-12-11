@@ -42,7 +42,7 @@ TEST_CASE("Test particle graph serialization")
 
     const auto graph = MakeShared<Graph>(context);
 
-    auto const1 = graph->Create("Constant")->WithProperty("value", 1.0f)->WithOutput("out");
+    auto const1 = graph->Create("Constant")->WithProperty("Value", 1.0f)->WithOutput("out");
     auto add = graph->Create("Add")->
         WithInput("x", 0.5f)->
         WithInput("y", const1->GetOutput("out"))->WithOutput("out");
@@ -170,7 +170,7 @@ TEST_CASE("Test const")
 			<nodes>
 				<node id="1" name="Constant">
 					<properties>
-						<property name="value">
+						<property name="Value">
 							<value type="Vector3" value="1 2 3" />
 						</property>
 					</properties>

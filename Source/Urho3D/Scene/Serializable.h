@@ -177,7 +177,7 @@ public:
     VariantAttributeAccessorImpl(TGetFunction getFunction, TSetFunction setFunction) : getFunction_(getFunction), setFunction_(setFunction) { }
 
     /// Invoke getter function.
-    void Get(const Serializable* ptr, Variant& value) const override
+    void Get(const Object* ptr, Variant& value) const override
     {
         assert(ptr);
         const auto classPtr = static_cast<const TClassType*>(ptr);
@@ -185,7 +185,7 @@ public:
     }
 
     /// Invoke setter function.
-    void Set(Serializable* ptr, const Variant& value) override
+    void Set(Object* ptr, const Variant& value) override
     {
         assert(ptr);
         auto classPtr = static_cast<TClassType*>(ptr);

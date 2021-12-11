@@ -21,13 +21,13 @@
 //
 
 #include "../CommonUtils.h"
-#include "Urho3D/Graphics/AnimationTrack.h"
-#include "Urho3D/Graphics/Material.h"
-#include "Urho3D/IO/VariantTypeRegistry.h"
-#include "Urho3D/IO/VectorBuffer.h"
-#include "Urho3D/Resource/ResourceCache.h"
-#include "Urho3D/Resource/XMLArchive.h"
-#include "Urho3D/Resource/XMLFile.h"
+#include <Urho3D/Graphics/AnimationTrack.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/IO/VariantTypeRegistry.h>
+#include <Urho3D/IO/VectorBuffer.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/XMLArchive.h>
+#include <Urho3D/Resource/XMLFile.h>
 
 #include <Urho3D/Resource/Graph.h>
 #include <Urho3D/Resource/GraphNode.h>

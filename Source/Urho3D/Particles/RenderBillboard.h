@@ -27,6 +27,7 @@
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
@@ -38,6 +39,9 @@ class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3,
 public:
     /// Construct.
     explicit RenderBillboard(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
     class Instance : public AbstractNodeType::Instance
     {
@@ -77,6 +81,11 @@ public:
     /// Set material.
     /// @property
     void SetMaterial(Material* material);
+
+    /// Set material attribute.
+    void SetMaterialAttr(const ResourceRef& value);
+    /// Set material attribute.
+    ResourceRef GetMaterialAttr() const;
 
 protected:
     /// Is the billboards attached to the node or rendered in a absolute world space coordinates.

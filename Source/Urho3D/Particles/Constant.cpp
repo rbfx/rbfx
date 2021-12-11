@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "Constant.h"
+#include "ParticleGraphSystem.h"
 #include "../IO/ArchiveSerialization.h"
 
 namespace Urho3D
@@ -30,7 +31,7 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 
-const Variant& Constant::GetValue() { return value_; }
+const Variant& Constant::GetValue() const { return value_; }
 
 void Constant::SetValue(const Variant& value)
 {
@@ -38,20 +39,23 @@ void Constant::SetValue(const Variant& value)
     SetPinValueType(0, value.GetType());
 }
 
-bool Constant::LoadProperty(GraphNodeProperty& prop)
+
+Constant::Constant(Context* context)
+    : ParticleGraphNode(context)
+    , pins_{ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out", VAR_NONE, PGCONTAINER_SCALAR)}
 {
-    if (prop.GetName() == "value")
-    {
-        value_ = prop.value_;
-        return true;
-    }
-    return ParticleGraphNode::LoadProperty(prop);
 }
 
-bool Constant::SaveProperties(ParticleGraphWriter& writer, GraphNode& node)
+void Constant::RegisterObject(ParticleGraphSystem* context)
 {
-    node.GetOrAddProperty("value") = value_;
-    return ParticleGraphNode::SaveProperties(writer, node);
+    context->RegisterParticleGraphNodeFactory<Constant>();
+
+    context->RegisterAttribute<Constant>(Urho3D::AttributeInfo(
+        VAR_NONE, "Value",
+        Urho3D::MakeVariantAttributeAccessor<Constant>(
+            [](const Constant& self, Urho3D::Variant& value) { value = self.GetValue(); },
+            [](Constant& self, const Urho3D::Variant& value) { self.SetValue(value); }),
+        nullptr, Variant(), AM_DEFAULT));
 }
 
 Constant::Instance::Instance(Constant* node)

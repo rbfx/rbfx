@@ -218,6 +218,13 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
 
 bool ParticleGraphNode::LoadProperty(GraphNodeProperty& prop)
 {
+    ParticleGraphSystem* system = context_->GetSubsystem<ParticleGraphSystem>();
+    const auto* attr = system->GetAttribute(this->GetType(), prop.GetName());
+    if (attr)
+    {
+        attr->accessor_->Set(this, prop.value_);
+        return true;
+    }
     URHO3D_LOGERROR(Format("Unknown property {}.{}.", GetTypeName(), prop.GetName()));
     return false;
 }
@@ -261,6 +268,15 @@ bool ParticleGraphNode::SavePins(ParticleGraphWriter& writer, GraphNode& node)
 
 bool ParticleGraphNode::SaveProperties(ParticleGraphWriter& writer, GraphNode& node)
 {
+    ParticleGraphSystem* system = context_->GetSubsystem<ParticleGraphSystem>();
+    const auto* attributes = system->GetAttributes(GetType());
+    if (attributes)
+    {
+        for (auto& attr : *attributes)
+        {
+            attr.accessor_->Get(this, node.GetOrAddProperty(attr.name_));
+        }
+    }
     return true;
 }
 

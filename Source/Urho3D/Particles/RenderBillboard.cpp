@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "RenderBillboard.h"
+#include "ParticleGraphSystem.h"
 #include "ParticleGraphLayerInstance.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Octree.h"
@@ -35,19 +36,24 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 RenderBillboard::RenderBillboard(Context* context)
-    : AbstractNodeType(context, PinArray{
-   ParticleGraphPin(PGPIN_INPUT, "pos"),
-            ParticleGraphPin(PGPIN_INPUT, "size")
-    })
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_INPUT, "pos"), ParticleGraphPin(PGPIN_INPUT, "size")})
     , isWorldSpace_(false)
 {
 }
 
-//bool RenderBillboard::Serialize(Archive& archive)
+void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<RenderBillboard>();
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef,
+                                    ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+}
+
+// bool RenderBillboard::Serialize(Archive& archive)
 //{
 //    SerializeValue(archive, "isWorldSpace", isWorldSpace_);
 //    SerializeResource(archive, "material", material_, materialRef_);
-//    
+//
 //    return AbstractNodeType::Serialize(archive);
 //}
 
@@ -63,10 +69,7 @@ RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerIns
     octree_->AddManualDrawable(billboardSet_);
 }
 
-RenderBillboard::Instance::~Instance()
-{
-    octree_->RemoveManualDrawable(billboardSet_);
-}
+RenderBillboard::Instance::~Instance() { octree_->RemoveManualDrawable(billboardSet_); }
 void RenderBillboard::Instance::Prepare(unsigned numParticles)
 {
     unsigned numBillboards = billboardSet_->GetNumBillboards();
@@ -90,10 +93,7 @@ void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& po
     billboard->size_ = size;
 }
 
-void RenderBillboard::Instance::Commit()
-{
-    billboardSet_->Commit();
-}
+void RenderBillboard::Instance::Commit() { billboardSet_->Commit(); }
 
 Material* RenderBillboard::GetMaterial() const
 {
@@ -113,6 +113,18 @@ void RenderBillboard::SetMaterial(Material* material)
     }
 }
 
+void RenderBillboard::SetMaterialAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    material_ = cache->GetResource<Material>(value.name_);
+    materialRef_ = value;
 }
+
+ResourceRef RenderBillboard::GetMaterialAttr() const
+{
+    return materialRef_;
+}
+
+} // namespace ParticleGraphNodes
 
 } // namespace Urho3D

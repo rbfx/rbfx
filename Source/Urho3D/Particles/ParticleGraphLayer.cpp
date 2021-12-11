@@ -158,7 +158,6 @@ ParticleGraphLayer::ParticleGraphLayer(Context* context)
     , capacity_(16)
     , emit_(context)
     , update_(context)
-    , isPrepared_(false)
 {
     Invalidate();
 }
@@ -174,7 +173,7 @@ ParticleGraph& ParticleGraphLayer::GetUpdateGraph() { return update_; }
 
 void ParticleGraphLayer::Invalidate()
 {
-    isPrepared_ = false;
+    committed_.reset();
     memset(&attributeBufferLayout_, 0, sizeof(AttributeBufferLayout));
     tempMemory_.Reset(0);
     attributes_.Reset(0, 0);
@@ -205,8 +204,9 @@ void ParticleGraphLayer::AttributeBufferLayout::Apply(ParticleGraphLayer& layer)
 
 bool ParticleGraphLayer::Commit()
 {
-    //TODO: prepare once!
-    Invalidate();
+    if (committed_.has_value())
+        return committed_.value();
+    committed_ = false;
     // Evaluate attribute buffer layout except attributes size.
     attributeBufferLayout_.Apply(*this);
 
@@ -226,8 +226,8 @@ bool ParticleGraphLayer::Commit()
     attributeBufferLayout_.attributeBufferSize_ = attributes_.GetRequiredMemory();
     ParticleGraphSpan& values = attributeBufferLayout_.values_;
     values = ParticleGraphSpan(values.offset_, attributeBufferLayout_.attributeBufferSize_ - values.offset_);
-    isPrepared_ = true;
-    return true;
+    committed_ = true;
+    return committed_.value();
 }
 
 const ParticleGraphLayer::AttributeBufferLayout& ParticleGraphLayer::GetAttributeBufferLayout() const

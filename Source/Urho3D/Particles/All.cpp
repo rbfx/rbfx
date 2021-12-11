@@ -40,9 +40,9 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
 {
     system->RegisterParticleGraphNodeFactory<GetAttribute>();
     system->RegisterParticleGraphNodeFactory<SetAttribute>();
-    system->RegisterParticleGraphNodeFactory<Constant>();
+    Constant::RegisterObject(system);
     system->RegisterParticleGraphNodeFactory<Print>();
-    system->RegisterParticleGraphNodeFactory<RenderBillboard>();
+    RenderBillboard::RegisterObject(system);
 
     system->RegisterParticleGraphNodeFactory<Add>();
     system->RegisterParticleGraphNodeFactory<Slerp>();

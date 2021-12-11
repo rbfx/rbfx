@@ -1,42 +1,40 @@
 <?xml version="1.0"?>
 <particleGraphEffect>
-	<layer type="ParticleGraphLayer">
+	<layer type="ParticleGraphLayer" capacity="10">
 		<emit>
-			<node type="Constant">
-				<value type="Vector3" value="1 2 3" />
-				<pins>
-					<pin name="value" valueType="Vector3" />
-				</pins>
-			</node>
-			<node type="SetAttribute">
-				<pins>
-					<pin name="pos" valueType="Vector3" sourceNode="0" sourcePin="0" />
-				</pins>
-			</node>
+			<nodes>
+				<!-- <node id="1" name="Constant">
+					<properties>
+						<property name="value">
+							<value type="Vector3" value="1 2 3" />
+						</property>
+					</properties>
+					<pins>
+						<pin direction="Out" type="Vector3" name="out" />
+					</pins>
+				</node>
+				<node id="2" name="SetAttribute">
+					<pins>
+						<pin type="Vector3" name="" node="1" pin="out" />
+						<pin direction="Out" type="Vector3" name="pos" />
+					</pins>
+				</node> -->
+			</nodes>
 		</emit>
 		<update>
-			<node type="GetAttribute">
+			<nodes>
+				<node id="1" name="RenderBillboard">
+					<properties>
+						<property name="Material">
+							<value type="ResourceRef" value="Material;Materials/Particle.xml" />
+						</property>
+					</properties>
 				<pins>
-					<pin name="pos" valueType="Vector3" />
+					<pin name="pos" type="Vector3" value="0 0 0" />
+					<pin name="size" type="Vector2" value="1 1" />
 				</pins>
 			</node>
-			<node type="Constant">
-				<value type="Vector2" value="0.5 1" />
-				<pins>
-					<pin name="value" valueType="Vector2" />
-				</pins>
-			</node>
-			<node type="Print">
-				<pins>
-					<pin name="value" valueType="None" sourceNode="0" sourcePin="0" />
-				</pins>
-			</node>
-			<node type="RenderBillboard" isWorldSpace="false" material="Material;Materials/Particle.xml">
-				<pins>
-					<pin name="pos" valueType="Vector3" sourceNode="0" sourcePin="0" />
-					<pin name="size" valueType="Vector2" sourceNode="1" sourcePin="0" />
-				</pins>
-			</node>
+			</nodes>
 		</update>
 	</layer>
 </particleGraphEffect>

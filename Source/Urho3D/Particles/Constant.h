@@ -27,6 +27,7 @@
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
@@ -35,13 +36,13 @@ namespace ParticleGraphNodes
 class URHO3D_API Constant : public ParticleGraphNode
 {
     URHO3D_OBJECT(Constant, ParticleGraphNode)
+
 public:
     /// Construct.
-    explicit Constant(Context* context)
-        : ParticleGraphNode(context)
-        , pins_{ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out", VAR_NONE, PGCONTAINER_SCALAR)}
-    {
-    }
+    explicit Constant(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
 protected:
     class Instance : public ParticleGraphNodeInstance
@@ -73,13 +74,9 @@ public:
     /// Serialize from/to archive. Return true if successful.
     //bool Serialize(Archive& archive) override;
 
-    const Variant& GetValue();
+    const Variant& GetValue() const;
 
     void SetValue(const Variant&);
-
-    bool LoadProperty(GraphNodeProperty& prop) override;
-
-    bool SaveProperties(ParticleGraphWriter& writer, GraphNode& node) override;
 
 protected:
 

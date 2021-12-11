@@ -68,6 +68,29 @@ void ParticleGraphSystem::RegisterParticleGraphNodeFactory(ObjectFactory* factor
     particleNodeFactories_[factory->GetType()] = factory;
 }
 
+void ParticleGraphSystem::RegisterAttribute(StringHash objectType, const AttributeInfo& attr)
+{
+    ea::vector<AttributeInfo>& objectAttributes = attributes_[objectType];
+    objectAttributes.push_back(attr);
+}
+
+AttributeInfo* ParticleGraphSystem::GetAttribute(StringHash objectType, StringHash nameHash)
+{
+    auto i = attributes_.find(objectType);
+    if (i == attributes_.end())
+        return nullptr;
+
+    ea::vector<AttributeInfo>& infos = i->second;
+
+    for (auto j = infos.begin(); j != infos.end(); ++j)
+    {
+        if (j->nameHash_ == nameHash)
+            return &(*j);
+    }
+
+    return nullptr;
+}
+
 void RegisterParticleGraphLibrary(Context* context, ParticleGraphSystem* system)
 {
     ParticleGraphEffect::RegisterObject(context);

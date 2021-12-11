@@ -31,10 +31,8 @@
 
 #include "Urho3D/Graphics/DebugRenderer.h"
 #include "Urho3D/Graphics/Model.h"
-
-#include <Urho3D/Graphics/ParticleEmitter.h>
-#include <Urho3D/Graphics/ParticleGraphEffect.h>
-#include <Urho3D/Graphics/ParticleGraphEmitter.h>
+#include "Urho3D/Particles/ParticleGraphEffect.h"
+#include "Urho3D/Particles/ParticleGraphEmitter.h"
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Graphics/Octree.h>
@@ -130,6 +128,12 @@ void ParticleGraph::CreateScene()
             mushroomObject->SetCastShadows(true);
         }
     }
+
+    //{
+    //    auto effect = MakeShared<ParticleGraphEffect>(context_);
+    //    effect->SetName("Particle/SnowExplosionGraph.xml");
+    //    cache->AddManualResource(effect);
+    //}
 
     // Create billboard sets (floating smoke)
     const unsigned NUM_BILLBOARDNODES = 25;
