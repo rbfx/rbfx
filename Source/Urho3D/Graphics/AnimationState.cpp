@@ -379,6 +379,7 @@ void AnimationState::ApplyTransformTrack(const AnimationTrack& track,
     if (track.keyFrames_.empty() || !node)
         return;
 
+    const AnimationKeyFrame& baseValue = track.keyFrames_.front();
     const AnimationChannelFlags channelMask = track.channelMask_;
 
     Transform newTransform;
@@ -388,22 +389,19 @@ void AnimationState::ApplyTransformTrack(const AnimationTrack& track,
     {
         if (channelMask & CHANNEL_POSITION)
         {
-            const Vector3& base = bone ? bone->initialPosition_ : track.baseValue_.position_;
-            const Vector3 delta = newTransform.position_ - base;
+            const Vector3 delta = newTransform.position_ - baseValue.position_;
             newTransform.position_ = node->GetPosition() + delta * weight;
         }
         if (channelMask & CHANNEL_ROTATION)
         {
-            const Quaternion& base = bone ? bone->initialRotation_ : track.baseValue_.rotation_;
-            const Quaternion delta = newTransform.rotation_ * base.Inverse();
+            const Quaternion delta = newTransform.rotation_ * baseValue.rotation_.Inverse();
             newTransform.rotation_ = (delta * node->GetRotation()).Normalized();
             if (!Equals(weight, 1.0f))
                 newTransform.rotation_ = node->GetRotation().Slerp(newTransform.rotation_, weight);
         }
         if (channelMask & CHANNEL_SCALE)
         {
-            const Vector3& base = bone ? bone->initialScale_ : track.baseValue_.scale_;
-            const Vector3 delta = newTransform.scale_ - base;
+            const Vector3 delta = newTransform.scale_ - baseValue.scale_;
             newTransform.scale_ = node->GetScale() + delta * weight;
         }
     }
@@ -447,6 +445,7 @@ void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrac
     if (track.keyFrames_.empty() || !serializable)
         return;
 
+    const Variant& baseValue = track.keyFrames_.front().value_;
     Variant newValue = track.Sample(time_, animation_->GetLength(), looped_, stateTrack.keyFrame_);
 
     // Apply blending
@@ -477,7 +476,7 @@ void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrac
         }
 
         if (blendingMode_ == ABM_ADDITIVE)
-            newValue = BlendAdditive(oldValue, newValue, track.baseValue_, weight);
+            newValue = BlendAdditive(oldValue, newValue, baseValue, weight);
         else
             newValue = oldValue.Lerp(newValue, weight);
     }

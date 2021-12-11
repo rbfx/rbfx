@@ -478,14 +478,12 @@ TEST_CASE("Variant animation tracks")
         animation->SetLength(1.0f);
         {
             VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
-            track->baseValue_ = 11.0f;
             track->AddKeyFrame({ 0.0f, 12.0f });
             track->AddKeyFrame({ 0.4f, 16.0f });
             track->Commit();
         }
         {
             VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
-            track->baseValue_ = 11;
             track->AddKeyFrame({ 0.0f, Variant(12) });
             track->AddKeyFrame({ 0.4f, Variant(16) });
             track->Commit();
@@ -525,12 +523,12 @@ TEST_CASE("Variant animation tracks")
     // Test:
     // - Animation1: Lerp(10, 20, 0.75) = 17(.5)
     // - Animation2: Lerp(20, 30, 0.75) = 27(.5)
-    // - Animation3: Lerp(12, 16, 0.75) - 11 = 4
-    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 24(.5)
+    // - Animation3: Lerp(12, 16, 0.75) - 12 = 3
+    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 23
     Tests::RunFrame(context, 0.3f, 0.5f);
     REQUIRE(quad2->GetWorldPosition().Equals({ 0.5f, 1.5f, 0.5f }, M_LARGE_EPSILON));
-    REQUIRE(rootNode->GetVar("Test") == Variant(24));
-    REQUIRE(childNodeText->GetFontSize() == 24.5f);
+    REQUIRE(rootNode->GetVar("Test") == Variant(23));
+    REQUIRE(childNodeText->GetFontSize() == 24.0f);
     REQUIRE(childNodeText->GetText() == "A");
 
     // [Time = 1.0]
@@ -538,12 +536,12 @@ TEST_CASE("Variant animation tracks")
     // Test:
     // - Animation1: Lerp(10, 20, 1.0) = 20
     // - Animation2: Lerp(20, 30, 1.0) = 30
-    // - Animation3: Lerp(12, 16, 1.0) - 11 = 5
-    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 27(.5)
+    // - Animation3: Lerp(12, 16, 1.0) - 12 = 4
+    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 27
     Tests::SerializeAndDeserializeScene(scene);
     Tests::RunFrame(context, 0.3f, 0.5f);
     REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
     REQUIRE(rootNode->GetVar("Test") == Variant(27));
-    REQUIRE(childNodeText->GetFontSize() == 27.5f);
+    REQUIRE(childNodeText->GetFontSize() == 27.0f);
     REQUIRE(childNodeText->GetText() == "B");
 }

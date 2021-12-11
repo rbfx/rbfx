@@ -79,9 +79,6 @@ struct URHO3D_API AnimationTrack : public KeyFrameSet<AnimationKeyFrame>
     StringHash nameHash_;
     /// Bitmask of included data (position, rotation, scale).
     AnimationChannelFlags channelMask_{};
-    /// Base transform for additive animations.
-    /// If animation is applied to bones, bone initial transform is used instead.
-    Transform baseValue_;
 
     /// Sample value at given time.
     void Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& transform) const;
@@ -114,8 +111,6 @@ struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKey
     ea::string name_;
     /// Name hash.
     StringHash nameHash_;
-    /// Base transform for additive animations.
-    Variant baseValue_;
     /// Interpolation mode.
     KeyFrameInterpolation interpolation_{ KeyFrameInterpolation::Linear };
 
