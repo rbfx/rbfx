@@ -76,7 +76,7 @@ struct ParticleGraphAttributeBuilder
 
                 // Evaluate output pin value for output pins.
                 pin.valueType_ = pin.requestedValueType_;
-                if (pin.valueType_ == VAR_NONE && !pin.GetIsInput())
+                if (pin.valueType_ == VAR_NONE && !pin.IsInput())
                 {
                     pin.valueType_ = node->EvaluateOutputPinType(pin);
                     if (pin.valueType_ == VAR_NONE)
@@ -91,19 +91,19 @@ struct ParticleGraphAttributeBuilder
                     pin.attributeIndex_ = attributes_.GetOrAddAttribute(pin.name_, pin.requestedValueType_);
 
                     // For output sparse pin the memory is the same as the attribute memory
-                    if (!pin.GetIsInput())
+                    if (!pin.IsInput())
                     {
                         pin.memory_ = ParticleGraphPinRef(PGCONTAINER_SPARSE, pin.attributeIndex_);
                     }
                 }
                 // Allocate temp buffer for an output pin
-                else if (!pin.GetIsInput())
+                else if (!pin.IsInput())
                 {
                     // Allocate temp buffer
                     pin.memory_ = ParticleGraphPinRef(pin.containerType_, tempBufferLayout_.Allocate(pin.containerType_, pin.requestedValueType_));
                 }
                 // Connect input pin
-                if (pin.GetIsInput())
+                if (pin.IsInput())
                 {
                     if (pin.sourceNode_ == ParticleGraph::INVALID_NODE_INDEX)
                     {
@@ -122,7 +122,7 @@ struct ParticleGraphAttributeBuilder
                         return false;
                     }
                     const auto& sourcePin = sourceNode->GetPin(pin.sourcePin_);
-                    if (sourcePin.GetIsInput())
+                    if (sourcePin.IsInput())
                     {
                         URHO3D_LOGERROR("Source pin isn't output pin");
                         return false;

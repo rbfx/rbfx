@@ -108,7 +108,7 @@ ParticleGraphPin ParticleGraphPin::WithType(VariantType type) const
 
 bool ParticleGraphPin::SetSource(unsigned nodeIndex, unsigned pinIndex)
 {
-    if (!GetIsInput())
+    if (!IsInput())
     {
         URHO3D_LOGERROR(Format("Can't set source to output pin {}", GetName()));
         return false;

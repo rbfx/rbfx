@@ -74,7 +74,7 @@ public:
 
     /// Get input pin flag.
     /// @property
-    bool GetIsInput() const { return flags_.Test(PGPIN_INPUT); }
+    bool IsInput() const { return flags_.Test(PGPIN_INPUT); }
 
     /// Name of the pin for visual editor.
     /// @property

@@ -49,14 +49,6 @@ void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
                                     ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
 }
 
-// bool RenderBillboard::Serialize(Archive& archive)
-//{
-//    SerializeValue(archive, "isWorldSpace", isWorldSpace_);
-//    SerializeResource(archive, "material", material_, materialRef_);
-//
-//    return AbstractNodeType::Serialize(archive);
-//}
-
 RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer)
     : AbstractNodeType::Instance(node, layer)
 {

@@ -246,7 +246,7 @@ bool ParticleGraphNode::SavePins(ParticleGraphWriter& writer, GraphNode& node)
     for (unsigned i = 0; i < NumPins(); ++i)
     {
         ParticleGraphPin& pin = GetPin(i);
-        if (pin.GetIsInput())
+        if (pin.IsInput())
         {
             auto& inputPin = node.GetOrAddInput(pin.GetName());
             inputPin.SetType(pin.GetRequestedType());

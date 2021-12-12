@@ -41,6 +41,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     system->RegisterParticleGraphNodeFactory<GetAttribute>();
     system->RegisterParticleGraphNodeFactory<SetAttribute>();
     Constant::RegisterObject(system);
+    Curve::RegisterObject(system);
     system->RegisterParticleGraphNodeFactory<Print>();
     RenderBillboard::RegisterObject(system);
 

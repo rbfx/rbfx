@@ -28,13 +28,14 @@
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
 /// Sample curve operator.
 class URHO3D_API Curve : public AbstractNode<Curve, float, float>
 {
-    URHO3D_OBJECT(Curve, ParticleGraphNode);
+    URHO3D_OBJECT(Curve, ParticleGraphNode)
 
 public:
     template <typename Tuple>
@@ -52,17 +53,25 @@ public:
 public:
     /// Construct.
     explicit Curve(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    float GetDuration() const { return duration_; }
+    void SetDuration(float duration) { duration_ = duration; }
+    bool IsLooped() const { return isLooped_; }
+    void SetLooped(bool isLooped) { isLooped_ = isLooped; }
+    const VariantCurve& GetCurve() const { return curve_; }
+    void SetCurve(const VariantCurve& curve) { curve_ = curve; }
 
     Variant Sample(float time) const;
 
-    bool LoadProperty(GraphNodeProperty& prop) override;
-
-    bool SaveProperties(ParticleGraphWriter& writer, GraphNode& node) override;
+    VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
 
 private:
     float duration_;
     bool isLooped_;
-    VariantAnimationTrack curve_;
+    VariantCurve curve_;
 };
 
 
