@@ -166,9 +166,6 @@ bool Animation::LoadXML(const XMLElement& source)
         if (trackElem.HasAttribute("tension"))
             newTrack->splineTension_ = trackElem.GetFloat("tension");
 
-        if (XMLElement baseValueElem = trackElem.GetChild("base"))
-            newTrack->baseValue_ = trackElem.GetVariantValue(type);
-
         for (XMLElement keyFrameElem = trackElem.GetChild("keyframe"); keyFrameElem; keyFrameElem = keyFrameElem.GetNext("keyframe"))
         {
             VariantAnimationKeyFrame keyFrame;
@@ -234,9 +231,6 @@ bool Animation::BeginLoad(Deserializer& source)
         AnimationTrack* newTrack = CreateTrack(source.ReadString());
         newTrack->channelMask_ = AnimationChannelFlags(source.ReadUByte());
 
-        if (version >= variantTrackVersion)
-            ReadTransform(source, newTrack->baseValue_, newTrack->channelMask_);
-
         const unsigned keyFrames = source.ReadUInt();
         newTrack->keyFrames_.resize(keyFrames);
         memoryUse += keyFrames * sizeof(AnimationKeyFrame);
@@ -263,7 +257,6 @@ bool Animation::BeginLoad(Deserializer& source)
 
             newTrack->interpolation_ = static_cast<KeyFrameInterpolation>(source.ReadUByte());
             newTrack->splineTension_ = source.ReadFloat();
-            newTrack->baseValue_ = source.ReadVariant(trackType);
 
             const unsigned keyFrames = source.ReadUInt();
             newTrack->keyFrames_.resize(keyFrames);
@@ -338,7 +331,6 @@ bool Animation::Save(Serializer& dest) const
         const AnimationTrack& track = item.second;
         dest.WriteString(track.name_);
         dest.WriteUByte(track.channelMask_);
-        WriteTransform(dest, track.baseValue_, track.channelMask_);
         dest.WriteUInt(track.keyFrames_.size());
 
         // Write keyframes of the track
@@ -362,7 +354,6 @@ bool Animation::Save(Serializer& dest) const
         dest.WriteUByte(static_cast<unsigned char>(trackType));
         dest.WriteUByte(static_cast<unsigned char>(track.interpolation_));
         dest.WriteFloat(track.splineTension_);
-        dest.WriteVariantData(track.baseValue_.GetType() == trackType ? track.baseValue_ : defaultValue);
         dest.WriteUInt(track.keyFrames_.size());
 
         // Write keyframes of the track

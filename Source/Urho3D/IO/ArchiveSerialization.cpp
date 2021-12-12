@@ -20,9 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/VariantCurve.h"
 #include "../IO/ArchiveSerialization.h"
-
-#include "VariantTypeRegistry.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Resource.h"
 
@@ -48,7 +47,7 @@ Resource* FetchResource(Archive& archive, ResourceRef& resourceRef)
 
 bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value)
 {
-    static_assert(MAX_VAR_TYPES == 28, "Update me");
+    static_assert(MAX_VAR_TYPES == 29, "Update me");
     switch (variantType)
     {
     case VAR_NONE:
@@ -122,32 +121,15 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         archive.SetError(Format("Unsupported Variant type of element '{0}'", name));
         return false;
     case VAR_CUSTOM:
-    {
         // Even if loading, value should be initialized to default value.
-        const auto reg = archive.GetContext()->GetSubsystem<VariantTypeRegistry>();
-        if (reg)
-        {
-            ea::string hint;
-            if (!archive.IsInput())
-            {
-                auto hint = reg->GetHint(value);
-                if (hint)
-                    SerializeValue(archive, "hint", *const_cast<ea::string*>(hint));
-            }
-            else
-            {
-                SerializeValue(archive, "hint", hint);
-            }
-            if (archive.IsInput())
-                reg->InitializeValue(hint, value);
-        }
-
+        // It's the only way to know type.
         if (CustomVariantValue* ptr = value.GetCustomVariantValuePtr())
             return ptr->Serialize(archive);
 
         archive.SetError(Format("Custom Variant is not initialized for element '{0}'", name));
         return false;
-    }
+    case VAR_VARIANTCURVE:
+        return Detail::SerializeVariantValueType<VariantCurve>(archive, name, value);
     case MAX_VAR_TYPES:
     default:
         assert(0);

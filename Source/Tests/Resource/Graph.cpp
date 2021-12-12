@@ -23,7 +23,6 @@
 #include "../CommonUtils.h"
 #include <Urho3D/Graphics/AnimationTrack.h>
 #include <Urho3D/Graphics/Material.h>
-#include <Urho3D/IO/VariantTypeRegistry.h>
 #include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLArchive.h>
@@ -116,8 +115,6 @@ TEST_CASE("Test pins deserialization")
 TEST_CASE("Graph serialization roundtrip")
 {
     auto context = Tests::CreateCompleteTestContext();
-    auto reg = context->RegisterSubsystem<VariantTypeRegistry>();
-    reg->RegisterInitializer<ea::unique_ptr<VariantAnimationTrack>>("VariantAnimationTrack");
 
     auto resourceCache = context->GetSubsystem<ResourceCache>();
     auto material = MakeShared<Material>(context);
@@ -132,11 +129,11 @@ TEST_CASE("Graph serialization roundtrip")
     auto nodeC = graph->Create("C");
 
     nodeA->GetOrAddProperty("material") = Variant(ResourceRef(StringHash("Material"), material->GetName()));
-    ea::unique_ptr<VariantAnimationTrack> track = ea::make_unique<VariantAnimationTrack>();
-    track->AddKeyFrame(VariantAnimationKeyFrame{0.0f, 0.5f});
-    track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 1.0f});
-    track->Commit();
-    nodeC->GetOrAddProperty("spline").SetCustom<ea::unique_ptr<VariantAnimationTrack>>(ea::move(track));
+    VariantCurve track;
+    track.AddKeyFrame(VariantAnimationKeyFrame{0.0f, 0.5f});
+    track.AddKeyFrame(VariantAnimationKeyFrame{1.0f, 1.0f});
+    track.Commit();
+    nodeC->GetOrAddProperty("spline") = track;
 
     auto& out = nodeA->GetOrAddOutput("out");
     auto& enter = nodeC->GetOrAddEnter("enter");

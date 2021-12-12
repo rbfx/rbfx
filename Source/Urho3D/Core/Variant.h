@@ -43,6 +43,7 @@ namespace Urho3D
 {
 
 class Archive;
+class VariantCurve;
 
 /// Variant's supported types.
 enum VariantType : unsigned char
@@ -74,8 +75,9 @@ enum VariantType : unsigned char
     VAR_RECT,
     VAR_INTVECTOR3,
     VAR_INT64,
-    // Add new types here
     VAR_CUSTOM,
+    VAR_VARIANTCURVE,
+    // Add new types here
     MAX_VAR_TYPES
 };
 
@@ -408,6 +410,7 @@ union VariantValue
     VariantBuffer buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
+    VariantCurve* variantCurve_;
 
     /// Construct uninitialized.
     VariantValue() { }      // NOLINT(modernize-use-equals-default)
@@ -614,6 +617,12 @@ public:
 
     /// Construct from a Matrix4.
     Variant(const Matrix4& value)       // NOLINT(google-explicit-constructor)
+    {
+        *this = value;
+    }
+
+    /// Construct from a VariantCurve.
+    Variant(const VariantCurve& value)       // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -909,6 +918,9 @@ public:
         return *this;
     }
 
+    /// Assign from a VariantCurve.
+    Variant& operator =(const VariantCurve& rhs);
+
     /// Test for equality with another variant.
     bool operator ==(const Variant& rhs) const;
 
@@ -1071,6 +1083,9 @@ public:
         return type_ == VAR_MATRIX4 ? *value_.matrix4_ == rhs : false;
     }
 
+    /// Test for equality with a VariantCurve. To return true, both the type and value must match.
+    bool operator ==(const VariantCurve& rhs) const;
+
     /// Test for inequality with another variant.
     bool operator !=(const Variant& rhs) const { return !(*this == rhs); }
 
@@ -1160,6 +1175,9 @@ public:
 
     /// Test for inequality with a Matrix4.
     bool operator !=(const Matrix4& rhs) const { return !(*this == rhs); }
+
+    /// Test for inequality with a VariantCurve.
+    bool operator !=(const VariantCurve& rhs) const { return !(*this == rhs); }
 
     /// Set from typename and value strings. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
     void FromString(const ea::string& type, const ea::string& value);
@@ -1398,6 +1416,9 @@ public:
         return type_ == VAR_MATRIX4 ? *value_.matrix4_ : Matrix4::IDENTITY;
     }
 
+    /// Return a VariantCurve or identity on type mismatch.
+    const VariantCurve& GetVariantCurve() const;
+
     /// Return pointer to custom variant value.
     CustomVariantValue* GetCustomVariantValuePtr()
     {
@@ -1515,6 +1536,8 @@ public:
     static const VariantVector emptyVariantVector;
     /// Empty string vector.
     static const StringVector emptyStringVector;
+    /// Empty variant curve.
+    static const VariantCurve emptyCurve;
 
 private:
     /// Set new type and allocate/deallocate memory as necessary.
@@ -1595,6 +1618,8 @@ template <> inline VariantType GetVariantType<Matrix3x4>() { return VAR_MATRIX3X
 
 template <> inline VariantType GetVariantType<Matrix4>() { return VAR_MATRIX4; }
 
+template <> inline VariantType GetVariantType<VariantCurve>() { return VAR_VARIANTCURVE; }
+
 // Specializations of Variant::Get<T>
 template <> URHO3D_API int Variant::Get<int>() const;
 
@@ -1644,6 +1669,8 @@ template <> URHO3D_API const Matrix3x4& Variant::Get<const Matrix3x4&>() const;
 
 template <> URHO3D_API const Matrix4& Variant::Get<const Matrix4&>() const;
 
+template <> URHO3D_API const VariantCurve& Variant::Get<const VariantCurve&>() const;
+
 template <> URHO3D_API ResourceRef Variant::Get<ResourceRef>() const;
 
 template <> URHO3D_API ResourceRefList Variant::Get<ResourceRefList>() const;
@@ -1681,6 +1708,8 @@ template <> URHO3D_API Matrix3 Variant::Get<Matrix3>() const;
 template <> URHO3D_API Matrix3x4 Variant::Get<Matrix3x4>() const;
 
 template <> URHO3D_API Matrix4 Variant::Get<Matrix4>() const;
+
+template <> URHO3D_API VariantCurve Variant::Get<VariantCurve>() const;
 
 // Implementations
 template <class T> const T* CustomVariantValue::GetValuePtr() const

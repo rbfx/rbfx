@@ -114,7 +114,7 @@ public:
         /// Compare equal.
         bool operator==(const BaseIterator& rhs) const
         {
-            return outer_ == rhs.outer_ && inner_ == rhs.inner_;
+            return (outer_ == outerEnd_ && rhs.outer_ == rhs.outerEnd_) || (outer_ == rhs.outer_ && inner_ == rhs.inner_);
         }
 
         /// Compare not equal.
