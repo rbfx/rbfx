@@ -27,6 +27,7 @@
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
@@ -97,7 +98,7 @@ protected:
 /// Add operator.
 class URHO3D_API Add : public BinaryMathOperator
 {
-    URHO3D_OBJECT(Add, ParticleGraphNode);
+    URHO3D_OBJECT(Add, ParticleGraphNode)
 
 public:
     template <typename Tuple>
@@ -115,6 +116,9 @@ public:
 public:
     /// Construct.
     explicit Add(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 };
 
 
@@ -139,16 +143,10 @@ public:
 
 public:
     /// Construct.
-    explicit Slerp(Context* context)
-        : AbstractNodeType(context, PinArray
-            {
-                ParticleGraphPin(PGPIN_INPUT, "x"),
-                ParticleGraphPin(PGPIN_INPUT, "y"),
-                ParticleGraphPin(PGPIN_INPUT, "t"),
-                ParticleGraphPin(PGPIN_NONE, "out"),
-        })
-    {
-    }
+    explicit Slerp(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 };
 
 }

@@ -53,6 +53,30 @@ public:
     }
 };
 
+/// Get time step of the current frame.
+class URHO3D_API Move : public AbstractNode<Move, Vector3, Vector3, Vector3>
+{
+    URHO3D_OBJECT(Move, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit Move(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    template <typename Tuple>
+    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& pin0 = ea::get<0>(spans);
+        auto& pin1 = ea::get<1>(spans);
+        auto& pin2 = ea::get<2>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            pin2[i] = pin0[i] + context.timeStep_ * pin1[i];
+        }
+    }
+};
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

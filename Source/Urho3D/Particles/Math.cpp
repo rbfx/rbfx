@@ -22,6 +22,7 @@
 
 #pragma once
 #include "Math.h"
+#include "ParticleGraphSystem.h"
 
 #include "Urho3D/Core/Context.h"
 
@@ -114,6 +115,26 @@ Add::Add(Context* context)
                                       BinaryOperatorPermutation::Make<Add, Vector4, Vector4, Vector4>(),
                                   })
 {
+}
+
+void Add::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<Add>();
+}
+
+Slerp::Slerp(Context* context)
+    : AbstractNodeType(context, PinArray{
+                                    ParticleGraphPin(PGPIN_INPUT, "x"),
+                                    ParticleGraphPin(PGPIN_INPUT, "y"),
+                                    ParticleGraphPin(PGPIN_INPUT, "t"),
+                                    ParticleGraphPin(PGPIN_NONE, "out"),
+                                })
+{
+}
+
+void Slerp::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<Slerp>();
 }
 
 }

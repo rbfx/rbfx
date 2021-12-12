@@ -24,6 +24,7 @@
 
 #include "Attribute.h"
 #include "Helpers.h"
+#include "ParticleGraphSystem.h"
 
 #include "../Resource/XMLElement.h"
 
@@ -94,6 +95,11 @@ GetAttribute::GetAttribute(Context* context)
 {
 }
 
+void GetAttribute::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<GetAttribute>();
+}
+
 ParticleGraphPin* GetAttribute::LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin)
 {
     SetPinName(0, pin.GetName());
@@ -108,6 +114,11 @@ SetAttribute::SetAttribute(Context* context)
           ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "", VAR_FLOAT),
     }
 {
+}
+
+void SetAttribute::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<SetAttribute>();
 }
 
 void SetAttribute::SetAttributeType(VariantType valueType)

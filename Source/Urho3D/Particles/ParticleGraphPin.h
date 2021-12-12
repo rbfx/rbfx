@@ -71,6 +71,8 @@ public:
     /// Construct pin.
     ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, VariantType type = VAR_NONE,
                          ParticleGraphContainerType container = PGCONTAINER_AUTO);
+    /// Construct pin.
+    ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, ParticleGraphContainerType container);
 
     /// Get input pin flag.
     /// @property

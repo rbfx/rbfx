@@ -24,6 +24,7 @@
 
 #include "Helpers.h"
 #include "ParticleGraphLayerInstance.h"
+#include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
@@ -49,6 +50,11 @@ GetUniform::GetUniform(Context* context)
     : ParticleGraphNode(context)
     , pins_{ParticleGraphPin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "uniform", VAR_FLOAT, PGCONTAINER_SCALAR)}
 {
+}
+
+void GetUniform::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<GetUniform>();
 }
 
 void GetUniform::SetAttributeType(VariantType valueType)

@@ -28,6 +28,7 @@
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
@@ -43,6 +44,9 @@ public:
         , pins_{ParticleGraphPin(PGPIN_INPUT, "value")}
     {
     }
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
 protected:
     class Instance : public ParticleGraphNodeInstance

@@ -27,6 +27,7 @@
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
@@ -50,6 +51,9 @@ protected:
 public:
     /// Construct.
     explicit GetUniform(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
     /// Set attribute name
     /// @property

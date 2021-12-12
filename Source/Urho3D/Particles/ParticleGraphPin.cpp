@@ -32,18 +32,27 @@ namespace Urho3D
 {
 
 ParticleGraphPin::ParticleGraphPin()
-    : flags_(PGPIN_INPUT)
+    : sourceNode_(ParticleGraph::INVALID_NODE_INDEX)
+    , flags_(PGPIN_INPUT)
+{
+}
+ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, ParticleGraphContainerType container)
+    : containerType_(container)
+    , name_(name)
+    , nameHash_(name)
     , sourceNode_(ParticleGraph::INVALID_NODE_INDEX)
+    , flags_(flags)
+    , requestedValueType_(VAR_NONE)
 {
 }
 ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, VariantType type,
                                            ParticleGraphContainerType container)
-    : flags_(flags)
-    , requestedValueType_(type)
-    , containerType_(container)
-    , sourceNode_(ParticleGraph::INVALID_NODE_INDEX)
+    : containerType_(container)
     , name_(name)
     , nameHash_(name)
+    , sourceNode_(ParticleGraph::INVALID_NODE_INDEX)
+    , flags_(flags)
+    , requestedValueType_(type)
 {
 }
 
@@ -72,6 +81,9 @@ bool ParticleGraphPin::GetConnected() const
 
 bool ParticleGraphPin::SetName(const ea::string& name)
 {
+    if (name_ == name)
+        return true;
+
     if (!flags_.Test(PGPIN_NAME_MUTABLE))
     {
         URHO3D_LOGERROR("Can't change name of {} pin.", GetName());
@@ -84,6 +96,8 @@ bool ParticleGraphPin::SetName(const ea::string& name)
 
 bool ParticleGraphPin::SetValueType(VariantType valueType)
 {
+    if (requestedValueType_ == valueType)
+        return true;
     if (!flags_.Test(PGPIN_TYPE_MUTABLE))
     {
         URHO3D_LOGERROR("Can't change type of {} pin.", GetName());

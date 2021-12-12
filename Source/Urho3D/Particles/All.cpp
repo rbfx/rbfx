@@ -24,6 +24,7 @@
 
 #include "ParticleGraphSystem.h"
 #include "All.h"
+
 #include "../Graphics/Material.h"
 
 #include "../Core/Context.h"
@@ -38,15 +39,23 @@ namespace ParticleGraphNodes
 
 void RegisterGraphNodes(ParticleGraphSystem* system)
 {
-    system->RegisterParticleGraphNodeFactory<GetAttribute>();
-    system->RegisterParticleGraphNodeFactory<SetAttribute>();
+    GetAttribute::RegisterObject(system);
+    SetAttribute::RegisterObject(system);
+    GetUniform::RegisterObject(system);
+
     Constant::RegisterObject(system);
     Curve::RegisterObject(system);
-    system->RegisterParticleGraphNodeFactory<Print>();
+    Print::RegisterObject(system);
+    Destroy::RegisterObject(system);
     RenderBillboard::RegisterObject(system);
 
-    system->RegisterParticleGraphNodeFactory<Add>();
-    system->RegisterParticleGraphNodeFactory<Slerp>();
+    Add::RegisterObject(system);
+    Slerp::RegisterObject(system);
+
+    TimeStep::RegisterObject(system);
+    Move::RegisterObject(system);
+    Bounce::RegisterObject(system);
+
 }
 
 }

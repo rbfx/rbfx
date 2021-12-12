@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "Print.h"
+#include "ParticleGraphSystem.h"
 #include "../IO/Log.h"
 
 #include "Helpers.h"
@@ -67,6 +68,11 @@ namespace
         }
     };
 
+}
+
+void Print::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<Print>();
 }
 
 Print::Instance::Instance(Print* node)

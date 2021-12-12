@@ -30,6 +30,10 @@
 #include "Print.h"
 #include "Math.h"
 #include "RenderBillboard.h"
+#include "Bounce.h"
+#include "Environment.h"
+#include "Destroy.h"
+#include "Uniform.h"
 
 namespace Urho3D
 {

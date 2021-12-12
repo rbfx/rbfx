@@ -27,7 +27,8 @@
 
 namespace Urho3D
 {
-    
+class ParticleGraphSystem;
+
 namespace ParticleGraphNodes
 {
 /// Operation on attribute
@@ -73,6 +74,9 @@ protected:
 public:
     /// Construct.
     explicit GetAttribute(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.
     unsigned NumPins() const override { return 1; }
@@ -112,6 +116,9 @@ class URHO3D_API SetAttribute : public Attribute
 public:
     /// Construct.
     explicit SetAttribute(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.
     unsigned NumPins() const override { return 2; }

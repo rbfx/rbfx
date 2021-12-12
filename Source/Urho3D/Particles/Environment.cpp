@@ -33,12 +33,26 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 TimeStep::TimeStep(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "out", VAR_FLOAT, PGCONTAINER_SCALAR)})
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "out", PGCONTAINER_SCALAR)})
 {
 }
 void TimeStep::RegisterObject(ParticleGraphSystem* context)
 {
     context->RegisterParticleGraphNodeFactory<TimeStep>();
+}
+
+Move::Move(Context* context)
+    : AbstractNodeType(context, PinArray{
+                                    ParticleGraphPin(PGPIN_INPUT, "position"),
+                                    ParticleGraphPin(PGPIN_INPUT, "velocity"),
+                                    ParticleGraphPin(PGPIN_NONE, "newPosition"),
+                                })
+{
+}
+
+void Move::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<Move>();
 }
 
 } // namespace ParticleGraphNodes

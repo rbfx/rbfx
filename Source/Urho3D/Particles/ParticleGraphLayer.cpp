@@ -62,29 +62,93 @@ struct ParticleGraphAttributeBuilder
     {
     }
 
-    bool Build(ParticleGraph& graph)
+    bool EvaluateValueType(SharedPtr<ParticleGraphNode> node, ParticleGraphPin& pin)
     {
-        const unsigned graphNodes = graph.GetNumNodes();
-
-        for (unsigned i = 0; i < graphNodes; ++i)
+        // Evaluate output pin value for output pins.
+        pin.valueType_ = pin.requestedValueType_;
+        if (pin.valueType_ == VAR_NONE && !pin.IsInput())
         {
-            // Configure pin nodes
-            auto node = graph.GetNode(i);
-            for (unsigned pinIndex = 0; pinIndex < node->NumPins(); ++pinIndex)
+            pin.valueType_ = node->EvaluateOutputPinType(pin);
+            if (pin.valueType_ == VAR_NONE)
             {
-                auto& pin = node->GetPin(pinIndex);
+                URHO3D_LOGERROR("Can't detect output pin type");
+                return false;
+            }
+        }
+        return true;
+    }
 
-                // Evaluate output pin value for output pins.
-                pin.valueType_ = pin.requestedValueType_;
-                if (pin.valueType_ == VAR_NONE && !pin.IsInput())
+    bool BuildNode(ParticleGraph& graph, unsigned i)
+    {
+        // Configure pin nodes.
+        auto node = graph.GetNode(i);
+
+        ParticleGraphContainerType defaultOutputType = PGCONTAINER_SCALAR;
+        
+        // Connect input pins.
+        for (unsigned pinIndex = 0; pinIndex < node->NumPins(); ++pinIndex)
+        {
+            auto& pin = node->GetPin(pinIndex);
+
+            if (!EvaluateValueType(node, pin))
+                return false;
+
+            // Connect input pin.
+            if (pin.IsInput())
+            {
+                if (pin.containerType_ == PGCONTAINER_SPARSE)
                 {
-                    pin.valueType_ = node->EvaluateOutputPinType(pin);
-                    if (pin.valueType_ == VAR_NONE)
-                    {
-                        URHO3D_LOGERROR("Can't detect output pin type");
-                        return false;
-                    }
+                    URHO3D_LOGERROR(
+                        Format("Sparse input pin {}.{} is not supported", node->GetTypeName(), pin.GetName()));
+                    return false;
                 }
+                if (pin.sourceNode_ == ParticleGraph::INVALID_NODE_INDEX)
+                {
+                    URHO3D_LOGERROR(Format("Source node is not set for {}.{}", node->GetTypeName(), pin.GetName()));
+                    return false;
+                }
+                if (pin.sourceNode_ >= i)
+                {
+                    URHO3D_LOGERROR("Graph can't forward reference nodes");
+                    return false;
+                }
+                const auto sourceNode = graph.GetNode(pin.sourceNode_);
+                if (pin.sourcePin_ >= sourceNode->NumPins())
+                {
+                    URHO3D_LOGERROR("Reference to a missing pin");
+                    return false;
+                }
+                const auto& sourcePin = sourceNode->GetPin(pin.sourcePin_);
+                if (sourcePin.IsInput())
+                {
+                    URHO3D_LOGERROR("Source pin isn't output pin");
+                    return false;
+                }
+                pin.memory_ = sourcePin.memory_;
+                // Detect default output type.
+                if (pin.memory_.type_ != PGCONTAINER_SCALAR)
+                {
+                    defaultOutputType = PGCONTAINER_SPAN;
+                }
+                // Evaluate input pin type.
+                if (pin.requestedValueType_ == VAR_NONE)
+                {
+                    pin.valueType_ = sourcePin.valueType_;
+                }
+                else if (pin.requestedValueType_ != sourcePin.valueType_)
+                {
+                    URHO3D_LOGERROR("Source pin type doesn't match input pin type");
+                    return false;
+                }
+            }
+        }
+        // Allocate memory for output pins.
+        for (unsigned pinIndex = 0; pinIndex < node->NumPins(); ++pinIndex)
+        {
+            auto& pin = node->GetPin(pinIndex);
+
+            if (!pin.IsInput())
+            {
                 // Allocate attribute buffer if this is a new attribute
                 if (pin.containerType_ == PGCONTAINER_SPARSE)
                 {
@@ -97,49 +161,27 @@ struct ParticleGraphAttributeBuilder
                     }
                 }
                 // Allocate temp buffer for an output pin
-                else if (!pin.IsInput())
+                else
                 {
                     // Allocate temp buffer
-                    pin.memory_ = ParticleGraphPinRef(pin.containerType_, tempBufferLayout_.Allocate(pin.containerType_, pin.requestedValueType_));
-                }
-                // Connect input pin
-                if (pin.IsInput())
-                {
-                    if (pin.sourceNode_ == ParticleGraph::INVALID_NODE_INDEX)
-                    {
-                        URHO3D_LOGERROR(Format("Source node is not set for {}.{}", node->GetTypeName(), pin.GetName()));
-                        return false;
-                    }
-                    if (pin.sourceNode_ >= i)
-                    {
-                        URHO3D_LOGERROR("Graph can't forward reference nodes");
-                        return false;
-                    }
-                    const auto sourceNode = graph.GetNode(pin.sourceNode_);
-                    if (pin.sourcePin_ >= sourceNode->NumPins())
-                    {
-                        URHO3D_LOGERROR("Reference to a missing pin");
-                        return false;
-                    }
-                    const auto& sourcePin = sourceNode->GetPin(pin.sourcePin_);
-                    if (sourcePin.IsInput())
-                    {
-                        URHO3D_LOGERROR("Source pin isn't output pin");
-                        return false;
-                    }
-                    pin.memory_ = sourcePin.memory_;
-
-                    if (pin.requestedValueType_ == VAR_NONE)
-                    {
-                        pin.valueType_ = sourcePin.valueType_;
-                    }
-                    else if (pin.requestedValueType_ != sourcePin.valueType_)
-                    {
-                        URHO3D_LOGERROR("Source pin type doesn't match input pin type");
-                        return false;
-                    }
+                    auto containerType = pin.containerType_;
+                    if (containerType == PGCONTAINER_AUTO)
+                        containerType = defaultOutputType;
+                    pin.memory_ = ParticleGraphPinRef(
+                        containerType, tempBufferLayout_.Allocate(containerType, pin.requestedValueType_));
                 }
             }
+        }
+        return true;
+    }
+
+    bool Build(ParticleGraph& graph)
+    {
+        const unsigned graphNodes = graph.GetNumNodes();
+
+        for (unsigned i = 0; i < graphNodes; ++i)
+        {
+            if (!BuildNode(graph, i)) return false;
         }
         return true;
     }
