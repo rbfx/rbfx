@@ -26,6 +26,7 @@
 
 #include "../Container/FlagSet.h"
 #include "../Container/KeyFrameSet.h"
+#include "../Core/VariantCurve.h"
 #include "../Math/Transform.h"
 
 namespace Urho3D
@@ -39,19 +40,6 @@ enum AnimationChannel : unsigned char
     CHANNEL_SCALE = 0x4,
 };
 URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
-
-/// Method of interpolation between keyframes.
-enum class KeyFrameInterpolation
-{
-    /// No interpolation, value is snapped to next one.
-    None,
-    /// Linear interpolation between values. Spherical interpolation for quaternions.
-    Linear,
-    /// Cubic spline with fixed tension.
-    TensionSpline,
-    /// Cubic spline with tangents.
-    TangentSpline
-};
 
 /// Skeletal animation keyframe.
 /// TODO: Replace inheritance with composition?
@@ -85,56 +73,9 @@ struct URHO3D_API AnimationTrack : public KeyFrameSet<AnimationKeyFrame>
 };
 
 /// Generic variant animation keyframe.
-struct VariantAnimationKeyFrame
-{
-    /// Keyframe time.
-    float time_{};
-    /// Attribute value.
-    Variant value_;
-
-    /// Compare equal.
-    bool operator==(const VariantAnimationKeyFrame& rhs) const
-    {
-        return time_ == rhs.time_ && value_ == rhs.value_;
-    }
-    /// Compare unequal.
-    bool operator!=(const VariantAnimationKeyFrame& rhs) const
-    {
-        return !(*this == rhs);
-    }
-};
+using VariantAnimationKeyFrame = VariantCurvePoint;
 
 /// Generic animation track, stores keyframes of single animatable entity.
-struct URHO3D_API VariantAnimationTrack : public KeyFrameSet<VariantAnimationKeyFrame>
-{
-    /// Annotated name of animatable entity.
-    ea::string name_;
-    /// Name hash.
-    StringHash nameHash_;
-    /// Interpolation mode.
-    KeyFrameInterpolation interpolation_{ KeyFrameInterpolation::Linear };
-
-    /// Spline tension for spline interpolation.
-    float splineTension_{ 0.5f };
-    /// Tangents for cubic spline. Recalculated on commit for tension spline.
-    ea::vector<Variant> inTangents_;
-    ea::vector<Variant> outTangents_;
-
-    /// Type of values, deduced from key frames.
-    VariantType type_{};
-
-    /// Commit changes and recalculate derived members. May change interpolation mode.
-    void Commit();
-    /// Sample value at given time.
-    Variant Sample(float time, float duration, bool isLooped, unsigned& frameIndex) const;
-    /// Return type of animation track. Defined by the type of the first keyframe.
-    VariantType GetType() const;
-
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive);
-};
-
-/// Serialize VariantAnimationTrack.
-bool URHO3D_API SerializeValue(Archive& archive, const char* name, VariantAnimationTrack& value);
+struct URHO3D_API VariantAnimationTrack : public VariantCurve {};
 
 }

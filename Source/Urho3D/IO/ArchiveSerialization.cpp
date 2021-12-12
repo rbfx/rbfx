@@ -20,33 +20,15 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/VariantCurve.h"
 #include "../IO/ArchiveSerialization.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/Resource.h"
 
 namespace Urho3D
 {
-namespace Detail
-{
-
-Resource* FetchResource(Archive& archive, ResourceRef& resourceRef)
-{
-    if (resourceRef.name_.empty())
-    {
-        return nullptr;
-    }
-    else
-    {
-        ResourceCache* cache = archive.GetContext()->GetSubsystem<ResourceCache>();
-        return cache->GetResource(resourceRef.type_, resourceRef.name_);
-    }
-}
-
-} // namespace Detail
 
 bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value)
 {
-    static_assert(MAX_VAR_TYPES == 28, "Update me");
+    static_assert(MAX_VAR_TYPES == 29, "Update me");
     switch (variantType)
     {
     case VAR_NONE:
@@ -127,6 +109,8 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
 
         archive.SetError(Format("Custom Variant is not initialized for element '{0}'", name));
         return false;
+    case VAR_VARIANTCURVE:
+        return Detail::SerializeVariantValueType<VariantCurve>(archive, name, value);
     case MAX_VAR_TYPES:
     default:
         assert(0);
