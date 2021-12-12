@@ -49,7 +49,14 @@ void Bounce::RegisterObject(ParticleGraphSystem* context)
 
 void Bounce::RayCastAndBounce(UpdateContext& context, Vector3& pos, Vector3& velocity)
 {
+    const Vector3 gravity(0, -9.8f, 0);
+    velocity += gravity * context.timeStep_;
     pos += velocity * context.timeStep_;
+    if (pos.y_ < -2.0f)
+    {
+        pos.y_ = -2.0f;
+        velocity.y_ = -velocity.y_;
+    }
 }
 
 } // namespace ParticleGraphNodes
