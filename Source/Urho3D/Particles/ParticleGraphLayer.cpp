@@ -199,6 +199,7 @@ void ParticleGraphLayer::AttributeBufferLayout::Apply(ParticleGraphLayer& layer)
     }
     nodeInstances_ = Append(this, instanceSize);
     indices_ = Append<unsigned>(this, layer.capacity_);
+    destructionQueue_ = Append<unsigned>(this, layer.capacity_);
     values_ = Append(this, 0);
 }
 

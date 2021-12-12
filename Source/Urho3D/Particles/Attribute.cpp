@@ -31,7 +31,7 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-namespace 
+namespace
 {
 
 template <typename T> struct CopyValues
@@ -42,40 +42,41 @@ template <typename T> struct CopyValues
         switch (pin1.GetContainerType())
         {
         case PGCONTAINER_SCALAR:
+        {
+            auto src = context.GetScalar<T>(pin1.GetMemoryReference());
+            auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
+            for (unsigned i = 0; i < numParticles; ++i)
             {
-                auto src = context.GetScalar<T>(pin1.GetMemoryReference());
-                auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
-                for (unsigned i = 0; i < numParticles; ++i)
-                {
-                    dst[i] = src[i];
-                }
+                dst[i] = src[i];
             }
-            break;
-            case PGCONTAINER_SPAN:
+        }
+        break;
+        case PGCONTAINER_SPAN:
+        {
+            auto src = context.GetSpan<T>(pin1.GetMemoryReference());
+            auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
+            for (unsigned i = 0; i < numParticles; ++i)
             {
-                auto src = context.GetSpan<T>(pin1.GetMemoryReference());
-                auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
-                for (unsigned i = 0; i < numParticles; ++i)
-                {
-                    dst[i] = src[i];
-                }
+                dst[i] = src[i];
             }
-            break;
-            case PGCONTAINER_SPARSE:
+        }
+        break;
+        case PGCONTAINER_SPARSE:
+        {
+            auto src = context.GetSparse<T>(pin1.GetMemoryReference());
+            auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
+            for (unsigned i = 0; i < numParticles; ++i)
             {
-                auto src = context.GetSparse<T>(pin1.GetMemoryReference());
-                auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
-                for (unsigned i = 0; i < numParticles; ++i)
-                {
-                    dst[i] = src[i];
-                }
+                dst[i] = src[i];
             }
-            break;
-            }
+        }
+        break;
+        }
     }
 };
 
-}
+} // namespace
+
 Attribute::Attribute(Context* context)
     : ParticleGraphNode(context)
 {

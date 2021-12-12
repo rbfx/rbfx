@@ -33,6 +33,7 @@ namespace Urho3D
 
 ParticleGraphLayerInstance::ParticleGraphLayerInstance()
     : activeParticles_(0)
+    , destuctionQueueSize_(0)
 {
 }
 
@@ -95,6 +96,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     {
         indices_[i] = i;
     }
+    destuctionQueue_ = layout.indices_.MakeSpan<unsigned>(attributes_);
 }
 
 bool ParticleGraphLayerInstance::CheckActiveParticles() const { return activeParticles_ != 0; }
@@ -125,6 +127,25 @@ void ParticleGraphLayerInstance::Update(float timeStep)
 unsigned ParticleGraphLayerInstance::GetNumAttributes() const
 {
     return layer_->GetAttributes().GetNumAttributes();
+}
+
+void ParticleGraphLayerInstance::MarkForDeletion(unsigned particleIndex)
+{
+    if (particleIndex >= activeParticles_)
+        return;
+
+    //TODO: if buffer is full sort and eliminate duplicates.
+    if (destuctionQueueSize_ < destuctionQueue_.size())
+    {
+        destuctionQueue_[destuctionQueueSize_] = particleIndex;
+        ++destuctionQueueSize_;
+    }
+}
+
+Variant ParticleGraphLayerInstance::GetUniform(const StringHash& string_hash, VariantType variant)
+{
+    //TODO: Make a collection of uniforms.
+    return {};
 }
 
 void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)

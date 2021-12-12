@@ -50,6 +50,8 @@ public:
         ParticleGraphSpan nodeInstances_;
         /// Indices.
         ParticleGraphSpan indices_;
+        /// Indices to destroy.
+        ParticleGraphSpan destructionQueue_;
         /// Particle attribute values.
         ParticleGraphSpan values_;
 

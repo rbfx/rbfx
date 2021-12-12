@@ -66,6 +66,12 @@ public:
     /// Get emitter.
     ParticleGraphEmitter* GetEmitter() const { return emitter_; }
 
+    /// Mark a particle for deletion.
+    void MarkForDeletion(unsigned particleIndex);
+
+    /// Get uniform variant.
+    Variant GetUniform(const StringHash& string_hash, VariantType variant);
+
 protected:
     /// Set emitter reference.
     void SetEmitter(ParticleGraphEmitter* emitter);
@@ -88,6 +94,10 @@ private:
     ea::span<ParticleGraphNodeInstance*> updateNodeInstances_;
     /// All indices of the particle system.
     ea::span<unsigned> indices_;
+    /// Particle indices to be removed.
+    ea::span<unsigned> destuctionQueue_;
+    /// Number of particles to destroy at end of the frame.
+    unsigned destuctionQueueSize_;
     /// Number of active particles.
     unsigned activeParticles_;
     /// Reference to layer.
