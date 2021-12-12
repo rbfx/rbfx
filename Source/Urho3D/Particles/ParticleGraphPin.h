@@ -69,7 +69,7 @@ public:
     /// Construct default pin.
     ParticleGraphPin();
     /// Construct pin.
-    ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string name, VariantType type = VAR_NONE,
+    ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, VariantType type = VAR_NONE,
                          ParticleGraphContainerType container = PGCONTAINER_AUTO);
 
     /// Get input pin flag.
@@ -117,9 +117,9 @@ public:
 
 protected:
     /// Set pin name and hash.
-    void SetName(const ea::string& name);
+    bool SetName(const ea::string& name);
     /// Set pin value type.
-    void SetValueType(VariantType valueType);
+    bool SetValueType(VariantType valueType);
 
     /// Get input pin flag.
     /// @property

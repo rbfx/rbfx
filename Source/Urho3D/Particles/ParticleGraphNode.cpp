@@ -42,20 +42,26 @@ ParticleGraphNode::ParticleGraphNode(Context* context)
 {
 }
 
-void ParticleGraphNode::SetPinName(unsigned pinIndex, const ea::string& name)
+bool ParticleGraphNode::SetPinName(unsigned pinIndex, const ea::string& name)
 {
     if (pinIndex >= NumPins())
-        return;
+    {
+        URHO3D_LOGERROR("Pin index out of bounds.");
+        return false;
+    }
     auto& pin = GetPin(pinIndex);
-    pin.SetName(name);
+    return pin.SetName(name);
 }
 
-void ParticleGraphNode::SetPinValueType(unsigned pinIndex, VariantType type)
+bool ParticleGraphNode::SetPinValueType(unsigned pinIndex, VariantType type)
 {
     if (pinIndex >= NumPins())
-        return;
+    {
+        URHO3D_LOGERROR("Pin index out of bounds.");
+        return false;
+    }
     auto& pin = GetPin(pinIndex);
-    pin.SetValueType(type);
+    return pin.SetValueType(type);
 }
 
 ParticleGraphNode::~ParticleGraphNode() = default;

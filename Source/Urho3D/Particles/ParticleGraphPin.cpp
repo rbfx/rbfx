@@ -36,70 +36,16 @@ ParticleGraphPin::ParticleGraphPin()
     , sourceNode_(ParticleGraph::INVALID_NODE_INDEX)
 {
 }
-ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string name, VariantType type,
+ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, VariantType type,
                                            ParticleGraphContainerType container)
     : flags_(flags)
     , requestedValueType_(type)
     , containerType_(container)
     , sourceNode_(ParticleGraph::INVALID_NODE_INDEX)
+    , name_(name)
+    , nameHash_(name)
 {
-    SetName(name);
 }
-
-//bool ParticleGraphPin::Serialize(Archive& archive)
-//{
-//    if (archive.IsInput())
-//    {
-//        // Load name.
-//        ea::string name;
-//        if (!SerializeValue(archive, "name", name))
-//            return false;
-//        // Set name if it is mutable or check it.
-//        if (flags_.Test(PGPIN_NAME_MUTABLE))
-//            name_ = name;
-//        else if (name != name_)
-//        {
-//            archive.SetError("Pin name mismatch");
-//            return false;
-//        }
-//        // Load type.
-//        VariantType type{VAR_NONE};
-//
-//      if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), type))
-//          return false;
-//        // Set type if it is mutable or check it.
-//        if (flags_.Test(PGPIN_TYPE_MUTABLE))
-//            requestedValueType_ = type;
-//        else if (requestedValueType_ != type)
-//        {
-//            archive.SetError("Pin type mismatch");
-//            return false;
-//        }
-//    }
-//    else
-//    {
-//        if (!SerializeValue(archive, "name", name_))
-//        {
-//            return false;
-//        }
-//        if (!SerializeEnum(archive, "valueType", Variant::GetTypeNameList(), requestedValueType_))
-//        {
-//            return false;
-//        }
-//    }
-//    if (GetIsInput())
-//    {
-//        if (!SerializeValue(archive, "sourceNode", sourceNode_))
-//        {
-//            return false;
-//        }
-//        if (!SerializeValue(archive, "sourcePin", sourcePin_))
-//        {
-//            return false;
-//        }
-//    }
-//    return true;
-//}
 
 ParticleGraphPin ParticleGraphPin::WithType(VariantType type) const
 {
@@ -124,13 +70,28 @@ bool ParticleGraphPin::GetConnected() const
     return sourceNode_ != ParticleGraph::INVALID_NODE_INDEX;
 }
 
-void ParticleGraphPin::SetName(const ea::string& name)
+bool ParticleGraphPin::SetName(const ea::string& name)
 {
+    if (!flags_.Test(PGPIN_NAME_MUTABLE))
+    {
+        URHO3D_LOGERROR("Can't change name of {} pin.", GetName());
+        return false;
+    }
     name_ = name;
     nameHash_ = StringHash(name_);
+    return true;
 }
 
-void ParticleGraphPin::SetValueType(VariantType valueType) { requestedValueType_ = valueType; }
+bool ParticleGraphPin::SetValueType(VariantType valueType)
+{
+    if (!flags_.Test(PGPIN_TYPE_MUTABLE))
+    {
+        URHO3D_LOGERROR("Can't change type of {} pin.", GetName());
+        return false;
+    }
+    requestedValueType_ = valueType;
+    return true;
+}
 
 void ParticleGraphPin::SetIsInput(bool isInput) { flags_.Set(PGPIN_INPUT, isInput); }
 

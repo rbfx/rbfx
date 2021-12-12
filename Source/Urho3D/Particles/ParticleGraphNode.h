@@ -113,11 +113,11 @@ protected:
 
     /// Set pin name.
     /// This method is protected so it can only be accessable to nodes that allow pin renaming.
-    void SetPinName(unsigned pinIndex, const ea::string& name);
+    bool SetPinName(unsigned pinIndex, const ea::string& name);
 
     /// Set pin type.
     /// This method is protected so it can only be accessable to nodes that allow pin renaming.
-    void SetPinValueType(unsigned pinIndex, VariantType type);
+    bool SetPinValueType(unsigned pinIndex, VariantType type);
 
     /// Parent graph.
     ParticleGraph* graph_;
