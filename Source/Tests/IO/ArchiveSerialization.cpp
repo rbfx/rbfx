@@ -22,13 +22,13 @@
 
 #include "../CommonUtils.h"
 
-#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Core/VariantCurve.h>
+#include <Urho3D/Graphics/Material.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
-#include <Urho3D/Graphics/AnimationTrack.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
-#include <Urho3D/Graphics/Material.h>
 
 #include <catch2/catch_amalgamated.hpp>
 
@@ -477,27 +477,30 @@ TEST_CASE("Test resource is serialized as part of the file")
     }
 }
 
-TEST_CASE("Variant unique_ptr serialization")
+TEST_CASE("VariantCurve is serialized in Variant")
 {
     auto context = CreateTestContext();
 
     Variant sourceObject;
-    auto track = ea::make_unique<VariantAnimationTrack>();
-    track->interpolation_ = GENERATE(
-        KeyFrameInterpolation::None,
-        KeyFrameInterpolation::Linear,
-        KeyFrameInterpolation::TensionSpline,
-        KeyFrameInterpolation::TangentSpline);
-    track->AddKeyFrame(VariantAnimationKeyFrame{0, 0.0f});
-    track->AddKeyFrame(VariantAnimationKeyFrame{0.5f, 1.0f});
-    track->AddKeyFrame(VariantAnimationKeyFrame{1.0f, 0.0f});
-    if (track->interpolation_ == KeyFrameInterpolation::TangentSpline)
     {
-        track->inTangents_ = {0.1f, -0.1f, 0.0f};
-        track->outTangents_ = {0.2f, -0.2f, 0.0f};
+        VariantCurve curve;
+        curve.interpolation_ = GENERATE(
+            KeyFrameInterpolation::None,
+            KeyFrameInterpolation::Linear,
+            KeyFrameInterpolation::TensionSpline,
+            KeyFrameInterpolation::TangentSpline);
+        curve.AddKeyFrame(VariantCurvePoint{ 0, 0.0f });
+        curve.AddKeyFrame(VariantCurvePoint{ 0.5f, 1.0f });
+        curve.AddKeyFrame(VariantCurvePoint{ 1.0f, 0.0f });
+        if (curve.interpolation_ == KeyFrameInterpolation::TangentSpline)
+        {
+            curve.inTangents_ = { 0.1f, -0.1f, 0.0f };
+            curve.outTangents_ = { 0.2f, -0.2f, 0.0f };
+        }
+        curve.Commit();
+
+        sourceObject = curve;
     }
-    track->Commit();
-    sourceObject.SetCustom(ea::move(track));
 
     SECTION("XML file")
     {
@@ -505,21 +508,17 @@ TEST_CASE("Variant unique_ptr serialization")
         XMLElement root = xmlFile->CreateRoot("root");
 
         XMLOutputArchive xmlOutputArchive{context, root.CreateChild("child")};
-        SerializeValue(xmlOutputArchive, "VariantAnimationTrack", sourceObject);
+        SerializeValue(xmlOutputArchive, "value", sourceObject);
         REQUIRE_FALSE(xmlOutputArchive.HasError());
 
         XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
         Variant objectFromXML;
-        objectFromXML.SetCustom(ea::make_unique<VariantAnimationTrack>());
-        SerializeValue(xmlInputArchive, "VariantAnimationTrack", objectFromXML);
+        SerializeValue(xmlInputArchive, "value", objectFromXML);
         REQUIRE_FALSE(xmlInputArchive.HasError());
 
-        auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
-        auto xmlTrack = objectFromXML.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
-        REQUIRE((*sourceTrack)->keyFrames_ == (*xmlTrack)->keyFrames_);
-        REQUIRE((*sourceTrack)->interpolation_ == (*xmlTrack)->interpolation_);
-        REQUIRE((*sourceTrack)->outTangents_ == (*xmlTrack)->outTangents_);
-        REQUIRE((*sourceTrack)->inTangents_ == (*xmlTrack)->inTangents_);
+        const auto& sourceCurve = sourceObject.GetVariantCurve();
+        const auto& xmlCurve = objectFromXML.GetVariantCurve();
+        REQUIRE(sourceCurve == xmlCurve);
     }
 
     SECTION("JSON file")
@@ -529,20 +528,16 @@ TEST_CASE("Variant unique_ptr serialization")
 
         JSONValue child;
         JSONOutputArchive jsonOutputArchive{context, child};
-        SerializeValue(jsonOutputArchive, "VariantAnimationTrack", sourceObject);
+        SerializeValue(jsonOutputArchive, "value", sourceObject);
         root.Set("child", child);
 
         JSONInputArchive jsonInputArchive{context, root.Get("child")};
         Variant objectFromJSON;
-        objectFromJSON.SetCustom(ea::make_unique<VariantAnimationTrack>());
-        SerializeValue(jsonInputArchive, "VariantAnimationTrack", objectFromJSON);
+        SerializeValue(jsonInputArchive, "value", objectFromJSON);
 
-        auto sourceTrack = sourceObject.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
-        auto jsonTrack = objectFromJSON.GetCustomPtr<ea::unique_ptr<VariantAnimationTrack>>();
-        REQUIRE((*sourceTrack)->keyFrames_ == (*jsonTrack)->keyFrames_);
-        REQUIRE((*sourceTrack)->interpolation_ == (*jsonTrack)->interpolation_);
-        REQUIRE((*sourceTrack)->outTangents_ == (*jsonTrack)->outTangents_);
-        REQUIRE((*sourceTrack)->inTangents_ == (*jsonTrack)->inTangents_);
+        const auto& sourceCurve = sourceObject.GetVariantCurve();
+        const auto& jsonCurve = objectFromJSON.GetVariantCurve();
+        REQUIRE(sourceCurve == jsonCurve);
     }
 }
 

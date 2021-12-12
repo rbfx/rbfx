@@ -24,6 +24,7 @@
 
 #include "../Core/StringUtils.h"
 #include "../IO/VectorBuffer.h"
+#include "../Core/VariantCurve.h"
 
 #include <cstring>
 
@@ -37,6 +38,7 @@ const ResourceRefList Variant::emptyResourceRefList { };
 const VariantMap Variant::emptyVariantMap;
 const VariantVector Variant::emptyVariantVector { };
 const StringVector Variant::emptyStringVector { };
+const VariantCurve Variant::emptyCurve;
 
 static const char* typeNames[] =
 {
@@ -68,6 +70,7 @@ static const char* typeNames[] =
     "IntVector3",
     "Int64",
     "Custom",
+    "VariantCurve",
     nullptr
 };
 
@@ -131,6 +134,10 @@ Variant& Variant::operator =(const Variant& rhs)
         *value_.matrix4_ = *rhs.value_.matrix4_;
         break;
 
+    case VAR_VARIANTCURVE:
+        *value_.variantCurve_ = *rhs.value_.variantCurve_;
+        break;
+
     default:
         memcpy(&value_, &rhs.value_, sizeof(VariantValue));     // NOLINT(bugprone-undefined-memory-manipulation)
         break;
@@ -143,6 +150,13 @@ Variant& Variant::operator =(const VectorBuffer& rhs)
 {
     SetType(VAR_BUFFER);
     value_.buffer_ = rhs.GetBuffer();
+    return *this;
+}
+
+Variant& Variant::operator =(const VariantCurve& rhs)
+{
+    SetType(VAR_VARIANTCURVE);
+    *value_.variantCurve_ = rhs;
     return *this;
 }
 
@@ -229,6 +243,9 @@ bool Variant::operator ==(const Variant& rhs) const
     case VAR_RECT:
         return value_.rect_ == rhs.value_.rect_;
 
+    case VAR_VARIANTCURVE:
+        return *value_.variantCurve_ == *rhs.value_.variantCurve_;
+
     default:
         return true;
     }
@@ -249,6 +266,11 @@ bool Variant::operator ==(const VectorBuffer& rhs) const
     return type_ == VAR_BUFFER && buffer.size() == rhs.GetSize() ?
         strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(rhs.GetData()), buffer.size()) == 0 :
         false;
+}
+
+bool Variant::operator ==(const VariantCurve& rhs) const
+{
+    return type_ == VAR_VARIANTCURVE ? *value_.variantCurve_ == rhs : false;
 }
 
 Variant::Variant(VariantType type)
@@ -334,6 +356,10 @@ Variant::Variant(VariantType type)
 
     case VAR_RECT:
         *this = Rect::ZERO;
+        break;
+
+    case VAR_VARIANTCURVE:
+        *this = emptyCurve;
         break;
 
     case VAR_BUFFER:
@@ -520,6 +546,11 @@ VectorBuffer Variant::GetVectorBuffer() const
     return VectorBuffer(type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer);
 }
 
+const VariantCurve& Variant::GetVariantCurve() const
+{
+    return type_ == VAR_VARIANTCURVE ? *value_.variantCurve_ : emptyCurve;
+}
+
 const char* const* Variant::GetTypeNameList()
 {
     return typeNames;
@@ -605,7 +636,7 @@ ea::string Variant::ToString() const
         return GetCustomVariantValuePtr()->ToString();
 
     default:
-        // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP
+        // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP, VAR_VARIANTCURVE
         // Reference string serialization requires typehash-to-name mapping from the context. Can not support here
         // Also variant map or vector string serialization is not supported. XML or binary save should be used instead
         return EMPTY_STRING;
@@ -706,6 +737,9 @@ bool Variant::IsZero() const
     case VAR_CUSTOM:
         return GetCustomVariantValuePtr()->IsZero();
 
+    case VAR_VARIANTCURVE:
+        return *value_.variantCurve_ == emptyCurve;
+
     default:
         return true;
     }
@@ -766,6 +800,10 @@ void Variant::SetType(VariantType newType)
         value_.AsCustomValue().~CustomVariantValue();
         break;
 
+    case VAR_VARIANTCURVE:
+        delete value_.variantCurve_;
+        break;
+
     default:
         break;
     }
@@ -821,6 +859,10 @@ void Variant::SetType(VariantType newType)
     case VAR_CUSTOM:
         // Initialize virtual table with void dummy custom object
         new (&value_.storage_) CustomVariantValue();
+        break;
+
+    case VAR_VARIANTCURVE:
+        value_.variantCurve_ = new VariantCurve();
         break;
 
     default:
@@ -948,6 +990,11 @@ template <> const Matrix4& Variant::Get<const Matrix4&>() const
     return GetMatrix4();
 }
 
+template <> const VariantCurve& Variant::Get<const VariantCurve&>() const
+{
+    return GetVariantCurve();
+}
+
 template <> ResourceRef Variant::Get<ResourceRef>() const
 {
     return GetResourceRef();
@@ -1041,6 +1088,11 @@ template <> Matrix3x4 Variant::Get<Matrix3x4>() const
 template <> Matrix4 Variant::Get<Matrix4>() const
 {
     return GetMatrix4();
+}
+
+template <> VariantCurve Variant::Get<VariantCurve>() const
+{
+    return GetVariantCurve();
 }
 
 ea::string Variant::GetTypeName(VariantType type)
@@ -1185,6 +1237,8 @@ unsigned Variant::ToHash() const
         return ea::hash<Urho3D::IntVector3>()(Get<Urho3D::IntVector3>());
     case Urho3D::VAR_INT64:
         return ea::hash<long long>()(Get<long long>());
+    case Urho3D::VAR_VARIANTCURVE:
+        return ea::hash<VariantCurve>()(Get<VariantCurve>());
     case Urho3D::VAR_CUSTOM:
     default:
         assert(false);
