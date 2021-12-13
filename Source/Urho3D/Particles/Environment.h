@@ -43,7 +43,7 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 
     template <typename Tuple>
-    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& pin0 = ea::get<0>(spans);
         for (unsigned i = 0; i < numParticles; ++i)
@@ -65,7 +65,7 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 
     template <typename Tuple>
-    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& pin0 = ea::get<0>(spans);
         auto& pin1 = ea::get<1>(spans);

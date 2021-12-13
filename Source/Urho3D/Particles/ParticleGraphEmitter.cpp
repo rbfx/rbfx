@@ -34,7 +34,7 @@
 
 namespace Urho3D
 {
-
+extern const char* GEOMETRY_CATEGORY;
 
 ParticleGraphEmitter::ParticleGraphEmitter(Context* context)
     : Component(context)
@@ -45,7 +45,7 @@ ParticleGraphEmitter::~ParticleGraphEmitter() = default;
 
 void ParticleGraphEmitter::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleGraphEmitter>();
+    context->RegisterFactory<ParticleGraphEmitter>(GEOMETRY_CATEGORY);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Effect", GetEffectAttr, SetEffectAttr, ResourceRef,
@@ -68,7 +68,10 @@ void ParticleGraphEmitter::OnSetEnabled()
 
 void ParticleGraphEmitter::Reset()
 {
-    layers_.clear();
+    for (auto& layer : layers_)
+    {
+        layer.Reset();
+    }
 }
 
 void ParticleGraphEmitter::ApplyEffect()
@@ -84,6 +87,8 @@ void ParticleGraphEmitter::ApplyEffect()
         layers_[i].SetEmitter(this);
         layers_[i].Apply(effect_->GetLayer(i));
     }
+
+    Reset();
 }
 
 void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
@@ -91,7 +96,7 @@ void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
     if (effect == effect_)
         return;
 
-    Reset();
+    layers_.clear();
 
     // Unsubscribe from the reload event of previous effect (if any), then subscribe to the new
     if (effect_)
@@ -220,7 +225,7 @@ void ParticleGraphEmitter::HandleScenePostUpdate(StringHash eventType, VariantMa
 void ParticleGraphEmitter::HandleEffectReloadFinished(StringHash eventType, VariantMap& eventData)
 {
     // When particle effect file is live-edited, remove existing particles and reapply the effect parameters
-    Reset();
+    layers_.clear();
     ApplyEffect();
 }
 

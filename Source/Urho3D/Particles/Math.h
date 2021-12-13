@@ -102,7 +102,7 @@ class URHO3D_API Add : public BinaryMathOperator
 
 public:
     template <typename Tuple>
-    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& x = ea::get<0>(spans);
         auto& y = ea::get<1>(spans);
@@ -129,7 +129,7 @@ class URHO3D_API Slerp : public AbstractNode<Slerp, Quaternion, Quaternion, floa
 
 public:
     template <typename Tuple>
-    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& x = ea::get<0>(spans);
         auto& y = ea::get<1>(spans);

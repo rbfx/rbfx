@@ -30,6 +30,30 @@
 
 namespace Urho3D
 {
+void ParticleGraphLayerInstance::BurstState::Reset(const ParticleGraphLayerBurst& burst)
+{
+    burst_ = burst;
+    timeToBurst_ = burst_.delayInSeconds_;
+}
+
+unsigned ParticleGraphLayerInstance::BurstState::Update(float timestep)
+{
+    if (!burst_.cycles_)
+        return 0;
+    timeToBurst_ -= timestep;
+    if (timeToBurst_ <= 0)
+    {
+        timeToBurst_ = burst_.cycleIntervalInSeconds_;
+        if (burst_.cycles_ != ParticleGraphLayerBurst::InfiniteCycles)
+        {
+            --burst_.cycles_;
+        }
+        if (Random() <= burst_.probability_)
+            return burst_.count_;
+        return 0;
+    }
+    return 0;
+}
 
 ParticleGraphLayerInstance::ParticleGraphLayerInstance()
     : activeParticles_(0)
@@ -56,7 +80,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     if (!layer->Commit())
         return;
     layer_ = layer;
-
+    burstStates_.resize(layer_->GetNumBursts());
     const auto& layout = layer_->GetAttributeBufferLayout();
     if (layout.attributeBufferSize_ > 0)
         attributes_.resize(layout.attributeBufferSize_);
@@ -97,12 +121,16 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
         indices_[i] = i;
     }
     destuctionQueue_ = layout.destructionQueue_.MakeSpan<unsigned>(attributes_);
+    Reset();
 }
 
 bool ParticleGraphLayerInstance::CheckActiveParticles() const { return activeParticles_ != 0; }
 
 bool ParticleGraphLayerInstance::EmitNewParticle(unsigned numParticles)
 {
+    if (numParticles == 0)
+        return true;
+
     if (activeParticles_ == indices_.size())
         return false;
     if (!numParticles)
@@ -120,6 +148,13 @@ bool ParticleGraphLayerInstance::EmitNewParticle(unsigned numParticles)
 
 void ParticleGraphLayerInstance::Update(float timeStep)
 {
+    unsigned emitCounter = 0;
+    for (auto& burstState: burstStates_)
+    {
+        emitCounter += burstState.Update(timeStep);
+    }
+    EmitNewParticle(emitCounter);
+
     auto autoContext = MakeUpdateContext(timeStep);
     RunGraph(updateNodeInstances_, autoContext);
     DestroyParticles();
@@ -147,6 +182,14 @@ Variant ParticleGraphLayerInstance::GetUniform(const StringHash& string_hash, Va
 {
     //TODO: Make a collection of uniforms.
     return {};
+}
+
+void ParticleGraphLayerInstance::Reset()
+{
+    for (unsigned i = 0; i < burstStates_.size(); ++i)
+    {
+        burstStates_[i].Reset(layer_->GetBurst(i));
+    }
 }
 
 void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)

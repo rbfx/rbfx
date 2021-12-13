@@ -23,6 +23,9 @@
 #pragma once
 
 #include "Helpers.h"
+#include "ParticleGraphLayerInstance.h"
+#include "Urho3D/Physics/PhysicsWorld.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {
@@ -35,6 +38,16 @@ namespace ParticleGraphNodes
 class URHO3D_API Bounce : public AbstractNode<Bounce, Vector3, Vector3, Vector3, Vector3>
 {
     URHO3D_OBJECT(Bounce, ParticleGraphNode)
+
+    class Instance : public AbstractNodeType::Instance
+    {
+    public:
+        Instance(Bounce* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
+        {
+        }
+    };
+
 public:
     /// Construct.
     explicit Bounce(Context* context);
@@ -42,21 +55,23 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    void RayCastAndBounce(UpdateContext& context, Vector3& pos, Vector3& velocity);
+    void RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity);
 
     template <typename Tuple>
-    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& pin0 = ea::get<0>(spans);
         auto& pin1 = ea::get<1>(spans);
         auto& pin2 = ea::get<2>(spans);
         auto& pin3 = ea::get<3>(spans);
-        Bounce* bounce = instance->GetNodeInstace();
+        Bounce* bounce = instance->GetGraphNodeInstace();
+        auto node = instance->GetNode();
+        auto physics = instance->GetScene()->GetComponent<PhysicsWorld>();
         for (unsigned i = 0; i < numParticles; ++i)
         {
             pin2[i] = pin0[i];
             pin3[i] = pin1[i];
-            bounce->RayCastAndBounce(context, pin2[i], pin3[i]);
+            bounce->RayCastAndBounce(context, node, physics, pin2[i], pin3[i]);
         }
     }
 };

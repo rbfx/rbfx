@@ -28,10 +28,20 @@
 
 namespace Urho3D
 {
-
 /// Instance of particle graph layer in emitter.
 class URHO3D_API ParticleGraphLayerInstance
 {
+    struct BurstState
+    {
+        /// Burst settings.
+        ParticleGraphLayerBurst burst_;
+        /// Time left before the next burst.
+        float timeToBurst_;
+
+        void Reset(const ParticleGraphLayerBurst& burst);
+
+        unsigned Update(float timestep);
+    };
 public:
     /// Construct.
     ParticleGraphLayerInstance();
@@ -73,6 +83,10 @@ public:
     /// Get uniform variant.
     Variant GetUniform(const StringHash& string_hash, VariantType variant);
 
+    /// Reset the particle emitter layer completely. Removes current particles, sets emitting state on, and resets the
+    /// emission timer.
+    void Reset();
+
 protected:
     /// Set emitter reference.
     void SetEmitter(ParticleGraphEmitter* emitter);
@@ -108,6 +122,8 @@ private:
     SharedPtr<ParticleGraphLayer> layer_;
     /// Emitter that owns the layer instance.
     ParticleGraphEmitter* emitter_{};
+    /// State of each burst.
+    ea::fixed_vector<BurstState, 1> burstStates_;
 
     friend class ParticleGraphEmitter;
 };

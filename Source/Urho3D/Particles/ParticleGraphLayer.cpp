@@ -223,7 +223,23 @@ void ParticleGraphLayer::Invalidate()
     attributes_.Reset(0, 0);
 }
 
-void ParticleGraphLayer::AttributeBufferLayout::Apply(ParticleGraphLayer& layer)
+bool SerializeValue(Archive& archive, const char* name, ParticleGraphLayerBurst& burst)
+{
+    if (auto block = archive.OpenUnorderedBlock(name))
+    {
+        ParticleGraphLayerBurst defaultValue;
+        // TODO: handle optional
+        SerializeValue(archive, "delay", burst.delayInSeconds_);
+        SerializeValue(archive, "count", burst.count_);
+        SerializeValue(archive, "cycles", burst.cycles_);
+        SerializeValue(archive, "interval", burst.cycleIntervalInSeconds_);
+        SerializeValue(archive, "probability", burst.probability_);
+        return true;
+    }
+    return false;
+}
+
+void ParticleGraphLayer::AttributeBufferLayout::EvaluateLayout(ParticleGraphLayer& layer)
 {
     const auto emitGraphNodes = layer.emit_.GetNumNodes();
     const auto updateGraphNodes = layer.update_.GetNumNodes();
@@ -253,7 +269,7 @@ bool ParticleGraphLayer::Commit()
         return committed_.value();
     committed_ = false;
     // Evaluate attribute buffer layout except attributes size.
-    attributeBufferLayout_.Apply(*this);
+    attributeBufferLayout_.EvaluateLayout(*this);
 
     attributes_.Reset(attributeBufferLayout_.attributeBufferSize_, capacity_);
     tempMemory_.Reset(capacity_);
@@ -287,6 +303,11 @@ bool ParticleGraphLayer::Serialize(Archive& archive)
 {
     if (!SerializeValue(archive, "capacity", capacity_))
         return false;
+
+    //TODO: Handle optional collection.
+    if (archive.IsInput() || !bursts_.empty())
+        SerializeVectorAsObjects(archive, "bursts", "burst", bursts_);
+
     if (!emit_.Serialize(archive, "emit"))
         return false;
     if (!update_.Serialize(archive, "update"))

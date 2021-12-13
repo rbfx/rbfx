@@ -25,13 +25,28 @@
 #include "ParticleGraph.h"
 #include "ParticleGraphPin.h"
 
-#include <EASTL/span.h>
 #include <EASTL/optional.h>
-#include <Urho3D/IO/Archive.h>
 #include <Urho3D/Resource/Resource.h>
 
 namespace Urho3D
 {
+struct ParticleGraphLayerBurst
+{
+    static constexpr unsigned InfiniteCycles = UINT_MAX;
+
+    /// Delay before the burst.
+    float delayInSeconds_{0.0f};
+    /// How many particles to emit.
+    unsigned count_{1};
+    /// How many cycles to repeat.
+    unsigned cycles_{InfiniteCycles};
+    /// Delay between burst cycles.
+    float cycleIntervalInSeconds_ {0.01f};
+    /// Chance for the burst to happen.
+    float probability_ {1.0f};
+};
+
+bool SerializeValue(Archive& archive, const char* name, ParticleGraphLayerBurst& burst);
 
 class URHO3D_API ParticleGraphLayer : public Object
 {
@@ -55,7 +70,8 @@ public:
         /// Particle attribute values.
         ParticleGraphSpan values_;
 
-        void Apply(ParticleGraphLayer& layer);
+        /// Evaluate attribute buffer size and layout.
+        void EvaluateLayout(ParticleGraphLayer& layer);
     };
 
     /// Construct.
@@ -71,6 +87,18 @@ public:
 
     /// Get update graph.
     ParticleGraph& GetUpdateGraph();
+
+    /// Get number of bursts.
+    /// @property
+    unsigned GetNumBursts() const { return bursts_.size(); }
+    /// Set number of bursts.
+    /// @property 
+    void SetNumBursts(unsigned bursts) { bursts_.resize(bursts); }
+
+    /// Get burst.
+    const ParticleGraphLayerBurst& GetBurst(unsigned index) const { return  bursts_[index]; }
+    /// Set burst.
+    void SetBurst(unsigned index, const ParticleGraphLayerBurst& burst) { bursts_[index] = burst; }
 
     /// Invalidate graph layer state.
     /// Call this method when something is changed in the layer graphs and it requires new preparation.
@@ -103,14 +131,18 @@ private:
     ea::optional<bool> committed_;
     /// Maximum number of particles.
     unsigned capacity_;
+    /// Emission graph.
     ParticleGraph emit_;
+    /// Update graph.
     ParticleGraph update_;
-    /// Attribure buffer layout.
+    /// Attribute buffer layout.
     AttributeBufferLayout attributeBufferLayout_;
     /// Attributes memory layout.
     ParticleGraphAttributeLayout attributes_;
     /// Intermediate memory layout.
     ParticleGraphBufferLayout tempMemory_;
+    /// Collection of bursts.
+    ea::vector<ParticleGraphLayerBurst> bursts_;
 };
 
 } // namespace Urho3D

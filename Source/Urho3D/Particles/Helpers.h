@@ -24,52 +24,10 @@
 
 #include "../Core/Context.h"
 #include "ParticleGraphEffect.h"
+#include "ParticleGraphLayerInstance.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
 #include <EASTL/tuple.h>
-
-//#define URHO3D_PARTICLE_NODE1_BEGIN(Name, Pin0Name, Pin0) \
-//    class URHO3D_API Name : public AbstractNode1<Name, Pin0> \
-//    { \
-//    public: \
-//        Name(Context* context) \
-//            : AbstractNode1(context) \
-//        { \
-//            pins_[0].name_ = Pin0Name; \
-//        } \
-//                                                                                                                       \
-//    private: \
-//        friend class AbstractNode1<Name, Pin0Name, Pin0>; \
-//        template <typename Span0> static void Op(const unsigned numParticles, Span0 pin0) \
-//        { \
-//            for (unsigned index = 0; index < numParticles; ++index) \
-//            {
-//
-//#define URHO3D_PARTICLE_NODE3_BEGIN(Name, Pin0Name, Pin0, Pin1Name, Pin1, Pin2Name, Pin2) \
-//    class URHO3D_API Name : public AbstractNode3<Name, Pin0, Pin1, Pin2> \
-//    { \
-//    public: \
-//        Name(Context* context) \
-//            : AbstractNode3(context) \
-//        { \
-//            pins_[0].SetName(Pin0Name); \
-//            pins_[1].SetName(Pin1Name); \
-//            pins_[2].SetName(Pin2Name); \
-//        } \
-//                                                                                                                       \
-//    private: \
-//        friend class AbstractNode3<Name, Pin0, Pin1, Pin2>; \
-//        template <typename Span0, typename Span1, typename Span2> \
-//        static void Op(const unsigned numParticles, Span0 pin0, Span1 pin1, Span2 pin2) \
-//        { \
-//            for (unsigned index = 0; index < numParticles; ++index) \
-//            {
-//
-//
-//#define URHO3D_PARTICLE_NODE_END() \
-//            } \
-//        } \
-//    };
 
 namespace Urho3D
 {
@@ -81,7 +39,7 @@ template <typename Node, typename Instance, typename Tuple>
 void RunUpdate(UpdateContext& context, Instance* instance, unsigned numParticles,
                ParticleGraphPinRef* pinRefs, Tuple tuple)
 {
-    Node::Op(context, static_cast<typename Node::Instance*>(instance), numParticles, std::move(tuple));
+    Node::Evaluate(context, static_cast<typename Node::Instance*>(instance), numParticles, std::move(tuple));
 };
 
 /// Abstract update runner.
@@ -153,10 +111,10 @@ void RunUpdate(UpdateContext& context, Instance * instance, unsigned numParticle
     }
 };
 /// Abstract node
-template <typename Node, typename... Values> class AbstractNode : public ParticleGraphNode
+template <typename GraphNode, typename... Values> class AbstractNode : public ParticleGraphNode
 {
 protected:
-    typedef AbstractNode<Node, Values...> AbstractNodeType;
+    typedef AbstractNode<GraphNode, Values...> AbstractNodeType;
     static constexpr unsigned NumberOfPins = sizeof...(Values);
     typedef ea::array<ParticleGraphPin, NumberOfPins> PinArray;
 
@@ -184,11 +142,13 @@ public:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(Node* node, ParticleGraphLayerInstance* layer)
+        /// Construct instance.
+        Instance(GraphNode* node, ParticleGraphLayerInstance* layer)
             : node_(node)
+            , layer_(layer)
         {
         }
-
+        /// Update particles.
         void Update(UpdateContext& context) override
         {
             ParticleGraphPinRef pinRefs[NumberOfPins];
@@ -196,13 +156,27 @@ public:
             {
                 pinRefs[i] = node_->pins_[i].GetMemoryReference();
             }
-            RunUpdate<Node, Instance, Values...>(context, this, context.indices_.size(), pinRefs);
+            RunUpdate<GraphNode, Instance, Values...>(context, this, context.indices_.size(), pinRefs);
         }
 
-        Node* GetNodeInstace() { return node_; }
+        /// Get graph node instance.
+        GraphNode* GetGraphNodeInstace() { return node_; }
+        /// Get graph layer instance.
+        ParticleGraphLayerInstance* GetLayerInstance() { return layer_; }
+        /// Get emitter component.
+        ParticleGraphEmitter* GetEmitter() { return layer_->GetEmitter(); }
+        /// Get scene node.
+        Node* GetNode();
+        /// Get engine context.
+        Context* GetContext();
+        /// Get scene.
+        Scene* GetScene();
 
     protected:
-        Node* node_;
+        /// Pointer to graph node instance.
+        GraphNode* node_;
+        /// Pointer to graph layer instance.
+        ParticleGraphLayerInstance* layer_;
     };
 
 public:
@@ -213,12 +187,12 @@ public:
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override { return sizeof(typename Node::Instance); }
+    unsigned EvaluateInstanceSize() override { return sizeof(typename GraphNode::Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
     {
-        return new (ptr) typename Node::Instance(static_cast<Node*>(this), layer);
+        return new (ptr) typename GraphNode::Instance(static_cast<GraphNode*>(this), layer);
     }
 
 protected:
@@ -226,6 +200,23 @@ protected:
     PinArray pins_;
 };
 
+template <typename Node, typename ... Values> Urho3D::Node* AbstractNode<Node, Values...>::Instance::GetNode()
+{
+    const auto* emitter = GetEmitter();
+    return (emitter) ? emitter->GetNode() : nullptr;
+}
+
+template <typename Node, typename ... Values> Context* AbstractNode<Node, Values...>::Instance::GetContext()
+{
+    const auto* emitter = GetEmitter();
+    return (emitter) ? emitter->GetContext() : nullptr;
+}
+
+template <typename Node, typename ... Values> Scene* AbstractNode<Node, Values...>::Instance::GetScene()
+{
+    const auto* emitter = GetEmitter();
+    return (emitter) ? emitter->GetScene() : nullptr;
+}
 
 template <template <typename> typename T, typename ... Args>
 void SelectByVariantType(VariantType variantType, Args... args)

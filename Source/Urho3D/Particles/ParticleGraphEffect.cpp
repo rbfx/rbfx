@@ -34,6 +34,7 @@
 #include "../IO/FileSystem.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/XMLArchive.h"
+#include "Urho3D/IO/Log.h"
 
 namespace Urho3D
 {
@@ -115,7 +116,10 @@ bool ParticleGraphEffect::EndLoad()
     //    return true;
 
     XMLInputArchive archive(loadXMLFile_);
-    return Serialize(archive);
+    const auto res = Serialize(archive);
+    //if (archive.HasError())
+    //    URHO3D_LOGERROR(archive.GetErrorString());
+    return res;
 }
 
 bool ParticleGraphEffect::Save(Serializer& dest) const
@@ -124,7 +128,11 @@ bool ParticleGraphEffect::Save(Serializer& dest) const
     XMLElement graphElem = xml->CreateRoot("particleGraph");
     XMLOutputArchive archive(xml);
     if (!const_cast<ParticleGraphEffect*>(this)->Serialize(archive))
+    {
+        //if (archive.HasError())
+        //    URHO3D_LOGERROR(archive.GetErrorString());
         return false;
+    }
     return xml->Save(dest);
 }
 

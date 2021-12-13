@@ -25,6 +25,7 @@
 #include "../Graphics/Drawable.h"
 #include "../Scene/Component.h"
 #include "ParticleGraphEffect.h"
+#include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {

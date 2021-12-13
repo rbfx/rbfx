@@ -33,6 +33,10 @@
 #include "Urho3D/Graphics/Model.h"
 #include "Urho3D/Particles/ParticleGraphEffect.h"
 #include "Urho3D/Particles/ParticleGraphEmitter.h"
+#include "Urho3D/Physics/CollisionShape.h"
+#include "Urho3D/Physics/PhysicsWorld.h"
+#include <Urho3D/Physics/RigidBody.h>
+
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Graphics/Octree.h>
@@ -75,6 +79,7 @@ void ParticleGraph::CreateScene()
     // Also create a DebugRenderer component so that we can draw debug geometry
     scene_->CreateComponent<Octree>();
     scene_->CreateComponent<DebugRenderer>();
+    scene_->CreateComponent<PhysicsWorld>();
     
     // Create a Zone component for ambient lighting & fog control
     Node* zoneNode = scene_->CreateChild("Zone");
@@ -103,6 +108,10 @@ void ParticleGraph::CreateScene()
             auto* floorObject = floorNode->CreateComponent<StaticModel>();
             floorObject->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
             floorObject->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
+            auto* floorCollider = floorNode->CreateComponent<CollisionShape>();
+            floorCollider->SetBox(Vector3::ONE);
+            auto* floorRigidBody = floorNode->CreateComponent<RigidBody>();
+            floorRigidBody->SetCollisionLayer(2);
         }
     }
 
@@ -126,14 +135,13 @@ void ParticleGraph::CreateScene()
             mushroomObject->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
             mushroomObject->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
             mushroomObject->SetCastShadows(true);
+            auto* body = mushroomNode->CreateComponent<RigidBody>();
+            body->SetCollisionLayer(2);
+            auto* shape = mushroomNode->CreateComponent<CollisionShape>();
+            shape->SetTriangleMesh(mushroomObject->GetModel(), 0);
+
         }
     }
-
-    //{
-    //    auto effect = MakeShared<ParticleGraphEffect>(context_);
-    //    effect->SetName("Particle/SnowExplosionGraph.xml");
-    //    cache->AddManualResource(effect);
-    //}
 
     // Create billboard sets (floating smoke)
     const unsigned NUM_BILLBOARDNODES = 25;

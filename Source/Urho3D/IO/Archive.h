@@ -141,7 +141,7 @@ public:
     /// Return current string stack.
     virtual ea::string GetCurrentStackString() = 0;
     /// Return first error string.
-    virtual ea::string_view GetErrorString() const = 0;
+    virtual const ea::string& GetErrorString() const = 0;
     /// Return first error stack.
     virtual ea::string_view GetErrorStack() const = 0;
 
@@ -252,7 +252,7 @@ public:
     /// Whether the serialization error occurred.
     bool HasError() const final { return hasError_; }
     /// Return first error string.
-    ea::string_view GetErrorString() const final { return errorString_; }
+    const ea::string& GetErrorString() const final { return errorString_; }
     /// Return first error stack.
     ea::string_view GetErrorStack() const final { return errorStack_; }
 

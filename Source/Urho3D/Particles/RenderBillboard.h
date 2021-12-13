@@ -60,7 +60,7 @@ public:
     };
 
     template <typename Tuple>
-    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         instance->Prepare(numParticles);
         auto& pin0 = ea::get<0>(spans);
@@ -94,8 +94,6 @@ protected:
     SharedPtr<Material> material_;
     /// Reference to material.
     ResourceRef materialRef_;
-
-    //friend class AbstractNodeType;
 };
 
 } // namespace ParticleGraphNodes
