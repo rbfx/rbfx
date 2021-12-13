@@ -52,18 +52,24 @@ void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
 RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer)
     : AbstractNodeType::Instance(node, layer)
 {
-    auto emitter = layer->GetEmitter();
-    auto scene = emitter->GetScene();
+    const auto scene = GetScene();
 
-    sceneNode_ = node->isWorldSpace_ ? MakeShared<Node>(scene->GetContext()) : emitter->GetNode();
+    sceneNode_ = MakeShared<Node>(GetContext());
+
     billboardSet_ = sceneNode_->CreateComponent<BillboardSet>();
+    billboardSet_->SetMaterial(node->material_);
     octree_ = scene->GetOrCreateComponent<Octree>();
     octree_->AddManualDrawable(billboardSet_);
 }
 
 RenderBillboard::Instance::~Instance() { octree_->RemoveManualDrawable(billboardSet_); }
+
 void RenderBillboard::Instance::Prepare(unsigned numParticles)
 {
+    if (!GetGraphNodeInstace()->isWorldSpace_)
+    {
+         sceneNode_->SetWorldTransform(GetNode()->GetWorldTransform());
+    }
     unsigned numBillboards = billboardSet_->GetNumBillboards();
     if (numBillboards < numParticles)
     {
