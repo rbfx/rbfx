@@ -96,7 +96,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     {
         indices_[i] = i;
     }
-    destuctionQueue_ = layout.indices_.MakeSpan<unsigned>(attributes_);
+    destuctionQueue_ = layout.destructionQueue_.MakeSpan<unsigned>(attributes_);
 }
 
 bool ParticleGraphLayerInstance::CheckActiveParticles() const { return activeParticles_ != 0; }
@@ -122,6 +122,7 @@ void ParticleGraphLayerInstance::Update(float timeStep)
 {
     auto autoContext = MakeUpdateContext(timeStep);
     RunGraph(updateNodeInstances_, autoContext);
+    DestroyParticles();
 }
 
 unsigned ParticleGraphLayerInstance::GetNumAttributes() const

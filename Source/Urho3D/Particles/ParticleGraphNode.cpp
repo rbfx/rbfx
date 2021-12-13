@@ -138,7 +138,8 @@ ParticleGraphPin* ParticleGraphNode::LoadInputPin(ParticleGraphReader& reader, G
     const auto pin = GetPin(inputPin.GetName());
     if (pin)
     {
-        pin->SetValueType(inputPin.GetType());
+        if (inputPin.GetType() != VAR_NONE)
+            pin->SetValueType(inputPin.GetType());
     }
     else
     {

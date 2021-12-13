@@ -47,9 +47,37 @@ public:
     static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& pin0 = ea::get<0>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+        // Iterate all particles even if all pins are scalar.
+        for (unsigned i = 0; i < context.indices_.size(); ++i)
         {
             if (pin0[i])
+            {
+                context.layer_->MarkForDeletion(i);
+            }
+        }
+    }
+};
+
+/// Destroy expired particles.
+class URHO3D_API Expire : public AbstractNode<Expire, float, float>
+{
+    URHO3D_OBJECT(Expire, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit Expire(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    template <typename Tuple>
+    static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& pin0 = ea::get<0>(spans);
+        auto& pin1 = ea::get<0>(spans);
+        // Iterate all particles even if all pins are scalar.
+        for (unsigned i = 0; i < context.indices_.size(); ++i)
+        {
+            if (pin0[i] >= pin1[i])
             {
                 context.layer_->MarkForDeletion(i);
             }

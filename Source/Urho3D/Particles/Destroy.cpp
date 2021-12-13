@@ -31,13 +31,22 @@ namespace ParticleGraphNodes
 {
 
 Destroy::Destroy(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_INPUT, "delete")})
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_INPUT, "condition")})
 {
 }
 
 void Destroy::RegisterObject(ParticleGraphSystem* context)
 {
     context->RegisterParticleGraphNodeFactory<Destroy>();
+}
+
+Expire::Expire(Context* context)
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_INPUT, "time"), ParticleGraphPin(PGPIN_INPUT, "lifetime")})
+{
+}
+void Expire::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<Expire>();
 }
 
 } // namespace ParticleGraphNodes

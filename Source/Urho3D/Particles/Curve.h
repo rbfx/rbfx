@@ -33,11 +33,20 @@ class ParticleGraphSystem;
 namespace ParticleGraphNodes
 {
 /// Sample curve operator.
-class URHO3D_API Curve : public AbstractNode<Curve, float, float>
+class URHO3D_API Curve : public ParticleGraphNode
 {
     URHO3D_OBJECT(Curve, ParticleGraphNode)
 
 public:
+    class Instance : public ParticleGraphNodeInstance
+    {
+    public:
+        Instance(Curve* node);
+        void Update(UpdateContext& context) override;
+        Curve* GetNodeInstace() { return node_; }
+    protected:
+        Curve* node_;
+    };
     template <typename Tuple>
     static void Op(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
@@ -57,21 +66,34 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
+    /// Get number of pins.
+    unsigned NumPins() const override { return 2; }
+
+    /// Get pin by index.
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
+
     float GetDuration() const { return duration_; }
     void SetDuration(float duration) { duration_ = duration; }
     bool IsLooped() const { return isLooped_; }
     void SetLooped(bool isLooped) { isLooped_ = isLooped; }
     const VariantCurve& GetCurve() const { return curve_; }
-    void SetCurve(const VariantCurve& curve) { curve_ = curve; }
+    void SetCurve(const VariantCurve& curve);
 
     Variant Sample(float time) const;
 
     VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
 
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() override;
+
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
 private:
     float duration_;
     bool isLooped_;
     VariantCurve curve_;
+    ParticleGraphPin pins_[2];
 };
 
 

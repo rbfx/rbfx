@@ -25,15 +25,45 @@
 
 namespace Urho3D
 {
+
 namespace ParticleGraphNodes
 {
+
+namespace
+{
+template <typename T> struct DispatchUpdate
+{
+    void operator()(UpdateContext& context, Curve::Instance* instance, ParticleGraphPinRef* pinRefs)
+    {
+        RunUpdate<Curve, Curve::Instance, float, T>(context, instance, context.indices_.size(), pinRefs);
+    }
+};
+} // namespace
+
+Curve::Instance::Instance(Curve* node)
+    :node_(node)
+{
+}
+
+void Curve::Instance::Update(UpdateContext& context)
+{
+    ParticleGraphPinRef pinRefs[2];
+    for (unsigned i = 0; i < 2; ++i)
+    {
+        pinRefs[i] = node_->pins_[i].GetMemoryReference();
+    }
+    SelectByVariantType<DispatchUpdate>(node_->pins_[1].GetValueType(), context, this, pinRefs);
+    
+}
+
 Curve::Curve(Context* context)
-    : AbstractNodeType(context, PinArray{
-                                    ParticleGraphPin(PGPIN_INPUT, "t"),
-                                    ParticleGraphPin(PGPIN_NONE, "out"),
-                                })
+    : ParticleGraphNode(context)
     , duration_(1)
     , isLooped_(false)
+    , pins_{
+        ParticleGraphPin(PGPIN_INPUT, "t", VAR_FLOAT),
+        ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")
+    }
 {
 }
 
@@ -46,6 +76,12 @@ void Curve::RegisterObject(ParticleGraphSystem* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Curve", GetCurve, SetCurve, VariantCurve, VariantCurve(), AM_DEFAULT);
 }
 
+void Curve::SetCurve(const VariantCurve& curve)
+{
+    curve_ = curve;
+    SetPinValueType(1, curve_.GetType());
+}
+
 Variant Curve::Sample(float time) const
 {
     unsigned frameIndex;
@@ -56,6 +92,17 @@ VariantType Curve::EvaluateOutputPinType(ParticleGraphPin& pin)
 {
     return curve_.GetType();
 }
+
+unsigned Curve::EvaluateInstanceSize()
+{
+    return sizeof(Instance);
+}
+
+ParticleGraphNodeInstance* Curve::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    return new (ptr) Instance(this);
+}
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

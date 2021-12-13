@@ -24,6 +24,7 @@
 
 #include "ParticleGraphLayer.h"
 #include "ParticleGraphNodeInstance.h"
+#include <EASTL/sort.h>
 
 namespace Urho3D
 {
@@ -82,6 +83,9 @@ protected:
     /// Run graph.
     void RunGraph(ea::span<ParticleGraphNodeInstance*>& nodes, UpdateContext& updateContext);
 
+    /// Destroy particles.
+    void DestroyParticles();
+
 private:
     /// Memory used to store all layer related arrays: nodes, indices, attributes.
     ea::vector<uint8_t> attributes_;
@@ -107,6 +111,21 @@ private:
 
     friend class ParticleGraphEmitter;
 };
+
+inline void ParticleGraphLayerInstance::DestroyParticles()
+{
+    if (!destuctionQueueSize_)
+        return;
+    auto queue = destuctionQueue_.subspan(0, destuctionQueueSize_);
+    ea::sort(queue.begin(), queue.end(), ea::greater<float>());
+    //TODO: Eliminate duplicates.
+    for (unsigned index: queue)
+    {
+        ea::swap(indices_[index], indices_[activeParticles_ - 1]);
+        --activeParticles_;
+    }
+    destuctionQueueSize_ = 0;
+}
 
 /// Get attribute values.
 template <typename T> inline SparseSpan<T> ParticleGraphLayerInstance::GetAttributeValues(unsigned attributeIndex)

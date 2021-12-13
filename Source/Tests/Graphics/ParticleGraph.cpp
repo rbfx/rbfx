@@ -128,8 +128,15 @@ TEST_CASE("Test simple particle graph")
         log->SetPinSource(0, getIndex);
         auto logIndex = updateGraph.Add(log);
 
+        auto ct = MakeShared<ParticleGraphNodes::Constant>(context);
+        ct->SetValue(0.0f);
+        auto constTIndex = updateGraph.Add(ct);
+
         auto curve = MakeShared<ParticleGraphNodes::Curve>(context);
-        curve->SetPinSource(0, getIndex);
+        VariantCurve variantCurve;
+        variantCurve.AddKeyFrame(VariantCurvePoint{0.0f, Vector3(0,1,2)});
+        curve->SetCurve(variantCurve);
+        curve->SetPinSource(0, constTIndex);
         auto curveIndex = updateGraph.Add(curve);
 
         auto render = MakeShared<ParticleGraphNodes::RenderBillboard>(context);
@@ -205,4 +212,43 @@ TEST_CASE("Test const")
     REQUIRE(emitter->GetLayer(0)->GetNumAttributes() > 0);
     auto attributeSpan = emitter->GetLayer(0)->GetAttributeValues<Vector3>(0);
     CHECK(attributeSpan[0] == Vector3(1, 2, 3));
+}
+
+TEST_CASE("Test Expire")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    const auto effect = MakeShared<ParticleGraphEffect>(context);
+    auto xml = R"(<particleGraphEffect>
+	<layer type="ParticleGraphLayer" capacity="10">
+		<emit>
+			<nodes>
+			</nodes>
+		</emit>
+		<update>
+			<nodes>
+				<node id="1" name="Expire">
+					<pins>
+						<pin name="time" type="float" value="1" />
+						<pin name="lifetime" type="float" value="1" />
+					</pins>
+				</node>
+			</nodes>
+		</update>
+	</layer>
+</particleGraphEffect>)";
+    REQUIRE(effect->Load(MemoryBuffer(xml)));
+
+    const auto scene = MakeShared<Scene>(context);
+    const auto node = scene->CreateChild();
+    auto emitter = node->CreateComponent<ParticleGraphEmitter>();
+    emitter->SetEffect(effect);
+    REQUIRE(emitter->EmitNewParticle(0));
+    REQUIRE(emitter->EmitNewParticle(0));
+    REQUIRE(emitter->EmitNewParticle(0));
+    CHECK(emitter->GetLayer(0)->CheckActiveParticles());
+
+    Tests::RunFrame(context, 0.1f, 0.1f);
+
+    CHECK(!emitter->GetLayer(0)->CheckActiveParticles());
 }

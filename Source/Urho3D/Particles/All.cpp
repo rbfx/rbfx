@@ -47,6 +47,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Curve::RegisterObject(system);
     Print::RegisterObject(system);
     Destroy::RegisterObject(system);
+    Expire::RegisterObject(system);
     RenderBillboard::RegisterObject(system);
 
     Add::RegisterObject(system);

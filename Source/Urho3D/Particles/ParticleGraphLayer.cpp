@@ -137,7 +137,9 @@ struct ParticleGraphAttributeBuilder
                 }
                 else if (pin.requestedValueType_ != sourcePin.valueType_)
                 {
-                    URHO3D_LOGERROR("Source pin type doesn't match input pin type");
+                    URHO3D_LOGERROR("Source pin {}.{} type {} doesn't match input pin {}.{} type {}",
+                                    sourceNode->GetTypeName(), sourcePin.GetName(), sourcePin.GetValueType(),
+                                    node->GetTypeName(), pin.GetName(), pin.GetRequestedType());
                     return false;
                 }
             }
