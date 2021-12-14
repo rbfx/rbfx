@@ -52,7 +52,9 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     RenderBillboard::RegisterObject(system);
 
     Add::RegisterObject(system);
+    Subtract::RegisterObject(system);
     Multiply::RegisterObject(system);
+    Divide::RegisterObject(system);
     Slerp::RegisterObject(system);
 
     TimeStep::RegisterObject(system);

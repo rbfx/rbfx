@@ -31,6 +31,33 @@ namespace Urho3D
 
 namespace ParticleGraphNodes
 {
+
+namespace
+{
+const static ea::vector<BinaryOperatorPermutation> AddPins{
+    BinaryOperatorPermutation::Make<Add, float, float, float>(),
+    BinaryOperatorPermutation::Make<Add, Vector2, Vector2, Vector2>(),
+    BinaryOperatorPermutation::Make<Add, Vector3, Vector3, Vector3>(),
+    BinaryOperatorPermutation::Make<Add, Vector4, Vector4, Vector4>(),
+};
+
+const static ea::vector<BinaryOperatorPermutation> SubtractPins{
+    BinaryOperatorPermutation::Make<Subtract, float, float, float>(),
+    BinaryOperatorPermutation::Make<Subtract, Vector2, Vector2, Vector2>(),
+    BinaryOperatorPermutation::Make<Subtract, Vector3, Vector3, Vector3>(),
+    BinaryOperatorPermutation::Make<Subtract, Vector4, Vector4, Vector4>(),
+};
+
+const static ea::vector<BinaryOperatorPermutation> MultiplyPins{
+    BinaryOperatorPermutation::Make<Multiply, float, float, float>(),
+};
+
+const static ea::vector<BinaryOperatorPermutation> DividePins{
+    BinaryOperatorPermutation::Make<Divide, float, float, float>(),
+};
+
+}
+
 BinaryOperatorPermutation::BinaryOperatorPermutation(VariantType x, VariantType y, VariantType out, Lambda lambda)
     : x_(x)
     , y_(y)
@@ -49,9 +76,9 @@ void BinaryMathOperator::Instance::Update(UpdateContext& context)
     operator_->Update(context);
 }
 
-BinaryMathOperator::BinaryMathOperator(Context* context, ea::vector<BinaryOperatorPermutation>&& permutations)
+BinaryMathOperator::BinaryMathOperator(Context* context, const ea::vector<BinaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
-    , permutations_(ea::move(permutations))
+    , permutations_(permutations)
     , pins_{
         ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "x"),
           ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "y"),
@@ -79,7 +106,7 @@ ParticleGraphNodeInstance* BinaryMathOperator::CreateInstanceAt(void* ptr, Parti
 
 VariantType BinaryMathOperator::EvaluateOutputPinType(ParticleGraphPin& pin)
 {
-    for (BinaryOperatorPermutation& p: permutations_)
+    for (const BinaryOperatorPermutation& p: permutations_)
     {
         if (p.x_ == pins_[0].GetValueType() && p.y_ == pins_[1].GetValueType())
         {
@@ -97,7 +124,7 @@ void BinaryMathOperator::Update(UpdateContext& context)
         pinRefs[i] = pins_[i].GetMemoryReference();
     }
 
-    for (BinaryOperatorPermutation& p : permutations_)
+    for (const BinaryOperatorPermutation& p : permutations_)
     {
         if (p.x_ == pins_[0].GetValueType() && p.y_ == pins_[1].GetValueType())
         {
@@ -107,13 +134,7 @@ void BinaryMathOperator::Update(UpdateContext& context)
 }
 
 Add::Add(Context* context)
-    : BinaryMathOperator(context,
-        {
-            BinaryOperatorPermutation::Make<Add,float, float, float>(),
-                                      BinaryOperatorPermutation::Make<Add, Vector2, Vector2, Vector2>(),
-                                      BinaryOperatorPermutation::Make<Add, Vector3, Vector3, Vector3>(),
-                                      BinaryOperatorPermutation::Make<Add, Vector4, Vector4, Vector4>(),
-                                  })
+    : BinaryMathOperator(context, AddPins)
 {
 }
 
@@ -122,14 +143,28 @@ void Add::RegisterObject(ParticleGraphSystem* context)
     context->RegisterParticleGraphNodeFactory<Add>();
 }
 
+
+Subtract::Subtract(Context* context)
+    : BinaryMathOperator(context, SubtractPins)
+{
+}
+
+void Subtract::RegisterObject(ParticleGraphSystem* context) { context->RegisterParticleGraphNodeFactory<Subtract>(); }
+
+
 Multiply::Multiply(Context* context)
-    : BinaryMathOperator(context, {
-                                      BinaryOperatorPermutation::Make<Multiply, float, float, float>(),
-                                  })
+    : BinaryMathOperator(context, MultiplyPins)
 {
 }
 
 void Multiply::RegisterObject(ParticleGraphSystem* context) { context->RegisterParticleGraphNodeFactory<Multiply>(); }
+
+Divide::Divide(Context* context)
+    : BinaryMathOperator(context, DividePins)
+{
+}
+
+void Divide::RegisterObject(ParticleGraphSystem* context) { context->RegisterParticleGraphNodeFactory<Divide>(); }
 
 Slerp::Slerp(Context* context)
     : AbstractNodeType(context, PinArray{

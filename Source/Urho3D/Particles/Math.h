@@ -68,7 +68,7 @@ public:
     };
 
     /// Construct.
-    explicit BinaryMathOperator(Context* context, ea::vector<BinaryOperatorPermutation>&& permutations);
+    explicit BinaryMathOperator(Context* context, const ea::vector<BinaryOperatorPermutation>& permutations);
 
     /// Get number of pins.
     unsigned NumPins() const override;
@@ -91,7 +91,7 @@ protected:
     void Update(UpdateContext& context);
 
 protected:
-    ea::vector<BinaryOperatorPermutation> permutations_;
+    const ea::vector<BinaryOperatorPermutation>& permutations_;
     ParticleGraphPin pins_[3];
 };
 
@@ -121,7 +121,33 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 };
 
-/// Add operator.
+/// Subtract operator.
+class URHO3D_API Subtract : public BinaryMathOperator
+{
+    URHO3D_OBJECT(Subtract, ParticleGraphNode)
+
+public:
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& x = ea::get<0>(spans);
+        auto& y = ea::get<1>(spans);
+        auto& out = ea::get<2>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = x[i] - y[i];
+        }
+    }
+
+public:
+    /// Construct.
+    explicit Subtract(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+};
+
+/// Multiply operator.
 class URHO3D_API Multiply : public BinaryMathOperator
 {
     URHO3D_OBJECT(Multiply, ParticleGraphNode)
@@ -142,6 +168,33 @@ public:
 public:
     /// Construct.
     explicit Multiply(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+};
+
+
+/// Divide operator.
+class URHO3D_API Divide : public BinaryMathOperator
+{
+    URHO3D_OBJECT(Divide, ParticleGraphNode)
+
+public:
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& x = ea::get<0>(spans);
+        auto& y = ea::get<1>(spans);
+        auto& out = ea::get<2>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = x[i] / y[i];
+        }
+    }
+
+public:
+    /// Construct.
+    explicit Divide(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
