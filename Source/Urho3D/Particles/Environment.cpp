@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "Environment.h"
 
 #include "Helpers.h"

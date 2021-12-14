@@ -63,6 +63,8 @@ private:
     StringHash nameHash_;
 };
 
+bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value);
+
 /// Graph node.
 class URHO3D_API GraphNode : public Object
 {
@@ -191,6 +193,5 @@ private:
 
     friend class Graph;
 };
-
 
 } // namespace Urho3D

@@ -90,7 +90,7 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper
 namespace
 {
 
-static char* DirectionEnumConstants[]{"In", "Out", "Enter", "Exit", nullptr};
+static const char* DirectionEnumConstants[]{"In", "Out", "Enter", "Exit", nullptr};
 
 template <typename T, size_t nodeCount>
 GraphNodeMapHelper<T, nodeCount> MakeMapHelper(ea::fixed_vector<T, nodeCount>& vector)
@@ -98,6 +98,7 @@ GraphNodeMapHelper<T, nodeCount> MakeMapHelper(ea::fixed_vector<T, nodeCount>& v
     return GraphNodeMapHelper<T, nodeCount>(vector);
 }
 
+}
 
 bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value)
 {
@@ -106,9 +107,6 @@ bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value
         return value.Serialize(archive);
     }
     return false;
-}
-
-
 }
 
 bool GraphNodeProperty::Serialize(Archive& archive)

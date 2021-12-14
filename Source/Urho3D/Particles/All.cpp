@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "ParticleGraphSystem.h"
 #include "All.h"
 
