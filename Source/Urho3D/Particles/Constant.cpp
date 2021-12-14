@@ -72,6 +72,15 @@ void Constant::Instance::Update(UpdateContext& context)
     const auto& pin0 = node_->pins_[0];
     switch (node_->value_.GetType())
     {
+    case VAR_INT:
+        context.GetScalar<int>(pin0.GetMemoryReference())[0] = node_->value_.GetInt();
+        break;
+    case VAR_BOOL:
+        context.GetScalar<bool>(pin0.GetMemoryReference())[0] = node_->value_.GetBool();
+        break;
+    case VAR_INT64:
+        context.GetScalar<long long>(pin0.GetMemoryReference())[0] = node_->value_.GetInt64();
+        break;
     case VAR_FLOAT:
         context.GetScalar<float>(pin0.GetMemoryReference())[0] = node_->value_.GetFloat();
         break;
@@ -83,6 +92,12 @@ void Constant::Instance::Update(UpdateContext& context)
         break;
     case VAR_VECTOR4:
         context.GetScalar<Vector4>(pin0.GetMemoryReference())[0] = node_->value_.GetVector4();
+        break;
+    case VAR_COLOR:
+        context.GetScalar<Color>(pin0.GetMemoryReference())[0] = node_->value_.GetColor();
+        break;
+    case VAR_VARIANTCURVE:
+        context.GetScalar<const VariantCurve*>(pin0.GetMemoryReference())[0] = &node_->value_.GetVariantCurve();
         break;
     default:
         assert(!"Not implemented yet");

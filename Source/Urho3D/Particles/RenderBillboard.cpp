@@ -36,10 +36,13 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 RenderBillboard::RenderBillboard(Context* context)
-    : AbstractNodeType(context, PinArray{
-        ParticleGraphPin(PGPIN_INPUT, "pos"),
-        ParticleGraphPin(PGPIN_INPUT, "size"),
-        ParticleGraphPin(PGPIN_INPUT, "frame")})
+    : AbstractNodeType(context,
+                       PinArray{
+                           ParticleGraphPin(PGPIN_INPUT, "pos"),
+                           ParticleGraphPin(PGPIN_INPUT, "size"),
+                           ParticleGraphPin(PGPIN_INPUT, "frame"),
+                           ParticleGraphPin(PGPIN_INPUT, "color"),
+                       })
     , isWorldSpace_(false)
 {
 }
@@ -88,12 +91,13 @@ void RenderBillboard::Instance::Prepare(unsigned numParticles)
     }
 }
 
-void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex)
+void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color)
 {
     auto* billboard = billboardSet_->GetBillboard(index);
     billboard->enabled_ = true;
     billboard->position_ = pos;
     billboard->size_ = size;
+    billboard->color_ = color;
     unsigned frame = frameIndex;
     unsigned x = frame % node_->columns_;
     unsigned y = (frame / node_->columns_) % node_->rows_;

@@ -117,7 +117,7 @@ void RenderActionAttribute(Serializable* serializable, const AttributeInfo& info
 
     static Variant label;
     serializable->OnGetAttribute(info, label);
-    ui::Text(label.GetString().c_str());
+    ui::Text("%s", label.GetString().c_str());
 }
 
 bool RenderResourceRef(ResourceRef& ref, Object* eventSender)

@@ -124,6 +124,14 @@ TEST_CASE("Test simple particle graph")
         c->SetValue(Vector2(1, 2));
         auto constIndex = updateGraph.Add(c);
 
+        auto frame = MakeShared<ParticleGraphNodes::Constant>(context);
+        frame->SetValue(0.0f);
+        auto frameIndex = updateGraph.Add(frame);
+
+        auto color = MakeShared<ParticleGraphNodes::Constant>(context);
+        color->SetValue(Color(1.0f, 1.0f, 1.0f, 1.0f));
+        auto colorIndex = updateGraph.Add(color);
+
         auto log = MakeShared<ParticleGraphNodes::Print>(context);
         log->SetPinSource(0, getIndex);
         auto logIndex = updateGraph.Add(log);
@@ -143,6 +151,8 @@ TEST_CASE("Test simple particle graph")
         render->SetMaterial(material);
         render->SetPinSource(0, curveIndex, 1);
         render->SetPinSource(1, constIndex);
+        render->SetPinSource(2, frameIndex);
+        render->SetPinSource(3, colorIndex);
         auto renderIndex = updateGraph.Add(render);
 
     }

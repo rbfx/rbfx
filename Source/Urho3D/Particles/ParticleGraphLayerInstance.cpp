@@ -241,7 +241,8 @@ void ParticleGraphLayerInstance::RunGraph(ea::span<ParticleGraphNodeInstance*>& 
     template Span<IntVector3> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                 \
     template Span<Matrix3> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
     template Span<Matrix3x4> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                  \
-    template Span<Matrix4> UpdateContext::FuncName(const ParticleGraphPinRef& pin)
+    template Span<Matrix4> UpdateContext::FuncName(const ParticleGraphPinRef& pin);                                    \
+    template Span<const VariantCurve*> UpdateContext::FuncName(const ParticleGraphPinRef& pin);
 
 InstantiateSpan(ea::span, GetSpan);
 InstantiateSpan(ScalarSpan, GetScalar);
