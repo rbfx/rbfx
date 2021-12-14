@@ -277,6 +277,13 @@ inline bool SerializeValue(Archive& archive, const char* name, Vector4& value)
     return Detail::SerializeArrayType<4>(archive, name, value);
 }
 
+class GraphNodeProperty;
+
+inline bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value)
+{
+    return true;
+}
+
 /// Serialize Matrix3.
 inline bool SerializeValue(Archive& archive, const char* name, Matrix3& value)
 {

@@ -111,7 +111,7 @@ public:
     bool ConnectTo(GraphOutPin& pin);
 
     /// Get pin connected to the current pin.
-    GraphOutPin* GraphInPin::GetConnectedPin() const;
+    GraphOutPin* GetConnectedPin() const;
 
     /// Get true if pin is connected.
     bool GetConnected() const { return targetNode_; }

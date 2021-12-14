@@ -55,7 +55,7 @@ public:
         auto& out = ea::get<1>(spans);
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            out[i] = node->Sample(t[i]).Get<ea::remove_reference_t<decltype(out[0])>>();
+            out[i] = node->Sample(t[i]).template Get<ea::remove_reference_t<decltype(out[0])>>();
         }
     }
 

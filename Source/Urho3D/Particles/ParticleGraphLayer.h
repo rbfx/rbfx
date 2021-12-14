@@ -124,7 +124,7 @@ public:
     unsigned GetTempBufferSize() const;
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive);
+    bool Serialize(Archive& archive) override;
 
 private:
     /// is the effect committed.
