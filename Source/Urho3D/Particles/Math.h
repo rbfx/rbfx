@@ -121,6 +121,31 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 };
 
+/// Add operator.
+class URHO3D_API Multiply : public BinaryMathOperator
+{
+    URHO3D_OBJECT(Multiply, ParticleGraphNode)
+
+public:
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& x = ea::get<0>(spans);
+        auto& y = ea::get<1>(spans);
+        auto& out = ea::get<2>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = x[i] * y[i];
+        }
+    }
+
+public:
+    /// Construct.
+    explicit Multiply(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+};
 
 /// Slerp operator.
 class URHO3D_API Slerp : public AbstractNode<Slerp, Quaternion, Quaternion, float, Quaternion>

@@ -122,6 +122,15 @@ void Add::RegisterObject(ParticleGraphSystem* context)
     context->RegisterParticleGraphNodeFactory<Add>();
 }
 
+Multiply::Multiply(Context* context)
+    : BinaryMathOperator(context, {
+                                      BinaryOperatorPermutation::Make<Multiply, float, float, float>(),
+                                  })
+{
+}
+
+void Multiply::RegisterObject(ParticleGraphSystem* context) { context->RegisterParticleGraphNodeFactory<Multiply>(); }
+
 Slerp::Slerp(Context* context)
     : AbstractNodeType(context, PinArray{
                                     ParticleGraphPin(PGPIN_INPUT, "x"),

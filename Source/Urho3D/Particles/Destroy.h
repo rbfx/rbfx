@@ -73,7 +73,7 @@ public:
     static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& pin0 = ea::get<0>(spans);
-        auto& pin1 = ea::get<0>(spans);
+        auto& pin1 = ea::get<1>(spans);
         // Iterate all particles even if all pins are scalar.
         for (unsigned i = 0; i < context.indices_.size(); ++i)
         {

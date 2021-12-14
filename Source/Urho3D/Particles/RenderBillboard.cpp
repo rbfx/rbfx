@@ -36,7 +36,10 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 RenderBillboard::RenderBillboard(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_INPUT, "pos"), ParticleGraphPin(PGPIN_INPUT, "size")})
+    : AbstractNodeType(context, PinArray{
+        ParticleGraphPin(PGPIN_INPUT, "pos"),
+        ParticleGraphPin(PGPIN_INPUT, "size"),
+        ParticleGraphPin(PGPIN_INPUT, "frame")})
     , isWorldSpace_(false)
 {
 }
@@ -47,6 +50,8 @@ void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef,
                                     ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Rows", GetRows, SetRows, unsigned, 1, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Columns", GetColumns, SetColumns, unsigned, 1, AM_DEFAULT);
 }
 
 RenderBillboard::Instance::Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer)
@@ -83,12 +88,18 @@ void RenderBillboard::Instance::Prepare(unsigned numParticles)
     }
 }
 
-void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size)
+void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex)
 {
     auto* billboard = billboardSet_->GetBillboard(index);
     billboard->enabled_ = true;
     billboard->position_ = pos;
     billboard->size_ = size;
+    unsigned frame = frameIndex;
+    unsigned x = frame % node_->columns_;
+    unsigned y = (frame / node_->columns_) % node_->rows_;
+    auto uvMin = Vector2(x, y) * node_->uvTileSize_;
+    auto uvMax = uvMin + node_->uvTileSize_;
+    billboard->uv_ = Rect(uvMin, uvMax);
 }
 
 void RenderBillboard::Instance::Commit() { billboardSet_->Commit(); }
@@ -123,6 +134,32 @@ ResourceRef RenderBillboard::GetMaterialAttr() const
     return materialRef_;
 }
 
+void RenderBillboard::SetRows(unsigned value)
+{
+    rows_ = ea::max(1u, value);
+    UpdateUV();
+}
+
+unsigned RenderBillboard::GetRows() const
+{
+    return rows_;
+}
+
+void RenderBillboard::SetColumns(unsigned value)
+{
+    columns_ = ea::max(1u, value);
+    UpdateUV();
+}
+
+unsigned RenderBillboard::GetColumns() const
+{
+    return columns_;
+}
+
+void RenderBillboard::UpdateUV()
+{
+    uvTileSize_ = Vector2(1.0f / columns_, 1.0f / rows_);
+}
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

@@ -169,8 +169,7 @@ struct ParticleGraphAttributeBuilder
                     auto containerType = pin.containerType_;
                     if (containerType == PGCONTAINER_AUTO)
                         containerType = defaultOutputType;
-                    pin.memory_ = ParticleGraphPinRef(
-                        containerType, tempBufferLayout_.Allocate(containerType, pin.requestedValueType_));
+                    pin.memory_ = ParticleGraphPinRef(containerType, tempBufferLayout_.Allocate(containerType, pin.valueType_));
                 }
             }
         }

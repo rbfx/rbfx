@@ -145,5 +145,15 @@ void SetAttribute::Instance::Update(UpdateContext& context)
     SelectByVariantType<CopyValues>(pin0.GetValueType(), context, pin0, pin1);
 };
 
+ParticleTime::ParticleTime(Context* context)
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "time", PGCONTAINER_SPARSE)})
+{
+}
+
+void ParticleTime::RegisterObject(ParticleGraphSystem* context)
+{
+    context->RegisterParticleGraphNodeFactory<ParticleTime>();
+}
+
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

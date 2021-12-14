@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "Helpers.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
 
@@ -34,7 +35,7 @@ namespace ParticleGraphNodes
 /// Operation on attribute
 class URHO3D_API Attribute : public ParticleGraphNode
 {
-    URHO3D_OBJECT(Attribute, ParticleGraphNode);
+    URHO3D_OBJECT(Attribute, ParticleGraphNode)
 
 protected:
     /// Construct.
@@ -62,7 +63,7 @@ public:
 /// Get particle attribute value.
 class URHO3D_API GetAttribute : public Attribute
 {
-    URHO3D_OBJECT(GetAttribute, Attribute);
+    URHO3D_OBJECT(GetAttribute, Attribute)
 
 protected:
     class Instance : public ParticleGraphNodeInstance
@@ -144,6 +145,30 @@ protected:
     
     /// Pins
     ParticleGraphPin pins_[2];
+};
+
+/// Get time step of the current frame.
+class URHO3D_API ParticleTime : public AbstractNode<ParticleTime, float>
+{
+    URHO3D_OBJECT(ParticleTime, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit ParticleTime(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    /// Update and return particle time.
+    /// @nobind
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& pin0 = ea::get<0>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            pin0[i] += context.timeStep_;
+        }
+    }
 };
 
 } // namespace ParticleGraphNodes

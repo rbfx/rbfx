@@ -33,7 +33,7 @@ namespace ParticleGraphNodes
 {
 
 /// Render billboard
-class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3, Vector2>
+class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3, Vector2, float>
 {
     URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
@@ -49,11 +49,10 @@ public:
         Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer);
         ~Instance() override;
         void Prepare(unsigned numParticles);
-        void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size);
+        void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex);
         void Commit();
 
     protected:
-        RenderBillboard* node_;
         SharedPtr<Urho3D::Node> sceneNode_;
         SharedPtr<Urho3D::BillboardSet> billboardSet_;
         SharedPtr<Urho3D::Octree> octree_;
@@ -65,9 +64,10 @@ public:
         instance->Prepare(numParticles);
         auto& pin0 = ea::get<0>(spans);
         auto& pin1 = ea::get<1>(spans);
+        auto& frame = ea::get<2>(spans);
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            instance->UpdateParticle(i, pin0[i], pin1[i]);
+            instance->UpdateParticle(i, pin0[i], pin1[i], frame[i]);
         }
         instance->Commit();
     }
@@ -87,13 +87,36 @@ public:
     /// Set material attribute.
     ResourceRef GetMaterialAttr() const;
 
+    /// Set number of rows in a sprite sheet.
+    /// @property
+    void SetRows(unsigned value);
+    /// Get number of rows in a sprite sheet.
+    /// @property 
+    unsigned GetRows() const;
+
+    /// Set number of columns in a sprite sheet.
+    /// @property
+    void SetColumns(unsigned value);
+    /// Get number of columns in a sprite sheet.
+    /// @property
+    unsigned GetColumns() const;
+
 protected:
+    /// Update sprite sheet uv.
+    void UpdateUV();
+
     /// Is the billboards attached to the node or rendered in a absolute world space coordinates.
     bool isWorldSpace_;
     /// Selected material.
     SharedPtr<Material> material_;
     /// Reference to material.
     ResourceRef materialRef_;
+    /// Number of rows in a sprite sheet.
+    unsigned rows_{1};
+    /// Number of columns in a sprite sheet.
+    unsigned columns_{1};
+    /// Sprite sheet tile size.
+    Vector2 uvTileSize_;
 };
 
 } // namespace ParticleGraphNodes
