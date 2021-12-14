@@ -63,6 +63,7 @@ private:
     StringHash nameHash_;
 };
 
+/// Serialize GraphNodeProperty.
 bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value);
 
 /// Graph node.
