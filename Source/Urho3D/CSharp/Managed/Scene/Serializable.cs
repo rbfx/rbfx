@@ -440,7 +440,7 @@ namespace Urho3DNet
     {
         private static StringList _emptyStringList = new StringList();
 
-        protected void OnSetupInstance()
+        public void RegisterAttributes()
         {
             Type type = GetType();
             Type serializableType = typeof(Serializable);
@@ -448,10 +448,7 @@ namespace Urho3DNet
             if (type.Assembly == serializableType.Assembly || !type.IsSubclassOf(serializableType))
                 return;
 
-            AttributeMap allAttributes = Context.AllAttributes;
-            // And only once per type.
-            if (allAttributes.ContainsKey(GetTypeHash()))
-                return;
+            ObjectReflection reflection = Context.GetReflection(GetTypeHash());
 
             // Register field attributes of this class
             foreach (FieldInfo field in type.GetFields(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic))
@@ -500,7 +497,7 @@ namespace Urho3DNet
                 string attributeName = attribute?.Name ?? field.Name;
                 var info = new AttributeInfo(accessor.VariantType, attributeName, accessor, enumNames, defaultValue,
                     attribute?.Mode ?? AttributeMode.AmDefault);
-                Context.RegisterAttribute(GetTypeHash(), info);
+                reflection.AddAttribute(info);
             }
 
             // Register property attributes of this class
@@ -559,7 +556,7 @@ namespace Urho3DNet
                 string attributeName = attribute?.Name ?? property.Name;
                 var info = new AttributeInfo(accessor.VariantType, attributeName, accessor, enumNames, defaultValue,
                     attribute?.Mode ?? AttributeMode.AmDefault);
-                Context.RegisterAttribute(GetTypeHash(), info);
+                reflection.AddAttribute(info);
             }
         }
     }

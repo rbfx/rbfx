@@ -54,7 +54,8 @@ Ragdolls::Ragdolls(Context* context) :
     drawDebug_(false)
 {
     // Register an object factory for our custom CreateRagdoll component so that we can create them to scene nodes
-    context->RegisterFactory<CreateRagdoll>();
+    if (!context->IsReflected<CreateRagdoll>())
+        context->AddReflection<CreateRagdoll>();
 }
 
 void Ragdolls::Start()

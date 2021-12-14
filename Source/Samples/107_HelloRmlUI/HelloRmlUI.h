@@ -70,8 +70,6 @@ public:
     explicit HelloRmlUI(Context* context);
     /// Setup after engine initialization and before running the main loop.
     void Start() override;
-    /// Tear down any state that would pollute next initialization of the sample.
-    void Stop() override;
 
 private:
     /// Initialize 3D scene.

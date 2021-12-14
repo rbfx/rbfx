@@ -56,7 +56,8 @@ VehicleDemo::VehicleDemo(Context* context) :
     Sample(context)
 {
     // Register factory and attributes for the Vehicle component so it can be created via CreateComponent, and loaded / saved
-    Vehicle::RegisterObject(context);
+    if (!context->IsReflected<Vehicle>())
+        Vehicle::RegisterObject(context);
 }
 
 void VehicleDemo::Start()

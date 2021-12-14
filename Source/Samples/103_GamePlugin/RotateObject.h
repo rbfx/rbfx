@@ -51,7 +51,7 @@ public:
 
     static void RegisterObject(Context* context, PluginApplication* plugin)
     {
-        plugin->RegisterFactory<RotateObject>("User Components");
+        plugin->AddReflection<RotateObject>("User Components");
         URHO3D_ATTRIBUTE("Animate", bool, animate_, true, AM_EDIT);
     }
 
