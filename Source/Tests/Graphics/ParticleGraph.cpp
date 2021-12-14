@@ -199,7 +199,8 @@ TEST_CASE("Test const")
 		</update>
 	</layer>
 </particleGraphEffect>)";
-    REQUIRE(effect->Load(MemoryBuffer(xml)));
+    MemoryBuffer buffer(xml);
+    REQUIRE(effect->Load(buffer));
 
     const auto scene = MakeShared<Scene>(context);
     const auto node = scene->CreateChild();
@@ -237,7 +238,8 @@ TEST_CASE("Test Expire")
 		</update>
 	</layer>
 </particleGraphEffect>)";
-    REQUIRE(effect->Load(MemoryBuffer(xml)));
+    MemoryBuffer buffer(xml);
+    REQUIRE(effect->Load(buffer));
 
     const auto scene = MakeShared<Scene>(context);
     const auto node = scene->CreateChild();
