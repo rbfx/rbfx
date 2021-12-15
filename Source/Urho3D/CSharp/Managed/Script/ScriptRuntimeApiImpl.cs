@@ -56,7 +56,7 @@ namespace Urho3DNet
             return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
         }
 
-        public override int LoadAssembly(string path)
+        public override IntPtr LoadAssembly(string path)
         {
             Assembly assembly;
             try
@@ -65,9 +65,9 @@ namespace Urho3DNet
             }
             catch (Exception)
             {
-                return 0;
+                return IntPtr.Zero;
             }
-            return GCHandle.ToIntPtr(GCHandle.Alloc(assembly)).ToInt32();
+            return GCHandle.ToIntPtr(GCHandle.Alloc(assembly));
         }
 
         public override void Dispose(RefCounted instance)
