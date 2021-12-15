@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "../Container/Hash.h"
 #include "../Core/VariantCurve.h"
 #include "../IO/Archive.h"

@@ -44,9 +44,9 @@ namespace Urho3DNet
             throw new Exception("Assembly versioning is not supported in this build.");
         }
 
-        public override PluginApplication CreatePluginApplication(int assembly)
+        public override PluginApplication CreatePluginApplication(IntPtr assembly)
         {
-            var instance = GCHandle.FromIntPtr(new IntPtr(assembly)).Target as Assembly;
+            var instance = GCHandle.FromIntPtr(assembly).Target as Assembly;
             if (instance == null)
                 return null;
 

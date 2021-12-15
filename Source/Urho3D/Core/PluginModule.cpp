@@ -547,7 +547,7 @@ PluginApplication* PluginModule::InstantiatePlugin()
     }
 #if URHO3D_CSHARP
     else if (moduleType_ == MODULE_MANAGED)
-        return Script::GetRuntimeApi()->CreatePluginApplication(handle_);
+        return Script::GetRuntimeApi()->CreatePluginApplication((void*)handle_);
 #endif
     return nullptr;
 }
