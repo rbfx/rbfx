@@ -52,9 +52,9 @@ public:
     /// Modifies specified assembly by setting it's version to specified one.
     virtual bool SetAssemblyVersion(const ea::string& path, unsigned version) = 0;
     /// Loads specified managed assembly and returns it's gc handle.
-    virtual int LoadAssembly(const ea::string& path) = 0;
+    virtual void* LoadAssembly(const ea::string& path) = 0;
     /// Looks for class inheriting from PluginApplication and creates an instance of it.
-    virtual PluginApplication* CreatePluginApplication(int assembly) = 0;
+    virtual PluginApplication* CreatePluginApplication(void* assembly) = 0;
     /// Invokes managed instance.Dispose() method.
     virtual void Dispose(RefCounted* instance) = 0;
     /// Release specified gc handle. It becomes invalid.

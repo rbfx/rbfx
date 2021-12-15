@@ -156,7 +156,7 @@ bool PluginModule::Load(const ea::string& path)
 
 #if URHO3D_CSHARP
     if (moduleType_ == MODULE_MANAGED)
-        handle_ = Script::GetRuntimeApi()->LoadAssembly(path.data());
+        handle_ = (uintptr_t)Script::GetRuntimeApi()->LoadAssembly(path.data());
     else
 #endif  // URHO3D_CSHARP
     {
@@ -547,7 +547,7 @@ PluginApplication* PluginModule::InstantiatePlugin()
     }
 #if URHO3D_CSHARP
     else if (moduleType_ == MODULE_MANAGED)
-        return Script::GetRuntimeApi()->CreatePluginApplication(handle_);
+        return Script::GetRuntimeApi()->CreatePluginApplication((void*)handle_);
 #endif
     return nullptr;
 }
