@@ -30,12 +30,15 @@ namespace Urho3D
 {
 
 /// Container implementation that stores elements in a fixed vector.
-template <typename T, size_t nodeCount> struct GraphNodeMapHelper
+template <typename T, size_t nodeCount> struct GraphMapHelper
 {
-    GraphNodeMapHelper(ea::fixed_vector<T, nodeCount>& vector)
+    /// Construct.
+    GraphMapHelper(ea::fixed_vector<T, nodeCount>& vector)
         : vector_(vector)
     {
     }
+
+    /// Get item by name.
     T* Get(const ea::string_view name)
     {
         for (T& val : vector_)
@@ -46,7 +49,7 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper
         return nullptr;
     }
 
-
+    /// Get or create new item.
     T& GetOrAdd(const ea::string_view name, ea::function<T()> add)
     {
         for (T& val : vector_)
@@ -60,6 +63,7 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper
         return vector_.back();
     }
 
+    /// Get or create new item.
     T& GetOrAdd(const ea::string_view name)
     {
         for (T& val : vector_)
@@ -73,6 +77,7 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper
         return value;
     }
 
+    /// Add new item. Returns false if value is already present.
     bool Add(T&& value)
     {
         for (T& val : vector_)
@@ -93,9 +98,9 @@ namespace
 static const char* DirectionEnumConstants[]{"In", "Out", "Enter", "Exit", nullptr};
 
 template <typename T, size_t nodeCount>
-GraphNodeMapHelper<T, nodeCount> MakeMapHelper(ea::fixed_vector<T, nodeCount>& vector)
+GraphMapHelper<T, nodeCount> MakeMapHelper(ea::fixed_vector<T, nodeCount>& vector)
 {
-    return GraphNodeMapHelper<T, nodeCount>(vector);
+    return GraphMapHelper<T, nodeCount>(vector);
 }
 
 }
@@ -109,6 +114,12 @@ bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value
     return false;
 }
 
+void GraphNodeProperty::SetName(const ea::string_view name)
+{
+    name_ = name;
+    nameHash_ = name;
+}
+
 bool GraphNodeProperty::Serialize(Archive& archive)
 {
     if (!SerializeValue(archive, "name", name_))
@@ -119,16 +130,12 @@ bool GraphNodeProperty::Serialize(Archive& archive)
         return false;
 
     return SerializeVariantValue(archive, variantType, "value", value_);
-
-    return true;
 }
 
 GraphNode::GraphNode(Context* context)
     : Object(context)
     , graph_(nullptr)
     , id_(0)
-    , name_()
-    , nameHash_()
 {
 }
 
@@ -138,7 +145,6 @@ void GraphNode::RegisterObject(Context* context)
 {
     context->RegisterFactory<GraphNode>();
 }
-
 
 template <typename Iterator>
 bool GraphNode::SerializePins(Archive& archive, Iterator begin, Iterator end)
@@ -179,7 +185,7 @@ Variant& GraphNode::GetOrAddProperty(const ea::string_view name)
 
 Variant* GraphNode::GetProperty(const ea::string_view name)
 {
-    auto res  = MakeMapHelper(properties_).Get(name);
+    const auto res  = MakeMapHelper(properties_).Get(name);
     if (res)
         return &res->value_;
     return nullptr;

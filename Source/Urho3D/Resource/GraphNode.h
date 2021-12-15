@@ -31,6 +31,7 @@ namespace Urho3D
 {
 class Graph;
 
+/// Property of a graph node.
 class URHO3D_API GraphNodeProperty
 {
 public:
@@ -47,11 +48,7 @@ public:
 
     /// Set property name.
     /// @property 
-    void SetName(const ea::string_view name)
-    {
-        name_ = name;
-        nameHash_ = name;
-    }
+    void SetName(const ea::string_view name);
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive);
@@ -142,7 +139,7 @@ public:
     /// Get enter pin.
     GraphOutPin* GetEnter(const ea::string_view name);
 
-    /// Get output pins.
+    /// Get enter pins.
     ea::span<GraphOutPin> GetEnters() { return ea::span(enterPins_); }
 
     /// Get exit pin.
@@ -159,7 +156,7 @@ public:
     void SetName(const ea::string& name);
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive);
+    bool Serialize(Archive& archive) override;
 
 protected:
 

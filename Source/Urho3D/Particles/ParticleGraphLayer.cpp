@@ -57,12 +57,12 @@ struct ParticleGraphAttributeBuilder
                                   ParticleGraphBufferLayout& tempSize)
         : attributes_(attributes)
         , layout_(layout)
-        , capacity_(capacity)
         , tempBufferLayout_(tempSize)
+        , capacity_(capacity)
     {
     }
 
-    bool EvaluateValueType(SharedPtr<ParticleGraphNode> node, ParticleGraphPin& pin)
+    bool EvaluateValueType(const SharedPtr<ParticleGraphNode>& node, ParticleGraphPin& pin) const
     {
         // Evaluate output pin value for output pins.
         pin.valueType_ = pin.requestedValueType_;
@@ -78,10 +78,10 @@ struct ParticleGraphAttributeBuilder
         return true;
     }
 
-    bool BuildNode(ParticleGraph& graph, unsigned i)
+    bool BuildNode(const ParticleGraph& graph, unsigned i) const
     {
         // Configure pin nodes.
-        auto node = graph.GetNode(i);
+        const auto node = graph.GetNode(i);
 
         ParticleGraphContainerType defaultOutputType = PGCONTAINER_SCALAR;
         
@@ -176,7 +176,7 @@ struct ParticleGraphAttributeBuilder
         return true;
     }
 
-    bool Build(ParticleGraph& graph)
+    bool Build(const ParticleGraph& graph) const
     {
         const unsigned graphNodes = graph.GetNumNodes();
 
@@ -226,7 +226,6 @@ bool SerializeValue(Archive& archive, const char* name, ParticleGraphLayerBurst&
 {
     if (auto block = archive.OpenUnorderedBlock(name))
     {
-        ParticleGraphLayerBurst defaultValue;
         // TODO: handle optional
         SerializeValue(archive, "delay", burst.delayInSeconds_);
         SerializeValue(archive, "count", burst.count_);
@@ -238,7 +237,7 @@ bool SerializeValue(Archive& archive, const char* name, ParticleGraphLayerBurst&
     return false;
 }
 
-void ParticleGraphLayer::AttributeBufferLayout::EvaluateLayout(ParticleGraphLayer& layer)
+void ParticleGraphLayer::AttributeBufferLayout::EvaluateLayout(const ParticleGraphLayer& layer)
 {
     const auto emitGraphNodes = layer.emit_.GetNumNodes();
     const auto updateGraphNodes = layer.update_.GetNumNodes();
@@ -248,12 +247,12 @@ void ParticleGraphLayer::AttributeBufferLayout::EvaluateLayout(ParticleGraphLaye
     unsigned instanceSize = 0;
     for (unsigned i = 0; i < emitGraphNodes; ++i)
     {
-        auto node = layer.emit_.GetNode(i);
+        const auto node = layer.emit_.GetNode(i);
         instanceSize += node->EvaluateInstanceSize();
     }
     for (unsigned i = 0; i < updateGraphNodes; ++i)
     {
-        auto node = layer.update_.GetNode(i);
+        const auto node = layer.update_.GetNode(i);
         instanceSize += node->EvaluateInstanceSize();
     }
     nodeInstances_ = Append(this, instanceSize);

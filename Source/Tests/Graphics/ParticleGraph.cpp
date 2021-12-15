@@ -153,6 +153,7 @@ TEST_CASE("Test simple particle graph")
         render->SetPinSource(1, constIndex);
         render->SetPinSource(2, frameIndex);
         render->SetPinSource(3, colorIndex);
+        render->SetPinSource(4, frameIndex);
         auto renderIndex = updateGraph.Add(render);
 
     }
@@ -187,9 +188,7 @@ TEST_CASE("Test const")
 			<nodes>
 				<node id="1" name="Constant">
 					<properties>
-						<property name="Value">
-							<value type="Vector3" value="1 2 3" />
-						</property>
+						<property name="Value" type="Vector3" value="1 2 3" />
 					</properties>
 					<pins>
 						<pin direction="Out" type="Vector3" name="out" />

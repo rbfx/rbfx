@@ -71,7 +71,7 @@ public:
         ParticleGraphSpan values_;
 
         /// Evaluate attribute buffer size and layout.
-        void EvaluateLayout(ParticleGraphLayer& layer);
+        void EvaluateLayout(const ParticleGraphLayer& layer);
     };
 
     /// Construct.

@@ -28,13 +28,15 @@ namespace Urho3D
 {
 class GraphNode;
 
-/// Abstract graph to store connected nodes.
+/// Graph to store connected nodes.
 class URHO3D_API Graph : public Object
 {
     URHO3D_OBJECT(Graph, Object);
 
 public:
+    /// Maximum node id value that should not be reached.
     static constexpr unsigned MAX_ID = std::numeric_limits<unsigned>::max();
+    /// First valid node id value.
     static constexpr unsigned FIRST_ID = 1;
 
     /// Construct.
@@ -79,7 +81,7 @@ private:
     unsigned GetFreeNodeID();
 
     /// Last known node ID.
-    unsigned laskKnownNodeID_{FIRST_ID};
+    unsigned nextNodeID_{FIRST_ID};
 
     /// Replicated scene nodes by ID.
     ea::unordered_map<unsigned, SharedPtr<GraphNode>> nodes_;

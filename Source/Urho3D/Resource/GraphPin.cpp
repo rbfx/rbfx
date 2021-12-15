@@ -25,7 +25,6 @@
 #include "Graph.h"
 #include "GraphNode.h"
 
-#include "GraphNode.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/Log.h"
 
@@ -33,16 +32,13 @@ namespace Urho3D
 {
 
 GraphPin::GraphPin(GraphNode* node, GraphPinDirection direction)
-    : node_(node)
+    : type_(VAR_NONE)
+    , node_(node)
     , direction_(direction)
-    , type_(VAR_NONE)
 {
 }
 
-void GraphPin::SetType(VariantType type)
-{
-    type_ = type;
-}
+void GraphPin::SetType(VariantType type) { type_ = type; }
 
 bool GraphPin::Serialize(Archive& archive)
 {
@@ -50,15 +46,12 @@ bool GraphPin::Serialize(Archive& archive)
     {
         return false;
     }
-    //TODO: check if element is missing properly
+    // TODO: check if element is missing properly
     SerializeEnum(archive, "type", Variant::GetTypeNameList(), type_);
     return true;
 }
 
-void GraphPin::SetName(const ea::string_view name)
-{
-    name_ = name;
-}
+void GraphPin::SetName(const ea::string_view name) { name_ = name; }
 
 GraphInPin::GraphInPin(GraphNode* node, GraphPinDirection direction)
     : GraphPin(node, direction)
@@ -98,7 +91,7 @@ GraphOutPin* GraphInPin::GetConnectedPin() const
     if (!targetNode_)
         return nullptr;
 
-    auto node = GetNode()->GetGraph()->GetNode(targetNode_);
+    const auto node = GetNode()->GetGraph()->GetNode(targetNode_);
     if (!node)
         return nullptr;
 
@@ -106,7 +99,6 @@ GraphOutPin* GraphInPin::GetConnectedPin() const
         return node->GetOutput(targetPin_);
     return node->GetEnter(targetPin_);
 }
-
 
 bool GraphInPin::Serialize(Archive& archive)
 {
@@ -168,7 +160,6 @@ void GraphDataInPin::SetDefaultValue(const Variant& variant)
     defaultValue_ = variant;
 }
 
-
 GraphDataInPin::GraphDataInPin(GraphNode* node, GraphPinDirection direction)
     : GraphInPin(node, direction)
 {
@@ -178,4 +169,5 @@ GraphOutPin::GraphOutPin(GraphNode* node, GraphPinDirection direction)
     : GraphPin(node, direction)
 {
 }
-}
+
+} // namespace Urho3D

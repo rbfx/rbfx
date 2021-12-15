@@ -28,8 +28,9 @@
 namespace Urho3D
 {
 class GraphNode;
-template <typename T, size_t nodeCount> struct GraphNodeMapHelper;
+template <typename T, size_t nodeCount> struct GraphMapHelper;
 
+/// Direction of a graph pin.
 enum GraphPinDirection
 {
     PINDIR_INPUT,
@@ -38,7 +39,7 @@ enum GraphPinDirection
     PINDIR_EXIT,
 };
 
-/// Abstract graph node pin.
+/// Graph node pin.
 class URHO3D_API GraphPin
 {
 protected:
@@ -78,12 +79,16 @@ protected:
     /// Pin type.
     VariantType type_;
 
-
+    /// Node that owns the pin.
     GraphNode* node_;
+    /// Pin direction.
     GraphPinDirection direction_;
 
+    /// GraphNode is a friend class to construct the pin and call SetName.
     friend class GraphNode;
-    template <typename T, size_t nodeCount> friend class GraphNodeMapHelper;
+
+    /// GraphMapHelper is a friend class to manipulate pin collections.
+    template <typename T, size_t nodeCount> friend class GraphMapHelper;
 };
 
 /// Graph node pin that connects to other pins.
@@ -93,6 +98,7 @@ protected:
     /// Construct.
     GraphOutPin(GraphNode* node, GraphPinDirection direction);
 
+    /// GraphNode is a friend class to construct the pin.
     friend class GraphNode;
 };
 
@@ -123,6 +129,7 @@ private:
     /// Target pin name.
     ea::string targetPin_;
 
+    /// GraphNode is a friend class to construct the pin.
     friend class GraphNode;
 };
 
@@ -149,6 +156,7 @@ private:
     /// Target node.
     Variant defaultValue_;
 
+    /// GraphNode is a friend class to construct the pin.
     friend class GraphNode;
 };
 } // namespace Urho3D

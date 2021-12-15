@@ -48,7 +48,7 @@ void Graph::RegisterObject(Context* context)
 
 void Graph::Clear()
 {
-    laskKnownNodeID_ = FIRST_ID;
+    nextNodeID_ = FIRST_ID;
 
     for (auto& i: nodes_)
     {
@@ -177,15 +177,15 @@ void Graph::Add(GraphNode* node)
         return;
     }
 
-    auto i = nodes_.find(id);
+    const auto i = nodes_.find(id);
     if (i == nodes_.end())
     {
-        if (id >= laskKnownNodeID_)
+        if (id >= nextNodeID_)
         {
             if (id == MAX_ID - 1)
-                laskKnownNodeID_ = FIRST_ID;
+                nextNodeID_ = FIRST_ID;
             else
-                laskKnownNodeID_ = id+1;
+                nextNodeID_ = id+1;
         }
         nodes_[id] = node;
         node->SetGraph(this, id);
@@ -218,11 +218,11 @@ unsigned Graph::GetFreeNodeID()
 {
     for (;;)
     {
-        unsigned ret = laskKnownNodeID_;
-        if (laskKnownNodeID_ < MAX_ID)
-            ++laskKnownNodeID_;
+        unsigned ret = nextNodeID_;
+        if (nextNodeID_ < MAX_ID)
+            ++nextNodeID_;
         else
-            laskKnownNodeID_ = FIRST_ID;
+            nextNodeID_ = FIRST_ID;
 
         if (!nodes_.contains(ret))
             return ret;
