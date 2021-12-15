@@ -42,6 +42,7 @@ RenderBillboard::RenderBillboard(Context* context)
                            ParticleGraphPin(PGPIN_INPUT, "size"),
                            ParticleGraphPin(PGPIN_INPUT, "frame"),
                            ParticleGraphPin(PGPIN_INPUT, "color"),
+                           ParticleGraphPin(PGPIN_INPUT, "rotation"),
                        })
     , isWorldSpace_(false)
 {
@@ -91,16 +92,17 @@ void RenderBillboard::Instance::Prepare(unsigned numParticles)
     }
 }
 
-void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color)
+void RenderBillboard::Instance::UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color, float rotation)
 {
     auto* billboard = billboardSet_->GetBillboard(index);
     billboard->enabled_ = true;
     billboard->position_ = pos;
     billboard->size_ = size;
     billboard->color_ = color;
+    billboard->rotation_ = rotation;
     unsigned frame = frameIndex;
     unsigned x = frame % node_->columns_;
-    unsigned y = (frame / node_->columns_) % node_->rows_;
+    unsigned y = (frame / node_->columns_);
     auto uvMin = Vector2(x, y) * node_->uvTileSize_;
     auto uvMax = uvMin + node_->uvTileSize_;
     billboard->uv_ = Rect(uvMin, uvMax);

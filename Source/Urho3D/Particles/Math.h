@@ -71,7 +71,7 @@ public:
     explicit BinaryMathOperator(Context* context, const ea::vector<BinaryOperatorPermutation>& permutations);
 
     /// Get number of pins.
-    unsigned NumPins() const override;
+    unsigned GetNumPins() const override;
 
     /// Get pin by index.
     ParticleGraphPin& GetPin(unsigned index) override;

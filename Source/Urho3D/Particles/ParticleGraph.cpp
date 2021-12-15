@@ -177,6 +177,23 @@ unsigned ParticleGraphReader::ReadNode(unsigned id)
 
     if (!dstNode->Load(*this, *srcNode))
         return ParticleGraph::INVALID_NODE_INDEX;
+
+    for (unsigned i=0; i<dstNode->GetNumPins(); ++i)
+    {
+        auto pin = dstNode->GetPin(i);
+        if (pin.IsInput() && pin.GetRequestedType() != VAR_NONE)
+        {
+            if (pin.GetConnectedNodeIndex() == ParticleGraph::INVALID_NODE_INDEX)
+            {
+                auto constNode = MakeShared<ParticleGraphNodes::Constant>(system_->GetContext());
+                Variant v;
+                v.SetDefault(pin.GetRequestedType());
+                constNode->SetValue(v);
+                auto constIndex = particleGraph_.Add(constNode);
+                dstNode->SetPinSource(i, constIndex, 0);
+            }
+        }
+    }
    
     auto dstIndex =  particleGraph_.Add(dstNode);
     nodes_[id] = dstIndex;

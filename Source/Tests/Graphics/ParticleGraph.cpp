@@ -264,3 +264,4 @@ TEST_CASE("Test Expire")
 
     CHECK(!emitter->GetLayer(0)->CheckActiveParticles());
 }
+

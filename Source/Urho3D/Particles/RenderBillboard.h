@@ -33,7 +33,7 @@ namespace ParticleGraphNodes
 {
 
 /// Render billboard
-class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3, Vector2, float, Color>
+class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3, Vector2, float, Color, float>
 {
     URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
@@ -49,7 +49,8 @@ public:
         Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer);
         ~Instance() override;
         void Prepare(unsigned numParticles);
-        void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color);
+        void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color,
+                            float rotation);
         void Commit();
 
     protected:
@@ -66,9 +67,10 @@ public:
         auto& pin1 = ea::get<1>(spans);
         auto& frame = ea::get<2>(spans);
         auto& color = ea::get<3>(spans);
+        auto& rotation = ea::get<4>(spans);
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            instance->UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i]);
+            instance->UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i], rotation[i]);
         }
         instance->Commit();
     }

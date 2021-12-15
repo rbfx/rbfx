@@ -1468,6 +1468,12 @@ public:
     /// @property
     bool IsEmpty() const { return type_ == VAR_NONE; }
 
+    /// Set default value of the type.
+    template <class T> void SetDefault() { const T value{}; *this = value; }
+
+    /// Set default value of the type.
+    void SetDefault(VariantType type);
+
     /// Return the value, template version.
     template <class T> T Get() const;
 

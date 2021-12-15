@@ -23,8 +23,8 @@
 #pragma once
 
 #include "ParticleGraphNode.h"
-#include "ParticleGraphPin.h"
 #include "ParticleGraphNodeInstance.h"
+#include "ParticleGraphPin.h"
 
 namespace Urho3D
 {
@@ -34,12 +34,12 @@ namespace ParticleGraphNodes
 {
 
 /// Operation on attribute
-class URHO3D_API Print : public ParticleGraphNode
+class URHO3D_API Random : public ParticleGraphNode
 {
-    URHO3D_OBJECT(Print, ParticleGraphNode)
+    URHO3D_OBJECT(Random, ParticleGraphNode)
 public:
     /// Construct.
-    explicit Print(Context* context);
+    explicit Random(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
@@ -48,11 +48,11 @@ protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(Print* node);
+        Instance(Random* node);
         void Update(UpdateContext& context) override;
 
     protected:
-        Print* node_;
+        Random* node_;
     };
 
 public:
@@ -71,10 +71,19 @@ public:
         return new (ptr) Instance(this);
     }
 
-protected:
+    const Variant& GetMin() const { return min_; }
+    void SetMin(const Variant& val) { min_ = val; }
+    const Variant& GetMax() const { return max_; }
+    void SetMax(const Variant& val) { max_ = val; }
 
+protected:
     /// Pins
     ParticleGraphPin pins_[1];
+
+    /// Min value.
+    Variant min_;
+    /// Max value.
+    Variant max_;
 };
 
 } // namespace ParticleGraphNodes

@@ -44,7 +44,7 @@ ParticleGraphNode::ParticleGraphNode(Context* context)
 
 bool ParticleGraphNode::SetPinName(unsigned pinIndex, const ea::string& name)
 {
-    if (pinIndex >= NumPins())
+    if (pinIndex >= GetNumPins())
     {
         URHO3D_LOGERROR("Pin index out of bounds.");
         return false;
@@ -55,7 +55,7 @@ bool ParticleGraphNode::SetPinName(unsigned pinIndex, const ea::string& name)
 
 bool ParticleGraphNode::SetPinValueType(unsigned pinIndex, VariantType type)
 {
-    if (pinIndex >= NumPins())
+    if (pinIndex >= GetNumPins())
     {
         URHO3D_LOGERROR("Pin index out of bounds.");
         return false;
@@ -73,7 +73,7 @@ const ParticleGraphPin& ParticleGraphNode::GetPin(unsigned index) const
 
 bool ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsigned nodePinIndex)
 {
-    if (pinIndex >= NumPins())
+    if (pinIndex >= GetNumPins())
     {
         URHO3D_LOGERROR("Pin index out of bounds");
         return false;
@@ -84,7 +84,7 @@ bool ParticleGraphNode::SetPinSource(unsigned pinIndex, unsigned nodeIndex, unsi
 
 unsigned ParticleGraphNode::GetPinIndex(const ea::string& name)
 {
-    for (unsigned i = 0; i < NumPins(); ++i)
+    for (unsigned i = 0; i < GetNumPins(); ++i)
     {
         ParticleGraphPin& pin = GetPin(i);
         if (pin.GetName() == name)
@@ -250,7 +250,7 @@ bool ParticleGraphNode::LoadProperties(ParticleGraphReader& reader, GraphNode& n
 
 bool ParticleGraphNode::SavePins(ParticleGraphWriter& writer, GraphNode& node)
 {
-    for (unsigned i = 0; i < NumPins(); ++i)
+    for (unsigned i = 0; i < GetNumPins(); ++i)
     {
         ParticleGraphPin& pin = GetPin(i);
         if (pin.IsInput())

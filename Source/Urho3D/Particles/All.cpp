@@ -37,28 +37,26 @@ namespace ParticleGraphNodes
 
 void RegisterGraphNodes(ParticleGraphSystem* system)
 {
-    GetAttribute::RegisterObject(system);
-    SetAttribute::RegisterObject(system);
-    ParticleTime::RegisterObject(system);
-    GetUniform::RegisterObject(system);
-
+    Add::RegisterObject(system);
+    Bounce::RegisterObject(system);
+    Cone::RegisterObject(system);
     Constant::RegisterObject(system);
     Curve::RegisterObject(system);
-    Print::RegisterObject(system);
     Destroy::RegisterObject(system);
-    Expire::RegisterObject(system);
-    RenderBillboard::RegisterObject(system);
-
-    Add::RegisterObject(system);
-    Subtract::RegisterObject(system);
-    Multiply::RegisterObject(system);
     Divide::RegisterObject(system);
-    Slerp::RegisterObject(system);
-
-    TimeStep::RegisterObject(system);
+    Expire::RegisterObject(system);
+    GetAttribute::RegisterObject(system);
+    GetUniform::RegisterObject(system);
     Move::RegisterObject(system);
-    Bounce::RegisterObject(system);
-
+    Multiply::RegisterObject(system);
+    ParticleTime::RegisterObject(system);
+    Print::RegisterObject(system);
+    Random::RegisterObject(system);
+    RenderBillboard::RegisterObject(system);
+    SetAttribute::RegisterObject(system);
+    Slerp::RegisterObject(system);
+    Subtract::RegisterObject(system);
+    TimeStep::RegisterObject(system);
 }
 
 }

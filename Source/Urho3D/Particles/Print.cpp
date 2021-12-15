@@ -70,6 +70,12 @@ namespace
 
 }
 
+Print::Print(Context* context)
+    : ParticleGraphNode(context)
+    , pins_{ParticleGraphPin(PGPIN_INPUT, "value")}
+{
+}
+
 void Print::RegisterObject(ParticleGraphSystem* context)
 {
     context->RegisterParticleGraphNodeFactory<Print>();

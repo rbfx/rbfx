@@ -86,7 +86,7 @@ struct ParticleGraphAttributeBuilder
         ParticleGraphContainerType defaultOutputType = PGCONTAINER_SCALAR;
         
         // Connect input pins.
-        for (unsigned pinIndex = 0; pinIndex < node->NumPins(); ++pinIndex)
+        for (unsigned pinIndex = 0; pinIndex < node->GetNumPins(); ++pinIndex)
         {
             auto& pin = node->GetPin(pinIndex);
 
@@ -113,7 +113,7 @@ struct ParticleGraphAttributeBuilder
                     return false;
                 }
                 const auto sourceNode = graph.GetNode(pin.sourceNode_);
-                if (pin.sourcePin_ >= sourceNode->NumPins())
+                if (pin.sourcePin_ >= sourceNode->GetNumPins())
                 {
                     URHO3D_LOGERROR("Reference to a missing pin");
                     return false;
@@ -145,7 +145,7 @@ struct ParticleGraphAttributeBuilder
             }
         }
         // Allocate memory for output pins.
-        for (unsigned pinIndex = 0; pinIndex < node->NumPins(); ++pinIndex)
+        for (unsigned pinIndex = 0; pinIndex < node->GetNumPins(); ++pinIndex)
         {
             auto& pin = node->GetPin(pinIndex);
 

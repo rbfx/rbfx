@@ -86,7 +86,7 @@ BinaryMathOperator::BinaryMathOperator(Context* context, const ea::vector<Binary
 {
 }
 
-unsigned BinaryMathOperator::NumPins() const
+unsigned BinaryMathOperator::GetNumPins() const
 {
     return 3;
 }

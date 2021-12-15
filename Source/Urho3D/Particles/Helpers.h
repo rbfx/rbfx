@@ -160,11 +160,11 @@ public:
         }
 
         /// Get graph node instance.
-        GraphNode* GetGraphNodeInstace() { return node_; }
+        GraphNode* GetGraphNodeInstace() const { return node_; }
         /// Get graph layer instance.
-        ParticleGraphLayerInstance* GetLayerInstance() { return layer_; }
+        ParticleGraphLayerInstance* GetLayerInstance() const { return layer_; }
         /// Get emitter component.
-        ParticleGraphEmitter* GetEmitter() { return layer_->GetEmitter(); }
+        ParticleGraphEmitter* GetEmitter() const { return layer_->GetEmitter(); }
         /// Get scene node.
         Node* GetNode();
         /// Get engine context.
@@ -181,7 +181,7 @@ public:
 
 public:
     /// Get number of pins.
-    unsigned NumPins() const override { return NumberOfPins; }
+    unsigned GetNumPins() const override { return NumberOfPins; }
 
     /// Get pin by index.
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }

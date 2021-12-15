@@ -114,7 +114,11 @@ bool GraphNodeProperty::Serialize(Archive& archive)
     if (!SerializeValue(archive, "name", name_))
         return false;
 
-    SerializeValue(archive, "value", value_);
+    VariantType variantType = value_.GetType();
+    if (!SerializeValue(archive, "type", variantType))
+        return false;
+
+    return SerializeVariantValue(archive, variantType, "value", value_);
 
     return true;
 }

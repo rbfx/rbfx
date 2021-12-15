@@ -55,7 +55,7 @@ public:
     ParticleGraph* GetGraph() { return graph_; }
 
     /// Get number of pins.
-    virtual unsigned NumPins() const = 0;
+    virtual unsigned GetNumPins() const = 0;
 
     /// Get pin by index.
     virtual ParticleGraphPin& GetPin(unsigned index) = 0;

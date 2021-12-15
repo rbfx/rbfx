@@ -57,7 +57,7 @@ protected:
 
 public:
     /// Get number of pins.
-    unsigned NumPins() const override { return 1; }
+    unsigned GetNumPins() const override { return 1; }
 
     /// Get pin by index.
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
