@@ -52,7 +52,8 @@ SkeletalAnimation::SkeletalAnimation(Context* context) :
     drawDebug_(false)
 {
     // Register an object factory for our custom Mover3D component so that we can create them to scene nodes
-    context->RegisterFactory<Mover3D>();
+    if (!context->IsReflected<Mover3D>())
+        context->AddReflection<Mover3D>();
 }
 
 void SkeletalAnimation::Start()

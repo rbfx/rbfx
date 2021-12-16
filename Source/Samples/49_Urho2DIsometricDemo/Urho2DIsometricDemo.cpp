@@ -63,9 +63,11 @@ Urho2DIsometricDemo::Urho2DIsometricDemo(Context* context) :
     drawDebug_(false)
 {
     // Register factory for the CharacterIsometric component so it can be created via CreateComponent
-    CharacterIsometric::RegisterObject(context);
+    if (!context->IsReflected<CharacterIsometric>())
+        CharacterIsometric::RegisterObject(context);
     // Register factory and attributes for the Mover component so it can be created via CreateComponent, and loaded / saved
-    Mover::RegisterObject(context);
+    if (!context->IsReflected<Mover>())
+        Mover::RegisterObject(context);
 }
 
 void Urho2DIsometricDemo::Start()

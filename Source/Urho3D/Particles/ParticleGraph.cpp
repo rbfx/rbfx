@@ -173,7 +173,8 @@ unsigned ParticleGraphReader::ReadNode(unsigned id)
     }
 
     auto *srcNode = graph_.GetNode(id);
-    auto dstNode = system_->CreateParticleGraphNode(srcNode->GetNameHash());
+    SharedPtr<ParticleGraphNode> dstNode;
+    dstNode.StaticCast(system_->CreateObject(srcNode->GetNameHash()));
 
     if (!dstNode->Load(*this, *srcNode))
         return ParticleGraph::INVALID_NODE_INDEX;

@@ -57,7 +57,8 @@ RaycastVehicleDemo::RaycastVehicleDemo(Context* context)
     : Sample(context)
 {
     // Register factory and attributes for the Vehicle component so it can be created via CreateComponent, and loaded / saved
-    Vehicle2::RegisterObject(context);
+    if (!context->IsReflected<Vehicle2>())
+        Vehicle2::RegisterObject(context);
 }
 
 void RaycastVehicleDemo::Start()

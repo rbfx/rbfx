@@ -97,7 +97,7 @@ GetAttribute::GetAttribute(Context* context)
 
 void GetAttribute::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<GetAttribute>();
+    context->AddReflection<GetAttribute>();
 }
 
 ParticleGraphPin* GetAttribute::LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin)
@@ -118,7 +118,7 @@ SetAttribute::SetAttribute(Context* context)
 
 void SetAttribute::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<SetAttribute>();
+    context->AddReflection<SetAttribute>();
 }
 
 void SetAttribute::SetAttributeType(VariantType valueType)
@@ -152,7 +152,7 @@ ParticleTime::ParticleTime(Context* context)
 
 void ParticleTime::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<ParticleTime>();
+    context->AddReflection<ParticleTime>();
 }
 
 } // namespace ParticleGraphNodes

@@ -50,7 +50,7 @@ RenderBillboard::RenderBillboard(Context* context)
 
 void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<RenderBillboard>();
+    context->AddReflection<RenderBillboard>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef,
                                     ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);

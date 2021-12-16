@@ -194,17 +194,8 @@ private:
 /// @nobind
 struct AttributeHandle
 {
-    friend class Context;
-public:
-    /// Construct default.
-    AttributeHandle() = default;
-    /// Construct from another handle.
-    AttributeHandle(const AttributeHandle& another) = default;
-private:
-    /// Attribute info.
-    AttributeInfo* attributeInfo_ = nullptr;
-    /// Network attribute info.
-    AttributeInfo* networkAttributeInfo_ = nullptr;
+    friend class ObjectReflection;
+
 public:
     /// Set metadata.
     AttributeHandle& SetMetadata(StringHash key, const Variant& value)
@@ -215,6 +206,12 @@ public:
             networkAttributeInfo_->metadata_[key] = value;
         return *this;
     }
+
+private:
+    /// Attribute info.
+    AttributeInfo* attributeInfo_ = nullptr;
+    /// Network attribute info.
+    AttributeInfo* networkAttributeInfo_ = nullptr;
 };
 
 }

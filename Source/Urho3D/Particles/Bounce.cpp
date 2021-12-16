@@ -46,7 +46,7 @@ Bounce::Bounce(Context* context)
 
 void Bounce::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Bounce>();
+    context->AddReflection<Bounce>();
 }
 
 void Bounce::RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity)

@@ -36,7 +36,7 @@ TimeStep::TimeStep(Context* context)
 }
 void TimeStep::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<TimeStep>();
+    context->AddReflection<TimeStep>();
 }
 
 Move::Move(Context* context)
@@ -50,7 +50,7 @@ Move::Move(Context* context)
 
 void Move::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Move>();
+    context->AddReflection<Move>();
 }
 
 } // namespace ParticleGraphNodes

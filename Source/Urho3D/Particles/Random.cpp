@@ -55,14 +55,14 @@ Random::Random(Context* context)
 
 void Random::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Random>();
-    context->RegisterAttribute<Random>(
+    auto* reflection = context->AddReflection<Random>();
+    reflection->AddAttribute(
         Urho3D::AttributeInfo(VAR_NONE, "Min",
                               Urho3D::MakeVariantAttributeAccessor<Random>(
                                   [](const Random& self, Urho3D::Variant& value) { value = self.GetMin(); },
                                   [](Random& self, const Urho3D::Variant& value) { self.SetMin(value); }),
                               nullptr, Variant(), AM_DEFAULT));
-    context->RegisterAttribute<Random>(
+    reflection->AddAttribute(
         Urho3D::AttributeInfo(VAR_NONE, "Max",
                               Urho3D::MakeVariantAttributeAccessor<Random>(
                                   [](const Random& self, Urho3D::Variant& value) { value = self.GetMax(); },

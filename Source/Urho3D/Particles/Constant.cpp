@@ -48,10 +48,11 @@ Constant::Constant(Context* context)
 
 void Constant::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Constant>();
+    auto* refleciton = context->AddReflection<Constant>();
 
-    context->RegisterAttribute<Constant>(Urho3D::AttributeInfo(
-        VAR_NONE, "Value",
+    refleciton->AddAttribute(
+        Urho3D::AttributeInfo(
+        VAR_FLOAT, "Value",
         Urho3D::MakeVariantAttributeAccessor<Constant>(
             [](const Constant& self, Urho3D::Variant& value) { value = self.GetValue(); },
             [](Constant& self, const Urho3D::Variant& value) { self.SetValue(value); }),

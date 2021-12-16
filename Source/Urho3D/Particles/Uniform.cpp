@@ -54,7 +54,7 @@ GetUniform::GetUniform(Context* context)
 
 void GetUniform::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<GetUniform>();
+    context->AddReflection<GetUniform>();
 }
 
 void GetUniform::SetAttributeType(VariantType valueType)

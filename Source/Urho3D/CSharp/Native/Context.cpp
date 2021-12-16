@@ -39,48 +39,21 @@ extern Urho3D_CSharpCreateObjectCallback Urho3D_CSharpCreateObject;
 namespace Urho3D
 {
 
-class ManagedObjectFactoryEventSubscriber : public Object
+SharedPtr<Object> CreateManagedObject(const TypeInfo* typeInfo, Context* context)
 {
-    URHO3D_OBJECT(ManagedObjectFactoryEventSubscriber, Object);
-public:
-    ManagedObjectFactoryEventSubscriber(Context* context) : Object(context) { }
-};
-
-class ManagedObjectFactory : public ObjectFactory
-{
-public:
-    ManagedObjectFactory(Context* context, const char* typeName, StringHash baseType)
-        : ObjectFactory(context)
-        , baseType_(baseType)
-        , managedType_(typeName)
-    {
-        typeInfo_ = new TypeInfo(typeName, Urho3DGetDirectorTypeInfo(baseType));
-    }
-
-    ~ManagedObjectFactory() override
-    {
-        delete typeInfo_;
-    }
-
-    SharedPtr<Object> CreateObject() override
-    {
-        SharedPtr<Object> result((Object*)Urho3D_CSharpCreateObject(context_, managedType_.Value()));
-        return result;
-    }
-
-protected:
-    /// Hash of base type (SWIG director class).
-    StringHash baseType_;
-    /// Hash of managed type. This is different from `baseType_`.
-    StringHash managedType_;
-};
+    const StringHash managedType = typeInfo->GetType();
+    auto object = reinterpret_cast<Object*>(Urho3D_CSharpCreateObject(context, managedType.Value()));
+    return SharedPtr<Object>(object);
+}
 
 extern "C"
 {
 
 URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType, const char* category)
 {
-    context->RegisterFactory(new ManagedObjectFactory(context, typeName, StringHash(baseType)), category);
+    auto typeInfo = ea::make_unique<TypeInfo>(typeName, Urho3DGetDirectorTypeInfo(StringHash(baseType)));
+    auto reflection = context->ReflectCustomType(ea::move(typeInfo));
+    reflection->SetObjectFactory(CreateManagedObject);
 }
 
 URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_ParseArguments(int argc, char** argv)

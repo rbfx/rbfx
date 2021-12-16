@@ -139,7 +139,7 @@ Add::Add(Context* context)
 
 void Add::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Add>();
+    context->AddReflection<Add>();
 }
 
 
@@ -148,7 +148,10 @@ Subtract::Subtract(Context* context)
 {
 }
 
-void Subtract::RegisterObject(ParticleGraphSystem* context) { context->RegisterParticleGraphNodeFactory<Subtract>(); }
+void Subtract::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Subtract>();
+}
 
 
 Multiply::Multiply(Context* context)
@@ -156,14 +159,20 @@ Multiply::Multiply(Context* context)
 {
 }
 
-void Multiply::RegisterObject(ParticleGraphSystem* context) { context->RegisterParticleGraphNodeFactory<Multiply>(); }
+void Multiply::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Multiply>();
+}
 
 Divide::Divide(Context* context)
     : BinaryMathOperator(context, DividePins)
 {
 }
 
-void Divide::RegisterObject(ParticleGraphSystem* context) { context->RegisterParticleGraphNodeFactory<Divide>(); }
+void Divide::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Divide>();
+}
 
 Slerp::Slerp(Context* context)
     : AbstractNodeType(context, PinArray{
@@ -177,7 +186,7 @@ Slerp::Slerp(Context* context)
 
 void Slerp::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Slerp>();
+    context->AddReflection<Slerp>();
 }
 
 }

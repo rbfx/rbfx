@@ -78,7 +78,7 @@ Print::Print(Context* context)
 
 void Print::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Print>();
+    context->AddReflection<Print>();
 }
 
 Print::Instance::Instance(Print* node)

@@ -37,7 +37,7 @@ Destroy::Destroy(Context* context)
 
 void Destroy::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Destroy>();
+    context->AddReflection<Destroy>();
 }
 
 Expire::Expire(Context* context)
@@ -46,7 +46,7 @@ Expire::Expire(Context* context)
 }
 void Expire::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Expire>();
+    context->AddReflection<Expire>();
 }
 
 } // namespace ParticleGraphNodes

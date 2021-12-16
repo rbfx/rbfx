@@ -43,7 +43,7 @@ Cone::Cone(Context* context)
 
 void Cone::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Cone>();
+    context->AddReflection<Cone>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angle", GetAngle, SetAngle, float, 45.0f, AM_DEFAULT);

@@ -118,6 +118,15 @@ ea::string StringHash::ToString() const
     return ea::string(tempBuffer);
 }
 
+ea::string StringHash::ToDebugString() const
+{
+#ifdef URHO3D_HASH_DEBUG
+    return Format("#{} '{}'", ToString(), Reverse());
+#else
+    return Format("#{}", ToString());
+#endif
+}
+
 ea::string StringHash::Reverse() const
 {
 #ifdef URHO3D_HASH_DEBUG

@@ -69,7 +69,7 @@ Curve::Curve(Context* context)
 
 void Curve::RegisterObject(ParticleGraphSystem* context)
 {
-    context->RegisterParticleGraphNodeFactory<Curve>();
+    context->AddReflection<Curve>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Duration", GetDuration, SetDuration, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("IsLooped", IsLooped, SetLooped, bool, false, AM_DEFAULT);
