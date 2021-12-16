@@ -57,7 +57,7 @@ Vector3 Cone::Generate() const
     const float radius = Sqrt(Random()) * Sin( Min(Max(angle_, 0.0f), 89.999f));
     const float height = Sqrt(1.0f - radius * radius);
 
-    return Vector3(Cos(angle) * radius, Sin(angle) * radius, height);
+    return Vector3(Cos(angle) * (radius + radius_), Sin(angle) * (radius +  + radius_), height);
 }
 
 Matrix3x4 Cone::GetShapeTransform() const
