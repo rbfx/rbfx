@@ -1,5 +1,5 @@
 URHO3D_REFCOUNTED(Urho3D::Object);
-URHO3D_REFCOUNTED(Urho3D::ObjectFactory);
+URHO3D_REFCOUNTED(Urho3D::ObjectReflection);
 URHO3D_REFCOUNTED(Urho3D::Time);
 URHO3D_REFCOUNTED(Urho3D::ValueCache);
 URHO3D_REFCOUNTED(Urho3D::AttributeAccessor);

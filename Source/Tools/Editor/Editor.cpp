@@ -561,15 +561,16 @@ Tab* Editor::CreateTab(StringHash type)
 StringVector Editor::GetObjectsByCategory(const ea::string& category)
 {
     StringVector result;
-    const auto& factories = context_->GetObjectFactories();
     auto it = context_->GetObjectCategories().find(category);
     if (it != context_->GetObjectCategories().end())
     {
         for (const StringHash& type : it->second)
         {
-            auto jt = factories.find(type);
-            if (jt != factories.end())
-                result.push_back(jt->second->GetTypeName());
+            if (auto reflection = context_->GetReflection(type))
+            {
+                if (reflection->HasObjectFactory())
+                    result.push_back(reflection->GetTypeName());
+            }
         }
     }
     return result;

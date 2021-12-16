@@ -55,7 +55,8 @@ CharacterDemo::CharacterDemo(Context* context) :
     firstPerson_(false)
 {
     // Register factory and attributes for the Character component so it can be created via CreateComponent, and loaded / saved
-    Character::RegisterObject(context);
+    if (!context->IsReflected<Character>())
+        Character::RegisterObject(context);
 }
 
 CharacterDemo::~CharacterDemo() = default;

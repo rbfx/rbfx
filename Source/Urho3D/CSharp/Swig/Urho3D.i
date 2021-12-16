@@ -324,6 +324,7 @@ namespace SDL
 
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
+%ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
@@ -332,6 +333,8 @@ namespace SDL
 %include "Urho3D/Core/Variant.h"
 %include "Urho3D/Core/Attribute.h"
 %include "Urho3D/Core/SubsystemCache.h"
+%interface_custom("%s", "I%s", Urho3D::ObjectReflectionRegistry)
+%include "Urho3D/Core/ObjectReflection.h"
 %include "Urho3D/Core/Context.h"
 %include "Urho3D/Core/Object.h"
 %include "Urho3D/Core/Timer.h"

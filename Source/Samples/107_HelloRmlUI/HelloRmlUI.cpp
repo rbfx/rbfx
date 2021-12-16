@@ -118,7 +118,8 @@ HelloRmlUI::HelloRmlUI(Context* context)
 void HelloRmlUI::Start()
 {
     // Register custom components.
-    context_->RegisterFactory<SimpleWindow>();
+    if (!context_->IsReflected<SimpleWindow>())
+        context_->AddReflection<SimpleWindow>();
 
     // Execute base class startup
     Sample::Start();
@@ -131,12 +132,6 @@ void HelloRmlUI::Start()
 
     // Set the mouse mode to use in the sample
     Sample::InitMouseMode(MM_FREE);
-}
-
-void HelloRmlUI::Stop()
-{
-    // Only necessary so sample can be reopened. Under normal circumnstances applications do not need to do this.
-    context_->RemoveFactory<SimpleWindow>();
 }
 
 void HelloRmlUI::InitWindow()

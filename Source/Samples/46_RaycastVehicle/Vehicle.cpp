@@ -44,7 +44,8 @@ const float CHASSIS_WIDTH = 2.6f;
 
 void Vehicle2::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Vehicle2>();
+    context->AddReflection<Vehicle2>();
+
     URHO3D_ATTRIBUTE("Steering", float, steering_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Controls Yaw", float, controls_.yaw_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Controls Pitch", float, controls_.pitch_, 0.0f, AM_DEFAULT);

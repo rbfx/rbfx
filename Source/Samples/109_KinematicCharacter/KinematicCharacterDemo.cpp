@@ -57,7 +57,8 @@ KinematicCharacterDemo::KinematicCharacterDemo(Context* context) :
     , firstPerson_(false)
     , drawDebug_(false)
 {
-    KinematicCharacter::RegisterObject(context);
+    if (!context_->IsReflected<KinematicCharacter>())
+        KinematicCharacter::RegisterObject(context);
 }
 
 KinematicCharacterDemo::~KinematicCharacterDemo() = default;
