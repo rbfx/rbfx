@@ -66,9 +66,11 @@ Urho2DPlatformer::Urho2DPlatformer(Context* context) :
     Sample(context)
 {
     // Register factory for the Character2D component so it can be created via CreateComponent
-    Character2D::RegisterObject(context);
+    if (!context->IsReflected<Character2D>())
+        Character2D::RegisterObject(context);
     // Register factory and attributes for the Mover component so it can be created via CreateComponent, and loaded / saved
-    Mover::RegisterObject(context);
+    if (!context->IsReflected<Mover>())
+        Mover::RegisterObject(context);
 }
 
 void Urho2DPlatformer::Start()

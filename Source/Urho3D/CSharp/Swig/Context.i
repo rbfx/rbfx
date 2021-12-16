@@ -1,8 +1,5 @@
 %ignore Urho3D::Context::RegisterFactory;
-%ignore Urho3D::Context::GetFactory;
 %ignore Urho3D::Context::GetEventHandler;
-%ignore Urho3D::Context::GetObjectCategories;
-%ignore Urho3D::Context::GetObjectFactories;
 
 
 // Extend Context with extra code
@@ -48,10 +45,10 @@
 %director Urho3D::ScriptRuntimeApi;
 %inheritable(Urho3D, Object);
 %inheritable(Urho3D, Application);
-%inheritable(Urho3D, Serializable);         %addOnSetupInstance(Urho3D::Serializable);
-%inheritable(Urho3D, Animatable);           %addOnSetupInstance(Urho3D::Animatable);
-%inheritable(Urho3D, Component);            %addOnSetupInstance(Urho3D::Component);
-%inheritable(Urho3D, LogicComponent);       %addOnSetupInstance(Urho3D::LogicComponent);
+%inheritable(Urho3D, Serializable);
+%inheritable(Urho3D, Animatable);
+%inheritable(Urho3D, Component);
+%inheritable(Urho3D, LogicComponent);
 %inheritable(Urho3D, PluginApplication);
 %inheritable(Urho3D, Drawable);
 %inheritable(Urho3D, Drawable2D);
@@ -69,3 +66,7 @@
         return newObject.Handle;
     }
 }%}
+
+// Ignore some parts of reflection API
+%ignore Urho3D::ObjectReflection::ObjectReflection;
+%ignore Urho3D::ObjectReflectionRegistry::ReflectCustomType;

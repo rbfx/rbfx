@@ -105,6 +105,9 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
+    /// Return debug string that contains hash value, and reversed hash string if possible.
+    ea::string ToDebugString() const;
+
     /// Return string which has specific hash value. Return first string if many (in order of calculation). Use for debug purposes only. Return empty string if URHO3D_HASH_DEBUG is off.
     ea::string Reverse() const;
 

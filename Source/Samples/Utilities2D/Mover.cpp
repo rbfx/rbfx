@@ -45,7 +45,7 @@ Mover::Mover(Context* context) :
 
 void Mover::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Mover>();
+    context->AddReflection<Mover>();
 
     // These macros register the class attribute to the Context for automatic load / save handling.
     // We specify the Default attribute mode which means it will be used both for saving into file, and network replication.

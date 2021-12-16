@@ -49,7 +49,7 @@ void GamePlugin::Load()
 void GamePlugin::Unload()
 {
     // Finalize plugin, ensure that no objects provided by the plugin are alive. Some of that work is automated by
-    // parent class. Objects that had factories registered through PluginApplication::RegisterFactory<> have their
+    // parent class. Objects that had factories registered through PluginApplication::AddReflection<> have their
     // attributes automatically unregistered, factories/subsystems removed.
 }
 

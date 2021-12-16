@@ -43,7 +43,7 @@ Vehicle::Vehicle(Context* context) :
 
 void Vehicle::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Vehicle>();
+    context->AddReflection<Vehicle>();
 
     URHO3D_ATTRIBUTE("Controls Yaw", float, controls_.yaw_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Controls Pitch", float, controls_.pitch_, 0.0f, AM_DEFAULT);
