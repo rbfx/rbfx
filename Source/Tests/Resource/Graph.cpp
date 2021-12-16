@@ -86,13 +86,20 @@ TEST_CASE("Test pins deserialization")
         R"(
         <nodes>
             <node id="42" name="Test">
-				<pins>
-					<pin name="in" />
-					<pin direction="In" type="Vector2" name="in2" />
-					<pin direction="Out" type="Vector3" name="out" />
-					<pin direction="Enter" name="enter" />
-					<pin direction="Exit" name="exit" />
-				</pins>
+				<in>
+					<pin />
+					<pin type="Vector2" name="in2" />
+					<pin type="Vector3" name="in3" value="1 2 3" />
+				</in>
+				<out>
+					<pin type="Vector3" name="out" />
+				</out>
+				<enter>
+					<pin name="enter" />
+				</enter>
+				<exit>
+					<pin name="exit" />
+				</exit>
             </node>
         </nodes>
     )"));
@@ -100,16 +107,18 @@ TEST_CASE("Test pins deserialization")
     auto node = graph->GetNode(42);
     REQUIRE(node);
 
-    REQUIRE(node->GetInputs().size() == 2);
+    REQUIRE(node->GetInputs().size() == 3);
     REQUIRE(node->GetOutputs().size() == 1);
     REQUIRE(node->GetEnters().size() == 1);
     REQUIRE(node->GetExits().size() == 1);
 
-    CHECK(node->GetInput("in")->GetType() == VAR_NONE);
+    CHECK(node->GetInput("")->GetType() == VAR_NONE);
     CHECK(node->GetInput("in2")->GetType() == VAR_VECTOR2);
+    CHECK(node->GetInput("in3")->GetType() == VAR_VECTOR3);
+    CHECK(node->GetInput("in3")->GetValue().GetVector3() == Vector3(1,2,3));
     CHECK(node->GetOutput("out")->GetType() == VAR_VECTOR3);
-    CHECK(node->GetEnter("enter")->GetType() == VAR_NONE);
-    CHECK(node->GetExit("exit")->GetType() == VAR_NONE);
+    CHECK(node->GetEnter("enter"));
+    CHECK(node->GetExit("exit"));
 }
 
 TEST_CASE("Graph serialization roundtrip")

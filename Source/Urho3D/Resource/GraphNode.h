@@ -107,18 +107,18 @@ public:
     GraphNode* WithProperty(const ea::string_view name, const Variant& value);
 
     /// Get input pin by name.
-    GraphDataInPin* GetInput(const ea::string_view name);
+    GraphInPin* GetInput(const ea::string_view name);
 
     /// Get input pins.
-    ea::span<GraphDataInPin> GetInputs() { return ea::span(inputPins_); }
+    ea::span<GraphInPin> GetInputs() { return ea::span(inputPins_); }
 
     /// Get or add input pin.
-    GraphDataInPin& GetOrAddInput(const ea::string_view name);
+    GraphInPin& GetOrAddInput(const ea::string_view name);
 
     /// Add input pin.
     GraphNode* WithInput(const ea::string_view name, VariantType type = VAR_NONE);
 
-    /// Add input pin with default value.
+    /// Add input pin with value.
     GraphNode* WithInput(const ea::string_view name, const Variant& value);
 
     /// Add input pin connected to the output pin.
@@ -137,36 +137,37 @@ public:
     ea::span<GraphOutPin> GetOutputs() { return ea::span(outputPins_); }
 
     /// Get or add enter pin.
-    GraphOutPin& GetOrAddEnter(const ea::string_view name);
+    GraphEnterPin& GetOrAddEnter(const ea::string_view name);
 
     /// Get enter pin.
-    GraphOutPin* GetEnter(const ea::string_view name);
+    GraphEnterPin* GetEnter(const ea::string_view name);
 
     /// Get output pins.
-    ea::span<GraphOutPin> GetEnters() { return ea::span(enterPins_); }
+    ea::span<GraphEnterPin> GetEnters() { return ea::span(enterPins_); }
 
     /// Get exit pin.
-    GraphInPin* GetExit(const ea::string_view name);
+    GraphExitPin* GetExit(const ea::string_view name);
 
     /// Get or add exit pin.
-    GraphInPin& GetOrAddExit(const ea::string_view name);
+    GraphExitPin& GetOrAddExit(const ea::string_view name);
 
     /// Get exit pins.
-    ea::span<GraphInPin> GetExits() { return ea::span(exitPins_); }
+    ea::span<GraphExitPin> GetExits() { return ea::span(exitPins_); }
 
     /// Set name of the graph node.
     /// @property
     void SetName(const ea::string& name);
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive);
+    bool Serialize(Archive& archive, ArchiveBlock& block);
 
 protected:
 
     /// Set graph and id. Called by Graph.
     void SetGraph(Graph* scene, unsigned id);
 
-    template <typename Iterator> bool SerializePins(Archive& archive, Iterator begin, Iterator end);
+    template <typename PinType, size_t PinCount>
+    bool SerializePins(Archive& archive, const char* blockName, ea::fixed_vector<PinType, PinCount>& pins);
 
 private:
     /// Name.
@@ -183,12 +184,12 @@ private:
     ea::fixed_vector<GraphNodeProperty, 1> properties_;
 
     /// Enter pins. Define execution flow.
-    ea::fixed_vector<GraphOutPin, 1> enterPins_;
+    ea::fixed_vector<GraphEnterPin, 1> enterPins_;
     /// Exit pins. Define next nodes in execution flow.
-    ea::fixed_vector<GraphInPin, 1> exitPins_;
+    ea::fixed_vector<GraphExitPin, 1> exitPins_;
 
     /// Input pins. Define source pin for the data flow.
-    ea::fixed_vector<GraphDataInPin, 3> inputPins_;
+    ea::fixed_vector<GraphInPin, 3> inputPins_;
     /// Output pins. Define data flow.
     ea::fixed_vector<GraphOutPin, 1> outputPins_;
 

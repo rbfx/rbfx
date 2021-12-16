@@ -85,7 +85,7 @@ bool Graph::Serialize(Archive& archive)
                     SharedPtr<GraphNode> node = MakeShared<GraphNode>(context_);
                     node->SetGraph(nullptr, id);
                     Add(node);
-                    if (!node->Serialize(archive))
+                    if (!node->Serialize(archive, block))
                         return false;
                 }
                 else
@@ -104,7 +104,7 @@ bool Graph::Serialize(Archive& archive)
                     unsigned id = value.first;
                     if (!SerializeValue(archive, "id", id))
                         return false;
-                    if (!value.second->Serialize(archive))
+                    if (!value.second->Serialize(archive, block))
                         return false;
                 }
                 else

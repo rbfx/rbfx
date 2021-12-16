@@ -140,35 +140,44 @@ void GraphNode::RegisterObject(Context* context)
 }
 
 
-template <typename Iterator>
-bool GraphNode::SerializePins(Archive& archive, Iterator begin, Iterator end)
+template <typename PinType, size_t PinCount>
+bool GraphNode::SerializePins(Archive& archive, const char* name, ea::fixed_vector<PinType, PinCount>& vector)
 {
-    while (begin != end)
-    {
-        if (ArchiveBlock block = archive.OpenUnorderedBlock("pin"))
-        {
-            GraphPinDirection dir = begin->GetDirection();
-            if (dir != PINDIR_INPUT)
-            {
-                if (!SerializeEnum(archive, "direction", DirectionEnumConstants, dir))
-                    return false;
-            }
-            auto type = begin->type_;
-            if (type != VAR_NONE)
-            {
-                if (!SerializeEnum(archive, "type", Variant::GetTypeNameList(), type))
-                    return false;
-            }
-            if (!begin->Serialize(archive))
-                return false;
-
-            ++begin;
-        }
-        else
-        {
-            return false;
-        }
-    }
+    SerializeOptional(archive, !vector.empty(),
+                      [&](bool loading)
+                      {
+                          if (auto block = archive.OpenArrayBlock(name, vector.size()))
+                          {
+                              if (archive.IsInput())
+                              {
+                                  vector.clear();
+                                  vector.reserve(block.GetSizeHint());
+                                  for (unsigned i = 0; i < block.GetSizeHint(); ++i)
+                                  {
+                                      if (auto block = archive.OpenUnorderedBlock("pin"))
+                                      {
+                                          vector.push_back(PinType(this));
+                                          if (!vector.back().Serialize(archive, block))
+                                              return false;
+                                      }
+                                  }
+                                  return true;
+                              }
+                              else
+                              {
+                                  for (auto& value : vector)
+                                  {
+                                      if (auto block = archive.OpenUnorderedBlock("pin"))
+                                      {
+                                          if (!value.Serialize(archive, block))
+                                              return false;
+                                      }
+                                  }
+                                  return true;
+                              }
+                          }
+                          return false;
+                      });
     return true;
 }
 
@@ -192,14 +201,14 @@ GraphNode* GraphNode::WithProperty(const ea::string_view name, const Variant& va
     return this;
 }
 
-GraphDataInPin* GraphNode::GetInput(const ea::string_view name)
+GraphInPin* GraphNode::GetInput(const ea::string_view name)
 {
     return MakeMapHelper(inputPins_).Get(name);
 }
 
-GraphDataInPin& GraphNode::GetOrAddInput(const ea::string_view name)
+GraphInPin& GraphNode::GetOrAddInput(const ea::string_view name)
 {
-    return MakeMapHelper(inputPins_).GetOrAdd(name, [this]() { return GraphDataInPin(this, PINDIR_INPUT); });
+    return MakeMapHelper(inputPins_).GetOrAdd(name, [this]() { return GraphInPin(this); });
 }
 
 GraphNode* GraphNode::WithInput(const ea::string_view name, VariantType type)
@@ -215,7 +224,7 @@ GraphNode* GraphNode::WithInput(const ea::string_view name, const Variant& value
     auto& pin = GetOrAddInput(name);
     pin.SetName(name);
     pin.type_ = value.GetType();
-    pin.SetDefaultValue(value);
+    pin.SetValue(value);
     return this;
 }
 
@@ -233,7 +242,7 @@ GraphNode* GraphNode::WithInput(const ea::string_view name, GraphOutPin* outputP
 
 GraphOutPin& GraphNode::GetOrAddOutput(const ea::string_view name)
 {
-    return MakeMapHelper(outputPins_).GetOrAdd(name, [this]() { return GraphOutPin(this, PINDIR_OUTPUT); });
+    return MakeMapHelper(outputPins_).GetOrAdd(name, [this]() { return GraphOutPin(this); });
 }
 
 GraphNode* GraphNode::WithOutput(const ea::string_view name, VariantType type)
@@ -249,22 +258,22 @@ GraphOutPin* GraphNode::GetOutput(const ea::string_view name)
     return MakeMapHelper(outputPins_).Get(name);
 }
 
-GraphInPin* GraphNode::GetExit(const ea::string_view name)
+GraphExitPin* GraphNode::GetExit(const ea::string_view name)
 {
     return MakeMapHelper(exitPins_).Get(name);
 }
 
-GraphInPin& GraphNode::GetOrAddExit(const ea::string_view name)
+GraphExitPin& GraphNode::GetOrAddExit(const ea::string_view name)
 {
-    return MakeMapHelper(exitPins_).GetOrAdd(name, [this]() { return GraphInPin(this, PINDIR_EXIT); });
+    return MakeMapHelper(exitPins_).GetOrAdd(name, [this]() { return GraphExitPin(this); });
 }
 
-GraphOutPin& GraphNode::GetOrAddEnter(const ea::string_view name)
+GraphEnterPin& GraphNode::GetOrAddEnter(const ea::string_view name)
 {
-    return MakeMapHelper(enterPins_).GetOrAdd(name, [this]() { return GraphOutPin(this, PINDIR_ENTER); });
+    return MakeMapHelper(enterPins_).GetOrAdd(name, [this]() { return GraphEnterPin(this); });
 }
 
-GraphOutPin* GraphNode::GetEnter(const ea::string_view name)
+GraphEnterPin* GraphNode::GetEnter(const ea::string_view name)
 {
     return MakeMapHelper(enterPins_).Get(name);
 }
@@ -278,10 +287,8 @@ void GraphNode::SetName(const ea::string& name)
     }
 }
 
-bool GraphNode::Serialize(Archive& archive)
+bool GraphNode::Serialize(Archive& archive, ArchiveBlock& block)
 {
-    unsigned numPins = archive.IsInput() ? 0 : enterPins_.size() + exitPins_.size() + inputPins_.size() + outputPins_.size();
-
     SerializeValue(archive, "name", name_);
 
     if (archive.IsInput())
@@ -298,73 +305,11 @@ bool GraphNode::Serialize(Archive& archive)
             SerializeVectorAsObjects(archive, "properties", "property", properties_);
         }
     }
-
-    if (auto block = archive.OpenArrayBlock("pins", numPins))
-    {
-        if (archive.IsInput())
-        {
-            enterPins_.clear();
-            exitPins_.clear();
-            inputPins_.clear();
-            outputPins_.clear();
-
-            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-            {
-                if (ArchiveBlock block = archive.OpenUnorderedBlock("pin"))
-                {
-                    GraphPinDirection direction = PINDIR_INPUT;
-
-                    //TODO: handle error
-                    SerializeEnum(archive, "direction", DirectionEnumConstants, direction);
-
-                    switch (direction)
-                    {
-                    case PINDIR_INPUT:
-                    {
-                        GraphDataInPin pin(this, direction);
-                        pin.Serialize(archive);
-                        MakeMapHelper(inputPins_).Add(ea::move(pin));
-                        break;
-                    }
-                    case PINDIR_OUTPUT:
-                    {
-                        GraphOutPin pin(this, direction);
-                        pin.Serialize(archive);
-                        MakeMapHelper(outputPins_).Add(ea::move(pin));
-                        break;
-                    }
-                    case PINDIR_ENTER:
-                    {
-                        GraphOutPin pin(this, direction);
-                        pin.Serialize(archive);
-                        MakeMapHelper(enterPins_).Add(ea::move(pin));
-                        break;
-                    }
-                    case PINDIR_EXIT:
-                    {
-                        GraphInPin pin(this, direction);
-                        pin.Serialize(archive);
-                        MakeMapHelper(exitPins_).Add(ea::move(pin));
-                        break;
-                    }
-                    }
-                }
-            }
-            return true;
-        }
-        else
-        {
-            if (!SerializePins(archive, inputPins_.begin(), inputPins_.end()))
-                return false;
-            if (!SerializePins(archive, outputPins_.begin(), outputPins_.end()))
-                return false;
-            if (!SerializePins(archive, enterPins_.begin(), enterPins_.end()))
-                return false;
-            if (!SerializePins(archive, exitPins_.begin(), exitPins_.end()))
-                return false;
-            return true;
-        }
-    }
+    SerializePins(archive, "enter", enterPins_);
+    SerializePins(archive, "in", inputPins_);
+    SerializePins(archive, "exit", exitPins_);
+    SerializePins(archive, "out", outputPins_);
+    
     return true;
 }
 
