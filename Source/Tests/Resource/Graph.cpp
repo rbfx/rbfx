@@ -86,30 +86,51 @@ TEST_CASE("Test pins deserialization")
         R"(
         <nodes>
             <node id="42" name="Test">
-				<pins>
-					<pin name="in" />
-					<pin direction="In" type="Vector2" name="in2" />
-					<pin direction="Out" type="Vector3" name="out" />
-					<pin direction="Enter" name="enter" />
-					<pin direction="Exit" name="exit" />
-				</pins>
+				<in>
+					<pin />
+					<pin type="Vector2" name="in2" />
+					<pin type="Vector3" name="in3" value="1 2 3" />
+				</in>
+				<out>
+					<pin type="Vector3" name="out" />
+				</out>
+				<enter>
+					<pin name="enter" />
+				</enter>
+				<exit>
+					<pin name="exit" />
+				</exit>
+            </node>
+            <node id="4294967294" name="Test2">
+                <properties>
+                    <property name="p" type="Vector2" value="1 2" />
+                </properties>
             </node>
         </nodes>
     )"));
 
-    auto node = graph->GetNode(42);
-    REQUIRE(node);
+    auto node42 = graph->GetNode(42);
+    REQUIRE(node42);
+    CHECK(node42->GetName() == "Test");
 
-    REQUIRE(node->GetInputs().size() == 2);
-    REQUIRE(node->GetOutputs().size() == 1);
-    REQUIRE(node->GetEnters().size() == 1);
-    REQUIRE(node->GetExits().size() == 1);
+    CHECK(node42->GetInputs().size() == 3);
+    CHECK(node42->GetOutputs().size() == 1);
+    CHECK(node42->GetEnters().size() == 1);
+    CHECK(node42->GetExits().size() == 1);
 
-    CHECK(node->GetInput("in")->GetType() == VAR_NONE);
-    CHECK(node->GetInput("in2")->GetType() == VAR_VECTOR2);
-    CHECK(node->GetOutput("out")->GetType() == VAR_VECTOR3);
-    CHECK(node->GetEnter("enter")->GetType() == VAR_NONE);
-    CHECK(node->GetExit("exit")->GetType() == VAR_NONE);
+    CHECK(node42->GetInput("")->GetType() == VAR_NONE);
+    CHECK(node42->GetInput("in2")->GetType() == VAR_VECTOR2);
+    CHECK(node42->GetInput("in3")->GetType() == VAR_VECTOR3);
+    CHECK(node42->GetInput("in3")->GetValue().GetVector3() == Vector3(1,2,3));
+    CHECK(node42->GetOutput("out")->GetType() == VAR_VECTOR3);
+    CHECK(node42->GetEnter("enter"));
+    CHECK(node42->GetExit("exit"));
+
+    auto lastNode = graph->GetNode(4294967294);
+    REQUIRE(lastNode);
+    CHECK(lastNode->GetName() == "Test2");
+    REQUIRE(lastNode->GetProperty("p"));
+    CHECK(lastNode->GetProperty("p")->GetVector2() == Vector2(1,2));
 }
 
 TEST_CASE("Graph serialization roundtrip")
@@ -152,7 +173,6 @@ TEST_CASE("Graph serialization roundtrip")
         CHECK(graph->Serialize(archive));
         xml->Save(buf);
     }
-    ea::string xmlText((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
 
     auto restoredGraph = MakeShared<Graph>(context);
     buf.Seek(0);

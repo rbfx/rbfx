@@ -190,15 +190,17 @@ TEST_CASE("Test const")
 					<properties>
 						<property name="Value" type="Vector3" value="1 2 3" />
 					</properties>
-					<pins>
-						<pin direction="Out" type="Vector3" name="out" />
-					</pins>
+					<out>
+						<pin type="Vector3" name="out" />
+					</out>
 				</node>
 				<node id="2" name="SetAttribute">
-					<pins>
+					<in>
 						<pin type="Vector3" name="" node="1" pin="out" />
-						<pin direction="Out" type="Vector3" name="pos" />
-					</pins>
+					</in>
+					<out>
+						<pin type="Vector3" name="pos" />
+					</out>
 				</node>
 			</nodes>
 		</emit>
@@ -238,10 +240,10 @@ TEST_CASE("Test Expire")
 		<update>
 			<nodes>
 				<node id="1" name="Expire">
-					<pins>
+					<in>
 						<pin name="time" type="float" value="1" />
 						<pin name="lifetime" type="float" value="1" />
-					</pins>
+					</in>
 				</node>
 			</nodes>
 		</update>

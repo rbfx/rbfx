@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the Urho3D project.
+// Copyright (c) 2021 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,135 +28,162 @@
 namespace Urho3D
 {
 class GraphNode;
-template <typename T, size_t nodeCount> struct GraphMapHelper;
+template <typename T, size_t nodeCount> struct GraphNodeMapHelper;
 
-/// Direction of a graph pin.
-enum GraphPinDirection
-{
-    PINDIR_INPUT,
-    PINDIR_OUTPUT,
-    PINDIR_ENTER,
-    PINDIR_EXIT,
-};
-
-/// Graph node pin.
+/// Abstract graph node pin.
 class URHO3D_API GraphPin
 {
 protected:
     /// Construct.
-    GraphPin(GraphNode* node, GraphPinDirection direction);
+    explicit GraphPin(GraphNode* node);
+
+    /// Destruct.
+    virtual ~GraphPin();
 
 public:
-    /// Get pin type.
-    /// @property 
-    VariantType GetType() const { return type_; }
-
-    /// Set pin type.
-    /// @property
-    void SetType(VariantType type);
-
     /// Get name of the pin.
     /// @property
     const ea::string& GetName() { return name_; }
-
-    /// Get pin direction.
-    GraphPinDirection GetDirection() const { return direction_; }
 
     /// Get pin node.
     GraphNode* GetNode() const { return node_; }
 
 protected:
     /// Serialize from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive);
+    virtual bool Serialize(Archive& archive, ArchiveBlock& block);
 
     /// Set name of the pin. Executed by GraphNode.
     /// @property
-    void SetName(const ea::string_view name);
+    void SetName(const ea::string_view name) { name_ = name; }
 
     /// Pin name.
     ea::string name_;
 
-    /// Pin type.
-    VariantType type_;
+    /// Owner node.
+    GraphNode* node_{};
 
-    /// Node that owns the pin.
-    GraphNode* node_;
-    /// Pin direction.
-    GraphPinDirection direction_;
-
-    /// GraphNode is a friend class to construct the pin and call SetName.
     friend class GraphNode;
-
-    /// GraphMapHelper is a friend class to manipulate pin collections.
-    template <typename T, size_t nodeCount> friend class GraphMapHelper;
+    template <typename T, size_t nodeCount> friend struct GraphNodeMapHelper;
 };
 
-/// Graph node pin that connects to other pins.
-class URHO3D_API GraphOutPin : public GraphPin
+/// Abstract graph data flow node pin. Has pin type.
+class URHO3D_API GraphDataPin : public GraphPin
 {
 protected:
     /// Construct.
-    GraphOutPin(GraphNode* node, GraphPinDirection direction);
+    explicit GraphDataPin(GraphNode* node);
+public:
+    /// Get pin type.
+    /// @property
+    VariantType GetType() const { return type_; }
 
-    /// GraphNode is a friend class to construct the pin.
+    /// Set pin type.
+    /// @property
+    void SetType(VariantType type) { type_ = type; }
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, ArchiveBlock& block) override;
+
+protected:
+    /// Pin type.
+    VariantType type_{VAR_NONE};
+};
+
+/// Graph node pin that connects to other pins.
+class URHO3D_API GraphOutPin : public GraphDataPin
+{
+protected:
+    /// Construct.
+    explicit GraphOutPin(GraphNode* node);
+
     friend class GraphNode;
 };
 
 /// Graph node pin with connection.
-class URHO3D_API GraphInPin : public GraphPin
+class URHO3D_API GraphInPin : public GraphDataPin
 {
 protected:
     /// Construct.
-    GraphInPin(GraphNode* node, GraphPinDirection direction);
+    GraphInPin(GraphNode* node);
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
+    bool Serialize(Archive& archive, ArchiveBlock& block) override;
 
 public:
     /// Connect to other pin.
     bool ConnectTo(GraphOutPin& pin);
 
+    /// Disconnect pin.
+    void Disconnect();
+
     /// Get pin connected to the current pin.
     GraphOutPin* GetConnectedPin() const;
 
     /// Get true if pin is connected.
-    bool GetConnected() const { return targetNode_; }
+    bool IsConnected() const { return targetNode_; }
+
+    /// Get value.
+    /// @property
+    const Variant& GetValue() { return value_; }
+
+    /// Set value. Disconnects pin from an "Out" pin.
+    /// @property
+    void SetValue(const Variant& variant);
 
 private:
     /// Target node.
-    unsigned targetNode_;
+    unsigned targetNode_{};
 
     /// Target pin name.
     ea::string targetPin_;
 
-    /// GraphNode is a friend class to construct the pin.
+    /// Target node.
+    Variant value_;
+
     friend class GraphNode;
 };
 
-/// Graph data flow node pin with connection and default value.
-class URHO3D_API GraphDataInPin : public GraphInPin
+/// Graph node execution flow "enter" pin. May be connected to multiple exit pins.
+class URHO3D_API GraphEnterPin : public GraphPin
 {
 protected:
     /// Construct.
-    GraphDataInPin(GraphNode* node, GraphPinDirection direction);
+    explicit GraphEnterPin(GraphNode* node);
+
+    friend class GraphNode;
+};
+
+/// Graph node execution flow "exit" pin. May be connected to one "enter" pins.
+class URHO3D_API GraphExitPin : public GraphPin
+{
+protected:
+    /// Construct.
+    explicit GraphExitPin(GraphNode* node);
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
+    bool Serialize(Archive& archive, ArchiveBlock& block) override;
 
 public:
-    /// Get default value.
-    /// @property
-    const Variant& GetDefaultValue();
+    /// Connect to other pin.
+    bool ConnectTo(GraphEnterPin& pin);
 
-    /// Set default value.
-    /// @property 
-    void SetDefaultValue(const Variant& variant);
+    /// Disconnect pin.
+    void Disconnect();
+
+    /// Get pin connected to the current pin.
+    GraphEnterPin* GetConnectedPin() const;
+
+    /// Get true if pin is connected.
+    bool IsConnected() const { return targetNode_; }
 
 private:
     /// Target node.
-    Variant defaultValue_;
+    unsigned targetNode_{};
 
-    /// GraphNode is a friend class to construct the pin.
+    /// Target pin name.
+    ea::string targetPin_;
+
     friend class GraphNode;
 };
+
 } // namespace Urho3D

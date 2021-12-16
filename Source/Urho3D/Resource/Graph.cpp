@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2021 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@ void Graph::RegisterObject(Context* context)
 
 void Graph::Clear()
 {
-    nextNodeID_ = FIRST_ID;
+    laskKnownNodeID_ = FIRST_ID;
 
     for (auto& i: nodes_)
     {
@@ -85,7 +85,7 @@ bool Graph::Serialize(Archive& archive)
                     SharedPtr<GraphNode> node = MakeShared<GraphNode>(context_);
                     node->SetGraph(nullptr, id);
                     Add(node);
-                    if (!node->Serialize(archive))
+                    if (!node->Serialize(archive, block))
                         return false;
                 }
                 else
@@ -104,7 +104,7 @@ bool Graph::Serialize(Archive& archive)
                     unsigned id = value.first;
                     if (!SerializeValue(archive, "id", id))
                         return false;
-                    if (!value.second->Serialize(archive))
+                    if (!value.second->Serialize(archive, block))
                         return false;
                 }
                 else
@@ -177,15 +177,15 @@ void Graph::Add(GraphNode* node)
         return;
     }
 
-    const auto i = nodes_.find(id);
+    auto i = nodes_.find(id);
     if (i == nodes_.end())
     {
-        if (id >= nextNodeID_)
+        if (id >= laskKnownNodeID_)
         {
             if (id == MAX_ID - 1)
-                nextNodeID_ = FIRST_ID;
+                laskKnownNodeID_ = FIRST_ID;
             else
-                nextNodeID_ = id+1;
+                laskKnownNodeID_ = id+1;
         }
         nodes_[id] = node;
         node->SetGraph(this, id);
@@ -218,11 +218,11 @@ unsigned Graph::GetFreeNodeID()
 {
     for (;;)
     {
-        unsigned ret = nextNodeID_;
-        if (nextNodeID_ < MAX_ID)
-            ++nextNodeID_;
+        unsigned ret = laskKnownNodeID_;
+        if (laskKnownNodeID_ < MAX_ID)
+            ++laskKnownNodeID_;
         else
-            nextNodeID_ = FIRST_ID;
+            laskKnownNodeID_ = FIRST_ID;
 
         if (!nodes_.contains(ret))
             return ret;

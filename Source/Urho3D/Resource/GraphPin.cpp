@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the Urho3D project.
+// Copyright (c) 2021 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,30 +31,43 @@
 namespace Urho3D
 {
 
-GraphPin::GraphPin(GraphNode* node, GraphPinDirection direction)
-    : type_(VAR_NONE)
-    , node_(node)
-    , direction_(direction)
+GraphPin::GraphPin(GraphNode* node)
+    : node_(node)
 {
 }
 
-void GraphPin::SetType(VariantType type) { type_ = type; }
+GraphPin::~GraphPin() = default;
 
-bool GraphPin::Serialize(Archive& archive)
+bool GraphPin::Serialize(Archive& archive, ArchiveBlock& block)
 {
-    if (!SerializeValue(archive, "name", name_))
-    {
-        return false;
-    }
-    // TODO: check if element is missing properly
-    SerializeEnum(archive, "type", Variant::GetTypeNameList(), type_);
+    //TODO: make proper optional serialization.
+    SerializeOptional(archive, name_.empty(),
+                             [&](bool loading) { return SerializeValue(archive, "name", name_); });
     return true;
 }
 
-void GraphPin::SetName(const ea::string_view name) { name_ = name; }
+GraphDataPin::GraphDataPin(GraphNode* node)
+    : GraphPin(node)
+{
+}
 
-GraphInPin::GraphInPin(GraphNode* node, GraphPinDirection direction)
-    : GraphPin(node, direction)
+bool GraphDataPin::Serialize(Archive& archive, ArchiveBlock& block)
+{
+    if (!GraphPin::Serialize(archive, block))
+        return false;
+    // TODO: check if element is missing properly
+    SerializeOptional(archive, type_ == VAR_NONE,
+                      [&](bool loading) { return SerializeEnum(archive, "type", Variant::GetTypeNameList(), type_); });
+    return true;
+}
+
+GraphOutPin::GraphOutPin(GraphNode* node)
+    :GraphDataPin(node)
+{
+}
+
+GraphInPin::GraphInPin(GraphNode* node)
+    : GraphDataPin(node)
     , targetNode_(0)
 {
 }
@@ -71,19 +84,15 @@ bool GraphInPin::ConnectTo(GraphOutPin& pin)
         URHO3D_LOGERROR("Can't connect to pin in a different graph.");
         return false;
     }
-    if (direction_ == PINDIR_INPUT && pin.GetDirection() != PINDIR_OUTPUT)
-    {
-        URHO3D_LOGERROR("Input pin can only be connected to output pin.");
-        return false;
-    }
-    if (direction_ == PINDIR_EXIT && pin.GetDirection() != PINDIR_ENTER)
-    {
-        URHO3D_LOGERROR("Exit pin can only be connected to enter pin.");
-        return false;
-    }
     targetNode_ = pin.GetNode()->GetID();
     targetPin_ = pin.GetName();
     return true;
+}
+
+void GraphInPin::Disconnect()
+{
+    targetNode_ = 0;
+    targetPin_.clear();
 }
 
 GraphOutPin* GraphInPin::GetConnectedPin() const
@@ -91,18 +100,74 @@ GraphOutPin* GraphInPin::GetConnectedPin() const
     if (!targetNode_)
         return nullptr;
 
-    const auto node = GetNode()->GetGraph()->GetNode(targetNode_);
-    if (!node)
-        return nullptr;
-
-    if (direction_ == PINDIR_INPUT)
-        return node->GetOutput(targetPin_);
-    return node->GetEnter(targetPin_);
+    if (const auto node = GetNode())
+    {
+        if (const auto graph = node->GetGraph())
+        {
+            if (auto target = graph->GetNode(targetNode_))
+            {
+                return target->GetOutput(targetPin_);
+            }
+        }
+    }
+    return nullptr;
 }
 
-bool GraphInPin::Serialize(Archive& archive)
+
+bool GraphInPin::Serialize(Archive& archive, ArchiveBlock& block)
 {
-    if (!GraphPin::Serialize(archive))
+    if (!GraphDataPin::Serialize(archive, block))
+        return false;
+
+            // TODO: check if element is missing properly
+    SerializeOptional(archive, targetNode_ != 0,
+                      [&](bool loading) { return SerializeValue(archive, "node", targetNode_); });
+    SerializeOptional(archive, !targetPin_.empty(),
+                      [&](bool loading) { return SerializeValue(archive, "pin", targetPin_); });
+
+    SerializeOptional(archive, !value_.IsEmpty(),
+                      [&](bool loading) { return SerializeVariantValue(archive, type_, "value", value_); });
+
+    return true;
+}
+
+void GraphInPin::SetValue(const Variant& variant)
+{
+    value_ = variant;
+    Disconnect();
+}
+
+GraphEnterPin* GraphExitPin::GetConnectedPin() const
+{
+    if (!targetNode_)
+        return nullptr;
+
+    if (const auto node = GetNode())
+    {
+        if (const auto graph = node->GetGraph())
+        {
+            if (auto target = graph->GetNode(targetNode_))
+            {
+                return node->GetEnter(targetPin_);
+            }
+        }
+    }
+    return nullptr;
+}
+
+GraphEnterPin::GraphEnterPin(GraphNode* node)
+    :GraphPin(node)
+{
+}
+
+GraphExitPin::GraphExitPin(GraphNode* node)
+    : GraphPin(node)
+{
+}
+
+bool GraphExitPin::Serialize(Archive& archive, ArchiveBlock& block)
+{
+    if (!GraphPin::Serialize(archive, block))
         return false;
     if (archive.IsInput())
     {
@@ -131,43 +196,27 @@ bool GraphInPin::Serialize(Archive& archive)
     return true;
 }
 
-bool GraphDataInPin::Serialize(Archive& archive)
+bool GraphExitPin::ConnectTo(GraphEnterPin& pin)
 {
-    if (!GraphInPin::Serialize(archive))
+    if (!GetNode()->GetGraph())
+    {
+        URHO3D_LOGERROR("Can't connect pin from detached node.");
         return false;
-    if (archive.IsInput())
-    {
-        SerializeVariantValue(archive, type_, "value", defaultValue_);
     }
-    else
+    if (pin.GetNode()->GetGraph() != GetNode()->GetGraph())
     {
-        if (defaultValue_.GetType() != VAR_NONE)
-        {
-            if (!SerializeVariantValue(archive, defaultValue_.GetType(), "value", defaultValue_))
-                return false;
-        }
+        URHO3D_LOGERROR("Can't connect to pin in a different graph.");
+        return false;
     }
+    targetNode_ = pin.GetNode()->GetID();
+    targetPin_ = pin.GetName();
     return true;
 }
 
-const Variant& GraphDataInPin::GetDefaultValue()
+void GraphExitPin::Disconnect()
 {
-    return defaultValue_;
+    targetNode_ = 0;
+    targetPin_.clear();
 }
 
-void GraphDataInPin::SetDefaultValue(const Variant& variant)
-{
-    defaultValue_ = variant;
 }
-
-GraphDataInPin::GraphDataInPin(GraphNode* node, GraphPinDirection direction)
-    : GraphInPin(node, direction)
-{
-}
-
-GraphOutPin::GraphOutPin(GraphNode* node, GraphPinDirection direction)
-    : GraphPin(node, direction)
-{
-}
-
-} // namespace Urho3D

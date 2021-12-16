@@ -133,7 +133,7 @@ bool ParticleGraphNode::Save(ParticleGraphWriter& writer, GraphNode& node)
     return true;
 }
 
-ParticleGraphPin* ParticleGraphNode::LoadInputPin(ParticleGraphReader& reader, GraphDataInPin& inputPin)
+ParticleGraphPin* ParticleGraphNode::LoadInputPin(ParticleGraphReader& reader, GraphInPin& inputPin)
 {
     const auto pin = GetPin(inputPin.GetName());
     if (pin)
@@ -176,7 +176,7 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
 
         assert(pin->GetName() == inputPin.GetName());
 
-        if (inputPin.GetConnected())
+        if (inputPin.IsConnected())
         {
             const auto source = inputPin.GetConnectedPin();
             if (source == nullptr)
@@ -197,12 +197,12 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
     for (auto& inputPin : node.GetInputs())
     {
         auto pin = GetPin(inputPin.GetName());
-        if (!inputPin.GetConnected())
+        if (!inputPin.IsConnected())
         {
-            auto constValue = inputPin.GetDefaultValue();
+            auto constValue = inputPin.GetValue();
             if (constValue.GetType() == VAR_NONE)
             {
-                URHO3D_LOGERROR(Format("Pin {}.{} is not connected and doesn't have default value.", GetTypeName(),
+                URHO3D_LOGERROR(Format("Pin {}.{} is not connected and doesn't have value.", GetTypeName(),
                                        inputPin.GetName()));
                 return false;
             }

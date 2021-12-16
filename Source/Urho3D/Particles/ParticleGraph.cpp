@@ -173,9 +173,14 @@ unsigned ParticleGraphReader::ReadNode(unsigned id)
     }
 
     auto *srcNode = graph_.GetNode(id);
+    auto newNode = system_->CreateObject(srcNode->GetNameHash());
+    if (!newNode)
+    {
+        URHO3D_LOGERROR(Format("Unknown node type {}", srcNode->GetName()));
+        return ParticleGraph::INVALID_NODE_INDEX;
+    }
     SharedPtr<ParticleGraphNode> dstNode;
-    dstNode.StaticCast(system_->CreateObject(srcNode->GetNameHash()));
-
+    dstNode.StaticCast(newNode);
     if (!dstNode->Load(*this, *srcNode))
         return ParticleGraph::INVALID_NODE_INDEX;
 
