@@ -57,13 +57,13 @@ void Random::RegisterObject(ParticleGraphSystem* context)
 {
     auto* reflection = context->AddReflection<Random>();
     reflection->AddAttribute(
-        Urho3D::AttributeInfo(VAR_NONE, "Min",
+        Urho3D::AttributeInfo(VAR_FLOAT, "Min",
                               Urho3D::MakeVariantAttributeAccessor<Random>(
                                   [](const Random& self, Urho3D::Variant& value) { value = self.GetMin(); },
                                   [](Random& self, const Urho3D::Variant& value) { self.SetMin(value); }),
                               nullptr, Variant(), AM_DEFAULT));
     reflection->AddAttribute(
-        Urho3D::AttributeInfo(VAR_NONE, "Max",
+        Urho3D::AttributeInfo(VAR_FLOAT, "Max",
                               Urho3D::MakeVariantAttributeAccessor<Random>(
                                   [](const Random& self, Urho3D::Variant& value) { value = self.GetMax(); },
                                   [](Random& self, const Urho3D::Variant& value) { self.SetMax(value); }),
