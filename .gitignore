@@ -12,7 +12,6 @@
 /bin/StringHashNames.json
 /include/
 /lib*/
-generated/
 /Source/Urho3D/tolua++-prefix/
 /cmake-build*
 captures/
