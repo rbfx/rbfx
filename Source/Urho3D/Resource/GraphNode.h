@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "GraphPin.h"
 #include "../Core/Context.h"
+#include "GraphPin.h"
 #include <EASTL/fixed_vector.h>
 #include <EASTL/span.h>
 
@@ -46,7 +46,7 @@ public:
     StringHash GetNameHash() const { return nameHash_; }
 
     /// Set property name.
-    /// @property 
+    /// @property
     void SetName(const ea::string_view name)
     {
         name_ = name;
@@ -162,7 +162,6 @@ public:
     bool Serialize(Archive& archive, ArchiveBlock& block);
 
 protected:
-
     /// Set graph and id. Called by Graph.
     void SetGraph(Graph* scene, unsigned id);
 

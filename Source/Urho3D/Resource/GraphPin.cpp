@@ -40,9 +40,8 @@ GraphPin::~GraphPin() = default;
 
 bool GraphPin::Serialize(Archive& archive, ArchiveBlock& block)
 {
-    //TODO: make proper optional serialization.
-    SerializeOptional(archive, name_.empty(),
-                             [&](bool loading) { return SerializeValue(archive, "name", name_); });
+    // TODO: make proper optional serialization.
+    SerializeOptional(archive, name_.empty(), [&](bool loading) { return SerializeValue(archive, "name", name_); });
     return true;
 }
 
@@ -57,12 +56,12 @@ bool GraphDataPin::Serialize(Archive& archive, ArchiveBlock& block)
         return false;
     // TODO: check if element is missing properly
     SerializeOptional(archive, type_ == VAR_NONE,
-                      [&](bool loading) { return SerializeEnum(archive, "type", Variant::GetTypeNameList(), type_); });
+        [&](bool loading) { return SerializeEnum(archive, "type", Variant::GetTypeNameList(), type_); });
     return true;
 }
 
 GraphOutPin::GraphOutPin(GraphNode* node)
-    :GraphDataPin(node)
+    : GraphDataPin(node)
 {
 }
 
@@ -113,20 +112,19 @@ GraphOutPin* GraphInPin::GetConnectedPin() const
     return nullptr;
 }
 
-
 bool GraphInPin::Serialize(Archive& archive, ArchiveBlock& block)
 {
     if (!GraphDataPin::Serialize(archive, block))
         return false;
 
-            // TODO: check if element is missing properly
-    SerializeOptional(archive, targetNode_ != 0,
-                      [&](bool loading) { return SerializeValue(archive, "node", targetNode_); });
-    SerializeOptional(archive, !targetPin_.empty(),
-                      [&](bool loading) { return SerializeValue(archive, "pin", targetPin_); });
+    // TODO: check if element is missing properly
+    SerializeOptional(
+        archive, targetNode_ != 0, [&](bool loading) { return SerializeValue(archive, "node", targetNode_); });
+    SerializeOptional(
+        archive, !targetPin_.empty(), [&](bool loading) { return SerializeValue(archive, "pin", targetPin_); });
 
     SerializeOptional(archive, !value_.IsEmpty(),
-                      [&](bool loading) { return SerializeVariantValue(archive, type_, "value", value_); });
+        [&](bool loading) { return SerializeVariantValue(archive, type_, "value", value_); });
 
     return true;
 }
@@ -156,7 +154,7 @@ GraphEnterPin* GraphExitPin::GetConnectedPin() const
 }
 
 GraphEnterPin::GraphEnterPin(GraphNode* node)
-    :GraphPin(node)
+    : GraphPin(node)
 {
 }
 
@@ -219,4 +217,4 @@ void GraphExitPin::Disconnect()
     targetPin_.clear();
 }
 
-}
+} // namespace Urho3D

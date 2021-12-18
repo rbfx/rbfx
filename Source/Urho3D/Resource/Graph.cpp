@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-
 #include "Graph.h"
 #include "GraphNode.h"
 #include "XMLArchive.h"
@@ -37,32 +36,26 @@ Graph::Graph(Context* context)
 {
 }
 
-Graph::~Graph()
-{
-    Clear();
-}
+Graph::~Graph() { Clear(); }
 
-void Graph::RegisterObject(Context* context)
-{
-}
+void Graph::RegisterObject(Context* context) {}
 
 void Graph::Clear()
 {
     laskKnownNodeID_ = FIRST_ID;
 
-    for (auto& i: nodes_)
+    for (auto& i : nodes_)
     {
         i.second->SetGraph(nullptr, i.first);
     }
     nodes_.clear();
 }
 
-
 void Graph::GetNodeIds(ea::vector<unsigned>& ids) const
 {
     ids.clear();
     ids.reserve(nodes_.size());
-    for (auto& node: nodes_)
+    for (auto& node : nodes_)
     {
         ids.push_back(node.first);
     }
@@ -185,7 +178,7 @@ void Graph::Add(GraphNode* node)
             if (id == MAX_ID - 1)
                 laskKnownNodeID_ = FIRST_ID;
             else
-                laskKnownNodeID_ = id+1;
+                laskKnownNodeID_ = id + 1;
         }
         nodes_[id] = node;
         node->SetGraph(this, id);

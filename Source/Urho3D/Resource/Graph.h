@@ -85,5 +85,4 @@ private:
     ea::unordered_map<unsigned, SharedPtr<GraphNode>> nodes_;
 };
 
-
 } // namespace Urho3D

@@ -72,6 +72,7 @@ class URHO3D_API GraphDataPin : public GraphPin
 protected:
     /// Construct.
     explicit GraphDataPin(GraphNode* node);
+
 public:
     /// Get pin type.
     /// @property

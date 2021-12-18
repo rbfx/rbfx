@@ -46,7 +46,6 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper
         return nullptr;
     }
 
-
     T& GetOrAdd(const ea::string_view name, ea::function<T()> add)
     {
         for (T& val : vector_)
@@ -96,7 +95,7 @@ GraphNodeMapHelper<T, nodeCount> MakeMapHelper(ea::fixed_vector<T, nodeCount>& v
     return GraphNodeMapHelper<T, nodeCount>(vector);
 }
 
-}
+} // namespace
 
 bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value)
 {
@@ -130,50 +129,46 @@ GraphNode::GraphNode(Context* context)
 
 GraphNode::~GraphNode() = default;
 
-void GraphNode::RegisterObject(Context* context)
-{
-    context->RegisterFactory<GraphNode>();
-}
-
+void GraphNode::RegisterObject(Context* context) { context->RegisterFactory<GraphNode>(); }
 
 template <typename PinType, size_t PinCount>
 bool GraphNode::SerializePins(Archive& archive, const char* name, ea::fixed_vector<PinType, PinCount>& vector)
 {
     SerializeOptional(archive, !vector.empty(),
-                      [&](bool loading)
-                      {
-                          if (auto block = archive.OpenArrayBlock(name, vector.size()))
-                          {
-                              if (archive.IsInput())
-                              {
-                                  vector.clear();
-                                  vector.reserve(block.GetSizeHint());
-                                  for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-                                  {
-                                      if (auto pinBlock = archive.OpenUnorderedBlock("pin"))
-                                      {
-                                          vector.push_back(PinType(this));
-                                          if (!vector.back().Serialize(archive, pinBlock))
-                                              return false;
-                                      }
-                                  }
-                                  return true;
-                              }
-                              else
-                              {
-                                  for (auto& value : vector)
-                                  {
-                                      if (auto pinBlock = archive.OpenUnorderedBlock("pin"))
-                                      {
-                                          if (!value.Serialize(archive, pinBlock))
-                                              return false;
-                                      }
-                                  }
-                                  return true;
-                              }
-                          }
-                          return false;
-                      });
+        [&](bool loading)
+        {
+            if (auto block = archive.OpenArrayBlock(name, vector.size()))
+            {
+                if (archive.IsInput())
+                {
+                    vector.clear();
+                    vector.reserve(block.GetSizeHint());
+                    for (unsigned i = 0; i < block.GetSizeHint(); ++i)
+                    {
+                        if (auto pinBlock = archive.OpenUnorderedBlock("pin"))
+                        {
+                            vector.push_back(PinType(this));
+                            if (!vector.back().Serialize(archive, pinBlock))
+                                return false;
+                        }
+                    }
+                    return true;
+                }
+                else
+                {
+                    for (auto& value : vector)
+                    {
+                        if (auto pinBlock = archive.OpenUnorderedBlock("pin"))
+                        {
+                            if (!value.Serialize(archive, pinBlock))
+                                return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        });
     return true;
 }
 
@@ -184,7 +179,7 @@ Variant& GraphNode::GetOrAddProperty(const ea::string_view name)
 
 Variant* GraphNode::GetProperty(const ea::string_view name)
 {
-    const auto res  = MakeMapHelper(properties_).Get(name);
+    const auto res = MakeMapHelper(properties_).Get(name);
     if (res)
         return &res->value_;
     return nullptr;
@@ -197,10 +192,7 @@ GraphNode* GraphNode::WithProperty(const ea::string_view name, const Variant& va
     return this;
 }
 
-GraphInPin* GraphNode::GetInput(const ea::string_view name)
-{
-    return MakeMapHelper(inputPins_).Get(name);
-}
+GraphInPin* GraphNode::GetInput(const ea::string_view name) { return MakeMapHelper(inputPins_).Get(name); }
 
 GraphInPin& GraphNode::GetOrAddInput(const ea::string_view name)
 {
@@ -249,15 +241,9 @@ GraphNode* GraphNode::WithOutput(const ea::string_view name, VariantType type)
     return this;
 }
 
-GraphOutPin* GraphNode::GetOutput(const ea::string_view name)
-{
-    return MakeMapHelper(outputPins_).Get(name);
-}
+GraphOutPin* GraphNode::GetOutput(const ea::string_view name) { return MakeMapHelper(outputPins_).Get(name); }
 
-GraphExitPin* GraphNode::GetExit(const ea::string_view name)
-{
-    return MakeMapHelper(exitPins_).Get(name);
-}
+GraphExitPin* GraphNode::GetExit(const ea::string_view name) { return MakeMapHelper(exitPins_).Get(name); }
 
 GraphExitPin& GraphNode::GetOrAddExit(const ea::string_view name)
 {
@@ -269,10 +255,7 @@ GraphEnterPin& GraphNode::GetOrAddEnter(const ea::string_view name)
     return MakeMapHelper(enterPins_).GetOrAdd(name, [this]() { return GraphEnterPin(this); });
 }
 
-GraphEnterPin* GraphNode::GetEnter(const ea::string_view name)
-{
-    return MakeMapHelper(enterPins_).Get(name);
-}
+GraphEnterPin* GraphNode::GetEnter(const ea::string_view name) { return MakeMapHelper(enterPins_).Get(name); }
 
 void GraphNode::SetName(const ea::string& name)
 {
@@ -293,16 +276,13 @@ bool GraphNode::Serialize(Archive& archive, ArchiveBlock& block)
     }
     // TODO: check if properties present
     SerializeOptional(archive, !properties_.empty(),
-                      [&](bool loading)
-    {
-        return SerializeVectorAsObjects(archive, "properties", "property", properties_);
-    });
+        [&](bool loading) { return SerializeVectorAsObjects(archive, "properties", "property", properties_); });
 
     SerializePins(archive, "enter", enterPins_);
     SerializePins(archive, "in", inputPins_);
     SerializePins(archive, "exit", exitPins_);
     SerializePins(archive, "out", outputPins_);
-    
+
     return true;
 }
 
