@@ -199,8 +199,9 @@ void ParticleGraphLayer::RegisterObject(Context* context)
 ParticleGraphLayer::ParticleGraphLayer(Context* context)
     : Object(context)
     , capacity_(16)
-    , emit_(context)
-    , update_(context)
+    , emit_(MakeShared<ParticleGraph>(context))
+    , init_(MakeShared<ParticleGraph>(context))
+    , update_(MakeShared<ParticleGraph>(context))
 {
     Invalidate();
 }
@@ -209,10 +210,13 @@ ParticleGraphLayer::ParticleGraphLayer(Context* context)
 ParticleGraphLayer::~ParticleGraphLayer() = default;
 
 /// Get emit graph.
-ParticleGraph& ParticleGraphLayer::GetEmitGraph() { return emit_; }
+ParticleGraph& ParticleGraphLayer::GetEmitGraph() { return *emit_; }
+
+/// Get initialization graph.
+ParticleGraph& ParticleGraphLayer::GetInitGraph() { return *init_; }
 
 /// Get update graph.
-ParticleGraph& ParticleGraphLayer::GetUpdateGraph() { return update_; }
+ParticleGraph& ParticleGraphLayer::GetUpdateGraph() { return *update_; }
 
 void ParticleGraphLayer::Invalidate()
 {
@@ -222,37 +226,29 @@ void ParticleGraphLayer::Invalidate()
     attributes_.Reset(0, 0);
 }
 
-bool SerializeValue(Archive& archive, const char* name, ParticleGraphLayerBurst& burst)
-{
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        // TODO: handle optional
-        SerializeValue(archive, "delay", burst.delayInSeconds_);
-        SerializeValue(archive, "count", burst.count_);
-        SerializeValue(archive, "cycles", burst.cycles_);
-        SerializeValue(archive, "interval", burst.cycleIntervalInSeconds_);
-        SerializeValue(archive, "probability", burst.probability_);
-        return true;
-    }
-    return false;
-}
-
 void ParticleGraphLayer::AttributeBufferLayout::EvaluateLayout(const ParticleGraphLayer& layer)
 {
-    const auto emitGraphNodes = layer.emit_.GetNumNodes();
-    const auto updateGraphNodes = layer.update_.GetNumNodes();
+    const auto emitGraphNodes = layer.emit_->GetNumNodes();
+    const auto initGraphNodes = layer.init_->GetNumNodes();
+    const auto updateGraphNodes = layer.update_->GetNumNodes();
     attributeBufferSize_ = 0;
     emitNodePointers_ = Append<ParticleGraphNodeInstance*>(this, emitGraphNodes);
+    initNodePointers_ = Append<ParticleGraphNodeInstance*>(this, initGraphNodes);
     updateNodePointers_ = Append<ParticleGraphNodeInstance*>(this, updateGraphNodes);
     unsigned instanceSize = 0;
     for (unsigned i = 0; i < emitGraphNodes; ++i)
     {
-        const auto node = layer.emit_.GetNode(i);
+        const auto node = layer.emit_->GetNode(i);
+        instanceSize += node->EvaluateInstanceSize();
+    }
+    for (unsigned i = 0; i < initGraphNodes; ++i)
+    {
+        const auto node = layer.init_->GetNode(i);
         instanceSize += node->EvaluateInstanceSize();
     }
     for (unsigned i = 0; i < updateGraphNodes; ++i)
     {
-        const auto node = layer.update_.GetNode(i);
+        const auto node = layer.update_->GetNode(i);
         instanceSize += node->EvaluateInstanceSize();
     }
     nodeInstances_ = Append(this, instanceSize);
@@ -274,12 +270,17 @@ bool ParticleGraphLayer::Commit()
     // Allocate memory for each pin.
     {
         ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempMemory_);
-        if (!builder.Build(emit_))
+        if (!builder.Build(*init_))
             return false;
     }
     {
         ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempMemory_);
-        if (!builder.Build(update_))
+        if (!builder.Build(*emit_))
+            return false;
+    }
+    {
+        ParticleGraphAttributeBuilder builder(attributes_, &attributeBufferLayout_, capacity_, tempMemory_);
+        if (!builder.Build(*update_))
             return false;
     }
     attributeBufferLayout_.attributeBufferSize_ = attributes_.GetRequiredMemory();
@@ -303,12 +304,11 @@ bool ParticleGraphLayer::Serialize(Archive& archive)
         return false;
 
     //TODO: Handle optional collection.
-    if (archive.IsInput() || !bursts_.empty())
-        SerializeVectorAsObjects(archive, "bursts", "burst", bursts_);
-
-    if (!emit_.Serialize(archive, "emit"))
+    if (!emit_->Serialize(archive, "emit"))
         return false;
-    if (!update_.Serialize(archive, "update"))
+    if (!init_->Serialize(archive, "init"))
+        return false;
+    if (!update_->Serialize(archive, "update"))
         return false;
     if (archive.IsInput())
     {

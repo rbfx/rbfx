@@ -31,17 +31,6 @@ namespace Urho3D
 /// Instance of particle graph layer in emitter.
 class URHO3D_API ParticleGraphLayerInstance
 {
-    struct BurstState
-    {
-        /// Burst settings.
-        ParticleGraphLayerBurst burst_;
-        /// Time left before the next burst.
-        float timeToBurst_;
-
-        void Reset(const ParticleGraphLayerBurst& burst);
-
-        unsigned Update(float timestep);
-    };
 public:
     /// Construct.
     ParticleGraphLayerInstance();
@@ -100,6 +89,9 @@ protected:
     /// Destroy particles.
     void DestroyParticles();
 
+    ea::span<uint8_t> InitNodeInstances(ea::span<uint8_t> nodeInstances, const ParticleGraphSpan& nodePointers,
+                               const ParticleGraph& particle_graph);
+
 private:
     /// Memory used to store all layer related arrays: nodes, indices, attributes.
     ea::vector<uint8_t> attributes_;
@@ -108,6 +100,8 @@ private:
     ea::vector<uint8_t> temp_;
     /// Node instances for emit graph
     ea::span<ParticleGraphNodeInstance*> emitNodeInstances_;
+    /// Node instances for initialization graph
+    ea::span<ParticleGraphNodeInstance*> initNodeInstances_;
     /// Node instances for update graph
     ea::span<ParticleGraphNodeInstance*> updateNodeInstances_;
     /// All indices of the particle system.
@@ -122,8 +116,6 @@ private:
     SharedPtr<ParticleGraphLayer> layer_;
     /// Emitter that owns the layer instance.
     ParticleGraphEmitter* emitter_{};
-    /// State of each burst.
-    ea::fixed_vector<BurstState, 1> burstStates_;
 
     friend class ParticleGraphEmitter;
 };

@@ -101,17 +101,17 @@ TEST_CASE("Test simple particle graph")
     effect->SetNumLayers(1);
     auto layer = effect->GetLayer(0);
     {
-        auto& emitGraph = layer->GetEmitGraph();
+        auto& initGraph = layer->GetInitGraph();
 
         auto c = MakeShared<ParticleGraphNodes::Constant>(context);
         c->SetValue(Vector3(1,2,3));
-        auto constIndex = emitGraph.Add(c);
+        auto constIndex = initGraph.Add(c);
 
         auto set = MakeShared<ParticleGraphNodes::SetAttribute>(context);
         set->SetAttributeName("pos");
         set->SetAttributeType(VAR_VECTOR3);
         set->SetPinSource(set->GetPinIndex(""), constIndex);
-        auto setIndex = emitGraph.Add(set);
+        auto setIndex = initGraph.Add(set);
     }
     {
         auto& updateGraph = layer->GetUpdateGraph();
@@ -186,6 +186,10 @@ TEST_CASE("Test const")
 	<layer type="ParticleGraphLayer" capacity="10">
 		<emit>
 			<nodes>
+			</nodes>
+		</emit>
+		<init>
+			<nodes>
 				<node id="1" name="Constant">
 					<properties>
 						<property name="Value" type="Vector3" value="1 2 3" />
@@ -203,7 +207,7 @@ TEST_CASE("Test const")
 					</out>
 				</node>
 			</nodes>
-		</emit>
+		</init>
 		<update>
 			<nodes>
 			</nodes>
@@ -237,6 +241,10 @@ TEST_CASE("Test Expire")
 			<nodes>
 			</nodes>
 		</emit>
+		<init>
+			<nodes>
+			</nodes>
+		</init>
 		<update>
 			<nodes>
 				<node id="1" name="Expire">
