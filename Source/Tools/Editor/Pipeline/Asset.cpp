@@ -191,7 +191,7 @@ bool Asset::Load()
     }
 
     JSONInputArchive archive(&file);
-    if (!Serialize(archive))
+    if (!file.GetRoot().IsNull() && !Serialize(archive))
         return false;
 
     // Initialize flavor importers.

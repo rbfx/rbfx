@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Assert.h"
 #include "../Core/Object.h"
 #include "../Core/ObjectReflection.h"
 #include "../IO/Log.h"
@@ -266,8 +267,7 @@ void ObjectReflectionRegistry::ErrorReflectionNotFound(StringHash typeNameHash) 
 
 void ObjectReflectionRegistry::ErrorDuplicateReflection(StringHash typeNameHash) const
 {
-    URHO3D_LOGERROR("Object {} is reflectied multiple types.", typeNameHash.ToDebugString());
-    assert(0 && "Object is reflectied multiple types. Did you miss URHO3D_OBJECT macro?");
+    URHO3D_ASSERTLOG(0, "Object {} is reflectied multiple times.", typeNameHash.ToDebugString());
 }
 
 void ObjectReflectionRegistry::AddReflectionToCurrentCategory(ObjectReflection* reflection)
@@ -286,10 +286,7 @@ void ObjectReflectionRegistry::RemoveReflectionFromCurrentCategory(ObjectReflect
     if (oldIndex < objectsInOldCategory.size())
         objectsInOldCategory.erase_at(oldIndex);
     else
-    {
-        URHO3D_LOGERROR("Object {} is not found in category '{}'", reflection->GetTypeName(), oldCategory);
-        assert(0);
-    }
+        URHO3D_ASSERTLOG(0, "Object {} is not found in category '{}'", reflection->GetTypeName(), oldCategory);
 }
 
 }

@@ -72,7 +72,7 @@ enum class ArchiveBlockType
 class Archive;
 
 /// Archive block scope guard.
-class URHO3D_API ArchiveBlock : private NonCopyable
+class URHO3D_API ArchiveBlock : private MovableNonCopyable
 {
 public:
     /// Construct invalid.
@@ -237,7 +237,7 @@ public:
 };
 
 /// Archive implementation helper. Provides default Archive implementation for most cases.
-class URHO3D_API ArchiveBase : public Archive, private NonCopyable
+class URHO3D_API ArchiveBase : public Archive, public MovableNonCopyable
 {
 public:
     /// Get context.

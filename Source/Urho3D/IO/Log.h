@@ -24,6 +24,7 @@
 
 #include <EASTL/list.h>
 
+#include "../Core/Assert.h"
 #include "../Core/Macros.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
