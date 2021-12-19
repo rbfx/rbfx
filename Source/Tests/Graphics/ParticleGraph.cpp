@@ -216,6 +216,7 @@ TEST_CASE("Test const")
 </particleGraphEffect>)";
     MemoryBuffer buffer(xml);
     REQUIRE(effect->Load(buffer));
+    REQUIRE(effect->GetLayer(0)->GetInitGraph().GetNumNodes() >= 2);
 
     const auto scene = MakeShared<Scene>(context);
     const auto node = scene->CreateChild();

@@ -89,8 +89,8 @@ protected:
     /// Destroy particles.
     void DestroyParticles();
 
-    ea::span<uint8_t> InitNodeInstances(ea::span<uint8_t> nodeInstances, const ParticleGraphSpan& nodePointers,
-                               const ParticleGraph& particle_graph);
+    ea::span<uint8_t> InitNodeInstances(ea::span<uint8_t> nodeInstanceBuffer,
+        ea::span<ParticleGraphNodeInstance*>& nodeInstances, const ParticleGraph& particle_graph);
 
 private:
     /// Memory used to store all layer related arrays: nodes, indices, attributes.

@@ -68,9 +68,12 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
 
     auto nodeInstances = layout.nodeInstances_.MakeSpan<uint8_t>(attributes_);
     // Initialize indices
-    nodeInstances = InitNodeInstances(nodeInstances, layout.emitNodePointers_, layer_->GetEmitGraph());
-    nodeInstances = InitNodeInstances(nodeInstances, layout.initNodePointers_, layer_->GetInitGraph());
-    nodeInstances = InitNodeInstances(nodeInstances, layout.updateNodePointers_, layer_->GetUpdateGraph());
+    emitNodeInstances_ = layout.emitNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
+    nodeInstances = InitNodeInstances(nodeInstances, updateNodeInstances_, layer_->GetEmitGraph());
+    initNodeInstances_ = layout.initNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
+    nodeInstances = InitNodeInstances(nodeInstances, initNodeInstances_, layer_->GetInitGraph());
+    updateNodeInstances_ = layout.updateNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
+    nodeInstances = InitNodeInstances(nodeInstances, updateNodeInstances_, layer_->GetUpdateGraph());
 
     // Initialize indices
     indices_ = layout.indices_.MakeSpan<unsigned>(attributes_);
@@ -169,25 +172,23 @@ void ParticleGraphLayerInstance::RunGraph(ea::span<ParticleGraphNodeInstance*>& 
     }
 }
 
-ea::span<uint8_t> ParticleGraphLayerInstance::InitNodeInstances(ea::span<uint8_t> nodeInstances,
-                                                       const ParticleGraphSpan& nodePointers,
-                                                       const ParticleGraph& graph)
+ea::span<uint8_t> ParticleGraphLayerInstance::InitNodeInstances(ea::span<uint8_t> nodeInstanceBuffer,
+    ea::span<ParticleGraphNodeInstance*>& nodeInstances, const ParticleGraph& graph)
 {
     unsigned instanceOffset = 0;
-    updateNodeInstances_ = nodePointers.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
     for (unsigned i = 0; i < graph.GetNumNodes(); ++i)
     {
         const auto node = graph.GetNode(i);
         const auto size = node->EvaluateInstanceSize();
-        assert(instanceOffset + size <= nodeInstances.size());
-        uint8_t* ptr = nodeInstances.begin() + instanceOffset;
-        updateNodeInstances_[i] = node->CreateInstanceAt(ptr, this);
-        assert(updateNodeInstances_[i] == (ParticleGraphNodeInstance*)ptr);
+        assert(instanceOffset + size <= nodeInstanceBuffer.size());
+        uint8_t* ptr = nodeInstanceBuffer.begin() + instanceOffset;
+        nodeInstances[i] = node->CreateInstanceAt(ptr, this);
+        assert(nodeInstances[i] == reinterpret_cast<ParticleGraphNodeInstance*>(ptr));
         instanceOffset += size;
     }
-    if (instanceOffset == nodeInstances.size())
+    if (instanceOffset == nodeInstanceBuffer.size())
         return {};
-    return nodeInstances.subspan(instanceOffset);
+    return nodeInstanceBuffer.subspan(instanceOffset);
 }
 
 #define InstantiateSpan(Span, FuncName)                                                                                \
