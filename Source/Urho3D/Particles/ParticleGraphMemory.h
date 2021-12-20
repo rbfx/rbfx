@@ -23,9 +23,8 @@
 #pragma once
 
 #include "ParticleGraphMemory.h"
+#include "Span.h"
 #include "../Core/Variant.h"
-
-#include <EASTL/span.h>
 
 namespace Urho3D
 {
@@ -35,30 +34,6 @@ enum ParticleGraphContainerType
     PGCONTAINER_SPARSE,
     PGCONTAINER_SCALAR,
     PGCONTAINER_AUTO
-};
-
-
-template <typename T> struct ScalarSpan
-{
-    ScalarSpan(const ea::span<T>& data)
-        : data_(data)
-    {
-    }
-    inline T& operator[](unsigned index) { return data_.front(); }
-    ea::span<T> data_;
-};
-
-template <typename T> struct SparseSpan
-{
-    SparseSpan() = default;
-    SparseSpan(const ea::span<T>& data, const ea::span<unsigned>& indices)
-        : data_(data)
-        , indices_(indices)
-    {
-    }
-    inline T& operator[](unsigned index) { return data_[indices_[index]]; }
-    ea::span<T> data_;
-    ea::span<unsigned> indices_;
 };
 
 /// Memory layout definition.
@@ -124,10 +99,10 @@ private:
     ea::vector<AttrSpan> attributes_;
 
     /// Size of required attribute buffer.
-    unsigned position_;
+    unsigned position_{};
 
     /// Maximal number of particles.
-    unsigned capacity_;
+    unsigned capacity_{};
 };
 
 /// Memory layout for intermediate values.
@@ -165,10 +140,10 @@ private:
     ea::vector<PinSpan> spans_;
 
     /// Size of required attribute buffer.
-    unsigned position_;
+    unsigned position_{};
 
     /// Maximal number of particles.
-    unsigned capacity_;
+    unsigned capacity_{};
 };
 
 } // namespace Urho3D

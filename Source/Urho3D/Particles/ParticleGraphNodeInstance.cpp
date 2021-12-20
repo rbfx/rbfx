@@ -32,5 +32,9 @@ ParticleGraphNodeInstance::ParticleGraphNodeInstance() = default;
 
 ParticleGraphNodeInstance::~ParticleGraphNodeInstance() = default;
 
+void ParticleGraphNodeInstance::Reset()
+{
+}
+
 } // namespace Urho3D
 

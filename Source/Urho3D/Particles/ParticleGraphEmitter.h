@@ -81,12 +81,12 @@ public:
     /// Get layer by index.
     ParticleGraphLayerInstance* GetLayer(unsigned layer);
 
+    /// Return whether has active particles.
+    bool CheckActiveParticles() const;
+
 protected:
     /// Handle scene being assigned.
     void OnSceneSet(Scene* scene) override;
-
-    /// Return whether has active particles.
-    bool CheckActiveParticles() const;
 
 private:
     /// Handle scene post-update event.

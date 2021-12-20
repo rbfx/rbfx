@@ -28,6 +28,38 @@
 
 namespace Urho3D
 {
+class URHO3D_API ParicleGraphUniform
+{
+public:
+    /// Uniform value.
+    Variant value_;
+
+    /// Get uniform name.
+    /// @property
+    const ea::string& GetName() const { return name_; }
+
+    /// Get uniform name hash.
+    /// @property
+    StringHash GetNameHash() const { return nameHash_; }
+
+    /// Set property name.
+    /// @property
+    void SetName(const ea::string_view name)
+    {
+        name_ = name;
+        nameHash_ = name;
+    }
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive);
+
+private:
+    /// Property name.
+    ea::string name_;
+    /// Property name hash.
+    StringHash nameHash_;
+};
+
 /// Instance of particle graph layer in emitter.
 class URHO3D_API ParticleGraphLayerInstance
 {
@@ -41,11 +73,11 @@ public:
     /// Apply layer settings to the layer instance
     void Apply(const SharedPtr<ParticleGraphLayer>& layer);
 
-    /// Return whether has active particles.
-    bool CheckActiveParticles() const;
+    /// Return number of active particles.
+    unsigned GetNumActiveParticles() const { return activeParticles_; }
 
-    /// Create a new particle. Return true if there was room.
-    bool EmitNewParticle(unsigned numParticles = 1);
+    /// Create a new particles. Return true if there was room.
+    bool EmitNewParticles(float numParticles = 1.0f);
 
     /// Run update step.
     void Update(float timeStep);
@@ -69,8 +101,11 @@ public:
     /// Mark a particle for deletion.
     void MarkForDeletion(unsigned particleIndex);
 
-    /// Get uniform variant.
-    Variant GetUniform(const StringHash& string_hash, VariantType variant);
+    /// Get uniform index. Creates new uniform slot on demand.
+    unsigned GetUniformIndex(const StringHash& string_hash, VariantType variant);
+
+    /// Get uniform variant by index.
+    Variant& GetUniform(unsigned index);
 
     /// Reset the particle emitter layer completely. Removes current particles, sets emitting state on, and resets the
     /// emission timer.
@@ -93,6 +128,8 @@ protected:
         ea::span<ParticleGraphNodeInstance*>& nodeInstances, const ParticleGraph& particle_graph);
 
 private:
+    /// Emit counter reminder. When reminder value get over 1 the layer emits particle.
+    float emitCounterReminder_{};
     /// Memory used to store all layer related arrays: nodes, indices, attributes.
     ea::vector<uint8_t> attributes_;
     /// Temp memory needed for graph calculation.

@@ -22,29 +22,41 @@
 
 #pragma once
 
-#include "Helpers.h"
+#include "../Core/Variant.h"
 
-#include "Attribute.h"
-#include "Bounce.h"
-#include "Cone.h"
-#include "Constant.h"
-#include "Curve.h"
-#include "Destroy.h"
-#include "Environment.h"
-#include "Emit.h"
-#include "Math.h"
-#include "Print.h"
-#include "Random.h"
-#include "RenderBillboard.h"
-#include "Uniform.h"
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
-class ParticleGraphSystem;
 
-namespace ParticleGraphNodes
+template <typename T> struct ScalarSpan
 {
-void RegisterGraphNodes(ParticleGraphSystem* context);
-}
+    typedef T element_type;
+    typedef ea::remove_cv_t<T> value_type;
+
+    ScalarSpan(const ea::span<T>& data)
+        : data_(data)
+    {
+    }
+
+    inline T& operator[](unsigned index) { return data_.front(); }
+    ea::span<T> data_;
+};
+
+template <typename T> struct SparseSpan
+{
+    typedef T element_type;
+    typedef ea::remove_cv_t<T> value_type;
+
+    SparseSpan() = default;
+    SparseSpan(const ea::span<T>& data, const ea::span<unsigned>& indices)
+        : data_(data)
+        , indices_(indices)
+    {
+    }
+    inline T& operator[](unsigned index) { return data_[indices_[index]]; }
+    ea::span<T> data_;
+    ea::span<unsigned> indices_;
+};
 
 } // namespace Urho3D

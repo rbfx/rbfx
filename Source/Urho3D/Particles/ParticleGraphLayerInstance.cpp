@@ -69,7 +69,7 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     auto nodeInstances = layout.nodeInstances_.MakeSpan<uint8_t>(attributes_);
     // Initialize indices
     emitNodeInstances_ = layout.emitNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
-    nodeInstances = InitNodeInstances(nodeInstances, updateNodeInstances_, layer_->GetEmitGraph());
+    nodeInstances = InitNodeInstances(nodeInstances, emitNodeInstances_, layer_->GetEmitGraph());
     initNodeInstances_ = layout.initNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
     nodeInstances = InitNodeInstances(nodeInstances, initNodeInstances_, layer_->GetInitGraph());
     updateNodeInstances_ = layout.updateNodePointers_.MakeSpan<ParticleGraphNodeInstance*>(attributes_);
@@ -85,23 +85,25 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     Reset();
 }
 
-bool ParticleGraphLayerInstance::CheckActiveParticles() const { return activeParticles_ != 0; }
-
-bool ParticleGraphLayerInstance::EmitNewParticle(unsigned numParticles)
+bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
 {
-    if (numParticles == 0)
+    emitCounterReminder_ += numParticles;
+    
+    if (emitCounterReminder_ < 1.0f)
         return true;
 
-    if (activeParticles_ == indices_.size())
+    unsigned particlesToEmit = static_cast<unsigned>(emitCounterReminder_);
+    emitCounterReminder_ -= static_cast<float>(particlesToEmit);
+
+    particlesToEmit = std::min(particlesToEmit, indices_.size() - activeParticles_);
+    if (!particlesToEmit)
         return false;
-    if (!numParticles)
-        return true;
 
     const auto startIndex = activeParticles_;
-    ++activeParticles_;
+    activeParticles_ += particlesToEmit;
 
     auto autoContext = MakeUpdateContext(0.0f);
-    autoContext.indices_ = autoContext.indices_.subspan(startIndex, numParticles);
+    autoContext.indices_ = autoContext.indices_.subspan(startIndex, particlesToEmit);
     RunGraph(initNodeInstances_, autoContext);
 
     return true;
@@ -110,9 +112,10 @@ bool ParticleGraphLayerInstance::EmitNewParticle(unsigned numParticles)
 void ParticleGraphLayerInstance::Update(float timeStep)
 {
     auto autoContext = MakeUpdateContext(timeStep);
+    if (indices_.empty())
+        return;
+    autoContext.indices_ = indices_.subspan(0, 1);
     RunGraph(emitNodeInstances_, autoContext);
-
-    //EmitNewParticle(_emitCounter);
 
     RunGraph(updateNodeInstances_, MakeUpdateContext(timeStep));
     DestroyParticles();
@@ -136,14 +139,29 @@ void ParticleGraphLayerInstance::MarkForDeletion(unsigned particleIndex)
     }
 }
 
-Variant ParticleGraphLayerInstance::GetUniform(const StringHash& string_hash, VariantType variant)
+/// Get uniform index. Creates new uniform slot on demand.
+unsigned ParticleGraphLayerInstance::GetUniformIndex(const StringHash& string_hash, VariantType variant)
+{
+    // TODO: Make a collection of uniforms.
+    return 0;
+}
+
+/// Get uniform variant by index.
+Variant& ParticleGraphLayerInstance::GetUniform(unsigned index)
 {
     //TODO: Make a collection of uniforms.
-    return {};
+    static Variant v;
+    return v;
 }
 
 void ParticleGraphLayerInstance::Reset()
 {
+    for (ParticleGraphNodeInstance* node : emitNodeInstances_)
+        node->Reset();
+    for (ParticleGraphNodeInstance* node : initNodeInstances_)
+        node->Reset();
+    for (ParticleGraphNodeInstance* node : updateNodeInstances_)
+        node->Reset();
     activeParticles_ = 0;
 }
 
@@ -184,6 +202,7 @@ ea::span<uint8_t> ParticleGraphLayerInstance::InitNodeInstances(ea::span<uint8_t
         uint8_t* ptr = nodeInstanceBuffer.begin() + instanceOffset;
         nodeInstances[i] = node->CreateInstanceAt(ptr, this);
         assert(nodeInstances[i] == reinterpret_cast<ParticleGraphNodeInstance*>(ptr));
+        nodeInstances[i]->Reset();
         instanceOffset += size;
     }
     if (instanceOffset == nodeInstanceBuffer.size())

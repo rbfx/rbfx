@@ -52,6 +52,9 @@ public:
 
     /// Update.
     virtual void Update(UpdateContext& context) = 0;
+
+    /// Update.
+    virtual void Reset();
 };
 
 } // namespace Urho3D

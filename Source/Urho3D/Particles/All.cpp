@@ -39,11 +39,13 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
 {
     Add::RegisterObject(system);
     Bounce::RegisterObject(system);
+    BurstTimer::RegisterObject(system);
     Cone::RegisterObject(system);
     Constant::RegisterObject(system);
     Curve::RegisterObject(system);
     Destroy::RegisterObject(system);
     Divide::RegisterObject(system);
+    Emit::RegisterObject(system);
     Expire::RegisterObject(system);
     GetAttribute::RegisterObject(system);
     GetUniform::RegisterObject(system);
@@ -54,6 +56,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Random::RegisterObject(system);
     RenderBillboard::RegisterObject(system);
     SetAttribute::RegisterObject(system);
+    SetUniform::RegisterObject(system);
     Slerp::RegisterObject(system);
     Subtract::RegisterObject(system);
     TimeStep::RegisterObject(system);

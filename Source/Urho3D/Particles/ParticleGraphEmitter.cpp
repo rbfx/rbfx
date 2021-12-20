@@ -143,7 +143,7 @@ bool ParticleGraphEmitter::EmitNewParticle(unsigned layer)
     if (layer >= layers_.size())
         return false;
 
-    layers_[layer].EmitNewParticle();
+    layers_[layer].EmitNewParticles();
 
     return true;
 }
@@ -174,7 +174,7 @@ bool ParticleGraphEmitter::CheckActiveParticles() const
 {
     for (unsigned i = 0; i < layers_.size(); ++i)
     {
-        if (layers_[i].CheckActiveParticles())
+        if (layers_[i].GetNumActiveParticles() > 0)
             return true;
     }
 

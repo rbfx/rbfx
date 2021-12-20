@@ -231,6 +231,99 @@ TEST_CASE("Test const")
     CHECK(attributeSpan[0] == Vector3(1, 2, 3));
 }
 
+TEST_CASE("Test Emit")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    const auto effect = MakeShared<ParticleGraphEffect>(context);
+    auto xml = R"(<particleGraphEffect>
+	<layer type="ParticleGraphLayer" capacity="10">
+		<emit>
+			<nodes>
+    			<node id="1" name="Emit">
+					<in>
+						<pin name="count" type="float" value="1" />
+					</in>
+				</node>
+			</nodes>
+		</emit>
+		<init>
+			<nodes>
+			</nodes>
+		</init>
+		<update>
+			<nodes>
+			</nodes>
+		</update>
+	</layer>
+</particleGraphEffect>)";
+    MemoryBuffer buffer(xml);
+    REQUIRE(effect->Load(buffer));
+
+    const auto scene = MakeShared<Scene>(context);
+    const auto node = scene->CreateChild();
+    auto emitter = node->CreateComponent<ParticleGraphEmitter>();
+    emitter->SetEffect(effect);
+
+    Tests::RunFrame(context, 0.1f, 0.1f);
+
+    CHECK(emitter->CheckActiveParticles());
+}
+
+TEST_CASE("Test Burst")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    const auto effect = MakeShared<ParticleGraphEffect>(context);
+    auto xml = R"(<particleGraphEffect>
+	<layer type="ParticleGraphLayer" capacity="10">
+		<emit>
+			<nodes>
+    			<node id="1" name="BurstTimer">
+	    			<properties>
+    	    			<property name="Delay" type="float" value="1.0" />
+    	    			<property name="Interval" type="float" value="1.0" />
+                        <property name="Cycles" type="int" value="2" />
+	    			</properties>
+					<in>
+						<pin name="count" type="float" value="1" />
+					</in>
+					<out>
+						<pin name="out" type="float" />
+					</out>
+				</node>
+    			<node id="2" name="Emit">
+					<in>
+						<pin name="count" type="float" node="1" pin="out" />
+					</in>
+				</node>
+			</nodes>
+		</emit>
+		<init>
+			<nodes>
+			</nodes>
+		</init>
+		<update>
+			<nodes>
+			</nodes>
+		</update>
+	</layer>
+</particleGraphEffect>)";
+    MemoryBuffer buffer(xml);
+    REQUIRE(effect->Load(buffer));
+
+    const auto scene = MakeShared<Scene>(context);
+    const auto node = scene->CreateChild();
+    auto emitter = node->CreateComponent<ParticleGraphEmitter>();
+    emitter->SetEffect(effect);
+
+    Tests::RunFrame(context, 0.1f, 0.1f);
+    CHECK(!emitter->CheckActiveParticles());
+
+    Tests::RunFrame(context, 1.1f, 0.1f);
+    CHECK(emitter->CheckActiveParticles());
+}
+
 TEST_CASE("Test Expire")
 {
     auto context = Tests::CreateCompleteTestContext();
@@ -268,10 +361,10 @@ TEST_CASE("Test Expire")
     REQUIRE(emitter->EmitNewParticle(0));
     REQUIRE(emitter->EmitNewParticle(0));
     REQUIRE(emitter->EmitNewParticle(0));
-    CHECK(emitter->GetLayer(0)->CheckActiveParticles());
+    CHECK(emitter->GetLayer(0)->GetNumActiveParticles());
 
     Tests::RunFrame(context, 0.1f, 0.1f);
 
-    CHECK(!emitter->GetLayer(0)->CheckActiveParticles());
+    CHECK(!emitter->GetLayer(0)->GetNumActiveParticles());
 }
 

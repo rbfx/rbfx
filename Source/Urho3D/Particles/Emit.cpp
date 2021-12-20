@@ -20,31 +20,45 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "Emit.h"
 
 #include "Helpers.h"
-
-#include "Attribute.h"
-#include "Bounce.h"
-#include "Cone.h"
-#include "Constant.h"
-#include "Curve.h"
-#include "Destroy.h"
-#include "Environment.h"
-#include "Emit.h"
-#include "Math.h"
-#include "Print.h"
-#include "Random.h"
-#include "RenderBillboard.h"
-#include "Uniform.h"
+#include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
-class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-void RegisterGraphNodes(ParticleGraphSystem* context);
+
+Emit::Emit(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
+            ParticleGraphPin(PGPIN_INPUT, "count"),
+        })
+{
 }
+
+void Emit::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<Emit>(); }
+
+BurstTimer::BurstTimer(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
+            ParticleGraphPin(PGPIN_INPUT, "count"),
+            ParticleGraphPin(PGPIN_NONE, "out"),
+        })
+{
+}
+
+void BurstTimer::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<BurstTimer>();
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Delay", GetDelay, SetDelay, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Interval", GetInterval, SetInterval, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Cycles", GetCycles, SetCycles, unsigned, 0.0f, AM_DEFAULT);
+}
+
+} // namespace ParticleGraphNodes
 
 } // namespace Urho3D

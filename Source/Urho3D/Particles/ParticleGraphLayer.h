@@ -67,6 +67,9 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Get maximum number of particles the layer can hold.
+    unsigned GetCapacity() const { return capacity_; }
+
     /// Get emit graph.
     ParticleGraph& GetEmitGraph();
 

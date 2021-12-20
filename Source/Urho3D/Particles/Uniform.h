@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "ParticleGraphLayerInstance.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
 
@@ -31,21 +32,48 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-
-/// Get particle layer uniform value.
-class URHO3D_API GetUniform : public ParticleGraphNode
+/// Operation on attribute
+class URHO3D_API Uniform : public ParticleGraphNode
 {
-    URHO3D_OBJECT(GetUniform, ParticleGraphNode)
+    URHO3D_OBJECT(Uniform, ParticleGraphNode)
+
+protected:
+    /// Construct.
+    explicit Uniform(Context* context);
+
+public:
+    /// Set attribute name
+    /// @property
+    void SetUniformName(const ea::string& name) { SetPinName(0, name); }
+
+    /// Get attribute name
+    /// @property
+    const ea::string& GetUniformName() const { return GetPinName(0); }
+
+    /// Set attribute type
+    /// @property
+    virtual void SetUniformType(VariantType valueType);
+
+    /// Get attribute type
+    /// @property
+    VariantType GetUniformType() const { return GetPinValueType(0); }
+};
+
+/// Get particle attribute value.
+class URHO3D_API GetUniform : public Uniform
+{
+    URHO3D_OBJECT(GetUniform, Uniform)
 
 protected:
     class Instance : public ParticleGraphNodeInstance
     {
     public:
-        Instance(GetUniform* node);
+        Instance(GetUniform* node, unsigned uniformIndex);
         void Update(UpdateContext& context) override;
 
     protected:
         GetUniform* node_;
+        unsigned uniformIndex_{};
     };
 
 public:
@@ -54,22 +82,6 @@ public:
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
-
-    /// Set attribute name
-    /// @property
-    void SetAttributeName(const ea::string& name) { SetPinName(0, name); }
-
-    /// Get attribute name
-    /// @property
-    const ea::string& GetAttributeName() const { return GetPinName(0); }
-
-    /// Set attribute type
-    /// @property
-    virtual void SetAttributeType(VariantType valueType);
-
-    /// Get attribute type
-    /// @property
-    VariantType GetAttributeType() const { return GetPinValueType(0); }
 
     /// Get number of pins.
     unsigned GetNumPins() const override { return 1; }
@@ -83,13 +95,62 @@ public:
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
     {
-        return new (ptr) Instance(this);
+        return new (ptr) Instance(this, layer->GetUniformIndex(GetUniformName(), GetUniformType()));
     }
 
 protected:
+    ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin) override;
 
     /// Pins
     ParticleGraphPin pins_[1];
+};
+
+/// Set particle attribute value.
+class URHO3D_API SetUniform : public Uniform
+{
+    URHO3D_OBJECT(SetUniform, Uniform);
+    class Instance : public ParticleGraphNodeInstance
+    {
+    public:
+        Instance(SetUniform* node, unsigned uniformIndex);
+        void Update(UpdateContext& context) override;
+
+    protected:
+        SetUniform* node_;
+        unsigned uniformIndex_{};
+    };
+
+public:
+    /// Construct.
+    explicit SetUniform(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    /// Get number of pins.
+    unsigned GetNumPins() const override { return 2; }
+
+    /// Get pin by index.
+    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
+
+    /// Set attribute type
+    /// @property
+    void SetUniformType(VariantType valueType) override;
+
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
+
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
+    {
+        return new (ptr) Instance(this, layer->GetUniformIndex(GetUniformName(), GetUniformType()));
+    }
+
+protected:
+    ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin) override;
+
+    /// Pins
+    ParticleGraphPin pins_[2];
 };
 
 } // namespace ParticleGraphNodes
