@@ -67,7 +67,7 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Get number of pins.
-    unsigned GetNumPins() const override { return 2; }
+    unsigned GetNumPins() const override { return static_cast<unsigned>(ea::size(pins_)); }
 
     /// Get pin by index.
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }

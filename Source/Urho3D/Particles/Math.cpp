@@ -33,29 +33,103 @@ namespace ParticleGraphNodes
 
 namespace
 {
-const static ea::vector<BinaryOperatorPermutation> AddPins{
+const static ea::vector AddPins{
     BinaryOperatorPermutation::Make<Add, float, float, float>(),
     BinaryOperatorPermutation::Make<Add, Vector2, Vector2, Vector2>(),
     BinaryOperatorPermutation::Make<Add, Vector3, Vector3, Vector3>(),
     BinaryOperatorPermutation::Make<Add, Vector4, Vector4, Vector4>(),
 };
 
-const static ea::vector<BinaryOperatorPermutation> SubtractPins{
+const static ea::vector NegatePins{
+    UnaryOperatorPermutation::Make<Negate, float, float>(),
+};
+
+const static ea::vector SubtractPins{
     BinaryOperatorPermutation::Make<Subtract, float, float, float>(),
     BinaryOperatorPermutation::Make<Subtract, Vector2, Vector2, Vector2>(),
     BinaryOperatorPermutation::Make<Subtract, Vector3, Vector3, Vector3>(),
     BinaryOperatorPermutation::Make<Subtract, Vector4, Vector4, Vector4>(),
 };
 
-const static ea::vector<BinaryOperatorPermutation> MultiplyPins{
+const static ea::vector MultiplyPins{
     BinaryOperatorPermutation::Make<Multiply, float, float, float>(),
 };
 
-const static ea::vector<BinaryOperatorPermutation> DividePins{
+const static ea::vector DividePins{
     BinaryOperatorPermutation::Make<Divide, float, float, float>(),
 };
 
+const static ea::vector TimeStepScalePins{
+    UnaryOperatorPermutation::Make<TimeStepScale, float, float>(),
+};
+
+
+} // namespace
+
+// ------------------------------------
+
+UnaryOperatorPermutation::UnaryOperatorPermutation(VariantType x, VariantType out, Lambda lambda)
+    : x_(x)
+    , out_(out)
+    , lambda_(lambda)
+{
 }
+
+UnaryMathOperator::Instance::Instance(UnaryMathOperator* op)
+    : operator_(op)
+{
+}
+
+void UnaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context); }
+
+UnaryMathOperator::UnaryMathOperator(Context* context, const ea::vector<UnaryOperatorPermutation>& permutations)
+    : ParticleGraphNode(context)
+    , permutations_(permutations)
+    , pins_{ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "x"),
+          ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")}
+{
+}
+
+unsigned UnaryMathOperator::GetNumPins() const { return static_cast<unsigned>(ea::size(pins_)); }
+
+ParticleGraphPin& UnaryMathOperator::GetPin(unsigned index) { return pins_[index]; }
+
+unsigned UnaryMathOperator::EvaluateInstanceSize() { return sizeof(Instance); }
+
+ParticleGraphNodeInstance* UnaryMathOperator::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    return new (ptr) Instance(this);
+}
+
+VariantType UnaryMathOperator::EvaluateOutputPinType(ParticleGraphPin& pin)
+{
+    for (const UnaryOperatorPermutation& p : permutations_)
+    {
+        if (p.x_ == pins_[0].GetValueType())
+        {
+            return p.out_;
+        }
+    }
+    return VAR_NONE;
+}
+
+void UnaryMathOperator::Update(UpdateContext& context)
+{
+    ParticleGraphPinRef pinRefs[2];
+    for (unsigned i = 0; i < 2; ++i)
+    {
+        pinRefs[i] = pins_[i].GetMemoryReference();
+    }
+
+    for (const UnaryOperatorPermutation& p : permutations_)
+    {
+        if (p.x_ == pins_[0].GetValueType())
+        {
+            return p.lambda_(context, pinRefs);
+        }
+    }
+}
+// ------------------------------------
 
 BinaryOperatorPermutation::BinaryOperatorPermutation(VariantType x, VariantType y, VariantType out, Lambda lambda)
     : x_(x)
@@ -87,9 +161,7 @@ BinaryMathOperator::BinaryMathOperator(Context* context, const ea::vector<Binary
 }
 
 unsigned BinaryMathOperator::GetNumPins() const
-{
-    return 3;
-}
+{ return static_cast<unsigned>(ea::size(pins_)); }
 
 ParticleGraphPin& BinaryMathOperator::GetPin(unsigned index)
 {
@@ -132,6 +204,8 @@ void BinaryMathOperator::Update(UpdateContext& context)
     }
 }
 
+// ------------------------------------
+
 Add::Add(Context* context)
     : BinaryMathOperator(context, AddPins)
 {
@@ -153,6 +227,12 @@ void Subtract::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Subtract>();
 }
 
+Negate::Negate(Context* context)
+    : UnaryMathOperator(context, NegatePins)
+{
+}
+
+void Negate::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<Negate>(); }
 
 Multiply::Multiply(Context* context)
     : BinaryMathOperator(context, MultiplyPins)
@@ -173,6 +253,13 @@ void Divide::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<Divide>();
 }
+
+TimeStepScale::TimeStepScale(Context* context)
+    : UnaryMathOperator(context, TimeStepScalePins)
+{
+}
+
+void TimeStepScale::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<TimeStepScale>(); }
 
 Slerp::Slerp(Context* context)
     : AbstractNodeType(context, PinArray{

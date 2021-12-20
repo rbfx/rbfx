@@ -31,6 +31,7 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+
 struct BinaryOperatorPermutation
 {
     typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> Lambda;
@@ -50,6 +51,66 @@ struct BinaryOperatorPermutation
     VariantType y_;
     VariantType out_;
     Lambda lambda_;
+};
+
+struct UnaryOperatorPermutation
+{
+    typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> Lambda;
+
+    UnaryOperatorPermutation(VariantType x, VariantType out, Lambda lambda);
+
+    template <class Node, typename X, typename T> static UnaryOperatorPermutation Make()
+    {
+        return UnaryOperatorPermutation(GetVariantType<X>(), GetVariantType<T>(),
+            [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
+            { RunUpdate<Node, typename Node::Instance, X, T>(context, nullptr, context.indices_.size(), pinRefs); });
+    }
+
+    VariantType x_;
+    VariantType out_;
+    Lambda lambda_;
+};
+
+/// Binary math operator
+class URHO3D_API UnaryMathOperator : public ParticleGraphNode
+{
+public:
+    struct Instance : public ParticleGraphNodeInstance
+    {
+        /// Construct.
+        explicit Instance(UnaryMathOperator* op);
+
+        /// Update particles.
+        virtual void Update(UpdateContext& context);
+
+        UnaryMathOperator* operator_;
+    };
+
+    /// Construct.
+    explicit UnaryMathOperator(Context* context, const ea::vector<UnaryOperatorPermutation>& permutations);
+
+    /// Get number of pins.
+    unsigned GetNumPins() const override;
+
+    /// Get pin by index.
+    ParticleGraphPin& GetPin(unsigned index) override;
+
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() override;
+
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+protected:
+    /// Evaluate runtime output pin type.
+    VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
+
+    /// Update particles.
+    void Update(UpdateContext& context);
+
+protected:
+    const ea::vector<UnaryOperatorPermutation>& permutations_;
+    ParticleGraphPin pins_[2];
 };
 
 /// Binary math operator
@@ -147,6 +208,31 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 };
 
+/// Negate operator.
+class URHO3D_API Negate : public UnaryMathOperator
+{
+    URHO3D_OBJECT(Negate, ParticleGraphNode)
+
+public:
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& x = ea::get<0>(spans);
+        auto& out = ea::get<1>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = -x[i];
+        }
+    }
+
+public:
+    /// Construct.
+    explicit Negate(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+};
+
 /// Multiply operator.
 class URHO3D_API Multiply : public BinaryMathOperator
 {
@@ -195,6 +281,31 @@ public:
 public:
     /// Construct.
     explicit Divide(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+};
+
+/// Negate operator.
+class URHO3D_API TimeStepScale : public UnaryMathOperator
+{
+    URHO3D_OBJECT(Negate, ParticleGraphNode)
+
+public:
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& x = ea::get<0>(spans);
+        auto& out = ea::get<1>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = x[i] * context.timeStep_;
+        }
+    }
+
+public:
+    /// Construct.
+    explicit TimeStepScale(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);

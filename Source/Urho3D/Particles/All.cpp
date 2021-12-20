@@ -60,6 +60,8 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Slerp::RegisterObject(system);
     Subtract::RegisterObject(system);
     TimeStep::RegisterObject(system);
+    TimeStepScale::RegisterObject(system);
+    Negate::RegisterObject(system);
 }
 
 }

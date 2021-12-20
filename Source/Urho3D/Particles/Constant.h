@@ -57,7 +57,7 @@ protected:
 
 public:
     /// Get number of pins.
-    unsigned GetNumPins() const override { return 1; }
+    unsigned GetNumPins() const override { return static_cast<unsigned>(ea::size(pins_)); }
 
     /// Get pin by index.
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
