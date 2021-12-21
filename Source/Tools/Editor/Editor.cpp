@@ -281,15 +281,7 @@ void Editor::Start()
 int Editor::RunEditorInstance(const ea::vector<ea::string>& arguments, ea::string& output)
 {
     auto fs = context_->GetSubsystem<FileSystem>();
-
-#if URHO3D_CSHARP && !_WIN32
-    // Editor executable is a C# program interpreted by .net runtime.
-    auto argumentsCopy = arguments;
-    argumentsCopy.push_front(fs->GetProgramFileName());
-    return fs->SystemRun(fs->GetInterpreterFileName(), argumentsCopy, output);
-#else
     return fs->SystemRun(fs->GetProgramFileName(), arguments, output);
-#endif
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)

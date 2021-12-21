@@ -32,7 +32,6 @@
 %csattribute(Urho3D::FileSystem, %arg(bool), ExecuteConsoleCommands, GetExecuteConsoleCommands, SetExecuteConsoleCommands);
 %csattribute(Urho3D::FileSystem, %arg(ea::string), ProgramDir, GetProgramDir);
 %csattribute(Urho3D::FileSystem, %arg(ea::string), ProgramFileName, GetProgramFileName);
-%csattribute(Urho3D::FileSystem, %arg(ea::string), InterpreterFileName, GetInterpreterFileName);
 %csattribute(Urho3D::FileSystem, %arg(ea::string), UserDocumentsDir, GetUserDocumentsDir);
 %csattribute(Urho3D::FileSystem, %arg(ea::string), TemporaryDir, GetTemporaryDir);
 %csattribute(Urho3D::FileWatcher, %arg(ea::string), Path, GetPath);
