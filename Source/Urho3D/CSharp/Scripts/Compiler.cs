@@ -56,7 +56,12 @@ namespace Urho3DNet
 
             var metadataReferences = new List<MetadataReference>();
             // Reference all current referenced modules.
-            metadataReferences.AddRange(AppDomain.CurrentDomain.GetAssemblies().Select(assembly => MetadataReference.CreateFromFile(assembly.Location)));
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                // Assemblies with empty path are in-memory compiled and do not need to be referenced.
+                if (assembly.Location.Length > 0)
+                    metadataReferences.Add(MetadataReference.CreateFromFile(assembly.Location));
+            }
             // Add custom references if any.
             if (extraReferences != null)
                 metadataReferences.AddRange(extraReferences.Select(r => MetadataReference.CreateFromFile(r)).ToArray());
