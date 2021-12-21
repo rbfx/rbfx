@@ -43,14 +43,14 @@ struct SceneState
     {
         sceneState_.Clear();
         BinaryOutputArchive sceneArchive(scene->GetContext(), sceneState_);
-        scene->Serialize(sceneArchive);
+        scene->Serialize(sceneArchive, "scene");
     }
 
     void Load(Scene* scene)
     {
         sceneState_.Seek(0);
         BinaryInputArchive sceneArchive(scene->GetContext(), sceneState_);
-        scene->Serialize(sceneArchive);
+        scene->Serialize(sceneArchive, "scene");
         scene->GetContext()->GetSubsystem<UI>()->Clear();
         sceneState_.Clear();
         scene->GetSubsystem<SceneManager>()->SetActiveScene(scene);

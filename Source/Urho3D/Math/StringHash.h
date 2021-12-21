@@ -102,6 +102,9 @@ public:
     /// @property
     unsigned Value() const { return value_; }
 
+    /// Return mutable hash value. For internal use only.
+    unsigned& MutableValue() { return value_; }
+
     /// Return as string.
     ea::string ToString() const;
 

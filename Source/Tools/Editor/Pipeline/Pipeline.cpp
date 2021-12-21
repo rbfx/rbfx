@@ -490,75 +490,48 @@ bool Pipeline::HasFlavorSettings(const ea::string& resourceName)
     return false;
 }
 
-bool Pipeline::Serialize(Archive& archive)
+void Pipeline::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 {
-    if (auto block = archive.OpenUnorderedBlock("pipeline"))
+    // TODO: Revisit
+    ConsumeArchiveException([&]
     {
-        if (auto block = archive.OpenSequentialBlock("flavors"))
+        auto block = archive.OpenSequentialBlock("flavors");
+        for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors_.size(); i < num; i++)
         {
-            for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors_.size(); i < num; i++)
+            if (auto block = archive.OpenUnorderedBlock("flavor"))
             {
-                if (auto block = archive.OpenUnorderedBlock("flavor"))
+                // TODO: This sucks (x2). Flavor should serialize itself. Flavor also has many similarities to ApplicationSettings. Can they share some serialization code?
+                Flavor* flavor = nullptr;
+                ea::string flavorName;
+                StringVector flavorPlatforms;
+                if (!archive.IsInput())
                 {
-                    // TODO: This sucks. Flavor should serialize itself. Flavor also has many similarities to ApplicationSettings. Can they share some serialization code?
-                    Flavor* flavor = nullptr;
-                    ea::string flavorName;
-                    StringVector flavorPlatforms;
-                    if (!archive.IsInput())
-                    {
-                        flavor = flavors_[i];
-                        flavorName = flavor->GetName();
-                        flavorPlatforms = flavor->GetPlatforms();
-                    }
-                    if (!SerializeValue(archive, "name", flavorName))
-                        return false;
-
-                    // Fine to not exist.
-                    SerializeValue(archive, "platforms", flavorPlatforms);
-
-                    if (archive.IsInput())
-                    {
-                        flavor = AddFlavor(flavorName);
-                        flavor->GetPlatforms() = flavorPlatforms;
-                    }
-
-                    ea::map<ea::string, Variant>& parameters = flavor->GetEngineParameters();
-                    if (auto block = archive.OpenMapBlock("settings", parameters.size()))
-                    {
-                        if (archive.IsInput())
-                        {
-                            for (unsigned j = 0; j < block.GetSizeHint(); ++j)
-                            {
-                                ea::string key;
-                                if (!archive.SerializeKey(key))
-                                    return false;
-                                if (!SerializeValue(archive, "value", parameters[key]))
-                                    return false;
-                            }
-                        }
-                        else
-                        {
-                            for (auto& pair : parameters)
-                            {
-                                if (!archive.SerializeKey(const_cast<ea::string&>(pair.first)))
-                                    return false;
-                                if (!SerializeValue(archive, "value", pair.second))
-                                    return false;
-                            }
-                        }
-                    }
+                    flavor = flavors_[i];
+                    flavorName = flavor->GetName();
+                    flavorPlatforms = flavor->GetPlatforms();
                 }
+                SerializeValue(archive, "name", flavorName);
+
+                // Fine to not exist.
+                SerializeOptionalValue(archive, "platforms", flavorPlatforms, {});
+
+                if (archive.IsInput())
+                {
+                    flavor = AddFlavor(flavorName);
+                    flavor->GetPlatforms() = flavorPlatforms;
+                }
+
+                ea::map<ea::string, Variant>& parameters = flavor->GetEngineParameters();
+                SerializeMap(archive, "settings", "value", parameters);
             }
         }
-    }
+    });
 
     // Add default flavor if:
     // * This is a new proejct and no flavors were loaded from project file.
     // * User modified project file and renamed default flavor to something else.
     if (archive.IsInput() && (flavors_.empty() || GetDefaultFlavor()->GetName() != Flavor::DEFAULT))
         AddFlavor(Flavor::DEFAULT);
-
-    return true;
 }
 
 void Pipeline::SortFlavors()
@@ -638,7 +611,7 @@ bool Pipeline::CookSettings() const
 
         JSONFile file(context_);
         JSONOutputArchive archive(&file);
-        if (!settings.Serialize(archive))
+        if (!settings.Serialize(archive, "settings"))
             return false;
         context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(flavor->GetCachePath() + "Settings.json");
@@ -683,8 +656,8 @@ bool Pipeline::CookCacheInfo() const
         }
         JSONFile file(context_);
         JSONOutputArchive archive(&file);
-        if (!SerializeStringMap(archive, "cacheInfo", "map", mapping))
-            return false;
+        // TODO: Revisit
+        SerializeMap(archive, "cacheInfo", "map", mapping);
 
         context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(Format("{}CacheInfo.json", flavor->GetCachePath(), flavor->GetName()));

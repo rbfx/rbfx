@@ -138,9 +138,9 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-bool Scene::Serialize(Archive& archive)
+bool Scene::Serialize(Archive& archive, const char* name)
 {
-    if (!Node::Serialize(archive))
+    if (!Node::Serialize(archive, name))
         return false;
 
     fileName_ = archive.GetName();

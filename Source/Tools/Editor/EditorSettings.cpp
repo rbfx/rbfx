@@ -55,9 +55,9 @@ void Editor::RenderSettingsWindow()
     }
 }
 
-bool Editor::Serialize(Archive& archive)
+bool Editor::Serialize(Archive& archive, const char* name)
 {
-    if (auto editorBlock = archive.OpenUnorderedBlock("editor"))
+    if (auto editorBlock = archive.OpenUnorderedBlock(name))
     {
         if (auto windowBlock = archive.OpenUnorderedBlock("window"))
         {
@@ -65,7 +65,7 @@ bool Editor::Serialize(Archive& archive)
             SerializeValue(archive, "size", windowSize_);
         }
         SerializeValue(archive, "recentProjects", recentProjects_);
-        if (!keyBindings_.Serialize(archive))
+        if (!keyBindings_.Serialize(archive, "keyBindings"))
             return false;
     }
     return true;

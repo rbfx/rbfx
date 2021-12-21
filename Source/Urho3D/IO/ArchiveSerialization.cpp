@@ -26,95 +26,225 @@
 namespace Urho3D
 {
 
-bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value)
+namespace Detail
+{
+
+ea::string NumberArrayToString(float* values, unsigned size)
+{
+    ea::string result;
+    for (unsigned i = 0; i < size; ++i)
+    {
+        if (i > 0)
+            result += " ";
+        result += ea::string(ea::string::CtorSprintf(), "%g", values[i]);
+    }
+    return result;
+}
+
+ea::string NumberArrayToString(int* values, unsigned size)
+{
+    ea::string result;
+    for (unsigned i = 0; i < size; ++i)
+    {
+        if (i > 0)
+            result += " ";
+        result += ea::to_string(values[i]);
+    }
+    return result;
+}
+
+unsigned StringToNumberArray(const ea::string& string, float* values, unsigned maxSize)
+{
+    const ea::vector<ea::string> elements = string.split(' ');
+    const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
+    for (unsigned i = 0; i < size; ++i)
+        values[i] = ToFloat(elements[i]);
+
+    return elements.size();
+}
+
+unsigned StringToNumberArray(const ea::string& string, int* values, unsigned maxSize)
+{
+    const ea::vector<ea::string> elements = string.split(' ');
+    const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
+    for (unsigned i = 0; i < size; ++i)
+        values[i] = ToInt(elements[i]);
+
+    return elements.size();
+}
+
+template <class T>
+inline void SerializeVariantAsType(Archive& archive, const char* name, Variant& variant)
+{
+    if (archive.IsInput())
+    {
+        T value{};
+        SerializeValue(archive, name, value);
+        variant = value;
+    }
+    else
+    {
+        const T& value = variant.Get<T>();
+        SerializeValue(archive, name, const_cast<T&>(value));
+    }
+}
+
+}
+
+void SerializeVariantAsType(Archive& archive, VariantType variantType, const char* name, Variant& value)
 {
     static_assert(MAX_VAR_TYPES == 29, "Update me");
     switch (variantType)
     {
     case VAR_NONE:
-        return true;
+        return;
+
     case VAR_INT:
-        return Detail::SerializeVariantValueType<int>(archive, name, value);
+        Detail::SerializeVariantAsType<int>(archive, name, value);
+        return;
+
     case VAR_BOOL:
-        return Detail::SerializeVariantValueType<bool>(archive, name, value);
+        Detail::SerializeVariantAsType<bool>(archive, name, value);
+        return;
+
     case VAR_FLOAT:
-        return Detail::SerializeVariantValueType<float>(archive, name, value);
+        Detail::SerializeVariantAsType<float>(archive, name, value);
+        return;
+
     case VAR_VECTOR2:
-        return Detail::SerializeVariantValueType<Vector2>(archive, name, value);
+        Detail::SerializeVariantAsType<Vector2>(archive, name, value);
+        return;
+
     case VAR_VECTOR3:
-        return Detail::SerializeVariantValueType<Vector3>(archive, name, value);
+        Detail::SerializeVariantAsType<Vector3>(archive, name, value);
+        return;
+
     case VAR_VECTOR4:
-        return Detail::SerializeVariantValueType<Vector4>(archive, name, value);
+        Detail::SerializeVariantAsType<Vector4>(archive, name, value);
+        return;
+
     case VAR_QUATERNION:
-        return Detail::SerializeVariantValueType<Quaternion>(archive, name, value);
+        Detail::SerializeVariantAsType<Quaternion>(archive, name, value);
+        return;
+
     case VAR_COLOR:
-        return Detail::SerializeVariantValueType<Color>(archive, name, value);
+        Detail::SerializeVariantAsType<Color>(archive, name, value);
+        return;
+
     case VAR_STRING:
-        return Detail::SerializeVariantValueType<ea::string>(archive, name, value);
+        Detail::SerializeVariantAsType<ea::string>(archive, name, value);
+        return;
+
+    case VAR_RESOURCEREF:
+        Detail::SerializeVariantAsType<ResourceRef>(archive, name, value);
+        return;
+
+    case VAR_RESOURCEREFLIST:
+        Detail::SerializeVariantAsType<ResourceRefList>(archive, name, value);
+        return;
+
+    case VAR_INTRECT:
+        Detail::SerializeVariantAsType<IntRect>(archive, name, value);
+        return;
+
+    case VAR_INTVECTOR2:
+        Detail::SerializeVariantAsType<IntVector2>(archive, name, value);
+        return;
+
+    case VAR_MATRIX3:
+        Detail::SerializeVariantAsType<Matrix3>(archive, name, value);
+        return;
+
+    case VAR_MATRIX3X4:
+        Detail::SerializeVariantAsType<Matrix3x4>(archive, name, value);
+        return;
+
+    case VAR_MATRIX4:
+        Detail::SerializeVariantAsType<Matrix4>(archive, name, value);
+        return;
+
+    case VAR_DOUBLE:
+        Detail::SerializeVariantAsType<double>(archive, name, value);
+        return;
+
+    case VAR_RECT:
+        Detail::SerializeVariantAsType<Rect>(archive, name, value);
+        return;
+
+    case VAR_INTVECTOR3:
+        Detail::SerializeVariantAsType<IntVector3>(archive, name, value);
+        return;
+
+    case VAR_INT64:
+        Detail::SerializeVariantAsType<long long>(archive, name, value);
+        return;
+
+    case VAR_VARIANTCURVE:
+        Detail::SerializeVariantAsType<VariantCurve>(archive, name, value);
+        return;
+
     case VAR_BUFFER:
+    {
         if (archive.IsInput() && !value.GetBufferPtr())
             value = VariantBuffer{};
-        if (auto ptr = value.GetBufferPtr())
-            return SerializeVectorAsBytes(archive, name, *ptr);
-        return false;
-    case VAR_RESOURCEREF:
-        return Detail::SerializeVariantValueType<ResourceRef>(archive, name, value);
-    case VAR_RESOURCEREFLIST:
-        return Detail::SerializeVariantValueType<ResourceRefList>(archive, name, value);
+
+        auto ptr = value.GetBufferPtr();
+        URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
+        SerializeVectorAsBytes(archive, name, *ptr);
+        return;
+    }
+
     case VAR_VARIANTVECTOR:
+    {
         if (archive.IsInput() && !value.GetVariantVectorPtr())
             value = VariantVector{};
-        if (auto ptr = value.GetVariantVectorPtr())
-            return SerializeVectorAsObjects(archive, name, nullptr, *ptr);
-        return false;
+
+        auto ptr = value.GetVariantVectorPtr();
+        URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
+        SerializeVectorAsObjects(archive, name, "value", *ptr);
+        return;
+    }
+
     case VAR_VARIANTMAP:
+    {
         if (archive.IsInput() && !value.GetVariantMapPtr())
             value = VariantMap{};
-        if (auto ptr = value.GetVariantMapPtr())
-            return SerializeStringHashMap(archive, name, nullptr, *ptr);
-        return false;
-    case VAR_INTRECT:
-        return Detail::SerializeVariantValueType<IntRect>(archive, name, value);
-    case VAR_INTVECTOR2:
-        return Detail::SerializeVariantValueType<IntVector2>(archive, name, value);
-    case VAR_MATRIX3:
-        return Detail::SerializeVariantValueType<Matrix3>(archive, name, value);
-    case VAR_MATRIX3X4:
-        return Detail::SerializeVariantValueType<Matrix3x4>(archive, name, value);
-    case VAR_MATRIX4:
-        return Detail::SerializeVariantValueType<Matrix4>(archive, name, value);
-    case VAR_DOUBLE:
-        return Detail::SerializeVariantValueType<double>(archive, name, value);
+
+        auto ptr = value.GetVariantMapPtr();
+        URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
+        SerializeMap(archive, name, "value", *ptr);
+        return;
+    }
+
     case VAR_STRINGVECTOR:
+    {
         if (archive.IsInput() && !value.GetStringVectorPtr())
             value = StringVector{};
-        if (auto ptr = value.GetStringVectorPtr())
-            return SerializeVectorAsObjects(archive, name, nullptr, *ptr);
-        return false;
-    case VAR_RECT:
-        return Detail::SerializeVariantValueType<Rect>(archive, name, value);
-    case VAR_INTVECTOR3:
-        return Detail::SerializeVariantValueType<IntVector3>(archive, name, value);
-    case VAR_INT64:
-        return Detail::SerializeVariantValueType<long long>(archive, name, value);
-    case VAR_VOIDPTR:
-    case VAR_PTR:
-        archive.SetError(Format("Unsupported Variant type of element '{0}'", name));
-        return false;
+
+        auto ptr = value.GetStringVectorPtr();
+        URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
+        SerializeVectorAsObjects(archive, name, "value", *ptr);
+        return;
+    }
+
     case VAR_CUSTOM:
+    {
         // Even if loading, value should be initialized to default value.
         // It's the only way to know type.
-        if (CustomVariantValue* ptr = value.GetCustomVariantValuePtr())
-            return ptr->Serialize(archive);
+        CustomVariantValue* ptr = value.GetCustomVariantValuePtr();
+        URHO3D_ASSERT(ptr, "Cannot serialize CustomVariant of unknown type");
 
-        archive.SetError(Format("Custom Variant is not initialized for element '{0}'", name));
-        return false;
-    case VAR_VARIANTCURVE:
-        return Detail::SerializeVariantValueType<VariantCurve>(archive, name, value);
+        ptr->Serialize(archive, name);
+        return;
+    }
+
+    case VAR_VOIDPTR:
+    case VAR_PTR:
+        throw ArchiveException("'{}/{}' has unsupported variant type");
+
     case MAX_VAR_TYPES:
     default:
-        assert(0);
-        return false;
+        URHO3D_ASSERT(0);
     }
 }
 

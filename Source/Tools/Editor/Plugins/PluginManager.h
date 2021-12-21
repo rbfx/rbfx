@@ -59,7 +59,7 @@ public:
     /// Registers static plugin.
     bool RegisterPlugin(PluginApplication* application);
 #endif
-    bool Serialize(Archive& archive) override;
+    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
 
 protected:
     /// Entry about dynamic library on the disk. It may or may not be loaded.

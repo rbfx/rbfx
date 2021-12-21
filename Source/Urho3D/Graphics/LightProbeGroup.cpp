@@ -38,39 +38,30 @@ namespace Urho3D
 
 extern const char* SCENE_CATEGORY;
 
-bool SerializeValue(Archive& archive, const char* name, LightProbe& value)
+void SerializeValue(Archive& archive, const char* name, LightProbe& value)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "Position", value.position_);
-        return true;
-    }
-    return false;
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "Position", value.position_);
 }
 
-bool SerializeValue(Archive& archive, const char* name, LightProbeCollectionBakedData& value)
+void SerializeValue(Archive& archive, const char* name, LightProbeCollectionBakedData& value)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    static const unsigned currentVersion = 1;
+    const unsigned version = archive.SerializeVersion(currentVersion);
+    if (version == currentVersion)
     {
-        static const unsigned currentVersion = 1;
-        const unsigned version = archive.SerializeVersion(currentVersion);
-        if (version == currentVersion)
+        SerializeVector(archive, "SH9", "Element", value.sphericalHarmonics_);
+
+        // Generate ambient if loading
+        if (archive.IsInput())
         {
-            SerializeVector(archive, "SH9", "Element", value.sphericalHarmonics_);
-
-            // Generate ambient if loading
-            if (archive.IsInput())
-            {
-                const unsigned numLightProbes = value.Size();
-                value.ambient_.resize(numLightProbes);
-                for (unsigned i = 0; i < numLightProbes; ++i)
-                    value.ambient_[i] = value.sphericalHarmonics_[i].GetDebugColor().ToVector3();
-            }
-
-            return true;
+            const unsigned numLightProbes = value.Size();
+            value.ambient_.resize(numLightProbes);
+            for (unsigned i = 0; i < numLightProbes; ++i)
+                value.ambient_[i] = value.sphericalHarmonics_[i].GetDebugColor().ToVector3();
         }
     }
-    return false;
 }
 
 LightProbeGroup::LightProbeGroup(Context* context) :
@@ -265,14 +256,12 @@ void LightProbeGroup::SetLightProbes(const LightProbeVector& lightProbes)
 
 void LightProbeGroup::SerializeLightProbes(Archive& archive)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock("LightProbesData"))
+    ArchiveBlock block = archive.OpenUnorderedBlock("LightProbesData");
+    static const unsigned currentVersion = 2;
+    const unsigned version = archive.SerializeVersion(currentVersion);
+    if (version == currentVersion)
     {
-        static const unsigned currentVersion = 2;
-        const unsigned version = archive.SerializeVersion(currentVersion);
-        if (version == currentVersion)
-        {
-            SerializeVector(archive, "LightProbes", "LightProbe", lightProbes_);
-        }
+        SerializeVector(archive, "LightProbes", "LightProbe", lightProbes_);
     }
 }
 
@@ -294,7 +283,10 @@ ea::string LightProbeGroup::GetSerializedLightProbes() const
 
 bool LightProbeGroup::SerializeBakedData(Archive& archive, LightProbeCollectionBakedData& bakedData)
 {
-    return SerializeValue(archive, "LightProbesBakedData", bakedData);
+    return ConsumeArchiveException([&]
+    {
+        SerializeValue(archive, "LightProbesBakedData", bakedData);
+    });
 }
 
 void LightProbeGroup::SetBakedDataFileRef(const ResourceRef& fileRef)

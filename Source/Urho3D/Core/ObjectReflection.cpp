@@ -162,6 +162,24 @@ unsigned ObjectReflection::GetAttributeIndex(StringHash nameHash) const
     return index < attributeNames_.size() ? index : M_MAX_UNSIGNED;
 }
 
+unsigned ObjectReflection::GetAttributeIndex(StringHash nameHash, unsigned hintIndex) const
+{
+    const unsigned numAttributes = attributeNames_.size();
+    hintIndex = ea::min(hintIndex, numAttributes);
+
+    for (unsigned i = hintIndex; i < numAttributes; ++i)
+    {
+        if (attributeNames_[i] == nameHash)
+            return i;
+    }
+    for (unsigned i = 0; i < hintIndex; ++i)
+    {
+        if (attributeNames_[i] == nameHash)
+            return i;
+    }
+    return M_MAX_UNSIGNED;
+}
+
 AttributeInfo* ObjectReflection::GetAttribute(StringHash nameHash)
 {
     return const_cast<AttributeInfo*>(const_cast<const ObjectReflection*>(this)->GetAttribute(nameHash));

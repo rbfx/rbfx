@@ -213,7 +213,7 @@ VariantType VariantCurve::GetType() const
     return keyFrames_.empty() ? VAR_NONE : keyFrames_[0].value_.GetType();
 }
 
-bool VariantCurve::Serialize(Archive& archive, ArchiveBlock& block)
+void VariantCurve::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 {
     SerializeValue(archive, "name", name_);
     SerializeValue(archive, "type", type_);
@@ -225,23 +225,15 @@ bool VariantCurve::Serialize(Archive& archive, ArchiveBlock& block)
         SerializeVectorTieAsObjects(archive, "keyframes", "keyframe", ea::tie(keyFrames_, inTangents_, outTangents_),
             [&](Archive& archive, const char* name, ea::tuple<VariantCurvePoint&, Variant&, Variant&> value)
         {
-            if (auto block = archive.OpenUnorderedBlock(name))
-            {
-                auto& keyFrame = ea::get<0>(value);
-                auto& inTangent = ea::get<1>(value);
-                auto& outTangent = ea::get<2>(value);
-                if (!SerializeValue(archive, "time", keyFrame.time_))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "value", keyFrame.value_))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "in", inTangent))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "out", outTangent))
-                    return false;
+            auto block = archive.OpenUnorderedBlock(name);
 
-                return true;
-            }
-            return false;
+            auto& keyFrame = ea::get<0>(value);
+            auto& inTangent = ea::get<1>(value);
+            auto& outTangent = ea::get<2>(value);
+            SerializeValue(archive, "time", keyFrame.time_);
+            SerializeVariantAsType(archive, type_, "value", keyFrame.value_);
+            SerializeVariantAsType(archive, type_, "in", inTangent);
+            SerializeVariantAsType(archive, type_, "out", outTangent);
         });
     }
     else
@@ -249,23 +241,14 @@ bool VariantCurve::Serialize(Archive& archive, ArchiveBlock& block)
         SerializeVectorAsObjects(archive, "keyframes", "keyframe", keyFrames_,
             [&](Archive& archive, const char* name, VariantCurvePoint& value)
         {
-            if (auto block = archive.OpenUnorderedBlock(name))
-            {
-                if (!SerializeValue(archive, "time", value.time_))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "value", value.value_))
-                    return false;
-
-                return true;
-            }
-            return false;
+            auto block = archive.OpenUnorderedBlock(name);
+            SerializeValue(archive, "time", value.time_);
+            SerializeVariantAsType(archive, type_, "value", value.value_);
         });
     }
 
     if (archive.IsInput())
         Commit();
-
-    return true;
 }
 
 unsigned VariantCurve::ToHash() const
@@ -290,11 +273,10 @@ bool VariantCurve::operator==(const VariantCurve& rhs) const
         && keyFrames_ == rhs.keyFrames_;
 }
 
-bool SerializeValue(Archive& archive, const char* name, VariantCurve& value)
+void SerializeValue(Archive& archive, const char* name, VariantCurve& value)
 {
-    if (auto block = archive.OpenUnorderedBlock(name))
-        return value.Serialize(archive, block);
-    return false;
+    auto block = archive.OpenUnorderedBlock(name);
+    value.SerializeInBlock(archive, block);
 }
 
 }

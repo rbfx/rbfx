@@ -14,8 +14,6 @@
 %csattribute(Urho3D::ArchiveBase, %arg(ea::string_view), Name, GetName);
 %csattribute(Urho3D::ArchiveBase, %arg(unsigned int), Checksum, GetChecksum);
 %csattribute(Urho3D::ArchiveBase, %arg(bool), IsEOF, IsEOF);
-%csattribute(Urho3D::ArchiveBase, %arg(ea::string_view), ErrorString, GetErrorString);
-%csattribute(Urho3D::ArchiveBase, %arg(ea::string_view), ErrorStack, GetErrorStack);
 %csattribute(Urho3D::BinaryOutputArchiveBlock, %arg(ea::string_view), Name, GetName);
 %csattribute(Urho3D::BinaryOutputArchiveBlock, %arg(Urho3D::Serializer *), Serializer, GetSerializer);
 %csattribute(Urho3D::BinaryOutputArchive, %arg(ea::string_view), Name, GetName);

@@ -22,10 +22,12 @@
 
 #pragma once
 
+#include "../Core/Assert.h"
 #include "../Core/Object.h"
 #include "../Core/StringUtils.h"
 #include "../Core/Variant.h"
 #include "../IO/Archive.h"
+#include "../IO/Log.h"
 #include "../Math/Color.h"
 #include "../Math/Matrix3.h"
 #include "../Math/Matrix3x4.h"
@@ -49,927 +51,594 @@ class Resource;
 namespace Detail
 {
 
-/// Format float array to string.
-inline ea::string FormatArray(float* values, unsigned size)
-{
-    ea::string result;
-    for (unsigned i = 0; i < size; ++i)
-    {
-        if (i > 0)
-            result += " ";
-        result += ea::string(ea::string::CtorSprintf(), "%g", values[i]);
-    }
-    return result;
-}
+URHO3D_API ea::string NumberArrayToString(float* values, unsigned size);
+URHO3D_API ea::string NumberArrayToString(int* values, unsigned size);
+URHO3D_API unsigned StringToNumberArray(const ea::string& string, float* values, unsigned maxSize);
+URHO3D_API unsigned StringToNumberArray(const ea::string& string, int* values, unsigned maxSize);
 
-/// Format int array to string.
-inline ea::string FormatArray(int* values, unsigned size)
-{
-    ea::string result;
-    for (unsigned i = 0; i < size; ++i)
-    {
-        if (i > 0)
-            result += " ";
-        result += ea::to_string(values[i]);
-    }
-    return result;
-}
-
-/// Un-format float array from string.
-inline unsigned UnFormatArray(const ea::string& string, float* values, unsigned maxSize)
-{
-    const ea::vector<ea::string> elements = string.split(' ');
-    const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
-    for (unsigned i = 0; i < size; ++i)
-        values[i] = ToFloat(elements[i]);
-
-    return elements.size();
-}
-
-/// Un-format int array from string.
-inline unsigned UnFormatArray(const ea::string& string, int* values, unsigned maxSize)
-{
-    const ea::vector<ea::string> elements = string.split(' ');
-    const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
-    for (unsigned i = 0; i < size; ++i)
-        values[i] = ToInt(elements[i]);
-
-    return elements.size();
-}
-
-/// Serialize array of fixed size.
-template <class T>
-inline bool SerializeArray(Archive& archive, const char* name, T* values, unsigned size)
-{
-    if (!archive.IsHumanReadable())
-        return archive.SerializeBytes(name, values, size * sizeof(T));
-    else
-    {
-        if (archive.IsInput())
-        {
-            ea::string string;
-            if (!archive.Serialize(name, string))
-                return false;
-
-            const unsigned realSize = Detail::UnFormatArray(string, values, size);
-            return realSize == size;
-        }
-        else
-        {
-            ea::string string = Detail::FormatArray(values, size);
-            return archive.Serialize(name, string);
-        }
-    }
-}
-
-/// Serialize type as fixed array.
+/// Serialize primitive array type as bytes or as formatted string.
 template <unsigned N, class T>
-inline bool SerializeArrayType(Archive& archive, const char* name, T& value)
+inline void SerializePrimitiveArray(Archive& archive, const char* name, T& value)
 {
+    // Serialize as bytes if we don't care about readability
+    if (!archive.IsHumanReadable())
+    {
+        archive.SerializeBytes(name, &value, sizeof(value));
+        return;
+    }
+
+    // Serialize as string otherwise
     using ElementType = std::decay_t<decltype(*value.Data())>;
+    ElementType* elements = const_cast<ElementType*>(value.Data());
 
-    if (archive.IsInput())
-    {
-        ElementType elements[N];
-        if (!SerializeArray(archive, name, elements, N))
-            return false;
+    const bool loading = archive.IsInput();
+    ea::string string;
 
-        value = T{ elements };
-        return true;
-    }
-    else
-    {
-        return SerializeArray(archive, name, const_cast<ElementType*>(value.Data()), N);
-    }
-}
+    if (!loading)
+        string = NumberArrayToString(elements, N);
 
-/// Serialize value of the Variant (of specific type).
-template <class T>
-inline bool SerializeVariantValueType(Archive& archive, const char* name, Variant& variant)
-{
-    if (archive.IsInput())
-    {
-        T value{};
-        if (!SerializeValue(archive, name, value))
-            return false;
-        variant = value;
-        return true;
-    }
-    else
-    {
-        const T& value = variant.Get<T>();
-        return SerializeValue(archive, name, const_cast<T&>(value));
-    }
-}
+    archive.Serialize(name, string);
 
-/// Format ResourceRefList to string.
-inline ea::string FormatResourceRefList(ea::string_view typeString, const ea::string* names, unsigned size)
-{
-    ea::string result{ typeString };
-    for (unsigned i = 0; i < size; ++i)
-    {
-        result += ";";
-        result += names[i];
-    }
-    return result;
+    if (loading)
+        StringToNumberArray(string, elements, N);
 }
 
 /// Serialize tie of vectors of the same size. Each tie of elements is serialized as separate object.
 template <class T, class U, size_t... Is>
-inline bool SerializeVectorTie(Archive& archive, const char* name, const char* element, T& vectorTuple, const U& serializeValue, ea::index_sequence<Is...>)
+inline void SerializeVectorTie(Archive& archive, const char* name, const char* element, T& vectorTuple, const U& serializeValue, ea::index_sequence<Is...>)
 {
     const unsigned sizes[] = { ea::get<Is>(vectorTuple).size()... };
-    const unsigned outputSize = sizes[0];
-    if (auto block = archive.OpenArrayBlock(name, outputSize))
-    {
-        if (archive.IsInput())
-        {
-            const unsigned inputSize = block.GetSizeHint();
-            (ea::get<Is>(vectorTuple).clear(), ...);
-            (ea::get<Is>(vectorTuple).resize(inputSize), ...);
-            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-            {
-                const auto elementTuple = ea::tie(ea::get<Is>(vectorTuple)[i]...);
-                if (!serializeValue(archive, element, elementTuple))
-                    return false;
-            }
-            return true;
-        }
-        else
-        {
-            if (ea::adjacent_find(ea::begin(sizes), ea::end(sizes), ea::not_equal_to<unsigned>{}) != ea::end(sizes))
-            {
-                archive.SetError("Vector sizes don't match");
-                return false;
-            }
 
-            for (unsigned i = 0; i < outputSize; ++i)
-            {
-                const auto elementTuple = ea::tie(ea::get<Is>(vectorTuple)[i]...);
-                if (!serializeValue(archive, element, elementTuple))
-                    return false;
-            }
-        }
+    unsigned numElements = sizes[0];
+    auto block = archive.OpenArrayBlock(name, numElements);
+
+    if (archive.IsInput())
+    {
+        numElements = block.GetSizeHint();
+        (ea::get<Is>(vectorTuple).clear(), ...);
+        (ea::get<Is>(vectorTuple).resize(numElements), ...);
     }
-    return false;
+    else
+    {
+        if (ea::find(ea::begin(sizes), ea::end(sizes), numElements, ea::not_equal_to<unsigned>{}) != ea::end(sizes))
+            throw ArchiveException("Vectors of '{}/{}' have mismatching sizes", archive.GetCurrentBlockPath(), name);
+    }
+
+    for (unsigned i = 0; i < numElements; ++i)
+    {
+        const auto elementTuple = ea::tie(ea::get<Is>(vectorTuple)[i]...);
+        serializeValue(archive, element, elementTuple);
+    }
 }
 
 /// Default callback for value serialization.
 struct DefaultSerializer
 {
     template <class T>
-    bool operator()(Archive& archive, const char* name, T& value) const { return SerializeValue(archive, name, value); }
+    void operator()(Archive& archive, const char* name, T& value) const { SerializeValue(archive, name, value); }
+};
+
+/// Any type to/from any type.
+template <class InternalType, class ExternalType>
+struct DefaultTypeCaster
+{
+    InternalType ToArchive(Archive& archive, const char* name, const ExternalType& value) const
+    {
+        return static_cast<InternalType>(value);
+    }
+
+    ExternalType FromArchive(Archive& archive, const char* name, const InternalType& value) const
+    {
+        return static_cast<ExternalType>(value);
+    }
+};
+
+/// String hash to/from string.
+struct StringHashCaster
+{
+    ea::string_view stringHint_;
+
+    ea::string ToArchive(Archive& archive, const char* name, const StringHash& value) const
+    {
+        return ea::string(stringHint_);
+    }
+
+    StringHash FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        return static_cast<StringHash>(value);
+    }
+};
+
+/// Enum to/from string.
+template <class T>
+struct EnumStringCaster
+{
+    using UnderlyingInteger = std::underlying_type_t<T>;
+    const char* const* enumConstants_{};
+
+    ea::string ToArchive(Archive& archive, const char* name, const T& value) const
+    {
+        return enumConstants_[static_cast<UnderlyingInteger>(value)];
+    }
+
+    T FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        return static_cast<T>(GetStringListIndex(value.c_str(), enumConstants_, 0));
+    }
+};
+
+/// ResourceRef to/from string.
+struct ResourceRefStringCaster
+{
+    ea::string ToArchive(Archive& archive, const char* name, const ResourceRef& value) const
+    {
+        Context* context = archive.GetContext();
+        const ea::string typeName = context->GetTypeName(value.type_);
+        return Format("{};{}", typeName, value.name_);
+    }
+
+    ResourceRef FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        const ea::vector<ea::string> chunks = value.split(';');
+        if (chunks.size() != 2)
+            throw ArchiveException("Unexpected format of ResourceRef '{}/{}'", archive.GetCurrentBlockPath(), name);
+
+        return { StringHash{chunks[0]}, chunks[1] };
+    }
+};
+
+/// ResourceRefList to/from string.
+struct ResourceRefListStringCaster
+{
+    ea::string ToArchive(Archive& archive, const char* name, const ResourceRefList& value) const
+    {
+        Context* context = archive.GetContext();
+        const ea::string typeName = context->GetTypeName(value.type_);
+        return Format("{};{}", typeName, ea::string::joined(value.names_, ";"));
+    }
+
+    ResourceRefList FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        ea::vector<ea::string> chunks = value.split(';');
+        if (chunks.empty())
+            throw ArchiveException("Unexpected format of ResourceRefList '{}/{}'", archive.GetCurrentBlockPath(), name);
+
+        const ea::string typeName = ea::move(chunks[0]);
+        chunks.pop_front();
+        return { StringHash{typeName}, chunks };
+    }
 };
 
 }
 
-/// Serialize bool.
-inline bool SerializeValue(Archive& archive, const char* name, bool& value) { return archive.Serialize(name, value); }
+/// @name Serialize primitive types
+/// @{
+inline void SerializeValue(Archive& archive, const char* name, bool& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, signed char& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, unsigned char& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, short& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, unsigned short& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, int& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, unsigned int& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, long long& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, unsigned long long& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, float& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, double& value) { archive.Serialize(name, value); }
+inline void SerializeValue(Archive& archive, const char* name, ea::string& value) { archive.Serialize(name, value); }
+/// @}
 
-/// Serialize signed char.
-inline bool SerializeValue(Archive& archive, const char* name, signed char& value) { return archive.Serialize(name, value); }
+/// @name Serialize primitive array types
+/// @{
+inline void SerializeValue(Archive& archive, const char* name, Vector2& value) { Detail::SerializePrimitiveArray<2>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Vector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Vector4& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Matrix3& value) { Detail::SerializePrimitiveArray<9>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Matrix3x4& value) { Detail::SerializePrimitiveArray<12>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Matrix4& value) { Detail::SerializePrimitiveArray<16>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Rect& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Quaternion& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, Color& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, IntVector2& value) { Detail::SerializePrimitiveArray<2>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, IntVector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, IntRect& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }
+/// @}
 
-/// Serialize unsigned char.
-inline bool SerializeValue(Archive& archive, const char* name, unsigned char& value) { return archive.Serialize(name, value); }
-
-/// Serialize signed short.
-inline bool SerializeValue(Archive& archive, const char* name, short& value) { return archive.Serialize(name, value); }
-
-/// Serialize unsigned short.
-inline bool SerializeValue(Archive& archive, const char* name, unsigned short& value) { return archive.Serialize(name, value); }
-
-/// Serialize signed int.
-inline bool SerializeValue(Archive& archive, const char* name, int& value) { return archive.Serialize(name, value); }
-
-/// Serialize unsigned int.
-inline bool SerializeValue(Archive& archive, const char* name, unsigned int& value) { return archive.Serialize(name, value); }
-
-/// Serialize signed long.
-inline bool SerializeValue(Archive& archive, const char* name, long long& value) { return archive.Serialize(name, value); }
-
-/// Serialize unsigned long.
-inline bool SerializeValue(Archive& archive, const char* name, unsigned long long& value) { return archive.Serialize(name, value); }
-
-/// Serialize float.
-inline bool SerializeValue(Archive& archive, const char* name, float& value) { return archive.Serialize(name, value); }
-
-/// Serialize double.
-inline bool SerializeValue(Archive& archive, const char* name, double& value) { return archive.Serialize(name, value); }
-
-/// Serialize string.
-inline bool SerializeValue(Archive& archive, const char* name, ea::string& value) { return archive.Serialize(name, value); }
-
-/// Serialize Vector2.
-inline bool SerializeValue(Archive& archive, const char* name, Vector2& value)
+/// Serialize value as another type.
+template <class T, class U, class TCaster = Detail::DefaultTypeCaster<T, U>>
+void SerializeValueAsType(Archive& archive, const char* name, U& value, const TCaster& caster = TCaster{})
 {
-    return Detail::SerializeArrayType<2>(archive, name, value);
-}
-
-/// Serialize Vector3.
-inline bool SerializeValue(Archive& archive, const char* name, Vector3& value)
-{
-    return Detail::SerializeArrayType<3>(archive, name, value);
-}
-
-/// Serialize Vector4.
-inline bool SerializeValue(Archive& archive, const char* name, Vector4& value)
-{
-    return Detail::SerializeArrayType<4>(archive, name, value);
-}
-
-/// Serialize Matrix3.
-inline bool SerializeValue(Archive& archive, const char* name, Matrix3& value)
-{
-    return Detail::SerializeArrayType<9>(archive, name, value);
-}
-
-/// Serialize Matrix3x4.
-inline bool SerializeValue(Archive& archive, const char* name, Matrix3x4& value)
-{
-    return Detail::SerializeArrayType<12>(archive, name, value);
-}
-
-/// Serialize Matrix4.
-inline bool SerializeValue(Archive& archive, const char* name, Matrix4& value)
-{
-    return Detail::SerializeArrayType<16>(archive, name, value);
-}
-
-/// Serialize Rect.
-inline bool SerializeValue(Archive& archive, const char* name, Rect& value)
-{
-    return Detail::SerializeArrayType<4>(archive, name, value);
-}
-
-/// Serialize Quaternion.
-inline bool SerializeValue(Archive& archive, const char* name, Quaternion& value)
-{
-    return Detail::SerializeArrayType<4>(archive, name, value);
-}
-
-/// Serialize Color.
-inline bool SerializeValue(Archive& archive, const char* name, Color& value)
-{
-    return Detail::SerializeArrayType<4>(archive, name, value);
-}
-
-/// Serialize IntVector2.
-inline bool SerializeValue(Archive& archive, const char* name, IntVector2& value)
-{
-    return Detail::SerializeArrayType<2>(archive, name, value);
-}
-
-/// Serialize IntVector3.
-inline bool SerializeValue(Archive& archive, const char* name, IntVector3& value)
-{
-    return Detail::SerializeArrayType<3>(archive, name, value);
-}
-
-/// Serialize IntRect.
-inline bool SerializeValue(Archive& archive, const char* name, IntRect& value)
-{
-    return Detail::SerializeArrayType<4>(archive, name, value);
-}
-
-/// Serialize StringHash (as is).
-inline bool SerializeValue(Archive& archive, const char* name, StringHash& value)
-{
-    unsigned hashValue = value.Value();
-    if (!SerializeValue(archive, name, hashValue))
-        return false;
-    value = StringHash{ hashValue };
-    return true;
-}
-
-/// Serialize enum as integer (if binary archive) or as string (if text archive).
-template <class EnumType, class UnderlyingInteger = std::underlying_type_t<EnumType>>
-inline bool SerializeEnum(Archive& archive, const char* name, const char* const* enumConstants, EnumType& value)
-{
-    assert(enumConstants);
     const bool loading = archive.IsInput();
-    if (!archive.IsHumanReadable())
-    {
-        if (loading)
-        {
-            UnderlyingInteger intValue{};
-            if (!SerializeValue(archive, name, intValue))
-                return false;
-            value = static_cast<EnumType>(intValue);
-            return true;
-        }
-        else
-        {
-            UnderlyingInteger intValue = static_cast<UnderlyingInteger>(value);
-            if (!SerializeValue(archive, name, intValue))
-                return false;
-            return true;
-        }
-    }
-    else
-    {
-        if (loading)
-        {
-            ea::string stringValue;
-            if (!SerializeValue(archive, name, stringValue))
-                return false;
-            value = static_cast<EnumType>(GetStringListIndex(stringValue.c_str(), enumConstants, 0));
-            return true;
-        }
-        else
-        {
-            // This is so unsafe
-            ea::string stringValue = enumConstants[static_cast<UnderlyingInteger>(value)];
-            return SerializeValue(archive, name, stringValue);
-        }
-    }
+    T convertedValue{};
+
+    if (!loading)
+        convertedValue = caster.ToArchive(archive, name, value);
+
+    SerializeValue(archive, name, convertedValue);
+
+    if (loading)
+        value = caster.FromArchive(archive, name, convertedValue);
 }
+
+/// Serialize StringHash as integer.
+inline void SerializeValue(Archive& archive, const char* name, StringHash& value) { SerializeValue(archive, name, value.MutableValue()); }
 
 /// Serialize string hash as integer or as string.
-inline bool SerializeStringHash(Archive& archive, const char* name, StringHash& value, const ea::string_view string)
+inline void SerializeStringHash(Archive& archive, const char* name, StringHash& value, const ea::string_view stringHint)
 {
     if (!archive.IsHumanReadable())
-    {
-        unsigned hashValue = value.Value();
-        if (!SerializeValue(archive, name, hashValue))
-            return false;
-        value = StringHash{ hashValue };
-    }
+        SerializeValue(archive, name, value);
     else
-    {
-        if (archive.IsInput())
-        {
-            ea::string stringValue;
-            if (!SerializeValue(archive, name, stringValue))
-                return false;
-            value = StringHash{ stringValue };
-        }
-        else
-        {
-            ea::string stringValue{ string };
-            if (!SerializeValue(archive, name, stringValue))
-                return false;
-        }
-    }
-    return true;
+        SerializeValueAsType<ea::string>(archive, name, value, Detail::StringHashCaster{stringHint});
 }
 
-/// Serialize string hash map key as integer or as string.
-inline bool SerializeStringHashKey(Archive& archive, StringHash& value, const ea::string_view string)
+/// Serialize enum as integer as integer or as string.
+template <class EnumType, class UnderlyingInteger = std::underlying_type_t<EnumType>>
+void SerializeEnum(Archive& archive, const char* name, const char* const* enumConstants, EnumType& value)
 {
+    URHO3D_ASSERT(enumConstants);
+
     if (!archive.IsHumanReadable())
-    {
-        unsigned hashValue = value.Value();
-        if (!archive.SerializeKey(hashValue))
-            return false;
-        value = StringHash{ hashValue };
-    }
+        SerializeValueAsType<UnderlyingInteger>(archive, name, value);
     else
-    {
-        if (archive.IsInput())
-        {
-            ea::string stringValue;
-            if (!archive.SerializeKey(stringValue))
-                return false;
-            value = StringHash{ stringValue };
-        }
-        else
-        {
-            ea::string stringValue{ string };
-            if (!archive.SerializeKey(stringValue))
-                return false;
-        }
-    }
-    return true;
+        SerializeValueAsType<ea::string>(archive, name, value, Detail::EnumStringCaster<EnumType>{enumConstants});
+}
+
+/// Serialize type of the Variant.
+inline void SerializeValue(Archive& archive, const char* name, VariantType& value)
+{
+    SerializeEnum(archive, name, Variant::GetTypeNameList(), value);
+}
+
+/// Serialize value of the Variant.
+URHO3D_API void SerializeVariantAsType(Archive& archive, VariantType variantType, const char* name, Variant& value);
+
+/// Serialize Variant in existing block.
+inline void SerializeVariantInBlock(Archive& archive, ArchiveBlock& block, Variant& value)
+{
+    VariantType variantType = value.GetType();
+    SerializeValue(archive, "type", variantType);
+    SerializeVariantAsType(archive, variantType, "value", value);
 }
 
 /// Serialize vector with standard interface. Content is serialized as separate objects.
-template <class T, class U = Detail::DefaultSerializer>
-inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const char* element, T& vector, const U& serializeValue = U{})
+template <class T, class TSerializer = Detail::DefaultSerializer>
+void SerializeVectorAsObjects(Archive& archive, const char* name, const char* element, T& vector, const TSerializer& serializeValue = TSerializer{})
 {
     using ValueType = typename T::value_type;
-    if (auto block = archive.OpenArrayBlock(name, vector.size()))
+
+    unsigned numElements = vector.size();
+    auto block = archive.OpenArrayBlock(name, numElements);
+
+    if (archive.IsInput())
     {
-        if (archive.IsInput())
-        {
-            vector.clear();
-            vector.resize(block.GetSizeHint());
-            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-            {
-                if (!serializeValue(archive, element, vector[i]))
-                    return false;
-            }
-            return true;
-        }
-        else
-        {
-            for (ValueType& value : vector)
-            {
-                if (!serializeValue(archive, element, value))
-                    return false;
-            }
-            return true;
-        }
+        numElements = block.GetSizeHint();
+        vector.clear();
+        vector.resize(numElements);
     }
-    return false;
+
+    for (unsigned i = 0; i < numElements; ++i)
+        serializeValue(archive, element, vector[i]);
 }
 
 /// Serialize array with standard interface (compatible with ea::span, ea::array, etc). Content is serialized as separate objects.
-template <class T, class U = Detail::DefaultSerializer>
-inline bool SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array, const U& serializeValue = U{})
+template <class T, class TSerializer = Detail::DefaultSerializer>
+void SerializeArrayAsObjects(Archive& archive, const char* name, const char* element, T& array, const TSerializer& serializeValue = TSerializer{})
 {
-    if (auto block = archive.OpenArrayBlock(name, array.size()))
+    const unsigned numElements = array.size();
+    auto block = archive.OpenArrayBlock(name, numElements);
+
+    if (archive.IsInput())
     {
-        if (archive.IsInput())
-        {
-            if (array.size() != block.GetSizeHint())
-            {
-                archive.SetError("Expected array size doesn't match block size");
-                return false;
-            }
-            for (unsigned i = 0; i < array.size(); ++i)
-            {
-                if (!serializeValue(archive, element, array[i]))
-                    return false;
-            }
-            return true;
-        }
-        else
-        {
-            for (unsigned i = 0; i < array.size(); ++i)
-            {
-                if (!serializeValue(archive, element, array[i]))
-                    return false;
-            }
-            return true;
-        }
+        if (numElements != block.GetSizeHint())
+            throw ArchiveException("'{}/{}' has unexpected array size", archive.GetCurrentBlockPath(), name);
     }
-    return false;
+
+    for (unsigned i = 0; i < numElements; ++i)
+        serializeValue(archive, element, array[i]);
 }
 
-template <class T, class U = Detail::DefaultSerializer>
-inline bool SerializeVectorTieAsObjects(Archive& archive, const char* name, const char* element, T vectorTuple, const U& serializeValue = U{})
+template <class T, class TSerializer = Detail::DefaultSerializer>
+void SerializeVectorTieAsObjects(Archive& archive, const char* name, const char* element, T vectorTuple, const TSerializer& serializeValue = TSerializer{})
 {
     static constexpr auto tupleSize = ea::tuple_size_v<T>;
-    return Detail::SerializeVectorTie(archive, name, element, vectorTuple, serializeValue, ea::make_index_sequence<tupleSize>{});
+    Detail::SerializeVectorTie(archive, name, element, vectorTuple, serializeValue, ea::make_index_sequence<tupleSize>{});
 }
 
 /// Serialize vector with standard interface. Content is serialized as bytes.
 template <class T>
-inline bool SerializeVectorAsBytes(Archive& archive, const char* name, T& vector)
+void SerializeVectorAsBytes(Archive& archive, const char* name, T& vector)
 {
     using ValueType = typename T::value_type;
     static_assert(std::is_standard_layout<ValueType>::value, "Type should have standard layout to safely use byte serialization");
     static_assert(std::is_trivially_copyable<ValueType>::value, "Type should be trivially copyable to safely use byte serialization");
 
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    const bool loading = archive.IsInput();
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+
+    unsigned sizeInBytes{};
+
+    if (!loading)
+        sizeInBytes = vector.size() * sizeof(ValueType);
+
+    archive.SerializeVLE("size", sizeInBytes);
+
+    if (loading)
     {
-        if (archive.IsInput())
-        {
-            unsigned sizeInBytes{};
-            if (!archive.SerializeVLE("size", sizeInBytes))
-                return false;
-
-            if (sizeInBytes % sizeof(ValueType) != 0)
-            {
-                archive.SetError(Format("Unexpected size of byte array '{0}'", name));
-                return false;
-            }
-
-            vector.resize(sizeInBytes / sizeof(ValueType));
-            if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
-                return false;
-        }
-        else
-        {
-            unsigned sizeInBytes = vector.size() * sizeof(ValueType);
-            if (!archive.SerializeVLE("size", sizeInBytes))
-                return false;
-
-            if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
-                return false;
-        }
-        return true;
+        if (sizeInBytes % sizeof(ValueType) != 0)
+            throw ArchiveException("'{}/{}' has unexpected size in bytes", archive.GetCurrentBlockPath(), name);
+        vector.resize(sizeInBytes / sizeof(ValueType));
     }
-    return false;
+
+    archive.SerializeBytes("data", vector.data(), sizeInBytes);
 }
 
 /// Serialize vector in the best possible format.
 template <class T>
-inline bool SerializeVector(Archive& archive, const char* name, const char* element, T& vector)
+void SerializeVector(Archive& archive, const char* name, const char* element, T& vector)
 {
     using ValueType = typename T::value_type;
     static constexpr bool standardLayout = std::is_standard_layout<ValueType>::value;
     static constexpr bool triviallyCopyable = std::is_trivially_copyable<ValueType>::value;
 
-    if (archive.IsHumanReadable())
-        return SerializeVectorAsObjects(archive, name, element, vector);
-    else
+    if constexpr (standardLayout && triviallyCopyable)
     {
-        if constexpr (standardLayout && triviallyCopyable)
-            return SerializeVectorAsBytes(archive, name, vector);
-        else
-            return SerializeVectorAsObjects(archive, name, element, vector);
+        if (!archive.IsHumanReadable())
+        {
+            SerializeVectorAsBytes(archive, name, vector);
+            return;
+        }
     }
+
+    SerializeVectorAsObjects(archive, name, element, vector);
 }
 
 /// Serialize custom vector.
 /// While writing, serializer may skip vector elements. Size should match actual number of elements to be written.
 /// While reading, serializer must push elements into vector on its own.
 template <class T, class U>
-inline bool SerializeCustomVector(Archive& archive, ArchiveBlockType blockType, const char* name, unsigned sizeToWrite, const T& vector, U serializer)
+void SerializeCustomVector(Archive& archive, const char* name, unsigned sizeToWrite, const T& vector, U serializer)
 {
-    assert(blockType == ArchiveBlockType::Array || blockType == ArchiveBlockType::Map);
-
     using ValueType = typename T::value_type;
-    if (auto block = archive.OpenBlock(name, sizeToWrite, false, blockType))
+    auto block = archive.OpenArrayBlock(name, sizeToWrite);
+    if (archive.IsInput())
     {
-        if (archive.IsInput())
+        for (unsigned index = 0; index < block.GetSizeHint(); ++index)
         {
-            for (unsigned index = 0; index < block.GetSizeHint(); ++index)
-            {
-                static const ValueType valuePlaceholder{};
-                if (!serializer(index, valuePlaceholder, true))
-                {
-                    archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
-                    return false;
-                }
-            }
-            return true;
-        }
-        else
-        {
-            for (unsigned index = 0; index < vector.size(); ++index)
-            {
-                if (!serializer(index, vector[index], false))
-                {
-                    archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
-                    return false;
-                }
-            }
-            return true;
+            static const ValueType valuePlaceholder{};
+            serializer(index, valuePlaceholder, true);
         }
     }
-    return false;
+    else
+    {
+        for (unsigned index = 0; index < vector.size(); ++index)
+            serializer(index, vector[index], false);
+    }
 }
 
-/// Serialize custom map.
-/// While writing, serializer may skip map elements. Size should match actual number of elements to be written.
-/// While reading, serializer must push elements into map on its own.
-template <class T, class U>
-inline bool SerializeCustomMap(Archive& archive, ArchiveBlockType blockType, const char* name, unsigned sizeToWrite, const T& map, U serializer)
+/// Serialize map or hash map with with standard interface.
+template <class T, class TSerializer = Detail::DefaultSerializer>
+void SerializeMap(Archive& archive, const char* name, const char* element, T& map, const TSerializer& serializeValue = TSerializer{})
 {
-    assert(blockType == ArchiveBlockType::Array || blockType == ArchiveBlockType::Map);
-
     using KeyType = typename T::key_type;
-    using MappedType = typename T::mapped_type;
-    if (auto block = archive.OpenBlock(name, sizeToWrite, false, blockType))
-    {
-        if (archive.IsInput())
-        {
-            for (unsigned index = 0; index < block.GetSizeHint(); ++index)
-            {
-                static const KeyType keyPlaceholder{};
-                static const MappedType valuePlaceholder{};
-                if (!serializer(index, keyPlaceholder, valuePlaceholder, true))
-                {
-                    archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
-                    return false;
-                }
-            }
-            return true;
-        }
-        else
-        {
-            unsigned index = 0;
-            for (auto& elem : map)
-            {
-                // Copy the key so it could be passed by reference
-                if (!serializer(index, elem.first, elem.second, false))
-                {
-                    archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
-                    return false;
-                }
-                ++index;
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
-/// Serialize map or hash map with string key with standard interface.
-template <class T>
-inline bool SerializeStringMap(Archive& archive, const char* name, const char* element, T& map)
-{
     using ValueType = typename T::mapped_type;
-    if (auto block = archive.OpenMapBlock(name, map.size()))
+
+    if constexpr (ea::is_same_v<ValueType, Variant> && ea::is_same_v<TSerializer, Detail::DefaultSerializer>)
     {
+        auto block = archive.OpenArrayBlock(name, map.size());
         if (archive.IsInput())
         {
             map.clear();
             for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
-                ea::string key{};
-                ValueType value{};
-                archive.SerializeKey(key);
-                if (!SerializeValue(archive, element, value))
-                    return false;
-                map.emplace(std::move(key), std::move(value));
+                auto elementBlock = archive.OpenUnorderedBlock(element);
+                KeyType key{};
+                SerializeValue(archive, "key", key);
+                SerializeVariantInBlock(archive, elementBlock, map[key]);
             }
-            return true;
         }
         else
         {
-            for (auto& keyValue : map)
+            for (const auto& [key, value] : map)
             {
-                archive.SerializeKey(const_cast<ea::string&>(keyValue.first));
-                SerializeValue(archive, element, keyValue.second);
+                auto elementBlock = archive.OpenUnorderedBlock(element);
+                SerializeValue(archive, "key", const_cast<KeyType&>(key));
+                SerializeVariantInBlock(archive, elementBlock, const_cast<Variant&>(value));
             }
-            return true;
         }
     }
-    return false;
-}
-
-/// Serialize map or hash map with unsigned integer key with standard interface.
-template <class T>
-inline bool SerializeStringHashMap(Archive& archive, const char* name, const char* element, T& map)
-{
-    using ValueType = typename T::mapped_type;
-    if (auto block = archive.OpenMapBlock(name, map.size()))
+    else
     {
+        auto block = archive.OpenArrayBlock(name, map.size());
         if (archive.IsInput())
         {
             map.clear();
             for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
-                ValueType value{};
-                unsigned key{};
-                archive.SerializeKey(key);
-                if (!SerializeValue(archive, element, value))
-                    return false;
-                map.emplace(StringHash{ key }, std::move(value));
+                auto elementBlock = archive.OpenUnorderedBlock(element);
+                KeyType key{};
+                serializeValue(archive, "key", key);
+                serializeValue(archive, "value", map[key]);
             }
-            return true;
         }
         else
         {
-            for (auto& keyValue : map)
+            for (const auto& [key, value] : map)
             {
-                unsigned key = keyValue.first.Value();
-                archive.SerializeKey(key);
-                SerializeValue(archive, element, keyValue.second);
+                auto elementBlock = archive.OpenUnorderedBlock(element);
+                serializeValue(archive, "key", const_cast<KeyType&>(key));
+                serializeValue(archive, "value", const_cast<ValueType&>(value));
             }
-            return true;
         }
     }
-    return false;
+}
+
+/// Serialize set or hash set with standard interface.
+template <class T, class TSerializer = Detail::DefaultSerializer>
+void SerializeSet(Archive& archive, const char* name, const char* element, T& set, const TSerializer& serializeValue = TSerializer{})
+{
+    using ValueType = typename T::value_type;
+
+    auto block = archive.OpenArrayBlock(name, set.size());
+    if (archive.IsInput())
+    {
+        set.clear();
+        for (unsigned i = 0; i < block.GetSizeHint(); ++i)
+        {
+            auto elementBlock = archive.OpenUnorderedBlock(element);
+            ValueType value{};
+            serializeValue(archive, element, value);
+            set.emplace(ea::move(value));
+        }
+    }
+    else
+    {
+        for (const auto& value : set)
+            serializeValue(archive, element, const_cast<ValueType&>(value));
+    }
 }
 
 /// Serialize StringVector.
-inline bool SerializeValue(Archive& archive, const char* name, StringVector& value)
+inline void SerializeValue(Archive& archive, const char* name, StringVector& value)
 {
-    return SerializeVectorAsObjects(archive, name, nullptr, value);
+    SerializeVectorAsObjects(archive, name, "value", value);
 }
 
 /// Serialize VariantVector.
-inline bool SerializeValue(Archive& archive, const char* name, VariantVector& value)
+inline void SerializeValue(Archive& archive, const char* name, VariantVector& value)
 {
-    return SerializeVectorAsObjects(archive, name, nullptr, value);
+    SerializeVectorAsObjects(archive, name, "value", value);
 }
 
 /// Serialize VariantMap.
-inline bool SerializeValue(Archive& archive, const char* name, VariantMap& value)
+inline void SerializeValue(Archive& archive, const char* name, VariantMap& value)
 {
-    return SerializeStringHashMap(archive, name, nullptr, value);
+    SerializeMap(archive, name, "value", value);
 }
 
 /// Serialize ResourceRef.
-inline bool SerializeValue(Archive& archive, const char* name, ResourceRef& value)
+inline void SerializeValue(Archive& archive, const char* name, ResourceRef& value)
 {
     if (!archive.IsHumanReadable())
     {
-        if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-        {
-            bool success = true;
-            success &= SerializeValue(archive, "type", value.type_);
-            success &= SerializeValue(archive, "name", value.name_);
-            return success;
-        }
-        return false;
+        ArchiveBlock block = archive.OpenUnorderedBlock(name);
+        SerializeValue(archive, "type", value.type_);
+        SerializeValue(archive, "name", value.name_);
+        return;
     }
-    else
-    {
-        Context* context = archive.GetContext();
-        if (!context)
-            return false;
 
-        if (archive.IsInput())
-        {
-            ea::string stringValue;
-            if (!SerializeValue(archive, name, stringValue))
-                return false;
-
-            ea::vector<ea::string> chunks = stringValue.split(';');
-            if (chunks.size() != 2)
-            {
-                archive.SetError(Format("Unexpected format of ResourceRef '{0}'", name));
-                return false;
-            }
-
-            value.type_ = chunks[0];
-            value.name_ = chunks[1];
-        }
-        else
-        {
-            ea::string stringValue = Detail::FormatResourceRefList(context->GetTypeName(value.type_), &value.name_, 1);
-            if (!SerializeValue(archive, name, stringValue))
-                return false;
-        }
-        return true;
-    }
+    SerializeValueAsType<ea::string>(archive, name, value, Detail::ResourceRefStringCaster{});
 }
 
 /// Serialize ResourceRefList.
-inline bool SerializeValue(Archive& archive, const char* name, ResourceRefList& value)
+inline void SerializeValue(Archive& archive, const char* name, ResourceRefList& value)
 {
     if (!archive.IsHumanReadable())
     {
-        if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-        {
-            bool success = true;
-            success &= SerializeValue(archive, "type", value.type_);
-            success &= SerializeVectorAsObjects(archive, "name", "element", value.names_);
-            return success;
-        }
-        return false;
+        ArchiveBlock block = archive.OpenUnorderedBlock(name);
+        SerializeValue(archive, "type", value.type_);
+        SerializeVectorAsObjects(archive, "name", "element", value.names_);
+        return;
     }
-    else
-    {
-        Context* context = archive.GetContext();
-        if (!context)
-            return false;
 
-        if (archive.IsInput())
-        {
-            ea::string stringValue;
-            if (!SerializeValue(archive, name, stringValue))
-                return false;
-
-            ea::vector<ea::string> chunks = stringValue.split(';');
-            if (chunks.size() < 1)
-            {
-                archive.SetError(Format("Unexpected format of ResourceRefList '{0}'", name));
-                return false;
-            }
-
-            value.type_ = chunks[0];
-            chunks.pop_front();
-            value.names_ = std::move(chunks);
-        }
-        else
-        {
-            ea::string stringValue = Detail::FormatResourceRefList(context->GetTypeName(value.type_), value.names_.data(), value.names_.size());
-            if (!SerializeValue(archive, name, stringValue))
-                return false;
-        }
-        return true;
-    }
+    SerializeValueAsType<ea::string>(archive, name, value, Detail::ResourceRefListStringCaster{});
 }
-
-/// Serialize type of the Variant.
-inline bool SerializeValue(Archive& archive, const char* name, VariantType& value)
-{
-    return SerializeEnum(archive, name, Variant::GetTypeNameList(), value);
-}
-
-/// Serialize value of the Variant.
-URHO3D_API bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value);
 
 /// Serialize Variant.
-inline bool SerializeValue(Archive& archive, const char* name, Variant& value)
+inline void SerializeValue(Archive& archive, const char* name, Variant& value)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        VariantType variantType = value.GetType();
-        if (!SerializeValue(archive, "type", variantType))
-            return false;
-
-        return SerializeVariantValue(archive, variantType, "value", value);
-    }
-    return false;
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    SerializeVariantInBlock(archive, block, value);
 }
 
 /// Serialize Object.
 template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
-inline bool SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
+void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        // Serialize type
-        StringHash type = value ? value->GetType() : StringHash{};
-        const ea::string_view typeName = value ? ea::string_view{ value->GetTypeName() } : "";
-        if (!SerializeStringHash(archive, "type", type, typeName))
-            return false;
+    const bool loading = archive.IsInput();
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
 
-        // Serialize empty object
+    StringHash type{};
+    ea::string_view typeName{};
+    if (!loading && value)
+    {
+        type = value->GetType();
+        typeName = value->GetTypeName();
+    }
+
+    SerializeStringHash(archive, "type", type, typeName);
+
+    if (loading)
+    {
+        // Serialize null object
         if (type == StringHash{})
         {
             value = nullptr;
-            return true;
+            return;
         }
 
-        // Create instance if loading
-        if (archive.IsInput())
+        // Create instance
+        Context* context = archive.GetContext();
+        value.StaticCast(context->CreateObject(type));
+        if (!value)
         {
-            Context* context = archive.GetContext();
-            if (!context)
-            {
-                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
-                return false;
-            }
-
-            value.StaticCast(context->CreateObject(type));
-
-            if (!value)
-            {
-                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
-                return false;
-            }
+            throw ArchiveException("Failed to create object '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
+                type.ToDebugString());
         }
-
-        // Serialize object
-        return value->Serialize(archive);
     }
-    return false;
+
+    if (value && !value->Serialize(archive, "value"))
+    {
+        throw ArchiveException("Failed to serialize object '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
+            type.ToDebugString());
+    }
 }
 
 /// Serialize optional element or block.
-template <class T>
-inline bool SerializeOptional(Archive& archive, bool cond, T serializer, bool emulate = true)
+template <class T, class U = T, class TSerializer = Detail::DefaultSerializer>
+void SerializeOptionalValue(Archive& archive, const char* name, T& value, const U& defaultValue,
+    const TSerializer& serializeValue = TSerializer{})
 {
     const bool loading = archive.IsInput();
-    if (archive.IsUnorderedSupportedNow())
+
+    if (!archive.IsUnorderedAccessSupportedInCurrentBlock())
     {
-        if (loading)
-        {
-            return serializer(true);
-        }
-        else
-        {
-            if (cond)
-                return serializer(false);
-            return true;
-        }
+        ArchiveBlock block = archive.OpenUnorderedBlock(name);
+
+        bool initialized{};
+
+        if (!loading)
+            initialized = value != defaultValue;
+
+        SerializeValue(archive, "initialized", initialized);
+
+        if (initialized)
+            SerializeValue(archive, "value", value);
+        else if (loading)
+            value = defaultValue;
     }
-    else if (emulate)
+    else
     {
-        if (ArchiveBlock block = archive.OpenUnorderedBlock("optional"))
-        {
-            if (!SerializeValue(archive, "exists", cond))
-                return false;
+        const bool initialized = loading ? archive.HasElementOrBlock(name) : value != defaultValue;
+        if (initialized)
+            SerializeValue(archive, name, value);
+        else if (loading)
+            value = defaultValue;
+    }
+}
 
-            if (cond)
-                return serializer(loading);
-
-            return true;
-        }
+template <class T>
+bool ConsumeArchiveException(const T& lambda)
+{
+    try
+    {
+        lambda();
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        URHO3D_LOGERROR("Serialization error: {}", e.what());
         return false;
     }
-    else
-    {
-        return serializer(loading);
-    }
-}
-
-/// Serialize value with custom setter callback.
-template <class T, class U>
-inline bool SerializeCustomValue(Archive& archive, const char* name, const T& value, U setter)
-{
-    if (archive.IsInput())
-    {
-        T tempValue;
-        const bool success = SerializeValue(archive, name, tempValue);
-        setter(tempValue);
-        return success;
-    }
-    else
-        return SerializeValue(archive, name, const_cast<T&>(value));
-}
-
-/// Serialize value with custom setter callback.
-template <class T, class U>
-inline bool SerializeCustomEnum(Archive& archive, const char* name, const char* const* enumConstants, const T& value, U setter)
-{
-    if (archive.IsInput())
-    {
-        T tempValue;
-        const bool success = SerializeEnum(archive, name, enumConstants, tempValue);
-        setter(tempValue);
-        return success;
-    }
-    else
-        return SerializeEnum(archive, name, enumConstants, const_cast<T&>(value));
 }
 
 }

@@ -109,9 +109,9 @@ public:
     virtual void OnEvent(Object* sender, StringHash eventType, VariantMap& eventData);
 
     /// Serialize object.
-    virtual bool Serialize(Archive& archive);
-    /// Serialize content from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive, ArchiveBlock& block);
+    virtual bool Serialize(Archive& archive, const char* name);
+    /// Serialize content from/to archive. May throw ArchiveException.
+    virtual void SerializeInBlock(Archive& archive, ArchiveBlock& block);
 
     /// Return type info static.
     static const TypeInfo* GetTypeInfoStatic() { return nullptr; }

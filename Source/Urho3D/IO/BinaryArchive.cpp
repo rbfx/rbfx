@@ -21,45 +21,50 @@
 //
 
 #include "../IO/BinaryArchive.h"
+#include "../Core/Assert.h"
 
 #include <cassert>
 
 namespace Urho3D
 {
 
+namespace
+{
+
+constexpr const char* blockGuardName = "<block guard>";
+
+}
+
 BinaryOutputArchiveBlock::BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool safe)
-    : name_(name)
-    , type_(type)
+    : ArchiveBlockBase(name, type)
     , parentSerializer_(parentSerializer)
 {
     if (safe)
-        checkedData_ = ea::make_unique<VectorBuffer>();
+        outputBuffer_ = ea::make_unique<VectorBuffer>();
 }
 
-bool BinaryOutputArchiveBlock::Close(ArchiveBase& archive)
+void BinaryOutputArchiveBlock::Close(ArchiveBase& archive)
 {
-    if (!checkedData_)
+    if (!outputBuffer_)
     {
-        assert(nesting_ == 0);
-        return true;
+        URHO3D_ASSERT(!HasOpenInlineBlock());
+        return;
     }
 
-    const unsigned size = checkedData_->GetSize();
+    const unsigned size = outputBuffer_->GetSize();
     if (parentSerializer_->WriteVLE(size))
     {
-        if (parentSerializer_->Write(checkedData_->GetData(), size) == size)
-            return true;
+        if (parentSerializer_->Write(outputBuffer_->GetData(), size) == size)
+            return;
     }
 
-    archive.SetErrorFormatted(ArchiveBase::errorUnspecifiedFailure_elementName, ArchiveBase::blockElementName_);
-    return false;
-
+    throw archive.IOFailureException(blockGuardName);
 }
 
 Serializer* BinaryOutputArchiveBlock::GetSerializer()
 {
-    if (checkedData_)
-        return checkedData_.get();
+    if (outputBuffer_)
+        return outputBuffer_.get();
     else
         return parentSerializer_;
 }
@@ -70,10 +75,23 @@ BinaryOutputArchive::BinaryOutputArchive(Context* context, Serializer& serialize
 {
 }
 
-bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
+ea::string_view BinaryOutputArchive::GetName() const
 {
-    if (!CheckEOF(name))
-        return false;
+    if (Deserializer* deserializer = dynamic_cast<Deserializer*>(serializer_))
+        return deserializer->GetName();
+    return {};
+}
+
+unsigned BinaryOutputArchive::GetChecksum()
+{
+    if (Deserializer* deserializer = dynamic_cast<Deserializer*>(serializer_))
+        return deserializer->GetChecksum();
+    return 0;
+}
+
+void BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
+{
+    CheckBeforeBlock(name);
 
     if (stack_.empty())
     {
@@ -91,126 +109,44 @@ bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool 
         }
         else
         {
-            GetCurrentBlock().OpenNestedBlock();
+            GetCurrentBlock().OpenInlineBlock();
         }
     }
 
-    if (type == ArchiveBlockType::Array || type == ArchiveBlockType::Map)
+    if (type == ArchiveBlockType::Array)
     {
         if (!currentBlockSerializer_->WriteVLE(sizeHint))
         {
-            SetErrorFormatted(ArchiveBase::errorUnspecifiedFailure_elementName, ArchiveBase::blockElementName_);
             EndBlock();
-            return false;
+            throw IOFailureException(blockGuardName);
         }
     }
-
-    return true;
 }
 
-bool BinaryOutputArchive::EndBlock()
+void BinaryOutputArchive::EndBlock() noexcept
 {
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
-        return false;
-    }
-
-    if (GetCurrentBlock().CloseNestedBlock())
-        return true;
-
-    const bool blockClosed = GetCurrentBlock().Close(*this);
-
-    stack_.pop_back();
-    if (!stack_.empty())
-        currentBlockSerializer_ = GetCurrentBlock().GetSerializer();
-    else
-    {
-        CloseArchive();
-        currentBlockSerializer_ = nullptr;
-    }
-
-    return blockClosed;
+    ArchiveBaseT::EndBlock();
+    currentBlockSerializer_ = stack_.empty() ? nullptr : GetCurrentBlock().GetSerializer();
 }
 
-bool BinaryOutputArchive::SerializeKey(ea::string& key)
+void BinaryOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
-        return false;
-
-    return CheckElementWrite(currentBlockSerializer_->WriteString(key), ArchiveBase::keyElementName_);
+    CheckBeforeElement(name);
+    CheckResult(currentBlockSerializer_->Write(bytes, size) == size, name);
 }
 
-bool BinaryOutputArchive::SerializeKey(unsigned& key)
+void BinaryOutputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
-        return false;
-
-    return CheckElementWrite(currentBlockSerializer_->WriteUInt(key), ArchiveBase::keyElementName_);
-}
-
-bool BinaryOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
-{
-    if (!CheckEOFAndRoot(name))
-        return false;
-
-    return CheckElementWrite(currentBlockSerializer_->Write(bytes, size) == size, name);
-}
-
-bool BinaryOutputArchive::SerializeVLE(const char* name, unsigned& value)
-{
-    if (!CheckEOFAndRoot(name))
-        return false;
-
-    return CheckElementWrite(currentBlockSerializer_->WriteVLE(value), name);
-}
-
-bool BinaryOutputArchive::CheckEOF(const char* elementName)
-{
-    if (HasError())
-        return false;
-
-    if (IsEOF())
-    {
-        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
-        return false;
-    }
-
-    return true;
-}
-
-bool BinaryOutputArchive::CheckEOFAndRoot(const char* elementName)
-{
-    if (!CheckEOF(elementName))
-        return false;
-
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
-        assert(0);
-        return false;
-    }
-
-    return true;
-}
-
-bool BinaryOutputArchive::CheckElementWrite(bool result, const char* elementName)
-{
-    if (result)
-        return true;
-
-    SetErrorFormatted(ArchiveBase::errorUnspecifiedFailure_elementName, elementName);
-    return false;
+    CheckBeforeElement(name);
+    CheckResult(currentBlockSerializer_->WriteVLE(value), name);
 }
 
 // Generate serialization implementation (binary output)
 #define URHO3D_BINARY_OUT_IMPL(type, function) \
-    bool BinaryOutputArchive::Serialize(const char* name, type& value) \
+    void BinaryOutputArchive::Serialize(const char* name, type& value) \
     { \
-        if (!CheckEOFAndRoot(name)) \
-            return false; \
-        return CheckElementWrite(currentBlockSerializer_->function(value), name); \
+        CheckBeforeElement(name); \
+        CheckResult(currentBlockSerializer_->function(value), name); \
     }
 
 URHO3D_BINARY_OUT_IMPL(bool, WriteBool);
@@ -230,8 +166,7 @@ URHO3D_BINARY_OUT_IMPL(ea::string, WriteString);
 
 BinaryInputArchiveBlock::BinaryInputArchiveBlock(const char* name, ArchiveBlockType type,
     Deserializer* deserializer, bool safe, unsigned nextElementPosition)
-    : name_(name)
-    , type_(type)
+    : ArchiveBlockBase(name, type)
     , deserializer_(deserializer)
     , safe_(safe)
     , nextElementPosition_(nextElementPosition)
@@ -261,10 +196,9 @@ BinaryInputArchive::BinaryInputArchive(Context* context, Deserializer& deseriali
 {
 }
 
-bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
+void BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
-    if (!CheckEOF(name))
-        return false;
+    CheckBeforeBlock(name);
 
     if (stack_.empty())
     {
@@ -280,126 +214,41 @@ bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool s
         }
         else
         {
-            GetCurrentBlock().OpenNestedBlock();
+            GetCurrentBlock().OpenInlineBlock();
         }
     }
 
-    if (type == ArchiveBlockType::Array || type == ArchiveBlockType::Map)
+    if (type == ArchiveBlockType::Array)
     {
         sizeHint = deserializer_->ReadVLE();
         if (deserializer_->IsEof() && sizeHint != 0)
         {
-            SetErrorFormatted(ArchiveBase::errorUnspecifiedFailure_elementName, ArchiveBase::blockElementName_);
             EndBlock();
-            return false;
+            throw IOFailureException(blockGuardName);
         }
     }
-
-    return true;
 }
 
-bool BinaryInputArchive::EndBlock()
+void BinaryInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
-        return false;
-    }
-
-    if (GetCurrentBlock().CloseNestedBlock())
-        return true;
-
-    GetCurrentBlock().Close(*this);
-
-    stack_.pop_back();
-    if (stack_.empty())
-        CloseArchive();
-    return true;
+    CheckBeforeElement(name);
+    CheckResult(deserializer_->Read(bytes, size) == size, name);
 }
 
-bool BinaryInputArchive::SerializeKey(ea::string& key)
+void BinaryInputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
-        return false;
-
-    key = deserializer_->ReadString();
-    return CheckElementRead(true, ArchiveBase::keyElementName_);
-}
-
-bool BinaryInputArchive::SerializeKey(unsigned& key)
-{
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
-        return false;
-
-    key = deserializer_->ReadUInt();
-    return CheckElementRead(true, ArchiveBase::keyElementName_);
-}
-
-bool BinaryInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
-{
-    if (!CheckEOFAndRoot(name))
-        return false;
-
-    return CheckElementRead(deserializer_->Read(bytes, size) == size, name);
-}
-
-bool BinaryInputArchive::SerializeVLE(const char* name, unsigned& value)
-{
-    if (!CheckEOFAndRoot(name))
-        return false;
-
+    CheckBeforeElement(name);
     value = deserializer_->ReadVLE();
-    return CheckElementRead(true, name);
-}
-
-bool BinaryInputArchive::CheckEOF(const char* elementName)
-{
-    if (HasError())
-        return false;
-
-    if (IsEOF())
-    {
-        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
-        return false;
-    }
-
-    return true;
-}
-
-bool BinaryInputArchive::CheckEOFAndRoot(const char* elementName)
-{
-    if (!CheckEOF(elementName))
-        return false;
-
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
-        assert(0);
-        return false;
-    }
-
-    return true;
-}
-
-bool BinaryInputArchive::CheckElementRead(bool result, const char* elementName)
-{
-    if (!result || deserializer_->GetPosition() > GetCurrentBlock().GetNextElementPosition())
-    {
-        SetErrorFormatted(ArchiveBase::errorUnspecifiedFailure_elementName, elementName);
-        return false;
-    }
-    return true;
+    CheckResult(true, name);
 }
 
 // Generate serialization implementation (binary input)
 #define URHO3D_BINARY_IN_IMPL(type, function) \
-    bool BinaryInputArchive::Serialize(const char* name, type& value) \
+    void BinaryInputArchive::Serialize(const char* name, type& value) \
     { \
-        if (!CheckEOFAndRoot(name)) \
-            return false; \
+        CheckBeforeElement(name); \
         value = deserializer_->function(); \
-        return CheckElementRead(true, name); \
+        CheckResult(true, name); \
     }
 
 URHO3D_BINARY_IN_IMPL(bool, ReadBool);

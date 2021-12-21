@@ -167,7 +167,7 @@ void Editor::Setup()
             if (file.LoadFile(editorSettingsFile))
             {
                 JSONInputArchive archive(&file);
-                if (!Serialize(archive))
+                if (!Serialize(archive, "editor"))
                     URHO3D_LOGERROR("Loading of editor settings failed.");
 
                 engineParameters_[EP_WINDOW_WIDTH] = windowSize_.x_;
@@ -321,7 +321,7 @@ void Editor::Stop()
 
         JSONFile json(context_);
         JSONOutputArchive archive(&json);
-        if (Serialize(archive))
+        if (Serialize(archive, "editor"))
         {
             if (!json.SaveFile(editorSettingsDir + "Editor.json"))
                 URHO3D_LOGERROR("Saving of editor settings failed.");

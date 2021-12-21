@@ -109,21 +109,20 @@ void AnimatedModel::RegisterObject(Context* context)
         AM_DEFAULT);
 }
 
-bool AnimatedModel::Serialize(Archive& archive)
+bool AnimatedModel::Serialize(Archive& archive, const char* name)
 {
     loading_ = true;
-    bool success = Component::Serialize(archive);
+    bool success = Component::Serialize(archive, name);
     loading_ = false;
 
     return success;
 }
 
-bool AnimatedModel::Serialize(Archive& archive, ArchiveBlock& block)
+void AnimatedModel::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 {
     loading_ = true;
-    bool success = Serializable::Serialize(archive, block);
+    Serializable::SerializeInBlock(archive, block);
     loading_ = false;
-    return success;
 }
 
 bool AnimatedModel::Load(Deserializer& source)

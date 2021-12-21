@@ -61,4 +61,13 @@ private:
     ea::string message_;
 };
 
+/// Exception thrown on I/O error on Archive serialization/deserialization.
+/// Try to catch this exception outside of serialization code and don't leak it to user code.
+/// Archive is generally not safe to use if ArchiveException has been thrown.
+class ArchiveException : public RuntimeException
+{
+public:
+    using RuntimeException::RuntimeException;
+};
+
 }

@@ -50,7 +50,7 @@ struct GLTFImporterSettings
     float keyFrameTimeError_{ M_EPSILON };
 };
 
-URHO3D_API bool SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
+URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
 
 /// Utility class to load GLTF file and save it as Urho resources.
 /// It may modify Context singletons, so it's better to use this utility from separate executable.

@@ -37,6 +37,7 @@ class Deserializer;
 class Serializer;
 class XMLElement;
 class JSONValue;
+class ObjectReflection;
 
 struct DirtyBits;
 struct NetworkState;
@@ -57,15 +58,15 @@ public:
     virtual void OnSetAttribute(const AttributeInfo& attr, const Variant& src);
     /// Handle attribute read access. Default implementation reads the variable at offset, or invokes the get accessor.
     virtual void OnGetAttribute(const AttributeInfo& attr, Variant& dest) const;
+    /// Return reflection used for serialization.
+    virtual ObjectReflection* GetReflection() const;
     /// Return attribute descriptions, or null if none defined.
     virtual const ea::vector<AttributeInfo>* GetAttributes() const;
     /// Return network replication attribute descriptions, or null if none defined.
     virtual const ea::vector<AttributeInfo>* GetNetworkAttributes() const;
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
-    /// Serialize content from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block) override;
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
 
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);
