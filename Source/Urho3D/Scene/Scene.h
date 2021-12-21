@@ -120,7 +120,7 @@ public:
     template <class T> const SceneComponentIndex& GetComponentIndex() { return GetComponentIndex(T::GetTypeStatic()); }
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
+    bool Serialize(Archive& archive, const char* name) override;
 
     /// Load from binary data. Removes all existing child nodes and components first. Return true if successful.
     bool Load(Deserializer& source) override;

@@ -429,9 +429,9 @@ public:
 };
 
 /// Serialize tetrahedron to archive.
-URHO3D_API bool SerializeValue(Archive& archive, const char* name, Tetrahedron& value);
+URHO3D_API void SerializeValue(Archive& archive, const char* name, Tetrahedron& value);
 
 /// Serialize tetrahedral mesh to archive.
-URHO3D_API bool SerializeValue(Archive& archive, const char* name, TetrahedralMesh& value);
+URHO3D_API void SerializeValue(Archive& archive, const char* name, TetrahedralMesh& value);
 
 }

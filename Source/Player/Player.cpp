@@ -72,7 +72,7 @@ void Player::Setup()
         if (jsonFile.LoadFile(settingsFilePath))
         {
             JSONInputArchive archive(&jsonFile);
-            if (settings_.Serialize(archive))
+            if (settings_.Serialize(archive, "settings"))
             {
                 for (const auto& pair : settings_.engineParameters_)
                     engineParameters_[pair.first] = pair.second;
@@ -137,7 +137,7 @@ void Player::Setup()
         }
 
         JSONInputArchive archive(&jsonFile);
-        if (!settings_.Serialize(archive))
+        if (!settings_.Serialize(archive, "settings"))
         {
             URHO3D_LOGERROR("Unable to deserialize Settings.json in {}", pakFile);
             continue;

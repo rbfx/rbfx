@@ -135,7 +135,7 @@ bool Project::LoadProject(const ea::string& projectPath, bool disableAssetImport
     }
     // Loading is performed even on empty file. Give a chance for serialization function to do default setup in case of missing data.
     JSONInputArchive archive(&file);
-    if (!Serialize(archive))
+    if (!Serialize(archive, "project"))
         return false;
 
     // Default resources directory for new projects.
@@ -280,7 +280,7 @@ bool Project::SaveProject()
     // Project.json
     JSONFile file(context_);
     JSONOutputArchive archive(&file);
-    if (!Serialize(archive))
+    if (!Serialize(archive, "project"))
         return false;
 
     ea::string filePath(projectFileDir_ + "Project.json");
@@ -294,7 +294,7 @@ bool Project::SaveProject()
     return true;
 }
 
-bool Project::Serialize(Archive& archive)
+bool Project::Serialize(Archive& archive, const char* name)
 {
     const int version = 1;
     if (!archive.IsInput() && context_->GetSubsystem<Engine>()->IsHeadless())
@@ -319,11 +319,11 @@ bool Project::Serialize(Archive& archive)
                 path = AddTrailingSlash(path);
         }
 
-        if (!pipeline_->Serialize(archive))
+        if (!pipeline_->Serialize(archive, "pipeline"))
             return false;
 #if URHO3D_PLUGINS
-        if (!plugins_->Serialize(archive))
-            return false;
+        if (!plugins_->Serialize(archive, "plugins"))
+            ; //return false; // TODO: Revisit
 #endif
         using namespace EditorProjectSerialize;
         SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);

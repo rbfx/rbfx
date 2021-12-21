@@ -303,6 +303,6 @@ struct SphericalHarmonicsDot9
 };
 
 /// Serialize SH to archive.
-URHO3D_API bool SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value);
+URHO3D_API void SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value);
 
 }

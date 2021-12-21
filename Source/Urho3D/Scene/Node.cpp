@@ -97,8 +97,9 @@ void Node::RegisterObject(Context* context)
         AM_NET | AM_NOEDIT);
 }
 
-bool Node::Serialize(Archive& archive)
+bool Node::Serialize(Archive& archive, const char* name)
 {
+    // TODO: Handle exceptions
     if (ArchiveBlock block = archive.OpenUnorderedBlock("node"))
     {
         if (archive.IsInput())
@@ -107,8 +108,7 @@ bool Node::Serialize(Archive& archive)
 
             // Load this node ID for resolver
             unsigned nodeID{};
-            if (!SerializeValue(archive, "id", id_))
-                return false;
+            SerializeValue(archive, "id", id_);
             resolver.AddNode(nodeID, this);
 
             // Load node content
@@ -145,12 +145,11 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
     }
 
     // Serialize base class
-    if (!Animatable::Serialize(archive, block))
-        return false;
+    Animatable::SerializeInBlock(archive, block);
 
     // Serialize components
     const unsigned numComponentsToWrite = loading ? 0 : GetNumPersistentComponents();
-    const bool componentsSerialized = SerializeCustomVector(archive, ArchiveBlockType::Array, "components", numComponentsToWrite, components_,
+    SerializeCustomVector(archive, "components", numComponentsToWrite, components_,
         [&](unsigned /*index*/, SharedPtr<Component> component, bool loading)
     {
         assert(loading || component);
@@ -180,14 +179,11 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
             }
 
             // Serialize component.
-            component->Serialize(archive, componentBlock);
+            component->SerializeInBlock(archive, componentBlock);
             return true;
         }
         return false;
     });
-
-    if (!componentsSerialized)
-        return false;
 
     // Skip children
     if (!serializeChildren)
@@ -195,7 +191,7 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
 
     // Serialize children
     const unsigned numChildrenToWrite = loading ? 0 : GetNumPersistentChildren();
-    const bool childrenSerialized = SerializeCustomVector(archive, ArchiveBlockType::Array, "children", numChildrenToWrite, children_,
+    SerializeCustomVector(archive, "children", numChildrenToWrite, children_,
         [&](unsigned /*index*/, SharedPtr<Node> child, bool loading)
     {
         assert(loading || child);
@@ -230,9 +226,6 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
 
         return false;
     });
-
-    if (!childrenSerialized)
-        return false;
 
     return true;
 }

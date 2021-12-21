@@ -30,17 +30,14 @@ namespace Urho3D
 ArchiveBlock::~ArchiveBlock()
 {
     if (archive_)
-    {
-        const bool success = archive_->EndBlock();
-        assert(success);
-    }
+        archive_->EndBlock();
 }
 
 bool Archive::ValidateName(ea::string_view name)
 {
-    // Empty names are allowed
+    // Empty names are not allowed
     if (name.empty())
-        return true;
+        return false;
 
     // Name must start with letter or underscore.
     if (!isalpha(name[0]) && name[0] != '_')
@@ -53,37 +50,7 @@ bool Archive::ValidateName(ea::string_view name)
             return false;
     }
 
-    // Name must not be reserved
-    static const ea::string keywords[] = { "key" };
-    for (ea::string_view keyword : keywords)
-    {
-        if (name == keyword)
-            return false;
-    }
-
     return true;
 }
-
-const char* ArchiveBase::versionElementName_ = "Version";
-const char* ArchiveBase::keyElementName_ = "<Map key>";
-const char* ArchiveBase::blockElementName_ = "<Block>";
-
-const ea::string ArchiveBase::fatalRootBlockNotOpened_elementName = "Fatal: Root block must be opened before serializing element '{0}'";
-const ea::string ArchiveBase::fatalUnexpectedEndBlock = "Fatal: Unexpected call to EndBlock";
-const ea::string ArchiveBase::fatalMissingElementName = "Fatal: Missing element name in Unordered block";
-const ea::string ArchiveBase::fatalMissingKeySerialization = "Fatal: Missing key serialization in Map block";
-const ea::string ArchiveBase::fatalDuplicateKeySerialization = "Fatal: Duplicate key serialization in Map block";
-const ea::string ArchiveBase::fatalUnexpectedKeySerialization = "Fatal: Unexpected key serialization in non-Map block";
-const ea::string ArchiveBase::fatalInvalidName = "Fatal: Invalid element or block name '{0}'";
-const ea::string ArchiveBase::errorEOF_elementName = "End of file before element or block '{0}'";
-const ea::string ArchiveBase::errorUnspecifiedFailure_elementName = "Unspecified I/O failure before element or block '{0}'";
-
-const ea::string ArchiveBase::errorElementNotFound_elementName = "Element or block '{0}' is not found";
-const ea::string ArchiveBase::errorUnexpectedBlockType_blockName = "Block '{0}' has unexpected type";
-const ea::string ArchiveBase::errorMissingMapKey = "Map key is missing";
-
-const ea::string ArchiveBase::errorDuplicateElement_elementName = "Duplicate element or block '{0}'";
-const ea::string ArchiveBase::fatalBlockOverflow = "Fatal: Array or Map block overflow";
-const ea::string ArchiveBase::fatalBlockUnderflow = "Fatal: Array or Map block underflow";
 
 }

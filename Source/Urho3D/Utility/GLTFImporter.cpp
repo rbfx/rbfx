@@ -3221,20 +3221,17 @@ private:
     GLTFSceneImporter sceneImporter_;
 };
 
-bool SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
+void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
 {
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "addLights", value.addLights_);
-        SerializeValue(archive, "addSkybox", value.addSkybox_);
-        SerializeValue(archive, "skyboxMaterial", value.skyboxMaterial_);
-        SerializeValue(archive, "addReflectionProbe", value.addReflectionProbe_);
-        SerializeValue(archive, "reflectionProbeCubemap", value.reflectionProbeCubemap_);
-        SerializeValue(archive, "highRenderQuality", value.highRenderQuality_);
-        SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
-        SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
-    }
-    return !archive.HasError();
+    auto block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "addLights", value.addLights_);
+    SerializeValue(archive, "addSkybox", value.addSkybox_);
+    SerializeValue(archive, "skyboxMaterial", value.skyboxMaterial_);
+    SerializeValue(archive, "addReflectionProbe", value.addReflectionProbe_);
+    SerializeValue(archive, "reflectionProbeCubemap", value.reflectionProbeCubemap_);
+    SerializeValue(archive, "highRenderQuality", value.highRenderQuality_);
+    SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
+    SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
 }
 
 GLTFImporter::GLTFImporter(Context* context, const GLTFImporterSettings& settings)

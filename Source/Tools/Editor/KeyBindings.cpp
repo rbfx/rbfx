@@ -71,10 +71,10 @@ void KeyBindings::OnApplicationStarted(StringHash, VariantMap&)
     editor->settingsTabs_.Subscribe(this, &KeyBindings::RenderSettingsUI);
 }
 
-bool KeyBindings::Serialize(Archive& archive)
+bool KeyBindings::Serialize(Archive& archive, const char* name)
 {
     Input* input = GetSubsystem<Input>();
-    if (auto bindings = archive.OpenSequentialBlock("keyBindings"))
+    if (auto bindings = archive.OpenSequentialBlock(name))
     {
         for (int i = 0; i < ActionType::MaxCount; i++)
         {

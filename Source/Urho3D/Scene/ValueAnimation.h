@@ -80,11 +80,6 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
-    /// Serialize content from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block) override;
-
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
     /// Save resource. Return true if successful.
