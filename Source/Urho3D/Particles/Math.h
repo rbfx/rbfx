@@ -289,7 +289,7 @@ public:
 /// Negate operator.
 class URHO3D_API TimeStepScale : public UnaryMathOperator
 {
-    URHO3D_OBJECT(Negate, ParticleGraphNode)
+    URHO3D_OBJECT(TimeStepScale, ParticleGraphNode)
 
 public:
     template <typename Tuple>
