@@ -677,7 +677,7 @@ bool Serializable::Serialize(Archive& archive)
 bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
 {
     const ea::vector<AttributeInfo>* attributes = GetAttributes();
-    if (!attributes)
+    if (!attributes || attributes->empty())
         return true;
 
     // Prepare for serialization

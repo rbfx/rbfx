@@ -192,7 +192,10 @@ bool Asset::Load()
 
     JSONInputArchive archive(&file);
     if (!file.GetRoot().IsNull() && !Serialize(archive))
+    {
+        URHO3D_LOGERROR("Deserializing {} failed.", assetPath);
         return false;
+    }
 
     // Initialize flavor importers.
     for (Flavor* flavor : GetSubsystem<Pipeline>()->GetFlavors())
