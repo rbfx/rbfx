@@ -49,8 +49,11 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Expire::RegisterObject(system);
     GetAttribute::RegisterObject(system);
     GetUniform::RegisterObject(system);
+    Lerp::RegisterObject(system);
+    MakeVec2::RegisterObject(system);
     Move::RegisterObject(system);
     Multiply::RegisterObject(system);
+    Negate::RegisterObject(system);
     ParticleTime::RegisterObject(system);
     Print::RegisterObject(system);
     Random::RegisterObject(system);
@@ -61,8 +64,6 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Subtract::RegisterObject(system);
     TimeStep::RegisterObject(system);
     TimeStepScale::RegisterObject(system);
-    Negate::RegisterObject(system);
-    MakeVec2::RegisterObject(system);
 }
 
 }

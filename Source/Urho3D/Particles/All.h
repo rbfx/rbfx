@@ -25,17 +25,20 @@
 #include "Helpers.h"
 
 #include "Attribute.h"
+#include "BinaryOperators.h"
 #include "Bounce.h"
 #include "Cone.h"
 #include "Constant.h"
 #include "Curve.h"
 #include "Destroy.h"
-#include "Environment.h"
 #include "Emit.h"
+#include "Environment.h"
 #include "Math.h"
 #include "Print.h"
 #include "Random.h"
 #include "RenderBillboard.h"
+#include "TernaryOperators.h"
+#include "UnaryOperators.h"
 #include "Uniform.h"
 
 namespace Urho3D
