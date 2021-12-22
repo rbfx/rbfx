@@ -276,6 +276,17 @@ void Slerp::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Slerp>();
 }
 
+MakeVec2::MakeVec2(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
+            ParticleGraphPin(PGPIN_INPUT, "x"),
+            ParticleGraphPin(PGPIN_INPUT, "y"),
+            ParticleGraphPin(PGPIN_NONE, "out"),
+        })
+{
+}
+
+void MakeVec2::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeVec2>(); }
 }
 
 } // namespace Urho3D

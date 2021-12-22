@@ -62,6 +62,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     TimeStep::RegisterObject(system);
     TimeStepScale::RegisterObject(system);
     Negate::RegisterObject(system);
+    MakeVec2::RegisterObject(system);
 }
 
 }
