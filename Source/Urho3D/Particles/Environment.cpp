@@ -39,6 +39,26 @@ void TimeStep::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<TimeStep>();
 }
 
+EffectTime::EffectTime(Context* context)
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "out",PGCONTAINER_SCALAR)})
+{
+}
+
+void EffectTime::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<EffectTime>();
+}
+
+NormalizedEffectTime::NormalizedEffectTime(Context* context)
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "out", PGCONTAINER_SCALAR)})
+{
+}
+
+void NormalizedEffectTime::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<NormalizedEffectTime>();
+}
+
 Move::Move(Context* context)
     : AbstractNodeType(context, PinArray{
                                     ParticleGraphPin(PGPIN_INPUT, "position"),

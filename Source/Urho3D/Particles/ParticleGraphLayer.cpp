@@ -27,6 +27,7 @@
 #include "ParticleGraphNode.h"
 #include "ParticleGraphPin.h"
 #include "Urho3D/Resource/Graph.h"
+#include "Urho3D/Scene/Serializable.h"
 
 #include <Urho3D/IO/Log.h>
 
@@ -194,11 +195,14 @@ struct ParticleGraphAttributeBuilder
 void ParticleGraphLayer::RegisterObject(Context* context)
 {
     context->RegisterFactory<ParticleGraphLayer>();
+    URHO3D_ACCESSOR_ATTRIBUTE("Capacity", GetCapacity, SetCapacity, unsigned, DefaultCapacity, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Duration", GetDuration, SetDuration, float, DefaultDuration, AM_DEFAULT);
 }
 /// Construct ParticleGraphLayer.
 ParticleGraphLayer::ParticleGraphLayer(Context* context)
     : Object(context)
-    , capacity_(16)
+    , capacity_(DefaultCapacity)
+    , duration_(DefaultDuration)
     , emit_(MakeShared<ParticleGraph>(context))
     , init_(MakeShared<ParticleGraph>(context))
     , update_(MakeShared<ParticleGraph>(context))
@@ -208,6 +212,19 @@ ParticleGraphLayer::ParticleGraphLayer(Context* context)
 
 /// Destruct ParticleGraphLayer.
 ParticleGraphLayer::~ParticleGraphLayer() = default;
+
+/// Set maximum number of particles the layer can hold.
+void ParticleGraphLayer::SetCapacity(unsigned capacity)
+{
+    capacity_ = capacity;
+    Invalidate();
+}
+
+/// Set effect duration in seconds.
+void ParticleGraphLayer::SetDuration(float duration)
+{
+    duration_ = ea::max(1e-6f, duration);
+}
 
 /// Get emit graph.
 ParticleGraph& ParticleGraphLayer::GetEmitGraph() { return *emit_; }
@@ -300,8 +317,10 @@ unsigned ParticleGraphLayer::GetTempBufferSize() const { return tempMemory_.GetR
 /// Serialize from/to archive. Return true if successful.
 bool ParticleGraphLayer::Serialize(Archive& archive)
 {
-    if (!SerializeValue(archive, "capacity", capacity_))
-        return false;
+    SerializeOptional(
+        archive, capacity_ != DefaultCapacity, [&](bool load) { return SerializeValue(archive, "capacity", capacity_); });
+    SerializeOptional(
+        archive, duration_ != DefaultDuration, [&](bool load) { return SerializeValue(archive, "duration", duration_); });
 
     //TODO: Handle optional collection.
     if (!emit_->Serialize(archive, "emit"))

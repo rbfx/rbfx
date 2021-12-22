@@ -71,7 +71,8 @@ public:
     };
 
     /// Construct.
-    explicit TernaryMathOperator(Context* context, const ea::vector<TernaryOperatorPermutation>& permutations);
+    explicit TernaryMathOperator(
+        Context* context, const char* zName, const ea::vector<TernaryOperatorPermutation>& permutations);
 
     /// Get number of pins.
     unsigned GetNumPins() const override;

@@ -111,6 +111,9 @@ public:
     /// emission timer.
     void Reset();
 
+    /// Get effect layer.
+    ParticleGraphLayer* GetLayer() const { return layer_; }
+
 protected:
     /// Set emitter reference.
     void SetEmitter(ParticleGraphEmitter* emitter);
@@ -153,6 +156,8 @@ private:
     SharedPtr<ParticleGraphLayer> layer_;
     /// Emitter that owns the layer instance.
     ParticleGraphEmitter* emitter_{};
+    /// Time since emitter start.
+    float time_{};
 
     friend class ParticleGraphEmitter;
 };

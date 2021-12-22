@@ -30,7 +30,10 @@ namespace Urho3D
 
 struct UpdateContext
 {
+    /// Current frame time step.
     float timeStep_{};
+    /// Time since emitter start.
+    float time_{};
     ea::span<unsigned> indices_;
     ea::span<uint8_t> attributes_;
     ea::span<uint8_t> tempBuffer_;

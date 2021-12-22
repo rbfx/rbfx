@@ -33,6 +33,9 @@ namespace Urho3D
 
 class URHO3D_API ParticleGraphLayer : public Object
 {
+    static constexpr float DefaultDuration = 1.0f;
+    static constexpr unsigned DefaultCapacity = 16;
+
     URHO3D_OBJECT(ParticleGraphLayer, Object)
 public:
     /// Layout of attribute buffer
@@ -68,7 +71,20 @@ public:
     static void RegisterObject(Context* context);
 
     /// Get maximum number of particles the layer can hold.
+    /// @property 
     unsigned GetCapacity() const { return capacity_; }
+
+    /// Set maximum number of particles the layer can hold.
+    /// @property
+    void SetCapacity(unsigned capacity);
+
+    /// Get effect duration in seconds.
+    /// @property
+    float GetDuration() const { return duration_; }
+
+    /// Set effect duration in seconds.
+    /// @property
+    void SetDuration(float duration);
 
     /// Get emit graph.
     ParticleGraph& GetEmitGraph();
@@ -110,7 +126,9 @@ private:
     /// is the effect committed.
     ea::optional<bool> committed_;
     /// Maximum number of particles.
-    unsigned capacity_;
+    unsigned capacity_{DefaultCapacity};
+    /// Effect duration in seconds.
+    float duration_{DefaultDuration};
     /// Emission graph.
     SharedPtr<ParticleGraph> emit_;
     /// Initialization graph.

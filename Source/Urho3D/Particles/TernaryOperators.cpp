@@ -59,11 +59,12 @@ TernaryMathOperator::Instance::Instance(TernaryMathOperator* op)
 
 void TernaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context); }
 
-TernaryMathOperator::TernaryMathOperator(Context* context, const ea::vector<TernaryOperatorPermutation>& permutations)
+TernaryMathOperator::TernaryMathOperator(Context* context, const char* zName, const ea::vector<TernaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
     , permutations_(permutations)
     , pins_{ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "x"),
-          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "y"), ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")}
+          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "y"),
+          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, zName), ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")}
 {
 }
 
@@ -92,15 +93,15 @@ VariantType TernaryMathOperator::EvaluateOutputPinType(ParticleGraphPin& pin)
 
 void TernaryMathOperator::Update(UpdateContext& context)
 {
-    ParticleGraphPinRef pinRefs[3];
-    for (unsigned i = 0; i < 3; ++i)
+    ParticleGraphPinRef pinRefs[4];
+    for (unsigned i = 0; i < 4; ++i)
     {
         pinRefs[i] = pins_[i].GetMemoryReference();
     }
 
     for (const TernaryOperatorPermutation& p : permutations_)
     {
-        if (p.x_ == pins_[0].GetValueType() && p.y_ == pins_[1].GetValueType())
+        if (p.x_ == pins_[0].GetValueType() && p.y_ == pins_[1].GetValueType() && p.z_ == pins_[2].GetValueType())
         {
             return p.lambda_(context, pinRefs);
         }
@@ -108,7 +109,7 @@ void TernaryMathOperator::Update(UpdateContext& context)
 }
 
 Lerp::Lerp(Context* context)
-    : TernaryMathOperator(context, LerpPins)
+    : TernaryMathOperator(context, "t", LerpPins)
 {
 }
 

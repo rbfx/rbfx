@@ -53,6 +53,52 @@ public:
     }
 };
 
+/// Get time passed since start of the emitter.
+class URHO3D_API EffectTime : public AbstractNode<EffectTime, float>
+{
+    URHO3D_OBJECT(EffectTime, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit EffectTime(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& pin0 = ea::get<0>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            pin0[i] = context.time_;
+        }
+    }
+};
+
+
+/// Get time passed since start of the emitter.
+class URHO3D_API NormalizedEffectTime : public AbstractNode<NormalizedEffectTime, float>
+{
+    URHO3D_OBJECT(NormalizedEffectTime, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit NormalizedEffectTime(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& pin0 = ea::get<0>(spans);
+        const float value = context.time_ / instance->GetLayer()->GetDuration();
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            pin0[i] = value;
+        }
+    }
+};
+
 /// Get time step of the current frame.
 class URHO3D_API Move : public AbstractNode<Move, Vector3, Vector3, Vector3>
 {

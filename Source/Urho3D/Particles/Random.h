@@ -81,9 +81,9 @@ protected:
     ParticleGraphPin pins_[1];
 
     /// Min value.
-    Variant min_;
+    Variant min_{0.0f};
     /// Max value.
-    Variant max_;
+    Variant max_{1.0f};
 };
 
 } // namespace ParticleGraphNodes

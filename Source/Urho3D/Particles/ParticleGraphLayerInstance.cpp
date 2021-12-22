@@ -119,6 +119,7 @@ void ParticleGraphLayerInstance::Update(float timeStep)
 
     RunGraph(updateNodeInstances_, MakeUpdateContext(timeStep));
     DestroyParticles();
+    time_ += timeStep;
 }
 
 unsigned ParticleGraphLayerInstance::GetNumAttributes() const
@@ -163,6 +164,7 @@ void ParticleGraphLayerInstance::Reset()
     for (ParticleGraphNodeInstance* node : updateNodeInstances_)
         node->Reset();
     activeParticles_ = 0;
+    time_ = 0.0f;
 }
 
 void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)
@@ -178,6 +180,7 @@ UpdateContext ParticleGraphLayerInstance::MakeUpdateContext(float timeStep)
     context.attributes_ = attributes_;
     context.tempBuffer_ = temp_;
     context.timeStep_ = timeStep;
+    context.time_ = time_;
     context.layer_ = this;
     return context;
 }

@@ -163,6 +163,8 @@ public:
         GraphNode* GetGraphNodeInstace() const { return node_; }
         /// Get graph layer instance.
         ParticleGraphLayerInstance* GetLayerInstance() const { return layer_; }
+        /// Get graph layer.
+        ParticleGraphLayer* GetLayer() const { return layer_->GetLayer(); }
         /// Get emitter component.
         ParticleGraphEmitter* GetEmitter() const { return layer_->GetEmitter(); }
         /// Get scene node.
