@@ -240,7 +240,7 @@ bool SerializeValue(Archive& archive, const char* name, SerializationTestStruct&
     return false;
 }
 
-SharedPtr<Context> CreateTestContext()
+SharedPtr<Context> CreateSerializationContext()
 {
     auto context = MakeShared<Context>();
     context->RegisterFactory<SerializableObject>();
@@ -350,7 +350,7 @@ ea::unique_ptr<SerializationTestStruct> LoadTestStructBinary(Context* context, V
 
 TEST_CASE("Test structure is serialized to archive")
 {
-    auto context = CreateTestContext();
+    auto context = Tests::GetOrCreateContext(CreateSerializationContext);
     const SerializationTestStruct sourceObject = CreateTestStruct(context);
 
     SECTION("binary archive")
@@ -386,7 +386,7 @@ TEST_CASE("Test structure is serialized to archive")
 
 TEST_CASE("Test structure is serialized as part of the file")
 {
-    auto context = CreateTestContext();
+    auto context = Tests::GetOrCreateContext(CreateSerializationContext);
     SerializationTestStruct sourceObject = CreateTestStruct(context);
 
     SECTION("XML file")
@@ -426,7 +426,7 @@ TEST_CASE("Test structure is serialized as part of the file")
 
 TEST_CASE("Test resource is serialized as part of the file")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     ResourceCache* cache (context->GetSubsystem<ResourceCache>());
     SharedPtr<Material> resource = MakeShared<Material>(context);
     resource->SetName("@/TestResource.mdl");
@@ -479,7 +479,7 @@ TEST_CASE("Test resource is serialized as part of the file")
 
 TEST_CASE("VariantCurve is serialized in Variant")
 {
-    auto context = CreateTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     Variant sourceObject;
     {

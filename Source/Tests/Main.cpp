@@ -23,3 +23,12 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_amalgamated.hpp>
 // Don't write tests here!
+
+#include "CommonUtils.h"
+
+int main(int argc, char* argv[])
+{
+    const int result = Catch::Session().run(argc, argv);
+    Tests::ResetContext();
+    return result;
+}
