@@ -41,6 +41,19 @@ namespace Urho3D
 namespace
 {
 
+void AddDeltaToFrame(unsigned& frame, float& blendFactor, double delta)
+{
+    const int deltaInt = static_cast<int>(delta);
+    const float deltaFract = delta - deltaInt;
+    frame += deltaInt;
+
+    blendFactor += deltaFract;
+    if (blendFactor < 0.0)
+        --frame;
+    if (blendFactor >= 1.0)
+        ++frame;
+}
+
 void ResetClock(ClientClock& clock, unsigned currentFrame)
 {
     clock.currentFrame_ = currentFrame;
@@ -65,6 +78,11 @@ double GetPingInFrames(const ClientClock& clock)
 {
     // ms * (frames / s) * (s / ms)
     return clock.ping_ * clock.updateFrequency_ * 0.001;
+}
+
+double GetSmoothPingInSeconds(const ClientClock& clock)
+{
+    return clock.smoothPing_ * 0.001;
 }
 
 void AddClockError(ClientClock& clock, double clockError)
@@ -119,6 +137,11 @@ void AdvanceClockTime(ClientClock& clock, double timeStep)
     }
 }
 
+void UpdateSmoothPing(ClientClock& clock, float blendFactor)
+{
+    clock.smoothPing_ = Lerp(clock.smoothPing_, static_cast<double>(clock.ping_), blendFactor);
+}
+
 }
 
 ClientClock::ClientClock(unsigned updateFrequency, unsigned numStartSamples, unsigned numTrimmedSamples, unsigned numOngoingSamples)
@@ -167,6 +190,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
 
         clock_->latestServerFrame_ = msg.lastFrame_;
         clock_->ping_ = msg.ping_;
+        clock_->smoothPing_ = clock_->ping_;
 
         clock_->currentFrame_ = clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_));
         clock_->frameDuration_ = 1.0f / clock_->updateFrequency_;
@@ -198,6 +222,8 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
     case MSG_REMOVE_COMPONENTS:
     {
         connection_->OnMessageReceived(messageId, messageData);
+
+        const unsigned timestamp = messageData.ReadUInt();
         while (!messageData.IsEof())
         {
             const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
@@ -207,7 +233,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
                 URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", NetworkManagerBase::FormatNetworkId(networkId));
                 continue;
             }
-            networkObject->OnRemovedOnClient();
+            networkObject->PrepareToRemove();
             if (networkObject)
                 networkObject->Remove();
         }
@@ -216,6 +242,8 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
     case MSG_UPDATE_COMPONENTS:
     {
         connection_->OnMessageReceived(messageId, messageData);
+
+        const unsigned timestamp = messageData.ReadUInt();
         while (!messageData.IsEof())
         {
             const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
@@ -228,10 +256,27 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
             {
                 const bool isSnapshot = componentType != StringHash{};
                 if (isSnapshot)
-                    networkObject->ReadSnapshot(componentBuffer_);
+                    networkObject->ReadSnapshot(timestamp, componentBuffer_);
                 else
-                    networkObject->ReadReliableDelta(componentBuffer_);
+                    networkObject->ReadReliableDelta(timestamp, componentBuffer_);
             }
+        }
+        break;
+    }
+    case MSG_UNRELIABLE_UPDATE_COMPONENTS:
+    {
+        connection_->OnMessageReceived(messageId, messageData);
+
+        const unsigned timestamp = messageData.ReadUInt();
+        while (!messageData.IsEof())
+        {
+            const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+            messageData.ReadBuffer(componentBuffer_.GetBuffer());
+            componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+            componentBuffer_.Seek(0);
+
+            if (NetworkObject* networkObject = base_->GetNetworkObject(networkId))
+                networkObject->ReadUnreliableDelta(timestamp, componentBuffer_);
         }
         break;
     }
@@ -249,8 +294,8 @@ void ClientNetworkManager::ProcessTimeCorrection()
     AddClockError(*clock_, clockError);
 
     // Snap to new time if error is too big
-    const bool needForwardSnap = std::abs(clockError) >= clockSnapThresholdSec_ * clock_->updateFrequency_;
-    const bool needRewind = DoesClockNeedRewind(*clock_, clockRewindThresholdFrames_);
+    const bool needForwardSnap = std::abs(clockError) >= settings_.clockSnapThresholdSec_ * clock_->updateFrequency_;
+    const bool needRewind = DoesClockNeedRewind(*clock_, settings_.clockRewindThresholdFrames_);
     if (needForwardSnap || needRewind)
     {
         ResetClock(*clock_, currentServerTime);
@@ -310,7 +355,7 @@ NetworkObject* ClientNetworkManager::GetOrCreateNetworkObject(NetworkId networkI
 
 void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
 {
-    networkObject->OnRemovedOnClient();
+    networkObject->PrepareToRemove();
     if (networkObject)
         networkObject->Remove();
 }
@@ -326,6 +371,25 @@ double ClientNetworkManager::GetCurrentFrameDeltaRelativeTo(double referenceFram
     const double referenceFrameFract = referenceFrame - referenceFrameUint;
     const double currentFrameFract = clock_->subFrameTime_ * clock_->updateFrequency_;
     return frameDeltaInt + referenceFrameFract - currentFrameFract;
+}
+
+ea::pair<unsigned, float> ClientNetworkManager::GetCurrentFrameWithOffset(double delta) const
+{
+    if (!clock_)
+        return {};
+
+    unsigned currentFrame = GetCurrentFrame();
+    float blendFactor = GetCurrentBlendFactor();
+    AddDeltaToFrame(currentFrame, blendFactor, delta);
+    return {currentFrame, blendFactor};
+}
+
+unsigned ClientNetworkManager::GetTraceCapacity() const
+{
+    if (!clock_)
+        return 0;
+
+    return CeilToInt(settings_.traceDurationInSeconds_ * clock_->updateFrequency_);
 }
 
 ea::string ClientNetworkManager::ToString() const
@@ -344,6 +408,17 @@ void ClientNetworkManager::OnInputProcessed()
     auto time = GetSubsystem<Time>();
     const float timeStep = time->GetTimeStep();
     AdvanceClockTime(*clock_, timeStep);
+    UpdateSmoothPing(*clock_, settings_.pingSmoothConstant_);
+
+    const double interpolationDelay = settings_.sampleDelayInSeconds_ + GetSmoothPingInSeconds(*clock_);
+    const auto [currentFrame, blendFactor] = GetCurrentFrameWithOffset(-interpolationDelay * clock_->updateFrequency_);
+
+    const auto& networkObjects = base_->GetUnorderedNetworkObjects();
+    for (NetworkObject* networkObject : networkObjects)
+    {
+        if (networkObject)
+            networkObject->InterpolateState(currentFrame, blendFactor);
+    }
 }
 
 }

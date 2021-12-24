@@ -28,10 +28,11 @@
 #include <Urho3D/Network/NetworkObject.h>
 #include <Urho3D/Network/NetworkManager.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneEvents.h>
 
 TEST_CASE("Time is synchronized between client and server")
 {
-    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateCompleteContext);
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
     // Prepare test parameters
@@ -127,7 +128,7 @@ TEST_CASE("Time is synchronized between client and server")
 
 TEST_CASE("Scene is synchronized between client and server")
 {
-    auto context = URHO3D_GET_TEST_CONTEXT(Tests::CreateCompleteContext);
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
     const float syncDelay = 0.25f;
 
@@ -184,7 +185,7 @@ TEST_CASE("Scene is synchronized between client and server")
     Tests::NetworkSimulator sim(serverScene);
     sim.SimulateTime(10.0f);
 
-    // Add client and wait for synchronization
+    // Add clients and wait for synchronization
     for (Scene* clientScene : clientScenes)
         sim.AddClient(clientScene, quality);
     sim.SimulateTime(10.0f);
@@ -316,5 +317,198 @@ TEST_CASE("Scene is synchronized between client and server")
     }
 
     sim.SimulateTime(1.0f);
+}
 
+TEST_CASE("SynchronizedValue is updated and sampled")
+{
+    ValueTrace<float> v;
+
+    {
+        v.Resize(5);
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE_FALSE(v.GetValue(2));
+        REQUIRE_FALSE(v.GetValue(3));
+        REQUIRE_FALSE(v.GetValue(4));
+        REQUIRE_FALSE(v.GetValue(5));
+
+        REQUIRE_FALSE(v.GetNearestValidFrame(5));
+    }
+
+    {
+        v.Append(2, 1000.0f);
+
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE(v.GetValue(2) == 1000.0f);
+        REQUIRE_FALSE(v.GetValue(3));
+        REQUIRE_FALSE(v.GetValue(4));
+        REQUIRE_FALSE(v.GetValue(5));
+
+        REQUIRE_FALSE(v.GetNearestValidFrame(1));
+        REQUIRE(v.GetNearestValidFrame(2) == 2u);
+        REQUIRE(v.GetNearestValidFrame(5) == 2u);
+    }
+
+    {
+        v.Append(2, 2000.0f);
+
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE(v.GetValue(2) == 1000.0f);
+        REQUIRE_FALSE(v.GetValue(3));
+        REQUIRE_FALSE(v.GetValue(4));
+        REQUIRE_FALSE(v.GetValue(5));
+
+        REQUIRE_FALSE(v.GetNearestValidFrame(1));
+        REQUIRE(v.GetNearestValidFrame(2) == 2u);
+        REQUIRE(v.GetNearestValidFrame(5) == 2u);
+    }
+
+    {
+        v.Replace(2, 2000.0f);
+
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE(v.GetValue(2) == 2000.0f);
+        REQUIRE_FALSE(v.GetValue(3));
+        REQUIRE_FALSE(v.GetValue(4));
+        REQUIRE_FALSE(v.GetValue(5));
+
+        REQUIRE_FALSE(v.GetNearestValidFrame(1));
+        REQUIRE(v.GetNearestValidFrame(2) == 2u);
+        REQUIRE(v.GetNearestValidFrame(5) == 2u);
+    }
+
+    {
+        v.Append(4, 4000.0f);
+
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE(v.GetValue(2) == 2000.0f);
+        REQUIRE_FALSE(v.GetValue(3));
+        REQUIRE(v.GetValue(4) == 4000.0f);
+        REQUIRE_FALSE(v.GetValue(5));
+
+        REQUIRE_FALSE(v.GetNearestValidFrame(1));
+        REQUIRE(v.GetNearestValidFrame(2) == 2u);
+        REQUIRE(v.GetNearestValidFrame(3) == 2u);
+        REQUIRE(v.GetNearestValidFrame(4) == 4u);
+        REQUIRE(v.GetNearestValidFrame(5) == 4u);
+        REQUIRE(v.GetNearestValidFrame(15) == 4u);
+    }
+
+    {
+        v.Append(3, 3000.0f);
+        v.Append(5, 5000.0f);
+        v.Append(6, 6000.0f);
+
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE(v.GetValue(2) == 2000.0f);
+        REQUIRE(v.GetValue(3) == 3000.0f);
+        REQUIRE(v.GetValue(4) == 4000.0f);
+        REQUIRE(v.GetValue(5) == 5000.0f);
+        REQUIRE(v.GetValue(6) == 6000.0f);
+    }
+
+    {
+        v.Append(9, 9000.0f);
+
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE_FALSE(v.GetValue(2));
+        REQUIRE_FALSE(v.GetValue(3));
+        REQUIRE_FALSE(v.GetValue(4));
+        REQUIRE(v.GetValue(5) == 5000.0f);
+        REQUIRE(v.GetValue(6) == 6000.0f);
+        REQUIRE_FALSE(v.GetValue(7));
+        REQUIRE_FALSE(v.GetValue(8));
+        REQUIRE(v.GetValue(9) == 9000.0f);
+    }
+
+    {
+        v.Resize(7);
+        v.Append(10, 10000.0f);
+        v.Append(12, 12000.0f);
+
+        REQUIRE_FALSE(v.GetValue(1));
+        REQUIRE_FALSE(v.GetValue(2));
+        REQUIRE_FALSE(v.GetValue(3));
+        REQUIRE_FALSE(v.GetValue(4));
+        REQUIRE_FALSE(v.GetValue(5));
+        REQUIRE(v.GetValue(6) == 6000.0f);
+        REQUIRE_FALSE(v.GetValue(7));
+        REQUIRE_FALSE(v.GetValue(8));
+        REQUIRE(v.GetValue(9) == 9000.0f);
+        REQUIRE(v.GetValue(10) == 10000.0f);
+        REQUIRE_FALSE(v.GetValue(11));
+        REQUIRE(v.GetValue(12) == 12000.0f);
+        REQUIRE_FALSE(v.GetValue(13));
+    }
+
+    {
+        v.Resize(3);
+        REQUIRE_FALSE(v.GetValue(8));
+        REQUIRE_FALSE(v.GetValue(9));
+        REQUIRE(v.GetValue(10) == 10000.0f);
+        REQUIRE_FALSE(v.GetValue(11));
+        REQUIRE(v.GetValue(12) == 12000.0f);
+        REQUIRE_FALSE(v.GetValue(13));
+
+        REQUIRE_FALSE(v.GetNearestValidFrame(9));
+        REQUIRE(v.GetNearestValidFrame(10) == 10u);
+        REQUIRE(v.GetNearestValidFrame(11) == 10u);
+        REQUIRE(v.GetNearestValidFrame(12) == 12u);
+        REQUIRE(v.GetNearestValidFrame(13) == 12u);
+    }
+}
+
+TEST_CASE("Position and rotation are synchronized between client and server")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
+
+    // Setup scenes
+    const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0, 0 };
+    const float moveSpeedNodeA = 1.0f;
+    const float rotationSpeedNodeA = 10.0f;
+    const float moveSpeedNodeB = 0.1f;
+    auto serverScene = MakeShared<Scene>(context);
+    SharedPtr<Scene> clientScenes[] = {
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context)
+    };
+
+    auto serverNodeA = serverScene->CreateChild("Node");
+    serverNodeA->CreateComponent<DefaultNetworkObject>();
+
+    auto serverNodeB = serverNodeA->CreateChild("Node Child");
+    serverNodeB->CreateComponent<DefaultNetworkObject>();
+    serverNodeB->SetPosition({ 0.0f, 0.0f, 1.0f });
+
+    // Animate objects forever
+    serverScene->SubscribeToEvent(serverScene, E_SCENEUPDATE, [&](StringHash, VariantMap& eventData)
+    {
+        const float timeStep = eventData[SceneUpdate::P_TIMESTEP].GetFloat();
+        serverNodeA->Translate(timeStep * moveSpeedNodeA * Vector3::LEFT, TS_PARENT);
+        serverNodeA->Rotate({ timeStep * rotationSpeedNodeA, Vector3::UP }, TS_PARENT);
+        serverNodeB->Translate(timeStep * moveSpeedNodeB * Vector3::FORWARD, TS_PARENT);
+    });
+
+    // Spend some time alone
+    Tests::NetworkSimulator sim(serverScene);
+    sim.SimulateTime(9.0f);
+
+    // Add clients and wait for synchronization
+    for (Scene* clientScene : clientScenes)
+        sim.AddClient(clientScene, quality);
+    sim.SimulateTime(9.0f);
+
+    // Expect positions to be roughly synchronized
+    const float expectedDelay = 0.2;
+    for (Scene* clientScene : clientScenes)
+    {
+        auto clientNodeA = clientScene->GetChild("Node", true);
+        auto clientNodeB = clientScene->GetChild("Node Child", true);
+
+        const Vector3 positionA = clientNodeA->GetWorldPosition() + expectedDelay * moveSpeedNodeA * Vector3::LEFT;
+        REQUIRE(serverNodeA->GetWorldPosition().Equals(positionA, 0.1f));
+    }
+
+    //sim.SimulateTime(9.0f);
 }

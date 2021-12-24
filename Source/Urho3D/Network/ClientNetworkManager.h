@@ -41,6 +41,17 @@ class NetworkObject;
 class NetworkManagerBase;
 class Scene;
 
+/// Client-only NetworkManager settings.
+struct ClientNetworkManagerSettings
+{
+    float traceDurationInSeconds_{ 1.0f };
+    float sampleDelayInSeconds_{ 0.1f };
+    float pingSmoothConstant_{ 0.05f };
+
+    double clockRewindThresholdFrames_{ 0.6 };
+    double clockSnapThresholdSec_{ 10.0 };
+};
+
 /// Client clock synchronized with server.
 struct ClientClock
 {
@@ -53,6 +64,8 @@ struct ClientClock
 
     unsigned latestServerFrame_{};
     unsigned ping_{};
+    /// TODO: Stabilize ping before smoothing
+    double smoothPing_{};
 
     unsigned currentFrame_{};
     float frameDuration_{};
@@ -77,12 +90,18 @@ public:
     ea::string ToString() const;
     AbstractConnection* GetConnection() const { return connection_; }
 
+    /// Return global properties of client state.
+    /// @{
     unsigned GetPingInMs() const { return clock_ ? clock_->ping_ : 0; }
     bool IsSynchronized() const { return clock_.has_value(); }
     unsigned GetCurrentFrame() const { return clock_ ? clock_->currentFrame_ : 0; }
+    float GetCurrentBlendFactor() const { return clock_ ? clock_->subFrameTime_ * clock_->updateFrequency_ : 0; }
     unsigned GetLastSynchronizationFrame() const { return clock_ ? clock_->lastSynchronizationFrame_ : 0; }
     float GetSubFrameTime() const { return clock_ ? clock_->subFrameTime_ : 0.0f; }
     double GetCurrentFrameDeltaRelativeTo(double referenceFrame) const;
+    ea::pair<unsigned, float> GetCurrentFrameWithOffset(double delta = 0.0) const;
+    unsigned GetTraceCapacity() const;
+    /// @}
 
 private:
     void OnInputProcessed();
@@ -90,13 +109,13 @@ private:
     NetworkObject* GetOrCreateNetworkObject(NetworkId networkId, StringHash componentType);
     void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
 
+    ClientNetworkManagerSettings settings_;
+
     Network* network_{};
     NetworkManagerBase* base_{};
     Scene* scene_{};
     AbstractConnection* connection_{};
 
-    double clockRewindThresholdFrames_{ 0.6 };
-    double clockSnapThresholdSec_{ 10.0 };
     ea::optional<ClientClock> clock_;
 
     VectorBuffer componentBuffer_;

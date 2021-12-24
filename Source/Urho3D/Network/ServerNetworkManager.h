@@ -90,6 +90,42 @@ struct ServerNetworkManagerSettings
     float relevanceTimeout_{ 5.0f };
 };
 
+/// Internal class to handle delta updates.
+class DeltaUpdateMask
+{
+public:
+    void Clear(unsigned maxIndex)
+    {
+        mask_.clear();
+        mask_.resize(maxIndex);
+    }
+
+    void Set(unsigned index) { mask_[index] = ReliableAndUnreliableDelta; }
+
+    void ResetReliableDelta(unsigned index) { mask_[index] &= ~ReliableDelta; }
+
+    void ResetUnreliableDelta(unsigned index) { mask_[index] &= ~UnreliableDelta; }
+
+    bool NeedAny(unsigned index) const { return mask_[index] != Empty; }
+
+    bool NeedReliableDelta(unsigned index) const { return !!(mask_[index] & ReliableDelta); }
+
+    bool NeedUnreliableDelta(unsigned index) const { return !!(mask_[index] & UnreliableDelta); }
+
+private:
+    enum : unsigned char
+    {
+        Empty = 0,
+
+        ReliableDelta = 1 << 0,
+        UnreliableDelta = 1 << 1,
+
+        ReliableAndUnreliableDelta = ReliableDelta | UnreliableDelta
+    };
+
+    ea::vector<unsigned char> mask_;
+};
+
 /// Server part of NetworkManager subsystem.
 class URHO3D_API ServerNetworkManager : public Object
 {
@@ -110,7 +146,15 @@ public:
     unsigned GetCurrentFrame() const { return currentFrame_; }
 
 private:
+    using DeltaBufferSpan = ea::pair<unsigned, unsigned>;
+
     void BeginNetworkFrame();
+    void UpdateClocks(float timeStep);
+    void CollectObjectsToUpdate(float timeStep);
+    void PrepareDeltaUpdates();
+    void PrepareReliableDeltaForObject(unsigned index, NetworkObject* networkObject);
+    void PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject);
+
     ClientConnectionData& GetConnection(AbstractConnection* connection);
 
     void RecalculateAvergagePing(ClientConnectionData& data);
@@ -129,8 +173,9 @@ private:
     ea::vector<NetworkObject*> orderedNetworkObjects_;
 
     VectorBuffer deltaUpdateBuffer_;
-    ea::vector<bool> needDeltaUpdates_;
-    ea::vector<ea::pair<unsigned, unsigned>> deltaUpdates_;
+    DeltaUpdateMask deltaUpdateMask_;
+    ea::vector<DeltaBufferSpan> reliableDeltaUpdates_;
+    ea::vector<DeltaBufferSpan> unreliableDeltaUpdates_;
 };
 
 }
