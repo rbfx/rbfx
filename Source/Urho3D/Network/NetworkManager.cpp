@@ -124,7 +124,7 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
     networkObjects_[index] = networkObject;
 
     if (!IsReplicatedClient())
-        networkObject->InitializeReliableDelta();
+        networkObject->InitializeOnServer();
 
     URHO3D_LOGINFO("NetworkObject {} is added", FormatNetworkId(networkId));
 }

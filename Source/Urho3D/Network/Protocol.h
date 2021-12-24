@@ -91,6 +91,8 @@ enum NetworkMessageId
     MSG_REMOVE_COMPONENTS,
     /// Server->Client:
     MSG_UPDATE_COMPONENTS,
+    /// Server->Client:
+    MSG_UNRELIABLE_UPDATE_COMPONENTS,
 
     LAST_NETWORK_MANAGER_MSG,
     /// @}
