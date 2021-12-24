@@ -22,7 +22,9 @@
 
 #pragma once
 
-#include "../Core/StringUtils.h"
+#include "../Core/Format.h"
+
+#include <Urho3D/Urho3D.h>
 
 namespace Urho3D
 {
@@ -30,9 +32,9 @@ namespace Urho3D
 namespace Detail
 {
 
-template <class... T> inline ea::string GetAssertMessage(int, ea::string_view format, T&&... args)
+template <class... T> inline ea::string GetAssertMessage(int, ea::string_view format, const T&... args)
 {
-    return Urho3D::Format(format, ea::move(args)...);
+    return Urho3D::Format(format, args...);
 }
 
 inline ea::string GetAssertMessage(int) { return ""; }
@@ -58,6 +60,6 @@ URHO3D_API void AssertFailure(bool isFatal, ea::string_view expression, ea::stri
         ((void)(!(expression) \
             && URHO3D_ASSERT_IMPL(false, #expression, Urho3D::Detail::GetAssertMessage(0, ##__VA_ARGS__))))
 #else
-    #define URHO3D_ASSERT(expression, format, ...) ((void)0)
-    #define URHO3D_ASSERTLOG(expression, format, ...) ((void)0)
+    #define URHO3D_ASSERT(expression, ...) ((void)0)
+    #define URHO3D_ASSERTLOG(expression, ...) ((void)0)
 #endif

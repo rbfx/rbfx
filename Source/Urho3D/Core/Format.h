@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,43 +22,24 @@
 
 #pragma once
 
-#include "../Core/Format.h"
-
-#include <EASTL/string.h>
-
-#include <exception>
+#if _MSC_VER
+#   pragma warning(push, 0)
+#endif
+#include <fmt/format.h>
+#if _MSC_VER
+#   pragma warning(pop)
+#endif
 
 namespace Urho3D
 {
 
-/// Generic runtime exception adapted for usage in Urho.
-/// Note that this exception shouldn't leak into main loop of the engine and should only be used internally.
-class RuntimeException : public std::exception
+/// Return a formatted string.
+template <typename... Args>
+ea::string Format(ea::string_view formatString, const Args&... args)
 {
-public:
-    /// Construct exception with static message.
-    explicit RuntimeException(ea::string_view message) : message_(message) {}
-    /// Construct exception with formatted message.
-    template <class T, class ... Ts>
-    RuntimeException(ea::string_view format, const T& firstArg, const Ts& ... otherArgs)
-    {
-        try
-        {
-            message_ = Format(format, firstArg, otherArgs...);
-        }
-        catch(const std::exception& e)
-        {
-            message_ = "Failed to format RuntimeException: ";
-            message_ += e.what();
-        }
-    }
-    /// Return message.
-    const ea::string& GetMessage() const { return message_; }
-
-    const char* what() const noexcept override { return message_.c_str(); }
-
-private:
-    ea::string message_;
-};
+    ea::string ret;
+    fmt::format_to(std::back_inserter(ret), formatString, args...);
+    return ret;
+}
 
 }
