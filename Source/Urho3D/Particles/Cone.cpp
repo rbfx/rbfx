@@ -31,33 +31,82 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+namespace 
+{
+const char* emitFromNames[] = {"Base", "Volume", "Surface", "Edge", "Vertex", nullptr};
+}
 
 Cone::Cone(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out", PGCONTAINER_SPAN)})
+    : AbstractNodeType(context, PinArray{
+            ParticleGraphPin(PGPIN_TYPE_MUTABLE, "position", PGCONTAINER_SPAN),
+            ParticleGraphPin(PGPIN_TYPE_MUTABLE, "velocity", PGCONTAINER_SPAN),
+        })
     , radius_(0.0f)
+    , radiusThickness_(1.0f)
     , angle_(45.0f)
     , rotation_(Quaternion::IDENTITY)
     , translation_(Vector3::ZERO)
+    , emitFrom_(EmitFrom::Volume)
 {
 }
 
 void Cone::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Cone>();
-
+    auto ref = context->AddReflection<Cone>();
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angle", GetAngle, SetAngle, float, 45.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Length", GetLength, SetLength, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Translation", GetTranslation, SetTranslation, Vector3, Vector3::ZERO, AM_DEFAULT);
+    ref->AddAttribute(Urho3D::AttributeInfo(Urho3D::VAR_STRING,
+        "From",
+        Urho3D::MakeVariantAttributeAccessor<Cone>([](const Cone& self, Urho3D::Variant& value)
+            { value = emitFromNames[static_cast<int>(self.emitFrom_)]; },
+            [](Cone& self, const Urho3D::Variant& value)
+            {
+                const char** name = emitFromNames;
+                const auto expectedName = value.Get<ea::string>();
+                int index = 0;
+                while (name[index])
+                {
+                    if (expectedName == name[index])
+                    {
+                        self.emitFrom_ = static_cast<EmitFrom>(index);
+                        return;
+                    }
+                    ++index;
+                }
+                self.emitFrom_ = static_cast<EmitFrom>(0);
+            }),
+        emitFromNames, static_cast<int>(EmitFrom::Volume), AM_DEFAULT));
 }
 
-Vector3 Cone::Generate() const
+void Cone::Generate(Vector3& pos, Vector3& vel) const
 {
     const float angle = Random(360.0f);
     const float radius = Sqrt(Random()) * Sin( Min(Max(angle_, 0.0f), 89.999f));
     const float height = Sqrt(1.0f - radius * radius);
+    const float cosinus = Cos(angle);
+    const float sinus = Sin(angle);
+    const Vector3 direction = Vector3(cosinus * radius, sinus * radius, height);
 
-    return Vector3(Cos(angle) * (radius + radius_), Sin(angle) * (radius +  + radius_), height);
+    float r = radius_;
+    if (radiusThickness_ > 0.0f && emitFrom_ != EmitFrom::Surface)
+    {
+        r *= 1.0f - Random() * radiusThickness_;
+    }
+    switch (emitFrom_)
+    {
+    case EmitFrom::Base:
+        vel = direction;
+        pos = Vector3(cosinus * (r), sinus * (r), 0.0f);
+        break;
+    default:
+        vel = direction;
+        pos = direction * Random(length_) + Vector3(cosinus * r, sinus * r, 0.0f);
+        break;
+    }
 }
 
 Matrix3x4 Cone::GetShapeTransform() const

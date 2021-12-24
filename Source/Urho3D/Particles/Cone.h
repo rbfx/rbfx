@@ -32,8 +32,17 @@ class ParticleGraphSystem;
 namespace ParticleGraphNodes
 {
 
+enum class EmitFrom
+{
+    Base,
+    Volume,
+    Surface,
+    Edge,
+    Vertex,
+};
+
 /// Operation on attribute
-class URHO3D_API Cone : public AbstractNode<Cone, Vector3>
+class URHO3D_API Cone : public AbstractNode<Cone, Vector3, Vector3>
 {
     URHO3D_OBJECT(Cone, ParticleGraphNode)
 public:
@@ -50,19 +59,34 @@ public:
     {
         const Cone * cone = instance->GetGraphNodeInstace();
         const Matrix3x4 m = cone->GetShapeTransform();
-        auto& out = ea::get<0>(spans);
+        const Matrix3 md = m.RotationMatrix();
+        auto& pos = ea::get<0>(spans);
+        auto& vel = ea::get<1>(spans);
 
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            out[i] = m * cone->Generate();
+            Vector3 p, v;
+            cone->Generate(p, v);
+            pos[i] = m * p;
+            vel[i] = md * v;
         }
     }
 
 public:
+    /// Get cone length.
+    float GetLength() const { return length_; }
+    /// Set cone length.
+    void SetLength(float val) { length_ = val; }
+
     /// Get cone base radius.
     float GetRadius() const { return radius_; }
     /// Set cone base radius.
     void SetRadius(float val) { radius_ = val; }
+
+    /// Get cone base radius thickness.
+    float GetRadiusThickness() const { return radiusThickness_; }
+    /// Set cone base radius thickness.
+    void SetRadiusThickness(float val) { radiusThickness_ = val; }
     /// Get cone angle in degrees.
     float GetAngle() const { return angle_; }
     /// Set cone angle in degrees.
@@ -77,20 +101,25 @@ public:
     void SetTranslation(const Vector3& val) { translation_ = val; }
 
     /// Generate value in the cone.
-    Vector3 Generate() const;
+    void Generate(Vector3& pos, Vector3& vel) const;
 
     /// Get shape transform.
     Matrix3x4 GetShapeTransform() const;
 
 protected:
+    /// Cone length.
+    float length_{1.0f};
     /// Cone base radius.
-    float radius_;
+    float radius_{0.0f};
+    /// Cone radius thickness.
+    float radiusThickness_{1.0f};
     /// Cone angle in degrees.
-    float angle_;
+    float angle_{45.0f};
     /// Cone orientation.
     Quaternion rotation_;
     /// Cone offset.
     Vector3 translation_;
+    EmitFrom emitFrom_{EmitFrom::Volume};
 };
 
 } // namespace ParticleGraphNodes
