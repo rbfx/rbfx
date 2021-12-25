@@ -138,7 +138,6 @@ public:
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
-    void SendUpdate(AbstractConnection* connection);
     void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
 
     void SetTestPing(AbstractConnection* connection, unsigned ping);
@@ -157,6 +156,14 @@ private:
     void PrepareDeltaUpdates();
     void PrepareReliableDeltaForObject(unsigned index, NetworkObject* networkObject);
     void PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject);
+
+    void SendUpdate(ClientConnectionData& data);
+    bool SendSyncronizationMessages(ClientConnectionData& data);
+    void SendPingAndClockMessages(ClientConnectionData& data);
+    void SendRemoveObjectsMessage(ClientConnectionData& data);
+    void SendAddObjectsMessage(ClientConnectionData& data);
+    void SendUpdateObjectsReliableMessage(ClientConnectionData& data);
+    void SendUpdateObjectsUnreliableMessage(ClientConnectionData& data);
 
     ClientConnectionData& GetConnection(AbstractConnection* connection);
 

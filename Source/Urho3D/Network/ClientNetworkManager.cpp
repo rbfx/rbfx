@@ -176,8 +176,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         const auto msg = ReadNetworkMessage<MsgPingPong>(messageData);
         connection_->OnMessageReceived(messageId, msg);
 
-        const bool isReliable = !!(msg.magic_ & 1u);
-        connection_->SendSerializedMessage(MSG_PONG, MsgPingPong{ msg.magic_ }, isReliable ? NetworkMessageFlag::Reliable : NetworkMessageFlag::None);
+        ProcessPing(msg);
         break;
     }
 
@@ -186,19 +185,7 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         const auto msg = ReadNetworkMessage<MsgSynchronize>(messageData);
         connection_->OnMessageReceived(messageId, msg);
 
-        clock_.emplace(ClientClock{ msg.updateFrequency_, msg.numStartClockSamples_, msg.numTrimmedClockSamples_, msg.numOngoingClockSamples_ });
-
-        clock_->latestServerFrame_ = msg.lastFrame_;
-        clock_->ping_ = msg.ping_;
-        clock_->smoothPing_ = clock_->ping_;
-
-        clock_->currentFrame_ = clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_));
-        clock_->frameDuration_ = 1.0f / clock_->updateFrequency_;
-        clock_->subFrameTime_ = 0.0f;
-        clock_->lastSynchronizationFrame_ = clock_->currentFrame_;
-
-        connection_->SendSerializedMessage(MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{ msg.magic_ }, NetworkMessageFlag::Reliable);
-        URHO3D_LOGINFO("Client clock is started from frame #{}", clock_->currentFrame_);
+        ProcessSynchronize(msg);
         break;
     }
 
@@ -206,83 +193,155 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
     {
         const auto msg = ReadNetworkMessage<MsgClock>(messageData);
         connection_->OnMessageReceived(messageId, msg);
-        if (!clock_)
-        {
-            URHO3D_LOGWARNING("Client clock update received before synchronization");
-            break;
-        }
 
-        const auto delta = static_cast<int>(msg.lastFrame_ - clock_->latestServerFrame_);
-        clock_->ping_ = msg.ping_;
-        clock_->latestServerFrame_ += ea::max(0, delta);
-        ProcessTimeCorrection();
+        ProcessClock(msg);
         break;
     }
 
-    case MSG_REMOVE_COMPONENTS:
+    case MSG_REMOVE_OBJECTS:
     {
         connection_->OnMessageReceived(messageId, messageData);
 
-        const unsigned timestamp = messageData.ReadUInt();
-        while (!messageData.IsEof())
-        {
-            const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
-            WeakPtr<NetworkObject> networkObject{ base_->GetNetworkObject(networkId) };
-            if (!networkObject)
-            {
-                URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", NetworkManagerBase::FormatNetworkId(networkId));
-                continue;
-            }
-            networkObject->PrepareToRemove();
-            if (networkObject)
-                networkObject->Remove();
-        }
+        ProcessRemoveObjects(messageData);
         break;
     }
-    case MSG_UPDATE_COMPONENTS:
+
+    case MSG_ADD_OBJECTS:
     {
         connection_->OnMessageReceived(messageId, messageData);
 
-        const unsigned timestamp = messageData.ReadUInt();
-        while (!messageData.IsEof())
-        {
-            const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
-            const StringHash componentType = messageData.ReadStringHash();
-            messageData.ReadBuffer(componentBuffer_.GetBuffer());
-            componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
-            componentBuffer_.Seek(0);
-
-            if (NetworkObject* networkObject = GetOrCreateNetworkObject(networkId, componentType))
-            {
-                const bool isSnapshot = componentType != StringHash{};
-                if (isSnapshot)
-                    networkObject->ReadSnapshot(timestamp, componentBuffer_);
-                else
-                    networkObject->ReadReliableDelta(timestamp, componentBuffer_);
-            }
-        }
+        ProcessAddObjects(messageData);
         break;
     }
-    case MSG_UNRELIABLE_UPDATE_COMPONENTS:
+
+    case MSG_UPDATE_OBJECTS_RELIABLE:
     {
         connection_->OnMessageReceived(messageId, messageData);
 
-        const unsigned timestamp = messageData.ReadUInt();
-        while (!messageData.IsEof())
-        {
-            const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
-            messageData.ReadBuffer(componentBuffer_.GetBuffer());
-            componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
-            componentBuffer_.Seek(0);
+        ProcessUpdateObjectsReliable(messageData);
+        break;
+    }
 
-            if (NetworkObject* networkObject = base_->GetNetworkObject(networkId))
-                networkObject->ReadUnreliableDelta(timestamp, componentBuffer_);
-        }
+    case MSG_UPDATE_OBJECTS_UNRELIABLE:
+    {
+        connection_->OnMessageReceived(messageId, messageData);
+
+        ProcessUpdateObjectsUnreliable(messageData);
         break;
     }
 
     default:
         break;
+    }
+}
+
+void ClientNetworkManager::ProcessPing(const MsgPingPong& msg)
+{
+    const bool isReliable = !!(msg.magic_ & 1u);
+    connection_->SendSerializedMessage(
+        MSG_PONG, MsgPingPong{msg.magic_}, isReliable ? NetworkMessageFlag::Reliable : NetworkMessageFlag::None);
+}
+
+void ClientNetworkManager::ProcessSynchronize(const MsgSynchronize& msg)
+{
+    clock_.emplace(ClientClock{
+        msg.updateFrequency_, msg.numStartClockSamples_, msg.numTrimmedClockSamples_, msg.numOngoingClockSamples_});
+
+    clock_->latestServerFrame_ = msg.lastFrame_;
+    clock_->ping_ = msg.ping_;
+    clock_->smoothPing_ = clock_->ping_;
+
+    clock_->currentFrame_ = clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_));
+    clock_->frameDuration_ = 1.0f / clock_->updateFrequency_;
+    clock_->subFrameTime_ = 0.0f;
+    clock_->lastSynchronizationFrame_ = clock_->currentFrame_;
+
+    connection_->SendSerializedMessage(
+        MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{msg.magic_}, NetworkMessageFlag::Reliable);
+
+    URHO3D_LOGINFO("Client clock is started from frame #{}", clock_->currentFrame_);
+}
+
+void ClientNetworkManager::ProcessClock(const MsgClock& msg)
+{
+    if (!clock_)
+    {
+        URHO3D_LOGWARNING("Client clock update received before synchronization");
+        return;
+    }
+
+    const auto delta = static_cast<int>(msg.lastFrame_ - clock_->latestServerFrame_);
+    clock_->ping_ = msg.ping_;
+    clock_->latestServerFrame_ += ea::max(0, delta);
+    ProcessTimeCorrection();
+}
+
+void ClientNetworkManager::ProcessRemoveObjects(MemoryBuffer& messageData)
+{
+    const unsigned messageFrame = messageData.ReadUInt();
+    while (!messageData.IsEof())
+    {
+        const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+        WeakPtr<NetworkObject> networkObject{ base_->GetNetworkObject(networkId) };
+        if (!networkObject)
+        {
+            URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", NetworkManagerBase::FormatNetworkId(networkId));
+            continue;
+        }
+        networkObject->PrepareToRemove();
+        if (networkObject)
+            networkObject->Remove();
+    }
+}
+
+void ClientNetworkManager::ProcessAddObjects(MemoryBuffer& messageData)
+{
+    const unsigned messageFrame = messageData.ReadUInt();
+    while (!messageData.IsEof())
+    {
+        const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+        const StringHash componentType = messageData.ReadStringHash();
+
+        messageData.ReadBuffer(componentBuffer_.GetBuffer());
+        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+        componentBuffer_.Seek(0);
+
+        if (NetworkObject* networkObject = CreateNetworkObject(networkId, componentType))
+            networkObject->ReadSnapshot(messageFrame, componentBuffer_);
+    }
+}
+
+void ClientNetworkManager::ProcessUpdateObjectsReliable(MemoryBuffer& messageData)
+{
+    const unsigned messageFrame = messageData.ReadUInt();
+    while (!messageData.IsEof())
+    {
+        const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+        const StringHash componentType = messageData.ReadStringHash();
+
+        messageData.ReadBuffer(componentBuffer_.GetBuffer());
+        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+        componentBuffer_.Seek(0);
+
+        if (NetworkObject* networkObject = GetCheckedNetworkObject(networkId, componentType))
+            networkObject->ReadReliableDelta(messageFrame, componentBuffer_);
+    }
+}
+
+void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData)
+{
+    const unsigned messageFrame = messageData.ReadUInt();
+    while (!messageData.IsEof())
+    {
+        const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+        const StringHash componentType = messageData.ReadStringHash();
+
+        messageData.ReadBuffer(componentBuffer_.GetBuffer());
+        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+        componentBuffer_.Seek(0);
+
+        if (NetworkObject* networkObject = GetCheckedNetworkObject(networkId, componentType))
+            networkObject->ReadUnreliableDelta(messageFrame, componentBuffer_);
     }
 }
 
@@ -316,41 +375,49 @@ void ClientNetworkManager::ProcessTimeCorrection()
     }
 }
 
-NetworkObject* ClientNetworkManager::GetOrCreateNetworkObject(NetworkId networkId, StringHash componentType)
+NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, StringHash componentType)
 {
-    if (componentType != StringHash{})
+    auto networkObject = DynamicCast<NetworkObject>(context_->CreateObject(componentType));
+    if (!networkObject)
     {
-        auto networkObject = DynamicCast<NetworkObject>(context_->CreateObject(componentType));
-        if (!networkObject)
-        {
-            URHO3D_LOGWARNING("Cannot create NetworkObject {} of type #{} '{}'",
-                NetworkManagerBase::FormatNetworkId(networkId), componentType.Value(), componentType.Reverse());
-            return nullptr;
-        }
-        networkObject->SetNetworkId(networkId);
-
-        const unsigned networkIndex = NetworkManagerBase::DecomposeNetworkId(networkId).first;
-        if (NetworkObject* oldNetworkObject = base_->GetNetworkObjectByIndex(networkIndex))
-        {
-            URHO3D_LOGWARNING("NetworkObject {} overwrites existing NetworkObject {}",
-                NetworkManagerBase::FormatNetworkId(networkId), NetworkManagerBase::FormatNetworkId(oldNetworkObject->GetNetworkId()));
-            RemoveNetworkObject(WeakPtr<NetworkObject>(oldNetworkObject));
-        }
-
-        Node* newNode = scene_->CreateChild(EMPTY_STRING, LOCAL);
-        newNode->AddComponent(networkObject, 0, LOCAL);
-        return networkObject;
+        URHO3D_LOGWARNING("Cannot create NetworkObject {} of type #{} '{}'",
+            NetworkManagerBase::FormatNetworkId(networkId), componentType.Value(), componentType.Reverse());
+        return nullptr;
     }
-    else
+    networkObject->SetNetworkId(networkId);
+
+    const unsigned networkIndex = NetworkManagerBase::DecomposeNetworkId(networkId).first;
+    if (NetworkObject* oldNetworkObject = base_->GetNetworkObjectByIndex(networkIndex))
     {
-        NetworkObject* networkObject = base_->GetNetworkObject(networkId);
-        if (!networkObject)
-        {
-            URHO3D_LOGWARNING("Cannot find existing NetworkObject {}", NetworkManagerBase::FormatNetworkId(networkId));
-            return nullptr;
-        }
-        return networkObject;
+        URHO3D_LOGWARNING("NetworkObject {} overwrites existing NetworkObject {}",
+            NetworkManagerBase::FormatNetworkId(networkId),
+            NetworkManagerBase::FormatNetworkId(oldNetworkObject->GetNetworkId()));
+        RemoveNetworkObject(WeakPtr<NetworkObject>(oldNetworkObject));
     }
+
+    Node* newNode = scene_->CreateChild(EMPTY_STRING, LOCAL);
+    newNode->AddComponent(networkObject, 0, LOCAL);
+    return networkObject;
+}
+
+NetworkObject* ClientNetworkManager::GetCheckedNetworkObject(NetworkId networkId, StringHash componentType)
+{
+    NetworkObject* networkObject = base_->GetNetworkObject(networkId);
+    if (!networkObject)
+    {
+        URHO3D_LOGWARNING("Cannot find existing NetworkObject {}", NetworkManagerBase::FormatNetworkId(networkId));
+        return nullptr;
+    }
+
+    if (networkObject->GetType() != componentType)
+    {
+        URHO3D_LOGWARNING("NetworkObject {} has unexpected type '{}', message was prepared for {}",
+            NetworkManagerBase::FormatNetworkId(networkId), networkObject->GetTypeName(),
+            componentType.ToDebugString());
+        return nullptr;
+    }
+
+    return networkObject;
 }
 
 void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)

@@ -58,8 +58,8 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
     {
         BeginNetworkFrame();
-        for (const auto& [connection, data] : connections_)
-            SendUpdate(connection);
+        for (auto& [connection, data] : connections_)
+            SendUpdate(data);
     });
 }
 
@@ -240,9 +240,22 @@ void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
     connections_.erase(connection);
 }
 
-void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
+void ServerNetworkManager::SendUpdate(ClientConnectionData& data)
 {
-    ClientConnectionData& data = GetConnection(connection);
+    if (!SendSyncronizationMessages(data))
+        return;
+
+    SendPingAndClockMessages(data);
+
+    SendRemoveObjectsMessage(data);
+    SendAddObjectsMessage(data);
+    SendUpdateObjectsReliableMessage(data);
+    SendUpdateObjectsUnreliableMessage(data);
+}
+
+bool ServerNetworkManager::SendSyncronizationMessages(ClientConnectionData& data)
+{
+    AbstractConnection* connection = data.connection_;
 
     // Initialization phase: send "reliable" pings one by one
     if (!data.comfirmedPings_.full())
@@ -254,7 +267,7 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
 
             connection->SendSerializedMessage(MSG_PING, MsgPingPong{ magic }, NetworkMessageFlag::Reliable);
         }
-        return;
+        return false;
     }
 
     // Synchronization phase.
@@ -279,8 +292,15 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
 
             connection->SendSerializedMessage(MSG_SYNCHRONIZE, msg, NetworkMessageFlag::Reliable);
         }
-        return;
+        return false;
     }
+
+    return true;
+}
+
+void ServerNetworkManager::SendPingAndClockMessages(ClientConnectionData& data)
+{
+    AbstractConnection* connection = data.connection_;
 
     // Send periodic ping
     if (data.pingAccumulator_ >= settings_.pingIntervalMs_ / 1000.0f)
@@ -299,9 +319,12 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
         data.clockAccumulator_ = 0.0f;
         connection->SendSerializedMessage(MSG_CLOCK, MsgClock{ currentFrame_, data.averagePing_ }, NetworkMessageFlag::None);
     }
+}
 
-    // Send scene updates
-    connection->SendGeneratedMessage(MSG_REMOVE_COMPONENTS, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+void ServerNetworkManager::SendRemoveObjectsMessage(ClientConnectionData& data)
+{
+    data.connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS,
+        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         if (debugInfo)
@@ -321,8 +344,12 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
         const bool sendMessage = !data.pendingRemovedComponents_.empty();
         return sendMessage;
     });
+}
 
-    connection->SendGeneratedMessage(MSG_UPDATE_COMPONENTS, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+void ServerNetworkManager::SendAddObjectsMessage(ClientConnectionData& data)
+{
+    data.connection_->SendGeneratedMessage(MSG_ADD_OBJECTS,
+        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteUInt(currentFrame_);
@@ -330,44 +357,66 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
         bool sendMessage = false;
         for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
         {
-            // Skip redundant updates
-            const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (!isSnapshot && !deltaUpdateMask_.NeedReliableDelta(index))
+            if (!isSnapshot)
                 continue;
 
             sendMessage = true;
             msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            if (isSnapshot)
-            {
-                msg.WriteStringHash(networkObject->GetType());
+            msg.WriteStringHash(networkObject->GetType());
 
-                componentBuffer_.Clear();
-                networkObject->WriteSnapshot(currentFrame_, componentBuffer_);
-                msg.WriteBuffer(componentBuffer_.GetBuffer());
-            }
-            else
-            {
-                msg.WriteStringHash(StringHash{});
-
-                const auto [beginOffset, endOffset] = reliableDeltaUpdates_[index];
-                const unsigned deltaSize = endOffset - beginOffset;
-                msg.WriteVLE(deltaSize);
-                msg.Write(deltaUpdateBuffer_.GetData() + beginOffset, deltaSize);
-            }
+            componentBuffer_.Clear();
+            networkObject->WriteSnapshot(currentFrame_, componentBuffer_);
+            msg.WriteBuffer(componentBuffer_.GetBuffer());
 
             if (debugInfo)
             {
                 if (!debugInfo->empty())
                     debugInfo->append(", ");
-                if (isSnapshot)
-                    debugInfo->append("*");
                 debugInfo->append(NetworkManagerBase::FormatNetworkId(networkObject->GetNetworkId()));
             }
         }
         return sendMessage;
     });
+}
 
-    connection->SendGeneratedMessage(MSG_UNRELIABLE_UPDATE_COMPONENTS, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientConnectionData& data)
+{
+    data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE,
+        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        msg.WriteUInt(currentFrame_);
+
+        bool sendMessage = false;
+        for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
+        {
+            const unsigned index = GetIndex(networkObject->GetNetworkId());
+            if (isSnapshot || !deltaUpdateMask_.NeedReliableDelta(index))
+                continue;
+
+            sendMessage = true;
+            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+            msg.WriteStringHash(networkObject->GetType());
+
+            const auto [beginOffset, endOffset] = reliableDeltaUpdates_[index];
+            const unsigned deltaSize = endOffset - beginOffset;
+            msg.WriteVLE(deltaSize);
+            msg.Write(deltaUpdateBuffer_.GetData() + beginOffset, deltaSize);
+
+            if (debugInfo)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkObject->GetNetworkId()));
+            }
+        }
+        return sendMessage;
+    });
+}
+
+void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionData& data)
+{
+    data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteUInt(currentFrame_);
@@ -382,6 +431,8 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
 
             sendMessage = true;
             msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+            msg.WriteStringHash(networkObject->GetType());
+
             const auto [beginOffset, endOffset] = unreliableDeltaUpdates_[index];
             const unsigned deltaSize = endOffset - beginOffset;
             msg.WriteVLE(deltaSize);
