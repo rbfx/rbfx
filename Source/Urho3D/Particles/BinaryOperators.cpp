@@ -49,6 +49,8 @@ const static ea::vector SubtractPins{
 
 const static ea::vector MultiplyPins{
     BinaryOperatorPermutation::Make<Multiply, float, float, float>(),
+    BinaryOperatorPermutation::Make<Multiply, float, Vector3, Vector3>(),
+    BinaryOperatorPermutation::Make<Multiply, Vector3, float, Vector3>(),
 };
 
 const static ea::vector DividePins{

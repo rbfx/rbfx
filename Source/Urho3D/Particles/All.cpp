@@ -51,6 +51,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     GetUniform::RegisterObject(system);
     Lerp::RegisterObject(system);
     MakeVec2::RegisterObject(system);
+    MakeVec3::RegisterObject(system);
     Move::RegisterObject(system);
     Multiply::RegisterObject(system);
     Negate::RegisterObject(system);

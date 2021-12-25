@@ -57,6 +57,19 @@ MakeVec2::MakeVec2(Context* context)
 }
 
 void MakeVec2::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeVec2>(); }
+
+MakeVec3::MakeVec3(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
+            ParticleGraphPin(PGPIN_INPUT, "x"),
+            ParticleGraphPin(PGPIN_INPUT, "y"),
+            ParticleGraphPin(PGPIN_INPUT, "z"),
+            ParticleGraphPin(PGPIN_NONE, "out"),
+        })
+{
+}
+
+void MakeVec3::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeVec3>(); }
 }
 
 } // namespace Urho3D
