@@ -50,15 +50,16 @@ public:
     /// Implementation of NetworkObject
     /// @{
     void InitializeOnServer() override;
+
     void OnTransformDirty() override;
-    void WriteSnapshot(VectorBuffer& dest) override;
-    bool WriteReliableDelta(VectorBuffer& dest) override;
-    bool WriteUnreliableDelta(VectorBuffer& dest) override;
+    void WriteSnapshot(unsigned frame, VectorBuffer& dest) override;
+    bool WriteReliableDelta(unsigned frame, VectorBuffer& dest) override;
+    bool WriteUnreliableDelta(unsigned frame, VectorBuffer& dest) override;
 
     void InterpolateState(unsigned currentFrame, float blendFactor) override;
-    void ReadSnapshot(unsigned timestamp, VectorBuffer& src) override;
-    void ReadReliableDelta(unsigned timestamp, VectorBuffer& src) override;
-    void ReadUnreliableDelta(unsigned timestamp, VectorBuffer& src) override;
+    void ReadSnapshot(unsigned frame, VectorBuffer& src) override;
+    void ReadReliableDelta(unsigned frame, VectorBuffer& src) override;
+    void ReadUnreliableDelta(unsigned frame, VectorBuffer& src) override;
     /// @}
 
 protected:

@@ -40,7 +40,12 @@ void DefaultNetworkObject::RegisterObject(Context* context)
 
 void DefaultNetworkObject::InitializeOnServer()
 {
+    const auto networkManager = GetServerNetworkManager();
+    const unsigned traceCapacity = networkManager->GetTraceCapacity();
+
     lastParentNetworkId_ = GetParentNetworkId();
+    worldPositionTrace_.Resize(traceCapacity);
+    worldRotationTrace_.Resize(traceCapacity);
 }
 
 void DefaultNetworkObject::OnTransformDirty()
@@ -48,7 +53,7 @@ void DefaultNetworkObject::OnTransformDirty()
     worldTransformCounter_ = WorldTransformCooldown;
 }
 
-void DefaultNetworkObject::WriteSnapshot(VectorBuffer& dest)
+void DefaultNetworkObject::WriteSnapshot(unsigned frame, VectorBuffer& dest)
 {
     const auto parentNetworkId = GetParentNetworkId();
     dest.WriteUInt(static_cast<unsigned>(parentNetworkId));
@@ -60,7 +65,7 @@ void DefaultNetworkObject::WriteSnapshot(VectorBuffer& dest)
     dest.WriteVector3(node_->GetSignedWorldScale());
 }
 
-bool DefaultNetworkObject::WriteReliableDelta(VectorBuffer& dest)
+bool DefaultNetworkObject::WriteReliableDelta(unsigned frame, VectorBuffer& dest)
 {
     const unsigned updateMask = EvaluateReliableDeltaMask();
     if (!updateMask)
@@ -73,8 +78,13 @@ bool DefaultNetworkObject::WriteReliableDelta(VectorBuffer& dest)
     return true;
 }
 
-bool DefaultNetworkObject::WriteUnreliableDelta(VectorBuffer& dest)
+bool DefaultNetworkObject::WriteUnreliableDelta(unsigned frame, VectorBuffer& dest)
 {
+    const Vector3 worldPosition = node_->GetWorldPosition();
+    const Quaternion worldRotation = node_->GetWorldRotation();
+    worldPositionTrace_.Append(frame, worldPosition);
+    worldRotationTrace_.Append(frame, worldRotation);
+
     const unsigned updateMask = EvaluateUnreliableDeltaMask();
     if (!updateMask)
         return false;
@@ -82,8 +92,8 @@ bool DefaultNetworkObject::WriteUnreliableDelta(VectorBuffer& dest)
     dest.WriteUInt(updateMask);
     if (updateMask & UpdateWorldTransform)
     {
-        dest.WriteVector3(node_->GetWorldPosition());
-        dest.WriteQuaternion(node_->GetWorldRotation());
+        dest.WriteVector3(worldPosition);
+        dest.WriteQuaternion(worldRotation);
     }
 
     return true;
@@ -118,16 +128,16 @@ unsigned DefaultNetworkObject::EvaluateUnreliableDeltaMask()
 
 void DefaultNetworkObject::InterpolateState(unsigned currentFrame, float blendFactor)
 {
-    worldPositionTrace_.PrepareForInterpolationTo(currentFrame + 1);
+    worldPositionTrace_.ExtrapolateIfEmpty(currentFrame + 1);
     if (auto newWorldPosition = worldPositionTrace_.GetBlendedValue(currentFrame, blendFactor))
         node_->SetWorldPosition(*newWorldPosition);
 
-    worldRotationTrace_.PrepareForInterpolationTo(currentFrame + 1);
+    worldRotationTrace_.ExtrapolateIfEmpty(currentFrame + 1);
     if (auto newWorldRotation = worldRotationTrace_.GetBlendedValue(currentFrame, blendFactor))
         node_->SetWorldRotation(*newWorldRotation);
 }
 
-void DefaultNetworkObject::ReadSnapshot(unsigned timestamp, VectorBuffer& src)
+void DefaultNetworkObject::ReadSnapshot(unsigned frame, VectorBuffer& src)
 {
     const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
     SetParentNetworkObject(parentNetworkId);
@@ -149,7 +159,7 @@ void DefaultNetworkObject::ReadSnapshot(unsigned timestamp, VectorBuffer& src)
     worldRotationTrace_.Resize(traceCapacity);
 }
 
-void DefaultNetworkObject::ReadReliableDelta(unsigned timestamp, VectorBuffer& src)
+void DefaultNetworkObject::ReadReliableDelta(unsigned frame, VectorBuffer& src)
 {
     const unsigned updateMask = src.ReadUInt();
     if (updateMask & UpdateParentNetworkObjectId)
@@ -159,13 +169,13 @@ void DefaultNetworkObject::ReadReliableDelta(unsigned timestamp, VectorBuffer& s
     }
 }
 
-void DefaultNetworkObject::ReadUnreliableDelta(unsigned timestamp, VectorBuffer& src)
+void DefaultNetworkObject::ReadUnreliableDelta(unsigned frame, VectorBuffer& src)
 {
     const unsigned updateMask = src.ReadUInt();
     if (updateMask & UpdateWorldTransform)
     {
-        worldPositionTrace_.Append(timestamp, src.ReadVector3());
-        worldRotationTrace_.Append(timestamp, src.ReadQuaternion());
+        worldPositionTrace_.Append(frame, src.ReadVector3());
+        worldRotationTrace_.Append(frame, src.ReadQuaternion());
     }
 }
 

@@ -90,15 +90,6 @@ public:
         return true;
     }
 
-    /// If called, interpolation is guaranteed to stay continuous regardless of appended values.
-    bool PrepareForInterpolationTo(unsigned frame)
-    {
-        bool result = false;
-        result |= ExtrapolateIfEmpty(frame - 1);
-        result |= ExtrapolateIfEmpty(frame);
-        return result;
-    }
-
     /// Return as normal vector of values. The last element is the latest appended value.
     Container AsVector() const
     {
@@ -133,22 +124,56 @@ public:
         for (unsigned behind = offset; behind < capacity; ++behind)
         {
             const unsigned wrappedIndex = (lastIndex_ + capacity - behind) % capacity;
-            const auto& value = values_[wrappedIndex];
-            if (value)
+            if (values_[wrappedIndex])
                 return lastFrame_ - behind;
         }
         return ea::nullopt;
     }
 
-    /// Sample value at given frame and blend factor. Requires two consecutive values.
+    /// Return nearest future frame with valid value.
+    /// Returns last frame if nothing else is found.
+    unsigned GetNearestValidFutureFrame(unsigned frame) const
+    {
+        const unsigned capacity = values_.size();
+        const int offset = ea::max(0, static_cast<int>(lastFrame_ - frame));
+
+        if (offset >= 2)
+        {
+            for (unsigned behind = offset - 1; behind > 0; --behind)
+            {
+                const unsigned wrappedIndex = (lastIndex_ + capacity - behind) % capacity;
+                if (values_[wrappedIndex])
+                    return lastFrame_ - behind;
+            }
+        }
+        return lastFrame_;
+    }
+
+    /// Return sampled value between specified frame and the next one.
     ea::optional<T> GetBlendedValue(unsigned frame, float blendFactor) const
     {
         const auto value1 = GetValue(frame);
         const auto value2 = GetValue(frame + 1);
-        if (!value1 || !value2)
-            return ea::nullopt;
 
-        return InterpolateOnNetworkClient(*value1, *value2, blendFactor);
+        if (value1 && value2)
+            return InterpolateOnNetworkClient(*value1, *value2, blendFactor);
+        else if (value1)
+            return value1;
+        else
+            return value2;
+    }
+
+    /// Return valid sampled value or closest available value.
+    T GetBlendedValueOrNearest(unsigned frame, float blendFactor)
+    {
+        if (auto blendedValue = GetBlendedValue(frame, blendFactor))
+            return *blendedValue;
+
+        if (auto previousValidFrame = GetNearestValidFrame(frame))
+            return *GetValue(*previousValidFrame);
+
+        const unsigned futureValidFrame = GetNearestValidFutureFrame(frame);
+        return *GetValue(futureValidFrame);
     }
 
 private:

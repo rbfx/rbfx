@@ -88,6 +88,7 @@ struct ServerNetworkManagerSettings
     unsigned numTrimmedClockSamples_{ 3 };
 
     float relevanceTimeout_{ 5.0f };
+    float traceDurationInSeconds_{ 3.0f };
 };
 
 /// Internal class to handle delta updates.
@@ -133,6 +134,7 @@ class URHO3D_API ServerNetworkManager : public Object
 
 public:
     ServerNetworkManager(NetworkManagerBase* base, Scene* scene);
+    void InitializeNetworkObjects();
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
@@ -144,6 +146,7 @@ public:
 
     ea::string ToString() const;
     unsigned GetCurrentFrame() const { return currentFrame_; }
+    unsigned GetTraceCapacity() const { return CeilToInt(settings_.traceDurationInSeconds_ * updateFrequency_); }
 
 private:
     using DeltaBufferSpan = ea::pair<unsigned, unsigned>;
@@ -165,7 +168,7 @@ private:
     Scene* scene_{};
     const ServerNetworkManagerSettings settings_; // TODO: Make mutable
 
-    unsigned updateFrequency_{};
+    const unsigned updateFrequency_{};
     unsigned currentFrame_{};
 
     ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
