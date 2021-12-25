@@ -31,6 +31,7 @@
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
+#include "../Network/DefaultNetworkObject.h"
 #include "../Network/HttpRequest.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"

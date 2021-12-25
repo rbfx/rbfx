@@ -24,9 +24,11 @@
 #include "../NetworkUtils.h"
 #include "../SceneUtils.h"
 
+#include <Urho3D/Network/DefaultNetworkObject.h>
 #include <Urho3D/Network/Network.h>
-#include <Urho3D/Network/NetworkObject.h>
 #include <Urho3D/Network/NetworkManager.h>
+#include <Urho3D/Network/NetworkObject.h>
+#include <Urho3D/Network/NetworkValue.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 
@@ -321,7 +323,7 @@ TEST_CASE("Scene is synchronized between client and server")
 
 TEST_CASE("SynchronizedValue is updated and sampled")
 {
-    ValueTrace<float> v;
+    NetworkValue<float> v;
 
     {
         v.Resize(5);
