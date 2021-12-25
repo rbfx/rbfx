@@ -24,12 +24,8 @@
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"
-#if defined(URHO3D_PHYSICS) || defined(URHO3D_URHO2D)
-#include "../Physics/PhysicsEvents.h"
-#endif
 #include "../Network/NetworkObject.h"
 #include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
 
 namespace Urho3D
 {
@@ -220,146 +216,6 @@ void NetworkObject::ReadReliableDelta(unsigned timestamp, VectorBuffer& src)
 
 void NetworkObject::ReadUnreliableDelta(unsigned timestamp, VectorBuffer& src)
 {
-}
-
-DefaultNetworkObject::DefaultNetworkObject(Context* context) : NetworkObject(context) {}
-
-DefaultNetworkObject::~DefaultNetworkObject() = default;
-
-void DefaultNetworkObject::RegisterObject(Context* context)
-{
-    context->RegisterFactory<DefaultNetworkObject>();
-}
-
-void DefaultNetworkObject::InitializeOnServer()
-{
-    lastParentNetworkId_ = GetParentNetworkId();
-}
-
-void DefaultNetworkObject::OnTransformDirty()
-{
-    worldTransformCounter_ = WorldTransformCooldown;
-}
-
-void DefaultNetworkObject::WriteSnapshot(VectorBuffer& dest)
-{
-    const auto parentNetworkId = GetParentNetworkId();
-    dest.WriteUInt(static_cast<unsigned>(parentNetworkId));
-
-    dest.WriteString(node_->GetName());
-
-    dest.WriteVector3(node_->GetWorldPosition());
-    dest.WritePackedQuaternion(node_->GetWorldRotation());
-    dest.WriteVector3(node_->GetSignedWorldScale());
-}
-
-bool DefaultNetworkObject::WriteReliableDelta(VectorBuffer& dest)
-{
-    const unsigned updateMask = EvaluateReliableDeltaMask();
-    if (!updateMask)
-        return false;
-
-    dest.WriteUInt(updateMask);
-    if (updateMask & UpdateParentNetworkObjectId)
-        dest.WriteUInt(static_cast<unsigned>(lastParentNetworkId_));
-
-    return true;
-}
-
-bool DefaultNetworkObject::WriteUnreliableDelta(VectorBuffer& dest)
-{
-    const unsigned updateMask = EvaluateUnreliableDeltaMask();
-    if (!updateMask)
-        return false;
-
-    dest.WriteUInt(updateMask);
-    if (updateMask & UpdateWorldTransform)
-    {
-        dest.WriteVector3(node_->GetWorldPosition());
-        dest.WriteQuaternion(node_->GetWorldRotation());
-    }
-
-    return true;
-}
-
-unsigned DefaultNetworkObject::EvaluateReliableDeltaMask()
-{
-    unsigned mask = 0;
-
-    const auto parentNetworkId = GetParentNetworkId();
-    if (lastParentNetworkId_ != parentNetworkId)
-    {
-        lastParentNetworkId_ = parentNetworkId;
-        mask |= UpdateParentNetworkObjectId;
-    }
-
-    return mask;
-}
-
-unsigned DefaultNetworkObject::EvaluateUnreliableDeltaMask()
-{
-    unsigned mask = 0;
-
-    if (worldTransformCounter_ > 0)
-    {
-        mask |= UpdateWorldTransform;
-        --worldTransformCounter_;
-    }
-
-    return mask;
-}
-
-void DefaultNetworkObject::InterpolateState(unsigned currentFrame, float blendFactor)
-{
-    worldPositionTrace_.PrepareForInterpolationTo(currentFrame + 1);
-    if (auto newWorldPosition = worldPositionTrace_.GetBlendedValue(currentFrame, blendFactor))
-        node_->SetWorldPosition(*newWorldPosition);
-
-    worldRotationTrace_.PrepareForInterpolationTo(currentFrame + 1);
-    if (auto newWorldRotation = worldRotationTrace_.GetBlendedValue(currentFrame, blendFactor))
-        node_->SetWorldRotation(*newWorldRotation);
-}
-
-void DefaultNetworkObject::ReadSnapshot(unsigned timestamp, VectorBuffer& src)
-{
-    const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
-    SetParentNetworkObject(parentNetworkId);
-
-    node_->SetName(src.ReadString());
-
-    const Vector3 worldPosition = src.ReadVector3();
-    const Quaternion worldRotation = src.ReadPackedQuaternion();
-    const Vector3 worldScale = src.ReadVector3();
-    const Matrix3x4 worldTransform{ worldPosition, worldRotation, worldScale };
-    const Matrix3x4 localTransform = node_->IsTransformHierarchyRoot()
-        ? worldTransform
-        : node_->GetParent()->GetWorldTransform().Inverse() * worldTransform;
-    node_->SetTransform(localTransform);
-
-    const auto networkManager = GetClientNetworkManager();
-    const unsigned traceCapacity = networkManager->GetTraceCapacity();
-    worldPositionTrace_.Resize(traceCapacity);
-    worldRotationTrace_.Resize(traceCapacity);
-}
-
-void DefaultNetworkObject::ReadReliableDelta(unsigned timestamp, VectorBuffer& src)
-{
-    const unsigned updateMask = src.ReadUInt();
-    if (updateMask & UpdateParentNetworkObjectId)
-    {
-        const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
-        SetParentNetworkObject(parentNetworkId);
-    }
-}
-
-void DefaultNetworkObject::ReadUnreliableDelta(unsigned timestamp, VectorBuffer& src)
-{
-    const unsigned updateMask = src.ReadUInt();
-    if (updateMask & UpdateWorldTransform)
-    {
-        worldPositionTrace_.Append(timestamp, src.ReadVector3());
-        worldRotationTrace_.Append(timestamp, src.ReadQuaternion());
-    }
 }
 
 }
