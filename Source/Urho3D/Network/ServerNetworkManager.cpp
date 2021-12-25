@@ -53,6 +53,7 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     , network_(GetSubsystem<Network>())
     , base_(base)
     , scene_(scene)
+    , updateFrequency_(network_->GetUpdateFps())
 {
     SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
     {
@@ -62,11 +63,19 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     });
 }
 
+void ServerNetworkManager::InitializeNetworkObjects()
+{
+    const auto& networkObjects = base_->GetUnorderedNetworkObjects();
+    for (NetworkObject* networkObject : networkObjects)
+    {
+        if (networkObject)
+            networkObject->InitializeOnServer();
+    }
+}
+
 void ServerNetworkManager::BeginNetworkFrame()
 {
-    updateFrequency_ = network_->GetUpdateFps();
     const float timeStep = 1.0f / updateFrequency_;
-
     UpdateClocks(timeStep);
     CollectObjectsToUpdate(timeStep);
     PrepareDeltaUpdates();
@@ -176,7 +185,7 @@ void ServerNetworkManager::PrepareDeltaUpdates()
 void ServerNetworkManager::PrepareReliableDeltaForObject(unsigned index, NetworkObject* networkObject)
 {
     const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-    if (networkObject->WriteReliableDelta(deltaUpdateBuffer_))
+    if (networkObject->WriteReliableDelta(currentFrame_, deltaUpdateBuffer_))
     {
         const unsigned endOffset = deltaUpdateBuffer_.Tell();
         reliableDeltaUpdates_[index] = { beginOffset, endOffset };
@@ -191,7 +200,7 @@ void ServerNetworkManager::PrepareReliableDeltaForObject(unsigned index, Network
 void ServerNetworkManager::PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject)
 {
     const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-    if (networkObject->WriteUnreliableDelta(deltaUpdateBuffer_))
+    if (networkObject->WriteUnreliableDelta(currentFrame_, deltaUpdateBuffer_))
     {
         const unsigned endOffset = deltaUpdateBuffer_.Tell();
         unreliableDeltaUpdates_[index] = { beginOffset, endOffset };
@@ -333,7 +342,7 @@ void ServerNetworkManager::SendUpdate(AbstractConnection* connection)
                 msg.WriteStringHash(networkObject->GetType());
 
                 componentBuffer_.Clear();
-                networkObject->WriteSnapshot(componentBuffer_);
+                networkObject->WriteSnapshot(currentFrame_, componentBuffer_);
                 msg.WriteBuffer(componentBuffer_.GetBuffer());
             }
             else

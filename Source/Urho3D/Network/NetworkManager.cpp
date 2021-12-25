@@ -123,7 +123,7 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
     recentlyAddedComponents_.insert(networkId);
     networkObjects_[index] = networkObject;
 
-    if (!IsReplicatedClient())
+    if (server_)
         networkObject->InitializeOnServer();
 
     URHO3D_LOGINFO("NetworkObject {} is added", FormatNetworkId(networkId));
@@ -296,6 +296,7 @@ void NetworkManager::MarkAsServer()
     if (!server_)
     {
         server_ = MakeShared<ServerNetworkManager>(this, GetScene());
+        server_->InitializeNetworkObjects();
     }
 }
 

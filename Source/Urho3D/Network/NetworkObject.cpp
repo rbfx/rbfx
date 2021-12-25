@@ -182,16 +182,16 @@ void NetworkObject::OnTransformDirty()
 {
 }
 
-void NetworkObject::WriteSnapshot(VectorBuffer& dest)
+void NetworkObject::WriteSnapshot(unsigned frame, VectorBuffer& dest)
 {
 }
 
-bool NetworkObject::WriteReliableDelta(VectorBuffer& dest)
+bool NetworkObject::WriteReliableDelta(unsigned frame, VectorBuffer& dest)
 {
     return false;
 }
 
-bool NetworkObject::WriteUnreliableDelta(VectorBuffer& dest)
+bool NetworkObject::WriteUnreliableDelta(unsigned frame, VectorBuffer& dest)
 {
     return false;
 }
@@ -206,15 +206,15 @@ void NetworkObject::PrepareToRemove()
         node_->Remove();
 }
 
-void NetworkObject::ReadSnapshot(unsigned timestamp, VectorBuffer& src)
+void NetworkObject::ReadSnapshot(unsigned frame, VectorBuffer& src)
 {
 }
 
-void NetworkObject::ReadReliableDelta(unsigned timestamp, VectorBuffer& src)
+void NetworkObject::ReadReliableDelta(unsigned frame, VectorBuffer& src)
 {
 }
 
-void NetworkObject::ReadUnreliableDelta(unsigned timestamp, VectorBuffer& src)
+void NetworkObject::ReadUnreliableDelta(unsigned frame, VectorBuffer& src)
 {
 }
 

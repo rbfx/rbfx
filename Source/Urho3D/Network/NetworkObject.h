@@ -77,11 +77,11 @@ public:
     /// Called when transform of the object is dirtied.
     virtual void OnTransformDirty();
     /// Write full snapshot on server.
-    virtual void WriteSnapshot(VectorBuffer& dest);
+    virtual void WriteSnapshot(unsigned frame, VectorBuffer& dest);
     /// Write reliable delta update on server. Delta is applied to previous delta or snapshot message.
-    virtual bool WriteReliableDelta(VectorBuffer& dest);
+    virtual bool WriteReliableDelta(unsigned frame, VectorBuffer& dest);
     /// Write unreliable delta update on server.
-    virtual bool WriteUnreliableDelta(VectorBuffer& dest);
+    virtual bool WriteUnreliableDelta(unsigned frame, VectorBuffer& dest);
 
     /// @}
 
@@ -93,11 +93,11 @@ public:
     /// Prepare to this compnent being removed by the authority of the server.
     virtual void PrepareToRemove();
     /// Read full snapshot.
-    virtual void ReadSnapshot(unsigned timestamp, VectorBuffer& src);
+    virtual void ReadSnapshot(unsigned frame, VectorBuffer& src);
     /// Read reliable delta update. Delta is applied to previous reliable delta or snapshot message.
-    virtual void ReadReliableDelta(unsigned timestamp, VectorBuffer& src);
+    virtual void ReadReliableDelta(unsigned frame, VectorBuffer& src);
     /// Read unreliable delta update.
-    virtual void ReadUnreliableDelta(unsigned timestamp, VectorBuffer& src);
+    virtual void ReadUnreliableDelta(unsigned frame, VectorBuffer& src);
 
     /// @}
 
