@@ -106,8 +106,18 @@ public:
 private:
     void OnInputProcessed();
     void ProcessTimeCorrection();
-    NetworkObject* GetOrCreateNetworkObject(NetworkId networkId, StringHash componentType);
+
+    NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType);
+    NetworkObject* GetCheckedNetworkObject(NetworkId networkId, StringHash componentType);
     void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
+
+    void ProcessPing(const MsgPingPong& msg);
+    void ProcessSynchronize(const MsgSynchronize& msg);
+    void ProcessClock(const MsgClock& msg);
+    void ProcessRemoveObjects(MemoryBuffer& messageData);
+    void ProcessAddObjects(MemoryBuffer& messageData);
+    void ProcessUpdateObjectsReliable(MemoryBuffer& messageData);
+    void ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData);
 
     ClientNetworkManagerSettings settings_;
 

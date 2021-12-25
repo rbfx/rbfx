@@ -88,11 +88,13 @@ enum NetworkMessageId
     /// Server->Client: information about current time and client's ping.
     MSG_CLOCK,
     /// Server->Client:
-    MSG_REMOVE_COMPONENTS,
+    MSG_REMOVE_OBJECTS,
     /// Server->Client:
-    MSG_UPDATE_COMPONENTS,
+    MSG_ADD_OBJECTS,
     /// Server->Client:
-    MSG_UNRELIABLE_UPDATE_COMPONENTS,
+    MSG_UPDATE_OBJECTS_RELIABLE,
+    /// Server->Client:
+    MSG_UPDATE_OBJECTS_UNRELIABLE,
 
     LAST_NETWORK_MANAGER_MSG,
     /// @}
