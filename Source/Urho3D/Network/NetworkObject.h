@@ -89,7 +89,7 @@ public:
     /// @{
 
     /// Interpolate replicated state.
-    virtual void InterpolateState(unsigned currentFrame, float blendFactor);
+    virtual void InterpolateState(const NetworkTime& time);
     /// Prepare to this compnent being removed by the authority of the server.
     virtual void PrepareToRemove();
     /// Read full snapshot.

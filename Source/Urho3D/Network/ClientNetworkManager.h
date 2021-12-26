@@ -27,6 +27,7 @@
 #include "../Container/IndexAllocator.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
+#include "../Network/NetworkTime.h"
 #include "../Network/ProtocolMessages.h"
 
 #include <EASTL/optional.h>
@@ -67,9 +68,8 @@ struct ClientClock
     /// TODO: Stabilize ping before smoothing
     double smoothPing_{};
 
-    unsigned currentFrame_{};
+    NetworkTime serverTime_;
     float frameDuration_{};
-    float subFrameTime_{};
     unsigned lastSynchronizationFrame_{};
 
     ea::ring_buffer<double> synchronizationErrors_{};
@@ -94,12 +94,12 @@ public:
     /// @{
     unsigned GetPingInMs() const { return clock_ ? clock_->ping_ : 0; }
     bool IsSynchronized() const { return clock_.has_value(); }
-    unsigned GetCurrentFrame() const { return clock_ ? clock_->currentFrame_ : 0; }
-    float GetCurrentBlendFactor() const { return clock_ ? clock_->subFrameTime_ * clock_->updateFrequency_ : 0; }
+    NetworkTime GetServerTime() const { return clock_ ? clock_->serverTime_ : NetworkTime{}; }
+
+    unsigned GetCurrentFrame() const { return GetServerTime().GetFrame(); }
+    float GetCurrentBlendFactor() const { return GetServerTime().GetSubFrame(); }
     unsigned GetLastSynchronizationFrame() const { return clock_ ? clock_->lastSynchronizationFrame_ : 0; }
-    float GetSubFrameTime() const { return clock_ ? clock_->subFrameTime_ : 0.0f; }
-    double GetCurrentFrameDeltaRelativeTo(double referenceFrame) const;
-    ea::pair<unsigned, float> GetCurrentFrameWithOffset(double delta = 0.0) const;
+    double GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const;
     unsigned GetTraceCapacity() const;
     /// @}
 
