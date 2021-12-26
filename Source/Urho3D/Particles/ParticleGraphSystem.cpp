@@ -28,6 +28,7 @@
 #include "ParticleGraphLayer.h"
 #include "../IO/Log.h"
 #include "../Graphics/Material.h"
+#include "../Graphics/Model.h"
 
 namespace Urho3D
 {

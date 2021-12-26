@@ -94,6 +94,18 @@ void Constant::Instance::Update(UpdateContext& context)
     case VAR_VECTOR4:
         context.GetScalar<Vector4>(pin0.GetMemoryReference())[0] = node_->value_.GetVector4();
         break;
+    case VAR_QUATERNION:
+        context.GetScalar<Quaternion>(pin0.GetMemoryReference())[0] = node_->value_.GetQuaternion();
+        break;
+    case VAR_MATRIX3:
+        context.GetScalar<Matrix3>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix3();
+        break;
+    case VAR_MATRIX3X4:
+        context.GetScalar<Matrix3x4>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix3x4();
+        break;
+    case VAR_MATRIX4:
+        context.GetScalar<Matrix4>(pin0.GetMemoryReference())[0] = node_->value_.GetMatrix4();
+        break;
     case VAR_COLOR:
         context.GetScalar<Color>(pin0.GetMemoryReference())[0] = node_->value_.GetColor();
         break;

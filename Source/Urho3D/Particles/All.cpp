@@ -24,6 +24,7 @@
 #include "All.h"
 
 #include "../Graphics/Material.h"
+#include "../Graphics/Model.h"
 
 #include "../Core/Context.h"
 
@@ -67,6 +68,8 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     TimeStepScale::RegisterObject(system);
     EffectTime::RegisterObject(system);
     NormalizedEffectTime::RegisterObject(system);
+    RenderMesh::RegisterObject(system);
+    MakeMatrix3x4::RegisterObject(system);
 }
 
 }

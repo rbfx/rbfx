@@ -70,6 +70,20 @@ MakeVec3::MakeVec3(Context* context)
 }
 
 void MakeVec3::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeVec3>(); }
+
+MakeMatrix3x4::MakeMatrix3x4(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
+            ParticleGraphPin(PGPIN_INPUT, "translation"),
+            ParticleGraphPin(PGPIN_INPUT, "rotation"),
+            ParticleGraphPin(PGPIN_INPUT, "scale"),
+            ParticleGraphPin(PGPIN_NONE, "out"),
+        })
+{
+}
+
+void MakeMatrix3x4::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeMatrix3x4>(); }
+
 }
 
 } // namespace Urho3D

@@ -37,6 +37,7 @@
 #include "Print.h"
 #include "Random.h"
 #include "RenderBillboard.h"
+#include "RenderMesh.h"
 #include "TernaryOperators.h"
 #include "UnaryOperators.h"
 #include "Uniform.h"
