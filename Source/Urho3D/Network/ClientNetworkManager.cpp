@@ -41,25 +41,11 @@ namespace Urho3D
 namespace
 {
 
-void AddDeltaToFrame(unsigned& frame, float& blendFactor, double delta)
-{
-    const int deltaInt = static_cast<int>(delta);
-    const float deltaFract = delta - deltaInt;
-    frame += deltaInt;
-
-    blendFactor += deltaFract;
-    if (blendFactor < 0.0)
-        --frame;
-    if (blendFactor >= 1.0)
-        ++frame;
-}
-
 void ResetClock(ClientClock& clock, unsigned currentFrame)
 {
-    clock.currentFrame_ = currentFrame;
-    clock.subFrameTime_ = 0.0;
+    clock.serverTime_ = NetworkTime{currentFrame};
 
-    clock.lastSynchronizationFrame_ = clock.currentFrame_;
+    clock.lastSynchronizationFrame_ = clock.serverTime_.GetFrame();
     clock.synchronizationErrors_.clear();
     clock.synchronizationErrorsSorted_.clear();
 }
@@ -105,36 +91,13 @@ void AddClockError(ClientClock& clock, double clockError)
 
 void RewindClock(ClientClock& clock, double deltaFrames)
 {
-    const int integerError = RoundToInt(deltaFrames);
-    const float subFrameError = static_cast<float>(deltaFrames - integerError) * clock.frameDuration_;
-    clock.currentFrame_ += integerError;
-    clock.subFrameTime_ += subFrameError;
-    if (clock.subFrameTime_ < 0.0f)
-    {
-        clock.subFrameTime_ += clock.frameDuration_;
-        --clock.currentFrame_;
-    }
-    else if (clock.subFrameTime_ >= clock.frameDuration_)
-    {
-        clock.subFrameTime_ -= clock.frameDuration_;
-        ++clock.currentFrame_;
-    }
+    clock.serverTime_ += deltaFrames;
 
     for (double& error : clock.synchronizationErrors_)
         error -= deltaFrames;
     clock.averageError_ -= deltaFrames;
 
-    clock.lastSynchronizationFrame_ = clock.currentFrame_;
-}
-
-void AdvanceClockTime(ClientClock& clock, double timeStep)
-{
-    clock.subFrameTime_ += timeStep;
-    while (clock.subFrameTime_ >= clock.frameDuration_)
-    {
-        clock.subFrameTime_ -= clock.frameDuration_;
-        ++clock.currentFrame_;
-    }
+    clock.lastSynchronizationFrame_ = clock.serverTime_.GetFrame();
 }
 
 void UpdateSmoothPing(ClientClock& clock, float blendFactor)
@@ -251,15 +214,14 @@ void ClientNetworkManager::ProcessSynchronize(const MsgSynchronize& msg)
     clock_->ping_ = msg.ping_;
     clock_->smoothPing_ = clock_->ping_;
 
-    clock_->currentFrame_ = clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_));
+    clock_->serverTime_ = NetworkTime{clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_))};
     clock_->frameDuration_ = 1.0f / clock_->updateFrequency_;
-    clock_->subFrameTime_ = 0.0f;
-    clock_->lastSynchronizationFrame_ = clock_->currentFrame_;
+    clock_->lastSynchronizationFrame_ = clock_->serverTime_.GetFrame();
 
     connection_->SendSerializedMessage(
         MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{msg.magic_}, NetworkMessageFlag::Reliable);
 
-    URHO3D_LOGINFO("Client clock is started from frame #{}", clock_->currentFrame_);
+    URHO3D_LOGINFO("Client clock is started from frame {}", clock_->serverTime_.ToString());
 }
 
 void ClientNetworkManager::ProcessClock(const MsgClock& msg)
@@ -364,14 +326,11 @@ void ClientNetworkManager::ProcessTimeCorrection()
     // Adjust time if (re)initializing
     if (IsClockInitializing(*clock_))
     {
-        const unsigned oldCurrentFrame = clock_->currentFrame_;
-        const float oldSubFrameTime = clock_->subFrameTime_;
-
+        const NetworkTime oldServerTime = clock_->serverTime_;
         RewindClock(*clock_, clock_->averageError_);
 
-        URHO3D_LOGINFO("Client clock is rewound from frame #{}:{} to frame #{}:{}",
-            oldCurrentFrame, oldSubFrameTime,
-            clock_->currentFrame_, clock_->subFrameTime_);
+        URHO3D_LOGINFO("Client clock is rewound from frame {} to frame {}",
+            oldServerTime.ToString(), clock_->serverTime_.ToString());
     }
 }
 
@@ -427,28 +386,12 @@ void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObj
         networkObject->Remove();
 }
 
-double ClientNetworkManager::GetCurrentFrameDeltaRelativeTo(double referenceFrame) const
+double ClientNetworkManager::GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const
 {
     if (!clock_)
         return M_LARGE_VALUE;
 
-    // Cast to integers to support time wrap
-    const auto referenceFrameUint = static_cast<unsigned>(std::floor(std::fmod(referenceFrame, 4294967296.0)));
-    const auto frameDeltaInt = static_cast<int>(referenceFrameUint - clock_->currentFrame_);
-    const double referenceFrameFract = referenceFrame - referenceFrameUint;
-    const double currentFrameFract = clock_->subFrameTime_ * clock_->updateFrequency_;
-    return frameDeltaInt + referenceFrameFract - currentFrameFract;
-}
-
-ea::pair<unsigned, float> ClientNetworkManager::GetCurrentFrameWithOffset(double delta) const
-{
-    if (!clock_)
-        return {};
-
-    unsigned currentFrame = GetCurrentFrame();
-    float blendFactor = GetCurrentBlendFactor();
-    AddDeltaToFrame(currentFrame, blendFactor, delta);
-    return {currentFrame, blendFactor};
+    return clock_->serverTime_ - NetworkTime{referenceFrame};
 }
 
 unsigned ClientNetworkManager::GetTraceCapacity() const
@@ -474,17 +417,18 @@ void ClientNetworkManager::OnInputProcessed()
 
     auto time = GetSubsystem<Time>();
     const float timeStep = time->GetTimeStep();
-    AdvanceClockTime(*clock_, timeStep);
+
+    clock_->serverTime_ += timeStep * clock_->updateFrequency_;
     UpdateSmoothPing(*clock_, settings_.pingSmoothConstant_);
 
     const double interpolationDelay = settings_.sampleDelayInSeconds_ + GetSmoothPingInSeconds(*clock_);
-    const auto [currentFrame, blendFactor] = GetCurrentFrameWithOffset(-interpolationDelay * clock_->updateFrequency_);
+    const NetworkTime clientTime = clock_->serverTime_ - interpolationDelay * clock_->updateFrequency_;
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)
     {
         if (networkObject)
-            networkObject->InterpolateState(currentFrame, blendFactor);
+            networkObject->InterpolateState(clientTime);
     }
 }
 

@@ -196,7 +196,7 @@ bool NetworkObject::WriteUnreliableDelta(unsigned frame, VectorBuffer& dest)
     return false;
 }
 
-void NetworkObject::InterpolateState(unsigned currentFrame, float blendFactor)
+void NetworkObject::InterpolateState(const NetworkTime& time)
 {
 }
 
