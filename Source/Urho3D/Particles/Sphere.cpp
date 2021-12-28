@@ -22,8 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include "Sphere.h"
 #include "ParticleGraphSystem.h"
-#include "Cone.h"
 
 #include "Helpers.h"
 
@@ -31,40 +31,38 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-namespace 
+namespace
 {
 const char* emitFromNames[] = {"Base", "Volume", "Surface", "Edge", "Vertex", nullptr};
 }
 
-Cone::Cone(Context* context)
-    : AbstractNodeType(context, PinArray{
+Sphere::Sphere(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
             ParticleGraphPin(PGPIN_TYPE_MUTABLE, "position", PGCONTAINER_SPAN),
             ParticleGraphPin(PGPIN_TYPE_MUTABLE, "velocity", PGCONTAINER_SPAN),
         })
     , radius_(0.0f)
     , radiusThickness_(1.0f)
-    , angle_(45.0f)
     , rotation_(Quaternion::IDENTITY)
     , position_(Vector3::ZERO)
+    , scale_(Vector3::ONE)
     , emitFrom_(EmitFrom::Volume)
 {
 }
 
-void Cone::RegisterObject(ParticleGraphSystem* context)
+void Sphere::RegisterObject(ParticleGraphSystem* context)
 {
-    auto ref = context->AddReflection<Cone>();
+    auto ref = context->AddReflection<Sphere>();
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Angle", GetAngle, SetAngle, float, 45.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Length", GetLength, SetLength, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
-    ref->AddAttribute(Urho3D::AttributeInfo(Urho3D::VAR_STRING,
-        "From",
-        Urho3D::MakeVariantAttributeAccessor<Cone>([](const Cone& self, Urho3D::Variant& value)
+    ref->AddAttribute(Urho3D::AttributeInfo(Urho3D::VAR_STRING, "From",
+        Urho3D::MakeVariantAttributeAccessor<Sphere>([](const Sphere& self, Urho3D::Variant& value)
             { value = emitFromNames[static_cast<int>(self.emitFrom_)]; },
-            [](Cone& self, const Urho3D::Variant& value)
+            [](Sphere& self, const Urho3D::Variant& value)
             {
                 const char** name = emitFromNames;
                 const auto expectedName = value.Get<ea::string>();
@@ -83,14 +81,10 @@ void Cone::RegisterObject(ParticleGraphSystem* context)
         emitFromNames, static_cast<int>(EmitFrom::Volume), AM_DEFAULT));
 }
 
-void Cone::Generate(Vector3& pos, Vector3& vel) const
+void Sphere::Generate(Vector3& pos, Vector3& vel) const
 {
-    const float angle = Random(360.0f);
-    const float radius = Sqrt(Random()) * Sin( Min(Max(angle_, 0.0f), 89.999f));
-    const float height = Sqrt(1.0f - radius * radius);
-    const float cosinus = Cos(angle);
-    const float sinus = Sin(angle);
-    const Vector3 direction = Vector3(cosinus * radius, sinus * radius, height);
+    Vector3 direction(Random(2.0f) - 1.0f, Random(2.0f) - 1.0f, Random(2.0f) - 1.0f);
+    direction.Normalize();
 
     float r = radius_;
     if (radiusThickness_ > 0.0f && emitFrom_ != EmitFrom::Surface)
@@ -101,18 +95,19 @@ void Cone::Generate(Vector3& pos, Vector3& vel) const
     {
     case EmitFrom::Base:
         vel = direction;
-        pos = Vector3(cosinus * (r), sinus * (r), 0.0f);
+        pos = Vector3::ZERO;
+        break;
+    case EmitFrom::Surface:
+        vel = direction;
+        pos = direction * radius_;
         break;
     default:
         vel = direction;
-        pos = direction * Random(length_) + Vector3(cosinus * r, sinus * r, 0.0f);
+        pos = direction * Pow(Random(), 1.0f / 3.0f) * 0.5f;
         break;
     }
 }
 
-Matrix3x4 Cone::GetShapeTransform() const
-{
-    return Matrix3x4(position_, rotation_, scale_);
-}
+Matrix3x4 Sphere::GetShapeTransform() const { return Matrix3x4(position_, rotation_, scale_); }
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

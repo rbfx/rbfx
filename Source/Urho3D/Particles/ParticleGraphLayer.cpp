@@ -72,7 +72,7 @@ struct ParticleGraphAttributeBuilder
             pin.valueType_ = node->EvaluateOutputPinType(pin);
             if (pin.valueType_ == VAR_NONE)
             {
-                URHO3D_LOGERROR("Can't detect output pin type");
+                URHO3D_LOGERROR(Format("Can't detect output pin {}.{} type", node->GetTypeName(), pin.GetName()));
                 return false;
             }
         }
@@ -139,8 +139,8 @@ struct ParticleGraphAttributeBuilder
                 else if (pin.requestedValueType_ != sourcePin.valueType_)
                 {
                     URHO3D_LOGERROR("Source pin {}.{} type {} doesn't match input pin {}.{} type {}",
-                                    sourceNode->GetTypeName(), sourcePin.GetName(), sourcePin.GetValueType(),
-                                    node->GetTypeName(), pin.GetName(), pin.GetRequestedType());
+                                    sourceNode->GetTypeName(), sourcePin.GetName(), Variant::GetTypeNameList()[sourcePin.GetValueType()],
+                                    node->GetTypeName(), pin.GetName(), Variant::GetTypeNameList()[pin.GetRequestedType()]);
                     return false;
                 }
             }

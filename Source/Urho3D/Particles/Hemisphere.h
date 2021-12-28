@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "ParticleGraphNode.h"
-#include "Helpers.h"
 #include "Emitter.h"
+#include "Helpers.h"
+#include "ParticleGraphNode.h"
 
 namespace Urho3D
 {
@@ -34,22 +34,21 @@ namespace ParticleGraphNodes
 {
 
 /// Operation on attribute
-class URHO3D_API Cone : public AbstractNode<Cone, Vector3, Vector3>
+class URHO3D_API Hemisphere : public AbstractNode<Hemisphere, Vector3, Vector3>
 {
-    URHO3D_OBJECT(Cone, ParticleGraphNode)
+    URHO3D_OBJECT(Hemisphere, ParticleGraphNode)
 public:
     /// Construct.
-    explicit Cone(Context* context);
+    explicit Hemisphere(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
 public:
-
     template <typename Tuple>
     static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
-        const Cone * cone = instance->GetGraphNodeInstace();
+        const Hemisphere* cone = instance->GetGraphNodeInstace();
         const Matrix3x4 m = cone->GetShapeTransform();
         const Matrix3 md = m.RotationMatrix();
         auto& pos = ea::get<0>(spans);
@@ -65,10 +64,6 @@ public:
     }
 
 public:
-    /// Get cone length.
-    float GetLength() const { return length_; }
-    /// Set cone length.
-    void SetLength(float val) { length_ = val; }
 
     /// Get cone base radius.
     float GetRadius() const { return radius_; }
@@ -79,10 +74,7 @@ public:
     float GetRadiusThickness() const { return radiusThickness_; }
     /// Set cone base radius thickness.
     void SetRadiusThickness(float val) { radiusThickness_ = val; }
-    /// Get cone angle in degrees.
-    float GetAngle() const { return angle_; }
-    /// Set cone angle in degrees.
-    void SetAngle(float val) { angle_ = val; }
+
     /// Get cone rotation.
     const Quaternion& GetRotation() const { return rotation_; }
     /// Set cone rotation.
@@ -103,14 +95,10 @@ public:
     Matrix3x4 GetShapeTransform() const;
 
 protected:
-    /// Cone length.
-    float length_{1.0f};
     /// Cone base radius.
     float radius_{0.0f};
     /// Cone radius thickness.
     float radiusThickness_{1.0f};
-    /// Cone angle in degrees.
-    float angle_{45.0f};
     /// Cone orientation.
     Quaternion rotation_;
     /// Cone offset.

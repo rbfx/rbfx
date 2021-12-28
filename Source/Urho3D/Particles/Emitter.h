@@ -22,27 +22,8 @@
 
 #pragma once
 
+#include "ParticleGraphNode.h"
 #include "Helpers.h"
-
-#include "Attribute.h"
-#include "BinaryOperators.h"
-#include "Bounce.h"
-#include "Cone.h"
-#include "Hemisphere.h"
-#include "Sphere.h"
-#include "Constant.h"
-#include "Curve.h"
-#include "Destroy.h"
-#include "Emit.h"
-#include "Environment.h"
-#include "Math.h"
-#include "Print.h"
-#include "Random.h"
-#include "RenderBillboard.h"
-#include "RenderMesh.h"
-#include "TernaryOperators.h"
-#include "UnaryOperators.h"
-#include "Uniform.h"
 
 namespace Urho3D
 {
@@ -50,7 +31,16 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-void RegisterGraphNodes(ParticleGraphSystem* context);
-}
+
+enum class EmitFrom
+{
+    Base,
+    Volume,
+    Surface,
+    Edge,
+    Vertex,
+};
+
+} // namespace ParticleGraphNodes
 
 } // namespace Urho3D

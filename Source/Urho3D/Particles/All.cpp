@@ -70,6 +70,8 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     NormalizedEffectTime::RegisterObject(system);
     RenderMesh::RegisterObject(system);
     MakeMatrix3x4::RegisterObject(system);
+    Sphere::RegisterObject(system);
+    Hemisphere::RegisterObject(system);
 }
 
 }

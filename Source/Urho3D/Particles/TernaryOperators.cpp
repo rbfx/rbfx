@@ -38,6 +38,7 @@ const static ea::vector LerpPins{
     TernaryOperatorPermutation::Make<Lerp, Vector2, Vector2, float, Vector2>(),
     TernaryOperatorPermutation::Make<Lerp, Vector3, Vector3, float, Vector3>(),
     TernaryOperatorPermutation::Make<Lerp, Vector4, Vector4, float, Vector4>(),
+    TernaryOperatorPermutation::Make<Lerp, Color, Color, float, Color>(),
 };
 
 } // namespace
