@@ -111,13 +111,14 @@ bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
 
 void ParticleGraphLayerInstance::Update(float timeStep)
 {
-    auto autoContext = MakeUpdateContext(timeStep);
+    auto emitContext = MakeUpdateContext(timeStep);
     if (indices_.empty())
         return;
-    autoContext.indices_ = indices_.subspan(0, 1);
-    RunGraph(emitNodeInstances_, autoContext);
+    emitContext.indices_ = indices_.subspan(0, 1);
+    RunGraph(emitNodeInstances_, emitContext);
 
-    RunGraph(updateNodeInstances_, MakeUpdateContext(timeStep));
+    auto updateContext = MakeUpdateContext(timeStep);
+    RunGraph(updateNodeInstances_, updateContext);
     DestroyParticles();
     time_ += timeStep;
 }
