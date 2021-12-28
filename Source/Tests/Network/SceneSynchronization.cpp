@@ -323,76 +323,72 @@ TEST_CASE("Scene is synchronized between client and server")
 
 TEST_CASE("SynchronizedValue is updated and sampled")
 {
-    NetworkValue<float> v;
+    NetworkValue<float> v(5);
 
     {
-        v.Resize(5);
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE_FALSE(v.GetValue(2));
-        REQUIRE_FALSE(v.GetValue(3));
-        REQUIRE_FALSE(v.GetValue(4));
-        REQUIRE_FALSE(v.GetValue(5));
-
-        REQUIRE_FALSE(v.GetNearestValidFrame(5));
+        REQUIRE_FALSE(v.GetRaw(1));
+        REQUIRE_FALSE(v.GetRaw(2));
+        REQUIRE_FALSE(v.GetRaw(3));
+        REQUIRE_FALSE(v.GetRaw(4));
+        REQUIRE_FALSE(v.GetRaw(5));
     }
 
     {
         v.Append(2, 1000.0f);
 
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE(v.GetValue(2) == 1000.0f);
-        REQUIRE_FALSE(v.GetValue(3));
-        REQUIRE_FALSE(v.GetValue(4));
-        REQUIRE_FALSE(v.GetValue(5));
+        REQUIRE_FALSE(v.GetRaw(1));
+        REQUIRE(v.GetRaw(2) == 1000.0f);
+        REQUIRE_FALSE(v.GetRaw(3));
+        REQUIRE_FALSE(v.GetRaw(4));
+        REQUIRE_FALSE(v.GetRaw(5));
 
-        REQUIRE_FALSE(v.GetNearestValidFrame(1));
-        REQUIRE(v.GetNearestValidFrame(2) == 2u);
-        REQUIRE(v.GetNearestValidFrame(5) == 2u);
+        REQUIRE(v.GetClosestRaw(1) == 1000.0f);
+        REQUIRE(v.GetClosestRaw(2) == 1000.0f);
+        REQUIRE(v.GetClosestRaw(5) == 1000.0f);
     }
 
     {
         v.Append(2, 2000.0f);
 
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE(v.GetValue(2) == 1000.0f);
-        REQUIRE_FALSE(v.GetValue(3));
-        REQUIRE_FALSE(v.GetValue(4));
-        REQUIRE_FALSE(v.GetValue(5));
+        REQUIRE_FALSE(v.GetRaw(1));
+        REQUIRE(v.GetRaw(2) == 1000.0f);
+        REQUIRE_FALSE(v.GetRaw(3));
+        REQUIRE_FALSE(v.GetRaw(4));
+        REQUIRE_FALSE(v.GetRaw(5));
 
-        REQUIRE_FALSE(v.GetNearestValidFrame(1));
-        REQUIRE(v.GetNearestValidFrame(2) == 2u);
-        REQUIRE(v.GetNearestValidFrame(5) == 2u);
+        REQUIRE(v.GetClosestRaw(1) == 1000.0f);
+        REQUIRE(v.GetClosestRaw(2) == 1000.0f);
+        REQUIRE(v.GetClosestRaw(5) == 1000.0f);
     }
 
     {
         v.Replace(2, 2000.0f);
 
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE(v.GetValue(2) == 2000.0f);
-        REQUIRE_FALSE(v.GetValue(3));
-        REQUIRE_FALSE(v.GetValue(4));
-        REQUIRE_FALSE(v.GetValue(5));
+        REQUIRE_FALSE(v.GetRaw(1));
+        REQUIRE(v.GetRaw(2) == 2000.0f);
+        REQUIRE_FALSE(v.GetRaw(3));
+        REQUIRE_FALSE(v.GetRaw(4));
+        REQUIRE_FALSE(v.GetRaw(5));
 
-        REQUIRE_FALSE(v.GetNearestValidFrame(1));
-        REQUIRE(v.GetNearestValidFrame(2) == 2u);
-        REQUIRE(v.GetNearestValidFrame(5) == 2u);
+        REQUIRE(v.GetClosestRaw(1) == 2000.0f);
+        REQUIRE(v.GetClosestRaw(2) == 2000.0f);
+        REQUIRE(v.GetClosestRaw(5) == 2000.0f);
     }
 
     {
         v.Append(4, 4000.0f);
 
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE(v.GetValue(2) == 2000.0f);
-        REQUIRE_FALSE(v.GetValue(3));
-        REQUIRE(v.GetValue(4) == 4000.0f);
-        REQUIRE_FALSE(v.GetValue(5));
+        REQUIRE_FALSE(v.GetRaw(1));
+        REQUIRE(v.GetRaw(2) == 2000.0f);
+        REQUIRE_FALSE(v.GetRaw(3));
+        REQUIRE(v.GetRaw(4) == 4000.0f);
+        REQUIRE_FALSE(v.GetRaw(5));
 
-        REQUIRE_FALSE(v.GetNearestValidFrame(1));
-        REQUIRE(v.GetNearestValidFrame(2) == 2u);
-        REQUIRE(v.GetNearestValidFrame(3) == 2u);
-        REQUIRE(v.GetNearestValidFrame(4) == 4u);
-        REQUIRE(v.GetNearestValidFrame(5) == 4u);
-        REQUIRE(v.GetNearestValidFrame(15) == 4u);
+        REQUIRE(v.GetClosestRaw(1) == 2000.0f);
+        REQUIRE(v.GetClosestRaw(2) == 2000.0f);
+        REQUIRE(v.GetClosestRaw(3) == 2000.0f);
+        REQUIRE(v.GetClosestRaw(4) == 4000.0f);
+        REQUIRE(v.GetClosestRaw(5) == 4000.0f);
     }
 
     {
@@ -400,62 +396,38 @@ TEST_CASE("SynchronizedValue is updated and sampled")
         v.Append(5, 5000.0f);
         v.Append(6, 6000.0f);
 
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE(v.GetValue(2) == 2000.0f);
-        REQUIRE(v.GetValue(3) == 3000.0f);
-        REQUIRE(v.GetValue(4) == 4000.0f);
-        REQUIRE(v.GetValue(5) == 5000.0f);
-        REQUIRE(v.GetValue(6) == 6000.0f);
+        REQUIRE_FALSE(v.GetRaw(1));
+        REQUIRE(v.GetRaw(2) == 2000.0f);
+        REQUIRE(v.GetRaw(3) == 3000.0f);
+        REQUIRE(v.GetRaw(4) == 4000.0f);
+        REQUIRE(v.GetRaw(5) == 5000.0f);
+        REQUIRE(v.GetRaw(6) == 6000.0f);
+
+        REQUIRE(v.GetClosestRaw(5) == 5000.0f);
+        REQUIRE(v.GetClosestRaw(6) == 6000.0f);
+        REQUIRE(v.GetClosestRaw(7) == 6000.0f);
     }
 
     {
         v.Append(9, 9000.0f);
 
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE_FALSE(v.GetValue(2));
-        REQUIRE_FALSE(v.GetValue(3));
-        REQUIRE_FALSE(v.GetValue(4));
-        REQUIRE(v.GetValue(5) == 5000.0f);
-        REQUIRE(v.GetValue(6) == 6000.0f);
-        REQUIRE_FALSE(v.GetValue(7));
-        REQUIRE_FALSE(v.GetValue(8));
-        REQUIRE(v.GetValue(9) == 9000.0f);
-    }
+        REQUIRE_FALSE(v.GetRaw(1));
+        REQUIRE_FALSE(v.GetRaw(2));
+        REQUIRE_FALSE(v.GetRaw(3));
+        REQUIRE_FALSE(v.GetRaw(4));
+        REQUIRE(v.GetRaw(5) == 5000.0f);
+        REQUIRE(v.GetRaw(6) == 6000.0f);
+        REQUIRE_FALSE(v.GetRaw(7));
+        REQUIRE_FALSE(v.GetRaw(8));
+        REQUIRE(v.GetRaw(9) == 9000.0f);
 
-    {
-        v.Resize(7);
-        v.Append(10, 10000.0f);
-        v.Append(12, 12000.0f);
-
-        REQUIRE_FALSE(v.GetValue(1));
-        REQUIRE_FALSE(v.GetValue(2));
-        REQUIRE_FALSE(v.GetValue(3));
-        REQUIRE_FALSE(v.GetValue(4));
-        REQUIRE_FALSE(v.GetValue(5));
-        REQUIRE(v.GetValue(6) == 6000.0f);
-        REQUIRE_FALSE(v.GetValue(7));
-        REQUIRE_FALSE(v.GetValue(8));
-        REQUIRE(v.GetValue(9) == 9000.0f);
-        REQUIRE(v.GetValue(10) == 10000.0f);
-        REQUIRE_FALSE(v.GetValue(11));
-        REQUIRE(v.GetValue(12) == 12000.0f);
-        REQUIRE_FALSE(v.GetValue(13));
-    }
-
-    {
-        v.Resize(3);
-        REQUIRE_FALSE(v.GetValue(8));
-        REQUIRE_FALSE(v.GetValue(9));
-        REQUIRE(v.GetValue(10) == 10000.0f);
-        REQUIRE_FALSE(v.GetValue(11));
-        REQUIRE(v.GetValue(12) == 12000.0f);
-        REQUIRE_FALSE(v.GetValue(13));
-
-        REQUIRE_FALSE(v.GetNearestValidFrame(9));
-        REQUIRE(v.GetNearestValidFrame(10) == 10u);
-        REQUIRE(v.GetNearestValidFrame(11) == 10u);
-        REQUIRE(v.GetNearestValidFrame(12) == 12u);
-        REQUIRE(v.GetNearestValidFrame(13) == 12u);
+        REQUIRE(v.GetClosestRaw(4) == 5000.0f);
+        REQUIRE(v.GetClosestRaw(5) == 5000.0f);
+        REQUIRE(v.GetClosestRaw(6) == 6000.0f);
+        REQUIRE(v.GetClosestRaw(7) == 6000.0f);
+        REQUIRE(v.GetClosestRaw(8) == 6000.0f);
+        REQUIRE(v.GetClosestRaw(9) == 9000.0f);
+        REQUIRE(v.GetClosestRaw(10) == 9000.0f);
     }
 }
 
