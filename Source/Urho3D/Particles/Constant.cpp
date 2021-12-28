@@ -42,7 +42,7 @@ void Constant::SetValue(const Variant& value)
 
 Constant::Constant(Context* context)
     : ParticleGraphNode(context)
-    , pins_{ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out", VAR_NONE, PGCONTAINER_SCALAR)}
+    , pins_{ParticleGraphPin(ParticleGraphPinFlag::MutableType, "out", VAR_NONE, PGCONTAINER_SCALAR)}
 {
 }
 

@@ -34,7 +34,7 @@ namespace ParticleGraphNodes
 Emit::Emit(Context* context)
     : AbstractNodeType(context,
         PinArray{
-            ParticleGraphPin(PGPIN_INPUT, "count"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "count"),
         })
 {
 }
@@ -44,8 +44,8 @@ void Emit::RegisterObject(ParticleGraphSystem* context) { context->AddReflection
 BurstTimer::BurstTimer(Context* context)
     : AbstractNodeType(context,
         PinArray{
-            ParticleGraphPin(PGPIN_INPUT, "count"),
-            ParticleGraphPin(PGPIN_NONE, "out"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "count"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
         })
 {
 }

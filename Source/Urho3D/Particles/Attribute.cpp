@@ -90,7 +90,7 @@ void Attribute::SetAttributeType(VariantType valueType)
 
 GetAttribute::GetAttribute(Context* context)
     : Attribute(context)
-    , pins_{ ParticleGraphPin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "attr", VAR_FLOAT,
+    , pins_{ ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "attr", VAR_FLOAT,
                                               PGCONTAINER_SPARSE)}
 {
 }
@@ -110,8 +110,8 @@ ParticleGraphPin* GetAttribute::LoadOutputPin(ParticleGraphReader& reader, Graph
 SetAttribute::SetAttribute(Context* context)
     : Attribute(context)
     , pins_{
-          ParticleGraphPin(PGPIN_NAME_MUTABLE | PGPIN_TYPE_MUTABLE, "attr", VAR_FLOAT, PGCONTAINER_SPARSE),
-          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "", VAR_FLOAT),
+          ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "attr", VAR_FLOAT, PGCONTAINER_SPARSE),
+          ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "", VAR_FLOAT),
     }
 {
 }
@@ -146,7 +146,7 @@ void SetAttribute::Instance::Update(UpdateContext& context)
 };
 
 ParticleTime::ParticleTime(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "time", PGCONTAINER_SPARSE)})
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::None, "time", PGCONTAINER_SPARSE)})
 {
 }
 

@@ -72,7 +72,7 @@ namespace
 
 Print::Print(Context* context)
     : ParticleGraphNode(context)
-    , pins_{ParticleGraphPin(PGPIN_INPUT, "value")}
+    , pins_{ParticleGraphPin(ParticleGraphPinFlag::Input, "value")}
 {
 }
 

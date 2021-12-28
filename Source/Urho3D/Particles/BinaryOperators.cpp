@@ -78,8 +78,8 @@ void BinaryMathOperator::Instance::Update(UpdateContext& context) { operator_->U
 BinaryMathOperator::BinaryMathOperator(Context* context, const ea::vector<BinaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
     , permutations_(permutations)
-    , pins_{ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "x"),
-          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "y"), ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")}
+    , pins_{ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "x"),
+          ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "y"), ParticleGraphPin(ParticleGraphPinFlag::MutableType, "out")}
 {
 }
 

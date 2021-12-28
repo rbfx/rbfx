@@ -31,7 +31,7 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 TimeStep::TimeStep(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "out", PGCONTAINER_SCALAR)})
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::None, "out", PGCONTAINER_SCALAR)})
 {
 }
 void TimeStep::RegisterObject(ParticleGraphSystem* context)
@@ -40,7 +40,7 @@ void TimeStep::RegisterObject(ParticleGraphSystem* context)
 }
 
 EffectTime::EffectTime(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "out",PGCONTAINER_SCALAR)})
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::None, "out",PGCONTAINER_SCALAR)})
 {
 }
 
@@ -50,7 +50,7 @@ void EffectTime::RegisterObject(ParticleGraphSystem* context)
 }
 
 NormalizedEffectTime::NormalizedEffectTime(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(PGPIN_NONE, "out", PGCONTAINER_SCALAR)})
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::None, "out", PGCONTAINER_SCALAR)})
 {
 }
 
@@ -61,9 +61,9 @@ void NormalizedEffectTime::RegisterObject(ParticleGraphSystem* context)
 
 Move::Move(Context* context)
     : AbstractNodeType(context, PinArray{
-                                    ParticleGraphPin(PGPIN_INPUT, "position"),
-                                    ParticleGraphPin(PGPIN_INPUT, "velocity"),
-                                    ParticleGraphPin(PGPIN_NONE, "newPosition"),
+                                    ParticleGraphPin(ParticleGraphPinFlag::Input, "position"),
+                                    ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
+                                    ParticleGraphPin(ParticleGraphPinFlag::None, "newPosition"),
                                 })
 {
 }

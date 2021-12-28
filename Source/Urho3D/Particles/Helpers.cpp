@@ -20,35 +20,33 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Environment.h"
 
-#include "Destroy.h"
+#include "Helpers.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
+
 namespace ParticleGraphNodes
 {
 
-Destroy::Destroy(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::Input, "condition")})
+NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0)
+    : updateFunction_(ea::move(update))
+    , in_{ea::move(pin0)}
 {
 }
 
-void Destroy::RegisterObject(ParticleGraphSystem* context)
+bool NodePattern::Match(const ea::span<ParticleGraphPin>& pins)
 {
-    context->AddReflection<Destroy>();
+    return false;
 }
 
-Expire::Expire(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::Input, "time"), ParticleGraphPin(ParticleGraphPinFlag::Input, "lifetime")})
+VariantType NodePattern::EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins,
+    const ParticleGraphPin& outputPin)
 {
+    return VAR_NONE;
 }
-void Expire::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<Expire>();
-}
-
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

@@ -63,9 +63,9 @@ void TernaryMathOperator::Instance::Update(UpdateContext& context) { operator_->
 TernaryMathOperator::TernaryMathOperator(Context* context, const char* zName, const ea::vector<TernaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
     , permutations_(permutations)
-    , pins_{ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "x"),
-          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "y"),
-          ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, zName), ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")}
+    , pins_{ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "x"),
+          ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "y"),
+          ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, zName), ParticleGraphPin(ParticleGraphPinFlag::MutableType, "out")}
 {
 }
 

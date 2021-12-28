@@ -39,8 +39,8 @@ const char* emitFromNames[] = {"Base", "Volume", "Surface", "Edge", "Vertex", nu
 Hemisphere::Hemisphere(Context* context)
     : AbstractNodeType(context,
         PinArray{
-            ParticleGraphPin(PGPIN_TYPE_MUTABLE, "position", PGCONTAINER_SPAN),
-            ParticleGraphPin(PGPIN_TYPE_MUTABLE, "velocity", PGCONTAINER_SPAN),
+            ParticleGraphPin(ParticleGraphPinFlag::MutableType, "position", PGCONTAINER_SPAN),
+            ParticleGraphPin(ParticleGraphPinFlag::MutableType, "velocity", PGCONTAINER_SPAN),
         })
     , radius_(0.0f)
     , radiusThickness_(1.0f)

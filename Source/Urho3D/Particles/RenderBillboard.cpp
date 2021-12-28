@@ -38,11 +38,11 @@ namespace ParticleGraphNodes
 RenderBillboard::RenderBillboard(Context* context)
     : AbstractNodeType(context,
                        PinArray{
-                           ParticleGraphPin(PGPIN_INPUT, "pos"),
-                           ParticleGraphPin(PGPIN_INPUT, "size"),
-                           ParticleGraphPin(PGPIN_INPUT, "frame"),
-                           ParticleGraphPin(PGPIN_INPUT, "color"),
-                           ParticleGraphPin(PGPIN_INPUT, "rotation"),
+                           ParticleGraphPin(ParticleGraphPinFlag::Input, "pos"),
+                           ParticleGraphPin(ParticleGraphPinFlag::Input, "size"),
+                           ParticleGraphPin(ParticleGraphPinFlag::Input, "frame"),
+                           ParticleGraphPin(ParticleGraphPinFlag::Input, "color"),
+                           ParticleGraphPin(ParticleGraphPinFlag::Input, "rotation"),
                        })
     , isWorldSpace_(false)
 {

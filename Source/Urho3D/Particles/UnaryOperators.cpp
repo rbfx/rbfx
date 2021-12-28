@@ -61,7 +61,7 @@ void UnaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Up
 UnaryMathOperator::UnaryMathOperator(Context* context, const ea::vector<UnaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
     , permutations_(permutations)
-    , pins_{ParticleGraphPin(PGPIN_INPUT | PGPIN_TYPE_MUTABLE, "x"), ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")}
+    , pins_{ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "x"), ParticleGraphPin(ParticleGraphPinFlag::MutableType, "out")}
 {
 }
 

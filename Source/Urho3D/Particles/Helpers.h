@@ -220,6 +220,36 @@ template <typename Node, typename ... Values> Scene* AbstractNode<Node, Values..
     return (emitter) ? emitter->GetScene() : nullptr;
 }
 
+struct PinPattern
+{
+    PinPattern(ParticleGraphPinFlags flags, const ea::string& name, VariantType type = VAR_NONE)
+        : flags_(flags), name_(name), nameHash_(name), type_(type)
+    {
+    }
+    PinPattern(const ea::string& name, VariantType type = VAR_NONE)
+        : PinPattern(ParticleGraphPinFlag::Input, name, type)
+    {
+    }
+    ParticleGraphPinFlags flags_;
+    ea::string name_;
+    StringHash nameHash_;
+    VariantType type_;
+};
+
+struct NodePattern
+{
+    typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> UpdateFunction;
+
+    NodePattern(UpdateFunction&& update, PinPattern&& pin0);
+
+    bool Match(const ea::span<ParticleGraphPin>& pins);
+
+    VariantType EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins, const ParticleGraphPin& outputPin);
+
+    UpdateFunction updateFunction_;
+    ea::fixed_vector<PinPattern, 4> in_;
+};
+
 template <template <typename> typename T, typename ... Args>
 void SelectByVariantType(VariantType variantType, Args... args)
 {

@@ -36,10 +36,10 @@ namespace ParticleGraphNodes
 Bounce::Bounce(Context* context)
     : AbstractNodeType(context, PinArray
         {
-            ParticleGraphPin(PGPIN_INPUT, "position"),
-            ParticleGraphPin(PGPIN_INPUT, "velocity"),
-            ParticleGraphPin(PGPIN_NONE, "newPosition"),
-            ParticleGraphPin(PGPIN_NONE, "newVelocity"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "position"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "newPosition"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "newVelocity"),
         })
 {
 }

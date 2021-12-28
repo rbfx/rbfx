@@ -32,18 +32,20 @@ namespace Urho3D
 {
 class ParticleGraphLayerInstance;
 
-enum ParticleGraphPinFlagValues
+enum class ParticleGraphPinFlag
 {
     /// No flags set.
-    PGPIN_NONE = 0x0,
+    None = 0x0,
+    /// No flags set.
+    Output = ParticleGraphPinFlag::None,
     /// Input pin.
-    PGPIN_INPUT = 0x1,
+    Input = 0x1,
     /// Pin name defined in runtime.
-    PGPIN_NAME_MUTABLE = 0x2,
+    MutableName = 0x2,
     /// Pin value type defined in runtime.
-    PGPIN_TYPE_MUTABLE = 0x4,
+    MutableType = 0x4,
 };
-URHO3D_FLAGSET(ParticleGraphPinFlagValues, ParticleGraphPinFlags);
+URHO3D_FLAGSET(ParticleGraphPinFlag, ParticleGraphPinFlags);
 
 /// Reference to a pin buffer in a particle graph.
 struct ParticleGraphPinRef
@@ -76,7 +78,7 @@ public:
 
     /// Get input pin flag.
     /// @property
-    bool IsInput() const { return flags_.Test(PGPIN_INPUT); }
+    bool IsInput() const { return flags_.Test(ParticleGraphPinFlag::Input); }
 
     /// Name of the pin for visual editor.
     /// @property
@@ -146,7 +148,7 @@ private:
 
 
     /// Is input pin.
-    ParticleGraphPinFlags flags_{PGPIN_INPUT};
+    ParticleGraphPinFlags flags_{ParticleGraphPinFlag::Input};
 
     /// Value type (float, vector3, etc).
     VariantType requestedValueType_{VAR_NONE};

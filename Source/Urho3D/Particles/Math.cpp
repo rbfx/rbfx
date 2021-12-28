@@ -33,10 +33,10 @@ namespace ParticleGraphNodes
 
 Slerp::Slerp(Context* context)
     : AbstractNodeType(context, PinArray{
-                                    ParticleGraphPin(PGPIN_INPUT, "x"),
-                                    ParticleGraphPin(PGPIN_INPUT, "y"),
-                                    ParticleGraphPin(PGPIN_INPUT, "t"),
-                                    ParticleGraphPin(PGPIN_NONE, "out"),
+                                    ParticleGraphPin(ParticleGraphPinFlag::Input, "x"),
+                                    ParticleGraphPin(ParticleGraphPinFlag::Input, "y"),
+                                    ParticleGraphPin(ParticleGraphPinFlag::Input, "t"),
+                                    ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
                                 })
 {
 }
@@ -49,9 +49,9 @@ void Slerp::RegisterObject(ParticleGraphSystem* context)
 MakeVec2::MakeVec2(Context* context)
     : AbstractNodeType(context,
         PinArray{
-            ParticleGraphPin(PGPIN_INPUT, "x"),
-            ParticleGraphPin(PGPIN_INPUT, "y"),
-            ParticleGraphPin(PGPIN_NONE, "out"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "x"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "y"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
         })
 {
 }
@@ -61,10 +61,10 @@ void MakeVec2::RegisterObject(ParticleGraphSystem* context) { context->AddReflec
 MakeVec3::MakeVec3(Context* context)
     : AbstractNodeType(context,
         PinArray{
-            ParticleGraphPin(PGPIN_INPUT, "x"),
-            ParticleGraphPin(PGPIN_INPUT, "y"),
-            ParticleGraphPin(PGPIN_INPUT, "z"),
-            ParticleGraphPin(PGPIN_NONE, "out"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "x"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "y"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "z"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
         })
 {
 }
@@ -74,10 +74,10 @@ void MakeVec3::RegisterObject(ParticleGraphSystem* context) { context->AddReflec
 MakeMatrix3x4::MakeMatrix3x4(Context* context)
     : AbstractNodeType(context,
         PinArray{
-            ParticleGraphPin(PGPIN_INPUT, "translation"),
-            ParticleGraphPin(PGPIN_INPUT, "rotation"),
-            ParticleGraphPin(PGPIN_INPUT, "scale"),
-            ParticleGraphPin(PGPIN_NONE, "out"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "translation"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "rotation"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "scale"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
         })
 {
 }

@@ -99,7 +99,7 @@ void RenderMeshDrawable::UpdateBatches(const FrameInfo& frame)
 RenderMesh::RenderMesh(Context* context)
     : AbstractNodeType(context,
         PinArray{
-            ParticleGraphPin(PGPIN_INPUT, "transform")
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "transform")
         })
     , isWorldSpace_(false)
     , materialsAttr_(Material::GetTypeStatic())

@@ -61,8 +61,8 @@ Curve::Curve(Context* context)
     , duration_(1)
     , isLooped_(false)
     , pins_{
-        ParticleGraphPin(PGPIN_INPUT, "t", VAR_FLOAT),
-        ParticleGraphPin(PGPIN_TYPE_MUTABLE, "out")
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "t", VAR_FLOAT),
+        ParticleGraphPin(ParticleGraphPinFlag::MutableType, "out")
     }
 {
 }
