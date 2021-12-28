@@ -238,17 +238,64 @@ struct PinPattern
 
 struct NodePattern
 {
+    static constexpr size_t ExpectedNumberOfPins = 4;
+
     typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> UpdateFunction;
 
     NodePattern(UpdateFunction&& update, PinPattern&& pin0);
 
-    bool Match(const ea::span<ParticleGraphPin>& pins);
+    bool Match(const ea::span<ParticleGraphPin>& pins) const;
 
-    VariantType EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins, const ParticleGraphPin& outputPin);
+    VariantType EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins, const ParticleGraphPin& outputPin) const;
 
     UpdateFunction updateFunction_;
-    ea::fixed_vector<PinPattern, 4> in_;
+    ea::fixed_vector<PinPattern, ExpectedNumberOfPins> in_;
 };
+
+
+/// Graph node that adapts to input pins dynamically.
+class URHO3D_API AdaptiveGraphNode : public ParticleGraphNode
+{
+public:
+    struct Instance : public ParticleGraphNodeInstance
+    {
+        /// Construct.
+        explicit Instance(AdaptiveGraphNode* node, const NodePattern& pattern);
+
+        /// Update particles.
+        virtual void Update(UpdateContext& context);
+
+        AdaptiveGraphNode* node_;
+        const NodePattern& pattern_;
+    };
+
+    /// Construct.
+    explicit AdaptiveGraphNode(Context* context, const ea::vector<NodePattern>& patterns);
+
+    /// Get number of pins.
+    unsigned GetNumPins() const override;
+
+    /// Get pin by index.
+    ParticleGraphPin& GetPin(unsigned index) override;
+
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() override;
+
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+protected:
+    /// Evaluate runtime output pin type.
+    VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
+
+    /// Update particles.
+    void Update(UpdateContext& context, const NodePattern& pattern);
+
+protected:
+    const ea::vector<NodePattern>& patterns_;
+    ea::fixed_vector < ParticleGraphPin, NodePattern::ExpectedNumberOfPins> pins_;
+};
+
 
 template <template <typename> typename T, typename ... Args>
 void SelectByVariantType(VariantType variantType, Args... args)

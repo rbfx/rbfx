@@ -37,16 +37,73 @@ NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0)
 {
 }
 
-bool NodePattern::Match(const ea::span<ParticleGraphPin>& pins)
-{
+bool NodePattern::Match(const ea::span<ParticleGraphPin>& pins) const {
     return false;
 }
 
 VariantType NodePattern::EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins,
-    const ParticleGraphPin& outputPin)
+    const ParticleGraphPin& outputPin) const
 {
     return VAR_NONE;
 }
+
+AdaptiveGraphNode::Instance::Instance(AdaptiveGraphNode* op, const NodePattern& pattern)
+    : node_(op)
+    , pattern_(pattern)
+{
+}
+
+void AdaptiveGraphNode::Instance::Update(UpdateContext& context)
+{
+    node_->Update(context, pattern_);
+}
+
+AdaptiveGraphNode::AdaptiveGraphNode(Context* context, const ea::vector<NodePattern>& patterns)
+    : ParticleGraphNode(context)
+    , patterns_(patterns)
+{
+}
+
+unsigned AdaptiveGraphNode::GetNumPins() const { return static_cast<unsigned>(pins_.size()); }
+
+ParticleGraphPin& AdaptiveGraphNode::GetPin(unsigned index) { return pins_[index]; }
+
+unsigned AdaptiveGraphNode::EvaluateInstanceSize() { return sizeof(Instance); }
+
+ParticleGraphNodeInstance* AdaptiveGraphNode::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    for (const NodePattern& p : patterns_)
+    {
+        if (p.Match(pins_))
+        {
+            return new (ptr) Instance(this, p);
+        }
+    }
+    return nullptr;
+}
+
+VariantType AdaptiveGraphNode::EvaluateOutputPinType(ParticleGraphPin& pin)
+{
+    for (const NodePattern& p : patterns_)
+    {
+        const VariantType type = p.EvaluateOutputPinType(pins_, pin);
+        if (type != VAR_NONE)
+            return type;
+    }
+    return VAR_NONE;
+}
+
+void AdaptiveGraphNode::Update(UpdateContext& context, const NodePattern& pattern)
+{
+    ea::fixed_vector<ParticleGraphPinRef, NodePattern::ExpectedNumberOfPins> pinRefs;
+    for (auto& pin: pins_)
+    {
+        pinRefs.push_back(pin.GetMemoryReference());
+    }
+
+    return pattern.updateFunction_(context, pinRefs.data());
+}
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D
