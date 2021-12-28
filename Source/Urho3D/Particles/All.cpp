@@ -72,6 +72,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     MakeMatrix3x4::RegisterObject(system);
     Sphere::RegisterObject(system);
     Hemisphere::RegisterObject(system);
+    LimitVelocity::RegisterObject(system);
 }
 
 }

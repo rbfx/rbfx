@@ -22,7 +22,6 @@
 
 #include "ParticleGraphSystem.h"
 
-#include "All.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphEmitter.h"
 #include "ParticleGraphLayer.h"
@@ -32,6 +31,12 @@
 
 namespace Urho3D
 {
+namespace ParticleGraphNodes
+{
+
+void RegisterGraphNodes(ParticleGraphSystem* system);
+
+}
 
 ParticleGraphSystem::ParticleGraphSystem(Context* context)
     : Object(context)

@@ -73,6 +73,27 @@ void Move::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Move>();
 }
 
+LimitVelocity::LimitVelocity(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "limit"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
+        })
+    , dampen_(0.0f)
+{
+}
+
+void LimitVelocity::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<LimitVelocity>();
+    URHO3D_ACCESSOR_ATTRIBUTE("Dampen", GetDampen, SetDampen, float, 0, AM_DEFAULT);
+}
+
+void LimitVelocity::SetDampen(float value) { dampen_ = value; }
+
+float LimitVelocity::GetDampen() const { return dampen_; }
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

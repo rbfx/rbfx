@@ -99,7 +99,7 @@ public:
     }
 };
 
-/// Get time step of the current frame.
+/// Move position according to velocity and time step of the current frame.
 class URHO3D_API Move : public AbstractNode<Move, Vector3, Vector3, Vector3>
 {
     URHO3D_OBJECT(Move, ParticleGraphNode)
@@ -121,6 +121,40 @@ public:
             pin2[i] = pin0[i] + context.timeStep_ * pin1[i];
         }
     }
+};
+
+/// Move position according to velocity and time step of the current frame.
+class URHO3D_API LimitVelocity : public AbstractNode<LimitVelocity, Vector3, float, Vector3>
+{
+    URHO3D_OBJECT(LimitVelocity, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit LimitVelocity(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& vel = ea::get<0>(spans);
+        auto& speed = ea::get<1>(spans);
+        auto& result = ea::get<2>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            result[i] = vel[i];
+        }
+    }
+
+    /// Set dampen.
+    /// @property
+    void SetDampen(float value);
+    /// Get dampen.
+    /// @property
+    float GetDampen() const;
+protected:
+
+    float dampen_{0.0f};
 };
 
 } // namespace ParticleGraphNodes
