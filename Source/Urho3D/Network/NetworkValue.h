@@ -27,6 +27,7 @@
 #include "../Core/Assert.h"
 #include "../Math/MathDefs.h"
 #include "../Math/Quaternion.h"
+#include "../Network/NetworkTime.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/vector.h>
@@ -34,150 +35,166 @@
 namespace Urho3D
 {
 
-/// Value stored at multiple points of time in ring buffer.
+/// Helper class to manipulate values stored in NetworkValue.
 template <class T>
-class NetworkValue
+struct NetworkValueTraits
+{
+    static T Interpolate(const T& lhs, const T& rhs, float blendFactor) { return Lerp(lhs, rhs, blendFactor); }
+
+    static T Extrapolate(const T& first, const T& second) { return second + (second - first); }
+};
+
+template <>
+struct NetworkValueTraits<Quaternion>
+{
+    static Quaternion Interpolate(const Quaternion& lhs, const Quaternion& rhs, float blendFactor)
+    {
+        return lhs.Slerp(rhs, blendFactor);
+    }
+
+    static Quaternion Extrapolate(const Quaternion& first, const Quaternion& second)
+    {
+        return (second * first.Inverse()) * second;
+    }
+};
+
+/// Value stored at multiple points of time in ring buffer.
+/// If value was set at least once, it will have at least one valid value forever.
+/// On Server, and values are treated as reliable and piecewise-continuous.
+/// On Client, values may be extrapolated if frames are missing.
+template <class T, class Traits = NetworkValueTraits<T>>
+class NetworkValue : private Traits
 {
 public:
-    using Container = ea::vector<ea::optional<T>>;
+    NetworkValue() = default;
+    explicit NetworkValue(unsigned capacity)
+        : values_(capacity)
+    {
+    }
+    explicit NetworkValue(const Traits& traits, unsigned capacity)
+        : Traits(traits)
+        , values_(capacity)
+    {
+    }
 
-    /// Resize container preserving contents when possible.
+    unsigned GetCapacity() const { return values_.size(); }
+    unsigned GetFirstFrame() const { return lastFrame_ - GetCapacity(); }
+    unsigned GetLastFrame() const { return lastFrame_; }
+
+    /// Resize container and reset contents except latest frame.
     void Resize(unsigned capacity)
     {
         URHO3D_ASSERT(capacity > 0);
 
-        const unsigned oldCapacity = values_.size();
-        if (capacity == oldCapacity)
-        {
-            return;
-        }
-        else if (oldCapacity == 0)
-        {
-            // Initialize normally first time
-            values_.resize(capacity);
-        }
-        else if (capacity > oldCapacity)
-        {
-            // Insert new elements after last one, it will not affect index of last one
-            values_.insert(ea::next(values_.begin(), lastIndex_ + 1), capacity - oldCapacity, ea::nullopt);
-        }
-        else
-        {
-            // Remove elements starting from the old ones
-            values_ = AsVector();
-            values_.erase(values_.begin(), ea::next(values_.begin(), oldCapacity - capacity));
-            lastIndex_ = values_.size() - 1;
-        }
+        NetworkValue<T> result(capacity);
+        if (initialized_)
+            result.Replace(lastFrame_, values_[lastIndex_]->value_);
+
+        *this = ea::move(result);
     }
 
     /// Set value for given frame if not set. No op otherwise.
-    void Append(unsigned frame, const T& value) { SetInternal(frame, value, false); }
+    void Append(unsigned frame, const T& value) { SetInternal(frame, value, false, DefaultPenalty); }
 
     /// Set value for given frame. Overwrites previous value.
-    void Replace(unsigned frame, const T& value) { SetInternal(frame, value, true); }
+    void Replace(unsigned frame, const T& value) { SetInternal(frame, value, true, DefaultPenalty); }
 
-    /// Extrapolate value into specified frame if it's uninitialized.
-    /// Return true if new value was filled.
-    bool ExtrapolateIfEmpty(unsigned frame)
+    /// Return whether the frame is contained in the buffer (it may still have no value).
+    bool Contains(unsigned frame) const
     {
-        const auto nearestValidFrame = GetNearestValidFrame(frame);
-        if (!nearestValidFrame || *nearestValidFrame == frame)
-            return false;
-
-        const auto value = GetValue(*nearestValidFrame);
-        URHO3D_ASSERT(value);
-        Append(frame, *value);
-        return true;
-    }
-
-    /// Return as normal vector of values. The last element is the latest appended value.
-    Container AsVector() const
-    {
-        const unsigned capacity = values_.size();
-
-        Container result(capacity);
-        for (unsigned i = 0; i < capacity; ++i)
-            result[i] = values_[(lastIndex_ + i + 1) % capacity];
-        return result;
-    }
-
-    /// Return raw value or null if nothing is stored.
-    ea::optional<T> GetValue(unsigned frame) const
-    {
-        const unsigned capacity = values_.size();
         const int behind = static_cast<int>(lastFrame_ - frame);
-        if (behind < 0 || behind >= capacity)
-            return ea::nullopt;
-
-        const unsigned wrappedIndex = (lastIndex_ + capacity - behind) % capacity;
-        return values_[wrappedIndex];
+        return behind >= 0 && behind < values_.size();
     }
 
-    /// Return specified frame, or nearest frame with valid value prior to specified one.
-    ea::optional<unsigned> GetNearestValidFrame(unsigned frame) const
+    /// Return raw value at given frame.
+    ea::optional<T> GetRaw(unsigned frame) const
     {
-        const unsigned capacity = values_.size();
-        const int offset = ea::max(0, static_cast<int>(lastFrame_ - frame));
-        if (offset >= capacity)
-            return ea::nullopt;
-
-        for (unsigned behind = offset; behind < capacity; ++behind)
+        if (Contains(frame))
         {
-            const unsigned wrappedIndex = (lastIndex_ + capacity - behind) % capacity;
-            if (values_[wrappedIndex])
-                return lastFrame_ - behind;
+            if (const auto& frameValue = values_[FrameToIndex(frame)])
+                return frameValue->value_;
         }
         return ea::nullopt;
     }
 
-    /// Return nearest future frame with valid value.
-    /// Returns last frame if nothing else is found.
-    unsigned GetNearestValidFutureFrame(unsigned frame) const
+    /// Return closest valid raw value, if possible. Prior values take precedence.
+    ea::optional<T> GetClosestRaw(unsigned frame) const
     {
-        const unsigned capacity = values_.size();
-        const int offset = ea::max(0, static_cast<int>(lastFrame_ - frame));
+        if (const auto value = GetRaw(frame))
+            return *value;
 
-        if (offset >= 2)
+        const int behind = static_cast<int>(lastFrame_ - frame);
+        if (behind > 0)
         {
-            for (unsigned behind = offset - 1; behind > 0; --behind)
+            const unsigned capacity = values_.size();
+            const int clampedBehind = Clamp<int>(behind, 0, capacity - 1);
+
+            // Check frames before `frame`
+            const unsigned numFramesBefore = capacity - (clampedBehind + 1);
+            for (unsigned i = 1; i <= numFramesBefore; ++i)
             {
-                const unsigned wrappedIndex = (lastIndex_ + capacity - behind) % capacity;
-                if (values_[wrappedIndex])
-                    return lastFrame_ - behind;
+                if (const auto pastValue = GetRaw(frame - i))
+                    return *pastValue;
+            }
+
+            // Check frames after `frame`
+            const unsigned numFramesAfter = clampedBehind;
+            for (unsigned i = 1; i <= numFramesAfter; ++i)
+            {
+                if (const auto futureValue = GetRaw(frame + i))
+                    return *futureValue;
             }
         }
-        return lastFrame_;
+
+        URHO3D_ASSERT(behind <= 0);
+        return *GetRaw(lastFrame_);
     }
 
-    /// Return sampled value between specified frame and the next one.
-    ea::optional<T> GetBlendedValue(unsigned frame, float blendFactor) const
+    /// Client-side sampling: repair missing values if necessary and sample value.
+    ea::optional<T> RepairAndSample(const NetworkTime& time, unsigned maxExtrapolationPenalty = 0)
     {
-        const auto value1 = GetValue(frame);
-        const auto value2 = GetValue(frame + 1);
+        if (initialized_)
+        {
+            const unsigned frame = time.GetFrame();
+            RepairFrame(frame + 1, maxExtrapolationPenalty);
 
-        if (value1 && value2)
-            return InterpolateOnNetworkClient(*value1, *value2, blendFactor);
-        else if (value1)
-            return value1;
-        else
-            return value2;
+            const auto frameValue = GetRaw(frame);
+            const auto nextFrameValue = GetRaw(frame + 1);
+            if (frameValue && nextFrameValue)
+                return this->Interpolate(*frameValue, *nextFrameValue, time.GetSubFrame());
+        }
+        return ea::nullopt;
     }
 
-    /// Return valid sampled value or closest available value.
-    T GetBlendedValueOrNearest(unsigned frame, float blendFactor)
+    /// Server-side sampling: interpolate between consequent frames
+    /// or return value of the closest valid frame.
+    T SampleValid(const NetworkTime& time) const
     {
-        if (auto blendedValue = GetBlendedValue(frame, blendFactor))
-            return *blendedValue;
+        const unsigned frame = time.GetFrame();
 
-        if (auto previousValidFrame = GetNearestValidFrame(frame))
-            return *GetValue(*previousValidFrame);
+        const auto frameValue = GetRaw(frame);
+        if (frameValue && time.GetSubFrame() < M_LARGE_EPSILON)
+            return *frameValue;
 
-        const unsigned futureValidFrame = GetNearestValidFutureFrame(frame);
-        return *GetValue(futureValidFrame);
+        const auto nextFrameValue = GetRaw(frame + 1);
+        if (frameValue && nextFrameValue)
+            return this->Interpolate(*frameValue, *nextFrameValue, time.GetSubFrame());
+
+        return GetClosestRaw(frame);
     }
+
+    T SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
 
 private:
-    void SetInternal(unsigned frame, const T& value, bool overwrite)
+    static constexpr unsigned DefaultPenalty = 0;
+
+    struct FrameValue
+    {
+        T value_{};
+        unsigned extrapolationPenalty_{};
+    };
+
+    void SetInternal(unsigned frame, const T& value, bool overwrite, unsigned penalty)
     {
         URHO3D_ASSERT(!values_.empty());
 
@@ -187,7 +204,7 @@ private:
             initialized_ = true;
             lastFrame_ = frame;
             lastIndex_ = 0;
-            values_[0] = value;
+            values_[0] = FrameValue{value, penalty};
             return;
         }
 
@@ -199,7 +216,7 @@ private:
             // Roll buffer forward on positive delta, resetting intermediate values
             lastFrame_ += offset;
             lastIndex_ = (lastIndex_ + offset) % capacity;
-            values_[lastIndex_] = value;
+            values_[lastIndex_] = FrameValue{value, penalty};
 
             const unsigned uninitializedBeginBehind = 1;
             const unsigned uninitializedEndBehind = ea::min(static_cast<unsigned>(offset), capacity);
@@ -217,26 +234,64 @@ private:
             {
                 const unsigned wrappedIndex = (lastIndex_ + capacity - behind) % capacity;
                 if (overwrite || !values_[wrappedIndex])
-                    values_[wrappedIndex] = value;
+                    values_[wrappedIndex] = FrameValue{value, penalty};
             }
         }
     }
 
+    ea::optional<unsigned> GetLatestValidFrame(unsigned frame) const
+    {
+        const int behind = static_cast<int>(lastFrame_ - frame);
+        if (behind < 0)
+            return lastFrame_;
+        if (behind >= values_.size())
+            return ea::nullopt;
+
+        const unsigned firstFrame = GetFirstFrame();
+        for (unsigned validFrame = frame; validFrame != firstFrame - 1; --validFrame)
+        {
+            if (values_[FrameToIndex(validFrame)])
+                return validFrame;
+        }
+
+        return ea::nullopt;
+    }
+
+    void RepairFrame(unsigned frame, unsigned maxExtrapolationPenalty)
+    {
+        const auto latestValidFrame = GetLatestValidFrame(frame);
+        if (!latestValidFrame)
+            return;
+
+        for (unsigned baseFrame = *latestValidFrame; baseFrame != frame; ++baseFrame)
+        {
+            const auto nextFrame = ExtrapolateNextFrameValue(baseFrame, maxExtrapolationPenalty);
+            SetInternal(baseFrame + 1, nextFrame.value_, true, nextFrame.extrapolationPenalty_);
+        }
+    }
+
+    FrameValue ExtrapolateNextFrameValue(unsigned frame, unsigned maxExtrapolationPenalty)
+    {
+        const unsigned index = FrameToIndex(frame);
+        const unsigned penalty = values_[index]->extrapolationPenalty_;
+
+        T nextValue = values_[index]->value_;
+        if (penalty < maxExtrapolationPenalty || maxExtrapolationPenalty == M_MAX_UNSIGNED)
+        {
+            if (const auto prevValue = GetRaw(frame - 1))
+                nextValue = this->Extrapolate(*prevValue, nextValue);
+        }
+
+        const unsigned nextPenalty = penalty != M_MAX_UNSIGNED ? penalty + 1 : penalty;
+        return {nextValue, nextPenalty};
+    }
+
+    unsigned FrameToIndex(unsigned frame) const { return (lastIndex_ + (frame - lastFrame_ + values_.size())) % values_.size(); }
+
     bool initialized_{};
     unsigned lastFrame_{};
     unsigned lastIndex_{};
-    Container values_;
+    ea::vector<ea::optional<FrameValue>> values_;
 };
-
-template <class T>
-T InterpolateOnNetworkClient(const T& lhs, const T& rhs, float blendFactor)
-{
-    return Lerp(lhs, rhs, blendFactor);
-}
-
-inline Quaternion InterpolateOnNetworkClient(const Quaternion& lhs, const Quaternion& rhs, float blendFactor)
-{
-    return lhs.Slerp(rhs, blendFactor);
-}
 
 }

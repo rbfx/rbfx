@@ -128,15 +128,10 @@ unsigned DefaultNetworkObject::EvaluateUnreliableDeltaMask()
 
 void DefaultNetworkObject::InterpolateState(const NetworkTime& time)
 {
-    const unsigned currentFrame = time.GetFrame();
-    const float blendFactor = time.GetSubFrame();
-
-    worldPositionTrace_.ExtrapolateIfEmpty(currentFrame + 1);
-    if (auto newWorldPosition = worldPositionTrace_.GetBlendedValue(currentFrame, blendFactor))
+    if (auto newWorldPosition = worldPositionTrace_.RepairAndSample(time))
         node_->SetWorldPosition(*newWorldPosition);
 
-    worldRotationTrace_.ExtrapolateIfEmpty(currentFrame + 1);
-    if (auto newWorldRotation = worldRotationTrace_.GetBlendedValue(currentFrame, blendFactor))
+    if (auto newWorldRotation = worldRotationTrace_.RepairAndSample(time))
         node_->SetWorldRotation(*newWorldRotation);
 }
 
