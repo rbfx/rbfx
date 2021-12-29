@@ -138,11 +138,28 @@ public:
     static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
     {
         auto& vel = ea::get<0>(spans);
-        auto& speed = ea::get<1>(spans);
+        auto& limit = ea::get<1>(spans);
         auto& result = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+        const float dampen = instance->GetGraphNodeInstace()->dampen_;
+        if (dampen <= 1e-6f || context.timeStep_ < 1e-6f)
         {
-            result[i] = vel[i];
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                result[i] = vel[i];
+            }
+        }
+        else
+        {
+            const auto t = 1.0f - powf(1.0f - dampen, context.timeStep_);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                const float speed = vel[i].Length();
+                const float limitVal = limit[i];
+                if (speed > limitVal + 1e-6f)
+                {
+                    result[i] = vel[i] * (Urho3D::Lerp(speed, limitVal, t) / speed);
+                }
+            }
         }
     }
 
