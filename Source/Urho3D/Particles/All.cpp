@@ -73,6 +73,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Sphere::RegisterObject(system);
     Hemisphere::RegisterObject(system);
     LimitVelocity::RegisterObject(system);
+    ApplyForce::RegisterObject(system);
 }
 
 }

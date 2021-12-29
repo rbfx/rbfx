@@ -47,6 +47,8 @@ Bounce::Bounce(Context* context)
 void Bounce::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<Bounce>();
+    URHO3D_ACCESSOR_ATTRIBUTE("Dampen", GetDampen, SetDampen, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("BounceFactor", GetBounceFactor, SetBounceFactor, float, 1.0f, AM_DEFAULT);
 }
 
 void Bounce::RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity)
@@ -62,14 +64,18 @@ void Bounce::RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* 
         if (distance > 1e-6f)
         {
             auto wp = node->LocalToWorld(pos);
-            physics->RaycastSingle(res, Ray(wp, offset * (1.0f / distance)), distance);
+            const float radius = 0.1f;
+            physics->SphereCast(res, Ray(wp, offset * (1.0f / distance)), radius, distance);
             if (res.body_)
             {
                 wp = wp.Lerp(res.position_, 0.99f);
                 pos = node->WorldToLocal(wp);
-                const float bounceFactor = 1.0f;
-                const auto bounceScale = (1.0f + bounceFactor) * velocity.DotProduct(res.normal_);
+                const auto bounceScale = (1.0f + bounceFactor_) * velocity.DotProduct(res.normal_);
                 velocity -= res.normal_ * bounceScale;
+                if (dampen_ > 0.0f)
+                {
+                    velocity *= (1.0f-dampen_);
+                }
             }
             else
             {

@@ -74,6 +74,14 @@ public:
             bounce->RayCastAndBounce(context, node, physics, pin2[i], pin3[i]);
         }
     }
+    float GetDampen() const { return dampen_; }
+    void SetDampen(float dampen) { dampen_ = dampen; }
+    float GetBounceFactor() const { return bounceFactor_; }
+    void SetBounceFactor(float bounceFactor) { bounceFactor_ = bounceFactor; }
+
+protected:
+    float dampen_{0.0f};
+    float bounceFactor_{1.0f};
 };
 
 } // namespace ParticleGraphNodes

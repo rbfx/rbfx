@@ -94,6 +94,21 @@ void LimitVelocity::SetDampen(float value) { dampen_ = value; }
 
 float LimitVelocity::GetDampen() const { return dampen_; }
 
+ApplyForce::ApplyForce(Context* context)
+    : AbstractNodeType(context,
+        PinArray{
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
+            ParticleGraphPin(ParticleGraphPinFlag::Input, "force"),
+            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
+        })
+{
+}
+
+void ApplyForce::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<ApplyForce>();
+}
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

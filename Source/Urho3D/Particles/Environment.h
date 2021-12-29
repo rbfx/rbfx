@@ -174,6 +174,31 @@ protected:
     float dampen_{0.0f};
 };
 
+/// Move position according to velocity and time step of the current frame.
+class URHO3D_API ApplyForce : public AbstractNode<ApplyForce, Vector3, Vector3, Vector3>
+{
+    URHO3D_OBJECT(ApplyForce, ParticleGraphNode)
+public:
+    /// Construct.
+    explicit ApplyForce(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
+
+    template <typename Tuple>
+    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    {
+        auto& vel = ea::get<0>(spans);
+        auto& force = ea::get<1>(spans);
+        auto& result = ea::get<2>(spans);
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            result[i] = vel[i] + force[i]*context.timeStep_;
+        }
+    }
+
+};
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

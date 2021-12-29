@@ -114,7 +114,7 @@ public:
 
 
 /// Make Matrix3x4.
-class URHO3D_API MakeMatrix3x4 : public AbstractNode<MakeMatrix3x4, Vector3, Quaternion, float, Matrix3x4>
+class URHO3D_API MakeMatrix3x4 : public AbstractNode<MakeMatrix3x4, Vector3, Quaternion, Vector3, Matrix3x4>
 {
     URHO3D_OBJECT(MakeMatrix3x4, ParticleGraphNode);
 
