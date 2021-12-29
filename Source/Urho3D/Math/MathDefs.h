@@ -99,7 +99,7 @@ inline T Abs(T value) { return value >= 0.0 ? value : -value; }
 /// Return the sign of a float (-1, 0 or 1).
 /// @specialization{float}
 template <class T>
-inline T Sign(T value) { return value > 0.0 ? 1.0 : (value < 0.0 ? -1.0 : 0.0); }
+inline T Sign(T value) { return value > 0 ? T(1) : (value < 0 ? T(-1) : T(0)); }
 
 /// Convert degrees to radians.
 template <class T>
