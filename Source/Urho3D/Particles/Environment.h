@@ -150,7 +150,7 @@ public:
         }
         else
         {
-            const auto t = 1.0f - powf(1.0f - dampen, context.timeStep_);
+            const auto t = 1.0f - powf(1.0f - dampen, 20.0f * context.timeStep_);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 const float speed = vel[i].Length();
