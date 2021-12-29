@@ -62,6 +62,12 @@ public:
     void ReadUnreliableDelta(unsigned frame, VectorBuffer& src) override;
     /// @}
 
+    /// Getters for network properties
+    /// @{
+    Vector3 GetTemporalWorldPosition(const NetworkTime& time) const { return worldPositionTrace_.SampleValid(time); }
+    Quaternion GetTemporalWorldRotation(const NetworkTime& time) const { return worldRotationTrace_.SampleValid(time); }
+    /// @}
+
 protected:
     /// Evaluates the mask for reliable delta update. Called exactly once by WriteReliableDelta.
     virtual unsigned EvaluateReliableDeltaMask();

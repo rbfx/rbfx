@@ -339,10 +339,10 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     };
 
     auto serverNodeA = serverScene->CreateChild("Node");
-    serverNodeA->CreateComponent<DefaultNetworkObject>();
+    auto serverObjectA = serverNodeA->CreateComponent<DefaultNetworkObject>();
 
     auto serverNodeB = serverNodeA->CreateChild("Node Child");
-    serverNodeB->CreateComponent<DefaultNetworkObject>();
+    auto serverObjectB = serverNodeB->CreateComponent<DefaultNetworkObject>();
     serverNodeB->SetPosition({ 0.0f, 0.0f, 1.0f });
 
     // Animate objects forever
@@ -356,6 +356,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
     // Spend some time alone
     Tests::NetworkSimulator sim(serverScene);
+    const auto& serverNetworkManager = serverScene->GetNetworkManager()->AsServer();
     sim.SimulateTime(9.0f);
 
     // Add clients and wait for synchronization
@@ -363,16 +364,22 @@ TEST_CASE("Position and rotation are synchronized between client and server")
         sim.AddClient(clientScene, quality);
     sim.SimulateTime(9.0f);
 
-    // Expect positions to be roughly synchronized
+    // Expect positions and rotations to be precisely synchronized
     const float expectedDelay = 0.2;
     for (Scene* clientScene : clientScenes)
     {
+        const NetworkTime clientTime = clientScene->GetNetworkManager()->AsClient().GetClientTime();
+        const double delay = serverNetworkManager.GetServerTime() - clientTime;
+
         auto clientNodeA = clientScene->GetChild("Node", true);
         auto clientNodeB = clientScene->GetChild("Node Child", true);
 
-        const Vector3 positionA = clientNodeA->GetWorldPosition() + expectedDelay * moveSpeedNodeA * Vector3::LEFT;
-        REQUIRE(serverNodeA->GetWorldPosition().Equals(positionA, 0.1f));
-    }
+        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(expectedDelay).margin(0.01));
 
-    //sim.SimulateTime(9.0f);
+        REQUIRE(serverObjectA->GetTemporalWorldPosition(clientTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverObjectA->GetTemporalWorldRotation(clientTime).Equals(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));
+
+        REQUIRE(serverObjectB->GetTemporalWorldPosition(clientTime).Equals(clientNodeB->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverObjectB->GetTemporalWorldRotation(clientTime).Equals(clientNodeB->GetWorldRotation(), M_LARGE_EPSILON));
+    }
 }

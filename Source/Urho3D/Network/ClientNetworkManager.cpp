@@ -41,10 +41,9 @@ namespace Urho3D
 namespace
 {
 
-void ResetClock(ClientClock& clock, unsigned currentFrame)
+void ResetClock(ClientClock& clock, const NetworkTime& serverTime)
 {
-    clock.serverTime_ = NetworkTime{currentFrame};
-
+    clock.serverTime_ = serverTime;
     clock.lastSynchronizationFrame_ = clock.serverTime_.GetFrame();
     clock.synchronizationErrors_.clear();
     clock.synchronizationErrorsSorted_.clear();
@@ -310,8 +309,8 @@ void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageD
 void ClientNetworkManager::ProcessTimeCorrection()
 {
     // Accumulate between client predicted time and server time
-    const unsigned currentServerTime = clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_));
-    const double clockError = GetCurrentFrameDeltaRelativeTo(currentServerTime);
+    const NetworkTime currentServerTime = NetworkTime{clock_->latestServerFrame_} + GetPingInFrames(*clock_);
+    const double clockError = currentServerTime - clock_->serverTime_;
     AddClockError(*clock_, clockError);
 
     // Snap to new time if error is too big
@@ -422,13 +421,13 @@ void ClientNetworkManager::OnInputProcessed()
     UpdateSmoothPing(*clock_, settings_.pingSmoothConstant_);
 
     const double interpolationDelay = settings_.sampleDelayInSeconds_ + GetSmoothPingInSeconds(*clock_);
-    const NetworkTime clientTime = clock_->serverTime_ - interpolationDelay * clock_->updateFrequency_;
+    clock_->clientTime_ = clock_->serverTime_ - interpolationDelay * clock_->updateFrequency_;
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)
     {
         if (networkObject)
-            networkObject->InterpolateState(clientTime);
+            networkObject->InterpolateState(clock_->clientTime_);
     }
 }
 

@@ -69,6 +69,7 @@ struct ClientClock
     double smoothPing_{};
 
     NetworkTime serverTime_;
+    NetworkTime clientTime_;
     float frameDuration_{};
     unsigned lastSynchronizationFrame_{};
 
@@ -95,6 +96,7 @@ public:
     unsigned GetPingInMs() const { return clock_ ? clock_->ping_ : 0; }
     bool IsSynchronized() const { return clock_.has_value(); }
     NetworkTime GetServerTime() const { return clock_ ? clock_->serverTime_ : NetworkTime{}; }
+    NetworkTime GetClientTime() const { return clock_ ? clock_->clientTime_ : NetworkTime{}; }
 
     unsigned GetCurrentFrame() const { return GetServerTime().GetFrame(); }
     float GetCurrentBlendFactor() const { return GetServerTime().GetSubFrame(); }

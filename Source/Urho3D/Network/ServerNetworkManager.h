@@ -144,6 +144,7 @@ public:
     void SetCurrentFrame(unsigned frame);
 
     ea::string ToString() const;
+    NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
     unsigned GetCurrentFrame() const { return currentFrame_; }
     unsigned GetTraceCapacity() const { return CeilToInt(settings_.traceDurationInSeconds_ * updateFrequency_); }
 
