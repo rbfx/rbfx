@@ -100,7 +100,8 @@ bool ParticleGraphPin::SetValueType(VariantType valueType)
         return true;
     if (!flags_.Test(ParticleGraphPinFlag::MutableType))
     {
-        URHO3D_LOGERROR("Can't change type of {} pin.", GetName());
+        URHO3D_LOGERROR("Can't change type of {} pin from {} to {}.", GetName(),
+            Variant::GetTypeNameList()[requestedValueType_], Variant::GetTypeNameList()[valueType]);
         return false;
     }
     requestedValueType_ = valueType;
