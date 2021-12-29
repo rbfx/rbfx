@@ -59,8 +59,8 @@ void NetworkTime::AddDelta(double delta)
 
 double NetworkTime::GetDelta(const NetworkTime& origin) const
 {
-    const auto deltaInt = static_cast<int>(origin.frame_ - frame_);
-    const double deltaFract = origin.subFrame_ - subFrame_;
+    const auto deltaInt = static_cast<int>(frame_ - origin.frame_);
+    const double deltaFract = subFrame_ - origin.subFrame_;
     return deltaInt + deltaFract;
 }
 
