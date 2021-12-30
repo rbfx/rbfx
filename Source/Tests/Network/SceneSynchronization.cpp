@@ -24,6 +24,8 @@
 #include "../NetworkUtils.h"
 #include "../SceneUtils.h"
 
+#include <Urho3D/Graphics/Light.h>
+#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Network/DefaultNetworkObject.h>
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Network/NetworkManager.h>
@@ -31,6 +33,50 @@
 #include <Urho3D/Network/NetworkValue.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/XMLFile.h>
+
+namespace
+{
+
+SharedPtr<XMLFile> CreateTestPrefab(Context* context)
+{
+    auto node = MakeShared<Node>(context);
+    node->SetName("Root");
+    auto staticModel = node->CreateComponent<StaticModel>();
+    staticModel->SetCastShadows(true);
+
+    auto childNode = node->CreateChild("Child");
+    childNode->SetPosition({0.0f, 1.0f, 0.0f});
+    auto light = childNode->CreateComponent<Light>();
+    light->SetCastShadows(true);
+    light->SetColor(Color::RED);
+
+    auto prefab = MakeShared<XMLFile>(context);
+    XMLElement prefabRootElement = prefab->CreateRoot("node");
+    node->SaveXML(prefabRootElement);
+    return prefab;
+}
+
+Resource* GetOrCreateResource(Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
+{
+    auto cache = context->GetSubsystem<ResourceCache>();
+    if (auto resource = cache->GetResource(type, name))
+        return resource;
+
+    auto resource = factory();
+    resource->SetName(name);
+    cache->AddManualResource(resource);
+    return resource;
+}
+
+template <class T>
+T* GetOrCreateResource(Context* context, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
+{
+    return dynamic_cast<T*>(GetOrCreateResource(context, T::GetTypeStatic(), name, factory));
+}
+
+}
 
 TEST_CASE("Time is synchronized between client and server")
 {
@@ -381,5 +427,82 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(serverObjectB->GetTemporalWorldPosition(clientTime).Equals(clientNodeB->GetWorldPosition(), M_LARGE_EPSILON));
         REQUIRE(serverObjectB->GetTemporalWorldRotation(clientTime).Equals(clientNodeB->GetWorldRotation(), M_LARGE_EPSILON));
+    }
+}
+
+TEST_CASE("Prefabs are replicated on clients")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
+
+    auto prefab = GetOrCreateResource<XMLFile>(
+        context, "@/SceneSynchronization/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
+
+    // Setup scenes
+    const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
+    auto serverScene = MakeShared<Scene>(context);
+    SharedPtr<Scene> clientScenes[] = {
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context)
+    };
+
+    // Start simulation
+    Tests::NetworkSimulator sim(serverScene);
+    for (Scene* clientScene : clientScenes)
+        sim.AddClient(clientScene, quality);
+
+    // Create nodes
+    {
+        Node* node1 = serverScene->CreateChild("Node 1");
+        node1->SetPosition({1.0f, 0.0f, 0.0f});
+        auto object1 = node1->CreateComponent<DefaultNetworkObject>();
+        object1->SetClientPrefab(prefab);
+
+        Node* node2 = serverScene->CreateChild("Node 2");
+        node2->SetPosition({2.0f, 0.0f, 0.0f});
+        auto object2 = node2->CreateComponent<DefaultNetworkObject>();
+        object2->SetClientPrefab(prefab);
+    }
+    sim.SimulateTime(10.0f);
+
+    // Expect prefabs replicated
+    for (Scene* clientScene : clientScenes)
+    {
+        auto node1 = clientScene->GetChild("Node 1", true);
+        REQUIRE(node1);
+
+        auto node2 = clientScene->GetChild("Node 2", true);
+        REQUIRE(node2);
+
+        auto node1Child = node1->GetChild("Child");
+        REQUIRE(node1Child);
+
+        auto node2Child = node2->GetChild("Child");
+        REQUIRE(node2Child);
+
+        CHECK(node1->GetWorldPosition().Equals({1.0f, 0.0f, 0.0f}));
+        CHECK(node1Child->GetWorldPosition().Equals({1.0f, 1.0f, 0.0f}));
+        CHECK(node2->GetWorldPosition().Equals({2.0f, 0.0f, 0.0f}));
+        CHECK(node2Child->GetWorldPosition().Equals({2.0f, 1.0f, 0.0f}));
+
+        auto staticModel1 = node1->GetComponent<StaticModel>();
+        REQUIRE(staticModel1);
+
+        auto staticModel2 = node2->GetComponent<StaticModel>();
+        REQUIRE(staticModel2);
+
+        auto light1 = node1Child->GetComponent<Light>();
+        REQUIRE(light1);
+
+        auto light2 = node2Child->GetComponent<Light>();
+        REQUIRE(light2);
+
+        CHECK(staticModel1->GetCastShadows() == true);
+        CHECK(staticModel2->GetCastShadows() == true);
+        CHECK(light1->GetCastShadows() == true);
+        CHECK(light2->GetCastShadows() == true);
+        CHECK(light1->GetColor() == Color::RED);
+        CHECK(light2->GetColor() == Color::RED);
     }
 }

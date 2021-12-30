@@ -25,6 +25,9 @@
 #include "../Core/Context.h"
 #include "../Network/DefaultNetworkObject.h"
 #include "../Scene/Node.h"
+#include "../Scene/SceneResolver.h"
+#include "../Resource/ResourceCache.h"
+#include "../Resource/XMLFile.h"
 
 namespace Urho3D
 {
@@ -36,6 +39,19 @@ DefaultNetworkObject::~DefaultNetworkObject() = default;
 void DefaultNetworkObject::RegisterObject(Context* context)
 {
     context->RegisterFactory<DefaultNetworkObject>();
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Client Prefab", GetClientPrefabAttr, SetClientPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+}
+
+void DefaultNetworkObject::SetClientPrefab(XMLFile* prefab)
+{
+    if (prefab && prefab->GetName().empty())
+    {
+        URHO3D_ASSERTLOG(0, "DefaultNetworkObject::SetClientPrefab is called with unnamed resource");
+        return;
+    }
+
+    clientPrefab_ = prefab;
 }
 
 void DefaultNetworkObject::InitializeOnServer()
@@ -57,6 +73,8 @@ void DefaultNetworkObject::WriteSnapshot(unsigned frame, VectorBuffer& dest)
 {
     const auto parentNetworkId = GetParentNetworkId();
     dest.WriteUInt(static_cast<unsigned>(parentNetworkId));
+
+    dest.WriteString(clientPrefab_ ? clientPrefab_->GetName() : EMPTY_STRING);
 
     dest.WriteString(node_->GetName());
 
@@ -140,6 +158,20 @@ void DefaultNetworkObject::ReadSnapshot(unsigned frame, VectorBuffer& src)
     const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
     SetParentNetworkObject(parentNetworkId);
 
+    const ea::string clientPrefabName = src.ReadString();
+    SetClientPrefabAttr(ResourceRef{XMLFile::GetTypeStatic(), clientPrefabName});
+
+    if (clientPrefab_)
+    {
+        const XMLElement& prefabRootElement = clientPrefab_->GetRoot();
+
+        SceneResolver resolver;
+        unsigned nodeID = prefabRootElement.GetUInt("id");
+        resolver.AddNode(nodeID, node_);
+
+        node_->LoadXML(prefabRootElement, resolver, true, true, LOCAL, false);
+    }
+
     node_->SetName(src.ReadString());
 
     const Vector3 worldPosition = src.ReadVector3();
@@ -175,6 +207,17 @@ void DefaultNetworkObject::ReadUnreliableDelta(unsigned frame, VectorBuffer& src
         worldPositionTrace_.Append(frame, src.ReadVector3());
         worldRotationTrace_.Append(frame, src.ReadQuaternion());
     }
+}
+
+ResourceRef DefaultNetworkObject::GetClientPrefabAttr() const
+{
+    return GetResourceRef(clientPrefab_, XMLFile::GetTypeStatic());
+}
+
+void DefaultNetworkObject::SetClientPrefabAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    SetClientPrefab(cache->GetResource<XMLFile>(value.name_));
 }
 
 }
