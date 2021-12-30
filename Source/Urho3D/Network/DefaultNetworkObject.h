@@ -30,6 +30,8 @@
 namespace Urho3D
 {
 
+class XMLFile;
+
 /// Default implementation of NetworkObject that does some basic replication.
 class URHO3D_API DefaultNetworkObject : public NetworkObject
 {
@@ -46,6 +48,11 @@ public:
     ~DefaultNetworkObject() override;
 
     static void RegisterObject(Context* context);
+
+    /// Attribute modification. Don't do that after replication!
+    /// @{
+    void SetClientPrefab(XMLFile* prefab);
+    /// @}
 
     /// Implementation of NetworkObject
     /// @{
@@ -74,8 +81,16 @@ protected:
     /// Returns the mask for unreliable delta update. Called exactly once by WriteUnreliableDelta.
     virtual unsigned EvaluateUnreliableDeltaMask();
 
+    ResourceRef GetClientPrefabAttr() const;
+    void SetClientPrefabAttr(const ResourceRef& value);
+
 private:
     static const unsigned WorldTransformCooldown = 5;
+
+    /// Attributes
+    /// @{
+    SharedPtr<XMLFile> clientPrefab_;
+    /// @}
 
     /// Delta update caches (for server)
     /// @{

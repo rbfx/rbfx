@@ -1855,11 +1855,12 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
     return true;
 }
 
-bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode)
+bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren, bool rewriteIDs, CreateMode mode, bool removeComponents)
 {
     // Remove all children and components first in case this is not a fresh load
     RemoveAllChildren();
-    RemoveAllComponents();
+    if (removeComponents)
+        RemoveAllComponents();
 
     if (!Animatable::LoadXML(source))
         return false;

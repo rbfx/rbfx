@@ -679,7 +679,7 @@ public:
         CreateMode mode = REPLICATED);
     /// Load components from XML data and optionally load child nodes.
     bool LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED);
+        CreateMode mode = REPLICATED, bool removeComponents = true);
     /// Load components from XML data and optionally load child nodes.
     bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
         CreateMode mode = REPLICATED);
