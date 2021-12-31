@@ -95,6 +95,13 @@ public:
         unsigned lastFrame_{};
     };
 
+    struct InterpolationBase
+    {
+        unsigned firstIndex_{};
+        unsigned secondIndex_{};
+        float blendFactor_{};
+    };
+
     NetworkValueBase() = default;
 
     bool IsInitialized() const { return initialized_; }
@@ -261,6 +268,35 @@ public:
         return {FrameReconstructionMode::Extrapolate, *firstValidFrame, *frameBefore};
     }
 
+    InterpolationBase GetValidFrameInterpolation(const NetworkTime& time) const
+    {
+        const unsigned frame = time.GetFrame();
+        const auto thisOrPastFrame = FindClosestAllocatedFrame(frame, true, false);
+
+        // Optimize for exact queries
+        if (thisOrPastFrame == frame && time.GetSubFrame() < M_LARGE_EPSILON)
+        {
+            const unsigned index = FrameToIndexUnchecked(frame);
+            return InterpolationBase{index, index, 0.0f};
+        }
+
+        const auto nextOrFutureFrame = FindClosestAllocatedFrame(frame + 1, false, true);
+        if (thisOrPastFrame && nextOrFutureFrame)
+        {
+            const unsigned firstIndex = FrameToIndexUnchecked(*thisOrPastFrame);
+            const unsigned secondIndex = FrameToIndexUnchecked(*nextOrFutureFrame);
+            const auto extraPastFrames = static_cast<int>(frame - *thisOrPastFrame);
+            const auto extraFutureFrames = static_cast<int>(*nextOrFutureFrame - frame - 1);
+            const float adjustedFactor =
+                (extraPastFrames + time.GetSubFrame()) / (extraPastFrames + extraFutureFrames + 1);
+            return InterpolationBase{firstIndex, secondIndex, adjustedFactor};
+        }
+
+        const unsigned closestFrame = thisOrPastFrame.value_or(nextOrFutureFrame.value_or(lastFrame_));
+        const unsigned index = FrameToIndexUnchecked(closestFrame);
+        return InterpolationBase{index, index, 0.0f};
+    }
+
     void CollectAllocatedFrames(unsigned firstFrame, unsigned lastFrame, ea::vector<unsigned>& frames) const
     {
         frames.clear();
@@ -315,7 +351,7 @@ public:
         values_.resize(capacity);
     }
 
-    /// Set value for given frame if not set. No op otherwise.
+    /// Set value for given frame if possible.
     void Set(unsigned frame, const T& value)
     {
         if (AllocateFrame(frame))
@@ -340,8 +376,23 @@ public:
         return values_[FrameToIndexUnchecked(closestFrame)];
     }
 
+    /// Server-side sampling: interpolate between consequent frames
+    /// or return value of the closest valid frame.
+    T SampleValid(const NetworkTime& time) const
+    {
+        const InterpolationBase interpolation = GetValidFrameInterpolation(time);
+
+        if (interpolation.firstIndex_ == interpolation.secondIndex_)
+            return values_[interpolation.firstIndex_];
+
+        return Traits::Interpolate(
+            values_[interpolation.firstIndex_], values_[interpolation.secondIndex_], interpolation.blendFactor_);
+    }
+
+    T SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
+
     /// Client-side sampling: sample value reconstructing missing values.
-    ea::optional<T> RepairAndSample(const NetworkTime& time, const NetworkValueExtrapolationSettings& settings = {})
+    ea::optional<T> ReconstructAndSample(const NetworkTime& time, const NetworkValueExtrapolationSettings& settings = {})
     {
         if (!IsInitialized())
             return ea::nullopt;
@@ -364,25 +415,6 @@ public:
 
         return Traits::Interpolate(reconstruct_->values_[0], reconstruct_->values_[1], time.GetSubFrame());
     }
-
-    /// Server-side sampling: interpolate between consequent frames
-    /// or return value of the closest valid frame.
-    T SampleValid(const NetworkTime& time) const
-    {
-        const unsigned frame = time.GetFrame();
-        const auto index = AllocatedFrameToIndex(frame);
-
-        if (index && time.GetSubFrame() < M_LARGE_EPSILON)
-            return values_[*index];
-
-        const auto nextIndex = AllocatedFrameToIndex(frame + 1);
-        if (index && nextIndex)
-            return Traits::Interpolate(values_[*index], values_[*nextIndex], time.GetSubFrame());
-
-        return GetClosestRaw(frame);
-    }
-
-    T SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
 
 private:
     T CalculateReconstructedValue(unsigned frame, const NetworkValueExtrapolationSettings& settings)
@@ -436,7 +468,6 @@ private:
     ea::vector<unsigned> extrapolationFrames_;
 };
 
-#if 0
 /// Helper class to interpolate value spans.
 template <class T, class Traits = NetworkValueTraits<T>>
 class InterpolatedConstSpan
@@ -466,6 +497,7 @@ private:
 };
 
 /// Similar to NetworkValue, except each frame contains an array of elements.
+/// Does not support client-side reconstruction.
 template <class T, class Traits = NetworkValueTraits<T>>
 class NetworkValueVector : private NetworkValueBase
 {
@@ -484,11 +516,16 @@ public:
         values_.resize(size_ * capacity);
     }
 
-    /// Set value for given frame if not set. No op otherwise.
-    void Append(unsigned frame, ValueSpan value) { SetInternal(frame, value, false); }
-
-    /// Set value for given frame. Overwrites previous value.
-    void Replace(unsigned frame, ValueSpan value) { SetInternal(frame, value, true); }
+    /// Set value for given frame if possible.
+    void Set(unsigned frame, ValueSpan value)
+    {
+        if (AllocateFrame(frame))
+        {
+            const unsigned index = FrameToIndexUnchecked(frame);
+            const unsigned count = ea::min<unsigned>(value.size(), size_);
+            ea::copy_n(value.begin(), count, &values_[index * size_]);
+        }
+    }
 
     /// Return raw value at given frame.
     ea::optional<ValueSpan> GetRaw(unsigned frame) const
@@ -501,89 +538,33 @@ public:
     /// Return closest valid raw value, if possible. Prior values take precedence.
     ValueSpan GetClosestRaw(unsigned frame) const
     {
-        if (const auto closestFrame = FindClosestAllocatedFrame(frame, true))
-            return GetSpanForIndex(FrameToIndexUnchecked(*closestFrame));
-
-        URHO3D_ASSERT(0);
-        return *GetRaw(GetLastFrame());
-    }
-
-    /// Client-side sampling: repair missing values if necessary and sample value.
-    ea::optional<InterpolatedValueSpan> RepairAndSample(const NetworkTime& time, unsigned maxExtrapolationPenalty = 0)
-    {
-        const auto callback = [&](unsigned frame, unsigned penalty)
-        {
-            const auto previousIndex = AllocatedFrameToIndex(frame - 2);
-            const unsigned baseIndex = FrameToIndexUnchecked(frame - 1);
-            const unsigned repairedIndex = FrameToIndexUnchecked(frame);
-            const auto nextIndex = AllocatedFrameToIndex(frame + 1);
-
-            const bool isLowPenalty = penalty < maxExtrapolationPenalty || maxExtrapolationPenalty == M_MAX_UNSIGNED;
-
-            for (unsigned i = 0; i < size_; ++i)
-            {
-                const unsigned repairedSubIndex = GetElementIndex(repairedIndex, i);
-                const unsigned baseSubIndex = GetElementIndex(baseIndex, i);
-
-                if (nextIndex)
-                    values_[repairedSubIndex] = Traits::Interpolate(values_[baseSubIndex], values_[GetElementIndex(*nextIndex, i)], 0.5f);
-                else if (isLowPenalty && previousIndex)
-                    values_[repairedSubIndex] = Traits::Extrapolate(values_[GetElementIndex(*previousIndex, i)], values_[baseSubIndex]);
-                else
-                    values_[repairedSubIndex] = values_[baseSubIndex];
-            }
-        };
-
-        const unsigned frame = time.GetFrame();
-        RepairMissingFramesUpTo(frame, callback);
-        RepairMissingFramesUpTo(frame + 1, callback);
-
-        const auto index = AllocatedFrameToIndex(frame);
-        const auto nextIndex = AllocatedFrameToIndex(frame + 1);
-        if (index && nextIndex)
-            return InterpolatedValueSpan{GetSpanForIndex(*index), GetSpanForIndex(*nextIndex), time.GetSubFrame()};
-        return ea::nullopt;
+        const unsigned closestFrame = GetClosestAllocatedFrame(frame);
+        return GetSpanForIndex(FrameToIndexUnchecked(closestFrame));
     }
 
     /// Server-side sampling: interpolate between consequent frames
     /// or return value of the closest valid frame.
     InterpolatedValueSpan SampleValid(const NetworkTime& time) const
     {
-        const unsigned frame = time.GetFrame();
-        const auto index = AllocatedFrameToIndex(frame);
+        const InterpolationBase interpolation = GetValidFrameInterpolation(time);
 
-        if (index && time.GetSubFrame() < M_LARGE_EPSILON)
-            return InterpolatedValueSpan{GetSpanForIndex(*index)};
+        if (interpolation.firstIndex_ == interpolation.secondIndex_)
+            return InterpolatedValueSpan{GetSpanForIndex(interpolation.firstIndex_)};
 
-        const auto nextIndex = AllocatedFrameToIndex(frame + 1);
-        if (index && nextIndex)
-            return InterpolatedValueSpan{GetSpanForIndex(*index), GetSpanForIndex(*nextIndex), time.GetSubFrame()};
-
-        return InterpolatedValueSpan{GetClosestRaw(frame)};
+        return InterpolatedValueSpan{GetSpanForIndex(interpolation.firstIndex_),
+            GetSpanForIndex(interpolation.secondIndex_), interpolation.blendFactor_};
     }
 
     InterpolatedValueSpan SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
 
 private:
-    unsigned GetElementIndex(unsigned index, unsigned subIndex) const { return index * size_ + subIndex; }
-
     ValueSpan GetSpanForIndex(unsigned index) const
     {
         return ValueSpan(values_).subspan(index * size_, size_);
     }
 
-    void SetInternal(unsigned frame, ea::span<const T> value, bool overwrite)
-    {
-        if (AllocateFrame(frame, 0, overwrite))
-        {
-            const unsigned index = FrameToIndexUnchecked(frame);
-            const unsigned count = ea::min<unsigned>(value.size(), size_);
-            ea::copy_n(value.begin(), count, &values_[index * size_]);
-        }
-    }
-
     unsigned size_{};
     ea::vector<T> values_;
 };
-#endif
+
 }

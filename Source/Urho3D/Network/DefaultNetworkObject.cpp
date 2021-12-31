@@ -149,10 +149,10 @@ void DefaultNetworkObject::InterpolateState(const NetworkTime& time)
     const ClientNetworkManager* clientNetworkManager = GetClientNetworkManager();
     const unsigned positionExtrapolationFrames = clientNetworkManager->GetPositionExtrapolationFrames();
 
-    if (auto newWorldPosition = worldPositionTrace_.RepairAndSample(time, {positionExtrapolationFrames}))
+    if (auto newWorldPosition = worldPositionTrace_.ReconstructAndSample(time, {positionExtrapolationFrames}))
         node_->SetWorldPosition(*newWorldPosition);
 
-    if (auto newWorldRotation = worldRotationTrace_.RepairAndSample(time))
+    if (auto newWorldRotation = worldRotationTrace_.ReconstructAndSample(time))
         node_->SetWorldRotation(*newWorldRotation);
 }
 
