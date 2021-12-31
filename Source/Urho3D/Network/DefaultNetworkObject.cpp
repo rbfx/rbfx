@@ -146,7 +146,10 @@ unsigned DefaultNetworkObject::EvaluateUnreliableDeltaMask()
 
 void DefaultNetworkObject::InterpolateState(const NetworkTime& time)
 {
-    if (auto newWorldPosition = worldPositionTrace_.RepairAndSample(time))
+    const ClientNetworkManager* clientNetworkManager = GetClientNetworkManager();
+    const unsigned positionExtrapolationFrames = clientNetworkManager->GetPositionExtrapolationFrames();
+
+    if (auto newWorldPosition = worldPositionTrace_.RepairAndSample(time, {positionExtrapolationFrames}))
         node_->SetWorldPosition(*newWorldPosition);
 
     if (auto newWorldRotation = worldRotationTrace_.RepairAndSample(time))

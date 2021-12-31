@@ -401,6 +401,14 @@ unsigned ClientNetworkManager::GetTraceCapacity() const
     return CeilToInt(settings_.traceDurationInSeconds_ * clock_->updateFrequency_);
 }
 
+unsigned ClientNetworkManager::GetPositionExtrapolationFrames() const
+{
+    if (!clock_)
+        return 0;
+
+    return RoundToInt(settings_.positionExtrapolationTimeInSeconds_ * clock_->updateFrequency_);
+}
+
 ea::string ClientNetworkManager::ToString() const
 {
     const ea::string& sceneName = scene_->GetName();

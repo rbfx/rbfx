@@ -26,6 +26,8 @@
 #include <Urho3D/Core/Variant.h>
 #include <Urho3D/Container/Ptr.h>
 
+#include <EASTL/optional.h>
+
 #include <catch2/catch_amalgamated.hpp>
 #include <ostream>
 
@@ -71,6 +73,14 @@ DEFINE_STRING_MAKER(Vector3, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector4, value.ToString().c_str());
 
 #undef DEFINE_STRING_MAKER
+
+template<class T> struct StringMaker<ea::optional<T>>
+{
+    static std::string convert(const ea::optional<T>& value)
+    {
+        return value ? StringMaker<T>::convert(*value) : "(nullopt)";
+    }
+};
 
 }
 /// @}
