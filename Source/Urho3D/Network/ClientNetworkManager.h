@@ -48,6 +48,7 @@ struct ClientNetworkManagerSettings
     float traceDurationInSeconds_{ 1.0f };
     float sampleDelayInSeconds_{ 0.1f };
     float pingSmoothConstant_{ 0.05f };
+    float positionExtrapolationTimeInSeconds_{0.25};
 
     double clockRewindThresholdFrames_{ 0.6 };
     double clockSnapThresholdSec_{ 10.0 };
@@ -90,6 +91,7 @@ public:
 
     ea::string ToString() const;
     AbstractConnection* GetConnection() const { return connection_; }
+    const ClientNetworkManagerSettings& GetSettings() const { return settings_; }
 
     /// Return global properties of client state.
     /// @{
@@ -102,7 +104,9 @@ public:
     float GetCurrentBlendFactor() const { return GetServerTime().GetSubFrame(); }
     unsigned GetLastSynchronizationFrame() const { return clock_ ? clock_->lastSynchronizationFrame_ : 0; }
     double GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const;
+
     unsigned GetTraceCapacity() const;
+    unsigned GetPositionExtrapolationFrames() const;
     /// @}
 
 private:

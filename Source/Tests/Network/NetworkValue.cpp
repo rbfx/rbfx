@@ -195,39 +195,42 @@ TEST_CASE("NetworkValue is updated and sampled")
 
 TEST_CASE("NetworkValue is repaired on demand")
 {
-    const unsigned maxPenalty = 3;
+    NetworkValueExtrapolationSettings settings{3};
 
     NetworkValue<float> v;
     v.Resize(10);
 
     v.Set(5, 5000.0f);
+
+    REQUIRE(v.RepairAndSample(NetworkTime{4, 0.0f}, settings) == 5000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{4, 0.5f}, settings) == 5000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{5, 0.0f}, settings) == 5000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{5, 0.5f}, settings) == 5000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{6, 0.0f}, settings) == 5000.0f);
+
     v.Set(10, 10000.0f);
-    v.Set(12, 12000.0f);
 
-    REQUIRE_FALSE(v.RepairAndSample(NetworkTime{4, 0.0f}, maxPenalty));
-    REQUIRE_FALSE(v.RepairAndSample(NetworkTime{4, 0.5f}, maxPenalty));
-    REQUIRE(v.RepairAndSample(NetworkTime{5, 0.0f}, maxPenalty) == 5000.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{5, 0.5f}, maxPenalty) == 5000.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{6, 0.0f}, maxPenalty) == 5000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{8, 0.0f}, settings) == 8000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{8, 0.5f}, settings) == 8500.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{9, 0.0f}, settings) == 9000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{9, 0.5f}, settings) == 9500.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{10, 0.0f}, settings) == 10000.0f);
 
-    REQUIRE(v.RepairAndSample(NetworkTime{8, 0.0f}, maxPenalty) == 5000.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{8, 0.5f}, maxPenalty) == 6250.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{9, 0.0f}, maxPenalty) == 7500.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{9, 0.5f}, maxPenalty) == 8750.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{10, 0.0f}, maxPenalty) == 10000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{10, 0.5f}, settings) == 10500.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{11, 0.0f}, settings) == 11000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{11, 0.5f}, settings) == 11500.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{12, 0.0f}, settings) == 12000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{12, 0.5f}, settings) == 12500.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{13, 0.0f}, settings) == 13000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{13, 0.5f}, settings) == 13000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{14, 0.0f}, settings) == 13000.0f);
 
-    REQUIRE(v.RepairAndSample(NetworkTime{10, 0.5f}, maxPenalty) == 10500.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{11, 0.0f}, maxPenalty) == 11000.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{11, 0.5f}, maxPenalty) == 11500.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{12, 0.0f}, maxPenalty) == 12000.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{12, 0.5f}, maxPenalty) == 12500.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{13, 0.0f}, maxPenalty) == 13000.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{13, 0.5f}, maxPenalty) == 13500.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{14, 0.0f}, maxPenalty) == 14000.0f);
+    v.Set(13, 13000.0f);
 
-    REQUIRE(v.RepairAndSample(NetworkTime{14, 0.5f}, maxPenalty) == 14000.0f);
-    REQUIRE(v.RepairAndSample(NetworkTime{15, 0.0f}, maxPenalty) == 14000.0f);
-
+    REQUIRE(v.RepairAndSample(NetworkTime{14, 0.5f}, settings) == 13000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{15, 0.0f}, settings) == 13000.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{15, 0.5f}, settings) == 14500.0f);
+    REQUIRE(v.RepairAndSample(NetworkTime{16, 0.0f}, settings) == 16000.0f);
 }
 
 #if 0
