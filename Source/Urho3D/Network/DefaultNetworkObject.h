@@ -85,7 +85,7 @@ protected:
     void SetClientPrefabAttr(const ResourceRef& value);
 
 private:
-    static const unsigned WorldTransformCooldown = 5;
+    static const unsigned WorldTransformCooldown = 8;
 
     /// Attributes
     /// @{

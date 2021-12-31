@@ -62,7 +62,7 @@ public:
     {
         SendMessageInternal(messageId, reliable, inOrder, data, numBytes);
 
-        URHO3D_LOGDEBUG("{}: Message #{} ({} bytes) sent{}{}{}{}",
+        URHO3D_LOGTRACE("{}: Message #{} ({} bytes) sent{}{}{}{}",
             ToString(),
             static_cast<unsigned>(messageId),
             numBytes,
