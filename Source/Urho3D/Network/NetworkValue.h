@@ -63,10 +63,25 @@ struct NetworkValueTraits<Quaternion>
 class NetworkValueBase
 {
 public:
+    enum class FrameReconstructionMode
+    {
+        None,
+        Interpolate,
+        Extrapolate
+    };
+
+    struct FrameReconstructionBase
+    {
+        FrameReconstructionMode mode_{};
+        unsigned firstFrame_{};
+        unsigned lastFrame_{};
+    };
+
     NetworkValueBase() = default;
 
-    unsigned GetCapacity() const { return elements_.size(); }
-    unsigned GetFirstFrame() const { return lastFrame_ - GetCapacity(); }
+    bool IsInitialized() const { return initialized_; }
+    unsigned GetCapacity() const { return hasFrameByIndex_.size(); }
+    unsigned GetFirstFrame() const { return lastFrame_ - GetCapacity() + 1; }
     unsigned GetLastFrame() const { return lastFrame_; }
 
     /// Intransitive frame comparison
@@ -82,8 +97,8 @@ public:
     {
         URHO3D_ASSERT(capacity > 0);
 
-        elements_.clear();
-        elements_.resize(capacity);
+        hasFrameByIndex_.clear();
+        hasFrameByIndex_.resize(capacity);
     }
 
     ea::optional<unsigned> FrameToIndex(unsigned frame) const
@@ -106,15 +121,15 @@ public:
     {
         if (auto index = FrameToIndex(frame))
         {
-            if (elements_[*index])
-                return index;
+            if (hasFrameByIndex_[*index])
+                return *index;
         }
         return ea::nullopt;
     }
 
-    bool AllocateFrame(unsigned frame, unsigned penalty, bool overwrite)
+    bool AllocateFrame(unsigned frame)
     {
-        URHO3D_ASSERT(!elements_.empty());
+        URHO3D_ASSERT(!hasFrameByIndex_.empty());
 
         // Initialize first frame if not intialized
         if (!initialized_)
@@ -123,7 +138,7 @@ public:
             lastFrame_ = frame;
             lastIndex_ = 0;
 
-            elements_[lastIndex_] = penalty;
+            hasFrameByIndex_[lastIndex_] = true;
             return true;
         }
 
@@ -137,9 +152,9 @@ public:
             // Reset skipped frames
             const unsigned firstSkippedFrame = MaxFrame(lastFrame_ - offset + 1, GetFirstFrame());
             for (unsigned skippedFrame = firstSkippedFrame; skippedFrame != lastFrame_; ++skippedFrame)
-                elements_[FrameToIndexUnchecked(skippedFrame)] = ea::nullopt;
+                hasFrameByIndex_[FrameToIndexUnchecked(skippedFrame)] = false;
 
-            elements_[lastIndex_] = penalty;
+            hasFrameByIndex_[lastIndex_] = true;
             return true;
         }
 
@@ -147,11 +162,8 @@ public:
         if (auto index = FrameToIndex(frame))
         {
             // Set singular past value, overwrite is optional
-            if (overwrite || !elements_[*index])
-            {
-                elements_[*index] = penalty;
-                return true;
-            }
+            hasFrameByIndex_[*index] = true;
+            return true;
         }
 
         return false;
@@ -159,14 +171,15 @@ public:
 
     bool HasFrame(unsigned frame) const { return AllocatedFrameToIndex(frame).has_value(); }
 
-    ea::optional<unsigned> FindClosestAllocatedFrame(unsigned frame, bool searchFuture) const
+    ea::optional<unsigned> FindClosestAllocatedFrame(unsigned frame, bool searchPast, bool searchFuture) const
     {
         if (HasFrame(frame))
             return frame;
 
-        // Search past values if any
         const unsigned firstFrame = GetFirstFrame();
-        if (IsFrameGreaterThan(frame, firstFrame))
+
+        // Search past values if any
+        if (searchPast && IsFrameGreaterThan(frame, firstFrame))
         {
             const unsigned lastCheckedFrame = MinFrame(lastFrame_, frame - 1);
             for (unsigned pastFrame = lastCheckedFrame; pastFrame != firstFrame - 1; --pastFrame)
@@ -190,35 +203,57 @@ public:
         return ea::nullopt;
     }
 
-    template <class Callback>
-    void RepairMissingFramesUpTo(unsigned frame, const Callback& callback)
+    unsigned GetClosestAllocatedFrame(unsigned frame) const
     {
-        if (!initialized_)
-            return;
+        URHO3D_ASSERT(initialized_);
+        if (const auto closestFrame = FindClosestAllocatedFrame(frame, true, true))
+            return *closestFrame;
+        return lastFrame_;
+    }
 
-        // Skip repair if frame is good or if cannot repair
-        const auto baseFrame = FindClosestAllocatedFrame(frame, false);
-        if (!baseFrame || *baseFrame == frame)
-            return;
+    FrameReconstructionBase FindReconstructionBase(unsigned frame) const
+    {
+        const auto frameBefore = FindClosestAllocatedFrame(frame, true, false);
+        const auto frameAfter = FindClosestAllocatedFrame(frame, false, true);
 
-        // Invoke callback for all missing frames
-        unsigned penalty = *elements_[FrameToIndexUnchecked(*baseFrame)];
-        for (unsigned frameToRepair = *baseFrame + 1; frameToRepair != frame + 1; ++frameToRepair)
+        if (frameBefore && frameAfter)
         {
-            if (penalty != M_MAX_UNSIGNED)
-                ++penalty;
+            // Frame is present, no reconstruction is needed
+            if (*frameBefore == *frameAfter)
+                return {FrameReconstructionMode::None, *frameBefore, *frameAfter};
 
-            const bool added = AllocateFrame(frameToRepair, penalty, true);
-            URHO3D_ASSERT(added);
-            callback(frameToRepair, penalty);
+            // Frame is missing but it can be interpolated from past and future
+            return {FrameReconstructionMode::Interpolate, *frameBefore, *frameAfter};
         }
+        else if (!frameBefore && !frameAfter)
+        {
+            // Shall never happen for initialized value
+            URHO3D_ASSERT(0);
+            return {FrameReconstructionMode::None, lastFrame_, lastFrame_};
+        }
+
+        // Frame is too far in the past, just take whatever we have
+        if (!frameBefore)
+            return {FrameReconstructionMode::None, *frameAfter, *frameAfter};
+
+        // Find extrapolation range
+        const auto firstValidFrame = FindClosestAllocatedFrame(GetFirstFrame(), false, true);
+        URHO3D_ASSERT(*firstValidFrame && !IsFrameGreaterThan(*firstValidFrame, *frameBefore));
+        return {FrameReconstructionMode::Extrapolate, *firstValidFrame, *frameBefore};
+    }
+
+    static float GetFrameInterpolationFactor(unsigned lhs, unsigned rhs, unsigned value)
+    {
+        const auto valueOffset = static_cast<int>(value - lhs);
+        const auto maxOffset = static_cast<int>(rhs - lhs);
+        return maxOffset >= 0 ? Clamp(static_cast<float>(valueOffset) / maxOffset, 0.0f, 1.0f) : 0.0f;
     }
 
 private:
     bool initialized_{};
     unsigned lastFrame_{};
     unsigned lastIndex_{};
-    ea::vector<ea::optional<unsigned>> elements_;
+    ea::vector<bool> hasFrameByIndex_;
 };
 
 /// Value stored at multiple points of time in ring buffer.
@@ -244,10 +279,14 @@ public:
     }
 
     /// Set value for given frame if not set. No op otherwise.
-    void Append(unsigned frame, const T& value) { SetInternal(frame, value, false); }
-
-    /// Set value for given frame. Overwrites previous value.
-    void Replace(unsigned frame, const T& value) { SetInternal(frame, value, true); }
+    void Set(unsigned frame, const T& value)
+    {
+        if (AllocateFrame(frame))
+        {
+            const unsigned index = FrameToIndexUnchecked(frame);
+            values_[index] = value;
+        }
+    }
 
     /// Return raw value at given frame.
     ea::optional<T> GetRaw(unsigned frame) const
@@ -257,44 +296,34 @@ public:
         return ea::nullopt;
     }
 
-    /// Return closest valid raw value, if possible. Prior values take precedence.
+    /// Return closest valid raw value. Prior values take precedence.
     T GetClosestRaw(unsigned frame) const
     {
-        if (const auto closestFrame = FindClosestAllocatedFrame(frame, true))
-            return values_[FrameToIndexUnchecked(*closestFrame)];
-
-        URHO3D_ASSERT(0);
-        return *GetRaw(GetLastFrame());
+        const unsigned closestFrame = GetClosestAllocatedFrame(frame);
+        return values_[FrameToIndexUnchecked(closestFrame)];
     }
 
-    /// Client-side sampling: repair missing values if necessary and sample value.
+    /// Client-side sampling: sample value reconstructing missing values.
     ea::optional<T> RepairAndSample(const NetworkTime& time, unsigned maxExtrapolationPenalty = 0)
     {
-        const auto callback = [&](unsigned frame, unsigned penalty)
-        {
-            const auto previousIndex = AllocatedFrameToIndex(frame - 2);
-            const unsigned baseIndex = FrameToIndexUnchecked(frame - 1);
-            const unsigned repairedIndex = FrameToIndexUnchecked(frame);
-            const auto nextIndex = AllocatedFrameToIndex(frame + 1);
-
-            const bool isLowPenalty = penalty < maxExtrapolationPenalty || maxExtrapolationPenalty == M_MAX_UNSIGNED;
-            if (nextIndex)
-                values_[repairedIndex] = Traits::Interpolate(values_[baseIndex], values_[*nextIndex], 0.5f);
-            else if (isLowPenalty && previousIndex)
-                values_[repairedIndex] = Traits::Extrapolate(values_[*previousIndex], values_[baseIndex]);
-            else
-                values_[repairedIndex] = values_[baseIndex];
-        };
+        if (!IsInitialized())
+            return ea::nullopt;
 
         const unsigned frame = time.GetFrame();
-        RepairMissingFramesUpTo(frame, callback);
-        RepairMissingFramesUpTo(frame + 1, callback);
 
-        const auto index = AllocatedFrameToIndex(frame);
-        const auto nextIndex = AllocatedFrameToIndex(frame + 1);
-        if (index && nextIndex)
-            return Traits::Interpolate(values_[*index], values_[*nextIndex], time.GetSubFrame());
-        return ea::nullopt;
+        if (!reconstruct_ || reconstruct_->frame_ != frame)
+        {
+            if (!reconstruct_)
+                reconstruct_ = ReconstructCache{frame};
+
+            if (reconstruct_->frame_ + 1 == frame)
+                reconstruct_->values_[0] = reconstruct_->values_[1];
+            else
+                reconstruct_->values_[0] = CalculateReconstructedValue(frame);
+            reconstruct_->values_[1] = CalculateReconstructedValue(frame + 1);
+        }
+
+        return Traits::Interpolate(reconstruct_->values_[0], reconstruct_->values_[1], time.GetSubFrame());
     }
 
     /// Server-side sampling: interpolate between consequent frames
@@ -317,18 +346,37 @@ public:
     T SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
 
 private:
-    void SetInternal(unsigned frame, const T& value, bool overwrite)
+    T CalculateReconstructedValue(unsigned frame) const
     {
-        if (AllocateFrame(frame, 0, overwrite))
+        const FrameReconstructionBase base = FindReconstructionBase(frame);
+        switch (base.mode_)
         {
-            const unsigned index = FrameToIndexUnchecked(frame);
-            values_[index] = value;
+        case FrameReconstructionMode::Interpolate:
+        {
+            const T firstValue = values_[FrameToIndexUnchecked(base.firstFrame_)];
+            const T lastValue = values_[FrameToIndexUnchecked(base.lastFrame_)];
+            const float factor = GetFrameInterpolationFactor(base.firstFrame_, base.lastFrame_, frame);
+            return Traits::Interpolate(firstValue, lastValue, factor);
+        }
+        case FrameReconstructionMode::Extrapolate:
+            // TODO: Add extrapolation
+        case FrameReconstructionMode::None:
+        default:
+            return values_[FrameToIndexUnchecked(base.lastFrame_)];
         }
     }
 
+    struct ReconstructCache
+    {
+        unsigned frame_{};
+        ea::array<T, 2> values_;
+    };
+
     ea::vector<T> values_;
+    ea::optional<ReconstructCache> reconstruct_;
 };
 
+#if 0
 /// Helper class to interpolate value spans.
 template <class T, class Traits = NetworkValueTraits<T>>
 class InterpolatedConstSpan
@@ -477,5 +525,5 @@ private:
     unsigned size_{};
     ea::vector<T> values_;
 };
-
+#endif
 }

@@ -100,8 +100,8 @@ bool DefaultNetworkObject::WriteUnreliableDelta(unsigned frame, VectorBuffer& de
 {
     const Vector3 worldPosition = node_->GetWorldPosition();
     const Quaternion worldRotation = node_->GetWorldRotation();
-    worldPositionTrace_.Append(frame, worldPosition);
-    worldRotationTrace_.Append(frame, worldRotation);
+    worldPositionTrace_.Set(frame, worldPosition);
+    worldRotationTrace_.Set(frame, worldRotation);
 
     const unsigned updateMask = EvaluateUnreliableDeltaMask();
     if (!updateMask)
@@ -204,8 +204,8 @@ void DefaultNetworkObject::ReadUnreliableDelta(unsigned frame, VectorBuffer& src
     const unsigned updateMask = src.ReadUInt();
     if (updateMask & UpdateWorldTransform)
     {
-        worldPositionTrace_.Append(frame, src.ReadVector3());
-        worldRotationTrace_.Append(frame, src.ReadQuaternion());
+        worldPositionTrace_.Set(frame, src.ReadVector3());
+        worldRotationTrace_.Set(frame, src.ReadQuaternion());
     }
 }
 
