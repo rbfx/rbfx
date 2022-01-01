@@ -45,24 +45,31 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 
 public:
-
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        const Cone * cone = instance->GetGraphNodeInstace();
-        const Matrix3x4 m = cone->GetShapeTransform();
-        const Matrix3 md = m.RotationMatrix();
-        auto& pos = ea::get<0>(spans);
-        auto& vel = ea::get<1>(spans);
-
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Cone* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            Vector3 p, v;
-            cone->Generate(p, v);
-            pos[i] = m * p;
-            vel[i] = md * v;
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            const Cone* cone = GetGraphNodeInstace();
+            const Matrix3x4 m = cone->GetShapeTransform();
+            const Matrix3 md = m.RotationMatrix();
+            auto& pos = ea::get<0>(spans);
+            auto& vel = ea::get<1>(spans);
+
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                Vector3 p, v;
+                cone->Generate(p, v);
+                pos[i] = m * p;
+                vel[i] = md * v;
+            }
+        }
+    };
 
 public:
     /// Get cone length.

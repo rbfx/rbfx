@@ -47,30 +47,30 @@ VariantType NodePattern::EvaluateOutputPinType(const ea::span<ParticleGraphPin>&
     return VAR_NONE;
 }
 
-AdaptiveGraphNode::Instance::Instance(AdaptiveGraphNode* op, const NodePattern& pattern)
+PatternMatchingNode::Instance::Instance(PatternMatchingNode* op, const NodePattern& pattern)
     : node_(op)
     , pattern_(pattern)
 {
 }
 
-void AdaptiveGraphNode::Instance::Update(UpdateContext& context)
+void PatternMatchingNode::Instance::Update(UpdateContext& context)
 {
     node_->Update(context, pattern_);
 }
 
-AdaptiveGraphNode::AdaptiveGraphNode(Context* context, const ea::vector<NodePattern>& patterns)
+PatternMatchingNode::PatternMatchingNode(Context* context, const ea::vector<NodePattern>& patterns)
     : ParticleGraphNode(context)
     , patterns_(patterns)
 {
 }
 
-unsigned AdaptiveGraphNode::GetNumPins() const { return static_cast<unsigned>(pins_.size()); }
+unsigned PatternMatchingNode::GetNumPins() const { return static_cast<unsigned>(pins_.size()); }
 
-ParticleGraphPin& AdaptiveGraphNode::GetPin(unsigned index) { return pins_[index]; }
+ParticleGraphPin& PatternMatchingNode::GetPin(unsigned index) { return pins_[index]; }
 
-unsigned AdaptiveGraphNode::EvaluateInstanceSize() { return sizeof(Instance); }
+unsigned PatternMatchingNode::EvaluateInstanceSize() { return sizeof(Instance); }
 
-ParticleGraphNodeInstance* AdaptiveGraphNode::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+ParticleGraphNodeInstance* PatternMatchingNode::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
 {
     for (const NodePattern& p : patterns_)
     {
@@ -82,7 +82,7 @@ ParticleGraphNodeInstance* AdaptiveGraphNode::CreateInstanceAt(void* ptr, Partic
     return nullptr;
 }
 
-VariantType AdaptiveGraphNode::EvaluateOutputPinType(ParticleGraphPin& pin)
+VariantType PatternMatchingNode::EvaluateOutputPinType(ParticleGraphPin& pin)
 {
     for (const NodePattern& p : patterns_)
     {
@@ -93,7 +93,7 @@ VariantType AdaptiveGraphNode::EvaluateOutputPinType(ParticleGraphPin& pin)
     return VAR_NONE;
 }
 
-void AdaptiveGraphNode::Update(UpdateContext& context, const NodePattern& pattern)
+void PatternMatchingNode::Update(UpdateContext& context, const NodePattern& pattern)
 {
     ea::fixed_vector<ParticleGraphPinRef, NodePattern::ExpectedNumberOfPins> pinRefs;
     for (auto& pin: pins_)

@@ -73,7 +73,7 @@ BinaryMathOperator::Instance::Instance(BinaryMathOperator* op)
 {
 }
 
-void BinaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context); }
+void BinaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context, this); }
 
 BinaryMathOperator::BinaryMathOperator(Context* context, const ea::vector<BinaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
@@ -106,7 +106,7 @@ VariantType BinaryMathOperator::EvaluateOutputPinType(ParticleGraphPin& pin)
     return VAR_NONE;
 }
 
-void BinaryMathOperator::Update(UpdateContext& context)
+void BinaryMathOperator::Update(UpdateContext& context, Instance* instance)
 {
     ParticleGraphPinRef pinRefs[3];
     for (unsigned i = 0; i < 3; ++i)
@@ -118,7 +118,7 @@ void BinaryMathOperator::Update(UpdateContext& context)
     {
         if (p.x_ == pins_[0].GetValueType() && p.y_ == pins_[1].GetValueType())
         {
-            return p.lambda_(context, pinRefs);
+            return p.lambda_(context, instance, pinRefs);
         }
     }
 }

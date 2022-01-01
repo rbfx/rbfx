@@ -56,7 +56,7 @@ UnaryMathOperator::Instance::Instance(UnaryMathOperator* op)
 {
 }
 
-void UnaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context); }
+void UnaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context, this); }
 
 UnaryMathOperator::UnaryMathOperator(Context* context, const ea::vector<UnaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
@@ -88,7 +88,7 @@ VariantType UnaryMathOperator::EvaluateOutputPinType(ParticleGraphPin& pin)
     return VAR_NONE;
 }
 
-void UnaryMathOperator::Update(UpdateContext& context)
+void UnaryMathOperator::Update(UpdateContext& context, Instance* instance)
 {
     ParticleGraphPinRef pinRefs[2];
     for (unsigned i = 0; i < 2; ++i)
@@ -100,7 +100,7 @@ void UnaryMathOperator::Update(UpdateContext& context)
     {
         if (p.x_ == pins_[0].GetValueType())
         {
-            return p.lambda_(context, pinRefs);
+            return p.lambda_(context, instance, pinRefs);
         }
     }
 }

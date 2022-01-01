@@ -51,23 +51,21 @@ public:
         Instance(RenderMesh* node, ParticleGraphLayerInstance* layer);
         ~Instance() override;
         ea::vector<Matrix3x4>& Prepare(unsigned numParticles);
-
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& dst = Prepare(numParticles);
+            auto& transforms = ea::get<0>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                dst[i] = transforms[i];
+            }
+        }
     protected:
         SharedPtr<Urho3D::Node> sceneNode_;
         SharedPtr<RenderMeshDrawable> drawable_ {};
         SharedPtr<Urho3D::Octree> octree_;
-    };
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
-    {
-        auto& dst = instance->Prepare(numParticles);
-        auto& transforms = ea::get<0>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
-        {
-            dst[i] = transforms[i];
-        }
-    }
+    };
 
 public:
     /// Set model attribute.

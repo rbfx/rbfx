@@ -35,7 +35,7 @@ template <typename T> struct DispatchUpdate
 {
     void operator()(UpdateContext& context, Curve::Instance* instance, ParticleGraphPinRef* pinRefs)
     {
-        RunUpdate<Curve, Curve::Instance, float, T>(context, instance, context.indices_.size(), pinRefs);
+        RunUpdate<Curve::Instance, float, T>(context, *instance, context.indices_.size(), pinRefs);
     }
 };
 } // namespace

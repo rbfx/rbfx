@@ -42,15 +42,21 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& pin0 = ea::get<0>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(TimeStep* node, ParticleGraphLayerInstance* layer): AbstractNodeType::Instance(node, layer) { }
+
+        template <typename Tuple>
+        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
         {
-            pin0[i] = context.timeStep_;
+            auto& pin0 = ea::get<0>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                pin0[i] = context.timeStep_;
+            }
         }
-    }
+    };
 };
 
 /// Get time passed since start of the emitter.
@@ -64,15 +70,23 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& pin0 = ea::get<0>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(EffectTime* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            pin0[i] = context.time_;
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& pin0 = ea::get<0>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                pin0[i] = context.time_;
+            }
+        }
+    };
 };
 
 
@@ -87,16 +101,25 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& pin0 = ea::get<0>(spans);
-        const float value = context.time_ / instance->GetLayer()->GetDuration();
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(NormalizedEffectTime* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            pin0[i] = value;
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& pin0 = ea::get<0>(spans);
+            const float value = context.time_ / GetLayer()->GetDuration();
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                pin0[i] = value;
+            }
+        }
+    };
+
 };
 
 /// Move position according to velocity and time step of the current frame.
@@ -110,17 +133,26 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& pin0 = ea::get<0>(spans);
-        auto& pin1 = ea::get<1>(spans);
-        auto& pin2 = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Move* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            pin2[i] = pin0[i] + context.timeStep_ * pin1[i];
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& pin0 = ea::get<0>(spans);
+            auto& pin1 = ea::get<1>(spans);
+            auto& pin2 = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                pin2[i] = pin0[i] + context.timeStep_ * pin1[i];
+            }
+        }
+    };
+
 };
 
 /// Move position according to velocity and time step of the current frame.
@@ -134,34 +166,42 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& vel = ea::get<0>(spans);
-        auto& limit = ea::get<1>(spans);
-        auto& result = ea::get<2>(spans);
-        const float dampen = instance->GetGraphNodeInstace()->dampen_;
-        if (dampen <= 1e-6f || context.timeStep_ < 1e-6f)
+    public:
+        Instance(LimitVelocity* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                result[i] = vel[i];
-            }
         }
-        else
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
         {
-            const auto t = 1.0f - powf(1.0f - dampen, 20.0f * context.timeStep_);
-            for (unsigned i = 0; i < numParticles; ++i)
+            auto& vel = ea::get<0>(spans);
+            auto& limit = ea::get<1>(spans);
+            auto& result = ea::get<2>(spans);
+            const float dampen = GetGraphNodeInstace()->dampen_;
+            if (dampen <= 1e-6f || context.timeStep_ < 1e-6f)
             {
-                const float speed = vel[i].Length();
-                const float limitVal = limit[i];
-                if (speed > limitVal + 1e-6f)
+                for (unsigned i = 0; i < numParticles; ++i)
                 {
-                    result[i] = vel[i] * (Urho3D::Lerp(speed, limitVal, t) / speed);
+                    result[i] = vel[i];
+                }
+            }
+            else
+            {
+                const auto t = 1.0f - powf(1.0f - dampen, 20.0f * context.timeStep_);
+                for (unsigned i = 0; i < numParticles; ++i)
+                {
+                    const float speed = vel[i].Length();
+                    const float limitVal = limit[i];
+                    if (speed > limitVal + 1e-6f)
+                    {
+                        result[i] = vel[i] * (Urho3D::Lerp(speed, limitVal, t) / speed);
+                    }
                 }
             }
         }
-    }
+    };
 
     /// Set dampen.
     /// @property
@@ -185,18 +225,25 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& vel = ea::get<0>(spans);
-        auto& force = ea::get<1>(spans);
-        auto& result = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(ApplyForce* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            result[i] = vel[i] + force[i]*context.timeStep_;
         }
-    }
 
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& vel = ea::get<0>(spans);
+            auto& force = ea::get<1>(spans);
+            auto& result = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                result[i] = vel[i] + force[i] * context.timeStep_;
+            }
+        }
+    };
 };
 
 } // namespace ParticleGraphNodes

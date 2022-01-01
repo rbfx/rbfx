@@ -34,15 +34,19 @@ namespace ParticleGraphNodes
 
 struct UnaryOperatorPermutation
 {
-    typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> Lambda;
+    typedef ea::function<void(UpdateContext& context, ParticleGraphNodeInstance* instance, ParticleGraphPinRef*)>
+        Lambda;
 
     UnaryOperatorPermutation(VariantType x, VariantType out, Lambda lambda);
 
     template <class Node, typename X, typename T> static UnaryOperatorPermutation Make()
     {
         return UnaryOperatorPermutation(GetVariantType<X>(), GetVariantType<T>(),
-            [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
-            { RunUpdate<Node, typename Node::Instance, X, T>(context, nullptr, context.indices_.size(), pinRefs); });
+            [](UpdateContext& context, ParticleGraphNodeInstance* instance, ParticleGraphPinRef* pinRefs)
+            {
+                RunUpdate<typename Node::Instance, X, T>(
+                    context, *static_cast<typename Node::Instance*>(instance), context.indices_.size(), pinRefs);
+            });
     }
 
     VariantType x_;
@@ -85,7 +89,7 @@ protected:
     VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
 
     /// Update particles.
-    void Update(UpdateContext& context);
+    void Update(UpdateContext& context, Instance* instance);
 
 protected:
     const ea::vector<UnaryOperatorPermutation>& permutations_;
@@ -98,16 +102,24 @@ class URHO3D_API Negate : public UnaryMathOperator
     URHO3D_OBJECT(Negate, ParticleGraphNode)
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public UnaryMathOperator::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& out = ea::get<1>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Negate* node)
+            : UnaryMathOperator::Instance(node)
         {
-            out[i] = -x[i];
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& out = ea::get<1>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = -x[i];
+            }
+        }
+    };
 
 public:
     /// Construct.
@@ -123,16 +135,24 @@ class URHO3D_API TimeStepScale : public UnaryMathOperator
     URHO3D_OBJECT(TimeStepScale, ParticleGraphNode)
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public UnaryMathOperator::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& out = ea::get<1>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(TimeStepScale* node)
+            : UnaryMathOperator::Instance(node)
         {
-            out[i] = x[i] * context.timeStep_;
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& out = ea::get<1>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = x[i] * context.timeStep_;
+            }
+        }
+    };
 
 public:
     /// Construct.

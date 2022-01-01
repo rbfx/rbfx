@@ -34,7 +34,8 @@ namespace ParticleGraphNodes
 
 struct TernaryOperatorPermutation
 {
-    typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> Lambda;
+    typedef ea::function<void(UpdateContext& context, ParticleGraphNodeInstance* instance, ParticleGraphPinRef*)>
+        Lambda;
 
     TernaryOperatorPermutation(VariantType x, VariantType y, VariantType z, VariantType out, Lambda lambda);
 
@@ -42,9 +43,9 @@ struct TernaryOperatorPermutation
     {
         return TernaryOperatorPermutation(GetVariantType<X>(), GetVariantType<Y>(), GetVariantType<Z>(),
             GetVariantType<T>(),
-            [](UpdateContext& context, ParticleGraphPinRef* pinRefs) {
-                RunUpdate<Node, typename Node::Instance, X, Y, Z, T>(
-                    context, nullptr, context.indices_.size(), pinRefs);
+            [](UpdateContext& context, ParticleGraphNodeInstance* instance, ParticleGraphPinRef* pinRefs) {
+                RunUpdate<typename Node::Instance, X, Y, Z, T>(
+                    context, *static_cast<typename Node::Instance*>(instance), context.indices_.size(), pinRefs);
             });
     }
 
@@ -91,7 +92,7 @@ protected:
     VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
 
     /// Update particles.
-    void Update(UpdateContext& context);
+    void Update(UpdateContext& context, Instance* instance);
 
 protected:
     const ea::vector<TernaryOperatorPermutation>& permutations_;
@@ -104,20 +105,28 @@ class URHO3D_API Lerp : public TernaryMathOperator
     URHO3D_OBJECT(Lerp, ParticleGraphNode)
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public TernaryMathOperator::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& factor = ea::get<2>(spans);
-        auto& out = ea::get<3>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Lerp* node)
+            : TernaryMathOperator::Instance(node)
         {
-            const auto k = factor[i];
-            const auto _k = 1.0f - k;
-            out[i] = x[i] * _k + y[i] * k;
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& factor = ea::get<2>(spans);
+            auto& out = ea::get<3>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                const auto k = factor[i];
+                const auto _k = 1.0f - k;
+                out[i] = x[i] * _k + y[i] * k;
+            }
+        }
+    };
 
 public:
     /// Construct.

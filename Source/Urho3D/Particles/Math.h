@@ -38,18 +38,27 @@ class URHO3D_API Slerp : public AbstractNode<Slerp, Quaternion, Quaternion, floa
     URHO3D_OBJECT(Slerp, ParticleGraphNode);
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance : public AbstractNodeType::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& t = ea::get<2>(spans);
-        auto& out = ea::get<3>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        /// Construct instance.
+        Instance(Slerp* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            out[i] = x[i].Slerp(y[i], t[i]);
         }
-    }
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& t = ea::get<2>(spans);
+            auto& out = ea::get<3>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = x[i].Slerp(y[i], t[i]);
+            }
+        }
+    };
+
 
 public:
     /// Construct.
@@ -65,17 +74,25 @@ class URHO3D_API MakeVec2 : public AbstractNode<MakeVec2, float, float, Vector2>
     URHO3D_OBJECT(MakeVec2, ParticleGraphNode);
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& out = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(MakeVec2* node, ParticleGraphLayerInstance* layer)
+            : AbstractNode<MakeVec2, float, float, Vector2>::Instance(node, layer)
         {
-            out[i] = {x[i], y[i]};
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& out = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = {x[i], y[i]};
+            }
+        }
+    };
 
 public:
     /// Construct.
@@ -91,18 +108,26 @@ class URHO3D_API MakeVec3 : public AbstractNode<MakeVec3, float, float, float, V
     URHO3D_OBJECT(MakeVec3, ParticleGraphNode);
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& z = ea::get<2>(spans);
-        auto& out = ea::get<3>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(MakeVec3* node, ParticleGraphLayerInstance* layer)
+            : AbstractNode<MakeVec3, float, float, float, Vector3>::Instance(node, layer)
         {
-            out[i] = {x[i], y[i], z[i]};
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& z = ea::get<2>(spans);
+            auto& out = ea::get<3>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = {x[i], y[i], z[i]};
+            }
+        }
+    };
 
 public:
     /// Construct.
@@ -119,18 +144,27 @@ class URHO3D_API MakeMatrix3x4 : public AbstractNode<MakeMatrix3x4, Vector3, Qua
     URHO3D_OBJECT(MakeMatrix3x4, ParticleGraphNode);
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& z = ea::get<2>(spans);
-        auto& out = ea::get<3>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(MakeMatrix3x4* node, ParticleGraphLayerInstance* layer)
+            : AbstractNode<MakeMatrix3x4, Vector3, Quaternion, Vector3, Matrix3x4>::Instance(node, layer)
         {
-            out[i] = Matrix3x4(x[i], y[i], z[i]);
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& z = ea::get<2>(spans);
+            auto& out = ea::get<3>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = Matrix3x4(x[i], y[i], z[i]);
+            }
+        }
+    };
+
 
 public:
     /// Construct.

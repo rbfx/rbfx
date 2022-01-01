@@ -43,7 +43,7 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    class Instance : public AbstractNodeType::Instance
+    class Instance final : public AbstractNodeType::Instance
     {
     public:
         Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer);
@@ -53,27 +53,29 @@ public:
                             float rotation);
         void Commit();
 
+        template <typename Tuple>
+        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            Prepare(numParticles);
+            auto& pin0 = ea::get<0>(spans);
+            auto& pin1 = ea::get<1>(spans);
+            auto& frame = ea::get<2>(spans);
+            auto& color = ea::get<3>(spans);
+            auto& rotation = ea::get<4>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i], rotation[i]);
+            }
+            Commit();
+        }
+
     protected:
         SharedPtr<Urho3D::Node> sceneNode_;
         SharedPtr<Urho3D::BillboardSet> billboardSet_;
         SharedPtr<Urho3D::Octree> octree_;
     };
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
-    {
-        instance->Prepare(numParticles);
-        auto& pin0 = ea::get<0>(spans);
-        auto& pin1 = ea::get<1>(spans);
-        auto& frame = ea::get<2>(spans);
-        auto& color = ea::get<3>(spans);
-        auto& rotation = ea::get<4>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
-        {
-            instance->UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i], rotation[i]);
-        }
-        instance->Commit();
-    }
+
 
 public:
 

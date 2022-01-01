@@ -70,6 +70,8 @@ protected:
     {
     public:
         void Update(UpdateContext& context) override {}
+
+        template <typename Spans> void operator()(UpdateContext& context, unsigned numParticles, Spans&& spans) {}
     };
 
 public:
@@ -158,17 +160,27 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    /// Update and return particle time.
-    /// @nobind
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& pin0 = ea::get<0>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(ParticleTime* node, ParticleGraphLayerInstance* layer)
+            : AbstractNode<ParticleTime, float>::Instance(node, layer)
         {
-            pin0[i] += context.timeStep_;
         }
-    }
+
+        /// Update and return particle time.
+        /// @nobind
+        template <typename Tuple>
+        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& pin0 = ea::get<0>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                pin0[i] += context.timeStep_;
+            }
+        }
+    };
+
 };
 
 } // namespace ParticleGraphNodes

@@ -44,20 +44,22 @@ public:
         Instance(Curve* node);
         void Update(UpdateContext& context) override;
         Curve* GetNodeInstace() { return node_; }
+
+        template <typename Tuple>
+        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto* node = GetNodeInstace();
+            auto& t = ea::get<0>(spans);
+            auto& out = ea::get<1>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = node->Sample(t[i]).template Get<ea::remove_reference_t<decltype(out[0])>>();
+            }
+        }
     protected:
         Curve* node_;
     };
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
-    {
-        auto* node = instance->GetNodeInstace();
-        auto& t = ea::get<0>(spans);
-        auto& out = ea::get<1>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
-        {
-            out[i] = node->Sample(t[i]).template Get<ea::remove_reference_t<decltype(out[0])>>();
-        }
-    }
+
 
 public:
     /// Construct.

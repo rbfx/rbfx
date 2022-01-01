@@ -42,18 +42,26 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+        struct Instance : public AbstractNodeType::Instance
     {
-        auto& span = ea::get<0>(spans);
-        // Can't use iterator here as it may use ScalarSpan with infinite iterator.
-        float sum = 0.0f;
-        for (unsigned i=0; i<numParticles; ++i)
+        /// Construct instance.
+        Instance(Emit* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            sum += span[i];
         }
-        context.layer_->EmitNewParticles(sum);
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& span = ea::get<0>(spans);
+            // Can't use iterator here as it may use ScalarSpan with infinite iterator.
+            float sum = 0.0f;
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                sum += span[i];
+            }
+            context.layer_->EmitNewParticles(sum);
+        }
+    };
 };
 
 
@@ -82,28 +90,30 @@ public:
             counter_ = node_->GetCycles();
         }
 
+        template <typename Tuple>
+        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            timeToBurst_ -= context.timeStep_;
+            if (counter_ > 0 && timeToBurst_ <= 0.0f)
+            {
+                auto& span = ea::get<0>(spans);
+                // Can't use iterator here as it may use ScalarSpan with infinite iterator.
+                float sum = 0.0f;
+                for (unsigned i = 0; i < numParticles; ++i)
+                {
+                    sum += span[i];
+                }
+                context.layer_->EmitNewParticles(sum);
+                timeToBurst_ += GetGraphNodeInstace()->interval_;
+                --counter_;
+            }
+        }
+
         float timeToBurst_{};
         unsigned counter_{};
     };
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
-    {
-        instance->timeToBurst_ -= context.timeStep_;
-        if (instance->counter_ > 0 && instance->timeToBurst_ <= 0.0f)
-        {
-            auto& span = ea::get<0>(spans);
-            // Can't use iterator here as it may use ScalarSpan with infinite iterator.
-            float sum = 0.0f;
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                sum += span[i];
-            }
-            context.layer_->EmitNewParticles(sum);
-            instance->timeToBurst_ += instance->GetGraphNodeInstace()->interval_;
-            --instance->counter_;
-        }
-    }
+
 
     /// Get delay in seconds.
     /// @property

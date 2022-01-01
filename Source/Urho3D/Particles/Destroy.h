@@ -43,19 +43,27 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& pin0 = ea::get<0>(spans);
-        // Iterate all particles even if all pins are scalar.
-        for (unsigned i = 0; i < context.indices_.size(); ++i)
+    public:
+        Instance(Destroy* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            if (pin0[i])
+        }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& pin0 = ea::get<0>(spans);
+            // Iterate all particles even if all pins are scalar.
+            for (unsigned i = 0; i < context.indices_.size(); ++i)
             {
-                context.layer_->MarkForDeletion(i);
+                if (pin0[i])
+                {
+                    context.layer_->MarkForDeletion(i);
+                }
             }
         }
-    }
+    };
 };
 
 /// Destroy expired particles.
@@ -69,20 +77,28 @@ public:
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public AbstractNodeType::Instance
     {
-        auto& pin0 = ea::get<0>(spans);
-        auto& pin1 = ea::get<1>(spans);
-        // Iterate all particles even if all pins are scalar.
-        for (unsigned i = 0; i < context.indices_.size(); ++i)
+    public:
+        Instance(Expire* node, ParticleGraphLayerInstance* layer)
+            : AbstractNodeType::Instance(node, layer)
         {
-            if (pin0[i] >= pin1[i])
+        }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& pin0 = ea::get<0>(spans);
+            auto& pin1 = ea::get<1>(spans);
+            // Iterate all particles even if all pins are scalar.
+            for (unsigned i = 0; i < context.indices_.size(); ++i)
             {
-                context.layer_->MarkForDeletion(i);
+                if (pin0[i] >= pin1[i])
+                {
+                    context.layer_->MarkForDeletion(i);
+                }
             }
         }
-    }
+    };
 };
 
 } // namespace ParticleGraphNodes

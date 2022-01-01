@@ -35,16 +35,16 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 /// Abstract update runner.
-template <typename Node, typename Instance, typename Tuple>
-void RunUpdate(UpdateContext& context, Instance* instance, unsigned numParticles,
+template <typename Instance, typename Tuple>
+void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles,
                ParticleGraphPinRef* pinRefs, Tuple tuple)
 {
-    Node::Evaluate(context, static_cast<typename Node::Instance*>(instance), numParticles, std::move(tuple));
+    instance(context, numParticles, std::move(tuple));
 };
 
 /// Abstract update runner.
-template <typename Node, typename Instance, typename Tuple, typename Value0, typename... Values>
-void RunUpdate(UpdateContext& context, Instance* instance, unsigned numParticles,
+template <typename Instance, typename Tuple, typename Value0, typename... Values>
+void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles,
                ParticleGraphPinRef* pinRefs, Tuple tuple)
 {
     switch (pinRefs[0].type_)
@@ -52,21 +52,21 @@ void RunUpdate(UpdateContext& context, Instance* instance, unsigned numParticles
     case PGCONTAINER_SPAN:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSpan<Value0>(*pinRefs)));
-        RunUpdate<Node, Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
+        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
     case PGCONTAINER_SPARSE:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSparse<Value0>(*pinRefs)));
-        RunUpdate<Node, Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
+        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
     case PGCONTAINER_SCALAR:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetScalar<Value0>(*pinRefs)));
-        RunUpdate<Node, Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
+        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
@@ -77,22 +77,22 @@ void RunUpdate(UpdateContext& context, Instance* instance, unsigned numParticles
 };
 
 /// Abstract update runner.
-template <typename Node, typename Instance, typename Value0, typename... Values>
-void RunUpdate(UpdateContext& context, Instance * instance, unsigned numParticles, ParticleGraphPinRef* pinRefs)
+template <typename Instance, typename Value0, typename... Values>
+void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles, ParticleGraphPinRef* pinRefs)
 {
     switch (pinRefs[0].type_)
     {
     case PGCONTAINER_SPAN:
     {
         ea::tuple<ea::span<Value0>> nextTuple = ea::make_tuple(context.GetSpan<Value0>(*pinRefs));
-        RunUpdate<Node, Instance, ea::tuple<ea::span<Value0>>, Values...>(context, instance, numParticles, pinRefs + 1,
+        RunUpdate<Instance, ea::tuple<ea::span<Value0>>, Values...>(context, instance, numParticles, pinRefs + 1,
                                                                          std::move(nextTuple));
         return;
     }
     case PGCONTAINER_SPARSE:
     {
         ea::tuple<SparseSpan<Value0>> nextTuple = ea::make_tuple(context.GetSparse<Value0>(*pinRefs));
-        RunUpdate<Node, Instance, ea::tuple<SparseSpan<Value0>>, Values...>(context, instance, numParticles,
+        RunUpdate<Instance, ea::tuple<SparseSpan<Value0>>, Values...>(context, instance, numParticles,
                                                                             pinRefs + 1,
                                                                   std::move(nextTuple));
         return;
@@ -100,7 +100,7 @@ void RunUpdate(UpdateContext& context, Instance * instance, unsigned numParticle
     case PGCONTAINER_SCALAR:
     {
         ea::tuple<ScalarSpan<Value0>> nextTuple = ea::make_tuple(context.GetScalar<Value0>(*pinRefs));
-        RunUpdate<Node, Instance, ea::tuple<ScalarSpan<Value0>>, Values...>(context, instance, numParticles,
+        RunUpdate<Instance, ea::tuple<ScalarSpan<Value0>>, Values...>(context, instance, numParticles,
                                                                             pinRefs + 1,
                                                                   std::move(nextTuple));
         return;
@@ -156,7 +156,8 @@ public:
             {
                 pinRefs[i] = node_->pins_[i].GetMemoryReference();
             }
-            RunUpdate<GraphNode, Instance, Values...>(context, this, context.indices_.size(), pinRefs);
+            RunUpdate<typename GraphNode::Instance, Values...>(
+                context, *static_cast<typename GraphNode::Instance*>(this), context.indices_.size(), pinRefs);
         }
 
         /// Get graph node instance.
@@ -254,23 +255,23 @@ struct NodePattern
 
 
 /// Graph node that adapts to input pins dynamically.
-class URHO3D_API AdaptiveGraphNode : public ParticleGraphNode
+class URHO3D_API PatternMatchingNode : public ParticleGraphNode
 {
 public:
     struct Instance : public ParticleGraphNodeInstance
     {
         /// Construct.
-        explicit Instance(AdaptiveGraphNode* node, const NodePattern& pattern);
+        explicit Instance(PatternMatchingNode* node, const NodePattern& pattern);
 
         /// Update particles.
         virtual void Update(UpdateContext& context);
 
-        AdaptiveGraphNode* node_;
+        PatternMatchingNode* node_;
         const NodePattern& pattern_;
     };
 
     /// Construct.
-    explicit AdaptiveGraphNode(Context* context, const ea::vector<NodePattern>& patterns);
+    explicit PatternMatchingNode(Context* context, const ea::vector<NodePattern>& patterns);
 
     /// Get number of pins.
     unsigned GetNumPins() const override;

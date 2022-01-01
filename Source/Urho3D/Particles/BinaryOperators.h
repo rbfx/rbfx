@@ -34,15 +34,19 @@ namespace ParticleGraphNodes
 
 struct BinaryOperatorPermutation
 {
-    typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> Lambda;
+    typedef ea::function<void(UpdateContext& context, ParticleGraphNodeInstance* instance, ParticleGraphPinRef*)>
+        Lambda;
 
     BinaryOperatorPermutation(VariantType x, VariantType y, VariantType out, Lambda lambda);
 
     template <class Node, typename X, typename Y, typename T> static BinaryOperatorPermutation Make()
     {
         return BinaryOperatorPermutation(GetVariantType<X>(), GetVariantType<Y>(), GetVariantType<T>(),
-            [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
-            { RunUpdate<Node, typename Node::Instance, X, Y, T>(context, nullptr, context.indices_.size(), pinRefs); });
+            [](UpdateContext& context, ParticleGraphNodeInstance* instance, ParticleGraphPinRef* pinRefs)
+            {
+                RunUpdate<typename Node::Instance, X, Y, T>(
+                    context, *static_cast<typename Node::Instance*>(instance), context.indices_.size(), pinRefs);
+            });
     }
 
     VariantType x_;
@@ -86,7 +90,7 @@ protected:
     VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
 
     /// Update particles.
-    void Update(UpdateContext& context);
+    void Update(UpdateContext& context, Instance* instance);
 
 protected:
     const ea::vector<BinaryOperatorPermutation>& permutations_;
@@ -99,17 +103,25 @@ class URHO3D_API Add : public BinaryMathOperator
     URHO3D_OBJECT(Add, ParticleGraphNode)
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public BinaryMathOperator::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& out = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Add* node)
+            : BinaryMathOperator::Instance(node)
         {
-            out[i] = x[i] + y[i];
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& out = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = x[i] + y[i];
+            }
+        }
+    };
 
 public:
     /// Construct.
@@ -125,17 +137,26 @@ class URHO3D_API Subtract : public BinaryMathOperator
     URHO3D_OBJECT(Subtract, ParticleGraphNode)
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public BinaryMathOperator::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& out = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Subtract* node)
+            : BinaryMathOperator::Instance(node)
         {
-            out[i] = x[i] - y[i];
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& out = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = x[i] - y[i];
+            }
+        }
+    };
+
 
 public:
     /// Construct.
@@ -151,17 +172,25 @@ class URHO3D_API Multiply : public BinaryMathOperator
     URHO3D_OBJECT(Multiply, ParticleGraphNode)
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public BinaryMathOperator::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& out = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Multiply* node)
+            : BinaryMathOperator::Instance(node)
         {
-            out[i] = x[i] * y[i];
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& out = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = x[i] * y[i];
+            }
+        }
+    };
 
 public:
     /// Construct.
@@ -177,17 +206,26 @@ class URHO3D_API Divide : public BinaryMathOperator
     URHO3D_OBJECT(Divide, ParticleGraphNode)
 
 public:
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
+    class Instance final : public BinaryMathOperator::Instance
     {
-        auto& x = ea::get<0>(spans);
-        auto& y = ea::get<1>(spans);
-        auto& out = ea::get<2>(spans);
-        for (unsigned i = 0; i < numParticles; ++i)
+    public:
+        Instance(Divide* node)
+            : BinaryMathOperator::Instance(node)
         {
-            out[i] = x[i] / y[i];
         }
-    }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& out = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = x[i] / y[i];
+            }
+        }
+    };
+
 
 public:
     /// Construct.

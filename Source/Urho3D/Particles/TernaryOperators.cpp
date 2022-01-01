@@ -58,7 +58,7 @@ TernaryMathOperator::Instance::Instance(TernaryMathOperator* op)
 {
 }
 
-void TernaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context); }
+void TernaryMathOperator::Instance::Update(UpdateContext& context) { operator_->Update(context, this); }
 
 TernaryMathOperator::TernaryMathOperator(Context* context, const char* zName, const ea::vector<TernaryOperatorPermutation>& permutations)
     : ParticleGraphNode(context)
@@ -92,7 +92,7 @@ VariantType TernaryMathOperator::EvaluateOutputPinType(ParticleGraphPin& pin)
     return VAR_NONE;
 }
 
-void TernaryMathOperator::Update(UpdateContext& context)
+void TernaryMathOperator::Update(UpdateContext& context, Instance* instance)
 {
     ParticleGraphPinRef pinRefs[4];
     for (unsigned i = 0; i < 4; ++i)
@@ -104,7 +104,7 @@ void TernaryMathOperator::Update(UpdateContext& context)
     {
         if (p.x_ == pins_[0].GetValueType() && p.y_ == pins_[1].GetValueType() && p.z_ == pins_[2].GetValueType())
         {
-            return p.lambda_(context, pinRefs);
+            return p.lambda_(context, instance, pinRefs);
         }
     }
 }

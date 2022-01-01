@@ -46,6 +46,23 @@ class URHO3D_API Bounce : public AbstractNode<Bounce, Vector3, Vector3, Vector3,
             : AbstractNodeType::Instance(node, layer)
         {
         }
+
+        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        {
+            auto& pin0 = ea::get<0>(spans);
+            auto& pin1 = ea::get<1>(spans);
+            auto& pin2 = ea::get<2>(spans);
+            auto& pin3 = ea::get<3>(spans);
+            Bounce* bounce = GetGraphNodeInstace();
+            auto node = GetNode();
+            auto physics = GetScene()->GetComponent<PhysicsWorld>();
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                pin2[i] = pin0[i];
+                pin3[i] = pin1[i];
+                bounce->RayCastAndBounce(context, node, physics, pin2[i], pin3[i]);
+            }
+        }
     };
 
 public:
@@ -57,23 +74,6 @@ public:
 
     void RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity);
 
-    template <typename Tuple>
-    static void Evaluate(UpdateContext& context, Instance* instance, unsigned numParticles, Tuple&& spans)
-    {
-        auto& pin0 = ea::get<0>(spans);
-        auto& pin1 = ea::get<1>(spans);
-        auto& pin2 = ea::get<2>(spans);
-        auto& pin3 = ea::get<3>(spans);
-        Bounce* bounce = instance->GetGraphNodeInstace();
-        auto node = instance->GetNode();
-        auto physics = instance->GetScene()->GetComponent<PhysicsWorld>();
-        for (unsigned i = 0; i < numParticles; ++i)
-        {
-            pin2[i] = pin0[i];
-            pin3[i] = pin1[i];
-            bounce->RayCastAndBounce(context, node, physics, pin2[i], pin3[i]);
-        }
-    }
     float GetDampen() const { return dampen_; }
     void SetDampen(float dampen) { dampen_ = dampen; }
     float GetBounceFactor() const { return bounceFactor_; }

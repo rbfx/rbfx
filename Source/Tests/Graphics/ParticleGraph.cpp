@@ -33,6 +33,7 @@
 #include <Urho3D/Particles/All.h>
 #include <Urho3D/Scene/Scene.h>
 #include <EASTL/span.h>
+#include <EASTL/variant.h>
 
 using namespace Urho3D;
 
@@ -368,3 +369,109 @@ TEST_CASE("Test Expire")
     CHECK(!emitter->GetLayer(0)->GetNumActiveParticles());
 }
 
+namespace 
+{
+/// Abstract update runner.
+template <typename Visitor, typename Tuple>
+void RunUpdate(Visitor&& visitor, UpdateContext& context, ParticleGraphPinRef* pinRefs, Tuple tuple)
+{
+    visitor(ea::move(tuple));
+};
+
+/// Abstract update runner.
+template <typename Visitor, typename Tuple, typename Value0, typename... Values>
+void RunUpdate(Visitor&& visitor,
+    UpdateContext& context, ParticleGraphPinRef* pinRefs, Tuple tuple)
+{
+    switch (pinRefs[0].type_)
+    {
+    case PGCONTAINER_SPAN:
+    {
+        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSpan<Value0>(*pinRefs)));
+        RunUpdate<Visitor, decltype(nextTuple), Values...>(
+            ea::move(visitor), context, pinRefs + 1, nextTuple);
+        return;
+    }
+    case PGCONTAINER_SPARSE:
+    {
+        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSparse<Value0>(*pinRefs)));
+        RunUpdate<Visitor, decltype(nextTuple), Values...>(ea::move(visitor), context, pinRefs + 1, nextTuple);
+        return;
+    }
+    case PGCONTAINER_SCALAR:
+    {
+        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetScalar<Value0>(*pinRefs)));
+        RunUpdate<Visitor, decltype(nextTuple), Values...>(ea::move(visitor), context, pinRefs + 1, nextTuple);
+        return;
+    }
+    default: assert(!"Invalid pin container type permutation"); break;
+    }
+};
+
+/// Abstract update runner.
+template <typename Visitor, typename Value0, typename... Values>
+void RunUpdate(
+    Visitor&& visitor, UpdateContext& context, ParticleGraphPinRef* pinRefs)
+{
+    switch (pinRefs[0].type_)
+    {
+    case PGCONTAINER_SPAN:
+    {
+        ea::tuple<ea::span<Value0>> nextTuple = ea::make_tuple(context.GetSpan<Value0>(*pinRefs));
+        RunUpdate<Visitor, ea::tuple<ea::span<Value0>>, Values...>(
+            ea::move(visitor), context, pinRefs + 1, std::move(nextTuple));
+        return;
+    }
+    case PGCONTAINER_SPARSE:
+    {
+        ea::tuple<SparseSpan<Value0>> nextTuple = ea::make_tuple(context.GetSparse<Value0>(*pinRefs));
+        RunUpdate<Visitor, ea::tuple<SparseSpan<Value0>>, Values...>(
+            ea::move(visitor), context, pinRefs + 1, std::move(nextTuple));
+        return;
+    }
+    case PGCONTAINER_SCALAR:
+    {
+        ea::tuple<ScalarSpan<Value0>> nextTuple = ea::make_tuple(context.GetScalar<Value0>(*pinRefs));
+        RunUpdate<Visitor, ea::tuple<ScalarSpan<Value0>>, Values...>(
+            ea::move(visitor), context, pinRefs + 1, std::move(nextTuple));
+        return;
+    }
+    default: assert(!"Invalid pin container type permutation"); break;
+    }
+};
+
+struct Visitor
+{
+    template <typename T>
+    void operator()(T&& a) { }
+};
+
+using namespace  ParticleGraphNodes;
+
+template <typename... Values>
+NodePattern MakePattern()
+{
+    NodePattern p;
+    p.updateFunction_ = [](UpdateContext& context, ParticleGraphPinRef* pins)
+    {
+        auto glambda = [](auto a) { return a; };
+        RunUpdate<decltype(glambda), float, float>(ea::move(glambda), context, pins);
+    };
+}
+
+}
+
+TEST_CASE("PatternMatchingNode")
+{
+    ParticleGraphPinRef refs[2];
+    auto glambda = [](auto a) { return a; };
+    UpdateContext context;
+    RunUpdate<decltype(glambda), float, float>(ea::move(glambda), context, refs);
+    //using namespace  ParticleGraphNodes;
+    //auto context = Tests::CreateCompleteTestContext();
+
+    //ea::vector<NodePattern> patterns{
+    //    NodePattern([](UpdateContext& context, ParticleGraphPinRef* pins) {}, PinPattern("x", VariantType::VAR_INT))
+    //};
+    //PatternMatchingNode node(context, {patterns});
+}
