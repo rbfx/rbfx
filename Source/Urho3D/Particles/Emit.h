@@ -50,9 +50,8 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T span)
         {
-            auto& span = ea::get<0>(spans);
             // Can't use iterator here as it may use ScalarSpan with infinite iterator.
             float sum = 0.0f;
             for (unsigned i = 0; i < numParticles; ++i)
@@ -90,22 +89,25 @@ public:
             counter_ = node_->GetCycles();
         }
 
-        template <typename Tuple>
-        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename T, typename Out> void operator()(UpdateContext& context, unsigned numParticles, T count, Out out)
         {
             timeToBurst_ -= context.timeStep_;
             if (counter_ > 0 && timeToBurst_ <= 0.0f)
             {
-                auto& span = ea::get<0>(spans);
                 // Can't use iterator here as it may use ScalarSpan with infinite iterator.
-                float sum = 0.0f;
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
-                    sum += span[i];
+                    out[i] = count[i];
                 }
-                context.layer_->EmitNewParticles(sum);
                 timeToBurst_ += GetGraphNodeInstace()->interval_;
                 --counter_;
+            }
+            else
+            {
+                for (unsigned i = 0; i < numParticles; ++i)
+                {
+                    out[i] = 0.0f;
+                }
             }
         }
 

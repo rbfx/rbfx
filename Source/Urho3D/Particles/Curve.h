@@ -45,12 +45,10 @@ public:
         void Update(UpdateContext& context) override;
         Curve* GetNodeInstace() { return node_; }
 
-        template <typename Tuple>
-        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename T, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, T t, Out out)
         {
             auto* node = GetNodeInstace();
-            auto& t = ea::get<0>(spans);
-            auto& out = ea::get<1>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = node->Sample(t[i]).template Get<ea::remove_reference_t<decltype(out[0])>>();

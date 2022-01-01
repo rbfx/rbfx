@@ -47,12 +47,9 @@ class URHO3D_API Bounce : public AbstractNode<Bounce, Vector3, Vector3, Vector3,
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Pin0, typename Pin1, typename Pin2, typename Pin3>
+        void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Pin2 pin2, Pin3 pin3)
         {
-            auto& pin0 = ea::get<0>(spans);
-            auto& pin1 = ea::get<1>(spans);
-            auto& pin2 = ea::get<2>(spans);
-            auto& pin3 = ea::get<3>(spans);
             Bounce* bounce = GetGraphNodeInstace();
             auto node = GetNode();
             auto physics = GetScene()->GetComponent<PhysicsWorld>();

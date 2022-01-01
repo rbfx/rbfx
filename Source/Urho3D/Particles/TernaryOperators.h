@@ -113,12 +113,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Y, typename Z, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Z factor, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& y = ea::get<1>(spans);
-            auto& factor = ea::get<2>(spans);
-            auto& out = ea::get<3>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 const auto k = factor[i];

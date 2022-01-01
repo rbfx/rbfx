@@ -110,10 +110,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, X x, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& out = ea::get<1>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = -x[i];
@@ -143,10 +142,8 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Out> void operator()(UpdateContext& context, unsigned numParticles, X x, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& out = ea::get<1>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = x[i] * context.timeStep_;

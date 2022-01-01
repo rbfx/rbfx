@@ -111,11 +111,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Y, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& y = ea::get<1>(spans);
-            auto& out = ea::get<2>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = x[i] + y[i];
@@ -145,11 +143,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Y, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& y = ea::get<1>(spans);
-            auto& out = ea::get<2>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = x[i] - y[i];
@@ -180,11 +176,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Y, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& y = ea::get<1>(spans);
-            auto& out = ea::get<2>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = x[i] * y[i];
@@ -214,11 +208,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Y, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& y = ea::get<1>(spans);
-            auto& out = ea::get<2>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = x[i] / y[i];

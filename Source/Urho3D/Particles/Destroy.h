@@ -51,9 +51,8 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T pin0)
         {
-            auto& pin0 = ea::get<0>(spans);
             // Iterate all particles even if all pins are scalar.
             for (unsigned i = 0; i < context.indices_.size(); ++i)
             {
@@ -85,14 +84,13 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Time, typename Lifetime>
+        void operator()(UpdateContext& context, unsigned numParticles, Time time, Lifetime lifetime)
         {
-            auto& pin0 = ea::get<0>(spans);
-            auto& pin1 = ea::get<1>(spans);
             // Iterate all particles even if all pins are scalar.
             for (unsigned i = 0; i < context.indices_.size(); ++i)
             {
-                if (pin0[i] >= pin1[i])
+                if (time[i] >= lifetime[i])
                 {
                     context.layer_->MarkForDeletion(i);
                 }

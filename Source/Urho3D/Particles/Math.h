@@ -46,12 +46,9 @@ public:
             : AbstractNodeType::Instance(node, layer)
         {
         }
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename X, typename Y, typename T, typename Out>
+        void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, T t, Out out)
         {
-            auto& x = ea::get<0>(spans);
-            auto& y = ea::get<1>(spans);
-            auto& t = ea::get<2>(spans);
-            auto& out = ea::get<3>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 out[i] = x[i].Slerp(y[i], t[i]);

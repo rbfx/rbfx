@@ -32,22 +32,40 @@ namespace ParticleGraphNodes
 {
 namespace
 {
-
-//template <typename Result, typename... Args> NodePattern MakePattern(ea::function<Result(Args...)> fn)
+//template <typename T> struct In
 //{
-//    return NodePattern();
+//    typedef T Type;
+//    const char* name_;
+//};
+//template <typename T> struct Out
+//{
+//    typedef T Type;
+//    const char* name_;
+//};
+//template <typename Lambda, typename... Args> NodePattern MakePattern(Lambda&& lambda, Args... args)
+//{
+//    return NodePattern([lambda](UpdateContext& context, ParticleGraphPinRef* pinRefs)
+//        { RunUpdate<Lambda, Args>(context, lambda, pinRefs); });
 //}
 
 static ea::vector<NodePattern> MakePatterns{
-    //MakePattern<Vector2, float, float>([](float x, float y) -> Vector2 { return Vector2(x, y); }),
+    /*MakePattern(
+        [](UpdateContext& context, unsigned numParticles, auto&& spans)
+        {
+            auto& x = ea::get<0>(spans);
+            auto& y = ea::get<1>(spans);
+            auto& out = ea::get<2>(spans);
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = Vector2(x[i], y[i]);
+            }
+        },
+        In<int>{"x"}, In<int>{"y"}, Out<int>{"y"}),*/
     NodePattern(
         [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
         {
-            auto lambda = [](UpdateContext& context, unsigned numParticles, auto&& spans)
+            auto lambda = [](UpdateContext& context, unsigned numParticles, auto x, auto y, auto out)
             {
-                auto& x = ea::get<0>(spans);
-                auto& y = ea::get<1>(spans);
-                auto& out = ea::get<2>(spans);
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     out[i] = Vector2(x[i], y[i]);
@@ -61,12 +79,8 @@ static ea::vector<NodePattern> MakePatterns{
     NodePattern(
         [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
         {
-            auto lambda = [](UpdateContext& context, unsigned numParticles, auto&& spans)
+            auto lambda = [](UpdateContext& context, unsigned numParticles, auto x, auto y, auto z, auto out)
             {
-                auto& x = ea::get<0>(spans);
-                auto& y = ea::get<1>(spans);
-                auto& z = ea::get<2>(spans);
-                auto& out = ea::get<3>(spans);
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     out[i] = Vector3(x[i], y[i], z[i]);
@@ -80,12 +94,9 @@ static ea::vector<NodePattern> MakePatterns{
     NodePattern(
         [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
         {
-            auto lambda = [](UpdateContext& context, unsigned numParticles, auto&& spans)
+            auto lambda =
+                [](UpdateContext& context, unsigned numParticles, auto translation, auto rotation, auto scale, auto out)
             {
-                auto& translation = ea::get<0>(spans);
-                auto& rotation = ea::get<1>(spans);
-                auto& scale = ea::get<2>(spans);
-                auto& out = ea::get<3>(spans);
                 for (unsigned i = 0; i < numParticles; ++i)
                 {
                     out[i] = Matrix3x4(translation[i], rotation[i], scale[i]);

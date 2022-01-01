@@ -47,10 +47,8 @@ public:
     public:
         Instance(TimeStep* node, ParticleGraphLayerInstance* layer): AbstractNodeType::Instance(node, layer) { }
 
-        template <typename Tuple>
-        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Pin0> void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0)
         {
-            auto& pin0 = ea::get<0>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 pin0[i] = context.timeStep_;
@@ -78,9 +76,8 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Pin0> void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0)
         {
-            auto& pin0 = ea::get<0>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 pin0[i] = context.time_;
@@ -109,9 +106,8 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Pin0> void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0)
         {
-            auto& pin0 = ea::get<0>(spans);
             const float value = context.time_ / GetLayer()->GetDuration();
             for (unsigned i = 0; i < numParticles; ++i)
             {
@@ -141,11 +137,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Pin0, typename Pin1, typename Pin2>
+        void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Pin2 pin2)
         {
-            auto& pin0 = ea::get<0>(spans);
-            auto& pin1 = ea::get<1>(spans);
-            auto& pin2 = ea::get<2>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 pin2[i] = pin0[i] + context.timeStep_ * pin1[i];
@@ -174,11 +168,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Vel, typename Limit, typename Result>
+        void operator()(UpdateContext& context, unsigned numParticles, Vel vel, Limit limit, Result result)
         {
-            auto& vel = ea::get<0>(spans);
-            auto& limit = ea::get<1>(spans);
-            auto& result = ea::get<2>(spans);
             const float dampen = GetGraphNodeInstace()->dampen_;
             if (dampen <= 1e-6f || context.timeStep_ < 1e-6f)
             {
@@ -233,11 +225,9 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Vel, typename Force, typename Result>
+        void operator()(UpdateContext& context, unsigned numParticles, Vel vel, Force force, Result result)
         {
-            auto& vel = ea::get<0>(spans);
-            auto& force = ea::get<1>(spans);
-            auto& result = ea::get<2>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 result[i] = vel[i] + force[i] * context.timeStep_;

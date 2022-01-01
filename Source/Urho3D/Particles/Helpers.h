@@ -39,7 +39,8 @@ template <typename Instance, typename Tuple>
 void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
                ParticleGraphPinRef* pinRefs, Tuple tuple)
 {
-    instance(context, scalar?1:context.indices_.size(), std::move(tuple));
+    ea::apply(instance, ea::tuple_cat(ea::make_tuple(context, static_cast<unsigned>(scalar ? 1 : context.indices_.size())), tuple));
+    //instance(context, scalar?1:context.indices_.size(), tuple);
 };
 
 /// Abstract update runner.

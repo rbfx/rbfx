@@ -53,15 +53,11 @@ public:
                             float rotation);
         void Commit();
 
-        template <typename Tuple>
-        void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Pin0, typename Pin1, typename Frame, typename Color, typename Rotation>
+        void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Frame frame, Color color,
+            Rotation rotation)
         {
             Prepare(numParticles);
-            auto& pin0 = ea::get<0>(spans);
-            auto& pin1 = ea::get<1>(spans);
-            auto& frame = ea::get<2>(spans);
-            auto& color = ea::get<3>(spans);
-            auto& rotation = ea::get<4>(spans);
             for (unsigned i = 0; i < numParticles; ++i)
             {
                 UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i], rotation[i]);

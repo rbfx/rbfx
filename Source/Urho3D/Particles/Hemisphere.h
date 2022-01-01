@@ -53,13 +53,12 @@ public:
         {
         }
 
-        template <typename Tuple> void operator()(UpdateContext& context, unsigned numParticles, Tuple&& spans)
+        template <typename Pos, typename Vel>
+        void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
         {
             const Hemisphere* cone = GetGraphNodeInstace();
             const Matrix3x4 m = cone->GetShapeTransform();
             const Matrix3 md = m.RotationMatrix();
-            auto& pos = ea::get<0>(spans);
-            auto& vel = ea::get<1>(spans);
 
             for (unsigned i = 0; i < numParticles; ++i)
             {
