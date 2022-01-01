@@ -47,8 +47,16 @@ struct UpdateContext
 class URHO3D_API ParticleGraphNodeInstance
 {
 public:
+    /// Delete default copy constructor.
+    ParticleGraphNodeInstance(ParticleGraphNodeInstance&) = delete;
+    ParticleGraphNodeInstance& operator=(const ParticleGraphNodeInstance&) = delete;
+    /// Delete default move constructor.
+    ParticleGraphNodeInstance(ParticleGraphNodeInstance&&) = delete;
+    ParticleGraphNodeInstance& operator=(ParticleGraphNodeInstance&&) = delete;
+
     /// Construct.
     ParticleGraphNodeInstance();
+
 
     /// Destruct.
     virtual ~ParticleGraphNodeInstance();

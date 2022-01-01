@@ -38,8 +38,8 @@ Bounce::Bounce(Context* context)
         {
             ParticleGraphPin(ParticleGraphPinFlag::Input, "position"),
             ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
-            ParticleGraphPin(ParticleGraphPinFlag::None, "newPosition"),
-            ParticleGraphPin(ParticleGraphPinFlag::None, "newVelocity"),
+            ParticleGraphPin(ParticleGraphPinFlag::Output, "newPosition"),
+            ParticleGraphPin(ParticleGraphPinFlag::Output, "newVelocity"),
         })
 {
 }

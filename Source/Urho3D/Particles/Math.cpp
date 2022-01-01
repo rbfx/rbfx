@@ -42,25 +42,30 @@ namespace
 //    typedef T Type;
 //    const char* name_;
 //};
+//
+//template <typename PinType> struct PinPatternBuilder
+//{
+//    typedef typename PinType::Type Type;
+//};
+//
 //template <typename Lambda, typename... Args> NodePattern MakePattern(Lambda&& lambda, Args... args)
 //{
 //    return NodePattern([lambda](UpdateContext& context, ParticleGraphPinRef* pinRefs)
-//        { RunUpdate<Lambda, Args>(context, lambda, pinRefs); });
+//    {
+//        RunUpdate<Lambda, Args>(context, lambda, pinRefs);
+//    });
 //}
 
 static ea::vector<NodePattern> MakePatterns{
-    /*MakePattern(
-        [](UpdateContext& context, unsigned numParticles, auto&& spans)
-        {
-            auto& x = ea::get<0>(spans);
-            auto& y = ea::get<1>(spans);
-            auto& out = ea::get<2>(spans);
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                out[i] = Vector2(x[i], y[i]);
-            }
-        },
-        In<int>{"x"}, In<int>{"y"}, Out<int>{"y"}),*/
+    //MakePattern(
+    //    [](UpdateContext& context, unsigned numParticles, auto x, auto y, auto out)
+    //    {
+    //        for (unsigned i = 0; i < numParticles; ++i)
+    //        {
+    //            out[i] = Vector2(x[i], y[i]);
+    //        }
+    //    },
+    //    In<int>{"x"}, In<int>{"y"}, Out<int>{"y"}),
     NodePattern(
         [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
         {
@@ -114,7 +119,7 @@ Slerp::Slerp(Context* context)
                                     ParticleGraphPin(ParticleGraphPinFlag::Input, "x"),
                                     ParticleGraphPin(ParticleGraphPinFlag::Input, "y"),
                                     ParticleGraphPin(ParticleGraphPinFlag::Input, "t"),
-                                    ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
+            ParticleGraphPin(ParticleGraphPinFlag::Output, "out"),
                                 })
 {
 }

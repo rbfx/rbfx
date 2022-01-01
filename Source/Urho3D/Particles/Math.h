@@ -65,7 +65,7 @@ public:
     static void RegisterObject(ParticleGraphSystem* context);
 };
 
-/// Make Vector2.
+/// Make a value by calling constructor.
 class URHO3D_API Make: public PatternMatchingNode
 {
     URHO3D_OBJECT(Make, ParticleGraphNode);

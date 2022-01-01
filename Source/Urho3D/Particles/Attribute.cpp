@@ -146,7 +146,7 @@ void SetAttribute::Instance::Update(UpdateContext& context)
 };
 
 ParticleTime::ParticleTime(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::None, "time", PGCONTAINER_SPARSE)})
+    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::Output, "time", PGCONTAINER_SPARSE)})
 {
 }
 
