@@ -92,7 +92,7 @@ public:
 protected:
     /// Load input pin.
     virtual ParticleGraphPin* LoadInputPin(ParticleGraphReader& reader, GraphInPin& pin);
-    /// Load input pin.
+    /// Load output pin.
     virtual ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin);
     /// Load pins.
     virtual bool LoadPins(ParticleGraphReader& reader, GraphNode& node);

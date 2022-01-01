@@ -51,8 +51,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     GetAttribute::RegisterObject(system);
     GetUniform::RegisterObject(system);
     Lerp::RegisterObject(system);
-    MakeVec2::RegisterObject(system);
-    MakeVec3::RegisterObject(system);
+    Make::RegisterObject(system);
     Move::RegisterObject(system);
     Multiply::RegisterObject(system);
     Negate::RegisterObject(system);
@@ -69,7 +68,6 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     EffectTime::RegisterObject(system);
     NormalizedEffectTime::RegisterObject(system);
     RenderMesh::RegisterObject(system);
-    MakeMatrix3x4::RegisterObject(system);
     Sphere::RegisterObject(system);
     Hemisphere::RegisterObject(system);
     LimitVelocity::RegisterObject(system);

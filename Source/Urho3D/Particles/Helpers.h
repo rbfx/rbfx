@@ -36,15 +36,15 @@ namespace ParticleGraphNodes
 {
 /// Abstract update runner.
 template <typename Instance, typename Tuple>
-void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles,
+void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
                ParticleGraphPinRef* pinRefs, Tuple tuple)
 {
-    instance(context, numParticles, std::move(tuple));
+    instance(context, scalar?1:context.indices_.size(), std::move(tuple));
 };
 
 /// Abstract update runner.
 template <typename Instance, typename Tuple, typename Value0, typename... Values>
-void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles,
+void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
                ParticleGraphPinRef* pinRefs, Tuple tuple)
 {
     switch (pinRefs[0].type_)
@@ -52,21 +52,21 @@ void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles
     case PGCONTAINER_SPAN:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSpan<Value0>(*pinRefs)));
-        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
+        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, false, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
     case PGCONTAINER_SPARSE:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSparse<Value0>(*pinRefs)));
-        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
+        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, false, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
     case PGCONTAINER_SCALAR:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetScalar<Value0>(*pinRefs)));
-        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, numParticles, pinRefs + 1,
+        RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, scalar, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
@@ -78,36 +78,32 @@ void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles
 
 /// Abstract update runner.
 template <typename Instance, typename Value0, typename... Values>
-void RunUpdate(UpdateContext& context, Instance& instance, unsigned numParticles, ParticleGraphPinRef* pinRefs)
+void RunUpdate(UpdateContext& context, Instance& instance, ParticleGraphPinRef* pinRefs)
 {
     switch (pinRefs[0].type_)
     {
     case PGCONTAINER_SPAN:
     {
         ea::tuple<ea::span<Value0>> nextTuple = ea::make_tuple(context.GetSpan<Value0>(*pinRefs));
-        RunUpdate<Instance, ea::tuple<ea::span<Value0>>, Values...>(context, instance, numParticles, pinRefs + 1,
-                                                                         std::move(nextTuple));
+        RunUpdate<Instance, ea::tuple<ea::span<Value0>>, Values...>(
+            context, instance, false, pinRefs + 1, std::move(nextTuple));
         return;
     }
     case PGCONTAINER_SPARSE:
     {
         ea::tuple<SparseSpan<Value0>> nextTuple = ea::make_tuple(context.GetSparse<Value0>(*pinRefs));
-        RunUpdate<Instance, ea::tuple<SparseSpan<Value0>>, Values...>(context, instance, numParticles,
-                                                                            pinRefs + 1,
-                                                                  std::move(nextTuple));
+        RunUpdate<Instance, ea::tuple<SparseSpan<Value0>>, Values...>(
+            context, instance, false, pinRefs + 1, std::move(nextTuple));
         return;
     }
     case PGCONTAINER_SCALAR:
     {
         ea::tuple<ScalarSpan<Value0>> nextTuple = ea::make_tuple(context.GetScalar<Value0>(*pinRefs));
-        RunUpdate<Instance, ea::tuple<ScalarSpan<Value0>>, Values...>(context, instance, numParticles,
-                                                                            pinRefs + 1,
-                                                                  std::move(nextTuple));
+        RunUpdate<Instance, ea::tuple<ScalarSpan<Value0>>, Values...>(
+            context, instance, true, pinRefs + 1, std::move(nextTuple));
         return;
     }
-    default:
-        assert(!"Invalid pin container type permutation");
-        break;
+    default: assert(!"Invalid pin container type permutation"); break;
     }
 };
 /// Abstract node
@@ -156,8 +152,7 @@ public:
             {
                 pinRefs[i] = node_->pins_[i].GetMemoryReference();
             }
-            RunUpdate<typename GraphNode::Instance, Values...>(
-                context, *static_cast<typename GraphNode::Instance*>(this), context.indices_.size(), pinRefs);
+            RunUpdate<typename GraphNode::Instance, Values...>(context, *static_cast<typename GraphNode::Instance*>(this), pinRefs);
         }
 
         /// Get graph node instance.
@@ -244,13 +239,16 @@ struct NodePattern
     typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> UpdateFunction;
 
     NodePattern(UpdateFunction&& update, PinPattern&& pin0);
+    NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1);
+    NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2);
+    NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2, PinPattern&& pin3);
 
     bool Match(const ea::span<ParticleGraphPin>& pins) const;
 
     VariantType EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins, const ParticleGraphPin& outputPin) const;
 
     UpdateFunction updateFunction_;
-    ea::fixed_vector<PinPattern, ExpectedNumberOfPins> in_;
+    ea::fixed_vector<PinPattern, ExpectedNumberOfPins> pins_;
 };
 
 
@@ -286,6 +284,11 @@ public:
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
 protected:
+    /// Load input pin.
+    ParticleGraphPin* LoadInputPin(ParticleGraphReader& reader, GraphInPin& pin) override;
+    /// Load output pin.
+    ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin) override;
+
     /// Evaluate runtime output pin type.
     VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
 

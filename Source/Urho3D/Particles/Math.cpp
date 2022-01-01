@@ -30,7 +30,74 @@ namespace Urho3D
 
 namespace ParticleGraphNodes
 {
+namespace
+{
 
+//template <typename Result, typename... Args> NodePattern MakePattern(ea::function<Result(Args...)> fn)
+//{
+//    return NodePattern();
+//}
+
+static ea::vector<NodePattern> MakePatterns{
+    //MakePattern<Vector2, float, float>([](float x, float y) -> Vector2 { return Vector2(x, y); }),
+    NodePattern(
+        [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
+        {
+            auto lambda = [](UpdateContext& context, unsigned numParticles, auto&& spans)
+            {
+                auto& x = ea::get<0>(spans);
+                auto& y = ea::get<1>(spans);
+                auto& out = ea::get<2>(spans);
+                for (unsigned i = 0; i < numParticles; ++i)
+                {
+                    out[i] = Vector2(x[i], y[i]);
+                }
+            };
+            RunUpdate<decltype(lambda), float, float, Vector2>(context, lambda, pinRefs);
+        },
+        PinPattern("x", VAR_FLOAT), PinPattern("y", VAR_FLOAT),
+        PinPattern(ParticleGraphPinFlag::Output, "out", VAR_VECTOR2)),
+
+    NodePattern(
+        [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
+        {
+            auto lambda = [](UpdateContext& context, unsigned numParticles, auto&& spans)
+            {
+                auto& x = ea::get<0>(spans);
+                auto& y = ea::get<1>(spans);
+                auto& z = ea::get<2>(spans);
+                auto& out = ea::get<3>(spans);
+                for (unsigned i = 0; i < numParticles; ++i)
+                {
+                    out[i] = Vector3(x[i], y[i], z[i]);
+                }
+            };
+            RunUpdate<decltype(lambda), float, float, float, Vector3>(context, lambda, pinRefs);
+        },
+        PinPattern("x", VAR_FLOAT), PinPattern("y", VAR_FLOAT), PinPattern("z", VAR_FLOAT),
+        PinPattern(ParticleGraphPinFlag::Output, "out", VAR_VECTOR3)),
+
+    NodePattern(
+        [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
+        {
+            auto lambda = [](UpdateContext& context, unsigned numParticles, auto&& spans)
+            {
+                auto& translation = ea::get<0>(spans);
+                auto& rotation = ea::get<1>(spans);
+                auto& scale = ea::get<2>(spans);
+                auto& out = ea::get<3>(spans);
+                for (unsigned i = 0; i < numParticles; ++i)
+                {
+                    out[i] = Matrix3x4(translation[i], rotation[i], scale[i]);
+                }
+            };
+            RunUpdate<decltype(lambda), Vector3, Quaternion, Vector3, Matrix3x4>(context, lambda, pinRefs);
+        },
+        PinPattern("translation", VAR_VECTOR3), PinPattern("rotation", VAR_QUATERNION),
+        PinPattern("scale", VAR_VECTOR3), PinPattern(ParticleGraphPinFlag::Output, "out", VAR_MATRIX3X4)),
+};
+
+}
 Slerp::Slerp(Context* context)
     : AbstractNodeType(context, PinArray{
                                     ParticleGraphPin(ParticleGraphPinFlag::Input, "x"),
@@ -46,43 +113,12 @@ void Slerp::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Slerp>();
 }
 
-MakeVec2::MakeVec2(Context* context)
-    : AbstractNodeType(context,
-        PinArray{
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "x"),
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "y"),
-            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
-        })
+Make::Make(Context* context)
+    : PatternMatchingNode(context, MakePatterns)
 {
 }
 
-void MakeVec2::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeVec2>(); }
-
-MakeVec3::MakeVec3(Context* context)
-    : AbstractNodeType(context,
-        PinArray{
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "x"),
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "y"),
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "z"),
-            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
-        })
-{
-}
-
-void MakeVec3::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeVec3>(); }
-
-MakeMatrix3x4::MakeMatrix3x4(Context* context)
-    : AbstractNodeType(context,
-        PinArray{
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "translation"),
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "rotation"),
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "scale"),
-            ParticleGraphPin(ParticleGraphPinFlag::None, "out"),
-        })
-{
-}
-
-void MakeMatrix3x4::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<MakeMatrix3x4>(); }
+void Make::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<Make>(); }
 
 }
 

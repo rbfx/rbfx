@@ -24,27 +24,86 @@
 
 #include "Helpers.h"
 #include "ParticleGraphSystem.h"
+#include "Urho3D/IO/Log.h"
 
 namespace Urho3D
 {
 
 namespace ParticleGraphNodes
 {
+namespace 
+{
+class NopInstance: public ParticleGraphNodeInstance
+{
+    void Update(UpdateContext& context) override{};
+};
+}
 
 NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0)
     : updateFunction_(ea::move(update))
-    , in_{ea::move(pin0)}
+    , pins_{ea::move(pin0)}
+{
+}
+NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1)
+    : updateFunction_(ea::move(update))
+    , pins_{ea::move(pin0), ea::move(pin1)}
+{
+}
+
+NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2)
+    : updateFunction_(ea::move(update))
+    , pins_{ea::move(pin0), ea::move(pin1), ea::move(pin2)}
+{
+}
+
+NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2,
+    PinPattern&& pin3)
+    : updateFunction_(ea::move(update))
+    , pins_{ea::move(pin0), ea::move(pin1), ea::move(pin2), ea::move(pin3)}
 {
 }
 
 bool NodePattern::Match(const ea::span<ParticleGraphPin>& pins) const {
-    return false;
+    if (pins.size() != this->pins_.size())
+    {
+        return false;
+    }
+    for (unsigned i = 0; i < pins.size(); ++i)
+    {
+        if (pins[i].GetNameHash() != this->pins_[i].nameHash_)
+            return false;
+        if (pins[i].GetValueType() != this->pins_[i].type_)
+            return false;
+    }
+    return true;
 }
 
 VariantType NodePattern::EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins,
     const ParticleGraphPin& outputPin) const
 {
-    return VAR_NONE;
+    if (pins.size() != this->pins_.size())
+    {
+        return VAR_NONE;
+    }
+    VariantType res = VAR_NONE;
+    for (unsigned i = 0; i < pins.size(); ++i)
+    {
+        if (pins[i].GetNameHash() != this->pins_[i].nameHash_)
+            return VAR_NONE;
+        if (pins[i].IsInput())
+        {
+            if (pins[i].GetValueType() != this->pins_[i].type_)
+                return VAR_NONE;
+        }
+        else
+        {
+            if (outputPin.GetNameHash() == this->pins_[i].nameHash_)
+            {
+                res = this->pins_[i].type_;
+            }
+        }
+    }
+    return res;
 }
 
 PatternMatchingNode::Instance::Instance(PatternMatchingNode* op, const NodePattern& pattern)
@@ -79,7 +138,32 @@ ParticleGraphNodeInstance* PatternMatchingNode::CreateInstanceAt(void* ptr, Part
             return new (ptr) Instance(this, p);
         }
     }
-    return nullptr;
+    URHO3D_LOGERROR(Format("No matching pattern found for graph node {}", this->GetTypeName()));
+    return new (ptr) NopInstance();
+}
+
+ParticleGraphPin* PatternMatchingNode::LoadInputPin(ParticleGraphReader& reader, GraphInPin& inputPin)
+{
+    const auto index = GetPinIndex(inputPin.GetName());
+    if (index != INVALID_PIN)
+    {
+        if (inputPin.GetType() != VAR_NONE)
+            SetPinValueType(index, inputPin.GetType());
+        return &GetPin(index);
+    }
+    return &pins_.emplace_back(ParticleGraphPinFlag::Input, inputPin.GetName(), inputPin.GetType());
+}
+
+ParticleGraphPin* PatternMatchingNode::LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& outputPin)
+{
+    const auto index = GetPinIndex(outputPin.GetName());
+    if (index != INVALID_PIN)
+    {
+        if (outputPin.GetType() != VAR_NONE)
+            SetPinValueType(index, outputPin.GetType());
+        return &GetPin(index);
+    }
+    return &pins_.emplace_back(ParticleGraphPinFlag::Output, outputPin.GetName(), outputPin.GetType());
 }
 
 VariantType PatternMatchingNode::EvaluateOutputPinType(ParticleGraphPin& pin)

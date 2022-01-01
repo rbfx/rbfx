@@ -45,7 +45,7 @@ struct BinaryOperatorPermutation
             [](UpdateContext& context, ParticleGraphNodeInstance* instance, ParticleGraphPinRef* pinRefs)
             {
                 RunUpdate<typename Node::Instance, X, Y, T>(
-                    context, *static_cast<typename Node::Instance*>(instance), context.indices_.size(), pinRefs);
+                    context, *static_cast<typename Node::Instance*>(instance), pinRefs);
             });
     }
 
