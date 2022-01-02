@@ -44,17 +44,9 @@ class SerializableObject : public Object
 public:
     explicit SerializableObject(Context* context) : Object(context) {}
 
-    bool Serialize(Archive& archive, const char* name)
-    {
-        if (auto block = archive.OpenSafeUnorderedBlock("SerializableObject"))
-            return Serialize(archive, block);
-        return false;
-    }
-
-    bool Serialize(Archive& archive, ArchiveBlock& block)
+    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override
     {
         SerializeValue(archive, "member_", member_);
-        return true;
     }
 
     bool operator ==(const SerializableObject& rhs) const

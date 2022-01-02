@@ -160,11 +160,9 @@ bool Asset::Save()
     {
         JSONFile file(context_);
         JSONOutputArchive archive(&file);
-        if (Serialize(archive, "asset"))
-        {
-            if (file.SaveFile(assetPath))
-                return true;
-        }
+        SerializeValue(archive, "asset", *this);
+        if (file.SaveFile(assetPath))
+            return true;
     }
     else
     {
@@ -191,8 +189,9 @@ bool Asset::Load()
     }
 
     JSONInputArchive archive(&file);
-    if (!file.GetRoot().IsNull() && !Serialize(archive, "asset"))
+    if (!file.GetRoot().IsNull())
     {
+        SerializeValue(archive, "asset", *this);
         URHO3D_LOGERROR("Deserializing {} failed.", assetPath);
         return false;
     }

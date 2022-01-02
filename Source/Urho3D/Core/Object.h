@@ -108,8 +108,6 @@ public:
     /// Handle event.
     virtual void OnEvent(Object* sender, StringHash eventType, VariantMap& eventData);
 
-    /// Serialize object.
-    virtual bool Serialize(Archive& archive, const char* name);
     /// Serialize content from/to archive. May throw ArchiveException.
     virtual void SerializeInBlock(Archive& archive, ArchiveBlock& block);
 

@@ -25,6 +25,7 @@
 #include "../Core/Assert.h"
 #include "../Core/Object.h"
 #include "../Core/StringUtils.h"
+#include "../Core/TypeTrait.h"
 #include "../Core/Variant.h"
 #include "../IO/Archive.h"
 #include "../IO/Log.h"
@@ -209,6 +210,17 @@ struct ResourceRefListStringCaster
     }
 };
 
+}
+
+/// Check whether the object can be serialized from/to Archive block.
+URHO3D_TYPE_TRAIT(IsObjectSerializableInBlock, std::declval<T&>().SerializeInBlock(std::declval<Archive&>(), std::declval<ArchiveBlock&>()));
+
+/// Serialize object with standard interface as value.
+template <class T, std::enable_if_t<IsObjectSerializableInBlock<T>::value, int> = 0>
+inline void SerializeValue(Archive& archive, const char* name, T& value)
+{
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    value.SerializeInBlock(archive, block);
 }
 
 /// @name Serialize primitive types
@@ -586,11 +598,8 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
         }
     }
 
-    if (value && !value->Serialize(archive, "value"))
-    {
-        throw ArchiveException("Failed to serialize object '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
-            type.ToDebugString());
-    }
+    if (value)
+        SerializeValue(archive, "value", *value);
 }
 
 /// Serialize optional element or block.

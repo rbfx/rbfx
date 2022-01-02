@@ -132,21 +132,6 @@ void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData
     }
 }
 
-bool Object::Serialize(Archive& archive, const char* name)
-{
-    try
-    {
-        auto block = archive.OpenSafeUnorderedBlock(name);
-        SerializeInBlock(archive, block);
-        return true;
-    }
-    catch (const ArchiveException& e)
-    {
-        URHO3D_LOGERROR("Failed to serialize object of type '{}': {}", GetTypeName(), e.what());
-        return false;
-    }
-}
-
 void Object::SerializeInBlock(Archive& /*archive*/, ArchiveBlock& /*block*/)
 {
     URHO3D_ASSERT(0);
