@@ -50,7 +50,9 @@ struct MsgSynchronize
 {
     unsigned magic_{};
 
+    unsigned connectionId_{};
     unsigned updateFrequency_{};
+
     unsigned numStartClockSamples_{};
     unsigned numTrimmedClockSamples_{};
     unsigned numOngoingClockSamples_{};

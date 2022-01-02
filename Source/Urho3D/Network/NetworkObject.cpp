@@ -34,6 +34,17 @@ NetworkObject::NetworkObject(Context* context) : Component(context) {}
 
 NetworkObject::~NetworkObject() = default;
 
+void NetworkObject::SetOwner(AbstractConnection* owner)
+{
+    if (networkMode_ != NetworkObjectMode::Draft)
+    {
+        URHO3D_ASSERTLOG(0, "NetworkObject::SetOwner may be called only for NetworkObject in Draft mode");
+        return;
+    }
+
+    ownerConnection_ = owner;
+}
+
 void NetworkObject::RegisterObject(Context* context)
 {
     context->RegisterFactory<NetworkObject>();

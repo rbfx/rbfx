@@ -65,6 +65,7 @@ public:
     void RemoveAllComponents();
 
     void ClearRecentActions();
+    const auto& GetRecentlyAddedComponents() const { return recentlyAddedComponents_; }
     const auto& GetRecentlyRemovedComponents() const { return recentlyRemovedComponents_; }
 
     void UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
@@ -97,7 +98,7 @@ private:
     ea::vector<NetworkObject*> networkObjects_;
     ea::vector<unsigned> networkObjectVersions_;
     ea::vector<bool> networkObjectsDirty_;
-    IndexAllocator<DummyMutex> indexAllocator_;
+    IndexAllocator<> indexAllocator_;
 
     ea::unordered_set<NetworkId> recentlyRemovedComponents_;
     ea::unordered_set<NetworkId> recentlyAddedComponents_;

@@ -63,16 +63,6 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     });
 }
 
-void ServerNetworkManager::InitializeNetworkObjects()
-{
-    const auto& networkObjects = base_->GetUnorderedNetworkObjects();
-    for (NetworkObject* networkObject : networkObjects)
-    {
-        if (networkObject)
-            networkObject->InitializeOnServer();
-    }
-}
-
 void ServerNetworkManager::BeginNetworkFrame()
 {
     const float timeStep = 1.0f / updateFrequency_;
@@ -97,6 +87,20 @@ void ServerNetworkManager::UpdateClocks(float timeStep)
 
 void ServerNetworkManager::CollectObjectsToUpdate(float timeStep)
 {
+    const auto& recentlyAddedObjects = base_->GetRecentlyAddedComponents();
+    for (NetworkId networkId : recentlyAddedObjects)
+    {
+        NetworkObject* networkObject = base_->GetNetworkObject(networkId);
+        if (!networkObject)
+        {
+            URHO3D_ASSERTLOG(0, "Cannot find recently added NetworkObject");
+            continue;
+        }
+
+        networkObject->SetNetworkMode(NetworkObjectMode::Server);
+        networkObject->InitializeOnServer();
+    }
+
     const unsigned maxIndex = base_->GetNetworkIndexUpperBound();
     deltaUpdateMask_.Clear(maxIndex);
     reliableDeltaUpdates_.resize(maxIndex);
@@ -242,7 +246,7 @@ void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
 
 void ServerNetworkManager::SendUpdate(ClientConnectionData& data)
 {
-    if (!SendSyncronizationMessages(data))
+    if (!SendSynchronizationMessages(data))
         return;
 
     SendPingAndClockMessages(data);
@@ -253,7 +257,7 @@ void ServerNetworkManager::SendUpdate(ClientConnectionData& data)
     SendUpdateObjectsUnreliableMessage(data);
 }
 
-bool ServerNetworkManager::SendSyncronizationMessages(ClientConnectionData& data)
+bool ServerNetworkManager::SendSynchronizationMessages(ClientConnectionData& data)
 {
     AbstractConnection* connection = data.connection_;
 
@@ -283,6 +287,8 @@ bool ServerNetworkManager::SendSyncronizationMessages(ClientConnectionData& data
             MsgSynchronize msg{ magic };
 
             msg.updateFrequency_ = updateFrequency_;
+            msg.connectionId_ = connection->GetObjectID();
+
             msg.numStartClockSamples_ = settings_.numStartClockSamples_;
             msg.numTrimmedClockSamples_ = settings_.numTrimmedClockSamples_;
             msg.numOngoingClockSamples_ = settings_.numOngoingClockSamples_;
@@ -363,6 +369,7 @@ void ServerNetworkManager::SendAddObjectsMessage(ClientConnectionData& data)
             sendMessage = true;
             msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
             msg.WriteStringHash(networkObject->GetType());
+            msg.WriteVLE(networkObject->GetOwnerConnectionId());
 
             componentBuffer_.Clear();
             networkObject->WriteSnapshot(currentFrame_, componentBuffer_);

@@ -123,9 +123,6 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
     recentlyAddedComponents_.insert(networkId);
     networkObjects_[index] = networkObject;
 
-    if (server_)
-        networkObject->InitializeOnServer();
-
     URHO3D_LOGINFO("NetworkObject {} is added", FormatNetworkId(networkId));
 }
 
@@ -269,7 +266,7 @@ NetworkId NetworkManagerBase::ComposeNetworkId(unsigned index, unsigned version)
 ea::pair<unsigned, unsigned> NetworkManagerBase::DecomposeNetworkId(NetworkId networkId)
 {
     const auto value = static_cast<unsigned>(networkId);
-    return { (value >> IndexOffset) & IndexMask, (value >> VersionOffset) * VersionMask };
+    return { (value >> IndexOffset) & IndexMask, (value >> VersionOffset) & VersionMask };
 }
 
 ea::string NetworkManagerBase::FormatNetworkId(NetworkId networkId)
@@ -296,7 +293,6 @@ void NetworkManager::MarkAsServer()
     if (!server_)
     {
         server_ = MakeShared<ServerNetworkManager>(this, GetScene());
-        server_->InitializeNetworkObjects();
     }
 }
 

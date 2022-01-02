@@ -103,6 +103,8 @@ public:
     void SimulateEngineFrame(float timeStep);
     void SimulateTime(float time);
 
+    AbstractConnection* GetServerToClientConnection(Scene* clientScene);
+
 private:
     struct PerClient
     {
@@ -119,7 +121,7 @@ private:
     Scene* serverScene_{};
     NetworkManager* serverNetworkManager_{};
 
-    ea::vector<PerClient> clientScenes_;
+    ea::vector<PerClient> clients_;
 };
 
 }

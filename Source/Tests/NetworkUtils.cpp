@@ -149,7 +149,7 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
     serverNetworkManager_->AsServer().AddConnection(data.serverToClient_);
     serverNetworkManager_->AsServer().SetTestPing(data.serverToClient_, RoundToInt((quality.maxPing_ + quality.minPing_) / 2 * 1000));
 
-    clientScenes_.push_back(data);
+    clients_.push_back(data);
 }
 
 void NetworkSimulator::SimulateEngineFrame(float timeStep)
@@ -160,12 +160,12 @@ void NetworkSimulator::SimulateEngineFrame(float timeStep)
     const unsigned elapsedNetworkMilliseconds = static_cast<unsigned>(timeStep * MillisecondsInFrame * FramesInSecond);
 
     // Process client-to-server messages first so server can process them
-    for (PerClient& data : clientScenes_)
+    for (PerClient& data : clients_)
         data.clientToServer_->IncrementTime(elapsedNetworkMilliseconds);
 
     // Proces server-to-client messages after.
     // This may result in more client-to-server messages which will be ignored until next frame.
-    for (PerClient& data : clientScenes_)
+    for (PerClient& data : clients_)
         data.serverToClient_->IncrementTime(elapsedNetworkMilliseconds);
 
     // Update client time
@@ -190,6 +190,13 @@ void NetworkSimulator::SimulateTime(float time)
 
     for (unsigned i = 0; i < numSteps; ++i)
         SimulateEngineFrame(timeStep);
+}
+
+AbstractConnection* NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
+{
+    const auto isSameScene = [&](const PerClient& data) { return data.clientScene_ == clientScene; };
+    const auto iter = ea::find_if(clients_.begin(), clients_.end(), isSameScene);
+    return iter != clients_.end() ? iter->serverToClient_ : nullptr;
 }
 
 }

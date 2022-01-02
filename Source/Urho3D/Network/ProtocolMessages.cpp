@@ -47,6 +47,8 @@ void MsgSynchronize::Save(VectorBuffer& dest) const
     dest.WriteUInt(magic_);
 
     dest.WriteVLE(updateFrequency_);
+    dest.WriteVLE(connectionId_);
+
     dest.WriteVLE(numStartClockSamples_);
     dest.WriteVLE(numTrimmedClockSamples_);
     dest.WriteVLE(numOngoingClockSamples_);
@@ -60,6 +62,8 @@ void MsgSynchronize::Load(MemoryBuffer& src)
     magic_ = src.ReadUInt();
 
     updateFrequency_ = src.ReadVLE();
+    connectionId_ = src.ReadVLE();
+
     numStartClockSamples_ = src.ReadVLE();
     numTrimmedClockSamples_ = src.ReadVLE();
     numOngoingClockSamples_ = src.ReadVLE();
@@ -70,8 +74,8 @@ void MsgSynchronize::Load(MemoryBuffer& src)
 
 ea::string MsgSynchronize::ToString() const
 {
-    return Format("{{magic={}, lastFrame={} ping={} updateFrequency={}}}",
-        magic_, lastFrame_, ping_, updateFrequency_);
+    return Format("{{magic={} updateFrequency={} connectionId={} lastFrame={} ping={}}}",
+        magic_, updateFrequency_, connectionId_, lastFrame_, ping_);
 }
 
 void MsgSynchronizeAck::Save(VectorBuffer& dest) const
