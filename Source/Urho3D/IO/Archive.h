@@ -22,15 +22,17 @@
 
 #pragma once
 
-#include "../Core/Context.h"
 #include "../Core/Exception.h"
-#include "../Core/StringUtils.h"
+#include "../Core/NonCopyable.h"
 
 #include <EASTL/string.h>
 #include <EASTL/utility.h>
 
 namespace Urho3D
 {
+
+class Archive;
+class Context;
 
 /// Type of archive block.
 /// - Default block type is Sequential.
@@ -58,8 +60,6 @@ enum class ArchiveBlockType
     /// - Best choice when items are ordered and number of items is dynamic (e.g. dynamic array).
     Array
 };
-
-class Archive;
 
 /// Archive block scope guard.
 class URHO3D_API ArchiveBlock : private MovableNonCopyable

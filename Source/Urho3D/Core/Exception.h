@@ -24,6 +24,8 @@
 
 #include "../Core/Format.h"
 
+#include <Urho3D/Urho3D.h>
+
 #include <EASTL/string.h>
 
 #include <exception>
@@ -33,7 +35,7 @@ namespace Urho3D
 
 /// Generic runtime exception adapted for usage in Urho.
 /// Note that this exception shouldn't leak into main loop of the engine and should only be used internally.
-class RuntimeException : public std::exception
+class URHO3D_API RuntimeException : public std::exception
 {
 public:
     /// Construct exception with static message.
@@ -64,7 +66,7 @@ private:
 /// Exception thrown on I/O error on Archive serialization/deserialization.
 /// Try to catch this exception outside of serialization code and don't leak it to user code.
 /// Archive is generally not safe to use if ArchiveException has been thrown.
-class ArchiveException : public RuntimeException
+class URHO3D_API ArchiveException : public RuntimeException
 {
 public:
     using RuntimeException::RuntimeException;

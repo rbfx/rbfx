@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/Assert.h"
+#include "../Core/Context.h"
 #include "../Core/NonCopyable.h"
 #include "../IO/Archive.h"
 

@@ -21,6 +21,7 @@
 //
 
 #include "../IO/ArchiveBase.h"
+#include "../Core/StringUtils.h"
 
 namespace Urho3D
 {
