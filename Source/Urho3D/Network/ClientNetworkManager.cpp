@@ -106,8 +106,10 @@ void UpdateSmoothPing(ClientClock& clock, float blendFactor)
 
 }
 
-ClientClock::ClientClock(unsigned updateFrequency, unsigned numStartSamples, unsigned numTrimmedSamples, unsigned numOngoingSamples)
-    : updateFrequency_(updateFrequency)
+ClientClock::ClientClock(unsigned thisConnectionId, unsigned updateFrequency, unsigned numStartSamples,
+    unsigned numTrimmedSamples, unsigned numOngoingSamples)
+    : thisConnectionId_(thisConnectionId)
+    , updateFrequency_(updateFrequency)
     , numStartSamples_(numStartSamples)
     , numTrimmedSamples_(numTrimmedSamples)
     , numOngoingSamples_(ea::max(numOngoingSamples, numStartSamples + 1))
@@ -207,7 +209,7 @@ void ClientNetworkManager::ProcessPing(const MsgPingPong& msg)
 void ClientNetworkManager::ProcessSynchronize(const MsgSynchronize& msg)
 {
     clock_.emplace(ClientClock{
-        msg.updateFrequency_, msg.numStartClockSamples_, msg.numTrimmedClockSamples_, msg.numOngoingClockSamples_});
+        msg.connectionId_, msg.updateFrequency_, msg.numStartClockSamples_, msg.numTrimmedClockSamples_, msg.numOngoingClockSamples_});
 
     clock_->latestServerFrame_ = msg.lastFrame_;
     clock_->ping_ = msg.ping_;
@@ -262,13 +264,21 @@ void ClientNetworkManager::ProcessAddObjects(MemoryBuffer& messageData)
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
         const StringHash componentType = messageData.ReadStringHash();
+        const unsigned ownerConnectionId = messageData.ReadVLE();
 
         messageData.ReadBuffer(componentBuffer_.GetBuffer());
         componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
         componentBuffer_.Seek(0);
 
         if (NetworkObject* networkObject = CreateNetworkObject(networkId, componentType))
+        {
+            if (ownerConnectionId == clock_->thisConnectionId_)
+                networkObject->SetNetworkMode(NetworkObjectMode::ClientOwned);
+            else
+                networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
+
             networkObject->ReadSnapshot(messageFrame, componentBuffer_);
+        }
     }
 }
 

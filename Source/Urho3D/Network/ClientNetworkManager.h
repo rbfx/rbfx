@@ -24,7 +24,6 @@
 
 #pragma once
 
-#include "../Container/IndexAllocator.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/NetworkTime.h"
@@ -57,9 +56,12 @@ struct ClientNetworkManagerSettings
 /// Client clock synchronized with server.
 struct ClientClock
 {
-    ClientClock(unsigned updateFrequency, unsigned numStartSamples, unsigned numTrimmedSamples, unsigned numOngoingSamples);
+    ClientClock(unsigned thisConnectionId, unsigned updateFrequency, unsigned numStartSamples,
+        unsigned numTrimmedSamples, unsigned numOngoingSamples);
 
     const unsigned updateFrequency_{};
+    const unsigned thisConnectionId_{};
+
     const unsigned numStartSamples_{};
     const unsigned numTrimmedSamples_{};
     const unsigned numOngoingSamples_{};

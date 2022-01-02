@@ -506,3 +506,75 @@ TEST_CASE("Prefabs are replicated on clients")
         CHECK(light2->GetColor() == Color::RED);
     }
 }
+
+TEST_CASE("Ownership is consistent on server and on clients")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
+
+    // Setup scenes
+    const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
+    auto serverScene = MakeShared<Scene>(context);
+    SharedPtr<Scene> clientScenes[] = {
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context),
+        MakeShared<Scene>(context)
+    };
+
+    // Start simulation
+    Tests::NetworkSimulator sim(serverScene);
+    for (Scene* clientScene : clientScenes)
+        sim.AddClient(clientScene, quality);
+
+    // Create nodes
+    {
+        Node* node = serverScene->CreateChild("Unowned Node");
+        auto object = node->CreateComponent<DefaultNetworkObject>();
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+    }
+    {
+        Node* node = serverScene->CreateChild("Owned Node 0");
+        auto object = node->CreateComponent<DefaultNetworkObject>();
+        object->SetOwner(sim.GetServerToClientConnection(clientScenes[0]));
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+    }
+    {
+        Node* node = serverScene->CreateChild("Owned Node 1");
+        auto object = node->CreateComponent<DefaultNetworkObject>();
+        object->SetOwner(sim.GetServerToClientConnection(clientScenes[1]));
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+    }
+    {
+        Node* node = serverScene->CreateChild("Owned Node 2");
+        auto object = node->CreateComponent<DefaultNetworkObject>();
+        object->SetOwner(sim.GetServerToClientConnection(clientScenes[2]));
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+    }
+    sim.SimulateTime(10.0f);
+
+    // Check ownership
+    const auto getObject = [](Scene* scene, const ea::string& name)
+    {
+        return scene->GetChild(name, true)->GetDerivedComponent<NetworkObject>();
+    };
+
+    REQUIRE(getObject(serverScene, "Unowned Node")->GetNetworkMode() == NetworkObjectMode::Server);
+    REQUIRE(getObject(serverScene, "Owned Node 0")->GetNetworkMode() == NetworkObjectMode::Server);
+    REQUIRE(getObject(serverScene, "Owned Node 1")->GetNetworkMode() == NetworkObjectMode::Server);
+    REQUIRE(getObject(serverScene, "Owned Node 2")->GetNetworkMode() == NetworkObjectMode::Server);
+
+    REQUIRE(getObject(clientScenes[0], "Unowned Node")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+    REQUIRE(getObject(clientScenes[0], "Owned Node 0")->GetNetworkMode() == NetworkObjectMode::ClientOwned);
+    REQUIRE(getObject(clientScenes[0], "Owned Node 1")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+    REQUIRE(getObject(clientScenes[0], "Owned Node 2")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+
+    REQUIRE(getObject(clientScenes[1], "Unowned Node")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+    REQUIRE(getObject(clientScenes[1], "Owned Node 0")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+    REQUIRE(getObject(clientScenes[1], "Owned Node 1")->GetNetworkMode() == NetworkObjectMode::ClientOwned);
+    REQUIRE(getObject(clientScenes[1], "Owned Node 2")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+
+    REQUIRE(getObject(clientScenes[2], "Unowned Node")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+    REQUIRE(getObject(clientScenes[2], "Owned Node 0")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+    REQUIRE(getObject(clientScenes[2], "Owned Node 1")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
+    REQUIRE(getObject(clientScenes[2], "Owned Node 2")->GetNetworkMode() == NetworkObjectMode::ClientOwned);
+}

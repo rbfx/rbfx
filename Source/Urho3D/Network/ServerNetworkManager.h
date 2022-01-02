@@ -134,7 +134,6 @@ class URHO3D_API ServerNetworkManager : public Object
 
 public:
     ServerNetworkManager(NetworkManagerBase* base, Scene* scene);
-    void InitializeNetworkObjects();
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
@@ -159,7 +158,7 @@ private:
     void PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject);
 
     void SendUpdate(ClientConnectionData& data);
-    bool SendSyncronizationMessages(ClientConnectionData& data);
+    bool SendSynchronizationMessages(ClientConnectionData& data);
     void SendPingAndClockMessages(ClientConnectionData& data);
     void SendRemoveObjectsMessage(ClientConnectionData& data);
     void SendAddObjectsMessage(ClientConnectionData& data);

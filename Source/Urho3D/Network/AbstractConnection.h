@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Container/FlagSet.h"
+#include "../Container/IndexAllocator.h"
 #include "../Core/Object.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
@@ -44,7 +45,7 @@ URHO3D_FLAGSET(NetworkMessageFlag, NetworkMessageFlags);
 
 /// Interface of connection to another host.
 /// Virtual for easier unit testing.
-class URHO3D_API AbstractConnection : public Object
+class URHO3D_API AbstractConnection : public Object, public IDFamily<AbstractConnection>
 {
     URHO3D_OBJECT(AbstractConnection, Object);
 

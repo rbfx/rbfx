@@ -33,7 +33,7 @@ namespace Urho3D
 {
 
 /// Utility to assign unique non-zero IDs to objects. Thread-safe.
-template <class T>
+template <class T = DummyMutex>
 class IndexAllocator
 {
 public:

@@ -27,6 +27,7 @@
 #include "../Core/Assert.h"
 #include "../Container/FlagSet.h"
 #include "../Scene/Component.h"
+#include "../Network/AbstractConnection.h"
 #include "../Network/NetworkManager.h"
 
 #include <EASTL/fixed_vector.h>
@@ -36,6 +37,20 @@ namespace Urho3D
 {
 
 class AbstractConnection;
+
+enum class NetworkObjectMode
+{
+    /// Default state of NetworkObject.
+    /// If scene is not replicated from/to, NetworkObject in such scene stays as Draft.
+    /// If scene is replicated, NetworkObject is a draft until it's processed by Network subsystem.
+    Draft,
+    /// Object is on server and is replicated to clients.
+    Server,
+    /// Object is on client and is replicated from the server.
+    ClientReplicated,
+    /// Object is on client and is owned by this client. Client may send feedback from owned objects.
+    ClientOwned
+};
 
 /// Base component of Network-replicated object.
 ///
@@ -52,20 +67,27 @@ public:
     explicit NetworkObject(Context* context);
     ~NetworkObject() override;
 
+    /// Server-only: set owner connection which is allowed to send feedback for this object.
+    void SetOwner(AbstractConnection* owner);
+
     static void RegisterObject(Context* context);
 
-    /// Update pointer to the parent NetworkObject.
+    /// Internal API for NetworkManager.
+    /// @{
     void UpdateParent();
-    /// Assign NetworkId. On the Server, it's better to let the Server assign ID, to avoid unwanted side effects.
     void SetNetworkId(NetworkId networkId) { networkId_ = networkId; }
+    void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
+    /// @}
+
     /// Return current or last NetworkId. Return InvalidNetworkId if not registered.
     NetworkId GetNetworkId() const { return networkId_; }
-    /// Return NetworkId of parent NetworkObject.
     NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
-    /// Return parent NetworkObject.
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
-    /// Return children NetworkObject.
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
+    NetworkObjectMode GetNetworkMode() const { return networkMode_; }
+    bool IsOwnedByThisClient() const { return networkMode_ == NetworkObjectMode::ClientOwned; }
+    AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
+    unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 
     /// Called on server side only. ServerNetworkManager is guaranteed to be available.
     /// @{
@@ -124,6 +146,8 @@ private:
     /// Network ID, unique within Scene.
     /// May contain outdated value if NetworkObject is not registered in any NetworkManager.
     NetworkId networkId_{InvalidNetworkId};
+    NetworkObjectMode networkMode_{};
+    AbstractConnection* ownerConnection_{};
 
     /// NetworkObject hierarchy
     /// @{
