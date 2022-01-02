@@ -30,6 +30,8 @@
 #   pragma warning(pop)
 #endif
 
+#include <EASTL/string.h>
+
 namespace Urho3D
 {
 

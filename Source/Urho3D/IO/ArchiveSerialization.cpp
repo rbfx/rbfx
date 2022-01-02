@@ -89,6 +89,48 @@ inline void SerializeVariantAsType(Archive& archive, const char* name, Variant& 
     }
 }
 
+/// ResourceRef to/from string.
+struct ResourceRefStringCaster
+{
+    ea::string ToArchive(Archive& archive, const char* name, const ResourceRef& value) const
+    {
+        Context* context = archive.GetContext();
+        const ea::string typeName = context->GetTypeName(value.type_);
+        return Format("{};{}", typeName, value.name_);
+    }
+
+    ResourceRef FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        const ea::vector<ea::string> chunks = value.split(';');
+        if (chunks.size() != 2)
+            throw ArchiveException("Unexpected format of ResourceRef '{}/{}'", archive.GetCurrentBlockPath(), name);
+
+        return { StringHash{chunks[0]}, chunks[1] };
+    }
+};
+
+/// ResourceRefList to/from string.
+struct ResourceRefListStringCaster
+{
+    ea::string ToArchive(Archive& archive, const char* name, const ResourceRefList& value) const
+    {
+        Context* context = archive.GetContext();
+        const ea::string typeName = context->GetTypeName(value.type_);
+        return Format("{};{}", typeName, ea::string::joined(value.names_, ";"));
+    }
+
+    ResourceRefList FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        ea::vector<ea::string> chunks = value.split(';');
+        if (chunks.empty())
+            throw ArchiveException("Unexpected format of ResourceRefList '{}/{}'", archive.GetCurrentBlockPath(), name);
+
+        const ea::string typeName = ea::move(chunks[0]);
+        chunks.pop_front();
+        return { StringHash{typeName}, chunks };
+    }
+};
+
 }
 
 void SerializeVariantAsType(Archive& archive, VariantType variantType, const char* name, Variant& value)
@@ -246,6 +288,47 @@ void SerializeVariantAsType(Archive& archive, VariantType variantType, const cha
     default:
         URHO3D_ASSERT(0);
     }
+}
+
+void SerializeValue(Archive& archive, const char* name, StringVector& value)
+{
+    SerializeVectorAsObjects(archive, name, "value", value);
+}
+
+void SerializeValue(Archive& archive, const char* name, VariantVector& value)
+{
+    SerializeVectorAsObjects(archive, name, "value", value);
+}
+
+void SerializeValue(Archive& archive, const char* name, VariantMap& value)
+{
+    SerializeMap(archive, name, "value", value);
+}
+
+void SerializeValue(Archive& archive, const char* name, ResourceRef& value)
+{
+    if (!archive.IsHumanReadable())
+    {
+        ArchiveBlock block = archive.OpenUnorderedBlock(name);
+        SerializeValue(archive, "type", value.type_);
+        SerializeValue(archive, "name", value.name_);
+        return;
+    }
+
+    SerializeValueAsType<ea::string>(archive, name, value, Detail::ResourceRefStringCaster{});
+}
+
+void SerializeValue(Archive& archive, const char* name, ResourceRefList& value)
+{
+    if (!archive.IsHumanReadable())
+    {
+        ArchiveBlock block = archive.OpenUnorderedBlock(name);
+        SerializeValue(archive, "type", value.type_);
+        SerializeVectorAsObjects(archive, "name", "element", value.names_);
+        return;
+    }
+
+    SerializeValueAsType<ea::string>(archive, name, value, Detail::ResourceRefListStringCaster{});
 }
 
 }
