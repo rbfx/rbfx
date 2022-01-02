@@ -611,8 +611,7 @@ bool Pipeline::CookSettings() const
 
         JSONFile file(context_);
         JSONOutputArchive archive(&file);
-        if (!settings.Serialize(archive, "settings"))
-            return false;
+        SerializeValue(archive, "settings", settings);
         context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(flavor->GetCachePath() + "Settings.json");
     }

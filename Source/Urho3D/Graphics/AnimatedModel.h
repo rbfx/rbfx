@@ -50,8 +50,6 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, const char* name) override;
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
 

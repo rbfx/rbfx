@@ -135,8 +135,7 @@ bool Project::LoadProject(const ea::string& projectPath, bool disableAssetImport
     }
     // Loading is performed even on empty file. Give a chance for serialization function to do default setup in case of missing data.
     JSONInputArchive archive(&file);
-    if (!Serialize(archive, "project"))
-        return false;
+    SerializeValue(archive, "project", *this);
 
     // Default resources directory for new projects.
     if (resourcePaths_.empty())
@@ -280,8 +279,7 @@ bool Project::SaveProject()
     // Project.json
     JSONFile file(context_);
     JSONOutputArchive archive(&file);
-    if (!Serialize(archive, "project"))
-        return false;
+    SerializeValue(archive, "project", *this);
 
     ea::string filePath(projectFileDir_ + "Project.json");
     if (!file.SaveFile(filePath))
@@ -294,44 +292,37 @@ bool Project::SaveProject()
     return true;
 }
 
-bool Project::Serialize(Archive& archive, const char* name)
+void Project::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 {
     const int version = 1;
     if (!archive.IsInput() && context_->GetSubsystem<Engine>()->IsHeadless())
     {
         URHO3D_LOGERROR("Headless instance is supposed to use project as read-only.");
-        return false;
+        return;
     }
 
     // Saving project data of tabs may trigger saving resources, which in turn triggers saving editor project. Avoid that loop.
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
 
-    if (auto projectBlock = archive.OpenUnorderedBlock("project"))
+    int archiveVersion = version;
+    SerializeValue(archive, "version", archiveVersion);
+    SerializeValue(archive, "defaultScene", defaultScene_);
+    SerializeValue(archive, "resourcePaths", resourcePaths_);
+
+    if (archive.IsInput())
     {
-        int archiveVersion = version;
-        SerializeValue(archive, "version", archiveVersion);
-        SerializeValue(archive, "defaultScene", defaultScene_);
-        SerializeValue(archive, "resourcePaths", resourcePaths_);
-
-        if (archive.IsInput())
-        {
-            for (ea::string& path : resourcePaths_)
-                path = AddTrailingSlash(path);
-        }
-
-        if (!pipeline_->Serialize(archive, "pipeline"))
-            return false;
-#if URHO3D_PLUGINS
-        if (!plugins_->Serialize(archive, "plugins"))
-            ; //return false; // TODO: Revisit
-#endif
-        using namespace EditorProjectSerialize;
-        SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);
+        for (ea::string& path : resourcePaths_)
+            path = AddTrailingSlash(path);
     }
 
-    SubscribeToEvent(E_EDITORRESOURCESAVED, [this](StringHash, VariantMap&) { SaveProject(); });
+    SerializeValue(archive, "pipeline", *pipeline_);
+#if URHO3D_PLUGINS
+    SerializeValue(archive, "plugins", *plugins_);
+#endif
+    using namespace EditorProjectSerialize;
+    SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);
 
-    return true;
+    SubscribeToEvent(E_EDITORRESOURCESAVED, [this](StringHash, VariantMap&) { SaveProject(); });
 }
 
 void Project::RenderSettingsUI()
