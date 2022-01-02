@@ -39,28 +39,15 @@ class NopInstance: public ParticleGraphNodeInstance
 };
 }
 
-NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0)
+NodePattern::NodePattern(UpdateFunction&& update)
     : updateFunction_(ea::move(update))
-    , pins_{ea::move(pin0)}
-{
-}
-NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1)
-    : updateFunction_(ea::move(update))
-    , pins_{ea::move(pin0), ea::move(pin1)}
 {
 }
 
-NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2)
-    : updateFunction_(ea::move(update))
-    , pins_{ea::move(pin0), ea::move(pin1), ea::move(pin2)}
+NodePattern& NodePattern::WithPin(PinPatternBase&& pin)
 {
-}
-
-NodePattern::NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2,
-    PinPattern&& pin3)
-    : updateFunction_(ea::move(update))
-    , pins_{ea::move(pin0), ea::move(pin1), ea::move(pin2), ea::move(pin3)}
-{
+    pins_.push_back(ea::move(pin));
+    return *this;
 }
 
 bool NodePattern::Match(const ea::span<ParticleGraphPin>& pins) const {

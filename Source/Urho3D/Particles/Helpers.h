@@ -34,6 +34,51 @@ namespace Urho3D
 
 namespace ParticleGraphNodes
 {
+
+struct PinPatternBase
+{
+    PinPatternBase(ParticleGraphPinFlags flags, ea::string_view name, VariantType type = VAR_NONE)
+        : flags_(flags)
+        , name_(name)
+        , nameHash_(name)
+        , type_(type)
+    {
+    }
+    PinPatternBase(ea::string_view name, VariantType type = VAR_NONE)
+        : PinPatternBase(ParticleGraphPinFlag::Input, name, type)
+    {
+    }
+    ParticleGraphPinFlags flags_;
+    ea::string_view name_;
+    StringHash nameHash_;
+    VariantType type_;
+};
+
+template <typename T> struct PinPattern : public PinPatternBase
+{
+    typedef T Type;
+
+    PinPattern(ParticleGraphPinFlags flags, const char* name)
+        : PinPatternBase(flags, name, GetVariantType<T>())
+    {
+    }
+    PinPattern(const char* name)
+        : PinPatternBase(name, GetVariantType<T>())
+    {
+    }
+};
+
+template <typename T>
+struct GetPinType
+{
+    typedef T Type;
+};
+template <typename T> struct GetPinType<PinPattern<T>>
+{
+    typedef T Type;
+};
+
+
 /// Abstract update runner.
 template <typename Instance, typename Tuple>
 void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
@@ -48,25 +93,26 @@ template <typename Instance, typename Tuple, typename Value0, typename... Values
 void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
                ParticleGraphPinRef* pinRefs, Tuple tuple)
 {
+    typedef typename GetPinType<Value0>::Type ValueType;
     switch (pinRefs[0].type_)
     {
     case PGCONTAINER_SPAN:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSpan<Value0>(*pinRefs)));
+        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSpan<ValueType>(*pinRefs)));
         RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, false, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
     case PGCONTAINER_SPARSE:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSparse<Value0>(*pinRefs)));
+        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSparse<ValueType>(*pinRefs)));
         RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, false, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
     case PGCONTAINER_SCALAR:
     {
-        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetScalar<Value0>(*pinRefs)));
+        auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetScalar<ValueType>(*pinRefs)));
         RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, scalar, pinRefs + 1,
                                                                   nextTuple);
         return;
@@ -81,26 +127,27 @@ void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
 template <typename Instance, typename Value0, typename... Values>
 void RunUpdate(UpdateContext& context, Instance& instance, ParticleGraphPinRef* pinRefs)
 {
+    typedef typename GetPinType<Value0>::Type ValueType;
     switch (pinRefs[0].type_)
     {
     case PGCONTAINER_SPAN:
     {
-        ea::tuple<ea::span<Value0>> nextTuple = ea::make_tuple(context.GetSpan<Value0>(*pinRefs));
-        RunUpdate<Instance, ea::tuple<ea::span<Value0>>, Values...>(
+        ea::tuple<ea::span<ValueType>> nextTuple = ea::make_tuple(context.GetSpan<ValueType>(*pinRefs));
+        RunUpdate<Instance, ea::tuple<ea::span<ValueType>>, Values...>(
             context, instance, false, pinRefs + 1, std::move(nextTuple));
         return;
     }
     case PGCONTAINER_SPARSE:
     {
-        ea::tuple<SparseSpan<Value0>> nextTuple = ea::make_tuple(context.GetSparse<Value0>(*pinRefs));
-        RunUpdate<Instance, ea::tuple<SparseSpan<Value0>>, Values...>(
+        ea::tuple<SparseSpan<ValueType>> nextTuple = ea::make_tuple(context.GetSparse<ValueType>(*pinRefs));
+        RunUpdate<Instance, ea::tuple<SparseSpan<ValueType>>, Values...>(
             context, instance, false, pinRefs + 1, std::move(nextTuple));
         return;
     }
     case PGCONTAINER_SCALAR:
     {
-        ea::tuple<ScalarSpan<Value0>> nextTuple = ea::make_tuple(context.GetScalar<Value0>(*pinRefs));
-        RunUpdate<Instance, ea::tuple<ScalarSpan<Value0>>, Values...>(
+        ea::tuple<ScalarSpan<ValueType>> nextTuple = ea::make_tuple(context.GetScalar<ValueType>(*pinRefs));
+        RunUpdate<Instance, ea::tuple<ScalarSpan<ValueType>>, Values...>(
             context, instance, true, pinRefs + 1, std::move(nextTuple));
         return;
     }
@@ -217,21 +264,6 @@ template <typename Node, typename ... Values> Scene* AbstractNode<Node, Values..
     return (emitter) ? emitter->GetScene() : nullptr;
 }
 
-struct PinPattern
-{
-    PinPattern(ParticleGraphPinFlags flags, const ea::string& name, VariantType type = VAR_NONE)
-        : flags_(flags), name_(name), nameHash_(name), type_(type)
-    {
-    }
-    PinPattern(const ea::string& name, VariantType type = VAR_NONE)
-        : PinPattern(ParticleGraphPinFlag::Input, name, type)
-    {
-    }
-    ParticleGraphPinFlags flags_;
-    ea::string name_;
-    StringHash nameHash_;
-    VariantType type_;
-};
 
 struct NodePattern
 {
@@ -239,17 +271,25 @@ struct NodePattern
 
     typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> UpdateFunction;
 
-    NodePattern(UpdateFunction&& update, PinPattern&& pin0);
-    NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1);
-    NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2);
-    NodePattern(UpdateFunction&& update, PinPattern&& pin0, PinPattern&& pin1, PinPattern&& pin2, PinPattern&& pin3);
+    explicit NodePattern(UpdateFunction&& update);
+    NodePattern& WithPin(PinPatternBase&& pin0);
 
     bool Match(const ea::span<ParticleGraphPin>& pins) const;
 
     VariantType EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins, const ParticleGraphPin& outputPin) const;
 
+    template <typename T> void SetPins(T lastPin)
+    {
+        pins_.emplace_back(lastPin.flags_, lastPin.name_, GetVariantType<typename T::Type>());
+    }
+    template <typename T, typename... Rest> void SetPins(T lastPin, Rest... restPins)
+    {
+        pins_.emplace_back(lastPin.flags_, lastPin.name_, GetVariantType<typename T::Type>());
+        SetPins(restPins...);
+    }
+
     UpdateFunction updateFunction_;
-    ea::fixed_vector<PinPattern, ExpectedNumberOfPins> pins_;
+    ea::fixed_vector<PinPatternBase, ExpectedNumberOfPins> pins_;
 };
 
 

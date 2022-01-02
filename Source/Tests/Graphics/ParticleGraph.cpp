@@ -419,3 +419,54 @@ TEST_CASE("Test Make")
     auto attributeSpan = emitter->GetLayer(0)->GetAttributeValues<Vector2>(0);
     CHECK(attributeSpan[0] == Vector2(2, 3));
 }
+
+TEST_CASE("Test Make IntVector2")
+{
+    auto context = Tests::CreateCompleteTestContext();
+
+    const auto effect = MakeShared<ParticleGraphEffect>(context);
+    auto xml = R"(<particleGraphEffect>
+	<layer type="ParticleGraphLayer" capacity="10">
+		<emit>
+			<nodes>
+			</nodes>
+		</emit>
+		<init>
+			<nodes>
+				<node id="1" name="Make">
+					<in>
+						<pin name="x" type="int" value="2" />
+						<pin name="y" type="int" value="3" />
+					</in>
+					<out>
+						<pin name="out" type="IntVector2" />
+					</out>
+				</node>
+				<node id="2" name="SetAttribute">
+					<in>
+						<pin name="" type="IntVector2" node="1" pin="out" />
+					</in>
+					<out>
+						<pin name="attr" type="IntVector2" />
+					</out>
+				</node>
+			</nodes>
+		</init>
+		<update>
+			<nodes>
+			</nodes>
+		</update>
+	</layer>
+</particleGraphEffect>)";
+    MemoryBuffer buffer(xml);
+    REQUIRE(effect->Load(buffer));
+
+    const auto scene = MakeShared<Scene>(context);
+    const auto node = scene->CreateChild();
+    auto emitter = node->CreateComponent<ParticleGraphEmitter>();
+    emitter->SetEffect(effect);
+    REQUIRE(emitter->EmitNewParticle(0));
+
+    auto attributeSpan = emitter->GetLayer(0)->GetAttributeValues<IntVector2>(0);
+    CHECK(attributeSpan[0] == IntVector2(2, 3));
+}

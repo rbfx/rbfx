@@ -32,40 +32,34 @@ namespace ParticleGraphNodes
 {
 namespace
 {
-//template <typename T> struct In
-//{
-//    typedef T Type;
-//    const char* name_;
-//};
-//template <typename T> struct Out
-//{
-//    typedef T Type;
-//    const char* name_;
-//};
-//
-//template <typename PinType> struct PinPatternBuilder
-//{
-//    typedef typename PinType::Type Type;
-//};
-//
-//template <typename Lambda, typename... Args> NodePattern MakePattern(Lambda&& lambda, Args... args)
-//{
-//    return NodePattern([lambda](UpdateContext& context, ParticleGraphPinRef* pinRefs)
-//    {
-//        RunUpdate<Lambda, Args>(context, lambda, pinRefs);
-//    });
-//}
+
+
+template <typename PinType> struct PinPatternBuilder
+{
+    typedef typename PinType::Type Type;
+};
+
+template <typename Lambda, typename... Args> NodePattern MakePattern(Lambda lambda, Args... args)
+{
+    auto l = [&](UpdateContext& context, ParticleGraphPinRef* pinRefs)
+    {
+        RunUpdate<Lambda, Args...>(context, lambda, pinRefs);
+    };
+    NodePattern pattern(l);
+    pattern.SetPins(args...);
+    return pattern;
+}
 
 static ea::vector<NodePattern> MakePatterns{
-    //MakePattern(
-    //    [](UpdateContext& context, unsigned numParticles, auto x, auto y, auto out)
-    //    {
-    //        for (unsigned i = 0; i < numParticles; ++i)
-    //        {
-    //            out[i] = Vector2(x[i], y[i]);
-    //        }
-    //    },
-    //    In<int>{"x"}, In<int>{"y"}, Out<int>{"y"}),
+    MakePattern(
+        [](UpdateContext& context, unsigned numParticles, auto x, auto y, auto out)
+        {
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                out[i] = IntVector2(x[i], y[i]);
+            }
+        },
+        PinPattern<int>("x"), PinPattern<int>("y"), PinPattern<IntVector2>(ParticleGraphPinFlag::Output, "out")),
     NodePattern(
         [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
         {
@@ -77,10 +71,10 @@ static ea::vector<NodePattern> MakePatterns{
                 }
             };
             RunUpdate<decltype(lambda), float, float, Vector2>(context, lambda, pinRefs);
-        },
-        PinPattern("x", VAR_FLOAT), PinPattern("y", VAR_FLOAT),
-        PinPattern(ParticleGraphPinFlag::Output, "out", VAR_VECTOR2)),
-
+        })
+        .WithPin(PinPattern<float>("x"))
+        .WithPin(PinPattern<float>("y"))
+        .WithPin(PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")),
     NodePattern(
         [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
         {
@@ -92,9 +86,11 @@ static ea::vector<NodePattern> MakePatterns{
                 }
             };
             RunUpdate<decltype(lambda), float, float, float, Vector3>(context, lambda, pinRefs);
-        },
-        PinPattern("x", VAR_FLOAT), PinPattern("y", VAR_FLOAT), PinPattern("z", VAR_FLOAT),
-        PinPattern(ParticleGraphPinFlag::Output, "out", VAR_VECTOR3)),
+        })
+        .WithPin(PinPattern<float>("x"))
+        .WithPin(PinPattern<float>("y"))
+        .WithPin(PinPattern<float>("z"))
+        .WithPin(PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")),
 
     NodePattern(
         [](UpdateContext& context, ParticleGraphPinRef* pinRefs)
@@ -108,9 +104,11 @@ static ea::vector<NodePattern> MakePatterns{
                 }
             };
             RunUpdate<decltype(lambda), Vector3, Quaternion, Vector3, Matrix3x4>(context, lambda, pinRefs);
-        },
-        PinPattern("translation", VAR_VECTOR3), PinPattern("rotation", VAR_QUATERNION),
-        PinPattern("scale", VAR_VECTOR3), PinPattern(ParticleGraphPinFlag::Output, "out", VAR_MATRIX3X4)),
+        })
+        .WithPin(PinPattern<Vector3>("translation"))
+        .WithPin(PinPattern<Quaternion>("rotation"))
+        .WithPin(PinPattern<Vector3>("scale"))
+        .WithPin(PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")),
 };
 
 }
