@@ -49,7 +49,7 @@ public:
 
     void SerializeInBlock(Archive& archive, ArchiveBlock& block) override
     {
-        SerializeValue(archive, "member_", member_);
+        SerializeValue(archive, "member", member_);
     }
 
     bool operator ==(const SerializableObject& rhs) const
@@ -178,55 +178,55 @@ void SerializeValue(Archive& archive, const char* name, PlainTypesAggregate& val
 {
     auto block = archive.OpenUnorderedBlock(name);
 
-    SerializeValue(archive, "bool_", value.bool_);
+    SerializeValue(archive, "bool", value.bool_);
 
-    SerializeValue(archive, "byte_", value.byte_);
-    SerializeValue(archive, "short_", value.short_);
-    SerializeValue(archive, "int_", value.int_);
-    SerializeValue(archive, "long_", value.long_);
+    SerializeValue(archive, "byte", value.byte_);
+    SerializeValue(archive, "short", value.short_);
+    SerializeValue(archive, "int", value.int_);
+    SerializeValue(archive, "long", value.long_);
 
-    SerializeValue(archive, "float_", value.float_);
-    SerializeValue(archive, "double_", value.double_);
+    SerializeValue(archive, "float", value.float_);
+    SerializeValue(archive, "double", value.double_);
 
-    SerializeValue(archive, "vec2_", value.vec2_);
-    SerializeValue(archive, "vec3_", value.vec3_);
-    SerializeValue(archive, "vec4_", value.vec4_);
-    SerializeValue(archive, "intVec2_", value.intVec2_);
-    SerializeValue(archive, "intVec3_", value.intVec3_);
+    SerializeValue(archive, "vec2", value.vec2_);
+    SerializeValue(archive, "vec3", value.vec3_);
+    SerializeValue(archive, "vec4", value.vec4_);
+    SerializeValue(archive, "intVec2", value.intVec2_);
+    SerializeValue(archive, "intVec3", value.intVec3_);
 
-    SerializeValue(archive, "rect_", value.rect_);
-    SerializeValue(archive, "intRect_", value.intRect_);
+    SerializeValue(archive, "rect", value.rect_);
+    SerializeValue(archive, "intRect", value.intRect_);
 
-    SerializeValue(archive, "mat3_", value.mat3_);
-    SerializeValue(archive, "mat3x4_", value.mat3x4_);
-    SerializeValue(archive, "mat4_", value.mat4_);
+    SerializeValue(archive, "mat3", value.mat3_);
+    SerializeValue(archive, "mat3x4", value.mat3x4_);
+    SerializeValue(archive, "mat4", value.mat4_);
 
-    SerializeValue(archive, "quat_", value.quat_);
-    SerializeValue(archive, "color_", value.color_);
+    SerializeValue(archive, "quat", value.quat_);
+    SerializeValue(archive, "color", value.color_);
 }
 
 void SerializeValue(Archive& archive, const char* name, ContainerTypesAggregate& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
 
-    SerializeValue(archive, "justString_", value.string_);
-    SerializeVectorAsObjects(archive, "vectorOfFloats_", value.vectorOfFloats_, "elem");
-    SerializeVectorAsBytes(archive, "byteFloatVector_", value.byteFloatVector_);
-    SerializeMap(archive, "mapOfFloats_", value.mapOfFloats_, "elem");
-    SerializeValue(archive, "variantMap_", value.variantMap_);
-    SerializeValue(archive, "variantVector_", value.variantVector_);
-    SerializeValue(archive, "variantBuffer_", value.variantBuffer_);
-    SerializeValue(archive, "emptySerializable_", value.emptySerializable_);
-    SerializeValue(archive, "serializableObject_", value.serializableObject_);
+    SerializeValue(archive, "justString", value.string_);
+    SerializeVectorAsObjects(archive, "vectorOfFloats", value.vectorOfFloats_);
+    SerializeVectorAsBytes(archive, "byteFloatVector", value.byteFloatVector_);
+    SerializeMap(archive, "mapOfFloats", value.mapOfFloats_);
+    SerializeValue(archive, "variantMap", value.variantMap_);
+    SerializeValue(archive, "variantVector", value.variantVector_);
+    SerializeValue(archive, "variantBuffer", value.variantBuffer_);
+    SerializeValue(archive, "emptySerializable", value.emptySerializable_);
+    SerializeValue(archive, "serializableObject", value.serializableObject_);
 }
 
 void SerializeValue(Archive& archive, const char* name, SerializationTestStruct& value)
 {
     auto block = archive.OpenUnorderedBlock(name);
-    SerializeValue(archive, "plain_", value.plain_);
-    SerializeValue(archive, "container_", value.container_);
-    SerializeValue(archive, "variant_", value.variant_);
-    SerializeResource(archive, "material_", value.material_, value.materialRef_);
+    SerializeValue(archive, "plain", value.plain_);
+    SerializeValue(archive, "container", value.container_);
+    SerializeValue(archive, "variant", value.variant_);
+    SerializeResource(archive, "material", value.material_, value.materialRef_);
 }
 
 SerializationTestStruct CreateTestStruct(Context* context)
@@ -359,11 +359,11 @@ TEST_CASE("Test structure is serialized as part of the file")
         XMLElement root = xmlFile->CreateRoot("root");
 
         XMLOutputArchive xmlOutputArchive{ context, root.CreateChild("child") };
-        SerializeValue(xmlOutputArchive, "SerializationTestStruct", sourceObject);
+        SerializeValue(xmlOutputArchive, "test", sourceObject);
 
         XMLInputArchive xmlInputArchive{ context, root.GetChild("child") };
         SerializationTestStruct objectFromXML;
-        SerializeValue(xmlInputArchive, "SerializationTestStruct", objectFromXML);
+        SerializeValue(xmlInputArchive, "test", objectFromXML);
 
         REQUIRE(sourceObject == objectFromXML);
     }
@@ -375,12 +375,12 @@ TEST_CASE("Test structure is serialized as part of the file")
 
         JSONValue child;
         JSONOutputArchive jsonOutputArchive{ context, child };
-        SerializeValue(jsonOutputArchive, "SerializationTestStruct", sourceObject);
+        SerializeValue(jsonOutputArchive, "test", sourceObject);
         root.Set("child", child);
 
         JSONInputArchive jsonInputArchive{ context, root.Get("child") };
         SerializationTestStruct objectFromJSON;
-        SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
+        SerializeValue(jsonInputArchive, "test", objectFromJSON);
 
         REQUIRE(sourceObject == objectFromJSON);
     }

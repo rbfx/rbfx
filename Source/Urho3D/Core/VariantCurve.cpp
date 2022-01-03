@@ -33,10 +33,10 @@ namespace
 
 const char* const keyFrameInterpolationNames[] =
 {
-    "none",
-    "linear",
-    "spline",
-    "cubicspline",
+    "None",
+    "Linear",
+    "Spline",
+    "CubicSpline",
     nullptr
 };
 
