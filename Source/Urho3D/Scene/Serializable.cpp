@@ -628,7 +628,7 @@ bool Serializable::LoadFile(const ea::string& resourceName)
     return Load(realResourceName);
 }
 
-void Serializable::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void Serializable::SerializeInBlock(Archive& archive)
 {
     const ObjectReflection* reflection = GetReflection();
     if (!reflection)
@@ -701,7 +701,7 @@ void Serializable::SerializeInBlock(Archive& archive, ArchiveBlock& block)
             SerializeStringHash(archive, "name", nameHash, attr.name_);
         }
 
-        SerializeVariantInBlock(archive, block, value.second);
+        SerializeVariantInBlock(archive, value.second);
     });
 
     // If loading, read attributes

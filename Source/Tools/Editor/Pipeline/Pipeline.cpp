@@ -490,7 +490,7 @@ bool Pipeline::HasFlavorSettings(const ea::string& resourceName)
     return false;
 }
 
-void Pipeline::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void Pipeline::SerializeInBlock(Archive& archive)
 {
     // TODO: Revisit
     ConsumeArchiveException([&]

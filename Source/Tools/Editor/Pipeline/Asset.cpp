@@ -203,10 +203,10 @@ bool Asset::Load()
     return true;
 }
 
-void Asset::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void Asset::SerializeInBlock(Archive& archive)
 {
     // TODO: Revisit
-    BaseClassName::SerializeInBlock(archive, block);
+    BaseClassName::SerializeInBlock(archive);
 
     auto* pipeline = GetSubsystem<Pipeline>();
     const ea::vector<SharedPtr<Flavor>>& flavors = pipeline->GetFlavors();
@@ -232,7 +232,7 @@ void Asset::SerializeInBlock(Archive& archive, ArchiveBlock& block)
                             importer = GetImporter(flavor, importerType->GetType());
                         if (auto block = archive.OpenUnorderedBlock(importerType->GetTypeName().c_str()))
                         {
-                            importer->SerializeInBlock(archive, block);
+                            importer->SerializeInBlock(archive);
                         }
                     }
                 }

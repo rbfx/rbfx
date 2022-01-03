@@ -213,7 +213,7 @@ VariantType VariantCurve::GetType() const
     return keyFrames_.empty() ? VAR_NONE : keyFrames_[0].value_.GetType();
 }
 
-void VariantCurve::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void VariantCurve::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "name", name_);
     SerializeValue(archive, "type", type_);

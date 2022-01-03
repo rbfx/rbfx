@@ -71,7 +71,7 @@ void KeyBindings::OnApplicationStarted(StringHash, VariantMap&)
     editor->settingsTabs_.Subscribe(this, &KeyBindings::RenderSettingsUI);
 }
 
-void KeyBindings::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void KeyBindings::SerializeInBlock(Archive& archive)
 {
     Input* input = GetSubsystem<Input>();
     if (auto bindings = archive.OpenSequentialBlock("binds"))

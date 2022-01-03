@@ -97,7 +97,7 @@ void Node::RegisterObject(Context* context)
         AM_NET | AM_NOEDIT);
 }
 
-void Node::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void Node::SerializeInBlock(Archive& archive)
 {
     // TODO: Handle exceptions
     if (archive.IsInput())
@@ -110,7 +110,7 @@ void Node::SerializeInBlock(Archive& archive, ArchiveBlock& block)
         resolver.AddNode(nodeID, this);
 
         // Load node content
-        SerializeInBlock(archive, block, &resolver);
+        SerializeInBlock(archive, &resolver);
 
         // Resolve IDs and apply attributes
         resolver.Resolve();
@@ -120,11 +120,11 @@ void Node::SerializeInBlock(Archive& archive, ArchiveBlock& block)
     {
         // Save node ID and content
         Urho3D::SerializeValue(archive, "id", id_);
-        SerializeInBlock(archive, block, nullptr);
+        SerializeInBlock(archive, nullptr);
     }
 }
 
-void Node::SerializeInBlock(Archive& archive, ArchiveBlock& block, SceneResolver* resolver,
+void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
     bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/, CreateMode mode /*= REPLICATED*/)
 {
     // Resolver must be present if loading
@@ -139,7 +139,7 @@ void Node::SerializeInBlock(Archive& archive, ArchiveBlock& block, SceneResolver
     }
 
     // Serialize base class
-    Animatable::SerializeInBlock(archive, block);
+    Animatable::SerializeInBlock(archive);
 
     // Serialize components
     const unsigned numComponentsToWrite = loading ? 0 : GetNumPersistentComponents();
@@ -173,7 +173,7 @@ void Node::SerializeInBlock(Archive& archive, ArchiveBlock& block, SceneResolver
             }
 
             // Serialize component.
-            component->SerializeInBlock(archive, componentBlock);
+            component->SerializeInBlock(archive);
         }
     });
 
@@ -210,7 +210,7 @@ void Node::SerializeInBlock(Archive& archive, ArchiveBlock& block, SceneResolver
             }
 
             // Serialize child
-            child->SerializeInBlock(archive, childBlock, resolver, serializeChildren, rewriteIDs, mode);
+            child->SerializeInBlock(archive, resolver, serializeChildren, rewriteIDs, mode);
         }
     });
 }

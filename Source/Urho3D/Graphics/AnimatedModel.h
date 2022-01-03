@@ -51,7 +51,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
+    void SerializeInBlock(Archive& archive) override;
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
