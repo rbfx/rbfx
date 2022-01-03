@@ -102,7 +102,4 @@ public:
     VariantType type_{};
 };
 
-/// Serialize VariantCurve as is.
-void SerializeValue(Archive& archive, const char* name, VariantCurve& value);
-
 }

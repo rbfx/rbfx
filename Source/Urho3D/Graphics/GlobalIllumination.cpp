@@ -108,9 +108,8 @@ void GlobalIllumination::CompileLightProbes()
     }
 
     file->Clear();
-    BinaryOutputArchive archive = file->AsOutputArchive();
 
-    if (!SerializeData(archive))
+    if (!file->SaveObjectCallback([&](Archive& archive) { SerializeData(archive); }))
     {
         URHO3D_LOGERROR("Cannot save Global Illumination data: serialization failed");
         return;
@@ -147,19 +146,16 @@ ResourceRef GlobalIllumination::GetFileRef() const
     return fileRef_;
 }
 
-bool GlobalIllumination::SerializeData(Archive& archive)
+void GlobalIllumination::SerializeData(Archive& archive)
 {
-    return ConsumeArchiveException([&]
+    ArchiveBlock block = archive.OpenUnorderedBlock("LightProbes");
+    static const unsigned currentVersion = 2;
+    const unsigned version = archive.SerializeVersion(currentVersion);
+    if (version == currentVersion)
     {
-        ArchiveBlock block = archive.OpenUnorderedBlock("LightProbes");
-        static const unsigned currentVersion = 2;
-        const unsigned version = archive.SerializeVersion(currentVersion);
-        if (version == currentVersion)
-        {
-            SerializeValue(archive, "Mesh", lightProbesMesh_);
-            SerializeValue(archive, "Data", lightProbesBakedData_);
-        }
-    });
+        SerializeValue(archive, "Mesh", lightProbesMesh_);
+        SerializeValue(archive, "Data", lightProbesBakedData_);
+    }
 }
 
 void GlobalIllumination::ReloadData()
@@ -167,15 +163,7 @@ void GlobalIllumination::ReloadData()
     auto cache = context_->GetSubsystem<ResourceCache>();
     auto file = cache->GetTempResource<BinaryFile>(fileRef_.name_);
 
-    bool success = false;
-    if (file)
-    {
-        BinaryInputArchive archive = file->AsInputArchive();
-        if (SerializeData(archive))
-            success = true;
-    }
-
-    if (!success)
+    if (!file || !file->LoadObjectCallback([&](Archive& archive) { SerializeData(archive); }))
     {
         lightProbesMesh_ = {};
         lightProbesBakedData_.Clear();
