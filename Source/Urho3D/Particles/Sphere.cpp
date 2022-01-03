@@ -45,8 +45,8 @@ void Sphere::RegisterObject(ParticleGraphSystem* context)
 Sphere::Sphere(Context* context)
     : BaseNodeType(context
     , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "position", ParticleGraphContainerType::Scalar),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Scalar),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "position", ParticleGraphContainerType::Span),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Span),
     })
 {
 }
