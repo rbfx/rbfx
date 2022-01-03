@@ -1,5 +1,6 @@
+
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,94 +22,71 @@
 //
 
 #include "../Precompiled.h"
-
 #include "Hemisphere.h"
+#include "HemisphereInstance.h"
 #include "ParticleGraphSystem.h"
-
-#include "Helpers.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-namespace
-{
-const char* emitFromNames[] = {"Base", "Volume", "Surface", "Edge", "Vertex", nullptr};
-}
-
 Hemisphere::Hemisphere(Context* context)
-    : AbstractNodeType(context,
-        PinArray{
-            ParticleGraphPin(ParticleGraphPinFlag::MutableType, "position", PGCONTAINER_SPAN),
-            ParticleGraphPin(ParticleGraphPinFlag::MutableType, "velocity", PGCONTAINER_SPAN),
-        })
-    , radius_(0.0f)
-    , radiusThickness_(1.0f)
-    , rotation_(Quaternion::IDENTITY)
-    , position_(Vector3::ZERO)
-    , scale_(Vector3::ONE)
-    , emitFrom_(EmitFrom::Volume)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "position", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Auto),
+    })
 {
 }
 
 void Hemisphere::RegisterObject(ParticleGraphSystem* context)
 {
-    auto ref = context->AddReflection<Hemisphere>();
-    URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
-    ref->AddAttribute(Urho3D::AttributeInfo(Urho3D::VAR_STRING, "From",
-        Urho3D::MakeVariantAttributeAccessor<Hemisphere>([](const Hemisphere& self, Urho3D::Variant& value)
-            { value = emitFromNames[static_cast<int>(self.emitFrom_)]; },
-            [](Hemisphere& self, const Urho3D::Variant& value)
-            {
-                const char** name = emitFromNames;
-                const auto expectedName = value.Get<ea::string>();
-                int index = 0;
-                while (name[index])
-                {
-                    if (expectedName == name[index])
-                    {
-                        self.emitFrom_ = static_cast<EmitFrom>(index);
-                        return;
-                    }
-                    ++index;
-                }
-                self.emitFrom_ = static_cast<EmitFrom>(0);
-            }),
-        emitFromNames, static_cast<int>(EmitFrom::Volume), AM_DEFAULT));
+    context->AddReflection<Hemisphere>();
+    URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("RadiusThickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
 }
 
-void Hemisphere::Generate(Vector3& pos, Vector3& vel) const
+/// Evaluate size required to place new node instance.
+unsigned Hemisphere::EvaluateInstanceSize() const
 {
-    Vector3 direction(Random(2.0f) - 1.0f, Random(2.0f) - 1.0f, Random(2.0f) - 1.0f);
-    direction.Normalize();
-    direction.z_ = Abs(direction.z_);
-
-    float r = radius_;
-    if (radiusThickness_ > 0.0f && emitFrom_ != EmitFrom::Surface)
-    {
-        r *= 1.0f - Random() * radiusThickness_;
-    }
-    switch (emitFrom_)
-    {
-    case EmitFrom::Base:
-        vel = direction;
-        pos = Vector3::ZERO;
-        break;
-    case EmitFrom::Surface:
-        vel = direction;
-        pos = direction * radius_;
-        break;
-    default:
-        vel = direction;
-        pos = direction * Pow(Random(), 1.0f / 3.0f) * 0.5f;
-        break;
-    }
+    return sizeof(HemisphereInstance);
 }
 
-Matrix3x4 Hemisphere::GetShapeTransform() const { return Matrix3x4(position_, rotation_, scale_); }
+/// Place new instance at the provided address.
+ParticleGraphNodeInstance* Hemisphere::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    HemisphereInstance* instance = new (ptr) HemisphereInstance();
+    instance->Init(this, layer);
+    return instance;
+}
+
+void Hemisphere::SetRadius(float value) { radius_ = value; }
+
+float Hemisphere::GetRadius() const { return radius_; }
+
+void Hemisphere::SetRadiusThickness(float value) { radiusThickness_ = value; }
+
+float Hemisphere::GetRadiusThickness() const { return radiusThickness_; }
+
+void Hemisphere::SetPosition(Vector3 value) { position_ = value; }
+
+Vector3 Hemisphere::GetPosition() const { return position_; }
+
+void Hemisphere::SetRotation(Quaternion value) { rotation_ = value; }
+
+Quaternion Hemisphere::GetRotation() const { return rotation_; }
+
+void Hemisphere::SetScale(Vector3 value) { scale_ = value; }
+
+Vector3 Hemisphere::GetScale() const { return scale_; }
+
+void Hemisphere::SetFrom(int value) { from_ = value; }
+
+int Hemisphere::GetFrom() const { return from_; }
+
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

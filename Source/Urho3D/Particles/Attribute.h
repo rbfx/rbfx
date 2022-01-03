@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -88,7 +88,7 @@ public:
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() const override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
@@ -134,7 +134,7 @@ public:
     void SetAttributeType(VariantType valueType) override;
 
     /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() const override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
@@ -147,38 +147,6 @@ protected:
     
     /// Pins
     ParticleGraphPin pins_[2];
-};
-
-/// Get time step of the current frame.
-class URHO3D_API ParticleTime : public AbstractNode<ParticleTime, float>
-{
-    URHO3D_OBJECT(ParticleTime, ParticleGraphNode)
-public:
-    /// Construct.
-    explicit ParticleTime(Context* context);
-    /// Register particle node factory.
-    /// @nobind
-    static void RegisterObject(ParticleGraphSystem* context);
-
-    class Instance final : public AbstractNodeType::Instance
-    {
-    public:
-        Instance(ParticleTime* node, ParticleGraphLayerInstance* layer)
-            : AbstractNode<ParticleTime, float>::Instance(node, layer)
-        {
-        }
-
-        /// Update and return particle time.
-        /// @nobind
-        template <typename Pin0> void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0)
-        {
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                pin0[i] += context.timeStep_;
-            }
-        }
-    };
-
 };
 
 } // namespace ParticleGraphNodes

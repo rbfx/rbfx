@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "Helpers.h"
-#include "ParticleGraphLayerInstance.h"
+#include "TemplateNode.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
@@ -31,72 +32,25 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+class DestroyInstance;
 
-/// Destroy marked particles.
-class URHO3D_API Destroy : public AbstractNode<Destroy, bool>
+class URHO3D_API Destroy : public TemplateNode<DestroyInstance, bool>
 {
     URHO3D_OBJECT(Destroy, ParticleGraphNode)
 public:
-    /// Construct.
+    /// Construct Destroy.
     explicit Destroy(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    class Instance final : public AbstractNodeType::Instance
-    {
-    public:
-        Instance(Destroy* node, ParticleGraphLayerInstance* layer)
-            : AbstractNodeType::Instance(node, layer)
-        {
-        }
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
 
-        template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T pin0)
-        {
-            // Iterate all particles even if all pins are scalar.
-            for (unsigned i = 0; i < context.indices_.size(); ++i)
-            {
-                if (pin0[i])
-                {
-                    context.layer_->MarkForDeletion(i);
-                }
-            }
-        }
-    };
-};
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
-/// Destroy expired particles.
-class URHO3D_API Expire : public AbstractNode<Expire, float, float>
-{
-    URHO3D_OBJECT(Expire, ParticleGraphNode)
-public:
-    /// Construct.
-    explicit Expire(Context* context);
-    /// Register particle node factory.
-    /// @nobind
-    static void RegisterObject(ParticleGraphSystem* context);
-
-    class Instance final : public AbstractNodeType::Instance
-    {
-    public:
-        Instance(Expire* node, ParticleGraphLayerInstance* layer)
-            : AbstractNodeType::Instance(node, layer)
-        {
-        }
-
-        template <typename Time, typename Lifetime>
-        void operator()(UpdateContext& context, unsigned numParticles, Time time, Lifetime lifetime)
-        {
-            // Iterate all particles even if all pins are scalar.
-            for (unsigned i = 0; i < context.indices_.size(); ++i)
-            {
-                if (time[i] >= lifetime[i])
-                {
-                    context.layer_->MarkForDeletion(i);
-                }
-            }
-        }
-    };
+protected:
 };
 
 } // namespace ParticleGraphNodes

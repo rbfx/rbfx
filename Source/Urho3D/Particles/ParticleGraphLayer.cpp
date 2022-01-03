@@ -26,10 +26,9 @@
 #include "ParticleGraph.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphPin.h"
-#include "Urho3D/Resource/Graph.h"
-#include "Urho3D/Scene/Serializable.h"
 
-#include <Urho3D/IO/Log.h>
+#include "../Scene/Serializable.h"
+#include "../IO/Log.h"
 
 namespace Urho3D
 {
@@ -84,7 +83,7 @@ struct ParticleGraphAttributeBuilder
         // Configure pin nodes.
         const auto node = graph.GetNode(i);
 
-        ParticleGraphContainerType defaultOutputType = PGCONTAINER_SCALAR;
+        ParticleGraphContainerType defaultOutputType = ParticleGraphContainerType::Scalar;
         
         // Connect input pins.
         for (unsigned pinIndex = 0; pinIndex < node->GetNumPins(); ++pinIndex)
@@ -97,7 +96,7 @@ struct ParticleGraphAttributeBuilder
             // Connect input pin.
             if (pin.IsInput())
             {
-                if (pin.containerType_ == PGCONTAINER_SPARSE)
+                if (pin.containerType_ == ParticleGraphContainerType::Sparse)
                 {
                     URHO3D_LOGERROR(
                         Format("Sparse input pin {}.{} is not supported", node->GetTypeName(), pin.GetName()));
@@ -127,9 +126,9 @@ struct ParticleGraphAttributeBuilder
                 }
                 pin.memory_ = sourcePin.memory_;
                 // Detect default output type.
-                if (pin.memory_.type_ != PGCONTAINER_SCALAR)
+                if (pin.memory_.type_ != ParticleGraphContainerType::Scalar)
                 {
-                    defaultOutputType = PGCONTAINER_SPAN;
+                    defaultOutputType = ParticleGraphContainerType::Span;
                 }
                 // Evaluate input pin type.
                 if (pin.requestedValueType_ == VAR_NONE)
@@ -153,14 +152,14 @@ struct ParticleGraphAttributeBuilder
             if (!pin.IsInput())
             {
                 // Allocate attribute buffer if this is a new attribute
-                if (pin.containerType_ == PGCONTAINER_SPARSE)
+                if (pin.containerType_ == ParticleGraphContainerType::Sparse)
                 {
                     pin.attributeIndex_ = attributes_.GetOrAddAttribute(pin.name_, pin.requestedValueType_);
 
                     // For output sparse pin the memory is the same as the attribute memory
                     if (!pin.IsInput())
                     {
-                        pin.memory_ = ParticleGraphPinRef(PGCONTAINER_SPARSE, pin.attributeIndex_);
+                        pin.memory_ = ParticleGraphPinRef(ParticleGraphContainerType::Sparse, pin.attributeIndex_);
                     }
                 }
                 // Allocate temp buffer for an output pin
@@ -168,7 +167,7 @@ struct ParticleGraphAttributeBuilder
                 {
                     // Allocate temp buffer
                     auto containerType = pin.containerType_;
-                    if (containerType == PGCONTAINER_AUTO)
+                    if (containerType == ParticleGraphContainerType::Auto)
                         containerType = defaultOutputType;
                     pin.memory_ = ParticleGraphPinRef(containerType, tempBufferLayout_.Allocate(containerType, pin.valueType_));
                 }

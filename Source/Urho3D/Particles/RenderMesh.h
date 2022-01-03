@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,86 +22,51 @@
 
 #pragma once
 
-#include "Helpers.h"
-#include "Urho3D/Graphics/BillboardSet.h"
+#include "TemplateNode.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
-class Model;
 class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-class RenderMeshDrawable;
+class RenderMeshInstance;
 
-/// Render static model mesh.
-class URHO3D_API RenderMesh : public AbstractNode<RenderMesh, Matrix3x4>
+class URHO3D_API RenderMesh : public TemplateNode<RenderMeshInstance, Matrix3x4>
 {
     URHO3D_OBJECT(RenderMesh, ParticleGraphNode)
 public:
-    /// Construct.
+    /// Construct RenderMesh.
     explicit RenderMesh(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    class Instance : public AbstractNodeType::Instance
-    {
-    public:
-        Instance(RenderMesh* node, ParticleGraphLayerInstance* layer);
-        ~Instance() override;
-        ea::vector<Matrix3x4>& Prepare(unsigned numParticles);
-        template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T transforms)
-        {
-            auto& dst = Prepare(numParticles);
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                dst[i] = transforms[i];
-            }
-        }
-    protected:
-        SharedPtr<Urho3D::Node> sceneNode_;
-        SharedPtr<RenderMeshDrawable> drawable_ {};
-        SharedPtr<Urho3D::Octree> octree_;
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
 
-    };
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
-public:
-    /// Set model attribute.
-    void SetModelAttr(const ResourceRef& value);
-    /// Set materials attribute.
-    void SetMaterialsAttr(const ResourceRefList& value);
-    /// Return model attribute.
-    ResourceRef GetModelAttr() const;
-    /// Return materials attribute.
-    const ResourceRefList& GetMaterialsAttr() const;
+    /// Set dampen.
+    /// @property
+    void SetModel(ResourceRef value);
+    /// Get dampen.
+    /// @property
+    ResourceRef GetModel() const;
 
-    /// Set model.
-    /// @manualbind
-    virtual void SetModel(Model* model);
-    /// Set material on all geometries.
+    /// Set dampen.
     /// @property
-    virtual void SetMaterial(Material* material);
-    /// Set material on one geometry. Return true if successful.
-    /// @property{set_materials}
-    virtual bool SetMaterial(unsigned index, Material* material);
-    /// Return model.
+    void SetMaterial(ResourceRefList value);
+    /// Get dampen.
     /// @property
-    Model* GetModel() const { return model_; }
-    /// Return material from the first geometry, assuming all the geometries use the same material.
-    /// @property
-    virtual Material* GetMaterial() const { return GetMaterial(0); }
-    /// Return material by geometry index.
-    /// @property{get_materials}
-    virtual Material* GetMaterial(unsigned index) const;
+    ResourceRefList GetMaterial() const;
 
 protected:
-    /// Is the billboards attached to the node or rendered in a absolute world space coordinates.
-    bool isWorldSpace_;
-    /// Model.
-    SharedPtr<Model> model_;
-    /// Material list attribute.
-    mutable ResourceRefList materialsAttr_;
+    ResourceRef model_{};
+    ResourceRefList material_{};
 };
 
 } // namespace ParticleGraphNodes

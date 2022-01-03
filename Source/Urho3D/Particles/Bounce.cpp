@@ -1,5 +1,6 @@
+
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,73 +21,54 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
 #include "Bounce.h"
+#include "BounceInstance.h"
 #include "ParticleGraphSystem.h"
-
-#include "Helpers.h"
-#include "Urho3D/Math/Ray.h"
-#include "Urho3D/Physics/PhysicsWorld.h"
 
 namespace Urho3D
 {
-class ParticleGraphSystem;
-
 namespace ParticleGraphNodes
 {
 Bounce::Bounce(Context* context)
-    : AbstractNodeType(context, PinArray
-        {
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "position"),
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
-            ParticleGraphPin(ParticleGraphPinFlag::Output, "newPosition"),
-            ParticleGraphPin(ParticleGraphPinFlag::Output, "newVelocity"),
-        })
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "position"),
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "newPosition"),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "newVelocity"),
+    })
 {
 }
 
 void Bounce::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<Bounce>();
-    URHO3D_ACCESSOR_ATTRIBUTE("Dampen", GetDampen, SetDampen, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("BounceFactor", GetBounceFactor, SetBounceFactor, float, 1.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Dampen", GetDampen, SetDampen, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("BounceFactor", GetBounceFactor, SetBounceFactor, float, float{}, AM_DEFAULT);
 }
 
-void Bounce::RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity)
+/// Evaluate size required to place new node instance.
+unsigned Bounce::EvaluateInstanceSize() const
 {
-    if (physics)
-    {
-        const auto gravity = physics->GetGravity();
-        velocity += gravity * context.timeStep_;
-        PhysicsRaycastResult res;
-        Vector3 offset = velocity * context.timeStep_;
-
-        auto distance = offset.Length();
-        if (distance > 1e-6f)
-        {
-            auto wp = node->LocalToWorld(pos);
-            const float radius = 0.1f;
-            physics->SphereCast(res, Ray(wp, offset * (1.0f / distance)), radius, distance);
-            if (res.body_)
-            {
-                wp = wp.Lerp(res.position_, 0.99f);
-                pos = node->WorldToLocal(wp);
-                const auto bounceScale = (1.0f + bounceFactor_) * velocity.DotProduct(res.normal_);
-                velocity -= res.normal_ * bounceScale;
-                if (dampen_ > 0.0f)
-                {
-                    velocity *= (1.0f-dampen_);
-                }
-            }
-            else
-            {
-                pos += offset;
-            }
-        }
-        return;
-    }
-    pos += velocity * context.timeStep_;
+    return sizeof(BounceInstance);
 }
+
+/// Place new instance at the provided address.
+ParticleGraphNodeInstance* Bounce::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    BounceInstance* instance = new (ptr) BounceInstance();
+    instance->Init(this, layer);
+    return instance;
+}
+
+void Bounce::SetDampen(float value) { dampen_ = value; }
+
+float Bounce::GetDampen() const { return dampen_; }
+
+void Bounce::SetBounceFactor(float value) { bounceFactor_ = value; }
+
+float Bounce::GetBounceFactor() const { return bounceFactor_; }
 
 } // namespace ParticleGraphNodes
-
 } // namespace Urho3D

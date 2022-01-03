@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "Emitter.h"
-#include "Helpers.h"
+#include "TemplateNode.h"
 #include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
@@ -32,87 +32,73 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+class SphereInstance;
 
-/// Operation on attribute
-class URHO3D_API Sphere : public AbstractNode<Sphere, Vector3, Vector3>
+class URHO3D_API Sphere : public TemplateNode<SphereInstance, Vector3, Vector3>
 {
     URHO3D_OBJECT(Sphere, ParticleGraphNode)
 public:
-    /// Construct.
+    /// Construct Sphere.
     explicit Sphere(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-public:
-    class Instance final : public AbstractNodeType::Instance
-    {
-    public:
-        Instance(Sphere* node, ParticleGraphLayerInstance* layer)
-            : AbstractNodeType::Instance(node, layer)
-        {
-        }
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
 
-        template <typename Pos, typename Vel>
-        void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
-        {
-            const Sphere* cone = GetGraphNodeInstace();
-            const Matrix3x4 m = cone->GetShapeTransform();
-            const Matrix3 md = m.RotationMatrix();
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                Vector3 p, v;
-                cone->Generate(p, v);
-                pos[i] = m * p;
-                vel[i] = md * v;
-            }
-        }
-    };
+    /// Set dampen.
+    /// @property
+    void SetRadius(float value);
+    /// Get dampen.
+    /// @property
+    float GetRadius() const;
 
-public:
-    /// Get cone base radius.
-    float GetRadius() const { return radius_; }
-    /// Set cone base radius.
-    void SetRadius(float val) { radius_ = val; }
+    /// Set dampen.
+    /// @property
+    void SetRadiusThickness(float value);
+    /// Get dampen.
+    /// @property
+    float GetRadiusThickness() const;
 
-    /// Get cone base radius thickness.
-    float GetRadiusThickness() const { return radiusThickness_; }
-    /// Set cone base radius thickness.
-    void SetRadiusThickness(float val) { radiusThickness_ = val; }
+    /// Set dampen.
+    /// @property
+    void SetPosition(Vector3 value);
+    /// Get dampen.
+    /// @property
+    Vector3 GetPosition() const;
 
-    /// Get cone rotation.
-    const Quaternion& GetRotation() const { return rotation_; }
-    /// Set cone rotation.
-    void SetRotation(const Quaternion& val) { rotation_ = val; }
-    /// Get cone offset.
-    const Vector3& GetPosition() const { return position_; }
-    /// Set cone offset.
-    void SetPosition(const Vector3& val) { position_ = val; }
-    /// Get cone scale.
-    const Vector3& GetScale() const { return scale_; }
-    /// Set cone scale.
-    void SetScale(const Vector3& val) { scale_ = val; }
+    /// Set dampen.
+    /// @property
+    void SetRotation(Quaternion value);
+    /// Get dampen.
+    /// @property
+    Quaternion GetRotation() const;
 
-    /// Generate value in the cone.
-    void Generate(Vector3& pos, Vector3& vel) const;
+    /// Set dampen.
+    /// @property
+    void SetScale(Vector3 value);
+    /// Get dampen.
+    /// @property
+    Vector3 GetScale() const;
 
-    /// Get shape transform.
-    Matrix3x4 GetShapeTransform() const;
+    /// Set dampen.
+    /// @property
+    void SetFrom(int value);
+    /// Get dampen.
+    /// @property
+    int GetFrom() const;
 
 protected:
-    /// Cone base radius.
-    float radius_{0.0f};
-    /// Cone radius thickness.
-    float radiusThickness_{1.0f};
-    /// Cone orientation.
-    Quaternion rotation_;
-    /// Cone offset.
-    Vector3 position_;
-    /// Cone scale.
-    Vector3 scale_;
-    /// Emitting area.
-    EmitFrom emitFrom_{EmitFrom::Volume};
+    float radius_{};
+    float radiusThickness_{};
+    Vector3 position_{};
+    Quaternion rotation_{};
+    Vector3 scale_{};
+    int from_{};
 };
 
 } // namespace ParticleGraphNodes

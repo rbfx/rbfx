@@ -1,5 +1,6 @@
+
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +21,41 @@
 // THE SOFTWARE.
 //
 
+#include "../Precompiled.h"
 #include "Emit.h"
-
-#include "Helpers.h"
+#include "EmitInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
-
 namespace ParticleGraphNodes
 {
-
 Emit::Emit(Context* context)
-    : AbstractNodeType(context,
-        PinArray{
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "count"),
-        })
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "count", ParticleGraphContainerType::Auto),
+    })
 {
 }
 
-void Emit::RegisterObject(ParticleGraphSystem* context) { context->AddReflection<Emit>(); }
-
-BurstTimer::BurstTimer(Context* context)
-    : AbstractNodeType(context,
-        PinArray{ParticleGraphPin(ParticleGraphPinFlag::Input, "count"),
-            ParticleGraphPin(ParticleGraphPinFlag::Output, "out")})
+void Emit::RegisterObject(ParticleGraphSystem* context)
 {
+    context->AddReflection<Emit>();
 }
 
-void BurstTimer::RegisterObject(ParticleGraphSystem* context)
+/// Evaluate size required to place new node instance.
+unsigned Emit::EvaluateInstanceSize() const
 {
-    context->AddReflection<BurstTimer>();
+    return sizeof(EmitInstance);
+}
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Delay", GetDelay, SetDelay, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Interval", GetInterval, SetInterval, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Cycles", GetCycles, SetCycles, unsigned, 0.0f, AM_DEFAULT);
+/// Place new instance at the provided address.
+ParticleGraphNodeInstance* Emit::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    EmitInstance* instance = new (ptr) EmitInstance();
+    instance->Init(this, layer);
+    return instance;
 }
 
 } // namespace ParticleGraphNodes
-
 } // namespace Urho3D

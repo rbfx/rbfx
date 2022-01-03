@@ -23,6 +23,7 @@
 #include "ParticleGraphSystem.h"
 #include "All.h"
 
+#include "Make.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Model.h"
 
@@ -55,7 +56,6 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Move::RegisterObject(system);
     Multiply::RegisterObject(system);
     Negate::RegisterObject(system);
-    ParticleTime::RegisterObject(system);
     Print::RegisterObject(system);
     Random::RegisterObject(system);
     RenderBillboard::RegisterObject(system);

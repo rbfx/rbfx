@@ -1,5 +1,6 @@
+
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,93 +22,71 @@
 //
 
 #include "../Precompiled.h"
-
 #include "Sphere.h"
+#include "SphereInstance.h"
 #include "ParticleGraphSystem.h"
-
-#include "Helpers.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-namespace
-{
-const char* emitFromNames[] = {"Base", "Volume", "Surface", "Edge", "Vertex", nullptr};
-}
-
 Sphere::Sphere(Context* context)
-    : AbstractNodeType(context,
-        PinArray{
-            ParticleGraphPin(ParticleGraphPinFlag::MutableType, "position", PGCONTAINER_SPAN),
-            ParticleGraphPin(ParticleGraphPinFlag::MutableType, "velocity", PGCONTAINER_SPAN),
-        })
-    , radius_(0.0f)
-    , radiusThickness_(1.0f)
-    , rotation_(Quaternion::IDENTITY)
-    , position_(Vector3::ZERO)
-    , scale_(Vector3::ONE)
-    , emitFrom_(EmitFrom::Volume)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "position", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Auto),
+    })
 {
 }
 
 void Sphere::RegisterObject(ParticleGraphSystem* context)
 {
-    auto ref = context->AddReflection<Sphere>();
-    URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
-    ref->AddAttribute(Urho3D::AttributeInfo(Urho3D::VAR_STRING, "From",
-        Urho3D::MakeVariantAttributeAccessor<Sphere>([](const Sphere& self, Urho3D::Variant& value)
-            { value = emitFromNames[static_cast<int>(self.emitFrom_)]; },
-            [](Sphere& self, const Urho3D::Variant& value)
-            {
-                const char** name = emitFromNames;
-                const auto expectedName = value.Get<ea::string>();
-                int index = 0;
-                while (name[index])
-                {
-                    if (expectedName == name[index])
-                    {
-                        self.emitFrom_ = static_cast<EmitFrom>(index);
-                        return;
-                    }
-                    ++index;
-                }
-                self.emitFrom_ = static_cast<EmitFrom>(0);
-            }),
-        emitFromNames, static_cast<int>(EmitFrom::Volume), AM_DEFAULT));
+    context->AddReflection<Sphere>();
+    URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("RadiusThickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
 }
 
-void Sphere::Generate(Vector3& pos, Vector3& vel) const
+/// Evaluate size required to place new node instance.
+unsigned Sphere::EvaluateInstanceSize() const
 {
-    Vector3 direction(Random(2.0f) - 1.0f, Random(2.0f) - 1.0f, Random(2.0f) - 1.0f);
-    direction.Normalize();
-
-    float r = radius_;
-    if (radiusThickness_ > 0.0f && emitFrom_ != EmitFrom::Surface)
-    {
-        r *= 1.0f - Random() * radiusThickness_;
-    }
-    switch (emitFrom_)
-    {
-    case EmitFrom::Base:
-        vel = direction;
-        pos = Vector3::ZERO;
-        break;
-    case EmitFrom::Surface:
-        vel = direction;
-        pos = direction * radius_;
-        break;
-    default:
-        vel = direction;
-        pos = direction * Pow(Random(), 1.0f / 3.0f) * 0.5f;
-        break;
-    }
+    return sizeof(SphereInstance);
 }
 
-Matrix3x4 Sphere::GetShapeTransform() const { return Matrix3x4(position_, rotation_, scale_); }
+/// Place new instance at the provided address.
+ParticleGraphNodeInstance* Sphere::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    SphereInstance* instance = new (ptr) SphereInstance();
+    instance->Init(this, layer);
+    return instance;
+}
+
+void Sphere::SetRadius(float value) { radius_ = value; }
+
+float Sphere::GetRadius() const { return radius_; }
+
+void Sphere::SetRadiusThickness(float value) { radiusThickness_ = value; }
+
+float Sphere::GetRadiusThickness() const { return radiusThickness_; }
+
+void Sphere::SetPosition(Vector3 value) { position_ = value; }
+
+Vector3 Sphere::GetPosition() const { return position_; }
+
+void Sphere::SetRotation(Quaternion value) { rotation_ = value; }
+
+Quaternion Sphere::GetRotation() const { return rotation_; }
+
+void Sphere::SetScale(Vector3 value) { scale_ = value; }
+
+Vector3 Sphere::GetScale() const { return scale_; }
+
+void Sphere::SetFrom(int value) { from_ = value; }
+
+int Sphere::GetFrom() const { return from_; }
+
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

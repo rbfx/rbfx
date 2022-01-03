@@ -34,7 +34,6 @@
 #include "../IO/FileSystem.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/XMLArchive.h"
-#include "Urho3D/IO/Log.h"
 
 namespace Urho3D
 {

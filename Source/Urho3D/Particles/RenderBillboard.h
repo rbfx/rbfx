@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "Helpers.h"
-#include "Urho3D/Graphics/BillboardSet.h"
+#include "TemplateNode.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
@@ -31,93 +32,49 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+class RenderBillboardInstance;
 
-/// Render billboard
-class URHO3D_API RenderBillboard : public AbstractNode<RenderBillboard, Vector3, Vector2, float, Color, float>
+class URHO3D_API RenderBillboard : public TemplateNode<RenderBillboardInstance, Vector3, Vector2, float, Color, float>
 {
     URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
-    /// Construct.
+    /// Construct RenderBillboard.
     explicit RenderBillboard(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    class Instance final : public AbstractNodeType::Instance
-    {
-    public:
-        Instance(RenderBillboard* node, ParticleGraphLayerInstance* layer);
-        ~Instance() override;
-        void Prepare(unsigned numParticles);
-        void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color,
-                            float rotation);
-        void Commit();
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
 
-        template <typename Pin0, typename Pin1, typename Frame, typename Color, typename Rotation>
-        void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Frame frame, Color color,
-            Rotation rotation)
-        {
-            Prepare(numParticles);
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i], rotation[i]);
-            }
-            Commit();
-        }
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
-    protected:
-        SharedPtr<Urho3D::Node> sceneNode_;
-        SharedPtr<Urho3D::BillboardSet> billboardSet_;
-        SharedPtr<Urho3D::Octree> octree_;
-    };
-
-
-
-public:
-
-    /// Return material.
+    /// Set dampen.
     /// @property
-    Material* GetMaterial() const;
-
-    /// Set material.
+    void SetMaterial(ResourceRef value);
+    /// Get dampen.
     /// @property
-    void SetMaterial(Material* material);
+    ResourceRef GetMaterial() const;
 
-    /// Set material attribute.
-    void SetMaterialAttr(const ResourceRef& value);
-    /// Set material attribute.
-    ResourceRef GetMaterialAttr() const;
+    /// Set dampen.
+    /// @property
+    void SetRows(int value);
+    /// Get dampen.
+    /// @property
+    int GetRows() const;
 
-    /// Set number of rows in a sprite sheet.
+    /// Set dampen.
     /// @property
-    void SetRows(unsigned value);
-    /// Get number of rows in a sprite sheet.
-    /// @property 
-    unsigned GetRows() const;
-
-    /// Set number of columns in a sprite sheet.
+    void SetColumns(int value);
+    /// Get dampen.
     /// @property
-    void SetColumns(unsigned value);
-    /// Get number of columns in a sprite sheet.
-    /// @property
-    unsigned GetColumns() const;
+    int GetColumns() const;
 
 protected:
-    /// Update sprite sheet uv.
-    void UpdateUV();
-
-    /// Is the billboards attached to the node or rendered in a absolute world space coordinates.
-    bool isWorldSpace_;
-    /// Selected material.
-    SharedPtr<Material> material_;
-    /// Reference to material.
-    ResourceRef materialRef_;
-    /// Number of rows in a sprite sheet.
-    unsigned rows_{1};
-    /// Number of columns in a sprite sheet.
-    unsigned columns_{1};
-    /// Sprite sheet tile size.
-    Vector2 uvTileSize_;
+    ResourceRef material_{};
+    int rows_{};
+    int columns_{};
 };
 
 } // namespace ParticleGraphNodes

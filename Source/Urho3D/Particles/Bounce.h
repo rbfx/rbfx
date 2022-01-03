@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "Helpers.h"
-#include "ParticleGraphLayerInstance.h"
-#include "Urho3D/Physics/PhysicsWorld.h"
-#include "Urho3D/Scene/Scene.h"
+#include "TemplateNode.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
@@ -33,52 +32,41 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+class BounceInstance;
 
-/// Get time step of the current frame.
-class URHO3D_API Bounce : public AbstractNode<Bounce, Vector3, Vector3, Vector3, Vector3>
+class URHO3D_API Bounce : public TemplateNode<BounceInstance, Vector3, Vector3, Vector3, Vector3>
 {
     URHO3D_OBJECT(Bounce, ParticleGraphNode)
-
-    class Instance : public AbstractNodeType::Instance
-    {
-    public:
-        Instance(Bounce* node, ParticleGraphLayerInstance* layer)
-            : AbstractNodeType::Instance(node, layer)
-        {
-        }
-
-        template <typename Pin0, typename Pin1, typename Pin2, typename Pin3>
-        void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Pin2 pin2, Pin3 pin3)
-        {
-            Bounce* bounce = GetGraphNodeInstace();
-            auto node = GetNode();
-            auto physics = GetScene()->GetComponent<PhysicsWorld>();
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                pin2[i] = pin0[i];
-                pin3[i] = pin1[i];
-                bounce->RayCastAndBounce(context, node, physics, pin2[i], pin3[i]);
-            }
-        }
-    };
-
 public:
-    /// Construct.
+    /// Construct Bounce.
     explicit Bounce(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-    void RayCastAndBounce(UpdateContext& context, Node* node, PhysicsWorld* physics, Vector3& pos, Vector3& velocity);
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
 
-    float GetDampen() const { return dampen_; }
-    void SetDampen(float dampen) { dampen_ = dampen; }
-    float GetBounceFactor() const { return bounceFactor_; }
-    void SetBounceFactor(float bounceFactor) { bounceFactor_ = bounceFactor; }
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+    /// Set dampen.
+    /// @property
+    void SetDampen(float value);
+    /// Get dampen.
+    /// @property
+    float GetDampen() const;
+
+    /// Set dampen.
+    /// @property
+    void SetBounceFactor(float value);
+    /// Get dampen.
+    /// @property
+    float GetBounceFactor() const;
 
 protected:
-    float dampen_{0.0f};
-    float bounceFactor_{1.0f};
+    float dampen_{};
+    float bounceFactor_{};
 };
 
 } // namespace ParticleGraphNodes

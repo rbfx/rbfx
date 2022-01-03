@@ -93,7 +93,7 @@ VariantType Curve::EvaluateOutputPinType(ParticleGraphPin& pin)
     return curve_.GetType();
 }
 
-unsigned Curve::EvaluateInstanceSize()
+unsigned Curve::EvaluateInstanceSize() const
 {
     return sizeof(Instance);
 }

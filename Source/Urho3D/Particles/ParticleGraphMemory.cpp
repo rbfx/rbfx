@@ -77,9 +77,9 @@ void ParticleGraphBufferLayout::Reset(unsigned capacity)
 
 unsigned ParticleGraphBufferLayout::Allocate(ParticleGraphContainerType container, VariantType type)
 {
-    assert(container != PGCONTAINER_AUTO);
+    assert(container != ParticleGraphContainerType::Auto);
     unsigned index = spans_.size();
-    unsigned size = ((container == PGCONTAINER_SCALAR) ? 1 : capacity_) * GetVariantSize(type);
+    unsigned size = ((container == ParticleGraphContainerType::Scalar) ? 1 : capacity_) * GetVariantSize(type);
     spans_.push_back(PinSpan{container, type, ParticleGraphSpan(position_, size)});
     position_ += size;
     return index;

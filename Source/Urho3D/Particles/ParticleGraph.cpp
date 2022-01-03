@@ -29,7 +29,6 @@
 #include "ParticleGraphSystem.h"
 #include "Urho3D/Resource/Graph.h"
 
-#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/Log.h>
 
 
@@ -114,8 +113,8 @@ bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
 ParticleGraphWriter::ParticleGraphWriter(ParticleGraph& particleGraph, Graph& graph)
     : particleGraph_(particleGraph)
     , graph_(graph)
+    , system_(particleGraph.GetContext()->GetSubsystem<ParticleGraphSystem>())
 {
-    system_ = particleGraph_.GetContext()->GetSubsystem<ParticleGraphSystem>();
     nodes_.resize(particleGraph_.GetNumNodes());
     for (unsigned i = 0; i < particleGraph_.GetNumNodes(); ++i)
     {
@@ -127,7 +126,7 @@ bool ParticleGraphWriter::Write()
 {
     for (unsigned i=0; i<particleGraph_.GetNumNodes(); ++i)
     {
-        auto id = WriteNode(i);
+        const auto id = WriteNode(i);
         if (!id)
             return false;
     }
@@ -140,8 +139,8 @@ unsigned ParticleGraphWriter::WriteNode(unsigned index)
     {
         return nodes_[index];
     }
-    auto node = particleGraph_.GetNode(index);
-    auto outNode = graph_.Create(node->GetTypeName());
+    const auto node = particleGraph_.GetNode(index);
+    const auto outNode = graph_.Create(node->GetTypeName());
     nodes_[index] = outNode->GetID();
     if (!node->Save(*this, *outNode))
         return false;
@@ -150,24 +149,24 @@ unsigned ParticleGraphWriter::WriteNode(unsigned index)
 
 GraphOutPin& ParticleGraphWriter::GetSourcePin(unsigned nodeIndex, unsigned pinIndex)
 {
-    auto node = particleGraph_.GetNode(nodeIndex);
-    auto outNode = nodes_[nodeIndex];
-    auto pin = node->GetPin(pinIndex);
+    const auto node = particleGraph_.GetNode(nodeIndex);
+    const auto outNode = nodes_[nodeIndex];
+    const auto pin = node->GetPin(pinIndex);
     return graph_.GetNode(outNode)->GetOrAddOutput(pin.GetName());
 }
 
 ParticleGraphReader::ParticleGraphReader(ParticleGraph& particleGraph, Graph& graph)
     : particleGraph_(particleGraph)
     , graph_(graph)
+    , system_(particleGraph.GetContext()->GetSubsystem<ParticleGraphSystem>())
 {
-    system_ = particleGraph_.GetContext()->GetSubsystem<ParticleGraphSystem>();
     graph.GetNodeIds(ids_);
 }
 
 unsigned ParticleGraphReader::ReadNode(unsigned id)
 {
     {
-        auto it = nodes_.find(id);
+        const auto it = nodes_.find(id);
         if (it != nodes_.end())
             return it->second;
     }
@@ -207,10 +206,10 @@ unsigned ParticleGraphReader::ReadNode(unsigned id)
 }
 unsigned ParticleGraphReader::GetOrAddConstant(const Variant& constValue)
 {
-    auto it = constants_.find(constValue);
+    const auto it = constants_.find(constValue);
     if (it == constants_.end())
     {
-        auto constNode = MakeShared<ParticleGraphNodes::Constant>(particleGraph_.GetContext());
+        const auto constNode = MakeShared<ParticleGraphNodes::Constant>(particleGraph_.GetContext());
         constNode->SetValue(constValue);
         return constants_[constValue] = particleGraph_.Add(constNode);
     }
@@ -219,7 +218,7 @@ unsigned ParticleGraphReader::GetOrAddConstant(const Variant& constValue)
 }
 unsigned ParticleGraphReader::GetInputPinIndex(unsigned nodeIndex, const ea::string& string)
 {
-    auto node = particleGraph_.GetNode(nodeIndex);
+    const auto node = particleGraph_.GetNode(nodeIndex);
     if (!node)
         return ParticleGraphNode::INVALID_PIN;
     return node->GetPinIndex(string);
@@ -227,7 +226,7 @@ unsigned ParticleGraphReader::GetInputPinIndex(unsigned nodeIndex, const ea::str
 
 bool ParticleGraphReader::Read()
 {
-    for (unsigned id : ids_)
+    for (const unsigned id : ids_)
     {
         if (ReadNode(id) == ParticleGraph::INVALID_NODE_INDEX)
             return false;

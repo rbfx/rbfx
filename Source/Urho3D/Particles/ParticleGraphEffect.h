@@ -23,8 +23,8 @@
 #pragma once
 
 #include <EASTL/span.h>
-#include <Urho3D/Resource/Resource.h>
-#include <Urho3D/IO/Archive.h>
+#include "../Resource/Resource.h"
+#include "../IO/Archive.h"
 
 namespace Urho3D
 {

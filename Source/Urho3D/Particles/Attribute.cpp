@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ template <typename T> struct CopyValues
         const unsigned numParticles = context.indices_.size();
         switch (pin1.GetContainerType())
         {
-        case PGCONTAINER_SCALAR:
+        case ParticleGraphContainerType::Scalar:
         {
             auto src = context.GetScalar<T>(pin1.GetMemoryReference());
             auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
@@ -52,7 +52,7 @@ template <typename T> struct CopyValues
             }
         }
         break;
-        case PGCONTAINER_SPAN:
+        case ParticleGraphContainerType::Span:
         {
             auto src = context.GetSpan<T>(pin1.GetMemoryReference());
             auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
@@ -62,7 +62,7 @@ template <typename T> struct CopyValues
             }
         }
         break;
-        case PGCONTAINER_SPARSE:
+        case ParticleGraphContainerType::Sparse:
         {
             auto src = context.GetSparse<T>(pin1.GetMemoryReference());
             auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
@@ -91,7 +91,7 @@ void Attribute::SetAttributeType(VariantType valueType)
 GetAttribute::GetAttribute(Context* context)
     : Attribute(context)
     , pins_{ ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "attr", VAR_FLOAT,
-                                              PGCONTAINER_SPARSE)}
+                                              ParticleGraphContainerType::Sparse)}
 {
 }
 
@@ -110,7 +110,8 @@ ParticleGraphPin* GetAttribute::LoadOutputPin(ParticleGraphReader& reader, Graph
 SetAttribute::SetAttribute(Context* context)
     : Attribute(context)
     , pins_{
-          ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "attr", VAR_FLOAT, PGCONTAINER_SPARSE),
+          ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "attr", VAR_FLOAT,
+              ParticleGraphContainerType::Sparse),
           ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "", VAR_FLOAT),
     }
 {
@@ -144,16 +145,6 @@ void SetAttribute::Instance::Update(UpdateContext& context)
     const ParticleGraphPin& pin1 = node_->pins_[1];
     SelectByVariantType<CopyValues>(pin0.GetValueType(), context, pin0, pin1);
 };
-
-ParticleTime::ParticleTime(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::Output, "time", PGCONTAINER_SPARSE)})
-{
-}
-
-void ParticleTime::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<ParticleTime>();
-}
 
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

@@ -22,9 +22,9 @@
 
 #pragma once
 
+#include "ParticleGraphEffect.h"
 #include "../Graphics/Drawable.h"
 #include "../Scene/Component.h"
-#include "ParticleGraphEffect.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D
@@ -36,7 +36,7 @@ class ParticleGraphNodeInstance;
 /// %Particle graph emitter component.
 class URHO3D_API ParticleGraphEmitter : public Component
 {
-    URHO3D_OBJECT(ParticleGraphEmitter, Component);
+    URHO3D_OBJECT(ParticleGraphEmitter, Component)
 
 public:
     /// Construct.

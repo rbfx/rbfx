@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,9 @@
 
 #pragma once
 
-#include "Helpers.h"
+#include "TemplateNode.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
@@ -30,122 +32,27 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+class EmitInstance;
 
-/// Emit particles at current layer.
-class URHO3D_API Emit : public AbstractNode<Emit, float>
+class URHO3D_API Emit : public TemplateNode<EmitInstance, float>
 {
     URHO3D_OBJECT(Emit, ParticleGraphNode)
 public:
-    /// Construct.
+    /// Construct Emit.
     explicit Emit(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
-        struct Instance : public AbstractNodeType::Instance
-    {
-        /// Construct instance.
-        Instance(Emit* node, ParticleGraphLayerInstance* layer)
-            : AbstractNodeType::Instance(node, layer)
-        {
-        }
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
 
-        template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T span)
-        {
-            // Can't use iterator here as it may use ScalarSpan with infinite iterator.
-            float sum = 0.0f;
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                sum += span[i];
-            }
-            context.layer_->EmitNewParticles(sum);
-        }
-    };
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+protected:
 };
 
-
-/// Emit particles at current layer.
-class URHO3D_API BurstTimer : public AbstractNode<BurstTimer, float, float>
-{
-    URHO3D_OBJECT(BurstTimer, ParticleGraphNode)
-public:
-    /// Construct.
-    explicit BurstTimer(Context* context);
-    /// Register particle node factory.
-    /// @nobind
-    static void RegisterObject(ParticleGraphSystem* context);
-
-    struct Instance : public AbstractNodeType::Instance
-    {
-        /// Construct instance.
-        Instance(BurstTimer* node, ParticleGraphLayerInstance* layer)
-            : AbstractNodeType::Instance(node, layer)
-        {
-        }
-
-        void Reset() override
-        {
-            timeToBurst_ = node_->GetDelay();
-            counter_ = node_->GetCycles();
-        }
-
-        template <typename T, typename Out> void operator()(UpdateContext& context, unsigned numParticles, T count, Out out)
-        {
-            timeToBurst_ -= context.timeStep_;
-            if (counter_ > 0 && timeToBurst_ <= 0.0f)
-            {
-                // Can't use iterator here as it may use ScalarSpan with infinite iterator.
-                for (unsigned i = 0; i < numParticles; ++i)
-                {
-                    out[i] = count[i];
-                }
-                timeToBurst_ += GetGraphNodeInstace()->interval_;
-                --counter_;
-            }
-            else
-            {
-                for (unsigned i = 0; i < numParticles; ++i)
-                {
-                    out[i] = 0.0f;
-                }
-            }
-        }
-
-        float timeToBurst_{};
-        unsigned counter_{};
-    };
-
-
-
-    /// Get delay in seconds.
-    /// @property
-    float GetDelay() const { return delay_; }
-
-    /// Set delay in seconds.
-    /// @property 
-    void SetDelay(float delay) { delay_ = delay; }
-
-    /// Get interval in seconds.
-    /// @property
-    float GetInterval() const { return interval_; }
-
-    /// Set interval in seconds.
-    /// @property
-    void SetInterval(float interval) { interval_ = interval; }
-
-    /// Get number of cycles.
-    /// @property
-    unsigned GetCycles() const { return cycles_; }
-
-    /// Set interval in seconds.
-    /// @property
-    void SetCycles(unsigned cycles) { cycles_ = cycles; }
-
-private:
-    float delay_{};
-    float interval_{0.01f};
-    unsigned cycles_{1};
-};
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

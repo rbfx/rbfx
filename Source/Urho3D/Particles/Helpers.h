@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -96,21 +96,21 @@ void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
     typedef typename GetPinType<Value0>::Type ValueType;
     switch (pinRefs[0].type_)
     {
-    case PGCONTAINER_SPAN:
+    case ParticleGraphContainerType::Span:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSpan<ValueType>(*pinRefs)));
         RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, false, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
-    case PGCONTAINER_SPARSE:
+    case ParticleGraphContainerType::Sparse:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetSparse<ValueType>(*pinRefs)));
         RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, false, pinRefs + 1,
                                                                   nextTuple);
         return;
     }
-    case PGCONTAINER_SCALAR:
+    case ParticleGraphContainerType::Scalar:
     {
         auto nextTuple = ea::tuple_cat(std::move(tuple), ea::make_tuple(context.GetScalar<ValueType>(*pinRefs)));
         RunUpdate<Instance, decltype(nextTuple), Values...>(context, instance, scalar, pinRefs + 1,
@@ -130,21 +130,21 @@ void RunUpdate(UpdateContext& context, Instance& instance, ParticleGraphPinRef* 
     typedef typename GetPinType<Value0>::Type ValueType;
     switch (pinRefs[0].type_)
     {
-    case PGCONTAINER_SPAN:
+    case ParticleGraphContainerType::Span:
     {
         ea::tuple<ea::span<ValueType>> nextTuple = ea::make_tuple(context.GetSpan<ValueType>(*pinRefs));
         RunUpdate<Instance, ea::tuple<ea::span<ValueType>>, Values...>(
             context, instance, false, pinRefs + 1, std::move(nextTuple));
         return;
     }
-    case PGCONTAINER_SPARSE:
+    case ParticleGraphContainerType::Sparse:
     {
         ea::tuple<SparseSpan<ValueType>> nextTuple = ea::make_tuple(context.GetSparse<ValueType>(*pinRefs));
         RunUpdate<Instance, ea::tuple<SparseSpan<ValueType>>, Values...>(
             context, instance, false, pinRefs + 1, std::move(nextTuple));
         return;
     }
-    case PGCONTAINER_SCALAR:
+    case ParticleGraphContainerType::Scalar:
     {
         ea::tuple<ScalarSpan<ValueType>> nextTuple = ea::make_tuple(context.GetScalar<ValueType>(*pinRefs));
         RunUpdate<Instance, ea::tuple<ScalarSpan<ValueType>>, Values...>(
@@ -154,193 +154,6 @@ void RunUpdate(UpdateContext& context, Instance& instance, ParticleGraphPinRef* 
     default: assert(!"Invalid pin container type permutation"); break;
     }
 };
-/// Abstract node
-template <typename GraphNode, typename... Values> class AbstractNode : public ParticleGraphNode
-{
-protected:
-    typedef AbstractNode<GraphNode, Values...> AbstractNodeType;
-    static constexpr unsigned NumberOfPins = sizeof...(Values);
-    typedef ea::array<ParticleGraphPin, NumberOfPins> PinArray;
-
-protected:
-    /// Helper methods to assign pin types based on template argument types
-    template <typename LastValue> void SetPinTypes(ParticleGraphPin* pins, const ParticleGraphPin* src)
-    {
-        *pins = (*src).WithType(GetVariantType<LastValue>());
-    }
-    template <typename First, typename Second, typename... PinTypes>
-    void SetPinTypes(ParticleGraphPin* pins, const ParticleGraphPin* src)
-    {
-        *pins = (*src).WithType(GetVariantType<First>());
-        SetPinTypes<Second, PinTypes...>(pins + 1, src + 1);
-    }
-
-    /// Construct.
-    explicit AbstractNode(Context* context, const PinArray& pins)
-        : ParticleGraphNode(context)
-    {
-        SetPinTypes<Values...>(&pins_[0], &pins[0]);
-    }
-
-public:
-    class Instance : public ParticleGraphNodeInstance
-    {
-    public:
-        /// Construct instance.
-        Instance(GraphNode* node, ParticleGraphLayerInstance* layer)
-            : node_(node)
-            , layer_(layer)
-        {
-        }
-        /// Update particles.
-        void Update(UpdateContext& context) override
-        {
-            ParticleGraphPinRef pinRefs[NumberOfPins];
-            for (unsigned i = 0; i < NumberOfPins; ++i)
-            {
-                pinRefs[i] = node_->pins_[i].GetMemoryReference();
-            }
-            RunUpdate<typename GraphNode::Instance, Values...>(context, *static_cast<typename GraphNode::Instance*>(this), pinRefs);
-        }
-
-        /// Get graph node instance.
-        GraphNode* GetGraphNodeInstace() const { return node_; }
-        /// Get graph layer instance.
-        ParticleGraphLayerInstance* GetLayerInstance() const { return layer_; }
-        /// Get graph layer.
-        ParticleGraphLayer* GetLayer() const { return layer_->GetLayer(); }
-        /// Get emitter component.
-        ParticleGraphEmitter* GetEmitter() const { return layer_->GetEmitter(); }
-        /// Get scene node.
-        Node* GetNode();
-        /// Get engine context.
-        Context* GetContext();
-        /// Get scene.
-        Scene* GetScene();
-
-    protected:
-        /// Pointer to graph node instance.
-        GraphNode* node_;
-        /// Pointer to graph layer instance.
-        ParticleGraphLayerInstance* layer_;
-    };
-
-public:
-    /// Get number of pins.
-    unsigned GetNumPins() const override { return NumberOfPins; }
-
-    /// Get pin by index.
-    ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
-
-    /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override { return sizeof(typename GraphNode::Instance); }
-
-    /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
-    {
-        return new (ptr) typename GraphNode::Instance(static_cast<GraphNode*>(this), layer);
-    }
-
-protected:
-    /// Pins
-    PinArray pins_;
-};
-
-template <typename Node, typename ... Values> Urho3D::Node* AbstractNode<Node, Values...>::Instance::GetNode()
-{
-    const auto* emitter = GetEmitter();
-    return (emitter) ? emitter->GetNode() : nullptr;
-}
-
-template <typename Node, typename ... Values> Context* AbstractNode<Node, Values...>::Instance::GetContext()
-{
-    const auto* emitter = GetEmitter();
-    return (emitter) ? emitter->GetContext() : nullptr;
-}
-
-template <typename Node, typename ... Values> Scene* AbstractNode<Node, Values...>::Instance::GetScene()
-{
-    const auto* emitter = GetEmitter();
-    return (emitter) ? emitter->GetScene() : nullptr;
-}
-
-
-struct NodePattern
-{
-    static constexpr size_t ExpectedNumberOfPins = 4;
-
-    typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> UpdateFunction;
-
-    explicit NodePattern(UpdateFunction&& update);
-    NodePattern& WithPin(PinPatternBase&& pin0);
-
-    bool Match(const ea::span<ParticleGraphPin>& pins) const;
-
-    VariantType EvaluateOutputPinType(const ea::span<ParticleGraphPin>& pins, const ParticleGraphPin& outputPin) const;
-
-    template <typename T> void SetPins(T lastPin)
-    {
-        pins_.emplace_back(lastPin.flags_, lastPin.name_, GetVariantType<typename T::Type>());
-    }
-    template <typename T, typename... Rest> void SetPins(T lastPin, Rest... restPins)
-    {
-        pins_.emplace_back(lastPin.flags_, lastPin.name_, GetVariantType<typename T::Type>());
-        SetPins(restPins...);
-    }
-
-    UpdateFunction updateFunction_;
-    ea::fixed_vector<PinPatternBase, ExpectedNumberOfPins> pins_;
-};
-
-
-/// Graph node that adapts to input pins dynamically.
-class URHO3D_API PatternMatchingNode : public ParticleGraphNode
-{
-public:
-    struct Instance : public ParticleGraphNodeInstance
-    {
-        /// Construct.
-        explicit Instance(PatternMatchingNode* node, const NodePattern& pattern);
-
-        /// Update particles.
-        virtual void Update(UpdateContext& context);
-
-        PatternMatchingNode* node_;
-        const NodePattern& pattern_;
-    };
-
-    /// Construct.
-    explicit PatternMatchingNode(Context* context, const ea::vector<NodePattern>& patterns);
-
-    /// Get number of pins.
-    unsigned GetNumPins() const override;
-
-    /// Get pin by index.
-    ParticleGraphPin& GetPin(unsigned index) override;
-
-    /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override;
-
-    /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
-
-protected:
-    /// Load input pin.
-    ParticleGraphPin* LoadInputPin(ParticleGraphReader& reader, GraphInPin& pin) override;
-    /// Load output pin.
-    ParticleGraphPin* LoadOutputPin(ParticleGraphReader& reader, GraphOutPin& pin) override;
-
-    /// Evaluate runtime output pin type.
-    VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
-
-    /// Update particles.
-    void Update(UpdateContext& context, const NodePattern& pattern);
-
-protected:
-    const ea::vector<NodePattern>& patterns_;
-    ea::fixed_vector < ParticleGraphPin, NodePattern::ExpectedNumberOfPins> pins_;
-};
-
 
 template <template <typename> typename T, typename ... Args>
 void SelectByVariantType(VariantType variantType, Args... args)

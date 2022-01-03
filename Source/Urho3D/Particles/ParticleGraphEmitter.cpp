@@ -22,15 +22,15 @@
 
 #include "../Precompiled.h"
 
+#include "ParticleGraphEmitter.h"
+#include "ParticleGraphLayer.h"
+#include "ParticleGraphLayerInstance.h"
+
 #include "../Core/Context.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "ParticleGraphEmitter.h"
-
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
-#include "ParticleGraphLayer.h"
-#include "ParticleGraphLayerInstance.h"
 
 namespace Urho3D
 {

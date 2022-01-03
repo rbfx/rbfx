@@ -51,7 +51,7 @@ URHO3D_FLAGSET(ParticleGraphPinFlag, ParticleGraphPinFlags);
 struct ParticleGraphPinRef
 {
     ParticleGraphPinRef()
-        : type_(PGCONTAINER_AUTO)
+        : type_(ParticleGraphContainerType::Auto)
         , index_(0)
     {
     }
@@ -72,7 +72,7 @@ public:
     ParticleGraphPin();
     /// Construct pin.
     ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, VariantType type = VAR_NONE,
-                         ParticleGraphContainerType container = PGCONTAINER_AUTO);
+                         ParticleGraphContainerType container = ParticleGraphContainerType::Auto);
     /// Construct pin.
     ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, ParticleGraphContainerType container);
 
@@ -131,7 +131,7 @@ protected:
 
 private:
     /// Container type: span, sparse or scalar.
-    ParticleGraphContainerType containerType_{PGCONTAINER_AUTO};
+    ParticleGraphContainerType containerType_{ParticleGraphContainerType::Auto};
 
     /// Value type at runtime.
     VariantType valueType_{VAR_NONE};

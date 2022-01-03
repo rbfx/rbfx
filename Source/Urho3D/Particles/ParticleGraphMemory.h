@@ -28,12 +28,12 @@
 
 namespace Urho3D
 {
-enum ParticleGraphContainerType
+enum class ParticleGraphContainerType
 {
-    PGCONTAINER_SPAN,
-    PGCONTAINER_SPARSE,
-    PGCONTAINER_SCALAR,
-    PGCONTAINER_AUTO
+    Span,
+    Sparse,
+    Scalar,
+    Auto
 };
 
 /// Memory layout definition.

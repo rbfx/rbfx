@@ -84,7 +84,7 @@ public:
     VariantType EvaluateOutputPinType(ParticleGraphPin& pin) override;
 
     /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override;
+    unsigned EvaluateInstanceSize() const override;
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;

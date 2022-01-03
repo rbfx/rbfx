@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,10 @@
 //
 
 #pragma once
+
+#include "TemplateNode.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
-#include "Helpers.h"
 
 namespace Urho3D
 {
@@ -31,53 +32,27 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+class SlerpInstance;
 
-/// Slerp operator.
-class URHO3D_API Slerp : public AbstractNode<Slerp, Quaternion, Quaternion, float, Quaternion>
+class URHO3D_API Slerp : public TemplateNode<SlerpInstance, Quaternion, Quaternion, float, Quaternion>
 {
-    URHO3D_OBJECT(Slerp, ParticleGraphNode);
-
+    URHO3D_OBJECT(Slerp, ParticleGraphNode)
 public:
-    class Instance : public AbstractNodeType::Instance
-    {
-    public:
-        /// Construct instance.
-        Instance(Slerp* node, ParticleGraphLayerInstance* layer)
-            : AbstractNodeType::Instance(node, layer)
-        {
-        }
-        template <typename X, typename Y, typename T, typename Out>
-        void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, T t, Out out)
-        {
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                out[i] = x[i].Slerp(y[i], t[i]);
-            }
-        }
-    };
-
-
-public:
-    /// Construct.
+    /// Construct Slerp.
     explicit Slerp(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
+
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
+
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+protected:
 };
 
-/// Make a value by calling constructor.
-class URHO3D_API Make: public PatternMatchingNode
-{
-    URHO3D_OBJECT(Make, ParticleGraphNode);
-
-public:
-    /// Construct.
-    explicit Make(Context* context);
-    /// Register particle node factory.
-    /// @nobind
-    static void RegisterObject(ParticleGraphSystem* context);
-};
-
-}
+} // namespace ParticleGraphNodes
 
 } // namespace Urho3D

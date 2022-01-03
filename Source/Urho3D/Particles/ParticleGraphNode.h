@@ -79,7 +79,7 @@ public:
     VariantType GetPinValueType(unsigned pinIndex) const;
 
     /// Evaluate size required to place new node instance.
-    virtual unsigned EvaluateInstanceSize() = 0;
+    virtual unsigned EvaluateInstanceSize() const = 0;
 
     /// Place new instance at the provided address.
     virtual ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) = 0;

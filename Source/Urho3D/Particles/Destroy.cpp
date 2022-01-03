@@ -1,5 +1,6 @@
+
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,17 +22,19 @@
 //
 
 #include "../Precompiled.h"
-
 #include "Destroy.h"
+#include "DestroyInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-
 Destroy::Destroy(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::Input, "condition")})
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "condition", ParticleGraphContainerType::Auto),
+    })
 {
 }
 
@@ -40,15 +43,19 @@ void Destroy::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Destroy>();
 }
 
-Expire::Expire(Context* context)
-    : AbstractNodeType(context, PinArray{ParticleGraphPin(ParticleGraphPinFlag::Input, "time"), ParticleGraphPin(ParticleGraphPinFlag::Input, "lifetime")})
+/// Evaluate size required to place new node instance.
+unsigned Destroy::EvaluateInstanceSize() const
 {
+    return sizeof(DestroyInstance);
 }
-void Expire::RegisterObject(ParticleGraphSystem* context)
+
+/// Place new instance at the provided address.
+ParticleGraphNodeInstance* Destroy::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
 {
-    context->AddReflection<Expire>();
+    DestroyInstance* instance = new (ptr) DestroyInstance();
+    instance->Init(this, layer);
+    return instance;
 }
 
 } // namespace ParticleGraphNodes
-
 } // namespace Urho3D

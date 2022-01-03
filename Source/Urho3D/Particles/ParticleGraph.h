@@ -24,11 +24,7 @@
 
 #include "ParticleGraphPin.h"
 #include "../Resource/Graph.h"
-#include "../Resource/Resource.h"
-#include "../IO/Archive.h"
-#include "Urho3D/Resource/GraphPin.h"
-
-#include <EASTL/span.h>
+#include "../Resource/GraphPin.h"
 
 namespace Urho3D
 {

@@ -20,10 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "Environment.h"
-
 #include "Helpers.h"
 #include "ParticleGraphSystem.h"
+#include "PatternMatchingNode.h"
 #include "Urho3D/IO/Log.h"
 
 namespace Urho3D
@@ -114,7 +113,7 @@ unsigned PatternMatchingNode::GetNumPins() const { return static_cast<unsigned>(
 
 ParticleGraphPin& PatternMatchingNode::GetPin(unsigned index) { return pins_[index]; }
 
-unsigned PatternMatchingNode::EvaluateInstanceSize() { return sizeof(Instance); }
+unsigned PatternMatchingNode::EvaluateInstanceSize() const { return sizeof(Instance); }
 
 ParticleGraphNodeInstance* PatternMatchingNode::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
 {

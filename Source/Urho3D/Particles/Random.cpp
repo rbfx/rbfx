@@ -49,7 +49,7 @@ struct Generate
 
 Random::Random(Context* context)
     : ParticleGraphNode(context)
-    , pins_{ParticleGraphPin(ParticleGraphPinFlag::MutableType, "out", PGCONTAINER_SPAN)}
+    , pins_{ParticleGraphPin(ParticleGraphPinFlag::MutableType, "out", ParticleGraphContainerType::Span)}
 {
 }
 

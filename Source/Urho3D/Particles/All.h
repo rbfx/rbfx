@@ -23,9 +23,12 @@
 #pragma once
 
 #include "Helpers.h"
-
+#include "Add.h"
+#include "ApplyForce.h"
+#include "BurstTimer.h"
+#include "LimitVelocity.h"
+#include "Slerp.h"
 #include "Attribute.h"
-#include "BinaryOperators.h"
 #include "Bounce.h"
 #include "Cone.h"
 #include "Hemisphere.h"
@@ -34,15 +37,18 @@
 #include "Curve.h"
 #include "Destroy.h"
 #include "Emit.h"
-#include "Environment.h"
-#include "Math.h"
 #include "Print.h"
 #include "Random.h"
 #include "RenderBillboard.h"
 #include "RenderMesh.h"
-#include "TernaryOperators.h"
-#include "UnaryOperators.h"
 #include "Uniform.h"
+#include "ApplyForce.h"
+#include "BurstTimer.h"
+#include "Expire.h"
+#include "LimitVelocity.h"
+#include "EffectTime.h"
+#include "NormalizedEffectTime.h"
+#include "TimeStep.h"
 
 namespace Urho3D
 {

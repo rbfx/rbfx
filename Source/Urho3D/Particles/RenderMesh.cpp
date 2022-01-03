@@ -1,5 +1,6 @@
+
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,185 +22,51 @@
 //
 
 #include "../Precompiled.h"
-
-#include "../Graphics/Material.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/StaticModel.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
-#include "ParticleGraphLayerInstance.h"
-#include "ParticleGraphSystem.h"
 #include "RenderMesh.h"
-#include "../Graphics/Model.h"
-#include "Urho3D/Graphics/Camera.h"
-#include "Urho3D/IO/Log.h"
-#include "Urho3D/Resource/ResourceEvents.h"
+#include "RenderMeshInstance.h"
+#include "ParticleGraphSystem.h"
+#include "../Graphics/Octree.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-class RenderMeshDrawable
-    : public StaticModel
-{
-    URHO3D_OBJECT(RenderMeshDrawable, StaticModel);
-
-public:
-    /// Construct.
-    explicit RenderMeshDrawable(Context* context);
-
-    /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly
-    /// re-entrantly.
-    void UpdateBatches(const FrameInfo& frame) override;
-
-    ea::vector<Matrix3x4> transforms_;
-};
-
-
-RenderMeshDrawable::RenderMeshDrawable(Context* context)
-    : StaticModel(context)
-{
-}
-
-void RenderMeshDrawable::UpdateBatches(const FrameInfo& frame)
-{
-    // Getting the world bounding box ensures the transforms are updated
-    const BoundingBox& worldBoundingBox = GetWorldBoundingBox();
-    const Matrix3x4& worldTransform = node_->GetWorldTransform();
-    distance_ = frame.camera_->GetDistance(worldBoundingBox.Center());
-
-    if (batches_.size() > 1)
-    {
-        for (unsigned i = 0; i < batches_.size(); ++i)
-        {
-            batches_[i].distance_ = frame.camera_->GetDistance(worldTransform * geometryData_[i].center_);
-            batches_[i].worldTransform_ = transforms_.empty() ? &Matrix3x4::IDENTITY : &transforms_[0];
-            batches_[i].numWorldTransforms_ = transforms_.size();
-        }
-    }
-    else if (batches_.size() == 1)
-    {
-        batches_[0].distance_ = distance_;
-        batches_[0].worldTransform_ = transforms_.empty() ? &Matrix3x4::IDENTITY : &transforms_[0];
-        batches_[0].numWorldTransforms_ = transforms_.size();
-    }
-
-    float scale = worldBoundingBox.Size().DotProduct(DOT_SCALE);
-    float newLodDistance = frame.camera_->GetLodDistance(distance_, scale, lodBias_);
-
-    if (newLodDistance != lodDistance_)
-    {
-        lodDistance_ = newLodDistance;
-        CalculateLodLevels();
-    }
-}
-
-
 RenderMesh::RenderMesh(Context* context)
-    : AbstractNodeType(context,
-        PinArray{
-            ParticleGraphPin(ParticleGraphPinFlag::Input, "transform")
-        })
-    , isWorldSpace_(false)
-    , materialsAttr_(Material::GetTypeStatic())
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "transform"),
+    })
 {
 }
 
 void RenderMesh::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<RenderMesh>();
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
-        "Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList,
-        ResourceRefList(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Model", GetModel, SetModel, ResourceRef, ResourceRef{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, ResourceRefList, ResourceRefList{}, AM_DEFAULT);
 }
 
-RenderMesh::Instance::Instance(RenderMesh* node, ParticleGraphLayerInstance* layer)
-    : AbstractNodeType::Instance(node, layer)
+/// Evaluate size required to place new node instance.
+unsigned RenderMesh::EvaluateInstanceSize() const
 {
-    const auto scene = GetScene();
-
-    sceneNode_ = MakeShared<Node>(GetContext());
-    drawable_ = MakeShared<RenderMeshDrawable>(GetContext());
-    sceneNode_->AddComponent(drawable_, 0, LOCAL);
-    drawable_->SetModel(node_->model_);
-    drawable_->SetMaterialsAttr(node_->materialsAttr_);
-    octree_ = scene->GetOrCreateComponent<Octree>();
-    octree_->AddManualDrawable(drawable_);
+    return sizeof(RenderMeshInstance);
 }
 
-RenderMesh::Instance::~Instance() { octree_->RemoveManualDrawable(drawable_); }
-
-ea::vector<Matrix3x4>& RenderMesh::Instance::Prepare(unsigned numParticles)
+/// Place new instance at the provided address.
+ParticleGraphNodeInstance* RenderMesh::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
 {
-    drawable_->transforms_.resize(numParticles);
-    sceneNode_->SetWorldTransform(GetNode()->GetWorldTransform());
-    //if (node_->material_ != drawable_->GetMaterial(0))
-    //    drawable_->SetMaterial(node_->material_);
-    return drawable_->transforms_;
+    RenderMeshInstance* instance = new (ptr) RenderMeshInstance();
+    instance->Init(this, layer);
+    return instance;
 }
 
-void RenderMesh::SetModelAttr(const ResourceRef& value)
-{
-    auto* cache = GetSubsystem<ResourceCache>();
-    auto * model = cache->GetResource<Model>(value.name_);
-    SetModel(model);
-}
+void RenderMesh::SetModel(ResourceRef value) { model_ = value; }
 
-void RenderMesh::SetMaterialsAttr(const ResourceRefList& value)
-{
-    auto* cache = GetSubsystem<ResourceCache>();
-    for (unsigned i = 0; i < value.names_.size() && i < materialsAttr_.names_.size(); ++i)
-        SetMaterial(i, cache->GetResource<Material>(value.names_[i]));
-}
+ResourceRef RenderMesh::GetModel() const { return model_; }
 
-ResourceRef RenderMesh::GetModelAttr() const { return GetResourceRef(model_, Model::GetTypeStatic()); }
+void RenderMesh::SetMaterial(ResourceRefList value) { material_ = value; }
 
-const ResourceRefList& RenderMesh::GetMaterialsAttr() const
-{
-    return materialsAttr_;
-}
-
-void RenderMesh::SetModel(Model* model)
-{
-    if (model == model_)
-        return;
-
-    model_ = model;
-    if (model_)
-    {
-        materialsAttr_.names_.resize(model_->GetNumGeometries());
-    }
-    else
-    {
-        materialsAttr_.names_.clear();
-    }
-}
-
-void RenderMesh::SetMaterial(Material* material)
-{
-    for (unsigned i = 0; i < materialsAttr_.names_.size(); ++i)
-        materialsAttr_.names_[i] = GetResourceName(material);
-}
-
-bool RenderMesh::SetMaterial(unsigned index, Material* material)
-{
-    if (index >= materialsAttr_.names_.size())
-    {
-        URHO3D_LOGERROR("Material index out of bounds");
-        return false;
-    }
-
-    materialsAttr_.names_[index] = GetResourceName(material);
-    return true;
-}
-
-Material* RenderMesh::GetMaterial(unsigned index) const
-{
-    return index < materialsAttr_.names_.size() ? GetSubsystem<ResourceCache>()->GetResource<Material>(materialsAttr_.names_[index]) : nullptr;
-}
+ResourceRefList RenderMesh::GetMaterial() const { return material_; }
 
 } // namespace ParticleGraphNodes
-
 } // namespace Urho3D

@@ -64,7 +64,7 @@ void Uniform::SetUniformType(VariantType valueType) { SetPinValueType(0, valueTy
 
 GetUniform::GetUniform(Context* context)
     : Uniform(context)
-    , pins_{ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "uniform", VAR_FLOAT, PGCONTAINER_SCALAR)}
+    , pins_{ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "uniform", VAR_FLOAT, ParticleGraphContainerType::Scalar)}
 {
 }
 
@@ -92,8 +92,8 @@ ParticleGraphPin* GetUniform::LoadOutputPin(ParticleGraphReader& reader, GraphOu
 SetUniform::SetUniform(Context* context)
     : Uniform(context)
     , pins_{
-          ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "uniform", VAR_FLOAT, PGCONTAINER_SCALAR),
-          ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "", VAR_FLOAT, PGCONTAINER_SCALAR),
+          ParticleGraphPin(ParticleGraphPinFlag::MutableName | ParticleGraphPinFlag::MutableType, "uniform", VAR_FLOAT, ParticleGraphContainerType::Scalar),
+          ParticleGraphPin(ParticleGraphPinFlag::Input | ParticleGraphPinFlag::MutableType, "", VAR_FLOAT, ParticleGraphContainerType::Scalar),
       }
 {
 }

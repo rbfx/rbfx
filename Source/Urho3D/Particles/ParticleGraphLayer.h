@@ -25,8 +25,9 @@
 #include "ParticleGraph.h"
 #include "ParticleGraphPin.h"
 
+#include "../Resource/Resource.h"
+
 #include <EASTL/optional.h>
-#include <Urho3D/Resource/Resource.h>
 
 namespace Urho3D
 {

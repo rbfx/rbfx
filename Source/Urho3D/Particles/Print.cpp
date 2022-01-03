@@ -52,13 +52,13 @@ namespace
 
             switch (pin0.GetContainerType())
             {
-            case PGCONTAINER_SPAN:
+            case ParticleGraphContainerType::Span:
                 LogSpan(LOG_INFO, numParticles, context.GetSpan<T>(pin0.GetMemoryReference()));
                 break;
-            case PGCONTAINER_SCALAR:
+            case ParticleGraphContainerType::Scalar:
                 LogSpan(LOG_INFO, 1, context.GetScalar<T>(pin0.GetMemoryReference()));
                 break;
-            case PGCONTAINER_SPARSE:
+            case ParticleGraphContainerType::Sparse:
                 LogSpan(LOG_INFO, numParticles, context.GetSparse<T>(pin0.GetMemoryReference()));
                 break;
             default:

@@ -90,7 +90,7 @@ public:
     ParticleGraphPin& GetPin(unsigned index) override { return pins_[index]; }
 
     /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() const override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
@@ -138,7 +138,7 @@ public:
     void SetUniformType(VariantType valueType) override;
 
     /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() override { return sizeof(Instance); }
+    unsigned EvaluateInstanceSize() const override { return sizeof(Instance); }
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override
