@@ -30,17 +30,18 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+void Destroy::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Destroy>();
+}
+
+
 Destroy::Destroy(Context* context)
     : BaseNodeType(context
     , PinArray {
         ParticleGraphPin(ParticleGraphPinFlag::Input, "condition", ParticleGraphContainerType::Auto),
     })
 {
-}
-
-void Destroy::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<Destroy>();
 }
 
 /// Evaluate size required to place new node instance.

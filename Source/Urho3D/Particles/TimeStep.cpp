@@ -30,17 +30,18 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+void TimeStep::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<TimeStep>();
+}
+
+
 TimeStep::TimeStep(Context* context)
     : BaseNodeType(context
     , PinArray {
         ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Scalar),
     })
 {
-}
-
-void TimeStep::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<TimeStep>();
 }
 
 /// Evaluate size required to place new node instance.

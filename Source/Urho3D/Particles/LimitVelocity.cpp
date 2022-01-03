@@ -30,20 +30,21 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-LimitVelocity::LimitVelocity(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "limit"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out"),
-    })
-{
-}
-
 void LimitVelocity::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<LimitVelocity>();
     URHO3D_ACCESSOR_ATTRIBUTE("Dampen", GetDampen, SetDampen, float, float{}, AM_DEFAULT);
+}
+
+
+LimitVelocity::LimitVelocity(Context* context)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "limit", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
+    })
+{
 }
 
 /// Evaluate size required to place new node instance.

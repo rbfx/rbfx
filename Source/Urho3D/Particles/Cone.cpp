@@ -37,10 +37,10 @@ void Cone::RegisterObject(ParticleGraphSystem* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angle", GetAngle, SetAngle, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Length", GetLength, SetLength, float, float{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Translation", GetTranslation, SetTranslation, Vector3, Vector3{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, EmitFrom, GetEmitFromNames(), EmitFrom{}, AM_DEFAULT);
 }
 
 
@@ -83,9 +83,9 @@ void Cone::SetLength(float value) { length_ = value; }
 
 float Cone::GetLength() const { return length_; }
 
-void Cone::SetPosition(Vector3 value) { position_ = value; }
+void Cone::SetTranslation(Vector3 value) { translation_ = value; }
 
-Vector3 Cone::GetPosition() const { return position_; }
+Vector3 Cone::GetTranslation() const { return translation_; }
 
 void Cone::SetRotation(Quaternion value) { rotation_ = value; }
 
@@ -95,9 +95,9 @@ void Cone::SetScale(Vector3 value) { scale_ = value; }
 
 Vector3 Cone::GetScale() const { return scale_; }
 
-void Cone::SetFrom(int value) { from_ = value; }
+void Cone::SetFrom(EmitFrom value) { from_ = value; }
 
-int Cone::GetFrom() const { return from_; }
+EmitFrom Cone::GetFrom() const { return from_; }
 
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

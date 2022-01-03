@@ -30,22 +30,23 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-Bounce::Bounce(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "position"),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "newPosition"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "newVelocity"),
-    })
-{
-}
-
 void Bounce::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<Bounce>();
     URHO3D_ACCESSOR_ATTRIBUTE("Dampen", GetDampen, SetDampen, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("BounceFactor", GetBounceFactor, SetBounceFactor, float, float{}, AM_DEFAULT);
+}
+
+
+Bounce::Bounce(Context* context)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "position", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "newPosition", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "newVelocity", ParticleGraphContainerType::Auto),
+    })
+{
 }
 
 /// Evaluate size required to place new node instance.

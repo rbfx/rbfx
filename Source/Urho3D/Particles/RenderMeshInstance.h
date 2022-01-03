@@ -61,9 +61,21 @@ public:
     template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T transforms)
     {
         auto& dst = Prepare(numParticles);
-        for (unsigned i = 0; i < numParticles; ++i)
+        auto* graphNode = static_cast<RenderMesh*>(GetGraphNode());
+        if (graphNode->GetIsWorldspace())
         {
-            dst[i] = transforms[i];
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                dst[i] = transforms[i];
+            }
+        }
+        else
+        {
+            auto localToWorld = GetNode()->GetWorldTransform();
+            for (unsigned i = 0; i < numParticles; ++i)
+            {
+                dst[i] = localToWorld * transforms[i];
+            }
         }
     }
 

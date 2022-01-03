@@ -30,21 +30,22 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-BurstTimer::BurstTimer(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "count"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out"),
-    })
-{
-}
-
 void BurstTimer::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<BurstTimer>();
     URHO3D_ACCESSOR_ATTRIBUTE("Delay", GetDelay, SetDelay, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Interval", GetInterval, SetInterval, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Cycles", GetCycles, SetCycles, int, int{}, AM_DEFAULT);
+}
+
+
+BurstTimer::BurstTimer(Context* context)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "count", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
+    })
+{
 }
 
 /// Evaluate size required to place new node instance.

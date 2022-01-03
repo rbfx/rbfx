@@ -22,41 +22,38 @@
 //
 
 #include "../Precompiled.h"
-#include "Slerp.h"
-#include "SlerpInstance.h"
+#include "EmitterRotation.h"
+#include "EmitterRotationInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Slerp::RegisterObject(ParticleGraphSystem* context)
+void EmitterRotation::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Slerp>();
+    context->AddReflection<EmitterRotation>();
 }
 
 
-Slerp::Slerp(Context* context)
+EmitterRotation::EmitterRotation(Context* context)
     : BaseNodeType(context
     , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "x", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "y", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "t", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Scalar),
     })
 {
 }
 
 /// Evaluate size required to place new node instance.
-unsigned Slerp::EvaluateInstanceSize() const
+unsigned EmitterRotation::EvaluateInstanceSize() const
 {
-    return sizeof(SlerpInstance);
+    return sizeof(EmitterRotationInstance);
 }
 
 /// Place new instance at the provided address.
-ParticleGraphNodeInstance* Slerp::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+ParticleGraphNodeInstance* EmitterRotation::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
 {
-    SlerpInstance* instance = new (ptr) SlerpInstance();
+    EmitterRotationInstance* instance = new (ptr) EmitterRotationInstance();
     instance->Init(this, layer);
     return instance;
 }

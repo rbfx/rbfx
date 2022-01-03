@@ -30,19 +30,20 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-ApplyForce::ApplyForce(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity"),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "force"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out"),
-    })
-{
-}
-
 void ApplyForce::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<ApplyForce>();
+}
+
+
+ApplyForce::ApplyForce(Context* context)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "force", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
+    })
+{
 }
 
 /// Evaluate size required to place new node instance.

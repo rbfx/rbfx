@@ -30,17 +30,18 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+void Emit::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Emit>();
+}
+
+
 Emit::Emit(Context* context)
     : BaseNodeType(context
     , PinArray {
         ParticleGraphPin(ParticleGraphPinFlag::Input, "count", ParticleGraphContainerType::Auto),
     })
 {
-}
-
-void Emit::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<Emit>();
 }
 
 /// Evaluate size required to place new node instance.

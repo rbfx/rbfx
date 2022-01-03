@@ -1,4 +1,3 @@
-
 //
 // Copyright (c) 2021-2022 the rbfx project.
 //
@@ -21,45 +20,39 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
-#include "Slerp.h"
-#include "SlerpInstance.h"
-#include "ParticleGraphSystem.h"
+#pragma once
+
+#include "TemplateNode.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
+
 namespace ParticleGraphNodes
 {
-void Slerp::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<Slerp>();
-}
+class EmitterRotationInstance;
 
-
-Slerp::Slerp(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "x", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "y", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "t", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
-    })
+class URHO3D_API EmitterRotation : public TemplateNode<EmitterRotationInstance, Quaternion>
 {
-}
+    URHO3D_OBJECT(EmitterRotation, ParticleGraphNode)
+public:
+    /// Construct EmitterRotation.
+    explicit EmitterRotation(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
-/// Evaluate size required to place new node instance.
-unsigned Slerp::EvaluateInstanceSize() const
-{
-    return sizeof(SlerpInstance);
-}
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
 
-/// Place new instance at the provided address.
-ParticleGraphNodeInstance* Slerp::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
-{
-    SlerpInstance* instance = new (ptr) SlerpInstance();
-    instance->Init(this, layer);
-    return instance;
-}
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+protected:
+};
 
 } // namespace ParticleGraphNodes
+
 } // namespace Urho3D

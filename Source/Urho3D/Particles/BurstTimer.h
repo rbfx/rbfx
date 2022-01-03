@@ -50,24 +50,24 @@ public:
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
-    /// Set dampen.
+    /// Set Delay.
     /// @property
     void SetDelay(float value);
-    /// Get dampen.
+    /// Get Delay.
     /// @property
     float GetDelay() const;
 
-    /// Set dampen.
+    /// Set Interval.
     /// @property
     void SetInterval(float value);
-    /// Get dampen.
+    /// Get Interval.
     /// @property
     float GetInterval() const;
 
-    /// Set dampen.
+    /// Set Cycles.
     /// @property
     void SetCycles(int value);
-    /// Get dampen.
+    /// Get Cycles.
     /// @property
     int GetCycles() const;
 

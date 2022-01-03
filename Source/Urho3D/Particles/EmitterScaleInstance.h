@@ -1,4 +1,3 @@
-
 //
 // Copyright (c) 2021-2022 the rbfx project.
 //
@@ -21,45 +20,31 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
-#include "Slerp.h"
-#include "SlerpInstance.h"
-#include "ParticleGraphSystem.h"
+#pragma once
+
+#include "EmitterScale.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
+
 namespace ParticleGraphNodes
 {
-void Slerp::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<Slerp>();
-}
 
-
-Slerp::Slerp(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "x", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "y", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "t", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
-    })
+class EmitterScaleInstance final : public EmitterScale::InstanceBase
 {
-}
-
-/// Evaluate size required to place new node instance.
-unsigned Slerp::EvaluateInstanceSize() const
-{
-    return sizeof(SlerpInstance);
-}
-
-/// Place new instance at the provided address.
-ParticleGraphNodeInstance* Slerp::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
-{
-    SlerpInstance* instance = new (ptr) SlerpInstance();
-    instance->Init(this, layer);
-    return instance;
-}
+public:
+    template <typename Pin0> void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0)
+    {
+        auto* node = GetNode();
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            pin0[i] = node->GetWorldPosition();
+        }
+    }
+};
 
 } // namespace ParticleGraphNodes
+
 } // namespace Urho3D

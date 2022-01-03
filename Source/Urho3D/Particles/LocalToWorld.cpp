@@ -22,41 +22,38 @@
 //
 
 #include "../Precompiled.h"
-#include "Slerp.h"
-#include "SlerpInstance.h"
+#include "LocalToWorld.h"
+#include "LocalToWorldInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Slerp::RegisterObject(ParticleGraphSystem* context)
+void LocalToWorld::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Slerp>();
+    context->AddReflection<LocalToWorld>();
 }
 
 
-Slerp::Slerp(Context* context)
+LocalToWorld::LocalToWorld(Context* context)
     : BaseNodeType(context
     , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "x", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "y", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "t", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Scalar),
     })
 {
 }
 
 /// Evaluate size required to place new node instance.
-unsigned Slerp::EvaluateInstanceSize() const
+unsigned LocalToWorld::EvaluateInstanceSize() const
 {
-    return sizeof(SlerpInstance);
+    return sizeof(LocalToWorldInstance);
 }
 
 /// Place new instance at the provided address.
-ParticleGraphNodeInstance* Slerp::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+ParticleGraphNodeInstance* LocalToWorld::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
 {
-    SlerpInstance* instance = new (ptr) SlerpInstance();
+    LocalToWorldInstance* instance = new (ptr) LocalToWorldInstance();
     instance->Init(this, layer);
     return instance;
 }

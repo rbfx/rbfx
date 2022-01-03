@@ -30,20 +30,21 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-Break::Break(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "vec"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "x"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "y"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "z"),
-    })
-{
-}
-
 void Break::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<Break>();
+}
+
+
+Break::Break(Context* context)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "vec", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "x", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "y", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "z", ParticleGraphContainerType::Auto),
+    })
+{
 }
 
 /// Evaluate size required to place new node instance.

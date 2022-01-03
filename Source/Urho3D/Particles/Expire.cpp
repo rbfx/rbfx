@@ -30,6 +30,12 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+void Expire::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Expire>();
+}
+
+
 Expire::Expire(Context* context)
     : BaseNodeType(context
     , PinArray {
@@ -37,11 +43,6 @@ Expire::Expire(Context* context)
         ParticleGraphPin(ParticleGraphPinFlag::Input, "lifetime", ParticleGraphContainerType::Auto),
     })
 {
-}
-
-void Expire::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<Expire>();
 }
 
 /// Evaluate size required to place new node instance.

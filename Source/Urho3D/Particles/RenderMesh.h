@@ -50,23 +50,31 @@ public:
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
-    /// Set dampen.
+    /// Set Model.
     /// @property
     void SetModel(ResourceRef value);
-    /// Get dampen.
+    /// Get Model.
     /// @property
     ResourceRef GetModel() const;
 
-    /// Set dampen.
+    /// Set Material.
     /// @property
     void SetMaterial(ResourceRefList value);
-    /// Get dampen.
+    /// Get Material.
     /// @property
     ResourceRefList GetMaterial() const;
+
+    /// Set Is Worldspace.
+    /// @property
+    void SetIsWorldspace(bool value);
+    /// Get Is Worldspace.
+    /// @property
+    bool GetIsWorldspace() const;
 
 protected:
     ResourceRef model_{};
     ResourceRefList material_{};
+    bool isWorldspace_{};
 };
 
 } // namespace ParticleGraphNodes

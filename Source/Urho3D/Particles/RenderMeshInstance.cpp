@@ -46,7 +46,6 @@ void RenderMeshDrawable::UpdateBatches(const FrameInfo& frame)
     const BoundingBox& worldBoundingBox = GetWorldBoundingBox();
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
     distance_ = frame.camera_->GetDistance(worldBoundingBox.Center());
-
     if (batches_.size() > 1)
     {
         for (unsigned i = 0; i < batches_.size(); ++i)

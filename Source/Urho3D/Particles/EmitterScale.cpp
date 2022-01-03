@@ -22,41 +22,38 @@
 //
 
 #include "../Precompiled.h"
-#include "Slerp.h"
-#include "SlerpInstance.h"
+#include "EmitterScale.h"
+#include "EmitterScaleInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Slerp::RegisterObject(ParticleGraphSystem* context)
+void EmitterScale::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Slerp>();
+    context->AddReflection<EmitterScale>();
 }
 
 
-Slerp::Slerp(Context* context)
+EmitterScale::EmitterScale(Context* context)
     : BaseNodeType(context
     , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "x", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "y", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "t", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Scalar),
     })
 {
 }
 
 /// Evaluate size required to place new node instance.
-unsigned Slerp::EvaluateInstanceSize() const
+unsigned EmitterScale::EvaluateInstanceSize() const
 {
-    return sizeof(SlerpInstance);
+    return sizeof(EmitterScaleInstance);
 }
 
 /// Place new instance at the provided address.
-ParticleGraphNodeInstance* Slerp::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+ParticleGraphNodeInstance* EmitterScale::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
 {
-    SlerpInstance* instance = new (ptr) SlerpInstance();
+    EmitterScaleInstance* instance = new (ptr) EmitterScaleInstance();
     instance->Init(this, layer);
     return instance;
 }

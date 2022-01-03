@@ -41,6 +41,8 @@ enum class EmitFrom
     Vertex,
 };
 
+const char** GetEmitFromNames();
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

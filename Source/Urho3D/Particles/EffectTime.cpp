@@ -30,17 +30,18 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+void EffectTime::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<EffectTime>();
+}
+
+
 EffectTime::EffectTime(Context* context)
     : BaseNodeType(context
     , PinArray {
         ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Scalar),
     })
 {
-}
-
-void EffectTime::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<EffectTime>();
 }
 
 /// Evaluate size required to place new node instance.

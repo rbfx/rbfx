@@ -35,10 +35,10 @@ void Sphere::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Sphere>();
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Translation", GetTranslation, SetTranslation, Vector3, Vector3{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, EmitFrom, GetEmitFromNames(), EmitFrom{}, AM_DEFAULT);
 }
 
 
@@ -73,9 +73,9 @@ void Sphere::SetRadiusThickness(float value) { radiusThickness_ = value; }
 
 float Sphere::GetRadiusThickness() const { return radiusThickness_; }
 
-void Sphere::SetPosition(Vector3 value) { position_ = value; }
+void Sphere::SetTranslation(Vector3 value) { translation_ = value; }
 
-Vector3 Sphere::GetPosition() const { return position_; }
+Vector3 Sphere::GetTranslation() const { return translation_; }
 
 void Sphere::SetRotation(Quaternion value) { rotation_ = value; }
 
@@ -85,9 +85,9 @@ void Sphere::SetScale(Vector3 value) { scale_ = value; }
 
 Vector3 Sphere::GetScale() const { return scale_; }
 
-void Sphere::SetFrom(int value) { from_ = value; }
+void Sphere::SetFrom(EmitFrom value) { from_ = value; }
 
-int Sphere::GetFrom() const { return from_; }
+EmitFrom Sphere::GetFrom() const { return from_; }
 
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

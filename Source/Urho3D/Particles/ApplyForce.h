@@ -49,6 +49,8 @@ public:
 
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+protected:
 };
 
 } // namespace ParticleGraphNodes

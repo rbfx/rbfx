@@ -1,6 +1,5 @@
-
 //
-// Copyright (c) 2021-2022 the rbfx project.
+// Copyright (c) 2021 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,45 +20,26 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
-#include "Slerp.h"
-#include "SlerpInstance.h"
-#include "ParticleGraphSystem.h"
+#pragma once
+
+#include "Emitter.h"
 
 namespace Urho3D
 {
+
 namespace ParticleGraphNodes
 {
-void Slerp::RegisterObject(ParticleGraphSystem* context)
+namespace
 {
-    context->AddReflection<Slerp>();
+const char* emitFromNames[]{"Base", "Volume", "Surface", "Edge", "Vertex", nullptr};
+
 }
 
-
-Slerp::Slerp(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "x", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "y", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "t", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Auto),
-    })
+const char** GetEmitFromNames()
 {
-}
-
-/// Evaluate size required to place new node instance.
-unsigned Slerp::EvaluateInstanceSize() const
-{
-    return sizeof(SlerpInstance);
-}
-
-/// Place new instance at the provided address.
-ParticleGraphNodeInstance* Slerp::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
-{
-    SlerpInstance* instance = new (ptr) SlerpInstance();
-    instance->Init(this, layer);
-    return instance;
+    return emitFromNames;
 }
 
 } // namespace ParticleGraphNodes
+
 } // namespace Urho3D

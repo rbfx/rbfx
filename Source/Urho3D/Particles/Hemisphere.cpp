@@ -35,10 +35,10 @@ void Hemisphere::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Hemisphere>();
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Translation", GetTranslation, SetTranslation, Vector3, Vector3{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, EmitFrom, GetEmitFromNames(), EmitFrom{}, AM_DEFAULT);
 }
 
 
@@ -73,9 +73,9 @@ void Hemisphere::SetRadiusThickness(float value) { radiusThickness_ = value; }
 
 float Hemisphere::GetRadiusThickness() const { return radiusThickness_; }
 
-void Hemisphere::SetPosition(Vector3 value) { position_ = value; }
+void Hemisphere::SetTranslation(Vector3 value) { translation_ = value; }
 
-Vector3 Hemisphere::GetPosition() const { return position_; }
+Vector3 Hemisphere::GetTranslation() const { return translation_; }
 
 void Hemisphere::SetRotation(Quaternion value) { rotation_ = value; }
 
@@ -85,9 +85,9 @@ void Hemisphere::SetScale(Vector3 value) { scale_ = value; }
 
 Vector3 Hemisphere::GetScale() const { return scale_; }
 
-void Hemisphere::SetFrom(int value) { from_ = value; }
+void Hemisphere::SetFrom(EmitFrom value) { from_ = value; }
 
-int Hemisphere::GetFrom() const { return from_; }
+EmitFrom Hemisphere::GetFrom() const { return from_; }
 
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

@@ -25,6 +25,7 @@
 #include "TemplateNode.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
+#include "Emitter.h"
 
 namespace Urho3D
 {
@@ -64,12 +65,12 @@ public:
     /// @property
     float GetRadiusThickness() const;
 
-    /// Set Position.
+    /// Set Translation.
     /// @property
-    void SetPosition(Vector3 value);
-    /// Get Position.
+    void SetTranslation(Vector3 value);
+    /// Get Translation.
     /// @property
-    Vector3 GetPosition() const;
+    Vector3 GetTranslation() const;
 
     /// Set Rotation.
     /// @property
@@ -87,18 +88,18 @@ public:
 
     /// Set From.
     /// @property
-    void SetFrom(int value);
+    void SetFrom(EmitFrom value);
     /// Get From.
     /// @property
-    int GetFrom() const;
+    EmitFrom GetFrom() const;
 
 protected:
     float radius_{};
     float radiusThickness_{};
-    Vector3 position_{};
+    Vector3 translation_{};
     Quaternion rotation_{};
     Vector3 scale_{};
-    int from_{};
+    EmitFrom from_{};
 };
 
 } // namespace ParticleGraphNodes

@@ -39,7 +39,7 @@ public:
     void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
     {
         const Cone* cone = static_cast<Cone*>(GetGraphNode());
-        const Matrix3x4 m = Matrix3x4(cone->GetPosition(), cone->GetRotation(), cone->GetScale());
+        const Matrix3x4 m = Matrix3x4(cone->GetTranslation(), cone->GetRotation(), cone->GetScale());
         const Matrix3 md = m.RotationMatrix();
 
         for (unsigned i = 0; i < numParticles; ++i)
