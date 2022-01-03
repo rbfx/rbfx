@@ -28,7 +28,7 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-struct Add_XY
+template <typename Value0, typename Value1, typename Value2> struct AddInstance
 {
     template <typename X, typename Y, typename Out>
     void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Out out)
@@ -39,11 +39,7 @@ struct Add_XY
         }
     }
 };
-typedef Add_XY Add_Float_Float_Float;
-typedef Add_XY Add_Vector2_Vector2_Vector2;
-typedef Add_XY Add_Vector3_Vector3_Vector3;
-typedef Add_XY Add_Vector4_Vector4_Vector4;
-typedef Add_XY Add_Color_Color_Color;
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

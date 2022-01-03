@@ -22,46 +22,50 @@
 //
 
 #include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
+#include "Divide.h"
+#include "DivideInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+void Divide::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Make>();
+    context->AddReflection<Divide>();
 }
 
 namespace {
-static ea::vector<NodePattern> MakePatterns{
+static ea::vector<NodePattern> DividePatterns{
     MakePattern(
-        MakeInstance<float, float, Vector2>()
+        DivideInstance<float, float, float>()
         , PinPattern<float>("x")
+        , PinPattern<float>("y")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        DivideInstance<Vector2, float, Vector2>()
+        , PinPattern<Vector2>("x")
         , PinPattern<float>("y")
         , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
+        DivideInstance<Vector3, float, Vector3>()
+        , PinPattern<Vector3>("x")
         , PinPattern<float>("y")
-        , PinPattern<float>("z")
         , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
+        DivideInstance<Vector4, float, Vector4>()
+        , PinPattern<Vector4>("x")
+        , PinPattern<float>("y")
+        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace
 
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
+Divide::Divide(Context* context)
+    : PatternMatchingNode(context, DividePatterns)
 {
 }
 

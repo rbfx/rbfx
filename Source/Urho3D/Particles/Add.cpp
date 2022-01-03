@@ -38,31 +38,31 @@ void Add::RegisterObject(ParticleGraphSystem* context)
 namespace {
 static ea::vector<NodePattern> AddPatterns{
     MakePattern(
-        Add_Float_Float_Float()
+        AddInstance<float, float, float>()
         , PinPattern<float>("x")
         , PinPattern<float>("y")
         , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        Add_Vector2_Vector2_Vector2()
+        AddInstance<Vector2, Vector2, Vector2>()
         , PinPattern<Vector2>("x")
         , PinPattern<Vector2>("y")
         , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        Add_Vector3_Vector3_Vector3()
+        AddInstance<Vector3, Vector3, Vector3>()
         , PinPattern<Vector3>("x")
         , PinPattern<Vector3>("y")
         , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        Add_Vector4_Vector4_Vector4()
+        AddInstance<Vector4, Vector4, Vector4>()
         , PinPattern<Vector4>("x")
         , PinPattern<Vector4>("y")
         , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        Add_Color_Color_Color()
+        AddInstance<Color, Color, Color>()
         , PinPattern<Color>("x")
         , PinPattern<Color>("y")
         , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")

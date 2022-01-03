@@ -23,14 +23,6 @@
 #include "ParticleGraphSystem.h"
 #include "All.h"
 
-#include "Make.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Model.h"
-
-#include "../Core/Context.h"
-
-#include <EASTL/tuple.h>
-
 namespace Urho3D
 {
 

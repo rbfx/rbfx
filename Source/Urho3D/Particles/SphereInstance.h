@@ -38,8 +38,8 @@ public:
     template <typename Pos, typename Vel>
     void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
     {
-        const Sphere* Sphere = static_cast<Sphere*>(GetGraphNode());
-        const Matrix3x4 m = Matrix3x4(Sphere->GetPosition(), Sphere->GetRotation(), Sphere->GetScale());
+        const Sphere* sphere = static_cast<Sphere*>(GetGraphNode());
+        const Matrix3x4 m = Matrix3x4(sphere->GetPosition(), sphere->GetRotation(), sphere->GetScale());
         const Matrix3 md = m.RotationMatrix();
 
         for (unsigned i = 0; i < numParticles; ++i)

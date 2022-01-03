@@ -22,46 +22,56 @@
 //
 
 #include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
+#include "Subtract.h"
+#include "SubtractInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+void Subtract::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Make>();
+    context->AddReflection<Subtract>();
 }
 
 namespace {
-static ea::vector<NodePattern> MakePatterns{
+static ea::vector<NodePattern> SubtractPatterns{
     MakePattern(
-        MakeInstance<float, float, Vector2>()
+        SubtractInstance<float, float, float>()
         , PinPattern<float>("x")
         , PinPattern<float>("y")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        SubtractInstance<Vector2, Vector2, Vector2>()
+        , PinPattern<Vector2>("x")
+        , PinPattern<Vector2>("y")
         , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
+        SubtractInstance<Vector3, Vector3, Vector3>()
+        , PinPattern<Vector3>("x")
+        , PinPattern<Vector3>("y")
         , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
+        SubtractInstance<Vector4, Vector4, Vector4>()
+        , PinPattern<Vector4>("x")
+        , PinPattern<Vector4>("y")
+        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        SubtractInstance<Color, Color, Color>()
+        , PinPattern<Color>("x")
+        , PinPattern<Color>("y")
+        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace
 
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
+Subtract::Subtract(Context* context)
+    : PatternMatchingNode(context, SubtractPatterns)
 {
 }
 

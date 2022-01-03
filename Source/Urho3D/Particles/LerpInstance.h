@@ -1,4 +1,3 @@
-
 //
 // Copyright (c) 2021-2022 the rbfx project.
 //
@@ -21,49 +20,26 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
-#include "ParticleGraphSystem.h"
+#pragma once
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
+
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+template <typename Value0, typename Value1, typename Value2, typename Value3> struct LerpInstance
 {
-    context->AddReflection<Make>();
-}
-
-namespace {
-static ea::vector<NodePattern> MakePatterns{
-    MakePattern(
-        MakeInstance<float, float, Vector2>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
-    ),
-    MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
-    ),
-    MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
-    ),
+    template <typename X, typename Y, typename T, typename Out>
+    void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, T t, Out out)
+    {
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = Urho3D::Lerp(x[i], y[i], t[i]);
+        }
+    }
 };
-} // namespace
-
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
-{
-}
 
 } // namespace ParticleGraphNodes
+
 } // namespace Urho3D

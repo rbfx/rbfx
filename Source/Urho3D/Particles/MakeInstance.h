@@ -28,42 +28,34 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-struct Make_Float_Float_Vector2
+template <typename... Values> struct MakeInstance
+{
+};
+
+template <typename Value0, typename Value1, typename Value2> struct MakeInstance<Value0, Value1, Value2>
 {
     template <typename X, typename Y, typename Out>
     void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Out out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            out[i] = {x[i], y[i]};
+            out[i] = Value2(x[i], y[i]);
         }
     }
 };
-struct Make_Float_Float_Float_Vector3
+template <typename Value0, typename Value1, typename Value2, typename Value3>
+struct MakeInstance<Value0, Value1, Value2, Value3>
 {
     template <typename X, typename Y, typename Z, typename Out>
     void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Z z, Out out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            out[i] = {x[i], y[i], z[i]};
+            out[i] = Value3(x[i], y[i], z[i]);
         }
     }
 };
-struct Make_Vector3_Quaternion_Vector3_Matrix3x4
-{
-    template <typename X, typename Y, typename Z, typename Out>
-    void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Z z, Out out)
-    {
-        for (unsigned i = 0; i < numParticles; ++i)
-        {
-            out[i] = {x[i], y[i], z[i]};
-        }
-    }
-};
-
 
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D
-

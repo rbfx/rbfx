@@ -22,46 +22,61 @@
 //
 
 #include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
+#include "Lerp.h"
+#include "LerpInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+void Lerp::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Make>();
+    context->AddReflection<Lerp>();
 }
 
 namespace {
-static ea::vector<NodePattern> MakePatterns{
+static ea::vector<NodePattern> LerpPatterns{
     MakePattern(
-        MakeInstance<float, float, Vector2>()
+        LerpInstance<float, float, float, float>()
         , PinPattern<float>("x")
         , PinPattern<float>("y")
+        , PinPattern<float>("t")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        LerpInstance<Vector2, Vector2, float, Vector2>()
+        , PinPattern<Vector2>("x")
+        , PinPattern<Vector2>("y")
+        , PinPattern<float>("t")
         , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
+        LerpInstance<Vector3, Vector3, float, Vector3>()
+        , PinPattern<Vector3>("x")
+        , PinPattern<Vector3>("y")
+        , PinPattern<float>("t")
         , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
+        LerpInstance<Vector4, Vector4, float, Vector4>()
+        , PinPattern<Vector4>("x")
+        , PinPattern<Vector4>("y")
+        , PinPattern<float>("t")
+        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        LerpInstance<Color, Color, float, Color>()
+        , PinPattern<Color>("x")
+        , PinPattern<Color>("y")
+        , PinPattern<float>("t")
+        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace
 
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
+Lerp::Lerp(Context* context)
+    : PatternMatchingNode(context, LerpPatterns)
 {
 }
 

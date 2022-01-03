@@ -49,6 +49,14 @@
 #include "EffectTime.h"
 #include "NormalizedEffectTime.h"
 #include "TimeStep.h"
+#include "Divide.h"
+#include "Lerp.h"
+#include "Make.h"
+#include "Move.h"
+#include "Multiply.h"
+#include "Negate.h"
+#include "Subtract.h"
+#include "TimeStepScale.h"
 
 namespace Urho3D
 {

@@ -22,46 +22,51 @@
 //
 
 #include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
+#include "TimeStepScale.h"
+#include "TimeStepScaleInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+void TimeStepScale::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Make>();
+    context->AddReflection<TimeStepScale>();
 }
 
 namespace {
-static ea::vector<NodePattern> MakePatterns{
+static ea::vector<NodePattern> TimeStepScalePatterns{
     MakePattern(
-        MakeInstance<float, float, Vector2>()
+        TimeStepScaleInstance<float, float>()
         , PinPattern<float>("x")
-        , PinPattern<float>("y")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        TimeStepScaleInstance<Vector2, Vector2>()
+        , PinPattern<Vector2>("x")
         , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
+        TimeStepScaleInstance<Vector3, Vector3>()
+        , PinPattern<Vector3>("x")
         , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
+        TimeStepScaleInstance<Vector4, Vector4>()
+        , PinPattern<Vector4>("x")
+        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        TimeStepScaleInstance<Color, Color>()
+        , PinPattern<Color>("x")
+        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace
 
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
+TimeStepScale::TimeStepScale(Context* context)
+    : PatternMatchingNode(context, TimeStepScalePatterns)
 {
 }
 

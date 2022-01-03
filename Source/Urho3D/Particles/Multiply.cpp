@@ -22,46 +22,50 @@
 //
 
 #include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
+#include "Multiply.h"
+#include "MultiplyInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+void Multiply::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Make>();
+    context->AddReflection<Multiply>();
 }
 
 namespace {
-static ea::vector<NodePattern> MakePatterns{
+static ea::vector<NodePattern> MultiplyPatterns{
     MakePattern(
-        MakeInstance<float, float, Vector2>()
+        MultiplyInstance<float, float, float>()
         , PinPattern<float>("x")
         , PinPattern<float>("y")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
+        MultiplyInstance<Vector3, float, Vector3>()
+        , PinPattern<Vector3>("x")
         , PinPattern<float>("y")
-        , PinPattern<float>("z")
         , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
+        MultiplyInstance<float, Vector3, Vector3>()
+        , PinPattern<float>("x")
+        , PinPattern<Vector3>("y")
+        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        MultiplyInstance<Color, Color, Color>()
+        , PinPattern<Color>("x")
+        , PinPattern<Color>("y")
+        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace
 
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
+Multiply::Multiply(Context* context)
+    : PatternMatchingNode(context, MultiplyPatterns)
 {
 }
 

@@ -22,46 +22,51 @@
 //
 
 #include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
+#include "Negate.h"
+#include "NegateInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+void Negate::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Make>();
+    context->AddReflection<Negate>();
 }
 
 namespace {
-static ea::vector<NodePattern> MakePatterns{
+static ea::vector<NodePattern> NegatePatterns{
     MakePattern(
-        MakeInstance<float, float, Vector2>()
+        NegateInstance<float, float>()
         , PinPattern<float>("x")
-        , PinPattern<float>("y")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        NegateInstance<Vector2, Vector2>()
+        , PinPattern<Vector2>("x")
         , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
+        NegateInstance<Vector3, Vector3>()
+        , PinPattern<Vector3>("x")
         , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
+        NegateInstance<Vector4, Vector4>()
+        , PinPattern<Vector4>("x")
+        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        NegateInstance<Color, Color>()
+        , PinPattern<Color>("x")
+        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace
 
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
+Negate::Negate(Context* context)
+    : PatternMatchingNode(context, NegatePatterns)
 {
 }
 

@@ -1,4 +1,3 @@
-
 //
 // Copyright (c) 2021-2022 the rbfx project.
 //
@@ -21,49 +20,31 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
-#include "ParticleGraphSystem.h"
+#pragma once
+
+#include "PatternMatchingNode.h"
+#include "ParticleGraphNode.h"
+#include "ParticleGraphNodeInstance.h"
 
 namespace Urho3D
 {
+class ParticleGraphSystem;
+
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+class URHO3D_API Multiply : public PatternMatchingNode
 {
-    context->AddReflection<Make>();
-}
+    URHO3D_OBJECT(Multiply, ParticleGraphNode)
+public:
+    /// Construct Multiply.
+    explicit Multiply(Context* context);
+    /// Register particle node factory.
+    /// @nobind
+    static void RegisterObject(ParticleGraphSystem* context);
 
-namespace {
-static ea::vector<NodePattern> MakePatterns{
-    MakePattern(
-        MakeInstance<float, float, Vector2>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
-    ),
-    MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
-    ),
-    MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
-    ),
+protected:
 };
-} // namespace
-
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
-{
-}
 
 } // namespace ParticleGraphNodes
+
 } // namespace Urho3D

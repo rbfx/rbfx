@@ -22,47 +22,42 @@
 //
 
 #include "../Precompiled.h"
-#include "Make.h"
-#include "MakeInstance.h"
+#include "Move.h"
+#include "MoveInstance.h"
 #include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-void Make::RegisterObject(ParticleGraphSystem* context)
+void Move::RegisterObject(ParticleGraphSystem* context)
 {
-    context->AddReflection<Make>();
+    context->AddReflection<Move>();
 }
 
-namespace {
-static ea::vector<NodePattern> MakePatterns{
-    MakePattern(
-        MakeInstance<float, float, Vector2>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
-    ),
-    MakePattern(
-        MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
-    ),
-    MakePattern(
-        MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
-    ),
-};
-} // namespace
 
-Make::Make(Context* context)
-    : PatternMatchingNode(context, MakePatterns)
+Move::Move(Context* context)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "position", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Input, "velocity", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "newPosition", ParticleGraphContainerType::Auto),
+    })
 {
+}
+
+/// Evaluate size required to place new node instance.
+unsigned Move::EvaluateInstanceSize() const
+{
+    return sizeof(MoveInstance);
+}
+
+/// Place new instance at the provided address.
+ParticleGraphNodeInstance* Move::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
+{
+    MoveInstance* instance = new (ptr) MoveInstance();
+    instance->Init(this, layer);
+    return instance;
 }
 
 } // namespace ParticleGraphNodes
