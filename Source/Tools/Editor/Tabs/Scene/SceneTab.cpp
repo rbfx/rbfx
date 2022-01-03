@@ -1376,13 +1376,13 @@ bool SceneTab::SerializeSelection(Archive& archive)
 {
     if (auto block = archive.OpenSequentialBlock("items"))
     {
-        SerializeSet(archive, "nodes", "node", selectedNodes_,
+        SerializeSet(archive, "nodes", selectedNodes_, "node",
             [&](Archive& archive, const char* name, WeakPtr<Node>& value)
         {
             SerializeValueAsType<unsigned>(archive, name, value, NodeNodeIdCaster{GetScene()});
         });
 
-        SerializeSet(archive, "components", "component", selectedNodes_,
+        SerializeSet(archive, "components", selectedNodes_, "component",
             [&](Archive& archive, const char* name, WeakPtr<Node>& value)
         {
             SerializeValueAsType<unsigned>(archive, name, value, NodeNodeIdCaster{GetScene()});

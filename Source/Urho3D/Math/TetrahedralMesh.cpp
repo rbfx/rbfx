@@ -1235,9 +1235,9 @@ void SerializeValue(Archive& archive, const char* name, Tetrahedron& value)
 void SerializeValue(Archive& archive, const char* name, TetrahedralMesh& value)
 {
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
-    SerializeVector(archive, "Vertices", "Position", value.vertices_);
-    SerializeVector(archive, "Tetrahedrons", "Tetrahedron", value.tetrahedrons_);
-    SerializeVector(archive, "HullNormals", "Hulls", value.hullNormals_);
+    SerializeVector(archive, "Vertices", value.vertices_, "Position");
+    SerializeVector(archive, "Tetrahedrons", value.tetrahedrons_, "Tetrahedron");
+    SerializeVector(archive, "HullNormals", value.hullNormals_, "Normal");
     SerializeValue(archive, "NumInnerTetrahedrons", value.numInnerTetrahedrons_);
 }
 

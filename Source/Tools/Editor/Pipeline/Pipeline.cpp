@@ -522,7 +522,7 @@ void Pipeline::SerializeInBlock(Archive& archive, ArchiveBlock& block)
                 }
 
                 ea::map<ea::string, Variant>& parameters = flavor->GetEngineParameters();
-                SerializeMap(archive, "settings", "value", parameters);
+                SerializeMap(archive, "settings", parameters, "value");
             }
         }
     });
@@ -656,7 +656,7 @@ bool Pipeline::CookCacheInfo() const
         JSONFile file(context_);
         JSONOutputArchive archive(&file);
         // TODO: Revisit
-        SerializeMap(archive, "cacheInfo", "map", mapping);
+        SerializeMap(archive, "cacheInfo", mapping, "map");
 
         context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(Format("{}CacheInfo.json", flavor->GetCachePath(), flavor->GetName()));

@@ -217,12 +217,12 @@ void VariantCurve::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 {
     SerializeValue(archive, "name", name_);
     SerializeValue(archive, "type", type_);
-    SerializeEnum(archive, "interpolation", keyFrameInterpolationNames, interpolation_);
+    SerializeEnum(archive, "interpolation", interpolation_, keyFrameInterpolationNames);
     SerializeValue(archive, "splineTension", splineTension_);
 
     if (interpolation_ == KeyFrameInterpolation::TangentSpline)
     {
-        SerializeVectorTieAsObjects(archive, "keyframes", "keyframe", ea::tie(keyFrames_, inTangents_, outTangents_),
+        SerializeVectorTieAsObjects(archive, "keyframes", ea::tie(keyFrames_, inTangents_, outTangents_), "keyframe",
             [&](Archive& archive, const char* name, ea::tuple<VariantCurvePoint&, Variant&, Variant&> value)
         {
             auto block = archive.OpenUnorderedBlock(name);
@@ -231,19 +231,19 @@ void VariantCurve::SerializeInBlock(Archive& archive, ArchiveBlock& block)
             auto& inTangent = ea::get<1>(value);
             auto& outTangent = ea::get<2>(value);
             SerializeValue(archive, "time", keyFrame.time_);
-            SerializeVariantAsType(archive, type_, "value", keyFrame.value_);
-            SerializeVariantAsType(archive, type_, "in", inTangent);
-            SerializeVariantAsType(archive, type_, "out", outTangent);
+            SerializeVariantAsType(archive, "value", keyFrame.value_, type_);
+            SerializeVariantAsType(archive, "in", inTangent, type_);
+            SerializeVariantAsType(archive, "out", outTangent, type_);
         });
     }
     else
     {
-        SerializeVectorAsObjects(archive, "keyframes", "keyframe", keyFrames_,
+        SerializeVectorAsObjects(archive, "keyframes", keyFrames_, "keyframe",
             [&](Archive& archive, const char* name, VariantCurvePoint& value)
         {
             auto block = archive.OpenUnorderedBlock(name);
             SerializeValue(archive, "time", value.time_);
-            SerializeVariantAsType(archive, type_, "value", value.value_);
+            SerializeVariantAsType(archive, "value", value.value_, type_);
         });
     }
 

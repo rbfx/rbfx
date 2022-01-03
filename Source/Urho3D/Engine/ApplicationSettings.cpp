@@ -36,10 +36,10 @@ void ApplicationSettings::SerializeInBlock(Archive& archive, ArchiveBlock& block
 {
     SerializeValue(archive, "defaultScene", defaultScene_);
     SerializeValue(archive, "platforms", platforms_);
-    SerializeMap(archive, "settings", "value", engineParameters_);
+    SerializeMap(archive, "settings", engineParameters_, "value");
 
 #if URHO3D_PLUGINS
-    SerializeVector(archive, "plugins", "plugin", plugins_);
+    SerializeVector(archive, "plugins", plugins_, "plugin");
 #endif
 }
 

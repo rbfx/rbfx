@@ -204,7 +204,7 @@ inline void SerializeStringHash(Archive& archive, const char* name, StringHash& 
 
 /// Serialize enum as integer as integer or as string.
 template <class EnumType, class UnderlyingInteger = std::underlying_type_t<EnumType>>
-void SerializeEnum(Archive& archive, const char* name, const char* const* enumConstants, EnumType& value)
+void SerializeEnum(Archive& archive, const char* name, EnumType& value, const char* const* enumConstants)
 {
     URHO3D_ASSERT(enumConstants);
 

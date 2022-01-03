@@ -133,7 +133,7 @@ struct ResourceRefListStringCaster
 
 }
 
-void SerializeVariantAsType(Archive& archive, VariantType variantType, const char* name, Variant& value)
+void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, VariantType variantType)
 {
     static_assert(MAX_VAR_TYPES == 29, "Update me");
     switch (variantType)
@@ -243,7 +243,7 @@ void SerializeVariantAsType(Archive& archive, VariantType variantType, const cha
 
         auto ptr = value.GetVariantVectorPtr();
         URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
-        SerializeVectorAsObjects(archive, name, "value", *ptr);
+        SerializeVectorAsObjects(archive, name, *ptr, "value");
         return;
     }
 
@@ -254,7 +254,7 @@ void SerializeVariantAsType(Archive& archive, VariantType variantType, const cha
 
         auto ptr = value.GetVariantMapPtr();
         URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
-        SerializeMap(archive, name, "value", *ptr);
+        SerializeMap(archive, name, *ptr, "value");
         return;
     }
 
@@ -265,7 +265,7 @@ void SerializeVariantAsType(Archive& archive, VariantType variantType, const cha
 
         auto ptr = value.GetStringVectorPtr();
         URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
-        SerializeVectorAsObjects(archive, name, "value", *ptr);
+        SerializeVectorAsObjects(archive, name, *ptr, "value");
         return;
     }
 
@@ -292,17 +292,17 @@ void SerializeVariantAsType(Archive& archive, VariantType variantType, const cha
 
 void SerializeValue(Archive& archive, const char* name, StringVector& value)
 {
-    SerializeVectorAsObjects(archive, name, "value", value);
+    SerializeVectorAsObjects(archive, name, value, "value");
 }
 
 void SerializeValue(Archive& archive, const char* name, VariantVector& value)
 {
-    SerializeVectorAsObjects(archive, name, "value", value);
+    SerializeVectorAsObjects(archive, name, value, "value");
 }
 
 void SerializeValue(Archive& archive, const char* name, VariantMap& value)
 {
-    SerializeMap(archive, name, "value", value);
+    SerializeMap(archive, name, value, "value");
 }
 
 void SerializeValue(Archive& archive, const char* name, ResourceRef& value)
@@ -324,7 +324,7 @@ void SerializeValue(Archive& archive, const char* name, ResourceRefList& value)
     {
         ArchiveBlock block = archive.OpenUnorderedBlock(name);
         SerializeValue(archive, "type", value.type_);
-        SerializeVectorAsObjects(archive, "name", "element", value.names_);
+        SerializeVectorAsObjects(archive, "names", value.names_, "name");
         return;
     }
 
