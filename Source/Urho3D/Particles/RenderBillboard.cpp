@@ -30,6 +30,16 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<RenderBillboard>();
+    URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, ResourceRef, ResourceRef{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Rows", GetRows, SetRows, int, int{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Columns", GetColumns, SetColumns, int, int{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Worldspace", GetIsWorldspace, SetIsWorldspace, bool, bool{}, AM_DEFAULT);
+}
+
+
 RenderBillboard::RenderBillboard(Context* context)
     : BaseNodeType(context
     , PinArray {
@@ -40,14 +50,6 @@ RenderBillboard::RenderBillboard(Context* context)
         ParticleGraphPin(ParticleGraphPinFlag::Input, "rotation", ParticleGraphContainerType::Auto),
     })
 {
-}
-
-void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<RenderBillboard>();
-    URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, ResourceRef, ResourceRef{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Rows", GetRows, SetRows, int, int{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Columns", GetColumns, SetColumns, int, int{}, AM_DEFAULT);
 }
 
 /// Evaluate size required to place new node instance.
@@ -75,6 +77,10 @@ int RenderBillboard::GetRows() const { return rows_; }
 void RenderBillboard::SetColumns(int value) { columns_ = value; }
 
 int RenderBillboard::GetColumns() const { return columns_; }
+
+void RenderBillboard::SetIsWorldspace(bool value) { isWorldspace_ = value; }
+
+bool RenderBillboard::GetIsWorldspace() const { return isWorldspace_; }
 
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

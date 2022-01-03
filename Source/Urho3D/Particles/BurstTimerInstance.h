@@ -34,6 +34,14 @@ namespace ParticleGraphNodes
 class BurstTimerInstance final : public BurstTimer::InstanceBase
 {
 public:
+    void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override
+    {
+        InstanceBase::Init(node, layer);
+        BurstTimer* burstTimer = static_cast<BurstTimer*>(node);
+        timeToBurst_ = burstTimer->GetDelay();
+        counter_ = burstTimer->GetCycles();
+    }
+
     template <typename T, typename Out> void operator()(UpdateContext& context, unsigned numParticles, T count, Out out)
     {
         timeToBurst_ -= context.timeStep_;

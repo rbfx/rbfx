@@ -30,6 +30,18 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
+void Hemisphere::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Hemisphere>();
+    URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
+}
+
+
 Hemisphere::Hemisphere(Context* context)
     : BaseNodeType(context
     , PinArray {
@@ -37,17 +49,6 @@ Hemisphere::Hemisphere(Context* context)
         ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Auto),
     })
 {
-}
-
-void Hemisphere::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<Hemisphere>();
-    URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, float{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("RadiusThickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
 }
 
 /// Evaluate size required to place new node instance.

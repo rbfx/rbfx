@@ -76,6 +76,8 @@ void RenderMeshDrawable::UpdateBatches(const FrameInfo& frame)
 
 void RenderMeshInstance::Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer)
 {
+    InstanceBase::Init(node, layer);
+
     const auto scene = GetScene();
     auto graphNode = static_cast<RenderMesh*>(node_);
     sceneNode_ = MakeShared<Node>(GetContext());

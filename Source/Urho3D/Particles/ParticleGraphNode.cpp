@@ -204,7 +204,7 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
             auto constValue = inputPin.GetValue();
             if (constValue.GetType() == VAR_NONE)
             {
-                URHO3D_LOGERROR(Format("Pin {}.{} is not connected and doesn't have value.", GetTypeName(),
+                URHO3D_LOGERROR(Format("Pin {}(#{}).{} is not connected and doesn't have value.", GetTypeName(), index_,
                                        inputPin.GetName()));
                 return false;
             }

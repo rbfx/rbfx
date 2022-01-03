@@ -50,45 +50,45 @@ public:
     /// Place new instance at the provided address.
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
-    /// Set dampen.
+    /// Set Radius.
     /// @property
     void SetRadius(float value);
-    /// Get dampen.
+    /// Get Radius.
     /// @property
     float GetRadius() const;
 
-    /// Set dampen.
+    /// Set Radius Thickness.
     /// @property
     void SetRadiusThickness(float value);
-    /// Get dampen.
+    /// Get Radius Thickness.
     /// @property
     float GetRadiusThickness() const;
 
-    /// Set dampen.
+    /// Set Position.
     /// @property
     void SetPosition(Vector3 value);
-    /// Get dampen.
+    /// Get Position.
     /// @property
     Vector3 GetPosition() const;
 
-    /// Set dampen.
+    /// Set Rotation.
     /// @property
     void SetRotation(Quaternion value);
-    /// Get dampen.
+    /// Get Rotation.
     /// @property
     Quaternion GetRotation() const;
 
-    /// Set dampen.
+    /// Set Scale.
     /// @property
     void SetScale(Vector3 value);
-    /// Get dampen.
+    /// Get Scale.
     /// @property
     Vector3 GetScale() const;
 
-    /// Set dampen.
+    /// Set From.
     /// @property
     void SetFrom(int value);
-    /// Get dampen.
+    /// Get From.
     /// @property
     int GetFrom() const;
 

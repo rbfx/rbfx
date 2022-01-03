@@ -26,7 +26,6 @@
 
 #include "../Graphics/Camera.h"
 #include "../Graphics/Octree.h"
-#include "../Graphics/StaticModel.h"
 #include "../Scene/Scene.h"
 #include "Urho3D/Resource/ResourceCache.h"
 
@@ -59,7 +58,7 @@ void RenderBillboardInstance::Prepare(unsigned numParticles)
 {
     auto* renderBillboard = static_cast<RenderBillboard*>(GetGraphNode());
 
-    //if (!renderBillboard->IsWorldspace())
+    if (!renderBillboard->GetIsWorldspace())
     {
         sceneNode_->SetWorldTransform(GetNode()->GetWorldTransform());
     }
@@ -74,8 +73,8 @@ void RenderBillboardInstance::Prepare(unsigned numParticles)
     {
         billboards[i].enabled_ = false;
     }
-    cols_ = renderBillboard->GetColumns();
-    rows_ = renderBillboard->GetRows();
+    cols_ = Max(1, renderBillboard->GetColumns());
+    rows_ = Max(1, renderBillboard->GetRows());
     uvTileSize_ = Vector2(1.0f / static_cast<float>(cols_), 1.0f / static_cast<float>(rows_));
 }
 

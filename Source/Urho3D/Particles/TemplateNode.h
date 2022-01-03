@@ -68,6 +68,7 @@ public:
         /// Init instance.
         virtual void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer)
         {
+            assert(node != nullptr);
             node_ = node;
             layer_ = layer;
         }

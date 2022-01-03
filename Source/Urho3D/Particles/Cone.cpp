@@ -30,26 +30,27 @@ namespace Urho3D
 {
 namespace ParticleGraphNodes
 {
-Cone::Cone(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "position"),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity"),
-    })
-{
-}
-
 void Cone::RegisterObject(ParticleGraphSystem* context)
 {
     context->AddReflection<Cone>();
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, float{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("RadiusThickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Radius Thickness", GetRadiusThickness, SetRadiusThickness, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angle", GetAngle, SetAngle, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Length", GetLength, SetLength, float, float{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
+}
+
+
+Cone::Cone(Context* context)
+    : BaseNodeType(context
+    , PinArray {
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "position", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Auto),
+    })
+{
 }
 
 /// Evaluate size required to place new node instance.
