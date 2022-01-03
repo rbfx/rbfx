@@ -41,7 +41,7 @@ extern const char* SCENE_CATEGORY;
 void SerializeValue(Archive& archive, const char* name, LightProbe& value)
 {
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
-    SerializeValue(archive, "Position", value.position_);
+    SerializeValue(archive, "position", value.position_);
 }
 
 void SerializeValue(Archive& archive, const char* name, LightProbeCollectionBakedData& value)
@@ -51,7 +51,7 @@ void SerializeValue(Archive& archive, const char* name, LightProbeCollectionBake
     const unsigned version = archive.SerializeVersion(currentVersion);
     if (version == currentVersion)
     {
-        SerializeVector(archive, "SH9", value.sphericalHarmonics_, "Element");
+        SerializeVector(archive, "sphericalHarmonics", value.sphericalHarmonics_);
 
         // Generate ambient if loading
         if (archive.IsInput())
@@ -260,7 +260,7 @@ void LightProbeGroup::SerializeLightProbes(Archive& archive)
     const unsigned version = archive.SerializeVersion(currentVersion);
     if (version == currentVersion)
     {
-        SerializeVector(archive, "LightProbes", lightProbes_, "LightProbe");
+        SerializeVector(archive, "lightProbes", lightProbes_);
     }
 }
 

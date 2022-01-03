@@ -243,7 +243,7 @@ void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, 
 
         auto ptr = value.GetVariantVectorPtr();
         URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
-        SerializeVectorAsObjects(archive, name, *ptr, "value");
+        SerializeVectorAsObjects(archive, name, *ptr);
         return;
     }
 
@@ -254,7 +254,7 @@ void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, 
 
         auto ptr = value.GetVariantMapPtr();
         URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
-        SerializeMap(archive, name, *ptr, "value");
+        SerializeMap(archive, name, *ptr);
         return;
     }
 
@@ -265,7 +265,7 @@ void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, 
 
         auto ptr = value.GetStringVectorPtr();
         URHO3D_ASSERT(ptr, "Cannot save Variant of mismatching type");
-        SerializeVectorAsObjects(archive, name, *ptr, "value");
+        SerializeVectorAsObjects(archive, name, *ptr);
         return;
     }
 
@@ -292,17 +292,17 @@ void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, 
 
 void SerializeValue(Archive& archive, const char* name, StringVector& value)
 {
-    SerializeVectorAsObjects(archive, name, value, "value");
+    SerializeVectorAsObjects(archive, name, value);
 }
 
 void SerializeValue(Archive& archive, const char* name, VariantVector& value)
 {
-    SerializeVectorAsObjects(archive, name, value, "value");
+    SerializeVectorAsObjects(archive, name, value);
 }
 
 void SerializeValue(Archive& archive, const char* name, VariantMap& value)
 {
-    SerializeMap(archive, name, value, "value");
+    SerializeMap(archive, name, value);
 }
 
 void SerializeValue(Archive& archive, const char* name, ResourceRef& value)
@@ -324,7 +324,7 @@ void SerializeValue(Archive& archive, const char* name, ResourceRefList& value)
     {
         ArchiveBlock block = archive.OpenUnorderedBlock(name);
         SerializeValue(archive, "type", value.type_);
-        SerializeVectorAsObjects(archive, "names", value.names_, "name");
+        SerializeVectorAsObjects(archive, "names", value.names_);
         return;
     }
 

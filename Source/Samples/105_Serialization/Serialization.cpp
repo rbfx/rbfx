@@ -341,7 +341,7 @@ void Serialization::TestSerializationPerformance()
         firstBuffer.WriteUByte(buffer[i]);
     const long long firstDuration = timer.GetUSec(true);
 
-    SerializeVectorAsObjects(secondArchive, "buffer", buffer, "element");
+    SerializeVectorAsObjects(secondArchive, "buffer", buffer);
     const long long secondDuration = timer.GetUSec(true);
 
     // Log result

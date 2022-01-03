@@ -63,7 +63,8 @@ inline void SerializeVectorTie(Archive& archive, const char* name, T& vectorTie,
 
 /// Serialize vector with standard interface. Content is serialized as separate objects.
 template <class T, class TSerializer = Detail::DefaultSerializer>
-void SerializeVectorAsObjects(Archive& archive, const char* name, T& vector, const char* element, const TSerializer& serializeValue = TSerializer{})
+void SerializeVectorAsObjects(Archive& archive, const char* name, T& vector, const char* element = "element",
+    const TSerializer& serializeValue = TSerializer{})
 {
     using ValueType = typename T::value_type;
 
@@ -83,7 +84,8 @@ void SerializeVectorAsObjects(Archive& archive, const char* name, T& vector, con
 
 /// Serialize array with standard interface (compatible with ea::span, ea::array, etc). Content is serialized as separate objects.
 template <class T, class TSerializer = Detail::DefaultSerializer>
-void SerializeArrayAsObjects(Archive& archive, const char* name, T& array, const char* element, const TSerializer& serializeValue = TSerializer{})
+void SerializeArrayAsObjects(Archive& archive, const char* name, T& array, const char* element = "element",
+    const TSerializer& serializeValue = TSerializer{})
 {
     const unsigned numElements = array.size();
     auto block = archive.OpenArrayBlock(name, numElements);
@@ -99,7 +101,8 @@ void SerializeArrayAsObjects(Archive& archive, const char* name, T& array, const
 }
 
 template <class T, class TSerializer = Detail::DefaultSerializer>
-void SerializeVectorTieAsObjects(Archive& archive, const char* name, T vectorTie, const char* element, const TSerializer& serializeValue = TSerializer{})
+void SerializeVectorTieAsObjects(Archive& archive, const char* name, T vectorTie, const char* element = "element",
+    const TSerializer& serializeValue = TSerializer{})
 {
     static constexpr auto tupleSize = ea::tuple_size_v<T>;
     Detail::SerializeVectorTie(archive, name, vectorTie, element, serializeValue, ea::make_index_sequence<tupleSize>{});
@@ -135,7 +138,7 @@ void SerializeVectorAsBytes(Archive& archive, const char* name, T& vector)
 
 /// Serialize vector in the best possible format.
 template <class T>
-void SerializeVector(Archive& archive, const char* name, T& vector, const char* element)
+void SerializeVector(Archive& archive, const char* name, T& vector, const char* element = "element")
 {
     using ValueType = typename T::value_type;
     static constexpr bool standardLayout = std::is_standard_layout<ValueType>::value;
@@ -179,7 +182,8 @@ void SerializeCustomVector(Archive& archive, const char* name, unsigned sizeToWr
 
 /// Serialize map or hash map with with standard interface.
 template <class T, class TSerializer = Detail::DefaultSerializer>
-void SerializeMap(Archive& archive, const char* name, T& map, const char* element, const TSerializer& serializeValue = TSerializer{})
+void SerializeMap(Archive& archive, const char* name, T& map, const char* element = "element",
+    const TSerializer& serializeValue = TSerializer{})
 {
     using KeyType = typename T::key_type;
     using ValueType = typename T::mapped_type;
@@ -236,7 +240,8 @@ void SerializeMap(Archive& archive, const char* name, T& map, const char* elemen
 
 /// Serialize set or hash set with standard interface.
 template <class T, class TSerializer = Detail::DefaultSerializer>
-void SerializeSet(Archive& archive, const char* name, T& set, const char* element, const TSerializer& serializeValue = TSerializer{})
+void SerializeSet(Archive& archive, const char* name, T& set, const char* element = "element",
+    const TSerializer& serializeValue = TSerializer{})
 {
     using ValueType = typename T::value_type;
 

@@ -148,13 +148,13 @@ ResourceRef GlobalIllumination::GetFileRef() const
 
 void GlobalIllumination::SerializeData(Archive& archive)
 {
-    ArchiveBlock block = archive.OpenUnorderedBlock("LightProbes");
+    ArchiveBlock block = archive.OpenUnorderedBlock("lightProbes");
     static const unsigned currentVersion = 2;
     const unsigned version = archive.SerializeVersion(currentVersion);
     if (version == currentVersion)
     {
-        SerializeValue(archive, "Mesh", lightProbesMesh_);
-        SerializeValue(archive, "Data", lightProbesBakedData_);
+        SerializeValue(archive, "mesh", lightProbesMesh_);
+        SerializeValue(archive, "data", lightProbesBakedData_);
     }
 }
 
