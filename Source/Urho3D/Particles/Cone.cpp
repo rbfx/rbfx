@@ -47,8 +47,8 @@ void Cone::RegisterObject(ParticleGraphSystem* context)
 Cone::Cone(Context* context)
     : BaseNodeType(context
     , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "position", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Auto),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "position", ParticleGraphContainerType::Scalar),
+        ParticleGraphPin(ParticleGraphPinFlag::Output, "velocity", ParticleGraphContainerType::Scalar),
     })
 {
 }
