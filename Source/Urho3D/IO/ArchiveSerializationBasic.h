@@ -136,6 +136,25 @@ struct EnumStringCaster
 /// Check whether the object can be serialized from/to Archive block.
 URHO3D_TYPE_TRAIT(IsObjectSerializableInBlock, std::declval<T&>().SerializeInBlock(std::declval<Archive&>()));
 
+/// Check whether the object has "empty" method.
+URHO3D_TYPE_TRAIT(IsObjectEmptyCheckable, std::declval<T&>().empty());
+
+/// Placeholder that represents any empty object as default value in SerializeOptionalValue.
+struct EmptyObject
+{
+    template <class T>
+    bool operator==(const T& rhs) const
+    {
+        if constexpr (IsObjectEmptyCheckable<T>::value)
+            return rhs.empty();
+        else
+            return rhs == T{};
+    }
+
+    template <class T>
+    explicit operator T() const { return T{}; }
+};
+
 /// @name Serialize primitive types
 /// @{
 inline void SerializeValue(Archive& archive, const char* name, bool& value) { archive.Serialize(name, value); }
@@ -215,8 +234,8 @@ void SerializeEnum(Archive& archive, const char* name, EnumType& value, const ch
 }
 
 /// Serialize optional element or block.
-template <class T, class U = T, class TSerializer = Detail::DefaultSerializer>
-void SerializeOptionalValue(Archive& archive, const char* name, T& value, const U& defaultValue,
+template <class T, class U = EmptyObject, class TSerializer = Detail::DefaultSerializer>
+void SerializeOptionalValue(Archive& archive, const char* name, T& value, const U& defaultValue = U{},
     const TSerializer& serializeValue = TSerializer{})
 {
     const bool loading = archive.IsInput();
@@ -228,22 +247,22 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
         bool initialized{};
 
         if (!loading)
-            initialized = value != defaultValue;
+            initialized = !(defaultValue == value);
 
         SerializeValue(archive, "initialized", initialized);
 
         if (initialized)
-            SerializeValue(archive, "value", value);
+            serializeValue(archive, "value", value);
         else if (loading)
-            value = defaultValue;
+            value = static_cast<T>(defaultValue);
     }
     else
     {
-        const bool initialized = loading ? archive.HasElementOrBlock(name) : value != defaultValue;
+        const bool initialized = loading ? archive.HasElementOrBlock(name) : !(defaultValue == value);
         if (initialized)
-            SerializeValue(archive, name, value);
+            serializeValue(archive, name, value);
         else if (loading)
-            value = defaultValue;
+            value = static_cast<T>(defaultValue);
     }
 }
 

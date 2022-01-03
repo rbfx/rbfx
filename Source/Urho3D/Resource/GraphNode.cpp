@@ -97,25 +97,10 @@ GraphNodeMapHelper<T, nodeCount> MakeMapHelper(ea::fixed_vector<T, nodeCount>& v
 
 } // namespace
 
-bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value)
+void GraphNodeProperty::SerializeInBlock(Archive& archive)
 {
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        return value.Serialize(archive);
-    }
-    return false;
-}
-
-bool GraphNodeProperty::Serialize(Archive& archive)
-{
-    if (!SerializeValue(archive, "name", name_))
-        return false;
-
-    VariantType variantType = value_.GetType();
-    if (!SerializeValue(archive, "type", variantType))
-        return false;
-
-    return SerializeVariantValue(archive, variantType, "value", value_);
+    SerializeValue(archive, "name", name_);
+    SerializeVariantInBlock(archive, value_);
 }
 
 GraphNode::GraphNode(Context* context)
@@ -130,47 +115,6 @@ GraphNode::GraphNode(Context* context)
 GraphNode::~GraphNode() = default;
 
 void GraphNode::RegisterObject(Context* context) { context->RegisterFactory<GraphNode>(); }
-
-template <typename PinType, size_t PinCount>
-bool GraphNode::SerializePins(Archive& archive, const char* name, ea::fixed_vector<PinType, PinCount>& vector)
-{
-    SerializeOptional(archive, !vector.empty(),
-        [&](bool loading)
-        {
-            if (auto block = archive.OpenArrayBlock(name, vector.size()))
-            {
-                if (archive.IsInput())
-                {
-                    vector.clear();
-                    vector.reserve(block.GetSizeHint());
-                    for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-                    {
-                        if (auto pinBlock = archive.OpenUnorderedBlock("pin"))
-                        {
-                            vector.push_back(PinType(this));
-                            if (!vector.back().Serialize(archive, pinBlock))
-                                return false;
-                        }
-                    }
-                    return true;
-                }
-                else
-                {
-                    for (auto& value : vector)
-                    {
-                        if (auto pinBlock = archive.OpenUnorderedBlock("pin"))
-                        {
-                            if (!value.Serialize(archive, pinBlock))
-                                return false;
-                        }
-                    }
-                    return true;
-                }
-            }
-            return false;
-        });
-    return true;
-}
 
 Variant& GraphNode::GetOrAddProperty(const ea::string_view name)
 {
@@ -266,24 +210,28 @@ void GraphNode::SetName(const ea::string& name)
     }
 }
 
-bool GraphNode::Serialize(Archive& archive, ArchiveBlock& block)
+void GraphNode::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "name", name_);
 
     if (archive.IsInput())
-    {
         nameHash_ = name_;
-    }
-    // TODO: check if properties present
-    SerializeOptional(archive, !properties_.empty(),
-        [&](bool loading) { return SerializeVectorAsObjects(archive, "properties", "property", properties_); });
 
-    SerializePins(archive, "enter", enterPins_);
-    SerializePins(archive, "in", inputPins_);
-    SerializePins(archive, "exit", exitPins_);
-    SerializePins(archive, "out", outputPins_);
+    SerializeOptionalValue(archive, "properties", properties_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value)
+    {
+        SerializeVectorAsObjects(archive, name, properties_, "property");
+    });
 
-    return true;
+    const auto serializePinVector = [&](Archive& archive, const char* name, auto& value)
+    {
+        SerializeVectorAsObjects(archive, name, value, "pin");
+    };
+
+    SerializeOptionalValue(archive, "enter", enterPins_, EmptyObject{}, serializePinVector);
+    SerializeOptionalValue(archive, "in", inputPins_, EmptyObject{}, serializePinVector);
+    SerializeOptionalValue(archive, "exit", exitPins_, EmptyObject{}, serializePinVector);
+    SerializeOptionalValue(archive, "out", outputPins_, EmptyObject{}, serializePinVector);
 }
 
 void GraphNode::SetGraph(Graph* scene, unsigned id)
