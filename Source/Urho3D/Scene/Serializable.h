@@ -66,7 +66,7 @@ public:
     virtual const ea::vector<AttributeInfo>* GetNetworkAttributes() const;
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
+    void SerializeInBlock(Archive& archive) override;
 
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);

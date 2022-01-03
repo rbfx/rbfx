@@ -72,7 +72,7 @@ public:
     ///
     bool Load();
     ///
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
+    void SerializeInBlock(Archive& archive) override;
     ///
     const AssetImporterMap& GetImporters() const { return importers_; }
     ///

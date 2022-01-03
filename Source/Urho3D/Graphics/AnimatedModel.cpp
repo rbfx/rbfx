@@ -109,10 +109,10 @@ void AnimatedModel::RegisterObject(Context* context)
         AM_DEFAULT);
 }
 
-void AnimatedModel::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void AnimatedModel::SerializeInBlock(Archive& archive)
 {
     loading_ = true;
-    BaseClassName::SerializeInBlock(archive, block);
+    BaseClassName::SerializeInBlock(archive);
     loading_ = false;
 }
 

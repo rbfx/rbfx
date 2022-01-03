@@ -199,7 +199,7 @@ void SerializeMap(Archive& archive, const char* name, T& map, const char* elemen
                 auto elementBlock = archive.OpenUnorderedBlock(element);
                 KeyType key{};
                 SerializeValue(archive, "key", key);
-                SerializeVariantInBlock(archive, elementBlock, map[key]);
+                SerializeVariantInBlock(archive, map[key]);
             }
         }
         else
@@ -208,7 +208,7 @@ void SerializeMap(Archive& archive, const char* name, T& map, const char* elemen
             {
                 auto elementBlock = archive.OpenUnorderedBlock(element);
                 SerializeValue(archive, "key", const_cast<KeyType&>(key));
-                SerializeVariantInBlock(archive, elementBlock, const_cast<Variant&>(value));
+                SerializeVariantInBlock(archive, const_cast<Variant&>(value));
             }
         }
     }

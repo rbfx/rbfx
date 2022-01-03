@@ -55,7 +55,7 @@ void Editor::RenderSettingsWindow()
     }
 }
 
-void Editor::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void Editor::SerializeInBlock(Archive& archive)
 {
     if (auto windowBlock = archive.OpenUnorderedBlock("window"))
     {

@@ -74,9 +74,9 @@ bool AssetImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     return true;
 }
 
-void AssetImporter::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void AssetImporter::SerializeInBlock(Archive& archive)
 {
-    BaseClassName::SerializeInBlock(archive, block);
+    BaseClassName::SerializeInBlock(archive);
 
     SerializeVector(archive, "byproducts", byproducts_, "resourceName");
 

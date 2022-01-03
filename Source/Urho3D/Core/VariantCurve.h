@@ -74,7 +74,7 @@ public:
     VariantType GetType() const;
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block);
+    void SerializeInBlock(Archive& archive);
 
     /// @name Utility functions
     /// @{

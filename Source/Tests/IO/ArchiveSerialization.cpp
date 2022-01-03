@@ -47,7 +47,7 @@ class SerializableObject : public Object
 public:
     explicit SerializableObject(Context* context) : Object(context) {}
 
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override
+    void SerializeInBlock(Archive& archive) override
     {
         SerializeValue(archive, "member", member_);
     }
