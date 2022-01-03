@@ -674,7 +674,7 @@ void Serializable::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 
     // Serialize attributes
     unsigned attributeIndexHint = 0;
-    SerializeVectorAsObjects(archive, "attributes", "attribute", serializedAttributes,
+    SerializeVectorAsObjects(archive, "attributes", serializedAttributes, "attribute",
         [&](Archive& archive, const char* name, ea::pair<unsigned, Variant>& value)
     {
         auto block = archive.OpenUnorderedBlock(name);

@@ -78,7 +78,7 @@ void AssetImporter::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 {
     BaseClassName::SerializeInBlock(archive, block);
 
-    SerializeVector(archive, "byproducts", "resourceName", byproducts_);
+    SerializeVector(archive, "byproducts", byproducts_, "resourceName");
 
     lastAttributeHash_ = HashEffectiveAttributeValues();
 }

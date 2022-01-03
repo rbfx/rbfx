@@ -33,18 +33,18 @@ namespace Urho3D
 /// Serialize type of the Variant.
 inline void SerializeValue(Archive& archive, const char* name, VariantType& value)
 {
-    SerializeEnum(archive, name, Variant::GetTypeNameList(), value);
+    SerializeEnum(archive, name, value, Variant::GetTypeNameList());
 }
 
 /// Serialize value of the Variant.
-URHO3D_API void SerializeVariantAsType(Archive& archive, VariantType variantType, const char* name, Variant& value);
+URHO3D_API void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, VariantType variantType);
 
 /// Serialize Variant in existing block.
 inline void SerializeVariantInBlock(Archive& archive, ArchiveBlock& block, Variant& value)
 {
     VariantType variantType = value.GetType();
     SerializeValue(archive, "type", variantType);
-    SerializeVariantAsType(archive, variantType, "value", value);
+    SerializeVariantAsType(archive, "value", value, variantType);
 }
 
 /// Serialize Variant.

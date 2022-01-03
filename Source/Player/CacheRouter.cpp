@@ -66,7 +66,7 @@ bool CacheRouter::AddPackage(PackageFile* packageFile)
     // TODO: Revisit
     JSONInputArchive archive(&jsonFile);
     ea::unordered_map<ea::string, ea::string> mapping;
-    SerializeMap(archive, "cacheInfo", "map", mapping);
+    SerializeMap(archive, "cacheInfo", mapping, "map");
 
     mapping_.insert(mapping.begin(), mapping.end());
     return true;

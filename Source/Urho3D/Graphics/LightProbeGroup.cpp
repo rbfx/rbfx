@@ -51,7 +51,7 @@ void SerializeValue(Archive& archive, const char* name, LightProbeCollectionBake
     const unsigned version = archive.SerializeVersion(currentVersion);
     if (version == currentVersion)
     {
-        SerializeVector(archive, "SH9", "Element", value.sphericalHarmonics_);
+        SerializeVector(archive, "SH9", value.sphericalHarmonics_, "Element");
 
         // Generate ambient if loading
         if (archive.IsInput())
@@ -260,7 +260,7 @@ void LightProbeGroup::SerializeLightProbes(Archive& archive)
     const unsigned version = archive.SerializeVersion(currentVersion);
     if (version == currentVersion)
     {
-        SerializeVector(archive, "LightProbes", "LightProbe", lightProbes_);
+        SerializeVector(archive, "LightProbes", lightProbes_, "LightProbe");
     }
 }
 

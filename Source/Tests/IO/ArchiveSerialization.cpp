@@ -210,9 +210,9 @@ void SerializeValue(Archive& archive, const char* name, ContainerTypesAggregate&
     auto block = archive.OpenUnorderedBlock(name);
 
     SerializeValue(archive, "justString_", value.string_);
-    SerializeVectorAsObjects(archive, "vectorOfFloats_", "elem", value.vectorOfFloats_);
+    SerializeVectorAsObjects(archive, "vectorOfFloats_", value.vectorOfFloats_, "elem");
     SerializeVectorAsBytes(archive, "byteFloatVector_", value.byteFloatVector_);
-    SerializeMap(archive, "mapOfFloats_", "elem", value.mapOfFloats_);
+    SerializeMap(archive, "mapOfFloats_", value.mapOfFloats_, "elem");
     SerializeValue(archive, "variantMap_", value.variantMap_);
     SerializeValue(archive, "variantVector_", value.variantVector_);
     SerializeValue(archive, "variantBuffer_", value.variantBuffer_);
