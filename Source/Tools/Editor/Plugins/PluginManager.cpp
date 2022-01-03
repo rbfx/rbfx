@@ -255,15 +255,16 @@ const StringVector& PluginManager::GetPluginNames()
     return *pluginNames;
 }
 
-void PluginManager::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void PluginManager::SerializeAsArray(Archive& archive)
 {
 #if URHO3D_STATIC
     // In static builds plugins are registered manually by the user.
     SendEvent(E_REGISTERSTATICPLUGINS);
 #else
+    auto block = archive.OpenArrayBlock("plugins", plugins_.size());
     ea::string name;
     bool isPrivate;
-    for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : plugins_.size(); i < num; i++)
+    for (unsigned i = 0, num = block.GetSizeHint(); i < num; i++)
     {
         if (!archive.IsInput())
         {

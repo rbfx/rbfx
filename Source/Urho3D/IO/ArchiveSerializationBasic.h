@@ -134,7 +134,7 @@ struct EnumStringCaster
 }
 
 /// Check whether the object can be serialized from/to Archive block.
-URHO3D_TYPE_TRAIT(IsObjectSerializableInBlock, std::declval<T&>().SerializeInBlock(std::declval<Archive&>(), std::declval<ArchiveBlock&>()));
+URHO3D_TYPE_TRAIT(IsObjectSerializableInBlock, std::declval<T&>().SerializeInBlock(std::declval<Archive&>()));
 
 /// @name Serialize primitive types
 /// @{
@@ -174,7 +174,7 @@ template <class T, std::enable_if_t<IsObjectSerializableInBlock<T>::value, int> 
 inline void SerializeValue(Archive& archive, const char* name, T& value)
 {
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
-    value.SerializeInBlock(archive, block);
+    value.SerializeInBlock(archive);
 }
 
 /// Serialize value as another type.

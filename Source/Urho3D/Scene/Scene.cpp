@@ -138,9 +138,9 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-void Scene::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void Scene::SerializeInBlock(Archive& archive)
 {
-    Node::SerializeInBlock(archive, block);
+    Node::SerializeInBlock(archive);
 
     fileName_ = archive.GetName();
     checksum_ = archive.GetChecksum();

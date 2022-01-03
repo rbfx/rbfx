@@ -109,7 +109,7 @@ public:
     virtual void OnEvent(Object* sender, StringHash eventType, VariantMap& eventData);
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    virtual void SerializeInBlock(Archive& archive, ArchiveBlock& block);
+    virtual void SerializeInBlock(Archive& archive);
 
     /// Return type info static.
     static const TypeInfo* GetTypeInfoStatic() { return nullptr; }

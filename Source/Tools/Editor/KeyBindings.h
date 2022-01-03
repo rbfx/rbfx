@@ -87,7 +87,7 @@ public:
     /// Construct.
     explicit KeyBindings(Context* context);
     /// Serialize key bindings state.
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
+    void SerializeInBlock(Archive& archive) override;
     /// Renders key bindings tab in settings window.
     void RenderSettingsUI();
     /// Bind handler to action.

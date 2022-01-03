@@ -132,7 +132,7 @@ void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData
     }
 }
 
-void Object::SerializeInBlock(Archive& /*archive*/, ArchiveBlock& /*block*/)
+void Object::SerializeInBlock(Archive& /*archive*/)
 {
     URHO3D_ASSERT(0);
     throw ArchiveException("Serialization is not supported for type '{}'", GetTypeName());

@@ -40,7 +40,7 @@ inline void SerializeValue(Archive& archive, const char* name, VariantType& valu
 URHO3D_API void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, VariantType variantType);
 
 /// Serialize Variant in existing block.
-inline void SerializeVariantInBlock(Archive& archive, ArchiveBlock& block, Variant& value)
+inline void SerializeVariantInBlock(Archive& archive, Variant& value)
 {
     VariantType variantType = value.GetType();
     SerializeValue(archive, "type", variantType);
@@ -51,7 +51,7 @@ inline void SerializeVariantInBlock(Archive& archive, ArchiveBlock& block, Varia
 inline void SerializeValue(Archive& archive, const char* name, Variant& value)
 {
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
-    SerializeVariantInBlock(archive, block, value);
+    SerializeVariantInBlock(archive, value);
 }
 
 /// Serialize variant types.

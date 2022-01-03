@@ -292,7 +292,7 @@ bool Project::SaveProject()
     return true;
 }
 
-void Project::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void Project::SerializeInBlock(Archive& archive)
 {
     const int version = 1;
     if (!archive.IsInput() && context_->GetSubsystem<Engine>()->IsHeadless())
@@ -317,7 +317,7 @@ void Project::SerializeInBlock(Archive& archive, ArchiveBlock& block)
 
     SerializeValue(archive, "pipeline", *pipeline_);
 #if URHO3D_PLUGINS
-    SerializeValue(archive, "plugins", *plugins_);
+    plugins_->SerializeAsArray(archive);
 #endif
     using namespace EditorProjectSerialize;
     SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);

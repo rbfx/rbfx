@@ -91,7 +91,7 @@ public:
     /// Returns true if resource or any of it's parent directories have non-default flavor settings.
     bool HasFlavorSettings(const ea::string& resourceName);
     ///
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
+    void SerializeInBlock(Archive& archive) override;
     ///
     Flavor* GetDefaultFlavor() const { return flavors_.front(); }
     ///

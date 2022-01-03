@@ -88,9 +88,9 @@ public:
     static void RegisterObject(Context* context);
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override;
+    void SerializeInBlock(Archive& archive) override;
     /// Serialize content from/to archive, with additional properties. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive, ArchiveBlock& block, SceneResolver* resolver,
+    void SerializeInBlock(Archive& archive, SceneResolver* resolver,
         bool serializeChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED);
 
     /// Load from binary data. Return true if successful.

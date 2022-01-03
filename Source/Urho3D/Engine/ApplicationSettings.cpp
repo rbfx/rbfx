@@ -32,7 +32,7 @@ ApplicationSettings::ApplicationSettings(Context* context)
 {
 }
 
-void ApplicationSettings::SerializeInBlock(Archive& archive, ArchiveBlock& block)
+void ApplicationSettings::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "defaultScene", defaultScene_);
     SerializeValue(archive, "platforms", platforms_);
