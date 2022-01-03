@@ -273,10 +273,4 @@ bool VariantCurve::operator==(const VariantCurve& rhs) const
         && keyFrames_ == rhs.keyFrames_;
 }
 
-void SerializeValue(Archive& archive, const char* name, VariantCurve& value)
-{
-    auto block = archive.OpenUnorderedBlock(name);
-    value.SerializeInBlock(archive, block);
-}
-
 }

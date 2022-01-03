@@ -185,8 +185,6 @@ public:
     /// Return serialized light probes.
     ea::string GetSerializedLightProbes() const;
 
-    /// Serialize baked data.
-    static bool SerializeBakedData(Archive& archive, LightProbeCollectionBakedData& bakedData);
     /// Set reference on file with baked data.
     void SetBakedDataFileRef(const ResourceRef& fileRef);
     /// Return reference on file with baked data.

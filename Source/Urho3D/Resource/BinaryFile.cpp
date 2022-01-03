@@ -23,9 +23,11 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../IO/BinaryArchive.h"
 #include "../IO/Deserializer.h"
 #include "../IO/File.h"
 #include "../IO/Log.h"
+#include "../IO/MemoryBuffer.h"
 #include "../IO/Serializer.h"
 #include "../Resource/BinaryFile.h"
 
@@ -63,6 +65,39 @@ bool BinaryFile::Save(Serializer& dest) const
     }
 
     return true;
+}
+
+bool BinaryFile::SaveObjectCallback(const ea::function<void(Archive&)> serializeValue)
+{
+    try
+    {
+        buffer_.Clear();
+        BinaryOutputArchive archive{GetContext(), AsSerializer()};
+        serializeValue(archive);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        buffer_.Clear();
+        URHO3D_LOGERROR("Failed to save object to binary: {}", e.what());
+        return false;
+    }
+}
+
+bool BinaryFile::LoadObjectCallback(const ea::function<void(Archive&)> serializeValue) const
+{
+    try
+    {
+        MemoryBuffer readBuffer{buffer_.GetBuffer()};
+        BinaryInputArchive archive{GetContext(), readBuffer};
+        serializeValue(archive);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        URHO3D_LOGERROR("Failed to load object from binary: {}", e.what());
+        return false;
+    }
 }
 
 void BinaryFile::Clear()

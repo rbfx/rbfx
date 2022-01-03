@@ -179,8 +179,7 @@ bool LightProbeGroup::SaveLightProbesBakedData(Context* context, const ea::strin
 
     BinaryFile bakedDataFile(context);
 
-    BinaryOutputArchive archive = bakedDataFile.AsOutputArchive();
-    if (!SerializeBakedData(archive, copy))
+    if (!bakedDataFile.SaveObject("LightProbesBakedData", bakedData))
         return false;
 
     if (!bakedDataFile.SaveFile(fileName))
@@ -281,14 +280,6 @@ ea::string LightProbeGroup::GetSerializedLightProbes() const
     return EncodeBase64(buffer.GetBuffer());
 }
 
-bool LightProbeGroup::SerializeBakedData(Archive& archive, LightProbeCollectionBakedData& bakedData)
-{
-    return ConsumeArchiveException([&]
-    {
-        SerializeValue(archive, "LightProbesBakedData", bakedData);
-    });
-}
-
 void LightProbeGroup::SetBakedDataFileRef(const ResourceRef& fileRef)
 {
     if (bakedDataRef_ != fileRef)
@@ -339,8 +330,7 @@ void LightProbeGroup::UpdateBakedData()
 
     if (bakedDataFile)
     {
-        BinaryInputArchive archive = bakedDataFile->AsInputArchive();
-        if (SerializeBakedData(archive, bakedData_))
+        if (bakedDataFile->LoadObject("LightProbesBakedData", bakedData_))
         {
             if (bakedData_.sphericalHarmonics_.size() == lightProbes_.size())
                 success = true;

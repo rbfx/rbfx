@@ -25,6 +25,8 @@
 #include "../Resource/Resource.h"
 #include "../Resource/JSONValue.h"
 
+#include <EASTL/functional.h>
+
 namespace Urho3D
 {
 
@@ -49,6 +51,16 @@ public:
     /// Save resource with user-defined indentation, only the first character (if any) of the string is used and the length of the string defines the character count. Return true if successful.
     bool Save(Serializer& dest, const ea::string& indendation) const;
 
+    /// Save/load objects using Archive serialization.
+    /// @{
+    bool SaveObjectCallback(const ea::function<void(Archive&)> serializeValue);
+    bool LoadObjectCallback(const ea::function<void(Archive&)> serializeValue) const;
+    template <class T> bool SaveObject(const char* name, const T& object);
+    template <class T> bool LoadObject(const char* name, T& object) const;
+    bool SaveObject(const Object& object) { return SaveObject(object.GetTypeName().c_str(), object); }
+    bool LoadObject(Object& object) const { return LoadObject(object.GetTypeName().c_str(), object); }
+    /// @}
+
     /// Deserialize from a string. Return true if successful.
     bool FromString(const ea::string& source);
     /// Save to a string.
@@ -62,9 +74,22 @@ public:
 
     /// Return true if parsing json string into JSONValue succeeds.
     static bool ParseJSON(const ea::string& json, JSONValue& value, bool reportError = true);
+
 private:
     /// JSON root value.
     JSONValue root_;
 };
+
+template <class T>
+bool JSONFile::SaveObject(const char* name, const T& object)
+{
+    return SaveObjectCallback([&](Archive& archive) { SerializeValue(archive, name, const_cast<T&>(object)); });
+}
+
+template <class T>
+bool JSONFile::LoadObject(const char* name, T& object) const
+{
+    return LoadObjectCallback([&](Archive& archive) { SerializeValue(archive, name, object); });
+}
 
 }

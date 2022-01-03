@@ -42,7 +42,7 @@ public:
     /// @}
 
 protected:
-    XMLArchiveBase(Context* context, XMLElement element, XMLFile* xmlFile, bool serializeRootName)
+    XMLArchiveBase(Context* context, XMLElement element, const XMLFile* xmlFile, bool serializeRootName)
         : ArchiveBaseT<BlockType, IsInputBool, true>(context)
         , rootElement_(element)
         , xmlFile_(xmlFile)
@@ -56,7 +56,7 @@ protected:
 
 private:
     /// XML file.
-    XMLFile* xmlFile_{};
+    const XMLFile* xmlFile_{};
 };
 
 /// XML attribute reference for input and output archives.
@@ -168,13 +168,13 @@ class URHO3D_API XMLInputArchive : public XMLArchiveBase<XMLInputArchiveBlock, t
 {
 public:
     /// Construct from element.
-    XMLInputArchive(Context* context, XMLElement element, XMLFile* xmlFile = nullptr, bool serializeRootName = false)
+    XMLInputArchive(Context* context, XMLElement element, const XMLFile* xmlFile = nullptr, bool serializeRootName = false)
         : XMLArchiveBase(context, element, xmlFile, serializeRootName)
     {
     }
     /// Construct from file.
-    explicit XMLInputArchive(XMLFile* xmlFile)
-        : XMLArchiveBase(xmlFile->GetContext(), xmlFile->GetRoot(), xmlFile, true)
+    explicit XMLInputArchive(const XMLFile* xmlFile)
+        : XMLArchiveBase(xmlFile->GetContext(), xmlFile->GetRoot(), xmlFile, false)
     {}
 
     /// @name Archive implementation
