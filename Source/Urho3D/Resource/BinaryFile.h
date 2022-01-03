@@ -25,9 +25,11 @@
 #pragma once
 
 #include "../Container/ByteVector.h"
-#include "../IO/BinaryArchive.h"
+#include "../IO/Archive.h"
 #include "../IO/VectorBuffer.h"
 #include "../Resource/Resource.h"
+
+#include <EASTL/functional.h>
 
 namespace Urho3D
 {
@@ -50,6 +52,16 @@ public:
     /// Save resource to a stream.
     bool Save(Serializer& dest) const override;
 
+    /// Save/load objects using Archive serialization.
+    /// @{
+    bool SaveObjectCallback(const ea::function<void(Archive&)> serializeValue);
+    bool LoadObjectCallback(const ea::function<void(Archive&)> serializeValue) const;
+    template <class T> bool SaveObject(const char* name, const T& object);
+    template <class T> bool LoadObject(const char* name, T& object) const;
+    bool SaveObject(const Object& object) { return SaveObject(object.GetTypeName().c_str(), object); }
+    bool LoadObject(Object& object) const { return LoadObject(object.GetTypeName().c_str(), object); }
+    /// @}
+
     /// Clear data.
     void Clear();
     /// Set data.
@@ -62,12 +74,20 @@ public:
     /// Cast to Deserializer.
     Deserializer& AsDeserializer() { return buffer_; }
 
-    /// Create input archive that reads from the resource. Don't use more than one archive simultaneously.
-    BinaryInputArchive AsInputArchive() { return BinaryInputArchive(context_, buffer_); }
-    /// Create output archive that writes to the resource. Don't use more than one archive simultaneously.
-    BinaryOutputArchive AsOutputArchive() { return BinaryOutputArchive(context_, buffer_); }
 private:
     VectorBuffer buffer_;
 };
+
+template <class T>
+bool BinaryFile::SaveObject(const char* name, const T& object)
+{
+    return SaveObjectCallback([&](Archive& archive) { SerializeValue(archive, name, const_cast<T&>(object)); });
+}
+
+template <class T>
+bool BinaryFile::LoadObject(const char* name, T& object) const
+{
+    return LoadObjectCallback([&](Archive& archive) { SerializeValue(archive, name, object); });
+}
 
 }

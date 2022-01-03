@@ -47,12 +47,6 @@ protected:
     }
 
 private:
-    /// Test structure serialization.
-    void TestStructSerialization();
-
-    /// Test partial XML and JSON serialization.
-    void TestPartialSerialization();
-
     /// Test scene serialization.
     void TestSceneSerialization();
 

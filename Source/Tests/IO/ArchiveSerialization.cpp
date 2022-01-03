@@ -26,6 +26,7 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
+#include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
@@ -37,6 +38,8 @@ using namespace Urho3D;
 namespace
 {
 
+const ea::string testResourceName = "@/ArchiveSerialization/TestResource.xml";
+
 class SerializableObject : public Object
 {
     URHO3D_OBJECT(SerializableObject, Object);
@@ -44,17 +47,9 @@ class SerializableObject : public Object
 public:
     explicit SerializableObject(Context* context) : Object(context) {}
 
-    bool Serialize(Archive& archive)
+    void SerializeInBlock(Archive& archive, ArchiveBlock& block) override
     {
-        if (auto block = archive.OpenSafeUnorderedBlock("SerializableObject"))
-            return Serialize(archive, block);
-        return false;
-    }
-
-    bool Serialize(Archive& archive, ArchiveBlock& block)
-    {
-        SerializeValue(archive, "member_", member_);
-        return true;
+        SerializeValue(archive, "member", member_);
     }
 
     bool operator ==(const SerializableObject& rhs) const
@@ -172,79 +167,66 @@ struct SerializationTestStruct
     // Initialize variant value so it can be deserialized from archive
     Variant variant_ = MakeCustomValue(ContainerTypesAggregate{});
 
-    auto Tie() const { return std::tie(plain_, container_, variant_); }
+    SharedPtr<Material> material_;
+    ResourceRef materialRef_;
+
+    auto Tie() const { return std::tie(plain_, container_, variant_, material_, materialRef_); }
     bool operator ==(const SerializationTestStruct& rhs) const { return Tie() == rhs.Tie(); }
 };
 
-bool SerializeValue(Archive& archive, const char* name, PlainTypesAggregate& value)
+void SerializeValue(Archive& archive, const char* name, PlainTypesAggregate& value)
 {
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "bool_", value.bool_);
+    auto block = archive.OpenUnorderedBlock(name);
 
-        SerializeValue(archive, "byte_", value.byte_);
-        SerializeValue(archive, "short_", value.short_);
-        SerializeValue(archive, "int_", value.int_);
-        SerializeValue(archive, "long_", value.long_);
+    SerializeValue(archive, "bool", value.bool_);
 
-        SerializeValue(archive, "float_", value.float_);
-        SerializeValue(archive, "double_", value.double_);
+    SerializeValue(archive, "byte", value.byte_);
+    SerializeValue(archive, "short", value.short_);
+    SerializeValue(archive, "int", value.int_);
+    SerializeValue(archive, "long", value.long_);
 
-        SerializeValue(archive, "vec2_", value.vec2_);
-        SerializeValue(archive, "vec3_", value.vec3_);
-        SerializeValue(archive, "vec4_", value.vec4_);
-        SerializeValue(archive, "intVec2_", value.intVec2_);
-        SerializeValue(archive, "intVec3_", value.intVec3_);
+    SerializeValue(archive, "float", value.float_);
+    SerializeValue(archive, "double", value.double_);
 
-        SerializeValue(archive, "rect_", value.rect_);
-        SerializeValue(archive, "intRect_", value.intRect_);
+    SerializeValue(archive, "vec2", value.vec2_);
+    SerializeValue(archive, "vec3", value.vec3_);
+    SerializeValue(archive, "vec4", value.vec4_);
+    SerializeValue(archive, "intVec2", value.intVec2_);
+    SerializeValue(archive, "intVec3", value.intVec3_);
 
-        SerializeValue(archive, "mat3_", value.mat3_);
-        SerializeValue(archive, "mat3x4_", value.mat3x4_);
-        SerializeValue(archive, "mat4_", value.mat4_);
+    SerializeValue(archive, "rect", value.rect_);
+    SerializeValue(archive, "intRect", value.intRect_);
 
-        SerializeValue(archive, "quat_", value.quat_);
-        SerializeValue(archive, "color_", value.color_);
-        return true;
-    }
-    return false;
+    SerializeValue(archive, "mat3", value.mat3_);
+    SerializeValue(archive, "mat3x4", value.mat3x4_);
+    SerializeValue(archive, "mat4", value.mat4_);
+
+    SerializeValue(archive, "quat", value.quat_);
+    SerializeValue(archive, "color", value.color_);
 }
 
-bool SerializeValue(Archive& archive, const char* name, ContainerTypesAggregate& value)
+void SerializeValue(Archive& archive, const char* name, ContainerTypesAggregate& value)
 {
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "justString_", value.string_);
-        SerializeVectorAsObjects(archive, "vectorOfFloats_", "elem", value.vectorOfFloats_);
-        SerializeVectorAsBytes(archive, "byteFloatVector_", value.byteFloatVector_);
-        SerializeStringMap(archive, "mapOfFloats_", "elem", value.mapOfFloats_);
-        SerializeValue(archive, "variantMap_", value.variantMap_);
-        SerializeValue(archive, "variantVector_", value.variantVector_);
-        SerializeValue(archive, "variantBuffer_", value.variantBuffer_);
-        SerializeValue(archive, "emptySerializable_", value.emptySerializable_);
-        SerializeValue(archive, "serializableObject_", value.serializableObject_);
-        return true;
-    }
-    return false;
+    auto block = archive.OpenUnorderedBlock(name);
+
+    SerializeValue(archive, "justString", value.string_);
+    SerializeVectorAsObjects(archive, "vectorOfFloats", value.vectorOfFloats_);
+    SerializeVectorAsBytes(archive, "byteFloatVector", value.byteFloatVector_);
+    SerializeMap(archive, "mapOfFloats", value.mapOfFloats_);
+    SerializeValue(archive, "variantMap", value.variantMap_);
+    SerializeValue(archive, "variantVector", value.variantVector_);
+    SerializeValue(archive, "variantBuffer", value.variantBuffer_);
+    SerializeValue(archive, "emptySerializable", value.emptySerializable_);
+    SerializeValue(archive, "serializableObject", value.serializableObject_);
 }
 
-bool SerializeValue(Archive& archive, const char* name, SerializationTestStruct& value)
+void SerializeValue(Archive& archive, const char* name, SerializationTestStruct& value)
 {
-    if (auto block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "plain_", value.plain_);
-        SerializeValue(archive, "container_", value.container_);
-        SerializeValue(archive, "variant_", value.variant_);
-        return true;
-    }
-    return false;
-}
-
-SharedPtr<Context> CreateTestContext()
-{
-    auto context = MakeShared<Context>();
-    context->RegisterFactory<SerializableObject>();
-    return context;
+    auto block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "plain", value.plain_);
+    SerializeValue(archive, "container", value.container_);
+    SerializeValue(archive, "variant", value.variant_);
+    SerializeResource(archive, "material", value.material_, value.materialRef_);
 }
 
 SerializationTestStruct CreateTestStruct(Context* context)
@@ -292,101 +274,83 @@ SerializationTestStruct CreateTestStruct(Context* context)
 
     result.variant_ = MakeCustomValue(result.container_);
 
+    auto cache = context->GetSubsystem<ResourceCache>();
+    result.material_ = cache->GetResource<Material>(testResourceName);
+    result.materialRef_ = ResourceRef(Material::GetTypeNameStatic(), testResourceName);
+    REQUIRE(result.material_);
+
     return result;
 }
 
-template <class ArchiveType, class ResourceType>
-SharedPtr<ResourceType> SaveTestStruct(Context* context, const SerializationTestStruct& data)
+void PrepareContext(Context* context)
 {
-    SharedPtr<ResourceType> resource = MakeShared<ResourceType>(context);
-    ArchiveType archive{ resource };
-    SerializeValue(archive, "SerializationTestStruct", const_cast<SerializationTestStruct&>(data));
+    if (!context->IsReflected<SerializableObject>())
+        context->RegisterFactory<SerializableObject>();
 
-    if (archive.HasError())
-        return nullptr;
-    return resource;
-}
-
-template <class ArchiveType>
-VectorBuffer SaveTestStructBinary(Context* context, const SerializationTestStruct& data)
-{
-    VectorBuffer buffer;
-    ArchiveType archive{ context, buffer };
-    SerializeValue(archive, "SerializationTestStruct", const_cast<SerializationTestStruct&>(data));
-
-    if (archive.HasError())
-        return {};
-    return buffer;
-}
-
-template <class ArchiveType, class ResourceType>
-ea::unique_ptr<SerializationTestStruct> LoadTestStruct(Context* context, ResourceType& resource)
-{
-    ArchiveType archive{ &resource };
-
-    SerializationTestStruct data;
-    SerializeValue(archive, "SerializationTestStruct", data);
-
-    if (archive.HasError())
-        return nullptr;
-    return ea::make_unique<SerializationTestStruct>(data);
-}
-
-template <class ArchiveType>
-ea::unique_ptr<SerializationTestStruct> LoadTestStructBinary(Context* context, VectorBuffer& buffer)
-{
-    buffer.Seek(0);
-    ArchiveType archive{ context, buffer };
-
-    SerializationTestStruct data;
-    SerializeValue(archive, "SerializationTestStruct", data);
-
-    if (archive.HasError())
-        return nullptr;
-    return ea::make_unique<SerializationTestStruct>(data);
+    auto cache = context->GetSubsystem<ResourceCache>();
+    if (!cache->GetResource<Material>(testResourceName))
+    {
+        auto resource = MakeShared<Material>(context);
+        resource->SetName(testResourceName);
+        cache->AddManualResource(resource);
+    }
 }
 
 }
 
 TEST_CASE("Test structure is serialized to archive")
 {
-    auto context = CreateTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    PrepareContext(context);
+
     const SerializationTestStruct sourceObject = CreateTestStruct(context);
 
     SECTION("binary archive")
     {
-        auto binaryData = SaveTestStructBinary<BinaryOutputArchive>(context, sourceObject);
-        REQUIRE(binaryData.GetSize() != 0);
+        auto binaryFile = MakeShared<BinaryFile>(context);
+        REQUIRE(binaryFile->SaveObject("test", sourceObject));
 
-        const auto objectFromBinary = LoadTestStructBinary<BinaryInputArchive>(context, binaryData);
-        REQUIRE(objectFromBinary);
-        REQUIRE(sourceObject == *objectFromBinary);
+        for (int i = 0; i < 3; ++i)
+        {
+            SerializationTestStruct objectFromBinary;
+            REQUIRE(binaryFile->LoadObject("test", objectFromBinary));
+            REQUIRE(sourceObject == objectFromBinary);
+        }
     }
 
     SECTION("XML archive")
     {
-        auto xmlData = SaveTestStruct<XMLOutputArchive, XMLFile>(context, sourceObject);
-        REQUIRE(xmlData);
+        auto xmlFile = MakeShared<XMLFile>(context);
+        REQUIRE(xmlFile->SaveObject("test", sourceObject));
+        REQUIRE(xmlFile->GetRoot().GetName() == "test");
 
-        auto objectFromXML = LoadTestStruct<XMLInputArchive, XMLFile>(context, *xmlData);
-        REQUIRE(objectFromXML);
-        REQUIRE(sourceObject == *objectFromXML);
+        for (int i = 0; i < 3; ++i)
+        {
+            SerializationTestStruct objectFromXML;
+            REQUIRE(xmlFile->LoadObject("test", objectFromXML));
+            REQUIRE(sourceObject == objectFromXML);
+        }
     }
 
     SECTION("JSON archive")
     {
-        auto jsonData = SaveTestStruct<JSONOutputArchive, JSONFile>(context, sourceObject);
-        REQUIRE(jsonData);
+        auto jsonFile = MakeShared<JSONFile>(context);
+        REQUIRE(jsonFile->SaveObject("test", sourceObject));
 
-        auto objectFromJSON = LoadTestStruct<JSONInputArchive, JSONFile>(context, *jsonData);
-        REQUIRE(objectFromJSON);
-        REQUIRE(sourceObject == *objectFromJSON);
+        for (int i = 0; i < 3; ++i)
+        {
+            SerializationTestStruct objectFromJSON;
+            REQUIRE(jsonFile->LoadObject("test", objectFromJSON));
+            REQUIRE(sourceObject == objectFromJSON);
+        }
     }
 }
 
 TEST_CASE("Test structure is serialized as part of the file")
 {
-    auto context = CreateTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    PrepareContext(context);
+
     SerializationTestStruct sourceObject = CreateTestStruct(context);
 
     SECTION("XML file")
@@ -395,13 +359,11 @@ TEST_CASE("Test structure is serialized as part of the file")
         XMLElement root = xmlFile->CreateRoot("root");
 
         XMLOutputArchive xmlOutputArchive{ context, root.CreateChild("child") };
-        SerializeValue(xmlOutputArchive, "SerializationTestStruct", sourceObject);
-        REQUIRE_FALSE(xmlOutputArchive.HasError());
+        SerializeValue(xmlOutputArchive, "test", sourceObject);
 
         XMLInputArchive xmlInputArchive{ context, root.GetChild("child") };
         SerializationTestStruct objectFromXML;
-        SerializeValue(xmlInputArchive, "SerializationTestStruct", objectFromXML);
-        REQUIRE_FALSE(xmlInputArchive.HasError());
+        SerializeValue(xmlInputArchive, "test", objectFromXML);
 
         REQUIRE(sourceObject == objectFromXML);
     }
@@ -413,73 +375,20 @@ TEST_CASE("Test structure is serialized as part of the file")
 
         JSONValue child;
         JSONOutputArchive jsonOutputArchive{ context, child };
-        SerializeValue(jsonOutputArchive, "SerializationTestStruct", sourceObject);
+        SerializeValue(jsonOutputArchive, "test", sourceObject);
         root.Set("child", child);
 
         JSONInputArchive jsonInputArchive{ context, root.Get("child") };
         SerializationTestStruct objectFromJSON;
-        SerializeValue(jsonInputArchive, "SerializationTestStruct", objectFromJSON);
+        SerializeValue(jsonInputArchive, "test", objectFromJSON);
 
         REQUIRE(sourceObject == objectFromJSON);
     }
 }
 
-TEST_CASE("Test resource is serialized as part of the file")
-{
-    auto context = Tests::CreateCompleteTestContext();
-    ResourceCache* cache (context->GetSubsystem<ResourceCache>());
-    SharedPtr<Material> resource = MakeShared<Material>(context);
-    resource->SetName("@/TestResource.mdl");
-    cache->AddManualResource(resource);
-    ResourceRef resourceRef(resource->GetTypeName(), resource->GetName());
-    SerializationTestStruct sourceObject = CreateTestStruct(context);
-
-    SECTION("XML file")
-    {
-        auto xmlFile = MakeShared<XMLFile>(context);
-        XMLElement root = xmlFile->CreateRoot("root");
-
-        XMLOutputArchive xmlOutputArchive{context, root.CreateChild("child")};
-        if (auto block = xmlOutputArchive.OpenUnorderedBlock("block"))
-            SerializeResource(xmlOutputArchive, "MaterialRef", resource, resourceRef);
-        REQUIRE_FALSE(xmlOutputArchive.HasError());
-
-        XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
-        SharedPtr<Material> resourceFromXML;
-        ResourceRef resourceRefFromXML;
-        if (auto block = xmlInputArchive.OpenUnorderedBlock("block"))
-            SerializeResource(xmlInputArchive, "MaterialRef", resourceFromXML, resourceRefFromXML);
-        REQUIRE_FALSE(xmlInputArchive.HasError());
-
-        REQUIRE(resource == resourceFromXML);
-        REQUIRE(resourceRef == resourceRefFromXML);
-    }
-
-    SECTION("JSON file")
-    {
-        auto jsonFile = MakeShared<JSONFile>(context);
-        JSONValue& root = jsonFile->GetRoot();
-
-        JSONValue child;
-        JSONOutputArchive jsonOutputArchive{context, child};
-        if (auto block = jsonOutputArchive.OpenUnorderedBlock("block"))
-            SerializeResource(jsonOutputArchive, "MaterialRef", resource, resourceRef);
-        root.Set("child", child);
-
-        JSONInputArchive jsonInputArchive{context, root.Get("child")};
-        SharedPtr<Material> resourceFromJSON;
-        ResourceRef resourceRefFromJSON;
-        if (auto block = jsonInputArchive.OpenUnorderedBlock("block"))
-            SerializeResource(jsonInputArchive, "MaterialRef", resourceFromJSON, resourceRefFromJSON);
-
-        REQUIRE(resource == resourceFromJSON);
-        REQUIRE(resourceRef == resourceRefFromJSON);
-    }
-}
-
 TEST_CASE("VariantCurve is serialized in Variant")
 {
-    auto context = CreateTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     Variant sourceObject;
     {
@@ -502,42 +411,35 @@ TEST_CASE("VariantCurve is serialized in Variant")
         sourceObject = curve;
     }
 
+    SECTION("Binary file")
+    {
+        auto binaryFile = MakeShared<BinaryFile>(context);
+        REQUIRE(binaryFile->SaveObject("test", sourceObject));
+
+        Variant objectFromBinary;
+        REQUIRE(binaryFile->LoadObject("test", objectFromBinary));
+        REQUIRE(sourceObject == objectFromBinary);
+    }
+
     SECTION("XML file")
     {
         auto xmlFile = MakeShared<XMLFile>(context);
-        XMLElement root = xmlFile->CreateRoot("root");
+        REQUIRE(xmlFile->SaveObject("test", sourceObject));
+        REQUIRE(xmlFile->GetRoot().GetName() == "test");
 
-        XMLOutputArchive xmlOutputArchive{context, root.CreateChild("child")};
-        SerializeValue(xmlOutputArchive, "value", sourceObject);
-        REQUIRE_FALSE(xmlOutputArchive.HasError());
-
-        XMLInputArchive xmlInputArchive{context, root.GetChild("child")};
         Variant objectFromXML;
-        SerializeValue(xmlInputArchive, "value", objectFromXML);
-        REQUIRE_FALSE(xmlInputArchive.HasError());
-
-        const auto& sourceCurve = sourceObject.GetVariantCurve();
-        const auto& xmlCurve = objectFromXML.GetVariantCurve();
-        REQUIRE(sourceCurve == xmlCurve);
+        REQUIRE(xmlFile->LoadObject("test", objectFromXML));
+        REQUIRE(sourceObject == objectFromXML);
     }
 
     SECTION("JSON file")
     {
         auto jsonFile = MakeShared<JSONFile>(context);
-        JSONValue& root = jsonFile->GetRoot();
+        REQUIRE(jsonFile->SaveObject("test", sourceObject));
 
-        JSONValue child;
-        JSONOutputArchive jsonOutputArchive{context, child};
-        SerializeValue(jsonOutputArchive, "value", sourceObject);
-        root.Set("child", child);
-
-        JSONInputArchive jsonInputArchive{context, root.Get("child")};
         Variant objectFromJSON;
-        SerializeValue(jsonInputArchive, "value", objectFromJSON);
-
-        const auto& sourceCurve = sourceObject.GetVariantCurve();
-        const auto& jsonCurve = objectFromJSON.GetVariantCurve();
-        REQUIRE(sourceCurve == jsonCurve);
+        REQUIRE(jsonFile->LoadObject("test", objectFromJSON));
+        REQUIRE(sourceObject == objectFromJSON);
     }
 }
 

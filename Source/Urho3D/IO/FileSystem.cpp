@@ -90,8 +90,6 @@ const char* SDL_IOS_GetDocumentsDir();
 namespace Urho3D
 {
 
-ea::string specifiedExecutableFile;
-
 int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* context)
 {
 #if defined(TVOS) || defined(IOS) || defined(UWP)
@@ -864,19 +862,8 @@ ea::string FileSystem::GetProgramDir() const
 
 ea::string FileSystem::GetProgramFileName() const
 {
-#if DESKTOP
-    if (!specifiedExecutableFile.empty())
-        return specifiedExecutableFile;
-
-    return GetInterpreterFileName();
-#else
-    return "";
-#endif
-}
-
-ea::string FileSystem::GetInterpreterFileName() const
-{
 #ifndef DESKTOP
+    URHO3D_LOGERROR("Program name is not available on current platform.");
 #elif defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;

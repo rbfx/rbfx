@@ -79,10 +79,13 @@ public:
     /// @name Return attributes
     /// @{
     unsigned GetAttributeIndex(StringHash nameHash) const;
+    unsigned GetAttributeIndex(StringHash nameHash, unsigned hintIndex) const;
     AttributeInfo* GetAttribute(StringHash nameHash);
     const AttributeInfo* GetAttribute(StringHash nameHash) const;
+    const AttributeInfo& GetAttributeByIndex(unsigned index) const { return attributes_[index]; }
     const ea::vector<AttributeInfo>& GetAttributes() const { return attributes_; }
     const ea::vector<AttributeInfo>& GetNetworkAttributes() const { return networkAttributes_; }
+    unsigned GetNumAttributes() const { return attributes_.size(); }
     /// @}
 
 private:

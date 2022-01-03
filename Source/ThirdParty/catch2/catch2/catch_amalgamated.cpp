@@ -3916,6 +3916,8 @@ namespace Catch {
     CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
 }
 
+// rbfx: Use custom main
+/*
 #if defined(CATCH_CONFIG_WCHAR) && defined(CATCH_PLATFORM_WINDOWS) && defined(_UNICODE) && !defined(DO_NOT_USE_WMAIN)
 // Standard C/C++ Win32 Unicode wmain entry point
 extern "C" int wmain (int argc, wchar_t * argv[], wchar_t * []) {
@@ -3930,7 +3932,7 @@ int main (int argc, char * argv[]) {
 
     return Catch::Session().run( argc, argv );
 }
-
+*/
 
 
 #include <cstdio>

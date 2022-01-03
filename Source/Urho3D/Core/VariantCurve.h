@@ -73,8 +73,8 @@ public:
     /// Return type of animation track. Defined by the type of the first keyframe.
     VariantType GetType() const;
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block);
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive, ArchiveBlock& block);
 
     /// @name Utility functions
     /// @{
@@ -101,8 +101,5 @@ public:
     /// Type of values, deduced from key frames.
     VariantType type_{};
 };
-
-/// Serialize VariantCurve as is.
-bool SerializeValue(Archive& archive, const char* name, VariantCurve& value);
 
 }

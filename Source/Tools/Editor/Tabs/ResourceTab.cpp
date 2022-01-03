@@ -444,15 +444,18 @@ void ResourceTab::ClearSelection()
 
 bool ResourceTab::SerializeSelection(Archive& archive)
 {
-    if (auto block = archive.OpenSequentialBlock("paths"))
+    // TODO: Revisit
+    try
     {
-        if (!SerializeValue(archive, "path", currentDir_))
-            return false;
-        if (!SerializeValue(archive, "item", selectedItem_))
-            return false;
+        auto block = archive.OpenUnorderedBlock("paths");
+        SerializeValue(archive, "path", currentDir_);
+        SerializeValue(archive, "item", selectedItem_);
         return true;
     }
-    return false;
+    catch (const ArchiveException& e)
+    {
+        return false;
+    }
 }
 
 void ResourceTab::OpenResource(const ea::string& resourceName)

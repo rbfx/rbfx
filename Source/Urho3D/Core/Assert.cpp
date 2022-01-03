@@ -22,28 +22,30 @@
 
 #include "../Precompiled.h"
 
-#include "../IO/ArchiveSerialization.h"
-#include "../Math/SphericalHarmonics.h"
+#include "../Core/Assert.h"
+#include "../IO/Log.h"
+
+#include <cassert>
+#include <stdexcept>
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-const SphericalHarmonics9 SphericalHarmonics9::ZERO;
-const SphericalHarmonicsColor9 SphericalHarmonicsColor9::ZERO;
-const SphericalHarmonicsDot9 SphericalHarmonicsDot9::ZERO;
-
-void SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value)
+void AssertFailure(bool isFatal, ea::string_view expression, ea::string_view message, ea::string_view file,
+    int line, ea::string_view function)
 {
-    ArchiveBlock block = archive.OpenUnorderedBlock(name);
-    SerializeValue(archive, "Ar", value.Ar_);
-    SerializeValue(archive, "Ag", value.Ag_);
-    SerializeValue(archive, "Ab", value.Ab_);
-    SerializeValue(archive, "Br", value.Br_);
-    SerializeValue(archive, "Bg", value.Bg_);
-    SerializeValue(archive, "Bb", value.Bb_);
-    SerializeValue(archive, "C", value.C_);
+    // Always log an error
+    URHO3D_LOGERROR("Assertion failure!\nExpression:\t{}\nMessage:\t{}\nFile:\t{}\nLine:\t{}\nFunction:\t{}\n",
+        expression, message, file, line, function);
+
+    // Show standard assert popup in debug mode
+    assert(0);
+
+    // Throw exception in release
+    if (isFatal)
+        throw std::logic_error("Assertion failure");
 }
 
-}
+} // namespace Urho3D

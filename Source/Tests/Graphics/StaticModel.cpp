@@ -31,7 +31,7 @@
 
 TEST_CASE("Empty geometry skipped in batch")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto scene = MakeShared<Scene>(context);
     auto node = scene->CreateChild();
     auto staticModel = node->CreateComponent<StaticModel>();
@@ -60,7 +60,7 @@ TEST_CASE("Empty geometry skipped in batch")
 
 TEST_CASE("Non-empty geometry is present at batch")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto scene = MakeShared<Scene>(context);
     auto node = scene->CreateChild();
     auto staticModel = node->CreateComponent<StaticModel>();

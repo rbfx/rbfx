@@ -112,9 +112,6 @@ public:
     ea::string GetProgramDir() const;
     /// Return the program's executable file path, or empty string if not applicable.
     ea::string GetProgramFileName() const;
-    /// Return executable path of interpreter program (for example path to mono executable on unixes for C# application), or empty string if not applicable.
-    /// If application is executed directly (no interpreter) this will return same result as GetProgramFileName().
-    ea::string GetInterpreterFileName() const;
     /// Return the user documents directory.
     /// @property
     ea::string GetUserDocumentsDir() const;

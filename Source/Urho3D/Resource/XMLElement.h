@@ -55,9 +55,9 @@ public:
     /// Construct null element.
     XMLElement();
     /// Construct with document and node pointers.
-    XMLElement(XMLFile* file, pugi::xml_node_struct* node);
+    XMLElement(const XMLFile* file, pugi::xml_node_struct* node);
     /// Construct from xpath query result set.
-    XMLElement(XMLFile* file, const XPathResultSet* resultSet, const pugi::xpath_node* xpathNode, unsigned xpathResultIndex);
+    XMLElement(const XMLFile* file, const XPathResultSet* resultSet, const pugi::xpath_node* xpathNode, unsigned xpathResultIndex);
     /// Copy-construct from another element.
     XMLElement(const XMLElement& rhs);
     /// Destruct.
@@ -297,7 +297,7 @@ public:
     Matrix4 GetMatrix4(const ea::string& name) const;
     /// Return XML file.
     /// @property
-    XMLFile* GetFile() const;
+    const XMLFile* GetFile() const;
 
     /// Return pugixml xml_node_struct.
     pugi::xml_node_struct* GetNode() const { return node_; }
@@ -320,7 +320,7 @@ public:
 
 private:
     /// XML file.
-    WeakPtr<XMLFile> file_;
+    WeakPtr<const XMLFile> file_;
     /// Pugixml node.
     pugi::xml_node_struct* node_;
     /// XPath query result set.
@@ -338,7 +338,7 @@ public:
     /// Construct empty result set.
     XPathResultSet();
     /// Construct with result set from XPath query.
-    XPathResultSet(XMLFile* file, pugi::xpath_node_set* resultSet);
+    XPathResultSet(const XMLFile* file, pugi::xpath_node_set* resultSet);
     /// Copy-construct.
     XPathResultSet(const XPathResultSet& rhs);
     /// Destruct.
@@ -364,7 +364,7 @@ public:
 
 private:
     /// XML file.
-    WeakPtr<XMLFile> file_;
+    WeakPtr<const XMLFile> file_;
     /// Pugixml xpath_node_set.
     pugi::xpath_node_set* resultSet_;
 };

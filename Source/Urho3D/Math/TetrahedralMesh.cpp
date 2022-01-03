@@ -1218,35 +1218,27 @@ void TetrahedralMesh::CalculateOuterMatrices()
     }
 }
 
-bool SerializeValue(Archive& archive, const char* name, Tetrahedron& value)
+void SerializeValue(Archive& archive, const char* name, Tetrahedron& value)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "Index0", value.indices_[0]);
-        SerializeValue(archive, "Index1", value.indices_[1]);
-        SerializeValue(archive, "Index2", value.indices_[2]);
-        SerializeValue(archive, "Index3", value.indices_[3]);
-        SerializeValue(archive, "Neighbor0", value.neighbors_[0]);
-        SerializeValue(archive, "Neighbor1", value.neighbors_[1]);
-        SerializeValue(archive, "Neighbor2", value.neighbors_[2]);
-        SerializeValue(archive, "Neighbor3", value.neighbors_[3]);
-        SerializeValue(archive, "Matrix", value.matrix_);
-        return true;
-    }
-    return false;
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "index0", value.indices_[0]);
+    SerializeValue(archive, "index1", value.indices_[1]);
+    SerializeValue(archive, "index2", value.indices_[2]);
+    SerializeValue(archive, "index3", value.indices_[3]);
+    SerializeValue(archive, "neighbor0", value.neighbors_[0]);
+    SerializeValue(archive, "neighbor1", value.neighbors_[1]);
+    SerializeValue(archive, "neighbor2", value.neighbors_[2]);
+    SerializeValue(archive, "neighbor3", value.neighbors_[3]);
+    SerializeValue(archive, "matrix", value.matrix_);
 }
 
-bool SerializeValue(Archive& archive, const char* name, TetrahedralMesh& value)
+void SerializeValue(Archive& archive, const char* name, TetrahedralMesh& value)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeVector(archive, "Vertices", "Position", value.vertices_);
-        SerializeVector(archive, "Tetrahedrons", "Tetrahedron", value.tetrahedrons_);
-        SerializeVector(archive, "HullNormals", "Hulls", value.hullNormals_);
-        SerializeValue(archive, "NumInnerTetrahedrons", value.numInnerTetrahedrons_);
-        return true;
-    }
-    return false;
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    SerializeVector(archive, "vertices", value.vertices_);
+    SerializeVector(archive, "tetrahedrons", value.tetrahedrons_);
+    SerializeVector(archive, "hullNormals", value.hullNormals_);
+    SerializeValue(archive, "numInnerTetrahedrons", value.numInnerTetrahedrons_);
 }
 
 }

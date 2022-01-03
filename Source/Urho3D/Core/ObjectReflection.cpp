@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Assert.h"
 #include "../Core/Object.h"
 #include "../Core/ObjectReflection.h"
 #include "../IO/Log.h"
@@ -161,6 +162,24 @@ unsigned ObjectReflection::GetAttributeIndex(StringHash nameHash) const
     return index < attributeNames_.size() ? index : M_MAX_UNSIGNED;
 }
 
+unsigned ObjectReflection::GetAttributeIndex(StringHash nameHash, unsigned hintIndex) const
+{
+    const unsigned numAttributes = attributeNames_.size();
+    hintIndex = ea::min(hintIndex, numAttributes);
+
+    for (unsigned i = hintIndex; i < numAttributes; ++i)
+    {
+        if (attributeNames_[i] == nameHash)
+            return i;
+    }
+    for (unsigned i = 0; i < hintIndex; ++i)
+    {
+        if (attributeNames_[i] == nameHash)
+            return i;
+    }
+    return M_MAX_UNSIGNED;
+}
+
 AttributeInfo* ObjectReflection::GetAttribute(StringHash nameHash)
 {
     return const_cast<AttributeInfo*>(const_cast<const ObjectReflection*>(this)->GetAttribute(nameHash));
@@ -266,8 +285,7 @@ void ObjectReflectionRegistry::ErrorReflectionNotFound(StringHash typeNameHash) 
 
 void ObjectReflectionRegistry::ErrorDuplicateReflection(StringHash typeNameHash) const
 {
-    URHO3D_LOGERROR("Object {} is reflectied multiple types.", typeNameHash.ToDebugString());
-    assert(0 && "Object is reflectied multiple types. Did you miss URHO3D_OBJECT macro?");
+    URHO3D_ASSERTLOG(0, "Object {} is reflectied multiple times.", typeNameHash.ToDebugString());
 }
 
 void ObjectReflectionRegistry::AddReflectionToCurrentCategory(ObjectReflection* reflection)
@@ -286,10 +304,7 @@ void ObjectReflectionRegistry::RemoveReflectionFromCurrentCategory(ObjectReflect
     if (oldIndex < objectsInOldCategory.size())
         objectsInOldCategory.erase_at(oldIndex);
     else
-    {
-        URHO3D_LOGERROR("Object {} is not found in category '{}'", reflection->GetTypeName(), oldCategory);
-        assert(0);
-    }
+        URHO3D_ASSERTLOG(0, "Object {} is not found in category '{}'", reflection->GetTypeName(), oldCategory);
 }
 
 }

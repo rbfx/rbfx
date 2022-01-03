@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/Scene/SceneManager.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
@@ -43,14 +44,14 @@ struct SceneState
     {
         sceneState_.Clear();
         BinaryOutputArchive sceneArchive(scene->GetContext(), sceneState_);
-        scene->Serialize(sceneArchive);
+        SerializeValue(sceneArchive, "scene", *scene);
     }
 
     void Load(Scene* scene)
     {
         sceneState_.Seek(0);
         BinaryInputArchive sceneArchive(scene->GetContext(), sceneState_);
-        scene->Serialize(sceneArchive);
+        SerializeValue(sceneArchive, "scene", *scene);
         scene->GetContext()->GetSubsystem<UI>()->Clear();
         sceneState_.Clear();
         scene->GetSubsystem<SceneManager>()->SetActiveScene(scene);

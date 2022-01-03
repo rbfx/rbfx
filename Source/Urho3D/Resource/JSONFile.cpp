@@ -24,9 +24,11 @@
 
 #include "../Core/Profiler.h"
 #include "../Core/Context.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/Deserializer.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
+#include "../Resource/JSONArchive.h"
 #include "../Resource/JSONFile.h"
 #include "../Resource/ResourceCache.h"
 
@@ -226,6 +228,38 @@ bool JSONFile::Save(Serializer& dest, const ea::string& indendation) const
     document.Accept(writer);
     auto size = (unsigned)buffer.GetSize();
     return dest.Write(buffer.GetString(), size) == size;
+}
+
+bool JSONFile::SaveObjectCallback(const ea::function<void(Archive&)> serializeValue)
+{
+    try
+    {
+        root_.Clear();
+        JSONOutputArchive archive{this};
+        serializeValue(archive);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        root_.Clear();
+        URHO3D_LOGERROR("Failed to save object to JSON: {}", e.what());
+        return false;
+    }
+}
+
+bool JSONFile::LoadObjectCallback(const ea::function<void(Archive&)> serializeValue) const
+{
+    try
+    {
+        JSONInputArchive archive{this};
+        serializeValue(archive);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        URHO3D_LOGERROR("Failed to load object from JSON: {}", e.what());
+        return false;
+    }
 }
 
 bool JSONFile::FromString(const ea::string & source)

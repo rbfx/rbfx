@@ -25,10 +25,10 @@
 TEST_CASE("Engine started multiple times in same process")
 {
     {
-        auto context = Tests::CreateCompleteTestContext();
+        auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     }
 
     {
-        auto context = Tests::CreateCompleteTestContext();
+        auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     }
 }

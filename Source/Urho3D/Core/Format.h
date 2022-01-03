@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,28 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#pragma once
 
-#include "../IO/ArchiveSerialization.h"
-#include "../Math/SphericalHarmonics.h"
+#if _MSC_VER
+#   pragma warning(push, 0)
+#endif
+#include <fmt/format.h>
+#if _MSC_VER
+#   pragma warning(pop)
+#endif
 
-#include "../DebugNew.h"
+#include <EASTL/string.h>
 
 namespace Urho3D
 {
 
-const SphericalHarmonics9 SphericalHarmonics9::ZERO;
-const SphericalHarmonicsColor9 SphericalHarmonicsColor9::ZERO;
-const SphericalHarmonicsDot9 SphericalHarmonicsDot9::ZERO;
-
-void SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value)
+/// Return a formatted string.
+template <typename... Args>
+ea::string Format(ea::string_view formatString, const Args&... args)
 {
-    ArchiveBlock block = archive.OpenUnorderedBlock(name);
-    SerializeValue(archive, "Ar", value.Ar_);
-    SerializeValue(archive, "Ag", value.Ag_);
-    SerializeValue(archive, "Ab", value.Ab_);
-    SerializeValue(archive, "Br", value.Br_);
-    SerializeValue(archive, "Bg", value.Bg_);
-    SerializeValue(archive, "Bb", value.Bb_);
-    SerializeValue(archive, "C", value.C_);
+    ea::string ret;
+    fmt::format_to(std::back_inserter(ret), formatString, args...);
+    return ret;
 }
 
 }
