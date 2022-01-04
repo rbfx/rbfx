@@ -37,6 +37,7 @@ class btCollisionShape;
 class btBroadphaseInterface;
 class btConstraintSolver;
 class btDiscreteDynamicsWorld;
+class btCustomDiscreteDynamicsWorld;
 class btDispatcher;
 class btDynamicsWorld;
 class btPersistentManifold;
@@ -166,6 +167,8 @@ public:
 
     /// Step the simulation forward.
     void Update(float timeStep);
+    /// Custom simulation with explicit steps and extrapolation/interpolation time.
+    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime);
     /// Refresh collisions only without updating dynamics.
     void UpdateCollisions();
     /// Set simulation substeps per second.
@@ -279,7 +282,7 @@ public:
     void SetDebugDepthTest(bool enable);
 
     /// Return the Bullet physics world.
-    btDiscreteDynamicsWorld* GetWorld() { return world_.get(); }
+    btDiscreteDynamicsWorld* GetWorld() const;
 
     /// Clean up the geometry cache.
     void CleanupGeometryCache();
@@ -318,6 +321,7 @@ private:
     void PostStep(float timeStep);
     /// Send accumulated collision events.
     void SendCollisionEvents();
+    void ApplyDelayedWorldTransforms();
 
     /// Bullet collision configuration.
     btCollisionConfiguration* collisionConfiguration_{};
@@ -328,7 +332,7 @@ private:
     /// Bullet constraint solver.
     ea::unique_ptr<btConstraintSolver> solver_;
     /// Bullet physics world.
-    ea::unique_ptr<btDiscreteDynamicsWorld> world_;
+    ea::unique_ptr<btCustomDiscreteDynamicsWorld> world_;
     /// Extra weak pointer to scene to allow for cleanup in case the world is destroyed before other components.
     WeakPtr<Scene> scene_;
     /// Rigid bodies in the world.

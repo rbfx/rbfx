@@ -54,6 +54,48 @@
 
 extern ContactAddedCallback gContactAddedCallback;
 
+ATTRIBUTE_ALIGNED16(class)
+btCustomDiscreteDynamicsWorld : public btDiscreteDynamicsWorld
+{
+public:
+    using btDiscreteDynamicsWorld::btDiscreteDynamicsWorld;
+
+    void customStepSimulation(unsigned clampedSimulationSteps, btScalar fixedTimeStep, btScalar overtime)
+    {
+        m_fixedTimeStep = fixedTimeStep;
+        m_localTime = overtime;
+
+        if (getDebugDrawer())
+        {
+            btIDebugDraw* debugDrawer = getDebugDrawer();
+            gDisableDeactivation = (debugDrawer->getDebugMode() & btIDebugDraw::DBG_NoDeactivation) != 0;
+        }
+
+        if (clampedSimulationSteps > 0)
+        {
+            saveKinematicState(fixedTimeStep * clampedSimulationSteps);
+
+            for (int i = 0; i < clampedSimulationSteps; i++)
+            {
+                // Urho3D: apply gravity on each substep
+                applyGravity();
+
+                internalSingleStepSimulation(fixedTimeStep);
+                synchronizeMotionStates();
+
+                // Urho3D: clear forces on each substep
+                clearForces();
+            }
+        }
+        else
+        {
+            synchronizeMotionStates();
+        }
+
+        clearForces();
+    }
+};
+
 namespace Urho3D
 {
 
@@ -165,7 +207,7 @@ PhysicsWorld::PhysicsWorld(Context* context) :
 
     broadphase_ = ea::make_unique<btDbvtBroadphase>();
     solver_ = ea::make_unique<btSequentialImpulseConstraintSolver>();
-    world_ = ea::make_unique<btDiscreteDynamicsWorld>(collisionDispatcher_.get(), broadphase_.get(), solver_.get(), collisionConfiguration_);
+    world_ = ea::make_unique<btCustomDiscreteDynamicsWorld>(collisionDispatcher_.get(), broadphase_.get(), solver_.get(), collisionConfiguration_);
 
     world_->setGravity(ToBtVector3(DEFAULT_GRAVITY));
     world_->getDispatchInfo().m_useContinuous = true;
@@ -300,7 +342,11 @@ void PhysicsWorld::Update(float timeStep)
     }
 
     simulating_ = false;
+    ApplyDelayedWorldTransforms();
+}
 
+void PhysicsWorld::ApplyDelayedWorldTransforms()
+{
     // Apply delayed (parented) world transforms now
     while (!delayedWorldTransforms_.empty())
     {
@@ -319,6 +365,20 @@ void PhysicsWorld::Update(float timeStep)
                 ++i;
         }
     }
+}
+
+void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime)
+{
+    URHO3D_PROFILE("UpdatePhysics");
+
+    delayedWorldTransforms_.clear();
+    simulating_ = true;
+
+    timeAcc_ = overtime;
+    world_->customStepSimulation(numSteps, fixedTimeStep, overtime);
+
+    simulating_ = false;
+    ApplyDelayedWorldTransforms();
 }
 
 void PhysicsWorld::UpdateCollisions()
@@ -782,6 +842,11 @@ void PhysicsWorld::SetDebugRenderer(DebugRenderer* debug)
 void PhysicsWorld::SetDebugDepthTest(bool enable)
 {
     debugDepthTest_ = enable;
+}
+
+btDiscreteDynamicsWorld* PhysicsWorld::GetWorld() const
+{
+    return world_.get();
 }
 
 void PhysicsWorld::CleanupGeometryCache()

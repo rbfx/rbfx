@@ -100,8 +100,10 @@ public:
     explicit NetworkSimulator(Scene* serverScene, unsigned seed = 0);
     void AddClient(Scene* clientScene, const ConnectionQuality& quality);
 
+    static void SimulateEngineFrame(Context* context, float timeStep);
+
     void SimulateEngineFrame(float timeStep);
-    void SimulateTime(float time);
+    void SimulateTime(float time, unsigned millisecondsInQuant = 8);
 
     AbstractConnection* GetServerToClientConnection(Scene* clientScene);
 

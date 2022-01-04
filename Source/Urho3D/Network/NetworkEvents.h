@@ -83,6 +83,9 @@ URHO3D_EVENT(E_NETWORKMESSAGE, NetworkMessage)
 /// Incoming network messages are processed on the client or server.
 URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
 {
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);                 // float
+    URHO3D_PARAM(P_UPDATENOW, UpdateNow);               // bool
+    URHO3D_PARAM(P_ACCUMULATEDTIME, AccumulatedTime);   // float
 }
 
 /// About to send network update on the client or server.

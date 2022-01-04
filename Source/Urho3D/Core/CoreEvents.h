@@ -63,4 +63,9 @@ URHO3D_EVENT(E_ENDFRAME, EndFrame)
 {
 }
 
+/// Frame end event, only for tools and testing.
+URHO3D_EVENT(E_ENDFRAMEPRIVATE, EndFramePrivate)
+{
+}
+
 }

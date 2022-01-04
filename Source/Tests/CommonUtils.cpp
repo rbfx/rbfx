@@ -24,6 +24,7 @@
 
 #include "CommonUtils.h"
 
+#include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Resource/XMLFile.h>
@@ -75,6 +76,27 @@ void RunFrame(Context* context, float timeStep, float maxTimeStep)
         timeStep -= subTimeStep;
     }
     while (timeStep > 0.0f);
+}
+
+FrameEventTracker::FrameEventTracker(Context* context)
+    : Object(context)
+{
+    SubscribeToEvent(E_ENDFRAMEPRIVATE,
+        [&](StringHash, VariantMap&)
+    {
+        if (!recordEvents_)
+            recordEvents_ = true;
+        else
+        {
+            recordedFrames_.push_back(ea::move(currentFrameEvents_));
+            currentFrameEvents_.clear();
+        }
+    });
+}
+
+void FrameEventTracker::HandleEvent(StringHash eventType, VariantMap& eventData)
+{
+    currentFrameEvents_.push_back(EventRecord{eventType, eventData});
 }
 
 }

@@ -43,6 +43,7 @@ class Network;
 class NetworkObject;
 class NetworkManagerBase;
 class Scene;
+class PhysicsWorld;
 
 struct ClientPing
 {
@@ -134,6 +135,7 @@ class URHO3D_API ServerNetworkManager : public Object
 
 public:
     ServerNetworkManager(NetworkManagerBase* base, Scene* scene);
+    ~ServerNetworkManager() override;
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
@@ -149,6 +151,9 @@ public:
 
 private:
     using DeltaBufferSpan = ea::pair<unsigned, unsigned>;
+
+    void UpdatePhysicsClock(float timeStep, bool networkUpdateNow, float accumulatedTime);
+    void UpdatePhysics();
 
     void BeginNetworkFrame();
     void UpdateClocks(float timeStep);
@@ -177,6 +182,12 @@ private:
 
     const unsigned updateFrequency_{};
     unsigned currentFrame_{};
+
+    WeakPtr<PhysicsWorld> physicsWorld_;
+    unsigned physicsUpdateFrequency_{};
+    unsigned numPhysicsSteps_{};
+    unsigned numPendingPhysicsSteps_{};
+    float physicsExtraTime_{};
 
     ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
     VectorBuffer componentBuffer_;
