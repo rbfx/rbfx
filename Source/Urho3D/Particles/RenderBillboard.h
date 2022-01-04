@@ -73,10 +73,10 @@ public:
 
     /// Set Face Camera Mode.
     /// @property
-    void SetFaceCameraMode(FaceCameraMode value);
+    void SetFaceCameraMode(int value);
     /// Get Face Camera Mode.
     /// @property
-    FaceCameraMode GetFaceCameraMode() const;
+    int GetFaceCameraMode() const;
 
     /// Set Is Worldspace.
     /// @property
@@ -89,7 +89,7 @@ protected:
     ResourceRef material_{};
     int rows_{};
     int columns_{};
-    FaceCameraMode faceCameraMode_{};
+    int faceCameraMode_{FC_ROTATE_XYZ};
     bool isWorldspace_{};
 };
 

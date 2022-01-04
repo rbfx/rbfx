@@ -29,7 +29,6 @@
 namespace Urho3D
 {
 namespace ParticleGraphNodes
-
 {
 void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
 {
@@ -37,7 +36,7 @@ void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, ResourceRef, ResourceRef{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rows", GetRows, SetRows, int, int{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Columns", GetColumns, SetColumns, int, int{}, AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Face Camera Mode", GetFaceCameraMode, SetFaceCameraMode, FaceCameraMode, BillboardSet::GetFaceCameraModeNames(), FaceCameraMode::FC_ROTATE_XYZ, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Face Camera Mode", GetFaceCameraMode, SetFaceCameraMode, int, (int)FC_ROTATE_XYZ, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Worldspace", GetIsWorldspace, SetIsWorldspace, bool, bool{}, AM_DEFAULT);
 }
 
@@ -81,9 +80,9 @@ void RenderBillboard::SetColumns(int value) { columns_ = value; }
 
 int RenderBillboard::GetColumns() const { return columns_; }
 
-void RenderBillboard::SetFaceCameraMode(FaceCameraMode value) { faceCameraMode_ = value; }
+void RenderBillboard::SetFaceCameraMode(int value) { faceCameraMode_ = value; }
 
-FaceCameraMode RenderBillboard::GetFaceCameraMode() const { return faceCameraMode_; }
+int RenderBillboard::GetFaceCameraMode() const { return faceCameraMode_; }
 
 void RenderBillboard::SetIsWorldspace(bool value) { isWorldspace_ = value; }
 

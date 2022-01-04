@@ -40,7 +40,7 @@ void Cone::RegisterObject(ParticleGraphSystem* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Translation", GetTranslation, SetTranslation, Vector3, Vector3{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3{}, AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, EmitFrom, GetEmitFromNames(), EmitFrom{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("From", GetFrom, SetFrom, int, int{}, AM_DEFAULT);
 }
 
 
@@ -95,9 +95,9 @@ void Cone::SetScale(Vector3 value) { scale_ = value; }
 
 Vector3 Cone::GetScale() const { return scale_; }
 
-void Cone::SetFrom(EmitFrom value) { from_ = value; }
+void Cone::SetFrom(int value) { from_ = value; }
 
-EmitFrom Cone::GetFrom() const { return from_; }
+int Cone::GetFrom() const { return from_; }
 
 } // namespace ParticleGraphNodes
 } // namespace Urho3D

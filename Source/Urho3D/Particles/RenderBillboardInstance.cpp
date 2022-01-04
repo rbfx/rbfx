@@ -46,7 +46,7 @@ void RenderBillboardInstance::Init(ParticleGraphNode* node, ParticleGraphLayerIn
 
     billboardSet_ = sceneNode_->CreateComponent<BillboardSet>();
     billboardSet_->SetMaterialAttr(renderBillboard->GetMaterial());
-    //billboardSet_->SetFaceCameraMode(FC_NONE);
+    billboardSet_->SetFaceCameraMode(static_cast<FaceCameraMode>(renderBillboard->GetFaceCameraMode()));
     octree_ = scene->GetOrCreateComponent<Octree>();
     octree_->AddManualDrawable(billboardSet_);
 }
