@@ -483,7 +483,7 @@ void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, Networ
         data.comfirmedPings_.push_back(pingMs);
 
         RecalculateAvergagePing(data);
-        URHO3D_LOGDEBUG("{}: Ping of {}ms added to buffer, average is {}ms", connection->ToString(), msg.magic_, pingMs, data.averagePing_);
+        URHO3D_LOGTRACE("{}: Ping of {}ms added to buffer, average is {}ms", connection->ToString(), pingMs, data.averagePing_);
         break;
     }
 

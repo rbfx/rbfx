@@ -85,7 +85,7 @@ bool NetworkManagerBase::IsValidComponent(unsigned index, unsigned version) cons
 void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
 {
     const bool needNewIndex = networkObject->GetNetworkId() == InvalidNetworkId;
-    if (numComponents_ >= IndexMask && needNewIndex)
+    if (numComponents_ > IndexMask && needNewIndex)
     {
         URHO3D_LOGERROR("Failed to register NetworkObject due to index overflow");
         assert(0);
