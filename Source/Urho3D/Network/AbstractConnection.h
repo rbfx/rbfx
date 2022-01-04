@@ -32,6 +32,8 @@
 #include "../IO/VectorBuffer.h"
 #include "../Network/Protocol.h"
 
+#include <EASTL/unordered_set.h>
+
 namespace Urho3D
 {
 
@@ -63,7 +65,7 @@ public:
     {
         SendMessageInternal(messageId, reliable, inOrder, data, numBytes);
 
-        URHO3D_LOGTRACE("{}: Message #{} ({} bytes) sent{}{}{}{}",
+        Log::GetLogger().Write(GetMessageLogLevel(messageId), "{}: Message #{} ({} bytes) sent{}{}{}{}",
             ToString(),
             static_cast<unsigned>(messageId),
             numBytes,
@@ -121,7 +123,7 @@ public:
 
     void OnMessageReceived(NetworkMessageId messageId, MemoryBuffer& messageData) const
     {
-        URHO3D_LOGDEBUG("{}: Message #{} received: {} bytes",
+        Log::GetLogger().Write(GetMessageLogLevel(messageId), "{}: Message #{} received: {} bytes",
             ToString(),
             static_cast<unsigned>(messageId),
             messageData.GetSize());
@@ -130,10 +132,24 @@ public:
     template <class T>
     void OnMessageReceived(NetworkMessageId messageId, const T& message) const
     {
-        URHO3D_LOGDEBUG("{}: Message #{} received: {}",
+        Log::GetLogger().Write(GetMessageLogLevel(messageId), "{}: Message #{} received: {}",
             ToString(),
             static_cast<unsigned>(messageId),
             message.ToString());
+    }
+
+    LogLevel GetMessageLogLevel(NetworkMessageId messageId) const
+    {
+        static const ea::unordered_set<NetworkMessageId> traceMessages = {
+            MSG_PING,
+            MSG_PONG,
+            MSG_CLOCK,
+            MSG_UPDATE_OBJECTS_RELIABLE,
+            MSG_UPDATE_OBJECTS_UNRELIABLE,
+
+            MSG_CONTROLS,
+        };
+        return traceMessages.contains(messageId) ? LOG_TRACE : LOG_DEBUG;
     }
     /// @}
 

@@ -105,7 +105,7 @@ enum NetworkMessageId
 
 /// ID used to identify replicated component within Scene.
 enum class NetworkId : unsigned {};
-static const NetworkId InvalidNetworkId = static_cast<NetworkId>(M_MAX_UNSIGNED);
+static const NetworkId InvalidNetworkId = static_cast<NetworkId>(0);
 
 /// Package file fragment size.
 static const unsigned PACKAGE_FRAGMENT_SIZE = 1024;
