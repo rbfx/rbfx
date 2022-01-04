@@ -154,9 +154,6 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
 
 void NetworkSimulator::SimulateEngineFrame(float timeStep)
 {
-    auto time = context_->GetSubsystem<Time>();
-    auto engine = context_->GetSubsystem<Engine>();
-
     const unsigned elapsedNetworkMilliseconds = static_cast<unsigned>(timeStep * MillisecondsInFrame * FramesInSecond);
 
     // Process client-to-server messages first so server can process them
@@ -168,6 +165,14 @@ void NetworkSimulator::SimulateEngineFrame(float timeStep)
     for (PerClient& data : clients_)
         data.serverToClient_->IncrementTime(elapsedNetworkMilliseconds);
 
+    SimulateEngineFrame(context_, timeStep);
+}
+
+void NetworkSimulator::SimulateEngineFrame(Context* context, float timeStep)
+{
+    auto time = context->GetSubsystem<Time>();
+    auto engine = context->GetSubsystem<Engine>();
+
     // Update client time
     engine->SetNextTimeStep(timeStep);
     time->BeginFrame(timeStep);
@@ -178,10 +183,9 @@ void NetworkSimulator::SimulateEngineFrame(float timeStep)
     time->EndFrame();
 }
 
-void NetworkSimulator::SimulateTime(float time)
+void NetworkSimulator::SimulateTime(float time, unsigned millisecondsInQuant)
 {
-    static constexpr unsigned millisecondsInQuant = 8;
-    static_assert(MillisecondsInFrame % millisecondsInQuant == 0, "Quants don't match frames");
+    REQUIRE(MillisecondsInFrame % millisecondsInQuant == 0);
 
     const float timeStep = static_cast<float>(millisecondsInQuant) / (FramesInSecond * MillisecondsInFrame);
     const float numStepsRaw = time / timeStep;

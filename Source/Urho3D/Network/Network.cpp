@@ -897,7 +897,13 @@ void Network::Update(float timeStep)
 {
     URHO3D_PROFILE("UpdateNetwork");
 
-    //Process all incoming messages for the server
+    // Check if periodic update should happen now
+    updateAcc_ += timeStep;
+    updateNow_ = updateAcc_ >= updateInterval_;
+    if (updateNow_)
+        updateAcc_ = fmodf(updateAcc_, updateInterval_);
+
+    // Process all incoming messages for the server
     if (rakPeer_->IsActive())
     {
         while (SLNet::Packet* packet = rakPeer_->Receive())
@@ -917,7 +923,14 @@ void Network::Update(float timeStep)
         }
     }
 
-    SendEvent(E_NETWORKINPUTPROCESSED);
+    {
+        using namespace NetworkInputProcessed;
+        VariantMap& eventData = GetEventDataMap();
+        eventData[P_TIMESTEP] = timeStep;
+        eventData[P_UPDATENOW] = updateNow_;
+        eventData[P_ACCUMULATEDTIME] = updateAcc_;
+        SendEvent(E_NETWORKINPUTPROCESSED, eventData);
+    }
 }
 
 void Network::PostUpdate(float timeStep)
@@ -925,13 +938,10 @@ void Network::PostUpdate(float timeStep)
     URHO3D_PROFILE("PostUpdateNetwork");
 
     // Check if periodic update should happen now
-    updateAcc_ += timeStep;
-    bool updateNow = updateAcc_ >= updateInterval_;
-    if (updateNow)
+    if (updateNow_)
     {
         // Notify of the impending update to allow for example updated client controls to be set
         SendEvent(E_NETWORKUPDATE);
-        updateAcc_ = fmodf(updateAcc_, updateInterval_);
 
         if (IsServerRunning())
         {

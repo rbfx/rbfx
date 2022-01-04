@@ -185,6 +185,8 @@ private:
     float updateInterval_;
     /// Update time accumulator.
     float updateAcc_;
+    /// Whether the network will be updated on this frame.
+    bool updateNow_{};
     /// Package cache directory.
     ea::string packageCacheDir_;
     /// Whether we started as server or not.

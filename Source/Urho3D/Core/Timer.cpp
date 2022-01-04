@@ -43,10 +43,6 @@
 namespace Urho3D
 {
 
-URHO3D_EVENT(E_ENDFRAMEPRIVATE, EndFramePrivate)
-{
-}
-
 bool HiresTimer::supported(false);
 long long HiresTimer::frequency(1000);
 

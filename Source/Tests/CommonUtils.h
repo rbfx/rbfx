@@ -51,6 +51,55 @@ SharedPtr<Context> CreateCompleteContext();
 /// Run frame with given time step.
 void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
 
+struct EventRecord
+{
+    StringHash eventType_;
+    VariantMap eventData_;
+};
+
+/// Helper class to track events in the engine during the frame.
+/// Events during the first tracked frame and after the last tracked frame are ignored.
+class FrameEventTracker : public Object
+{
+    URHO3D_OBJECT(FrameEventTracker, Object);
+
+public:
+    explicit FrameEventTracker(Context* context);
+
+    void TrackEvent(StringHash eventType)
+    {
+        SubscribeToEvent(eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
+    }
+
+    void TrackEvent(Object* object, StringHash eventType)
+    {
+        SubscribeToEvent(object, eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
+    }
+
+    bool HasFrame() const { return !recordedFrames_.empty(); }
+
+    ea::vector<EventRecord> PopFrame()
+    {
+        const auto frameEvents = ea::move(recordedFrames_.front());
+        recordedFrames_.pop_front();
+        return frameEvents;
+    }
+
+    template <class T>
+    void ValidateFrames(T callback)
+    {
+        while (HasFrame())
+            callback(PopFrame());
+    }
+
+private:
+    void HandleEvent(StringHash eventType, VariantMap& eventData);
+
+    bool recordEvents_{};
+    ea::vector<EventRecord> currentFrameEvents_;
+    ea::vector<ea::vector<EventRecord>> recordedFrames_;
+};
+
 }
 
 /// Convert common types to strings

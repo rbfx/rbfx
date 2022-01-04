@@ -28,9 +28,12 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Network/DefaultNetworkObject.h>
 #include <Urho3D/Network/Network.h>
+#include <Urho3D/Network/NetworkEvents.h>
 #include <Urho3D/Network/NetworkManager.h>
 #include <Urho3D/Network/NetworkObject.h>
 #include <Urho3D/Network/NetworkValue.h>
+#include <Urho3D/Physics/PhysicsEvents.h>
+#include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -577,4 +580,65 @@ TEST_CASE("Ownership is consistent on server and on clients")
     REQUIRE(getObject(clientScenes[2], "Owned Node 0")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
     REQUIRE(getObject(clientScenes[2], "Owned Node 1")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
     REQUIRE(getObject(clientScenes[2], "Owned Node 2")->GetNetworkMode() == NetworkObjectMode::ClientOwned);
+}
+
+TEST_CASE("Physics is synchronized with network updates on server")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
+
+    // Simulate some time before scene creation so network is not synchronized with scene
+    Tests::NetworkSimulator::SimulateEngineFrame(context, 0.01234f);
+
+    // Start simulation and track events
+    auto serverScene = MakeShared<Scene>(context);
+    auto physicsWorld = serverScene->CreateComponent<PhysicsWorld>();
+    physicsWorld->SetFps(64);
+
+    Tests::NetworkSimulator sim(serverScene);
+
+    auto eventTracker = MakeShared<Tests::FrameEventTracker>(context);
+    eventTracker->TrackEvent(E_PHYSICSPRESTEP);
+    eventTracker->TrackEvent(E_NETWORKUPDATE);
+
+    sim.SimulateTime(1.0f);
+
+    // Expect to have alternating frames:
+    // - ...
+    // - (end frame)
+    // - E_PHYSICSPRESTEP
+    // - (end frame)
+    // - E_PHYSICSPRESTEP
+    // - E_NETWORKUPDATE
+    // - (end frame)
+    // - E_PHYSICSPRESTEP
+    // - (end frame)
+    // - E_PHYSICSPRESTEP
+    // - E_NETWORKUPDATE
+    // - (end frame)
+    // - ...
+    ea::optional<unsigned> prevNumEvents;
+    const auto frameValidator = [&](const ea::vector<Tests::EventRecord>& events)
+    {
+        if (events.empty())
+            return;
+
+        const unsigned numEvents = events.size();
+        REQUIRE((numEvents == 1 || numEvents == 2));
+        REQUIRE(prevNumEvents != numEvents);
+
+        prevNumEvents = numEvents;
+        if (numEvents == 1)
+        {
+            REQUIRE(events[0].eventType_ == E_PHYSICSPRESTEP);
+        }
+        else
+        {
+            REQUIRE(events[0].eventType_ == E_PHYSICSPRESTEP);
+            REQUIRE(events[1].eventType_ == E_NETWORKUPDATE);
+        }
+    };
+
+    sim.SimulateTime(1.0f);
+    eventTracker->ValidateFrames(frameValidator);
 }
