@@ -470,6 +470,11 @@ const ea::vector<unsigned char>& BillboardSet::GetNetBillboardsAttr() const
     return attrBuffer_.GetBuffer();
 }
 
+const char** BillboardSet::GetFaceCameraModeNames()
+{
+    return faceCameraModeNames;
+}
+
 void BillboardSet::OnWorldBoundingBoxUpdate()
 {
     unsigned enabledBillboards = 0;

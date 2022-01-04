@@ -40,13 +40,13 @@ void RenderBillboardInstance::Init(ParticleGraphNode* node, ParticleGraphLayerIn
 
     auto* renderBillboard = static_cast<RenderBillboard*>(GetGraphNode());
     auto* context = node->GetContext();
-    auto* resourceCache = context->GetSubsystem<ResourceCache>();
     const auto scene = GetScene();
 
     sceneNode_ = MakeShared<Node>(GetContext());
 
     billboardSet_ = sceneNode_->CreateComponent<BillboardSet>();
     billboardSet_->SetMaterialAttr(renderBillboard->GetMaterial());
+    //billboardSet_->SetFaceCameraMode(FC_NONE);
     octree_ = scene->GetOrCreateComponent<Octree>();
     octree_->AddManualDrawable(billboardSet_);
 }
@@ -63,7 +63,7 @@ void RenderBillboardInstance::Prepare(unsigned numParticles)
         sceneNode_->SetWorldTransform(GetNode()->GetWorldTransform());
     }
     unsigned numBillboards = billboardSet_->GetNumBillboards();
-    if (numBillboards < numParticles)
+    //if (numBillboards < numParticles)
     {
         billboardSet_->SetNumBillboards(numParticles);
         numBillboards = numParticles;
@@ -79,7 +79,7 @@ void RenderBillboardInstance::Prepare(unsigned numParticles)
 }
 
 void RenderBillboardInstance::UpdateParticle(
-    unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color, float rotation)
+    unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color, float rotation, Vector3& direction)
 {
     auto* billboard = billboardSet_->GetBillboard(index);
     billboard->enabled_ = true;
@@ -87,6 +87,7 @@ void RenderBillboardInstance::UpdateParticle(
     billboard->size_ = size;
     billboard->color_ = color;
     billboard->rotation_ = rotation;
+    billboard->direction_ = direction;
     const int frame = static_cast<int>(frameIndex);
     const unsigned x = frame % cols_;
     const unsigned y = (frame / cols_);

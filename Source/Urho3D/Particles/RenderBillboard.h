@@ -34,7 +34,7 @@ namespace ParticleGraphNodes
 {
 class RenderBillboardInstance;
 
-class URHO3D_API RenderBillboard : public TemplateNode<RenderBillboardInstance, Vector3, Vector2, float, Color, float>
+class URHO3D_API RenderBillboard : public TemplateNode<RenderBillboardInstance, Vector3, Vector2, float, Color, float, Vector3>
 {
     URHO3D_OBJECT(RenderBillboard, ParticleGraphNode)
 public:
@@ -71,6 +71,13 @@ public:
     /// @property
     int GetColumns() const;
 
+    /// Set Face Camera Mode.
+    /// @property
+    void SetFaceCameraMode(FaceCameraMode value);
+    /// Get Face Camera Mode.
+    /// @property
+    FaceCameraMode GetFaceCameraMode() const;
+
     /// Set Is Worldspace.
     /// @property
     void SetIsWorldspace(bool value);
@@ -82,6 +89,7 @@ protected:
     ResourceRef material_{};
     int rows_{};
     int columns_{};
+    FaceCameraMode faceCameraMode_{};
     bool isWorldspace_{};
 };
 

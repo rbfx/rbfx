@@ -178,6 +178,8 @@ public:
     VariantVector GetBillboardsAttr() const;
     /// Return billboards attribute for network replication.
     const ea::vector<unsigned char>& GetNetBillboardsAttr() const;
+    /// Return FaceCameraMode enum value names.
+    static const char** GetFaceCameraModeNames();
 
 protected:
     /// Recalculate the world-space bounding box.

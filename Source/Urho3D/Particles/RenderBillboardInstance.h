@@ -40,18 +40,18 @@ public:
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
     ~RenderBillboardInstance() override;
     void Prepare(unsigned numParticles);
-    void UpdateParticle(
-        unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color, float rotation);
+    void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color,
+        float rotation, Vector3& direction);
     void Commit();
 
-    template <typename Pin0, typename Pin1, typename Frame, typename Color, typename Rotation>
+    template <typename Pin0, typename Pin1, typename Frame, typename Color, typename Rotation, typename Direction>
     void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Frame frame, Color color,
-        Rotation rotation)
+        Rotation rotation, Direction direction)
     {
         Prepare(numParticles);
         for (unsigned i = 0; i < numParticles; ++i)
         {
-            UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i], rotation[i]);
+            UpdateParticle(i, pin0[i], pin1[i], frame[i], color[i], rotation[i], direction[i]);
         }
         Commit();
     }
