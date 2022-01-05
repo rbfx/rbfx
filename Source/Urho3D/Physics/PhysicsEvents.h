@@ -27,6 +27,12 @@
 namespace Urho3D
 {
 
+/// Physics world is about to be updated. There may be zero, one, or more physics steps coming.
+URHO3D_EVENT(E_PHYSICSPREUPDATE, PhysicsPreUpdate)
+{
+    URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
+};
+
 /// Physics world is about to be stepped.
 URHO3D_EVENT(E_PHYSICSPRESTEP, PhysicsPreStep)
 {
