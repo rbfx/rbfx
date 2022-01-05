@@ -42,43 +42,81 @@ class NetworkManagerBase;
 class Scene;
 
 /// Client-only NetworkManager settings.
-struct ClientNetworkManagerSettings
+struct ClientSynchronizationSettings
 {
-    float traceDurationInSeconds_{ 1.0f };
-    float sampleDelayInSeconds_{ 0.1f };
-    float pingSmoothConstant_{ 0.05f };
-    float positionExtrapolationTimeInSeconds_{0.25};
+    float clientTimeDelayInSeconds_{ 0.1f };
+    float timeSnapThresholdInSeconds_{ 5.0 };
+    float timeRewindThresholdInSeconds_{ 0.6 };
 
-    double clockRewindThresholdFrames_{ 0.6 };
-    double clockSnapThresholdSec_{ 10.0 };
+    float minTimeStepScale_{ 0.5f };
+    float maxTimeStepScale_{ 2.0f };
 };
 
-/// Client clock synchronized with server.
-struct ClientClock
+struct ClientNetworkManagerSettings : public ClientSynchronizationSettings
 {
-    ClientClock(unsigned thisConnectionId, unsigned updateFrequency, unsigned numStartSamples,
-        unsigned numTrimmedSamples, unsigned numOngoingSamples);
+    float traceDurationInSeconds_{ 1.0f };
+    float pingSmoothConstant_{ 0.05f };
+    float positionExtrapolationTimeInSeconds_{0.25};
+};
 
-    const unsigned updateFrequency_{};
+/// Helper class that keeps clock synchronized with server.
+class ClientSynchronizationManager
+{
+public:
+    ClientSynchronizationManager(
+        Scene* scene, const MsgSynchronize& msg, const ClientSynchronizationSettings& settings);
+    ~ClientSynchronizationManager();
+    void SetSettings(const ClientSynchronizationSettings& settings) { settings_ = settings; }
+
+    double MillisecondsToFrames(double valueMs) const;
+    double SecondsToFrames(double valueSec) const;
+
+    void ProcessClockUpdate(const MsgClock& msg);
+    float ApplyTimeStep(float timeStep);
+
+    /// Return current state
+    /// @{
+    unsigned GetConnectionId() const { return thisConnectionId_; }
+    unsigned GetUpdateFrequency() const { return updateFrequency_; }
+    unsigned GetLatestPingMs() const { return latestPing_; }
+    NetworkTime GetServerTime() const { return serverTime_; }
+    NetworkTime GetSmoothClientTime() const { return smoothClientTime_; }
+    NetworkTime GetLatestUnstableClientTime() const { return latestUnstableClientTime_; }
+    /// @}
+
+private:
+    void ProcessPendingClockUpdate(const MsgClock& msg);
+    void ResetServerAndClientTime(const NetworkTime& serverTime);
+    float UpdateSmoothClientTime(float timeStep);
+
+    void CheckAndAdjustTime(
+        NetworkTime& time, ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples, bool quiet) const;
+    ea::optional<double> UpdateAverageError(ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples) const;
+    void AdjustTime(NetworkTime& time, ea::ring_buffer<double>& errors, double adjustment) const;
+
+    NetworkTime ToServerTime(unsigned lastServerFrame, unsigned pingMs) const;
+    NetworkTime ToClientTime(const NetworkTime& serverTime) const;
+
+    Scene* scene_{};
+
     const unsigned thisConnectionId_{};
-
-    const unsigned numStartSamples_{};
+    const unsigned updateFrequency_{};
+    const unsigned numSamples_{};
     const unsigned numTrimmedSamples_{};
-    const unsigned numOngoingSamples_{};
 
-    unsigned latestServerFrame_{};
-    unsigned ping_{};
-    /// TODO: Stabilize ping before smoothing
-    double smoothPing_{};
+    ClientSynchronizationSettings settings_{};
+
+    NetworkTime latestServerTime_{};
+    unsigned latestPing_{};
 
     NetworkTime serverTime_;
     NetworkTime clientTime_;
-    float frameDuration_{};
-    unsigned lastSynchronizationFrame_{};
+    NetworkTime smoothClientTime_;
+    NetworkTime latestUnstableClientTime_{};
 
-    ea::ring_buffer<double> synchronizationErrors_{};
-    ea::vector<double> synchronizationErrorsSorted_{};
-    double averageError_{};
+    ea::vector<MsgClock> pendingClockUpdates_;
+    ea::ring_buffer<double> serverTimeErrors_{};
+    ea::ring_buffer<double> clientTimeErrors_{};
 };
 
 /// Client part of NetworkManager subsystem.
@@ -97,14 +135,14 @@ public:
 
     /// Return global properties of client state.
     /// @{
-    unsigned GetPingInMs() const { return clock_ ? clock_->ping_ : 0; }
-    bool IsSynchronized() const { return clock_.has_value(); }
-    NetworkTime GetServerTime() const { return clock_ ? clock_->serverTime_ : NetworkTime{}; }
-    NetworkTime GetClientTime() const { return clock_ ? clock_->clientTime_ : NetworkTime{}; }
+    unsigned GetPingMs() const { return sync_ ? sync_->GetLatestPingMs() : 0; }
+    bool IsSynchronized() const { return sync_.has_value(); }
+    NetworkTime GetServerTime() const { return sync_ ? sync_->GetServerTime() : NetworkTime{}; }
+    NetworkTime GetClientTime() const { return sync_ ? sync_->GetSmoothClientTime() : NetworkTime{}; }
 
     unsigned GetCurrentFrame() const { return GetServerTime().GetFrame(); }
     float GetCurrentBlendFactor() const { return GetServerTime().GetSubFrame(); }
-    unsigned GetLastSynchronizationFrame() const { return clock_ ? clock_->lastSynchronizationFrame_ : 0; }
+    unsigned GetLastSynchronizationFrame() const { return sync_ ? sync_->GetLatestUnstableClientTime().GetFrame() : 0; }
     double GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const;
 
     unsigned GetTraceCapacity() const;
@@ -112,8 +150,7 @@ public:
     /// @}
 
 private:
-    void OnInputProcessed();
-    void ProcessTimeCorrection();
+    void UpdateReplica(float timeStep);
 
     NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType);
     NetworkObject* GetCheckedNetworkObject(NetworkId networkId, StringHash componentType);
@@ -134,7 +171,7 @@ private:
     Scene* scene_{};
     AbstractConnection* connection_{};
 
-    ea::optional<ClientClock> clock_;
+    ea::optional<ClientSynchronizationManager> sync_;
 
     VectorBuffer componentBuffer_;
 };

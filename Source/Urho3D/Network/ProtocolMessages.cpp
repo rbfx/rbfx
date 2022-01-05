@@ -49,7 +49,6 @@ void MsgSynchronize::Save(VectorBuffer& dest) const
     dest.WriteVLE(updateFrequency_);
     dest.WriteVLE(connectionId_);
 
-    dest.WriteVLE(numStartClockSamples_);
     dest.WriteVLE(numTrimmedClockSamples_);
     dest.WriteVLE(numOngoingClockSamples_);
 
@@ -64,7 +63,6 @@ void MsgSynchronize::Load(MemoryBuffer& src)
     updateFrequency_ = src.ReadVLE();
     connectionId_ = src.ReadVLE();
 
-    numStartClockSamples_ = src.ReadVLE();
     numTrimmedClockSamples_ = src.ReadVLE();
     numOngoingClockSamples_ = src.ReadVLE();
 

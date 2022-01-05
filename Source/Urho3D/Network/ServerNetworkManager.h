@@ -84,8 +84,7 @@ struct ServerNetworkManagerSettings
     unsigned maxOngoingPings_{ 11 };
 
     unsigned clockIntervalMs_{ 250 };
-    unsigned numStartClockSamples_{ 17 };
-    unsigned numOngoingClockSamples_{ 41 };
+    unsigned numOngoingClockSamples_{ 21 };
     unsigned numTrimmedClockSamples_{ 3 };
 
     float relevanceTimeout_{ 5.0f };

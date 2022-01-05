@@ -91,9 +91,16 @@ TEST_CASE("Time is synchronized between client and server")
     const auto retry = GENERATE(range(0, 5));
     const auto quality = GENERATE(
         Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f },
-        Tests::ConnectionQuality{ 0.22f, 0.28f, 0.50f, 0.10f, 0.10f }
+        Tests::ConnectionQuality{ 0.24f, 0.28f, 0.50f, 0.10f, 0.10f }
     );
     const float averagePingSec = (quality.maxPing_ + quality.minPing_) / 2;
+
+    const unsigned initialSyncTime = 20;
+    const unsigned initialWaitTime = 40;
+    const unsigned forwardSyncTime = 20;
+    const unsigned forwardWaitTime = 40;
+    const unsigned backwardSyncTime = 20;
+    const unsigned backwardWaitTime = 40;
 
     unsigned seed = retry;
     CombineHash(seed, MakeHash(quality.minPing_));
@@ -119,61 +126,60 @@ TEST_CASE("Time is synchronized between client and server")
     sim.SimulateTime(9.0f);
 
     REQUIRE(clientNetworkManager.IsSynchronized());
-    REQUIRE(clientNetworkManager.GetPingInMs() == RoundToInt(averagePingSec * 1000));
+    REQUIRE(clientNetworkManager.GetPingMs() == RoundToInt(averagePingSec * 1000));
 
     const float syncError = ea::max(0.5f, (quality.maxPing_ - quality.minPing_) * Tests::NetworkSimulator::FramesInSecond);
     const auto startTime = 32 * 10;
     REQUIRE(serverNetworkManager.GetCurrentFrame() == startTime);
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(startTime)) < syncError);
 
-    // Simulate 10 more seconds, should be precisely synchronized afterwards
-    sim.SimulateTime(10.0f);
-    REQUIRE(serverNetworkManager.GetCurrentFrame() == startTime + 32 * 10);
-    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(startTime + 32 * 10)) < frameErrorTolarance);
+    // Simulate some time, should be precisely synchronized afterwards
+    sim.SimulateTime(initialSyncTime);
+    REQUIRE(serverNetworkManager.GetCurrentFrame() == startTime + 32 * initialSyncTime);
+    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(startTime + 32 * initialSyncTime)) < frameErrorTolarance);
 
-    // Simulate 50 more seconds, expect time to stay synchronized
+    // Simulate more time, expect time to stay synchronized
     const unsigned syncFrame1 = clientNetworkManager.GetLastSynchronizationFrame();
-    sim.SimulateTime(50.0f);
+    sim.SimulateTime(initialWaitTime);
 
-    REQUIRE(serverNetworkManager.GetCurrentFrame() == startTime + 32 * 60);
-    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(startTime + 32 * 60)) < frameErrorTolarance);
+    REQUIRE(serverNetworkManager.GetCurrentFrame() == startTime + 32 * (initialSyncTime + initialWaitTime));
+    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(startTime + 32 * (initialSyncTime + initialWaitTime))) < frameErrorTolarance);
     REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame1);
 
-    // Warp time close to 2^32 and simulate 10 more seconds, expect time to be resynchronized
-    const auto bigTime = M_MAX_UNSIGNED - 32 * 20;
+    // Warp time close to 2^32 and simulate some time, expect time to be resynchronized
+    const auto bigTime = M_MAX_UNSIGNED - 32 * 30;
     serverNetworkManager.SetCurrentFrame(bigTime / 3);
     sim.SimulateTime(1.0f);
     serverNetworkManager.SetCurrentFrame(bigTime / 3 * 2);
     sim.SimulateTime(1.0f);
     serverNetworkManager.SetCurrentFrame(bigTime);
-    sim.SimulateTime(10.0f);
+    sim.SimulateTime(forwardSyncTime);
 
-    REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * 10);
-    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * 10)) < frameErrorTolarance);
-    REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() >= bigTime);
+    REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * forwardSyncTime);
+    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * forwardSyncTime)) < frameErrorTolarance);
 
-    // Simulate 50 more seconds, expect time to stay synchronized
+    // Simulate more time, expect time to stay synchronized
     const unsigned syncFrame2 = clientNetworkManager.GetLastSynchronizationFrame();
-    sim.SimulateTime(50.0f);
+    sim.SimulateTime(forwardWaitTime);
 
-    REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * 60);
-    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * 60)) < frameErrorTolarance);
+    REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * (forwardSyncTime + forwardWaitTime));
+    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * (forwardSyncTime + forwardWaitTime))) < frameErrorTolarance);
     REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame2);
 
-    // Warp time 1 second back and simulate 11 seconds, expect time to be resynchronized
-    serverNetworkManager.SetCurrentFrame(bigTime + 32 * 59);
-    sim.SimulateTime(11.0f);
+    // Warp time 1 second back and simulate some time, expect time to be resynchronized
+    const unsigned baseTime = bigTime + 32 * (forwardSyncTime + forwardWaitTime);
+    serverNetworkManager.SetCurrentFrame(baseTime - 32 * 1);
+    sim.SimulateTime(backwardSyncTime + 1);
 
-    REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * 70);
-    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * 70)) < frameErrorTolarance);
-    REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() >= bigTime + 32 * 59);
+    REQUIRE(serverNetworkManager.GetCurrentFrame() == baseTime + 32 * backwardSyncTime);
+    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(baseTime + 32 * backwardSyncTime)) < frameErrorTolarance);
 
-    // Simulate 10 more seconds, expect time to stay synchronized
+    // Simulate more time, expect time to stay synchronized
     const unsigned syncFrame3 = clientNetworkManager.GetLastSynchronizationFrame();
-    sim.SimulateTime(50.0f);
+    sim.SimulateTime(backwardWaitTime);
 
-    REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * 120);
-    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * 120)) < frameErrorTolarance);
+    REQUIRE(serverNetworkManager.GetCurrentFrame() == baseTime + 32 * (backwardSyncTime + backwardWaitTime));
+    REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(baseTime + 32 * (backwardSyncTime + backwardWaitTime))) < frameErrorTolarance);
     REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame3);
 }
 
@@ -423,7 +429,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
         auto clientNodeA = clientScene->GetChild("Node", true);
         auto clientNodeB = clientScene->GetChild("Node Child", true);
 
-        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(expectedDelay).margin(0.01));
+        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(expectedDelay).margin(0.02));
 
         REQUIRE(serverObjectA->GetTemporalWorldPosition(clientTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
         REQUIRE(serverObjectA->GetTemporalWorldRotation(clientTime).Equals(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));
