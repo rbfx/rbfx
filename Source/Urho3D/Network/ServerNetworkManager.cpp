@@ -365,7 +365,6 @@ bool ServerNetworkManager::SendSynchronizationMessages(ClientConnectionData& dat
             msg.updateFrequency_ = updateFrequency_;
             msg.connectionId_ = connection->GetObjectID();
 
-            msg.numStartClockSamples_ = settings_.numStartClockSamples_;
             msg.numTrimmedClockSamples_ = settings_.numTrimmedClockSamples_;
             msg.numOngoingClockSamples_ = settings_.numOngoingClockSamples_;
 

@@ -38,84 +38,169 @@
 namespace Urho3D
 {
 
-namespace
+ClientSynchronizationManager::ClientSynchronizationManager(
+    Scene* scene, const MsgSynchronize& msg, const ClientSynchronizationSettings& settings)
+    : scene_(scene)
+    , thisConnectionId_(msg.connectionId_)
+    , updateFrequency_(msg.updateFrequency_)
+    , numSamples_(msg.numOngoingClockSamples_)
+    , numTrimmedSamples_(msg.numTrimmedClockSamples_)
+    , settings_(settings)
+    , latestServerTime_(msg.lastFrame_)
+    , latestPing_(msg.ping_)
+    , serverTime_(ToServerTime(msg.lastFrame_, msg.ping_))
+    , clientTime_(ToClientTime(serverTime_))
+    , smoothClientTime_(clientTime_)
+    , latestUnstableClientTime_(clientTime_)
 {
-
-void ResetClock(ClientClock& clock, const NetworkTime& serverTime)
-{
-    clock.serverTime_ = serverTime;
-    clock.lastSynchronizationFrame_ = clock.serverTime_.GetFrame();
-    clock.synchronizationErrors_.clear();
-    clock.synchronizationErrorsSorted_.clear();
+    serverTimeErrors_.reserve(numSamples_);
+    // Don't smooth client time as it adds even more latency to synchronization
+    clientTimeErrors_.reserve(1);
 }
 
-bool IsClockInitializing(const ClientClock& clock)
+ClientSynchronizationManager::~ClientSynchronizationManager()
 {
-    return clock.synchronizationErrors_.size() == clock.numStartSamples_;
 }
 
-bool DoesClockNeedRewind(const ClientClock& clock, double rewindThreshold)
+double ClientSynchronizationManager::MillisecondsToFrames(double valueMs) const
 {
-    return clock.synchronizationErrors_.full() && std::abs(clock.averageError_) >= rewindThreshold;
+    return SecondsToFrames(valueMs * 0.001f);
 }
 
-double GetPingInFrames(const ClientClock& clock)
+double ClientSynchronizationManager::SecondsToFrames(double valueSec) const
 {
-    // ms * (frames / s) * (s / ms)
-    return clock.ping_ * clock.updateFrequency_ * 0.001;
+    // s * (frames / s) = frames
+    return valueSec * updateFrequency_;
 }
 
-double GetSmoothPingInSeconds(const ClientClock& clock)
+void ClientSynchronizationManager::ProcessClockUpdate(const MsgClock& msg)
 {
-    return clock.smoothPing_ * 0.001;
+    pendingClockUpdates_.push_back(msg);
 }
 
-void AddClockError(ClientClock& clock, double clockError)
+float ClientSynchronizationManager::ApplyTimeStep(float timeStep)
 {
-    auto& buffer = clock.synchronizationErrors_;
-    auto& bufferSorted = clock.synchronizationErrorsSorted_;
+    serverTime_ += SecondsToFrames(timeStep);
+    clientTime_ += SecondsToFrames(timeStep);
 
-    if (buffer.full())
-        buffer.pop_front();
-    buffer.push_back(clockError);
+    for (const MsgClock& msg : pendingClockUpdates_)
+        ProcessPendingClockUpdate(msg);
+    pendingClockUpdates_.clear();
 
-    bufferSorted.assign(buffer.begin(), buffer.end());
-    ea::sort(bufferSorted.begin(), bufferSorted.end());
-
-    // Skip first elements because highest pings cause lowest errors
-    const auto beginIter = std::next(bufferSorted.begin(), ea::min(buffer.size() - 1, clock.numTrimmedSamples_));
-    const auto endIter = bufferSorted.end();
-    clock.averageError_ = ea::accumulate(beginIter, endIter, 0.0) / ea::distance(beginIter, endIter);
+    return UpdateSmoothClientTime(timeStep);
 }
 
-void RewindClock(ClientClock& clock, double deltaFrames)
+void ClientSynchronizationManager::ProcessPendingClockUpdate(const MsgClock& msg)
 {
-    clock.serverTime_ += deltaFrames;
+    // Skip outdated updates
+    const bool isLatest = NetworkTime{msg.lastFrame_} - latestServerTime_ > 0.0;
+    if (!isLatest)
+        return;
 
-    for (double& error : clock.synchronizationErrors_)
-        error -= deltaFrames;
-    clock.averageError_ -= deltaFrames;
+    latestServerTime_ = NetworkTime{msg.lastFrame_};
+    latestPing_ = msg.ping_;
 
-    clock.lastSynchronizationFrame_ = clock.serverTime_.GetFrame();
+    const NetworkTime serverTimeFromMessage = ToServerTime(msg.lastFrame_, msg.ping_);
+    const double serverTimeError = serverTimeFromMessage - serverTime_;
+
+    if (serverTimeError >= SecondsToFrames(settings_.timeSnapThresholdInSeconds_))
+    {
+        ResetServerAndClientTime(serverTimeFromMessage);
+        return;
+    }
+
+    CheckAndAdjustTime(serverTime_, serverTimeErrors_, serverTimeError, numTrimmedSamples_, false);
+
+    const NetworkTime expectedClientTime = ToClientTime(serverTime_);
+    const double clientTimeError = expectedClientTime - clientTime_;
+    CheckAndAdjustTime(clientTime_, clientTimeErrors_, clientTimeError, 0, true);
 }
 
-void UpdateSmoothPing(ClientClock& clock, float blendFactor)
+void ClientSynchronizationManager::ResetServerAndClientTime(const NetworkTime& serverTime)
 {
-    clock.smoothPing_ = Lerp(clock.smoothPing_, static_cast<double>(clock.ping_), blendFactor);
+    URHO3D_LOGINFO("Client clock is reset from {} to {}",
+        serverTime_.ToString(), serverTime.ToString());
+
+    serverTime_ = serverTime;
+    clientTime_ = ToClientTime(serverTime);
+    smoothClientTime_ = clientTime_;
+    latestUnstableClientTime_ = clientTime_;
+
+    serverTimeErrors_.clear();
+    clientTimeErrors_.clear();
 }
 
+void ClientSynchronizationManager::CheckAndAdjustTime(
+    NetworkTime& time, ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples, bool quiet) const
+{
+    if (const auto averageError = UpdateAverageError(errors, error, numTrimmedSamples))
+    {
+        const double averageErrorAbs = std::abs(*averageError);
+        if (averageErrorAbs >= settings_.timeRewindThresholdInSeconds_)
+        {
+            const double adjustment = Sign(*averageError) * (averageErrorAbs - settings_.timeRewindThresholdInSeconds_ / 2);
+            const NetworkTime oldTime = time;
+            AdjustTime(time, errors, adjustment);
+
+            if (!quiet)
+                URHO3D_LOGINFO("Client clock is reset from {} to {}", oldTime.ToString(), time.ToString());
+        }
+    }
 }
 
-ClientClock::ClientClock(unsigned thisConnectionId, unsigned updateFrequency, unsigned numStartSamples,
-    unsigned numTrimmedSamples, unsigned numOngoingSamples)
-    : thisConnectionId_(thisConnectionId)
-    , updateFrequency_(updateFrequency)
-    , numStartSamples_(numStartSamples)
-    , numTrimmedSamples_(numTrimmedSamples)
-    , numOngoingSamples_(ea::max(numOngoingSamples, numStartSamples + 1))
+ea::optional<double> ClientSynchronizationManager::UpdateAverageError(
+    ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples) const
 {
-    synchronizationErrors_.set_capacity(numOngoingSamples_);
-    synchronizationErrorsSorted_.set_capacity(numOngoingSamples_);
+    if (errors.full())
+        errors.pop_front();
+    errors.push_back(error);
+    if (!errors.full())
+        return ea::nullopt;
+
+    static thread_local ea::vector<double> tempBuffer;
+    tempBuffer.assign(errors.begin(), errors.end());
+    ea::sort(tempBuffer.begin(), tempBuffer.end());
+
+    // Skip first elements because lowest values correspond to ping spikes
+    const auto beginIter = std::next(tempBuffer.begin(), ea::min(tempBuffer.size() - 1, numTrimmedSamples));
+    const auto endIter = tempBuffer.end();
+    return ea::accumulate(beginIter, endIter, 0.0) / ea::distance(beginIter, endIter);
+}
+
+void ClientSynchronizationManager::AdjustTime(
+    NetworkTime& time, ea::ring_buffer<double>& errors, double adjustment) const
+{
+    time += adjustment;
+    for (double& error : errors)
+        error -= adjustment;
+}
+
+float ClientSynchronizationManager::UpdateSmoothClientTime(float timeStep)
+{
+    const double timeError = (clientTime_ - smoothClientTime_) / updateFrequency_ - timeStep;
+    if (std::abs(timeError) < M_LARGE_EPSILON)
+        smoothClientTime_ = clientTime_;
+    else
+    {
+        const double minTimeStep = timeStep * settings_.minTimeStepScale_;
+        const double maxTimeStep = timeStep * settings_.maxTimeStepScale_;
+        timeStep = Clamp(timeStep + timeError, minTimeStep, maxTimeStep);
+        latestUnstableClientTime_ = clientTime_;
+        smoothClientTime_ += SecondsToFrames(timeStep);
+    }
+
+    return timeStep;
+}
+
+NetworkTime ClientSynchronizationManager::ToServerTime(unsigned lastServerFrame, unsigned pingMs) const
+{
+    return NetworkTime{lastServerFrame} + MillisecondsToFrames(pingMs);
+}
+
+NetworkTime ClientSynchronizationManager::ToClientTime(const NetworkTime& serverTime) const
+{
+    const double clientDelay = settings_.clientTimeDelayInSeconds_ + latestPing_ * 0.001;
+    return serverTime - SecondsToFrames(clientDelay);
 }
 
 ClientNetworkManager::ClientNetworkManager(NetworkManagerBase* base, Scene* scene, AbstractConnection* connection)
@@ -125,9 +210,11 @@ ClientNetworkManager::ClientNetworkManager(NetworkManagerBase* base, Scene* scen
     , scene_(scene)
     , connection_(connection)
 {
-    SubscribeToEvent(network_, E_NETWORKINPUTPROCESSED, [this](StringHash, VariantMap&)
+    SubscribeToEvent(network_, E_NETWORKINPUTPROCESSED, [this](StringHash, VariantMap& eventData)
     {
-        OnInputProcessed();
+        using namespace NetworkInputProcessed;
+        const float timeStep = eventData[P_TIMESTEP].GetFloat();
+        UpdateReplica(timeStep);
     });
 }
 
@@ -208,35 +295,23 @@ void ClientNetworkManager::ProcessPing(const MsgPingPong& msg)
 
 void ClientNetworkManager::ProcessSynchronize(const MsgSynchronize& msg)
 {
-    clock_.emplace(ClientClock{
-        msg.connectionId_, msg.updateFrequency_, msg.numStartClockSamples_, msg.numTrimmedClockSamples_, msg.numOngoingClockSamples_});
-
-    clock_->latestServerFrame_ = msg.lastFrame_;
-    clock_->ping_ = msg.ping_;
-    clock_->smoothPing_ = clock_->ping_;
-
-    clock_->serverTime_ = NetworkTime{clock_->latestServerFrame_ + RoundToInt(GetPingInFrames(*clock_))};
-    clock_->frameDuration_ = 1.0f / clock_->updateFrequency_;
-    clock_->lastSynchronizationFrame_ = clock_->serverTime_.GetFrame();
+    sync_.emplace(ClientSynchronizationManager{scene_, msg, settings_});
 
     connection_->SendSerializedMessage(
         MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{msg.magic_}, NetworkMessageFlag::Reliable);
 
-    URHO3D_LOGINFO("Client clock is started from frame {}", clock_->serverTime_.ToString());
+    URHO3D_LOGINFO("Client clock is started from {}", sync_->GetServerTime().ToString());
 }
 
 void ClientNetworkManager::ProcessClock(const MsgClock& msg)
 {
-    if (!clock_)
+    if (!sync_)
     {
         URHO3D_LOGWARNING("Client clock update received before synchronization");
         return;
     }
 
-    const auto delta = static_cast<int>(msg.lastFrame_ - clock_->latestServerFrame_);
-    clock_->ping_ = msg.ping_;
-    clock_->latestServerFrame_ += ea::max(0, delta);
-    ProcessTimeCorrection();
+    sync_->ProcessClockUpdate(msg);
 }
 
 void ClientNetworkManager::ProcessRemoveObjects(MemoryBuffer& messageData)
@@ -272,7 +347,7 @@ void ClientNetworkManager::ProcessAddObjects(MemoryBuffer& messageData)
 
         if (NetworkObject* networkObject = CreateNetworkObject(networkId, componentType))
         {
-            if (ownerConnectionId == clock_->thisConnectionId_)
+            if (ownerConnectionId == sync_->GetConnectionId())
                 networkObject->SetNetworkMode(NetworkObjectMode::ClientOwned);
             else
                 networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
@@ -313,33 +388,6 @@ void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageD
 
         if (NetworkObject* networkObject = GetCheckedNetworkObject(networkId, componentType))
             networkObject->ReadUnreliableDelta(messageFrame, componentBuffer_);
-    }
-}
-
-void ClientNetworkManager::ProcessTimeCorrection()
-{
-    // Accumulate between client predicted time and server time
-    const NetworkTime currentServerTime = NetworkTime{clock_->latestServerFrame_} + GetPingInFrames(*clock_);
-    const double clockError = currentServerTime - clock_->serverTime_;
-    AddClockError(*clock_, clockError);
-
-    // Snap to new time if error is too big
-    const bool needForwardSnap = std::abs(clockError) >= settings_.clockSnapThresholdSec_ * clock_->updateFrequency_;
-    const bool needRewind = DoesClockNeedRewind(*clock_, settings_.clockRewindThresholdFrames_);
-    if (needForwardSnap || needRewind)
-    {
-        ResetClock(*clock_, currentServerTime);
-        return;
-    }
-
-    // Adjust time if (re)initializing
-    if (IsClockInitializing(*clock_))
-    {
-        const NetworkTime oldServerTime = clock_->serverTime_;
-        RewindClock(*clock_, clock_->averageError_);
-
-        URHO3D_LOGINFO("Client clock is rewound from frame {} to frame {}",
-            oldServerTime.ToString(), clock_->serverTime_.ToString());
     }
 }
 
@@ -397,26 +445,26 @@ void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObj
 
 double ClientNetworkManager::GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const
 {
-    if (!clock_)
+    if (!sync_)
         return M_LARGE_VALUE;
 
-    return clock_->serverTime_ - NetworkTime{referenceFrame};
+    return sync_->GetServerTime() - NetworkTime{referenceFrame};
 }
 
 unsigned ClientNetworkManager::GetTraceCapacity() const
 {
-    if (!clock_)
+    if (!sync_)
         return 0;
 
-    return CeilToInt(settings_.traceDurationInSeconds_ * clock_->updateFrequency_);
+    return CeilToInt(settings_.traceDurationInSeconds_ * sync_->GetUpdateFrequency());
 }
 
 unsigned ClientNetworkManager::GetPositionExtrapolationFrames() const
 {
-    if (!clock_)
+    if (!sync_)
         return 0;
 
-    return RoundToInt(settings_.positionExtrapolationTimeInSeconds_ * clock_->updateFrequency_);
+    return RoundToInt(settings_.positionExtrapolationTimeInSeconds_ * sync_->GetUpdateFrequency());
 }
 
 ea::string ClientNetworkManager::ToString() const
@@ -427,25 +475,18 @@ ea::string ClientNetworkManager::ToString() const
         GetCurrentFrame());
 }
 
-void ClientNetworkManager::OnInputProcessed()
+void ClientNetworkManager::UpdateReplica(float timeStep)
 {
-    if (!clock_)
+    if (!sync_)
         return;
 
-    auto time = GetSubsystem<Time>();
-    const float timeStep = time->GetTimeStep();
-
-    clock_->serverTime_ += timeStep * clock_->updateFrequency_;
-    UpdateSmoothPing(*clock_, settings_.pingSmoothConstant_);
-
-    const double interpolationDelay = settings_.sampleDelayInSeconds_ + GetSmoothPingInSeconds(*clock_);
-    clock_->clientTime_ = clock_->serverTime_ - interpolationDelay * clock_->updateFrequency_;
+    sync_->ApplyTimeStep(timeStep);
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)
     {
         if (networkObject)
-            networkObject->InterpolateState(clock_->clientTime_);
+            networkObject->InterpolateState(sync_->GetSmoothClientTime());
     }
 }
 
