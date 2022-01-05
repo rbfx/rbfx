@@ -146,8 +146,9 @@ protected:
     void OnSceneSet(Scene* scene) override;
     void AddKinematicToWorld();
     void RemoveKinematicFromWorld();
-    /// Handle physics post-step event.
-    virtual void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
+
+    void HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData);
+    void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
 
 protected:
     unsigned colLayer_{ 1 };

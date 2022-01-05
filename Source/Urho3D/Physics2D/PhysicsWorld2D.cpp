@@ -284,6 +284,8 @@ void PhysicsWorld2D::Update(float timeStep)
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WORLD] = this;
+    SendEvent(E_PHYSICSPREUPDATE, eventData);
+
     eventData[P_TIMESTEP] = timeStep;
     SendEvent(E_PHYSICSPRESTEP, eventData);
 

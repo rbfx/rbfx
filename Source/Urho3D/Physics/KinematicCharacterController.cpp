@@ -128,13 +128,22 @@ void KinematicCharacterController::OnSceneSet(Scene* scene)
         {
             AddKinematicToWorld();
         }
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPreUpdate));
         SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
     }
     else
     {
         RemoveKinematicFromWorld();
+        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPREUPDATE);
         UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTSTEP);
     }
+}
+
+void KinematicCharacterController::HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData)
+{
+    const Vector3 position = node_->GetWorldPosition();
+    const Quaternion rotation = node_->GetWorldRotation();
+    SetTransform(position, rotation);
 }
 
 void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData)
@@ -277,7 +286,7 @@ void KinematicCharacterController::SetTransform(const Vector3& position, const Q
     btTransform worldTrans;
     worldTrans.setIdentity();
     worldTrans.setRotation(ToBtQuaternion(rotation));
-    worldTrans.setOrigin(ToBtVector3(position));
+    worldTrans.setOrigin(ToBtVector3(position + colShapeOffset_));
     pairCachingGhostObject_->setWorldTransform(worldTrans);
 }
 
@@ -285,7 +294,7 @@ void KinematicCharacterController::GetTransform(Vector3& position, Quaternion& r
 {
     btTransform worldTrans = pairCachingGhostObject_->getWorldTransform();
     rotation = ToQuaternion(worldTrans.getRotation());
-    position = ToVector3(worldTrans.getOrigin());
+    position = ToVector3(worldTrans.getOrigin()) - colShapeOffset_;
 }
 
 void KinematicCharacterController::SetLinearDamping(float linearDamping)

@@ -327,6 +327,7 @@ void PhysicsWorld::Update(float timeStep)
 
     delayedWorldTransforms_.clear();
     simulating_ = true;
+    PreUpdate();
 
     if (interpolation_)
         world_->stepSimulation(timeStep, maxSubSteps, internalTimeStep);
@@ -373,6 +374,7 @@ void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float ov
 
     delayedWorldTransforms_.clear();
     simulating_ = true;
+    PreUpdate();
 
     timeAcc_ = overtime;
     world_->customStepSimulation(numSteps, fixedTimeStep, overtime);
@@ -876,6 +878,14 @@ void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& 
 
     using namespace SceneSubsystemUpdate;
     Update(eventData[P_TIMESTEP].GetFloat());
+}
+
+void PhysicsWorld::PreUpdate()
+{
+    using namespace PhysicsPreUpdate;
+    VariantMap& eventData = GetEventDataMap();
+    eventData[P_WORLD] = this;
+    SendEvent(E_PHYSICSPREUPDATE, eventData);
 }
 
 void PhysicsWorld::PreStep(float timeStep)
