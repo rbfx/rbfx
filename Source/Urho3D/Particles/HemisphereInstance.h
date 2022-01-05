@@ -79,7 +79,7 @@ public:
             break;
         default:
             vel = direction;
-            pos = direction * Pow(Random(), 1.0f / 3.0f) * 0.5f;
+            pos = direction * hemisphere->GetRadius() * Pow(Random(), 1.0f / 3.0f) * 0.5f;
             break;
         }
     }
