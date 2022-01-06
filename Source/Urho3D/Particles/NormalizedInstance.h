@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,50 +22,22 @@
 
 #pragma once
 
-#include "Helpers.h"
-#include "Add.h"
-#include "ApplyForce.h"
-#include "BurstTimer.h"
-#include "LimitVelocity.h"
-#include "Slerp.h"
-#include "Attribute.h"
-#include "Bounce.h"
-#include "Cone.h"
-#include "Hemisphere.h"
-#include "Sphere.h"
-#include "Constant.h"
-#include "Curve.h"
-#include "Destroy.h"
-#include "Emit.h"
-#include "Print.h"
-#include "Random.h"
-#include "RenderBillboard.h"
-#include "RenderMesh.h"
-#include "Uniform.h"
-#include "ApplyForce.h"
-#include "BurstTimer.h"
-#include "Expire.h"
-#include "LimitVelocity.h"
-#include "EffectTime.h"
-#include "NormalizedEffectTime.h"
-#include "TimeStep.h"
-#include "Divide.h"
-#include "Lerp.h"
-#include "Make.h"
-#include "Move.h"
-#include "Multiply.h"
-#include "Negate.h"
-#include "Subtract.h"
-#include "TimeStepScale.h"
-#include "Normalized.h"
-
 namespace Urho3D
 {
 class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-void RegisterGraphNodes(ParticleGraphSystem* context);
-}
+template <typename Value0, typename Value1> struct NormalizedInstance
+{
+    template <typename X, typename Out> void operator()(UpdateContext& context, unsigned numParticles, X x, Out out)
+    {
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            out[i] = x[i].Normalized();
+        }
+    }
+};
+} // namespace ParticleGraphNodes
 
 } // namespace Urho3D
