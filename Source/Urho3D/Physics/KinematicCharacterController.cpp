@@ -130,25 +130,45 @@ void KinematicCharacterController::OnSceneSet(Scene* scene)
         }
         SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPreUpdate));
         SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostUpdate));
     }
     else
     {
         RemoveKinematicFromWorld();
         UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPREUPDATE);
         UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTSTEP);
+        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTUPDATE);
     }
 }
 
 void KinematicCharacterController::HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData)
 {
     const Vector3 position = node_->GetWorldPosition();
-    const Quaternion rotation = node_->GetWorldRotation();
-    SetTransform(position, rotation);
+    if (!position.Equals(latestPosition_, M_LARGE_EPSILON))
+    {
+        const Quaternion rotation = node_->GetWorldRotation();
+        SetTransform(position, rotation);
+    }
 }
 
 void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData)
 {
-    node_->SetWorldPosition(GetPosition());
+    previousPosition_ = nextPosition_;
+    nextPosition_ = GetPosition();
+}
+
+void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData)
+{
+    if (physicsWorld_ && physicsWorld_->GetInterpolation())
+    {
+        const float overtime = eventData[PhysicsPostUpdate::P_OVERTIME].GetFloat();
+        const float updateFrequency = physicsWorld_->GetFps();
+        latestPosition_ = Lerp(previousPosition_, nextPosition_, overtime * updateFrequency);
+    }
+    else
+        latestPosition_ = nextPosition_;
+
+    node_->SetWorldPosition(latestPosition_);
 }
 
 btCapsuleShape* KinematicCharacterController::GetOrCreateShape()
@@ -283,6 +303,10 @@ Quaternion KinematicCharacterController::GetRotation() const
 
 void KinematicCharacterController::SetTransform(const Vector3& position, const Quaternion& rotation)
 {
+    latestPosition_ = position;
+    previousPosition_ = position;
+    nextPosition_ = position;
+
     btTransform worldTrans;
     worldTrans.setIdentity();
     worldTrans.setRotation(ToBtQuaternion(rotation));

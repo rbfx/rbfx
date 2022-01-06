@@ -330,8 +330,10 @@ void PhysicsWorld2D::Update(float timeStep)
     SendBeginContactEvents();
     SendEndContactEvents();
 
-    using namespace PhysicsPostStep;
     SendEvent(E_PHYSICSPOSTSTEP, eventData);
+
+    eventData[PhysicsPostUpdate::P_OVERTIME] = 0.0f;
+    SendEvent(E_PHYSICSPOSTUPDATE, eventData);
 }
 
 void PhysicsWorld2D::DrawDebugGeometry()

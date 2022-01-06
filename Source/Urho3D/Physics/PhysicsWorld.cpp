@@ -94,6 +94,8 @@ public:
 
         clearForces();
     }
+
+    btScalar getLocalTime() const { return m_localTime; }
 };
 
 namespace Urho3D
@@ -342,6 +344,7 @@ void PhysicsWorld::Update(float timeStep)
         }
     }
 
+    PostUpdate(world_->getLocalTime());
     simulating_ = false;
     ApplyDelayedWorldTransforms();
 }
@@ -379,6 +382,7 @@ void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float ov
     timeAcc_ = overtime;
     world_->customStepSimulation(numSteps, fixedTimeStep, overtime);
 
+    PostUpdate(overtime);
     simulating_ = false;
     ApplyDelayedWorldTransforms();
 }
@@ -883,9 +887,20 @@ void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& 
 void PhysicsWorld::PreUpdate()
 {
     using namespace PhysicsPreUpdate;
+
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WORLD] = this;
     SendEvent(E_PHYSICSPREUPDATE, eventData);
+}
+
+void PhysicsWorld::PostUpdate(float overtime)
+{
+    using namespace PhysicsPostUpdate;
+
+    VariantMap& eventData = GetEventDataMap();
+    eventData[P_WORLD] = this;
+    eventData[P_OVERTIME] = overtime;
+    SendEvent(E_PHYSICSPOSTUPDATE, eventData);
 }
 
 void PhysicsWorld::PreStep(float timeStep)
