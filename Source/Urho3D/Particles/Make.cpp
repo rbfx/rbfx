@@ -57,6 +57,13 @@ static ea::vector<NodePattern> MakePatterns{
         , PinPattern<Vector3>("scale")
         , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
     ),
+    MakePattern(
+        MakeInstance<float, float, float, Quaternion>()
+        , PinPattern<float>("pitch")
+        , PinPattern<float>("yaw")
+        , PinPattern<float>("roll")
+        , PinPattern<Quaternion>(ParticleGraphPinFlag::Output, "out")
+    ),
 };
 } // namespace
 
