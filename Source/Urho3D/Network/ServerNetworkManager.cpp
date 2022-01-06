@@ -31,7 +31,6 @@
 #include "../Network/NetworkObject.h"
 #include "../Network/NetworkManager.h"
 #include "../Network/ServerNetworkManager.h"
-#include "../Physics/PhysicsWorld.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
@@ -56,17 +55,8 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     , base_(base)
     , scene_(scene)
     , updateFrequency_(network_->GetUpdateFps())
-    , physicsWorld_(scene_->GetComponent<PhysicsWorld>())
+    , physicsSync_(scene_, updateFrequency_, false)
 {
-    SubscribeToEvent(network_, E_NETWORKINPUTPROCESSED, [this](StringHash, VariantMap& eventData)
-    {
-        using namespace NetworkInputProcessed;
-        const float timeStep = eventData[P_TIMESTEP].GetFloat();
-        const bool updateNow = eventData[P_UPDATENOW].GetBool();
-        const float accumulatedTime = eventData[P_ACCUMULATEDTIME].GetFloat();
-        UpdatePhysicsClock(timeStep, updateNow, accumulatedTime);
-    });
-
     SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
     {
         BeginNetworkFrame();
@@ -74,69 +64,20 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
             SendUpdate(data);
     });
 
-    SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, [this](StringHash, VariantMap&)
+    SubscribeToEvent(network_, E_NETWORKINPUTPROCESSED, [this](StringHash, VariantMap& eventData)
     {
-        UpdatePhysics();
-    });
+        using namespace NetworkInputProcessed;
+        const float timeStep = eventData[P_TIMESTEP].GetFloat();
+        const bool updateNow = eventData[P_UPDATENOW].GetBool();
+        const float accumulatedTime = eventData[P_ACCUMULATEDTIME].GetFloat();
 
-    if (physicsWorld_)
-        physicsWorld_->SetUpdateEnabled(false);
+        const auto resetValue = updateNow ? ea::make_optional(accumulatedTime) : ea::nullopt;
+        physicsSync_.UpdateClock(timeStep, resetValue);
+    });
 }
 
 ServerNetworkManager::~ServerNetworkManager()
 {
-    if (physicsWorld_)
-        physicsWorld_->SetUpdateEnabled(true);
-}
-
-void ServerNetworkManager::UpdatePhysicsClock(float timeStep, bool networkUpdateNow, float accumulatedTime)
-{
-    if (!physicsWorld_)
-        return;
-
-    const unsigned updatePhysicsFrequency = physicsWorld_->GetFps();
-    const unsigned maxPhysicalStepsPerNetworkUpdate = ea::max(1u, updatePhysicsFrequency / updateFrequency_);
-    physicsUpdateFrequency_ = updateFrequency_ * maxPhysicalStepsPerNetworkUpdate;
-    if (physicsUpdateFrequency_ != updatePhysicsFrequency)
-    {
-        URHO3D_LOGWARNING(
-            "Network at {} FPS and PhysicsWorld at {} FPS cannot be synchronized, PhysicsWorld is forced at {} FPS",
-            updateFrequency_, updatePhysicsFrequency, physicsUpdateFrequency_);
-    }
-
-    if (networkUpdateNow)
-    {
-        numPhysicsSteps_ = 0;
-        physicsExtraTime_ = accumulatedTime;
-        numPendingPhysicsSteps_ = 1;
-    }
-    else
-    {
-        physicsExtraTime_ += timeStep;
-        numPendingPhysicsSteps_ = 0;
-    }
-
-    const float fixedTimeStep = 1.0f / physicsUpdateFrequency_;
-    while (physicsExtraTime_ >= fixedTimeStep)
-    {
-        physicsExtraTime_ -= fixedTimeStep;
-        ++numPendingPhysicsSteps_;
-    }
-
-    numPendingPhysicsSteps_ =
-        ea::min(numPhysicsSteps_ + numPendingPhysicsSteps_, maxPhysicalStepsPerNetworkUpdate) - numPhysicsSteps_;
-}
-
-void ServerNetworkManager::UpdatePhysics()
-{
-    if (!physicsWorld_)
-        return;
-
-    const float fixedTimeStep = 1.0f / physicsUpdateFrequency_;
-    physicsWorld_->CustomUpdate(numPendingPhysicsSteps_, fixedTimeStep, 0.0f);
-
-    numPhysicsSteps_ += numPendingPhysicsSteps_;
-    numPendingPhysicsSteps_ = 0;
 }
 
 void ServerNetworkManager::BeginNetworkFrame()

@@ -588,7 +588,7 @@ TEST_CASE("Ownership is consistent on server and on clients")
     REQUIRE(getObject(clientScenes[2], "Owned Node 2")->GetNetworkMode() == NetworkObjectMode::ClientOwned);
 }
 
-TEST_CASE("Physics is synchronized with network updates on server")
+TEST_CASE("Physics is synchronized with network updates")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
@@ -598,16 +598,21 @@ TEST_CASE("Physics is synchronized with network updates on server")
 
     // Start simulation and track events
     auto serverScene = MakeShared<Scene>(context);
-    auto physicsWorld = serverScene->CreateComponent<PhysicsWorld>();
-    physicsWorld->SetFps(64);
+    auto serverPhysicsWorld = serverScene->CreateComponent<PhysicsWorld>();
+    serverPhysicsWorld->SetFps(64);
 
+    const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
     Tests::NetworkSimulator sim(serverScene);
 
-    auto eventTracker = MakeShared<Tests::FrameEventTracker>(context);
-    eventTracker->TrackEvent(E_PHYSICSPRESTEP);
-    eventTracker->TrackEvent(E_NETWORKUPDATE);
-
     sim.SimulateTime(1.0f);
+
+    // Add client and wait for synchronization
+    SharedPtr<Scene> clientScene = MakeShared<Scene>(context);
+    auto clientPhysicsWorld = clientScene->CreateComponent<PhysicsWorld>();
+    clientPhysicsWorld->SetFps(64);
+
+    sim.AddClient(clientScene, quality);
+    sim.SimulateTime(10.0f);
 
     // Expect to have alternating frames:
     // - ...
@@ -623,6 +628,15 @@ TEST_CASE("Physics is synchronized with network updates on server")
     // - E_NETWORKUPDATE
     // - (end frame)
     // - ...
+
+    auto serverEventTracker = MakeShared<Tests::FrameEventTracker>(context);
+    serverEventTracker->TrackEvent(serverPhysicsWorld, E_PHYSICSPRESTEP);
+    serverEventTracker->TrackEvent(E_NETWORKUPDATE);
+
+    auto clientEventTracker = MakeShared<Tests::FrameEventTracker>(context);
+    clientEventTracker->TrackEvent(clientPhysicsWorld, E_PHYSICSPRESTEP);
+    clientEventTracker->TrackEvent(E_NETWORKCLIENTUPDATE);
+
     ea::optional<unsigned> prevNumEvents;
     const auto frameValidator = [&](const ea::vector<Tests::EventRecord>& events)
     {
@@ -646,5 +660,12 @@ TEST_CASE("Physics is synchronized with network updates on server")
     };
 
     sim.SimulateTime(1.0f);
-    eventTracker->ValidateFrames(frameValidator);
+    serverEventTracker->SkipFramesUntilEvent(E_NETWORKUPDATE);
+    clientEventTracker->SkipFramesUntilEvent(E_NETWORKCLIENTUPDATE);
+
+    REQUIRE(serverEventTracker->GetNumFrames() > 4);
+    REQUIRE(clientEventTracker->GetNumFrames() > 4);
+
+    serverEventTracker->ValidatePattern({{E_PHYSICSPRESTEP, E_NETWORKUPDATE}, {}, {E_PHYSICSPRESTEP}, {}});
+    clientEventTracker->ValidatePattern({{E_NETWORKCLIENTUPDATE, E_PHYSICSPRESTEP}, {}, {E_PHYSICSPRESTEP}, {}});
 }

@@ -98,6 +98,12 @@ URHO3D_EVENT(E_NETWORKUPDATESENT, NetworkUpdateSent)
 {
 }
 
+/// Network on network client synchronized with server.
+/// It is safe to assume that client state after NetworkClientUpdate is synchronized with server state before NetworkUpdate.
+URHO3D_EVENT(E_NETWORKCLIENTUPDATE, NetworkClientUpdate)
+{
+}
+
 /// Scene load failed, either due to file not found or checksum error.
 URHO3D_EVENT(E_NETWORKSCENELOADFAILED, NetworkSceneLoadFailed)
 {

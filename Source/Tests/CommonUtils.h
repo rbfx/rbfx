@@ -76,20 +76,40 @@ public:
         SubscribeToEvent(object, eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
     }
 
-    bool HasFrame() const { return !recordedFrames_.empty(); }
-
-    ea::vector<EventRecord> PopFrame()
-    {
-        const auto frameEvents = ea::move(recordedFrames_.front());
-        recordedFrames_.pop_front();
-        return frameEvents;
-    }
+    unsigned GetNumFrames() const { return recordedFrames_.size(); }
 
     template <class T>
-    void ValidateFrames(T callback)
+    void SkipFramesUntil(T callback)
     {
-        while (HasFrame())
-            callback(PopFrame());
+        const auto iter = ea::find_if(recordedFrames_.begin(), recordedFrames_.end(), callback);
+        recordedFrames_.erase(recordedFrames_.begin(), iter);
+    }
+
+    void SkipFramesUntilEvent(StringHash eventType, unsigned hits = 1)
+    {
+        SkipFramesUntil(
+            [&](const ea::vector<Tests::EventRecord>& events)
+        {
+            const auto isExpectedEvent = [&](const Tests::EventRecord& record) { return record.eventType_ == eventType; };
+            if (ea::find_if(events.begin(), events.end(), isExpectedEvent) != events.end())
+                --hits;
+            return hits == 0;
+        });
+    }
+
+    void ValidatePattern(ea::vector<ea::vector<StringHash>> pattern) const
+    {
+        const unsigned numFrames = recordedFrames_.size();
+        REQUIRE(numFrames >= pattern.size());
+
+        for (unsigned i = 0; i < numFrames; ++i)
+        {
+            const auto& frameEvents = recordedFrames_[i];
+            const auto& framePattern = pattern[i % pattern.size()];
+            REQUIRE(frameEvents.size() == framePattern.size());
+            for (unsigned j = 0; j < framePattern.size(); ++j)
+                REQUIRE(frameEvents[j].eventType_ == framePattern[j]);
+        }
     }
 
 private:
