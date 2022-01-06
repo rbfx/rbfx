@@ -26,6 +26,7 @@
 
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
+#include "../Network/LocalClockSynchronizer.h"
 #include "../Network/NetworkTime.h"
 #include "../Network/ProtocolMessages.h"
 
@@ -60,7 +61,7 @@ struct ClientNetworkManagerSettings : public ClientSynchronizationSettings
 };
 
 /// Helper class that keeps clock synchronized with server.
-class ClientSynchronizationManager
+class URHO3D_API ClientSynchronizationManager : public NonCopyable
 {
 public:
     ClientSynchronizationManager(
@@ -76,6 +77,7 @@ public:
 
     /// Return current state
     /// @{
+    bool IsNewFrame() const { return isNewFrame_; }
     unsigned GetConnectionId() const { return thisConnectionId_; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
     unsigned GetLatestPingMs() const { return latestPing_; }
@@ -113,10 +115,13 @@ private:
     NetworkTime clientTime_;
     NetworkTime smoothClientTime_;
     NetworkTime latestUnstableClientTime_{};
+    bool isNewFrame_{};
 
     ea::vector<MsgClock> pendingClockUpdates_;
     ea::ring_buffer<double> serverTimeErrors_{};
     ea::ring_buffer<double> clientTimeErrors_{};
+
+    PhysicsClockSynchronizer physicsSync_;
 };
 
 /// Client part of NetworkManager subsystem.

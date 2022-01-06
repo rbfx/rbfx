@@ -52,6 +52,7 @@ ClientSynchronizationManager::ClientSynchronizationManager(
     , clientTime_(ToClientTime(serverTime_))
     , smoothClientTime_(clientTime_)
     , latestUnstableClientTime_(clientTime_)
+    , physicsSync_(scene_, updateFrequency_, true)
 {
     serverTimeErrors_.reserve(numSamples_);
     // Don't smooth client time as it adds even more latency to synchronization
@@ -87,7 +88,14 @@ float ClientSynchronizationManager::ApplyTimeStep(float timeStep)
         ProcessPendingClockUpdate(msg);
     pendingClockUpdates_.clear();
 
-    return UpdateSmoothClientTime(timeStep);
+    const NetworkTime previousSmoothClientTime = smoothClientTime_;
+    const float adjustedTimeStep = UpdateSmoothClientTime(timeStep);
+
+    isNewFrame_ = previousSmoothClientTime.GetFrame() != smoothClientTime_.GetFrame();
+    const float overtime = smoothClientTime_.GetSubFrame() / updateFrequency_;
+    physicsSync_.UpdateClock(adjustedTimeStep, isNewFrame_ ? ea::make_optional(overtime) : ea::nullopt);
+
+    return adjustedTimeStep;
 }
 
 void ClientSynchronizationManager::ProcessPendingClockUpdate(const MsgClock& msg)
@@ -295,7 +303,7 @@ void ClientNetworkManager::ProcessPing(const MsgPingPong& msg)
 
 void ClientNetworkManager::ProcessSynchronize(const MsgSynchronize& msg)
 {
-    sync_.emplace(ClientSynchronizationManager{scene_, msg, settings_});
+    sync_.emplace(scene_, msg, settings_);
 
     connection_->SendSerializedMessage(
         MSG_SYNCHRONIZE_ACK, MsgSynchronizeAck{msg.magic_}, NetworkMessageFlag::Reliable);
@@ -481,6 +489,7 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
         return;
 
     sync_->ApplyTimeStep(timeStep);
+    const bool isNewFrame = sync_->IsNewFrame();
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)
@@ -488,6 +497,9 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
         if (networkObject)
             networkObject->InterpolateState(sync_->GetSmoothClientTime());
     }
+
+    if (isNewFrame)
+        network_->SendEvent(E_NETWORKCLIENTUPDATE);
 }
 
 }

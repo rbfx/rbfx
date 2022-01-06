@@ -28,6 +28,7 @@
 #include "../Core/Timer.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
+#include "../Network/LocalClockSynchronizer.h"
 #include "../Network/ProtocolMessages.h"
 
 #include <EASTL/bitvector.h>
@@ -43,7 +44,6 @@ class Network;
 class NetworkObject;
 class NetworkManagerBase;
 class Scene;
-class PhysicsWorld;
 
 struct ClientPing
 {
@@ -92,7 +92,7 @@ struct ServerNetworkManagerSettings
 };
 
 /// Internal class to handle delta updates.
-class DeltaUpdateMask
+class URHO3D_API DeltaUpdateMask
 {
 public:
     void Clear(unsigned maxIndex)
@@ -151,9 +151,6 @@ public:
 private:
     using DeltaBufferSpan = ea::pair<unsigned, unsigned>;
 
-    void UpdatePhysicsClock(float timeStep, bool networkUpdateNow, float accumulatedTime);
-    void UpdatePhysics();
-
     void BeginNetworkFrame();
     void UpdateClocks(float timeStep);
     void CollectObjectsToUpdate(float timeStep);
@@ -182,11 +179,7 @@ private:
     const unsigned updateFrequency_{};
     unsigned currentFrame_{};
 
-    WeakPtr<PhysicsWorld> physicsWorld_;
-    unsigned physicsUpdateFrequency_{};
-    unsigned numPhysicsSteps_{};
-    unsigned numPendingPhysicsSteps_{};
-    float physicsExtraTime_{};
+    PhysicsClockSynchronizer physicsSync_;
 
     ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
     VectorBuffer componentBuffer_;

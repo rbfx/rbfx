@@ -382,7 +382,6 @@ bool Network::Connect(const ea::string& address, unsigned short port, Scene* sce
         rakPeerClient_->Startup(2, &socket, 1);
     }
 
-    //isServer_ = false;
     SLNet::ConnectionAttemptResult connectResult = rakPeerClient_->Connect(address.c_str(), port, password_.c_str(), password_.length());
     if (connectResult == SLNet::CONNECTION_ATTEMPT_STARTED)
     {
@@ -455,6 +454,7 @@ bool Network::StartServer(unsigned short port, unsigned int maxConnections)
 void Network::StopServer()
 {
     clientConnections_.clear();
+    isServer_ = false;
 
     if (!rakPeer_)
         return;
@@ -985,6 +985,12 @@ void Network::PostUpdate(float timeStep)
 
         // Notify that the update was sent
         SendEvent(E_NETWORKUPDATESENT);
+    }
+    else if (serverConnection_)
+    {
+        // Send events and messages to server immediately
+        serverConnection_->SendRemoteEvents();
+        serverConnection_->SendAllBuffers();
     }
 }
 
