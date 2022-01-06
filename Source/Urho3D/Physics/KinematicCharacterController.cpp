@@ -54,7 +54,7 @@ KinematicCharacterController::KinematicCharacterController(Context* context)
     : Component(context)
 {
     pairCachingGhostObject_ = ea::make_unique<btPairCachingGhostObject>();
-    pairCachingGhostObject_->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+    pairCachingGhostObject_->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
 }
 
 KinematicCharacterController::~KinematicCharacterController()
