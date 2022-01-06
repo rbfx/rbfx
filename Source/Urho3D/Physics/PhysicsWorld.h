@@ -315,8 +315,10 @@ protected:
 private:
     /// Handle the scene subsystem update event, step simulation here.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
-    /// Trigger before physics update.
+    /// Trigger before physics update, before any of simulation steps.
     void PreUpdate();
+    /// Trigger after physics update, after all of simulation steps.
+    void PostUpdate(float overtime);
     /// Trigger update before each physics simulation step.
     void PreStep(float timeStep);
     /// Trigger update after each physics simulation step.

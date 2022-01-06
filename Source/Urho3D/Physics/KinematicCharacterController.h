@@ -149,6 +149,7 @@ protected:
 
     void HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData);
     void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
+    void HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData);
 
 protected:
     unsigned colLayer_{ 1 };
@@ -173,6 +174,10 @@ protected:
 
     Vector3 colShapeOffset_{ Vector3::ZERO };
     bool reapplyAttributes_{ false };
+
+    Vector3 latestPosition_;
+    Vector3 previousPosition_;
+    Vector3 nextPosition_;
 };
 
 }

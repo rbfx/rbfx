@@ -33,6 +33,14 @@ URHO3D_EVENT(E_PHYSICSPREUPDATE, PhysicsPreUpdate)
     URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
 };
 
+/// Physics world has been updated. There may have been zero, one, or more physics steps evaluated.
+/// Overtime indicates the amount of non-simulated time after latest step.
+URHO3D_EVENT(E_PHYSICSPOSTUPDATE, PhysicsPostUpdate)
+{
+    URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
+    URHO3D_PARAM(P_OVERTIME, Overtime);            // float
+};
+
 /// Physics world is about to be stepped.
 URHO3D_EVENT(E_PHYSICSPRESTEP, PhysicsPreStep)
 {
