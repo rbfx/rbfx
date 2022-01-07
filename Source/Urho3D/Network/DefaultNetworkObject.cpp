@@ -47,7 +47,8 @@ void DefaultNetworkObject::SetClientPrefab(XMLFile* prefab)
 {
     if (prefab && prefab->GetName().empty())
     {
-        URHO3D_ASSERTLOG(0, "DefaultNetworkObject::SetClientPrefab is called with unnamed resource");
+        URHO3D_ASSERTLOG(0, "DefaultNetworkObject::SetClientPrefab is called with unnamed resource for object {}",
+            NetworkManagerBase::FormatNetworkId(GetNetworkId()));
         return;
     }
 
@@ -144,7 +145,7 @@ unsigned DefaultNetworkObject::EvaluateUnreliableDeltaMask()
     return mask;
 }
 
-void DefaultNetworkObject::InterpolateState(const NetworkTime& time)
+void DefaultNetworkObject::InterpolateState(const NetworkTime& time, bool isNewFrame)
 {
     const ClientNetworkManager* clientNetworkManager = GetClientNetworkManager();
     const unsigned positionExtrapolationFrames = clientNetworkManager->GetPositionExtrapolationFrames();

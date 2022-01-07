@@ -27,6 +27,7 @@
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace Tests
@@ -78,10 +79,27 @@ void RunFrame(Context* context, float timeStep, float maxTimeStep)
     while (timeStep > 0.0f);
 }
 
+Resource* GetOrCreateResource(Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
+{
+    auto cache = context->GetSubsystem<ResourceCache>();
+    if (auto resource = cache->GetResource(type, name))
+        return resource;
+
+    auto resource = factory();
+    resource->SetName(name);
+    cache->AddManualResource(resource);
+    return resource;
+}
+
 FrameEventTracker::FrameEventTracker(Context* context)
+    : FrameEventTracker(context, E_ENDFRAMEPRIVATE)
+{
+}
+
+FrameEventTracker::FrameEventTracker(Context* context, StringHash endFrameEventType)
     : Object(context)
 {
-    SubscribeToEvent(E_ENDFRAMEPRIVATE,
+    SubscribeToEvent(endFrameEventType,
         [&](StringHash, VariantMap&)
     {
         if (!recordEvents_)
@@ -92,6 +110,43 @@ FrameEventTracker::FrameEventTracker(Context* context)
             currentFrameEvents_.clear();
         }
     });
+}
+
+void FrameEventTracker::TrackEvent(StringHash eventType)
+{
+    SubscribeToEvent(eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
+}
+
+void FrameEventTracker::TrackEvent(Object* object, StringHash eventType)
+{
+    SubscribeToEvent(object, eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
+}
+
+void FrameEventTracker::SkipFramesUntilEvent(StringHash eventType, unsigned hits)
+{
+    SkipFramesUntil(
+        [&](const ea::vector<EventRecord>& events)
+    {
+        const auto isExpectedEvent = [&](const EventRecord& record) { return record.eventType_ == eventType; };
+        if (ea::find_if(events.begin(), events.end(), isExpectedEvent) != events.end())
+            --hits;
+        return hits == 0;
+    });
+}
+
+void FrameEventTracker::ValidatePattern(ea::vector<ea::vector<StringHash>> pattern) const
+{
+    const unsigned numFrames = recordedFrames_.size();
+    REQUIRE(numFrames >= pattern.size());
+
+    for (unsigned i = 0; i < numFrames; ++i)
+    {
+        const auto& frameEvents = recordedFrames_[i];
+        const auto& framePattern = pattern[i % pattern.size()];
+        REQUIRE(frameEvents.size() == framePattern.size());
+        for (unsigned j = 0; j < framePattern.size(); ++j)
+            REQUIRE(frameEvents[j].eventType_ == framePattern[j]);
+    }
 }
 
 void FrameEventTracker::HandleEvent(StringHash eventType, VariantMap& eventData)
