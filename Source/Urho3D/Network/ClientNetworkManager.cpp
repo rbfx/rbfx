@@ -495,7 +495,7 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
     for (NetworkObject* networkObject : networkObjects)
     {
         if (networkObject)
-            networkObject->InterpolateState(sync_->GetSmoothClientTime());
+            networkObject->InterpolateState(sync_->GetSmoothClientTime(), isNewFrame);
     }
 
     if (isNewFrame)

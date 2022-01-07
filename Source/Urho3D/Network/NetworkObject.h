@@ -85,7 +85,6 @@ public:
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
     NetworkObjectMode GetNetworkMode() const { return networkMode_; }
-    bool IsOwnedByThisClient() const { return networkMode_ == NetworkObjectMode::ClientOwned; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 
@@ -111,7 +110,7 @@ public:
     /// @{
 
     /// Interpolate replicated state.
-    virtual void InterpolateState(const NetworkTime& time);
+    virtual void InterpolateState(const NetworkTime& time, bool isNewFrame);
     /// Prepare to this compnent being removed by the authority of the server.
     virtual void PrepareToRemove();
     /// Read full snapshot.

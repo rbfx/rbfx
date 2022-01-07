@@ -33,6 +33,13 @@
 
 using namespace Urho3D;
 
+namespace Urho3D
+{
+
+class Resource;
+
+}
+
 namespace Tests
 {
 
@@ -51,13 +58,18 @@ SharedPtr<Context> CreateCompleteContext();
 /// Run frame with given time step.
 void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
 
-struct EventRecord
-{
-    StringHash eventType_;
-    VariantMap eventData_;
-};
+/// Return resource by name. Creates and adds manual resource if missing.
+Resource* GetOrCreateResource(Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>()> factory);
 
-/// Helper class to track events in the engine during the frame.
+/// Return resource by name. Creates and adds manual resource if missing.
+template <class T>
+T* GetOrCreateResource(Context* context, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
+{
+    return dynamic_cast<T*>(GetOrCreateResource(context, T::GetTypeStatic(), name, factory));
+}
+
+/// Helper class to track events in the engine during.
+/// Events are grouped by frames using event.
 /// Events during the first tracked frame and after the last tracked frame are ignored.
 class FrameEventTracker : public Object
 {
@@ -65,16 +77,10 @@ class FrameEventTracker : public Object
 
 public:
     explicit FrameEventTracker(Context* context);
+    FrameEventTracker(Context* context, StringHash endFrameEventType);
 
-    void TrackEvent(StringHash eventType)
-    {
-        SubscribeToEvent(eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
-    }
-
-    void TrackEvent(Object* object, StringHash eventType)
-    {
-        SubscribeToEvent(object, eventType, URHO3D_HANDLER(FrameEventTracker, HandleEvent));
-    }
+    void TrackEvent(StringHash eventType);
+    void TrackEvent(Object* object, StringHash eventType);
 
     unsigned GetNumFrames() const { return recordedFrames_.size(); }
 
@@ -85,34 +91,16 @@ public:
         recordedFrames_.erase(recordedFrames_.begin(), iter);
     }
 
-    void SkipFramesUntilEvent(StringHash eventType, unsigned hits = 1)
-    {
-        SkipFramesUntil(
-            [&](const ea::vector<Tests::EventRecord>& events)
-        {
-            const auto isExpectedEvent = [&](const Tests::EventRecord& record) { return record.eventType_ == eventType; };
-            if (ea::find_if(events.begin(), events.end(), isExpectedEvent) != events.end())
-                --hits;
-            return hits == 0;
-        });
-    }
-
-    void ValidatePattern(ea::vector<ea::vector<StringHash>> pattern) const
-    {
-        const unsigned numFrames = recordedFrames_.size();
-        REQUIRE(numFrames >= pattern.size());
-
-        for (unsigned i = 0; i < numFrames; ++i)
-        {
-            const auto& frameEvents = recordedFrames_[i];
-            const auto& framePattern = pattern[i % pattern.size()];
-            REQUIRE(frameEvents.size() == framePattern.size());
-            for (unsigned j = 0; j < framePattern.size(); ++j)
-                REQUIRE(frameEvents[j].eventType_ == framePattern[j]);
-        }
-    }
+    void SkipFramesUntilEvent(StringHash eventType, unsigned hits = 1);
+    void ValidatePattern(ea::vector<ea::vector<StringHash>> pattern) const;
 
 private:
+    struct EventRecord
+    {
+        StringHash eventType_;
+        VariantMap eventData_;
+    };
+
     void HandleEvent(StringHash eventType, VariantMap& eventData);
 
     bool recordEvents_{};

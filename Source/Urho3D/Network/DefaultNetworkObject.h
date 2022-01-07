@@ -63,7 +63,7 @@ public:
     bool WriteReliableDelta(unsigned frame, VectorBuffer& dest) override;
     bool WriteUnreliableDelta(unsigned frame, VectorBuffer& dest) override;
 
-    void InterpolateState(const NetworkTime& time) override;
+    void InterpolateState(const NetworkTime& time, bool isNewFrame) override;
     void ReadSnapshot(unsigned frame, VectorBuffer& src) override;
     void ReadReliableDelta(unsigned frame, VectorBuffer& src) override;
     void ReadUnreliableDelta(unsigned frame, VectorBuffer& src) override;

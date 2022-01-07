@@ -61,24 +61,6 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
     return prefab;
 }
 
-Resource* GetOrCreateResource(Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
-{
-    auto cache = context->GetSubsystem<ResourceCache>();
-    if (auto resource = cache->GetResource(type, name))
-        return resource;
-
-    auto resource = factory();
-    resource->SetName(name);
-    cache->AddManualResource(resource);
-    return resource;
-}
-
-template <class T>
-T* GetOrCreateResource(Context* context, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
-{
-    return dynamic_cast<T*>(GetOrCreateResource(context, T::GetTypeStatic(), name, factory));
-}
-
 }
 
 TEST_CASE("Time is synchronized between client and server")
@@ -444,7 +426,7 @@ TEST_CASE("Prefabs are replicated on clients")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = GetOrCreateResource<XMLFile>(
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(
         context, "@/SceneSynchronization/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
 
     // Setup scenes
@@ -636,28 +618,6 @@ TEST_CASE("Physics is synchronized with network updates")
     auto clientEventTracker = MakeShared<Tests::FrameEventTracker>(context);
     clientEventTracker->TrackEvent(clientPhysicsWorld, E_PHYSICSPRESTEP);
     clientEventTracker->TrackEvent(E_NETWORKCLIENTUPDATE);
-
-    ea::optional<unsigned> prevNumEvents;
-    const auto frameValidator = [&](const ea::vector<Tests::EventRecord>& events)
-    {
-        if (events.empty())
-            return;
-
-        const unsigned numEvents = events.size();
-        REQUIRE((numEvents == 1 || numEvents == 2));
-        REQUIRE(prevNumEvents != numEvents);
-
-        prevNumEvents = numEvents;
-        if (numEvents == 1)
-        {
-            REQUIRE(events[0].eventType_ == E_PHYSICSPRESTEP);
-        }
-        else
-        {
-            REQUIRE(events[0].eventType_ == E_PHYSICSPRESTEP);
-            REQUIRE(events[1].eventType_ == E_NETWORKUPDATE);
-        }
-    };
 
     sim.SimulateTime(1.0f);
     serverEventTracker->SkipFramesUntilEvent(E_NETWORKUPDATE);
