@@ -99,7 +99,7 @@ public:
         Scene* GetScene() const;
 
         /// Static assert to simplify compile type error description.
-        template <typename... args> void operator()(args... a) { static_assert(false, "Instance operator() is not defined or arguments doesn't match node pins"); }
+        //template <typename... args> void operator()(args... a) { static_assert(false, "Instance operator() is not defined or arguments doesn't match node pins"); }
     protected:
         /// Pointer to graph node instance.
         ParticleGraphNode* node_{nullptr};
