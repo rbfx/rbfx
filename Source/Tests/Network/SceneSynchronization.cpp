@@ -99,11 +99,11 @@ TEST_CASE("Time is synchronized between client and server")
     auto& clientNetworkManager = clientScene->GetNetworkManager()->AsClient();
 
     // Simulate a few millseconds, not enough for synchronization due to ping
-    sim.SimulateTime(504 / 1024.0f);
+    sim.SimulateTime(504.0f / Tests::NetworkSimulator::MillisecondsInSecond);
     REQUIRE_FALSE(clientNetworkManager.IsSynchronized());
 
     // Simulate a few more seconds, should be somehow synchronized
-    sim.SimulateTime(520 / 1024.0f);
+    sim.SimulateTime(520.0f / Tests::NetworkSimulator::MillisecondsInSecond);
     sim.SimulateTime(9.0f);
 
     REQUIRE(clientNetworkManager.IsSynchronized());

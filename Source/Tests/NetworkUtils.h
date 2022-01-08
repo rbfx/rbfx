@@ -93,9 +93,10 @@ class NetworkSimulator
 {
 public:
     /// Number of frames per second.
-    static const unsigned FramesInSecond = 32;
+    static constexpr unsigned FramesInSecond = 32;
     /// Number of "milliseconds" in one server frame. Use decently big value to have sub-frame control over execution.
-    static const unsigned MillisecondsInFrame = 32;
+    static constexpr unsigned MillisecondsInFrame = 32;
+    static constexpr unsigned MillisecondsInSecond = FramesInSecond * MillisecondsInFrame;
 
     explicit NetworkSimulator(Scene* serverScene, unsigned seed = 0);
     void AddClient(Scene* clientScene, const ConnectionQuality& quality);
@@ -106,6 +107,8 @@ public:
     void SimulateTime(float time, unsigned millisecondsInQuant = 8);
 
     AbstractConnection* GetServerToClientConnection(Scene* clientScene);
+
+    RandomEngine& GetRandom() { return random_; }
 
 private:
     struct PerClient

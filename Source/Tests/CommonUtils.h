@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <Urho3D/Core/Assert.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Variant.h>
 #include <Urho3D/Container/Ptr.h>
@@ -68,8 +69,8 @@ T* GetOrCreateResource(Context* context, const ea::string& name, ea::function<Sh
     return dynamic_cast<T*>(GetOrCreateResource(context, T::GetTypeStatic(), name, factory));
 }
 
-/// Helper class to track events in the engine during.
-/// Events are grouped by frames using event.
+/// Helper class to track events in the engine.
+/// Events are grouped by frames using specified event.
 /// Events during the first tracked frame and after the last tracked frame are ignored.
 class FrameEventTracker : public Object
 {
@@ -106,6 +107,37 @@ private:
     bool recordEvents_{};
     ea::vector<EventRecord> currentFrameEvents_;
     ea::vector<ea::vector<EventRecord>> recordedFrames_;
+};
+
+/// Helper class to track attribute of serializable at specified event.
+class AttributeTracker : public Object
+{
+    URHO3D_OBJECT(AttributeTracker, Object);
+
+public:
+    explicit AttributeTracker(Context* context);
+    AttributeTracker(Context* context, StringHash endFrameEventType);
+
+    void Track(Serializable* serializable, const ea::string& attributeName);
+
+    template <class T>
+    void SkipUntil(T callback)
+    {
+        const auto iter = ea::find_if(recordedValues_.begin(), recordedValues_.end(), callback);
+        recordedValues_.erase(recordedValues_.begin(), iter);
+    }
+
+    void SkipUntilChanged()
+    {
+        const auto iter = ea::adjacent_find(recordedValues_.begin(), recordedValues_.end(), ea::not_equal_to<Variant>());
+        recordedValues_.erase(recordedValues_.begin(), iter);
+    }
+
+    const ea::vector<Variant>& GetValues() const { return recordedValues_; }
+
+private:
+    ea::vector<ea::pair<WeakPtr<Serializable>, ea::string>> trackers_;
+    ea::vector<Variant> recordedValues_;
 };
 
 }

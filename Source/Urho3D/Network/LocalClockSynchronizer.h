@@ -61,7 +61,7 @@ private:
 class URHO3D_API PhysicsClockSynchronizer
 {
 public:
-    PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool interpolated);
+    PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool allowInterpolation);
     ~PhysicsClockSynchronizer();
 
     void UpdateClock(float timeStep, ea::optional<float> leaderResetValue);
@@ -72,11 +72,11 @@ protected:
 #ifdef URHO3D_PHYSICS
     WeakPtr<PhysicsWorld> physicsWorld_;
     LocalClockSynchronizer sync_;
-    bool interpolated_{};
     SharedPtr<Object> eventListener_;
 
     bool wasUpdateEnabled_{};
     bool wasInterpolated_{};
+    bool interpolated_{};
 #endif
 };
 
