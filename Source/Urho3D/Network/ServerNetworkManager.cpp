@@ -611,7 +611,12 @@ void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData
         data.feedbackDelaySorted_.assign(data.feedbackDelay_.begin(), data.feedbackDelay_.end());
         ea::sort(data.feedbackDelaySorted_.begin(), data.feedbackDelaySorted_.end());
         const auto iter = data.feedbackDelaySorted_.begin() + data.feedbackDelaySorted_.size() / 2;
-        data.averageFeedbackDelay_ = ea::accumulate(iter - 1, iter + 2, 0u) / 3; // TODO: Refactor this thing
+        const unsigned newFeedbackDelay = *iter;
+
+        // If delay is decreased just by 1, don't.
+        // TODO: Use additional percentile to check?
+        if (newFeedbackDelay + 1 != data.averageFeedbackDelay_)
+            data.averageFeedbackDelay_ = newFeedbackDelay; // TODO: Refactor this thing
         //data.averageFeedbackDelay_ = *ea::max_element(data.feedbackDelay_.begin(), data.feedbackDelay_.end());
     }
 }

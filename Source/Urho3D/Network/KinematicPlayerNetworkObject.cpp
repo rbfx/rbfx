@@ -139,8 +139,9 @@ void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(
     if (!offset.Equals(Vector3::ZERO, 0.001f))
     {
         kinematicController_->AdjustRawPosition(offset);
-        for (auto& [predictionFrame, otherPredictedPosition] : predictedWorldPositions_)
-            otherPredictedPosition += offset;
+        predictedWorldPositions_.clear();
+        //for (auto& [predictionFrame, otherPredictedPosition] : predictedWorldPositions_)
+        //    otherPredictedPosition += offset;
     }
 }
 

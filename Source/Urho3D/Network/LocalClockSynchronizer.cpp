@@ -96,11 +96,10 @@ void LocalClockSynchronizer::Update(float timeStep, ea::optional<float> leaderRe
     numSubsteps_ = newNumSubsteps;
 }
 
-PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool interpolated)
+PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool allowInterpolation)
 #ifdef URHO3D_PHYSICS
     : physicsWorld_(scene->GetComponent<PhysicsWorld>())
     , sync_(networkFrequency)
-    , interpolated_(interpolated)
     , eventListener_(MakeShared<PlaceholderObject>(scene->GetContext()))
 #endif
 {
@@ -109,6 +108,8 @@ PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networ
     {
         wasUpdateEnabled_ = physicsWorld_->IsUpdateEnabled();
         wasInterpolated_ = physicsWorld_->GetInterpolation();
+        interpolated_ = allowInterpolation && wasInterpolated_;
+
         physicsWorld_->SetUpdateEnabled(false);
         physicsWorld_->SetInterpolation(interpolated_);
     }

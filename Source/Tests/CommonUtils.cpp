@@ -29,6 +29,7 @@
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/Serializable.h>
 
 namespace Tests
 {
@@ -152,6 +153,32 @@ void FrameEventTracker::ValidatePattern(ea::vector<ea::vector<StringHash>> patte
 void FrameEventTracker::HandleEvent(StringHash eventType, VariantMap& eventData)
 {
     currentFrameEvents_.push_back(EventRecord{eventType, eventData});
+}
+
+AttributeTracker::AttributeTracker(Context* context)
+    : AttributeTracker(context, E_ENDFRAMEPRIVATE)
+{
+}
+
+AttributeTracker::AttributeTracker(Context* context, StringHash endFrameEventType)
+    : Object(context)
+{
+    SubscribeToEvent(endFrameEventType,
+        [&](StringHash, VariantMap&)
+    {
+        for (const auto& [serializable, attributeName] : trackers_)
+        {
+            if (!serializable)
+                recordedValues_.push_back(Variant::EMPTY);
+            else
+                recordedValues_.push_back(serializable->GetAttribute(attributeName));
+        }
+    });
+}
+
+void AttributeTracker::Track(Serializable* serializable, const ea::string& attributeName)
+{
+    trackers_.emplace_back(WeakPtr<Serializable>(serializable), attributeName);
 }
 
 }

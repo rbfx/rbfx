@@ -146,6 +146,7 @@ public:
             MSG_CLOCK,
             MSG_UPDATE_OBJECTS_RELIABLE,
             MSG_UPDATE_OBJECTS_UNRELIABLE,
+            MSG_OBJECTS_FEEDBACK_UNRELIABLE,
 
             MSG_CONTROLS,
         };

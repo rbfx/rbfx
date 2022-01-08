@@ -104,10 +104,10 @@ TEST_CASE("Client-side prediction is consistent with server")
     REQUIRE(clientNode->GetWorldPosition().y_ == Catch::Approx(1.0f).margin(0.1f));
 
     // Start movement at some random point, move for about 5 seconds with velocity of 2 units/second
-    sim.SimulateTime(8 / 1024.0f);
+    sim.SimulateTime(8.0f / Tests::NetworkSimulator::MillisecondsInSecond);
     const float moveVelocity = 2.0f;
     clientObject->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
-    sim.SimulateTime(1016 / 1024.0f);
+    sim.SimulateTime(1016.0f / Tests::NetworkSimulator::MillisecondsInSecond);
     sim.SimulateTime(4.0f);
 
     // Expect client node at the specified position, with max error or 2 frames:
@@ -132,4 +132,64 @@ TEST_CASE("Client-side prediction is consistent with server")
 
     // Expect server and client positions to match
     REQUIRE(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), M_EPSILON));
+}
+
+TEST_CASE("Client-side prediction is stable when latency is stable")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
+
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(
+        context, "@/ClientSidePrediction/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
+
+    // Setup scenes
+    const unsigned seed = GENERATE(0, 1, 2);
+    const auto quality = Tests::ConnectionQuality{ 0.21f, 0.23f, 0.23f, 0.0f, 0.0f };
+
+    auto serverScene = CreateTestScene(context);
+    auto clientScene = CreateTestScene(context);
+
+    // Start simulation
+    Tests::NetworkSimulator sim(serverScene, seed);
+    sim.AddClient(clientScene, quality);
+    clientScene->GetComponent<PhysicsWorld>()->SetInterpolation(false);
+
+    // Create nodes
+    Node* serverNode = serverScene->InstantiateXML(prefab->GetRoot(), {0.0f, 0.96f, 0.0f}, Quaternion::IDENTITY, LOCAL);
+    auto serverObject = serverNode->CreateComponent<KinematicPlayerNetworkObject>();
+    serverObject->SetClientPrefab(prefab);
+    serverObject->SetOwner(sim.GetServerToClientConnection(clientScene));
+
+    // Wait for synchronization and start tracking
+    sim.SimulateTime(9.0f);
+    Node* clientNode = clientScene->GetChild("Player", true);
+    auto clientObject = clientNode->GetComponent<KinematicPlayerNetworkObject>();
+
+    Tests::AttributeTracker serverPosition(context);
+    serverPosition.Track(serverNode, "Position");
+    Tests::AttributeTracker clientPosition(context);
+    clientPosition.Track(clientNode, "Position");
+    sim.SimulateTime(1.0f);
+
+    // Start random movement.
+    // 1 physics tick is 1/64, so with velocity of 6.4 object should move for 0.1 units per tick.
+    Vector3 direction = Vector3::LEFT * 6.4;
+    for (unsigned actionIndex = 0; actionIndex < 100; ++actionIndex)
+    {
+        clientObject->SetWalkVelocity(direction);
+        direction *= -1.0f;
+
+        const float duration = sim.GetRandom().GetFloat(0.01f, 0.25f);
+        const unsigned quantizedDuration = CeilToInt(duration * Tests::NetworkSimulator::MillisecondsInSecond / 8);
+        sim.SimulateTime(quantizedDuration * 8 / 1024.0f);
+    }
+
+    serverPosition.SkipUntilChanged();
+    clientPosition.SkipUntilChanged();
+
+    const auto& serverPositionValues = serverPosition.GetValues();
+    const auto& clientPositionValues = clientPosition.GetValues();
+    const unsigned numValues = ea::min(serverPositionValues.size(), clientPositionValues.size());
+    for (unsigned i = 0; i < numValues; ++i)
+        REQUIRE(serverPositionValues[i].GetVector3() == clientPositionValues[i].GetVector3());
 }
