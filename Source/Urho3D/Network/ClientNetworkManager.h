@@ -31,6 +31,7 @@
 #include "../Network/ProtocolMessages.h"
 
 #include <EASTL/optional.h>
+#include <EASTL/unordered_set.h>
 #include <EASTL/bonus/ring_buffer.h>
 
 namespace Urho3D
@@ -134,7 +135,7 @@ public:
 
     void ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
 
-    ea::string ToString() const;
+    ea::string GetDebugInfo() const;
     AbstractConnection* GetConnection() const { return connection_; }
     const ClientNetworkManagerSettings& GetSettings() const { return settings_; }
 
@@ -156,8 +157,9 @@ public:
 
 private:
     void UpdateReplica(float timeStep);
+    void SendObjectsFeedbackUnreliable(unsigned feedbackFrame);
 
-    NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType);
+    NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned);
     NetworkObject* GetCheckedNetworkObject(NetworkId networkId, StringHash componentType);
     void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
 
@@ -177,6 +179,7 @@ private:
     AbstractConnection* connection_{};
 
     ea::optional<ClientSynchronizationManager> sync_;
+    ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;
 
     VectorBuffer componentBuffer_;
 };

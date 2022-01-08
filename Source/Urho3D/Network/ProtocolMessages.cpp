@@ -22,10 +22,18 @@
 
 #include "../Network/ProtocolMessages.h"
 
+#include "../Network/NetworkManager.h"
+
 #include "../Core/StringUtils.h"
 
 namespace Urho3D
 {
+
+ea::string ToString(NetworkId value)
+{
+    const auto [index, version] = NetworkManagerBase::DecomposeNetworkId(value);
+    return value == InvalidNetworkId ? "(null)" : Format("{}:{}", index, version);
+}
 
 void MsgPingPong::Save(VectorBuffer& dest) const
 {

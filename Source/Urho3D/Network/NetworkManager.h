@@ -75,7 +75,7 @@ public:
     Scene* GetScene() const { return scene_; }
     const auto& GetUnorderedNetworkObjects() const { return networkObjects_; }
     unsigned GetNetworkIndexUpperBound() const { return networkObjects_.size(); }
-    ea::string ToString() const;
+    ea::string GetDebugInfo() const;
     NetworkObject* GetNetworkObject(NetworkId networkId) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
 
@@ -83,7 +83,6 @@ public:
     /// @{
     static NetworkId ComposeNetworkId(unsigned index, unsigned version);
     static ea::pair<unsigned, unsigned> DecomposeNetworkId(NetworkId networkId);
-    static ea::string FormatNetworkId(NetworkId networkId);
     /// @}
 
 private:

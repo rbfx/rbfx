@@ -36,7 +36,6 @@
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
-#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace

@@ -187,6 +187,8 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
 {
     if (movingData_[0] == movingData_[1])
     {
+        // TODO: Implement riding on platforms
+#if 0
         Matrix3x4 delta = movingData_[0].transform_ * movingData_[1].transform_.Inverse();
 
         // add delta
@@ -201,10 +203,8 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
 
         // update yaw control (directly rotates char)
         controls_.yaw_ += delta.Rotation().YawAngle();
+#endif
     }
-
-    // update node position
-    node_->SetWorldPosition(kinematicController_->GetPosition());
 
     // shift and clear
     movingData_[1] = movingData_[0];

@@ -38,11 +38,8 @@ class URHO3D_API DefaultNetworkObject : public NetworkObject
     URHO3D_OBJECT(DefaultNetworkObject, NetworkObject);
 
 public:
-    enum : unsigned
-    {
-        UpdateParentNetworkObjectId = 1 << 0,
-        UpdateWorldTransform = 1 << 1
-    };
+    static constexpr unsigned ParentNetworkObjectIdMask = 1 << 0;
+    static constexpr unsigned WorldTransformMask = 1 << 1;
 
     explicit DefaultNetworkObject(Context* context);
     ~DefaultNetworkObject() override;
@@ -59,27 +56,35 @@ public:
     void InitializeOnServer() override;
 
     void OnTransformDirty() override;
-    void WriteSnapshot(unsigned frame, VectorBuffer& dest) override;
-    bool WriteReliableDelta(unsigned frame, VectorBuffer& dest) override;
-    bool WriteUnreliableDelta(unsigned frame, VectorBuffer& dest) override;
+    void WriteSnapshot(unsigned frame, Serializer& dest) override;
+    bool WriteReliableDelta(unsigned frame, Serializer& dest) override;
+    bool WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
 
     void InterpolateState(const NetworkTime& time, bool isNewFrame) override;
-    void ReadSnapshot(unsigned frame, VectorBuffer& src) override;
-    void ReadReliableDelta(unsigned frame, VectorBuffer& src) override;
-    void ReadUnreliableDelta(unsigned frame, VectorBuffer& src) override;
+    void ReadSnapshot(unsigned frame, Deserializer& src) override;
+    void ReadReliableDelta(unsigned frame, Deserializer& src) override;
+    void ReadUnreliableDelta(unsigned frame, unsigned feedbackFrame, Deserializer& src) override;
     /// @}
 
     /// Getters for network properties
     /// @{
     Vector3 GetTemporalWorldPosition(const NetworkTime& time) const { return worldPositionTrace_.SampleValid(time); }
     Quaternion GetTemporalWorldRotation(const NetworkTime& time) const { return worldRotationTrace_.SampleValid(time); }
+    ea::optional<Vector3> GetRawTemporalWorldPosition(unsigned frame) const { return worldPositionTrace_.GetRaw(frame); }
+    ea::optional<Quaternion> GetRawTemporalWorldRotation(unsigned frame) const { return worldRotationTrace_.GetRaw(frame); }
     /// @}
 
 protected:
-    /// Evaluates the mask for reliable delta update. Called exactly once by WriteReliableDelta.
-    virtual unsigned EvaluateReliableDeltaMask();
-    /// Returns the mask for unreliable delta update. Called exactly once by WriteUnreliableDelta.
-    virtual unsigned EvaluateUnreliableDeltaMask();
+    /// Read and write actual deltas and delta masks.
+    /// @{
+    virtual unsigned WriteReliableDeltaMask();
+    virtual void WriteReliableDeltaPayload(unsigned mask, unsigned frame, Serializer& dest);
+    virtual void ReadReliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src);
+
+    virtual unsigned WriteUnreliableDeltaMask();
+    virtual void WriteUnreliableDeltaPayload(unsigned mask, unsigned frame, Serializer& dest);
+    virtual void ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, unsigned feedbackFrame, Deserializer& src);
+    /// @}
 
     ResourceRef GetClientPrefabAttr() const;
     void SetClientPrefabAttr(const ResourceRef& value);
@@ -98,7 +103,7 @@ private:
     unsigned worldTransformCounter_{};
     /// @}
 
-    /// Tracers for synchronized values (for client)
+    /// Synchronized values (for both client and server)
     /// @{
     NetworkValue<Vector3> worldPositionTrace_;
     NetworkValue<Quaternion> worldRotationTrace_;

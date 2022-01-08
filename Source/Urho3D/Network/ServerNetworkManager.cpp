@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
 #include "../Core/Exception.h"
 #include "../IO/Log.h"
 #include "../Network/Connection.h"
@@ -57,22 +58,24 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     , updateFrequency_(network_->GetUpdateFps())
     , physicsSync_(scene_, updateFrequency_, false)
 {
-    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
+    SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
     {
-        BeginNetworkFrame();
-        for (auto& [connection, data] : connections_)
-            SendUpdate(data);
+        using namespace InputReady;
+        const float timeStep = eventData[P_TIMESTEP].GetFloat();
+
+        const bool isUpdateNow = network_->IsUpdateNow();
+        const float overtime = network_->GetUpdateOvertime();
+        const auto resetValue = isUpdateNow ? ea::make_optional(overtime) : ea::nullopt;
+        physicsSync_.UpdateClock(timeStep, resetValue);
+        if (isUpdateNow)
+            BeginNetworkFrame();
     });
 
-    SubscribeToEvent(network_, E_NETWORKINPUTPROCESSED, [this](StringHash, VariantMap& eventData)
+    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
     {
-        using namespace NetworkInputProcessed;
-        const float timeStep = eventData[P_TIMESTEP].GetFloat();
-        const bool updateNow = eventData[P_UPDATENOW].GetBool();
-        const float accumulatedTime = eventData[P_ACCUMULATEDTIME].GetFloat();
-
-        const auto resetValue = updateNow ? ea::make_optional(accumulatedTime) : ea::nullopt;
-        physicsSync_.UpdateClock(timeStep, resetValue);
+        PrepareNetworkFrame();
+        for (auto& [connection, data] : connections_)
+            SendUpdate(data);
     });
 }
 
@@ -84,6 +87,13 @@ void ServerNetworkManager::BeginNetworkFrame()
 {
     const float timeStep = 1.0f / updateFrequency_;
     UpdateClocks(timeStep);
+
+    network_->SendEvent(E_BEGINSERVERNETWORKUPDATE);
+}
+
+void ServerNetworkManager::PrepareNetworkFrame()
+{
+    const float timeStep = 1.0f / updateFrequency_;
     CollectObjectsToUpdate(timeStep);
     PrepareDeltaUpdates();
 }
@@ -237,7 +247,7 @@ void ServerNetworkManager::AddConnection(AbstractConnection* connection)
 {
     if (connections_.contains(connection))
     {
-        URHO3D_LOGWARNING("Connection is already added");
+        URHO3D_LOGWARNING("Connection {} is already added", connection->ToString());
         assert(0);
     }
 
@@ -248,17 +258,22 @@ void ServerNetworkManager::AddConnection(AbstractConnection* connection)
     data.comfirmedPings_.set_capacity(settings_.numInitialPings_);
     data.comfirmedPingsSorted_.set_capacity(settings_.numInitialPings_);
     data.pendingPings_.set_capacity(settings_.maxOngoingPings_);
+    data.feedbackDelay_.set_capacity(settings_.numFeedbackDelaySamples_);
+    data.feedbackDelaySorted_.set_capacity(settings_.numFeedbackDelaySamples_);
+
+    URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
 
 void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
 {
     if (!connections_.contains(connection))
     {
-        URHO3D_LOGWARNING("Connection is not added");
+        URHO3D_LOGWARNING("Connection {} is not added", connection->ToString());
         assert(0);
     }
 
     connections_.erase(connection);
+    URHO3D_LOGINFO("Connection {} is removed", connection->ToString());
 }
 
 void ServerNetworkManager::SendUpdate(ClientConnectionData& data)
@@ -355,7 +370,7 @@ void ServerNetworkManager::SendRemoveObjectsMessage(ClientConnectionData& data)
             {
                 if (!debugInfo->empty())
                     debugInfo->append(", ");
-                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkId));
+                debugInfo->append(ToString(networkId));
             }
         }
 
@@ -395,7 +410,7 @@ void ServerNetworkManager::SendAddObjectsMessage(ClientConnectionData& data)
             {
                 if (!debugInfo->empty())
                     debugInfo->append(", ");
-                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkObject->GetNetworkId()));
+                debugInfo->append(ToString(networkObject->GetNetworkId()));
             }
         }
         return sendMessage;
@@ -430,7 +445,7 @@ void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientConnectionData
             {
                 if (!debugInfo->empty())
                     debugInfo->append(", ");
-                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkObject->GetNetworkId()));
+                debugInfo->append(ToString(networkObject->GetNetworkId()));
             }
         }
         return sendMessage;
@@ -439,12 +454,14 @@ void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientConnectionData
 
 void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionData& data)
 {
-    data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+    data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, NetworkMessageFlag::None,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
-        msg.WriteUInt(currentFrame_);
-
         bool sendMessage = false;
+
+        msg.WriteUInt(currentFrame_);
+        msg.WriteVLE(data.averageFeedbackDelay_);
+
         for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
         {
             // Skip redundant updates, both if update is empty or if snapshot was already sent
@@ -465,7 +482,7 @@ void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionDa
             {
                 if (!debugInfo->empty())
                     debugInfo->append(", ");
-                debugInfo->append(NetworkManagerBase::FormatNetworkId(networkObject->GetNetworkId()));
+                debugInfo->append(ToString(networkObject->GetNetworkId()));
             }
         }
         return sendMessage;
@@ -474,53 +491,128 @@ void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionDa
 
 void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
+    ClientConnectionData& data = GetConnection(connection);
+
     switch (messageId)
     {
     case MSG_PONG:
     {
-        ClientConnectionData& data = GetConnection(connection);
         const auto& msg = ReadNetworkMessage<MsgPingPong>(messageData);
         connection->OnMessageReceived(messageId, msg);
 
-        const auto iter = ea::find_if(data.pendingPings_.begin(), data.pendingPings_.end(),
-            [&](const ClientPing& ping) { return ping.magic_ == msg.magic_; });
-        if (iter == data.pendingPings_.end())
-        {
-            URHO3D_LOGWARNING("{}: Unexpected pong received", connection->ToString(), msg.magic_);
-            break;
-        }
-
-        ClientPing& pendingPing = *iter;
-        const auto pingMs = pendingPing.timer_.GetUSec(false) / 1000 / 2;
-        data.pendingPings_.erase(iter);
-
-        if (data.comfirmedPings_.full())
-            data.comfirmedPings_.pop_front();
-        data.comfirmedPings_.push_back(pingMs);
-
-        RecalculateAvergagePing(data);
-        URHO3D_LOGTRACE("{}: Ping of {}ms added to buffer, average is {}ms", connection->ToString(), pingMs, data.averagePing_);
+        ProcessPong(data, msg);
         break;
     }
 
     case MSG_SYNCHRONIZE_ACK:
     {
-        ClientConnectionData& data = GetConnection(connection);
         const auto& msg = ReadNetworkMessage<MsgSynchronizeAck>(messageData);
         connection->OnMessageReceived(messageId, msg);
 
-        if (!data.pendingSynchronization_ || data.pendingSynchronization_ != msg.magic_)
-        {
-            URHO3D_LOGWARNING("{}: Unexpected synchronization ack received", connection->ToString(), msg.magic_);
-            break;
-        }
+        ProcessSynchronizeAck(data, msg);
+        break;
+    }
 
-        data.pendingSynchronization_ = ea::nullopt;
-        data.synchronized_ = true;
+    case MSG_OBJECTS_FEEDBACK_UNRELIABLE:
+    {
+        connection->OnMessageReceived(messageId, messageData);
+
+        ProcessObjectsFeedbackUnreliable(data, messageData);
+        break;
     }
 
     default:
         break;
+    }
+}
+
+void ServerNetworkManager::ProcessPong(ClientConnectionData& data, const MsgPingPong& msg)
+{
+    const auto iter = ea::find_if(data.pendingPings_.begin(), data.pendingPings_.end(),
+        [&](const ClientPing& ping) { return ping.magic_ == msg.magic_; });
+    if (iter == data.pendingPings_.end())
+    {
+        URHO3D_LOGWARNING("Connection {}: Unexpected pong received", data.connection_->ToString(), msg.magic_);
+        return;
+    }
+
+    ClientPing& pendingPing = *iter;
+    const auto pingMs = pendingPing.timer_.GetUSec(false) / 1000 / 2;
+    data.pendingPings_.erase(iter);
+
+    if (data.comfirmedPings_.full())
+        data.comfirmedPings_.pop_front();
+    data.comfirmedPings_.push_back(pingMs);
+
+    RecalculateAvergagePing(data);
+    URHO3D_LOGTRACE("Connection {}: Ping of {}ms added to buffer, average is {}ms", data.connection_->ToString(),
+        pingMs, data.averagePing_);
+}
+
+void ServerNetworkManager::ProcessSynchronizeAck(ClientConnectionData& data, const MsgSynchronizeAck& msg)
+{
+    if (!data.pendingSynchronization_ || data.pendingSynchronization_ != msg.magic_)
+    {
+        URHO3D_LOGWARNING(
+            "Connection {}: Unexpected synchronization ack received", data.connection_->ToString(), msg.magic_);
+        return;
+    }
+
+    data.pendingSynchronization_ = ea::nullopt;
+    data.synchronized_ = true;
+}
+
+void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData& data, MemoryBuffer& messageData)
+{
+    if (!data.synchronized_)
+    {
+        URHO3D_LOGWARNING("Connection {}: Received unexpected feedback", data.connection_->ToString());
+        return;
+    }
+
+    // Input is processed before BeginNetworkFrame, so add 1 to get actual current frame
+    const unsigned serverFrame = currentFrame_ + 1;
+    const unsigned feedbackFrame = messageData.ReadUInt();
+    while (!messageData.IsEof())
+    {
+        const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+        messageData.ReadBuffer(componentBuffer_.GetBuffer());
+
+        NetworkObject* networkObject = base_->GetNetworkObject(networkId);
+        if (!networkObject)
+        {
+            URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}",
+                data.connection_->ToString(), ToString(networkId));
+            continue;
+        }
+
+        if (networkObject->GetOwnerConnection() != data.connection_)
+        {
+            URHO3D_LOGWARNING("Connection {}: Received feedback for NetworkObject {} owned by connection #{}",
+                data.connection_->ToString(), ToString(networkId), networkObject->GetOwnerConnectionId());
+            continue;
+        }
+
+        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+        componentBuffer_.Seek(0);
+        networkObject->ReadUnreliableFeedback(serverFrame, feedbackFrame, componentBuffer_);
+    }
+
+    if (NetworkTime{feedbackFrame} - NetworkTime{data.latestFeedbackFrame_})
+    {
+        data.latestFeedbackFrame_ = feedbackFrame;
+        const unsigned delay = ea::max(0, static_cast<int>(serverFrame - feedbackFrame));
+
+        if (data.feedbackDelay_.full())
+            data.feedbackDelay_.pop_front();
+        while (!data.feedbackDelay_.full())
+            data.feedbackDelay_.push_back(delay);
+
+        data.feedbackDelaySorted_.assign(data.feedbackDelay_.begin(), data.feedbackDelay_.end());
+        ea::sort(data.feedbackDelaySorted_.begin(), data.feedbackDelaySorted_.end());
+        const auto iter = data.feedbackDelaySorted_.begin() + data.feedbackDelaySorted_.size() / 2;
+        data.averageFeedbackDelay_ = ea::accumulate(iter - 1, iter + 2, 0u) / 3; // TODO: Refactor this thing
+        //data.averageFeedbackDelay_ = *ea::max_element(data.feedbackDelay_.begin(), data.feedbackDelay_.end());
     }
 }
 
@@ -573,12 +665,18 @@ unsigned ServerNetworkManager::GetMagic(bool reliable) const
     return reliable ? (value | 1u) : (value & ~1u);
 }
 
-ea::string ServerNetworkManager::ToString() const
+ea::string ServerNetworkManager::GetDebugInfo() const
 {
     const ea::string& sceneName = scene_->GetName();
     return Format("Scene '{}': Frame #{}",
         !sceneName.empty() ? sceneName : "Unnamed",
         currentFrame_);
+}
+
+unsigned ServerNetworkManager::GetFeedbackDelay(AbstractConnection* connection) const
+{
+    const auto iter = connections_.find(connection);
+    return iter != connections_.end() ? iter->second.averageFeedbackDelay_ : 0;
 }
 
 }

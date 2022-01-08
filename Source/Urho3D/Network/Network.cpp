@@ -33,6 +33,7 @@
 #include "../IO/MemoryBuffer.h"
 #include "../Network/DefaultNetworkObject.h"
 #include "../Network/HttpRequest.h"
+#include "../Network/KinematicPlayerNetworkObject.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkPriority.h"
@@ -1065,6 +1066,9 @@ void RegisterNetworkLibrary(Context* context)
     DefaultNetworkObject::RegisterObject(context);
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
+#ifdef URHO3D_PHYSICS
+    KinematicPlayerNetworkObject::RegisterObject(context);
+#endif
 }
 
 }
