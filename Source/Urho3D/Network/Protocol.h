@@ -95,6 +95,8 @@ enum NetworkMessageId
     MSG_UPDATE_OBJECTS_RELIABLE,
     /// Server->Client:
     MSG_UPDATE_OBJECTS_UNRELIABLE,
+    /// Client->Server:
+    MSG_OBJECTS_FEEDBACK_UNRELIABLE,
 
     LAST_NETWORK_MANAGER_MSG,
     /// @}
@@ -106,6 +108,7 @@ enum NetworkMessageId
 /// ID used to identify replicated component within Scene.
 enum class NetworkId : unsigned {};
 static const NetworkId InvalidNetworkId = static_cast<NetworkId>(0);
+URHO3D_API ea::string ToString(NetworkId value);
 
 /// Package file fragment size.
 static const unsigned PACKAGE_FRAGMENT_SIZE = 1024;

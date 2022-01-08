@@ -88,6 +88,11 @@ URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
     URHO3D_PARAM(P_ACCUMULATEDTIME, AccumulatedTime);   // float
 }
 
+/// Begin the frame of network update on server.
+URHO3D_EVENT(E_BEGINSERVERNETWORKUPDATE, BeginServerNetworkUpdate)
+{
+}
+
 /// About to send network update on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
 {

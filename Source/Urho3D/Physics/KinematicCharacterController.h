@@ -50,14 +50,10 @@ public:
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
 
-    /// Return character position in world space.
-    Vector3 GetPosition() const;
-    /// Return character rotation in world space.
-    Quaternion GetRotation() const;
-    /// Set character position and rotation in world space as an atomic operation.
-    void SetTransform(const Vector3& position, const Quaternion& rotation);
-    /// Get character position and rotation in world space.
-    void GetTransform(Vector3& position, Quaternion& rotation) const;
+    /// Return character position in world space without interpolation.
+    Vector3 GetRawPosition() const;
+    /// Adjust position of kinematic body.
+    void AdjustRawPosition(const Vector3& offset);
 
     /// Set collision layer.
     void SetCollisionLayer(unsigned layer);
@@ -132,8 +128,6 @@ public:
     void SetLinearVelocity(const Vector3 &velocity);
     /// Return linear velocity.
     const Vector3 GetLinearVelocity() const;
-    /// Teleport character into new position.
-    void Warp(const Vector3 &position);
     /// Draw debug geometry.
     virtual void DrawDebugGeometry();
 
@@ -141,11 +135,14 @@ protected:
     btCapsuleShape* GetOrCreateShape();
     void ResetShape();
     void ReleaseKinematic();
-    void ApplySettings(bool reapply=false);
+    void ApplySettings(bool readdToWorld);
     void OnNodeSet(Node* node) override;
     void OnSceneSet(Scene* scene) override;
     void AddKinematicToWorld();
     void RemoveKinematicFromWorld();
+
+    /// Instantly reset character position to new value.
+    void WarpKinematic(const Vector3& position);
 
     void HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData);
     void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
@@ -173,7 +170,7 @@ protected:
     ea::unique_ptr<btKinematicCharacterController> kinematicController_;
 
     Vector3 colShapeOffset_{ Vector3::ZERO };
-    bool reapplyAttributes_{ false };
+    bool readdToWorld_{ false };
 
     Vector3 latestPosition_;
     Vector3 previousPosition_;

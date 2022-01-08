@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
 #include "../Core/Exception.h"
 #include "../IO/Log.h"
 #include "../Network/Connection.h"
@@ -218,9 +219,9 @@ ClientNetworkManager::ClientNetworkManager(NetworkManagerBase* base, Scene* scen
     , scene_(scene)
     , connection_(connection)
 {
-    SubscribeToEvent(network_, E_NETWORKINPUTPROCESSED, [this](StringHash, VariantMap& eventData)
+    SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
     {
-        using namespace NetworkInputProcessed;
+        using namespace InputReady;
         const float timeStep = eventData[P_TIMESTEP].GetFloat();
         UpdateReplica(timeStep);
     });
@@ -331,7 +332,7 @@ void ClientNetworkManager::ProcessRemoveObjects(MemoryBuffer& messageData)
         WeakPtr<NetworkObject> networkObject{ base_->GetNetworkObject(networkId) };
         if (!networkObject)
         {
-            URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", NetworkManagerBase::FormatNetworkId(networkId));
+            URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", ToString(networkId));
             continue;
         }
         networkObject->PrepareToRemove();
@@ -350,16 +351,12 @@ void ClientNetworkManager::ProcessAddObjects(MemoryBuffer& messageData)
         const unsigned ownerConnectionId = messageData.ReadVLE();
 
         messageData.ReadBuffer(componentBuffer_.GetBuffer());
-        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
-        componentBuffer_.Seek(0);
 
-        if (NetworkObject* networkObject = CreateNetworkObject(networkId, componentType))
+        const bool isOwned = ownerConnectionId == sync_->GetConnectionId();
+        if (NetworkObject* networkObject = CreateNetworkObject(networkId, componentType, isOwned))
         {
-            if (ownerConnectionId == sync_->GetConnectionId())
-                networkObject->SetNetworkMode(NetworkObjectMode::ClientOwned);
-            else
-                networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
-
+            componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+            componentBuffer_.Seek(0);
             networkObject->ReadSnapshot(messageFrame, componentBuffer_);
         }
     }
@@ -374,48 +371,62 @@ void ClientNetworkManager::ProcessUpdateObjectsReliable(MemoryBuffer& messageDat
         const StringHash componentType = messageData.ReadStringHash();
 
         messageData.ReadBuffer(componentBuffer_.GetBuffer());
-        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
-        componentBuffer_.Seek(0);
 
         if (NetworkObject* networkObject = GetCheckedNetworkObject(networkId, componentType))
+        {
+            componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+            componentBuffer_.Seek(0);
             networkObject->ReadReliableDelta(messageFrame, componentBuffer_);
+        }
     }
 }
 
 void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData)
 {
     const unsigned messageFrame = messageData.ReadUInt();
+    const unsigned feedbackDelay = messageData.ReadVLE();
+
     while (!messageData.IsEof())
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
         const StringHash componentType = messageData.ReadStringHash();
 
         messageData.ReadBuffer(componentBuffer_.GetBuffer());
-        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
-        componentBuffer_.Seek(0);
 
         if (NetworkObject* networkObject = GetCheckedNetworkObject(networkId, componentType))
-            networkObject->ReadUnreliableDelta(messageFrame, componentBuffer_);
+        {
+            componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+            componentBuffer_.Seek(0);
+            networkObject->ReadUnreliableDelta(messageFrame, messageFrame - feedbackDelay, componentBuffer_);
+        }
     }
 }
 
-NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, StringHash componentType)
+NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned)
 {
     auto networkObject = DynamicCast<NetworkObject>(context_->CreateObject(componentType));
     if (!networkObject)
     {
         URHO3D_LOGWARNING("Cannot create NetworkObject {} of type #{} '{}'",
-            NetworkManagerBase::FormatNetworkId(networkId), componentType.Value(), componentType.Reverse());
+            ToString(networkId), componentType.Value(), componentType.Reverse());
         return nullptr;
     }
     networkObject->SetNetworkId(networkId);
+
+    if (isOwned)
+    {
+        networkObject->SetNetworkMode(NetworkObjectMode::ClientOwned);
+        ownedObjects_.insert(WeakPtr<NetworkObject>(networkObject));
+    }
+    else
+        networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
 
     const unsigned networkIndex = NetworkManagerBase::DecomposeNetworkId(networkId).first;
     if (NetworkObject* oldNetworkObject = base_->GetNetworkObjectByIndex(networkIndex))
     {
         URHO3D_LOGWARNING("NetworkObject {} overwrites existing NetworkObject {}",
-            NetworkManagerBase::FormatNetworkId(networkId),
-            NetworkManagerBase::FormatNetworkId(oldNetworkObject->GetNetworkId()));
+            ToString(networkId),
+            ToString(oldNetworkObject->GetNetworkId()));
         RemoveNetworkObject(WeakPtr<NetworkObject>(oldNetworkObject));
     }
 
@@ -429,14 +440,14 @@ NetworkObject* ClientNetworkManager::GetCheckedNetworkObject(NetworkId networkId
     NetworkObject* networkObject = base_->GetNetworkObject(networkId);
     if (!networkObject)
     {
-        URHO3D_LOGWARNING("Cannot find existing NetworkObject {}", NetworkManagerBase::FormatNetworkId(networkId));
+        URHO3D_LOGWARNING("Cannot find existing NetworkObject {}", ToString(networkId));
         return nullptr;
     }
 
     if (networkObject->GetType() != componentType)
     {
         URHO3D_LOGWARNING("NetworkObject {} has unexpected type '{}', message was prepared for {}",
-            NetworkManagerBase::FormatNetworkId(networkId), networkObject->GetTypeName(),
+            ToString(networkId), networkObject->GetTypeName(),
             componentType.ToDebugString());
         return nullptr;
     }
@@ -446,6 +457,9 @@ NetworkObject* ClientNetworkManager::GetCheckedNetworkObject(NetworkId networkId
 
 void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
 {
+    if (networkObject->GetNetworkMode() == NetworkObjectMode::ClientOwned)
+        ownedObjects_.erase(networkObject);
+
     networkObject->PrepareToRemove();
     if (networkObject)
         networkObject->Remove();
@@ -475,7 +489,7 @@ unsigned ClientNetworkManager::GetPositionExtrapolationFrames() const
     return RoundToInt(settings_.positionExtrapolationTimeInSeconds_ * sync_->GetUpdateFrequency());
 }
 
-ea::string ClientNetworkManager::ToString() const
+ea::string ClientNetworkManager::GetDebugInfo() const
 {
     const ea::string& sceneName = scene_->GetName();
     return Format("Scene '{}': Estimated frame #{}",
@@ -499,7 +513,42 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
     }
 
     if (isNewFrame)
+    {
         network_->SendEvent(E_NETWORKCLIENTUPDATE);
+        SendObjectsFeedbackUnreliable(sync_->GetSmoothClientTime().GetFrame());
+    }
+}
+
+void ClientNetworkManager::SendObjectsFeedbackUnreliable(unsigned feedbackFrame)
+{
+    connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, NetworkMessageFlag::None,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        msg.WriteUInt(feedbackFrame);
+
+        bool sendMessage = false;
+        for (NetworkObject* networkObject : ownedObjects_)
+        {
+            if (!networkObject)
+                continue;
+
+            componentBuffer_.Clear();
+            if (networkObject->WriteUnreliableFeedback(feedbackFrame, componentBuffer_))
+            {
+                sendMessage = true;
+                msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+                msg.WriteBuffer(componentBuffer_.GetBuffer());
+            }
+
+            if (debugInfo)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                debugInfo->append(ToString(networkObject->GetNetworkId()));
+            }
+        }
+        return sendMessage;
+    });
 }
 
 }

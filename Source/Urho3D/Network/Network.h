@@ -122,6 +122,12 @@ public:
     /// @property
     float GetSimulatedPacketLoss() const { return simulatedPacketLoss_; }
 
+    /// Return the amount of time that happened after fixed-time network update.
+    float GetUpdateOvertime() const { return updateAcc_; }
+
+    /// Return whether the network is updated on this frame.
+    bool IsUpdateNow() const { return updateNow_; }
+
     /// Return a client or server connection by RakNet connection address, or null if none exist.
     Connection* GetConnection(const SLNet::AddressOrGUID& connection) const;
     /// Return the connection to the server. Null if not connected.

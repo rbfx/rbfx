@@ -44,7 +44,7 @@ public:
     void SetFollowerFrequency(unsigned followerFrequency);
     void Update(float timeStep, ea::optional<float> leaderResetValue);
 
-    unsigned GetFollowerSteps() const { return numPendingSubsteps_; }
+    unsigned GetPendingFollowerSteps() const { return numPendingSubsteps_; }
     unsigned GetFollowerFrequency() const { return followerFrequency_; }
     float GetFollowerAccumulatedTime() const { return timeAccumulator_; }
 
@@ -76,6 +76,7 @@ protected:
     SharedPtr<Object> eventListener_;
 
     bool wasUpdateEnabled_{};
+    bool wasInterpolated_{};
 #endif
 };
 

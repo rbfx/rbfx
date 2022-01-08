@@ -1139,7 +1139,7 @@ int Connection::GetPacketsOutPerSec() const
 
 ea::string Connection::ToString() const
 {
-    return GetAddress() + ":" + ea::to_string(GetPort());
+    return Format("#{} {}:{}", GetObjectID(), GetAddress(), GetPort());
 }
 
 unsigned Connection::GetNumDownloads() const

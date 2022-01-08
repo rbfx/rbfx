@@ -51,6 +51,13 @@ struct ClientPing
     HiresTimer timer_;
 };
 
+struct ClientObjectFeedback
+{
+    NetworkTime feedbackTime_{};
+    unsigned offset_{};
+    unsigned size_{};
+};
+
 /// Per-connection data for server.
 struct ClientConnectionData
 {
@@ -73,6 +80,11 @@ struct ClientConnectionData
 
     ea::vector<NetworkId> pendingRemovedComponents_;
     ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
+
+    ea::ring_buffer<unsigned> feedbackDelay_{};
+    ea::vector<unsigned> feedbackDelaySorted_;
+    unsigned averageFeedbackDelay_{};
+    unsigned latestFeedbackFrame_{};
 };
 
 /// Server settings for NetworkManager.
@@ -86,6 +98,8 @@ struct ServerNetworkManagerSettings
     unsigned clockIntervalMs_{ 250 };
     unsigned numOngoingClockSamples_{ 21 };
     unsigned numTrimmedClockSamples_{ 3 };
+
+    unsigned numFeedbackDelaySamples_{ 31 };
 
     float relevanceTimeout_{ 5.0f };
     float traceDurationInSeconds_{ 3.0f };
@@ -143,7 +157,8 @@ public:
     void SetTestPing(AbstractConnection* connection, unsigned ping);
     void SetCurrentFrame(unsigned frame);
 
-    ea::string ToString() const;
+    ea::string GetDebugInfo() const;
+    unsigned GetFeedbackDelay(AbstractConnection* connection) const;
     NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
     unsigned GetCurrentFrame() const { return currentFrame_; }
     unsigned GetTraceCapacity() const { return CeilToInt(settings_.traceDurationInSeconds_ * updateFrequency_); }
@@ -152,6 +167,7 @@ private:
     using DeltaBufferSpan = ea::pair<unsigned, unsigned>;
 
     void BeginNetworkFrame();
+    void PrepareNetworkFrame();
     void UpdateClocks(float timeStep);
     void CollectObjectsToUpdate(float timeStep);
     void PrepareDeltaUpdates();
@@ -165,6 +181,10 @@ private:
     void SendAddObjectsMessage(ClientConnectionData& data);
     void SendUpdateObjectsReliableMessage(ClientConnectionData& data);
     void SendUpdateObjectsUnreliableMessage(ClientConnectionData& data);
+
+    void ProcessPong(ClientConnectionData& data, const MsgPingPong& msg);
+    void ProcessSynchronizeAck(ClientConnectionData& data, const MsgSynchronizeAck& msg);
+    void ProcessObjectsFeedbackUnreliable(ClientConnectionData& data, MemoryBuffer& messageData);
 
     ClientConnectionData& GetConnection(AbstractConnection* connection);
 

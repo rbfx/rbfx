@@ -112,8 +112,8 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
     if (oldNetworkObject)
     {
         URHO3D_LOGWARNING("NetworkObject {} is overriden by NetworkObject {}",
-            FormatNetworkId(oldNetworkObject->GetNetworkId()),
-            FormatNetworkId(networkId));
+            ToString(oldNetworkObject->GetNetworkId()),
+            ToString(networkId));
 
         RemoveComponent(oldNetworkObject);
     }
@@ -123,7 +123,7 @@ void NetworkManagerBase::AddComponent(NetworkObject* networkObject)
     recentlyAddedComponents_.insert(networkId);
     networkObjects_[index] = networkObject;
 
-    URHO3D_LOGINFO("NetworkObject {} is added", FormatNetworkId(networkId));
+    URHO3D_LOGINFO("NetworkObject {} is added", ToString(networkId));
 }
 
 void NetworkManagerBase::RemoveComponent(NetworkObject* networkObject)
@@ -138,7 +138,7 @@ void NetworkManagerBase::RemoveComponent(NetworkObject* networkObject)
 
     if (GetNetworkObject(networkId) != networkObject)
     {
-        URHO3D_LOGWARNING("Cannot remove unknown NetworkObject {}", FormatNetworkId(networkId));
+        URHO3D_LOGWARNING("Cannot remove unknown NetworkObject {}", ToString(networkId));
         return;
     }
 
@@ -152,7 +152,7 @@ void NetworkManagerBase::RemoveComponent(NetworkObject* networkObject)
     networkObjectsDirty_[index] = true;
     indexAllocator_.Release(index);
 
-    URHO3D_LOGINFO("NetworkObject {} is removed", FormatNetworkId(networkId));
+    URHO3D_LOGINFO("NetworkObject {} is removed", ToString(networkId));
 }
 
 void NetworkManagerBase::QueueComponentUpdate(NetworkObject* networkObject)
@@ -160,7 +160,7 @@ void NetworkManagerBase::QueueComponentUpdate(NetworkObject* networkObject)
     const NetworkId networkId = networkObject->GetNetworkId();
     if (GetNetworkObject(networkId) != networkObject)
     {
-        URHO3D_LOGWARNING("Cannot queue update for unknown NetworkObject {}", FormatNetworkId(networkId));
+        URHO3D_LOGWARNING("Cannot queue update for unknown NetworkObject {}", ToString(networkId));
         return;
     }
 
@@ -233,12 +233,12 @@ void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>&
     }
 }
 
-ea::string NetworkManagerBase::ToString() const
+ea::string NetworkManagerBase::GetDebugInfo() const
 {
     if (server_)
-        return server_->ToString();
+        return server_->GetDebugInfo();
     else if (client_)
-        return client_->ToString();
+        return client_->GetDebugInfo();
     else
         return "";
 }
@@ -267,12 +267,6 @@ ea::pair<unsigned, unsigned> NetworkManagerBase::DecomposeNetworkId(NetworkId ne
 {
     const auto value = static_cast<unsigned>(networkId);
     return { (value >> IndexOffset) & IndexMask, (value >> VersionOffset) & VersionMask };
-}
-
-ea::string NetworkManagerBase::FormatNetworkId(NetworkId networkId)
-{
-    const auto [index, version] = DecomposeNetworkId(networkId);
-    return networkId == InvalidNetworkId ? "Undefined" : Format("{}:{}", index, version);
 }
 
 NetworkManager::NetworkManager(Scene* scene)

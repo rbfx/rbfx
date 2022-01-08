@@ -135,7 +135,7 @@ void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
         else
         {
             URHO3D_LOGERROR("Cannot assign NetworkObject {} to unknown parent NetworkObject {}",
-                NetworkManagerBase::FormatNetworkId(GetNetworkId()), NetworkManagerBase::FormatNetworkId(parentNetworkId));
+                ToString(GetNetworkId()), ToString(parentNetworkId));
         }
     }
     else
@@ -193,18 +193,22 @@ void NetworkObject::OnTransformDirty()
 {
 }
 
-void NetworkObject::WriteSnapshot(unsigned frame, VectorBuffer& dest)
+void NetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
 {
 }
 
-bool NetworkObject::WriteReliableDelta(unsigned frame, VectorBuffer& dest)
+bool NetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
 {
     return false;
 }
 
-bool NetworkObject::WriteUnreliableDelta(unsigned frame, VectorBuffer& dest)
+bool NetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& dest)
 {
     return false;
+}
+
+void NetworkObject::ReadUnreliableFeedback(unsigned currentFrame, unsigned feedbackFrame, Deserializer& src)
+{
 }
 
 void NetworkObject::InterpolateState(const NetworkTime& time, bool isNewFrame)
@@ -217,16 +221,21 @@ void NetworkObject::PrepareToRemove()
         node_->Remove();
 }
 
-void NetworkObject::ReadSnapshot(unsigned frame, VectorBuffer& src)
+void NetworkObject::ReadSnapshot(unsigned frame, Deserializer& src)
 {
 }
 
-void NetworkObject::ReadReliableDelta(unsigned frame, VectorBuffer& src)
+void NetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
 {
 }
 
-void NetworkObject::ReadUnreliableDelta(unsigned frame, VectorBuffer& src)
+void NetworkObject::ReadUnreliableDelta(unsigned frame, unsigned feedbackFrame, Deserializer& src)
 {
+}
+
+bool NetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
+{
+    return false;
 }
 
 }

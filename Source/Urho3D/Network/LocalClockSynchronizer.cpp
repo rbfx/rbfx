@@ -108,7 +108,9 @@ PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networ
     if (physicsWorld_)
     {
         wasUpdateEnabled_ = physicsWorld_->IsUpdateEnabled();
+        wasInterpolated_ = physicsWorld_->GetInterpolation();
         physicsWorld_->SetUpdateEnabled(false);
+        physicsWorld_->SetInterpolation(interpolated_);
     }
 
     eventListener_->SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, [this](StringHash, VariantMap&)
@@ -122,7 +124,10 @@ PhysicsClockSynchronizer::~PhysicsClockSynchronizer()
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
+    {
         physicsWorld_->SetUpdateEnabled(wasUpdateEnabled_);
+        physicsWorld_->SetInterpolation(wasInterpolated_);
+    }
 #endif
 }
 
@@ -145,7 +150,7 @@ void PhysicsClockSynchronizer::UpdatePhysics()
 
     const float fixedTimeStep = 1.0f / sync_.GetFollowerFrequency();
     const float overtime = interpolated_ ? sync_.GetFollowerAccumulatedTime() : 0.0f;
-    physicsWorld_->CustomUpdate(sync_.GetFollowerSteps(), fixedTimeStep, overtime);
+    physicsWorld_->CustomUpdate(sync_.GetPendingFollowerSteps(), fixedTimeStep, overtime);
 #endif
 }
 

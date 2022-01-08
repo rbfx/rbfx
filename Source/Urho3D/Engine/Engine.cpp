@@ -735,11 +735,15 @@ void Engine::Update()
 {
     URHO3D_PROFILE("Update");
 
-    // Logic update event
     using namespace Update;
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_TIMESTEP] = timeStep_;
+
+    // Pre-update event that indicates
+    SendEvent(E_INPUTREADY, eventData);
+
+    // Logic update event
     SendEvent(E_UPDATE, eventData);
 
     // Logic post-update event

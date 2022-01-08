@@ -33,6 +33,9 @@
 namespace Tests
 {
 
+// For easier debugging
+unsigned currentSimulationStep = 0;
+
 ManualConnection::ManualConnection(Context* context, NetworkManager* sink, unsigned seed)
     : AbstractConnection(context)
     , sink_(sink)
@@ -193,7 +196,10 @@ void NetworkSimulator::SimulateTime(float time, unsigned millisecondsInQuant)
     REQUIRE(numSteps == numStepsRaw);
 
     for (unsigned i = 0; i < numSteps; ++i)
+    {
+        currentSimulationStep = i;
         SimulateEngineFrame(timeStep);
+    }
 }
 
 AbstractConnection* NetworkSimulator::GetServerToClientConnection(Scene* clientScene)

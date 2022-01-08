@@ -34,6 +34,12 @@ URHO3D_EVENT(E_BEGINFRAME, BeginFrame)
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 }
 
+/// Pre-update event that indicates that both local and network input has been processed.
+URHO3D_EVENT(E_INPUTREADY, InputReady)
+{
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+}
+
 /// Application-wide logic update event.
 URHO3D_EVENT(E_UPDATE, Update)
 {
