@@ -400,6 +400,8 @@ void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageD
             networkObject->ReadUnreliableDelta(messageFrame, messageFrame - feedbackDelay, componentBuffer_);
         }
     }
+
+    latestFeedbackDelay_ = feedbackDelay;
 }
 
 NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned)
@@ -491,10 +493,18 @@ unsigned ClientNetworkManager::GetPositionExtrapolationFrames() const
 
 ea::string ClientNetworkManager::GetDebugInfo() const
 {
-    const ea::string& sceneName = scene_->GetName();
-    return Format("Scene '{}': Estimated frame #{}",
-        !sceneName.empty() ? sceneName : "Unnamed",
-        GetCurrentFrame());
+    if (!sync_)
+        return "Pending synchronization...\n";
+
+    ea::string result;
+
+    result += Format("Scene '{}': Time #{}-{:.1f}ms, Feedback Delay {} frames\n",
+        !scene_->GetName().empty() ? scene_->GetName() : "Unnamed",
+        GetServerTime().GetFrame(),
+        (GetServerTime() - GetClientTime()) / sync_->GetUpdateFrequency() * 1000.0f,
+        latestFeedbackDelay_);
+
+    return result;
 }
 
 void ClientNetworkManager::UpdateReplica(float timeStep)

@@ -97,7 +97,7 @@ void KinematicPlayerNetworkObject::InterpolateState(const NetworkTime& time, boo
     {
         if (isNewFrame)
         {
-            const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO: Remove before merge!!!
+            const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
             kinematicController_->SetWalkDirection(velocity_ * timeStep);
 
             trackNextStepAsFrame_ = time.GetFrame();
@@ -138,7 +138,9 @@ void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(
     const Vector3 offset = *confirmedPosition - predictedPosition;
     if (!offset.Equals(Vector3::ZERO, 0.001f))
     {
-        kinematicController_->AdjustRawPosition(offset);
+        const auto networkManager = GetClientNetworkManager();
+        const float smoothConstant = networkManager->GetSettings().positionSmoothConstant_;
+        kinematicController_->AdjustRawPosition(offset, smoothConstant);
         predictedWorldPositions_.clear();
         //for (auto& [predictionFrame, otherPredictedPosition] : predictedWorldPositions_)
         //    otherPredictedPosition += offset;
@@ -155,7 +157,7 @@ void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin()
         if (const auto newVelocity = feedbackVelocity_.GetRaw(feedbackFrame))
         {
             auto kinematicController = node_->GetComponent<KinematicCharacterController>();
-            const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO: Remove before merge!!!
+            const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
             kinematicController->SetWalkDirection(*newVelocity * timeStep);
         }
     }

@@ -329,7 +329,7 @@ void PhysicsWorld::Update(float timeStep)
 
     delayedWorldTransforms_.clear();
     simulating_ = true;
-    PreUpdate();
+    PreUpdate(timeStep);
 
     if (interpolation_)
         world_->stepSimulation(timeStep, maxSubSteps, internalTimeStep);
@@ -344,7 +344,7 @@ void PhysicsWorld::Update(float timeStep)
         }
     }
 
-    PostUpdate(world_->getLocalTime());
+    PostUpdate(timeStep, world_->getLocalTime());
     simulating_ = false;
     ApplyDelayedWorldTransforms();
 }
@@ -374,15 +374,16 @@ void PhysicsWorld::ApplyDelayedWorldTransforms()
 void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime)
 {
     URHO3D_PROFILE("UpdatePhysics");
+    const float timeStep = numSteps * fixedTimeStep + overtime;
 
     delayedWorldTransforms_.clear();
     simulating_ = true;
-    PreUpdate();
+    PreUpdate(timeStep);
 
     timeAcc_ = overtime;
     world_->customStepSimulation(numSteps, fixedTimeStep, overtime);
 
-    PostUpdate(overtime);
+    PostUpdate(timeStep, overtime);
     simulating_ = false;
     ApplyDelayedWorldTransforms();
 }
@@ -884,21 +885,23 @@ void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& 
     Update(eventData[P_TIMESTEP].GetFloat());
 }
 
-void PhysicsWorld::PreUpdate()
+void PhysicsWorld::PreUpdate(float timeStep)
 {
     using namespace PhysicsPreUpdate;
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WORLD] = this;
+    eventData[P_TIMESTEP] = timeStep;
     SendEvent(E_PHYSICSPREUPDATE, eventData);
 }
 
-void PhysicsWorld::PostUpdate(float overtime)
+void PhysicsWorld::PostUpdate(float timeStep, float overtime)
 {
     using namespace PhysicsPostUpdate;
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WORLD] = this;
+    eventData[P_TIMESTEP] = timeStep;
     eventData[P_OVERTIME] = overtime;
     SendEvent(E_PHYSICSPOSTUPDATE, eventData);
 }

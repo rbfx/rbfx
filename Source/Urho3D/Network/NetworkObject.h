@@ -116,7 +116,7 @@ public:
     /// Prepare to this compnent being removed by the authority of the server.
     virtual void PrepareToRemove();
     /// Read full snapshot.
-    virtual void ReadSnapshot(unsigned frame, Deserializer& src); // TODO: Rename to InitializeFromSnapshot?
+    virtual void ReadSnapshot(unsigned frame, Deserializer& src); // TODO(network): Rename to InitializeFromSnapshot?
     /// Read reliable delta update. Delta is applied to previous reliable delta or snapshot message.
     virtual void ReadReliableDelta(unsigned frame, Deserializer& src);
     /// Read unreliable delta update.

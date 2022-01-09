@@ -131,7 +131,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(1.0f);
 
     // Expect server and client positions to match
-    REQUIRE(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), M_EPSILON));
+    REQUIRE(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), 0.001)); // TODO(network): Reuse constant
 }
 
 TEST_CASE("Client-side prediction is stable when latency is stable")
