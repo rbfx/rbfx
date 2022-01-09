@@ -52,6 +52,7 @@ struct ClientSynchronizationSettings
 
     float minTimeStepScale_{ 0.5f };
     float maxTimeStepScale_{ 2.0f };
+    float positionSmoothConstant_{ 15.0f };
 };
 
 struct ClientNetworkManagerSettings : public ClientSynchronizationSettings
@@ -182,6 +183,7 @@ private:
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;
 
     VectorBuffer componentBuffer_;
+    unsigned latestFeedbackDelay_{};
 };
 
 }

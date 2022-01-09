@@ -614,9 +614,9 @@ void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData
         const unsigned newFeedbackDelay = *iter;
 
         // If delay is decreased just by 1, don't.
-        // TODO: Use additional percentile to check?
+        // TODO(network): Use additional percentile to check?
         if (newFeedbackDelay + 1 != data.averageFeedbackDelay_)
-            data.averageFeedbackDelay_ = newFeedbackDelay; // TODO: Refactor this thing
+            data.averageFeedbackDelay_ = newFeedbackDelay; // TODO(network): Refactor this thing
         //data.averageFeedbackDelay_ = *ea::max_element(data.feedbackDelay_.begin(), data.feedbackDelay_.end());
     }
 }
@@ -672,10 +672,19 @@ unsigned ServerNetworkManager::GetMagic(bool reliable) const
 
 ea::string ServerNetworkManager::GetDebugInfo() const
 {
-    const ea::string& sceneName = scene_->GetName();
-    return Format("Scene '{}': Frame #{}",
-        !sceneName.empty() ? sceneName : "Unnamed",
+    ea::string result;
+
+    result += Format("Scene '{}': Time #{}\n",
+        !scene_->GetName().empty() ? scene_->GetName() : "Unnamed",
         currentFrame_);
+
+    for (const auto& [connection, data] : connections_)
+    {
+        result += Format("Connection {}: Ping {}ms, Feedback Delay {} frames\n",
+            connection->ToString(), data.averagePing_, data.averageFeedbackDelay_);
+    }
+
+    return result;
 }
 
 unsigned ServerNetworkManager::GetFeedbackDelay(AbstractConnection* connection) const

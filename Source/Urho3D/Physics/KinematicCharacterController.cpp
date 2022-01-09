@@ -160,12 +160,17 @@ void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType,
 {
     if (physicsWorld_ && physicsWorld_->GetInterpolation())
     {
+        const float timeStep = eventData[PhysicsPostUpdate::P_TIMESTEP].GetFloat();
         const float overtime = eventData[PhysicsPostUpdate::P_OVERTIME].GetFloat();
         const float updateFrequency = physicsWorld_->GetFps();
-        latestPosition_ = Lerp(previousPosition_, nextPosition_, overtime * updateFrequency);
+        const float smoothConstant = 1.0f - Clamp(powf(2.0f, -timeStep * smoothingConstant_), 0.0f, 1.0f);
+        positionOffset_ = Lerp(positionOffset_, Vector3::ZERO, smoothConstant);
+        latestPosition_ = Lerp(previousPosition_, nextPosition_, overtime * updateFrequency) + positionOffset_;
     }
     else
+    {
         latestPosition_ = nextPosition_;
+    }
 
     node_->SetWorldPosition(latestPosition_);
 }
@@ -294,15 +299,17 @@ Vector3 KinematicCharacterController::GetRawPosition() const
     return ToVector3(t.getOrigin()) - colShapeOffset_;
 }
 
-void KinematicCharacterController::AdjustRawPosition(const Vector3& offset)
+void KinematicCharacterController::AdjustRawPosition(const Vector3& offset, float smoothConstant)
 {
+    smoothingConstant_ = smoothConstant;
+    positionOffset_ -= offset;
     WarpKinematic(GetRawPosition() + offset);
-    node_->SetWorldPosition(GetRawPosition());
+    node_->SetWorldPosition(latestPosition_);
 }
 
 void KinematicCharacterController::WarpKinematic(const Vector3& position)
 {
-    latestPosition_ = position;
+    latestPosition_ = position + positionOffset_;
     previousPosition_ = position;
     nextPosition_ = position;
 

@@ -53,7 +53,7 @@ public:
     /// Return character position in world space without interpolation.
     Vector3 GetRawPosition() const;
     /// Adjust position of kinematic body.
-    void AdjustRawPosition(const Vector3& offset);
+    void AdjustRawPosition(const Vector3& offset, float smoothConstant);
 
     /// Set collision layer.
     void SetCollisionLayer(unsigned layer);
@@ -172,9 +172,16 @@ protected:
     Vector3 colShapeOffset_{ Vector3::ZERO };
     bool readdToWorld_{ false };
 
-    Vector3 latestPosition_;
+    /// Offset used for smooth Node position adjustment.
+    Vector3 positionOffset_;
+    /// Constant used to fade out position offset.
+    float smoothingConstant_{};
+    /// Position used for interpolation and the final result.
+    /// @{
     Vector3 previousPosition_;
     Vector3 nextPosition_;
+    Vector3 latestPosition_;
+    /// @}
 };
 
 }

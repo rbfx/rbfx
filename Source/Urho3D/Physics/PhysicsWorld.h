@@ -316,9 +316,9 @@ private:
     /// Handle the scene subsystem update event, step simulation here.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
     /// Trigger before physics update, before any of simulation steps.
-    void PreUpdate();
+    void PreUpdate(float timeStep);
     /// Trigger after physics update, after all of simulation steps.
-    void PostUpdate(float overtime);
+    void PostUpdate(float timeStep, float overtime);
     /// Trigger update before each physics simulation step.
     void PreStep(float timeStep);
     /// Trigger update after each physics simulation step.

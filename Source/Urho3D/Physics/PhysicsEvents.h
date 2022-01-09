@@ -31,6 +31,7 @@ namespace Urho3D
 URHO3D_EVENT(E_PHYSICSPREUPDATE, PhysicsPreUpdate)
 {
     URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 };
 
 /// Physics world has been updated. There may have been zero, one, or more physics steps evaluated.
@@ -38,6 +39,7 @@ URHO3D_EVENT(E_PHYSICSPREUPDATE, PhysicsPreUpdate)
 URHO3D_EVENT(E_PHYSICSPOSTUPDATE, PhysicsPostUpdate)
 {
     URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
     URHO3D_PARAM(P_OVERTIME, Overtime);            // float
 };
 
