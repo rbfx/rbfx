@@ -37,9 +37,9 @@ const Quaternion Quaternion::ZERO{ 0.0f, 0.0f, 0.0f, 0.0f };
 void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
 {
     Vector3 normAxis = axis.Normalized();
-    angle *= M_DEGTORAD_2;
-    float sinAngle = sinf(angle);
-    float cosAngle = cosf(angle);
+    float sinAngle;
+    float cosAngle;
+    SinCos2(angle, sinAngle, cosAngle);
 
     w_ = cosAngle;
     x_ = normAxis.x_ * sinAngle;
@@ -50,15 +50,15 @@ void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
 void Quaternion::FromEulerAngles(float x, float y, float z)
 {
     // Order of rotations: Z first, then X, then Y (mimics typical FPS camera with gimbal lock at top/bottom)
-    x *= M_DEGTORAD_2;
-    y *= M_DEGTORAD_2;
-    z *= M_DEGTORAD_2;
-    float sinX = sinf(x);
-    float cosX = cosf(x);
-    float sinY = sinf(y);
-    float cosY = cosf(y);
-    float sinZ = sinf(z);
-    float cosZ = cosf(z);
+    float sinX;
+    float cosX;
+    float sinY;
+    float cosY;
+    float sinZ;
+    float cosZ;
+    SinCos2(x, sinX, cosX);
+    SinCos2(y, sinY, cosY);
+    SinCos2(z, sinZ, cosZ);
 
     w_ = cosY * cosX * cosZ + sinY * sinX * sinZ;
     x_ = cosY * sinX * cosZ + sinY * cosX * sinZ;
