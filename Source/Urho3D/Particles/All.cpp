@@ -66,6 +66,7 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     LimitVelocity::RegisterObject(system);
     ApplyForce::RegisterObject(system);
     Normalized::RegisterObject(system);
+    Length::RegisterObject(system);
 }
 
 }

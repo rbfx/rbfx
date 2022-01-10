@@ -1,5 +1,6 @@
+
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,53 +21,39 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "Helpers.h"
-#include "Add.h"
-#include "ApplyForce.h"
-#include "BurstTimer.h"
-#include "LimitVelocity.h"
-#include "Slerp.h"
-#include "Attribute.h"
-#include "Bounce.h"
-#include "Cone.h"
-#include "Hemisphere.h"
-#include "Sphere.h"
-#include "Constant.h"
-#include "Curve.h"
-#include "Destroy.h"
-#include "Emit.h"
-#include "Print.h"
-#include "Random.h"
-#include "RenderBillboard.h"
-#include "RenderMesh.h"
-#include "Uniform.h"
-#include "ApplyForce.h"
-#include "BurstTimer.h"
-#include "Expire.h"
-#include "LimitVelocity.h"
-#include "EffectTime.h"
-#include "NormalizedEffectTime.h"
-#include "TimeStep.h"
-#include "Divide.h"
-#include "Lerp.h"
-#include "Make.h"
-#include "Move.h"
-#include "Multiply.h"
-#include "Negate.h"
-#include "Subtract.h"
-#include "TimeStepScale.h"
-#include "Normalized.h"
+#include "../Precompiled.h"
 #include "Length.h"
+#include "LengthInstance.h"
+#include "ParticleGraphSystem.h"
 
 namespace Urho3D
 {
-class ParticleGraphSystem;
-
 namespace ParticleGraphNodes
 {
-void RegisterGraphNodes(ParticleGraphSystem* context);
+void Length::RegisterObject(ParticleGraphSystem* context)
+{
+    context->AddReflection<Length>();
 }
 
+namespace {
+static ea::vector<NodePattern> LengthPatterns{
+    MakePattern(
+        LengthInstance<Vector3, Vector3>()
+        , PinPattern<Vector3>("x")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
+        LengthInstance<Vector2, Vector2>()
+        , PinPattern<Vector2>("x")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+    ),
+};
+} // namespace
+
+Length::Length(Context* context)
+    : PatternMatchingNode(context, LengthPatterns)
+{
+}
+
+} // namespace ParticleGraphNodes
 } // namespace Urho3D
