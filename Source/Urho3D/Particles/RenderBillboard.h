@@ -78,6 +78,13 @@ public:
     /// @property
     int GetFaceCameraMode() const;
 
+    /// Set Sort By Distance.
+    /// @property
+    void SetSortByDistance(bool value);
+    /// Get Sort By Distance.
+    /// @property
+    bool GetSortByDistance() const;
+
     /// Set Is Worldspace.
     /// @property
     void SetIsWorldspace(bool value);
@@ -89,7 +96,8 @@ protected:
     ResourceRef material_{};
     int rows_{};
     int columns_{};
-    int faceCameraMode_{FC_ROTATE_XYZ};
+    int faceCameraMode_{};
+    bool sortByDistance_{};
     bool isWorldspace_{};
 };
 

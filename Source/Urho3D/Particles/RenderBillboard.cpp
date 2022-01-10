@@ -36,7 +36,8 @@ void RenderBillboard::RegisterObject(ParticleGraphSystem* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, ResourceRef, ResourceRef{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rows", GetRows, SetRows, int, int{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Columns", GetColumns, SetColumns, int, int{}, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Face Camera Mode", GetFaceCameraMode, SetFaceCameraMode, int, (int)FC_ROTATE_XYZ, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Face Camera Mode", GetFaceCameraMode, SetFaceCameraMode, int, int{}, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Sort By Distance", GetSortByDistance, SetSortByDistance, bool, bool{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Worldspace", GetIsWorldspace, SetIsWorldspace, bool, bool{}, AM_DEFAULT);
 }
 
@@ -83,6 +84,10 @@ int RenderBillboard::GetColumns() const { return columns_; }
 void RenderBillboard::SetFaceCameraMode(int value) { faceCameraMode_ = value; }
 
 int RenderBillboard::GetFaceCameraMode() const { return faceCameraMode_; }
+
+void RenderBillboard::SetSortByDistance(bool value) { sortByDistance_ = value; }
+
+bool RenderBillboard::GetSortByDistance() const { return sortByDistance_; }
 
 void RenderBillboard::SetIsWorldspace(bool value) { isWorldspace_ = value; }
 
