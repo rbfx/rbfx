@@ -215,8 +215,9 @@ void SerializeEnum(Archive& archive, const char* name, EnumType& value, const ch
 }
 
 /// Serialize optional element or block.
+/// This block is strictly optional in all archive types, even if it leads to overhead.
 template <class T, class U = T, class TSerializer = Detail::DefaultSerializer>
-void SerializeOptionalValue(Archive& archive, const char* name, T& value, const U& defaultValue,
+void SerializeStrictlyOptionalValue(Archive& archive, const char* name, T& value, const U& defaultValue,
     const TSerializer& serializeValue = TSerializer{})
 {
     const bool loading = archive.IsInput();
@@ -233,7 +234,7 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
         SerializeValue(archive, "initialized", initialized);
 
         if (initialized)
-            SerializeValue(archive, "value", value);
+            serializeValue(archive, "value", value);
         else if (loading)
             value = defaultValue;
     }
@@ -241,10 +242,30 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
     {
         const bool initialized = loading ? archive.HasElementOrBlock(name) : value != defaultValue;
         if (initialized)
-            SerializeValue(archive, name, value);
+            serializeValue(archive, name, value);
         else if (loading)
             value = defaultValue;
     }
+}
+
+/// Serialize element or block that's optional if archive type supports it.
+/// There's no overhead on optionality if Archive doesn't support optional blocks.
+template <class T, class U = T, class TSerializer = Detail::DefaultSerializer>
+void SerializeOptionalValue(Archive& archive, const char* name, T& value, const U& defaultValue,
+    const TSerializer& serializeValue = TSerializer{})
+{
+    if (!archive.IsUnorderedAccessSupportedInCurrentBlock())
+    {
+        serializeValue(archive, name, value);
+        return;
+    }
+
+    const bool loading = archive.IsInput();
+    const bool initialized = loading ? archive.HasElementOrBlock(name) : value != defaultValue;
+    if (initialized)
+        serializeValue(archive, name, value);
+    else if (loading)
+        value = defaultValue;
 }
 
 /// Wrapper that consumes ArchiveException and converts it to boolean status.
