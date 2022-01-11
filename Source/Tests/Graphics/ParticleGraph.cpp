@@ -32,7 +32,6 @@
 #include <Urho3D/Particles/ParticleGraphEffect.h>
 #include <Urho3D/Particles/All.h>
 #include <Urho3D/Scene/Scene.h>
-#include <EASTL/span.h>
 #include <EASTL/variant.h>
 
 using namespace Urho3D;

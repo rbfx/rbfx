@@ -44,6 +44,12 @@ static ea::vector<NodePattern> MakePatterns{
         , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
+        MakeInstance<int, int, IntVector2>()
+        , PinPattern<int>("x")
+        , PinPattern<int>("y")
+        , PinPattern<IntVector2>(ParticleGraphPinFlag::Output, "out")
+    ),
+    MakePattern(
         MakeInstance<float, float, float, Vector3>()
         , PinPattern<float>("x")
         , PinPattern<float>("y")
