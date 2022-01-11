@@ -674,34 +674,38 @@ void Serializable::SerializeInBlock(Archive& archive)
 
     // Serialize attributes
     unsigned attributeIndexHint = 0;
-    SerializeVectorAsObjects(archive, "attributes", serializedAttributes, "attribute",
-        [&](Archive& archive, const char* name, ea::pair<unsigned, Variant>& value)
+    SerializeOptionalValue(archive, "attributes", serializedAttributes, {},
+        [&](Archive& archive, const char* name, auto& value)
     {
-        auto block = archive.OpenUnorderedBlock(name);
-
-        if (archive.IsInput())
+        SerializeVectorAsObjects(archive, name, value, "attribute",
+            [&](Archive& archive, const char* name, ea::pair<unsigned, Variant>& value)
         {
-            // Find attribute by name hash if loading
-            StringHash nameHash;
-            SerializeStringHash(archive, "name", nameHash, ea::string_view{});
-            value.first = reflection->GetAttributeIndex(nameHash, attributeIndexHint);
-            if (value.first != M_MAX_UNSIGNED)
-                attributeIndexHint = value.first + 1;
+            auto block = archive.OpenUnorderedBlock(name);
+
+            if (archive.IsInput())
+            {
+                // Find attribute by name hash if loading
+                StringHash nameHash;
+                SerializeStringHash(archive, "name", nameHash, ea::string_view{});
+                value.first = reflection->GetAttributeIndex(nameHash, attributeIndexHint);
+                if (value.first != M_MAX_UNSIGNED)
+                    attributeIndexHint = value.first + 1;
+                else
+                {
+                    URHO3D_LOGWARNING("Attribute {} of Serializable '{}' is not found in reflection",
+                        nameHash.ToDebugString(), reflection->GetTypeName());
+                }
+            }
             else
             {
-                URHO3D_LOGWARNING("Attribute {} of Serializable '{}' is not found in reflection",
-                    nameHash.ToDebugString(), reflection->GetTypeName());
+                // Write attribute name or name hash if saving
+                const AttributeInfo& attr = attributes[value.first];
+                StringHash nameHash = attr.nameHash_;
+                SerializeStringHash(archive, "name", nameHash, attr.name_);
             }
-        }
-        else
-        {
-            // Write attribute name or name hash if saving
-            const AttributeInfo& attr = attributes[value.first];
-            StringHash nameHash = attr.nameHash_;
-            SerializeStringHash(archive, "name", nameHash, attr.name_);
-        }
 
-        SerializeVariantInBlock(archive, value.second);
+            SerializeVariantInBlock(archive, value.second);
+        });
     });
 
     // If loading, read attributes
