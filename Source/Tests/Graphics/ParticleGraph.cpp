@@ -148,13 +148,18 @@ TEST_CASE("Test simple particle graph")
         curve->SetPinSource(0, constTIndex);
         auto curveIndex = updateGraph.Add(curve);
 
+        auto direction = MakeShared<ParticleGraphNodes::Constant>(context);
+        frame->SetValue(Vector3::UP);
+        auto directionIndex = updateGraph.Add(frame);
+
         auto render = MakeShared<ParticleGraphNodes::RenderBillboard>(context);
-        render->SetMaterial(material);
+        render->SetMaterial(ResourceRef(Material::GetTypeNameStatic(), "Materials/DefaultGrey.xml"));
         render->SetPinSource(0, curveIndex, 1);
         render->SetPinSource(1, constIndex);
         render->SetPinSource(2, frameIndex);
         render->SetPinSource(3, colorIndex);
         render->SetPinSource(4, frameIndex);
+        render->SetPinSource(5, directionIndex);
         auto renderIndex = updateGraph.Add(render);
 
     }
