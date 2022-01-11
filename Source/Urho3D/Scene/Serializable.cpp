@@ -667,7 +667,7 @@ void Serializable::SerializeInBlock(Archive& archive)
                 }
             }
 
-            if (enumsAsStrings)
+            if (enumsAsStrings && attr.enumNames_)
                 value = attr.ConvertEnumToString(value.GetUInt());
         }
     }
