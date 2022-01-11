@@ -21,15 +21,20 @@
 //
 
 #include "../CommonUtils.h"
+#include "../SceneUtils.h"
 
 #include <Urho3D/Core/VariantCurve.h>
 #include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/XMLArchive.h>
+#include <Urho3D/Scene/Scene.h>
 
 #include <catch2/catch_amalgamated.hpp>
 
@@ -282,6 +287,30 @@ SerializationTestStruct CreateTestStruct(Context* context)
     return result;
 }
 
+SharedPtr<Scene> CreateTestScene(Context* context, int numObjects)
+{
+    auto scene = MakeShared<Scene>(context);
+
+    auto cache = context->GetSubsystem<ResourceCache>();
+    scene->CreateComponent<Octree>();
+
+    for (int i = 0; i < numObjects; ++i)
+    {
+        Node* node = scene->CreateChild("Object");
+        node->SetPosition(Vector3(i * 3.0f, 0.0f, 0.0f));
+        node->SetRotation(Quaternion(i * 15.0f, Vector3::UP));
+        node->SetScale(1.5f);
+
+        Node* childNode = node->CreateChild("Child");
+        childNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
+        auto model = childNode->CreateComponent<StaticModel>();
+        model->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+        model->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
+    }
+
+    return scene;
+}
+
 void PrepareContext(Context* context)
 {
     if (!context->IsReflected<SerializableObject>())
@@ -310,7 +339,7 @@ TEST_CASE("Test structure is serialized to archive")
         auto binaryFile = MakeShared<BinaryFile>(context);
         REQUIRE(binaryFile->SaveObject("test", sourceObject));
 
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             SerializationTestStruct objectFromBinary;
             REQUIRE(binaryFile->LoadObject("test", objectFromBinary));
@@ -324,7 +353,7 @@ TEST_CASE("Test structure is serialized to archive")
         REQUIRE(xmlFile->SaveObject("test", sourceObject));
         REQUIRE(xmlFile->GetRoot().GetName() == "test");
 
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             SerializationTestStruct objectFromXML;
             REQUIRE(xmlFile->LoadObject("test", objectFromXML));
@@ -337,7 +366,7 @@ TEST_CASE("Test structure is serialized to archive")
         auto jsonFile = MakeShared<JSONFile>(context);
         REQUIRE(jsonFile->SaveObject("test", sourceObject));
 
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             SerializationTestStruct objectFromJSON;
             REQUIRE(jsonFile->LoadObject("test", objectFromJSON));
@@ -443,3 +472,50 @@ TEST_CASE("VariantCurve is serialized in Variant")
     }
 }
 
+TEST_CASE("Scene is serialized to archive")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    const auto sourceScene = CreateTestScene(context, 30);
+    REQUIRE(Tests::CompareNodes(*sourceScene, *sourceScene));
+
+    SECTION("binary archive")
+    {
+        auto binaryFile = MakeShared<BinaryFile>(context);
+        REQUIRE(binaryFile->SaveObject(*sourceScene));
+
+        for (int i = 0; i < 2; ++i)
+        {
+            auto objectFromBinary = MakeShared<Scene>(context);
+            REQUIRE(binaryFile->LoadObject(*objectFromBinary));
+            REQUIRE(Tests::CompareNodes(*sourceScene, *objectFromBinary));
+        }
+    }
+
+    SECTION("XML archive")
+    {
+        auto xmlFile = MakeShared<XMLFile>(context);
+        REQUIRE(xmlFile->SaveObject(*sourceScene));
+        REQUIRE(xmlFile->GetRoot().GetName() == "Scene");
+
+        for (int i = 0; i < 2; ++i)
+        {
+            auto objectFromXML = MakeShared<Scene>(context);
+            REQUIRE(xmlFile->LoadObject(*objectFromXML));
+            REQUIRE(Tests::CompareNodes(*sourceScene, *objectFromXML));
+        }
+    }
+
+    SECTION("JSON archive")
+    {
+        auto jsonFile = MakeShared<JSONFile>(context);
+        REQUIRE(jsonFile->SaveObject(*sourceScene));
+
+        for (int i = 0; i < 2; ++i)
+        {
+            auto objectFromJSON = MakeShared<Scene>(context);
+            REQUIRE(jsonFile->LoadObject(*objectFromJSON));
+            REQUIRE(Tests::CompareNodes(*sourceScene, *objectFromJSON));
+        }
+    }
+}
