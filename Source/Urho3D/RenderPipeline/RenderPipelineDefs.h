@@ -44,13 +44,7 @@ struct UIBatchStateKey;
 struct UIBatchStateCreateContext;
 
 /// Macro to define shader constant name. Group name doesn't serve any functional purpose.
-/// VS 2017 has bug:
-/// https://developercommunity.visualstudio.com/t/static-inline-class-variables-have-their-destructo/300686
-#if defined(_MSC_VER) && _MSC_VER <= 1916
-    #define URHO3D_SHADER_CONST(group, name) static const ConstString group##_##name{ #name }
-#else
-    #define URHO3D_SHADER_CONST(group, name) static inline const ConstString group##_##name{ #name }
-#endif
+#define URHO3D_SHADER_CONST(group, name) URHO3D_GLOBAL_CONSTANT(ConstString group##_##name{#name})
 
 /// Common parameters of rendered frame.
 struct CommonFrameInfo
