@@ -35,6 +35,11 @@ void SerializeAndDeserializeScene(Scene* scene);
 /// Return attribute value as variant.
 Variant GetAttributeValue(const ea::pair<Serializable*, unsigned>& ref);
 
+/// Compare aspects of the scene.
+bool CompareAttributeValues(const Variant& lhs, const Variant& rhs);
+bool CompareSerializables(const Serializable& lhs, const Serializable& rhs);
+bool CompareNodes(const Node& lhs, const Node& rhs);
+
 /// Weak reference to Scene node by name.
 /// Useful for tests with serialization when actual objects are recreated.
 struct NodeRef
