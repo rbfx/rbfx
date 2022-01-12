@@ -329,7 +329,7 @@ void BillboardSet::SetFaceCameraMode(FaceCameraMode mode)
         switch (faceCameraMode_)
         {
         case FC_DIRECTION: batches_[0].geometryType_ = GEOM_DIRBILLBOARD; break;
-        case FC_AXIS_ANGLE: batches_[0].geometryType_ = GEOM_ORIENTEDBILLBOARD; break;
+        case FC_AXIS_ANGLE: batches_[0].geometryType_ = GEOM_STATIC_NOINSTANCING; break;
         default: batches_[0].geometryType_ = GEOM_BILLBOARD; break;
         }
         geometryTypeUpdate_ = true;
@@ -523,8 +523,7 @@ void BillboardSet::UpdateBufferSize()
     {
         if (faceCameraMode_ == FC_AXIS_ANGLE)
         {
-            //TODO: Add tangent?
-            vertexBuffer_->SetSize(numBillboards * 4, MASK_POSITION | MASK_NORMAL | MASK_COLOR | MASK_TEXCOORD1 | MASK_TEXCOORD2, true);
+            vertexBuffer_->SetSize(numBillboards * 4, MASK_POSITION | MASK_NORMAL | MASK_COLOR | MASK_TEXCOORD1 | MASK_TANGENT, true);
             geometry_->SetVertexBuffer(0, vertexBuffer_);
         }
         else if (faceCameraMode_ == FC_DIRECTION)
@@ -734,57 +733,61 @@ void BillboardSet::BuildAxisAngleVertexBuffer(unsigned enabledBillboards, float*
         float rotation_sin, rotation_cos;
         SinCos(billboard.rotation_, rotation_sin, rotation_cos);
 
-        Matrix3 rotationMatrix(billboard.rotation_, billboard.direction_);
+        Matrix3 rot(billboard.rotation_, billboard.direction_);
+        
+        *reinterpret_cast<Vector3*>(dest) = billboard.position_ + rot * Vector3(-size.x_, size.y_);
+        dest += 3;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(2);
+        dest += 3;
+        *reinterpret_cast<unsigned*>(dest) = color;
+        ++dest;
+        *reinterpret_cast<Vector2*>(dest) = {billboard.uv_.min_.x_, billboard.uv_.max_.y_};
+        dest += 2;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(0);
+        dest += 3;
+        *dest = 1.0f;
+        ++dest;
 
-        dest[0] = billboard.position_.x_;
-        dest[1] = billboard.position_.y_;
-        dest[2] = billboard.position_.z_;
-        dest[3] = billboard.direction_.x_;
-        dest[4] = billboard.direction_.y_;
-        dest[5] = billboard.direction_.z_;
-        ((unsigned&)dest[6]) = color;
-        dest[7] = billboard.uv_.min_.x_;
-        dest[8] = billboard.uv_.min_.y_;
-        dest[9] = - size.x_;
-        dest[10] = size.y_;
 
-        dest[11] = billboard.position_.x_;
-        dest[12] = billboard.position_.y_;
-        dest[13] = billboard.position_.z_;
-        dest[14] = billboard.direction_.x_;
-        dest[15] = billboard.direction_.y_;
-        dest[16] = billboard.direction_.z_;
-        ((unsigned&)dest[17]) = color;
-        dest[18] = billboard.uv_.max_.x_;
-        dest[19] = billboard.uv_.min_.y_;
-        dest[20] = size.x_;
-        dest[21] = size.y_;
+        *reinterpret_cast<Vector3*>(dest) = billboard.position_ + rot * Vector3(size.x_, size.y_);
+        dest += 3;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(2);
+        dest += 3;
+        *reinterpret_cast<unsigned*>(dest) = color;
+        ++dest;
+        *reinterpret_cast<Vector2*>(dest) = billboard.uv_.max_;
+        dest += 2;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(0);
+        dest += 3;
+        *dest = 1.0f;
+        ++dest;
 
-        dest[22] = billboard.position_.x_;
-        dest[23] = billboard.position_.y_;
-        dest[24] = billboard.position_.z_;
-        dest[25] = billboard.direction_.x_;
-        dest[26] = billboard.direction_.y_;
-        dest[27] = billboard.direction_.z_;
-        ((unsigned&)dest[28]) = color;
-        dest[29] = billboard.uv_.max_.x_;
-        dest[30] = billboard.uv_.max_.y_;
-        dest[31] = size.x_;
-        dest[32] = - size.y_;
 
-        dest[33] = billboard.position_.x_;
-        dest[34] = billboard.position_.y_;
-        dest[35] = billboard.position_.z_;
-        dest[36] = billboard.direction_.x_;
-        dest[37] = billboard.direction_.y_;
-        dest[38] = billboard.direction_.z_;
-        ((unsigned&)dest[39]) = color;
-        dest[40] = billboard.uv_.min_.x_;
-        dest[41] = billboard.uv_.max_.y_;
-        dest[42] = - size.x_;
-        dest[43] = - size.y_;
+        *reinterpret_cast<Vector3*>(dest) = billboard.position_ + rot * Vector3(size.x_, -size.y_);
+        dest += 3;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(2);
+        dest += 3;
+        *reinterpret_cast<unsigned*>(dest) = color;
+        ++dest;
+        *reinterpret_cast<Vector2*>(dest) = {billboard.uv_.max_.x_, billboard.uv_.min_.y_};
+        dest += 2;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(0);
+        dest += 3;
+        *dest = 1.0f;
+        ++dest;
 
-        dest += 44;
+        *reinterpret_cast<Vector3*>(dest) = billboard.position_ + rot * Vector3(-size.x_, -size.y_);
+        dest += 3;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(2);
+        dest += 3;
+        *reinterpret_cast<unsigned*>(dest) = color;
+        ++dest;
+        *reinterpret_cast<Vector2*>(dest) = billboard.uv_.min_;
+        dest += 2;
+        *reinterpret_cast<Vector3*>(dest) = rot.Column(0);
+        dest += 3;
+        *dest = 1.0f;
+        ++dest;
     }
 }
 void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
@@ -850,13 +853,17 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
     if (!dest)
         return;
 
-    if (faceCameraMode_ != FC_DIRECTION)
+    if (faceCameraMode_ == FC_DIRECTION)
     {
-        BuildDefaultVertexBuffer(enabledBillboards, dest, billboardScale);
+        BuildDirectionVertexBuffer(enabledBillboards, dest, billboardScale);
+    }
+    else if (faceCameraMode_ == FC_AXIS_ANGLE)
+    {
+        BuildAxisAngleVertexBuffer(enabledBillboards, dest, billboardScale);
     }
     else
     {
-        BuildDirectionVertexBuffer(enabledBillboards, dest, billboardScale);
+        BuildDefaultVertexBuffer(enabledBillboards, dest, billboardScale);
     }
 
     vertexBuffer_->Unlock();
