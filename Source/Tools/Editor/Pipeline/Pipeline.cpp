@@ -490,10 +490,12 @@ bool Pipeline::HasFlavorSettings(const ea::string& resourceName)
     return false;
 }
 
-void Pipeline::SerializeInBlock(Archive& archive)
+void Pipeline::SerializeOptional(Archive& archive)
 {
     // TODO: Revisit
-    ConsumeArchiveException([&]
+    int dummy{};
+    SerializeOptionalValue(archive, "pipeline", dummy, AlwaysSerialize{},
+        [this](Archive& archive, const char* name, int)
     {
         auto block = archive.OpenSequentialBlock("flavors");
         for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors_.size(); i < num; i++)

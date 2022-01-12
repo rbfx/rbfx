@@ -305,9 +305,9 @@ void Project::SerializeInBlock(Archive& archive)
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
 
     int archiveVersion = version;
-    SerializeValue(archive, "version", archiveVersion);
-    SerializeValue(archive, "defaultScene", defaultScene_);
-    SerializeValue(archive, "resourcePaths", resourcePaths_);
+    SerializeOptionalValue(archive, "version", archiveVersion);
+    SerializeOptionalValue(archive, "defaultScene", defaultScene_);
+    SerializeOptionalValue(archive, "resourcePaths", resourcePaths_);
 
     if (archive.IsInput())
     {
@@ -315,7 +315,7 @@ void Project::SerializeInBlock(Archive& archive)
             path = AddTrailingSlash(path);
     }
 
-    SerializeValue(archive, "pipeline", *pipeline_);
+    pipeline_->SerializeOptional(archive);
 #if URHO3D_PLUGINS
     plugins_->SerializeAsArray(archive);
 #endif

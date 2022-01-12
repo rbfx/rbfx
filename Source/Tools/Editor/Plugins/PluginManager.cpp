@@ -261,6 +261,9 @@ void PluginManager::SerializeAsArray(Archive& archive)
     // In static builds plugins are registered manually by the user.
     SendEvent(E_REGISTERSTATICPLUGINS);
 #else
+    if (archive.IsInput() && archive.IsUnorderedAccessSupportedInCurrentBlock() && !archive.HasElementOrBlock("plugins"))
+        return;
+
     auto block = archive.OpenArrayBlock("plugins", plugins_.size());
     ea::string name;
     bool isPrivate;
