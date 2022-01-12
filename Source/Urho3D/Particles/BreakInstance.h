@@ -30,10 +30,12 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+template <typename... Value>
+struct BreakInstance
+{};
 
-class BreakInstance final : public Break::InstanceBase
+template <> struct BreakInstance<Vector3, float, float, float>
 {
-public:
     template <typename Vec, typename X, typename Y, typename Z>
     void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X x, Y y, Z z)
     {
@@ -42,6 +44,48 @@ public:
             x[i] = vec[i].x_;
             y[i] = vec[i].y_;
             z[i] = vec[i].z_;
+        }
+    }
+};
+
+template <> struct BreakInstance<Vector2, float, float>
+{
+    template <typename Vec, typename X, typename Y>
+    void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X x, Y y)
+    {
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            x[i] = vec[i].x_;
+            y[i] = vec[i].y_;
+        }
+    }
+};
+
+template <> struct BreakInstance<Quaternion, float, float, float, float>
+{
+    template <typename Vec, typename X, typename Y, typename Z, typename W>
+    void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X x, Y y, Z z, W w)
+    {
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            x[i] = vec[i].x_;
+            y[i] = vec[i].y_;
+            z[i] = vec[i].z_;
+            w[i] = vec[i].w_;
+        }
+    }
+};
+
+template <> struct BreakInstance<Quaternion, Vector3, float>
+{
+    template <typename Vec, typename X, typename Y>
+    void operator()(UpdateContext& context, unsigned numParticles, Vec vec, X axis, Y angle)
+    {
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            const Quaternion q = vec[i];
+            angle[i] = q.Angle();
+            axis[i] = q.Axis();
         }
     }
 };

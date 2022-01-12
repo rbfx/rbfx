@@ -55,7 +55,7 @@ public:
     {
         const Hemisphere* hemisphere = static_cast<Hemisphere*>(GetGraphNode());
 
-        Vector3 direction(Random(2.0f) - 1.0f, Random(2.0f) - 1.0f, Random(2.0f) - 1.0f);
+        Vector3 direction(Urho3D::Random(2.0f) - 1.0f, Urho3D::Random(2.0f) - 1.0f, Urho3D::Random(2.0f) - 1.0f);
         direction.Normalize();
         direction.z_ = Abs(direction.z_);
 
@@ -65,7 +65,7 @@ public:
 
         if (radiusThickness_ > 0.0f && emitFrom_ != EmitFrom::Surface)
         {
-            r *= 1.0f - Random() * radiusThickness_;
+            r *= 1.0f - Urho3D::Random() * radiusThickness_;
         }
         switch (emitFrom_)
         {
@@ -79,7 +79,7 @@ public:
             break;
         default:
             vel = direction;
-            pos = direction * hemisphere->GetRadius() * Pow(Random(), 1.0f / 3.0f) * 0.5f;
+            pos = direction * hemisphere->GetRadius() * Pow(Urho3D::Random(), 1.0f / 3.0f) * 0.5f;
             break;
         }
     }

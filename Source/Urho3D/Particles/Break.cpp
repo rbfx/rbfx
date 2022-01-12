@@ -35,30 +35,41 @@ void Break::RegisterObject(ParticleGraphSystem* context)
     context->AddReflection<Break>();
 }
 
+namespace {
+static ea::vector<NodePattern> BreakPatterns{
+    MakePattern(
+        BreakInstance<Vector3, float, float, float>()
+        , PinPattern<Vector3>("vec")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "x")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "y")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "z")
+    ),
+    MakePattern(
+        BreakInstance<Vector2, float, float>()
+        , PinPattern<Vector2>("vec")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "x")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "y")
+    ),
+    MakePattern(
+        BreakInstance<Quaternion, float, float, float, float>()
+        , PinPattern<Quaternion>("q")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "x")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "y")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "z")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "w")
+    ),
+    MakePattern(
+        BreakInstance<Quaternion, Vector3, float>()
+        , PinPattern<Quaternion>("q")
+        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "axis")
+        , PinPattern<float>(ParticleGraphPinFlag::Output, "angle")
+    ),
+};
+} // namespace
 
 Break::Break(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Input, "vec", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "x", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "y", ParticleGraphContainerType::Auto),
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "z", ParticleGraphContainerType::Auto),
-    })
+    : PatternMatchingNode(context, BreakPatterns)
 {
-}
-
-/// Evaluate size required to place new node instance.
-unsigned Break::EvaluateInstanceSize() const
-{
-    return sizeof(BreakInstance);
-}
-
-/// Place new instance at the provided address.
-ParticleGraphNodeInstance* Break::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
-{
-    BreakInstance* instance = new (ptr) BreakInstance();
-    instance->Init(this, layer);
-    return instance;
 }
 
 } // namespace ParticleGraphNodes

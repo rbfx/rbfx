@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "PatternMatchingNode.h"
+#include "TemplateNode.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
 
@@ -32,17 +32,65 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-class URHO3D_API Break : public PatternMatchingNode
+class CircleInstance;
+
+class URHO3D_API Circle : public TemplateNode<CircleInstance, Vector3, Vector3>
 {
-    URHO3D_OBJECT(Break, ParticleGraphNode)
+    URHO3D_OBJECT(Circle, ParticleGraphNode)
 public:
-    /// Construct Break.
-    explicit Break(Context* context);
+    /// Construct Circle.
+    explicit Circle(Context* context);
     /// Register particle node factory.
     /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
+    /// Evaluate size required to place new node instance.
+    unsigned EvaluateInstanceSize() const override;
+
+    /// Place new instance at the provided address.
+    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+
+    /// Set Radius.
+    /// @property
+    void SetRadius(float value);
+    /// Get Radius.
+    /// @property
+    float GetRadius() const;
+
+    /// Set Radius Thickness.
+    /// @property
+    void SetRadiusThickness(float value);
+    /// Get Radius Thickness.
+    /// @property
+    float GetRadiusThickness() const;
+
+    /// Set Translation.
+    /// @property
+    void SetTranslation(Vector3 value);
+    /// Get Translation.
+    /// @property
+    Vector3 GetTranslation() const;
+
+    /// Set Rotation.
+    /// @property
+    void SetRotation(Quaternion value);
+    /// Get Rotation.
+    /// @property
+    Quaternion GetRotation() const;
+
+    /// Set Scale.
+    /// @property
+    void SetScale(Vector3 value);
+    /// Get Scale.
+    /// @property
+    Vector3 GetScale() const;
+
 protected:
+    float radius_{};
+    float radiusThickness_{};
+    Vector3 translation_{};
+    Quaternion rotation_{};
+    Vector3 scale_{};
 };
 
 } // namespace ParticleGraphNodes

@@ -23,7 +23,6 @@
 #include "ParticleGraphSystem.h"
 #include "All.h"
 
-
 namespace Urho3D
 {
 
@@ -67,6 +66,8 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     ApplyForce::RegisterObject(system);
     Normalized::RegisterObject(system);
     Length::RegisterObject(system);
+    Break::RegisterObject(system);
+    Circle::RegisterObject(system);
 }
 
 }

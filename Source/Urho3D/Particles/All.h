@@ -59,6 +59,8 @@
 #include "TimeStepScale.h"
 #include "Normalized.h"
 #include "Length.h"
+#include "Break.h"
+#include "Circle.h"
 
 namespace Urho3D
 {

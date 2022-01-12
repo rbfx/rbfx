@@ -55,8 +55,8 @@ public:
     {
         const Cone* cone = static_cast<Cone*>(GetGraphNode());
 
-        const float angle = Random(360.0f);
-        const float radius = Sqrt(Random()) * Sin(Min(Max(cone->GetAngle(), 0.0f), 89.999f));
+        const float angle = Urho3D::Random(360.0f);
+        const float radius = Sqrt(Urho3D::Random()) * Sin(Min(Max(cone->GetAngle(), 0.0f), 89.999f));
         const float height = Sqrt(1.0f - radius * radius);
         const float cosinus = Cos(angle);
         const float sinus = Sin(angle);
@@ -65,7 +65,7 @@ public:
         float r = cone->GetRadius();
         if (cone->GetRadiusThickness() > 0.0f && static_cast<EmitFrom>(cone->GetFrom()) != EmitFrom::Surface)
         {
-            r *= 1.0f - Random() * cone->GetRadiusThickness();
+            r *= 1.0f - Urho3D::Random() * cone->GetRadiusThickness();
         }
         switch (static_cast<EmitFrom>(cone->GetFrom()))
         {
@@ -75,7 +75,7 @@ public:
             break;
         default:
             vel = direction;
-            pos = direction * Random(cone->GetLength()) + Vector3(cosinus * r, sinus * r, 0.0f);
+            pos = direction * Urho3D::Random(cone->GetLength()) + Vector3(cosinus * r, sinus * r, 0.0f);
             break;
         }
     }

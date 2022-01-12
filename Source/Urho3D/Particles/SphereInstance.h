@@ -55,7 +55,7 @@ public:
     {
         const Sphere* sphere = static_cast<Sphere*>(GetGraphNode());
 
-        Vector3 direction(Random(2.0f) - 1.0f, Random(2.0f) - 1.0f, Random(2.0f) - 1.0f);
+        Vector3 direction(Urho3D::Random(2.0f) - 1.0f, Urho3D::Random(2.0f) - 1.0f, Urho3D::Random(2.0f) - 1.0f);
         direction.Normalize();
 
         float r = sphere->GetRadius();
@@ -63,7 +63,7 @@ public:
         auto emitFrom_ = static_cast<EmitFrom>(sphere->GetFrom());
         if (radiusThickness_ > 0.0f && emitFrom_ != EmitFrom::Surface)
         {
-            r *= 1.0f - Random() * radiusThickness_;
+            r *= 1.0f - Urho3D::Random() * radiusThickness_;
         }
         switch (emitFrom_)
         {
@@ -77,7 +77,7 @@ public:
             break;
         default:
             vel = direction;
-            pos = direction * Pow(Random(), 1.0f / 3.0f) * 0.5f;
+            pos = direction * Pow(Urho3D::Random(), 1.0f / 3.0f) * 0.5f;
             break;
         }
     }

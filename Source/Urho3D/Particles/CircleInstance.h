@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "ParticleGraphNode.h"
-#include "ParticleGraphNodeInstance.h"
-#include "TemplateNode.h"
+#include "Cone.h"
+#include "Emitter.h"
 
 namespace Urho3D
 {
@@ -32,41 +31,43 @@ class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
-class RenderQuadInstance;
 
-class URHO3D_API RenderQuad : public TemplateNode<RenderQuadInstance, Matrix3x4>
+class CircleInstance final : public Circle::InstanceBase
 {
-    URHO3D_OBJECT(RenderQuad, ParticleGraphNode)
 public:
-    /// Construct RenderQuad.
-    explicit RenderQuad(Context* context);
-    /// Register particle node factory.
-    /// @nobind
-    static void RegisterObject(ParticleGraphSystem* context);
+    template <typename Pos, typename Vel>
+    void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
+    {
+        const Cone* cone = static_cast<Cone*>(GetGraphNode());
+        const Matrix3x4 m = Matrix3x4(cone->GetTranslation(), cone->GetRotation(), cone->GetScale());
+        const Matrix3 md = m.RotationMatrix();
 
-    /// Evaluate size required to place new node instance.
-    unsigned EvaluateInstanceSize() const override;
+        for (unsigned i = 0; i < numParticles; ++i)
+        {
+            Vector3 p, v;
+            Generate(p, v);
+            pos[i] = m * p;
+            vel[i] = md * v;
+        }
+    }
 
-    /// Place new instance at the provided address.
-    ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
+    void Generate(Vector3& pos, Vector3& vel) const
+    {
+        const Circle* cone = static_cast<Circle*>(GetGraphNode());
 
-    /// Set Material.
-    /// @property
-    void SetMaterial(ResourceRef value);
-    /// Get Material.
-    /// @property
-    ResourceRef GetMaterial() const;
+        const float angle = Urho3D::Random(360.0f);
+        const float cosinus = Cos(angle);
+        const float sinus = Sin(angle);
+        const Vector3 direction = Vector3(cosinus, sinus, 0.0f);
 
-    /// Set Is Worldspace.
-    /// @property
-    void SetIsWorldspace(bool value);
-    /// Get Is Worldspace.
-    /// @property
-    bool GetIsWorldspace() const;
-
-protected:
-    ResourceRef material_{};
-    bool isWorldspace_{};
+        float r = cone->GetRadius();
+        if (cone->GetRadiusThickness() > 0.0f)
+        {
+            r *= 1.0f - Urho3D::Random() * cone->GetRadiusThickness();
+        }
+        vel = direction;
+        pos = Vector3(cosinus * (r), sinus * (r), 0.0f);
+    }
 };
 
 } // namespace ParticleGraphNodes
