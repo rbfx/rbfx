@@ -29,6 +29,7 @@
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/PackageFile.h"
+#include "../Network/ClockSynchronizer.h"
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
@@ -103,6 +104,15 @@ void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, 
     sceneState_.connection_ = this;
     port_ = address.systemAddress.GetPort();
     SetAddressOrGUID(address);
+
+    auto network = GetSubsystem<Network>();
+    if (isClient_)
+        clock_ = ea::make_unique<ClientClockSynchronizer>(network->GetClockSyncBufferSize());
+    else
+    {
+        clock_ = ea::make_unique<ServerClockSynchronizer>(
+            network->GetPingIntervalMs(), network->GetMaxPingIntervalMs(), network->GetClockSyncBufferSize());
+    }
 }
 
 void Connection::RegisterObject(Context* context)
@@ -415,6 +425,21 @@ void Connection::SendBuffer(PacketType type)
 
 void Connection::SendAllBuffers()
 {
+    // Send clock messages at the last time to have better precision
+    if (clock_)
+    {
+        auto& buffer = outgoingBuffer_[PT_UNRELIABLE_UNORDERED];
+        while (const auto clockMessage = clock_->PollMessage())
+        {
+            SendGeneratedMessage(MSG_CLOCK_SYNC, NetworkMessageFlag::None,
+                [&](VectorBuffer& msg, ea::string* debugInfo)
+            {
+                clockMessage->Save(msg);
+                return true;
+            });
+        }
+    }
+
     SendBuffer(PT_RELIABLE_ORDERED);
     SendBuffer(PT_RELIABLE_UNORDERED);
     SendBuffer(PT_UNRELIABLE_ORDERED);
@@ -522,6 +547,16 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
             case MSG_PACKAGEINFO:
                 ProcessPackageInfo(msgID, msg);
                 break;
+
+            case MSG_CLOCK_SYNC:
+                if (clock_)
+                {
+                    ClockSynchronizerMessage clockMessage;
+                    clockMessage.Load(msg);
+                    clock_->ProcessMessage(clockMessage);
+                }
+                break;
+
             default:
                 if (networkManager_ && FIRST_NETWORK_MANAGER_MSG <= msgID && msgID < LAST_NETWORK_MANAGER_MSG)
                     networkManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg);
@@ -1140,6 +1175,21 @@ int Connection::GetPacketsOutPerSec() const
 ea::string Connection::ToString() const
 {
     return Format("#{} {}:{}", GetObjectID(), GetAddress(), GetPort());
+}
+
+bool Connection::IsClockSynchronized() const
+{
+    return clock_->IsReady();
+}
+
+unsigned Connection::RemoteToLocalTime(unsigned time) const
+{
+    return clock_->RemoteToLocal(time);
+}
+
+unsigned Connection::LocalToRemoteTime(unsigned time) const
+{
+    return clock_->LocalToRemote(time);
 }
 
 unsigned Connection::GetNumDownloads() const

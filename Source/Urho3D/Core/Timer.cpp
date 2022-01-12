@@ -26,6 +26,8 @@
 #include "../Core/Profiler.h"
 #include "../Core/Timer.h"
 
+#include <SDL/SDL_timer.h>
+
 #include <ctime>
 
 #ifdef _WIN32
@@ -73,7 +75,7 @@ Time::~Time()
 static unsigned Tick()
 {
 #ifdef _WIN32
-    return (unsigned)GetTickCount();
+    return (unsigned)SDL_GetTicks();
 #elif __EMSCRIPTEN__
     return (unsigned)emscripten_get_now();
 #else
@@ -96,7 +98,7 @@ static long long HiresTick()
 #ifndef UWP
     }
     else
-        return GetTickCount();
+        return SDL_GetTicks();
 #endif
 #elif __EMSCRIPTEN__
     return (long long)(emscripten_get_now()*1000.0);

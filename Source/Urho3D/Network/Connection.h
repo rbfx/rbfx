@@ -46,6 +46,7 @@ namespace SLNet
 namespace Urho3D
 {
 
+class ClockSynchronizer;
 class File;
 class MemoryBuffer;
 class NetworkManager;
@@ -135,10 +136,17 @@ public:
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
+    /// Implement AbstractConnection
+    /// @{
+    void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
+    ea::string ToString() const override;
+    bool IsClockSynchronized() const override;
+    unsigned RemoteToLocalTime(unsigned time) const override;
+    unsigned LocalToRemoteTime(unsigned time) const override;
+    /// @}
+
     /// Get packet type based on the message parameters
     PacketType GetPacketType(bool reliable, bool inOrder);
-    /// Send a message.
-    void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     /// Send a remote event.
     void SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Send a remote event with the specified node as sender.
@@ -258,8 +266,6 @@ public:
     /// @property
     int GetPacketsOutPerSec() const;
 
-    /// Return an address:port string.
-    ea::string ToString() const override;
     /// Return number of package downloads remaining.
     /// @property
     unsigned GetNumDownloads() const;
@@ -326,9 +332,13 @@ private:
     /// Handle all packages loaded successfully. Also called directly on MSG_LOADSCENE if there are none.
     void OnPackagesReady();
 
+    /// Utility to keep server and client clocks synchronized.
+    ea::unique_ptr<ClockSynchronizer> clock_;
     /// Scene.
     WeakPtr<Scene> scene_;
+    /// Scene replication and synchronization manager.
     WeakPtr<NetworkManager> networkManager_;
+
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.
