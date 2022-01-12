@@ -107,11 +107,11 @@ void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, 
 
     auto network = GetSubsystem<Network>();
     if (isClient_)
-        clock_ = ea::make_unique<ClientClockSynchronizer>(network->GetClockSyncBufferSize());
+        clock_ = ea::make_unique<ClientClockSynchronizer>(network->GetClockBufferSize(), network->GetPingBufferSize());
     else
     {
-        clock_ = ea::make_unique<ServerClockSynchronizer>(
-            network->GetPingIntervalMs(), network->GetMaxPingIntervalMs(), network->GetClockSyncBufferSize());
+        clock_ = ea::make_unique<ServerClockSynchronizer>(network->GetPingIntervalMs(), network->GetMaxPingIntervalMs(),
+            network->GetClockBufferSize(), network->GetPingBufferSize());
     }
 }
 

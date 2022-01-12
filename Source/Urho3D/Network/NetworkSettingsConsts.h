@@ -35,7 +35,7 @@ struct NetworkSetting
 };
 
 #define URHO3D_NETWORK_SETTING(name, defaultValue) \
-    URHO3D_GLOBAL_CONSTANT(NetworkSetting name = (NetworkSetting{#name, defaultValue})) \
+    URHO3D_GLOBAL_CONSTANT(NetworkSetting name = (NetworkSetting{ConstString{#name}, defaultValue})) \
 
 /// Return network setting or default value.
 inline const Variant& GetNetworkSetting(const VariantMap& map, const NetworkSetting& key)

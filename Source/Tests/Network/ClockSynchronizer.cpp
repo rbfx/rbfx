@@ -25,6 +25,94 @@
 
 #include <Urho3D/Network/ClockSynchronizer.h>
 
+namespace
+{
+
+class ClockSynchronizerSimulator
+{
+public:
+    ea::vector<int> predictedServerToClientOffset_;
+    ea::vector<int> predictedClientToServerOffset_;
+    ea::vector<unsigned> pingOnServer_;
+    ea::vector<unsigned> pingOnClient_;
+
+    ClockSynchronizerSimulator(ea::function<unsigned()> getRandomDelay)
+        : getRandomDelay_(getRandomDelay)
+        , serverSync_{250, 10000, 40, 10, [&]{ return serverClock_; }}
+        , clientSync_{40, 10, [&]{ return clientClock_; }}
+    {
+    }
+
+    void Simulate(unsigned totalTime, unsigned timeStep = 10)
+    {
+        predictedServerToClientOffset_.clear();
+        predictedClientToServerOffset_.clear();
+        pingOnServer_.clear();
+        pingOnClient_.clear();
+
+        const unsigned numSteps = ea::max(1u, totalTime / timeStep);
+        for (unsigned i = 0; i < numSteps; ++i)
+        {
+            SimulateTimeStep(timeStep);
+            if (serverSync_.IsReady())
+            {
+                predictedServerToClientOffset_.push_back(static_cast<int>(serverSync_.LocalToRemote(0)));
+                pingOnClient_.push_back(serverSync_.GetPing());
+            }
+            if (clientSync_.IsReady())
+            {
+                predictedClientToServerOffset_.push_back(static_cast<int>(clientSync_.LocalToRemote(0)));
+                pingOnServer_.push_back(clientSync_.GetPing());
+            }
+        }
+    };
+
+private:
+    using MessageQueue = ea::vector<ea::pair<unsigned, ClockSynchronizerMessage>>;
+
+    void SimulateTimeStep(unsigned timeStep)
+    {
+        ProcessAndRemove(serverSync_, serverClock_, clientToServerMessages_);
+        ProcessAndRemove(clientSync_, clientClock_, serverToClientMessages_);
+
+        serverClock_ += timeStep;
+        clientClock_ += timeStep;
+
+        while (const auto msg = serverSync_.PollMessage())
+            serverToClientMessages_.emplace_back(clientClock_ + getRandomDelay_(), *msg);
+
+        while (const auto msg = clientSync_.PollMessage())
+            clientToServerMessages_.emplace_back(serverClock_ + getRandomDelay_(), *msg);
+    };
+
+    static void ProcessAndRemove(ClockSynchronizer& sync, unsigned currentTime, MessageQueue& queue)
+    {
+        queue.erase(ea::remove_if(queue.begin(), queue.end(),
+            [&](const auto& timeAndMessage)
+        {
+            if (timeAndMessage.first <= currentTime)
+            {
+                sync.ProcessMessage(timeAndMessage.second);
+                return true;
+            }
+            return false;
+        }), queue.end());
+    }
+
+    ea::function<unsigned()> getRandomDelay_;
+
+    unsigned serverClock_{10000};
+    unsigned clientClock_{20000};
+
+    ServerClockSynchronizer serverSync_;
+    ClientClockSynchronizer clientSync_;
+
+    MessageQueue serverToClientMessages_;
+    MessageQueue clientToServerMessages_;
+};
+
+}
+
 TEST_CASE("System clock is synchronized between client and server")
 {
     const unsigned minDelay = 250;
@@ -34,89 +122,105 @@ TEST_CASE("System clock is synchronized between client and server")
 
     const unsigned seed = GENERATE(0, 1, 2, 3, 4);
     RandomEngine re(seed);
-    const auto getRandomDelay = [&] { return re.GetUInt(minDelay, maxDelay) + (re.GetBool(throttleChance) ? throttleDelay : 0); };
-
-    unsigned serverClock = 10000;
-    ServerClockSynchronizer serverSync{250, 10000, 40, [&]{ return serverClock; }};
-
-    unsigned clientClock = 20000;
-    ClientClockSynchronizer clientSync{40, [&]{ return clientClock; }};
-
-    ea::vector<ea::pair<unsigned, ClockSynchronizerMessage>> serverToClientMessages;
-    ea::vector<ea::pair<unsigned, ClockSynchronizerMessage>> clientToServerMessages;
-
-    const auto processAndRemove = [](ClockSynchronizer& sync, unsigned now, auto& messages)
+    const auto getRandomDelay = [&]
     {
-        messages.erase(ea::remove_if(messages.begin(), messages.end(),
-            [&](const auto& timeAndMessage)
-        {
-            if (timeAndMessage.first <= now)
-            {
-                sync.ProcessMessage(timeAndMessage.second);
-                return true;
-            }
-            return false;
-        }), messages.end());
+        const bool isThrottled = re.GetBool(throttleChance);
+        const unsigned baseDelay = re.GetUInt(minDelay, maxDelay);
+        return baseDelay + (isThrottled ? throttleDelay : 0);
     };
 
-    const auto simulateTimeStep = [&](unsigned elapsedMs)
-    {
-        processAndRemove(serverSync, serverClock, clientToServerMessages);
-        processAndRemove(clientSync, clientClock, serverToClientMessages);
-
-        serverClock += elapsedMs;
-        clientClock += elapsedMs;
-
-        while (const auto msg = serverSync.PollMessage())
-            serverToClientMessages.emplace_back(clientClock + getRandomDelay(), *msg);
-
-        while (const auto msg = clientSync.PollMessage())
-            clientToServerMessages.emplace_back(serverClock + getRandomDelay(), *msg);
-    };
-
-    ea::vector<int> predictedServerToClientOffset;
-    ea::vector<int> predictedClientToServerOffset;
-    const auto simulateTime = [&](unsigned totalMs)
-    {
-        predictedServerToClientOffset.clear();
-        predictedClientToServerOffset.clear();
-
-        const unsigned timeStep = 10;
-        const unsigned numSteps = ea::max(1u, totalMs / timeStep);
-        for (unsigned i = 0; i < numSteps; ++i)
-        {
-            simulateTimeStep(timeStep);
-            if (serverSync.IsReady())
-                predictedServerToClientOffset.push_back(static_cast<int>(serverSync.LocalToRemote(0)));
-            if (clientSync.IsReady())
-                predictedClientToServerOffset.push_back(static_cast<int>(clientSync.LocalToRemote(0)));
-        }
-    };
+    ClockSynchronizerSimulator sim{getRandomDelay};
 
     // Expect time somewhat synchronized
-    simulateTime(2000);
+    sim.Simulate(2000);
 
-    REQUIRE(predictedServerToClientOffset.back() >= 9900);
-    REQUIRE(predictedServerToClientOffset.back() <= 10100);
+    REQUIRE(sim.predictedServerToClientOffset_.back() >= 9900);
+    REQUIRE(sim.predictedServerToClientOffset_.back() <= 10100);
 
-    REQUIRE(predictedClientToServerOffset.back() >= -10100);
-    REQUIRE(predictedClientToServerOffset.back() <= -9900);
+    REQUIRE(sim.predictedClientToServerOffset_.back() >= -10100);
+    REQUIRE(sim.predictedClientToServerOffset_.back() <= -9900);
 
-    simulateTime(2000);
+    REQUIRE(sim.pingOnClient_.back() >= 250);
+    REQUIRE(sim.pingOnClient_.back() <= 400);
+
+    REQUIRE(sim.pingOnServer_.back() >= 250);
+    REQUIRE(sim.pingOnServer_.back() <= 400);
+
+    sim.Simulate(2000);
 
     // Expect time to stay stable
-    simulateTime(10000);
+    sim.Simulate(10000);
+
     const auto [minServerToClient, maxServerToClient] =
-        ea::minmax_element(predictedServerToClientOffset.begin(), predictedServerToClientOffset.end());
+        ea::minmax_element(sim.predictedServerToClientOffset_.begin(), sim.predictedServerToClientOffset_.end());
     const auto [minClientToServer, maxClientToServer] =
-        ea::minmax_element(predictedClientToServerOffset.begin(), predictedClientToServerOffset.end());
+        ea::minmax_element(sim.predictedClientToServerOffset_.begin(), sim.predictedClientToServerOffset_.end());
 
-    REQUIRE(predictedServerToClientOffset.back() >= 9950);
-    REQUIRE(predictedServerToClientOffset.back() <= 10050);
+    const auto [minPingOnServer, maxPingOnServer] =
+        ea::minmax_element(sim.pingOnServer_.begin(), sim.pingOnServer_.end());
+    const auto [minPingOnClient, maxPingOnClient] =
+        ea::minmax_element(sim.pingOnClient_.begin(), sim.pingOnClient_.end());
 
-    REQUIRE(predictedClientToServerOffset.back() >= -10050);
-    REQUIRE(predictedClientToServerOffset.back() <= -9950);
+    REQUIRE(sim.predictedServerToClientOffset_.back() >= 9950);
+    REQUIRE(sim.predictedServerToClientOffset_.back() <= 10050);
+
+    REQUIRE(sim.predictedClientToServerOffset_.back() >= -10050);
+    REQUIRE(sim.predictedClientToServerOffset_.back() <= -9950);
 
     REQUIRE(*maxServerToClient - *minServerToClient < 35);
     REQUIRE(*maxClientToServer - *minClientToServer < 35);
+
+    REQUIRE(*minPingOnServer >= 250);
+    REQUIRE(*maxPingOnServer <= 400);
+
+    REQUIRE(*minPingOnClient >= 250);
+    REQUIRE(*maxPingOnClient <= 400);
+}
+
+TEST_CASE("System clock is perfectly synchronized on good connection")
+{
+    const unsigned minDelay = 180;
+    const unsigned maxDelay = 200;
+    const unsigned throttleDelay = 100;
+    const float throttleChance = 0.1f;
+
+    const unsigned seed = GENERATE(0, 1, 2, 3, 4);
+    RandomEngine re(seed);
+    const auto getRandomDelay = [&]
+    {
+        const bool isThrottled = re.GetBool(throttleChance);
+        const unsigned baseDelay = re.GetUInt(minDelay, maxDelay);
+        return baseDelay + (isThrottled ? throttleDelay : 0);
+    };
+
+    ClockSynchronizerSimulator sim{getRandomDelay};
+    sim.Simulate(2000);
+
+    // Expect time to stay stable
+    sim.Simulate(10000);
+
+    const auto [minServerToClient, maxServerToClient] =
+        ea::minmax_element(sim.predictedServerToClientOffset_.begin(), sim.predictedServerToClientOffset_.end());
+    const auto [minClientToServer, maxClientToServer] =
+        ea::minmax_element(sim.predictedClientToServerOffset_.begin(), sim.predictedClientToServerOffset_.end());
+
+    const auto [minPingOnServer, maxPingOnServer] =
+        ea::minmax_element(sim.pingOnServer_.begin(), sim.pingOnServer_.end());
+    const auto [minPingOnClient, maxPingOnClient] =
+        ea::minmax_element(sim.pingOnClient_.begin(), sim.pingOnClient_.end());
+
+    REQUIRE(sim.predictedServerToClientOffset_.back() >= 9980);
+    REQUIRE(sim.predictedServerToClientOffset_.back() <= 10020);
+
+    REQUIRE(sim.predictedClientToServerOffset_.back() >= -10020);
+    REQUIRE(sim.predictedClientToServerOffset_.back() <= -9980);
+
+    REQUIRE(*maxServerToClient - *minServerToClient < 30);
+    REQUIRE(*maxClientToServer - *minClientToServer < 30);
+
+    REQUIRE(*minPingOnServer >= 180);
+    REQUIRE(*maxPingOnServer <= 200);
+
+    REQUIRE(*minPingOnClient >= 180);
+    REQUIRE(*maxPingOnClient <= 200);
 }

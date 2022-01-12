@@ -100,9 +100,10 @@ void ClockSynchronizerMessage::Save(Serializer& dest) const
     dest.WriteUInt(remoteSent_);
 }
 
-ClockSynchronizer::ClockSynchronizer(unsigned bufferSize, ea::function<unsigned()> getTimestamp)
+ClockSynchronizer::ClockSynchronizer(unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
     : getTimestamp_(getTimestamp)
-    , localToRemote_{bufferSize}
+    , localToRemote_{clockBufferSize}
+    , roundTripDelay_{pingBufferSize}
 {
 }
 
@@ -111,9 +112,26 @@ unsigned ClockSynchronizer::GetTimestamp() const
     return getTimestamp_ ? getTimestamp_() : Time::GetSystemTime();
 }
 
-ServerClockSynchronizer::ServerClockSynchronizer(
-    unsigned pingIntervalMs, unsigned maxPingMs, unsigned bufferSize, ea::function<unsigned()> getTimestamp)
-    : ClockSynchronizer(bufferSize, getTimestamp)
+void ClockSynchronizer::UpdateClocks(
+    unsigned localSent, unsigned remoteReceived, unsigned remoteSent, unsigned localReceived)
+{
+    const unsigned offset1 = remoteReceived - localSent;
+    const unsigned offset2 = remoteSent - localReceived;
+    const auto delta = static_cast<int>(offset2 - offset1);
+    const unsigned offset = offset1 + delta / 2;
+    localToRemote_.AddValue(offset);
+    localToRemote_.Filter();
+
+    const unsigned outerDelay = localReceived - localSent;
+    const unsigned innerDelay = remoteSent - remoteReceived;
+    const unsigned delay = outerDelay - ea::min(outerDelay, innerDelay);
+    roundTripDelay_.AddValue(delay);
+    roundTripDelay_.Filter();
+}
+
+ServerClockSynchronizer::ServerClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
+    unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
+    : ClockSynchronizer(clockBufferSize, pingBufferSize, getTimestamp)
     , pingIntervalMs_{pingIntervalMs}
     , maxPingMs_{maxPingMs}
 {
@@ -197,8 +215,9 @@ void ServerClockSynchronizer::CleanupExpiredPings(unsigned now)
     pendingPings_.erase(ea::remove_if(pendingPings_.begin(), pendingPings_.end(), isOutdated));
 }
 
-ClientClockSynchronizer::ClientClockSynchronizer(unsigned bufferSize, ea::function<unsigned()> getTimestamp)
-    : ClockSynchronizer(bufferSize, getTimestamp)
+ClientClockSynchronizer::ClientClockSynchronizer(
+    unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
+    : ClockSynchronizer(clockBufferSize, pingBufferSize, getTimestamp)
 {
 }
 

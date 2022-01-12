@@ -601,12 +601,20 @@ void Network::SetMaxPingIntervalMs(unsigned interval)
     maxPingMs_ = interval;
 }
 
-void Network::SetClockSyncBufferSize(unsigned size)
+void Network::SetClockBufferSize(unsigned size)
 {
     if (IsServerRunning() || GetServerConnection())
         URHO3D_LOGWARNING("Cannot change sync buffer size for currently active connections.");
 
-    clockSyncBufferSize_ = size;
+    clockBufferSize_ = size;
+}
+
+void Network::SetPingBufferSize(unsigned size)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change ping buffer size for currently active connections.");
+
+    pingBufferSize_ = size;
 }
 
 void Network::SetSimulatedLatency(int ms)

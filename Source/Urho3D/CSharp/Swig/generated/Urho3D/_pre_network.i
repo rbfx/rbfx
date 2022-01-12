@@ -29,7 +29,7 @@
 %csattribute(Urho3D::HttpRequest, %arg(unsigned int), AvailableSize, GetAvailableSize);
 %csattribute(Urho3D::HttpRequest, %arg(bool), IsOpen, IsOpen);
 %csattribute(Urho3D::Network, %arg(ea::string), Guid, GetGUID);
-%csattribute(Urho3D::Network, %arg(int), UpdateFps, GetUpdateFps, SetUpdateFps);
+%csattribute(Urho3D::Network, %arg(unsigned int), UpdateFps, GetUpdateFps, SetUpdateFps);
 %csattribute(Urho3D::Network, %arg(int), SimulatedLatency, GetSimulatedLatency, SetSimulatedLatency);
 %csattribute(Urho3D::Network, %arg(float), SimulatedPacketLoss, GetSimulatedPacketLoss, SetSimulatedPacketLoss);
 %csattribute(Urho3D::Network, %arg(Urho3D::Connection *), ServerConnection, GetServerConnection);

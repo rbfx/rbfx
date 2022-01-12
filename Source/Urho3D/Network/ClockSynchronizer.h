@@ -95,30 +95,25 @@ public:
     unsigned LocalToRemote(unsigned value) const { return value + localToRemote_.GetFilteredValue(); }
     /// Convert from remote to local timestamp.
     unsigned RemoteToLocal(unsigned value) const { return value - localToRemote_.GetFilteredValue(); }
+    /// Return ping, i.e. half of round-trip delay excluding remote processing time.
+    unsigned GetPing() const { return roundTripDelay_.GetFilteredValue() / 2; }
 
 protected:
-    explicit ClockSynchronizer(unsigned bufferSize, ea::function<unsigned()> getTimestamp);
+    explicit ClockSynchronizer(unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp);
     unsigned GetTimestamp() const;
-    void UpdateClocks(unsigned localSent, unsigned remoteReceived, unsigned remoteSent, unsigned localReceived)
-    {
-        const unsigned offset1 = remoteReceived - localSent;
-        const unsigned offset2 = remoteSent - localReceived;
-        const auto delta = static_cast<int>(offset2 - offset1);
-        const unsigned offset = offset1 + delta / 2;
-        localToRemote_.AddValue(offset);
-        localToRemote_.Filter();
-    }
+    void UpdateClocks(unsigned localSent, unsigned remoteReceived, unsigned remoteSent, unsigned localReceived);
 
 private:
     const ea::function<unsigned()> getTimestamp_;
     FilteredUint localToRemote_;
+    FilteredUint roundTripDelay_;
 };
 
 class URHO3D_API ServerClockSynchronizer : public ClockSynchronizer
 {
 public:
-    ServerClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned bufferSize,
-        ea::function<unsigned()> getTimestamp = nullptr);
+    ServerClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
+        unsigned pingBufferSize, ea::function<unsigned()> getTimestamp = nullptr);
 
     /// Implement ClockSynchronizer
     /// @{
@@ -154,7 +149,8 @@ private:
 class URHO3D_API ClientClockSynchronizer : public ClockSynchronizer
 {
 public:
-    ClientClockSynchronizer(unsigned bufferSize, ea::function<unsigned()> getTimestamp = nullptr);
+    ClientClockSynchronizer(
+        unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp = nullptr);
 
     /// Implement ClockSynchronizer
     /// @{
