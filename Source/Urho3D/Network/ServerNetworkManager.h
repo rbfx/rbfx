@@ -44,6 +44,7 @@ class Network;
 class NetworkObject;
 class NetworkManagerBase;
 class Scene;
+struct NetworkSetting;
 
 struct ClientPing
 {
@@ -63,18 +64,6 @@ struct ClientConnectionData
 {
     AbstractConnection* connection_{};
 
-    ea::ring_buffer<unsigned> comfirmedPings_{};
-    ea::vector<unsigned> comfirmedPingsSorted_;
-    ea::ring_buffer<ClientPing> pendingPings_{};
-    ea::optional<unsigned> overridePing_;
-    unsigned averagePing_{ M_MAX_UNSIGNED };
-
-    bool synchronized_{};
-    ea::optional<unsigned> pendingSynchronization_{};
-
-    float pingAccumulator_{};
-    float clockAccumulator_{};
-
     ea::bitvector<> isComponentReplicated_;
     ea::vector<float> componentsRelevanceTimeouts_;
 
@@ -85,11 +74,55 @@ struct ClientConnectionData
     ea::vector<unsigned> feedbackDelaySorted_;
     unsigned averageFeedbackDelay_{};
     unsigned latestFeedbackFrame_{};
+
+public:
+    ClientConnectionData(AbstractConnection* connection, const VariantMap& settings);
+
+    void AdvanceTime(float timeStep, const NetworkTime& serverTime);
+
+    void SendCommonUpdates();
+    void SendSynchronizedMessages();
+
+    void OverridePing(unsigned ping);
+    void ProcessPong(const MsgPingPong& msg);
+    void ProcessSynchronized(const MsgSynchronized& msg);
+
+    bool IsSynchronized() const { return synchronized_; }
+    unsigned GetSmoothPing() const { return smoothPing_; }
+    unsigned GetLatestPing() const { return confirmedPings_.back(); }
+
+private:
+    // TODO(network): Use better random
+    unsigned MakeMagic() const { return Rand(); }
+    const Variant& GetSetting(const NetworkSetting& setting) const;
+
+    void SendPing();
+    void SendClock();
+    void CalculateSmoothPing();
+
+    VariantMap settings_;
+    NetworkTime serverTime_;
+
+    ea::optional<unsigned> synchronizationMagic_;
+    bool synchronized_{};
+
+    /// Ping evaluation
+    /// @{
+    float pingTimeAccumulator_{};
+    ea::ring_buffer<unsigned> confirmedPings_{};
+    ea::ring_buffer<ClientPing> pendingPings_{};
+    ea::optional<unsigned> overridePing_;
+    unsigned smoothPing_{ M_MAX_UNSIGNED };
+    /// @}
+
+    float clockTimeAccumulator_{};
 };
 
 /// Server settings for NetworkManager.
 struct ServerNetworkManagerSettings
 {
+    VariantMap map_;
+
     unsigned numInitialPings_{ 11 };
     unsigned numTrimmedMaxPings_{ 3 };
     unsigned pingIntervalMs_{ 1000 };
@@ -175,26 +208,21 @@ private:
     void PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject);
 
     void SendUpdate(ClientConnectionData& data);
-    bool SendSynchronizationMessages(ClientConnectionData& data);
-    void SendPingAndClockMessages(ClientConnectionData& data);
     void SendRemoveObjectsMessage(ClientConnectionData& data);
     void SendAddObjectsMessage(ClientConnectionData& data);
     void SendUpdateObjectsReliableMessage(ClientConnectionData& data);
     void SendUpdateObjectsUnreliableMessage(ClientConnectionData& data);
 
-    void ProcessPong(ClientConnectionData& data, const MsgPingPong& msg);
-    void ProcessSynchronizeAck(ClientConnectionData& data, const MsgSynchronizeAck& msg);
     void ProcessObjectsFeedbackUnreliable(ClientConnectionData& data, MemoryBuffer& messageData);
 
     ClientConnectionData& GetConnection(AbstractConnection* connection);
 
-    void RecalculateAvergagePing(ClientConnectionData& data);
     unsigned GetMagic(bool reliable = false) const;
 
     Network* network_{};
     NetworkManagerBase* base_{};
     Scene* scene_{};
-    const ServerNetworkManagerSettings settings_; // TODO: Make mutable
+    ServerNetworkManagerSettings settings_; // TODO: Make mutable
 
     const unsigned updateFrequency_{};
     unsigned currentFrame_{};

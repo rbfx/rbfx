@@ -81,12 +81,12 @@ enum NetworkMessageId
     MSG_PING = 200,
     /// Client->Server: reply to ping.
     MSG_PONG,
-    /// Server->Client: synchronize clocks on client and server.
-    MSG_SYNCHRONIZE,
-    /// Client->Server: clock synchronization is acknowledged.
-    MSG_SYNCHRONIZE_ACK,
-    /// Server->Client: information about current time and client's ping.
+    /// Server->Client: deliver networking settings.
+    MSG_CONFIGURE,
+    /// Server->Client: information about current server time and dynamic client properties.
     MSG_CLOCK,
+    /// Client->Server: client is synchronized and is ready for replication.
+    MSG_SYNCHRONIZED,
     /// Server->Client:
     MSG_REMOVE_OBJECTS,
     /// Server->Client:
