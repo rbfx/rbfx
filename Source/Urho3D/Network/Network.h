@@ -94,7 +94,9 @@ public:
     /// Set max allowed ping by server.
     void SetMaxPingIntervalMs(unsigned interval);
     /// Set number of clock synchronization samples used.
-    void SetClockSyncBufferSize(unsigned size);
+    void SetClockBufferSize(unsigned size);
+    /// Set number of ping samples used.
+    void SetPingBufferSize(unsigned size);
     /// Set simulated latency in milliseconds. This adds a fixed delay before sending each packet.
     /// @property
     void SetSimulatedLatency(int ms);
@@ -124,7 +126,9 @@ public:
     /// Return max allowed ping by server.
     unsigned GetMaxPingIntervalMs() const { return maxPingMs_; }
     /// Return number of clock synchronization samples used.
-    unsigned GetClockSyncBufferSize() const { return clockSyncBufferSize_; }
+    unsigned GetClockBufferSize() const { return clockBufferSize_; }
+    /// Return number of ping synchronization samples used.
+    unsigned GetPingBufferSize() const { return pingBufferSize_; }
 
     /// Return simulated latency in milliseconds.
     /// @property
@@ -184,7 +188,8 @@ private:
     unsigned updateFps_{30};
     unsigned pingIntervalMs_{250};
     unsigned maxPingMs_{10000};
-    unsigned clockSyncBufferSize_{40};
+    unsigned clockBufferSize_{40};
+    unsigned pingBufferSize_{10};
     /// @}
 
     /// SLikeNet peer instance for server connection.
