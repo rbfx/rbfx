@@ -110,10 +110,9 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(1016.0f / Tests::NetworkSimulator::MillisecondsInSecond);
     sim.SimulateTime(4.0f);
 
-    // Expect client node at the specified position, with max error or 2 frames:
-    // one frame due to start lag, one more due to interpolation
+    // Expect client node at about the specified position.
     {
-        const float maxError = 2 * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
+        const float maxError = 4 * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
         REQUIRE(clientNode->GetWorldPosition().x_ == 0.0f);
         REQUIRE(clientNode->GetWorldPosition().z_ == Catch::Approx(10.0f).margin(maxError));
     }

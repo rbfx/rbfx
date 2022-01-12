@@ -46,25 +46,17 @@ struct MsgPingPong
     ea::string ToString() const;
 };
 
-struct MsgSynchronize
+struct MsgConfigure
 {
     unsigned magic_{};
-
-    unsigned connectionId_{};
-    unsigned updateFrequency_{};
-
-    unsigned numTrimmedClockSamples_{};
-    unsigned numOngoingClockSamples_{};
-
-    unsigned lastFrame_{};
-    unsigned ping_{};
+    VariantMap settings_;
 
     void Save(VectorBuffer& dest) const;
     void Load(MemoryBuffer& src);
     ea::string ToString() const;
 };
 
-struct MsgSynchronizeAck
+struct MsgSynchronized
 {
     unsigned magic_{};
 
@@ -76,7 +68,8 @@ struct MsgSynchronizeAck
 struct MsgClock
 {
     unsigned lastFrame_{};
-    unsigned ping_{};
+    unsigned latestPing_{};
+    unsigned smoothPing_{};
 
     void Save(VectorBuffer& dest) const;
     void Load(MemoryBuffer& src);

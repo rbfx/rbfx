@@ -31,6 +31,7 @@
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkObject.h"
 #include "../Network/NetworkManager.h"
+#include "../Network/NetworkSettingsConsts.h"
 #include "../Network/ServerNetworkManager.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -50,6 +51,157 @@ unsigned GetIndex(NetworkId networkId)
 
 }
 
+ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const VariantMap& settings)
+    : connection_(connection)
+    , settings_(settings)
+{
+    const unsigned maxPendingPings = GetSetting(NetworkSettings::MaxPendingPings).GetUInt();
+    pendingPings_.set_capacity(maxPendingPings);
+
+    const unsigned numAveragedPings = GetSetting(NetworkSettings::NumAveragedPings).GetUInt();
+    confirmedPings_.set_capacity(numAveragedPings);
+
+    SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
+}
+
+void ClientConnectionData::AdvanceTime(float timeStep, const NetworkTime& serverTime)
+{
+    serverTime_ = serverTime;
+
+    pingTimeAccumulator_ += timeStep;
+    clockTimeAccumulator_ += timeStep;
+}
+
+void ClientConnectionData::SendCommonUpdates()
+{
+    // Send configuration on startup once
+    if (!synchronizationMagic_)
+    {
+        const unsigned magic = MakeMagic();
+        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, NetworkMessageFlag::Reliable);
+        synchronizationMagic_ = magic;
+    }
+
+    // Send ping if it's time
+    const unsigned numInitialPings = GetSetting(NetworkSettings::NumInitialPings).GetUInt();
+    const bool isInitializing = confirmedPings_.size() < numInitialPings;
+
+    const float pingInterval = isInitializing
+        ? GetSetting(NetworkSettings::InitialPingInterval).GetFloat()
+        : GetSetting(NetworkSettings::PeriodicPingInterval).GetFloat();
+
+    if (pingTimeAccumulator_ >= pingInterval)
+    {
+        pingTimeAccumulator_ = Fract(pingTimeAccumulator_ / pingInterval) * pingInterval;
+        SendPing();
+    }
+
+    // Send clocks if pings are initialized
+    if (!isInitializing)
+    {
+        const float clockInterval = GetSetting(NetworkSettings::PeriodicClockInterval).GetFloat();
+        if (clockTimeAccumulator_ >= clockInterval)
+        {
+            clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
+            SendClock();
+        }
+    }
+}
+
+void ClientConnectionData::SendSynchronizedMessages()
+{
+
+}
+
+void ClientConnectionData::OverridePing(unsigned ping)
+{
+    overridePing_ = ping;
+    CalculateSmoothPing();
+}
+
+void ClientConnectionData::ProcessPong(const MsgPingPong& msg)
+{
+    const auto iter = ea::find_if(pendingPings_.begin(), pendingPings_.end(),
+        [&](const ClientPing& ping) { return ping.magic_ == msg.magic_; });
+    if (iter == pendingPings_.end())
+    {
+        URHO3D_LOGWARNING("Connection {}: Unexpected pong received", connection_->ToString(), msg.magic_);
+        return;
+    }
+
+    ClientPing& pendingPing = *iter;
+    const auto pingMs = pendingPing.timer_.GetUSec(false) / 1000 / 2;
+    pendingPings_.erase(iter);
+
+    if (confirmedPings_.full())
+        confirmedPings_.pop_front();
+    confirmedPings_.push_back(pingMs);
+
+    CalculateSmoothPing();
+
+    URHO3D_LOGTRACE("Connection {}: Ping of {}ms added to buffer, smooth ping is {}ms", connection_->ToString(),
+        GetLatestPing(), GetSmoothPing());
+}
+
+void ClientConnectionData::ProcessSynchronized(const MsgSynchronized& msg)
+{
+    if (synchronizationMagic_ != msg.magic_)
+    {
+        URHO3D_LOGWARNING(
+            "Connection {}: Unexpected synchronization ack received", connection_->ToString());
+        return;
+    }
+
+    synchronized_ = true;
+}
+
+void ClientConnectionData::SendPing()
+{
+    const unsigned magic = MakeMagic();
+
+    if (pendingPings_.full())
+        pendingPings_.pop_front();
+
+    pendingPings_.push_back(ClientPing{magic});
+    connection_->SendSerializedMessage(MSG_PING, MsgPingPong{magic}, NetworkMessageFlag::None);
+}
+
+void ClientConnectionData::SendClock()
+{
+    connection_->SendSerializedMessage(
+        MSG_CLOCK, MsgClock{serverTime_.GetFrame(), GetLatestPing(), GetSmoothPing()}, NetworkMessageFlag::None);
+}
+
+void ClientConnectionData::CalculateSmoothPing()
+{
+    if (overridePing_)
+    {
+        smoothPing_ = *overridePing_;
+
+        if (confirmedPings_.full())
+            confirmedPings_.pop_front();
+        confirmedPings_.push_back(*overridePing_);
+
+        return;
+    }
+
+    URHO3D_ASSERT(!confirmedPings_.empty());
+
+    static thread_local ea::vector<unsigned> sortedPings;
+    sortedPings.assign(confirmedPings_.begin(), confirmedPings_.end());
+    ea::sort(sortedPings.begin(), sortedPings.end());
+
+    const unsigned numTrimmed = GetSetting(NetworkSettings::NumAveragedPingsTrimmed).GetUInt();
+    sortedPings.erase(sortedPings.end() - ea::min(numTrimmed, sortedPings.size() - 1), sortedPings.end());
+
+    smoothPing_ = ea::accumulate(sortedPings.begin(), sortedPings.end(), 0ull) / sortedPings.size();
+}
+
+const Variant& ClientConnectionData::GetSetting(const NetworkSetting& setting) const
+{
+    return GetNetworkSetting(settings_, setting);
+}
+
 ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
@@ -58,6 +210,8 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     , updateFrequency_(network_->GetUpdateFps())
     , physicsSync_(scene_, updateFrequency_, false)
 {
+    SetNetworkSetting(settings_.map_, NetworkSettings::UpdateFrequency, updateFrequency_);
+
     SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
     {
         using namespace InputReady;
@@ -103,13 +257,7 @@ void ServerNetworkManager::UpdateClocks(float timeStep)
     ++currentFrame_;
 
     for (auto& [connection, data] : connections_)
-    {
-        if (!data.synchronized_)
-            return;
-
-        data.pingAccumulator_ += timeStep;
-        data.clockAccumulator_ += timeStep;
-    }
+        data.AdvanceTime(timeStep, NetworkTime{currentFrame_});
 }
 
 void ServerNetworkManager::CollectObjectsToUpdate(float timeStep)
@@ -137,7 +285,7 @@ void ServerNetworkManager::CollectObjectsToUpdate(float timeStep)
     base_->UpdateAndSortNetworkObjects(orderedNetworkObjects_);
     for (auto& [connection, data] : connections_)
     {
-        if (!data.synchronized_)
+        if (!data.IsSynchronized())
             continue;
 
         data.isComponentReplicated_.resize(maxIndex);
@@ -251,13 +399,13 @@ void ServerNetworkManager::AddConnection(AbstractConnection* connection)
         assert(0);
     }
 
-    ClientConnectionData& data = connections_[connection];
-    data = ClientConnectionData{};
+    connections_.erase(connection);
+    const auto& [iter, insterted] = connections_.emplace(
+        connection, ClientConnectionData{connection, settings_.map_});
 
-    data.connection_ = connection;
-    data.comfirmedPings_.set_capacity(settings_.numInitialPings_);
-    data.comfirmedPingsSorted_.set_capacity(settings_.numInitialPings_);
-    data.pendingPings_.set_capacity(settings_.maxOngoingPings_);
+    URHO3D_ASSERT(insterted);
+    ClientConnectionData& data = iter->second;
+
     data.feedbackDelay_.set_capacity(settings_.numFeedbackDelaySamples_);
     data.feedbackDelaySorted_.set_capacity(settings_.numFeedbackDelaySamples_);
 
@@ -278,84 +426,17 @@ void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
 
 void ServerNetworkManager::SendUpdate(ClientConnectionData& data)
 {
-    if (!SendSynchronizationMessages(data))
-        return;
+    data.SendCommonUpdates();
+    if (data.IsSynchronized())
+        data.SendSynchronizedMessages();
 
-    SendPingAndClockMessages(data);
+    if (!data.IsSynchronized())
+        return;
 
     SendRemoveObjectsMessage(data);
     SendAddObjectsMessage(data);
     SendUpdateObjectsReliableMessage(data);
     SendUpdateObjectsUnreliableMessage(data);
-}
-
-bool ServerNetworkManager::SendSynchronizationMessages(ClientConnectionData& data)
-{
-    AbstractConnection* connection = data.connection_;
-
-    // Initialization phase: send "reliable" pings one by one
-    if (!data.comfirmedPings_.full())
-    {
-        if (data.pendingPings_.empty())
-        {
-            const unsigned magic = GetMagic(true);
-            data.pendingPings_.push_back(ClientPing{ magic });
-
-            connection->SendSerializedMessage(MSG_PING, MsgPingPong{ magic }, NetworkMessageFlag::Reliable);
-        }
-        return false;
-    }
-
-    // Synchronization phase.
-    if (!data.synchronized_)
-    {
-        if (!data.pendingSynchronization_)
-        {
-            const unsigned magic = GetMagic();
-            const unsigned ping = data.averagePing_;
-
-            data.pendingSynchronization_ = magic;
-
-            MsgSynchronize msg{ magic };
-
-            msg.updateFrequency_ = updateFrequency_;
-            msg.connectionId_ = connection->GetObjectID();
-
-            msg.numTrimmedClockSamples_ = settings_.numTrimmedClockSamples_;
-            msg.numOngoingClockSamples_ = settings_.numOngoingClockSamples_;
-
-            msg.lastFrame_ = currentFrame_;
-            msg.ping_ = ping;
-
-            connection->SendSerializedMessage(MSG_SYNCHRONIZE, msg, NetworkMessageFlag::Reliable);
-        }
-        return false;
-    }
-
-    return true;
-}
-
-void ServerNetworkManager::SendPingAndClockMessages(ClientConnectionData& data)
-{
-    AbstractConnection* connection = data.connection_;
-
-    // Send periodic ping
-    if (data.pingAccumulator_ >= settings_.pingIntervalMs_ / 1000.0f)
-    {
-        data.pingAccumulator_ = 0.0f;
-
-        const unsigned magic = GetMagic();
-        data.pendingPings_.push_back(ClientPing{ magic });
-
-        connection->SendSerializedMessage(MSG_PING, MsgPingPong{ magic }, NetworkMessageFlag::None);
-    }
-
-    // Send periodic clock
-    if (data.clockAccumulator_ >= settings_.clockIntervalMs_ / 1000.0f)
-    {
-        data.clockAccumulator_ = 0.0f;
-        connection->SendSerializedMessage(MSG_CLOCK, MsgClock{ currentFrame_, data.averagePing_ }, NetworkMessageFlag::None);
-    }
 }
 
 void ServerNetworkManager::SendRemoveObjectsMessage(ClientConnectionData& data)
@@ -500,16 +581,16 @@ void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, Networ
         const auto& msg = ReadNetworkMessage<MsgPingPong>(messageData);
         connection->OnMessageReceived(messageId, msg);
 
-        ProcessPong(data, msg);
+        data.ProcessPong(msg);
         break;
     }
 
-    case MSG_SYNCHRONIZE_ACK:
+    case MSG_SYNCHRONIZED:
     {
-        const auto& msg = ReadNetworkMessage<MsgSynchronizeAck>(messageData);
+        const auto& msg = ReadNetworkMessage<MsgSynchronized>(messageData);
         connection->OnMessageReceived(messageId, msg);
 
-        ProcessSynchronizeAck(data, msg);
+        data.ProcessSynchronized(msg);
         break;
     }
 
@@ -526,45 +607,9 @@ void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, Networ
     }
 }
 
-void ServerNetworkManager::ProcessPong(ClientConnectionData& data, const MsgPingPong& msg)
-{
-    const auto iter = ea::find_if(data.pendingPings_.begin(), data.pendingPings_.end(),
-        [&](const ClientPing& ping) { return ping.magic_ == msg.magic_; });
-    if (iter == data.pendingPings_.end())
-    {
-        URHO3D_LOGWARNING("Connection {}: Unexpected pong received", data.connection_->ToString(), msg.magic_);
-        return;
-    }
-
-    ClientPing& pendingPing = *iter;
-    const auto pingMs = pendingPing.timer_.GetUSec(false) / 1000 / 2;
-    data.pendingPings_.erase(iter);
-
-    if (data.comfirmedPings_.full())
-        data.comfirmedPings_.pop_front();
-    data.comfirmedPings_.push_back(pingMs);
-
-    RecalculateAvergagePing(data);
-    URHO3D_LOGTRACE("Connection {}: Ping of {}ms added to buffer, average is {}ms", data.connection_->ToString(),
-        pingMs, data.averagePing_);
-}
-
-void ServerNetworkManager::ProcessSynchronizeAck(ClientConnectionData& data, const MsgSynchronizeAck& msg)
-{
-    if (!data.pendingSynchronization_ || data.pendingSynchronization_ != msg.magic_)
-    {
-        URHO3D_LOGWARNING(
-            "Connection {}: Unexpected synchronization ack received", data.connection_->ToString(), msg.magic_);
-        return;
-    }
-
-    data.pendingSynchronization_ = ea::nullopt;
-    data.synchronized_ = true;
-}
-
 void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData& data, MemoryBuffer& messageData)
 {
-    if (!data.synchronized_)
+    if (!data.IsSynchronized())
     {
         URHO3D_LOGWARNING("Connection {}: Received unexpected feedback", data.connection_->ToString());
         return;
@@ -624,8 +669,7 @@ void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData
 void ServerNetworkManager::SetTestPing(AbstractConnection* connection, unsigned ping)
 {
     ClientConnectionData& data = GetConnection(connection);
-    data.overridePing_ = ping;
-    RecalculateAvergagePing(data);
+    data.OverridePing(ping);
 }
 
 void ServerNetworkManager::SetCurrentFrame(unsigned frame)
@@ -638,29 +682,6 @@ ClientConnectionData& ServerNetworkManager::GetConnection(AbstractConnection* co
     const auto iter = connections_.find(connection);
     assert(iter != connections_.end());
     return iter->second;
-}
-
-void ServerNetworkManager::RecalculateAvergagePing(ClientConnectionData& data)
-{
-    if (data.overridePing_)
-    {
-        data.averagePing_ = *data.overridePing_;
-        return;
-    }
-
-    if (data.comfirmedPings_.empty())
-    {
-        data.averagePing_ = M_MAX_UNSIGNED;
-        return;
-    }
-
-    data.comfirmedPingsSorted_.assign(data.comfirmedPings_.begin(), data.comfirmedPings_.end());
-    ea::sort(data.comfirmedPingsSorted_.begin(), data.comfirmedPingsSorted_.end());
-
-    const unsigned numPings = data.comfirmedPingsSorted_.size();
-    const auto beginIter = data.comfirmedPingsSorted_.begin();
-    const auto endIter = std::prev(data.comfirmedPingsSorted_.end(), ea::min(numPings - 1, settings_.numTrimmedMaxPings_));
-    data.averagePing_ = ea::accumulate(beginIter, endIter, 0) / ea::distance(beginIter, endIter);
 }
 
 unsigned ServerNetworkManager::GetMagic(bool reliable) const
@@ -680,8 +701,8 @@ ea::string ServerNetworkManager::GetDebugInfo() const
 
     for (const auto& [connection, data] : connections_)
     {
-        result += Format("Connection {}: Ping {}ms, Feedback Delay {} frames\n",
-            connection->ToString(), data.averagePing_, data.averageFeedbackDelay_);
+        result += Format("Connection {}: Ping {}ms->{}ms, Feedback Delay {} frames\n",
+            connection->ToString(), data.GetLatestPing(), data.GetSmoothPing(), data.averageFeedbackDelay_);
     }
 
     return result;

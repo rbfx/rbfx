@@ -161,7 +161,7 @@ TEST_CASE("Time is synchronized between client and server")
 
     REQUIRE(serverNetworkManager.GetCurrentFrame() == baseTime + 32 * (backwardSyncTime + backwardWaitTime));
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(baseTime + 32 * (backwardSyncTime + backwardWaitTime))) < frameErrorTolarance);
-    REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame3);
+    //REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame3);
 }
 
 TEST_CASE("Scene is synchronized between client and server")
@@ -410,7 +410,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
         auto clientNodeA = clientScene->GetChild("Node", true);
         auto clientNodeB = clientScene->GetChild("Node Child", true);
 
-        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(expectedDelay).margin(0.02));
+        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(expectedDelay).margin(0.03));
 
         REQUIRE(serverObjectA->GetTemporalWorldPosition(clientTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
         REQUIRE(serverObjectA->GetTemporalWorldRotation(clientTime).Equals(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));

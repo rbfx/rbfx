@@ -50,51 +50,35 @@ ea::string MsgPingPong::ToString() const
     return Format("{{magic={}}}", magic_);
 }
 
-void MsgSynchronize::Save(VectorBuffer& dest) const
+void MsgConfigure::Save(VectorBuffer& dest) const
 {
     dest.WriteUInt(magic_);
-
-    dest.WriteVLE(updateFrequency_);
-    dest.WriteVLE(connectionId_);
-
-    dest.WriteVLE(numTrimmedClockSamples_);
-    dest.WriteVLE(numOngoingClockSamples_);
-
-    dest.WriteUInt(lastFrame_);
-    dest.WriteVLE(ping_);
+    dest.WriteVariantMap(settings_);
 }
 
-void MsgSynchronize::Load(MemoryBuffer& src)
+void MsgConfigure::Load(MemoryBuffer& src)
 {
     magic_ = src.ReadUInt();
-
-    updateFrequency_ = src.ReadVLE();
-    connectionId_ = src.ReadVLE();
-
-    numTrimmedClockSamples_ = src.ReadVLE();
-    numOngoingClockSamples_ = src.ReadVLE();
-
-    lastFrame_ = src.ReadUInt();
-    ping_ = src.ReadVLE();
+    settings_ = src.ReadVariantMap();
 }
 
-ea::string MsgSynchronize::ToString() const
+ea::string MsgConfigure::ToString() const
 {
-    return Format("{{magic={} updateFrequency={} connectionId={} lastFrame={} ping={}}}",
-        magic_, updateFrequency_, connectionId_, lastFrame_, ping_);
+    return Format("{{magic={}, settings...}}", magic_);
 }
 
-void MsgSynchronizeAck::Save(VectorBuffer& dest) const
+
+void MsgSynchronized::Save(VectorBuffer& dest) const
 {
     dest.WriteUInt(magic_);
 }
 
-void MsgSynchronizeAck::Load(MemoryBuffer& src)
+void MsgSynchronized::Load(MemoryBuffer& src)
 {
     magic_ = src.ReadUInt();
 }
 
-ea::string MsgSynchronizeAck::ToString() const
+ea::string MsgSynchronized::ToString() const
 {
     return Format("{{magic={}}}", magic_);
 }
@@ -102,18 +86,20 @@ ea::string MsgSynchronizeAck::ToString() const
 void MsgClock::Save(VectorBuffer& dest) const
 {
     dest.WriteUInt(lastFrame_);
-    dest.WriteVLE(ping_);
+    dest.WriteVLE(latestPing_);
+    dest.WriteVLE(smoothPing_);
 }
 
 void MsgClock::Load(MemoryBuffer& src)
 {
     lastFrame_ = src.ReadUInt();
-    ping_ = src.ReadVLE();
+    latestPing_ = src.ReadVLE();
+    smoothPing_ = src.ReadVLE();
 }
 
 ea::string MsgClock::ToString() const
 {
-    return Format("{{lastFrame={}, ping={}}}", lastFrame_, ping_);
+    return Format("{{lastFrame={}, ping={}->{}}}", lastFrame_, latestPing_, smoothPing_);
 }
 
 }

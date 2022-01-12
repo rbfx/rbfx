@@ -42,6 +42,7 @@ class Network;
 class NetworkObject;
 class NetworkManagerBase;
 class Scene;
+struct NetworkSetting;
 
 /// Client-only NetworkManager settings.
 struct ClientSynchronizationSettings
@@ -66,8 +67,8 @@ struct ClientNetworkManagerSettings : public ClientSynchronizationSettings
 class URHO3D_API ClientSynchronizationManager : public NonCopyable
 {
 public:
-    ClientSynchronizationManager(
-        Scene* scene, const MsgSynchronize& msg, const ClientSynchronizationSettings& settings);
+    ClientSynchronizationManager(Scene* scene, const MsgClock& msg, const VariantMap& serverSettings,
+        const ClientSynchronizationSettings& settings);
     ~ClientSynchronizationManager();
     void SetSettings(const ClientSynchronizationSettings& settings) { settings_ = settings; }
 
@@ -86,6 +87,7 @@ public:
     NetworkTime GetServerTime() const { return serverTime_; }
     NetworkTime GetSmoothClientTime() const { return smoothClientTime_; }
     NetworkTime GetLatestUnstableClientTime() const { return latestUnstableClientTime_; }
+    const Variant& GetSetting(const NetworkSetting& setting) const;
     /// @}
 
 private:
@@ -102,6 +104,7 @@ private:
     NetworkTime ToClientTime(const NetworkTime& serverTime) const;
 
     Scene* scene_{};
+    const VariantMap serverSettings_;
 
     const unsigned thisConnectionId_{};
     const unsigned updateFrequency_{};
@@ -138,7 +141,7 @@ public:
 
     ea::string GetDebugInfo() const;
     AbstractConnection* GetConnection() const { return connection_; }
-    const ClientNetworkManagerSettings& GetSettings() const { return settings_; }
+    const ClientNetworkManagerSettings& GetSettings() const { return settings2_; }
 
     /// Return global properties of client state.
     /// @{
@@ -165,14 +168,16 @@ private:
     void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
 
     void ProcessPing(const MsgPingPong& msg);
-    void ProcessSynchronize(const MsgSynchronize& msg);
+    void ProcessConfigure(const MsgConfigure& msg);
     void ProcessClock(const MsgClock& msg);
     void ProcessRemoveObjects(MemoryBuffer& messageData);
     void ProcessAddObjects(MemoryBuffer& messageData);
     void ProcessUpdateObjectsReliable(MemoryBuffer& messageData);
     void ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData);
 
-    ClientNetworkManagerSettings settings_;
+    ea::optional<VariantMap> serverSettings_;
+    ea::optional<unsigned> synchronizationMagic_;
+    ClientNetworkManagerSettings settings2_;
 
     Network* network_{};
     NetworkManagerBase* base_{};
