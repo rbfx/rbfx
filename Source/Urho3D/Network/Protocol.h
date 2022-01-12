@@ -68,8 +68,11 @@ enum NetworkMessageId
     /// Server->client: info about package.
     MSG_PACKAGEINFO = 0x98,
 
-    /// Packet that includes all the above messages
+    /// Packet that includes all other messages.
     MSG_PACKED_MESSAGE = 0x99,
+
+    /// Message used to synchronize clock between client and server.
+    MSG_CLOCK_SYNC = 0x9A,
 
     /// Messages processed by NetworkManager
     /// @{

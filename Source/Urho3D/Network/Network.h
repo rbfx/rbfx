@@ -88,7 +88,13 @@ public:
     void BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Set network update FPS.
     /// @property
-    void SetUpdateFps(int fps);
+    void SetUpdateFps(unsigned fps);
+    /// Set interval of pings by server.
+    void SetPingIntervalMs(unsigned interval);
+    /// Set max allowed ping by server.
+    void SetMaxPingIntervalMs(unsigned interval);
+    /// Set number of clock synchronization samples used.
+    void SetClockSyncBufferSize(unsigned size);
     /// Set simulated latency in milliseconds. This adds a fixed delay before sending each packet.
     /// @property
     void SetSimulatedLatency(int ms);
@@ -112,7 +118,13 @@ public:
     void BanAddress(const ea::string& address);
     /// Return network update FPS.
     /// @property
-    int GetUpdateFps() const { return updateFps_; }
+    unsigned GetUpdateFps() const { return updateFps_; }
+    /// Return interval of pings by server.
+    unsigned GetPingIntervalMs() const { return pingIntervalMs_; }
+    /// Return max allowed ping by server.
+    unsigned GetMaxPingIntervalMs() const { return maxPingMs_; }
+    /// Return number of clock synchronization samples used.
+    unsigned GetClockSyncBufferSize() const { return clockSyncBufferSize_; }
 
     /// Return simulated latency in milliseconds.
     /// @property
@@ -167,6 +179,14 @@ private:
     /// Return hash of endpoint.
     static unsigned long GetEndpointHash(const SLNet::AddressOrGUID& endpoint);
 
+    /// Properties that need connection reset to apply
+    /// @{
+    unsigned updateFps_{30};
+    unsigned pingIntervalMs_{250};
+    unsigned maxPingMs_{10000};
+    unsigned clockSyncBufferSize_{40};
+    /// @}
+
     /// SLikeNet peer instance for server connection.
     SLNet::RakPeerInterface* rakPeer_;
     /// SLikeNet peer instance for client connection.
@@ -181,8 +201,6 @@ private:
     ea::hash_set<StringHash> blacklistedRemoteEvents_;
     /// Networked scenes.
     ea::hash_set<Scene*> networkScenes_;
-    /// Update FPS.
-    int updateFps_;
     /// Simulated latency (send delay) in milliseconds.
     int simulatedLatency_;
     /// Simulated packet loss probability between 0.0 - 1.0.

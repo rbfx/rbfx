@@ -194,15 +194,13 @@ static const char* RAKNET_MESSAGEID_STRINGS[] = {
     "ID_USER_PACKET_ENUM"
 };
 
-static const int DEFAULT_UPDATE_FPS = 30;
 static const int SERVER_TIMEOUT_TIME = 10000;
 
 Network::Network(Context* context) :
     Object(context),
-    updateFps_(DEFAULT_UPDATE_FPS),
     simulatedLatency_(0),
     simulatedPacketLoss_(0.0f),
-    updateInterval_(1.0f / (float)DEFAULT_UPDATE_FPS),
+    updateInterval_(1.0f / updateFps_),
     updateAcc_(0.0f),
     isServer_(false),
     scene_(nullptr),
@@ -574,7 +572,7 @@ void Network::BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrde
     }
 }
 
-void Network::SetUpdateFps(int fps)
+void Network::SetUpdateFps(unsigned fps)
 {
     if (IsServerRunning())
     {
@@ -585,6 +583,30 @@ void Network::SetUpdateFps(int fps)
     updateFps_ = Max(fps, 1);
     updateInterval_ = 1.0f / (float)updateFps_;
     updateAcc_ = 0.0f;
+}
+
+void Network::SetPingIntervalMs(unsigned interval)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change ping interval for currently active connections.");
+
+    pingIntervalMs_ = interval;
+}
+
+void Network::SetMaxPingIntervalMs(unsigned interval)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change max ping for currently active connections.");
+
+    maxPingMs_ = interval;
+}
+
+void Network::SetClockSyncBufferSize(unsigned size)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change sync buffer size for currently active connections.");
+
+    clockSyncBufferSize_ = size;
 }
 
 void Network::SetSimulatedLatency(int ms)

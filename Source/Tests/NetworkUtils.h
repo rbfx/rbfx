@@ -55,6 +55,9 @@ public:
 
     void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     ea::string ToString() const override { return "Manual Connection"; }
+    bool IsClockSynchronized() const override { return true; }
+    unsigned RemoteToLocalTime(unsigned time) const override { return time; }
+    unsigned LocalToRemoteTime(unsigned time) const override { return time; }
 
     void IncrementTime(unsigned delta);
 

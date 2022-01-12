@@ -37,6 +37,7 @@
 namespace Urho3D
 {
 
+// TODO(network): Remove!! It's already exists as PacketType
 enum class NetworkMessageFlag
 {
     None = 0,
@@ -58,6 +59,12 @@ public:
     virtual void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) = 0;
     /// Return debug connection string for logging.
     virtual ea::string ToString() const = 0;
+    /// Return whether the clock is synchronized between client and server.
+    virtual bool IsClockSynchronized() const = 0;
+    /// Convert remote timestamp to local timestamp.
+    virtual unsigned RemoteToLocalTime(unsigned time) const = 0;
+    /// Convert local timestamp to remote timestamp.
+    virtual unsigned LocalToRemoteTime(unsigned time) const = 0;
 
     /// Syntax sugar for SendMessage
     /// @{
