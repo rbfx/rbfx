@@ -261,10 +261,14 @@ BoundingBox ShadowSplitProcessor::GetSplitShadowBoundingBoxInLightSpace(
     // If volume became empty, restore it to avoid zero size
     if (focusParameters.focus_)
     {
-        const BoundingBox litGeometriesBox = GetLitGeometriesBoundingBox(drawableProcessor, litGeometries);
+        BoundingBox litGeometriesBox = GetLitGeometriesBoundingBox(drawableProcessor, litGeometries);
 
         if (litGeometriesBox.Defined())
         {
+            // Always keep small padding to ensure stable clipping
+            litGeometriesBox.min_ -= Vector3::ONE;
+            litGeometriesBox.max_ += Vector3::ONE;
+
             frustumVolume.Clip(litGeometriesBox);
             if (frustumVolume.Empty())
                 frustumVolume.Define(splitFrustum);

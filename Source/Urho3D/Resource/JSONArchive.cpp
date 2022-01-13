@@ -101,7 +101,8 @@ JSONValue& JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
 
 void JSONOutputArchiveBlock::Close(ArchiveBase& archive)
 {
-    URHO3D_ASSERT(expectedElementCount_ == M_MAX_UNSIGNED || numElements_ == expectedElementCount_);
+    // TODO: Uncomment when PluginManager is fixed
+    //URHO3D_ASSERT(expectedElementCount_ == M_MAX_UNSIGNED || numElements_ == expectedElementCount_);
 }
 
 void JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
