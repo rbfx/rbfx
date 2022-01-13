@@ -115,10 +115,10 @@ bool ParticleGraphEffect::EndLoad()
     //    return true;
 
     XMLInputArchive archive(loadXMLFile_);
-    const auto res = Serialize(archive);
+    SerializeInBlock(archive);
     //if (archive.HasError())
     //    URHO3D_LOGERROR(archive.GetErrorString());
-    return res;
+    return true;
 }
 
 bool ParticleGraphEffect::Save(Serializer& dest) const
@@ -126,18 +126,14 @@ bool ParticleGraphEffect::Save(Serializer& dest) const
     SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement graphElem = xml->CreateRoot("particleGraph");
     XMLOutputArchive archive(xml);
-    if (!const_cast<ParticleGraphEffect*>(this)->Serialize(archive))
-    {
-        //if (archive.HasError())
-        //    URHO3D_LOGERROR(archive.GetErrorString());
-        return false;
-    }
-    return xml->Save(dest);
+    const_cast<ParticleGraphEffect*>(this)->SerializeInBlock(archive);
+    xml->Save(dest);
+    return true;
 }
 
-bool ParticleGraphEffect::Serialize(Archive& archive)
+void ParticleGraphEffect::SerializeInBlock(Archive& archive)
 {
-    return SerializeVectorAsObjects(archive, "particleGraphEffect", "layer", layers_);
+    SerializeVectorAsObjects(archive, "particleGraphEffect", layers_ , "layer");
 }
 
 

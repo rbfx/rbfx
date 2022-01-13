@@ -61,7 +61,7 @@ public:
     /// Save resource. Return true if successful.
     bool Save(Serializer& dest) const override;
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
+    void SerializeInBlock(Archive& archive) override;
 
 
 private:

@@ -314,25 +314,21 @@ const ParticleGraphLayer::AttributeBufferLayout& ParticleGraphLayer::GetAttribut
 unsigned ParticleGraphLayer::GetTempBufferSize() const { return tempMemory_.GetRequiredMemory(); }
 
 /// Serialize from/to archive. Return true if successful.
-bool ParticleGraphLayer::Serialize(Archive& archive)
+void ParticleGraphLayer::SerializeInBlock(Archive& archive)
 {
-    SerializeOptional(
-        archive, capacity_ != DefaultCapacity, [&](bool load) { return SerializeValue(archive, "capacity", capacity_); });
-    SerializeOptional(
-        archive, duration_ != DefaultDuration, [&](bool load) { return SerializeValue(archive, "duration", duration_); });
+    SerializeOptionalValue(archive, "capacity", capacity_);
+    SerializeOptionalValue(archive, "duration", duration_);
 
-    //TODO: Handle optional collection.
-    if (!emit_->Serialize(archive, "emit"))
-        return false;
-    if (!init_->Serialize(archive, "init"))
-        return false;
-    if (!update_->Serialize(archive, "update"))
-        return false;
+    SerializeOptionalValue(archive, "emit", emit_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+    SerializeOptionalValue(archive, "init", init_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+    SerializeOptionalValue(archive, "update", update_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+
     if (archive.IsInput())
     {
-        if (!Commit())
-            return false;
+        Commit();
     }
-    return true;
 }
 } // namespace Urho3D

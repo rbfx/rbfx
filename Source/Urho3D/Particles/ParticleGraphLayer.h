@@ -120,8 +120,8 @@ public:
     /// @property
     unsigned GetTempBufferSize() const;
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
+    /// Serialize from/to archive.
+    void SerializeInBlock(Archive& archive) override;
 
 private:
     /// is the effect committed.

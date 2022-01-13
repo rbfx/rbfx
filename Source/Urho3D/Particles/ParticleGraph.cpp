@@ -93,17 +93,13 @@ bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
         Graph graph(context_);
         if (archive.IsInput())
         {
-            if (!graph.Serialize(archive))
-                return false;
-            if (!LoadGraph(graph))
-                return false;
+            graph.SerializeInBlock(archive);
+            LoadGraph(graph);
         }
         else
         {
-            if (!SaveGraph(graph))
-                return false;
-            if (!graph.Serialize(archive))
-                return false;
+            SaveGraph(graph);
+            graph.SerializeInBlock(archive);
         }
         return true;
     }
