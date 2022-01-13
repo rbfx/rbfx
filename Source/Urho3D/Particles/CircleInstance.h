@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "Cone.h"
+#include "Circle.h"
 #include "Emitter.h"
 
 namespace Urho3D
@@ -38,8 +38,8 @@ public:
     template <typename Pos, typename Vel>
     void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
     {
-        const Cone* cone = static_cast<Cone*>(GetGraphNode());
-        const Matrix3x4 m = Matrix3x4(cone->GetTranslation(), cone->GetRotation(), cone->GetScale());
+        const Circle* circle = static_cast<Circle*>(GetGraphNode());
+        const Matrix3x4 m = Matrix3x4(circle->GetTranslation(), circle->GetRotation(), circle->GetScale());
         const Matrix3 md = m.RotationMatrix();
 
         for (unsigned i = 0; i < numParticles; ++i)
@@ -53,17 +53,17 @@ public:
 
     void Generate(Vector3& pos, Vector3& vel) const
     {
-        const Circle* cone = static_cast<Circle*>(GetGraphNode());
+        const Circle* circle = static_cast<Circle*>(GetGraphNode());
 
         const float angle = Urho3D::Random(360.0f);
         const float cosinus = Cos(angle);
         const float sinus = Sin(angle);
         const Vector3 direction = Vector3(cosinus, sinus, 0.0f);
 
-        float r = cone->GetRadius();
-        if (cone->GetRadiusThickness() > 0.0f)
+        float r = circle->GetRadius();
+        if (circle->GetRadiusThickness() > 0.0f)
         {
-            r *= 1.0f - Urho3D::Random() * cone->GetRadiusThickness();
+            r *= 1.0f - Urho3D::Random() * circle->GetRadiusThickness();
         }
         vel = direction;
         pos = Vector3(cosinus * (r), sinus * (r), 0.0f);
