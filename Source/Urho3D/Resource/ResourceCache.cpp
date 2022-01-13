@@ -39,6 +39,8 @@
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
+#include "../Resource/Graph.h"
+#include "../Resource/GraphNode.h"
 
 #include "../DebugNew.h"
 
@@ -1200,6 +1202,8 @@ void RegisterResourceLibrary(Context* context)
     JSONFile::RegisterObject(context);
     PListFile::RegisterObject(context);
     XMLFile::RegisterObject(context);
+    Graph::RegisterObject(context);
+    GraphNode::RegisterObject(context);
 }
 
 void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
