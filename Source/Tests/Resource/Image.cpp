@@ -74,7 +74,7 @@ float CompareImages(const Image& lhs, const Image& rhs, bool compareAlpha, float
 
 TEST_CASE("DXT, ETC and PVRTC images are decompressed")
 {
-    auto context = MakeShared<Context>();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto imageReference = ReadImage(context, PNG, CF_NONE);
     const auto imageDXT1 = ReadImage(context, DXT1, CF_DXT1);

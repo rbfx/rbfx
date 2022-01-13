@@ -263,9 +263,6 @@ Graphics::Graphics(Context* context) :
     SetTextureUnitMappings();
 
     context_->RequireSDL(SDL_INIT_VIDEO);
-
-    // Register Graphics library object factories
-    RegisterGraphicsLibrary(context_);
 }
 
 Graphics::~Graphics()

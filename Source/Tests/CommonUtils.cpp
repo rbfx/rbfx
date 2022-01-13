@@ -48,7 +48,28 @@ void PrintError(StringHash hash, VariantMap& args)
 
 }
 
-SharedPtr<Context> CreateCompleteTestContext()
+static SharedPtr<Context> sharedContext;
+static CreateContextCallback sharedContextCallback;
+
+SharedPtr<Context> GetOrCreateContext(CreateContextCallback callback)
+{
+    if (sharedContext && sharedContextCallback == callback)
+        return sharedContext;
+
+    ResetContext();
+
+    sharedContext = callback();
+    sharedContextCallback = callback;
+    return sharedContext;
+}
+
+void ResetContext()
+{
+    sharedContext = nullptr;
+    sharedContextCallback = nullptr;
+}
+
+SharedPtr<Context> CreateCompleteContext()
 {
     auto context = MakeShared<Context>();
     auto engine = new Engine(context);

@@ -29,6 +29,7 @@
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Resource/ResourceCache.h"
+#include "../Resource/XMLArchive.h"
 #include "../Resource/XMLFile.h"
 
 #include <PugiXml/pugixml.hpp>
@@ -141,6 +142,40 @@ bool XMLFile::Save(Serializer& dest, const ea::string& indentation) const
     return writer.success_;
 }
 
+bool XMLFile::SaveObjectCallback(const ea::function<void(Archive&)> serializeValue)
+{
+    try
+    {
+        document_->remove_attributes();
+        document_->remove_children();
+        XMLOutputArchive archive{this};
+        serializeValue(archive);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        document_->remove_attributes();
+        document_->remove_children();
+        URHO3D_LOGERROR("Failed to save object to XML: {}", e.what());
+        return false;
+    }
+}
+
+bool XMLFile::LoadObjectCallback(const ea::function<void(Archive&)> serializeValue) const
+{
+    try
+    {
+        XMLInputArchive archive{this};
+        serializeValue(archive);
+        return true;
+    }
+    catch (const ArchiveException& e)
+    {
+        URHO3D_LOGERROR("Failed to load object from XML: {}", e.what());
+        return false;
+    }
+}
+
 XMLElement XMLFile::CreateRoot(const ea::string& name)
 {
     document_->reset();
@@ -168,7 +203,7 @@ bool XMLFile::FromString(const ea::string& source)
     return Load(buffer);
 }
 
-XMLElement XMLFile::GetRoot(const ea::string& name)
+XMLElement XMLFile::GetRoot(const ea::string& name) const
 {
     pugi::xml_node root = document_->first_child();
     if (root.empty())

@@ -38,12 +38,9 @@ GraphPin::GraphPin(GraphNode* node)
 
 GraphPin::~GraphPin() = default;
 
-bool GraphPin::Serialize(Archive& archive, ArchiveBlock& block)
+void GraphPin::SerializeInBlock(Archive& archive)
 {
-    //TODO: make proper optional serialization.
-    SerializeOptional(archive, name_.empty(),
-                             [&](bool loading) { return SerializeValue(archive, "name", name_); });
-    return true;
+    SerializeOptionalValue(archive, "name", name_);
 }
 
 GraphDataPin::GraphDataPin(GraphNode* node)
@@ -51,18 +48,15 @@ GraphDataPin::GraphDataPin(GraphNode* node)
 {
 }
 
-bool GraphDataPin::Serialize(Archive& archive, ArchiveBlock& block)
+void GraphDataPin::SerializeInBlock(Archive& archive)
 {
-    if (!GraphPin::Serialize(archive, block))
-        return false;
-    // TODO: check if element is missing properly
-    SerializeOptional(archive, type_ == VAR_NONE,
-                      [&](bool loading) { return SerializeEnum(archive, "type", Variant::GetTypeNameList(), type_); });
-    return true;
+    GraphPin::SerializeInBlock(archive);
+
+    SerializeOptionalValue(archive, "type", type_);
 }
 
 GraphOutPin::GraphOutPin(GraphNode* node)
-    :GraphDataPin(node)
+    : GraphDataPin(node)
 {
 }
 
@@ -106,29 +100,24 @@ GraphOutPin* GraphInPin::GetConnectedPin() const
         {
             if (auto target = graph->GetNode(targetNode_))
             {
-                return target->GetOutput(targetPin_);
+                return node->GetOutput(targetPin_);
             }
         }
     }
     return nullptr;
 }
 
-
-bool GraphInPin::Serialize(Archive& archive, ArchiveBlock& block)
+void GraphInPin::SerializeInBlock(Archive& archive)
 {
-    if (!GraphDataPin::Serialize(archive, block))
-        return false;
+    GraphDataPin::SerializeInBlock(archive);
 
-            // TODO: check if element is missing properly
-    SerializeOptional(archive, targetNode_ != 0,
-                      [&](bool loading) { return SerializeValue(archive, "node", targetNode_); });
-    SerializeOptional(archive, !targetPin_.empty(),
-                      [&](bool loading) { return SerializeValue(archive, "pin", targetPin_); });
-
-    SerializeOptional(archive, !value_.IsEmpty(),
-                      [&](bool loading) { return SerializeVariantValue(archive, type_, "value", value_); });
-
-    return true;
+    SerializeOptionalValue(archive, "node", targetNode_);
+    SerializeOptionalValue(archive, "pin", targetPin_);
+    SerializeOptionalValue(archive, "value", value_, Variant::EMPTY,
+        [&](Archive& archive, const char* name, Variant& value)
+    {
+        SerializeVariantAsType(archive, name, value, type_);
+    });
 }
 
 void GraphInPin::SetValue(const Variant& variant)
@@ -156,7 +145,7 @@ GraphEnterPin* GraphExitPin::GetConnectedPin() const
 }
 
 GraphEnterPin::GraphEnterPin(GraphNode* node)
-    :GraphPin(node)
+    : GraphPin(node)
 {
 }
 
@@ -165,35 +154,21 @@ GraphExitPin::GraphExitPin(GraphNode* node)
 {
 }
 
-bool GraphExitPin::Serialize(Archive& archive, ArchiveBlock& block)
+void GraphExitPin::SerializeInBlock(Archive& archive)
 {
-    if (!GraphPin::Serialize(archive, block))
-        return false;
+    GraphPin::SerializeInBlock(archive);
+
+    SerializeOptionalValue(archive, "node", targetNode_);
+    SerializeOptionalValue(archive, "pin", targetPin_);
+
     if (archive.IsInput())
     {
-        unsigned id = 0;
-        ea::string pin;
-        SerializeValue(archive, "node", id);
-        SerializeValue(archive, "pin", pin);
-
-        if (id != 0 && !pin.empty())
+        if (!targetNode_ || targetPin_.empty())
         {
-            targetNode_ = id;
-            if (targetNode_)
-            {
-                targetPin_ = pin;
-            }
+            targetNode_ = 0;
+            targetPin_ = "";
         }
     }
-    else
-    {
-        if (targetNode_)
-        {
-            SerializeValue(archive, "node", targetNode_);
-            SerializeValue(archive, "pin", targetPin_);
-        }
-    }
-    return true;
 }
 
 bool GraphExitPin::ConnectTo(GraphEnterPin& pin)
@@ -219,4 +194,4 @@ void GraphExitPin::Disconnect()
     targetPin_.clear();
 }
 
-}
+} // namespace Urho3D

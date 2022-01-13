@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-
 #include "Graph.h"
 #include "GraphNode.h"
 #include "XMLArchive.h"
@@ -37,85 +36,59 @@ Graph::Graph(Context* context)
 {
 }
 
-Graph::~Graph()
-{
-    Clear();
-}
+Graph::~Graph() { Clear(); }
 
-void Graph::RegisterObject(Context* context)
-{
-}
+void Graph::RegisterObject(Context* context) {}
 
 void Graph::Clear()
 {
     laskKnownNodeID_ = FIRST_ID;
 
-    for (auto& i: nodes_)
+    for (auto& i : nodes_)
     {
         i.second->SetGraph(nullptr, i.first);
     }
     nodes_.clear();
 }
 
-
 void Graph::GetNodeIds(ea::vector<unsigned>& ids) const
 {
     ids.clear();
     ids.reserve(nodes_.size());
-    for (auto& node: nodes_)
+    for (auto& node : nodes_)
     {
         ids.push_back(node.first);
     }
 }
 
-bool Graph::Serialize(Archive& archive)
+void Graph::SerializeInBlock(Archive& archive)
 {
-    if (auto block = archive.OpenArrayBlock("nodes", GetNumNodes()))
+    unsigned lastNodeId{};
+    SerializeMap(archive, "nodes", nodes_, "node",
+        [&](Archive& archive, const char* name, auto& value)
     {
-        if (archive.IsInput())
+        using ValueType = ea::remove_reference_t<decltype(value)>;
+        static constexpr bool isKey = ea::is_same_v<ValueType, unsigned>;
+        static constexpr bool isValue = ea::is_same_v<ValueType, SharedPtr<GraphNode>>;
+        static_assert(isKey != isValue, "Unexpected callback invocation");
+
+        if constexpr (isKey)
         {
-            Clear();
-            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-            {
-                if (ArchiveBlock block = archive.OpenUnorderedBlock("node"))
-                {
-                    unsigned id;
-                    if (!SerializeValue(archive, "id", id))
-                        return false;
-                    SharedPtr<GraphNode> node = MakeShared<GraphNode>(context_);
-                    node->SetGraph(nullptr, id);
-                    Add(node);
-                    if (!node->Serialize(archive, block))
-                        return false;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            return true;
+            SerializeValue(archive, "id", value);
+            lastNodeId = value;
         }
-        else
+        else if constexpr (isValue)
         {
-            for (auto& value : nodes_)
+            const bool loading = archive.IsInput();
+            if (loading)
             {
-                if (ArchiveBlock block = archive.OpenUnorderedBlock("node"))
-                {
-                    unsigned id = value.first;
-                    if (!SerializeValue(archive, "id", id))
-                        return false;
-                    if (!value.second->Serialize(archive, block))
-                        return false;
-                }
-                else
-                {
-                    return false;
-                }
+                value = MakeShared<GraphNode>(context_);
+                value->SetGraph(this, lastNodeId);
             }
-            return true;
+
+            value->SerializeInBlock(archive);
         }
-    }
-    return false;
+    });
 }
 
 GraphNode* Graph::GetNode(unsigned id) const
@@ -136,8 +109,8 @@ bool Graph::LoadXML(const ea::string_view xml)
     {
         return false;
     }
-    XMLInputArchive archive(&file);
-    return Serialize(archive);
+
+    return file.LoadObject(*this);
 }
 
 GraphNode* Graph::Create(const ea::string& name)
@@ -185,7 +158,7 @@ void Graph::Add(GraphNode* node)
             if (id == MAX_ID - 1)
                 laskKnownNodeID_ = FIRST_ID;
             else
-                laskKnownNodeID_ = id+1;
+                laskKnownNodeID_ = id + 1;
         }
         nodes_[id] = node;
         node->SetGraph(this, id);

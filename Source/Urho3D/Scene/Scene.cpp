@@ -138,14 +138,12 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-bool Scene::Serialize(Archive& archive)
+void Scene::SerializeInBlock(Archive& archive)
 {
-    if (!Node::Serialize(archive))
-        return false;
+    Node::SerializeInBlock(archive);
 
     fileName_ = archive.GetName();
     checksum_ = archive.GetChecksum();
-    return true;
 }
 
 bool Scene::Load(Deserializer& source)

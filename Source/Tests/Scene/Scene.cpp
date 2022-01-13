@@ -27,7 +27,7 @@
 
 TEST_CASE("Scene lookup")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto scene = MakeShared<Scene>(context);
 
     auto child0 = scene->CreateChild("Child_0");

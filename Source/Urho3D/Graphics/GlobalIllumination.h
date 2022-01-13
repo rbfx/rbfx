@@ -70,8 +70,8 @@ public:
     /// Return reference on file with baked data.
     ResourceRef GetFileRef() const;
 
-    /// Serialize GI data.
-    bool SerializeData(Archive& archive);
+    /// Serialize GI data. May throw ArchiveException.
+    void SerializeData(Archive& archive);
 
 private:
     /// Reload GI data.

@@ -55,20 +55,15 @@ void Editor::RenderSettingsWindow()
     }
 }
 
-bool Editor::Serialize(Archive& archive)
+void Editor::SerializeInBlock(Archive& archive)
 {
-    if (auto editorBlock = archive.OpenUnorderedBlock("editor"))
+    if (auto windowBlock = archive.OpenUnorderedBlock("window"))
     {
-        if (auto windowBlock = archive.OpenUnorderedBlock("window"))
-        {
-            SerializeValue(archive, "pos", windowPos_);
-            SerializeValue(archive, "size", windowSize_);
-        }
-        SerializeValue(archive, "recentProjects", recentProjects_);
-        if (!keyBindings_.Serialize(archive))
-            return false;
+        SerializeValue(archive, "pos", windowPos_);
+        SerializeValue(archive, "size", windowSize_);
     }
-    return true;
+    SerializeValue(archive, "recentProjects", recentProjects_);
+    SerializeValue(archive, "keyBindings", keyBindings_);
 }
 
 }

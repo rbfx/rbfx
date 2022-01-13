@@ -167,8 +167,7 @@ void Editor::Setup()
             if (file.LoadFile(editorSettingsFile))
             {
                 JSONInputArchive archive(&file);
-                if (!Serialize(archive))
-                    URHO3D_LOGERROR("Loading of editor settings failed.");
+                ConsumeArchiveException([&]{ SerializeValue(archive, "editor", *this); });
 
                 engineParameters_[EP_WINDOW_WIDTH] = windowSize_.x_;
                 engineParameters_[EP_WINDOW_HEIGHT] = windowSize_.y_;
@@ -281,15 +280,7 @@ void Editor::Start()
 int Editor::RunEditorInstance(const ea::vector<ea::string>& arguments, ea::string& output)
 {
     auto fs = context_->GetSubsystem<FileSystem>();
-
-#if URHO3D_CSHARP && !_WIN32
-    // Editor executable is a C# program interpreted by .net runtime.
-    auto argumentsCopy = arguments;
-    argumentsCopy.push_front(fs->GetProgramFileName());
-    return fs->SystemRun(fs->GetInterpreterFileName(), argumentsCopy, output);
-#else
     return fs->SystemRun(fs->GetProgramFileName(), arguments, output);
-#endif
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
@@ -329,13 +320,9 @@ void Editor::Stop()
 
         JSONFile json(context_);
         JSONOutputArchive archive(&json);
-        if (Serialize(archive))
-        {
-            if (!json.SaveFile(editorSettingsDir + "Editor.json"))
-                URHO3D_LOGERROR("Saving of editor settings failed.");
-        }
-        else
-            URHO3D_LOGERROR("Serializing of editor settings failed.");
+        SerializeValue(archive, "editor", *this);
+        if (!json.SaveFile(editorSettingsDir + "Editor.json"))
+            URHO3D_LOGERROR("Saving of editor settings failed.");
     }
 
     context_->GetSubsystem<WorkQueue>()->Complete(0);

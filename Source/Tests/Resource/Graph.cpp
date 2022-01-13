@@ -35,7 +35,7 @@ using namespace Urho3D;
 
 TEST_CASE("Validate graph node id when added to scene")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto graph = MakeShared<Graph>(context);
     auto node = MakeShared<GraphNode>(context);
@@ -80,33 +80,35 @@ TEST_CASE("Validate graph node id when added to scene")
 
 TEST_CASE("Test pins deserialization")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto graph = MakeShared<Graph>(context);
     REQUIRE(graph->LoadXML(
         R"(
-        <nodes>
-            <node id="42" name="Test">
-				<in>
-					<pin />
-					<pin type="Vector2" name="in2" />
-					<pin type="Vector3" name="in3" value="1 2 3" />
-				</in>
-				<out>
-					<pin type="Vector3" name="out" />
-				</out>
-				<enter>
-					<pin name="enter" />
-				</enter>
-				<exit>
-					<pin name="exit" />
-				</exit>
-            </node>
-            <node id="4294967294" name="Test2">
-                <properties>
-                    <property name="p" type="Vector2" value="1 2" />
-                </properties>
-            </node>
-        </nodes>
+        <graph>
+            <nodes>
+                <node id="42" name="Test">
+                    <in>
+                        <pin />
+                        <pin type="Vector2" name="in2" />
+                        <pin type="Vector3" name="in3" value="1 2 3" />
+                    </in>
+                    <out>
+                        <pin type="Vector3" name="out" />
+                    </out>
+                    <enter>
+                        <pin name="enter" />
+                    </enter>
+                    <exit>
+                        <pin name="exit" />
+                    </exit>
+                </node>
+                <node id="4294967294" name="Test2">
+                    <properties>
+                        <property name="p" type="Vector2" value="1 2" />
+                    </properties>
+                </node>
+            </nodes>
+        </graph>
     )"));
 
     auto node42 = graph->GetNode(42);
@@ -135,7 +137,7 @@ TEST_CASE("Test pins deserialization")
 
 TEST_CASE("Graph serialization roundtrip")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto resourceCache = context->GetSubsystem<ResourceCache>();
     auto material = MakeShared<Material>(context);
@@ -168,19 +170,16 @@ TEST_CASE("Graph serialization roundtrip")
     VectorBuffer buf;
     {
         SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
-        XMLElement graphElem = xml->CreateRoot("graph");
-        XMLOutputArchive archive(xml);
-        CHECK(graph->Serialize(archive));
-        xml->Save(buf);
+        REQUIRE(xml->SaveObject(*graph));
+        REQUIRE(xml->Save(buf));
     }
 
     auto restoredGraph = MakeShared<Graph>(context);
     buf.Seek(0);
     {
         SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
-        CHECK(xml->Load(buf));
-        XMLInputArchive archive(xml);
-        CHECK(restoredGraph->Serialize(archive));
+        REQUIRE(xml->Load(buf));
+        REQUIRE(xml->LoadObject(*restoredGraph));
     }
     CHECK(restoredGraph->GetNumNodes() == graph->GetNumNodes());
     ea::vector<unsigned> ids;

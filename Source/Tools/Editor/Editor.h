@@ -107,7 +107,7 @@ public:
     bool RegisterPlugin(PluginApplication* plugin);
 #endif
     /// Serialize editor user-specific settings.
-    bool Serialize(Archive& archive) override;
+    void SerializeInBlock(Archive& archive) override;
 
     /// Key bindings manager.
     KeyBindings keyBindings_{context_};

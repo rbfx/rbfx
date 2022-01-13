@@ -144,6 +144,10 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
 #endif
+    // Required in headless mode as well.
+    RegisterGraphicsLibrary(context_);
+    // Register object factories for libraries which are not automatically registered along with subsystem creation
+    RegisterSceneLibrary(context_);
     // Register UI library object factories before creation of subsystem. This is not done inside subsystem because
     // there may exist multiple instances of UI.
     RegisterUILibrary(context_);
@@ -152,8 +156,6 @@ Engine::Engine(Context* context) :
     RegisterRmlUILibrary(context_);
     context_->RegisterSubsystem(new RmlUI(context_));
 #endif
-    // Register object factories for libraries which are not automatically registered along with subsystem creation
-    RegisterSceneLibrary(context_);
 
 #ifdef URHO3D_GLOW
     // Light baker needs only one class so far, so register it directly.

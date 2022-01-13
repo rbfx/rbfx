@@ -22,14 +22,8 @@
 
 #pragma once
 
+#include "../Core/Format.h"
 #include "../Core/Variant.h"
-#if _MSC_VER
-#   pragma warning(push, 0)
-#endif
-#include <fmt/format.h>
-#if _MSC_VER
-#   pragma warning(pop)
-#endif
 
 namespace Urho3D
 {
@@ -178,13 +172,5 @@ template <> inline Matrix4 FromString<Matrix4>(const char* source) { return ToMa
 
 /// Parse type from a string.
 template <class T> T FromString(const ea::string& source) { return FromString<T>(source.c_str()); }
-
-/// Return a formatted string.
-template<typename... Args> inline ea::string Format(ea::string_view formatString, const Args&... args)
-{
-    ea::string ret;
-    fmt::format_to(std::back_inserter(ret), formatString, args...);
-    return ret;
-}
 
 }

@@ -63,6 +63,41 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+struct NodeNodeIdCaster
+{
+    Scene* scene_{};
+
+    unsigned ToArchive(Archive& archive, const char* name, const WeakPtr<Node>& value) const
+    {
+        return value ? value->GetID() : M_MAX_UNSIGNED;
+    }
+
+    WeakPtr<Node> FromArchive(Archive& archive, const char* name, unsigned value) const
+    {
+        return value != M_MAX_UNSIGNED ? WeakPtr<Node>{scene_->GetNode(value)} : nullptr;
+    }
+};
+
+struct ComponentComponentIdCaster
+{
+    Scene* scene_{};
+
+    unsigned ToArchive(Archive& archive, const char* name, const WeakPtr<Component>& value) const
+    {
+        return value ? value->GetID() : M_MAX_UNSIGNED;
+    }
+
+    WeakPtr<Component> FromArchive(Archive& archive, const char* name, unsigned value) const
+    {
+        return value != M_MAX_UNSIGNED ? WeakPtr<Component>{scene_->GetComponent(value)} : nullptr;
+    }
+};
+
+}
+
 static const IntVector2 cameraPreviewSize{320, 200};
 static Matrix4 inversionMatrix(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1);
 
@@ -1341,65 +1376,17 @@ bool SceneTab::SerializeSelection(Archive& archive)
 {
     if (auto block = archive.OpenSequentialBlock("items"))
     {
-        if (auto block = archive.OpenArrayBlock("nodes", selectedNodes_.size()))
+        SerializeSet(archive, "nodes", selectedNodes_, "node",
+            [&](Archive& archive, const char* name, WeakPtr<Node>& value)
         {
-            unsigned id;
-            if (archive.IsInput())
-            {
-                selectedNodes_.clear();
-                Scene* scene = GetScene();
-                for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-                {
-                    if (!SerializeValue(archive, "id", id))
-                        return false;
-                    if (Node* node = scene->GetNode(id))
-                        selectedNodes_.insert(WeakPtr(node));
-                    else
-                        return false;
-                }
-            }
-            else
-            {
-                for (Node* node : selectedNodes_)
-                {
-                    if (node == nullptr)
-                        continue;
-                    id = node->GetID();
-                    if (!SerializeValue(archive, "id", id))
-                        return false;
-                }
-            }
-        }
+            SerializeValueAsType<unsigned>(archive, name, value, NodeNodeIdCaster{GetScene()});
+        });
 
-        if (auto block = archive.OpenArrayBlock("components", selectedComponents_.size()))
+        SerializeSet(archive, "components", selectedNodes_, "component",
+            [&](Archive& archive, const char* name, WeakPtr<Node>& value)
         {
-            unsigned id;
-            if (archive.IsInput())
-            {
-                selectedComponents_.clear();
-                Scene* scene = GetScene();
-                for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-                {
-                    if (!SerializeValue(archive, "id", id))
-                        return false;
-                    if (Component* component = scene->GetComponent(id))
-                        selectedComponents_.insert(WeakPtr(component));
-                    else
-                        return false;
-                }
-            }
-            else
-            {
-                for (Component* component : selectedComponents_)
-                {
-                    if (component == nullptr)
-                        continue;
-                    id = component->GetID();
-                    if (!SerializeValue(archive, "id", id))
-                        return false;
-                }
-            }
-        }
+            SerializeValueAsType<unsigned>(archive, name, value, NodeNodeIdCaster{GetScene()});
+        });
 
         if (archive.IsInput())
             OnNodeSelectionChanged();

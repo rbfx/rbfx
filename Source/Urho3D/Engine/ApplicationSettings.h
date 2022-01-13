@@ -37,7 +37,7 @@ public:
     explicit ApplicationSettings(Context* context);
 
     ///
-    bool Serialize(Archive& archive) override;
+    void SerializeInBlock(Archive& archive) override;
 
     /// Resource name of scene that player application will start.
     ea::string defaultScene_{};

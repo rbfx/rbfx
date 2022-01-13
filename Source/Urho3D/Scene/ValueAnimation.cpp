@@ -48,29 +48,6 @@ const char* interpMethodNames[] =
     nullptr
 };
 
-bool SerializeValue(Archive& archive, const char* name, VAnimKeyFrame& keyFrame)
-{
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "time", keyFrame.time_);
-        SerializeValue(archive, "value", keyFrame.value_);
-        return true;
-    }
-    return false;
-}
-
-bool SerializeValue(Archive& archive, const char* name, VAnimEventFrame& eventFrame)
-{
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "time", eventFrame.time_);
-        SerializeValue(archive, "eventtype", eventFrame.eventType_);
-        SerializeValue(archive, "eventdata", eventFrame.eventData_);
-        return true;
-    }
-    return false;
-}
-
 ValueAnimation::ValueAnimation(Context* context) :
     Resource(context),
     owner_(nullptr),
@@ -89,46 +66,6 @@ ValueAnimation::~ValueAnimation() = default;
 void ValueAnimation::RegisterObject(Context* context)
 {
     context->RegisterFactory<ValueAnimation>();
-}
-
-bool ValueAnimation::Serialize(Archive& archive)
-{
-    if (ArchiveBlock block = archive.OpenUnorderedBlock("valueanimation"))
-        return Serialize(archive, block);
-    return false;
-}
-
-bool ValueAnimation::Serialize(Archive& archive, ArchiveBlock& /*block*/)
-{
-    const bool loading = archive.IsInput();
-
-    if (loading)
-    {
-        valueType_ = VAR_NONE;
-        eventFrames_.clear();
-    }
-
-    SerializeCustomEnum(archive, "interpolationmethod", interpMethodNames, interpolationMethod_,
-        [&](InterpMethod value) { SetInterpolationMethod(value); });
-
-    if (interpolationMethod_ == IM_SPLINE)
-        SerializeValue(archive, "splinetension", splineTension_);
-
-    SerializeCustomVector(archive, ArchiveBlockType::Array, "keyframes", keyFrames_.size(), keyFrames_,
-        [&](unsigned /*index*/, const VAnimKeyFrame& keyFrame, bool loading)
-    {
-        return SerializeCustomValue(archive, "keyframe", keyFrame,
-            [&](const VAnimKeyFrame& value) { SetKeyFrame(value.time_, value.value_); });
-    });
-
-    SerializeCustomVector(archive, ArchiveBlockType::Array, "eventframes", eventFrames_.size(), eventFrames_,
-        [&](unsigned /*index*/, const VAnimEventFrame& eventFrame, bool loading)
-    {
-        return SerializeCustomValue(archive, "eventframe", eventFrame,
-            [&](const VAnimEventFrame& value) { SetEventFrame(value.time_, value.eventType_, value.eventData_); });
-    });
-
-    return true;
 }
 
 bool ValueAnimation::BeginLoad(Deserializer& source)

@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "GraphPin.h"
 #include "../Core/Context.h"
+#include "GraphPin.h"
 #include <EASTL/fixed_vector.h>
 #include <EASTL/span.h>
 
@@ -46,15 +46,15 @@ public:
     StringHash GetNameHash() const { return nameHash_; }
 
     /// Set property name.
-    /// @property 
+    /// @property
     void SetName(const ea::string_view name)
     {
         name_ = name;
         nameHash_ = name;
     }
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive);
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
 
 private:
     /// Property name.
@@ -62,9 +62,6 @@ private:
     /// Property name hash.
     StringHash nameHash_;
 };
-
-/// Serialize GraphNodeProperty.
-bool SerializeValue(Archive& archive, const char* name, GraphNodeProperty& value);
 
 /// Graph node.
 class URHO3D_API GraphNode : public Object
@@ -158,16 +155,12 @@ public:
     /// @property
     void SetName(const ea::string& name);
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block);
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
 
 protected:
-
     /// Set graph and id. Called by Graph.
     void SetGraph(Graph* scene, unsigned id);
-
-    template <typename PinType, size_t PinCount>
-    bool SerializePins(Archive& archive, const char* blockName, ea::fixed_vector<PinType, PinCount>& pins);
 
 private:
     /// Name.

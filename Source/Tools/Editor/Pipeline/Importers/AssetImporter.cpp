@@ -74,16 +74,13 @@ bool AssetImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     return true;
 }
 
-bool AssetImporter::Serialize(Archive& archive, ArchiveBlock& block)
+void AssetImporter::SerializeInBlock(Archive& archive)
 {
-    if (!BaseClassName::Serialize(archive, block))
-        return false;
+    BaseClassName::SerializeInBlock(archive);
 
-    if (!SerializeVector(archive, "byproducts", "resourceName", byproducts_))
-        return false;
+    SerializeVector(archive, "byproducts", byproducts_, "resourceName");
 
     lastAttributeHash_ = HashEffectiveAttributeValues();
-    return true;
 }
 
 bool AssetImporter::IsModified() const

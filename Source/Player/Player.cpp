@@ -72,15 +72,14 @@ void Player::Setup()
         if (jsonFile.LoadFile(settingsFilePath))
         {
             JSONInputArchive archive(&jsonFile);
-            if (settings_.Serialize(archive))
-            {
-                for (const auto& pair : settings_.engineParameters_)
-                    engineParameters_[pair.first] = pair.second;
-                engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
-                // Unpacked application is executing. Do not attempt to load paks.
-                URHO3D_LOGINFO("This is a developer build executing unpacked application.");
-                return;
-            }
+            SerializeValue(archive, "settings", settings_);
+
+            for (const auto& pair : settings_.engineParameters_)
+                engineParameters_[pair.first] = pair.second;
+            engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
+            // Unpacked application is executing. Do not attempt to load paks.
+            URHO3D_LOGINFO("This is a developer build executing unpacked application.");
+            return;
         }
     }
 #endif
@@ -137,11 +136,7 @@ void Player::Setup()
         }
 
         JSONInputArchive archive(&jsonFile);
-        if (!settings_.Serialize(archive))
-        {
-            URHO3D_LOGERROR("Unable to deserialize Settings.json in {}", pakFile);
-            continue;
-        }
+        SerializeValue(archive, "settings", settings_);
 
         // Empty platforms list means pak is meant for all platforms.
         if (settings_.platforms_.empty() || settings_.platforms_.contains(GetPlatform()))

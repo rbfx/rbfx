@@ -33,14 +33,11 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper;
 /// Abstract graph node pin.
 class URHO3D_API GraphPin
 {
-protected:
-    /// Construct.
+public:
+    GraphPin() = default;
     explicit GraphPin(GraphNode* node);
-
-    /// Destruct.
     virtual ~GraphPin();
 
-public:
     /// Get name of the pin.
     /// @property
     const ea::string& GetName() { return name_; }
@@ -48,10 +45,10 @@ public:
     /// Get pin node.
     GraphNode* GetNode() const { return node_; }
 
-protected:
-    /// Serialize from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive, ArchiveBlock& block);
+    /// Serialize content from/to archive. May throw ArchiveException.
+    virtual void SerializeInBlock(Archive& archive);
 
+protected:
     /// Set name of the pin. Executed by GraphNode.
     /// @property
     void SetName(const ea::string_view name) { name_ = name; }
@@ -69,9 +66,10 @@ protected:
 /// Abstract graph data flow node pin. Has pin type.
 class URHO3D_API GraphDataPin : public GraphPin
 {
-protected:
-    /// Construct.
+public:
+    GraphDataPin() = default;
     explicit GraphDataPin(GraphNode* node);
+
 public:
     /// Get pin type.
     /// @property
@@ -81,8 +79,8 @@ public:
     /// @property
     void SetType(VariantType type) { type_ = type; }
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block) override;
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
 
 protected:
     /// Pin type.
@@ -92,8 +90,8 @@ protected:
 /// Graph node pin that connects to other pins.
 class URHO3D_API GraphOutPin : public GraphDataPin
 {
-protected:
-    /// Construct.
+public:
+    GraphOutPin() = default;
     explicit GraphOutPin(GraphNode* node);
 
     friend class GraphNode;
@@ -102,14 +100,10 @@ protected:
 /// Graph node pin with connection.
 class URHO3D_API GraphInPin : public GraphDataPin
 {
-protected:
-    /// Construct.
+public:
+    GraphInPin() = default;
     GraphInPin(GraphNode* node);
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block) override;
-
-public:
     /// Connect to other pin.
     bool ConnectTo(GraphOutPin& pin);
 
@@ -130,6 +124,9 @@ public:
     /// @property
     void SetValue(const Variant& variant);
 
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
 private:
     /// Target node.
     unsigned targetNode_{};
@@ -146,8 +143,8 @@ private:
 /// Graph node execution flow "enter" pin. May be connected to multiple exit pins.
 class URHO3D_API GraphEnterPin : public GraphPin
 {
-protected:
-    /// Construct.
+public:
+    GraphEnterPin() = default;
     explicit GraphEnterPin(GraphNode* node);
 
     friend class GraphNode;
@@ -156,14 +153,10 @@ protected:
 /// Graph node execution flow "exit" pin. May be connected to one "enter" pins.
 class URHO3D_API GraphExitPin : public GraphPin
 {
-protected:
-    /// Construct.
+public:
+    GraphExitPin() = default;
     explicit GraphExitPin(GraphNode* node);
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block) override;
-
-public:
     /// Connect to other pin.
     bool ConnectTo(GraphEnterPin& pin);
 
@@ -175,6 +168,9 @@ public:
 
     /// Get true if pin is connected.
     bool IsConnected() const { return targetNode_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
 
 private:
     /// Target node.

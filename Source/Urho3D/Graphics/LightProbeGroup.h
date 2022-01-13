@@ -43,7 +43,7 @@ struct LightProbe
 };
 
 /// Serialize light probe.
-bool SerializeValue(Archive& archive, const char* name, LightProbe& value);
+void SerializeValue(Archive& archive, const char* name, LightProbe& value);
 
 /// Vector of light probes.
 using LightProbeVector = ea::vector<LightProbe>;
@@ -78,7 +78,7 @@ struct LightProbeCollectionBakedData
 };
 
 /// Serialize light probe baked data.
-bool SerializeValue(Archive& archive, const char* name, LightProbeCollectionBakedData& value);
+void SerializeValue(Archive& archive, const char* name, LightProbeCollectionBakedData& value);
 
 /// Light probes from multiple light probe groups.
 struct LightProbeCollection
@@ -185,8 +185,6 @@ public:
     /// Return serialized light probes.
     ea::string GetSerializedLightProbes() const;
 
-    /// Serialize baked data.
-    static bool SerializeBakedData(Archive& archive, LightProbeCollectionBakedData& bakedData);
     /// Set reference on file with baked data.
     void SetBakedDataFileRef(const ResourceRef& fileRef);
     /// Return reference on file with baked data.

@@ -59,8 +59,8 @@ public:
     /// Load graph from json. Return true if successful.
     bool LoadJSON(const ea::string_view json);
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive);
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
 
     /// Add node to the graph.
     void Add(GraphNode*);
@@ -84,6 +84,5 @@ private:
     /// Replicated scene nodes by ID.
     ea::unordered_map<unsigned, SharedPtr<GraphNode>> nodes_;
 };
-
 
 } // namespace Urho3D

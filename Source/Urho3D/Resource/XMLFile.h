@@ -25,6 +25,8 @@
 #include "../Resource/Resource.h"
 #include "../Resource/XMLElement.h"
 
+#include <EASTL/functional.h>
+
 namespace pugi
 {
 
@@ -58,6 +60,16 @@ public:
     /// Save resource with user-defined indentation. Return true if successful.
     bool Save(Serializer& dest, const ea::string& indentation) const;
 
+    /// Save/load objects using Archive serialization.
+    /// @{
+    bool SaveObjectCallback(const ea::function<void(Archive&)> serializeValue);
+    bool LoadObjectCallback(const ea::function<void(Archive&)> serializeValue) const;
+    template <class T> bool SaveObject(const char* name, const T& object);
+    template <class T> bool LoadObject(const char* name, T& object) const;
+    bool SaveObject(const Object& object) { return SaveObject(object.GetTypeName().c_str(), object); }
+    bool LoadObject(Object& object) const { return LoadObject(object.GetTypeName().c_str(), object); }
+    /// @}
+
     /// Deserialize from a string. Return true if successful.
     bool FromString(const ea::string& source);
     /// Clear the document and create a root element.
@@ -66,7 +78,7 @@ public:
     XMLElement GetOrCreateRoot(const ea::string& name);
 
     /// Return the root element, with optionally specified name. Return null element if not found.
-    XMLElement GetRoot(const ea::string& name = EMPTY_STRING);
+    XMLElement GetRoot(const ea::string& name = EMPTY_STRING) const;
 
     /// Return the pugixml document.
     pugi::xml_document* GetDocument() const { return document_.get(); }
@@ -97,5 +109,17 @@ private:
     /// Pugixml document.
     ea::unique_ptr<pugi::xml_document> document_;
 };
+
+template <class T>
+bool XMLFile::SaveObject(const char* name, const T& object)
+{
+    return SaveObjectCallback([&](Archive& archive) { SerializeValue(archive, name, const_cast<T&>(object)); });
+}
+
+template <class T>
+bool XMLFile::LoadObject(const char* name, T& object) const
+{
+    return LoadObjectCallback([&](Archive& archive) { SerializeValue(archive, name, object); });
+}
 
 }

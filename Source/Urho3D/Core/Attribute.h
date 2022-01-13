@@ -28,6 +28,8 @@
 #include "../Container/Ptr.h"
 #include "../Core/Variant.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -140,16 +142,20 @@ struct AttributeInfo
     /// Return whether the attribute should be loaded.
     bool ShouldLoad() const { return !!(mode_ & AM_FILE); }
 
-    /// Instance equality operator.
-    bool operator ==(const AttributeInfo& rhs) const
-    {
-        return this == &rhs;
-    }
+    /// Convert enum value to string.
+    const char* ConvertEnumToString(unsigned value) const { return enumNames_[value]; }
 
-    /// Instance inequality operator.
-    bool operator !=(const AttributeInfo& rhs) const
+    /// Convert enum value to integer.
+    unsigned ConvertEnumToUInt(ea::string_view value) const
     {
-        return this != &rhs;
+        unsigned index = 0;
+        for (const char** namePtr = enumNames_; *namePtr; ++namePtr)
+        {
+            if (Compare(ea::string_view(*namePtr), value, false) == 0)
+                return index;
+            ++index;
+        }
+        return M_MAX_UNSIGNED;
     }
 
     /// Attribute type.

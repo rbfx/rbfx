@@ -33,10 +33,10 @@ namespace
 
 const char* const keyFrameInterpolationNames[] =
 {
-    "none",
-    "linear",
-    "spline",
-    "cubicspline",
+    "None",
+    "Linear",
+    "Spline",
+    "CubicSpline",
     nullptr
 };
 
@@ -213,59 +213,42 @@ VariantType VariantCurve::GetType() const
     return keyFrames_.empty() ? VAR_NONE : keyFrames_[0].value_.GetType();
 }
 
-bool VariantCurve::Serialize(Archive& archive, ArchiveBlock& block)
+void VariantCurve::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "name", name_);
     SerializeValue(archive, "type", type_);
-    SerializeEnum(archive, "interpolation", keyFrameInterpolationNames, interpolation_);
+    SerializeEnum(archive, "interpolation", interpolation_, keyFrameInterpolationNames);
     SerializeValue(archive, "splineTension", splineTension_);
 
     if (interpolation_ == KeyFrameInterpolation::TangentSpline)
     {
-        SerializeVectorTieAsObjects(archive, "keyframes", "keyframe", ea::tie(keyFrames_, inTangents_, outTangents_),
+        SerializeVectorTieAsObjects(archive, "keyframes", ea::tie(keyFrames_, inTangents_, outTangents_), "keyframe",
             [&](Archive& archive, const char* name, ea::tuple<VariantCurvePoint&, Variant&, Variant&> value)
         {
-            if (auto block = archive.OpenUnorderedBlock(name))
-            {
-                auto& keyFrame = ea::get<0>(value);
-                auto& inTangent = ea::get<1>(value);
-                auto& outTangent = ea::get<2>(value);
-                if (!SerializeValue(archive, "time", keyFrame.time_))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "value", keyFrame.value_))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "in", inTangent))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "out", outTangent))
-                    return false;
+            auto block = archive.OpenUnorderedBlock(name);
 
-                return true;
-            }
-            return false;
+            auto& keyFrame = ea::get<0>(value);
+            auto& inTangent = ea::get<1>(value);
+            auto& outTangent = ea::get<2>(value);
+            SerializeValue(archive, "time", keyFrame.time_);
+            SerializeVariantAsType(archive, "value", keyFrame.value_, type_);
+            SerializeVariantAsType(archive, "in", inTangent, type_);
+            SerializeVariantAsType(archive, "out", outTangent, type_);
         });
     }
     else
     {
-        SerializeVectorAsObjects(archive, "keyframes", "keyframe", keyFrames_,
+        SerializeVectorAsObjects(archive, "keyframes", keyFrames_, "keyframe",
             [&](Archive& archive, const char* name, VariantCurvePoint& value)
         {
-            if (auto block = archive.OpenUnorderedBlock(name))
-            {
-                if (!SerializeValue(archive, "time", value.time_))
-                    return false;
-                if (!SerializeVariantValue(archive, type_, "value", value.value_))
-                    return false;
-
-                return true;
-            }
-            return false;
+            auto block = archive.OpenUnorderedBlock(name);
+            SerializeValue(archive, "time", value.time_);
+            SerializeVariantAsType(archive, "value", value.value_, type_);
         });
     }
 
     if (archive.IsInput())
         Commit();
-
-    return true;
 }
 
 unsigned VariantCurve::ToHash() const
@@ -288,13 +271,6 @@ bool VariantCurve::operator==(const VariantCurve& rhs) const
         && inTangents_ == rhs.inTangents_
         && outTangents_ == rhs.outTangents_
         && keyFrames_ == rhs.keyFrames_;
-}
-
-bool SerializeValue(Archive& archive, const char* name, VariantCurve& value)
-{
-    if (auto block = archive.OpenUnorderedBlock(name))
-        return value.Serialize(archive, block);
-    return false;
 }
 
 }

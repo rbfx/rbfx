@@ -86,7 +86,7 @@ public:
     int WeakRefs() const;
 
     /// Return pointer to the reference count structure.
-    RefCount* RefCountPtr() { return refCount_; }
+    RefCount* RefCountPtr() const { return refCount_; }
 #if URHO3D_CSHARP
     /// Return true if script runtime object wrapping this native object exists.
     bool HasScriptObject() const { return scriptObject_ != nullptr; }

@@ -97,40 +97,34 @@ void Node::RegisterObject(Context* context)
         AM_NET | AM_NOEDIT);
 }
 
-bool Node::Serialize(Archive& archive)
+void Node::SerializeInBlock(Archive& archive)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock("node"))
+    // TODO: Handle exceptions
+    if (archive.IsInput())
     {
-        if (archive.IsInput())
-        {
-            SceneResolver resolver;
+        SceneResolver resolver;
 
-            // Load this node ID for resolver
-            unsigned nodeID{};
-            if (!SerializeValue(archive, "id", id_))
-                return false;
-            resolver.AddNode(nodeID, this);
+        // Load this node ID for resolver
+        unsigned nodeID{};
+        Urho3D::SerializeValue(archive, "id", id_);
+        resolver.AddNode(nodeID, this);
 
-            // Load node content
-            if (!Serialize(archive, block, &resolver))
-                return false;
+        // Load node content
+        SerializeInBlock(archive, &resolver);
 
-            // Resolve IDs and apply attributes
-            resolver.Resolve();
-            ApplyAttributes();
-        }
-        else
-        {
-            // Save node ID and content
-            SerializeValue(archive, "id", id_);
-            Serialize(archive, block, nullptr);
-        }
-        return true;
+        // Resolve IDs and apply attributes
+        resolver.Resolve();
+        ApplyAttributes();
     }
-    return false;
+    else
+    {
+        // Save node ID and content
+        Urho3D::SerializeValue(archive, "id", id_);
+        SerializeInBlock(archive, nullptr);
+    }
 }
 
-bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resolver,
+void Node::SerializeInBlock(Archive& archive, SceneResolver* resolver,
     bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/, CreateMode mode /*= REPLICATED*/)
 {
     // Resolver must be present if loading
@@ -145,19 +139,18 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
     }
 
     // Serialize base class
-    if (!Animatable::Serialize(archive, block))
-        return false;
+    Animatable::SerializeInBlock(archive);
 
     // Serialize components
     const unsigned numComponentsToWrite = loading ? 0 : GetNumPersistentComponents();
-    const bool componentsSerialized = SerializeCustomVector(archive, ArchiveBlockType::Array, "components", numComponentsToWrite, components_,
+    SerializeCustomVector(archive, "components", numComponentsToWrite, components_,
         [&](unsigned /*index*/, SharedPtr<Component> component, bool loading)
     {
         assert(loading || component);
 
         // Skip temporary components
         if (component && component->IsTemporary())
-            return true;
+            return;
 
         // Serialize component
         if (ArchiveBlock componentBlock = archive.OpenSafeUnorderedBlock("component"))
@@ -180,29 +173,24 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
             }
 
             // Serialize component.
-            component->Serialize(archive, componentBlock);
-            return true;
+            component->SerializeInBlock(archive);
         }
-        return false;
     });
-
-    if (!componentsSerialized)
-        return false;
 
     // Skip children
     if (!serializeChildren)
-        return true;
+        return;
 
     // Serialize children
     const unsigned numChildrenToWrite = loading ? 0 : GetNumPersistentChildren();
-    const bool childrenSerialized = SerializeCustomVector(archive, ArchiveBlockType::Array, "children", numChildrenToWrite, children_,
+    SerializeCustomVector(archive, "children", numChildrenToWrite, children_,
         [&](unsigned /*index*/, SharedPtr<Node> child, bool loading)
     {
         assert(loading || child);
 
         // Skip temporary children
         if (child && child->IsTemporary())
-            return true;
+            return;
 
         // Serialize child
         if (ArchiveBlock childBlock = archive.OpenUnorderedBlock("child"))
@@ -222,19 +210,9 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
             }
 
             // Serialize child
-            if (!child->Serialize(archive, childBlock, resolver, serializeChildren, rewriteIDs, mode))
-                return false;
-
-            return true;
+            child->SerializeInBlock(archive, resolver, serializeChildren, rewriteIDs, mode);
         }
-
-        return false;
     });
-
-    if (!childrenSerialized)
-        return false;
-
-    return true;
 }
 
 bool Node::Load(Deserializer& source)

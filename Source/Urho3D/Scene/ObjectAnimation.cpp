@@ -57,45 +57,6 @@ void ObjectAnimation::RegisterObject(Context* context)
     context->RegisterFactory<ObjectAnimation>();
 }
 
-bool ObjectAnimation::Serialize(Archive& archive)
-{
-    if (ArchiveBlock block = archive.OpenUnorderedBlock("objectanimation"))
-        return Serialize(archive, block);
-    return false;
-}
-
-bool ObjectAnimation::Serialize(Archive& archive, ArchiveBlock& block)
-{
-    return SerializeCustomMap(archive, ArchiveBlockType::Map, "attributeanimations", attributeAnimationInfos_.size(), attributeAnimationInfos_,
-        [&](unsigned /*index*/, const ea::string& name, const SharedPtr<ValueAnimationInfo>& info, bool loading)
-    {
-        ea::string animationName = name;
-        archive.SerializeKey(animationName);
-
-        if (ArchiveBlock infoBlock = archive.OpenUnorderedBlock("attributeanimation"))
-        {
-            // Get value animation to serialize
-            SharedPtr<ValueAnimation> animation = info
-                ? SharedPtr<ValueAnimation>(info->GetAnimation())
-                : MakeShared<ValueAnimation>(context_);
-
-            animation->Serialize(archive, infoBlock);
-
-            WrapMode wrapMode = info ? info->GetWrapMode() : WM_LOOP;
-            SerializeEnum(archive, "wrapmode", wrapModeNames, wrapMode);
-
-            float speed = info ? info->GetSpeed() : 1.0f;
-            SerializeValue(archive, "speed", speed);
-
-            if (loading)
-                AddAttributeAnimation(animationName, animation, wrapMode, speed);
-
-            return true;
-        }
-        return false;
-    });
-}
-
 bool ObjectAnimation::BeginLoad(Deserializer& source)
 {
     XMLFile xmlFile(context_);

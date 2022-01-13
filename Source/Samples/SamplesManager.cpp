@@ -121,7 +121,6 @@
 #if URHO3D_SYSTEMUI
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
-#include "105_Serialization/Serialization.h"
 #if URHO3D_NAVIGATION
 #include "106_BakedLighting/BakedLighting.h"
 #endif
@@ -319,7 +318,6 @@ void SamplesManager::Start()
 #if URHO3D_SYSTEMUI
     RegisterSample<HelloSystemUi>();
 #endif
-    RegisterSample<Serialization>();
 #if URHO3D_NAVIGATION
     RegisterSample<BakedLighting>();
 #endif

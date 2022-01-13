@@ -87,10 +87,10 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive) override;
-    /// Serialize content from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resolver,
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+    /// Serialize content from/to archive, with additional properties. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive, SceneResolver* resolver,
         bool serializeChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED);
 
     /// Load from binary data. Return true if successful.

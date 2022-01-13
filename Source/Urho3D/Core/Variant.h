@@ -30,6 +30,8 @@
 
 #include "../Container/Ptr.h"
 #include "../Container/ByteVector.h"
+#include "../Core/Assert.h"
+#include "../Core/Exception.h"
 #include "../Core/TypeTrait.h"
 #include "../Math/Color.h"
 #include "../Math/Matrix3.h"
@@ -232,7 +234,7 @@ public:
     /// Convert custom value to string.
     virtual ea::string ToString() const { return EMPTY_STRING; }
     /// Serialize to Archive.
-    virtual bool Serialize(Archive& /*archive*/) { return false; }
+    virtual void Serialize(Archive& /*archive*/, const char* /*name*/) { URHO3D_ASSERT(0); }
 
 private:
     /// Type info.
@@ -292,17 +294,17 @@ template <class T> struct CustomVariantValueTraits
         }
     }
     /// Serialize type.
-    static bool Serialize(Archive& archive, T& value)
+    static void Serialize(Archive& archive, const char* name, T& value)
     {
         if constexpr (IsArchiveSerializable<T>::value)
         {
-            return SerializeValue(archive, "value", value);
+            SerializeValue(archive, name, value);
         }
         else
         {
             (void)value;
             (void)archive;
-            return false;
+            throw ArchiveException("Serialization is not implemented for this Custom type");
         }
     }
 };
@@ -319,7 +321,7 @@ template <class T> struct CustomVariantValueTraits<ea::unique_ptr<T>>
     /// Convert type to string.
     static ea::string ToString(const ea::unique_ptr<T>& value) { return CustomVariantValueTraits<T>::ToString(*value); }
     /// Serialize type.
-    static bool Serialize(Archive& archive, ea::unique_ptr<T>& value) { return CustomVariantValueTraits<T>::Serialize(archive, *value); }
+    static void Serialize(Archive& archive, const char* name, ea::unique_ptr<T>& value) { CustomVariantValueTraits<T>::Serialize(archive, name, *value); }
 };
 
 /// Custom variant value implementation.
@@ -367,7 +369,7 @@ public:
     /// Convert custom value to string.
     ea::string ToString() const override { return Traits::ToString(value_); }
     /// Serialize to Archive.
-    bool Serialize(Archive& archive) override { return Traits::Serialize(archive, value_); }
+    void Serialize(Archive& archive, const char* name) override { Traits::Serialize(archive, name, value_); }
 
 private:
     /// Value.

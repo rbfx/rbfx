@@ -20,30 +20,23 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
-
-#include "../IO/ArchiveSerialization.h"
-#include "../Math/SphericalHarmonics.h"
-
-#include "../DebugNew.h"
+#include "../IO/ArchiveBase.h"
+#include "../Core/StringUtils.h"
 
 namespace Urho3D
 {
 
-const SphericalHarmonics9 SphericalHarmonics9::ZERO;
-const SphericalHarmonicsColor9 SphericalHarmonicsColor9::ZERO;
-const SphericalHarmonicsDot9 SphericalHarmonicsDot9::ZERO;
-
-void SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value)
+void ArchiveBase::ReadBytesFromHexString(
+    ea::string_view elementName, const ea::string& string, void* bytes, unsigned size)
 {
-    ArchiveBlock block = archive.OpenUnorderedBlock(name);
-    SerializeValue(archive, "Ar", value.Ar_);
-    SerializeValue(archive, "Ag", value.Ag_);
-    SerializeValue(archive, "Ab", value.Ab_);
-    SerializeValue(archive, "Br", value.Br_);
-    SerializeValue(archive, "Bg", value.Bg_);
-    SerializeValue(archive, "Bb", value.Bb_);
-    SerializeValue(archive, "C", value.C_);
-}
+    static thread_local ByteVector tempBuffer;
 
+    if (!HexStringToBuffer(tempBuffer, string))
+        throw UnexpectedElementValueException(elementName);
+
+    if (size != tempBuffer.size())
+        throw UnexpectedElementValueException(elementName);
+
+    ea::copy(tempBuffer.begin(), tempBuffer.end(), static_cast<unsigned char*>(bytes));
+}
 }

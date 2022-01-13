@@ -47,7 +47,7 @@ public:
     /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
     bool SaveProject();
     /// Serialize project.
-    bool Serialize(Archive& archive) override;
+    void SerializeInBlock(Archive& archive) override;
     /// Return project directory.
     const ea::string& GetProjectPath() const { return projectFileDir_; }
     /// Returns path to temporary asset cache.

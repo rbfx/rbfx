@@ -173,16 +173,11 @@ private:
 
 /// Serialize reference to a resource.
 template <class T, std::enable_if_t<std::is_base_of_v<Resource, T>, int> = 0>
-inline bool SerializeResource(Archive& archive, const char* name, SharedPtr<T>& value, ResourceRef& resourceRef)
+inline void SerializeResource(Archive& archive, const char* name, SharedPtr<T>& value, ResourceRef& resourceRef)
 {
-    if (!SerializeValue(archive, name, resourceRef))
-        return false;
-
+    SerializeValue(archive, name, resourceRef);
     if (archive.IsInput())
-    {
         value = SharedPtr<T>(dynamic_cast<T*>(Resource::LoadFromCache(archive.GetContext(), resourceRef.type_, resourceRef.name_)));
-    }
-    return true;
 }
 
 inline const ea::string& GetResourceName(Resource* resource)
