@@ -497,8 +497,12 @@ void Pipeline::SerializeOptional(Archive& archive)
     SerializeOptionalValue(archive, "pipeline", dummy, AlwaysSerialize{},
         [this](Archive& archive, const char* name, int)
     {
-        auto block = archive.OpenSequentialBlock("flavors");
-        for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors_.size(); i < num; i++)
+        auto pipelineBlock = archive.OpenUnorderedBlock(name);
+        if (archive.IsInput() && archive.IsUnorderedAccessSupportedInCurrentBlock() && !archive.HasElementOrBlock("flavors"))
+            return;
+
+        auto flavorsBlock = archive.OpenSequentialBlock("flavors");
+        for (unsigned i = 0, num = archive.IsInput() ? flavorsBlock.GetSizeHint() : flavors_.size(); i < num; i++)
         {
             if (auto block = archive.OpenUnorderedBlock("flavor"))
             {
