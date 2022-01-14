@@ -143,6 +143,8 @@ public:
     bool IsClockSynchronized() const override;
     unsigned RemoteToLocalTime(unsigned time) const override;
     unsigned LocalToRemoteTime(unsigned time) const override;
+    unsigned GetLocalTime() const override;
+    unsigned GetPing() const override;
     /// @}
 
     /// Get packet type based on the message parameters

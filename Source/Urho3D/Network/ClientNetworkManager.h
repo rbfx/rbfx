@@ -67,31 +67,30 @@ struct ClientNetworkManagerSettings : public ClientSynchronizationSettings
 class URHO3D_API ClientSynchronizationManager : public NonCopyable
 {
 public:
-    ClientSynchronizationManager(Scene* scene, const MsgClock& msg, const VariantMap& serverSettings,
-        const ClientSynchronizationSettings& settings);
+    ClientSynchronizationManager(Scene* scene, AbstractConnection* connection, const MsgSceneClock& msg,
+        const VariantMap& serverSettings, const ClientSynchronizationSettings& settings);
     ~ClientSynchronizationManager();
     void SetSettings(const ClientSynchronizationSettings& settings) { settings_ = settings; }
 
     double MillisecondsToFrames(double valueMs) const;
     double SecondsToFrames(double valueSec) const;
 
-    void ProcessClockUpdate(const MsgClock& msg);
-    float ApplyTimeStep(float timeStep);
+    float ApplyTimeStep(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
 
     /// Return current state
     /// @{
     bool IsNewFrame() const { return isNewFrame_; }
     unsigned GetConnectionId() const { return thisConnectionId_; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
-    unsigned GetLatestPingMs() const { return latestPing_; }
     NetworkTime GetServerTime() const { return serverTime_; }
-    NetworkTime GetSmoothClientTime() const { return smoothClientTime_; }
-    NetworkTime GetLatestUnstableClientTime() const { return latestUnstableClientTime_; }
+    NetworkTime GetSmoothClientTime() const { return clientTime_.Get(); }
+    NetworkTime GetLatestUnstableClientTime() const { return latestDilatedClientTime_; }
     const Variant& GetSetting(const NetworkSetting& setting) const;
     /// @}
 
 private:
-    void ProcessPendingClockUpdate(const MsgClock& msg);
+    void UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated);
+    void ProcessPendingClockUpdate(const MsgSceneClock& msg);
     void ResetServerAndClientTime(const NetworkTime& serverTime);
     float UpdateSmoothClientTime(float timeStep);
 
@@ -100,32 +99,23 @@ private:
     ea::optional<double> UpdateAverageError(ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples) const;
     void AdjustTime(NetworkTime& time, ea::ring_buffer<double>& errors, double adjustment) const;
 
-    NetworkTime ToServerTime(unsigned lastServerFrame, unsigned pingMs) const;
     NetworkTime ToClientTime(const NetworkTime& serverTime) const;
 
     Scene* scene_{};
+    AbstractConnection* connection_{};
     const VariantMap serverSettings_;
 
     const unsigned thisConnectionId_{};
     const unsigned updateFrequency_{};
-    const unsigned numSamples_{};
-    const unsigned numTrimmedSamples_{};
 
     ClientSynchronizationSettings settings_{};
 
-    NetworkTime latestServerTime_{};
-    unsigned latestPing_{};
-
     NetworkTime serverTime_;
-    NetworkTime clientTime_;
-    NetworkTime smoothClientTime_;
-    NetworkTime latestUnstableClientTime_{};
+    unsigned latestServerFrame_{};
+    NetworkTime latestDilatedClientTime_{};
     bool isNewFrame_{};
 
-    ea::vector<MsgClock> pendingClockUpdates_;
-    ea::ring_buffer<double> serverTimeErrors_{};
-    ea::ring_buffer<double> clientTimeErrors_{};
-
+    SoftNetworkTime clientTime_;
     PhysicsClockSynchronizer physicsSync_;
 };
 
@@ -145,7 +135,6 @@ public:
 
     /// Return global properties of client state.
     /// @{
-    unsigned GetPingMs() const { return sync_ ? sync_->GetLatestPingMs() : 0; }
     bool IsSynchronized() const { return sync_.has_value(); }
     NetworkTime GetServerTime() const { return sync_ ? sync_->GetServerTime() : NetworkTime{}; }
     NetworkTime GetClientTime() const { return sync_ ? sync_->GetSmoothClientTime() : NetworkTime{}; }
@@ -160,6 +149,7 @@ public:
     /// @}
 
 private:
+    void SynchronizeClocks(float timeStep);
     void UpdateReplica(float timeStep);
     void SendObjectsFeedbackUnreliable(unsigned feedbackFrame);
 
@@ -167,9 +157,8 @@ private:
     NetworkObject* GetCheckedNetworkObject(NetworkId networkId, StringHash componentType);
     void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
 
-    void ProcessPing(const MsgPingPong& msg);
     void ProcessConfigure(const MsgConfigure& msg);
-    void ProcessClock(const MsgClock& msg);
+    void ProcessSceneClock(const MsgSceneClock& msg);
     void ProcessRemoveObjects(MemoryBuffer& messageData);
     void ProcessAddObjects(MemoryBuffer& messageData);
     void ProcessUpdateObjectsReliable(MemoryBuffer& messageData);
@@ -184,6 +173,7 @@ private:
     Scene* scene_{};
     AbstractConnection* connection_{};
 
+    ea::vector<MsgSceneClock> pendingClockUpdates_;
     ea::optional<ClientSynchronizationManager> sync_;
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;
 

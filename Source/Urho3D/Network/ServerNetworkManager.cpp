@@ -25,7 +25,9 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Exception.h"
+#include "../Core/Timer.h"
 #include "../IO/Log.h"
+#include "../Math/RandomEngine.h"
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
@@ -55,20 +57,14 @@ ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const
     : connection_(connection)
     , settings_(settings)
 {
-    const unsigned maxPendingPings = GetSetting(NetworkSettings::MaxPendingPings).GetUInt();
-    pendingPings_.set_capacity(maxPendingPings);
-
-    const unsigned numAveragedPings = GetSetting(NetworkSettings::NumAveragedPings).GetUInt();
-    confirmedPings_.set_capacity(numAveragedPings);
-
     SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
 }
 
-void ClientConnectionData::AdvanceTime(float timeStep, const NetworkTime& serverTime)
+void ClientConnectionData::UpdateFrame(float timeStep, const NetworkTime& serverTime, float overtime)
 {
     serverTime_ = serverTime;
+    timestamp_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
 
-    pingTimeAccumulator_ += timeStep;
     clockTimeAccumulator_ += timeStep;
 }
 
@@ -82,65 +78,18 @@ void ClientConnectionData::SendCommonUpdates()
         synchronizationMagic_ = magic;
     }
 
-    // Send ping if it's time
-    const unsigned numInitialPings = GetSetting(NetworkSettings::NumInitialPings).GetUInt();
-    const bool isInitializing = confirmedPings_.size() < numInitialPings;
-
-    const float pingInterval = isInitializing
-        ? GetSetting(NetworkSettings::InitialPingInterval).GetFloat()
-        : GetSetting(NetworkSettings::PeriodicPingInterval).GetFloat();
-
-    if (pingTimeAccumulator_ >= pingInterval)
+    // Send clock updates
+    const float clockInterval = GetSetting(NetworkSettings::PeriodicClockInterval).GetFloat();
+    if (clockTimeAccumulator_ >= clockInterval)
     {
-        pingTimeAccumulator_ = Fract(pingTimeAccumulator_ / pingInterval) * pingInterval;
-        SendPing();
-    }
-
-    // Send clocks if pings are initialized
-    if (!isInitializing)
-    {
-        const float clockInterval = GetSetting(NetworkSettings::PeriodicClockInterval).GetFloat();
-        if (clockTimeAccumulator_ >= clockInterval)
-        {
-            clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
-            SendClock();
-        }
+        clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
+        SendClock();
     }
 }
 
 void ClientConnectionData::SendSynchronizedMessages()
 {
 
-}
-
-void ClientConnectionData::OverridePing(unsigned ping)
-{
-    overridePing_ = ping;
-    CalculateSmoothPing();
-}
-
-void ClientConnectionData::ProcessPong(const MsgPingPong& msg)
-{
-    const auto iter = ea::find_if(pendingPings_.begin(), pendingPings_.end(),
-        [&](const ClientPing& ping) { return ping.magic_ == msg.magic_; });
-    if (iter == pendingPings_.end())
-    {
-        URHO3D_LOGWARNING("Connection {}: Unexpected pong received", connection_->ToString(), msg.magic_);
-        return;
-    }
-
-    ClientPing& pendingPing = *iter;
-    const auto pingMs = pendingPing.timer_.GetUSec(false) / 1000 / 2;
-    pendingPings_.erase(iter);
-
-    if (confirmedPings_.full())
-        confirmedPings_.pop_front();
-    confirmedPings_.push_back(pingMs);
-
-    CalculateSmoothPing();
-
-    URHO3D_LOGTRACE("Connection {}: Ping of {}ms added to buffer, smooth ping is {}ms", connection_->ToString(),
-        GetLatestPing(), GetSmoothPing());
 }
 
 void ClientConnectionData::ProcessSynchronized(const MsgSynchronized& msg)
@@ -155,46 +104,15 @@ void ClientConnectionData::ProcessSynchronized(const MsgSynchronized& msg)
     synchronized_ = true;
 }
 
-void ClientConnectionData::SendPing()
-{
-    const unsigned magic = MakeMagic();
-
-    if (pendingPings_.full())
-        pendingPings_.pop_front();
-
-    pendingPings_.push_back(ClientPing{magic});
-    connection_->SendSerializedMessage(MSG_PING, MsgPingPong{magic}, NetworkMessageFlag::None);
-}
-
 void ClientConnectionData::SendClock()
 {
     connection_->SendSerializedMessage(
-        MSG_CLOCK, MsgClock{serverTime_.GetFrame(), GetLatestPing(), GetSmoothPing()}, NetworkMessageFlag::None);
+        MSG_SCENE_CLOCK, MsgSceneClock{serverTime_.GetFrame(), timestamp_, inputDelay_}, NetworkMessageFlag::None);
 }
 
-void ClientConnectionData::CalculateSmoothPing()
+unsigned ClientConnectionData::MakeMagic() const
 {
-    if (overridePing_)
-    {
-        smoothPing_ = *overridePing_;
-
-        if (confirmedPings_.full())
-            confirmedPings_.pop_front();
-        confirmedPings_.push_back(*overridePing_);
-
-        return;
-    }
-
-    URHO3D_ASSERT(!confirmedPings_.empty());
-
-    static thread_local ea::vector<unsigned> sortedPings;
-    sortedPings.assign(confirmedPings_.begin(), confirmedPings_.end());
-    ea::sort(sortedPings.begin(), sortedPings.end());
-
-    const unsigned numTrimmed = GetSetting(NetworkSettings::NumAveragedPingsTrimmed).GetUInt();
-    sortedPings.erase(sortedPings.end() - ea::min(numTrimmed, sortedPings.size() - 1), sortedPings.end());
-
-    smoothPing_ = ea::accumulate(sortedPings.begin(), sortedPings.end(), 0ull) / sortedPings.size();
+    return RandomEngine::GetDefaultEngine().GetUInt();
 }
 
 const Variant& ClientConnectionData::GetSetting(const NetworkSetting& setting) const
@@ -222,7 +140,7 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
         const auto resetValue = isUpdateNow ? ea::make_optional(overtime) : ea::nullopt;
         physicsSync_.UpdateClock(timeStep, resetValue);
         if (isUpdateNow)
-            BeginNetworkFrame();
+            BeginNetworkFrame(overtime);
     });
 
     SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
@@ -237,10 +155,13 @@ ServerNetworkManager::~ServerNetworkManager()
 {
 }
 
-void ServerNetworkManager::BeginNetworkFrame()
+void ServerNetworkManager::BeginNetworkFrame(float overtime)
 {
+    ++currentFrame_;
+
     const float timeStep = 1.0f / updateFrequency_;
-    UpdateClocks(timeStep);
+    for (auto& [connection, data] : connections_)
+        data.UpdateFrame(timeStep, NetworkTime{currentFrame_}, overtime);
 
     network_->SendEvent(E_BEGINSERVERNETWORKUPDATE);
 }
@@ -250,14 +171,6 @@ void ServerNetworkManager::PrepareNetworkFrame()
     const float timeStep = 1.0f / updateFrequency_;
     CollectObjectsToUpdate(timeStep);
     PrepareDeltaUpdates();
-}
-
-void ServerNetworkManager::UpdateClocks(float timeStep)
-{
-    ++currentFrame_;
-
-    for (auto& [connection, data] : connections_)
-        data.AdvanceTime(timeStep, NetworkTime{currentFrame_});
 }
 
 void ServerNetworkManager::CollectObjectsToUpdate(float timeStep)
@@ -576,15 +489,6 @@ void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, Networ
 
     switch (messageId)
     {
-    case MSG_PONG:
-    {
-        const auto& msg = ReadNetworkMessage<MsgPingPong>(messageData);
-        connection->OnMessageReceived(messageId, msg);
-
-        data.ProcessPong(msg);
-        break;
-    }
-
     case MSG_SYNCHRONIZED:
     {
         const auto& msg = ReadNetworkMessage<MsgSynchronized>(messageData);
@@ -666,12 +570,6 @@ void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData
     }
 }
 
-void ServerNetworkManager::SetTestPing(AbstractConnection* connection, unsigned ping)
-{
-    ClientConnectionData& data = GetConnection(connection);
-    data.OverridePing(ping);
-}
-
 void ServerNetworkManager::SetCurrentFrame(unsigned frame)
 {
     currentFrame_ = frame;
@@ -701,8 +599,8 @@ ea::string ServerNetworkManager::GetDebugInfo() const
 
     for (const auto& [connection, data] : connections_)
     {
-        result += Format("Connection {}: Ping {}ms->{}ms, Feedback Delay {} frames\n",
-            connection->ToString(), data.GetLatestPing(), data.GetSmoothPing(), data.averageFeedbackDelay_);
+        result += Format("Connection {}: Ping {}ms, Feedback Delay {} frames\n",
+            connection->ToString(), connection->GetPing(), data.averageFeedbackDelay_);
     }
 
     return result;

@@ -96,5 +96,29 @@ private:
     float subFrame_{};
 };
 
+/// Helper class to smoothly adjust NetworkTime on client.
+class SoftNetworkTime
+{
+public:
+    SoftNetworkTime(
+        unsigned updateFrequency, float snapThreshold, float tolerance, float minTimeScale, float maxTimeScale);
+
+    /// Reset time unconditionally.
+    void Reset(const NetworkTime& targetTime);
+    /// Update time, result should be as close to target as possible.
+    float Update(float timeStep, const NetworkTime& targetTime);
+
+    const NetworkTime& Get() const { return smoothTime_; }
+
+private:
+    const unsigned updateFrequency_{};
+    const float snapThreshold_{};
+    const float tolerance_{};
+    const float minTimeScale_{};
+    const float maxTimeScale_{};
+
+    NetworkTime smoothTime_;
+};
+
 
 }

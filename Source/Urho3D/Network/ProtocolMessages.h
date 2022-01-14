@@ -37,15 +37,6 @@ T ReadNetworkMessage(MemoryBuffer& src)
     return msg;
 }
 
-struct MsgPingPong
-{
-    unsigned magic_{};
-
-    void Save(VectorBuffer& dest) const;
-    void Load(MemoryBuffer& src);
-    ea::string ToString() const;
-};
-
 struct MsgConfigure
 {
     unsigned magic_{};
@@ -65,11 +56,11 @@ struct MsgSynchronized
     ea::string ToString() const;
 };
 
-struct MsgClock
+struct MsgSceneClock
 {
-    unsigned lastFrame_{};
-    unsigned latestPing_{};
-    unsigned smoothPing_{};
+    unsigned latestFrame_{};
+    unsigned latestFrameTime_{};
+    unsigned inputDelay_{};
 
     void Save(VectorBuffer& dest) const;
     void Load(MemoryBuffer& src);

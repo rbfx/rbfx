@@ -68,20 +68,19 @@ TEST_CASE("Time is synchronized between client and server")
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
     // Prepare test parameters
-    const float frameErrorTolarance = 1.0f;
+    const float frameErrorTolarance = 0.1f;
     const auto retry = GENERATE(range(0, 5));
     const auto quality = GENERATE(
         Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f },
         Tests::ConnectionQuality{ 0.24f, 0.28f, 0.50f, 0.10f, 0.10f }
     );
-    const float averagePingSec = (quality.maxPing_ + quality.minPing_) / 2;
 
-    const unsigned initialSyncTime = 20;
-    const unsigned initialWaitTime = 40;
-    const unsigned forwardSyncTime = 20;
-    const unsigned forwardWaitTime = 40;
-    const unsigned backwardSyncTime = 20;
-    const unsigned backwardWaitTime = 40;
+    const unsigned initialSyncTime = 10;
+    const unsigned initialWaitTime = 30;
+    const unsigned forwardSyncTime = 10;
+    const unsigned forwardWaitTime = 30;
+    const unsigned backwardSyncTime = 10;
+    const unsigned backwardWaitTime = 30;
 
     unsigned seed = retry;
     CombineHash(seed, MakeHash(quality.minPing_));
@@ -107,7 +106,6 @@ TEST_CASE("Time is synchronized between client and server")
     sim.SimulateTime(9.0f);
 
     REQUIRE(clientNetworkManager.IsSynchronized());
-    REQUIRE(clientNetworkManager.GetPingMs() == RoundToInt(averagePingSec * 1000));
 
     const float syncError = ea::max(0.5f, (quality.maxPing_ - quality.minPing_) * Tests::NetworkSimulator::FramesInSecond);
     const auto startTime = 32 * 10;
@@ -130,9 +128,9 @@ TEST_CASE("Time is synchronized between client and server")
     // Warp time close to 2^32 and simulate some time, expect time to be resynchronized
     const auto bigTime = M_MAX_UNSIGNED - 32 * 30;
     serverNetworkManager.SetCurrentFrame(bigTime / 3);
-    sim.SimulateTime(1.0f);
+    sim.SimulateTime(5.0f);
     serverNetworkManager.SetCurrentFrame(bigTime / 3 * 2);
-    sim.SimulateTime(1.0f);
+    sim.SimulateTime(5.0f);
     serverNetworkManager.SetCurrentFrame(bigTime);
     sim.SimulateTime(forwardSyncTime);
 
@@ -620,7 +618,7 @@ TEST_CASE("Physics is synchronized with network updates")
 
     sim.SimulateTime(1.0f);
     serverEventTracker->SkipFramesUntilEvent(E_NETWORKUPDATE);
-    clientEventTracker->SkipFramesUntilEvent(E_NETWORKCLIENTUPDATE);
+    clientEventTracker->SkipFramesUntilEvent(E_NETWORKCLIENTUPDATE, 2);
 
     REQUIRE(serverEventTracker->GetNumFrames() > 4);
     REQUIRE(clientEventTracker->GetNumFrames() > 4);

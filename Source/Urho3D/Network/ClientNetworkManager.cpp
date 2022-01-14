@@ -40,26 +40,24 @@
 namespace Urho3D
 {
 
-ClientSynchronizationManager::ClientSynchronizationManager(
-    Scene* scene, const MsgClock& msg, const VariantMap& serverSettings, const ClientSynchronizationSettings& settings)
+ClientSynchronizationManager::ClientSynchronizationManager(Scene* scene, AbstractConnection* connection,
+    const MsgSceneClock& msg, const VariantMap& serverSettings, const ClientSynchronizationSettings& settings)
     : scene_(scene)
+    , connection_(connection)
     , serverSettings_(serverSettings)
     , thisConnectionId_(GetSetting(NetworkSettings::ConnectionId).GetUInt())
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
-    , numSamples_(GetSetting(NetworkSettings::ClockBufferSize).GetUInt())
-    , numTrimmedSamples_(GetSetting(NetworkSettings::ClockBufferNumTrimmed).GetUInt())
     , settings_(settings)
-    , latestServerTime_(msg.lastFrame_)
-    , latestPing_(msg.smoothPing_)
-    , serverTime_(ToServerTime(msg.lastFrame_, msg.smoothPing_))
-    , clientTime_(ToClientTime(serverTime_))
-    , smoothClientTime_(clientTime_)
-    , latestUnstableClientTime_(clientTime_)
+    , clientTime_(updateFrequency_,
+        GetSetting(NetworkSettings::TimeSnapThreshold).GetFloat(),
+        GetSetting(NetworkSettings::TimeErrorTolerance).GetFloat(),
+        GetSetting(NetworkSettings::MinTimeDilation).GetFloat(),
+        GetSetting(NetworkSettings::MaxTimeDilation).GetFloat())
     , physicsSync_(scene_, updateFrequency_, true)
 {
-    serverTimeErrors_.reserve(numSamples_);
-    // Don't smooth client time as it adds even more latency to synchronization
-    clientTimeErrors_.reserve(1);
+    UpdateServerTime(msg, false);
+    clientTime_.Reset(ToClientTime(serverTime_));
+    latestDilatedClientTime_ = clientTime_.Get();
 }
 
 ClientSynchronizationManager::~ClientSynchronizationManager()
@@ -77,28 +75,23 @@ double ClientSynchronizationManager::SecondsToFrames(double valueSec) const
     return valueSec * updateFrequency_;
 }
 
-void ClientSynchronizationManager::ProcessClockUpdate(const MsgClock& msg)
-{
-    pendingClockUpdates_.push_back(msg);
-}
-
-float ClientSynchronizationManager::ApplyTimeStep(float timeStep)
+float ClientSynchronizationManager::ApplyTimeStep(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates)
 {
     serverTime_ += SecondsToFrames(timeStep);
-    clientTime_ += SecondsToFrames(timeStep);
+    for (const MsgSceneClock& msg : pendingClockUpdates)
+        UpdateServerTime(msg, true);
 
-    for (const MsgClock& msg : pendingClockUpdates_)
-        ProcessPendingClockUpdate(msg);
-    pendingClockUpdates_.clear();
+    const NetworkTime previousClientTime = clientTime_.Get();
+    const float dilatedTimeStep = clientTime_.Update(timeStep, ToClientTime(serverTime_));
 
-    const NetworkTime previousSmoothClientTime = smoothClientTime_;
-    const float adjustedTimeStep = UpdateSmoothClientTime(timeStep);
+    if (timeStep != dilatedTimeStep)
+        latestDilatedClientTime_ = clientTime_.Get();
 
-    isNewFrame_ = previousSmoothClientTime.GetFrame() != smoothClientTime_.GetFrame();
-    const float overtime = smoothClientTime_.GetSubFrame() / updateFrequency_;
-    physicsSync_.UpdateClock(adjustedTimeStep, isNewFrame_ ? ea::make_optional(overtime) : ea::nullopt);
+    isNewFrame_ = previousClientTime.GetFrame() != clientTime_.Get().GetFrame();
+    const float overtime = clientTime_.Get().GetSubFrame() / updateFrequency_;
+    physicsSync_.UpdateClock(dilatedTimeStep, isNewFrame_ ? ea::make_optional(overtime) : ea::nullopt);
 
-    return adjustedTimeStep;
+    return dilatedTimeStep;
 }
 
 const Variant& ClientSynchronizationManager::GetSetting(const NetworkSetting& setting) const
@@ -106,116 +99,22 @@ const Variant& ClientSynchronizationManager::GetSetting(const NetworkSetting& se
     return GetNetworkSetting(serverSettings_, setting);
 }
 
-void ClientSynchronizationManager::ProcessPendingClockUpdate(const MsgClock& msg)
+void ClientSynchronizationManager::UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated)
 {
-    // Skip outdated updates
-    const bool isLatest = NetworkTime{msg.lastFrame_} - latestServerTime_ > 0.0;
-    if (!isLatest)
+    if (skipOutdated && NetworkTime{msg.latestFrame_} - NetworkTime{latestServerFrame_} < 0.0)
         return;
 
-    latestServerTime_ = NetworkTime{msg.lastFrame_};
-    latestPing_ = msg.smoothPing_;
+    const unsigned serverFrameTime = connection_->RemoteToLocalTime(msg.latestFrameTime_);
+    const auto offsetMs = static_cast<int>(connection_->GetLocalTime() - serverFrameTime);
 
-    const NetworkTime serverTimeFromMessage = ToServerTime(msg.lastFrame_, msg.smoothPing_);
-    const double serverTimeError = serverTimeFromMessage - serverTime_;
-
-    if (serverTimeError >= SecondsToFrames(settings_.timeSnapThresholdInSeconds_))
-    {
-        ResetServerAndClientTime(serverTimeFromMessage);
-        return;
-    }
-
-    CheckAndAdjustTime(serverTime_, serverTimeErrors_, serverTimeError, numTrimmedSamples_, false);
-
-    const NetworkTime expectedClientTime = ToClientTime(serverTime_);
-    const double clientTimeError = expectedClientTime - clientTime_;
-    CheckAndAdjustTime(clientTime_, clientTimeErrors_, clientTimeError, 0, true);
-}
-
-void ClientSynchronizationManager::ResetServerAndClientTime(const NetworkTime& serverTime)
-{
-    URHO3D_LOGINFO("Client clock is reset from {} to {}",
-        serverTime_.ToString(), serverTime.ToString());
-
-    serverTime_ = serverTime;
-    clientTime_ = ToClientTime(serverTime);
-    smoothClientTime_ = clientTime_;
-    latestUnstableClientTime_ = clientTime_;
-
-    serverTimeErrors_.clear();
-    clientTimeErrors_.clear();
-}
-
-void ClientSynchronizationManager::CheckAndAdjustTime(
-    NetworkTime& time, ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples, bool quiet) const
-{
-    if (const auto averageError = UpdateAverageError(errors, error, numTrimmedSamples))
-    {
-        const double averageErrorAbs = std::abs(*averageError);
-        if (averageErrorAbs >= settings_.timeRewindThresholdInSeconds_)
-        {
-            const double adjustment = Sign(*averageError) * (averageErrorAbs - settings_.timeRewindThresholdInSeconds_ / 2);
-            const NetworkTime oldTime = time;
-            AdjustTime(time, errors, adjustment);
-
-            if (!quiet)
-                URHO3D_LOGINFO("Client clock is reset from {} to {}", oldTime.ToString(), time.ToString());
-        }
-    }
-}
-
-ea::optional<double> ClientSynchronizationManager::UpdateAverageError(
-    ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples) const
-{
-    if (errors.full())
-        errors.pop_front();
-    errors.push_back(error);
-    if (!errors.full())
-        return ea::nullopt;
-
-    static thread_local ea::vector<double> tempBuffer;
-    tempBuffer.assign(errors.begin(), errors.end());
-    ea::sort(tempBuffer.begin(), tempBuffer.end());
-
-    // Skip first elements because lowest values correspond to ping spikes
-    const auto beginIter = std::next(tempBuffer.begin(), ea::min(tempBuffer.size() - 1, numTrimmedSamples));
-    const auto endIter = tempBuffer.end();
-    return ea::accumulate(beginIter, endIter, 0.0) / ea::distance(beginIter, endIter);
-}
-
-void ClientSynchronizationManager::AdjustTime(
-    NetworkTime& time, ea::ring_buffer<double>& errors, double adjustment) const
-{
-    time += adjustment;
-    for (double& error : errors)
-        error -= adjustment;
-}
-
-float ClientSynchronizationManager::UpdateSmoothClientTime(float timeStep)
-{
-    const double timeError = (clientTime_ - smoothClientTime_) / updateFrequency_ - timeStep;
-    if (std::abs(timeError) < M_LARGE_EPSILON)
-        smoothClientTime_ = clientTime_;
-    else
-    {
-        const double minTimeStep = timeStep * settings_.minTimeStepScale_;
-        const double maxTimeStep = timeStep * settings_.maxTimeStepScale_;
-        timeStep = Clamp(timeStep + timeError, minTimeStep, maxTimeStep);
-        latestUnstableClientTime_ = clientTime_;
-        smoothClientTime_ += SecondsToFrames(timeStep);
-    }
-
-    return timeStep;
-}
-
-NetworkTime ClientSynchronizationManager::ToServerTime(unsigned lastServerFrame, unsigned pingMs) const
-{
-    return NetworkTime{lastServerFrame} + MillisecondsToFrames(pingMs);
+    latestServerFrame_ = msg.latestFrame_;
+    serverTime_ = NetworkTime{msg.latestFrame_};
+    serverTime_ += MillisecondsToFrames(offsetMs);
 }
 
 NetworkTime ClientSynchronizationManager::ToClientTime(const NetworkTime& serverTime) const
 {
-    const double clientDelay = settings_.clientTimeDelayInSeconds_ + latestPing_ * 0.001;
+    const double clientDelay = settings_.clientTimeDelayInSeconds_ + connection_->GetPing() * 0.001;
     return serverTime - SecondsToFrames(clientDelay);
 }
 
@@ -230,6 +129,7 @@ ClientNetworkManager::ClientNetworkManager(NetworkManagerBase* base, Scene* scen
     {
         using namespace InputReady;
         const float timeStep = eventData[P_TIMESTEP].GetFloat();
+        SynchronizeClocks(timeStep);
         UpdateReplica(timeStep);
     });
 }
@@ -238,15 +138,6 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
 {
     switch (messageId)
     {
-    case MSG_PING:
-    {
-        const auto msg = ReadNetworkMessage<MsgPingPong>(messageData);
-        connection_->OnMessageReceived(messageId, msg);
-
-        ProcessPing(msg);
-        break;
-    }
-
     case MSG_CONFIGURE:
     {
         const auto msg = ReadNetworkMessage<MsgConfigure>(messageData);
@@ -256,12 +147,12 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
         break;
     }
 
-    case MSG_CLOCK:
+    case MSG_SCENE_CLOCK:
     {
-        const auto msg = ReadNetworkMessage<MsgClock>(messageData);
+        const auto msg = ReadNetworkMessage<MsgSceneClock>(messageData);
         connection_->OnMessageReceived(messageId, msg);
 
-        ProcessClock(msg);
+        ProcessSceneClock(msg);
         break;
     }
 
@@ -302,33 +193,17 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
     }
 }
 
-void ClientNetworkManager::ProcessPing(const MsgPingPong& msg)
-{
-    connection_->SendSerializedMessage(MSG_PONG, MsgPingPong{msg.magic_}, NetworkMessageFlag::None);
-}
-
 void ClientNetworkManager::ProcessConfigure(const MsgConfigure& msg)
 {
     serverSettings_ = msg.settings_;
     synchronizationMagic_ = msg.magic_;
 }
 
-void ClientNetworkManager::ProcessClock(const MsgClock& msg)
+void ClientNetworkManager::ProcessSceneClock(const MsgSceneClock& msg)
 {
     if (!sync_)
-    {
-        if (!serverSettings_ || !synchronizationMagic_)
-            return;
-
-        sync_.emplace(scene_, msg, *serverSettings_, settings2_);
-
-        connection_->SendSerializedMessage(
-            MSG_SYNCHRONIZED, MsgSynchronized{*synchronizationMagic_}, NetworkMessageFlag::Reliable);
-    }
-    else
-    {
-        sync_->ProcessClockUpdate(msg);
-    }
+        pendingClockUpdates_.clear();
+    pendingClockUpdates_.push_back(msg);
 }
 
 void ClientNetworkManager::ProcessRemoveObjects(MemoryBuffer& messageData)
@@ -515,12 +390,28 @@ ea::string ClientNetworkManager::GetDebugInfo() const
     return result;
 }
 
+void ClientNetworkManager::SynchronizeClocks(float timeStep)
+{
+    if (sync_)
+    {
+        sync_->ApplyTimeStep(timeStep, pendingClockUpdates_);
+        pendingClockUpdates_.clear();
+        return;
+    }
+
+    if (!serverSettings_ || !connection_->IsClockSynchronized() || pendingClockUpdates_.empty())
+        return;
+
+    sync_.emplace(scene_, connection_, pendingClockUpdates_[0], *serverSettings_, settings2_);
+    connection_->SendSerializedMessage(
+        MSG_SYNCHRONIZED, MsgSynchronized{*synchronizationMagic_}, NetworkMessageFlag::Reliable);
+}
+
 void ClientNetworkManager::UpdateReplica(float timeStep)
 {
     if (!sync_)
         return;
 
-    sync_->ApplyTimeStep(timeStep);
     const bool isNewFrame = sync_->IsNewFrame();
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();

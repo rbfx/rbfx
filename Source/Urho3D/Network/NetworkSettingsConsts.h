@@ -34,8 +34,8 @@ struct NetworkSetting
     Variant defaultValue_;
 };
 
-#define URHO3D_NETWORK_SETTING(name, defaultValue) \
-    URHO3D_GLOBAL_CONSTANT(NetworkSetting name = (NetworkSetting{ConstString{#name}, defaultValue})) \
+#define URHO3D_NETWORK_SETTING(name, type, defaultValue) \
+    URHO3D_GLOBAL_CONSTANT(NetworkSetting name = (NetworkSetting{ConstString{#name}, type{defaultValue}})) \
 
 /// Return network setting or default value.
 inline const Variant& GetNetworkSetting(const VariantMap& map, const NetworkSetting& key)
@@ -58,45 +58,36 @@ namespace NetworkSettings
 /// @{
 
 /// Update frequency of the server, frames per second.
-URHO3D_NETWORK_SETTING(UpdateFrequency, 30);
+URHO3D_NETWORK_SETTING(UpdateFrequency, unsigned, 30);
 /// Connection ID of current client.
-URHO3D_NETWORK_SETTING(ConnectionId, 0);
+URHO3D_NETWORK_SETTING(ConnectionId, unsigned, 0);
 
 /// @}
 
 /// Server-only properties ignored by the client
 /// @{
 
-/// Max number of pending pings. Keep this value high enough not to miss any pings.
-URHO3D_NETWORK_SETTING(MaxPendingPings, 100);
-/// Interval in seconds between initial pings sent to client.
-URHO3D_NETWORK_SETTING(InitialPingInterval, 0.1f);
-/// Number of initial pings.
-URHO3D_NETWORK_SETTING(NumInitialPings, 10);
-/// Interval in seconds between periodic pings.
-URHO3D_NETWORK_SETTING(PeriodicPingInterval, 0.25f);
-/// Number of averaged pings to maintain smooth ping value.
-URHO3D_NETWORK_SETTING(NumAveragedPings, 20);
-/// Number of highest pings skipped when averaged.
-URHO3D_NETWORK_SETTING(NumAveragedPingsTrimmed, 3);
 /// Interval in seconds between periodic clock updates.
-URHO3D_NETWORK_SETTING(PeriodicClockInterval, 0.25f);
+URHO3D_NETWORK_SETTING(PeriodicClockInterval, float, 1.0f);
 
 /// @}
 
 /// Client-only properties ignored by the server
 /// @{
 
-/// Size of ring buffer used to keep server time synchronized.
-/// Server time is expected to stay unchanged most of the time since client and server work at the same rate.
-/// Error may occur is case of client or server lag.
-/// Prefer larger buffer to prevent random fluctuations.
-URHO3D_NETWORK_SETTING(ClockBufferSize, 21);
-/// Number of server time samples to skip on server time evaluation.
-URHO3D_NETWORK_SETTING(ClockBufferNumTrimmed, 3);
+/// Minimal time error that is not ignored.
+URHO3D_NETWORK_SETTING(TimeErrorTolerance, float, 0.002f);
+/// Limit of smooth time adjustment. Larger errors are corrected immediately.
+URHO3D_NETWORK_SETTING(TimeSnapThreshold, float, 2.5f);
+/// Minimal time dilation factor.
+URHO3D_NETWORK_SETTING(MinTimeDilation, float, 0.7f);
+/// Maximal time dilation factor.
+URHO3D_NETWORK_SETTING(MaxTimeDilation, float, 1.5f);
 
 /// @}
 
 }
+
+#undef URHO3D_NETWORK_SETTING
 
 }
