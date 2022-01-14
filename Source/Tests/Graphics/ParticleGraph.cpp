@@ -38,7 +38,7 @@ using namespace Urho3D;
 
 TEST_CASE("Test particle graph serialization")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto graph = MakeShared<Graph>(context);
 
@@ -54,7 +54,7 @@ TEST_CASE("Test particle graph serialization")
         auto xmlFile = MakeShared<XMLFile>(context);
         XMLElement root = xmlFile->CreateRoot("root");
         XMLOutputArchive xmlOutputArchive{context, root};
-        graph->Serialize(xmlOutputArchive);
+        graph->SerializeInBlock(xmlOutputArchive);
         xmlFile->Save(buf);
         ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
     }
@@ -70,7 +70,7 @@ TEST_CASE("Test particle graph serialization")
         auto xmlFile = MakeShared<XMLFile>(context);
         XMLElement root = xmlFile->CreateRoot("root");
         XMLOutputArchive xmlOutputArchive{context, root};
-        outGraph->Serialize(xmlOutputArchive);
+        outGraph->SerializeInBlock(xmlOutputArchive);
         xmlFile->Save(buf);
         ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
     }
@@ -83,7 +83,7 @@ TEST_CASE("Test particle graph serialization")
         auto xmlFile = MakeShared<XMLFile>(context);
         XMLElement root = xmlFile->CreateRoot("root");
         XMLOutputArchive xmlOutputArchive{context, root};
-        outGraph->Serialize(xmlOutputArchive);
+        outGraph->SerializeInBlock(xmlOutputArchive);
         xmlFile->Save(buf);
         ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
     }
@@ -91,7 +91,7 @@ TEST_CASE("Test particle graph serialization")
 
 TEST_CASE("Test simple particle graph")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto resourceCache = context->GetSubsystem<ResourceCache>();
     auto material = MakeShared<Material>(context);
     material->SetName("Materials/DefaultGrey.xml");
@@ -182,9 +182,49 @@ TEST_CASE("Test simple particle graph")
     //CHECK(((float*)sizeMem.data())[0] == 40.0);
 }
 
+TEST_CASE("Particle graph serilization roundtrip")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    const auto graph = MakeShared<Graph>(context);
+    auto xml = R"(<particleGraphEffect>
+	<layer type="ParticleGraphLayer" capacity="10">
+		<emit>
+			<nodes>
+			</nodes>
+		</emit>
+		<init>
+			<nodes>
+				<node id="1" name="Constant">
+					<properties>
+						<property name="Value" type="Vector3" value="1 2 3" />
+					</properties>
+					<out>
+						<pin type="Vector3" name="out" />
+					</out>
+				</node>
+				<node id="2" name="SetAttribute">
+					<in>
+						<pin type="Vector3" name="" node="1" pin="out" />
+					</in>
+					<out>
+						<pin type="Vector3" name="pos" />
+					</out>
+				</node>
+			</nodes>
+		</init>
+		<update>
+			<nodes>
+			</nodes>
+		</update>
+	</layer>
+</particleGraphEffect>)";
+    REQUIRE(graph->LoadXML(xml));
+}
+
 TEST_CASE("Test const")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
@@ -238,7 +278,7 @@ TEST_CASE("Test const")
 
 TEST_CASE("Test Emit")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
@@ -277,7 +317,7 @@ TEST_CASE("Test Emit")
 
 TEST_CASE("Test Burst")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
@@ -331,7 +371,7 @@ TEST_CASE("Test Burst")
 
 TEST_CASE("Test Expire")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
@@ -375,7 +415,7 @@ TEST_CASE("Test Expire")
 
 TEST_CASE("Test Make")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
@@ -419,14 +459,14 @@ TEST_CASE("Test Make")
     auto emitter = node->CreateComponent<ParticleGraphEmitter>();
     emitter->SetEffect(effect);
     REQUIRE(emitter->EmitNewParticle(0));
-
+    REQUIRE(emitter->GetLayer(0)->GetNumAttributes() > 0);
     auto attributeSpan = emitter->GetLayer(0)->GetAttributeValues<Vector2>(0);
     CHECK(attributeSpan[0] == Vector2(2, 3));
 }
 
 TEST_CASE("Test Make IntVector2")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
@@ -471,6 +511,7 @@ TEST_CASE("Test Make IntVector2")
     emitter->SetEffect(effect);
     REQUIRE(emitter->EmitNewParticle(0));
 
+    REQUIRE(emitter->GetLayer(0)->GetNumAttributes() > 0);
     auto attributeSpan = emitter->GetLayer(0)->GetAttributeValues<IntVector2>(0);
     CHECK(attributeSpan[0] == IntVector2(2, 3));
 }

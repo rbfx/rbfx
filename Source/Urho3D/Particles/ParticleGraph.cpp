@@ -164,8 +164,16 @@ unsigned ParticleGraphReader::ReadNode(unsigned id)
     {
         const auto it = nodes_.find(id);
         if (it != nodes_.end())
+        {
+            if (it->second == ParticleGraph::INVALID_NODE_INDEX)
+            {
+                URHO3D_LOGERROR("Loop detected at particle graph");
+                return it->second;
+            }
             return it->second;
+        }
     }
+    nodes_[id] = ParticleGraph::INVALID_NODE_INDEX;
 
     auto *srcNode = graph_.GetNode(id);
     auto newNode = system_->CreateObject(srcNode->GetNameHash());

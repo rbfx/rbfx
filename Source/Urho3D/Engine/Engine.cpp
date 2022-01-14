@@ -215,11 +215,6 @@ bool Engine::Initialize(const VariantMap& parameters)
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
     }
-    else
-    {
-        // Register graphics library objects explicitly in headless mode to allow them to work without using actual GPU resources
-        RegisterGraphicsLibrary(context_);
-    }
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
 
 #ifdef URHO3D_URHO2D
