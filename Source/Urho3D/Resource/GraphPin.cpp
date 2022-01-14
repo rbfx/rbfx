@@ -31,21 +31,11 @@
 namespace Urho3D
 {
 
-GraphPin::GraphPin(GraphNode* node)
-    : node_(node)
-{
-}
-
 GraphPin::~GraphPin() = default;
 
 void GraphPin::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "name", name_);
-}
-
-GraphDataPin::GraphDataPin(GraphNode* node)
-    : GraphPin(node)
-{
 }
 
 void GraphDataPin::SerializeInBlock(Archive& archive)
@@ -55,56 +45,25 @@ void GraphDataPin::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "type", type_);
 }
 
-GraphOutPin::GraphOutPin(GraphNode* node)
-    : GraphDataPin(node)
+bool GraphInPin::ConnectTo(GraphPinRef<GraphOutPin> pin)
 {
-}
-
-GraphInPin::GraphInPin(GraphNode* node)
-    : GraphDataPin(node)
-    , targetNode_(0)
-{
-}
-
-bool GraphInPin::ConnectTo(GraphOutPin& pin)
-{
-    if (!GetNode()->GetGraph())
+    if (pin)
     {
-        URHO3D_LOGERROR("Can't connect pin from detached node.");
+        targetNode_ = pin.GetNode()->GetID();
+        targetPin_ = pin.GetPin()->GetName();
+        return true;
+    }
+    else
+    {
+        Disconnect();
         return false;
     }
-    if (pin.GetNode()->GetGraph() != GetNode()->GetGraph())
-    {
-        URHO3D_LOGERROR("Can't connect to pin in a different graph.");
-        return false;
-    }
-    targetNode_ = pin.GetNode()->GetID();
-    targetPin_ = pin.GetName();
-    return true;
 }
 
 void GraphInPin::Disconnect()
 {
     targetNode_ = 0;
     targetPin_.clear();
-}
-
-GraphOutPin* GraphInPin::GetConnectedPin() const
-{
-    if (!targetNode_)
-        return nullptr;
-
-    if (const auto node = GetNode())
-    {
-        if (const auto graph = node->GetGraph())
-        {
-            if (auto target = graph->GetNode(targetNode_))
-            {
-                return node->GetOutput(targetPin_);
-            }
-        }
-    }
-    return nullptr;
 }
 
 void GraphInPin::SerializeInBlock(Archive& archive)
@@ -126,34 +85,6 @@ void GraphInPin::SetValue(const Variant& variant)
     Disconnect();
 }
 
-GraphEnterPin* GraphExitPin::GetConnectedPin() const
-{
-    if (!targetNode_)
-        return nullptr;
-
-    if (const auto node = GetNode())
-    {
-        if (const auto graph = node->GetGraph())
-        {
-            if (auto target = graph->GetNode(targetNode_))
-            {
-                return node->GetEnter(targetPin_);
-            }
-        }
-    }
-    return nullptr;
-}
-
-GraphEnterPin::GraphEnterPin(GraphNode* node)
-    : GraphPin(node)
-{
-}
-
-GraphExitPin::GraphExitPin(GraphNode* node)
-    : GraphPin(node)
-{
-}
-
 void GraphExitPin::SerializeInBlock(Archive& archive)
 {
     GraphPin::SerializeInBlock(archive);
@@ -171,21 +102,19 @@ void GraphExitPin::SerializeInBlock(Archive& archive)
     }
 }
 
-bool GraphExitPin::ConnectTo(GraphEnterPin& pin)
+bool GraphExitPin::ConnectTo(GraphPinRef<GraphEnterPin> pin)
 {
-    if (!GetNode()->GetGraph())
+    if (pin)
     {
-        URHO3D_LOGERROR("Can't connect pin from detached node.");
+        targetNode_ = pin.GetNode()->GetID();
+        targetPin_ = pin.GetPin()->GetName();
+        return true;
+    }
+    else
+    {
+        Disconnect();
         return false;
     }
-    if (pin.GetNode()->GetGraph() != GetNode()->GetGraph())
-    {
-        URHO3D_LOGERROR("Can't connect to pin in a different graph.");
-        return false;
-    }
-    targetNode_ = pin.GetNode()->GetID();
-    targetPin_ = pin.GetName();
-    return true;
 }
 
 void GraphExitPin::Disconnect()

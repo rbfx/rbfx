@@ -169,8 +169,10 @@ ParticleGraphPin* ParticleGraphNode::LoadOutputPin(ParticleGraphReader& reader, 
 bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
 {
     // First pass: validate and connect pins input pins.
-    for (auto& inputPin : node.GetInputs())
+    for (unsigned index = 0; index < node.GetNumInputs(); ++index)
     {
+        auto inputPinRef = node.GetInput(index);
+        auto& inputPin = *inputPinRef.GetPin();
         const auto pin = LoadInputPin(reader, inputPin);
 
         if (!pin)
@@ -180,24 +182,23 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
 
         if (inputPin.IsConnected())
         {
-            const auto source = inputPin.GetConnectedPin();
-            if (source == nullptr)
+            auto source = inputPinRef.GetConnectedPin<GraphOutPin>();
+            if (!source)
             {
                 URHO3D_LOGERROR(Format("Can't resolve connected pin for {}.{}", GetTypeName(), inputPin.GetName()));
                 return false;
             }
-            const auto connectedNode = reader.ReadNode(source->GetNode()->GetID());
-            if (connectedNode == ParticleGraph::INVALID_NODE_INDEX)
-            {
-                return false;
-            }
-            const unsigned pinIndex = reader.GetInputPinIndex(connectedNode, source->GetName());
-            pin->SetSource(connectedNode, pinIndex);
+            auto localIndex = reader.ReadNode(source.GetNode()->GetID());
+            const unsigned pinIndex = reader.GetInputPinIndex(localIndex, source.GetPin()->GetName());
+            pin->SetSource(localIndex, pinIndex);
         }
     }
     // Second pass: create constant nodes.
-    for (auto& inputPin : node.GetInputs())
+    for (unsigned index = 0; index < node.GetNumInputs(); ++index)
     {
+        auto inputPinRef = node.GetInput(index);
+        auto& inputPin = *inputPinRef.GetPin();
+
         auto pin = GetPin(inputPin.GetName());
         if (!inputPin.IsConnected())
         {
@@ -213,8 +214,10 @@ bool ParticleGraphNode::LoadPins(ParticleGraphReader& reader, GraphNode& node)
         }
     }
 
-    for (auto& outputPin : node.GetOutputs())
+    for (unsigned index = 0; index < node.GetNumOutputs(); ++index)
     {
+        auto outputPinRef = node.GetOutput(index);
+        auto& outputPin = *outputPinRef.GetPin();
         auto pin = LoadOutputPin(reader, outputPin);
 
         if (!pin)
@@ -261,19 +264,19 @@ bool ParticleGraphNode::SavePins(ParticleGraphWriter& writer, GraphNode& node)
         ParticleGraphPin& pin = GetPin(i);
         if (pin.IsInput())
         {
-            auto& inputPin = node.GetOrAddInput(pin.GetName());
-            inputPin.SetType(pin.GetRequestedType());
+            auto inputPin = node.GetOrAddInput(pin.GetName());
+            inputPin.GetPin()->SetType(pin.GetRequestedType());
 
             if (pin.GetConnected())
             {
                 const auto connectedNode = pin.GetConnectedNodeIndex();
-                inputPin.ConnectTo(writer.GetSourcePin(connectedNode, pin.GetConnectedPinIndex()));
+                inputPin.GetPin()->ConnectTo(writer.GetSourcePin(connectedNode, pin.GetConnectedPinIndex()));
             }
         }
         else
         {
             auto& outputPin = node.GetOrAddOutput(pin.GetName());
-            outputPin.SetType(pin.GetRequestedType());
+            outputPin.GetPin()->SetType(pin.GetRequestedType());
         }
     }
     return true;

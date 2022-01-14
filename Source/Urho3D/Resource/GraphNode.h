@@ -104,13 +104,16 @@ public:
     GraphNode* WithProperty(const ea::string_view name, const Variant& value);
 
     /// Get input pin by name.
-    GraphInPin* GetInput(const ea::string_view name);
+    GraphPinRef<GraphInPin> GetInput(const ea::string_view name);
 
-    /// Get input pins.
-    ea::span<GraphInPin> GetInputs() { return ea::span(inputPins_); }
+    /// Get input pin by index.
+    GraphPinRef<GraphInPin> GetInput(unsigned index);
+
+    /// Get number of input pins.
+    unsigned GetNumInputs() const { return inputPins_.size(); }
 
     /// Get or add input pin.
-    GraphInPin& GetOrAddInput(const ea::string_view name);
+    GraphPinRef<GraphInPin> GetOrAddInput(const ea::string_view name);
 
     /// Add input pin.
     GraphNode* WithInput(const ea::string_view name, VariantType type = VAR_NONE);
@@ -119,37 +122,46 @@ public:
     GraphNode* WithInput(const ea::string_view name, const Variant& value);
 
     /// Add input pin connected to the output pin.
-    GraphNode* WithInput(const ea::string_view name, GraphOutPin* pin, VariantType type = VAR_NONE);
+    GraphNode* WithInput(const ea::string_view name, GraphPinRef<GraphOutPin> pin, VariantType type = VAR_NONE);
 
     /// Get or add output pin.
-    GraphOutPin& GetOrAddOutput(const ea::string_view name);
+    GraphPinRef<GraphOutPin> GetOrAddOutput(const ea::string_view name);
 
     /// Add output pin.
     GraphNode* WithOutput(const ea::string_view name, VariantType type = VAR_NONE);
 
-    /// Get output pin.
-    GraphOutPin* GetOutput(const ea::string_view name);
+    /// Get output pin by name.
+    GraphPinRef<GraphOutPin> GetOutput(const ea::string_view name);
 
-    /// Get output pins.
-    ea::span<GraphOutPin> GetOutputs() { return ea::span(outputPins_); }
+    /// Get output pin by index.
+    GraphPinRef<GraphOutPin> GetOutput(unsigned index);
+
+    /// Get number of output pins.
+    unsigned GetNumOutputs() const { return outputPins_.size(); }
 
     /// Get or add enter pin.
-    GraphEnterPin& GetOrAddEnter(const ea::string_view name);
+    GraphPinRef<GraphEnterPin> GetOrAddEnter(const ea::string_view name);
 
-    /// Get enter pin.
-    GraphEnterPin* GetEnter(const ea::string_view name);
+    /// Get enter pin by name.
+    GraphPinRef<GraphEnterPin> GetEnter(const ea::string_view name);
 
-    /// Get output pins.
-    ea::span<GraphEnterPin> GetEnters() { return ea::span(enterPins_); }
+    /// Get enter pin by index.
+    GraphPinRef<GraphEnterPin> GetEnter(unsigned index);
+
+    /// Get number of enter pins.
+    unsigned GetNumEnters() const { return enterPins_.size(); }
 
     /// Get exit pin.
-    GraphExitPin* GetExit(const ea::string_view name);
+    GraphPinRef<GraphExitPin> GetExit(const ea::string_view name);
+
+    /// Get enter pin by index.
+    GraphPinRef<GraphExitPin> GetExit(unsigned index);
 
     /// Get or add exit pin.
-    GraphExitPin& GetOrAddExit(const ea::string_view name);
+    GraphPinRef<GraphExitPin> GetOrAddExit(const ea::string_view name);
 
-    /// Get exit pins.
-    ea::span<GraphExitPin> GetExits() { return ea::span(exitPins_); }
+    /// Get number of exit pins.
+    unsigned GetNumExits() const { return exitPins_.size(); }
 
     /// Set name of the graph node.
     /// @property
@@ -187,6 +199,7 @@ private:
     ea::fixed_vector<GraphOutPin, 1> outputPins_;
 
     friend class Graph;
+    friend class GraphNode;
 };
 
 } // namespace Urho3D

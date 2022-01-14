@@ -40,7 +40,7 @@ public:
     {
         const Cone* cone = static_cast<Cone*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(cone->GetTranslation(), cone->GetRotation(), cone->GetScale());
-        const Matrix3 md = m.RotationMatrix();
+        const Matrix3 md = m.ToMatrix3();
 
         for (unsigned i = 0; i < numParticles; ++i)
         {

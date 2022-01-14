@@ -128,6 +128,11 @@ TEST_CASE("Test simple particle graph")
         frame->SetValue(0.0f);
         auto frameIndex = updateGraph.Add(frame);
 
+        auto rotation = MakeShared<ParticleGraphNodes::Constant>(context);
+        rotation->SetValue(0.0f);
+        auto rotationIndex = updateGraph.Add(rotation);
+        
+
         auto color = MakeShared<ParticleGraphNodes::Constant>(context);
         color->SetValue(Color(1.0f, 1.0f, 1.0f, 1.0f));
         auto colorIndex = updateGraph.Add(color);
@@ -148,8 +153,8 @@ TEST_CASE("Test simple particle graph")
         auto curveIndex = updateGraph.Add(curve);
 
         auto direction = MakeShared<ParticleGraphNodes::Constant>(context);
-        frame->SetValue(Vector3::UP);
-        auto directionIndex = updateGraph.Add(frame);
+        direction->SetValue(Vector3::UP);
+        auto directionIndex = updateGraph.Add(direction);
 
         auto render = MakeShared<ParticleGraphNodes::RenderBillboard>(context);
         render->SetMaterial(ResourceRef(Material::GetTypeNameStatic(), "Materials/DefaultGrey.xml"));
@@ -157,7 +162,7 @@ TEST_CASE("Test simple particle graph")
         render->SetPinSource(1, constIndex);
         render->SetPinSource(2, frameIndex);
         render->SetPinSource(3, colorIndex);
-        render->SetPinSource(4, frameIndex);
+        render->SetPinSource(4, rotationIndex);
         render->SetPinSource(5, directionIndex);
         auto renderIndex = updateGraph.Add(render);
 
@@ -182,82 +187,44 @@ TEST_CASE("Test simple particle graph")
     //CHECK(((float*)sizeMem.data())[0] == 40.0);
 }
 
-TEST_CASE("Particle graph serilization roundtrip")
-{
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-
-    const auto graph = MakeShared<Graph>(context);
-    auto xml = R"(<particleGraphEffect>
-	<layer type="ParticleGraphLayer" capacity="10">
-		<emit>
-			<nodes>
-			</nodes>
-		</emit>
-		<init>
-			<nodes>
-				<node id="1" name="Constant">
-					<properties>
-						<property name="Value" type="Vector3" value="1 2 3" />
-					</properties>
-					<out>
-						<pin type="Vector3" name="out" />
-					</out>
-				</node>
-				<node id="2" name="SetAttribute">
-					<in>
-						<pin type="Vector3" name="" node="1" pin="out" />
-					</in>
-					<out>
-						<pin type="Vector3" name="pos" />
-					</out>
-				</node>
-			</nodes>
-		</init>
-		<update>
-			<nodes>
-			</nodes>
-		</update>
-	</layer>
-</particleGraphEffect>)";
-    REQUIRE(graph->LoadXML(xml));
-}
-
 TEST_CASE("Test const")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
-	<layer type="ParticleGraphLayer" capacity="10">
-		<emit>
-			<nodes>
-			</nodes>
-		</emit>
-		<init>
-			<nodes>
-				<node id="1" name="Constant">
-					<properties>
-						<property name="Value" type="Vector3" value="1 2 3" />
-					</properties>
-					<out>
-						<pin type="Vector3" name="out" />
-					</out>
-				</node>
-				<node id="2" name="SetAttribute">
-					<in>
-						<pin type="Vector3" name="" node="1" pin="out" />
-					</in>
-					<out>
-						<pin type="Vector3" name="pos" />
-					</out>
-				</node>
-			</nodes>
-		</init>
-		<update>
-			<nodes>
-			</nodes>
-		</update>
-	</layer>
+    <layers>
+	    <layer capacity="10">
+		    <emit>
+			    <nodes>
+			    </nodes>
+		    </emit>
+		    <init>
+			    <nodes>
+				    <node id="1" name="Constant">
+					    <properties>
+						    <property name="Value" type="Vector3" value="1 2 3" />
+					    </properties>
+					    <out>
+						    <pin type="Vector3" name="out" />
+					    </out>
+				    </node>
+				    <node id="2" name="SetAttribute">
+					    <in>
+						    <pin type="Vector3" name="" node="1" pin="out" />
+					    </in>
+					    <out>
+						    <pin type="Vector3" name="pos" />
+					    </out>
+				    </node>
+			    </nodes>
+		    </init>
+		    <update>
+			    <nodes>
+			    </nodes>
+		    </update>
+	    </layer>
+    </layers>
 </particleGraphEffect>)";
     MemoryBuffer buffer(xml);
     REQUIRE(effect->Load(buffer));
@@ -282,25 +249,27 @@ TEST_CASE("Test Emit")
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
-	<layer type="ParticleGraphLayer" capacity="10">
-		<emit>
-			<nodes>
-    			<node id="1" name="Emit">
-					<in>
-						<pin name="count" type="float" value="1" />
-					</in>
-				</node>
-			</nodes>
-		</emit>
-		<init>
-			<nodes>
-			</nodes>
-		</init>
-		<update>
-			<nodes>
-			</nodes>
-		</update>
-	</layer>
+    <layers>
+	    <layer type="ParticleGraphLayer" capacity="10">
+		    <emit>
+			    <nodes>
+    			    <node id="1" name="Emit">
+					    <in>
+						    <pin name="count" type="float" value="1" />
+					    </in>
+				    </node>
+			    </nodes>
+		    </emit>
+		    <init>
+			    <nodes>
+			    </nodes>
+		    </init>
+		    <update>
+			    <nodes>
+			    </nodes>
+		    </update>
+	    </layer>
+    </layers>
 </particleGraphEffect>)";
     MemoryBuffer buffer(xml);
     REQUIRE(effect->Load(buffer));
@@ -321,38 +290,40 @@ TEST_CASE("Test Burst")
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
-	<layer type="ParticleGraphLayer" capacity="10">
-		<emit>
-			<nodes>
-    			<node id="1" name="BurstTimer">
-	    			<properties>
-    	    			<property name="Delay" type="float" value="1.0" />
-    	    			<property name="Interval" type="float" value="1.0" />
-                        <property name="Cycles" type="int" value="2" />
-	    			</properties>
-					<in>
-						<pin name="count" type="float" value="1" />
-					</in>
-					<out>
-						<pin name="out" type="float" />
-					</out>
-				</node>
-    			<node id="2" name="Emit">
-					<in>
-						<pin name="count" type="float" node="1" pin="out" />
-					</in>
-				</node>
-			</nodes>
-		</emit>
-		<init>
-			<nodes>
-			</nodes>
-		</init>
-		<update>
-			<nodes>
-			</nodes>
-		</update>
-	</layer>
+    <layers>
+	    <layer type="ParticleGraphLayer" capacity="10">
+		    <emit>
+			    <nodes>
+    			    <node id="1" name="BurstTimer">
+	    			    <properties>
+    	    			    <property name="Delay" type="float" value="1.0" />
+    	    			    <property name="Interval" type="float" value="1.0" />
+                            <property name="Cycles" type="int" value="2" />
+	    			    </properties>
+					    <in>
+						    <pin name="count" type="float" value="1" />
+					    </in>
+					    <out>
+						    <pin name="out" type="float" />
+					    </out>
+				    </node>
+    			    <node id="2" name="Emit">
+					    <in>
+						    <pin name="count" type="float" node="1" pin="out" />
+					    </in>
+				    </node>
+			    </nodes>
+		    </emit>
+		    <init>
+			    <nodes>
+			    </nodes>
+		    </init>
+		    <update>
+			    <nodes>
+			    </nodes>
+		    </update>
+	    </layer>
+    </layers>
 </particleGraphEffect>)";
     MemoryBuffer buffer(xml);
     REQUIRE(effect->Load(buffer));
@@ -375,26 +346,28 @@ TEST_CASE("Test Expire")
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
-	<layer type="ParticleGraphLayer" capacity="10">
-		<emit>
-			<nodes>
-			</nodes>
-		</emit>
-		<init>
-			<nodes>
-			</nodes>
-		</init>
-		<update>
-			<nodes>
-				<node id="1" name="Expire">
-					<in>
-						<pin name="time" type="float" value="1" />
-						<pin name="lifetime" type="float" value="1" />
-					</in>
-				</node>
-			</nodes>
-		</update>
-	</layer>
+    <layers>
+	    <layer type="ParticleGraphLayer" capacity="10">
+		    <emit>
+			    <nodes>
+			    </nodes>
+		    </emit>
+		    <init>
+			    <nodes>
+			    </nodes>
+		    </init>
+		    <update>
+			    <nodes>
+				    <node id="1" name="Expire">
+					    <in>
+						    <pin name="time" type="float" value="1" />
+						    <pin name="lifetime" type="float" value="1" />
+					    </in>
+				    </node>
+			    </nodes>
+		    </update>
+	    </layer>
+    </layers>
 </particleGraphEffect>)";
     MemoryBuffer buffer(xml);
     REQUIRE(effect->Load(buffer));
@@ -419,37 +392,39 @@ TEST_CASE("Test Make")
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
-	<layer type="ParticleGraphLayer" capacity="10">
-		<emit>
-			<nodes>
-			</nodes>
-		</emit>
-		<init>
-			<nodes>
-				<node id="1" name="Make">
-					<in>
-						<pin name="x" type="float" value="2" />
-						<pin name="y" type="float" value="3" />
-					</in>
-					<out>
-						<pin name="out" type="Vector2" />
-					</out>
-				</node>
-				<node id="2" name="SetAttribute">
-					<in>
-						<pin name="" type="Vector2" node="1" pin="out" />
-					</in>
-					<out>
-						<pin name="attr" type="Vector2" />
-					</out>
-				</node>
-			</nodes>
-		</init>
-		<update>
-			<nodes>
-			</nodes>
-		</update>
-	</layer>
+    <layers>
+	    <layer type="ParticleGraphLayer" capacity="10">
+		    <emit>
+			    <nodes>
+			    </nodes>
+		    </emit>
+		    <init>
+			    <nodes>
+				    <node id="1" name="Make">
+					    <in>
+						    <pin name="x" type="float" value="2" />
+						    <pin name="y" type="float" value="3" />
+					    </in>
+					    <out>
+						    <pin name="out" type="Vector2" />
+					    </out>
+				    </node>
+				    <node id="2" name="SetAttribute">
+					    <in>
+						    <pin name="" type="Vector2" node="1" pin="out" />
+					    </in>
+					    <out>
+						    <pin name="attr" type="Vector2" />
+					    </out>
+				    </node>
+			    </nodes>
+		    </init>
+		    <update>
+			    <nodes>
+			    </nodes>
+		    </update>
+	    </layer>
+    </layers>
 </particleGraphEffect>)";
     MemoryBuffer buffer(xml);
     REQUIRE(effect->Load(buffer));
@@ -470,37 +445,39 @@ TEST_CASE("Test Make IntVector2")
 
     const auto effect = MakeShared<ParticleGraphEffect>(context);
     auto xml = R"(<particleGraphEffect>
-	<layer type="ParticleGraphLayer" capacity="10">
-		<emit>
-			<nodes>
-			</nodes>
-		</emit>
-		<init>
-			<nodes>
-				<node id="1" name="Make">
-					<in>
-						<pin name="x" type="int" value="2" />
-						<pin name="y" type="int" value="3" />
-					</in>
-					<out>
-						<pin name="out" type="IntVector2" />
-					</out>
-				</node>
-				<node id="2" name="SetAttribute">
-					<in>
-						<pin name="" type="IntVector2" node="1" pin="out" />
-					</in>
-					<out>
-						<pin name="attr" type="IntVector2" />
-					</out>
-				</node>
-			</nodes>
-		</init>
-		<update>
-			<nodes>
-			</nodes>
-		</update>
-	</layer>
+    <layers>
+	    <layer type="ParticleGraphLayer" capacity="10">
+		    <emit>
+			    <nodes>
+			    </nodes>
+		    </emit>
+		    <init>
+			    <nodes>
+				    <node id="1" name="Make">
+					    <in>
+						    <pin name="x" type="int" value="2" />
+						    <pin name="y" type="int" value="3" />
+					    </in>
+					    <out>
+						    <pin name="out" type="IntVector2" />
+					    </out>
+				    </node>
+				    <node id="2" name="SetAttribute">
+					    <in>
+						    <pin name="" type="IntVector2" node="1" pin="out" />
+					    </in>
+					    <out>
+						    <pin name="attr" type="IntVector2" />
+					    </out>
+				    </node>
+			    </nodes>
+		    </init>
+		    <update>
+			    <nodes>
+			    </nodes>
+		    </update>
+	    </layer>
+    </layers>
 </particleGraphEffect>)";
     MemoryBuffer buffer(xml);
     REQUIRE(effect->Load(buffer));

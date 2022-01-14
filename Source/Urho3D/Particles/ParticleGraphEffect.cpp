@@ -115,6 +115,7 @@ bool ParticleGraphEffect::EndLoad()
     //    return true;
 
     XMLInputArchive archive(loadXMLFile_);
+    auto block = archive.OpenUnorderedBlock("particleGraphEffect");
     SerializeInBlock(archive);
     //if (archive.HasError())
     //    URHO3D_LOGERROR(archive.GetErrorString());
@@ -124,8 +125,8 @@ bool ParticleGraphEffect::EndLoad()
 bool ParticleGraphEffect::Save(Serializer& dest) const
 {
     SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
-    XMLElement graphElem = xml->CreateRoot("particleGraph");
     XMLOutputArchive archive(xml);
+    auto block = archive.OpenUnorderedBlock("particleGraphEffect");
     const_cast<ParticleGraphEffect*>(this)->SerializeInBlock(archive);
     xml->Save(dest);
     return true;
@@ -133,7 +134,24 @@ bool ParticleGraphEffect::Save(Serializer& dest) const
 
 void ParticleGraphEffect::SerializeInBlock(Archive& archive)
 {
-    SerializeVectorAsObjects(archive, "particleGraphEffect", layers_ , "layer");
+    //SerializeVectorAsObjects(archive, "particleGraphEffect", layers_ , "layer");
+    
+    unsigned numElements = layers_.size();
+    auto block = archive.OpenArrayBlock("layers", numElements);
+
+    if (archive.IsInput())
+    {
+        numElements = block.GetSizeHint();
+        layers_.clear();
+        layers_.resize(numElements);
+        for (unsigned i = 0; i < numElements; ++i)
+        {
+            layers_[i] = MakeShared<ParticleGraphLayer>(context_);
+        }
+    }
+
+    for (unsigned i = 0; i < numElements; ++i)
+        SerializeValue(archive, "layer", *layers_[i]);
 }
 
 

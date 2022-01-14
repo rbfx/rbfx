@@ -40,7 +40,7 @@ public:
     {
         const Sphere* sphere = static_cast<Sphere*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(sphere->GetTranslation(), sphere->GetRotation(), sphere->GetScale());
-        const Matrix3 md = m.RotationMatrix();
+        const Matrix3 md = m.ToMatrix3();
 
         for (unsigned i = 0; i < numParticles; ++i)
         {

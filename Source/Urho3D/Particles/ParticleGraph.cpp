@@ -143,7 +143,7 @@ unsigned ParticleGraphWriter::WriteNode(unsigned index)
     return true;
 }
 
-GraphOutPin& ParticleGraphWriter::GetSourcePin(unsigned nodeIndex, unsigned pinIndex)
+GraphPinRef<GraphOutPin> ParticleGraphWriter::GetSourcePin(unsigned nodeIndex, unsigned pinIndex)
 {
     const auto node = particleGraph_.GetNode(nodeIndex);
     const auto outNode = nodes_[nodeIndex];

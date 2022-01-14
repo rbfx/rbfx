@@ -301,8 +301,7 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
     }
 
     if (value)
-        value->SerializeInBlock(archive);
-    //    SerializeValue(archive, "value", *value);
+        SerializeValue(archive, "value", *value);
 }
 
 }

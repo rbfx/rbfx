@@ -82,7 +82,7 @@ public:
     unsigned WriteNode(unsigned index);
 
     /// Get source pin reference.
-    GraphOutPin& GetSourcePin(unsigned connected_node, unsigned get_connected_pin_index);
+    GraphPinRef<GraphOutPin> GetSourcePin(unsigned connected_node, unsigned get_connected_pin_index);
 
 private:
     ParticleGraph& particleGraph_;

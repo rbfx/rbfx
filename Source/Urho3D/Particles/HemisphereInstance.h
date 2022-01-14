@@ -40,7 +40,7 @@ public:
     {
         const Hemisphere* hemisphere = static_cast<Hemisphere*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(hemisphere->GetTranslation(), hemisphere->GetRotation(), hemisphere->GetScale());
-        const Matrix3 md = m.RotationMatrix();
+        const Matrix3 md = m.ToMatrix3();
 
         for (unsigned i = 0; i < numParticles; ++i)
         {

@@ -73,7 +73,9 @@
 #include "../Urho2D/Urho2D.h"
 #endif
 #include "../Engine/EngineEvents.h"
+#ifdef URHO3D_PARTICLE_GRAPH
 #include "../Particles/ParticleGraphSystem.h"
+#endif
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -215,7 +217,9 @@ bool Engine::Initialize(const VariantMap& parameters)
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
     }
+#ifdef URHO3D_PARTICLE_GRAPH
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
+#endif
 
 #ifdef URHO3D_URHO2D
     // 2D graphics library is dependent on 3D graphics library

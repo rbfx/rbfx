@@ -154,7 +154,7 @@ private:
     VariantType requestedValueType_{VAR_NONE};
 
     /// Index of attribute. Only valid for sparse pins.
-    unsigned attributeIndex_;
+    unsigned attributeIndex_{};
 
     /// Reference to a memory block that corresponds to the pin value.
     ParticleGraphPinRef memory_;
