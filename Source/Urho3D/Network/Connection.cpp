@@ -1179,17 +1179,27 @@ ea::string Connection::ToString() const
 
 bool Connection::IsClockSynchronized() const
 {
-    return clock_->IsReady();
+    return clock_ && clock_->IsReady();
 }
 
 unsigned Connection::RemoteToLocalTime(unsigned time) const
 {
-    return clock_->RemoteToLocal(time);
+    return clock_ ? clock_->RemoteToLocal(time) : time;
 }
 
 unsigned Connection::LocalToRemoteTime(unsigned time) const
 {
-    return clock_->LocalToRemote(time);
+    return clock_ ? clock_->LocalToRemote(time) : time;
+}
+
+unsigned Connection::GetLocalTime() const
+{
+    return Time::GetSystemTime();
+}
+
+unsigned Connection::GetPing() const
+{
+    return clock_ ? clock_->GetPing() : 0;
 }
 
 unsigned Connection::GetNumDownloads() const

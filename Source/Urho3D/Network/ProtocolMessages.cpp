@@ -35,21 +35,6 @@ ea::string ToString(NetworkId value)
     return value == InvalidNetworkId ? "(null)" : Format("{}:{}", index, version);
 }
 
-void MsgPingPong::Save(VectorBuffer& dest) const
-{
-    dest.WriteUInt(magic_);
-}
-
-void MsgPingPong::Load(MemoryBuffer& src)
-{
-    magic_ = src.ReadUInt();
-}
-
-ea::string MsgPingPong::ToString() const
-{
-    return Format("{{magic={}}}", magic_);
-}
-
 void MsgConfigure::Save(VectorBuffer& dest) const
 {
     dest.WriteUInt(magic_);
@@ -83,23 +68,23 @@ ea::string MsgSynchronized::ToString() const
     return Format("{{magic={}}}", magic_);
 }
 
-void MsgClock::Save(VectorBuffer& dest) const
+void MsgSceneClock::Save(VectorBuffer& dest) const
 {
-    dest.WriteUInt(lastFrame_);
-    dest.WriteVLE(latestPing_);
-    dest.WriteVLE(smoothPing_);
+    dest.WriteUInt(latestFrame_);
+    dest.WriteVLE(latestFrameTime_);
+    dest.WriteVLE(inputDelay_);
 }
 
-void MsgClock::Load(MemoryBuffer& src)
+void MsgSceneClock::Load(MemoryBuffer& src)
 {
-    lastFrame_ = src.ReadUInt();
-    latestPing_ = src.ReadVLE();
-    smoothPing_ = src.ReadVLE();
+    latestFrame_ = src.ReadUInt();
+    latestFrameTime_ = src.ReadVLE();
+    inputDelay_ = src.ReadVLE();
 }
 
-ea::string MsgClock::ToString() const
+ea::string MsgSceneClock::ToString() const
 {
-    return Format("{{lastFrame={}, ping={}->{}}}", lastFrame_, latestPing_, smoothPing_);
+    return Format("{{latestFrame={} at {}, inputDelay={}}}", latestFrame_, latestFrameTime_, inputDelay_);
 }
 
 }

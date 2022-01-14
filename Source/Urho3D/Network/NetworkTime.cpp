@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Format.h"
+#include "../Math/MathDefs.h"
 #include "../Network/NetworkTime.h"
 
 namespace Urho3D
@@ -62,6 +63,42 @@ double NetworkTime::GetDelta(const NetworkTime& origin) const
     const auto deltaInt = static_cast<int>(frame_ - origin.frame_);
     const double deltaFract = subFrame_ - origin.subFrame_;
     return deltaInt + deltaFract;
+}
+
+SoftNetworkTime::SoftNetworkTime(
+    unsigned updateFrequency, float snapThreshold, float tolerance, float minTimeScale, float maxTimeScale)
+    : updateFrequency_{updateFrequency}
+    , snapThreshold_{snapThreshold}
+    , tolerance_{tolerance}
+    , minTimeScale_{minTimeScale}
+    , maxTimeScale_{maxTimeScale}
+{
+}
+
+void SoftNetworkTime::Reset(const NetworkTime& targetTime)
+{
+    smoothTime_ = targetTime;
+}
+
+float SoftNetworkTime::Update(float timeStep, const NetworkTime& targetTime)
+{
+    const float timeError = (targetTime - smoothTime_) / updateFrequency_ - timeStep;
+
+    if (std::abs(timeError) < tolerance_)
+    {
+        smoothTime_ += timeStep * updateFrequency_;
+        return timeStep;
+    }
+
+    if (std::abs(timeError) >= snapThreshold_)
+    {
+        smoothTime_ = targetTime;
+        return timeStep;
+    }
+
+    const float dilatedTimeStep = Clamp(timeStep + timeError, timeStep * minTimeScale_, timeStep * maxTimeScale_);
+    smoothTime_ += dilatedTimeStep * updateFrequency_;
+    return dilatedTimeStep;
 }
 
 }

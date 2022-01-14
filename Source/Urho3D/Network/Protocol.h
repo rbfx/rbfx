@@ -78,16 +78,11 @@ enum NetworkMessageId
     /// @{
     FIRST_NETWORK_MANAGER_MSG = 200,
 
-    /// TODO: Move MSG_PING and MSG_PONG out of NetworkManager, these messages may be useful w/o a Scene.
     /// TODO: Reuse constant when SWIG supports it.
-    /// Server->Client: request ping.
-    MSG_PING = 200,
-    /// Client->Server: reply to ping.
-    MSG_PONG,
     /// Server->Client: deliver networking settings.
-    MSG_CONFIGURE,
-    /// Server->Client: information about current server time and dynamic client properties.
-    MSG_CLOCK,
+    MSG_CONFIGURE = 200,
+    /// Server->Client: current server time and dynamic connection properties.
+    MSG_SCENE_CLOCK,
     /// Client->Server: client is synchronized and is ready for replication.
     MSG_SYNCHRONIZED,
     /// Server->Client:

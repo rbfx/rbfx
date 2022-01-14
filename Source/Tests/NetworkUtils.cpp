@@ -36,6 +36,8 @@ namespace Tests
 // For easier debugging
 unsigned currentSimulationStep = 0;
 
+unsigned ManualConnection::systemTime = 0;
+
 ManualConnection::ManualConnection(Context* context, NetworkManager* sink, unsigned seed)
     : AbstractConnection(context)
     , sink_(sink)
@@ -144,13 +146,12 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
     data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_, random_.GetUInt());
 
     data.clientToServer_->SetSinkConnection(data.serverToClient_);
-    data.clientToServer_->SetPing(quality);
+    data.clientToServer_->SetQuality(quality);
     data.serverToClient_->SetSinkConnection(data.clientToServer_);
-    data.serverToClient_->SetPing(quality);
+    data.serverToClient_->SetQuality(quality);
 
     data.clientNetworkManager_->MarkAsClient(data.clientToServer_);
     serverNetworkManager_->AsServer().AddConnection(data.serverToClient_);
-    serverNetworkManager_->AsServer().SetTestPing(data.serverToClient_, RoundToInt((quality.maxPing_ + quality.minPing_) / 2 * 1000));
 
     clients_.push_back(data);
 }
@@ -188,6 +189,7 @@ void NetworkSimulator::SimulateEngineFrame(Context* context, float timeStep)
 
 void NetworkSimulator::SimulateTime(float time, unsigned millisecondsInQuant)
 {
+    // TODO(network): Stop calling 1/1024th a "millisecond"!
     REQUIRE(MillisecondsInFrame % millisecondsInQuant == 0);
 
     const float timeStep = static_cast<float>(millisecondsInQuant) / (FramesInSecond * MillisecondsInFrame);
@@ -195,8 +197,15 @@ void NetworkSimulator::SimulateTime(float time, unsigned millisecondsInQuant)
     const auto numSteps = static_cast<unsigned>(numStepsRaw);
     REQUIRE(numSteps == numStepsRaw);
 
+    unsigned previousSystemTime = 0;
+    float systemTimeAccumulator = 0.0;
     for (unsigned i = 0; i < numSteps; ++i)
     {
+        systemTimeAccumulator += timeStep;
+        const unsigned currentSystemTime = FloorToInt(systemTimeAccumulator * 1000);
+        ManualConnection::systemTime += currentSystemTime - previousSystemTime;
+        previousSystemTime = currentSystemTime;
+
         currentSimulationStep = i;
         SimulateEngineFrame(timeStep);
     }

@@ -48,16 +48,20 @@ struct ConnectionQuality
 class ManualConnection : public AbstractConnection
 {
 public:
+    static unsigned systemTime;
+
     ManualConnection(Context* context, NetworkManager* sink, unsigned seed);
 
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
-    void SetPing(const ConnectionQuality& quality) { quality_ = quality; }
+    void SetQuality(const ConnectionQuality& quality) { quality_ = quality; }
 
     void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
     ea::string ToString() const override { return "Manual Connection"; }
     bool IsClockSynchronized() const override { return true; }
     unsigned RemoteToLocalTime(unsigned time) const override { return time; }
     unsigned LocalToRemoteTime(unsigned time) const override { return time; }
+    unsigned GetLocalTime() const override { return systemTime; }
+    unsigned GetPing() const override { return RoundToInt(1000 * (quality_.minPing_ + quality_.maxPing_) / 2); }
 
     void IncrementTime(unsigned delta);
 

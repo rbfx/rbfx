@@ -46,12 +46,6 @@ class NetworkManagerBase;
 class Scene;
 struct NetworkSetting;
 
-struct ClientPing
-{
-    unsigned magic_{};
-    HiresTimer timer_;
-};
-
 struct ClientObjectFeedback
 {
     NetworkTime feedbackTime_{};
@@ -78,42 +72,30 @@ struct ClientConnectionData
 public:
     ClientConnectionData(AbstractConnection* connection, const VariantMap& settings);
 
-    void AdvanceTime(float timeStep, const NetworkTime& serverTime);
+    void UpdateFrame(float timeStep, const NetworkTime& serverTime, float overtime);
 
     void SendCommonUpdates();
     void SendSynchronizedMessages();
 
-    void OverridePing(unsigned ping);
-    void ProcessPong(const MsgPingPong& msg);
     void ProcessSynchronized(const MsgSynchronized& msg);
 
     bool IsSynchronized() const { return synchronized_; }
-    unsigned GetSmoothPing() const { return smoothPing_; }
-    unsigned GetLatestPing() const { return confirmedPings_.back(); }
 
 private:
-    // TODO(network): Use better random
-    unsigned MakeMagic() const { return Rand(); }
+    unsigned MakeMagic() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
 
-    void SendPing();
     void SendClock();
-    void CalculateSmoothPing();
 
     VariantMap settings_;
     NetworkTime serverTime_;
+    unsigned timestamp_{};
 
     ea::optional<unsigned> synchronizationMagic_;
     bool synchronized_{};
 
-    /// Ping evaluation
-    /// @{
-    float pingTimeAccumulator_{};
-    ea::ring_buffer<unsigned> confirmedPings_{};
-    ea::ring_buffer<ClientPing> pendingPings_{};
-    ea::optional<unsigned> overridePing_;
-    unsigned smoothPing_{ M_MAX_UNSIGNED };
-    /// @}
+    // TODO(network): Fill it
+    unsigned inputDelay_{};
 
     float clockTimeAccumulator_{};
 };
@@ -123,14 +105,7 @@ struct ServerNetworkManagerSettings
 {
     VariantMap map_;
 
-    unsigned numInitialPings_{ 11 };
-    unsigned numTrimmedMaxPings_{ 3 };
-    unsigned pingIntervalMs_{ 1000 };
-    unsigned maxOngoingPings_{ 11 };
-
-    unsigned clockIntervalMs_{ 250 };
-    unsigned numOngoingClockSamples_{ 21 };
-    unsigned numTrimmedClockSamples_{ 3 };
+    unsigned clockIntervalMs_{ 1000 };
 
     unsigned numFeedbackDelaySamples_{ 31 };
 
@@ -187,7 +162,6 @@ public:
     void RemoveConnection(AbstractConnection* connection);
     void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
 
-    void SetTestPing(AbstractConnection* connection, unsigned ping);
     void SetCurrentFrame(unsigned frame);
 
     ea::string GetDebugInfo() const;
@@ -199,9 +173,8 @@ public:
 private:
     using DeltaBufferSpan = ea::pair<unsigned, unsigned>;
 
-    void BeginNetworkFrame();
+    void BeginNetworkFrame(float overtime);
     void PrepareNetworkFrame();
-    void UpdateClocks(float timeStep);
     void CollectObjectsToUpdate(float timeStep);
     void PrepareDeltaUpdates();
     void PrepareReliableDeltaForObject(unsigned index, NetworkObject* networkObject);

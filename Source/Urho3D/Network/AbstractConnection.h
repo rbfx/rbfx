@@ -65,6 +65,10 @@ public:
     virtual unsigned RemoteToLocalTime(unsigned time) const = 0;
     /// Convert local timestamp to remote timestamp.
     virtual unsigned LocalToRemoteTime(unsigned time) const = 0;
+    /// Return current local time.
+    virtual unsigned GetLocalTime() const = 0;
+    /// Return ping of the connection.
+    virtual unsigned GetPing() const = 0;
 
     /// Syntax sugar for SendMessage
     /// @{
@@ -148,14 +152,13 @@ public:
     LogLevel GetMessageLogLevel(NetworkMessageId messageId) const
     {
         static const ea::unordered_set<NetworkMessageId> traceMessages = {
-            MSG_PING,
-            MSG_PONG,
-            MSG_CLOCK,
+            MSG_CLOCK_SYNC,
+            MSG_CONTROLS,
+
+            MSG_SCENE_CLOCK,
             MSG_UPDATE_OBJECTS_RELIABLE,
             MSG_UPDATE_OBJECTS_UNRELIABLE,
             MSG_OBJECTS_FEEDBACK_UNRELIABLE,
-
-            MSG_CONTROLS,
         };
         return traceMessages.contains(messageId) ? LOG_TRACE : LOG_DEBUG;
     }
