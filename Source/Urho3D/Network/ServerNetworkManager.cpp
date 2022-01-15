@@ -56,6 +56,8 @@ unsigned GetIndex(NetworkId networkId)
 ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const VariantMap& settings)
     : connection_(connection)
     , settings_(settings)
+    , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
+    , inputDelayFilter_(GetSetting(NetworkSettings::InputDelayFilterBufferSize).GetUInt())
 {
     SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
 }
@@ -83,6 +85,13 @@ void ClientConnectionData::SendCommonUpdates()
     if (clockTimeAccumulator_ >= clockInterval)
     {
         clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
+
+        const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
+        inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
+        const unsigned newInputDelay = inputDelayFilter_.GetAverageValue();
+        // TODO(network): Filter better!
+        inputDelay_ = newInputDelay + 1 != inputDelay_ ? newInputDelay : inputDelay_;
+
         SendClock();
     }
 }

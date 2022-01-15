@@ -69,6 +69,8 @@ URHO3D_NETWORK_SETTING(ConnectionId, unsigned, 0);
 
 /// Interval in seconds between periodic clock updates.
 URHO3D_NETWORK_SETTING(PeriodicClockInterval, float, 1.0f);
+/// Number of clock ticks used to filter input delay.
+URHO3D_NETWORK_SETTING(InputDelayFilterBufferSize, unsigned, 5);
 
 /// @}
 

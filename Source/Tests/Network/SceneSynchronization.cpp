@@ -118,12 +118,12 @@ TEST_CASE("Time is synchronized between client and server")
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(startTime + 32 * initialSyncTime)) < frameErrorTolarance);
 
     // Simulate more time, expect time to stay synchronized
-    const unsigned syncFrame1 = clientNetworkManager.GetLastSynchronizationFrame();
+    const unsigned syncFrame1 = clientNetworkManager.GetLatestScaledInputFrame();
     sim.SimulateTime(initialWaitTime);
 
     REQUIRE(serverNetworkManager.GetCurrentFrame() == startTime + 32 * (initialSyncTime + initialWaitTime));
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(startTime + 32 * (initialSyncTime + initialWaitTime))) < frameErrorTolarance);
-    REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame1);
+    REQUIRE(clientNetworkManager.GetLatestScaledInputFrame() == syncFrame1);
 
     // Warp time close to 2^32 and simulate some time, expect time to be resynchronized
     const auto bigTime = M_MAX_UNSIGNED - 32 * 30;
@@ -138,12 +138,12 @@ TEST_CASE("Time is synchronized between client and server")
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * forwardSyncTime)) < frameErrorTolarance);
 
     // Simulate more time, expect time to stay synchronized
-    const unsigned syncFrame2 = clientNetworkManager.GetLastSynchronizationFrame();
+    const unsigned syncFrame2 = clientNetworkManager.GetLatestScaledInputFrame();
     sim.SimulateTime(forwardWaitTime);
 
     REQUIRE(serverNetworkManager.GetCurrentFrame() == bigTime + 32 * (forwardSyncTime + forwardWaitTime));
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(bigTime + 32 * (forwardSyncTime + forwardWaitTime))) < frameErrorTolarance);
-    REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame2);
+    REQUIRE(clientNetworkManager.GetLatestScaledInputFrame() == syncFrame2);
 
     // Warp time 1 second back and simulate some time, expect time to be resynchronized
     const unsigned baseTime = bigTime + 32 * (forwardSyncTime + forwardWaitTime);
@@ -154,12 +154,12 @@ TEST_CASE("Time is synchronized between client and server")
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(baseTime + 32 * backwardSyncTime)) < frameErrorTolarance);
 
     // Simulate more time, expect time to stay synchronized
-    const unsigned syncFrame3 = clientNetworkManager.GetLastSynchronizationFrame();
+    const unsigned syncFrame3 = clientNetworkManager.GetLatestScaledInputFrame();
     sim.SimulateTime(backwardWaitTime);
 
     REQUIRE(serverNetworkManager.GetCurrentFrame() == baseTime + 32 * (backwardSyncTime + backwardWaitTime));
     REQUIRE(std::abs(clientNetworkManager.GetCurrentFrameDeltaRelativeTo(baseTime + 32 * (backwardSyncTime + backwardWaitTime))) < frameErrorTolarance);
-    //REQUIRE(clientNetworkManager.GetLastSynchronizationFrame() == syncFrame3);
+    //REQUIRE(clientNetworkManager.GetLatestScaledInputFrame() == syncFrame3);
 }
 
 TEST_CASE("Scene is synchronized between client and server")

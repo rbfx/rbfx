@@ -40,10 +40,10 @@ class URHO3D_API FilteredUint
 public:
     explicit FilteredUint(unsigned bufferSize, float maxDeviation = 1.0f);
 
-    void AddValue(unsigned value);
+    void AddValue(unsigned value, bool filter = true);
     void Filter();
 
-    unsigned GetFilteredValue() const { return baseValue_ + filteredOffset_; }
+    unsigned GetAverageValue() const { return baseValue_ + averageOffset_; }
     bool IsInitialized() const { return !offsets_.empty(); }
 
 private:
@@ -51,7 +51,7 @@ private:
 
     unsigned baseValue_{};
     ea::ring_buffer<int> offsets_;
-    int filteredOffset_{};
+    int averageOffset_{};
 };
 
 enum class ClockSynchronizerPhase : unsigned
@@ -92,11 +92,11 @@ public:
     /// Return whether synchronizer is ready to use.
     bool IsReady() const { return localToRemote_.IsInitialized(); }
     /// Convert from local to remote timestamp.
-    unsigned LocalToRemote(unsigned value) const { return value + localToRemote_.GetFilteredValue(); }
+    unsigned LocalToRemote(unsigned value) const { return value + localToRemote_.GetAverageValue(); }
     /// Convert from remote to local timestamp.
-    unsigned RemoteToLocal(unsigned value) const { return value - localToRemote_.GetFilteredValue(); }
+    unsigned RemoteToLocal(unsigned value) const { return value - localToRemote_.GetAverageValue(); }
     /// Return ping, i.e. half of round-trip delay excluding remote processing time.
-    unsigned GetPing() const { return roundTripDelay_.GetFilteredValue() / 2; }
+    unsigned GetPing() const { return roundTripDelay_.GetAverageValue() / 2; }
 
 protected:
     explicit ClockSynchronizer(unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp);
