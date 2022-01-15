@@ -84,7 +84,8 @@ public:
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
     NetworkTime GetServerTime() const { return serverTime_; }
     NetworkTime GetSmoothClientTime() const { return clientTime_.Get(); }
-    NetworkTime GetLatestUnstableClientTime() const { return latestDilatedClientTime_; }
+    NetworkTime GetInputTime() const { return inputTime_.Get(); }
+    NetworkTime GetLatestScaledInputTime() const { return latestScaledInputTime_; }
     const Variant& GetSetting(const NetworkSetting& setting) const;
     /// @}
 
@@ -100,6 +101,7 @@ private:
     void AdjustTime(NetworkTime& time, ea::ring_buffer<double>& errors, double adjustment) const;
 
     NetworkTime ToClientTime(const NetworkTime& serverTime) const;
+    NetworkTime ToInputTime(const NetworkTime& serverTime) const;
 
     Scene* scene_{};
     AbstractConnection* connection_{};
@@ -107,15 +109,21 @@ private:
 
     const unsigned thisConnectionId_{};
     const unsigned updateFrequency_{};
+    const float timeSnapThreshold_{};
+    const float timeErrorTolerance_{};
+    const float minTimeDilation_{};
+    const float maxTimeDilation_{};
 
     ClientSynchronizationSettings settings_{};
 
+    unsigned inputDelay_{};
     NetworkTime serverTime_;
     unsigned latestServerFrame_{};
-    NetworkTime latestDilatedClientTime_{};
+    NetworkTime latestScaledInputTime_{};
     bool isNewFrame_{};
 
     SoftNetworkTime clientTime_;
+    SoftNetworkTime inputTime_;
     PhysicsClockSynchronizer physicsSync_;
 };
 
@@ -138,10 +146,11 @@ public:
     bool IsSynchronized() const { return sync_.has_value(); }
     NetworkTime GetServerTime() const { return sync_ ? sync_->GetServerTime() : NetworkTime{}; }
     NetworkTime GetClientTime() const { return sync_ ? sync_->GetSmoothClientTime() : NetworkTime{}; }
+    NetworkTime GetInputTime() const { return sync_ ? sync_->GetInputTime() : NetworkTime{}; }
 
     unsigned GetCurrentFrame() const { return GetServerTime().GetFrame(); }
     float GetCurrentBlendFactor() const { return GetServerTime().GetSubFrame(); }
-    unsigned GetLastSynchronizationFrame() const { return sync_ ? sync_->GetLatestUnstableClientTime().GetFrame() : 0; }
+    unsigned GetLatestScaledInputFrame() const { return sync_ ? sync_->GetLatestScaledInputTime().GetFrame() : 0; }
     double GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const;
 
     unsigned GetTraceCapacity() const;

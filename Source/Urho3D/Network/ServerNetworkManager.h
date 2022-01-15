@@ -28,6 +28,7 @@
 #include "../Core/Timer.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
+#include "../Network/ClockSynchronizer.h"
 #include "../Network/LocalClockSynchronizer.h"
 #include "../Network/ProtocolMessages.h"
 
@@ -88,6 +89,8 @@ private:
     void SendClock();
 
     VariantMap settings_;
+    const unsigned updateFrequency_{};
+
     NetworkTime serverTime_;
     unsigned timestamp_{};
 
@@ -95,6 +98,7 @@ private:
     bool synchronized_{};
 
     // TODO(network): Fill it
+    FilteredUint inputDelayFilter_;
     unsigned inputDelay_{};
 
     float clockTimeAccumulator_{};

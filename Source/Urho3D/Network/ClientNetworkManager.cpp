@@ -47,17 +47,20 @@ ClientSynchronizationManager::ClientSynchronizationManager(Scene* scene, Abstrac
     , serverSettings_(serverSettings)
     , thisConnectionId_(GetSetting(NetworkSettings::ConnectionId).GetUInt())
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
+    , timeSnapThreshold_{GetSetting(NetworkSettings::TimeSnapThreshold).GetFloat()}
+    , timeErrorTolerance_{GetSetting(NetworkSettings::TimeErrorTolerance).GetFloat()}
+    , minTimeDilation_{GetSetting(NetworkSettings::MinTimeDilation).GetFloat()}
+    , maxTimeDilation_{GetSetting(NetworkSettings::MaxTimeDilation).GetFloat()}
     , settings_(settings)
-    , clientTime_(updateFrequency_,
-        GetSetting(NetworkSettings::TimeSnapThreshold).GetFloat(),
-        GetSetting(NetworkSettings::TimeErrorTolerance).GetFloat(),
-        GetSetting(NetworkSettings::MinTimeDilation).GetFloat(),
-        GetSetting(NetworkSettings::MaxTimeDilation).GetFloat())
+    , inputDelay_(msg.inputDelay_)
+    , clientTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
+    , inputTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
     , physicsSync_(scene_, updateFrequency_, true)
 {
     UpdateServerTime(msg, false);
     clientTime_.Reset(ToClientTime(serverTime_));
-    latestDilatedClientTime_ = clientTime_.Get();
+    inputTime_.Reset(ToInputTime(serverTime_));
+    latestScaledInputTime_ = clientTime_.Get();
 }
 
 ClientSynchronizationManager::~ClientSynchronizationManager()
@@ -81,17 +84,19 @@ float ClientSynchronizationManager::ApplyTimeStep(float timeStep, const ea::vect
     for (const MsgSceneClock& msg : pendingClockUpdates)
         UpdateServerTime(msg, true);
 
-    const NetworkTime previousClientTime = clientTime_.Get();
-    const float dilatedTimeStep = clientTime_.Update(timeStep, ToClientTime(serverTime_));
+    clientTime_.Update(timeStep, ToClientTime(serverTime_));
 
-    if (timeStep != dilatedTimeStep)
-        latestDilatedClientTime_ = clientTime_.Get();
+    const NetworkTime previousInputTime = inputTime_.Get();
+    const float scaledTimeStep = inputTime_.Update(timeStep, ToInputTime(serverTime_));
 
-    isNewFrame_ = previousClientTime.GetFrame() != clientTime_.Get().GetFrame();
-    const float overtime = clientTime_.Get().GetSubFrame() / updateFrequency_;
-    physicsSync_.UpdateClock(dilatedTimeStep, isNewFrame_ ? ea::make_optional(overtime) : ea::nullopt);
+    if (timeStep != scaledTimeStep)
+        latestScaledInputTime_ = inputTime_.Get();
 
-    return dilatedTimeStep;
+    isNewFrame_ = previousInputTime.GetFrame() != inputTime_.Get().GetFrame();
+    const float overtime = inputTime_.Get().GetSubFrame() / updateFrequency_;
+    physicsSync_.UpdateClock(scaledTimeStep, isNewFrame_ ? ea::make_optional(overtime) : ea::nullopt);
+
+    return scaledTimeStep;
 }
 
 const Variant& ClientSynchronizationManager::GetSetting(const NetworkSetting& setting) const
@@ -107,6 +112,7 @@ void ClientSynchronizationManager::UpdateServerTime(const MsgSceneClock& msg, bo
     const unsigned serverFrameTime = connection_->RemoteToLocalTime(msg.latestFrameTime_);
     const auto offsetMs = static_cast<int>(connection_->GetLocalTime() - serverFrameTime);
 
+    inputDelay_ = msg.inputDelay_;
     latestServerFrame_ = msg.latestFrame_;
     serverTime_ = NetworkTime{msg.latestFrame_};
     serverTime_ += MillisecondsToFrames(offsetMs);
@@ -116,6 +122,11 @@ NetworkTime ClientSynchronizationManager::ToClientTime(const NetworkTime& server
 {
     const double clientDelay = settings_.clientTimeDelayInSeconds_ + connection_->GetPing() * 0.001;
     return serverTime - SecondsToFrames(clientDelay);
+}
+
+NetworkTime ClientSynchronizationManager::ToInputTime(const NetworkTime& serverTime) const
+{
+    return serverTime + static_cast<double>(inputDelay_);
 }
 
 ClientNetworkManager::ClientNetworkManager(NetworkManagerBase* base, Scene* scene, AbstractConnection* connection)
@@ -376,18 +387,20 @@ unsigned ClientNetworkManager::GetPositionExtrapolationFrames() const
 
 ea::string ClientNetworkManager::GetDebugInfo() const
 {
+    static const ea::string unnamedScene = "Unnamed";
+    const ea::string& sceneName = !scene_->GetName().empty() ? scene_->GetName() : unnamedScene;
     if (!sync_)
-        return "Pending synchronization...\n";
+        return Format("Scene '{}': Ping {}ms, Pending synchronization...\n", sceneName, connection_->GetPing());
 
-    ea::string result;
-
-    result += Format("Scene '{}': Time #{}-{:.1f}ms, Feedback Delay {} frames\n",
-        !scene_->GetName().empty() ? scene_->GetName() : "Unnamed",
+    const double inputDelayMs = (GetInputTime() - GetServerTime()) / sync_->GetUpdateFrequency() * 1000.0f;
+    const double replicaDelayMs = (GetServerTime() - GetClientTime()) / sync_->GetUpdateFrequency() * 1000.0f;
+    return Format("Scene '{}': Ping {}ms, Time {}ms+#{}-{}ms, Sync since #{}\n",
+        sceneName,
+        connection_->GetPing(),
+        ea::max(0, CeilToInt(inputDelayMs)),
         GetServerTime().GetFrame(),
-        (GetServerTime() - GetClientTime()) / sync_->GetUpdateFrequency() * 1000.0f,
-        latestFeedbackDelay_);
-
-    return result;
+        ea::max(0, CeilToInt(replicaDelayMs)),
+        GetLatestScaledInputFrame());
 }
 
 void ClientNetworkManager::SynchronizeClocks(float timeStep)

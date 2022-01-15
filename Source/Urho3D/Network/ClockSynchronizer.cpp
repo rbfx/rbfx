@@ -40,7 +40,7 @@ FilteredUint::FilteredUint(unsigned bufferSize, float maxDeviation)
     offsets_.set_capacity(bufferSize);
 }
 
-void FilteredUint::AddValue(unsigned value)
+void FilteredUint::AddValue(unsigned value, bool filter)
 {
     if (offsets_.empty())
         baseValue_ = value;
@@ -49,13 +49,16 @@ void FilteredUint::AddValue(unsigned value)
 
     const auto offset = static_cast<int>(value - baseValue_);
     offsets_.push_back(offset);
+
+    if (filter)
+        Filter();
 }
 
 void FilteredUint::Filter()
 {
     if (offsets_.size() < 2)
     {
-        filteredOffset_ = offsets_.empty() ? 0 : offsets_[0];
+        averageOffset_ = offsets_.empty() ? 0 : offsets_[0];
         return;
     }
 
@@ -79,7 +82,7 @@ void FilteredUint::Filter()
     }
 
     URHO3D_ASSERT(averageCount > 0);
-    filteredOffset_ = static_cast<int>(averageAccum / averageCount);
+    averageOffset_ = static_cast<int>(averageAccum / averageCount);
 }
 
 void ClockSynchronizerMessage::Load(Deserializer& src)
@@ -120,13 +123,11 @@ void ClockSynchronizer::UpdateClocks(
     const auto delta = static_cast<int>(offset2 - offset1);
     const unsigned offset = offset1 + delta / 2;
     localToRemote_.AddValue(offset);
-    localToRemote_.Filter();
 
     const unsigned outerDelay = localReceived - localSent;
     const unsigned innerDelay = remoteSent - remoteReceived;
     const unsigned delay = outerDelay - ea::min(outerDelay, innerDelay);
     roundTripDelay_.AddValue(delay);
-    roundTripDelay_.Filter();
 }
 
 ServerClockSynchronizer::ServerClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
