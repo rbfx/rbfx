@@ -53,14 +53,14 @@ ClientSynchronizationManager::ClientSynchronizationManager(Scene* scene, Abstrac
     , maxTimeDilation_{GetSetting(NetworkSettings::MaxTimeDilation).GetFloat()}
     , settings_(settings)
     , inputDelay_(msg.inputDelay_)
-    , clientTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
+    , replicaTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
     , inputTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
     , physicsSync_(scene_, updateFrequency_, true)
 {
     UpdateServerTime(msg, false);
-    clientTime_.Reset(ToClientTime(serverTime_));
+    replicaTime_.Reset(ToClientTime(serverTime_));
     inputTime_.Reset(ToInputTime(serverTime_));
-    latestScaledInputTime_ = clientTime_.Get();
+    latestScaledInputTime_ = replicaTime_.Get();
 }
 
 ClientSynchronizationManager::~ClientSynchronizationManager()
@@ -84,7 +84,7 @@ float ClientSynchronizationManager::ApplyTimeStep(float timeStep, const ea::vect
     for (const MsgSceneClock& msg : pendingClockUpdates)
         UpdateServerTime(msg, true);
 
-    clientTime_.Update(timeStep, ToClientTime(serverTime_));
+    replicaTime_.Update(timeStep, ToClientTime(serverTime_));
 
     const NetworkTime previousInputTime = inputTime_.Get();
     const float scaledTimeStep = inputTime_.Update(timeStep, ToInputTime(serverTime_));
@@ -92,9 +92,9 @@ float ClientSynchronizationManager::ApplyTimeStep(float timeStep, const ea::vect
     if (timeStep != scaledTimeStep)
         latestScaledInputTime_ = inputTime_.Get();
 
-    isNewFrame_ = previousInputTime.GetFrame() != inputTime_.Get().GetFrame();
+    isNewInputFrame_ = previousInputTime.GetFrame() != inputTime_.Get().GetFrame();
     const float overtime = inputTime_.Get().GetSubFrame() / updateFrequency_;
-    physicsSync_.UpdateClock(scaledTimeStep, isNewFrame_ ? ea::make_optional(overtime) : ea::nullopt);
+    physicsSync_.UpdateClock(scaledTimeStep, isNewInputFrame_ ? ea::make_optional(overtime) : ea::nullopt);
 
     return scaledTimeStep;
 }
@@ -278,7 +278,6 @@ void ClientNetworkManager::ProcessUpdateObjectsReliable(MemoryBuffer& messageDat
 void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData)
 {
     const unsigned messageFrame = messageData.ReadUInt();
-    const unsigned feedbackDelay = messageData.ReadVLE();
 
     while (!messageData.IsEof())
     {
@@ -291,11 +290,9 @@ void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageD
         {
             componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
             componentBuffer_.Seek(0);
-            networkObject->ReadUnreliableDelta(messageFrame, messageFrame - feedbackDelay, componentBuffer_);
+            networkObject->ReadUnreliableDelta(messageFrame, componentBuffer_);
         }
     }
-
-    latestFeedbackDelay_ = feedbackDelay;
 }
 
 NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned)
@@ -425,19 +422,19 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
     if (!sync_)
         return;
 
-    const bool isNewFrame = sync_->IsNewFrame();
+    const bool isNewInputFrame = sync_->IsNewInputFrame();
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)
     {
         if (networkObject)
-            networkObject->InterpolateState(sync_->GetSmoothClientTime(), isNewFrame);
+            networkObject->InterpolateState(sync_->GetReplicaTime(), sync_->GetInputTime(), isNewInputFrame);
     }
 
-    if (isNewFrame)
+    if (isNewInputFrame)
     {
         network_->SendEvent(E_NETWORKCLIENTUPDATE);
-        SendObjectsFeedbackUnreliable(sync_->GetSmoothClientTime().GetFrame());
+        SendObjectsFeedbackUnreliable(sync_->GetInputTime().GetFrame());
     }
 }
 

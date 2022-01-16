@@ -151,15 +151,16 @@ void DefaultNetworkObject::WriteUnreliableDeltaPayload(unsigned mask, unsigned f
     }
 }
 
-void DefaultNetworkObject::InterpolateState(const NetworkTime& time, bool isNewFrame)
+void DefaultNetworkObject::InterpolateState(
+    const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
 {
     const ClientNetworkManager* clientNetworkManager = GetClientNetworkManager();
     const unsigned positionExtrapolationFrames = clientNetworkManager->GetPositionExtrapolationFrames();
 
-    if (auto newWorldPosition = worldPositionTrace_.ReconstructAndSample(time, {positionExtrapolationFrames}))
+    if (auto newWorldPosition = worldPositionTrace_.ReconstructAndSample(replicaTime, {positionExtrapolationFrames}))
         node_->SetWorldPosition(*newWorldPosition);
 
-    if (auto newWorldRotation = worldRotationTrace_.ReconstructAndSample(time))
+    if (auto newWorldRotation = worldRotationTrace_.ReconstructAndSample(replicaTime))
         node_->SetWorldRotation(*newWorldRotation);
 }
 
@@ -214,14 +215,13 @@ void DefaultNetworkObject::ReadReliableDeltaPayload(unsigned mask, unsigned fram
     }
 }
 
-void DefaultNetworkObject::ReadUnreliableDelta(unsigned frame, unsigned feedbackFrame, Deserializer& src)
+void DefaultNetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& src)
 {
     const unsigned mask = src.ReadUInt();
-    ReadUnreliableDeltaPayload(mask, frame, feedbackFrame, src);
+    ReadUnreliableDeltaPayload(mask, frame, src);
 }
 
-void DefaultNetworkObject::ReadUnreliableDeltaPayload(
-    unsigned mask, unsigned frame, unsigned feedbackFrame, Deserializer& src)
+void DefaultNetworkObject::ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src)
 {
     if (mask & WorldTransformMask)
     {

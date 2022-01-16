@@ -104,7 +104,7 @@ public:
     /// Write unreliable delta update on server.
     virtual bool WriteUnreliableDelta(unsigned frame, Serializer& dest);
     /// Read unreliable feedback from client.
-    virtual void ReadUnreliableFeedback(unsigned currentFrame, unsigned feedbackFrame, Deserializer& src);
+    virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src);
 
     /// @}
 
@@ -112,7 +112,7 @@ public:
     /// @{
 
     /// Interpolate replicated state.
-    virtual void InterpolateState(const NetworkTime& time, bool isNewFrame);
+    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame);
     /// Prepare to this compnent being removed by the authority of the server.
     virtual void PrepareToRemove();
     /// Read full snapshot.
@@ -120,7 +120,7 @@ public:
     /// Read reliable delta update. Delta is applied to previous reliable delta or snapshot message.
     virtual void ReadReliableDelta(unsigned frame, Deserializer& src);
     /// Read unreliable delta update.
-    virtual void ReadUnreliableDelta(unsigned frame, unsigned feedbackFrame, Deserializer& src);
+    virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src);
     /// Write unreliable feedback from client.
     virtual bool WriteUnreliableFeedback(unsigned frame, Serializer& dest);
 

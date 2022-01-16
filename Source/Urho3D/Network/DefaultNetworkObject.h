@@ -60,10 +60,10 @@ public:
     bool WriteReliableDelta(unsigned frame, Serializer& dest) override;
     bool WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
 
-    void InterpolateState(const NetworkTime& time, bool isNewFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
-    void ReadUnreliableDelta(unsigned frame, unsigned feedbackFrame, Deserializer& src) override;
+    void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
     /// @}
 
     /// Getters for network properties
@@ -83,7 +83,7 @@ protected:
 
     virtual unsigned WriteUnreliableDeltaMask();
     virtual void WriteUnreliableDeltaPayload(unsigned mask, unsigned frame, Serializer& dest);
-    virtual void ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, unsigned feedbackFrame, Deserializer& src);
+    virtual void ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src);
     /// @}
 
     ResourceRef GetClientPrefabAttr() const;

@@ -207,11 +207,11 @@ bool NetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& dest)
     return false;
 }
 
-void NetworkObject::ReadUnreliableFeedback(unsigned currentFrame, unsigned feedbackFrame, Deserializer& src)
+void NetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
 {
 }
 
-void NetworkObject::InterpolateState(const NetworkTime& time, bool isNewFrame)
+void NetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
 {
 }
 
@@ -229,7 +229,7 @@ void NetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
 {
 }
 
-void NetworkObject::ReadUnreliableDelta(unsigned frame, unsigned feedbackFrame, Deserializer& src)
+void NetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& src)
 {
 }
 

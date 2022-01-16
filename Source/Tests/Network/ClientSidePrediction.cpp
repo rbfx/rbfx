@@ -76,7 +76,6 @@ TEST_CASE("Client-side prediction is consistent with server")
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
     //const auto quality = Tests::ConnectionQuality{ 0.01f, 0.01f, 0.01f, 0.0f, 0.0f };
-    const unsigned maxDelayInFrames = 1 + CeilToInt(quality.spikePing_ * Tests::NetworkSimulator::FramesInSecond);
 
     auto serverScene = CreateTestScene(context);
     auto clientScene = CreateTestScene(context);
@@ -93,6 +92,8 @@ TEST_CASE("Client-side prediction is consistent with server")
 
     // Wait for synchronization, expect controller on the ground
     sim.SimulateTime(10.0f);
+    const auto& serverNetworkManager = serverScene->GetNetworkManager()->AsServer();
+    const unsigned inputDelay = serverNetworkManager.GetFeedbackDelay(sim.GetServerToClientConnection(clientScene));
 
     Node* clientNode = clientScene->GetChild("Player", true);
     auto clientObject = clientNode->GetComponent<KinematicPlayerNetworkObject>();
@@ -111,18 +112,19 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(4.0f);
 
     // Expect client node at about the specified position.
+    const float physicsError = 0.12f;
+    const float networkError = 1 * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
     {
-        const float maxError = 4 * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
-        REQUIRE(clientNode->GetWorldPosition().x_ == 0.0f);
-        REQUIRE(clientNode->GetWorldPosition().z_ == Catch::Approx(10.0f).margin(maxError));
+        CHECK(clientNode->GetWorldPosition().x_ == 0.0f);
+        CHECK(clientNode->GetWorldPosition().z_ == Catch::Approx(10.0f - physicsError).margin(networkError));
     }
 
     // Expect server lagging behind, with max error about 1 + ping frames.
     {
-        const float maxError = (1 + maxDelayInFrames) * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
-        REQUIRE(serverNode->GetWorldPosition().x_ == 0.0f);
-        REQUIRE(serverNode->GetWorldPosition().z_ == Catch::Approx(10.0f).margin(maxError));
-        REQUIRE(serverNode->GetWorldPosition().z_ < clientNode->GetWorldPosition().z_);
+        const float serverDelay = inputDelay * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
+        CHECK(serverNode->GetWorldPosition().x_ == 0.0f);
+        CHECK(serverNode->GetWorldPosition().z_ == Catch::Approx(10.0f - physicsError - serverDelay).margin(networkError));
+        CHECK(serverNode->GetWorldPosition().z_ < clientNode->GetWorldPosition().z_);
     }
 
     // Stop movement and wait for a while
@@ -130,7 +132,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(1.0f);
 
     // Expect server and client positions to match
-    REQUIRE(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), 0.001)); // TODO(network): Reuse constant
+    CHECK(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), 0.001)); // TODO(network): Reuse constant
 }
 
 TEST_CASE("Client-side prediction is stable when latency is stable")
@@ -190,5 +192,5 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     const auto& clientPositionValues = clientPosition.GetValues();
     const unsigned numValues = ea::min(serverPositionValues.size(), clientPositionValues.size());
     for (unsigned i = 0; i < numValues; ++i)
-        REQUIRE(serverPositionValues[i].GetVector3() == clientPositionValues[i].GetVector3());
+        CHECK(serverPositionValues[i].GetVector3() == clientPositionValues[i].GetVector3());
 }
