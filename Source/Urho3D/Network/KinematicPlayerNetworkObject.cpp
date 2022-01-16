@@ -77,8 +77,12 @@ void KinematicPlayerNetworkObject::InitializeOnServer()
 
 void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
 {
-    const Vector3 newVelocity = src.ReadVector3();
-    feedbackVelocity_.Set(feedbackFrame, newVelocity);
+    const unsigned n = src.ReadVLE();
+    for (unsigned i = 0; i < n; ++i)
+    {
+        const Vector3 newVelocity = src.ReadVector3();
+        feedbackVelocity_.Set(feedbackFrame - n + i + 1, newVelocity);
+    }
 }
 
 void KinematicPlayerNetworkObject::ReadSnapshot(unsigned frame, Deserializer& src)
@@ -111,7 +115,13 @@ void KinematicPlayerNetworkObject::InterpolateState(
 
 bool KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
 {
-    dest.WriteVector3(velocity_);
+    inputBuffer_.push_back(velocity_);
+    if (inputBuffer_.size() >= 4)
+        inputBuffer_.pop_front();
+
+    dest.WriteVLE(inputBuffer_.size());
+    for (const Vector3& v : inputBuffer_)
+        dest.WriteVector3(v);
     return true;
 }
 

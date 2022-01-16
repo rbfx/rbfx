@@ -221,7 +221,7 @@ void ServerClockSynchronizer::CleanupExpiredPings(unsigned now)
         return;
 
     const auto isOutdated = [&](const PendingPong& ping) { return now - ping.serverSentTime_ >= maxPingMs_; };
-    pendingPings_.erase(ea::remove_if(pendingPings_.begin(), pendingPings_.end(), isOutdated));
+    pendingPings_.erase(ea::remove_if(pendingPings_.begin(), pendingPings_.end(), isOutdated), pendingPings_.end());
 }
 
 ClientClockSynchronizer::ClientClockSynchronizer(

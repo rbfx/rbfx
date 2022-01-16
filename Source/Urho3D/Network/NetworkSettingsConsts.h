@@ -71,6 +71,10 @@ URHO3D_NETWORK_SETTING(ConnectionId, unsigned, 0);
 URHO3D_NETWORK_SETTING(PeriodicClockInterval, float, 1.0f);
 /// Number of clock ticks used to filter input delay.
 URHO3D_NETWORK_SETTING(InputDelayFilterBufferSize, unsigned, 5);
+/// Minimal number of buffered input frames.
+URHO3D_NETWORK_SETTING(MinInputBuffering, unsigned, 0);
+/// Maximal number of buffered input frames.
+URHO3D_NETWORK_SETTING(MaxInputBuffering, unsigned, 0);
 
 /// @}
 
