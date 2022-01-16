@@ -86,18 +86,7 @@ void ClientConnectionData::SendCommonUpdates()
     {
         clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
 
-        const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
-        inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
-
-        // Go up on average, go down on max, to stabilize delay
-        const unsigned newAverageDelay = inputDelayFilter_.GetAverageValue();
-        const unsigned newMaxDelay = inputDelayFilter_.GetAverageValue();
-        if (inputDelay_ < newAverageDelay)
-            inputDelay_ = newAverageDelay;
-        else if (inputDelay_ > newMaxDelay)
-            inputDelay_ = newMaxDelay;
-
-        SendClock();
+        UpdateClientTimes();
     }
 }
 
@@ -118,10 +107,25 @@ void ClientConnectionData::ProcessSynchronized(const MsgSynchronized& msg)
     synchronized_ = true;
 }
 
-void ClientConnectionData::SendClock()
+void ClientConnectionData::UpdateClientTimes()
 {
-    connection_->SendSerializedMessage(
-        MSG_SCENE_CLOCK, MsgSceneClock{serverTime_.GetFrame(), timestamp_, inputDelay_}, NetworkMessageFlag::None);
+    const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
+    inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
+
+    // Go up on average, go down on max, to stabilize delay
+    const unsigned newAverageDelay = inputDelayFilter_.GetAverageValue();
+    const unsigned newMaxDelay = inputDelayFilter_.GetAverageValue();
+    if (inputDelay_ < newAverageDelay)
+        inputDelay_ = newAverageDelay;
+    else if (inputDelay_ > newMaxDelay)
+        inputDelay_ = newMaxDelay;
+
+    const unsigned minInputBuffer = GetSetting(NetworkSettings::MinInputBuffering).GetUInt();
+    const unsigned maxInputBuffer = GetSetting(NetworkSettings::MaxInputBuffering).GetUInt();
+    inputBufferSize_ = Clamp(inputBufferSize_, minInputBuffer, maxInputBuffer);
+
+    const MsgSceneClock msg{serverTime_.GetFrame(), timestamp_, inputDelay_ + inputBufferSize_};
+    connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, NetworkMessageFlag::None);
 }
 
 unsigned ClientConnectionData::MakeMagic() const

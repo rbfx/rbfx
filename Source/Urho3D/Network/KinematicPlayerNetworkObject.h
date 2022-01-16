@@ -76,6 +76,7 @@ private:
 
     /// Client only: track of predicted positions for unprocessed.
     ea::vector<ea::pair<unsigned, Vector3>> predictedWorldPositions_;
+    ea::vector<Vector3> inputBuffer_;
     /// Client only: whether to track next physics step.
     ea::optional<unsigned> trackNextStepAsFrame_;
 

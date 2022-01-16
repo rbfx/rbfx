@@ -87,7 +87,7 @@ private:
     unsigned MakeMagic() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
 
-    void SendClock();
+    void UpdateClientTimes();
 
     VariantMap settings_;
     const unsigned updateFrequency_{};
@@ -101,6 +101,7 @@ private:
     // TODO(network): Fill it
     FilteredUint inputDelayFilter_;
     unsigned inputDelay_{};
+    unsigned inputBufferSize_{};
 
     float clockTimeAccumulator_{};
 };
