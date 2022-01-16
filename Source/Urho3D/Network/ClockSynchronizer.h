@@ -43,7 +43,9 @@ public:
     void AddValue(unsigned value, bool filter = true);
     void Filter();
 
+    unsigned GetMinValue() const { return baseValue_ + minOffset_; }
     unsigned GetAverageValue() const { return baseValue_ + averageOffset_; }
+    unsigned GetMaxValue() const { return baseValue_ + maxOffset_; }
     bool IsInitialized() const { return !offsets_.empty(); }
 
 private:
@@ -51,7 +53,10 @@ private:
 
     unsigned baseValue_{};
     ea::ring_buffer<int> offsets_;
+
+    int minOffset_{};
     int averageOffset_{};
+    int maxOffset_{};
 };
 
 enum class ClockSynchronizerPhase : unsigned

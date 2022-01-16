@@ -58,7 +58,10 @@ void FilteredUint::Filter()
 {
     if (offsets_.size() < 2)
     {
-        averageOffset_ = offsets_.empty() ? 0 : offsets_[0];
+        const int offset = offsets_.empty() ? 0 : offsets_[0];
+        averageOffset_ = offset;
+        minOffset_ = offset;
+        maxOffset_ = offset;
         return;
     }
 
@@ -72,12 +75,17 @@ void FilteredUint::Filter()
 
     double averageAccum = 0.0;
     unsigned averageCount = 0;
+    minOffset_ = M_MAX_INT;
+    maxOffset_ = M_MIN_INT;
     for (int offset : offsets_)
     {
         if (offset - meanOffset <= deviation * maxDeviation_)
         {
             averageAccum += offset;
             ++averageCount;
+
+            minOffset_ = ea::min(minOffset_, offset);
+            maxOffset_ = ea::max(maxOffset_, offset);
         }
     }
 

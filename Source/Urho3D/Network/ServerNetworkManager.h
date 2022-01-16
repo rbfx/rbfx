@@ -81,6 +81,7 @@ public:
     void ProcessSynchronized(const MsgSynchronized& msg);
 
     bool IsSynchronized() const { return synchronized_; }
+    unsigned GetInputDelay() const { return inputDelay_; };
 
 private:
     unsigned MakeMagic() const;

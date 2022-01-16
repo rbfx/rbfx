@@ -79,11 +79,12 @@ public:
 
     /// Return current state
     /// @{
-    bool IsNewFrame() const { return isNewFrame_; }
+    bool IsNewInputFrame() const { return isNewInputFrame_; }
     unsigned GetConnectionId() const { return thisConnectionId_; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
+    unsigned GetInputDelay() const { return inputDelay_; }
     NetworkTime GetServerTime() const { return serverTime_; }
-    NetworkTime GetSmoothClientTime() const { return clientTime_.Get(); }
+    NetworkTime GetReplicaTime() const { return replicaTime_.Get(); }
     NetworkTime GetInputTime() const { return inputTime_.Get(); }
     NetworkTime GetLatestScaledInputTime() const { return latestScaledInputTime_; }
     const Variant& GetSetting(const NetworkSetting& setting) const;
@@ -120,9 +121,9 @@ private:
     NetworkTime serverTime_;
     unsigned latestServerFrame_{};
     NetworkTime latestScaledInputTime_{};
-    bool isNewFrame_{};
+    bool isNewInputFrame_{};
 
-    SoftNetworkTime clientTime_;
+    SoftNetworkTime replicaTime_;
     SoftNetworkTime inputTime_;
     PhysicsClockSynchronizer physicsSync_;
 };
@@ -145,7 +146,7 @@ public:
     /// @{
     bool IsSynchronized() const { return sync_.has_value(); }
     NetworkTime GetServerTime() const { return sync_ ? sync_->GetServerTime() : NetworkTime{}; }
-    NetworkTime GetClientTime() const { return sync_ ? sync_->GetSmoothClientTime() : NetworkTime{}; }
+    NetworkTime GetClientTime() const { return sync_ ? sync_->GetReplicaTime() : NetworkTime{}; }
     NetworkTime GetInputTime() const { return sync_ ? sync_->GetInputTime() : NetworkTime{}; }
 
     unsigned GetCurrentFrame() const { return GetServerTime().GetFrame(); }
@@ -187,7 +188,6 @@ private:
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;
 
     VectorBuffer componentBuffer_;
-    unsigned latestFeedbackDelay_{};
 };
 
 }

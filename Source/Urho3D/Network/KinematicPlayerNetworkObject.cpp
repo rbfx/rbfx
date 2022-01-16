@@ -75,7 +75,7 @@ void KinematicPlayerNetworkObject::InitializeOnServer()
     SubscribeToEvent(E_BEGINSERVERNETWORKUPDATE, [this](StringHash, VariantMap&) { OnServerNetworkFrameBegin(); });
 }
 
-void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned currentFrame, unsigned feedbackFrame, Deserializer& src)
+void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
 {
     const Vector3 newVelocity = src.ReadVector3();
     feedbackVelocity_.Set(feedbackFrame, newVelocity);
@@ -90,22 +90,23 @@ void KinematicPlayerNetworkObject::ReadSnapshot(unsigned frame, Deserializer& sr
     SubscribeToEvent(physicsWorld, E_PHYSICSPOSTSTEP, [this](StringHash, VariantMap&) { OnPhysicsPostStepOnClient(); });
 }
 
-void KinematicPlayerNetworkObject::InterpolateState(const NetworkTime& time, bool isNewFrame)
+void KinematicPlayerNetworkObject::InterpolateState(
+    const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
 {
     // Do client-side predictions
     if (kinematicController_ && GetNetworkMode() == NetworkObjectMode::ClientOwned)
     {
-        if (isNewFrame)
+        if (isNewInputFrame)
         {
             const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
             kinematicController_->SetWalkDirection(velocity_ * timeStep);
 
-            trackNextStepAsFrame_ = time.GetFrame();
+            trackNextStepAsFrame_ = inputTime.GetFrame();
         }
         return;
     }
 
-    DefaultNetworkObject::InterpolateState(time, isNewFrame);
+    DefaultNetworkObject::InterpolateState(replicaTime, inputTime, isNewInputFrame);
 }
 
 bool KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
@@ -114,10 +115,9 @@ bool KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Seria
     return true;
 }
 
-void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(
-    unsigned mask, unsigned frame, unsigned feedbackFrame, Deserializer& src)
+void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src)
 {
-    BaseClassName::ReadUnreliableDeltaPayload(mask, frame, feedbackFrame, src);
+    BaseClassName::ReadUnreliableDeltaPayload(mask, frame, src);
 
     if (!kinematicController_)
         return;
@@ -128,10 +128,10 @@ void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(
         return;
 
     // Skip if no predicted frame (shouldn't happen too ofter as well)
-    const auto greaterOrEqual = [&](const auto& frameAndPosition) { return frameAndPosition.first >= feedbackFrame; };
+    const auto greaterOrEqual = [&](const auto& frameAndPosition) { return frameAndPosition.first >= frame; };
     const auto iter = ea::find_if(predictedWorldPositions_.begin(), predictedWorldPositions_.end(), greaterOrEqual);
     predictedWorldPositions_.erase(predictedWorldPositions_.begin(), iter);
-    if (predictedWorldPositions_.empty() || predictedWorldPositions_.front().first != feedbackFrame)
+    if (predictedWorldPositions_.empty() || predictedWorldPositions_.front().first != frame)
         return;
 
     const Vector3 predictedPosition = predictedWorldPositions_.front().second;
@@ -152,8 +152,7 @@ void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin()
     if (AbstractConnection* owner = GetOwnerConnection())
     {
         auto networkManager = GetServerNetworkManager();
-        const unsigned feedbackDelay = networkManager->GetFeedbackDelay(owner);
-        const unsigned feedbackFrame = networkManager->GetCurrentFrame() - feedbackDelay;
+        const unsigned feedbackFrame = networkManager->GetCurrentFrame();
         if (const auto newVelocity = feedbackVelocity_.GetRaw(feedbackFrame))
         {
             auto kinematicController = node_->GetComponent<KinematicCharacterController>();

@@ -52,9 +52,9 @@ public:
     /// Implementation of NetworkObject
     /// @{
     void InitializeOnServer() override;
-    void ReadUnreliableFeedback(unsigned currentFrame, unsigned feedbackFrame, Deserializer& src) override;
+    void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
 
-    void InterpolateState(const NetworkTime& time, bool isNewFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     bool WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
     /// @}
@@ -62,7 +62,7 @@ public:
 protected:
     /// Implementation of DefaultNetworkObject
     /// @{
-    void ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, unsigned feedbackFrame, Deserializer& src) override;
+    void ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src) override;
     /// @}
 
     /// Called when frame begins on server.

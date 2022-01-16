@@ -88,9 +88,14 @@ void ClientConnectionData::SendCommonUpdates()
 
         const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
         inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
-        const unsigned newInputDelay = inputDelayFilter_.GetAverageValue();
-        // TODO(network): Filter better!
-        inputDelay_ = newInputDelay + 1 != inputDelay_ ? newInputDelay : inputDelay_;
+
+        // Go up on average, go down on max, to stabilize delay
+        const unsigned newAverageDelay = inputDelayFilter_.GetAverageValue();
+        const unsigned newMaxDelay = inputDelayFilter_.GetAverageValue();
+        if (inputDelay_ < newAverageDelay)
+            inputDelay_ = newAverageDelay;
+        else if (inputDelay_ > newMaxDelay)
+            inputDelay_ = newMaxDelay;
 
         SendClock();
     }
@@ -463,7 +468,6 @@ void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionDa
         bool sendMessage = false;
 
         msg.WriteUInt(currentFrame_);
-        msg.WriteVLE(data.averageFeedbackDelay_);
 
         for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
         {
@@ -529,7 +533,6 @@ void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData
     }
 
     // Input is processed before BeginNetworkFrame, so add 1 to get actual current frame
-    const unsigned serverFrame = currentFrame_ + 1;
     const unsigned feedbackFrame = messageData.ReadUInt();
     while (!messageData.IsEof())
     {
@@ -553,29 +556,7 @@ void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData
 
         componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
         componentBuffer_.Seek(0);
-        networkObject->ReadUnreliableFeedback(serverFrame, feedbackFrame, componentBuffer_);
-    }
-
-    if (NetworkTime{feedbackFrame} - NetworkTime{data.latestFeedbackFrame_})
-    {
-        data.latestFeedbackFrame_ = feedbackFrame;
-        const unsigned delay = ea::max(0, static_cast<int>(serverFrame - feedbackFrame));
-
-        if (data.feedbackDelay_.full())
-            data.feedbackDelay_.pop_front();
-        while (!data.feedbackDelay_.full())
-            data.feedbackDelay_.push_back(delay);
-
-        data.feedbackDelaySorted_.assign(data.feedbackDelay_.begin(), data.feedbackDelay_.end());
-        ea::sort(data.feedbackDelaySorted_.begin(), data.feedbackDelaySorted_.end());
-        const auto iter = data.feedbackDelaySorted_.begin() + data.feedbackDelaySorted_.size() / 2;
-        const unsigned newFeedbackDelay = *iter;
-
-        // If delay is decreased just by 1, don't.
-        // TODO(network): Use additional percentile to check?
-        if (newFeedbackDelay + 1 != data.averageFeedbackDelay_)
-            data.averageFeedbackDelay_ = newFeedbackDelay; // TODO(network): Refactor this thing
-        //data.averageFeedbackDelay_ = *ea::max_element(data.feedbackDelay_.begin(), data.feedbackDelay_.end());
+        networkObject->ReadUnreliableFeedback(feedbackFrame, componentBuffer_);
     }
 }
 
@@ -608,8 +589,8 @@ ea::string ServerNetworkManager::GetDebugInfo() const
 
     for (const auto& [connection, data] : connections_)
     {
-        result += Format("Connection {}: Ping {}ms, Feedback Delay {} frames\n",
-            connection->ToString(), connection->GetPing(), data.averageFeedbackDelay_);
+        result += Format("Connection {}: Ping {}ms, Input delay {} frames\n",
+            connection->ToString(), connection->GetPing(), data.GetInputDelay());
     }
 
     return result;
@@ -618,7 +599,7 @@ ea::string ServerNetworkManager::GetDebugInfo() const
 unsigned ServerNetworkManager::GetFeedbackDelay(AbstractConnection* connection) const
 {
     const auto iter = connections_.find(connection);
-    return iter != connections_.end() ? iter->second.averageFeedbackDelay_ : 0;
+    return iter != connections_.end() ? iter->second.GetInputDelay() : 0;
 }
 
 }
