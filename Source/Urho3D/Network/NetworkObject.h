@@ -87,6 +87,8 @@ public:
     NetworkObjectMode GetNetworkMode() const { return networkMode_; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
+    ClientNetworkManager* GetClientNetworkManager() const;
+    ServerNetworkManager* GetServerNetworkManager() const;
 
     /// Called on server side only. ServerNetworkManager is guaranteed to be available.
     /// @{
@@ -142,8 +144,6 @@ protected:
 
     NetworkObject* GetOtherNetworkObject(NetworkId networkId) const;
     void SetParentNetworkObject(NetworkId parentNetworkId);
-    ClientNetworkManager* GetClientNetworkManager() const;
-    ServerNetworkManager* GetServerNetworkManager() const;
 
 private:
     void UpdateCurrentScene(Scene* scene);

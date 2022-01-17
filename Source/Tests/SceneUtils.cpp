@@ -39,6 +39,14 @@ void SerializeAndDeserializeScene(Scene* scene)
     scene->LoadXML(xmlRoot);
 }
 
+SharedPtr<XMLFile> ConvertNodeToPrefab(Node* node)
+{
+    auto prefab = MakeShared<XMLFile>(node->GetContext());
+    XMLElement prefabRootElement = prefab->CreateRoot("node");
+    node->SaveXML(prefabRootElement);
+    return prefab;
+}
+
 Variant GetAttributeValue(const ea::pair<Serializable*, unsigned>& ref)
 {
     return ref.first->GetAttribute(ref.second);
