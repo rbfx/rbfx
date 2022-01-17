@@ -56,7 +56,8 @@ public:
 
     void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
-    bool WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
+    unsigned GetUnreliableFeedbackMask(unsigned frame) override;
+    void WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest) override;
     /// @}
 
 protected:

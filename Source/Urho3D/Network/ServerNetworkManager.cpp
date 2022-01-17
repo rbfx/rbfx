@@ -294,30 +294,30 @@ void ServerNetworkManager::PrepareDeltaUpdates()
 
 void ServerNetworkManager::PrepareReliableDeltaForObject(unsigned index, NetworkObject* networkObject)
 {
-    const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-    if (networkObject->WriteReliableDelta(currentFrame_, deltaUpdateBuffer_))
+    if (const auto mask = networkObject->GetReliableDeltaMask(currentFrame_))
     {
+        const unsigned beginOffset = deltaUpdateBuffer_.Tell();
+        networkObject->WriteReliableDelta(currentFrame_, mask, deltaUpdateBuffer_);
         const unsigned endOffset = deltaUpdateBuffer_.Tell();
         reliableDeltaUpdates_[index] = { beginOffset, endOffset };
     }
     else
     {
-        deltaUpdateBuffer_.Seek(beginOffset);
         deltaUpdateMask_.ResetReliableDelta(index);
     }
 }
 
 void ServerNetworkManager::PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject)
 {
-    const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-    if (networkObject->WriteUnreliableDelta(currentFrame_, deltaUpdateBuffer_))
+    if (const auto mask = networkObject->GetUnreliableDeltaMask(currentFrame_))
     {
+        const unsigned beginOffset = deltaUpdateBuffer_.Tell();
+        networkObject->WriteUnreliableDelta(currentFrame_, mask, deltaUpdateBuffer_);
         const unsigned endOffset = deltaUpdateBuffer_.Tell();
         unreliableDeltaUpdates_[index] = { beginOffset, endOffset };
     }
     else
     {
-        deltaUpdateBuffer_.Seek(beginOffset);
         deltaUpdateMask_.ResetUnreliableDelta(index);
     }
 }

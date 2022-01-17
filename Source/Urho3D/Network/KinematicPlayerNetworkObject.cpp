@@ -113,7 +113,12 @@ void KinematicPlayerNetworkObject::InterpolateState(
     DefaultNetworkObject::InterpolateState(replicaTime, inputTime, isNewInputFrame);
 }
 
-bool KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
+unsigned KinematicPlayerNetworkObject::GetUnreliableFeedbackMask(unsigned frame)
+{
+    return 1;
+}
+
+void KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest)
 {
     inputBuffer_.push_back(velocity_);
     if (inputBuffer_.size() >= 4)
@@ -122,7 +127,6 @@ bool KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Seria
     dest.WriteVLE(inputBuffer_.size());
     for (const Vector3& v : inputBuffer_)
         dest.WriteVector3(v);
-    return true;
 }
 
 void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src)

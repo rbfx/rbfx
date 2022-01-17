@@ -55,10 +55,12 @@ public:
     /// @{
     void InitializeOnServer() override;
 
-    void OnTransformDirty() override;
+    void UpdateTransformOnServer() override;
     void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    bool WriteReliableDelta(unsigned frame, Serializer& dest) override;
-    bool WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
+    unsigned GetReliableDeltaMask(unsigned frame) override;
+    void WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
+    unsigned GetUnreliableDeltaMask(unsigned frame) override;
+    void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
 
     void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;

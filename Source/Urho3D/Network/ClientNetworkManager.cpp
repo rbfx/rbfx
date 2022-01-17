@@ -452,8 +452,9 @@ void ClientNetworkManager::SendObjectsFeedbackUnreliable(unsigned feedbackFrame)
                 continue;
 
             componentBuffer_.Clear();
-            if (networkObject->WriteUnreliableFeedback(feedbackFrame, componentBuffer_))
+            if (const auto mask = networkObject->GetUnreliableFeedbackMask(feedbackFrame))
             {
+                networkObject->WriteUnreliableFeedback(feedbackFrame, mask, componentBuffer_);
                 sendMessage = true;
                 msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
                 msg.WriteBuffer(componentBuffer_.GetBuffer());
