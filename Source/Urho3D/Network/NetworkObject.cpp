@@ -50,7 +50,7 @@ void NetworkObject::RegisterObject(Context* context)
     context->RegisterFactory<NetworkObject>();
 }
 
-void NetworkObject::UpdateParent()
+void NetworkObject::UpdateObjectHierarchy()
 {
     NetworkObject* newParentNetworkObject = FindParentNetworkObject();
     if (newParentNetworkObject != parentNetworkObject_)
@@ -63,6 +63,8 @@ void NetworkObject::UpdateParent()
         if (parentNetworkObject_)
             parentNetworkObject_->AddChildNetworkObject(this);
     }
+
+    UpdateTransformOnServer();
 }
 
 void NetworkObject::OnNodeSet(Node* node)
@@ -110,11 +112,7 @@ void NetworkObject::UpdateCurrentScene(Scene* scene)
 void NetworkObject::OnMarkedDirty(Node* node)
 {
     if (networkManager_)
-    {
         networkManager_->QueueComponentUpdate(this);
-        if (!networkManager_->IsReplicatedClient())
-            OnTransformDirty();
-    }
 }
 
 NetworkObject* NetworkObject::GetOtherNetworkObject(NetworkId networkId) const
@@ -189,7 +187,7 @@ void NetworkObject::InitializeOnServer()
 {
 }
 
-void NetworkObject::OnTransformDirty()
+void NetworkObject::UpdateTransformOnServer()
 {
 }
 
@@ -197,14 +195,22 @@ void NetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
 {
 }
 
-bool NetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
+unsigned NetworkObject::GetReliableDeltaMask(unsigned frame)
 {
-    return false;
+    return 0;
 }
 
-bool NetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& dest)
+void NetworkObject::WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest)
 {
-    return false;
+}
+
+unsigned NetworkObject::GetUnreliableDeltaMask(unsigned frame)
+{
+    return 0;
+}
+
+void NetworkObject::WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest)
+{
 }
 
 void NetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
@@ -233,9 +239,13 @@ void NetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& src)
 {
 }
 
-bool NetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
+unsigned NetworkObject::GetUnreliableFeedbackMask(unsigned frame)
 {
-    return false;
+    return 0;
+}
+
+void NetworkObject::WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest)
+{
 }
 
 }

@@ -65,7 +65,7 @@ void DefaultNetworkObject::InitializeOnServer()
     worldRotationTrace_.Resize(traceCapacity);
 }
 
-void DefaultNetworkObject::OnTransformDirty()
+void DefaultNetworkObject::UpdateTransformOnServer()
 {
     worldTransformCounter_ = WorldTransformCooldown;
 }
@@ -84,15 +84,15 @@ void DefaultNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
     dest.WriteVector3(node_->GetSignedWorldScale());
 }
 
-bool DefaultNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
+unsigned DefaultNetworkObject::GetReliableDeltaMask(unsigned frame)
 {
-    const unsigned mask = WriteReliableDeltaMask();
-    if (!mask)
-        return false;
+    return WriteReliableDeltaMask();
+}
 
+void DefaultNetworkObject::WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest)
+{
     dest.WriteUInt(mask);
     WriteReliableDeltaPayload(mask, frame, dest);
-    return true;
 }
 
 unsigned DefaultNetworkObject::WriteReliableDeltaMask()
@@ -115,18 +115,17 @@ void DefaultNetworkObject::WriteReliableDeltaPayload(unsigned mask, unsigned fra
         dest.WriteUInt(static_cast<unsigned>(lastParentNetworkId_));
 }
 
-bool DefaultNetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& dest)
+unsigned DefaultNetworkObject::GetUnreliableDeltaMask(unsigned frame)
 {
     worldPositionTrace_.Set(frame, node_->GetWorldPosition());
     worldRotationTrace_.Set(frame, node_->GetWorldRotation());
+    return WriteUnreliableDeltaMask();
+}
 
-    const unsigned mask = WriteUnreliableDeltaMask();
-    if (!mask)
-        return false;
-
+void DefaultNetworkObject::WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest)
+{
     dest.WriteUInt(mask);
     WriteUnreliableDeltaPayload(mask, frame, dest);
-    return true;
 }
 
 unsigned DefaultNetworkObject::WriteUnreliableDeltaMask()

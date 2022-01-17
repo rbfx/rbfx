@@ -74,7 +74,7 @@ public:
 
     /// Internal API for NetworkManager.
     /// @{
-    void UpdateParent();
+    void UpdateObjectHierarchy();
     void SetNetworkId(NetworkId networkId) { networkId_ = networkId; }
     void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
     /// @}
@@ -96,13 +96,18 @@ public:
     /// Perform server-side initialization. Called once.
     virtual void InitializeOnServer();
     /// Called when transform of the object is dirtied.
-    virtual void OnTransformDirty();
+    virtual void UpdateTransformOnServer();
     /// Write full snapshot on server.
     virtual void WriteSnapshot(unsigned frame, Serializer& dest);
+    /// Return mask for reliable delta update. If mask is zero, write will be omitted.
+    /// TODO(network): Rename this shit!
+    virtual unsigned GetReliableDeltaMask(unsigned frame);
     /// Write reliable delta update on server. Delta is applied to previous delta or snapshot message.
-    virtual bool WriteReliableDelta(unsigned frame, Serializer& dest);
+    virtual void WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest);
+    /// Return mask for unreliable delta update. If mask is zero, write will be omitted.
+    virtual unsigned GetUnreliableDeltaMask(unsigned frame);
     /// Write unreliable delta update on server.
-    virtual bool WriteUnreliableDelta(unsigned frame, Serializer& dest);
+    virtual void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest);
     /// Read unreliable feedback from client.
     virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src);
 
@@ -121,8 +126,10 @@ public:
     virtual void ReadReliableDelta(unsigned frame, Deserializer& src);
     /// Read unreliable delta update.
     virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src);
+    /// Return mask for unreliable feedback. If mask is zero, write will be omitted.
+    virtual unsigned GetUnreliableFeedbackMask(unsigned frame);
     /// Write unreliable feedback from client.
-    virtual bool WriteUnreliableFeedback(unsigned frame, Serializer& dest);
+    virtual void WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest);
 
     /// @}
 

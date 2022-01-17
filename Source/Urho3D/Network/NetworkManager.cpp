@@ -213,7 +213,7 @@ void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>&
 
         if (NetworkObject* networkObject = networkObjects_[index])
         {
-            networkObject->UpdateParent();
+            networkObject->UpdateObjectHierarchy();
             networkObject->GetNode()->GetWorldTransform();
         }
     }
