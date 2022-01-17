@@ -38,7 +38,7 @@ namespace Urho3D
 {
 
 KinematicPlayerNetworkObject::KinematicPlayerNetworkObject(Context* context)
-    : DefaultNetworkObject(context)
+    : NetworkBehavior(context)
 {
 }
 
@@ -53,11 +53,11 @@ void KinematicPlayerNetworkObject::RegisterObject(Context* context)
 
 void KinematicPlayerNetworkObject::SetWalkVelocity(const Vector3& velocity)
 {
-    if (GetNetworkMode() == NetworkObjectMode::ClientReplicated)
+    if (GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientReplicated)
     {
         URHO3D_LOGWARNING(
             "KinematicPlayerNetworkObject::SetWalkVelocity is called for object {} even tho this client doesn't own it",
-            ToString(GetNetworkId()));
+            ToString(GetNetworkObject()->GetNetworkId()));
         return;
     }
 
@@ -66,9 +66,7 @@ void KinematicPlayerNetworkObject::SetWalkVelocity(const Vector3& velocity)
 
 void KinematicPlayerNetworkObject::InitializeOnServer()
 {
-    BaseClassName::InitializeOnServer();
-
-    const auto networkManager = GetServerNetworkManager();
+    const auto networkManager = GetNetworkObject()->GetServerNetworkManager();
     const unsigned traceCapacity = networkManager->GetTraceCapacity();
     feedbackVelocity_.Resize(traceCapacity);
 
@@ -87,8 +85,11 @@ void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame
 
 void KinematicPlayerNetworkObject::ReadSnapshot(unsigned frame, Deserializer& src)
 {
-    BaseClassName::ReadSnapshot(frame, src);
+    networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
+
+    if (GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned)
+        networkTransform_->SetTrackOnly(true);
 
     const auto physicsWorld = node_->GetScene()->GetComponent<PhysicsWorld>();
     SubscribeToEvent(physicsWorld, E_PHYSICSPOSTSTEP, [this](StringHash, VariantMap&) { OnPhysicsPostStepOnClient(); });
@@ -98,7 +99,7 @@ void KinematicPlayerNetworkObject::InterpolateState(
     const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
 {
     // Do client-side predictions
-    if (kinematicController_ && GetNetworkMode() == NetworkObjectMode::ClientOwned)
+    if (kinematicController_ && GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned)
     {
         if (isNewInputFrame)
         {
@@ -109,8 +110,6 @@ void KinematicPlayerNetworkObject::InterpolateState(
         }
         return;
     }
-
-    DefaultNetworkObject::InterpolateState(replicaTime, inputTime, isNewInputFrame);
 }
 
 unsigned KinematicPlayerNetworkObject::GetUnreliableFeedbackMask(unsigned frame)
@@ -129,15 +128,13 @@ void KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, unsig
         dest.WriteVector3(v);
 }
 
-void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src)
+void KinematicPlayerNetworkObject::OnUnreliableDelta(unsigned frame)
 {
-    BaseClassName::ReadUnreliableDeltaPayload(mask, frame, src);
-
-    if (!kinematicController_)
+    if (!kinematicController_ || !networkTransform_)
         return;
 
     // Skip frames without confirmed data (shouldn't happen too ofter)
-    const auto confirmedPosition = GetRawTemporalWorldPosition(frame);
+    const auto confirmedPosition = networkTransform_->GetRawTemporalWorldPosition(frame);
     if (!confirmedPosition)
         return;
 
@@ -152,7 +149,7 @@ void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(unsigned mask, uns
     const Vector3 offset = *confirmedPosition - predictedPosition;
     if (!offset.Equals(Vector3::ZERO, 0.001f))
     {
-        const auto networkManager = GetClientNetworkManager();
+        const auto networkManager = GetNetworkObject()->GetClientNetworkManager();
         const float smoothConstant = networkManager->GetSettings().positionSmoothConstant_;
         kinematicController_->AdjustRawPosition(offset, smoothConstant);
         predictedWorldPositions_.clear();
@@ -163,9 +160,9 @@ void KinematicPlayerNetworkObject::ReadUnreliableDeltaPayload(unsigned mask, uns
 
 void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin()
 {
-    if (AbstractConnection* owner = GetOwnerConnection())
+    if (AbstractConnection* owner = GetNetworkObject()->GetOwnerConnection())
     {
-        auto networkManager = GetServerNetworkManager();
+        auto networkManager = GetNetworkObject()->GetServerNetworkManager();
         const unsigned feedbackFrame = networkManager->GetCurrentFrame();
         if (const auto newVelocity = feedbackVelocity_.GetRaw(feedbackFrame))
         {

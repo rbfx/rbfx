@@ -41,10 +41,11 @@
 namespace
 {
 
-SharedPtr<XMLFile> CreateTestPrefab(Context* context)
+SharedPtr<XMLFile> CreateComplexTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
-    node->SetName("Root");
+    node->CreateComponent<ReplicatedNetworkTransform>();
+
     auto staticModel = node->CreateComponent<StaticModel>();
     staticModel->SetCastShadows(true);
 
@@ -54,10 +55,27 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
     light->SetCastShadows(true);
     light->SetColor(Color::RED);
 
-    auto prefab = MakeShared<XMLFile>(context);
-    XMLElement prefabRootElement = prefab->CreateRoot("node");
-    node->SaveXML(prefabRootElement);
-    return prefab;
+    return Tests::ConvertNodeToPrefab(node);
+}
+
+XMLFile* GetComplexTestPrefab(Context* context)
+{
+    return Tests::GetOrCreateResource<XMLFile>(
+        context, "@/SceneSynchronization/ComplexTestPrefab.xml", [&] { return CreateComplexTestPrefab(context); });
+}
+
+SharedPtr<XMLFile> CreateSimpleTestPrefab(Context* context)
+{
+    auto node = MakeShared<Node>(context);
+    node->CreateComponent<ReplicatedNetworkTransform>();
+
+    return Tests::ConvertNodeToPrefab(node);
+}
+
+XMLFile* GetSimpleTestPrefab(Context* context)
+{
+    return Tests::GetOrCreateResource<XMLFile>(
+        context, "@/SceneSynchronization/SimpleTestPrefab.xml", [&] { return CreateSimpleTestPrefab(context); });
 }
 
 }
@@ -168,6 +186,8 @@ TEST_CASE("Scene is synchronized between client and server")
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
     const float syncDelay = 0.25f;
 
+    auto prefab = GetSimpleTestPrefab(context);
+
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
     auto serverScene = MakeShared<Scene>(context);
@@ -189,31 +209,26 @@ TEST_CASE("Scene is synchronized between client and server")
             clientScene->CreateChild("Client Only Node");
         auto serverOnlyNode = serverScene->CreateChild("Server Only Node");
 
-        auto replicatedNodeA = serverScene->CreateChild("Replicated Node A");
-        replicatedNodeA->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeA = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Replicated Node A");
         replicatedNodeA->SetScale(2.0f);
         transformReplicatedNodeA = replicatedNodeA->GetWorldTransform();
 
-        auto replicatedNodeB = serverScene->CreateChild("Replicated Node B");
-        replicatedNodeB->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeB = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Replicated Node B");
         replicatedNodeB->SetPosition({ -1.0f, 2.0f, 0.5f });
         transformReplicatedNodeB = replicatedNodeB->GetWorldTransform();
 
-        auto replicatedNodeChild1 = replicatedNodeA->CreateChild("Replicated Node Child 1");
-        replicatedNodeChild1->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeChild1 = Tests::SpawnOnServer<BehaviorNetworkObject>(replicatedNodeA, prefab, "Replicated Node Child 1");
         replicatedNodeChild1->SetPosition({ -2.0f, 3.0f, 1.5f });
         transformReplicatedNodeChild1 = replicatedNodeChild1->GetWorldTransform();
 
-        auto replicatedNodeChild2 = replicatedNodeChild1->CreateChild("Replicated Node Child 2");
-        replicatedNodeChild2->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeChild2 = Tests::SpawnOnServer<BehaviorNetworkObject>(replicatedNodeChild1, prefab, "Replicated Node Child 2");
         replicatedNodeChild2->SetRotation({ 90.0f, Vector3::UP });
         transformReplicatedNodeChild2 = replicatedNodeChild2->GetWorldTransform();
 
         auto serverOnlyChild3 = replicatedNodeB->CreateChild("Server Only Child 3");
         serverOnlyChild3->SetPosition({ -1.0f, 0.0f, 0.0f });
 
-        auto replicatedNodeChild4 = serverOnlyChild3->CreateChild("Replicated Node Child 4");
-        replicatedNodeChild4->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeChild4 = Tests::SpawnOnServer<BehaviorNetworkObject>(serverOnlyChild3, prefab, "Replicated Node Child 4");
         transformReplicatedNodeChild4 = replicatedNodeChild4->GetWorldTransform();
     }
 
@@ -317,8 +332,7 @@ TEST_CASE("Scene is synchronized between client and server")
     {
         auto replicatedNodeA = serverScene->GetChild("Replicated Node A", true);
         replicatedNodeA->Remove();
-        auto replicatedNodeC = serverScene->CreateChild("Replicated Node C");
-        replicatedNodeC->CreateComponent<DefaultNetworkObject>();
+        auto replicatedNodeC = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Replicated Node C");
     }
 
     sim.SimulateTime(syncDelay);
@@ -360,6 +374,8 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
+    auto prefab = GetSimpleTestPrefab(context);
+
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0, 0 };
     const float moveSpeedNodeA = 1.0f;
@@ -372,12 +388,12 @@ TEST_CASE("Position and rotation are synchronized between client and server")
         MakeShared<Scene>(context)
     };
 
-    auto serverNodeA = serverScene->CreateChild("Node");
-    auto serverObjectA = serverNodeA->CreateComponent<DefaultNetworkObject>();
 
-    auto serverNodeB = serverNodeA->CreateChild("Node Child");
-    auto serverObjectB = serverNodeB->CreateComponent<DefaultNetworkObject>();
-    serverNodeB->SetPosition({ 0.0f, 0.0f, 1.0f });
+    Node* serverNodeA = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Node");
+    auto serverTransformA = serverNodeA->GetComponent<ReplicatedNetworkTransform>();
+
+    Node* serverNodeB = Tests::SpawnOnServer<BehaviorNetworkObject>(serverNodeA, prefab, "Node Child", { 0.0f, 0.0f, 1.0f });
+    auto serverTransformB = serverNodeB->GetComponent<ReplicatedNetworkTransform>();
 
     // Animate objects forever
     serverScene->SubscribeToEvent(serverScene, E_SCENEUPDATE, [&](StringHash, VariantMap& eventData)
@@ -410,11 +426,11 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(expectedDelay).margin(0.03));
 
-        REQUIRE(serverObjectA->GetTemporalWorldPosition(clientTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
-        REQUIRE(serverObjectA->GetTemporalWorldRotation(clientTime).Equals(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformA->GetTemporalWorldPosition(clientTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformA->GetTemporalWorldRotation(clientTime).Equals(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));
 
-        REQUIRE(serverObjectB->GetTemporalWorldPosition(clientTime).Equals(clientNodeB->GetWorldPosition(), M_LARGE_EPSILON));
-        REQUIRE(serverObjectB->GetTemporalWorldRotation(clientTime).Equals(clientNodeB->GetWorldRotation(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformB->GetTemporalWorldPosition(clientTime).Equals(clientNodeB->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformB->GetTemporalWorldRotation(clientTime).Equals(clientNodeB->GetWorldRotation(), M_LARGE_EPSILON));
     }
 }
 
@@ -423,8 +439,7 @@ TEST_CASE("Prefabs are replicated on clients")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(
-        context, "@/SceneSynchronization/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
+    auto prefab = GetComplexTestPrefab(context);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
@@ -442,15 +457,8 @@ TEST_CASE("Prefabs are replicated on clients")
 
     // Create nodes
     {
-        Node* node1 = serverScene->CreateChild("Node 1");
-        node1->SetPosition({1.0f, 0.0f, 0.0f});
-        auto object1 = node1->CreateComponent<DefaultNetworkObject>();
-        object1->SetClientPrefab(prefab);
-
-        Node* node2 = serverScene->CreateChild("Node 2");
-        node2->SetPosition({2.0f, 0.0f, 0.0f});
-        auto object2 = node2->CreateComponent<DefaultNetworkObject>();
-        object2->SetClientPrefab(prefab);
+        Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Node 1", {1.0f, 0.0f, 0.0f});
+        Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Node 2", {2.0f, 0.0f, 0.0f});
     }
     sim.SimulateTime(10.0f);
 
@@ -500,6 +508,8 @@ TEST_CASE("Ownership is consistent on server and on clients")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
+    auto prefab = GetSimpleTestPrefab(context);
+
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
     auto serverScene = MakeShared<Scene>(context);
@@ -516,25 +526,29 @@ TEST_CASE("Ownership is consistent on server and on clients")
 
     // Create nodes
     {
-        Node* node = serverScene->CreateChild("Unowned Node");
-        auto object = node->CreateComponent<DefaultNetworkObject>();
+        Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Unowned Node");
+
+        auto object = node->GetDerivedComponent<NetworkObject>();
         REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
     }
     {
-        Node* node = serverScene->CreateChild("Owned Node 0");
-        auto object = node->CreateComponent<DefaultNetworkObject>();
+        Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Owned Node 0");
+
+        auto object = node->GetDerivedComponent<NetworkObject>();
         object->SetOwner(sim.GetServerToClientConnection(clientScenes[0]));
         REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
     }
     {
-        Node* node = serverScene->CreateChild("Owned Node 1");
-        auto object = node->CreateComponent<DefaultNetworkObject>();
+        Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Owned Node 1");
+
+        auto object = node->GetDerivedComponent<NetworkObject>();
         object->SetOwner(sim.GetServerToClientConnection(clientScenes[1]));
         REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
     }
     {
-        Node* node = serverScene->CreateChild("Owned Node 2");
-        auto object = node->CreateComponent<DefaultNetworkObject>();
+        Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Owned Node 2");
+
+        auto object = node->GetDerivedComponent<NetworkObject>();
         object->SetOwner(sim.GetServerToClientConnection(clientScenes[2]));
         REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
     }

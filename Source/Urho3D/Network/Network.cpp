@@ -1093,6 +1093,12 @@ unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
 void RegisterNetworkLibrary(Context* context)
 {
     NetworkObject::RegisterObject(context);
+    StaticNetworkObject::RegisterObject(context);
+    BehaviorNetworkObject::RegisterObject(context);
+
+    NetworkBehavior::RegisterObject(context);
+    ReplicatedNetworkTransform::RegisterObject(context);
+
     DefaultNetworkObject::RegisterObject(context);
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);

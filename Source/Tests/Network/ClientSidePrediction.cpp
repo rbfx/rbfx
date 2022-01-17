@@ -53,7 +53,9 @@ SharedPtr<Scene> CreateTestScene(Context* context)
 SharedPtr<XMLFile> CreateTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
-    node->SetName("Player");
+    node->CreateComponent<ReplicatedNetworkTransform>();
+    node->CreateComponent<KinematicPlayerNetworkObject>();
+
     auto kinematicController = node->CreateComponent<KinematicCharacterController>();
     kinematicController->SetHeight(2.0f);
 
@@ -85,9 +87,8 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.AddClient(clientScene, quality);
 
     // Create nodes
-    Node* serverNode = serverScene->InstantiateXML(prefab->GetRoot(), {0.0f, 10.0f, 0.0f}, Quaternion::IDENTITY, LOCAL);
-    auto serverObject = serverNode->CreateComponent<KinematicPlayerNetworkObject>();
-    serverObject->SetClientPrefab(prefab);
+    Node* serverNode = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Player", {0.0f, 10.0f, 0.0f});
+    auto serverObject = serverNode->GetComponent<BehaviorNetworkObject>();
     serverObject->SetOwner(sim.GetServerToClientConnection(clientScene));
 
     // Wait for synchronization, expect controller on the ground
@@ -156,8 +157,8 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     clientScene->GetComponent<PhysicsWorld>()->SetInterpolation(false);
 
     // Create nodes
-    Node* serverNode = serverScene->InstantiateXML(prefab->GetRoot(), {0.0f, 0.96f, 0.0f}, Quaternion::IDENTITY, LOCAL);
-    auto serverObject = serverNode->CreateComponent<KinematicPlayerNetworkObject>();
+    Node* serverNode = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Player", {0.0f, 0.96f, 0.0f});
+    auto serverObject = serverNode->GetComponent<BehaviorNetworkObject>();
     serverObject->SetClientPrefab(prefab);
     serverObject->SetOwner(sim.GetServerToClientConnection(clientScene));
 

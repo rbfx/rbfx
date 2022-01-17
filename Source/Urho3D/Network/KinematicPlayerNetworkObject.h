@@ -36,9 +36,10 @@ namespace Urho3D
 class KinematicCharacterController;
 
 /// Kinematic controller of the player replicated over network.
-class URHO3D_API KinematicPlayerNetworkObject : public DefaultNetworkObject
+/// TODO(network): Rename to PredictedKinematicController?
+class URHO3D_API KinematicPlayerNetworkObject : public NetworkBehavior
 {
-    URHO3D_OBJECT(KinematicPlayerNetworkObject, DefaultNetworkObject);
+    URHO3D_OBJECT(KinematicPlayerNetworkObject, NetworkBehavior);
 
 public:
     explicit KinematicPlayerNetworkObject(Context* context);
@@ -56,22 +57,19 @@ public:
 
     void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
+    void OnUnreliableDelta(unsigned frame) override;
     unsigned GetUnreliableFeedbackMask(unsigned frame) override;
     void WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest) override;
     /// @}
 
 protected:
-    /// Implementation of DefaultNetworkObject
-    /// @{
-    void ReadUnreliableDeltaPayload(unsigned mask, unsigned frame, Deserializer& src) override;
-    /// @}
-
     /// Called when frame begins on server.
     void OnServerNetworkFrameBegin();
     /// Called when physics step is over.
     void OnPhysicsPostStepOnClient();
 
 private:
+    WeakPtr<ReplicatedNetworkTransform> networkTransform_;
     WeakPtr<KinematicCharacterController> kinematicController_;
     Vector3 velocity_;
 

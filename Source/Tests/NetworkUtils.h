@@ -32,6 +32,14 @@
 
 using namespace Urho3D;
 
+namespace Urho3D
+{
+
+class Node;
+class XMLFile;
+
+}
+
 namespace Tests
 {
 
@@ -135,5 +143,16 @@ private:
 
     ea::vector<PerClient> clients_;
 };
+
+/// Spawn networked object on server.
+Node* SpawnOnServer(Node* parent, StringHash objectType, XMLFile* prefab, const ea::string& name,
+    const Vector3& position = Vector3::ZERO, const Quaternion& rotation = Quaternion::IDENTITY);
+
+template <class T>
+Node* SpawnOnServer(Node* parent, XMLFile* prefab, const ea::string& name, const Vector3& position = Vector3::ZERO,
+    const Quaternion& rotation = Quaternion::IDENTITY)
+{
+    return SpawnOnServer(parent, T::GetTypeStatic(), prefab, name, position, rotation);
+}
 
 }

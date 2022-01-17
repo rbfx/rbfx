@@ -28,7 +28,9 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Network/Network.h>
+#include <Urho3D/Network/DefaultNetworkObject.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Resource/XMLFile.h>
 
 namespace Tests
 {
@@ -216,6 +218,18 @@ AbstractConnection* NetworkSimulator::GetServerToClientConnection(Scene* clientS
     const auto isSameScene = [&](const PerClient& data) { return data.clientScene_ == clientScene; };
     const auto iter = ea::find_if(clients_.begin(), clients_.end(), isSameScene);
     return iter != clients_.end() ? iter->serverToClient_ : nullptr;
+}
+
+Node* SpawnOnServer(Node* parent, StringHash objectType, XMLFile* prefab, const ea::string& name,
+    const Vector3& position, const Quaternion& rotation)
+{
+    Node* node = parent->GetScene()->InstantiateXML(prefab->GetRoot(), position, rotation, LOCAL);
+    node->SetParent(parent);
+    node->SetName(name);
+
+    auto networkObject = dynamic_cast<StaticNetworkObject*>(node->CreateComponent(objectType));
+    networkObject->SetClientPrefab(prefab);
+    return node;
 }
 
 }
