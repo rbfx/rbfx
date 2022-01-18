@@ -120,7 +120,7 @@ unsigned KinematicPlayerNetworkObject::GetUnreliableFeedbackMask(unsigned frame)
 void KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest)
 {
     inputBuffer_.push_back(velocity_);
-    if (inputBuffer_.size() >= 4)
+    if (inputBuffer_.size() >= 8)
         inputBuffer_.pop_front();
 
     dest.WriteVLE(inputBuffer_.size());
@@ -164,6 +164,7 @@ void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin()
     {
         auto networkManager = GetNetworkObject()->GetServerNetworkManager();
         const unsigned feedbackFrame = networkManager->GetCurrentFrame();
+        // TODO(network): Use prior values as well
         if (const auto newVelocity = feedbackVelocity_.GetRaw(feedbackFrame))
         {
             auto kinematicController = node_->GetComponent<KinematicCharacterController>();

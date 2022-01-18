@@ -24,6 +24,7 @@
 #include "../NetworkUtils.h"
 #include "../SceneUtils.h"
 
+#include <Urho3D/Network/ClientInputStatistics.h>
 #include <Urho3D/Network/KinematicPlayerNetworkObject.h>
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Physics/CollisionShape.h>
@@ -65,6 +66,46 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
     return prefab;
 }
 
+}
+
+TEST_CASE("Client input quality is evaluated")
+{
+    using UintSet = ea::unordered_set<unsigned>;
+
+    const unsigned seed = 0;
+    RandomEngine re(seed);
+    ClientInputStatistics stats(128);
+
+    float dropRate = 0.1f;
+    unsigned currentFrame = 0;
+    ea::vector<unsigned> bufferSize;
+
+    const auto simulateFrames = [&](unsigned count)
+    {
+        bufferSize.clear();
+        for (unsigned i = 0; i < count; ++i)
+        {
+            if (!re.GetBool(dropRate))
+                stats.OnInputReceived(currentFrame);
+            stats.OnInputConsumed(currentFrame);
+            ++currentFrame;
+            bufferSize.push_back(stats.GetBufferSize());
+        }
+    };
+
+    // Skip initial frames
+    simulateFrames(30);
+
+    // Expect stable 1
+    simulateFrames(1000);
+    REQUIRE(UintSet{bufferSize.begin(), bufferSize.end()} == UintSet{1u});
+
+    // Expect fluctuating 4-5
+    // This test is not very good because the random is bad, but it's better than nothing
+    dropRate = 0.5f;
+    simulateFrames(200);
+    simulateFrames(1000);
+    REQUIRE(UintSet{bufferSize.begin(), bufferSize.end()} == UintSet{4u, 5u});
 }
 
 TEST_CASE("Client-side prediction is consistent with server")

@@ -58,6 +58,7 @@ ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const
     , settings_(settings)
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
     , inputDelayFilter_(GetSetting(NetworkSettings::InputDelayFilterBufferSize).GetUInt())
+    , inputStats_(GetSetting(NetworkSettings::InputBufferingWindowSize).GetUInt())
 {
     SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
 }
@@ -68,6 +69,7 @@ void ClientConnectionData::UpdateFrame(float timeStep, const NetworkTime& server
     timestamp_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
 
     clockTimeAccumulator_ += timeStep;
+    inputStats_.OnInputConsumed(serverTime_.GetFrame());
 }
 
 void ClientConnectionData::SendCommonUpdates()
@@ -120,9 +122,11 @@ void ClientConnectionData::UpdateClientTimes()
     else if (inputDelay_ > newMaxDelay)
         inputDelay_ = newMaxDelay;
 
-    const unsigned minInputBuffer = GetSetting(NetworkSettings::MinInputBuffering).GetUInt();
-    const unsigned maxInputBuffer = GetSetting(NetworkSettings::MaxInputBuffering).GetUInt();
-    inputBufferSize_ = Clamp(inputBufferSize_, minInputBuffer, maxInputBuffer);
+    const int bufferSizeTweak = GetSetting(NetworkSettings::InputBufferingTweak).GetInt();
+    const int newBufferSize = static_cast<int>(inputStats_.GetBufferSize()) + bufferSizeTweak;
+    const int minInputBuffer = GetSetting(NetworkSettings::MinInputBuffering).GetUInt();
+    const int maxInputBuffer = GetSetting(NetworkSettings::MaxInputBuffering).GetUInt();
+    inputBufferSize_ = Clamp(newBufferSize, minInputBuffer, maxInputBuffer);
 
     const MsgSceneClock msg{serverTime_.GetFrame(), timestamp_, inputDelay_ + inputBufferSize_};
     connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, NetworkMessageFlag::None);
@@ -337,9 +341,6 @@ void ServerNetworkManager::AddConnection(AbstractConnection* connection)
     URHO3D_ASSERT(insterted);
     ClientConnectionData& data = iter->second;
 
-    data.feedbackDelay_.set_capacity(settings_.numFeedbackDelaySamples_);
-    data.feedbackDelaySorted_.set_capacity(settings_.numFeedbackDelaySamples_);
-
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
 
@@ -538,6 +539,8 @@ void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData
 
     // Input is processed before BeginNetworkFrame, so add 1 to get actual current frame
     const unsigned feedbackFrame = messageData.ReadUInt();
+    data.OnFeedbackReceived(feedbackFrame);
+
     while (!messageData.IsEof())
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
@@ -593,8 +596,8 @@ ea::string ServerNetworkManager::GetDebugInfo() const
 
     for (const auto& [connection, data] : connections_)
     {
-        result += Format("Connection {}: Ping {}ms, Input delay {} frames\n",
-            connection->ToString(), connection->GetPing(), data.GetInputDelay());
+        result += Format("Connection {}: Ping {}ms, Input delay {}+{} frames\n",
+            connection->ToString(), connection->GetPing(), data.GetInputDelay(), data.GetInputBufferSize());
     }
 
     return result;
@@ -603,7 +606,7 @@ ea::string ServerNetworkManager::GetDebugInfo() const
 unsigned ServerNetworkManager::GetFeedbackDelay(AbstractConnection* connection) const
 {
     const auto iter = connections_.find(connection);
-    return iter != connections_.end() ? iter->second.GetInputDelay() : 0;
+    return iter != connections_.end() ? iter->second.GetInputDelay() + iter->second.GetInputBufferSize() : 0;
 }
 
 }
