@@ -28,6 +28,7 @@
 #include "../Core/Timer.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
+#include "../Network/ClientInputStatistics.h"
 #include "../Network/ClockSynchronizer.h"
 #include "../Network/LocalClockSynchronizer.h"
 #include "../Network/ProtocolMessages.h"
@@ -65,15 +66,12 @@ struct ClientConnectionData
     ea::vector<NetworkId> pendingRemovedComponents_;
     ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
 
-    ea::ring_buffer<unsigned> feedbackDelay_{};
-    ea::vector<unsigned> feedbackDelaySorted_;
-    unsigned averageFeedbackDelay_{};
-    unsigned latestFeedbackFrame_{};
-
 public:
     ClientConnectionData(AbstractConnection* connection, const VariantMap& settings);
 
     void UpdateFrame(float timeStep, const NetworkTime& serverTime, float overtime);
+    // TODO(network): Hide this
+    void OnFeedbackReceived(unsigned feedbackFrame) { inputStats_.OnInputReceived(feedbackFrame); }
 
     void SendCommonUpdates();
     void SendSynchronizedMessages();
@@ -82,6 +80,7 @@ public:
 
     bool IsSynchronized() const { return synchronized_; }
     unsigned GetInputDelay() const { return inputDelay_; };
+    unsigned GetInputBufferSize() const { return inputBufferSize_; };
 
 private:
     unsigned MakeMagic() const;
@@ -98,9 +97,9 @@ private:
     ea::optional<unsigned> synchronizationMagic_;
     bool synchronized_{};
 
-    // TODO(network): Fill it
     FilteredUint inputDelayFilter_;
     unsigned inputDelay_{};
+    ClientInputStatistics inputStats_;
     unsigned inputBufferSize_{};
 
     float clockTimeAccumulator_{};
