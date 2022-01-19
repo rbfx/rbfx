@@ -83,10 +83,13 @@ public:
     unsigned GetInputBufferSize() const { return inputBufferSize_; };
 
 private:
+    static constexpr unsigned InputStatsSafetyLimit = 64;
+
     unsigned MakeMagic() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
 
-    void UpdateClientTimes();
+    void UpdateInputDelay();
+    void UpdateInputBuffer();
 
     VariantMap settings_;
     const unsigned updateFrequency_{};
@@ -97,9 +100,12 @@ private:
     ea::optional<unsigned> synchronizationMagic_;
     bool synchronized_{};
 
+    ea::optional<unsigned> latestProcessedPingTimestamp_;
     FilteredUint inputDelayFilter_;
     unsigned inputDelay_{};
+
     ClientInputStatistics inputStats_;
+    FilteredUint inputBufferFilter_;
     unsigned inputBufferSize_{};
 
     float clockTimeAccumulator_{};

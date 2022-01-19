@@ -69,6 +69,7 @@ public:
     unsigned RemoteToLocalTime(unsigned time) const override { return time; }
     unsigned LocalToRemoteTime(unsigned time) const override { return time; }
     unsigned GetLocalTime() const override { return systemTime; }
+    unsigned GetLocalTimeOfLatestRoundtrip() const override { return systemTime; }
     unsigned GetPing() const override { return RoundToInt(1000 * (quality_.minPing_ + quality_.maxPing_) / 2); }
 
     void IncrementTime(unsigned delta);

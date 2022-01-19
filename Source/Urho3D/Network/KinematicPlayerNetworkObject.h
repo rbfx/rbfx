@@ -67,6 +67,7 @@ protected:
     void OnServerNetworkFrameBegin();
     /// Called when physics step is over.
     void OnPhysicsPostStepOnClient();
+    void CorrectAgainstFrame(unsigned frame);
 
 private:
     WeakPtr<ReplicatedNetworkTransform> networkTransform_;
@@ -78,6 +79,7 @@ private:
     ea::vector<Vector3> inputBuffer_;
     /// Client only: whether to track next physics step.
     ea::optional<unsigned> trackNextStepAsFrame_;
+    ea::optional<unsigned> compareNextStepToFrame_;
 
     /// Server only: feedback from client.
     NetworkValue<Vector3> feedbackVelocity_;

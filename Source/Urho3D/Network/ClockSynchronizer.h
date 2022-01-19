@@ -46,6 +46,7 @@ public:
     unsigned GetMinValue() const { return baseValue_ + minOffset_; }
     unsigned GetAverageValue() const { return baseValue_ + averageOffset_; }
     unsigned GetMaxValue() const { return baseValue_ + maxOffset_; }
+    unsigned GetStabilizedAverageMaxValue() const { return baseValue_ + stabilizedMaxAverageOffset_; }
     bool IsInitialized() const { return !offsets_.empty(); }
 
 private:
@@ -57,6 +58,7 @@ private:
     int minOffset_{};
     int averageOffset_{};
     int maxOffset_{};
+    int stabilizedMaxAverageOffset_{};
 };
 
 enum class ClockSynchronizerPhase : unsigned
@@ -66,10 +68,7 @@ enum class ClockSynchronizerPhase : unsigned
     Ping = 1,
     /// Phase 2, Client->server.
     /// Payload is relative to the server. All times are filled.
-    Pong = 2,
-    /// Phase 3, Server->client:
-    /// Payload is relative to the client. All times are filled.
-    Sync = 3,
+    Pong = 2
 };
 
 /// Message exchanged between client and server to synchronize time.
@@ -89,10 +88,13 @@ struct ClockSynchronizerMessage
 class URHO3D_API ClockSynchronizer
 {
 public:
+    ClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
+        unsigned pingBufferSize, ea::function<unsigned()> getTimestamp = nullptr);
+
     /// Process incoming message. Should be called as soon as possible.
-    virtual void ProcessMessage(const ClockSynchronizerMessage& msg) = 0;
+    void ProcessMessage(const ClockSynchronizerMessage& msg);
     /// Receive outgoing message if there is any. Should be called as late as possible.
-    virtual ea::optional<ClockSynchronizerMessage> PollMessage() = 0;
+    ea::optional<ClockSynchronizerMessage> PollMessage();
 
     /// Return whether synchronizer is ready to use.
     bool IsReady() const { return localToRemote_.IsInitialized(); }
@@ -102,68 +104,15 @@ public:
     unsigned RemoteToLocal(unsigned value) const { return value - localToRemote_.GetAverageValue(); }
     /// Return ping, i.e. half of round-trip delay excluding remote processing time.
     unsigned GetPing() const { return roundTripDelay_.GetAverageValue() / 2; }
-
-protected:
-    explicit ClockSynchronizer(unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp);
-    unsigned GetTimestamp() const;
-    void UpdateClocks(unsigned localSent, unsigned remoteReceived, unsigned remoteSent, unsigned localReceived);
+    /// Return local timestamp of the latest successful roundtrip.
+    unsigned GetLocalTimeOfLatestRoundtrip() const { return latestRoundtripTimestamp_.value_or(0); }
 
 private:
-    const ea::function<unsigned()> getTimestamp_;
-    FilteredUint localToRemote_;
-    FilteredUint roundTripDelay_;
-};
-
-class URHO3D_API ServerClockSynchronizer : public ClockSynchronizer
-{
-public:
-    ServerClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
-        unsigned pingBufferSize, ea::function<unsigned()> getTimestamp = nullptr);
-
-    /// Implement ClockSynchronizer
-    /// @{
-    void ProcessMessage(const ClockSynchronizerMessage& msg) override;
-    ea::optional<ClockSynchronizerMessage> PollMessage() override;
-    /// @}
-
-private:
-    struct PendingPong
+    struct PendingPing
     {
         unsigned magic_{};
         unsigned serverSentTime_{};
     };
-    struct PendingSync
-    {
-        unsigned magic_{};
-        unsigned clientSentTime_{};
-        unsigned serverReceivedTime_{};
-    };
-
-    ClockSynchronizerMessage CreateNewPing(unsigned now);
-    ClockSynchronizerMessage CreateNewSync(const PendingSync& sync, unsigned now) const;
-    void CleanupExpiredPings(unsigned now);
-
-    const unsigned pingIntervalMs_{};
-    const unsigned maxPingMs_{};
-
-    ea::optional<unsigned> latestProbeTimestamp_;
-    ea::vector<PendingPong> pendingPings_;
-    ea::vector<PendingSync> pendingSyncs_;
-};
-
-class URHO3D_API ClientClockSynchronizer : public ClockSynchronizer
-{
-public:
-    ClientClockSynchronizer(
-        unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp = nullptr);
-
-    /// Implement ClockSynchronizer
-    /// @{
-    void ProcessMessage(const ClockSynchronizerMessage& msg) override;
-    ea::optional<ClockSynchronizerMessage> PollMessage() override;
-    /// @}
-
-private:
     struct PendingPong
     {
         unsigned magic_{};
@@ -171,7 +120,23 @@ private:
         unsigned clientReceivedTime_{};
     };
 
+    ClockSynchronizerMessage CreateNewPing(unsigned now);
+    ClockSynchronizerMessage CreateNewPong(const PendingPong& pong);
+    void CleanupExpiredPings(unsigned now);
+    unsigned GetTimestamp() const;
+    void UpdateClocks(unsigned localSent, unsigned remoteReceived, unsigned remoteSent, unsigned localReceived);
+
+    const ea::function<unsigned()> getTimestamp_;
+    const unsigned pingIntervalMs_{};
+    const unsigned maxPingMs_{};
+
+    ea::optional<unsigned> latestProbeTimestamp_;
+    ea::vector<PendingPing> pendingPings_;
     ea::vector<PendingPong> pendingPongs_;
+
+    FilteredUint localToRemote_;
+    FilteredUint roundTripDelay_;
+    ea::optional<unsigned> latestRoundtripTimestamp_;
 };
 
 }

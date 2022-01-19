@@ -27,49 +27,31 @@
 namespace Urho3D
 {
 
-ClientInputStatistics::ClientInputStatistics(unsigned windowSize)
+ClientInputStatistics::ClientInputStatistics(unsigned windowSize, unsigned maxInputLoss)
+    : maxInputLoss_(maxInputLoss)
 {
-    receivedFrames_.Resize(windowSize * 2);
     numLostFrames_.set_capacity(windowSize);
 }
 
 void ClientInputStatistics::OnInputReceived(unsigned frame)
 {
+    if (!latestInputFrame_)
+    {
+        latestInputFrame_ = frame;
+        return;
+    }
+
     // Skip outdated inputs
-    if (NetworkTime{frame} - NetworkTime{currentFrame_} <= 0.0)
+    const auto delta = RoundToInt(NetworkTime{frame} - NetworkTime{*latestInputFrame_});
+    latestInputFrame_ = frame;
+    if (delta <= 0)
         return;
 
-    receivedFrames_.Set(frame, 0);
-}
+    for (int i = 0; i < ea::min(delta, maxInputLoss_); ++i)
+        numLostFrames_.push_back(i);
 
-void ClientInputStatistics::OnInputConsumed(unsigned frame)
-{
-    ConsumeInputForFrame(frame);
-    TrackInputLoss();
     UpdateHistogram();
-
-    const auto [growSize, shrinkSize] = CalculateBufferSize();
-    if (bufferSize_ <= growSize)
-        bufferSize_ = growSize;
-    if (bufferSize_ >= shrinkSize)
-        bufferSize_ = shrinkSize;
-}
-
-void ClientInputStatistics::ConsumeInputForFrame(unsigned frame)
-{
-    currentFrame_ = frame;
-
-    if (receivedFrames_.GetRaw(currentFrame_).has_value())
-        numLostFramesBeforeCurrent_ = 0;
-    else
-        ++numLostFramesBeforeCurrent_;
-}
-
-void ClientInputStatistics::TrackInputLoss()
-{
-    if (numLostFrames_.full())
-        numLostFrames_.pop_front();
-    numLostFrames_.push_back(numLostFramesBeforeCurrent_);
+    bufferSize_ = GetMaxRepeatedLoss();
 }
 
 void ClientInputStatistics::UpdateHistogram()
@@ -88,16 +70,6 @@ unsigned ClientInputStatistics::GetMaxRepeatedLoss() const
     const auto isRepeated = [](unsigned x) { return x >= 2; };
     const auto iter = ea::find_if(histogram_.rbegin(), histogram_.rend(), isRepeated).base();
     return iter != histogram_.begin() ? iter - histogram_.begin() - 1 : 0;
-}
-
-ea::pair<unsigned, unsigned> ClientInputStatistics::CalculateBufferSize() const
-{
-    if (histogram_.size() <= 1)
-        return {0, 0};
-
-    const unsigned maxLoss = histogram_.size() - 1;
-    const unsigned maxRepeatedLoss = GetMaxRepeatedLoss();
-    return {ea::min(maxLoss - 1, maxRepeatedLoss), maxLoss};
 }
 
 }

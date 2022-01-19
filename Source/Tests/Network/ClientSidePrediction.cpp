@@ -70,42 +70,25 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
 
 TEST_CASE("Client input quality is evaluated")
 {
-    using UintSet = ea::unordered_set<unsigned>;
+    ClientInputStatistics stats(10, 8);
 
-    const unsigned seed = 0;
-    RandomEngine re(seed);
-    ClientInputStatistics stats(128);
+    stats.OnInputReceived(1001);
+    stats.OnInputReceived(1002);
+    stats.OnInputReceived(1004);
+    stats.OnInputReceived(1005);
+    stats.OnInputReceived(1007);
+    stats.OnInputReceived(1009);
+    stats.OnInputReceived(1010);
+    REQUIRE(stats.GetRecommendedBufferSize() == 1);
 
-    float dropRate = 0.1f;
-    unsigned currentFrame = 0;
-    ea::vector<unsigned> bufferSize;
+    stats.OnInputReceived(1020);
+    REQUIRE(stats.GetRecommendedBufferSize() == 1);
 
-    const auto simulateFrames = [&](unsigned count)
-    {
-        bufferSize.clear();
-        for (unsigned i = 0; i < count; ++i)
-        {
-            if (!re.GetBool(dropRate))
-                stats.OnInputReceived(currentFrame);
-            stats.OnInputConsumed(currentFrame);
-            ++currentFrame;
-            bufferSize.push_back(stats.GetBufferSize());
-        }
-    };
-
-    // Skip initial frames
-    simulateFrames(30);
-
-    // Expect stable 1
-    simulateFrames(1000);
-    REQUIRE(UintSet{bufferSize.begin(), bufferSize.end()} == UintSet{1u});
-
-    // Expect fluctuating 4-5
-    // This test is not very good because the random is bad, but it's better than nothing
-    dropRate = 0.5f;
-    simulateFrames(200);
-    simulateFrames(1000);
-    REQUIRE(UintSet{bufferSize.begin(), bufferSize.end()} == UintSet{4u, 5u});
+    stats.OnInputReceived(1023);
+    stats.OnInputReceived(1024);
+    stats.OnInputReceived(1026);
+    stats.OnInputReceived(1030);
+    REQUIRE(stats.GetRecommendedBufferSize() == 2);
 }
 
 TEST_CASE("Client-side prediction is consistent with server")
