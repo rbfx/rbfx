@@ -67,6 +67,8 @@ public:
     virtual unsigned LocalToRemoteTime(unsigned time) const = 0;
     /// Return current local time.
     virtual unsigned GetLocalTime() const = 0;
+    /// Return local time of last successful ping-pong roundtrip.
+    virtual unsigned GetLocalTimeOfLatestRoundtrip() const = 0;
     /// Return ping of the connection.
     virtual unsigned GetPing() const = 0;
 

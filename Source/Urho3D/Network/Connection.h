@@ -144,6 +144,7 @@ public:
     unsigned RemoteToLocalTime(unsigned time) const override;
     unsigned LocalToRemoteTime(unsigned time) const override;
     unsigned GetLocalTime() const override;
+    unsigned GetLocalTimeOfLatestRoundtrip() const override;
     unsigned GetPing() const override;
     /// @}
 

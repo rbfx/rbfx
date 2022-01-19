@@ -39,7 +39,7 @@ public:
     ClockSynchronizerSimulator(ea::function<unsigned()> getRandomDelay)
         : getRandomDelay_(getRandomDelay)
         , serverSync_{250, 10000, 40, 10, [&]{ return serverClock_; }}
-        , clientSync_{40, 10, [&]{ return clientClock_; }}
+        , clientSync_{250, 10000, 40, 10, [&]{ return clientClock_; }}
     {
     }
 
@@ -104,8 +104,8 @@ private:
     unsigned serverClock_{10000};
     unsigned clientClock_{20000};
 
-    ServerClockSynchronizer serverSync_;
-    ClientClockSynchronizer clientSync_;
+    ClockSynchronizer serverSync_;
+    ClockSynchronizer clientSync_;
 
     MessageQueue serverToClientMessages_;
     MessageQueue clientToServerMessages_;
@@ -117,8 +117,8 @@ TEST_CASE("System clock is synchronized between client and server")
 {
     const unsigned minDelay = 250;
     const unsigned maxDelay = 350;
-    const unsigned throttleDelay = 150;
-    const float throttleChance = 0.25f;
+    const unsigned throttleDelay = 100;
+    const float throttleChance = 0.2f;
 
     const unsigned seed = GENERATE(0, 1, 2, 3, 4);
     RandomEngine re(seed);
@@ -182,7 +182,7 @@ TEST_CASE("System clock is perfectly synchronized on good connection")
     const unsigned minDelay = 180;
     const unsigned maxDelay = 200;
     const unsigned throttleDelay = 100;
-    const float throttleChance = 0.1f;
+    const float throttleChance = 0.02f;
 
     const unsigned seed = GENERATE(0, 1, 2, 3, 4);
     RandomEngine re(seed);
@@ -209,14 +209,14 @@ TEST_CASE("System clock is perfectly synchronized on good connection")
     const auto [minPingOnClient, maxPingOnClient] =
         ea::minmax_element(sim.pingOnClient_.begin(), sim.pingOnClient_.end());
 
-    REQUIRE(sim.predictedServerToClientOffset_.back() >= 9980);
-    REQUIRE(sim.predictedServerToClientOffset_.back() <= 10020);
+    REQUIRE(sim.predictedServerToClientOffset_.back() >= 9990);
+    REQUIRE(sim.predictedServerToClientOffset_.back() <= 10010);
 
-    REQUIRE(sim.predictedClientToServerOffset_.back() >= -10020);
-    REQUIRE(sim.predictedClientToServerOffset_.back() <= -9980);
+    REQUIRE(sim.predictedClientToServerOffset_.back() >= -10010);
+    REQUIRE(sim.predictedClientToServerOffset_.back() <= -9990);
 
-    REQUIRE(*maxServerToClient - *minServerToClient < 30);
-    REQUIRE(*maxClientToServer - *minClientToServer < 30);
+    REQUIRE(*maxServerToClient - *minServerToClient < 15);
+    REQUIRE(*maxClientToServer - *minClientToServer < 15);
 
     REQUIRE(*minPingOnServer >= 180);
     REQUIRE(*maxPingOnServer <= 200);

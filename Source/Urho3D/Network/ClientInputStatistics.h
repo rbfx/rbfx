@@ -35,30 +35,23 @@ namespace Urho3D
 class URHO3D_API ClientInputStatistics
 {
 public:
-    ClientInputStatistics(unsigned windowSize);
+    ClientInputStatistics(unsigned windowSize, unsigned maxInputLoss);
 
     /// Notify that the input was received for given frame.
     void OnInputReceived(unsigned frame);
-    /// Notify that all the input up to specified frame has been consumed.
-    void OnInputConsumed(unsigned frame);
 
-    unsigned GetBufferSize() const { return bufferSize_; }
+    unsigned GetRecommendedBufferSize() const { return bufferSize_; }
 
 private:
-    void ConsumeInputForFrame(unsigned frame);
-    void TrackInputLoss();
     void UpdateHistogram();
     unsigned GetMaxRepeatedLoss() const;
-    ea::pair<unsigned, unsigned> CalculateBufferSize() const;
 
-    unsigned currentFrame_{};
-    NetworkValue<int> receivedFrames_;
+    const int maxInputLoss_;
 
-    unsigned numLostFramesBeforeCurrent_{};
+    ea::optional<unsigned> latestInputFrame_{};
     ea::ring_buffer<unsigned> numLostFrames_;
 
     ea::vector<unsigned> histogram_;
-
     unsigned bufferSize_{};
 };
 

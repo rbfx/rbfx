@@ -44,8 +44,6 @@ void FilteredUint::AddValue(unsigned value, bool filter)
 {
     if (offsets_.empty())
         baseValue_ = value;
-    if (offsets_.full())
-        offsets_.pop_front();
 
     const auto offset = static_cast<int>(value - baseValue_);
     offsets_.push_back(offset);
@@ -62,6 +60,7 @@ void FilteredUint::Filter()
         averageOffset_ = offset;
         minOffset_ = offset;
         maxOffset_ = offset;
+        stabilizedMaxAverageOffset_ = offset;
         return;
     }
 
@@ -91,6 +90,11 @@ void FilteredUint::Filter()
 
     URHO3D_ASSERT(averageCount > 0);
     averageOffset_ = static_cast<int>(averageAccum / averageCount);
+
+    if (stabilizedMaxAverageOffset_ < averageOffset_)
+        stabilizedMaxAverageOffset_ = averageOffset_;
+    else if (stabilizedMaxAverageOffset_ > maxOffset_)
+        stabilizedMaxAverageOffset_ = maxOffset_;
 }
 
 void ClockSynchronizerMessage::Load(Deserializer& src)
@@ -111,10 +115,13 @@ void ClockSynchronizerMessage::Save(Serializer& dest) const
     dest.WriteUInt(remoteSent_);
 }
 
-ClockSynchronizer::ClockSynchronizer(unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
+ClockSynchronizer::ClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
+    unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
     : getTimestamp_(getTimestamp)
     , localToRemote_{clockBufferSize}
     , roundTripDelay_{pingBufferSize}
+    , pingIntervalMs_{pingIntervalMs}
+    , maxPingMs_{maxPingMs}
 {
 }
 
@@ -138,19 +145,19 @@ void ClockSynchronizer::UpdateClocks(
     roundTripDelay_.AddValue(delay);
 }
 
-ServerClockSynchronizer::ServerClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
-    unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
-    : ClockSynchronizer(clockBufferSize, pingBufferSize, getTimestamp)
-    , pingIntervalMs_{pingIntervalMs}
-    , maxPingMs_{maxPingMs}
+void ClockSynchronizer::ProcessMessage(const ClockSynchronizerMessage& msg)
 {
-}
-
-void ServerClockSynchronizer::ProcessMessage(const ClockSynchronizerMessage& msg)
-{
-    if (msg.phase_ == ClockSynchronizerPhase::Pong)
+    if (msg.phase_ == ClockSynchronizerPhase::Ping)
     {
-        const auto isThisProbe = [&](const PendingPong& ping) { return ping.magic_ == msg.magic_; };
+        PendingPong pong;
+        pong.magic_ = msg.magic_;
+        pong.serverSentTime_ = msg.remoteSent_;
+        pong.clientReceivedTime_ = GetTimestamp();
+        pendingPongs_.push_back(pong);
+    }
+    else if (msg.phase_ == ClockSynchronizerPhase::Pong)
+    {
+        const auto isThisProbe = [&](const PendingPing& ping) { return ping.magic_ == msg.magic_; };
         const auto iter = ea::find_if(pendingPings_.begin(), pendingPings_.end(), isThisProbe);
         if (iter == pendingPings_.end())
         {
@@ -159,17 +166,12 @@ void ServerClockSynchronizer::ProcessMessage(const ClockSynchronizerMessage& msg
         }
 
         const unsigned now = GetTimestamp();
+        latestRoundtripTimestamp_ = now;
         UpdateClocks(iter->serverSentTime_, msg.remoteReceived_, msg.remoteSent_, now);
-        const unsigned roundTripMs = now - iter->serverSentTime_;
-        pendingSyncs_.push_back(PendingSync{msg.magic_, msg.remoteSent_, now});
-    }
-    else
-    {
-        URHO3D_LOGWARNING("Unexpected type of clock message was received");
     }
 }
 
-ea::optional<ClockSynchronizerMessage> ServerClockSynchronizer::PollMessage()
+ea::optional<ClockSynchronizerMessage> ClockSynchronizer::PollMessage()
 {
     const unsigned now = GetTimestamp();
     if (!latestProbeTimestamp_ || (now - *latestProbeTimestamp_ >= pingIntervalMs_))
@@ -179,20 +181,19 @@ ea::optional<ClockSynchronizerMessage> ServerClockSynchronizer::PollMessage()
         return CreateNewPing(now);
     }
 
-    if (!pendingSyncs_.empty())
+    if (!pendingPongs_.empty())
     {
-        const auto sync = pendingSyncs_.back();
-        pendingSyncs_.pop_back();
-
-        return CreateNewSync(sync, now);
+        const auto pong = pendingPongs_.back();
+        pendingPongs_.pop_back();
+        return CreateNewPong(pong);
     }
 
     return ea::nullopt;
 }
 
-ClockSynchronizerMessage ServerClockSynchronizer::CreateNewPing(unsigned now)
+ClockSynchronizerMessage ClockSynchronizer::CreateNewPing(unsigned now)
 {
-    PendingPong ping;
+    PendingPing ping;
     ping.magic_ = RandomEngine::GetDefaultEngine().GetUInt();
     ping.serverSentTime_ = now;
     pendingPings_.push_back(ping);
@@ -204,60 +205,8 @@ ClockSynchronizerMessage ServerClockSynchronizer::CreateNewPing(unsigned now)
     return msg;
 }
 
-ClockSynchronizerMessage ServerClockSynchronizer::CreateNewSync(const PendingSync& sync, unsigned now) const
+ClockSynchronizerMessage ClockSynchronizer::CreateNewPong(const PendingPong& pong)
 {
-    ClockSynchronizerMessage msg;
-    msg.magic_ = sync.magic_;
-    msg.phase_ = ClockSynchronizerPhase::Sync;
-    msg.localSent_ = sync.clientSentTime_;
-    msg.remoteReceived_ = sync.serverReceivedTime_;
-    msg.remoteSent_ = now;
-    return msg;
-}
-
-void ServerClockSynchronizer::CleanupExpiredPings(unsigned now)
-{
-    if (pendingPings_.size() < 2 * maxPingMs_ / pingIntervalMs_)
-        return;
-
-    const auto isOutdated = [&](const PendingPong& ping) { return now - ping.serverSentTime_ >= maxPingMs_; };
-    pendingPings_.erase(ea::remove_if(pendingPings_.begin(), pendingPings_.end(), isOutdated), pendingPings_.end());
-}
-
-ClientClockSynchronizer::ClientClockSynchronizer(
-    unsigned clockBufferSize, unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
-    : ClockSynchronizer(clockBufferSize, pingBufferSize, getTimestamp)
-{
-}
-
-void ClientClockSynchronizer::ProcessMessage(const ClockSynchronizerMessage& msg)
-{
-    if (msg.phase_ == ClockSynchronizerPhase::Ping)
-    {
-        PendingPong pong;
-        pong.magic_ = msg.magic_;
-        pong.serverSentTime_ = msg.remoteSent_;
-        pong.clientReceivedTime_ = GetTimestamp();
-        pendingPongs_.push_back(pong);
-    }
-    else if (msg.phase_ == ClockSynchronizerPhase::Sync)
-    {
-        UpdateClocks(msg.localSent_, msg.remoteReceived_, msg.remoteSent_, GetTimestamp());
-    }
-    else
-    {
-        URHO3D_LOGWARNING("Unexpected type of clock message was received");
-    }
-}
-
-ea::optional<ClockSynchronizerMessage> ClientClockSynchronizer::PollMessage()
-{
-    if (pendingPongs_.empty())
-        return ea::nullopt;
-
-    const PendingPong pong = pendingPongs_.back();
-    pendingPongs_.pop_back();
-
     ClockSynchronizerMessage msg;
     msg.magic_ = pong.magic_;
     msg.phase_ = ClockSynchronizerPhase::Pong;
@@ -265,6 +214,15 @@ ea::optional<ClockSynchronizerMessage> ClientClockSynchronizer::PollMessage()
     msg.remoteReceived_ = pong.clientReceivedTime_;
     msg.remoteSent_ = GetTimestamp();
     return msg;
+}
+
+void ClockSynchronizer::CleanupExpiredPings(unsigned now)
+{
+    if (pendingPings_.size() < 2 * maxPingMs_ / pingIntervalMs_)
+        return;
+
+    const auto isOutdated = [&](const PendingPing& ping) { return now - ping.serverSentTime_ >= maxPingMs_; };
+    pendingPings_.erase(ea::remove_if(pendingPings_.begin(), pendingPings_.end(), isOutdated), pendingPings_.end());
 }
 
 }

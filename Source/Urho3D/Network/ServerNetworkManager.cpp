@@ -58,7 +58,8 @@ ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const
     , settings_(settings)
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
     , inputDelayFilter_(GetSetting(NetworkSettings::InputDelayFilterBufferSize).GetUInt())
-    , inputStats_(GetSetting(NetworkSettings::InputBufferingWindowSize).GetUInt())
+    , inputStats_(GetSetting(NetworkSettings::InputBufferingWindowSize).GetUInt(), InputStatsSafetyLimit)
+    , inputBufferFilter_(GetSetting(NetworkSettings::InputBufferingFilterBufferSize).GetUInt())
 {
     SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
 }
@@ -69,7 +70,6 @@ void ClientConnectionData::UpdateFrame(float timeStep, const NetworkTime& server
     timestamp_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
 
     clockTimeAccumulator_ += timeStep;
-    inputStats_.OnInputConsumed(serverTime_.GetFrame());
 }
 
 void ClientConnectionData::SendCommonUpdates()
@@ -88,7 +88,11 @@ void ClientConnectionData::SendCommonUpdates()
     {
         clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
 
-        UpdateClientTimes();
+        UpdateInputDelay();
+        UpdateInputBuffer();
+
+        const MsgSceneClock msg{serverTime_.GetFrame(), timestamp_, inputDelay_ + inputBufferSize_};
+        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, NetworkMessageFlag::None);
     }
 }
 
@@ -109,27 +113,28 @@ void ClientConnectionData::ProcessSynchronized(const MsgSynchronized& msg)
     synchronized_ = true;
 }
 
-void ClientConnectionData::UpdateClientTimes()
+void ClientConnectionData::UpdateInputDelay()
 {
+    const unsigned latestPingTimestamp = connection_->GetLocalTimeOfLatestRoundtrip();
+    if (latestProcessedPingTimestamp_ == latestPingTimestamp)
+        return;
+    latestProcessedPingTimestamp_ = latestPingTimestamp;
+
     const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
     inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
+    inputDelay_ = inputDelayFilter_.GetStabilizedAverageMaxValue();
+}
 
-    // Go up on average, go down on max, to stabilize delay
-    const unsigned newAverageDelay = inputDelayFilter_.GetAverageValue();
-    const unsigned newMaxDelay = inputDelayFilter_.GetAverageValue();
-    if (inputDelay_ < newAverageDelay)
-        inputDelay_ = newAverageDelay;
-    else if (inputDelay_ > newMaxDelay)
-        inputDelay_ = newMaxDelay;
+void ClientConnectionData::UpdateInputBuffer()
+{
+    inputBufferFilter_.AddValue(inputStats_.GetRecommendedBufferSize());
 
     const int bufferSizeTweak = GetSetting(NetworkSettings::InputBufferingTweak).GetInt();
-    const int newBufferSize = static_cast<int>(inputStats_.GetBufferSize()) + bufferSizeTweak;
+    const int newInputBufferSize = bufferSizeTweak + static_cast<int>(inputBufferFilter_.GetStabilizedAverageMaxValue());
+
     const int minInputBuffer = GetSetting(NetworkSettings::MinInputBuffering).GetUInt();
     const int maxInputBuffer = GetSetting(NetworkSettings::MaxInputBuffering).GetUInt();
-    inputBufferSize_ = Clamp(newBufferSize, minInputBuffer, maxInputBuffer);
-
-    const MsgSceneClock msg{serverTime_.GetFrame(), timestamp_, inputDelay_ + inputBufferSize_};
-    connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, NetworkMessageFlag::None);
+    inputBufferSize_ = Clamp(newInputBufferSize, minInputBuffer, maxInputBuffer);
 }
 
 unsigned ClientConnectionData::MakeMagic() const

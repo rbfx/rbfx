@@ -133,6 +133,11 @@ void KinematicPlayerNetworkObject::OnUnreliableDelta(unsigned frame)
     if (!kinematicController_ || !networkTransform_)
         return;
 
+    compareNextStepToFrame_ = frame;
+}
+
+void KinematicPlayerNetworkObject::CorrectAgainstFrame(unsigned frame)
+{
     // Skip frames without confirmed data (shouldn't happen too ofter)
     const auto confirmedPosition = networkTransform_->GetRawTemporalWorldPosition(frame);
     if (!confirmedPosition)
@@ -176,10 +181,19 @@ void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin()
 
 void KinematicPlayerNetworkObject::OnPhysicsPostStepOnClient()
 {
-    if (kinematicController_ && trackNextStepAsFrame_)
+    if (kinematicController_)
     {
-        predictedWorldPositions_.emplace_back(*trackNextStepAsFrame_, kinematicController_->GetRawPosition());
-        trackNextStepAsFrame_ = ea::nullopt;
+        if (compareNextStepToFrame_)
+        {
+            CorrectAgainstFrame(*compareNextStepToFrame_);
+            compareNextStepToFrame_ = ea::nullopt;
+        }
+
+        if (trackNextStepAsFrame_)
+        {
+            predictedWorldPositions_.emplace_back(*trackNextStepAsFrame_, kinematicController_->GetRawPosition());
+            trackNextStepAsFrame_ = ea::nullopt;
+        }
     }
 }
 
