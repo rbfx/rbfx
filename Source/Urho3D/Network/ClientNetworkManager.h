@@ -79,7 +79,8 @@ public:
 
     /// Return current state
     /// @{
-    bool IsNewInputFrame() const { return isNewInputFrame_; }
+    bool IsNewInputFrame() const { return synchronizedPhysicsTick_.has_value(); }
+    ea::optional<unsigned> GetSynchronizedPhysicsTick() const { return synchronizedPhysicsTick_; }
     unsigned GetConnectionId() const { return thisConnectionId_; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
     unsigned GetInputDelay() const { return inputDelay_; }
@@ -121,7 +122,7 @@ private:
     NetworkTime serverTime_;
     unsigned latestServerFrame_{};
     NetworkTime latestScaledInputTime_{};
-    bool isNewInputFrame_{};
+    ea::optional<unsigned> synchronizedPhysicsTick_{};
 
     SoftNetworkTime replicaTime_;
     SoftNetworkTime inputTime_;

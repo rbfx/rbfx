@@ -55,7 +55,7 @@ public:
     void InitializeOnServer() override;
     void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void OnUnreliableDelta(unsigned frame) override;
     unsigned GetUnreliableFeedbackMask(unsigned frame) override;
@@ -78,7 +78,7 @@ private:
     ea::vector<ea::pair<unsigned, Vector3>> predictedWorldPositions_;
     ea::vector<Vector3> inputBuffer_;
     /// Client only: whether to track next physics step.
-    ea::optional<unsigned> trackNextStepAsFrame_;
+    ea::optional<ea::pair<unsigned, unsigned>> trackNextStepAsFrame_;
     ea::optional<unsigned> compareNextStepToFrame_;
 
     /// Server only: feedback from client.

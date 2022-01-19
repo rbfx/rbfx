@@ -151,7 +151,7 @@ void DefaultNetworkObject::WriteUnreliableDeltaPayload(unsigned mask, unsigned f
 }
 
 void DefaultNetworkObject::InterpolateState(
-    const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
+    const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame)
 {
     const ClientNetworkManager* clientNetworkManager = GetClientNetworkManager();
     const unsigned positionExtrapolationFrames = clientNetworkManager->GetPositionExtrapolationFrames();
@@ -513,7 +513,7 @@ void BehaviorNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deser
     }
 }
 
-void BehaviorNetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
+void BehaviorNetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame)
 {
     BaseClassName::InterpolateState(replicaTime, inputTime, isNewInputFrame);
 
@@ -643,7 +643,7 @@ void ReplicatedNetworkTransform::ReadSnapshot(unsigned frame, Deserializer& src)
     worldRotationTrace_.Resize(traceCapacity);
 }
 
-void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
+void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame)
 {
     if (trackOnly_)
         return;

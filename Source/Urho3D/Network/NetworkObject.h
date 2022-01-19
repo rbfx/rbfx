@@ -119,7 +119,7 @@ public:
     /// @{
 
     /// Interpolate replicated state.
-    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame);
+    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame);
     /// Prepare to this compnent being removed by the authority of the server.
     virtual void PrepareToRemove();
     /// Read full snapshot.

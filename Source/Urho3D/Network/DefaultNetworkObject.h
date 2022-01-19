@@ -63,7 +63,7 @@ public:
     unsigned GetUnreliableDeltaMask(unsigned frame) override;
     void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
@@ -115,7 +115,7 @@ private:
 
 /// NetworkObject that is replicated on the client from prefab and is not updated afterwards.
 /// Note: object position in the hierarchy of NetworkObject-s is still maintained.
-class StaticNetworkObject : public NetworkObject
+class URHO3D_API StaticNetworkObject : public NetworkObject
 {
     URHO3D_OBJECT(StaticNetworkObject, NetworkObject);
 
@@ -189,7 +189,7 @@ public:
     virtual void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) {}
     virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) {}
 
-    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) {}
+    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) {}
     virtual void ReadSnapshot(unsigned frame, Deserializer& src) {} // TODO(network): Rename to InitializeFromSnapshot?
     virtual void ReadReliableDelta(unsigned frame, Deserializer& src) {}
     virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src) {}
@@ -211,7 +211,7 @@ private:
 /// NetworkObject that is composed from the fixed amount of independent behaviors.
 /// Both client and server are responsible for creating same ,
 /// e.g. from prefabs.
-class BehaviorNetworkObject : public StaticNetworkObject
+class URHO3D_API BehaviorNetworkObject : public StaticNetworkObject
 {
     URHO3D_OBJECT(BehaviorNetworkObject, StaticNetworkObject);
 
@@ -237,7 +237,7 @@ public:
     void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
     void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
@@ -260,7 +260,7 @@ private:
 };
 
 /// Behavior that replicates transform of the node.
-class ReplicatedNetworkTransform : public NetworkBehavior
+class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
 {
     URHO3D_OBJECT(ReplicatedNetworkTransform, NetworkBehavior);
 
@@ -283,7 +283,7 @@ public:
     void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
 
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
     /// @}
 

@@ -55,7 +55,7 @@ ClientSynchronizationManager::ClientSynchronizationManager(Scene* scene, Abstrac
     , inputDelay_(msg.inputDelay_)
     , replicaTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
     , inputTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
-    , physicsSync_(scene_, updateFrequency_, true)
+    , physicsSync_(scene_, updateFrequency_, false)
 {
     UpdateServerTime(msg, false);
     replicaTime_.Reset(ToClientTime(serverTime_));
@@ -92,9 +92,13 @@ float ClientSynchronizationManager::ApplyTimeStep(float timeStep, const ea::vect
     if (timeStep != scaledTimeStep)
         latestScaledInputTime_ = inputTime_.Get();
 
-    isNewInputFrame_ = previousInputTime.GetFrame() != inputTime_.Get().GetFrame();
-    const float overtime = inputTime_.Get().GetSubFrame() / updateFrequency_;
-    physicsSync_.UpdateClock(scaledTimeStep, isNewInputFrame_ ? ea::make_optional(overtime) : ea::nullopt);
+    if (previousInputTime.GetFrame() != inputTime_.Get().GetFrame())
+        synchronizedPhysicsTick_ = physicsSync_.Synchronize(inputTime_.Get().GetSubFrame() / updateFrequency_);
+    else
+    {
+        physicsSync_.Update(scaledTimeStep);
+        synchronizedPhysicsTick_ = ea::nullopt;
+    }
 
     return scaledTimeStep;
 }
@@ -422,7 +426,7 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
     if (!sync_)
         return;
 
-    const bool isNewInputFrame = sync_->IsNewInputFrame();
+    const auto isNewInputFrame = sync_->GetSynchronizedPhysicsTick();
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)

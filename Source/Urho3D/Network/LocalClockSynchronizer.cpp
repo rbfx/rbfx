@@ -48,16 +48,17 @@ public:
 
 }
 
-LocalClockSynchronizer::LocalClockSynchronizer(unsigned leaderFrequency)
+LocalClockSynchronizer::LocalClockSynchronizer(unsigned leaderFrequency, bool isServer)
     : leaderFrequency_(leaderFrequency)
+    , isServer_(isServer)
     , followerFrequency_(leaderFrequency)
 {
 }
 
 void LocalClockSynchronizer::SetFollowerFrequency(unsigned followerFrequency)
 {
-    const unsigned maxSubsteps = ea::max(1u, followerFrequency / leaderFrequency_);
-    followerFrequency_ = leaderFrequency_ * maxSubsteps;
+    const unsigned maxFollowerTicks = ea::max(1u, followerFrequency / leaderFrequency_);
+    followerFrequency_ = leaderFrequency_ * maxFollowerTicks;
 
     if (followerFrequency_ != followerFrequency)
     {
@@ -67,39 +68,62 @@ void LocalClockSynchronizer::SetFollowerFrequency(unsigned followerFrequency)
     }
 }
 
-void LocalClockSynchronizer::Update(float timeStep, ea::optional<float> leaderResetValue)
+unsigned LocalClockSynchronizer::Synchronize(float overtime)
 {
-    unsigned numPendingSubsteps = 0;
-
-    if (leaderResetValue)
+    const unsigned maxFollowerTicks = followerFrequency_ / leaderFrequency_;
+    if (isServer_)
     {
-        numSubsteps_ = 0;
-        timeAccumulator_ = *leaderResetValue;
-        numPendingSubsteps = 1;
+        numPendingFollowerTicks_ = maxFollowerTicks;
+        numFollowerTicks_ = maxFollowerTicks;
+        timeAccumulator_ = overtime;
+        return 0;
     }
     else
     {
-        timeAccumulator_ += timeStep;
-    }
+        const unsigned followerTicksDebt = numFollowerTicks_ != 0 ? maxFollowerTicks - numFollowerTicks_ : 0;
 
+        numPendingFollowerTicks_ = followerTicksDebt + 1;
+        numFollowerTicks_ = numPendingFollowerTicks_;
+        timeAccumulator_ = overtime;
+        NormalizeOnClient();
+
+        return followerTicksDebt;
+    }
+}
+
+void LocalClockSynchronizer::Update(float timeStep)
+{
+    numPendingFollowerTicks_ = 0;
+    timeAccumulator_ += timeStep;
+    if (isServer_)
+        return;
+
+    NormalizeOnClient();
+}
+
+void LocalClockSynchronizer::NormalizeOnClient()
+{
     const float fixedTimeStep = 1.0f / followerFrequency_;
     while (timeAccumulator_ >= fixedTimeStep)
     {
         timeAccumulator_ -= fixedTimeStep;
-        ++numPendingSubsteps;
+        ++numPendingFollowerTicks_;
+        ++numFollowerTicks_;
     }
 
-    const unsigned maxNumSubsteps = followerFrequency_ / leaderFrequency_;
-    const unsigned newNumSubsteps = ea::min(numSubsteps_ + numPendingSubsteps, maxNumSubsteps);
-
-    numPendingSubsteps_ = newNumSubsteps - numSubsteps_;
-    numSubsteps_ = newNumSubsteps;
+    const unsigned maxFollowerTicks = followerFrequency_ / leaderFrequency_;
+    if (numFollowerTicks_ > maxFollowerTicks)
+    {
+        const unsigned extraFollowerTicks = numFollowerTicks_ - maxFollowerTicks;
+        numPendingFollowerTicks_ -= extraFollowerTicks;
+        numFollowerTicks_ -= extraFollowerTicks;
+    }
 }
 
-PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool allowInterpolation)
+PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer)
 #ifdef URHO3D_PHYSICS
     : physicsWorld_(scene->GetComponent<PhysicsWorld>())
-    , sync_(networkFrequency)
+    , sync_(networkFrequency, isServer)
     , eventListener_(MakeShared<PlaceholderObject>(scene->GetContext()))
 #endif
 {
@@ -108,7 +132,7 @@ PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networ
     {
         wasUpdateEnabled_ = physicsWorld_->IsUpdateEnabled();
         wasInterpolated_ = physicsWorld_->GetInterpolation();
-        interpolated_ = allowInterpolation && wasInterpolated_;
+        interpolated_ = !isServer && wasInterpolated_;
 
         physicsWorld_->SetUpdateEnabled(false);
         physicsWorld_->SetInterpolation(interpolated_);
@@ -132,26 +156,39 @@ PhysicsClockSynchronizer::~PhysicsClockSynchronizer()
 #endif
 }
 
-void PhysicsClockSynchronizer::UpdateClock(float timeStep, ea::optional<float> leaderResetValue)
+unsigned PhysicsClockSynchronizer::Synchronize(float overtime)
+{
+    unsigned synchronizedTick = 0;
+#ifdef URHO3D_PHYSICS
+    if (physicsWorld_)
+    {
+        sync_.SetFollowerFrequency(physicsWorld_->GetFps());
+        synchronizedTick = sync_.Synchronize(overtime);
+    }
+#endif
+    return synchronizedTick;
+}
+
+void PhysicsClockSynchronizer::Update(float timeStep)
 {
 #ifdef URHO3D_PHYSICS
-    if (!physicsWorld_)
-        return;
-
-    sync_.SetFollowerFrequency(physicsWorld_->GetFps());
-    sync_.Update(timeStep, leaderResetValue);
+    if (physicsWorld_)
+    {
+        sync_.SetFollowerFrequency(physicsWorld_->GetFps());
+        sync_.Update(timeStep);
+    }
 #endif
 }
 
 void PhysicsClockSynchronizer::UpdatePhysics()
 {
 #ifdef URHO3D_PHYSICS
-    if (!physicsWorld_)
-        return;
-
-    const float fixedTimeStep = 1.0f / sync_.GetFollowerFrequency();
-    const float overtime = interpolated_ ? sync_.GetFollowerAccumulatedTime() : 0.0f;
-    physicsWorld_->CustomUpdate(sync_.GetPendingFollowerSteps(), fixedTimeStep, overtime);
+    if (physicsWorld_)
+    {
+        const float fixedTimeStep = 1.0f / sync_.GetFollowerFrequency();
+        const float overtime = interpolated_ ? sync_.GetFollowerAccumulatedTime() : 0.0f;
+        physicsWorld_->CustomUpdate(sync_.GetPendingFollowerTicks(), fixedTimeStep, overtime);
+    }
 #endif
 }
 
