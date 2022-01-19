@@ -137,7 +137,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(4.0f);
 
     // Expect client node at about the specified position.
-    const float physicsError = 0.12f;
+    const float physicsError = 0.05f;
     const float networkError = 1 * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
     {
         CHECK(clientNode->GetWorldPosition().x_ == 0.0f);
@@ -216,6 +216,8 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     const auto& serverPositionValues = serverPosition.GetValues();
     const auto& clientPositionValues = clientPosition.GetValues();
     const unsigned numValues = ea::min(serverPositionValues.size(), clientPositionValues.size());
-    for (unsigned i = 0; i < numValues; ++i)
-        CHECK(serverPositionValues[i].GetVector3() == clientPositionValues[i].GetVector3());
+
+    // Compare every 4th element because client and server are synchronized only on frames
+    for (unsigned i = 0; i < numValues; i += 4)
+        REQUIRE(serverPositionValues[i].GetVector3() == clientPositionValues[i].GetVector3());
 }

@@ -153,7 +153,7 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     , base_(base)
     , scene_(scene)
     , updateFrequency_(network_->GetUpdateFps())
-    , physicsSync_(scene_, updateFrequency_, false)
+    , physicsSync_(scene_, updateFrequency_, true)
 {
     SetNetworkSetting(settings_.map_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
@@ -164,8 +164,12 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
 
         const bool isUpdateNow = network_->IsUpdateNow();
         const float overtime = network_->GetUpdateOvertime();
-        const auto resetValue = isUpdateNow ? ea::make_optional(overtime) : ea::nullopt;
-        physicsSync_.UpdateClock(timeStep, resetValue);
+
+        if (isUpdateNow)
+            physicsSync_.Synchronize(overtime);
+        else
+            physicsSync_.Update(timeStep);
+
         if (isUpdateNow)
             BeginNetworkFrame(overtime);
     });

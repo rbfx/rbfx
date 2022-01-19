@@ -37,34 +37,45 @@ class PhysicsWorld;
 /// Helper class that synchronizes two fixed-timestep clocks.
 /// Leader clock should not tick faster than follower clock.
 /// Leader clock should be explicitly reset on each tick.
+/// TODO(network): Rename to [Local]TickSynchronizer?
 class URHO3D_API LocalClockSynchronizer
 {
 public:
-    explicit LocalClockSynchronizer(unsigned leaderFrequency);
+    LocalClockSynchronizer(unsigned leaderFrequency, bool isServer);
     void SetFollowerFrequency(unsigned followerFrequency);
-    void Update(float timeStep, ea::optional<float> leaderResetValue);
 
-    unsigned GetPendingFollowerSteps() const { return numPendingSubsteps_; }
+    /// Synchronize with tick of the leader clock.
+    /// Overtime specifies how much time passed since leader clock tick.
+    /// Returns number of follower clock ticks before leader and follower clocks are synchronized.
+    unsigned Synchronize(float overtime);
+    /// Update follower clock within one tick of leader clock.
+    void Update(float timeStep);
+
+    unsigned GetPendingFollowerTicks() const { return numPendingFollowerTicks_; }
     unsigned GetFollowerFrequency() const { return followerFrequency_; }
     float GetFollowerAccumulatedTime() const { return timeAccumulator_; }
 
 private:
+    void NormalizeOnClient();
+
     const unsigned leaderFrequency_{};
+    const bool isServer_{};
     unsigned followerFrequency_{};
 
     float timeAccumulator_{};
-    unsigned numSubsteps_{};
-    unsigned numPendingSubsteps_{};
+    unsigned numFollowerTicks_{};
+    unsigned numPendingFollowerTicks_{};
 };
 
 /// Helper class that synchronizes PhysicsWorld clock with network clock.
 class URHO3D_API PhysicsClockSynchronizer
 {
 public:
-    PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool allowInterpolation);
+    PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer);
     ~PhysicsClockSynchronizer();
 
-    void UpdateClock(float timeStep, ea::optional<float> leaderResetValue);
+    unsigned Synchronize(float overtime);
+    void Update(float timeStep);
 
 protected:
     void UpdatePhysics();

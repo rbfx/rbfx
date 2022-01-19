@@ -217,7 +217,7 @@ void NetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer&
 {
 }
 
-void NetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
+void NetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame)
 {
 }
 
