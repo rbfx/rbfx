@@ -28,11 +28,11 @@
 #include "../IO/Log.h"
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
-#include "../Network/NetworkObject.h"
 #include "../Network/NetworkEvents.h"
-#include "../Network/NetworkManager.h"
-#include "../Network/NetworkSettingsConsts.h"
-#include "../Network/ClientNetworkManager.h"
+#include "../Replica/NetworkObject.h"
+#include "../Replica/NetworkManager.h"
+#include "../Replica/NetworkSettingsConsts.h"
+#include "../Replica/ClientNetworkManager.h"
 #include "../Scene/Scene.h"
 
 #include <EASTL/numeric.h>

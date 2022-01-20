@@ -26,9 +26,9 @@
 
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
-#include "../Network/LocalClockSynchronizer.h"
-#include "../Network/NetworkTime.h"
-#include "../Network/ProtocolMessages.h"
+#include "../Replica/LocalClockSynchronizer.h"
+#include "../Replica/NetworkTime.h"
+#include "../Replica/ProtocolMessages.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>

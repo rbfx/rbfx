@@ -24,7 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"
-#include "../Network/NetworkObject.h"
+#include "../Replica/NetworkObject.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D

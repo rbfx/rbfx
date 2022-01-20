@@ -22,7 +22,7 @@
 
 #include "../CommonUtils.h"
 
-#include <Urho3D/Network/NetworkTime.h>
+#include <Urho3D/Replica/NetworkTime.h>
 
 TEST_CASE("NetworkTime is updated as expected")
 {

@@ -23,9 +23,9 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
-#include "../Network/DefaultNetworkObject.h"
 #include "../Scene/Node.h"
 #include "../Scene/SceneResolver.h"
+#include "../Replica/DefaultNetworkObject.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 

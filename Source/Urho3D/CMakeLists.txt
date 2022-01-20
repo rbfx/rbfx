@@ -87,6 +87,7 @@ endif ()
 
 if (URHO3D_NETWORK)
     define_engine_source_files (Network)
+    define_engine_source_files (Replica)
 endif ()
 
 if (URHO3D_PHYSICS)

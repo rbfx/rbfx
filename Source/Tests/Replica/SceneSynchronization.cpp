@@ -26,16 +26,16 @@
 
 #include <Urho3D/Graphics/Light.h>
 #include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Network/DefaultNetworkObject.h>
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Network/NetworkEvents.h>
-#include <Urho3D/Network/NetworkManager.h>
-#include <Urho3D/Network/NetworkObject.h>
-#include <Urho3D/Network/NetworkValue.h>
 #include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
+#include <Urho3D/Replica/DefaultNetworkObject.h>
+#include <Urho3D/Replica/NetworkManager.h>
+#include <Urho3D/Replica/NetworkObject.h>
+#include <Urho3D/Replica/NetworkValue.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace

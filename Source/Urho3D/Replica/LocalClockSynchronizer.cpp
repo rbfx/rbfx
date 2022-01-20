@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Network/LocalClockSynchronizer.h"
+#include "../Replica/LocalClockSynchronizer.h"
 
 #include "../IO/Log.h"
 #ifdef URHO3D_PHYSICS
