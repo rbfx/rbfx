@@ -27,9 +27,9 @@
 #include "../Container/IndexAllocator.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
-#include "../Network/ClientNetworkManager.h"
-#include "../Network/ProtocolMessages.h"
-#include "../Network/ServerNetworkManager.h"
+#include "../Replica/ClientNetworkManager.h"
+#include "../Replica/ProtocolMessages.h"
+#include "../Replica/ServerNetworkManager.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>

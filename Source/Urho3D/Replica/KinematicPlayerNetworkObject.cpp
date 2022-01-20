@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../Network/KinematicPlayerNetworkObject.h"
+#include "../Replica/KinematicPlayerNetworkObject.h"
 
 #ifdef URHO3D_PHYSICS
 #include "../Core/Context.h"

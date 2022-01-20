@@ -24,8 +24,8 @@
 
 #pragma once
 
-#include "../Network/NetworkObject.h"
-#include "../Network/NetworkValue.h"
+#include "../Replica/NetworkObject.h"
+#include "../Replica/NetworkValue.h"
 
 namespace Urho3D
 {

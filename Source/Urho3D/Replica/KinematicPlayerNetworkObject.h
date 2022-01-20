@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Network/DefaultNetworkObject.h"
+#include "../Replica/DefaultNetworkObject.h"
 
 #include <EASTL/optional.h>
 

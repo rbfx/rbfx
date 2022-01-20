@@ -24,7 +24,7 @@
 
 #include "../Core/Format.h"
 #include "../Math/MathDefs.h"
-#include "../Network/NetworkTime.h"
+#include "../Replica/NetworkTime.h"
 
 namespace Urho3D
 {

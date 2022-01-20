@@ -27,7 +27,7 @@
 #include "../Core/Assert.h"
 #include "../Math/MathDefs.h"
 #include "../Math/Quaternion.h"
-#include "../Network/NetworkTime.h"
+#include "../Replica/NetworkTime.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/span.h>

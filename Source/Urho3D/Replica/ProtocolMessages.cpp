@@ -20,9 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../Network/ProtocolMessages.h"
+#include "../Replica/ProtocolMessages.h"
 
-#include "../Network/NetworkManager.h"
+#include "../Replica/NetworkManager.h"
 
 #include "../Core/StringUtils.h"
 

@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../Network/ClientInputStatistics.h"
+#include "../Replica/ClientInputStatistics.h"
 
 namespace Urho3D
 {

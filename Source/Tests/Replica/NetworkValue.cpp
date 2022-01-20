@@ -22,7 +22,7 @@
 
 #include "../CommonUtils.h"
 
-#include <Urho3D/Network/NetworkValue.h>
+#include <Urho3D/Replica/NetworkValue.h>
 
 namespace
 {

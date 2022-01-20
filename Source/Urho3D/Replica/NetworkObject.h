@@ -28,7 +28,7 @@
 #include "../Container/FlagSet.h"
 #include "../Scene/Component.h"
 #include "../Network/AbstractConnection.h"
-#include "../Network/NetworkManager.h"
+#include "../Replica/NetworkManager.h"
 
 #include <EASTL/fixed_vector.h>
 #include <EASTL/optional.h>

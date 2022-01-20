@@ -28,7 +28,7 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Network/Network.h>
-#include <Urho3D/Network/DefaultNetworkObject.h>
+#include <Urho3D/Replica/DefaultNetworkObject.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Resource/XMLFile.h>
 

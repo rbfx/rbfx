@@ -25,7 +25,7 @@
 #include <Urho3D/Container/ByteVector.h>
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/AbstractConnection.h>
-#include <Urho3D/Network/NetworkManager.h>
+#include <Urho3D/Replica/NetworkManager.h>
 
 #include <EASTL/vector.h>
 #include <EASTL/unordered_map.h>

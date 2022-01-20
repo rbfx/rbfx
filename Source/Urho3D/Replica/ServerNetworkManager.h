@@ -28,10 +28,10 @@
 #include "../Core/Timer.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
-#include "../Network/ClientInputStatistics.h"
 #include "../Network/ClockSynchronizer.h"
-#include "../Network/LocalClockSynchronizer.h"
-#include "../Network/ProtocolMessages.h"
+#include "../Replica/ClientInputStatistics.h"
+#include "../Replica/LocalClockSynchronizer.h"
+#include "../Replica/ProtocolMessages.h"
 
 #include <EASTL/bitvector.h>
 #include <EASTL/optional.h>

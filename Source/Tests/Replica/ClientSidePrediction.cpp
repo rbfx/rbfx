@@ -24,13 +24,13 @@
 #include "../NetworkUtils.h"
 #include "../SceneUtils.h"
 
-#include <Urho3D/Network/ClientInputStatistics.h>
-#include <Urho3D/Network/KinematicPlayerNetworkObject.h>
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/KinematicCharacterController.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
+#include <Urho3D/Replica/ClientInputStatistics.h>
+#include <Urho3D/Replica/KinematicPlayerNetworkObject.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace
