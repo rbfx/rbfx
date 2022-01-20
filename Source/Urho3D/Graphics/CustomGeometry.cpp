@@ -407,6 +407,7 @@ void CustomGeometry::Commit()
     }
 
     vertexBuffer_->ClearDataLost();
+    SetNumGeometries(geometries_.size());
 }
 
 void CustomGeometry::SetMaterial(Material* material)

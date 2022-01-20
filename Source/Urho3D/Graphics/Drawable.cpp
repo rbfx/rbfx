@@ -308,7 +308,7 @@ unsigned Drawable::GetShadowMaskInZone() const
 
 Geometry* Drawable::GetGeometryIfNotEmpty(Geometry* geometry)
 {
-    return (geometry && geometry->GetIndexCount()) ? geometry : nullptr;
+    return (geometry && geometry->GetEffectiveIndexCount() > 0) ? geometry : nullptr;
 }
 
 unsigned Drawable::RecalculatePipelineStateHash() const

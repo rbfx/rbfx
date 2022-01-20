@@ -117,6 +117,9 @@ public:
     /// @property
     float GetLodDistance() const { return lodDistance_; }
 
+    /// Return index or vertex count depending on whether the index buffer is used.
+    unsigned GetEffectiveIndexCount() const { return indexBuffer_ ? indexCount_ : vertexCount_; }
+
     /// Return number of primitives.
     unsigned GetPrimitiveCount() const;
 

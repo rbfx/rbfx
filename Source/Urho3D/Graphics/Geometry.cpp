@@ -218,7 +218,7 @@ VertexBuffer* Geometry::GetVertexBuffer(unsigned index) const
 
 unsigned Geometry::GetPrimitiveCount() const
 {
-    const unsigned indexCount = indexBuffer_ ? indexCount_ : vertexCount_;
+    const unsigned indexCount = GetEffectiveIndexCount();
     switch (primitiveType_)
     {
     case TRIANGLE_LIST:
