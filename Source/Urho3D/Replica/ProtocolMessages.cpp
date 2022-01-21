@@ -29,12 +29,6 @@
 namespace Urho3D
 {
 
-ea::string ToString(NetworkId value)
-{
-    const auto [index, version] = NetworkManagerBase::DecomposeNetworkId(value);
-    return value == InvalidNetworkId ? "(null)" : Format("{}:{}", index, version);
-}
-
 void MsgConfigure::Save(VectorBuffer& dest) const
 {
     dest.WriteUInt(magic_);

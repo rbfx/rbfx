@@ -59,7 +59,7 @@ enum class NetworkObjectMode
 /// Don't create more than one NetworkObject per Node.
 ///
 /// Hierarchy is updated after NetworkObject node is dirtied.
-class URHO3D_API NetworkObject : public Component
+class URHO3D_API NetworkObject : public TrackedComponent<BaseStableTrackedComponent, NetworkManagerBase>
 {
     URHO3D_OBJECT(NetworkObject, Component);
 
@@ -75,12 +75,13 @@ public:
     /// Internal API for NetworkManager.
     /// @{
     void UpdateObjectHierarchy();
-    void SetNetworkId(NetworkId networkId) { networkId_ = networkId; }
+    void SetNetworkId(NetworkId networkId) { SetStableId(networkId); }
     void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
     /// @}
 
     /// Return current or last NetworkId. Return InvalidNetworkId if not registered.
-    NetworkId GetNetworkId() const { return networkId_; }
+    NetworkId GetNetworkId() const { return GetStableId(); }
+    NetworkManager* GetNetworkManager() const { return static_cast<NetworkManager*>(GetRegistry()); }
     NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
@@ -146,16 +147,11 @@ protected:
     void SetParentNetworkObject(NetworkId parentNetworkId);
 
 private:
-    void UpdateCurrentScene(Scene* scene);
     NetworkObject* FindParentNetworkObject() const;
     void AddChildNetworkObject(NetworkObject* networkObject);
     void RemoveChildNetworkObject(NetworkObject* networkObject);
 
     /// NetworkManager corresponding to the NetworkObject.
-    WeakPtr<NetworkManager> networkManager_;
-    /// Network ID, unique within Scene.
-    /// May contain outdated value if NetworkObject is not registered in any NetworkManager.
-    NetworkId networkId_{InvalidNetworkId};
     NetworkObjectMode networkMode_{};
     AbstractConnection* ownerConnection_{};
 

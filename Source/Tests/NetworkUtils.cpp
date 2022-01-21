@@ -134,7 +134,7 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
     , network_(context_->GetSubsystem<Network>())
     , random_(seed)
     , serverScene_(serverScene)
-    , serverNetworkManager_(serverScene_->GetNetworkManager())
+    , serverNetworkManager_(serverScene_->GetNetworkManager(true))
 {
     serverNetworkManager_->MarkAsServer();
 }
@@ -143,7 +143,7 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
 {
     PerClient data;
     data.clientScene_ = clientScene;
-    data.clientNetworkManager_ = clientScene->GetNetworkManager();
+    data.clientNetworkManager_ = clientScene->GetNetworkManager(true);
     data.clientToServer_ = MakeShared<ManualConnection>(context_, serverNetworkManager_, random_.GetUInt());
     data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_, random_.GetUInt());
 
