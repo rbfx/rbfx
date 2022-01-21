@@ -94,7 +94,7 @@ private:
     /// Type info of reflected object.
     const TypeInfo* typeInfo_{};
     ea::unique_ptr<TypeInfo> ownedTypeInfo_;
-    ObjectFactoryCallback createObject_;
+    ObjectFactoryCallback createObject_{};
     /// Category of the object.
     ea::string category_;
 
