@@ -69,7 +69,7 @@ Drawable::Drawable(Context* context, DrawableFlags drawableFlags) :
     boundingBox_(0.0f, 0.0f),
     drawableFlags_(drawableFlags),
     worldBoundingBoxDirty_(true),
-    castShadows_(false),
+    castShadows_(true),
     occluder_(false),
     occludee_(true),
     updateQueued_(false),
