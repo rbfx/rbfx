@@ -200,6 +200,7 @@ set (THIRD_PARTY_DEPENDENCIES
     spirv-cross-msl
     spirv-cross-hlsl
     tinygltf
+    FastNoiseLite
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)

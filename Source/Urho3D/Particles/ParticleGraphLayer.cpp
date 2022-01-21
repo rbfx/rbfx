@@ -195,13 +195,17 @@ void ParticleGraphLayer::RegisterObject(Context* context)
 {
     context->RegisterFactory<ParticleGraphLayer>();
     URHO3D_ACCESSOR_ATTRIBUTE("Capacity", GetCapacity, SetCapacity, unsigned, DefaultCapacity, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("TimeScale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Duration", GetDuration, SetDuration, float, DefaultDuration, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Loop", IsLoop, SetLoop, bool, false, AM_DEFAULT);
 }
 /// Construct ParticleGraphLayer.
 ParticleGraphLayer::ParticleGraphLayer(Context* context)
     : Object(context)
     , capacity_(DefaultCapacity)
+    , timeScale_(1.0f)
     , duration_(DefaultDuration)
+    , loop_(false)
     , emit_(MakeShared<ParticleGraph>(context))
     , init_(MakeShared<ParticleGraph>(context))
     , update_(MakeShared<ParticleGraph>(context))
@@ -216,6 +220,20 @@ ParticleGraphLayer::~ParticleGraphLayer() = default;
 void ParticleGraphLayer::SetCapacity(unsigned capacity)
 {
     capacity_ = capacity;
+    Invalidate();
+}
+
+/// Set time step scale.
+void ParticleGraphLayer::SetTimeScale(float timeScale)
+{
+    timeScale_ = timeScale;
+    Invalidate();
+}
+
+/// Set time step scale.
+void ParticleGraphLayer::SetLoop(bool isLoop)
+{
+    loop_ = isLoop;
     Invalidate();
 }
 
@@ -318,6 +336,8 @@ void ParticleGraphLayer::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "capacity", capacity_);
     SerializeOptionalValue(archive, "duration", duration_);
+    SerializeOptionalValue(archive, "timeScale", timeScale_);
+    SerializeOptionalValue(archive, "loop", loop_);
 
     SerializeOptionalValue(archive, "emit", emit_, EmptyObject{},
         [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });

@@ -28,14 +28,6 @@
 
 namespace Urho3D
 {
-enum class ParticleGraphContainerType
-{
-    Span,
-    Sparse,
-    Scalar,
-    Auto
-};
-
 /// Memory layout definition.
 struct ParticleGraphSpan
 {
@@ -52,6 +44,8 @@ struct ParticleGraphSpan
     /// Make a span of type T from memory buffer.
     template <typename T> ea::span<T> MakeSpan(ea::span<uint8_t> buffer) const
     {
+        if (size_ == 0)
+            return {};
         const auto slice = buffer.subspan(offset_, size_);
         return ea::span<T>(reinterpret_cast<T*>(slice.begin()), reinterpret_cast<T*>(slice.end()));
     }

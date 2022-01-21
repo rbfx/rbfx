@@ -79,6 +79,22 @@ public:
     /// @property
     void SetCapacity(unsigned capacity);
 
+    /// Get time step scale.
+    /// @property
+    float GetTimeScale() const { return timeScale_; }
+
+    /// Set time step scale.
+    /// @property
+    void SetTimeScale(float timeScale);
+
+    /// Is effect looped.
+    /// @property
+    bool IsLoop() const { return loop_; }
+
+    /// Set effect loop flag.
+    /// @property
+    void SetLoop(bool loop);
+
     /// Get effect duration in seconds.
     /// @property
     float GetDuration() const { return duration_; }
@@ -128,8 +144,12 @@ private:
     ea::optional<bool> committed_;
     /// Maximum number of particles.
     unsigned capacity_{DefaultCapacity};
+    /// Time step scale.
+    float timeScale_{1.0f};
     /// Effect duration in seconds.
     float duration_{DefaultDuration};
+    /// Loop effect.
+    bool loop_{};
     /// Emission graph.
     SharedPtr<ParticleGraph> emit_;
     /// Initialization graph.

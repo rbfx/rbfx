@@ -111,6 +111,7 @@ bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
 
 void ParticleGraphLayerInstance::Update(float timeStep)
 {
+    timeStep *= layer_->GetTimeScale();
     auto emitContext = MakeUpdateContext(timeStep);
     if (indices_.empty())
         return;

@@ -23,8 +23,6 @@
 #include "ParticleGraphSystem.h"
 #include "All.h"
 
-#include "Box.h"
-
 namespace Urho3D
 {
 
@@ -71,6 +69,9 @@ void RegisterGraphNodes(ParticleGraphSystem* system)
     Break::RegisterObject(system);
     Circle::RegisterObject(system);
     Box::RegisterObject(system);
+    Cast::RegisterObject(system);
+    Noise3D::RegisterObject(system);
+    CurlNoise3D::RegisterObject(system);
 }
 
 }

@@ -28,6 +28,13 @@
 
 namespace Urho3D
 {
+enum class ParticleGraphContainerType
+{
+    Span,
+    Sparse,
+    Scalar,
+    Auto
+};
 
 template <typename T> struct ScalarSpan
 {
@@ -58,5 +65,34 @@ template <typename T> struct SparseSpan
     ea::span<T> data_;
     ea::span<unsigned> indices_;
 };
+
+template <typename T> struct SpanVariant
+{
+    typedef T element_type;
+    typedef ea::remove_cv_t<T> value_type;
+
+    SpanVariant() = default;
+    SpanVariant(ParticleGraphContainerType type, T* data, unsigned* indices)
+        : type_(type)
+        , data_(data)
+        , indices_(indices)
+    {
+    }
+    inline T& operator[](unsigned index)
+    {
+        switch (type_)
+        {
+        case ParticleGraphContainerType::Span: return data_[index];
+        case ParticleGraphContainerType::Sparse: return data_[indices_[index]];
+        case ParticleGraphContainerType::Scalar: return *data_;
+        default: return *data_;
+        }
+    }
+    ParticleGraphContainerType type_{ParticleGraphContainerType::Scalar};
+    T* data_;
+    unsigned* indices_;
+};
+
+
 
 } // namespace Urho3D
