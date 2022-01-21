@@ -275,7 +275,7 @@ bool ParticleGraphNode::SavePins(ParticleGraphWriter& writer, GraphNode& node)
         }
         else
         {
-            auto& outputPin = node.GetOrAddOutput(pin.GetName());
+            const auto& outputPin = node.GetOrAddOutput(pin.GetName());
             outputPin.GetPin()->SetType(pin.GetRequestedType());
         }
     }

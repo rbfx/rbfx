@@ -202,4 +202,9 @@ private:
     friend class GraphNode;
 };
 
+template <typename PinType> template<typename OtherPinType> GraphPinRef<OtherPinType> GraphPinRef<PinType>::GetConnectedPin() const
+{
+    return node_->GetGraph()->GetConnectedPin(*pin_);
+}
+
 } // namespace Urho3D

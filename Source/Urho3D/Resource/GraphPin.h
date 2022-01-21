@@ -187,10 +187,7 @@ public:
     bool operator !() const { return node_ == nullptr || pin_ == nullptr; }
     operator GraphNode*() const { return node_; }
     operator PinType*() const { return pin_; }
-    template <typename OtherPinType> GraphPinRef<OtherPinType> GetConnectedPin() const
-    {
-        return node_->GetGraph()->GetConnectedPin(*pin_);
-    }
+    template <typename OtherPinType> GraphPinRef<OtherPinType> GetConnectedPin() const;
 
 protected:
     GraphNode* node_{};
