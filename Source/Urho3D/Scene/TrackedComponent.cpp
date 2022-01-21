@@ -23,9 +23,20 @@
 #include "../Scene/TrackedComponent.h"
 
 #include "../Core/Assert.h"
+#include "../IO/Log.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+constexpr unsigned maxIndex = 0xffffff;
+constexpr unsigned maxVersion = 0xff;
+constexpr unsigned indexOffset = 0;
+constexpr unsigned versionOffset = 24;
+
+}
 
 BaseComponentRegistry::BaseComponentRegistry(Context* context, StringHash componentType)
     : Component(context)
@@ -40,17 +51,17 @@ BaseTrackedComponent* BaseComponentRegistry::GetTrackedComponentByIndex(unsigned
 
 void BaseComponentRegistry::AddTrackedComponent(BaseTrackedComponent* component)
 {
-    const unsigned index = component->GetIndexInArray();
-    if (index != M_MAX_UNSIGNED)
+    const unsigned oldIndex = component->GetIndexInArray();
+    if (oldIndex != M_MAX_UNSIGNED)
     {
-        URHO3D_ASSERTLOG(GetTrackedComponentByIndex(index) == component, "Component array is corrupted");
-        URHO3D_ASSERTLOG(0, "Component is already tracked at #{}", index);
+        URHO3D_ASSERTLOG(GetTrackedComponentByIndex(oldIndex) == component, "Component array is corrupted");
+        URHO3D_ASSERTLOG(0, "Component is already tracked at #{}", oldIndex);
         return;
     }
 
-    const unsigned newPackedIndex = componentsArray_.size();
+    const unsigned index = componentsArray_.size();
     componentsArray_.push_back(component);
-    component->SetIndexInArray(newPackedIndex);
+    component->SetIndexInArray(index);
     OnComponentAdded(component);
 }
 
@@ -60,6 +71,11 @@ void BaseComponentRegistry::RemoveTrackedComponent(BaseTrackedComponent* compone
     if (index == M_MAX_UNSIGNED)
     {
         URHO3D_ASSERTLOG(0, "Component is not tracked");
+        return;
+    }
+    if (GetTrackedComponentByIndex(index) != component)
+    {
+        URHO3D_ASSERTLOG(0, "Component array is corrupted");
         return;
     }
 
@@ -105,7 +121,10 @@ void BaseComponentRegistry::InitializeTrackedComponents()
     {
         auto trackedComponent = static_cast<BaseTrackedComponent*>(component);
         if (trackedComponent->ShouldBeTrackedInRegistry())
+        {
+            trackedComponent->ReconnectToRegistry();
             AddTrackedComponent(trackedComponent);
+        }
     }
 }
 
@@ -118,6 +137,138 @@ void BaseComponentRegistry::DeinitializeTrackedComponents()
     }
 
     componentsArray_.clear();
+}
+
+StableComponentId ConstructStableComponentId(unsigned index, unsigned version)
+{
+    unsigned result = 0;
+    result |= (index & maxIndex) << indexOffset;
+    result |= (version & maxVersion) << versionOffset;
+    return static_cast<StableComponentId>(result);
+}
+
+ea::pair<unsigned, unsigned> DeconstructStableComponentId(StableComponentId componentId)
+{
+    const auto value = static_cast<unsigned>(componentId);
+    return {(value >> indexOffset) & maxIndex, (value >> versionOffset) & maxVersion};
+}
+
+ea::string ToString(StableComponentId value)
+{
+    const auto [index, version] = DeconstructStableComponentId(value);
+    return value == StableComponentId{} ? "(null)" : Format("{}:{}", index, version);
+}
+
+BaseStableComponentRegistry::BaseStableComponentRegistry(Context* context, StringHash componentType)
+    : BaseComponentRegistry(context, componentType)
+{
+}
+
+BaseStableTrackedComponent* BaseStableComponentRegistry::GetTrackedComponentByStableId(StableComponentId id, bool checkVersion) const
+{
+    const auto [index, version] = DeconstructStableComponentId(id);
+    if (index >= stableIndexToEntry_.size())
+        return nullptr;
+
+    const RegistryEntry& entry = stableIndexToEntry_[index];
+    return (!checkVersion || entry.version_ == version) ? entry.component_ : nullptr;
+}
+
+BaseStableTrackedComponent* BaseStableComponentRegistry::GetTrackedComponentByStableIndex(unsigned index) const
+{
+    return index < stableIndexToEntry_.size() ? stableIndexToEntry_[index].component_ : nullptr;
+}
+
+void BaseStableComponentRegistry::OnComponentAdded(BaseTrackedComponent* baseComponent)
+{
+    auto component = static_cast<BaseStableTrackedComponent*>(baseComponent);
+    StableComponentId stableId = component->GetStableId();
+
+    // Try to reuse existing ID if possible
+    if (stableId != StableComponentId{})
+    {
+        if (GetTrackedComponentByStableId(stableId) == component)
+        {
+            URHO3D_ASSERTLOG(0, "Component is already tracked as {}", ToString(stableId));
+            return;
+        }
+
+        const auto [index, version] = DeconstructStableComponentId(stableId);
+        BaseStableTrackedComponent* otherComponent = GetTrackedComponentByStableIndex(index);
+        if (otherComponent)
+        {
+            URHO3D_LOGWARNING("Another component is already tracked as {}");
+            stableId = StableComponentId{};
+        }
+        else
+        {
+            EnsureIndex(index);
+            stableIndexToEntry_[index].version_ = version;
+        }
+    }
+
+    // Allocate new ID if needed
+    if (stableId == StableComponentId{})
+    {
+        const unsigned index = AllocateStableIndex();
+        stableId = ConstructStableComponentId(index, stableIndexToEntry_[index].version_);
+    }
+
+    const auto [index, version] = DeconstructStableComponentId(stableId);
+
+    RegistryEntry& entry = stableIndexToEntry_[index];
+    entry.component_ = component;
+
+    component->SetStableId(stableId);
+}
+
+void BaseStableComponentRegistry::OnComponentRemoved(BaseTrackedComponent* baseComponent)
+{
+    auto component = static_cast<BaseStableTrackedComponent*>(baseComponent);
+    const StableComponentId stableId = component->GetStableId();
+
+    if (stableId == StableComponentId{})
+    {
+        URHO3D_ASSERTLOG(0, "Component is not tracked");
+        return;
+    }
+    if (GetTrackedComponentByStableId(stableId) != component)
+    {
+        URHO3D_ASSERTLOG(0, "Component array is corrupted at {}", ToString(stableId));
+        return;
+    }
+
+    component->SetStableId(StableComponentId{});
+
+    const auto [index, version] = DeconstructStableComponentId(stableId);
+
+    RegistryEntry& entry = stableIndexToEntry_[index];
+    entry.component_ = nullptr;
+    entry.version_ = (entry.version_ + 1) % maxVersion;
+
+    stableIndexAllocator_.Release(index);
+}
+
+unsigned BaseStableComponentRegistry::AllocateStableIndex()
+{
+    // May need more than one attept if some indices are taken bypassing IndexAllocator
+    for (unsigned i = 0; i <= maxIndex; ++i)
+    {
+        const unsigned index = stableIndexAllocator_.Allocate();
+        EnsureIndex(index);
+        if (!stableIndexToEntry_[index].component_)
+            return index;
+    }
+
+    URHO3D_LOGERROR("Failed to allocate stable index for component");
+    assert(0);
+    return 0;
+}
+
+void BaseStableComponentRegistry::EnsureIndex(unsigned index)
+{
+    if (index >= stableIndexToEntry_.size())
+        stableIndexToEntry_.resize(index + 1);
 }
 
 }

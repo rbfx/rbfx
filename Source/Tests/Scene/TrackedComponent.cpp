@@ -25,7 +25,7 @@
 
 #include <Urho3D/Scene/TrackedComponent.h>
 
-class TestComponentRegistry : public BaseComponentRegistry
+class TestComponentRegistry : public BaseStableComponentRegistry
 {
     URHO3D_OBJECT(TestComponentRegistry, Component);
 
@@ -33,16 +33,16 @@ public:
     explicit TestComponentRegistry(Context* context);
 };
 
-class TestTrackedComponent : public TrackedComponent<TestComponentRegistry, EnabledOnlyTag>
+class TestTrackedComponent : public TrackedComponent<BaseStableTrackedComponent, TestComponentRegistry, EnabledOnlyTag>
 {
     URHO3D_OBJECT(TestTrackedComponent, Component);
 
 public:
-    using TrackedComponent<TestComponentRegistry, EnabledOnlyTag>::TrackedComponent;
+    using TrackedComponent<BaseStableTrackedComponent, TestComponentRegistry, EnabledOnlyTag>::TrackedComponent;
 };
 
 TestComponentRegistry::TestComponentRegistry(Context* context)
-    : BaseComponentRegistry(context, TestTrackedComponent::GetTypeStatic())
+    : BaseStableComponentRegistry(context, TestTrackedComponent::GetTypeStatic())
 {
 }
 
@@ -58,6 +58,7 @@ TEST_CASE("Tracked components are indexed in the registry")
     auto scene = MakeShared<Scene>(context);
     auto registry = scene->CreateComponent<TestComponentRegistry>();
 
+    // Create tracked components
     auto node1 = scene->CreateChild("Node 1");
     auto component1 = node1->CreateComponent<TestTrackedComponent>();
     auto node2 = scene->CreateChild("Node 2");
@@ -65,7 +66,10 @@ TEST_CASE("Tracked components are indexed in the registry")
     auto node3 = scene->CreateChild("Node 3");
     auto component3 = node3->CreateComponent<TestTrackedComponent>();
 
-    // Create tracked components
+    REQUIRE(component1->GetRegistry() == registry);
+    REQUIRE(component2->GetRegistry() == registry);
+    REQUIRE(component3->GetRegistry() == registry);
+
     REQUIRE(registry->GetNumTrackedComponents() == 3);
     REQUIRE(registry->GetTrackedComponentByIndex(0) == component1);
     REQUIRE(registry->GetTrackedComponentByIndex(1) == component2);
@@ -74,6 +78,15 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component1->GetIndexInArray() == 0);
     REQUIRE(component2->GetIndexInArray() == 1);
     REQUIRE(component3->GetIndexInArray() == 2);
+
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000001}) == component1);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000002}) == component2);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000003}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{0x00000001});
+    REQUIRE(component2->GetStableId() == StableComponentId{0x00000002});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000003});
 
     // Remove tracked component
     SharedPtr<Node> shaderNode2{node2};
@@ -87,25 +100,51 @@ TEST_CASE("Tracked components are indexed in the registry")
     REQUIRE(component3->GetIndexInArray() == 1);
     REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
 
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000001}) == component1);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000003}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{0x00000001});
+    REQUIRE(component2->GetStableId() == StableComponentId{});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000003});
+
+    shaderNode2 = nullptr;
+    component2 = nullptr;
+
     // Disable tracked component
+    const auto stableIdForNode1 = component1->GetStableId();
     node1->SetEnabled(false);
+
     REQUIRE(registry->GetNumTrackedComponents() == 1);
     REQUIRE(registry->GetTrackedComponentByIndex(0) == component3);
 
     REQUIRE(component3->GetIndexInArray() == 0);
 
     REQUIRE(component1->GetIndexInArray() == M_MAX_UNSIGNED);
-    REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
+
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000003}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000003});
 
     // Enable tracked component
+    component1->SetStableId(stableIdForNode1);
     node1->SetEnabled(true);
+
     REQUIRE(registry->GetNumTrackedComponents() == 2);
     REQUIRE(registry->GetTrackedComponentByIndex(0) == component3);
     REQUIRE(registry->GetTrackedComponentByIndex(1) == component1);
 
     REQUIRE(component3->GetIndexInArray() == 0);
     REQUIRE(component1->GetIndexInArray() == 1);
-    REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
+
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000001}) == component1);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000003}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{0x00000001});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000003});
 
     // Create disabled tracked component
     auto node4 = scene->CreateChild("Node 4");
@@ -119,24 +158,40 @@ TEST_CASE("Tracked components are indexed in the registry")
 
     REQUIRE(component3->GetIndexInArray() == 0);
     REQUIRE(component1->GetIndexInArray() == 1);
-    REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
     REQUIRE(component4->GetIndexInArray() == M_MAX_UNSIGNED);
+
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000001}) == component1);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000003}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{0x00000001});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000003});
 
     // Remove registry
     registry->Remove();
 
     REQUIRE(component3->GetIndexInArray() == M_MAX_UNSIGNED);
     REQUIRE(component1->GetIndexInArray() == M_MAX_UNSIGNED);
-    REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
     REQUIRE(component4->GetIndexInArray() == M_MAX_UNSIGNED);
+
+    REQUIRE(component3->GetStableId() == StableComponentId{});
+    REQUIRE(component1->GetStableId() == StableComponentId{});
+    REQUIRE(component4->GetStableId() == StableComponentId{});
 
     // Add registry
     registry = scene->CreateComponent<TestComponentRegistry>();
 
     REQUIRE(component1->GetIndexInArray() == 0);
     REQUIRE(component3->GetIndexInArray() == 1);
-    REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
     REQUIRE(component4->GetIndexInArray() == M_MAX_UNSIGNED);
+
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000001}) == component1);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000002}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{0x00000001});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000002});
+    REQUIRE(component4->GetStableId() == StableComponentId{});
 
     // Remove disabled tracked component
     node4->Remove();
@@ -147,5 +202,34 @@ TEST_CASE("Tracked components are indexed in the registry")
 
     REQUIRE(component1->GetIndexInArray() == 0);
     REQUIRE(component3->GetIndexInArray() == 1);
-    REQUIRE(component2->GetIndexInArray() == M_MAX_UNSIGNED);
+
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000001}) == component1);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000002}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{0x00000001});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000002});
+    REQUIRE(component4->GetStableId() == StableComponentId{});
+
+    // Disable and enable tracked component
+    component1->SetEnabled(false);
+    component1->SetEnabled(true);
+
+    REQUIRE(component1->GetRegistry() == registry);
+    REQUIRE(component3->GetRegistry() == registry);
+
+    REQUIRE(registry->GetNumTrackedComponents() == 2);
+    REQUIRE(registry->GetTrackedComponentByIndex(0) == component3);
+    REQUIRE(registry->GetTrackedComponentByIndex(1) == component1);
+
+    REQUIRE(component3->GetIndexInArray() == 0);
+    REQUIRE(component1->GetIndexInArray() == 1);
+
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{}) == nullptr);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x01000001}) == component1);
+    REQUIRE(registry->GetTrackedComponentByStableId(StableComponentId{0x00000002}) == component3);
+
+    REQUIRE(component1->GetStableId() == StableComponentId{0x01000001});
+    REQUIRE(component3->GetStableId() == StableComponentId{0x00000002});
+    REQUIRE(component4->GetStableId() == StableComponentId{});
 }
