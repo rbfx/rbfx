@@ -48,7 +48,7 @@ namespace
 
 unsigned GetIndex(NetworkId networkId)
 {
-    return NetworkManager::DecomposeNetworkId(networkId).first;
+    return DeconstructStableComponentId(networkId).first;
 }
 
 }

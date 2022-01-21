@@ -116,9 +116,12 @@ void BaseComponentRegistry::InitializeTrackedComponents()
     }
 
     ea::vector<Component*> components;
-    scene->GetComponents(components, componentType_, true);
+    scene->GetComponents(components, true);
     for (Component* component : components)
     {
+        if (!component->IsInstanceOf(componentType_))
+            continue;
+
         auto trackedComponent = static_cast<BaseTrackedComponent*>(component);
         if (trackedComponent->ShouldBeTrackedInRegistry())
         {

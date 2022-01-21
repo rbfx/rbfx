@@ -318,8 +318,7 @@ NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, St
     else
         networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
 
-    const unsigned networkIndex = NetworkManagerBase::DecomposeNetworkId(networkId).first;
-    if (NetworkObject* oldNetworkObject = base_->GetNetworkObjectByIndex(networkIndex))
+    if (NetworkObject* oldNetworkObject = base_->GetNetworkObject(networkId, false))
     {
         URHO3D_LOGWARNING("NetworkObject {} overwrites existing NetworkObject {}",
             ToString(networkId),
@@ -429,9 +428,9 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
     const auto isNewInputFrame = sync_->GetSynchronizedPhysicsTick();
 
     const auto& networkObjects = base_->GetUnorderedNetworkObjects();
-    for (NetworkObject* networkObject : networkObjects)
+    for (Component* component : networkObjects)
     {
-        if (networkObject)
+        if (auto networkObject = static_cast<NetworkObject*>(component))
             networkObject->InterpolateState(sync_->GetReplicaTime(), sync_->GetInputTime(), isNewInputFrame);
     }
 

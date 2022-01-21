@@ -1051,7 +1051,7 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
     }
     else
     {
-        networkManager_ = scene_->GetNetworkManager();
+        networkManager_ = scene_->GetNetworkManager(true);
         networkManager_->MarkAsServer();
         networkManager_->AsServer().AddConnection(this);
         sceneLoaded_ = true;
@@ -1267,7 +1267,7 @@ void Connection::SetPacketSizeLimit(int limit)
 
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
-    networkManager_ = scene_->GetNetworkManager();
+    networkManager_ = scene_->GetNetworkManager(true);
     networkManager_->MarkAsClient(this);
     sceneLoaded_ = true;
 
@@ -1689,7 +1689,7 @@ void Connection::OnPackagesReady()
         // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
         scene_->Clear(true, false);
 
-        networkManager_ = scene_->GetNetworkManager();
+        networkManager_ = scene_->GetNetworkManager(true);
         networkManager_->MarkAsClient(this);
         sceneLoaded_ = true;
 

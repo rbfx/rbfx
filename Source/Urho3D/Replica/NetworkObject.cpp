@@ -30,7 +30,7 @@
 namespace Urho3D
 {
 
-NetworkObject::NetworkObject(Context* context) : Component(context) {}
+NetworkObject::NetworkObject(Context* context) : TrackedComponent<BaseStableTrackedComponent, NetworkManagerBase>(context) {}
 
 NetworkObject::~NetworkObject() = default;
 
@@ -71,13 +71,11 @@ void NetworkObject::OnNodeSet(Node* node)
 {
     if (node)
     {
-        UpdateCurrentScene(node->GetScene());
         node->AddListener(this);
         node->MarkDirty();
     }
     else
     {
-        UpdateCurrentScene(nullptr);
         for (NetworkObject* childNetworkObject : childrenNetworkObjects_)
         {
             if (!childNetworkObject)
@@ -88,36 +86,15 @@ void NetworkObject::OnNodeSet(Node* node)
     }
 }
 
-void NetworkObject::UpdateCurrentScene(Scene* scene)
-{
-    NetworkManager* newNetworkManager = scene ? scene->GetNetworkManager() : nullptr;
-    if (newNetworkManager != networkManager_)
-    {
-        if (networkManager_)
-        {
-            // Remove only if still valid
-            if (networkManager_->GetNetworkObject(networkId_) == this)
-                networkManager_->RemoveComponent(this);
-            networkManager_ = nullptr;
-        }
-
-        if (scene)
-        {
-            networkManager_ = scene->GetNetworkManager();
-            networkManager_->AddComponent(this);
-        }
-    }
-}
-
 void NetworkObject::OnMarkedDirty(Node* node)
 {
-    if (networkManager_)
-        networkManager_->QueueComponentUpdate(this);
+    if (auto networkManager = GetNetworkManager())
+        networkManager->QueueComponentUpdate(this);
 }
 
 NetworkObject* NetworkObject::GetOtherNetworkObject(NetworkId networkId) const
 {
-    return networkManager_ ? networkManager_->GetNetworkObject(networkId) : nullptr;
+    return GetNetworkManager() ? GetNetworkManager()->GetNetworkObject(networkId) : nullptr;
 }
 
 void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
@@ -146,12 +123,12 @@ void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
 
 ClientNetworkManager* NetworkObject::GetClientNetworkManager() const
 {
-    return networkManager_ && networkManager_->IsReplicatedClient() ? &networkManager_->AsClient() : nullptr;
+    return GetNetworkManager() && GetNetworkManager()->IsReplicatedClient() ? &GetNetworkManager()->AsClient() : nullptr;
 }
 
 ServerNetworkManager* NetworkObject::GetServerNetworkManager() const
 {
-    return networkManager_ && !networkManager_->IsReplicatedClient() ? &networkManager_->AsServer() : nullptr;
+    return GetNetworkManager() && !GetNetworkManager()->IsReplicatedClient() ? &GetNetworkManager()->AsServer() : nullptr;
 }
 
 NetworkObject* NetworkObject::FindParentNetworkObject() const

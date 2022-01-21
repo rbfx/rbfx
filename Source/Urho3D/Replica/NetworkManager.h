@@ -30,6 +30,7 @@
 #include "../Replica/ClientNetworkManager.h"
 #include "../Replica/ProtocolMessages.h"
 #include "../Replica/ServerNetworkManager.h"
+#include "../Scene/TrackedComponent.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
@@ -42,25 +43,15 @@ class Network;
 class NetworkObject;
 
 /// Part of NetworkManager used by both client and server, and referenced by components.
-class URHO3D_API NetworkManagerBase : public Object
+class URHO3D_API NetworkManagerBase : public BaseStableComponentRegistry
 {
-    URHO3D_OBJECT(NetworkManagerBase, Object);
+    URHO3D_OBJECT(NetworkManagerBase, BaseStableComponentRegistry);
 
 public:
-    static constexpr unsigned IndexBits = 24;
-    static constexpr unsigned VersionBits = 8;
-    static constexpr unsigned IndexMask = (1u << IndexBits) - 1;
-    static constexpr unsigned VersionMask = (1u << VersionBits) - 1;
-    static constexpr unsigned IndexOffset = 0;
-    static constexpr unsigned VersionOffset = IndexOffset + IndexBits;
-    static_assert(VersionOffset + VersionBits == 32, "Unexpected mask layout");
-
-    explicit NetworkManagerBase(Scene* scene);
+    explicit NetworkManagerBase(Context* context);
 
     /// Process components
     /// @{
-    void AddComponent(NetworkObject* networkObject);
-    void RemoveComponent(NetworkObject* networkObject);
     void QueueComponentUpdate(NetworkObject* networkObject);
     void RemoveAllComponents();
 
@@ -73,36 +64,25 @@ public:
 
     bool IsReplicatedClient() const { return !!client_; }
     Scene* GetScene() const { return scene_; }
-    const auto& GetUnorderedNetworkObjects() const { return networkObjects_; }
-    unsigned GetNetworkIndexUpperBound() const { return networkObjects_.size(); }
+    const auto GetUnorderedNetworkObjects() const { return GetTrackedComponents(); }
+    unsigned GetNetworkIndexUpperBound() const { return GetStableIndexUpperBound(); }
     ea::string GetDebugInfo() const;
-    NetworkObject* GetNetworkObject(NetworkId networkId) const;
+    NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
 
-    /// NetworkId utilities
-    /// @{
-    static NetworkId ComposeNetworkId(unsigned index, unsigned version);
-    static ea::pair<unsigned, unsigned> DecomposeNetworkId(NetworkId networkId);
-    /// @}
-
 private:
-    unsigned AllocateNewIndex();
-    void EnsureIndex(unsigned index);
-    bool IsValidComponent(unsigned index, unsigned version, NetworkObject* networkObject) const;
-    bool IsValidComponent(unsigned index, unsigned version) const;
-
     Scene* scene_{};
 
-    unsigned numComponents_{};
-    ea::vector<NetworkObject*> networkObjects_;
-    ea::vector<unsigned> networkObjectVersions_;
     ea::vector<bool> networkObjectsDirty_;
-    IndexAllocator<> indexAllocator_;
 
     ea::unordered_set<NetworkId> recentlyRemovedComponents_;
     ea::unordered_set<NetworkId> recentlyAddedComponents_;
 
 protected:
+    void OnSceneSet(Scene* scene) override;
+    void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
+    void OnComponentRemoved(BaseTrackedComponent* baseComponent) override;
+
     SharedPtr<ServerNetworkManager> server_;
     SharedPtr<ClientNetworkManager> client_;
 };
@@ -116,7 +96,7 @@ class URHO3D_API NetworkManager : public NetworkManagerBase
 public:
     using NetworkObjectById = ea::unordered_map<unsigned, NetworkObject*>;
 
-    explicit NetworkManager(Scene* scene);
+    explicit NetworkManager(Context* context);
     ~NetworkManager() override;
 
     /// Switch network manager to server mode. It's not supposed to be called on NetworkManager in client mode.

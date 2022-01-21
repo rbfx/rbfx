@@ -104,9 +104,9 @@ enum NetworkMessageId
 };
 
 /// ID used to identify replicated component within Scene.
-enum class NetworkId : unsigned {};
+enum StableComponentId : unsigned {};
+using NetworkId = StableComponentId;
 static const NetworkId InvalidNetworkId = static_cast<NetworkId>(0);
-URHO3D_API ea::string ToString(NetworkId value);
 
 /// Package file fragment size.
 static const unsigned PACKAGE_FRAGMENT_SIZE = 1024;

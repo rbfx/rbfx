@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#pragma once
+
 #include "../Core/TupleUtils.h"
 #include "../Container/IndexAllocator.h"
 #include "../Scene/Component.h"
@@ -33,6 +35,8 @@ namespace Urho3D
 /// Index may change during the lifetime of the component!
 class URHO3D_API BaseTrackedComponent : public Component
 {
+    URHO3D_OBJECT(BaseTrackedComponent, Component);
+
 public:
     explicit BaseTrackedComponent(Context* context) : Component(context) {}
 
@@ -55,6 +59,8 @@ private:
 /// Base class for component registry that keeps components derived from BaseTrackedComponent.
 class URHO3D_API BaseComponentRegistry : public Component
 {
+    URHO3D_OBJECT(BaseComponentRegistry, Component);
+
 public:
     BaseComponentRegistry(Context* context, StringHash componentType);
 
@@ -84,7 +90,7 @@ private:
 };
 
 /// Strongly typed component ID. Default value is considered invalid.
-enum StableComponentId : unsigned {};
+enum StableComponentId : unsigned;
 URHO3D_API StableComponentId ConstructStableComponentId(unsigned index, unsigned version);
 URHO3D_API ea::pair<unsigned, unsigned> DeconstructStableComponentId(StableComponentId componentId);
 URHO3D_API ea::string ToString(StableComponentId value);
@@ -92,6 +98,8 @@ URHO3D_API ea::string ToString(StableComponentId value);
 /// Base class for tracked component with ID that is stable during object lifetime.
 class URHO3D_API BaseStableTrackedComponent : public BaseTrackedComponent
 {
+    URHO3D_OBJECT(BaseStableTrackedComponent, BaseTrackedComponent);
+
 public:
     explicit BaseStableTrackedComponent(Context* context) : BaseTrackedComponent(context) {}
 
@@ -108,11 +116,15 @@ private:
 /// Base class for component registry that keeps components derived from BaseStableTrackedComponent.
 class URHO3D_API BaseStableComponentRegistry : public BaseComponentRegistry
 {
+    URHO3D_OBJECT(BaseStableComponentRegistry, BaseComponentRegistry);
+
 public:
     BaseStableComponentRegistry(Context* context, StringHash componentType);
 
     BaseStableTrackedComponent* GetTrackedComponentByStableId(StableComponentId id, bool checkVersion = true) const;
     BaseStableTrackedComponent* GetTrackedComponentByStableIndex(unsigned index) const;
+
+    unsigned GetStableIndexUpperBound() const { return stableIndexToEntry_.size(); }
 
 protected:
     void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
@@ -149,13 +161,14 @@ public:
         if constexpr (IsOnlyEnabledTracked)
             return this->IsEnabledEffective();
         else
-            return false;
+            return true;
     }
 
     void ReconnectToRegistry() override
     {
         Scene* scene = this->GetScene();
-        registry_ = scene ? scene->GetComponent<RegistryComponentType>() : nullptr;
+        // TODO(network): Revisit derived-ness
+        registry_ = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
     }
 
     void OnSetEnabled() override
@@ -177,7 +190,7 @@ public:
 protected:
     void OnSceneSet(Scene* scene) override
     {
-        auto newRegistry = scene ? scene->GetComponent<RegistryComponentType>() : nullptr;
+        auto newRegistry = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
         if (newRegistry == registry_)
             return;
 

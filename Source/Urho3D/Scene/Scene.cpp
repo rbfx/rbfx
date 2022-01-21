@@ -277,10 +277,15 @@ Texture2D* Scene::GetLightmapTexture(unsigned index) const
     return index < lightmapTextures_.size() ? lightmapTextures_[index] : nullptr;
 }
 
-NetworkManager* Scene::GetNetworkManager()
+NetworkManager* Scene::GetNetworkManager(bool create)
 {
     if (!networkManager_)
-        networkManager_ = MakeShared<NetworkManager>(this);
+    {
+        if (create)
+            networkManager_ = CreateComponent<NetworkManager>();
+        else
+            networkManager_ = GetComponent<NetworkManager>();
+    }
     return networkManager_;
 }
 

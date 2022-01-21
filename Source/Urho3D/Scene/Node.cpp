@@ -1568,7 +1568,7 @@ void Node::GetComponents(ea::vector<Component*>& dest, StringHash type, bool rec
     {
         for (auto i = components_.begin(); i != components_.end(); ++i)
         {
-            if ((*i)->GetType() == type)
+            if ((*i)->GetType() == type || type == Component::GetTypeStatic()) // TODO(network): Revisit
                 dest.push_back(i->Get());
         }
     }
@@ -2428,7 +2428,7 @@ void Node::GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type)
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        if ((*i)->GetType() == type)
+        if ((*i)->GetType() == type || type == Component::GetTypeStatic()) // TODO(network): Revisit
             dest.push_back(i->Get());
     }
     for (auto i = children_.begin(); i != children_.end(); ++i)
