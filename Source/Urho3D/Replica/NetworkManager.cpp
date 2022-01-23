@@ -227,7 +227,7 @@ ServerNetworkManager& NetworkManager::AsServer()
     return *server_;
 }
 
-ClientNetworkManager& NetworkManager::AsClient()
+ClientReplica& NetworkManager::AsClient()
 {
     assert(clientProcessor_ && clientProcessor_->replica_);
     return *clientProcessor_->replica_;
@@ -275,7 +275,7 @@ void NetworkManager::ProcessMessageOnUninitializedClient(
     // If ready, initialize
     if (connection->IsClockSynchronized() && clientProcessor_->IsReadyToInitialize())
     {
-        clientProcessor_->replica_ = MakeShared<ClientNetworkManager>(
+        clientProcessor_->replica_ = MakeShared<ClientReplica>(
             GetScene(), connection, *clientProcessor_->initialClock_, *clientProcessor_->serverSettings_);
 
         connection->SendSerializedMessage(

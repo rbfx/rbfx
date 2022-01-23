@@ -27,7 +27,7 @@
 #include "../Container/IndexAllocator.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
-#include "../Replica/ClientNetworkManager.h"
+#include "../Replica/ClientReplica.h"
 #include "../Replica/ProtocolMessages.h"
 #include "../Replica/ServerNetworkManager.h"
 #include "../Scene/TrackedComponent.h"
@@ -100,7 +100,7 @@ public:
     void MarkAsClient(AbstractConnection* connectionToServer);
     /// Return expected client or server network manager.
     ServerNetworkManager& AsServer();
-    ClientNetworkManager& AsClient();
+    ClientReplica& AsClient();
     // TODO(network): Get rid of this
     bool IsReplicatedClient() const { return clientProcessor_ && clientProcessor_->replica_; }
     ea::string GetDebugInfo() const;
@@ -120,7 +120,7 @@ private:
 
         bool IsReadyToInitialize() const { return initialClock_ && serverSettings_ && ackMagic_; }
 
-        SharedPtr<ClientNetworkManager> replica_;
+        SharedPtr<ClientReplica> replica_;
     };
 
     ea::optional<ClientProcessor> clientProcessor_;

@@ -121,7 +121,7 @@ void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
     }
 }
 
-ClientNetworkManager* NetworkObject::GetClientNetworkManager() const
+ClientReplica* NetworkObject::GetClientNetworkManager() const
 {
     return GetNetworkManager() && GetNetworkManager()->IsReplicatedClient() ? &GetNetworkManager()->AsClient() : nullptr;
 }
