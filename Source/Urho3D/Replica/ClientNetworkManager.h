@@ -44,69 +44,59 @@ class NetworkManagerBase;
 class Scene;
 struct NetworkSetting;
 
-/// Client-only NetworkManager settings.
-struct ClientSynchronizationSettings
-{
-    float clientTimeDelayInSeconds_{ 0.1f };
-    float timeSnapThresholdInSeconds_{ 5.0 };
-    float timeRewindThresholdInSeconds_{ 0.6 };
-
-    float minTimeStepScale_{ 0.5f };
-    float maxTimeStepScale_{ 2.0f };
-    float positionSmoothConstant_{ 15.0f };
-};
-
-struct ClientNetworkManagerSettings : public ClientSynchronizationSettings
-{
-    float traceDurationInSeconds_{ 1.0f };
-    float pingSmoothConstant_{ 0.05f };
-    float positionExtrapolationTimeInSeconds_{0.25};
-};
-
-/// Helper class that keeps clock synchronized with server.
-class URHO3D_API ClientSynchronizationManager : public NonCopyable
+/// Maintains scene clocks of replica on the Client side.
+/// Note: it also keeps physical world synchronized.
+class URHO3D_API ClientReplicaClock : public Object
 {
 public:
-    ClientSynchronizationManager(Scene* scene, AbstractConnection* connection, const MsgSceneClock& msg,
-        const VariantMap& serverSettings, const ClientSynchronizationSettings& settings);
-    ~ClientSynchronizationManager();
-    void SetSettings(const ClientSynchronizationSettings& settings) { settings_ = settings; }
+    ClientReplicaClock(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
+        const VariantMap& serverSettings);
+    ~ClientReplicaClock();
 
-    double MillisecondsToFrames(double valueMs) const;
-    double SecondsToFrames(double valueSec) const;
-
-    float ApplyTimeStep(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
-
-    /// Return current state
+    /// Return constant properties of replica.
     /// @{
-    bool IsNewInputFrame() const { return synchronizedPhysicsTick_.has_value(); }
-    ea::optional<unsigned> GetSynchronizedPhysicsTick() const { return synchronizedPhysicsTick_; }
+    Scene* GetScene() const { return scene_; }
+    AbstractConnection* GetConnection() const { return connection_; }
     unsigned GetConnectionId() const { return thisConnectionId_; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
+    double SecondsToFrames(double value) const { return value * updateFrequency_; }
+    /// @}
+
+    /// Return dynamic properties of replica. Return values may vary over time.
+    /// @{
     unsigned GetInputDelay() const { return inputDelay_; }
-    NetworkTime GetServerTime() const { return serverTime_; }
-    NetworkTime GetReplicaTime() const { return replicaTime_.Get(); }
-    NetworkTime GetInputTime() const { return inputTime_.Get(); }
-    NetworkTime GetLatestScaledInputTime() const { return latestScaledInputTime_; }
     const Variant& GetSetting(const NetworkSetting& setting) const;
     /// @}
 
+    /// Return prediced exact server time.
+    NetworkTime GetServerTime() const { return serverTime_; }
+
+    /// Return replica interpolation time which is always behind server time.
+    /// Scene is expected to be exactly replicated at replica time.
+    NetworkTime GetReplicaTime() const { return replicaTime_.Get(); }
+
+    /// Return time at which ongoing client input will be processed on server.
+    /// Input time is always ahead of server.
+    NetworkTime GetInputTime() const { return inputTime_.Get(); }
+    bool IsNewInputFrame() const { return synchronizedPhysicsTick_.has_value(); }
+    NetworkTime GetLatestScaledInputTime() const { return latestScaledInputTime_; }
+    /// Return which physical tick of this frame corresponds to the beginning of the network frame.
+    ea::optional<unsigned> GetSynchronizedPhysicsTick() const { return synchronizedPhysicsTick_; }
+
+protected:
+    /// Apply elapsed timestep and accumulated clock updates.
+    /// Returns possibly scaled (dilated or contracted) timestep.
+    float ApplyTimeStep(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
+
+    Scene* const scene_{};
+    AbstractConnection* const connection_{};
+
 private:
     void UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated);
-    void ProcessPendingClockUpdate(const MsgSceneClock& msg);
-    void ResetServerAndClientTime(const NetworkTime& serverTime);
-    float UpdateSmoothClientTime(float timeStep);
-
-    void CheckAndAdjustTime(
-        NetworkTime& time, ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples, bool quiet) const;
-    ea::optional<double> UpdateAverageError(ea::ring_buffer<double>& errors, double error, unsigned numTrimmedSamples) const;
-    void AdjustTime(NetworkTime& time, ea::ring_buffer<double>& errors, double adjustment) const;
 
     NetworkTime ToClientTime(const NetworkTime& serverTime) const;
     NetworkTime ToInputTime(const NetworkTime& serverTime) const;
 
-    Scene* scene_{};
-    AbstractConnection* connection_{};
     const VariantMap serverSettings_;
 
     const unsigned thisConnectionId_{};
@@ -115,8 +105,6 @@ private:
     const float timeErrorTolerance_{};
     const float minTimeDilation_{};
     const float maxTimeDilation_{};
-
-    ClientSynchronizationSettings settings_{};
 
     unsigned inputDelay_{};
     NetworkTime serverTime_;
@@ -130,31 +118,21 @@ private:
 };
 
 /// Client part of NetworkManager subsystem.
-class URHO3D_API ClientNetworkManager : public Object
+/// TODO(network): Rename to ClientReplica
+class URHO3D_API ClientNetworkManager : public ClientReplicaClock
 {
-    URHO3D_OBJECT(ClientNetworkManager, Object);
+    URHO3D_OBJECT(ClientNetworkManager, ClientReplicaClock);
 
 public:
-    ClientNetworkManager(NetworkManagerBase* base, Scene* scene, AbstractConnection* connection);
+    ClientNetworkManager(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
+        const VariantMap& serverSettings);
 
     void ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
 
     ea::string GetDebugInfo() const;
-    AbstractConnection* GetConnection() const { return connection_; }
-    const ClientNetworkManagerSettings& GetSettings() const { return settings2_; }
 
     /// Return global properties of client state.
     /// @{
-    bool IsSynchronized() const { return sync_.has_value(); }
-    NetworkTime GetServerTime() const { return sync_ ? sync_->GetServerTime() : NetworkTime{}; }
-    NetworkTime GetClientTime() const { return sync_ ? sync_->GetReplicaTime() : NetworkTime{}; }
-    NetworkTime GetInputTime() const { return sync_ ? sync_->GetInputTime() : NetworkTime{}; }
-
-    unsigned GetCurrentFrame() const { return GetServerTime().GetFrame(); }
-    float GetCurrentBlendFactor() const { return GetServerTime().GetSubFrame(); }
-    unsigned GetLatestScaledInputFrame() const { return sync_ ? sync_->GetLatestScaledInputTime().GetFrame() : 0; }
-    double GetCurrentFrameDeltaRelativeTo(unsigned referenceFrame) const;
-
     unsigned GetTraceCapacity() const;
     unsigned GetPositionExtrapolationFrames() const;
     /// @}
@@ -168,16 +146,11 @@ private:
     NetworkObject* GetCheckedNetworkObject(NetworkId networkId, StringHash componentType);
     void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
 
-    void ProcessConfigure(const MsgConfigure& msg);
     void ProcessSceneClock(const MsgSceneClock& msg);
     void ProcessRemoveObjects(MemoryBuffer& messageData);
     void ProcessAddObjects(MemoryBuffer& messageData);
     void ProcessUpdateObjectsReliable(MemoryBuffer& messageData);
     void ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData);
-
-    ea::optional<VariantMap> serverSettings_;
-    ea::optional<unsigned> synchronizationMagic_;
-    ClientNetworkManagerSettings settings2_;
 
     Network* network_{};
     NetworkManagerBase* base_{};
@@ -185,7 +158,6 @@ private:
     AbstractConnection* connection_{};
 
     ea::vector<MsgSceneClock> pendingClockUpdates_;
-    ea::optional<ClientSynchronizationManager> sync_;
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;
 
     VectorBuffer componentBuffer_;

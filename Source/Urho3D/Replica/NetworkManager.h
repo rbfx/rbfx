@@ -62,11 +62,9 @@ public:
     void UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
     /// @}
 
-    bool IsReplicatedClient() const { return !!client_; }
     Scene* GetScene() const { return scene_; }
     const auto GetUnorderedNetworkObjects() const { return GetTrackedComponents(); }
     unsigned GetNetworkIndexUpperBound() const { return GetStableIndexUpperBound(); }
-    ea::string GetDebugInfo() const;
     NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
 
@@ -82,9 +80,6 @@ protected:
     void OnSceneSet(Scene* scene) override;
     void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
     void OnComponentRemoved(BaseTrackedComponent* baseComponent) override;
-
-    SharedPtr<ServerNetworkManager> server_;
-    SharedPtr<ClientNetworkManager> client_;
 };
 
 /// Subsystem that keeps trace of all NetworkObject in the Scene.
@@ -106,9 +101,31 @@ public:
     /// Return expected client or server network manager.
     ServerNetworkManager& AsServer();
     ClientNetworkManager& AsClient();
+    // TODO(network): Get rid of this
+    bool IsReplicatedClient() const { return clientProcessor_ && clientProcessor_->replica_; }
+    ea::string GetDebugInfo() const;
 
     /// Process network message either as client or as server.
     void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+
+private:
+    void ProcessMessageOnUninitializedClient(
+        AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+
+    struct ClientProcessor
+    {
+        ea::optional<MsgSceneClock> initialClock_;
+        ea::optional<VariantMap> serverSettings_;
+        ea::optional<unsigned> ackMagic_;
+
+        bool IsReadyToInitialize() const { return initialClock_ && serverSettings_ && ackMagic_; }
+
+        SharedPtr<ClientNetworkManager> replica_;
+    };
+
+    ea::optional<ClientProcessor> clientProcessor_;
+
+    SharedPtr<ServerNetworkManager> server_;
 };
 
 }

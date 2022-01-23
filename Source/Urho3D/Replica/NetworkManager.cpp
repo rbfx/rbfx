@@ -155,12 +155,14 @@ void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>&
     }
 }
 
-ea::string NetworkManagerBase::GetDebugInfo() const
+ea::string NetworkManager::GetDebugInfo() const
 {
-    if (server_)
+    if (clientProcessor_ && clientProcessor_->replica_)
+        return clientProcessor_->replica_->GetDebugInfo();
+    else if (clientProcessor_)
+        return "Pending synchronization..."; // TODO(network): Revisit formatting
+    else if (server_)
         return server_->GetDebugInfo();
-    else if (client_)
-        return client_->GetDebugInfo();
     else
         return "";
 }
@@ -183,10 +185,10 @@ NetworkManager::~NetworkManager() = default;
 
 void NetworkManager::MarkAsServer()
 {
-    if (client_)
+    if (clientProcessor_)
     {
         URHO3D_LOGWARNING("Swiching NetworkManager from client to server mode");
-        client_ = nullptr;
+        clientProcessor_ = ea::nullopt;
         assert(0);
     }
 
@@ -205,16 +207,16 @@ void NetworkManager::MarkAsClient(AbstractConnection* connectionToServer)
         assert(0);
     }
 
-    if (client_ && client_->GetConnection() != connectionToServer)
+    if (clientProcessor_ && clientProcessor_->replica_ && clientProcessor_->replica_->GetConnection() != connectionToServer)
     {
         URHO3D_LOGWARNING("Swiching NetworkManager from one server to another without scene recreation");
-        client_ = nullptr;
+        clientProcessor_ = ea::nullopt;
         assert(0);
     }
 
-    if (!client_)
+    if (!clientProcessor_)
     {
-        client_ = MakeShared<ClientNetworkManager>(this, GetScene(), connectionToServer);
+        clientProcessor_ = ClientProcessor{};
         RemoveAllComponents();
     }
 }
@@ -227,22 +229,58 @@ ServerNetworkManager& NetworkManager::AsServer()
 
 ClientNetworkManager& NetworkManager::AsClient()
 {
-    assert(client_);
-    return *client_;
+    assert(clientProcessor_ && clientProcessor_->replica_);
+    return *clientProcessor_->replica_;
 }
 
 void NetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
-    if (!server_ && !client_)
+    if (clientProcessor_)
     {
-        URHO3D_LOGWARNING("Uninitialized NetworkManager cannot process incoming message");
-        return;
+        // If replica is not initialized, collect initialization data
+        if (!clientProcessor_->replica_)
+            ProcessMessageOnUninitializedClient(connection, messageId, messageData);
+
+        if (clientProcessor_->replica_)
+            clientProcessor_->replica_->ProcessMessage(messageId, messageData);
     }
 
     if (server_)
+    {
         server_->ProcessMessage(connection, messageId, messageData);
-    else
-        client_->ProcessMessage(messageId, messageData);
+    }
+}
+
+void NetworkManager::ProcessMessageOnUninitializedClient(
+    AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+{
+    URHO3D_ASSERT(clientProcessor_ && !clientProcessor_->replica_);
+
+    if (messageId == MSG_CONFIGURE)
+    {
+        const auto msg = ReadNetworkMessage<MsgConfigure>(messageData);
+        connection->OnMessageReceived(messageId, msg);
+
+        clientProcessor_->ackMagic_ = msg.magic_;
+        clientProcessor_->serverSettings_ = msg.settings_;
+    }
+    else if (messageId == MSG_SCENE_CLOCK)
+    {
+        const auto msg = ReadNetworkMessage<MsgSceneClock>(messageData);
+        connection->OnMessageReceived(messageId, msg);
+
+        clientProcessor_->initialClock_ = msg;
+    }
+
+    // If ready, initialize
+    if (connection->IsClockSynchronized() && clientProcessor_->IsReadyToInitialize())
+    {
+        clientProcessor_->replica_ = MakeShared<ClientNetworkManager>(
+            GetScene(), connection, *clientProcessor_->initialClock_, *clientProcessor_->serverSettings_);
+
+        connection->SendSerializedMessage(
+            MSG_SYNCHRONIZED, MsgSynchronized{*clientProcessor_->ackMagic_}, NetworkMessageFlag::Reliable);
+    }
 }
 
 }
