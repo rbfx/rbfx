@@ -38,7 +38,6 @@ namespace Urho3D
 {
 
 class AbstractConnection;
-class Network;
 class NetworkObject;
 class NetworkManagerBase;
 class Scene;
@@ -92,6 +91,7 @@ protected:
     AbstractConnection* const connection_{};
 
 private:
+    SoftNetworkTime InitializeSoftTime() const;
     void UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated);
 
     NetworkTime ToClientTime(const NetworkTime& serverTime) const;
@@ -118,13 +118,12 @@ private:
 };
 
 /// Client part of NetworkManager subsystem.
-/// TODO(network): Rename to ClientReplica
-class URHO3D_API ClientNetworkManager : public ClientReplicaClock
+class URHO3D_API ClientReplica : public ClientReplicaClock
 {
-    URHO3D_OBJECT(ClientNetworkManager, ClientReplicaClock);
+    URHO3D_OBJECT(ClientReplica, ClientReplicaClock);
 
 public:
-    ClientNetworkManager(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
+    ClientReplica(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
         const VariantMap& serverSettings);
 
     void ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
@@ -152,10 +151,7 @@ private:
     void ProcessUpdateObjectsReliable(MemoryBuffer& messageData);
     void ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData);
 
-    Network* network_{};
-    NetworkManagerBase* base_{};
-    Scene* scene_{};
-    AbstractConnection* connection_{};
+    NetworkManagerBase* replicationManager_{};
 
     ea::vector<MsgSceneClock> pendingClockUpdates_;
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;

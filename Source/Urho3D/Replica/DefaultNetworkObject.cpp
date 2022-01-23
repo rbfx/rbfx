@@ -153,7 +153,7 @@ void DefaultNetworkObject::WriteUnreliableDeltaPayload(unsigned mask, unsigned f
 void DefaultNetworkObject::InterpolateState(
     const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame)
 {
-    const ClientNetworkManager* clientNetworkManager = GetClientNetworkManager();
+    const ClientReplica* clientNetworkManager = GetClientNetworkManager();
     const unsigned positionExtrapolationFrames = clientNetworkManager->GetPositionExtrapolationFrames();
 
     if (auto newWorldPosition = worldPositionTrace_.ReconstructAndSample(replicaTime, {positionExtrapolationFrames}))
@@ -648,7 +648,7 @@ void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime
     if (trackOnly_)
         return;
 
-    const ClientNetworkManager* clientNetworkManager = GetNetworkObject()->GetClientNetworkManager();
+    const ClientReplica* clientNetworkManager = GetNetworkObject()->GetClientNetworkManager();
     const unsigned positionExtrapolationFrames = clientNetworkManager->GetPositionExtrapolationFrames();
 
     if (auto newWorldPosition = worldPositionTrace_.ReconstructAndSample(replicaTime, {positionExtrapolationFrames}))

@@ -32,7 +32,7 @@
 #include "../Replica/NetworkObject.h"
 #include "../Replica/NetworkManager.h"
 #include "../Replica/NetworkSettingsConsts.h"
-#include "../Replica/ClientNetworkManager.h"
+#include "../Replica/ClientReplica.h"
 #include "../Scene/Scene.h"
 
 #include <EASTL/numeric.h>
@@ -48,13 +48,9 @@ ClientReplicaClock::ClientReplicaClock(Scene* scene, AbstractConnection* connect
     , serverSettings_(serverSettings)
     , thisConnectionId_(GetSetting(NetworkSettings::ConnectionId).GetUInt())
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
-    , timeSnapThreshold_{GetSetting(NetworkSettings::TimeSnapThreshold).GetFloat()}
-    , timeErrorTolerance_{GetSetting(NetworkSettings::TimeErrorTolerance).GetFloat()}
-    , minTimeDilation_{GetSetting(NetworkSettings::MinTimeDilation).GetFloat()}
-    , maxTimeDilation_{GetSetting(NetworkSettings::MaxTimeDilation).GetFloat()}
     , inputDelay_(initialClock.inputDelay_)
-    , replicaTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
-    , inputTime_(updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_)
+    , replicaTime_(InitializeSoftTime())
+    , inputTime_(InitializeSoftTime())
     , physicsSync_(scene_, updateFrequency_, false)
 {
     UpdateServerTime(initialClock, false);
@@ -97,6 +93,15 @@ const Variant& ClientReplicaClock::GetSetting(const NetworkSetting& setting) con
     return GetNetworkSetting(serverSettings_, setting);
 }
 
+SoftNetworkTime ClientReplicaClock::InitializeSoftTime() const
+{
+    const float timeSnapThreshold = GetSetting(NetworkSettings::TimeSnapThreshold).GetFloat();
+    const float timeErrorTolerance = GetSetting(NetworkSettings::TimeErrorTolerance).GetFloat();
+    const float minTimeDilation = GetSetting(NetworkSettings::MinTimeDilation).GetFloat();
+    const float maxTimeDilation = GetSetting(NetworkSettings::MaxTimeDilation).GetFloat();
+    return SoftNetworkTime{updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_};
+}
+
 void ClientReplicaClock::UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated)
 {
     if (skipOutdated && NetworkTime{msg.latestFrame_} - NetworkTime{latestServerFrame_} < 0.0)
@@ -123,13 +128,10 @@ NetworkTime ClientReplicaClock::ToInputTime(const NetworkTime& serverTime) const
     return serverTime + static_cast<double>(inputDelay_);
 }
 
-ClientNetworkManager::ClientNetworkManager(
+ClientReplica::ClientReplica(
     Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
-    , network_(GetSubsystem<Network>())
-    , base_(scene->GetNetworkManager())
-    , scene_(scene)
-    , connection_(connection)
+    , replicationManager_(scene->GetNetworkManager())
 {
     SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
     {
@@ -140,7 +142,7 @@ ClientNetworkManager::ClientNetworkManager(
     });
 }
 
-void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData)
+void ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     switch (messageId)
     {
@@ -190,30 +192,29 @@ void ClientNetworkManager::ProcessMessage(NetworkMessageId messageId, MemoryBuff
     }
 }
 
-void ClientNetworkManager::ProcessSceneClock(const MsgSceneClock& msg)
+void ClientReplica::ProcessSceneClock(const MsgSceneClock& msg)
 {
     pendingClockUpdates_.push_back(msg);
 }
 
-void ClientNetworkManager::ProcessRemoveObjects(MemoryBuffer& messageData)
+void ClientReplica::ProcessRemoveObjects(MemoryBuffer& messageData)
 {
     const unsigned messageFrame = messageData.ReadUInt();
     while (!messageData.IsEof())
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
-        WeakPtr<NetworkObject> networkObject{ base_->GetNetworkObject(networkId) };
+        WeakPtr<NetworkObject> networkObject{ replicationManager_->GetNetworkObject(networkId) };
         if (!networkObject)
         {
             URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", ToString(networkId));
             continue;
         }
-        networkObject->PrepareToRemove();
-        if (networkObject)
-            networkObject->Remove();
+
+        RemoveNetworkObject(networkObject);
     }
 }
 
-void ClientNetworkManager::ProcessAddObjects(MemoryBuffer& messageData)
+void ClientReplica::ProcessAddObjects(MemoryBuffer& messageData)
 {
     const unsigned messageFrame = messageData.ReadUInt();
     while (!messageData.IsEof())
@@ -234,7 +235,7 @@ void ClientNetworkManager::ProcessAddObjects(MemoryBuffer& messageData)
     }
 }
 
-void ClientNetworkManager::ProcessUpdateObjectsReliable(MemoryBuffer& messageData)
+void ClientReplica::ProcessUpdateObjectsReliable(MemoryBuffer& messageData)
 {
     const unsigned messageFrame = messageData.ReadUInt();
     while (!messageData.IsEof())
@@ -253,7 +254,7 @@ void ClientNetworkManager::ProcessUpdateObjectsReliable(MemoryBuffer& messageDat
     }
 }
 
-void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData)
+void ClientReplica::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData)
 {
     const unsigned messageFrame = messageData.ReadUInt();
 
@@ -273,7 +274,7 @@ void ClientNetworkManager::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageD
     }
 }
 
-NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned)
+NetworkObject* ClientReplica::CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned)
 {
     auto networkObject = DynamicCast<NetworkObject>(context_->CreateObject(componentType));
     if (!networkObject)
@@ -292,7 +293,7 @@ NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, St
     else
         networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
 
-    if (NetworkObject* oldNetworkObject = base_->GetNetworkObject(networkId, false))
+    if (NetworkObject* oldNetworkObject = replicationManager_->GetNetworkObject(networkId, false))
     {
         URHO3D_LOGWARNING("NetworkObject {} overwrites existing NetworkObject {}",
             ToString(networkId),
@@ -305,9 +306,9 @@ NetworkObject* ClientNetworkManager::CreateNetworkObject(NetworkId networkId, St
     return networkObject;
 }
 
-NetworkObject* ClientNetworkManager::GetCheckedNetworkObject(NetworkId networkId, StringHash componentType)
+NetworkObject* ClientReplica::GetCheckedNetworkObject(NetworkId networkId, StringHash componentType)
 {
-    NetworkObject* networkObject = base_->GetNetworkObject(networkId);
+    NetworkObject* networkObject = replicationManager_->GetNetworkObject(networkId);
     if (!networkObject)
     {
         URHO3D_LOGWARNING("Cannot find existing NetworkObject {}", ToString(networkId));
@@ -325,7 +326,7 @@ NetworkObject* ClientNetworkManager::GetCheckedNetworkObject(NetworkId networkId
     return networkObject;
 }
 
-void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
+void ClientReplica::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
 {
     if (networkObject->GetNetworkMode() == NetworkObjectMode::ClientOwned)
         ownedObjects_.erase(networkObject);
@@ -335,21 +336,21 @@ void ClientNetworkManager::RemoveNetworkObject(WeakPtr<NetworkObject> networkObj
         networkObject->Remove();
 }
 
-unsigned ClientNetworkManager::GetTraceCapacity() const
+unsigned ClientReplica::GetTraceCapacity() const
 {
     // TODO(network): Refactor
     float traceDurationInSeconds = 1.0f;
     return CeilToInt(traceDurationInSeconds * GetUpdateFrequency());
 }
 
-unsigned ClientNetworkManager::GetPositionExtrapolationFrames() const
+unsigned ClientReplica::GetPositionExtrapolationFrames() const
 {
     // TODO(network): Refactor
     float positionExtrapolationTimeInSeconds = 0.25;
     return RoundToInt(positionExtrapolationTimeInSeconds * GetUpdateFrequency());
 }
 
-ea::string ClientNetworkManager::GetDebugInfo() const
+ea::string ClientReplica::GetDebugInfo() const
 {
     static const ea::string unnamedScene = "Unnamed";
     const ea::string& sceneName = !scene_->GetName().empty() ? scene_->GetName() : unnamedScene;
@@ -365,17 +366,17 @@ ea::string ClientNetworkManager::GetDebugInfo() const
         GetLatestScaledInputTime().GetFrame());
 }
 
-void ClientNetworkManager::SynchronizeClocks(float timeStep)
+void ClientReplica::SynchronizeClocks(float timeStep)
 {
     ApplyTimeStep(timeStep, pendingClockUpdates_);
     pendingClockUpdates_.clear();
 }
 
-void ClientNetworkManager::UpdateReplica(float timeStep)
+void ClientReplica::UpdateReplica(float timeStep)
 {
     const auto isNewInputFrame = GetSynchronizedPhysicsTick();
 
-    const auto& networkObjects = base_->GetUnorderedNetworkObjects();
+    const auto& networkObjects = replicationManager_->GetUnorderedNetworkObjects();
     for (Component* component : networkObjects)
     {
         if (auto networkObject = static_cast<NetworkObject*>(component))
@@ -384,12 +385,13 @@ void ClientNetworkManager::UpdateReplica(float timeStep)
 
     if (isNewInputFrame)
     {
-        network_->SendEvent(E_NETWORKCLIENTUPDATE);
+        auto network = GetSubsystem<Network>();
+        network->SendEvent(E_NETWORKCLIENTUPDATE);
         SendObjectsFeedbackUnreliable(GetInputTime().GetFrame());
     }
 }
 
-void ClientNetworkManager::SendObjectsFeedbackUnreliable(unsigned feedbackFrame)
+void ClientReplica::SendObjectsFeedbackUnreliable(unsigned feedbackFrame)
 {
     connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, NetworkMessageFlag::None,
         [&](VectorBuffer& msg, ea::string* debugInfo)
