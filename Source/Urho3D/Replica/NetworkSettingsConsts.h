@@ -96,6 +96,8 @@ URHO3D_NETWORK_SETTING(TimeSnapThreshold, float, 2.5f);
 URHO3D_NETWORK_SETTING(MinTimeDilation, float, 0.7f);
 /// Maximal time dilation factor.
 URHO3D_NETWORK_SETTING(MaxTimeDilation, float, 1.5f);
+/// Delay in seconds before delivered updates are used for replica interpolation.
+URHO3D_NETWORK_SETTING(InterpolationDelay, float, 0.1f);
 
 /// @}
 

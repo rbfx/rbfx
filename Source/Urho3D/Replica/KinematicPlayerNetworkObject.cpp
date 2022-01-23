@@ -155,7 +155,8 @@ void KinematicPlayerNetworkObject::CorrectAgainstFrame(unsigned frame)
     if (!offset.Equals(Vector3::ZERO, 0.001f))
     {
         const auto networkManager = GetNetworkObject()->GetClientNetworkManager();
-        const float smoothConstant = networkManager->GetSettings().positionSmoothConstant_;
+        // TODO(network): Refactor
+        const float smoothConstant = 15.0f;
         kinematicController_->AdjustRawPosition(offset, smoothConstant);
         predictedWorldPositions_.clear();
         //for (auto& [predictionFrame, otherPredictedPosition] : predictedWorldPositions_)

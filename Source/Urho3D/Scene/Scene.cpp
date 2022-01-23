@@ -282,7 +282,7 @@ NetworkManager* Scene::GetNetworkManager(bool create)
     if (!networkManager_)
     {
         if (create)
-            networkManager_ = CreateComponent<NetworkManager>();
+            networkManager_ = GetOrCreateComponent<NetworkManager>(LOCAL);
         else
             networkManager_ = GetComponent<NetworkManager>();
     }
