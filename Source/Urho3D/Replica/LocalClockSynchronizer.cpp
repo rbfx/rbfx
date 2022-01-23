@@ -83,7 +83,7 @@ unsigned LocalClockSynchronizer::Synchronize(float overtime)
         const unsigned followerTicksDebt = numFollowerTicks_ != 0 ? maxFollowerTicks - numFollowerTicks_ : 0;
 
         numPendingFollowerTicks_ = followerTicksDebt + 1;
-        numFollowerTicks_ = numPendingFollowerTicks_;
+        numFollowerTicks_ = 1;
         timeAccumulator_ = overtime;
         NormalizeOnClient();
 

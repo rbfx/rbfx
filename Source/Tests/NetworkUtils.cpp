@@ -129,6 +129,13 @@ void ManualConnection::SendUnorderedMessages(ea::vector<InternalMessage>& messag
     });
 }
 
+double NetworkSimulator::QuantizeDuration(double duration, unsigned millisecondsInQuant)
+{
+    const unsigned numQuantsInSecond = 1000 / millisecondsInQuant;
+    REQUIRE(numQuantsInSecond * millisecondsInQuant == 1000);
+    return RoundToInt(duration * millisecondsInQuant) / static_cast<double>(millisecondsInQuant);
+}
+
 NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
     : context_(serverScene->GetContext())
     , network_(context_->GetSubsystem<Network>())
@@ -191,23 +198,16 @@ void NetworkSimulator::SimulateEngineFrame(Context* context, float timeStep)
 
 void NetworkSimulator::SimulateTime(float time, unsigned millisecondsInQuant)
 {
-    // TODO(network): Stop calling 1/1024th a "millisecond"!
     REQUIRE(MillisecondsInFrame % millisecondsInQuant == 0);
 
-    const float timeStep = static_cast<float>(millisecondsInQuant) / (FramesInSecond * MillisecondsInFrame);
+    const float timeStep = millisecondsInQuant / 1000.0f;
     const float numStepsRaw = time / timeStep;
-    const auto numSteps = static_cast<unsigned>(numStepsRaw);
-    REQUIRE(numSteps == numStepsRaw);
+    const auto numSteps = RoundToInt(numStepsRaw);
+    REQUIRE(numSteps == Catch::Approx(numStepsRaw).margin(0.001));
 
-    unsigned previousSystemTime = 0;
-    float systemTimeAccumulator = 0.0;
     for (unsigned i = 0; i < numSteps; ++i)
     {
-        systemTimeAccumulator += timeStep;
-        const unsigned currentSystemTime = FloorToInt(systemTimeAccumulator * 1000);
-        ManualConnection::systemTime += currentSystemTime - previousSystemTime;
-        previousSystemTime = currentSystemTime;
-
+        ManualConnection::systemTime += millisecondsInQuant;
         currentSimulationStep = i;
         SimulateEngineFrame(timeStep);
     }
