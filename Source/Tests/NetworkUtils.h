@@ -109,10 +109,10 @@ class NetworkSimulator
 {
 public:
     /// Number of frames per second.
-    static constexpr unsigned FramesInSecond = 32;
-    /// Number of "milliseconds" in one server frame. Use decently big value to have sub-frame control over execution.
-    static constexpr unsigned MillisecondsInFrame = 32;
-    static constexpr unsigned MillisecondsInSecond = FramesInSecond * MillisecondsInFrame;
+    static constexpr unsigned FramesInSecond = 25;
+    static constexpr unsigned MillisecondsInFrame = 1000 / FramesInSecond;
+    static constexpr unsigned MillisecondsInQuant = 10;
+    static double QuantizeDuration(double duration, unsigned millisecondsInQuant = MillisecondsInQuant);
 
     explicit NetworkSimulator(Scene* serverScene, unsigned seed = 0);
     void AddClient(Scene* clientScene, const ConnectionQuality& quality);
@@ -120,7 +120,7 @@ public:
     static void SimulateEngineFrame(Context* context, float timeStep);
 
     void SimulateEngineFrame(float timeStep);
-    void SimulateTime(float time, unsigned millisecondsInQuant = 8);
+    void SimulateTime(float time, unsigned millisecondsInQuant = MillisecondsInQuant);
 
     AbstractConnection* GetServerToClientConnection(Scene* clientScene);
 

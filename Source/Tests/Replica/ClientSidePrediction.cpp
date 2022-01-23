@@ -27,6 +27,7 @@
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/KinematicCharacterController.h>
+#include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Replica/ClientInputStatistics.h>
@@ -40,7 +41,7 @@ SharedPtr<Scene> CreateTestScene(Context* context)
 {
     auto serverScene = MakeShared<Scene>(context);
     auto physicsWorld = serverScene->CreateComponent<PhysicsWorld>();
-    physicsWorld->SetFps(64);
+    physicsWorld->SetFps(Tests::NetworkSimulator::FramesInSecond * 2);
 
     Node* floorNode = serverScene->CreateChild("Floor", LOCAL);
 
@@ -130,10 +131,10 @@ TEST_CASE("Client-side prediction is consistent with server")
     REQUIRE(clientNode->GetWorldPosition().y_ == Catch::Approx(1.0f).margin(0.1f));
 
     // Start movement at some random point, move for about 5 seconds with velocity of 2 units/second
-    sim.SimulateTime(8.0f / Tests::NetworkSimulator::MillisecondsInSecond);
+    sim.SimulateTime(0.01f);
     const float moveVelocity = 2.0f;
     clientObject->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
-    sim.SimulateTime(1016.0f / Tests::NetworkSimulator::MillisecondsInSecond);
+    sim.SimulateTime(0.99f);
     sim.SimulateTime(4.0f);
 
     // Expect client node at about the specified position.
@@ -206,8 +207,7 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
         direction *= -1.0f;
 
         const float duration = sim.GetRandom().GetFloat(0.01f, 0.25f);
-        const unsigned quantizedDuration = CeilToInt(duration * Tests::NetworkSimulator::MillisecondsInSecond / 8);
-        sim.SimulateTime(quantizedDuration * 8 / 1024.0f);
+        sim.SimulateTime(sim.QuantizeDuration(duration));
     }
 
     serverPosition.SkipUntilChanged();

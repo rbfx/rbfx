@@ -240,8 +240,7 @@ void NetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessa
         // If replica is not initialized, collect initialization data
         if (!clientProcessor_->replica_)
             ProcessMessageOnUninitializedClient(connection, messageId, messageData);
-
-        if (clientProcessor_->replica_)
+        else if (clientProcessor_->replica_)
             clientProcessor_->replica_->ProcessMessage(messageId, messageData);
     }
 
