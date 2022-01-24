@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Container/IndexAllocator.h"
+#include "../Container/TransformedSpan.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Replica/ClientReplica.h"
@@ -63,7 +63,7 @@ public:
     /// @}
 
     Scene* GetScene() const { return scene_; }
-    const auto GetUnorderedNetworkObjects() const { return GetTrackedComponents(); }
+    const auto GetUnorderedNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }
     unsigned GetNetworkIndexUpperBound() const { return GetStableIndexUpperBound(); }
     NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
@@ -102,7 +102,7 @@ public:
     ServerNetworkManager& AsServer();
     ClientReplica& AsClient();
     // TODO(network): Get rid of this
-    bool IsReplicatedClient() const { return clientProcessor_ && clientProcessor_->replica_; }
+    bool IsReplicatedClient() const { return client_ && client_->replica_; }
     ea::string GetDebugInfo() const;
 
     /// Process network message either as client or as server.
@@ -112,7 +112,7 @@ private:
     void ProcessMessageOnUninitializedClient(
         AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
 
-    struct ClientProcessor
+    struct ClientData
     {
         ea::optional<MsgSceneClock> initialClock_;
         ea::optional<VariantMap> serverSettings_;
@@ -123,7 +123,7 @@ private:
         SharedPtr<ClientReplica> replica_;
     };
 
-    ea::optional<ClientProcessor> clientProcessor_;
+    ea::optional<ClientData> client_;
 
     SharedPtr<ServerNetworkManager> server_;
 };

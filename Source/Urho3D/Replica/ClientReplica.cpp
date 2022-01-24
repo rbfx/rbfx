@@ -377,10 +377,9 @@ void ClientReplica::UpdateReplica(float timeStep)
     const auto isNewInputFrame = GetSynchronizedPhysicsTick();
 
     const auto& networkObjects = replicationManager_->GetUnorderedNetworkObjects();
-    for (Component* component : networkObjects)
+    for (NetworkObject* networkObject : networkObjects)
     {
-        if (auto networkObject = static_cast<NetworkObject*>(component))
-            networkObject->InterpolateState(GetReplicaTime(), GetInputTime(), isNewInputFrame);
+        networkObject->InterpolateState(GetReplicaTime(), GetInputTime(), isNewInputFrame);
     }
 
     if (isNewInputFrame)
