@@ -23,8 +23,7 @@
 #pragma once
 
 #include "CurlNoise3DInstance.h"
-
-#include "Urho3D/Engine/Engine.h"
+#include "../Engine/Engine.h"
 
 namespace Urho3D
 {
@@ -34,7 +33,6 @@ namespace ParticleGraphNodes
 CurlNoise3DInstance::CurlNoise3DInstance()
     : noise_(RandomEngine::GetDefaultEngine())
 {
-    
 }
 
 void CurlNoise3DInstance::Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer)
@@ -55,18 +53,19 @@ Vector3 CurlNoise3DInstance::Generate(const Vector3& pos)
     double x = pos.x_ * frequency;
     double y = pos.y_ * frequency;
     double z = pos.z_ * frequency + scrollPos_;
-    const auto center = noise_.GetDouble(x, y, z);
+    double scale = 0.01;
 
-    const double sampleX = noise_.GetDouble(x + offset, y, z);
-    const double sampleY = noise_.GetDouble(x, y + offset, z);
-    const double sampleZ = noise_.GetDouble(x, y, z + offset);
+    const auto center = noise_.GetDouble(x, y, z) * scale;
+
+    const double sampleX = noise_.GetDouble(x + offset, y, z) * scale;
+    const double sampleY = noise_.GetDouble(x, y + offset, z) * scale;
+    const double sampleZ = noise_.GetDouble(x, y, z + offset) * scale;
 
     const double dx = (sampleX - center) / offset;
     const double dy = (sampleY - center) / offset;
     const double dz = (sampleZ - center) / offset;
     return Vector3(dz - dy, dx - dz, dy - dx);
 }
-
 
 } // namespace ParticleGraphNodes
 
