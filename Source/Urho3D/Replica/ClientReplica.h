@@ -101,10 +101,6 @@ private:
 
     const unsigned thisConnectionId_{};
     const unsigned updateFrequency_{};
-    const float timeSnapThreshold_{};
-    const float timeErrorTolerance_{};
-    const float minTimeDilation_{};
-    const float maxTimeDilation_{};
 
     unsigned inputDelay_{};
     NetworkTime serverTime_;

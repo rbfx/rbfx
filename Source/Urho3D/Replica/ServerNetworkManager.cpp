@@ -53,6 +53,137 @@ unsigned GetIndex(NetworkId networkId)
 
 }
 
+SharedReplicationState::SharedReplicationState(NetworkManagerBase* replicationManager)
+    : replicationManager_(replicationManager)
+{
+    replicationManager_->OnNetworkObjectAdded.Subscribe(this, &SharedReplicationState::OnNetworkObjectAdded);
+    replicationManager_->OnNetworkObjectRemoved.Subscribe(this, &SharedReplicationState::OnNetworkObjectRemoved);
+
+    for (NetworkObject* networkObject : replicationManager_->GetNetworkObjects())
+        recentlyAddedComponents_.emplace(networkObject->GetNetworkId());
+}
+
+void SharedReplicationState::OnNetworkObjectAdded(NetworkObject* networkObject)
+{
+    recentlyAddedComponents_.insert(networkObject->GetNetworkId());
+}
+
+void SharedReplicationState::OnNetworkObjectRemoved(NetworkObject* networkObject)
+{
+    if (recentlyAddedComponents_.erase(networkObject->GetNetworkId()) == 0)
+        recentlyRemovedComponents_.insert(networkObject->GetNetworkId());
+}
+
+void SharedReplicationState::PrepareForNewFrame()
+{
+    ResetFrameBuffers();
+    InitializeNewObjects();
+
+    replicationManager_->UpdateAndSortNetworkObjects(sortedNetworkObjects_);
+}
+
+void SharedReplicationState::ResetFrameBuffers()
+{
+    const unsigned indexUppedBound = GetIndexUpperBound();
+
+    isDeltaUpdateQueued_.clear();
+    isDeltaUpdateQueued_.resize(indexUppedBound);
+
+    needReliableDeltaUpdate_.clear();
+    needReliableDeltaUpdate_.resize(indexUppedBound);
+    reliableDeltaUpdateData_.resize(indexUppedBound);
+
+    needUnreliableDeltaUpdate_.clear();
+    needUnreliableDeltaUpdate_.resize(indexUppedBound);
+    unreliableDeltaUpdateData_.resize(indexUppedBound);
+
+    deltaUpdateBuffer_.Clear();
+}
+
+void SharedReplicationState::InitializeNewObjects()
+{
+    for (NetworkId networkId : recentlyAddedComponents_)
+    {
+        NetworkObject* networkObject = replicationManager_->GetNetworkObject(networkId);
+        if (!networkObject)
+        {
+            URHO3D_ASSERTLOG(0, "Cannot find recently added NetworkObject");
+            continue;
+        }
+
+        networkObject->SetNetworkMode(NetworkObjectMode::Server);
+        networkObject->InitializeOnServer();
+    }
+    recentlyAddedComponents_.clear();
+}
+
+void SharedReplicationState::QueueDeltaUpdate(NetworkObject* networkObject)
+{
+    const unsigned index = GetIndex(networkObject->GetNetworkId());
+    isDeltaUpdateQueued_[index] = true;
+}
+
+void SharedReplicationState::CookDeltaUpdates(unsigned currentFrame)
+{
+    recentlyRemovedComponents_.clear();
+
+    for (unsigned i = 0; i < isDeltaUpdateQueued_.size(); ++i)
+    {
+        if (!isDeltaUpdateQueued_[i])
+            continue;
+
+        NetworkObject* networkObject = replicationManager_->GetNetworkObjectByIndex(i);
+        URHO3D_ASSERT(networkObject);
+
+        const unsigned reliableMask = networkObject->GetReliableDeltaMask(currentFrame);
+        if (reliableMask)
+        {
+            const unsigned beginOffset = deltaUpdateBuffer_.Tell();
+            networkObject->WriteReliableDelta(currentFrame, reliableMask, deltaUpdateBuffer_);
+            const unsigned endOffset = deltaUpdateBuffer_.Tell();
+
+            needReliableDeltaUpdate_[i] = true;
+            reliableDeltaUpdateData_[i] = {beginOffset, endOffset};
+        }
+
+        const unsigned unreliableMask = networkObject->GetUnreliableDeltaMask(currentFrame);
+        if (unreliableMask)
+        {
+            const unsigned beginOffset = deltaUpdateBuffer_.Tell();
+            networkObject->WriteUnreliableDelta(currentFrame, unreliableMask, deltaUpdateBuffer_);
+            const unsigned endOffset = deltaUpdateBuffer_.Tell();
+
+            needUnreliableDeltaUpdate_[i] = true;
+            unreliableDeltaUpdateData_[i] = {beginOffset, endOffset};
+        }
+    }
+}
+
+unsigned SharedReplicationState::GetIndexUpperBound() const
+{
+    return replicationManager_->GetNetworkIndexUpperBound();
+}
+
+ea::optional<ConstByteSpan> SharedReplicationState::GetReliableUpdateByIndex(unsigned index) const
+{
+    if (!needReliableDeltaUpdate_[index])
+        return ea::nullopt;
+    return GetSpanData(reliableDeltaUpdateData_[index]);
+}
+
+ea::optional<ConstByteSpan> SharedReplicationState::GetUnreliableUpdateByIndex(unsigned index) const
+{
+    if (!needUnreliableDeltaUpdate_[index])
+        return ea::nullopt;
+    return GetSpanData(unreliableDeltaUpdateData_[index]);
+}
+
+ConstByteSpan SharedReplicationState::GetSpanData(const DeltaBufferSpan& span) const
+{
+    const auto data = deltaUpdateBuffer_.GetData();
+    return {data + span.beginOffset_, span.endOffset_ - span.beginOffset_};
+}
+
 ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const VariantMap& settings)
     : connection_(connection)
     , settings_(settings)
@@ -70,6 +201,67 @@ void ClientConnectionData::UpdateFrame(float timeStep, const NetworkTime& server
     timestamp_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
 
     clockTimeAccumulator_ += timeStep;
+}
+
+void ClientConnectionData::ProcessNetworkObjects(SharedReplicationState& sharedState, float timeStep)
+{
+    const float relevanceTimeout = GetSetting(NetworkSettings::RelevanceTimeout).GetFloat();
+
+    const unsigned indexUpperBound = sharedState.GetIndexUpperBound();
+    isComponentReplicated_.resize(indexUpperBound);
+    componentsRelevanceTimeouts_.resize(indexUpperBound);
+
+    pendingRemovedComponents_.clear();
+    pendingUpdatedComponents_.clear();
+
+    // Process removed components first
+    for (NetworkId networkId : sharedState.GetRecentlyRemovedObjects())
+    {
+        const unsigned index = GetIndex(networkId);
+        if (isComponentReplicated_[index])
+        {
+            isComponentReplicated_[index] = false;
+            pendingRemovedComponents_.push_back(networkId);
+        }
+    }
+
+    // Process active components
+    for (NetworkObject* networkObject : sharedState.GetSortedObjects())
+    {
+        const NetworkId networkId = networkObject->GetNetworkId();
+        const unsigned index = GetIndex(networkId);
+
+        if (!isComponentReplicated_[index])
+        {
+            if (networkObject->IsRelevantForClient(connection_))
+            {
+                // Begin replication of component, queue snapshot
+                componentsRelevanceTimeouts_[index] = relevanceTimeout;
+                isComponentReplicated_[index] = true;
+                pendingUpdatedComponents_.push_back({ networkObject, true });
+            }
+        }
+        else
+        {
+            componentsRelevanceTimeouts_[index] -= timeStep;
+            if (componentsRelevanceTimeouts_[index] < 0.0f)
+            {
+                if (!networkObject->IsRelevantForClient(connection_))
+                {
+                    // Remove irrelevant component
+                    isComponentReplicated_[index] = false;
+                    pendingRemovedComponents_.push_back(networkId);
+                    continue;
+                }
+
+                componentsRelevanceTimeouts_[index] = relevanceTimeout;
+            }
+
+            // Queue non-snapshot update
+            sharedState.QueueDeltaUpdate(networkObject);
+            pendingUpdatedComponents_.push_back({ networkObject, false });
+        }
+    }
 }
 
 void ClientConnectionData::SendCommonUpdates()
@@ -154,6 +346,7 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     , scene_(scene)
     , updateFrequency_(network_->GetUpdateFps())
     , physicsSync_(scene_, updateFrequency_, true)
+    , sharedState_(MakeShared<SharedReplicationState>(base_))
 {
     SetNetworkSetting(settings_.map_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
@@ -200,139 +393,14 @@ void ServerNetworkManager::BeginNetworkFrame(float overtime)
 void ServerNetworkManager::PrepareNetworkFrame()
 {
     const float timeStep = 1.0f / updateFrequency_;
-    CollectObjectsToUpdate(timeStep);
-    PrepareDeltaUpdates();
-}
 
-void ServerNetworkManager::CollectObjectsToUpdate(float timeStep)
-{
-    const auto& recentlyAddedObjects = base_->GetRecentlyAddedComponents();
-    for (NetworkId networkId : recentlyAddedObjects)
-    {
-        NetworkObject* networkObject = base_->GetNetworkObject(networkId);
-        if (!networkObject)
-        {
-            URHO3D_ASSERTLOG(0, "Cannot find recently added NetworkObject");
-            continue;
-        }
-
-        networkObject->SetNetworkMode(NetworkObjectMode::Server);
-        networkObject->InitializeOnServer();
-    }
-
-    const unsigned maxIndex = base_->GetNetworkIndexUpperBound();
-    deltaUpdateMask_.Clear(maxIndex);
-    reliableDeltaUpdates_.resize(maxIndex);
-    unreliableDeltaUpdates_.resize(maxIndex);
-
-    // Collect objects to update
-    base_->UpdateAndSortNetworkObjects(orderedNetworkObjects_);
+    sharedState_->PrepareForNewFrame();
     for (auto& [connection, data] : connections_)
     {
-        if (!data.IsSynchronized())
-            continue;
-
-        data.isComponentReplicated_.resize(maxIndex);
-        data.componentsRelevanceTimeouts_.resize(maxIndex);
-
-        data.pendingRemovedComponents_.clear();
-        data.pendingUpdatedComponents_.clear();
-
-        // Process removed components first
-        for (NetworkId networkId : base_->GetRecentlyRemovedComponents())
-        {
-            const unsigned index = GetIndex(networkId);
-            if (data.isComponentReplicated_[index])
-            {
-                data.isComponentReplicated_[index] = false;
-                data.pendingRemovedComponents_.push_back(networkId);
-            }
-        }
-
-        // Process active components
-        for (NetworkObject* networkObject : orderedNetworkObjects_)
-        {
-            const NetworkId networkId = networkObject->GetNetworkId();
-            const unsigned index = GetIndex(networkId);
-
-            if (!data.isComponentReplicated_[index])
-            {
-                if (networkObject->IsRelevantForClient(connection))
-                {
-                    // Begin replication of component, queue snapshot
-                    data.componentsRelevanceTimeouts_[index] = settings_.relevanceTimeout_;
-                    data.isComponentReplicated_[index] = true;
-                    data.pendingUpdatedComponents_.push_back({ networkObject, true });
-                }
-            }
-            else
-            {
-                data.componentsRelevanceTimeouts_[index] -= timeStep;
-                if (data.componentsRelevanceTimeouts_[index] < 0.0f)
-                {
-                    if (!networkObject->IsRelevantForClient(connection))
-                    {
-                        // Remove irrelevant component
-                        data.isComponentReplicated_[index] = false;
-                        data.pendingRemovedComponents_.push_back(networkId);
-                        continue;
-                    }
-
-                    data.componentsRelevanceTimeouts_[index] = settings_.relevanceTimeout_;
-                }
-
-                // Queue non-snapshot update
-                deltaUpdateMask_.Set(index);
-                data.pendingUpdatedComponents_.push_back({ networkObject, false });
-            }
-        }
+        if (data.IsSynchronized())
+            data.ProcessNetworkObjects(*sharedState_, timeStep);
     }
-    base_->ClearRecentActions();
-}
-
-void ServerNetworkManager::PrepareDeltaUpdates()
-{
-    const unsigned maxIndex = base_->GetNetworkIndexUpperBound();
-    deltaUpdateBuffer_.Clear();
-    for (unsigned index = 0; index < maxIndex; ++index)
-    {
-        if (!deltaUpdateMask_.NeedAny(index))
-            continue;
-
-        NetworkObject* networkObject = base_->GetNetworkObjectByIndex(index);
-        PrepareReliableDeltaForObject(index, networkObject);
-        PrepareUnreliableDeltaForObject(index, networkObject);
-    }
-}
-
-void ServerNetworkManager::PrepareReliableDeltaForObject(unsigned index, NetworkObject* networkObject)
-{
-    if (const auto mask = networkObject->GetReliableDeltaMask(currentFrame_))
-    {
-        const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-        networkObject->WriteReliableDelta(currentFrame_, mask, deltaUpdateBuffer_);
-        const unsigned endOffset = deltaUpdateBuffer_.Tell();
-        reliableDeltaUpdates_[index] = { beginOffset, endOffset };
-    }
-    else
-    {
-        deltaUpdateMask_.ResetReliableDelta(index);
-    }
-}
-
-void ServerNetworkManager::PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject)
-{
-    if (const auto mask = networkObject->GetUnreliableDeltaMask(currentFrame_))
-    {
-        const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-        networkObject->WriteUnreliableDelta(currentFrame_, mask, deltaUpdateBuffer_);
-        const unsigned endOffset = deltaUpdateBuffer_.Tell();
-        unreliableDeltaUpdates_[index] = { beginOffset, endOffset };
-    }
-    else
-    {
-        deltaUpdateMask_.ResetUnreliableDelta(index);
-    }
+    sharedState_->CookDeltaUpdates(currentFrame_);
 }
 
 void ServerNetworkManager::AddConnection(AbstractConnection* connection)
@@ -451,17 +519,19 @@ void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientConnectionData
         for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
         {
             const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot || !deltaUpdateMask_.NeedReliableDelta(index))
+            if (isSnapshot)
+                continue;
+
+            const auto updateSpan = sharedState_->GetReliableUpdateByIndex(index);
+            if (!updateSpan)
                 continue;
 
             sendMessage = true;
             msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
             msg.WriteStringHash(networkObject->GetType());
 
-            const auto [beginOffset, endOffset] = reliableDeltaUpdates_[index];
-            const unsigned deltaSize = endOffset - beginOffset;
-            msg.WriteVLE(deltaSize);
-            msg.Write(deltaUpdateBuffer_.GetData() + beginOffset, deltaSize);
+            msg.WriteVLE(updateSpan->size());
+            msg.Write(updateSpan->data(), updateSpan->size());
 
             if (debugInfo)
             {
@@ -487,17 +557,19 @@ void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionDa
         {
             // Skip redundant updates, both if update is empty or if snapshot was already sent
             const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot || !deltaUpdateMask_.NeedUnreliableDelta(index))
+            if (isSnapshot)
+                continue;
+
+            const auto updateSpan = sharedState_->GetUnreliableUpdateByIndex(index);
+            if (!updateSpan)
                 continue;
 
             sendMessage = true;
             msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
             msg.WriteStringHash(networkObject->GetType());
 
-            const auto [beginOffset, endOffset] = unreliableDeltaUpdates_[index];
-            const unsigned deltaSize = endOffset - beginOffset;
-            msg.WriteVLE(deltaSize);
-            msg.Write(deltaUpdateBuffer_.GetData() + beginOffset, deltaSize);
+            msg.WriteVLE(updateSpan->size());
+            msg.Write(updateSpan->data(), updateSpan->size());
 
             if (debugInfo)
             {

@@ -58,7 +58,7 @@ void NetworkManagerBase::OnComponentAdded(BaseTrackedComponent* baseComponent)
         networkObjectsDirty_.resize(index + 1);
     networkObjectsDirty_[index] = true;
 
-    recentlyAddedComponents_.insert(networkId);
+    OnNetworkObjectAdded(this, networkObject);
 
     URHO3D_LOGINFO("NetworkObject {} is added", ToString(networkId));
 }
@@ -69,8 +69,7 @@ void NetworkManagerBase::OnComponentRemoved(BaseTrackedComponent* baseComponent)
 
     const NetworkId networkId = networkObject->GetNetworkId();
 
-    if (recentlyAddedComponents_.erase(networkId) == 0)
-        recentlyRemovedComponents_.insert(networkId);
+    OnNetworkObjectRemoved(this, networkObject);
 
     URHO3D_LOGINFO("NetworkObject {} is removed", ToString(networkId));
 
@@ -109,15 +108,8 @@ void NetworkManagerBase::RemoveAllComponents()
     }
 
     networkObjectsDirty_.clear();
-    ClearRecentActions();
 
     URHO3D_LOGINFO("{} nodes removed on NetworkObject cleanup", numRemovedNodes);
-}
-
-void NetworkManagerBase::ClearRecentActions()
-{
-    recentlyAddedComponents_.clear();
-    recentlyRemovedComponents_.clear();
 }
 
 void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const
