@@ -82,6 +82,8 @@ URHO3D_NETWORK_SETTING(InputBufferingTweak, int, 1);
 URHO3D_NETWORK_SETTING(MinInputBuffering, unsigned, 0);
 /// Maximal number of buffered input frames.
 URHO3D_NETWORK_SETTING(MaxInputBuffering, unsigned, 8);
+/// Interval in seconds between NetworkObject becoming unneeded for client and replication stopped.
+URHO3D_NETWORK_SETTING(RelevanceTimeout, float, 5.0f);
 
 /// @}
 

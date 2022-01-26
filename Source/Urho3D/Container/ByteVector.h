@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <EASTL/span.h>
 #include <EASTL/vector.h>
 
 namespace Urho3D
@@ -29,5 +30,11 @@ namespace Urho3D
 
 /// Vector of bytes.
 using ByteVector = ea::vector<unsigned char>;
+
+/// Span of bytes (mutable).
+using ByteSpan = ea::span<unsigned char>;
+
+/// Span of bytes (immutable).
+using ConstByteSpan = ea::span<const unsigned char>;
 
 }

@@ -48,14 +48,61 @@ class NetworkManagerBase;
 class Scene;
 struct NetworkSetting;
 
-struct ClientObjectFeedback
+/// Replication state shared between all clients.
+class SharedReplicationState : public RefCounted
 {
-    NetworkTime feedbackTime_{};
-    unsigned offset_{};
-    unsigned size_{};
+public:
+    explicit SharedReplicationState(NetworkManagerBase* replicationManager);
+
+    /// Initial preparation for new network frame.
+    void PrepareForNewFrame();
+    /// Request delta update to be prepared for specified object.
+    void QueueDeltaUpdate(NetworkObject* networkObject);
+    /// Cook all requested delta updates.
+    void CookDeltaUpdates(unsigned currentFrame);
+
+    /// Return state of the current frame.
+    /// @{
+    const auto& GetRecentlyRemovedObjects() const { return recentlyRemovedComponents_; }
+    const auto& GetSortedObjects() const { return sortedNetworkObjects_; }
+    unsigned GetIndexUpperBound() const;
+    ea::optional<ConstByteSpan> GetReliableUpdateByIndex(unsigned index) const;
+    ea::optional<ConstByteSpan> GetUnreliableUpdateByIndex(unsigned index) const;
+    /// @}
+
+private:
+    /// A span in delta update buffer corresponding to the update data of the individual NetworkObject.
+    struct DeltaBufferSpan
+    {
+        unsigned beginOffset_{};
+        unsigned endOffset_{};
+    };
+
+    void OnNetworkObjectAdded(NetworkObject* networkObject);
+    void OnNetworkObjectRemoved(NetworkObject* networkObject);
+
+    void ResetFrameBuffers();
+    void InitializeNewObjects();
+
+    ConstByteSpan GetSpanData(const DeltaBufferSpan& span) const;
+
+    WeakPtr<NetworkManagerBase> const replicationManager_{};
+
+    ea::unordered_set<NetworkId> recentlyRemovedComponents_;
+    ea::unordered_set<NetworkId> recentlyAddedComponents_;
+
+    ea::vector<NetworkObject*> sortedNetworkObjects_;
+
+    ea::vector<bool> isDeltaUpdateQueued_;
+    ea::vector<bool> needReliableDeltaUpdate_;
+    ea::vector<bool> needUnreliableDeltaUpdate_;
+
+    VectorBuffer deltaUpdateBuffer_;
+    ea::vector<DeltaBufferSpan> reliableDeltaUpdateData_;
+    ea::vector<DeltaBufferSpan> unreliableDeltaUpdateData_;
 };
 
-/// Per-connection data for server.
+/// Replication state specific to individual client connection.
 struct ClientConnectionData
 {
     AbstractConnection* connection_{};
@@ -70,6 +117,7 @@ public:
     ClientConnectionData(AbstractConnection* connection, const VariantMap& settings);
 
     void UpdateFrame(float timeStep, const NetworkTime& serverTime, float overtime);
+    void ProcessNetworkObjects(SharedReplicationState& sharedState, float timeStep);
     // TODO(network): Hide this
     void OnFeedbackReceived(unsigned feedbackFrame) { inputStats_.OnInputReceived(feedbackFrame); }
 
@@ -116,48 +164,7 @@ struct ServerNetworkManagerSettings
 {
     VariantMap map_;
 
-    unsigned clockIntervalMs_{ 1000 };
-
-    unsigned numFeedbackDelaySamples_{ 31 };
-
-    float relevanceTimeout_{ 5.0f };
     float traceDurationInSeconds_{ 3.0f };
-};
-
-/// Internal class to handle delta updates.
-class URHO3D_API DeltaUpdateMask
-{
-public:
-    void Clear(unsigned maxIndex)
-    {
-        mask_.clear();
-        mask_.resize(maxIndex);
-    }
-
-    void Set(unsigned index) { mask_[index] = ReliableAndUnreliableDelta; }
-
-    void ResetReliableDelta(unsigned index) { mask_[index] &= ~ReliableDelta; }
-
-    void ResetUnreliableDelta(unsigned index) { mask_[index] &= ~UnreliableDelta; }
-
-    bool NeedAny(unsigned index) const { return mask_[index] != Empty; }
-
-    bool NeedReliableDelta(unsigned index) const { return !!(mask_[index] & ReliableDelta); }
-
-    bool NeedUnreliableDelta(unsigned index) const { return !!(mask_[index] & UnreliableDelta); }
-
-private:
-    enum : unsigned char
-    {
-        Empty = 0,
-
-        ReliableDelta = 1 << 0,
-        UnreliableDelta = 1 << 1,
-
-        ReliableAndUnreliableDelta = ReliableDelta | UnreliableDelta
-    };
-
-    ea::vector<unsigned char> mask_;
 };
 
 /// Server part of NetworkManager subsystem.
@@ -186,10 +193,6 @@ private:
 
     void BeginNetworkFrame(float overtime);
     void PrepareNetworkFrame();
-    void CollectObjectsToUpdate(float timeStep);
-    void PrepareDeltaUpdates();
-    void PrepareReliableDeltaForObject(unsigned index, NetworkObject* networkObject);
-    void PrepareUnreliableDeltaForObject(unsigned index, NetworkObject* networkObject);
 
     void SendUpdate(ClientConnectionData& data);
     void SendRemoveObjectsMessage(ClientConnectionData& data);
@@ -213,14 +216,9 @@ private:
 
     PhysicsClockSynchronizer physicsSync_;
 
+    SharedPtr<SharedReplicationState> sharedState_;
     ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
     VectorBuffer componentBuffer_;
-    ea::vector<NetworkObject*> orderedNetworkObjects_;
-
-    VectorBuffer deltaUpdateBuffer_;
-    DeltaUpdateMask deltaUpdateMask_;
-    ea::vector<DeltaBufferSpan> reliableDeltaUpdates_;
-    ea::vector<DeltaBufferSpan> unreliableDeltaUpdates_;
 };
 
 }

@@ -99,7 +99,7 @@ SoftNetworkTime ClientReplicaClock::InitializeSoftTime() const
     const float timeErrorTolerance = GetSetting(NetworkSettings::TimeErrorTolerance).GetFloat();
     const float minTimeDilation = GetSetting(NetworkSettings::MinTimeDilation).GetFloat();
     const float maxTimeDilation = GetSetting(NetworkSettings::MaxTimeDilation).GetFloat();
-    return SoftNetworkTime{updateFrequency_, timeSnapThreshold_, timeErrorTolerance_, minTimeDilation_, maxTimeDilation_};
+    return SoftNetworkTime{updateFrequency_, timeSnapThreshold, timeErrorTolerance, minTimeDilation, maxTimeDilation};
 }
 
 void ClientReplicaClock::UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated)
@@ -376,7 +376,7 @@ void ClientReplica::UpdateReplica(float timeStep)
 {
     const auto isNewInputFrame = GetSynchronizedPhysicsTick();
 
-    const auto& networkObjects = replicationManager_->GetUnorderedNetworkObjects();
+    const auto& networkObjects = replicationManager_->GetNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)
     {
         networkObject->InterpolateState(GetReplicaTime(), GetInputTime(), isNewInputFrame);

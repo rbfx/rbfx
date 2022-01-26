@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Container/TransformedSpan.h"
+#include "../Core/Signal.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Replica/ClientReplica.h"
@@ -48,6 +49,9 @@ class URHO3D_API NetworkManagerBase : public BaseStableComponentRegistry
     URHO3D_OBJECT(NetworkManagerBase, BaseStableComponentRegistry);
 
 public:
+    Signal<void(NetworkObject*)> OnNetworkObjectAdded;
+    Signal<void(NetworkObject*)> OnNetworkObjectRemoved;
+
     explicit NetworkManagerBase(Context* context);
 
     /// Process components
@@ -55,15 +59,11 @@ public:
     void QueueComponentUpdate(NetworkObject* networkObject);
     void RemoveAllComponents();
 
-    void ClearRecentActions();
-    const auto& GetRecentlyAddedComponents() const { return recentlyAddedComponents_; }
-    const auto& GetRecentlyRemovedComponents() const { return recentlyRemovedComponents_; }
-
     void UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
     /// @}
 
     Scene* GetScene() const { return scene_; }
-    const auto GetUnorderedNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }
+    const auto GetNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }
     unsigned GetNetworkIndexUpperBound() const { return GetStableIndexUpperBound(); }
     NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
@@ -72,9 +72,6 @@ private:
     Scene* scene_{};
 
     ea::vector<bool> networkObjectsDirty_;
-
-    ea::unordered_set<NetworkId> recentlyRemovedComponents_;
-    ea::unordered_set<NetworkId> recentlyAddedComponents_;
 
 protected:
     void OnSceneSet(Scene* scene) override;
