@@ -55,7 +55,7 @@ public:
     void InitializeOnServer() override;
     void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void OnUnreliableDelta(unsigned frame) override;
     unsigned GetUnreliableFeedbackMask(unsigned frame) override;
@@ -66,7 +66,7 @@ protected:
     /// Called when frame begins on server.
     void OnServerNetworkFrameBegin();
     /// Called when physics step is over.
-    void OnPhysicsPostStepOnClient();
+    void OnPhysicsSynchronizedOnClient(unsigned networkFrame);
     void CorrectAgainstFrame(unsigned frame);
 
 private:

@@ -25,7 +25,6 @@
 #include "../IO/Log.h"
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsEvents.h"
-#include "../Physics/PhysicsWorld.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #endif
@@ -156,17 +155,16 @@ PhysicsClockSynchronizer::~PhysicsClockSynchronizer()
 #endif
 }
 
-unsigned PhysicsClockSynchronizer::Synchronize(float overtime)
+void PhysicsClockSynchronizer::Synchronize(unsigned networkFrame, float overtime)
 {
-    unsigned synchronizedTick = 0;
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
     {
         sync_.SetFollowerFrequency(physicsWorld_->GetFps());
-        synchronizedTick = sync_.Synchronize(overtime);
+        const unsigned synchronizedTick = sync_.Synchronize(overtime);
+        synchronizedStep_ = SynchronizedPhysicsStep{synchronizedTick, networkFrame};
     }
 #endif
-    return synchronizedTick;
 }
 
 void PhysicsClockSynchronizer::Update(float timeStep)
@@ -187,7 +185,8 @@ void PhysicsClockSynchronizer::UpdatePhysics()
     {
         const float fixedTimeStep = 1.0f / sync_.GetFollowerFrequency();
         const float overtime = interpolated_ ? sync_.GetFollowerAccumulatedTime() : 0.0f;
-        physicsWorld_->CustomUpdate(sync_.GetPendingFollowerTicks(), fixedTimeStep, overtime);
+        physicsWorld_->CustomUpdate(sync_.GetPendingFollowerTicks(), fixedTimeStep, overtime, synchronizedStep_);
+        synchronizedStep_ = ea::nullopt;
     }
 #endif
 }

@@ -32,6 +32,8 @@
 
 #include <Bullet/LinearMath/btIDebugDraw.h>
 
+#include <EASTL/optional.h>
+
 class btCollisionConfiguration;
 class btCollisionShape;
 class btBroadphaseInterface;
@@ -58,6 +60,12 @@ class Serializer;
 class XMLElement;
 
 struct CollisionGeometryData;
+
+struct SynchronizedPhysicsStep
+{
+    unsigned offset_{};
+    unsigned networkFrame_{};
+};
 
 /// Physics raycast hit.
 struct URHO3D_API PhysicsRaycastResult
@@ -168,7 +176,7 @@ public:
     /// Step the simulation forward.
     void Update(float timeStep);
     /// Custom simulation with explicit steps and extrapolation/interpolation time.
-    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime);
+    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<SynchronizedPhysicsStep> sync);
     /// Refresh collisions only without updating dynamics.
     void UpdateCollisions();
     /// Set simulation substeps per second.
@@ -367,6 +375,8 @@ private:
     unsigned fps_{DEFAULT_FPS};
     /// Maximum number of simulation substeps per frame. 0 (default) unlimited, or negative values for adaptive timestep.
     int maxSubSteps_{};
+    /// Indicates which physical step is synchronized with network frame.
+    ea::optional<SynchronizedPhysicsStep> synchronizedStep_;
     /// Time accumulator for non-interpolated mode.
     float timeAcc_{};
     /// Maximum angular velocity for network replication.

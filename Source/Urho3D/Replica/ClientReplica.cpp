@@ -77,13 +77,11 @@ float ClientReplicaClock::ApplyTimeStep(float timeStep, const ea::vector<MsgScen
     if (timeStep != scaledTimeStep)
         latestScaledInputTime_ = inputTime_.Get();
 
-    if (previousInputTime.GetFrame() != inputTime_.Get().GetFrame())
-        synchronizedPhysicsTick_ = physicsSync_.Synchronize(inputTime_.Get().GetSubFrame() / updateFrequency_);
+    isNewInputFrame_ = previousInputTime.GetFrame() != inputTime_.Get().GetFrame();
+    if (isNewInputFrame_)
+        physicsSync_.Synchronize(inputTime_.Get().GetFrame(), inputTime_.Get().GetSubFrame() / updateFrequency_);
     else
-    {
         physicsSync_.Update(scaledTimeStep);
-        synchronizedPhysicsTick_ = ea::nullopt;
-    }
 
     return scaledTimeStep;
 }
@@ -374,7 +372,7 @@ void ClientReplica::SynchronizeClocks(float timeStep)
 
 void ClientReplica::UpdateReplica(float timeStep)
 {
-    const auto isNewInputFrame = GetSynchronizedPhysicsTick();
+    const bool isNewInputFrame = IsNewInputFrame();
 
     const auto& networkObjects = replicationManager_->GetNetworkObjects();
     for (NetworkObject* networkObject : networkObjects)
