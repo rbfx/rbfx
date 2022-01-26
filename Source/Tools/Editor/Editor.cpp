@@ -151,7 +151,7 @@ void Editor::Setup()
     engineParameters_[EP_HIGH_DPI] = true;
     engineParameters_[EP_SYSTEMUI_FLAGS] = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt() | ImGuiConfigFlags_ViewportsEnable /*| ImGuiConfigFlags_DpiEnableScaleViewports*/;
 #else
-    engineParameters_[EP_HIGH_DPI] = false;
+    engineParameters_[EP_HIGH_DPI] = true;
 #endif
     // Load editor settings
     {
