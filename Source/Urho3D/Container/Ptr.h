@@ -407,25 +407,15 @@ public:
     /// Point to the object.
     T* operator ->() const
     {
-        T* rawPtr = Get();
-        assert(rawPtr);
-        return rawPtr;
+        assert(!Expired());
+        return ptr_;
     }
 
     /// Dereference the object.
     T& operator *() const
     {
-        T* rawPtr = Get();
-        assert(rawPtr);
-        return *rawPtr;
-    }
-
-    /// Subscript the object if applicable.
-    T& operator [](int index)
-    {
-        T* rawPtr = Get();
-        assert(rawPtr);
-        return (*rawPtr)[index];
+        assert(!Expired());
+        return ptr_;
     }
 
     /// Test for equality with another weak pointer.
