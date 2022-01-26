@@ -158,7 +158,7 @@
 				<property name="Angle" type="Float" value="10.96718" />
 				<property name="Length" type="Float" value="5" />
 				<property name="Translation" type="Vector3" value="0 0 0" />
-				<property name="Rotation" type="Quaternion" value="1 0 0 0" />
+				<property name="Rotation" type="Quaternion" value="0.7071068 -0.7071068 0 0" />
 				<property name="Scale" type="Vector3" value="1 1 1" />
 				<property name="From" type="Int" value="0" />
 			</properties>
@@ -726,7 +726,7 @@
 				<property name="Radius Thickness" type="Float" value="1" />
 				<property name="Angle" type="Float" value="11.72583" />
 				<property name="Length" type="Float" value="2.47" />
-				<property name="Translation" type="Vector3" value="0 0 0" />
+				<property name="Translation" type="Vector3" value="0 0.5 0" />
 				<property name="Rotation" type="Quaternion" value="0.7071068 -0.7071068 0 0" />
 				<property name="Scale" type="Vector3" value="1 1 1" />
 				<property name="From" type="Int" value="1" />
@@ -1871,7 +1871,7 @@
 				<property name="Angle" type="Float" value="8" />
 				<property name="Length" type="Float" value="5" />
 				<property name="Translation" type="Vector3" value="0 0 0" />
-				<property name="Rotation" type="Quaternion" value="1 0 0 0" />
+				<property name="Rotation" type="Quaternion" value="0.7071068 -0.7071068 0 0" />
 				<property name="Scale" type="Vector3" value="1 1 1" />
 				<property name="From" type="Int" value="0" />
 			</properties>
