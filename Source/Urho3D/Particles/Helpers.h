@@ -119,7 +119,7 @@ void RunUpdate(UpdateContext& context, Instance& instance, bool scalar,
         return;
     }
     default:
-        assert(!"Invalid pin container type permutation");
+        assert(!"Invalid pin container type");
         break;
     }
 };

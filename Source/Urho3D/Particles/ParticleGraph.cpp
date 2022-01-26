@@ -24,7 +24,7 @@
 
 #include "ParticleGraph.h"
 
-#include "Constant.h"
+#include "Nodes/Constant.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphSystem.h"
 #include "Urho3D/Resource/Graph.h"
