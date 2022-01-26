@@ -51,7 +51,7 @@ Vector3 CurlNoise3DInstance::Generate(const Vector3& pos)
     double x = pos.x_ * frequency;
     double y = pos.y_ * frequency;
     double z = pos.z_ * frequency + scrollPos_;
-    double scale = 0.01;
+    double scale = 0.02;
 
     const auto center = noise_.GetDouble(x, y, z) * scale;
 
