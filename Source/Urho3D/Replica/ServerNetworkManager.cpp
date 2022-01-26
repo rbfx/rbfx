@@ -359,12 +359,14 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
         const float overtime = network_->GetUpdateOvertime();
 
         if (isUpdateNow)
-            physicsSync_.Synchronize(overtime);
-        else
-            physicsSync_.Update(timeStep);
-
-        if (isUpdateNow)
+        {
             BeginNetworkFrame(overtime);
+            physicsSync_.Synchronize(overtime, currentFrame_);
+        }
+        else
+        {
+            physicsSync_.Update(timeStep);
+        }
     });
 
     SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)

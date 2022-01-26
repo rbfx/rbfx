@@ -63,7 +63,7 @@ public:
     unsigned GetUnreliableDeltaMask(unsigned frame) override;
     void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
@@ -189,7 +189,7 @@ public:
     virtual void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) {}
     virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) {}
 
-    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) {}
+    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) {}
     virtual void ReadSnapshot(unsigned frame, Deserializer& src) {} // TODO(network): Rename to InitializeFromSnapshot?
     virtual void ReadReliableDelta(unsigned frame, Deserializer& src) {}
     virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src) {}
@@ -237,7 +237,7 @@ public:
     void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
     void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
@@ -283,7 +283,7 @@ public:
     void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
 
     void ReadSnapshot(unsigned frame, Deserializer& src) override;
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame) override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
     /// @}
 

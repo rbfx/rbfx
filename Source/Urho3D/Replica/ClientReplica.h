@@ -77,10 +77,8 @@ public:
     /// Return time at which ongoing client input will be processed on server.
     /// Input time is always ahead of server.
     NetworkTime GetInputTime() const { return inputTime_.Get(); }
-    bool IsNewInputFrame() const { return synchronizedPhysicsTick_.has_value(); }
+    bool IsNewInputFrame() const { return isNewInputFrame_; }
     NetworkTime GetLatestScaledInputTime() const { return latestScaledInputTime_; }
-    /// Return which physical tick of this frame corresponds to the beginning of the network frame.
-    ea::optional<unsigned> GetSynchronizedPhysicsTick() const { return synchronizedPhysicsTick_; }
 
 protected:
     /// Apply elapsed timestep and accumulated clock updates.
@@ -106,7 +104,7 @@ private:
     NetworkTime serverTime_;
     unsigned latestServerFrame_{};
     NetworkTime latestScaledInputTime_{};
-    ea::optional<unsigned> synchronizedPhysicsTick_{};
+    bool isNewInputFrame_{};
 
     SoftNetworkTime replicaTime_;
     SoftNetworkTime inputTime_;

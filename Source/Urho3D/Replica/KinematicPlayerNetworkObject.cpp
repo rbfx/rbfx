@@ -89,24 +89,31 @@ void KinematicPlayerNetworkObject::ReadSnapshot(unsigned frame, Deserializer& sr
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
 
     if (GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned)
+    {
         networkTransform_->SetTrackOnly(true);
 
-    const auto physicsWorld = node_->GetScene()->GetComponent<PhysicsWorld>();
-    SubscribeToEvent(physicsWorld, E_PHYSICSPRESTEP, [this](StringHash, VariantMap&) { OnPhysicsPostStepOnClient(); });
+        const auto physicsWorld = node_->GetScene()->GetComponent<PhysicsWorld>();
+        SubscribeToEvent(physicsWorld, E_PHYSICSPRESTEP, [this](StringHash, VariantMap& eventData)
+        {
+            const Variant& networkFrame = eventData[PhysicsPreStep::P_NETWORKFRAME];
+            if (!networkFrame.IsEmpty())
+                OnPhysicsSynchronizedOnClient(networkFrame.GetUInt());
+        });
+    }
 }
 
 void KinematicPlayerNetworkObject::InterpolateState(
-    const NetworkTime& replicaTime, const NetworkTime& inputTime, const ea::optional<unsigned>& isNewInputFrame)
+    const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
 {
     // Do client-side predictions
     if (kinematicController_ && GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned)
     {
         if (isNewInputFrame)
         {
-            const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
-            kinematicController_->SetWalkDirection(velocity_ * timeStep);
+            //const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
+            //kinematicController_->SetWalkDirection(velocity_ * timeStep);
 
-            trackNextStepAsFrame_ = ea::make_pair(*isNewInputFrame, inputTime.GetFrame() - 1);
+            //trackNextStepAsFrame_ = ea::make_pair(*isNewInputFrame, inputTime.GetFrame() - 1);
         }
         return;
     }
@@ -180,26 +187,20 @@ void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin()
     }
 }
 
-void KinematicPlayerNetworkObject::OnPhysicsPostStepOnClient()
+void KinematicPlayerNetworkObject::OnPhysicsSynchronizedOnClient(unsigned networkFrame)
 {
     if (kinematicController_)
     {
+        const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
+        kinematicController_->SetWalkDirection(velocity_ * timeStep);
+
         if (compareNextStepToFrame_)
         {
             CorrectAgainstFrame(*compareNextStepToFrame_);
             compareNextStepToFrame_ = ea::nullopt;
         }
 
-        if (trackNextStepAsFrame_)
-        {
-            if (trackNextStepAsFrame_->first)
-                --trackNextStepAsFrame_->first;
-            else
-            {
-                predictedWorldPositions_.emplace_back(trackNextStepAsFrame_->second, kinematicController_->GetRawPosition());
-                trackNextStepAsFrame_ = ea::nullopt;
-            }
-        }
+        predictedWorldPositions_.emplace_back(networkFrame - 1, kinematicController_->GetRawPosition());
     }
 }
 

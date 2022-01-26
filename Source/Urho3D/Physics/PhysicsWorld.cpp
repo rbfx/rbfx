@@ -371,7 +371,7 @@ void PhysicsWorld::ApplyDelayedWorldTransforms()
     }
 }
 
-void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime)
+void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<SynchronizedPhysicsStep> sync)
 {
     URHO3D_PROFILE("UpdatePhysics");
     const float timeStep = numSteps * fixedTimeStep + overtime;
@@ -381,6 +381,7 @@ void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float ov
     PreUpdate(timeStep);
 
     timeAcc_ = overtime;
+    synchronizedStep_ = sync;
     world_->customStepSimulation(numSteps, fixedTimeStep, overtime);
 
     PostUpdate(timeStep, overtime);
@@ -914,7 +915,15 @@ void PhysicsWorld::PreStep(float timeStep)
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WORLD] = this;
     eventData[P_TIMESTEP] = timeStep;
+    if (synchronizedStep_ && synchronizedStep_->offset_ <= 0)
+    {
+        eventData[P_NETWORKFRAME] = synchronizedStep_->networkFrame_;
+        synchronizedStep_ = ea::nullopt;
+    }
     SendEvent(E_PHYSICSPRESTEP, eventData);
+
+    if (synchronizedStep_)
+        --synchronizedStep_->offset_;
 
     // Start profiling block for the actual simulation step
     // URHO3D_PROFILE("PhysicsStepSimulation");

@@ -48,6 +48,7 @@ URHO3D_EVENT(E_PHYSICSPRESTEP, PhysicsPreStep)
 {
     URHO3D_PARAM(P_WORLD, World);                  // PhysicsWorld pointer
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+    URHO3D_PARAM(P_NETWORKFRAME, NetworkFrame);    // unsigned
 }
 
 /// Physics world has been stepped.

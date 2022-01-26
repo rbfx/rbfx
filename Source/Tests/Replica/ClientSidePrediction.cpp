@@ -199,8 +199,8 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     sim.SimulateTime(1.0f);
 
     // Start random movement.
-    // 1 physics tick is 1/64, so with velocity of 6.4 object should move for 0.1 units per tick.
-    Vector3 direction = Vector3::LEFT * 6.4;
+    // 1 physics tick is 1/50, so with velocity of 5.0 object should move for 0.1 units per tick.
+    Vector3 direction = Vector3::LEFT * 5.0;
     for (unsigned actionIndex = 0; actionIndex < 100; ++actionIndex)
     {
         clientObject->SetWalkVelocity(direction);

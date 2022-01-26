@@ -25,6 +25,9 @@
 #pragma once
 
 #include "../Core/Object.h"
+#ifdef URHO3D_PHYSICS
+#include "../Physics/PhysicsWorld.h"
+#endif
 
 #include <EASTL/optional.h>
 
@@ -32,7 +35,6 @@ namespace Urho3D
 {
 
 class Scene;
-class PhysicsWorld;
 
 /// Helper class that synchronizes two fixed-timestep clocks.
 /// Leader clock should not tick faster than follower clock.
@@ -74,7 +76,7 @@ public:
     PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer);
     ~PhysicsClockSynchronizer();
 
-    unsigned Synchronize(float overtime);
+    void Synchronize(unsigned networkFrame, float overtime);
     void Update(float timeStep);
 
 protected:
@@ -88,6 +90,8 @@ protected:
     bool wasUpdateEnabled_{};
     bool wasInterpolated_{};
     bool interpolated_{};
+
+    ea::optional<SynchronizedPhysicsStep> synchronizedStep_;
 #endif
 };
 
