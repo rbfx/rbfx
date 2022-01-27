@@ -30,7 +30,7 @@
 #include "../IO/VectorBuffer.h"
 #include "../Replica/ClientReplica.h"
 #include "../Replica/ProtocolMessages.h"
-#include "../Replica/ServerNetworkManager.h"
+#include "../Replica/ServerReplicator.h"
 #include "../Scene/TrackedComponent.h"
 
 #include <EASTL/optional.h>
@@ -96,7 +96,7 @@ public:
     /// Switch network manager to client mode. It's not supposed to be called on NetworkManager in server mode.
     void MarkAsClient(AbstractConnection* connectionToServer);
     /// Return expected client or server network manager.
-    ServerNetworkManager& AsServer();
+    ServerReplicator& AsServer();
     ClientReplica& AsClient();
     // TODO(network): Get rid of this
     bool IsReplicatedClient() const { return client_ && client_->replica_; }
@@ -122,7 +122,7 @@ private:
 
     ea::optional<ClientData> client_;
 
-    SharedPtr<ServerNetworkManager> server_;
+    SharedPtr<ServerReplicator> server_;
 };
 
 }

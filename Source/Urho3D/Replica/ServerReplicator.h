@@ -191,13 +191,13 @@ private:
 };
 
 /// Server part of NetworkManager subsystem.
-class URHO3D_API ServerNetworkManager : public Object
+class URHO3D_API ServerReplicator : public Object
 {
-    URHO3D_OBJECT(ServerNetworkManager, Object);
+    URHO3D_OBJECT(ServerReplicator, Object);
 
 public:
-    ServerNetworkManager(NetworkManagerBase* base, Scene* scene);
-    ~ServerNetworkManager() override;
+    ServerReplicator(NetworkManagerBase* base, Scene* scene);
+    ~ServerReplicator() override;
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);

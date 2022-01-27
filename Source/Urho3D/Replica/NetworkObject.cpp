@@ -126,7 +126,7 @@ ClientReplica* NetworkObject::GetClientNetworkManager() const
     return GetNetworkManager() && GetNetworkManager()->IsReplicatedClient() ? &GetNetworkManager()->AsClient() : nullptr;
 }
 
-ServerNetworkManager* NetworkObject::GetServerNetworkManager() const
+ServerReplicator* NetworkObject::GetServerNetworkManager() const
 {
     return GetNetworkManager() && !GetNetworkManager()->IsReplicatedClient() ? &GetNetworkManager()->AsServer() : nullptr;
 }

@@ -186,7 +186,7 @@ void NetworkManager::MarkAsServer()
 
     if (!server_)
     {
-        server_ = MakeShared<ServerNetworkManager>(this, GetScene());
+        server_ = MakeShared<ServerReplicator>(this, GetScene());
     }
 }
 
@@ -213,7 +213,7 @@ void NetworkManager::MarkAsClient(AbstractConnection* connectionToServer)
     }
 }
 
-ServerNetworkManager& NetworkManager::AsServer()
+ServerReplicator& NetworkManager::AsServer()
 {
     assert(server_);
     return *server_;
