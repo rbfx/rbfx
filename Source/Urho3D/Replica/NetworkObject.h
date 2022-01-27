@@ -89,9 +89,9 @@ public:
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
     ClientReplica* GetClientNetworkManager() const;
-    ServerNetworkManager* GetServerNetworkManager() const;
+    ServerReplicator* GetServerNetworkManager() const;
 
-    /// Called on server side only. ServerNetworkManager is guaranteed to be available.
+    /// Called on server side only. ServerReplicator is guaranteed to be available.
     /// @{
 
     /// Return whether the component should be replicated for specified client connection.

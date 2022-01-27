@@ -34,7 +34,7 @@
 #include "../Replica/NetworkObject.h"
 #include "../Replica/NetworkManager.h"
 #include "../Replica/NetworkSettingsConsts.h"
-#include "../Replica/ServerNetworkManager.h"
+#include "../Replica/ServerReplicator.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
@@ -568,7 +568,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     }
 }
 
-ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scene)
+ServerReplicator::ServerReplicator(NetworkManagerBase* base, Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
     , base_(base)
@@ -606,11 +606,11 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     });
 }
 
-ServerNetworkManager::~ServerNetworkManager()
+ServerReplicator::~ServerReplicator()
 {
 }
 
-void ServerNetworkManager::BeginNetworkFrame(float overtime)
+void ServerReplicator::BeginNetworkFrame(float overtime)
 {
     ++currentFrame_;
 
@@ -620,7 +620,7 @@ void ServerNetworkManager::BeginNetworkFrame(float overtime)
     network_->SendEvent(E_BEGINSERVERNETWORKUPDATE);
 }
 
-void ServerNetworkManager::PrepareNetworkFrame()
+void ServerReplicator::PrepareNetworkFrame()
 {
     const float timeStep = 1.0f / updateFrequency_;
 
@@ -632,7 +632,7 @@ void ServerNetworkManager::PrepareNetworkFrame()
     sharedState_->CookDeltaUpdates(currentFrame_);
 }
 
-void ServerNetworkManager::AddConnection(AbstractConnection* connection)
+void ServerReplicator::AddConnection(AbstractConnection* connection)
 {
     if (connections_.contains(connection))
     {
@@ -650,7 +650,7 @@ void ServerNetworkManager::AddConnection(AbstractConnection* connection)
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
 
-void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
+void ServerReplicator::RemoveConnection(AbstractConnection* connection)
 {
     if (!connections_.contains(connection))
     {
@@ -662,25 +662,25 @@ void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
     URHO3D_LOGINFO("Connection {} is removed", connection->ToString());
 }
 
-void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+void ServerReplicator::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     ClientReplicationState& data = GetConnection(connection);
     data.ProcessMessage(messageId, messageData);
 }
 
-void ServerNetworkManager::SetCurrentFrame(unsigned frame)
+void ServerReplicator::SetCurrentFrame(unsigned frame)
 {
     currentFrame_ = frame;
 }
 
-ClientReplicationState& ServerNetworkManager::GetConnection(AbstractConnection* connection)
+ClientReplicationState& ServerReplicator::GetConnection(AbstractConnection* connection)
 {
     const auto iter = connections_.find(connection);
     assert(iter != connections_.end());
     return *iter->second;
 }
 
-ea::string ServerNetworkManager::GetDebugInfo() const
+ea::string ServerReplicator::GetDebugInfo() const
 {
     ea::string result;
 
@@ -697,7 +697,7 @@ ea::string ServerNetworkManager::GetDebugInfo() const
     return result;
 }
 
-unsigned ServerNetworkManager::GetFeedbackDelay(AbstractConnection* connection) const
+unsigned ServerReplicator::GetFeedbackDelay(AbstractConnection* connection) const
 {
     const auto iter = connections_.find(connection);
     return iter != connections_.end() ? iter->second->GetInputDelay() + iter->second->GetInputBufferSize() : 0;
