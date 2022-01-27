@@ -299,17 +299,19 @@ unsigned ClientSynchronizationState::MakeMagic() const
 ClientReplicationState::ClientReplicationState(
     NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings)
     : ClientSynchronizationState(replicationManager, connection, settings)
-    , connection_(connection)
 {
 }
 
-void ClientReplicationState::SendMessages()
+void ClientReplicationState::SendMessages(const SharedReplicationState& sharedState)
 {
     ClientSynchronizationState::SendMessages();
 
     if (IsSynchronized())
     {
-        // TODO(network): Fill me
+        SendRemoveObjects();
+        SendAddObjects();
+        SendUpdateObjectsReliable(sharedState);
+        SendUpdateObjectsUnreliable(sharedState);
     }
 }
 
@@ -366,6 +368,140 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
         componentBuffer_.Seek(0);
         networkObject->ReadUnreliableFeedback(feedbackFrame, componentBuffer_);
     }
+}
+
+void ClientReplicationState::SendRemoveObjects()
+{
+    connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS,
+        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        if (debugInfo)
+        {
+            for (NetworkId networkId : pendingRemovedComponents_)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                debugInfo->append(ToString(networkId));
+            }
+        }
+
+        msg.WriteUInt(GetCurrentFrame());
+        for (NetworkId networkId : pendingRemovedComponents_)
+            msg.WriteUInt(static_cast<unsigned>(networkId));
+
+        const bool sendMessage = !pendingRemovedComponents_.empty();
+        return sendMessage;
+    });
+}
+
+void ClientReplicationState::SendAddObjects()
+{
+    connection_->SendGeneratedMessage(MSG_ADD_OBJECTS,
+        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        msg.WriteUInt(GetCurrentFrame());
+
+        bool sendMessage = false;
+        for (const auto& [networkObject, isSnapshot] : pendingUpdatedComponents_)
+        {
+            if (!isSnapshot)
+                continue;
+
+            sendMessage = true;
+            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+            msg.WriteStringHash(networkObject->GetType());
+            msg.WriteVLE(networkObject->GetOwnerConnectionId());
+
+            componentBuffer_.Clear();
+            networkObject->WriteSnapshot(GetCurrentFrame(), componentBuffer_);
+            msg.WriteBuffer(componentBuffer_.GetBuffer());
+
+            if (debugInfo)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                debugInfo->append(ToString(networkObject->GetNetworkId()));
+            }
+        }
+        return sendMessage;
+    });
+}
+
+void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
+{
+    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE,
+        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        msg.WriteUInt(GetCurrentFrame());
+
+        bool sendMessage = false;
+        for (const auto& [networkObject, isSnapshot] : pendingUpdatedComponents_)
+        {
+            const unsigned index = GetIndex(networkObject->GetNetworkId());
+            if (isSnapshot)
+                continue;
+
+            const auto updateSpan = sharedState.GetReliableUpdateByIndex(index);
+            if (!updateSpan)
+                continue;
+
+            sendMessage = true;
+            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+            msg.WriteStringHash(networkObject->GetType());
+
+            msg.WriteVLE(updateSpan->size());
+            msg.Write(updateSpan->data(), updateSpan->size());
+
+            if (debugInfo)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                debugInfo->append(ToString(networkObject->GetNetworkId()));
+            }
+        }
+        return sendMessage;
+    });
+}
+
+void ClientReplicationState::SendUpdateObjectsUnreliable(const SharedReplicationState& sharedState)
+{
+    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, NetworkMessageFlag::None,
+        [&](VectorBuffer& msg, ea::string* debugInfo)
+    {
+        bool sendMessage = false;
+
+        msg.WriteUInt(GetCurrentFrame());
+
+        for (const auto& [networkObject, isSnapshot] : pendingUpdatedComponents_)
+        {
+            // Skip redundant updates, both if update is empty or if snapshot was already sent
+            const unsigned index = GetIndex(networkObject->GetNetworkId());
+            if (isSnapshot)
+                continue;
+
+            const auto updateSpan = sharedState.GetUnreliableUpdateByIndex(index);
+            if (!updateSpan)
+                continue;
+
+            sendMessage = true;
+            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+            msg.WriteStringHash(networkObject->GetType());
+
+            msg.WriteVLE(updateSpan->size());
+            msg.Write(updateSpan->data(), updateSpan->size());
+
+            if (debugInfo)
+            {
+                if (!debugInfo->empty())
+                    debugInfo->append(", ");
+                debugInfo->append(ToString(networkObject->GetNetworkId()));
+            }
+        }
+        return sendMessage;
+    });
 }
 
 void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& sharedState, float timeStep)
@@ -441,7 +577,7 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     , physicsSync_(scene_, updateFrequency_, true)
     , sharedState_(MakeShared<SharedReplicationState>(base_))
 {
-    SetNetworkSetting(settings_.map_, NetworkSettings::UpdateFrequency, updateFrequency_);
+    SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
     SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
     {
@@ -466,7 +602,7 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     {
         PrepareNetworkFrame();
         for (auto& [connection, data] : connections_)
-            SendUpdate(*data);
+            data->SendMessages(*sharedState_);
     });
 }
 
@@ -506,7 +642,7 @@ void ServerNetworkManager::AddConnection(AbstractConnection* connection)
 
     connections_.erase(connection);
     const auto& [iter, insterted] = connections_.emplace(
-        connection, MakeShared<ClientReplicationState>(base_, connection, settings_.map_));
+        connection, MakeShared<ClientReplicationState>(base_, connection, settings_));
 
     URHO3D_ASSERT(insterted);
     ClientReplicationState& data = *iter->second;
@@ -524,153 +660,6 @@ void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
 
     connections_.erase(connection);
     URHO3D_LOGINFO("Connection {} is removed", connection->ToString());
-}
-
-void ServerNetworkManager::SendUpdate(ClientReplicationState& data)
-{
-    data.SendMessages();
-
-    if (!data.IsSynchronized())
-        return;
-
-    SendRemoveObjectsMessage(data);
-    SendAddObjectsMessage(data);
-    SendUpdateObjectsReliableMessage(data);
-    SendUpdateObjectsUnreliableMessage(data);
-}
-
-void ServerNetworkManager::SendRemoveObjectsMessage(ClientReplicationState& data)
-{
-    data.connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS,
-        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
-    {
-        if (debugInfo)
-        {
-            for (NetworkId networkId : data.pendingRemovedComponents_)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkId));
-            }
-        }
-
-        msg.WriteUInt(currentFrame_);
-        for (NetworkId networkId : data.pendingRemovedComponents_)
-            msg.WriteUInt(static_cast<unsigned>(networkId));
-
-        const bool sendMessage = !data.pendingRemovedComponents_.empty();
-        return sendMessage;
-    });
-}
-
-void ServerNetworkManager::SendAddObjectsMessage(ClientReplicationState& data)
-{
-    data.connection_->SendGeneratedMessage(MSG_ADD_OBJECTS,
-        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
-    {
-        msg.WriteUInt(currentFrame_);
-
-        bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
-        {
-            if (!isSnapshot)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-            msg.WriteVLE(networkObject->GetOwnerConnectionId());
-
-            componentBuffer_.Clear();
-            networkObject->WriteSnapshot(currentFrame_, componentBuffer_);
-            msg.WriteBuffer(componentBuffer_.GetBuffer());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
-        }
-        return sendMessage;
-    });
-}
-
-void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientReplicationState& data)
-{
-    data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE,
-        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
-    {
-        msg.WriteUInt(currentFrame_);
-
-        bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
-        {
-            const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot)
-                continue;
-
-            const auto updateSpan = sharedState_->GetReliableUpdateByIndex(index);
-            if (!updateSpan)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-
-            msg.WriteVLE(updateSpan->size());
-            msg.Write(updateSpan->data(), updateSpan->size());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
-        }
-        return sendMessage;
-    });
-}
-
-void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientReplicationState& data)
-{
-    data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, NetworkMessageFlag::None,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
-    {
-        bool sendMessage = false;
-
-        msg.WriteUInt(currentFrame_);
-
-        for (const auto& [networkObject, isSnapshot] : data.pendingUpdatedComponents_)
-        {
-            // Skip redundant updates, both if update is empty or if snapshot was already sent
-            const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot)
-                continue;
-
-            const auto updateSpan = sharedState_->GetUnreliableUpdateByIndex(index);
-            if (!updateSpan)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-
-            msg.WriteVLE(updateSpan->size());
-            msg.Write(updateSpan->data(), updateSpan->size());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
-        }
-        return sendMessage;
-    });
 }
 
 void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)

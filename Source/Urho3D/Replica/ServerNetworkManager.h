@@ -116,6 +116,7 @@ public:
     /// @{
     const Variant& GetSetting(const NetworkSetting& setting) const;
     bool IsSynchronized() const { return synchronized_; }
+    unsigned GetCurrentFrame() const { return frame_; }
     unsigned GetInputDelay() const { return inputDelay_; };
     unsigned GetInputBufferSize() const { return inputBufferSize_; };
     /// @}
@@ -158,17 +159,9 @@ private:
     float clockTimeAccumulator_{};
 };
 
-/// Replication state specific to individual client connection.
+/// Scene replication state specific to individual client connection.
 struct ClientReplicationState : public ClientSynchronizationState
 {
-    AbstractConnection* connection_{};
-
-    ea::bitvector<> isComponentReplicated_;
-    ea::vector<float> componentsRelevanceTimeouts_;
-
-    ea::vector<NetworkId> pendingRemovedComponents_;
-    ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
-
 public:
     ClientReplicationState(
         NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings);
@@ -179,20 +172,22 @@ public:
     /// Process messages for this client.
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
     /// Send messages to connection for current frame.
-    void SendMessages();
+    void SendMessages(const SharedReplicationState& sharedState);
 
 private:
     void ProcessObjectsFeedbackUnreliable(MemoryBuffer& messageData);
+    void SendRemoveObjects();
+    void SendAddObjects();
+    void SendUpdateObjectsReliable(const SharedReplicationState& sharedState);
+    void SendUpdateObjectsUnreliable(const SharedReplicationState& sharedState);
+
+    ea::bitvector<> isComponentReplicated_;
+    ea::vector<float> componentsRelevanceTimeouts_;
+
+    ea::vector<NetworkId> pendingRemovedComponents_;
+    ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
 
     VectorBuffer componentBuffer_;
-};
-
-/// Server settings for NetworkManager.
-struct ServerNetworkManagerSettings
-{
-    VariantMap map_;
-
-    float traceDurationInSeconds_{ 3.0f };
 };
 
 /// Server part of NetworkManager subsystem.
@@ -214,26 +209,19 @@ public:
     unsigned GetFeedbackDelay(AbstractConnection* connection) const;
     NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
     unsigned GetCurrentFrame() const { return currentFrame_; }
-    unsigned GetTraceCapacity() const { return CeilToInt(settings_.traceDurationInSeconds_ * updateFrequency_); }
+    unsigned GetTraceCapacity() const { return CeilToInt(3.0f * updateFrequency_); } // TODO(network): Fix me
 
 private:
-    using DeltaBufferSpan = ea::pair<unsigned, unsigned>;
-
     void BeginNetworkFrame(float overtime);
     void PrepareNetworkFrame();
-
-    void SendUpdate(ClientReplicationState& data);
-    void SendRemoveObjectsMessage(ClientReplicationState& data);
-    void SendAddObjectsMessage(ClientReplicationState& data);
-    void SendUpdateObjectsReliableMessage(ClientReplicationState& data);
-    void SendUpdateObjectsUnreliableMessage(ClientReplicationState& data);
 
     ClientReplicationState& GetConnection(AbstractConnection* connection);
 
     Network* network_{};
     NetworkManagerBase* base_{};
     Scene* scene_{};
-    ServerNetworkManagerSettings settings_; // TODO: Make mutable
+
+    VariantMap settings_;
 
     const unsigned updateFrequency_{};
     unsigned currentFrame_{};
