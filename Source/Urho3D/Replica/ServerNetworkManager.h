@@ -54,8 +54,8 @@ class SharedReplicationState : public RefCounted
 public:
     explicit SharedReplicationState(NetworkManagerBase* replicationManager);
 
-    /// Initial preparation for new network frame.
-    void PrepareForNewFrame();
+    /// Initial preparation for network update.
+    void PrepareForUpdate();
     /// Request delta update to be prepared for specified object.
     void QueueDeltaUpdate(NetworkObject* networkObject);
     /// Cook all requested delta updates.
@@ -86,7 +86,7 @@ private:
 
     ConstByteSpan GetSpanData(const DeltaBufferSpan& span) const;
 
-    WeakPtr<NetworkManagerBase> const replicationManager_{};
+    const WeakPtr<NetworkManagerBase> replicationManager_{};
 
     ea::unordered_set<NetworkId> recentlyRemovedComponents_;
     ea::unordered_set<NetworkId> recentlyAddedComponents_;
@@ -102,51 +102,50 @@ private:
     ea::vector<DeltaBufferSpan> unreliableDeltaUpdateData_;
 };
 
-/// Replication state specific to individual client connection.
-struct ClientConnectionData
+/// Clock synchronization state specific to individual client connection.
+class ClientSynchronizationState : public RefCounted
 {
-    AbstractConnection* connection_{};
-
-    ea::bitvector<> isComponentReplicated_;
-    ea::vector<float> componentsRelevanceTimeouts_;
-
-    ea::vector<NetworkId> pendingRemovedComponents_;
-    ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
-
 public:
-    ClientConnectionData(AbstractConnection* connection, const VariantMap& settings);
+    ClientSynchronizationState(
+        NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings);
 
-    void UpdateFrame(float timeStep, const NetworkTime& serverTime, float overtime);
-    void ProcessNetworkObjects(SharedReplicationState& sharedState, float timeStep);
-    // TODO(network): Hide this
-    void OnFeedbackReceived(unsigned feedbackFrame) { inputStats_.OnInputReceived(feedbackFrame); }
+    /// Begin network frame. Overtime indicates how much time has passed since actual frame start time.
+    void BeginNetworkFrame(unsigned currentFrame, float overtime);
 
-    void SendCommonUpdates();
-    void SendSynchronizedMessages();
-
-    void ProcessSynchronized(const MsgSynchronized& msg);
-
+    /// Return current state and properties
+    /// @{
+    const Variant& GetSetting(const NetworkSetting& setting) const;
     bool IsSynchronized() const { return synchronized_; }
     unsigned GetInputDelay() const { return inputDelay_; };
     unsigned GetInputBufferSize() const { return inputBufferSize_; };
+    /// @}
 
-private:
-    static constexpr unsigned InputStatsSafetyLimit = 64;
+protected:
+    /// Send messages to connection for current frame.
+    void SendMessages();
+    /// Process messages for this client.
+    bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
+    /// Notify statistics aggregator that user input has received for specified frame.
+    void OnInputReceived(unsigned inputFrame);
 
-    unsigned MakeMagic() const;
-    const Variant& GetSetting(const NetworkSetting& setting) const;
-
-    void UpdateInputDelay();
-    void UpdateInputBuffer();
-
+    const WeakPtr<NetworkManagerBase> replicationManager_;
+    const WeakPtr<AbstractConnection> connection_;
     VariantMap settings_;
     const unsigned updateFrequency_{};
 
-    NetworkTime serverTime_;
-    unsigned timestamp_{};
+private:
+    void UpdateInputDelay();
+    void UpdateInputBuffer();
+    void ProcessSynchronized(const MsgSynchronized& msg);
+    unsigned MakeMagic() const;
+
+    static constexpr unsigned InputStatsSafetyLimit = 64;
 
     ea::optional<unsigned> synchronizationMagic_;
     bool synchronized_{};
+
+    unsigned frame_{};
+    unsigned frameLocalTime_{};
 
     ea::optional<unsigned> latestProcessedPingTimestamp_;
     FilteredUint inputDelayFilter_;
@@ -157,6 +156,35 @@ private:
     unsigned inputBufferSize_{};
 
     float clockTimeAccumulator_{};
+};
+
+/// Replication state specific to individual client connection.
+struct ClientReplicationState : public ClientSynchronizationState
+{
+    AbstractConnection* connection_{};
+
+    ea::bitvector<> isComponentReplicated_;
+    ea::vector<float> componentsRelevanceTimeouts_;
+
+    ea::vector<NetworkId> pendingRemovedComponents_;
+    ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
+
+public:
+    ClientReplicationState(
+        NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings);
+
+    /// Perform network update from the perspective of this client connection.
+    void UpdateNetworkObjects(SharedReplicationState& sharedState, float timeStep);
+
+    /// Process messages for this client.
+    bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
+    /// Send messages to connection for current frame.
+    void SendMessages();
+
+private:
+    void ProcessObjectsFeedbackUnreliable(MemoryBuffer& messageData);
+
+    VectorBuffer componentBuffer_;
 };
 
 /// Server settings for NetworkManager.
@@ -194,17 +222,13 @@ private:
     void BeginNetworkFrame(float overtime);
     void PrepareNetworkFrame();
 
-    void SendUpdate(ClientConnectionData& data);
-    void SendRemoveObjectsMessage(ClientConnectionData& data);
-    void SendAddObjectsMessage(ClientConnectionData& data);
-    void SendUpdateObjectsReliableMessage(ClientConnectionData& data);
-    void SendUpdateObjectsUnreliableMessage(ClientConnectionData& data);
+    void SendUpdate(ClientReplicationState& data);
+    void SendRemoveObjectsMessage(ClientReplicationState& data);
+    void SendAddObjectsMessage(ClientReplicationState& data);
+    void SendUpdateObjectsReliableMessage(ClientReplicationState& data);
+    void SendUpdateObjectsUnreliableMessage(ClientReplicationState& data);
 
-    void ProcessObjectsFeedbackUnreliable(ClientConnectionData& data, MemoryBuffer& messageData);
-
-    ClientConnectionData& GetConnection(AbstractConnection* connection);
-
-    unsigned GetMagic(bool reliable = false) const;
+    ClientReplicationState& GetConnection(AbstractConnection* connection);
 
     Network* network_{};
     NetworkManagerBase* base_{};
@@ -217,7 +241,7 @@ private:
     PhysicsClockSynchronizer physicsSync_;
 
     SharedPtr<SharedReplicationState> sharedState_;
-    ea::unordered_map<AbstractConnection*, ClientConnectionData> connections_;
+    ea::unordered_map<AbstractConnection*, SharedPtr<ClientReplicationState>> connections_;
     VectorBuffer componentBuffer_;
 };
 
