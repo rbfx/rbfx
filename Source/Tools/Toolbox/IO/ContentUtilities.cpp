@@ -22,24 +22,24 @@
 
 #include <Urho3D/Audio/Sound.h>
 #include <Urho3D/Core/Context.h>
-#include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/ParticleEffect.h>
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/Resource/Image.h>
-#include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/UI/Font.h>
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include "ContentUtilities.h"
-
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 
 namespace Urho3D
 {
@@ -48,7 +48,8 @@ const ea::vector<ea::string> archiveExtensions_{".rar", ".zip", ".tar", ".gz", "
 const ea::vector<ea::string> wordExtensions_{".doc", ".docx", ".odt"};
 const ea::vector<ea::string> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
 const ea::vector<ea::string> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
-const ea::vector<ea::string> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".rml", ".rcss", ".node", ".particle"};
+const ea::vector<ea::string> textExtensions_{
+    ".xml", ".json", ".txt", ".yml", ".scene", ".material", ".rml", ".rcss", ".node", ".particle"};
 const ea::vector<ea::string> audioExtensions_{".waw", ".ogg", ".mp3"};
 const ea::vector<ea::string> fontExtensions_{".ttf", ".sdf"};
 
@@ -78,32 +79,19 @@ ea::string GetFileIcon(const ea::string& fileName)
 {
     switch (GetFileType(fileName))
     {
-    case FTYPE_ARCHIVE:
-        return ICON_FA_FILE_ARCHIVE;
-    case FTYPE_WORD:
-        return ICON_FA_FILE_WORD;
-    case FTYPE_CODE:
-        return ICON_FA_FILE_CODE;
-    case FTYPE_IMAGE:
-        return ICON_FA_FILE_IMAGE;
-    case FTYPE_PDF:
-        return ICON_FA_FILE_PDF;
-    case FTYPE_VIDEO:
-        return ICON_FA_FILE_VIDEO;
-    case FTYPE_POWERPOINT:
-        return ICON_FA_FILE_POWERPOINT;
-    case FTYPE_TEXT:
-        return ICON_FA_FILE_ALT;
-    case FTYPE_FILM:
-        return ICON_FA_FILE_VIDEO;
-    case FTYPE_AUDIO:
-        return ICON_FA_FILE_AUDIO;
-    case FTYPE_EXCEL:
-        return ICON_FA_FILE_EXCEL;
-    case FTYPE_FONT:
-        return ICON_FA_FONT;
-    default:
-        return ICON_FA_FILE;
+    case FTYPE_ARCHIVE: return ICON_FA_FILE_ARCHIVE;
+    case FTYPE_WORD: return ICON_FA_FILE_WORD;
+    case FTYPE_CODE: return ICON_FA_FILE_CODE;
+    case FTYPE_IMAGE: return ICON_FA_FILE_IMAGE;
+    case FTYPE_PDF: return ICON_FA_FILE_PDF;
+    case FTYPE_VIDEO: return ICON_FA_FILE_VIDEO;
+    case FTYPE_POWERPOINT: return ICON_FA_FILE_POWERPOINT;
+    case FTYPE_TEXT: return ICON_FA_FILE_ALT;
+    case FTYPE_FILM: return ICON_FA_FILE_VIDEO;
+    case FTYPE_AUDIO: return ICON_FA_FILE_AUDIO;
+    case FTYPE_EXCEL: return ICON_FA_FILE_EXCEL;
+    case FTYPE_FONT: return ICON_FA_FONT;
+    default: return ICON_FA_FILE;
     }
 }
 
@@ -203,7 +191,7 @@ bool GetContentResourceType(Context* context, const ea::string& resourcePath, Re
     case CTYPE_UILAYOUT:
     case CTYPE_UISTYLE:
     {
-        types.emplace_back(BinaryFile::GetTypeStatic());    // rml, rcss
+        types.emplace_back(BinaryFile::GetTypeStatic()); // rml, rcss
         break;
     }
     case CTYPE_MODEL:
@@ -222,6 +210,10 @@ bool GetContentResourceType(Context* context, const ea::string& resourcePath, Re
         break;
     }
     case CTYPE_PARTICLE:
+    {
+        types.emplace_back(ParticleEffect::GetTypeStatic());
+        break;
+    }
     case CTYPE_RENDERPATH:
     case CTYPE_TEXTUREXML:
     {
@@ -259,4 +251,4 @@ bool GetContentResourceType(Context* context, const ea::string& resourcePath, Re
     return true;
 }
 
-}
+} // namespace Urho3D
