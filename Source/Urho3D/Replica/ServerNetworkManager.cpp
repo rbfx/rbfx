@@ -74,7 +74,7 @@ void SharedReplicationState::OnNetworkObjectRemoved(NetworkObject* networkObject
         recentlyRemovedComponents_.insert(networkObject->GetNetworkId());
 }
 
-void SharedReplicationState::PrepareForNewFrame()
+void SharedReplicationState::PrepareForUpdate()
 {
     ResetFrameBuffers();
     InitializeNewObjects();
@@ -184,8 +184,10 @@ ConstByteSpan SharedReplicationState::GetSpanData(const DeltaBufferSpan& span) c
     return {data + span.beginOffset_, span.endOffset_ - span.beginOffset_};
 }
 
-ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const VariantMap& settings)
-    : connection_(connection)
+ClientSynchronizationState::ClientSynchronizationState(
+    NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings)
+    : replicationManager_(replicationManager)
+    , connection_(connection)
     , settings_(settings)
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
     , inputDelayFilter_(GetSetting(NetworkSettings::InputDelayFilterBufferSize).GetUInt())
@@ -195,16 +197,182 @@ ClientConnectionData::ClientConnectionData(AbstractConnection* connection, const
     SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
 }
 
-void ClientConnectionData::UpdateFrame(float timeStep, const NetworkTime& serverTime, float overtime)
+void ClientSynchronizationState::BeginNetworkFrame(unsigned currentFrame, float overtime)
 {
-    serverTime_ = serverTime;
-    timestamp_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
-
-    clockTimeAccumulator_ += timeStep;
+    frame_ = currentFrame;
+    frameLocalTime_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
+    clockTimeAccumulator_ += 1.0f / updateFrequency_;
 }
 
-void ClientConnectionData::ProcessNetworkObjects(SharedReplicationState& sharedState, float timeStep)
+const Variant& ClientSynchronizationState::GetSetting(const NetworkSetting& setting) const
 {
+    return GetNetworkSetting(settings_, setting);
+}
+
+void ClientSynchronizationState::SendMessages()
+{
+    // Send configuration on startup once
+    if (!synchronizationMagic_)
+    {
+        const unsigned magic = MakeMagic();
+        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, NetworkMessageFlag::Reliable);
+        synchronizationMagic_ = magic;
+    }
+
+    // Send clock updates
+    const float clockInterval = GetSetting(NetworkSettings::PeriodicClockInterval).GetFloat();
+    if (clockTimeAccumulator_ >= clockInterval)
+    {
+        clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
+
+        UpdateInputDelay();
+        UpdateInputBuffer();
+
+        const MsgSceneClock msg{frame_, frameLocalTime_, inputDelay_ + inputBufferSize_};
+        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, NetworkMessageFlag::None);
+    }
+}
+
+void ClientSynchronizationState::UpdateInputDelay()
+{
+    const unsigned latestPingTimestamp = connection_->GetLocalTimeOfLatestRoundtrip();
+    if (latestProcessedPingTimestamp_ == latestPingTimestamp)
+        return;
+    latestProcessedPingTimestamp_ = latestPingTimestamp;
+
+    const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
+    inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
+    inputDelay_ = inputDelayFilter_.GetStabilizedAverageMaxValue();
+}
+
+void ClientSynchronizationState::UpdateInputBuffer()
+{
+    inputBufferFilter_.AddValue(inputStats_.GetRecommendedBufferSize());
+
+    const int bufferSizeTweak = GetSetting(NetworkSettings::InputBufferingTweak).GetInt();
+    const int newInputBufferSize = bufferSizeTweak + static_cast<int>(inputBufferFilter_.GetStabilizedAverageMaxValue());
+
+    const int minInputBuffer = GetSetting(NetworkSettings::MinInputBuffering).GetUInt();
+    const int maxInputBuffer = GetSetting(NetworkSettings::MaxInputBuffering).GetUInt();
+    inputBufferSize_ = Clamp(newInputBufferSize, minInputBuffer, maxInputBuffer);
+}
+
+void ClientSynchronizationState::ProcessSynchronized(const MsgSynchronized& msg)
+{
+    if (synchronizationMagic_ != msg.magic_)
+    {
+        URHO3D_LOGWARNING(
+            "Connection {}: Unexpected synchronization acknowledgement received", connection_->ToString());
+        return;
+    }
+
+    synchronized_ = true;
+}
+
+bool ClientSynchronizationState::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData)
+{
+    switch (messageId)
+    {
+    case MSG_SYNCHRONIZED:
+    {
+        const auto& msg = ReadNetworkMessage<MsgSynchronized>(messageData);
+        connection_->OnMessageReceived(messageId, msg);
+
+        ProcessSynchronized(msg);
+        return true;
+    }
+    default:
+        return false;
+    }
+}
+
+void ClientSynchronizationState::OnInputReceived(unsigned inputFrame)
+{
+    inputStats_.OnInputReceived(inputFrame);
+}
+
+unsigned ClientSynchronizationState::MakeMagic() const
+{
+    return RandomEngine::GetDefaultEngine().GetUInt();
+}
+
+ClientReplicationState::ClientReplicationState(
+    NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings)
+    : ClientSynchronizationState(replicationManager, connection, settings)
+    , connection_(connection)
+{
+}
+
+void ClientReplicationState::SendMessages()
+{
+    ClientSynchronizationState::SendMessages();
+
+    if (IsSynchronized())
+    {
+        // TODO(network): Fill me
+    }
+}
+
+bool ClientReplicationState::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData)
+{
+    if (ClientSynchronizationState::ProcessMessage(messageId, messageData))
+        return true;
+
+    switch (messageId)
+    {
+    case MSG_OBJECTS_FEEDBACK_UNRELIABLE:
+        connection_->OnMessageReceived(messageId, messageData);
+
+        ProcessObjectsFeedbackUnreliable(messageData);
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& messageData)
+{
+    if (!IsSynchronized())
+    {
+        URHO3D_LOGWARNING("Connection {}: Received unexpected feedback", connection_->ToString());
+        return;
+    }
+
+    const unsigned feedbackFrame = messageData.ReadUInt();
+    OnInputReceived(feedbackFrame);
+
+    while (!messageData.IsEof())
+    {
+        const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
+        messageData.ReadBuffer(componentBuffer_.GetBuffer());
+
+        NetworkObject* networkObject = replicationManager_->GetNetworkObject(networkId);
+        if (!networkObject)
+        {
+            URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}",
+                connection_->ToString(), ToString(networkId));
+            continue;
+        }
+
+        if (networkObject->GetOwnerConnection() != connection_)
+        {
+            URHO3D_LOGWARNING("Connection {}: Received feedback for NetworkObject {} owned by connection #{}",
+                connection_->ToString(), ToString(networkId), networkObject->GetOwnerConnectionId());
+            continue;
+        }
+
+        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
+        componentBuffer_.Seek(0);
+        networkObject->ReadUnreliableFeedback(feedbackFrame, componentBuffer_);
+    }
+}
+
+void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& sharedState, float timeStep)
+{
+    if (!IsSynchronized())
+        return;
+
     const float relevanceTimeout = GetSetting(NetworkSettings::RelevanceTimeout).GetFloat();
 
     const unsigned indexUpperBound = sharedState.GetIndexUpperBound();
@@ -264,81 +432,6 @@ void ClientConnectionData::ProcessNetworkObjects(SharedReplicationState& sharedS
     }
 }
 
-void ClientConnectionData::SendCommonUpdates()
-{
-    // Send configuration on startup once
-    if (!synchronizationMagic_)
-    {
-        const unsigned magic = MakeMagic();
-        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, NetworkMessageFlag::Reliable);
-        synchronizationMagic_ = magic;
-    }
-
-    // Send clock updates
-    const float clockInterval = GetSetting(NetworkSettings::PeriodicClockInterval).GetFloat();
-    if (clockTimeAccumulator_ >= clockInterval)
-    {
-        clockTimeAccumulator_ = Fract(clockTimeAccumulator_ / clockInterval) * clockInterval;
-
-        UpdateInputDelay();
-        UpdateInputBuffer();
-
-        const MsgSceneClock msg{serverTime_.GetFrame(), timestamp_, inputDelay_ + inputBufferSize_};
-        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, NetworkMessageFlag::None);
-    }
-}
-
-void ClientConnectionData::SendSynchronizedMessages()
-{
-
-}
-
-void ClientConnectionData::ProcessSynchronized(const MsgSynchronized& msg)
-{
-    if (synchronizationMagic_ != msg.magic_)
-    {
-        URHO3D_LOGWARNING(
-            "Connection {}: Unexpected synchronization ack received", connection_->ToString());
-        return;
-    }
-
-    synchronized_ = true;
-}
-
-void ClientConnectionData::UpdateInputDelay()
-{
-    const unsigned latestPingTimestamp = connection_->GetLocalTimeOfLatestRoundtrip();
-    if (latestProcessedPingTimestamp_ == latestPingTimestamp)
-        return;
-    latestProcessedPingTimestamp_ = latestPingTimestamp;
-
-    const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
-    inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
-    inputDelay_ = inputDelayFilter_.GetStabilizedAverageMaxValue();
-}
-
-void ClientConnectionData::UpdateInputBuffer()
-{
-    inputBufferFilter_.AddValue(inputStats_.GetRecommendedBufferSize());
-
-    const int bufferSizeTweak = GetSetting(NetworkSettings::InputBufferingTweak).GetInt();
-    const int newInputBufferSize = bufferSizeTweak + static_cast<int>(inputBufferFilter_.GetStabilizedAverageMaxValue());
-
-    const int minInputBuffer = GetSetting(NetworkSettings::MinInputBuffering).GetUInt();
-    const int maxInputBuffer = GetSetting(NetworkSettings::MaxInputBuffering).GetUInt();
-    inputBufferSize_ = Clamp(newInputBufferSize, minInputBuffer, maxInputBuffer);
-}
-
-unsigned ClientConnectionData::MakeMagic() const
-{
-    return RandomEngine::GetDefaultEngine().GetUInt();
-}
-
-const Variant& ClientConnectionData::GetSetting(const NetworkSetting& setting) const
-{
-    return GetNetworkSetting(settings_, setting);
-}
-
 ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
@@ -373,7 +466,7 @@ ServerNetworkManager::ServerNetworkManager(NetworkManagerBase* base, Scene* scen
     {
         PrepareNetworkFrame();
         for (auto& [connection, data] : connections_)
-            SendUpdate(data);
+            SendUpdate(*data);
     });
 }
 
@@ -385,9 +478,8 @@ void ServerNetworkManager::BeginNetworkFrame(float overtime)
 {
     ++currentFrame_;
 
-    const float timeStep = 1.0f / updateFrequency_;
     for (auto& [connection, data] : connections_)
-        data.UpdateFrame(timeStep, NetworkTime{currentFrame_}, overtime);
+        data->BeginNetworkFrame(currentFrame_, overtime);
 
     network_->SendEvent(E_BEGINSERVERNETWORKUPDATE);
 }
@@ -396,11 +488,10 @@ void ServerNetworkManager::PrepareNetworkFrame()
 {
     const float timeStep = 1.0f / updateFrequency_;
 
-    sharedState_->PrepareForNewFrame();
+    sharedState_->PrepareForUpdate();
     for (auto& [connection, data] : connections_)
     {
-        if (data.IsSynchronized())
-            data.ProcessNetworkObjects(*sharedState_, timeStep);
+        data->UpdateNetworkObjects(*sharedState_, timeStep);
     }
     sharedState_->CookDeltaUpdates(currentFrame_);
 }
@@ -415,10 +506,10 @@ void ServerNetworkManager::AddConnection(AbstractConnection* connection)
 
     connections_.erase(connection);
     const auto& [iter, insterted] = connections_.emplace(
-        connection, ClientConnectionData{connection, settings_.map_});
+        connection, MakeShared<ClientReplicationState>(base_, connection, settings_.map_));
 
     URHO3D_ASSERT(insterted);
-    ClientConnectionData& data = iter->second;
+    ClientReplicationState& data = *iter->second;
 
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
@@ -435,11 +526,9 @@ void ServerNetworkManager::RemoveConnection(AbstractConnection* connection)
     URHO3D_LOGINFO("Connection {} is removed", connection->ToString());
 }
 
-void ServerNetworkManager::SendUpdate(ClientConnectionData& data)
+void ServerNetworkManager::SendUpdate(ClientReplicationState& data)
 {
-    data.SendCommonUpdates();
-    if (data.IsSynchronized())
-        data.SendSynchronizedMessages();
+    data.SendMessages();
 
     if (!data.IsSynchronized())
         return;
@@ -450,7 +539,7 @@ void ServerNetworkManager::SendUpdate(ClientConnectionData& data)
     SendUpdateObjectsUnreliableMessage(data);
 }
 
-void ServerNetworkManager::SendRemoveObjectsMessage(ClientConnectionData& data)
+void ServerNetworkManager::SendRemoveObjectsMessage(ClientReplicationState& data)
 {
     data.connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS,
         NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
@@ -475,7 +564,7 @@ void ServerNetworkManager::SendRemoveObjectsMessage(ClientConnectionData& data)
     });
 }
 
-void ServerNetworkManager::SendAddObjectsMessage(ClientConnectionData& data)
+void ServerNetworkManager::SendAddObjectsMessage(ClientReplicationState& data)
 {
     data.connection_->SendGeneratedMessage(MSG_ADD_OBJECTS,
         NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
@@ -509,7 +598,7 @@ void ServerNetworkManager::SendAddObjectsMessage(ClientConnectionData& data)
     });
 }
 
-void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientConnectionData& data)
+void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientReplicationState& data)
 {
     data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE,
         NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
@@ -546,7 +635,7 @@ void ServerNetworkManager::SendUpdateObjectsReliableMessage(ClientConnectionData
     });
 }
 
-void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionData& data)
+void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientReplicationState& data)
 {
     data.connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, NetworkMessageFlag::None,
         [&](VectorBuffer& msg, ea::string* debugInfo)
@@ -586,68 +675,8 @@ void ServerNetworkManager::SendUpdateObjectsUnreliableMessage(ClientConnectionDa
 
 void ServerNetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
-    ClientConnectionData& data = GetConnection(connection);
-
-    switch (messageId)
-    {
-    case MSG_SYNCHRONIZED:
-    {
-        const auto& msg = ReadNetworkMessage<MsgSynchronized>(messageData);
-        connection->OnMessageReceived(messageId, msg);
-
-        data.ProcessSynchronized(msg);
-        break;
-    }
-
-    case MSG_OBJECTS_FEEDBACK_UNRELIABLE:
-    {
-        connection->OnMessageReceived(messageId, messageData);
-
-        ProcessObjectsFeedbackUnreliable(data, messageData);
-        break;
-    }
-
-    default:
-        break;
-    }
-}
-
-void ServerNetworkManager::ProcessObjectsFeedbackUnreliable(ClientConnectionData& data, MemoryBuffer& messageData)
-{
-    if (!data.IsSynchronized())
-    {
-        URHO3D_LOGWARNING("Connection {}: Received unexpected feedback", data.connection_->ToString());
-        return;
-    }
-
-    // Input is processed before BeginNetworkFrame, so add 1 to get actual current frame
-    const unsigned feedbackFrame = messageData.ReadUInt();
-    data.OnFeedbackReceived(feedbackFrame);
-
-    while (!messageData.IsEof())
-    {
-        const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
-        messageData.ReadBuffer(componentBuffer_.GetBuffer());
-
-        NetworkObject* networkObject = base_->GetNetworkObject(networkId);
-        if (!networkObject)
-        {
-            URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}",
-                data.connection_->ToString(), ToString(networkId));
-            continue;
-        }
-
-        if (networkObject->GetOwnerConnection() != data.connection_)
-        {
-            URHO3D_LOGWARNING("Connection {}: Received feedback for NetworkObject {} owned by connection #{}",
-                data.connection_->ToString(), ToString(networkId), networkObject->GetOwnerConnectionId());
-            continue;
-        }
-
-        componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
-        componentBuffer_.Seek(0);
-        networkObject->ReadUnreliableFeedback(feedbackFrame, componentBuffer_);
-    }
+    ClientReplicationState& data = GetConnection(connection);
+    data.ProcessMessage(messageId, messageData);
 }
 
 void ServerNetworkManager::SetCurrentFrame(unsigned frame)
@@ -655,18 +684,11 @@ void ServerNetworkManager::SetCurrentFrame(unsigned frame)
     currentFrame_ = frame;
 }
 
-ClientConnectionData& ServerNetworkManager::GetConnection(AbstractConnection* connection)
+ClientReplicationState& ServerNetworkManager::GetConnection(AbstractConnection* connection)
 {
     const auto iter = connections_.find(connection);
     assert(iter != connections_.end());
-    return iter->second;
-}
-
-unsigned ServerNetworkManager::GetMagic(bool reliable) const
-{
-    // TODO: It doesn't look secure.
-    const unsigned value = Rand();
-    return reliable ? (value | 1u) : (value & ~1u);
+    return *iter->second;
 }
 
 ea::string ServerNetworkManager::GetDebugInfo() const
@@ -680,7 +702,7 @@ ea::string ServerNetworkManager::GetDebugInfo() const
     for (const auto& [connection, data] : connections_)
     {
         result += Format("Connection {}: Ping {}ms, Input delay {}+{} frames\n",
-            connection->ToString(), connection->GetPing(), data.GetInputDelay(), data.GetInputBufferSize());
+            connection->ToString(), connection->GetPing(), data->GetInputDelay(), data->GetInputBufferSize());
     }
 
     return result;
@@ -689,7 +711,7 @@ ea::string ServerNetworkManager::GetDebugInfo() const
 unsigned ServerNetworkManager::GetFeedbackDelay(AbstractConnection* connection) const
 {
     const auto iter = connections_.find(connection);
-    return iter != connections_.end() ? iter->second.GetInputDelay() + iter->second.GetInputBufferSize() : 0;
+    return iter != connections_.end() ? iter->second->GetInputDelay() + iter->second->GetInputBufferSize() : 0;
 }
 
 }
