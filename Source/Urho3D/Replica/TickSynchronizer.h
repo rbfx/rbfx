@@ -39,11 +39,10 @@ class Scene;
 /// Helper class that synchronizes two fixed-timestep clocks.
 /// Leader clock should not tick faster than follower clock.
 /// Leader clock should be explicitly reset on each tick.
-/// TODO(network): Rename to [Local]TickSynchronizer?
-class URHO3D_API LocalClockSynchronizer
+class URHO3D_API TickSynchronizer
 {
 public:
-    LocalClockSynchronizer(unsigned leaderFrequency, bool isServer);
+    TickSynchronizer(unsigned leaderFrequency, bool isServer);
     void SetFollowerFrequency(unsigned followerFrequency);
 
     /// Synchronize with tick of the leader clock.
@@ -70,11 +69,11 @@ private:
 };
 
 /// Helper class that synchronizes PhysicsWorld clock with network clock.
-class URHO3D_API PhysicsClockSynchronizer
+class URHO3D_API PhysicsTickSynchronizer
 {
 public:
-    PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer);
-    ~PhysicsClockSynchronizer();
+    PhysicsTickSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer);
+    ~PhysicsTickSynchronizer();
 
     void Synchronize(unsigned networkFrame, float overtime);
     void Update(float timeStep);
@@ -84,7 +83,7 @@ protected:
 
 #ifdef URHO3D_PHYSICS
     WeakPtr<PhysicsWorld> physicsWorld_;
-    LocalClockSynchronizer sync_;
+    TickSynchronizer sync_;
     SharedPtr<Object> eventListener_;
 
     bool wasUpdateEnabled_{};

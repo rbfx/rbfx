@@ -82,7 +82,7 @@ XMLFile* GetSimpleTestPrefab(Context* context)
 
 TEST_CASE("Different clocks are synchronized on client")
 {
-    LocalClockSynchronizer sync(2, false);
+    TickSynchronizer sync(2, false);
     sync.SetFollowerFrequency(4);
 
     SECTION("Normal update")
@@ -144,7 +144,7 @@ TEST_CASE("Different clocks are synchronized on client")
 
 TEST_CASE("Different clocks are synchronized on server")
 {
-    LocalClockSynchronizer sync(2, true);
+    TickSynchronizer sync(2, true);
     sync.SetFollowerFrequency(4);
 
     SECTION("Normal update")

@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Replica/LocalClockSynchronizer.h"
+#include "../Replica/TickSynchronizer.h"
 
 #include "../IO/Log.h"
 #ifdef URHO3D_PHYSICS
@@ -47,14 +47,14 @@ public:
 
 }
 
-LocalClockSynchronizer::LocalClockSynchronizer(unsigned leaderFrequency, bool isServer)
+TickSynchronizer::TickSynchronizer(unsigned leaderFrequency, bool isServer)
     : leaderFrequency_(leaderFrequency)
     , isServer_(isServer)
     , followerFrequency_(leaderFrequency)
 {
 }
 
-void LocalClockSynchronizer::SetFollowerFrequency(unsigned followerFrequency)
+void TickSynchronizer::SetFollowerFrequency(unsigned followerFrequency)
 {
     const unsigned maxFollowerTicks = ea::max(1u, followerFrequency / leaderFrequency_);
     followerFrequency_ = leaderFrequency_ * maxFollowerTicks;
@@ -67,7 +67,7 @@ void LocalClockSynchronizer::SetFollowerFrequency(unsigned followerFrequency)
     }
 }
 
-unsigned LocalClockSynchronizer::Synchronize(float overtime)
+unsigned TickSynchronizer::Synchronize(float overtime)
 {
     const unsigned maxFollowerTicks = followerFrequency_ / leaderFrequency_;
     if (isServer_)
@@ -90,7 +90,7 @@ unsigned LocalClockSynchronizer::Synchronize(float overtime)
     }
 }
 
-void LocalClockSynchronizer::Update(float timeStep)
+void TickSynchronizer::Update(float timeStep)
 {
     numPendingFollowerTicks_ = 0;
     timeAccumulator_ += timeStep;
@@ -100,7 +100,7 @@ void LocalClockSynchronizer::Update(float timeStep)
     NormalizeOnClient();
 }
 
-void LocalClockSynchronizer::NormalizeOnClient()
+void TickSynchronizer::NormalizeOnClient()
 {
     const float fixedTimeStep = 1.0f / followerFrequency_;
     while (timeAccumulator_ >= fixedTimeStep)
@@ -119,7 +119,7 @@ void LocalClockSynchronizer::NormalizeOnClient()
     }
 }
 
-PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer)
+PhysicsTickSynchronizer::PhysicsTickSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer)
 #ifdef URHO3D_PHYSICS
     : physicsWorld_(scene->GetComponent<PhysicsWorld>())
     , sync_(networkFrequency, isServer)
@@ -144,7 +144,7 @@ PhysicsClockSynchronizer::PhysicsClockSynchronizer(Scene* scene, unsigned networ
 #endif
 }
 
-PhysicsClockSynchronizer::~PhysicsClockSynchronizer()
+PhysicsTickSynchronizer::~PhysicsTickSynchronizer()
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
@@ -155,7 +155,7 @@ PhysicsClockSynchronizer::~PhysicsClockSynchronizer()
 #endif
 }
 
-void PhysicsClockSynchronizer::Synchronize(unsigned networkFrame, float overtime)
+void PhysicsTickSynchronizer::Synchronize(unsigned networkFrame, float overtime)
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
@@ -167,7 +167,7 @@ void PhysicsClockSynchronizer::Synchronize(unsigned networkFrame, float overtime
 #endif
 }
 
-void PhysicsClockSynchronizer::Update(float timeStep)
+void PhysicsTickSynchronizer::Update(float timeStep)
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
@@ -178,7 +178,7 @@ void PhysicsClockSynchronizer::Update(float timeStep)
 #endif
 }
 
-void PhysicsClockSynchronizer::UpdatePhysics()
+void PhysicsTickSynchronizer::UpdatePhysics()
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)

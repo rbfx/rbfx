@@ -30,7 +30,7 @@
 #include "../IO/VectorBuffer.h"
 #include "../Network/ClockSynchronizer.h"
 #include "../Replica/ClientInputStatistics.h"
-#include "../Replica/LocalClockSynchronizer.h"
+#include "../Replica/TickSynchronizer.h"
 #include "../Replica/ProtocolMessages.h"
 
 #include <EASTL/bitvector.h>
@@ -226,7 +226,7 @@ private:
     const unsigned updateFrequency_{};
     unsigned currentFrame_{};
 
-    PhysicsClockSynchronizer physicsSync_;
+    PhysicsTickSynchronizer physicsSync_;
 
     SharedPtr<SharedReplicationState> sharedState_;
     ea::unordered_map<AbstractConnection*, SharedPtr<ClientReplicationState>> connections_;
