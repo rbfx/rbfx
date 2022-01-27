@@ -26,7 +26,7 @@
 
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
-#include "../Replica/LocalClockSynchronizer.h"
+#include "../Replica/TickSynchronizer.h"
 #include "../Replica/NetworkTime.h"
 #include "../Replica/ProtocolMessages.h"
 
@@ -108,7 +108,7 @@ private:
 
     SoftNetworkTime replicaTime_;
     SoftNetworkTime inputTime_;
-    PhysicsClockSynchronizer physicsSync_;
+    PhysicsTickSynchronizer physicsSync_;
 };
 
 /// Client part of NetworkManager subsystem.
