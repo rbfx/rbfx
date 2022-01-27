@@ -31,7 +31,6 @@
 
 #include <Urho3D/IO/Log.h>
 
-
 namespace Urho3D
 {
 

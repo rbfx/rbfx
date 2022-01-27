@@ -80,6 +80,9 @@ public:
             {
                 pinRefs[i] = node_->GetPin(i).GetMemoryReference();
             }
+            //auto spans = SpanVariantTuple<Values...>::Make(context, pinRefs);
+            //ea::apply(*static_cast<Instance*>(this),
+            //    ea::tuple_cat(ea::tie(context), ea::make_tuple(static_cast<unsigned>(context.indices_.size())), spans));
             RunUpdate<Instance, Values...>(context, *static_cast<Instance*>(this), pinRefs);
         }
 

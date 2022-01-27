@@ -30,7 +30,6 @@
 namespace Urho3D
 {
 class ParticleGraphLayerInstance;
-class UpdateContext;
 class ParticleGraphNodeInstance;
 
 /// %Particle graph emitter component.

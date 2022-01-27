@@ -22,12 +22,13 @@
 
 #pragma once
 
-#include "../Core/Variant.h"
-
 #include <EASTL/span.h>
 
 namespace Urho3D
 {
+struct ParticleGraphPinRef;
+struct UpdateContext;
+
 enum class ParticleGraphContainerType
 {
     Span,
@@ -42,12 +43,15 @@ template <typename T> struct ScalarSpan
     typedef ea::remove_cv_t<T> value_type;
 
     ScalarSpan(const ea::span<T>& data)
+        : data_(data.data())
+    {
+    }
+    ScalarSpan(T* data)
         : data_(data)
     {
     }
-
-    inline T& operator[](unsigned index) { return data_.front(); }
-    ea::span<T> data_;
+    inline T& operator[](unsigned index) { return *data_; }
+    T* data_;
 };
 
 template <typename T> struct SparseSpan
@@ -57,13 +61,18 @@ template <typename T> struct SparseSpan
 
     SparseSpan() = default;
     SparseSpan(const ea::span<T>& data, const ea::span<unsigned>& indices)
+        : data_(data.data())
+        , indices_(indices.data())
+    {
+    }
+    SparseSpan(T* data, unsigned* indices)
         : data_(data)
         , indices_(indices)
     {
     }
     inline T& operator[](unsigned index) { return data_[indices_[index]]; }
-    ea::span<T> data_;
-    ea::span<unsigned> indices_;
+    T* data_;
+    unsigned* indices_;
 };
 
 template <typename T> struct SpanVariant
@@ -78,6 +87,8 @@ template <typename T> struct SpanVariant
         , indices_(indices)
     {
     }
+    SpanVariant(UpdateContext& context, ParticleGraphPinRef& pinRef);
+
     inline T& operator[](unsigned index)
     {
         switch (type_)
@@ -88,11 +99,29 @@ template <typename T> struct SpanVariant
         default: return *data_;
         }
     }
+    T* GetSpan()
+    {
+        assert(type_ == ParticleGraphContainerType::Span);
+        return data_;
+    }
+
+    ScalarSpan<T> GetScalar()
+    {
+        assert(type_ == ParticleGraphContainerType::Scalar);
+        return ScalarSpan<T>(data_);
+    }
+
+    SparseSpan<T> GetSparse()
+    {
+        assert(type_ == ParticleGraphContainerType::Sparse);
+        return SparseSpan<T>(data_, indices_);
+    }
     ParticleGraphContainerType type_{ParticleGraphContainerType::Scalar};
     T* data_;
     unsigned* indices_;
 };
 
+template <typename... Values> struct SpanVariantTuple;
 
 
 } // namespace Urho3D
