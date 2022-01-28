@@ -101,10 +101,7 @@ bool Tab::RenderWindow()
     wasOpen_ = open_;
 
     if (activateTab_)
-    {
         open_ = true;
-        isActive_ = true;
-    }
 
     if (open_)
     {
@@ -144,7 +141,6 @@ bool Tab::RenderWindow()
                 }
             }
 
-            isActive_ = ui::IsWindowFocused();
             bool shouldBeOpen = RenderWindowContent();
             if (open_)
                 open_ = shouldBeOpen;
@@ -169,10 +165,7 @@ bool Tab::RenderWindow()
             ui::PopStyleVar();
     }
     else
-    {
-        isActive_ = false;
         isRendered_ = false;
-    }
 
     return open_;
 }
@@ -243,13 +236,6 @@ bool Tab::DeserializeSelection(const ByteVector& data)
     VectorBuffer buffer(data);
     BinaryInputArchive archive(context_, buffer);
     return SerializeSelection(archive);
-}
-
-bool Tab::IsActive(StringHash tabType) const
-{
-    auto* editor = GetSubsystem<Editor>();
-    auto* tab = editor->GetActiveTab();
-    return tab->GetType() == tabType;
 }
 
 }

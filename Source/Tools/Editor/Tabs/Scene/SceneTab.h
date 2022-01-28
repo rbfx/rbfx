@@ -92,8 +92,6 @@ public:
     StringHash GetResourceType() override { return XMLFile::GetTypeStatic(); };
     ///
     void OnUpdateFocused() override;
-    /// Called when tab focused.
-    void OnFocused() override;
     /// Modify current scene selection.
     void ModifySelection(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components, SelectionMode mode);
     /// Modify current scene selection.

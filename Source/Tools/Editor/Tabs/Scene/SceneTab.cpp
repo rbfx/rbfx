@@ -150,6 +150,8 @@ SceneTab::SceneTab(Context* context)
     undo_->Connect(&gizmo_, this);
 
     UpdateUniqueTitle();
+
+    GetSubsystem<Editor>()->GetTab<HierarchyTab>()->SetProvider(this);  // TODO: Temporary.
 }
 
 SceneTab::~SceneTab()
@@ -1314,12 +1316,6 @@ void SceneTab::RemoveComponentIcon(Component* component)
             index++;
         }
     }
-}
-
-void SceneTab::OnFocused()
-{
-    auto* editor = GetSubsystem<Editor>();
-    editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 
 void SceneTab::ModifySelection(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components, SceneTab::SelectionMode mode)
