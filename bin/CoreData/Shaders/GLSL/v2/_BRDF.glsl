@@ -169,6 +169,25 @@ half3 BRDF_Direct_PBRSpecular(const half3 specular, const half roughness,
 }
 
 /// Evaluate PBR lighting for direct light.
+// Burley Diffuse
+// diffuseColor = the rgb color value of the pixel
+// roughness    = the roughness of the pixel
+// NdotV        = the normal dot with the camera view direction
+// NdotL        = the normal dot with the light direction
+// VdotH        = the camera view direction dot with the half vector
+half BurleyDiffuse(half roughness, half NdotV, half NdotL, half VdotH)
+{
+    half energyBias = mix(roughness, 0.0, 0.5);
+    half energyFactor = mix(roughness, 1.0, 1.0 / 1.51);
+    half fd90 = energyBias + 2.0 * VdotH * VdotH * roughness;
+    half f0 = 1.0;
+    half lightScatter = f0 + (fd90 - f0) * pow(1.0 - NdotL, 5.0);
+    half viewScatter = f0 + (fd90 - f0) * pow(1.0 - NdotV, 5.0);
+
+    return lightScatter * viewScatter * energyFactor;
+}
+
+/// Evaluate PBR lighting for direct light.
 half3 Direct_PBR(const half3 lightColor, const half3 albedo, const half3 specular, const half roughness,
     const half3 lightVec, const half3 normal, const half3 eyeVec, const half3 halfVec)
 {
@@ -176,9 +195,13 @@ half3 Direct_PBR(const half3 lightColor, const half3 albedo, const half3 specula
     half NoV = abs(dot(normal, eyeVec)) + 1e-5;
     half NoH = clamp(dot(normal, halfVec), 0.0, 1.0);
     half LoH = clamp(dot(lightVec, halfVec), 0.0, 1.0);
+    
+    // float vdh = clamp(dot(toCamera, Hn), M_EPSILON, 1.0);
+    half VdotH = clamp(dot(-eyeVec, halfVec), 1e-5, 1.0);
+    half burley = BurleyDiffuse(roughness, NoV, NoL, VdotH);
 
     half3 specularLight = BRDF_Direct_PBRSpecular(specular, roughness, normal, halfVec, NoH, NoV, NoL, LoH);
-    return NoL * lightColor * (albedo + specularLight);
+    return lightColor * (burley * albedo + specularLight * NoL);
 }
 
 #endif // URHO3D_PHYSICAL_MATERIAL
