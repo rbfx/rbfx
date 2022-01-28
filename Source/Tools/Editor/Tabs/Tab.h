@@ -60,6 +60,8 @@ public:
     virtual void RenderToolbarButtons() { }
     /// Render tab content.
     virtual bool RenderWindow();
+    /// Called when window is focused.
+    virtual void OnUpdateFocused() { };
     /// Save ui settings.
     virtual void OnSaveUISettings(ImGuiTextBuffer* buf);
     /// Load ui settings.

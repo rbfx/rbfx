@@ -90,6 +90,8 @@ public:
     bool SaveResource() override;
     ///
     StringHash GetResourceType() override { return XMLFile::GetTypeStatic(); };
+    ///
+    void OnUpdateFocused() override;
     /// Called when tab focused.
     void OnFocused() override;
     /// Modify current scene selection.

@@ -131,7 +131,9 @@ bool Tab::RenderWindow()
                 }
             }
 
-            if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+            if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+                OnUpdateFocused();
+            else
             {
                 if (!wasRendered)                                                                                   // Just activated
                     ui::SetWindowFocus();

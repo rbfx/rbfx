@@ -150,15 +150,6 @@ SceneTab::SceneTab(Context* context)
     undo_->Connect(&gizmo_, this);
 
     UpdateUniqueTitle();
-
-    // Key bindings
-    Editor* editor = GetSubsystem<Editor>();
-    editor->keyBindings_.Bind(ActionType::Copy,           this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; CopySelection(); });
-    editor->keyBindings_.Bind(ActionType::Cut,            this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; CopySelection(); RemoveSelection(); });
-    editor->keyBindings_.Bind(ActionType::Paste,          this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; PasteIntuitive(); });
-    editor->keyBindings_.Bind(ActionType::PasteInto,      this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; PasteIntoSelection(); });
-    editor->keyBindings_.Bind(ActionType::Delete,         this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; RemoveSelection(); });
-    editor->keyBindings_.Bind(ActionType::ClearSelection, this, [this](SceneTab*) { if (ui::IsAnyItemActive() || (!IsActive() && !IsActive<HierarchyTab>())) return; ClearSelection(); });
 }
 
 SceneTab::~SceneTab()
@@ -170,6 +161,39 @@ SceneTab::~SceneTab()
 void SceneTab::OnRenderContextMenu()
 {
     BaseResourceTab::OnRenderContextMenu();
+}
+
+void SceneTab::OnUpdateFocused()
+{
+    if (ui::IsAnyItemActive())
+        return;
+
+    Editor* editor = GetSubsystem<Editor>();
+    if (editor->keyBindings_.IsActionPressed(ActionType::Copy))
+        CopySelection();
+    else if (editor->keyBindings_.IsActionPressed(ActionType::Cut))
+    {
+        CopySelection();
+        RemoveSelection();
+    }
+    else if (editor->keyBindings_.IsActionPressed(ActionType::Paste))
+        PasteIntuitive();
+    else if (editor->keyBindings_.IsActionPressed(ActionType::PasteInto))
+        PasteIntoSelection();
+    else if (editor->keyBindings_.IsActionPressed(ActionType::Delete))
+        RemoveSelection();
+    else if (editor->keyBindings_.IsActionPressed(ActionType::ClearSelection))
+        ClearSelection();
+    else if (!isViewportActive_)
+    {
+        // TODO: Make these bindable.
+        if (ui::IsKeyPressed(KEY_W))
+            gizmo_.SetOperation(GIZMOOP_TRANSLATE);
+        else if (ui::IsKeyPressed(KEY_E))
+            gizmo_.SetOperation(GIZMOOP_ROTATE);
+        else if (ui::IsKeyPressed(KEY_R))
+            gizmo_.SetOperation(GIZMOOP_SCALE);
+    }
 }
 
 bool SceneTab::RenderWindowContent()
@@ -893,17 +917,6 @@ void SceneTab::OnUpdate(VariantMap& args)
                 component->RunFrame(timeStep);
             }
         }
-    }
-
-    if (IsActive() && !isViewportActive_)
-    {
-        // TODO: Make these bindable.
-        if (ui::IsKeyPressed(KEY_W))
-            gizmo_.SetOperation(GIZMOOP_TRANSLATE);
-        else if (ui::IsKeyPressed(KEY_E))
-            gizmo_.SetOperation(GIZMOOP_ROTATE);
-        else if (ui::IsKeyPressed(KEY_R))
-            gizmo_.SetOperation(GIZMOOP_SCALE);
     }
 }
 
