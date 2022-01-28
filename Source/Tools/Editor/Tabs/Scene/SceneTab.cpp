@@ -206,10 +206,6 @@ bool SceneTab::RenderWindowContent()
     if (GetScene() == nullptr)
         return true;
 
-    // Focus window when appearing
-    if (!isRendered_)
-        ui::SetWindowFocus();
-
     if (!ui::BeginChild("Scene view", g.CurrentWindow->ContentRegionRect.GetSize(), false, windowFlags_))
     {
         ui::EndChild();

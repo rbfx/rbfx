@@ -97,7 +97,6 @@ bool Tab::RenderWindow()
         if (targetID)
             ui::SetNextWindowDockID(targetID, ImGuiCond_Once);
     }
-    bool wasRendered = isRendered_;
     wasOpen_ = open_;
 
     if (activateTab_)
@@ -132,9 +131,7 @@ bool Tab::RenderWindow()
                 OnUpdateFocused();
             else
             {
-                if (!wasRendered)                                                                                   // Just activated
-                    ui::SetWindowFocus();
-                else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
+                if (input->IsMouseVisible() && ui::IsAnyMouseDown())
                 {
                     if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))                                        // Interacting
                         ui::SetWindowFocus();
@@ -148,7 +145,6 @@ bool Tab::RenderWindow()
             {
                 // Tab is possibly closing, lets not override that condition.
             }
-            isRendered_ = true;
 
             if (noContentPadding)
                 ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
@@ -164,8 +160,6 @@ bool Tab::RenderWindow()
         if (noContentPadding)
             ui::PopStyleVar();
     }
-    else
-        isRendered_ = false;
 
     return open_;
 }

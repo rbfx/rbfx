@@ -78,8 +78,6 @@ public:
     ea::string GetUniqueTitle() const { return uniqueTitle_;}
     /// Returns title which uniquely identifies scene tab in imgui.
     ea::string GetUniqueName() const { return uniqueName_;}
-    /// Return true if scene view was rendered on this frame.
-    bool IsRendered() const { return isRendered_; }
     /// Return unique object id.
     ea::string GetID() const { return id_; }
     /// Set unique object id.
@@ -122,8 +120,6 @@ protected:
     ea::string uniqueTitle_;
     /// TYpe name with id appended to it.
     ea::string uniqueName_;
-    /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
-    bool isRendered_ = false;
     /// Returns true if tab is utility (non-content) window.
     bool isUtility_ = false;
     /// Flag indicating that tab is open and renders it's contents.
