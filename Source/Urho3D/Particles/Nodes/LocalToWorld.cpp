@@ -21,6 +21,9 @@
 // THE SOFTWARE.
 //
 
+#include "../Span.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../UpdateContext.h"
 #include "../../Precompiled.h"
 #include "LocalToWorld.h"
 #include "LocalToWorldInstance.h"

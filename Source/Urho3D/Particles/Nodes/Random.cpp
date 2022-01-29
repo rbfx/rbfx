@@ -23,6 +23,9 @@
 #include "../../Precompiled.h"
 
 #include "../ParticleGraphSystem.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../ParticleGraphNodeInstance.h"
+#include "../UpdateContext.h"
 #include "Random.h"
 
 #include "../Helpers.h"

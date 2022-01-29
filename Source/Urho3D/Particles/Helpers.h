@@ -27,6 +27,7 @@
 #include "ParticleGraphLayerInstance.h"
 #include "ParticleGraphNode.h"
 #include "ParticleGraphNodeInstance.h"
+#include "SpanVariants.h"
 #include <EASTL/tuple.h>
 
 namespace Urho3D
