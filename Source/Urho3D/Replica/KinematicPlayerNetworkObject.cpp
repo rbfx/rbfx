@@ -66,11 +66,17 @@ void KinematicPlayerNetworkObject::SetWalkVelocity(const Vector3& velocity)
 
 void KinematicPlayerNetworkObject::InitializeOnServer()
 {
-    const auto networkManager = GetNetworkObject()->GetServerNetworkManager();
-    const unsigned traceCapacity = networkManager->GetTraceCapacity();
-    feedbackVelocity_.Resize(traceCapacity);
+    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
+    const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
+    feedbackVelocity_.Resize(traceDuration);
 
-    SubscribeToEvent(E_BEGINSERVERNETWORKFRAME, [this](StringHash, VariantMap&) { OnServerNetworkFrameBegin(); });
+    SubscribeToEvent(E_BEGINSERVERNETWORKFRAME,
+        [this](StringHash, VariantMap& eventData)
+    {
+        using namespace BeginServerNetworkFrame;
+        const unsigned serverFrame = eventData[P_FRAME].GetUInt();
+        OnServerNetworkFrameBegin(serverFrame);
+    });
 }
 
 void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
@@ -161,7 +167,7 @@ void KinematicPlayerNetworkObject::CorrectAgainstFrame(unsigned frame)
     const Vector3 offset = *confirmedPosition - predictedPosition;
     if (!offset.Equals(Vector3::ZERO, 0.001f))
     {
-        const auto networkManager = GetNetworkObject()->GetClientNetworkManager();
+        const auto replicationManager = GetNetworkObject()->GetReplicationManager();
         // TODO(network): Refactor
         const float smoothConstant = 15.0f;
         kinematicController_->AdjustRawPosition(offset, smoothConstant);
@@ -171,14 +177,12 @@ void KinematicPlayerNetworkObject::CorrectAgainstFrame(unsigned frame)
     }
 }
 
-void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin()
+void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin(unsigned serverFrame)
 {
     if (AbstractConnection* owner = GetNetworkObject()->GetOwnerConnection())
     {
-        auto networkManager = GetNetworkObject()->GetServerNetworkManager();
-        const unsigned feedbackFrame = networkManager->GetCurrentFrame();
         // TODO(network): Use prior values as well
-        if (const auto newVelocity = feedbackVelocity_.GetRaw(feedbackFrame))
+        if (const auto newVelocity = feedbackVelocity_.GetRaw(serverFrame))
         {
             auto kinematicController = node_->GetComponent<KinematicCharacterController>();
             const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!

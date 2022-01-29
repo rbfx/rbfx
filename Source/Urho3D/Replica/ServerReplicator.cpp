@@ -612,7 +612,11 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
 
         for (auto& [connection, data] : connections_)
             data->BeginNetworkFrame(currentFrame_, overtime);
-        network_->SendEvent(E_BEGINSERVERNETWORKFRAME);
+
+        using namespace BeginServerNetworkFrame;
+        auto& eventData = GetEventDataMap();
+        eventData[P_FRAME] = currentFrame_;
+        network_->SendEvent(E_BEGINSERVERNETWORKFRAME, eventData);
     }
     else
     {

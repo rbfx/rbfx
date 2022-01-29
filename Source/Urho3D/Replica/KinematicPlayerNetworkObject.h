@@ -64,7 +64,7 @@ public:
 
 protected:
     /// Called when frame begins on server.
-    void OnServerNetworkFrameBegin();
+    void OnServerNetworkFrameBegin(unsigned serverFrame);
     /// Called when physics step is over.
     void OnPhysicsSynchronizedOnClient(unsigned networkFrame);
     void CorrectAgainstFrame(unsigned frame);

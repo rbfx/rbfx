@@ -1101,7 +1101,6 @@ void RegisterNetworkLibrary(Context* context)
     NetworkBehavior::RegisterObject(context);
     ReplicatedNetworkTransform::RegisterObject(context);
 
-    DefaultNetworkObject::RegisterObject(context);
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
 #ifdef URHO3D_PHYSICS

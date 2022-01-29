@@ -81,15 +81,13 @@ public:
 
     /// Return current or last NetworkId. Return InvalidNetworkId if not registered.
     NetworkId GetNetworkId() const { return GetStableId(); }
-    NetworkManager* GetNetworkManager() const { return static_cast<NetworkManager*>(GetRegistry()); }
+    NetworkManager* GetReplicationManager() const { return static_cast<NetworkManager*>(GetRegistry()); }
     NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
     NetworkObjectMode GetNetworkMode() const { return networkMode_; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
-    ClientReplica* GetClientNetworkManager() const;
-    ServerReplicator* GetServerNetworkManager() const;
 
     /// Called on server side only. ServerReplicator is guaranteed to be available.
     /// @{

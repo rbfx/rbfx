@@ -100,6 +100,9 @@ public:
 
     /// Return current state.
     /// @{
+    unsigned GetUpdateFrequency() const;
+    float GetTraceDurationInSeconds() const;
+    unsigned GetTraceDurationInFrames() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
     bool IsServer() const { return !!server_; }
     bool IsClient() const { return !!client_; }
