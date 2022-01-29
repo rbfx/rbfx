@@ -175,42 +175,53 @@ NetworkManager::NetworkManager(Context* context)
 
 NetworkManager::~NetworkManager() = default;
 
-void NetworkManager::MarkAsServer()
+void NetworkManager::RegisterObject(Context* context)
+{
+    context->RegisterFactory<NetworkManager>("");
+}
+
+void NetworkManager::Stop()
 {
     if (client_)
     {
-        URHO3D_LOGWARNING("Swiching NetworkManager from client to server mode");
+        URHO3D_LOGINFO("Stopped client for scene replication");
         client_ = ea::nullopt;
-        assert(0);
     }
 
-    if (!server_)
+    if (server_)
     {
-        server_ = MakeShared<ServerReplicator>(this, GetScene());
+        URHO3D_LOGINFO("Stopped server for scene replication");
+        server_ = nullptr;
     }
 }
 
-void NetworkManager::MarkAsClient(AbstractConnection* connectionToServer)
+void NetworkManager::StartServer()
+{
+    Stop();
+
+    server_ = MakeShared<ServerReplicator>(GetScene());
+
+    URHO3D_LOGINFO("Started server for scene replication");
+}
+
+void NetworkManager::StartClient(AbstractConnection* connectionToServer)
+{
+    Stop();
+
+    client_ = ClientData{WeakPtr<AbstractConnection>(connectionToServer)};
+    RemoveAllComponents();
+
+    URHO3D_LOGINFO("Started client for scene replication");
+}
+
+const Variant& NetworkManager::GetSetting(const NetworkSetting& setting) const
 {
     if (server_)
-    {
-        URHO3D_LOGWARNING("Swiching NetworkManager from client to server mode");
-        server_ = nullptr;
-        assert(0);
-    }
-
-    if (client_ && client_->replica_ && client_->replica_->GetConnection() != connectionToServer)
-    {
-        URHO3D_LOGWARNING("Swiching NetworkManager from one server to another without scene recreation");
-        client_ = ea::nullopt;
-        assert(0);
-    }
-
-    if (!client_)
-    {
-        client_ = ClientData{};
-        RemoveAllComponents();
-    }
+        return server_->GetSetting(setting);
+    else if (client_ && client_->replica_)
+        return client_->replica_->GetSetting(setting);
+    else
+        return Variant::EMPTY;
 }
 
 ServerReplicator& NetworkManager::AsServer()

@@ -118,8 +118,8 @@ TEST_CASE("Client-side prediction is consistent with server")
 
     // Wait for synchronization, expect controller on the ground
     sim.SimulateTime(10.0f);
-    const auto& serverNetworkManager = serverScene->GetNetworkManager()->AsServer();
-    const unsigned inputDelay = serverNetworkManager.GetFeedbackDelay(sim.GetServerToClientConnection(clientScene));
+    const auto& serverReplicator = *serverScene->GetComponent<NetworkManager>()->GetServerReplicator();
+    const unsigned inputDelay = serverReplicator.GetFeedbackDelay(sim.GetServerToClientConnection(clientScene));
 
     Node* clientNode = clientScene->GetChild("Player", true);
     auto clientObject = clientNode->GetComponent<KinematicPlayerNetworkObject>();

@@ -42,6 +42,7 @@ namespace Urho3D
 class Connection;
 class Network;
 class NetworkObject;
+class NetworkSetting;
 
 /// Part of NetworkManager used by both client and server, and referenced by components.
 class URHO3D_API NetworkManagerBase : public BaseStableComponentRegistry
@@ -79,22 +80,33 @@ protected:
     void OnComponentRemoved(BaseTrackedComponent* baseComponent) override;
 };
 
-/// Subsystem that keeps trace of all NetworkObject in the Scene.
-/// Built-in in Scene instead of being independent component for quick access and easier management.
+/// Root level scene component that manages Scene replication both on client and server.
 class URHO3D_API NetworkManager : public NetworkManagerBase
 {
     URHO3D_OBJECT(NetworkManager, NetworkManagerBase);
 
 public:
-    using NetworkObjectById = ea::unordered_map<unsigned, NetworkObject*>;
-
     explicit NetworkManager(Context* context);
     ~NetworkManager() override;
 
-    /// Switch network manager to server mode. It's not supposed to be called on NetworkManager in client mode.
-    void MarkAsServer();
-    /// Switch network manager to client mode. It's not supposed to be called on NetworkManager in server mode.
-    void MarkAsClient(AbstractConnection* connectionToServer);
+    static void RegisterObject(Context* context);
+
+    /// Stop whatever client or server logic is going on.
+    void Stop();
+    /// Start new server from current state.
+    void StartServer();
+    /// Start new client from specified connection.
+    void StartClient(AbstractConnection* connectionToServer);
+
+    /// Return current state.
+    /// @{
+    const Variant& GetSetting(const NetworkSetting& setting) const;
+    bool IsServer() const { return !!server_; }
+    bool IsClient() const { return !!client_; }
+    ClientReplica* GetClientReplica() const { return client_ ? client_->replica_ : nullptr; }
+    ServerReplicator* GetServerReplicator() const { return server_; }
+    /// @}
+
     /// Return expected client or server network manager.
     ServerReplicator& AsServer();
     ClientReplica& AsClient();
@@ -111,18 +123,18 @@ private:
 
     struct ClientData
     {
+        WeakPtr<AbstractConnection> connection_;
         ea::optional<MsgSceneClock> initialClock_;
         ea::optional<VariantMap> serverSettings_;
         ea::optional<unsigned> ackMagic_;
 
-        bool IsReadyToInitialize() const { return initialClock_ && serverSettings_ && ackMagic_; }
+        bool IsReadyToInitialize() const { return connection_ && initialClock_ && serverSettings_ && ackMagic_; }
 
         SharedPtr<ClientReplica> replica_;
     };
 
-    ea::optional<ClientData> client_;
-
     SharedPtr<ServerReplicator> server_;
+    ea::optional<ClientData> client_;
 };
 
 }

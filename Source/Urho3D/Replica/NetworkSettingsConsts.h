@@ -64,7 +64,7 @@ URHO3D_NETWORK_SETTING(ConnectionId, unsigned, 0);
 
 /// @}
 
-/// Server-only properties ignored by the client
+/// Server-only properties ignored by the client.
 /// @{
 
 /// Interval in seconds between periodic clock updates.
@@ -87,7 +87,7 @@ URHO3D_NETWORK_SETTING(RelevanceTimeout, float, 5.0f);
 
 /// @}
 
-/// Client-only properties ignored by the server
+/// Client-only properties ignored by the server.
 /// @{
 
 /// Minimal time error that is not ignored.

@@ -210,6 +210,10 @@ void Connection::SetScene(Scene* newScene)
 
     if (isClient_)
     {
+        networkManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+        if (!networkManager_->IsServer())
+            networkManager_->StartServer();
+
         sceneState_.Clear();
 
         // When scene is assigned on the server, instruct the client to load it. This may require downloading packages
@@ -1034,7 +1038,7 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
         return;
     }
 
-    if (!scene_)
+    if (!scene_ || !networkManager_)
     {
         URHO3D_LOGWARNING("Received a SceneLoaded message without an assigned scene from client " + ToString());
         return;
@@ -1051,8 +1055,6 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
     }
     else
     {
-        networkManager_ = scene_->GetNetworkManager(true);
-        networkManager_->MarkAsServer();
         networkManager_->AsServer().AddConnection(this);
         sceneLoaded_ = true;
 
@@ -1267,8 +1269,8 @@ void Connection::SetPacketSizeLimit(int limit)
 
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
-    networkManager_ = scene_->GetNetworkManager(true);
-    networkManager_->MarkAsClient(this);
+    networkManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+    networkManager_->StartClient(this);
     sceneLoaded_ = true;
 
     // Clear all replicated nodes
@@ -1689,8 +1691,8 @@ void Connection::OnPackagesReady()
         // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
         scene_->Clear(true, false);
 
-        networkManager_ = scene_->GetNetworkManager(true);
-        networkManager_->MarkAsClient(this);
+        networkManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+        networkManager_->StartClient(this);
         sceneLoaded_ = true;
 
         msg_.Clear();

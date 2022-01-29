@@ -120,7 +120,7 @@ public:
     ClientReplica(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
         const VariantMap& serverSettings);
 
-    void ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
+    bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
 
     ea::string GetDebugInfo() const;
 

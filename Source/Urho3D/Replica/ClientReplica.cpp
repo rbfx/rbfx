@@ -129,8 +129,10 @@ NetworkTime ClientReplicaClock::ToInputTime(const NetworkTime& serverTime) const
 ClientReplica::ClientReplica(
     Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
-    , replicationManager_(scene->GetNetworkManager())
+    , replicationManager_(scene->GetComponent<NetworkManager>())
 {
+    URHO3D_ASSERT(replicationManager_);
+
     SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
     {
         using namespace InputReady;
@@ -139,7 +141,7 @@ ClientReplica::ClientReplica(
     });
 }
 
-void ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData)
+bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     switch (messageId)
     {
@@ -149,7 +151,7 @@ void ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
         connection_->OnMessageReceived(messageId, msg);
 
         ProcessSceneClock(msg);
-        break;
+        return true;
     }
 
     case MSG_REMOVE_OBJECTS:
@@ -157,7 +159,7 @@ void ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
         connection_->OnMessageReceived(messageId, messageData);
 
         ProcessRemoveObjects(messageData);
-        break;
+        return true;
     }
 
     case MSG_ADD_OBJECTS:
@@ -165,7 +167,7 @@ void ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
         connection_->OnMessageReceived(messageId, messageData);
 
         ProcessAddObjects(messageData);
-        break;
+        return true;
     }
 
     case MSG_UPDATE_OBJECTS_RELIABLE:
@@ -173,7 +175,7 @@ void ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
         connection_->OnMessageReceived(messageId, messageData);
 
         ProcessUpdateObjectsReliable(messageData);
-        break;
+        return true;
     }
 
     case MSG_UPDATE_OBJECTS_UNRELIABLE:
@@ -181,11 +183,11 @@ void ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
         connection_->OnMessageReceived(messageId, messageData);
 
         ProcessUpdateObjectsUnreliable(messageData);
-        break;
+        return true;
     }
 
     default:
-        break;
+        return false;
     }
 }
 
