@@ -108,10 +108,8 @@ public:
     /// Handle event.
     virtual void OnEvent(Object* sender, StringHash eventType, VariantMap& eventData);
 
-    /// Serialize object.
-    virtual bool Serialize(Archive& archive);
-    /// Serialize content from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive, ArchiveBlock& block);
+    /// Serialize content from/to archive. May throw ArchiveException.
+    virtual void SerializeInBlock(Archive& archive);
 
     /// Return type info static.
     static const TypeInfo* GetTypeInfoStatic() { return nullptr; }
@@ -234,57 +232,6 @@ private:
 };
 
 template <class T> T* Object::GetSubsystem() const { return GetSubsystems().Get<T>(); }
-
-/// Base class for object factories.
-class URHO3D_API ObjectFactory : public RefCounted
-{
-public:
-    /// Construct.
-    explicit ObjectFactory(Context* context) :
-        context_(context)
-    {
-        assert(context_);
-    }
-
-    /// Destruct.
-    virtual ~ObjectFactory() = default;
-
-    /// Create an object. Implemented in templated subclasses.
-    virtual SharedPtr<Object> CreateObject() = 0;
-
-    /// Return execution context.
-    Context* GetContext() const { return context_; }
-
-    /// Return type info of objects created by this factory.
-    const TypeInfo* GetTypeInfo() const { return typeInfo_; }
-
-    /// Return type hash of objects created by this factory.
-    StringHash GetType() const { return typeInfo_->GetType(); }
-
-    /// Return type name of objects created by this factory.
-    const ea::string& GetTypeName() const { return typeInfo_->GetTypeName(); }
-
-protected:
-    /// Execution context.
-    Context* context_;
-    /// Type info.
-    const TypeInfo* typeInfo_{};
-};
-
-/// Template implementation of the object factory.
-template <class T> class ObjectFactoryImpl : public ObjectFactory
-{
-public:
-    /// Construct.
-    explicit ObjectFactoryImpl(Context* context) :
-        ObjectFactory(context)
-    {
-        typeInfo_ = T::GetTypeInfoStatic();
-    }
-
-    /// Create an object of the specific type.
-    SharedPtr<Object> CreateObject() override { return SharedPtr<Object>(new T(context_)); }
-};
 
 /// Internal helper class for invoking event handler functions.
 class URHO3D_API EventHandler : public ea::intrusive_list_node

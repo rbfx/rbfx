@@ -56,7 +56,7 @@ public:
     /// May be called from non-main thread. Returns a list of produced files in `byproducts` vector and `true` on success.
     virtual bool Execute(Urho3D::Asset* input, const ea::string& outputPath);
     ///
-    bool Serialize(Archive& archive, ArchiveBlock& block) override;
+    void SerializeInBlock(Archive& archive) override;
     /// Returns flags of this importer.
     AssetImporterFlags GetFlags() const { return flags_; }
     /// Returns true when settings of this importer were modified by the user.

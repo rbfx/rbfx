@@ -29,7 +29,7 @@ namespace Urho3D
 
 MemoryBuffer::MemoryBuffer(void* data, unsigned size) :
     AbstractFile(size),
-    buffer_((unsigned char*)data),
+    buffer_(static_cast<unsigned char*>(data)),
     readOnly_(false)
 {
     if (!buffer_)
@@ -37,12 +37,19 @@ MemoryBuffer::MemoryBuffer(void* data, unsigned size) :
 }
 
 MemoryBuffer::MemoryBuffer(const void* data, unsigned size) :
-    AbstractFile(size),
-    buffer_((unsigned char*)data),
-    readOnly_(true)
+    AbstractFile(size)
+    , buffer_(const_cast<unsigned char*>(static_cast<const unsigned char*>(data)))
+    , readOnly_(true)
 {
     if (!buffer_)
         size_ = 0;
+}
+
+MemoryBuffer::MemoryBuffer(ea::string_view text)
+    : AbstractFile(static_cast<unsigned>(text.size()))
+    , buffer_(const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(text.data())))
+    , readOnly_(true)
+{
 }
 
 MemoryBuffer::MemoryBuffer(ByteVector& data) :

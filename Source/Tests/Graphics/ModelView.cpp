@@ -30,7 +30,7 @@
 
 TEST_CASE("Simple model is constructed and desconstructed")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto modelView = MakeShared<ModelView>(context);
 
     VectorBuffer modelData;
@@ -185,7 +185,7 @@ TEST_CASE("Simple model is constructed and desconstructed")
 
 TEST_CASE("Model with multiple vertex formats is constructed and desconstructed")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto modelView = MakeShared<ModelView>(context);
 
     VectorBuffer modelData;
@@ -264,7 +264,7 @@ TEST_CASE("Model with multiple vertex formats is constructed and desconstructed"
 
 TEST_CASE("Skeletal model is constructed and desconstructed")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto modelView = Tests::CreateSkinnedQuad_Model(context);
 
     VectorBuffer modelData;
@@ -298,7 +298,7 @@ TEST_CASE("Skeletal model is constructed and desconstructed")
 
 TEST_CASE("Model with morphs is constructed and desconstructed")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto modelView = MakeShared<ModelView>(context);
 
     VectorBuffer modelData;
@@ -383,7 +383,7 @@ TEST_CASE("Model with morphs is constructed and desconstructed")
 
 TEST_CASE("Animation is serialized")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto animation = MakeShared<Animation>(context);
 
     VectorBuffer animationData;

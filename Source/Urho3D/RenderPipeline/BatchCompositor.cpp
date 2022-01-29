@@ -345,6 +345,8 @@ void BatchCompositor::BeginShadowBatchesComposition(unsigned lightIndex, ShadowS
             const SourceBatch& sourceBatch = sourceBatches[j];
             Material* material = sourceBatch.material_ ? sourceBatch.material_ : defaultMaterial_;
             Technique* tech = material->FindTechnique(drawable, shadowMaterialQuality_);
+            if (!tech)
+                continue;
             Pass* pass = tech->GetSupportedPass(shadowPassIndex_);
             if (!pass)
                 continue;
@@ -377,6 +379,8 @@ void BatchCompositor::FinalizeShadowBatchesComposition()
     for (const auto& splitAndKey : delayedShadowBatches_)
     {
         const PipelineBatchDesc& desc = splitAndKey.second;
+        if (!desc.geometry_)
+            continue;
         ShadowSplitProcessor& split = *splitAndKey.first;
         ctx.shadowSplitIndex_ = split.GetSplitIndex();
         PipelineState* pipelineState = shadowCache_.GetOrCreatePipelineState(desc.GetKey(), ctx, batchStateCacheCallback_);

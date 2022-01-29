@@ -140,8 +140,9 @@ void RemoveNamedAttribute(ea::unordered_map<StringHash, ea::vector<AttributeInfo
         attributes.erase(i);
 }
 
-Context::Context() :
-    eventHandler_(nullptr)
+Context::Context()
+    : ObjectReflectionRegistry(this)
+    , eventHandler_(nullptr)
 {
     assert(contextInstance == nullptr);
     contextInstance = this;
@@ -174,7 +175,6 @@ Context::~Context()
     RemoveSubsystem("Graphics");
 
     subsystems_.Clear();
-    factories_.clear();
 
     // Delete allocated event data maps
     for (auto i = eventDataMaps_.begin(); i != eventDataMaps_.end(); ++i)
@@ -189,53 +189,6 @@ Context* Context::GetInstance()
 {
     assert(contextInstance != nullptr);
     return contextInstance;
-}
-
-SharedPtr<Object> Context::CreateObject(StringHash objectType)
-{
-    auto i = factories_.find(objectType);
-    if (i != factories_.end())
-        return i->second->CreateObject();
-    else
-        return SharedPtr<Object>();
-}
-
-void Context::RegisterFactory(ObjectFactory* factory)
-{
-    if (!factory)
-        return;
-
-    auto it = factories_.find(factory->GetType());
-    if (it != factories_.end())
-    {
-        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
-            factory->GetTypeName().c_str(), it->second->GetTypeName().c_str());
-        assert(false);
-        return;
-    }
-    factories_[factory->GetType()] = factory;
-}
-
-void Context::RegisterFactory(ObjectFactory* factory, const char* category)
-{
-    if (!factory)
-        return;
-
-    RegisterFactory(factory);
-    if (CStringLength(category))
-        objectCategories_[category].push_back(factory->GetType());
-}
-
-void Context::RemoveFactory(StringHash type)
-{
-    factories_.erase(type);
-}
-
-void Context::RemoveFactory(StringHash type, const char* category)
-{
-    RemoveFactory(type);
-    if (CStringLength(category))
-        objectCategories_[category].erase_first_unsorted(type);
 }
 
 void Context::RegisterSubsystem(Object* object, StringHash type)
@@ -264,57 +217,6 @@ void Context::RegisterSubsystem(Object* object)
 void Context::RemoveSubsystem(StringHash objectType)
 {
     subsystems_.Remove(objectType);
-}
-
-AttributeHandle Context::RegisterAttribute(StringHash objectType, const AttributeInfo& attr)
-{
-    // None or pointer types can not be supported
-    if (attr.type_ == VAR_NONE || attr.type_ == VAR_VOIDPTR || attr.type_ == VAR_PTR)
-    {
-        URHO3D_LOGWARNING("Attempt to register unsupported attribute type {} to class {}", Variant::GetTypeName(attr.type_),
-            GetTypeName(objectType));
-        return AttributeHandle();
-    }
-
-    // Only SharedPtr<> of Serializable or it's subclasses are supported in attributes
-    if (attr.type_ == VAR_CUSTOM && !attr.defaultValue_.IsCustomType<SharedPtr<Serializable>>())
-    {
-        URHO3D_LOGWARNING("Attempt to register unsupported attribute of custom type to class {}", GetTypeName(objectType));
-        return AttributeHandle();
-    }
-
-    AttributeHandle handle;
-
-    ea::vector<AttributeInfo>& objectAttributes = attributes_[objectType];
-    objectAttributes.push_back(attr);
-    handle.attributeInfo_ = &objectAttributes.back();
-
-    if (attr.mode_ & AM_NET)
-    {
-        ea::vector<AttributeInfo>& objectNetworkAttributes = networkAttributes_[objectType];
-        objectNetworkAttributes.push_back(attr);
-        handle.networkAttributeInfo_ = &objectNetworkAttributes.back();
-    }
-    return handle;
-}
-
-void Context::RemoveAttribute(StringHash objectType, const char* name)
-{
-    RemoveNamedAttribute(attributes_, objectType, name);
-    RemoveNamedAttribute(networkAttributes_, objectType, name);
-}
-
-void Context::RemoveAllAttributes(StringHash objectType)
-{
-    attributes_.erase(objectType);
-    networkAttributes_.erase(objectType);
-}
-
-void Context::UpdateAttributeDefaultValue(StringHash objectType, const char* name, const Variant& defaultValue)
-{
-    AttributeInfo* info = GetAttribute(objectType, name);
-    if (info)
-        info->defaultValue_ = defaultValue;
 }
 
 VariantMap& Context::GetEventDataMap()
@@ -408,28 +310,6 @@ void Context::ReleaseIK()
 #endif // ifdef URHO3D_IK
 #endif // ifndef MINI_URHO
 
-void Context::CopyBaseAttributes(StringHash baseType, StringHash derivedType)
-{
-    // Prevent endless loop if mistakenly copying attributes from same class as derived
-    if (baseType == derivedType)
-    {
-        URHO3D_LOGWARNING("Attempt to copy base attributes to itself for class " + GetTypeName(baseType));
-        return;
-    }
-
-    const ea::vector<AttributeInfo>* baseAttributes = GetAttributes(baseType);
-    if (baseAttributes)
-    {
-        for (unsigned i = 0; i < baseAttributes->size(); ++i)
-        {
-            const AttributeInfo& attr = baseAttributes->at(i);
-            attributes_[derivedType].push_back(attr);
-            if (attr.mode_ & AM_NET)
-                networkAttributes_[derivedType].push_back(attr);
-        }
-    }
-}
-
 Object* Context::GetSubsystem(StringHash type) const
 {
     return subsystems_.Get(type);
@@ -457,25 +337,14 @@ Object* Context::GetEventSender() const
 const ea::string& Context::GetTypeName(StringHash objectType) const
 {
     // Search factories to find the hash-to-name mapping
-    auto i = factories_.find(objectType);
-    return i != factories_.end() ? i->second->GetTypeName() : EMPTY_STRING;
+    auto reflection = GetReflection(objectType);
+    return reflection ? reflection->GetTypeName() : EMPTY_STRING;
 }
 
 AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
 {
-    auto i = attributes_.find(objectType);
-    if (i == attributes_.end())
-        return nullptr;
-
-    ea::vector<AttributeInfo>& infos = i->second;
-
-    for (auto j = infos.begin(); j != infos.end(); ++j)
-    {
-        if (!j->name_.comparei(name))
-            return &(*j);
-    }
-
-    return nullptr;
+    ObjectReflection* reflection = GetReflection(objectType);
+    return reflection ? reflection->GetAttribute(name) : nullptr;
 }
 
 void Context::AddEventReceiver(Object* receiver, StringHash eventType)

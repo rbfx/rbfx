@@ -38,7 +38,6 @@ if (URHO3D_TOOLS AND NOT MINI_URHO)
     add_subdirectory(SpritePacker)
     add_subdirectory(Editor)
     add_subdirectory(ScriptPlayer)
-    add_subdirectory(SerializationConverter)
 endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)

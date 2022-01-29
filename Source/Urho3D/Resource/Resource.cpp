@@ -22,13 +22,16 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Core/Thread.h"
 #include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/Resource.h"
+#include "../Resource/ResourceCache.h"
 #include "../Resource/XMLElement.h"
+#include "Urho3D/IO/MemoryBuffer.h"
 
 namespace Urho3D
 {
@@ -38,6 +41,15 @@ Resource::Resource(Context* context) :
     memoryUse_(0),
     asyncLoadState_(ASYNC_DONE)
 {
+}
+
+Resource* Resource::LoadFromCache(Context* context, StringHash type, const ea::string& name)
+{
+    if (name.empty())
+        return nullptr;
+
+    auto cache = context->GetSubsystem<ResourceCache>();
+    return cache->GetResource(type, name);
 }
 
 bool Resource::Load(Deserializer& source)

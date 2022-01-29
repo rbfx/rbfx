@@ -34,20 +34,16 @@ const SphericalHarmonics9 SphericalHarmonics9::ZERO;
 const SphericalHarmonicsColor9 SphericalHarmonicsColor9::ZERO;
 const SphericalHarmonicsDot9 SphericalHarmonicsDot9::ZERO;
 
-bool SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value)
+void SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value)
 {
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        SerializeValue(archive, "Ar", value.Ar_);
-        SerializeValue(archive, "Ag", value.Ag_);
-        SerializeValue(archive, "Ab", value.Ab_);
-        SerializeValue(archive, "Br", value.Br_);
-        SerializeValue(archive, "Bg", value.Bg_);
-        SerializeValue(archive, "Bb", value.Bb_);
-        SerializeValue(archive, "C", value.C_);
-        return true;
-    }
-    return false;
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    SerializeValue(archive, "Ar", value.Ar_);
+    SerializeValue(archive, "Ag", value.Ag_);
+    SerializeValue(archive, "Ab", value.Ab_);
+    SerializeValue(archive, "Br", value.Br_);
+    SerializeValue(archive, "Bg", value.Bg_);
+    SerializeValue(archive, "Bb", value.Bb_);
+    SerializeValue(archive, "C", value.C_);
 }
 
 }

@@ -78,6 +78,12 @@ public:
     {
     }
 
+    /// Construct from an angle (in degrees) and axis.
+    Matrix3(float angle, const Vector3& axis) noexcept
+    {
+        FromAngleAxis(angle, axis);
+    }
+
     /// Assign from another matrix.
     Matrix3& operator =(const Matrix3& rhs) noexcept = default;
 
@@ -172,6 +178,9 @@ public:
             m20_ * rhs.m02_ + m21_ * rhs.m12_ + m22_ * rhs.m22_
         );
     }
+
+    /// Define from an angle (in degrees) and axis.
+    void FromAngleAxis(float angle, const Vector3& axis);
 
     /// Set scaling elements.
     void SetScale(const Vector3& scale)

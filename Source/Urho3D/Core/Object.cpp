@@ -26,6 +26,7 @@
 #include "../Core/ProcessUtils.h"
 #include "../Core/Thread.h"
 #include "../Core/Profiler.h"
+#include "../IO/Archive.h"
 #include "../IO/Log.h"
 
 #include "../DebugNew.h"
@@ -131,18 +132,10 @@ void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData
     }
 }
 
-bool Object::Serialize(Archive& /*archive*/)
+void Object::SerializeInBlock(Archive& /*archive*/)
 {
-    URHO3D_LOGERROR("Serialization is not supported for " + GetTypeInfo()->GetTypeName());
-    assert(0);
-    return false;
-}
-
-bool Object::Serialize(Archive& /*archive*/, ArchiveBlock& /*block*/)
-{
-    URHO3D_LOGERROR("Serialization is not supported for " + GetTypeInfo()->GetTypeName());
-    assert(0);
-    return false;
+    URHO3D_ASSERT(0);
+    throw ArchiveException("Serialization is not supported for type '{}'", GetTypeName());
 }
 
 bool Object::IsInstanceOf(StringHash type) const

@@ -27,12 +27,42 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+inline bool IsArchiveBlockJSONArray(ArchiveBlockType type)
+{
+    return type == ArchiveBlockType::Array || type == ArchiveBlockType::Sequential;
+}
+
+inline bool IsArchiveBlockJSONObject(ArchiveBlockType type)
+{
+    return type == ArchiveBlockType::Unordered;
+}
+
+inline bool IsJSONValueCompatibleWithArray(const JSONValue& value)
+{
+    return value.IsArray() || value.IsNull() || (value.IsObject() && value.GetObject().empty());
+}
+
+inline bool IsJSONValueCompatibleWithObject(const JSONValue& value)
+{
+    return value.IsObject() || value.IsNull() || (value.IsArray() && value.GetArray().empty());
+}
+
+inline bool IsArchiveBlockTypeMatching(const JSONValue& value, ArchiveBlockType type)
+{
+    return (IsArchiveBlockJSONArray(type) && IsJSONValueCompatibleWithArray(value))
+        || (IsArchiveBlockJSONObject(type) && IsJSONValueCompatibleWithObject(value));
+}
+
+}
+
 JSONOutputArchiveBlock::JSONOutputArchiveBlock(const char* name, ArchiveBlockType type, JSONValue* blockValue, unsigned sizeHint)
-    : name_(name)
-    , type_(type)
+    : ArchiveBlockBase(name, type)
     , blockValue_(blockValue)
 {
-    if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
+    if (type_ == ArchiveBlockType::Array)
         expectedElementCount_ = sizeHint;
 
     if (IsArchiveBlockJSONArray(type_))
@@ -43,71 +73,9 @@ JSONOutputArchiveBlock::JSONOutputArchiveBlock(const char* name, ArchiveBlockTyp
         assert(0);
 }
 
-bool JSONOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
+JSONValue& JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char* elementName)
 {
-    if (type_ != ArchiveBlockType::Map)
-    {
-        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization);
-        assert(0);
-        return false;
-    }
-
-    if (keySet_)
-    {
-        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization);
-        assert(0);
-        return false;
-    }
-
-    elementKey_ = ea::move(key);
-    keySet_ = true;
-    return true;
-}
-
-JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char* elementName)
-{
-    if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ >= expectedElementCount_)
-    {
-        archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow);
-        assert(0);
-        return nullptr;
-    }
-
-    if (type_ == ArchiveBlockType::Map && !keySet_)
-    {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization);
-        assert(0);
-        return nullptr;
-    }
-
-    if (type_ == ArchiveBlockType::Unordered && !elementName)
-    {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
-        assert(0);
-        return nullptr;
-    }
-
-    ea::string jsonObjectKey;
-    switch (type_)
-    {
-    case ArchiveBlockType::Unordered:
-        jsonObjectKey = elementName;
-        break;
-    case ArchiveBlockType::Map:
-        jsonObjectKey = elementKey_;
-        break;
-    default:
-        break;
-    }
-
-    if (type_ == ArchiveBlockType::Unordered || type_ == ArchiveBlockType::Map)
-    {
-        if (blockValue_->GetObject().contains(jsonObjectKey))
-        {
-            archive.SetErrorFormatted(ArchiveBase::errorDuplicateElement_elementName, elementName);
-            return nullptr;
-        }
-    }
+    URHO3D_ASSERT(numElements_ < expectedElementCount_);
 
     switch (type_)
     {
@@ -115,165 +83,80 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
     case ArchiveBlockType::Array:
         ++numElements_;
         blockValue_->Push(JSONValue{});
-        return &(*blockValue_)[blockValue_->Size() - 1];
+        return (*blockValue_)[blockValue_->Size() - 1];
 
     case ArchiveBlockType::Unordered:
-    case ArchiveBlockType::Map:
+        if (blockValue_->GetObject().contains(elementName))
+            throw archive.DuplicateElementException(elementName);
+
         ++numElements_;
-        keySet_ = false;
-        blockValue_->Set(jsonObjectKey, JSONValue{});
-        return &(*blockValue_)[jsonObjectKey];
+        blockValue_->Set(elementName, JSONValue{});
+        return (*blockValue_)[elementName];
 
     default:
-        assert(0);
-        return nullptr;
+        URHO3D_ASSERT(0);
+        return *blockValue_;
     }
 }
 
-bool JSONOutputArchiveBlock::Close(ArchiveBase& archive)
+void JSONOutputArchiveBlock::Close(ArchiveBase& archive)
 {
-    if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
-    {
-        if (numElements_ < expectedElementCount_)
-            archive.SetErrorFormatted(ArchiveBase::fatalBlockUnderflow);
-        else
-            archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow);
-        assert(0);
-        return false;
-    }
-
-    return true;
+    // TODO: Uncomment when PluginManager is fixed
+    //URHO3D_ASSERT(expectedElementCount_ == M_MAX_UNSIGNED || numElements_ == expectedElementCount_);
 }
 
-bool JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
+void JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
-    if (!CheckEOF(name, name))
-        return false;
+    CheckBeforeBlock(name);
+    CheckBlockOrElementName(name);
 
     // Open root block
     if (stack_.empty())
     {
         stack_.push_back(Block{ name, type, &rootValue_, sizeHint });
-        return true;
+        return;
     }
 
     // Validate new block
-    if (JSONValue* blockValue = GetCurrentBlock().CreateElement(*this, name))
-    {
-        stack_.push_back(Block{ name, type, blockValue, sizeHint });
-        return true;
-    }
-
-    return false;
+    JSONValue& blockValue = GetCurrentBlock().CreateElement(*this, name);
+    stack_.push_back(Block{ name, type, &blockValue, sizeHint });
 }
 
-bool JSONOutputArchive::EndBlock()
+void JSONOutputArchive::Serialize(const char* name, long long& value)
 {
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
-        return false;
-    }
-
-    const bool blockClosed = GetCurrentBlock().Close(*this);
-
-    stack_.pop_back();
-    if (stack_.empty())
-        CloseArchive();
-
-    return blockClosed;
+    CreateElement(name, JSONValue{ eastl::to_string(value) });
 }
 
-bool JSONOutputArchive::SerializeKey(ea::string& key)
+void JSONOutputArchive::Serialize(const char* name, unsigned long long& value)
 {
-    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
-        return false;
-
-    return GetCurrentBlock().SetElementKey(*this, key);
+    CreateElement(name, JSONValue{ eastl::to_string(value) });
 }
 
-bool JSONOutputArchive::SerializeKey(unsigned& key)
-{
-    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
-        return false;
-
-    return GetCurrentBlock().SetElementKey(*this, ea::to_string(key));
-}
-
-bool JSONOutputArchive::Serialize(const char* name, long long& value)
-{
-    return CreateElement(name, JSONValue{ eastl::to_string(value) });
-}
-
-bool JSONOutputArchive::Serialize(const char* name, unsigned long long& value)
-{
-    return CreateElement(name, JSONValue{ eastl::to_string(value) });
-}
-
-bool JSONOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
+void JSONOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
     BufferToHexString(tempString_, bytes, size);
-    return CreateElement(name, JSONValue{ tempString_ });
+    CreateElement(name, JSONValue{ tempString_ });
 }
 
-bool JSONOutputArchive::SerializeVLE(const char* name, unsigned& value)
+void JSONOutputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    return CreateElement(name, JSONValue{ value });
+    CreateElement(name, JSONValue{ value });
 }
 
-bool JSONOutputArchive::CheckEOF(const char* elementName, const char* debugName)
+void JSONOutputArchive::CreateElement(const char* name, const JSONValue& value)
 {
-    if (HasError())
-        return false;
+    CheckBeforeElement(name);
+    CheckBlockOrElementName(name);
 
-    if (!ValidateName(elementName))
-    {
-        SetErrorFormatted(ArchiveBase::fatalInvalidName, debugName);
-        return false;
-    }
-    
-    if (IsEOF())
-    {
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, debugName);
-        return false;
-    }
-
-    return true;
-}
-
-bool JSONOutputArchive::CheckEOFAndRoot(const char* elementName, const char* debugName)
-{
-    if (!CheckEOF(elementName, debugName))
-        return false;
-
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, debugName);
-        assert(0);
-        return false;
-    }
-
-    return true;
-}
-
-bool JSONOutputArchive::CreateElement(const char* name, const JSONValue& value)
-{
-    if (!CheckEOFAndRoot(name, name))
-        return false;
-
-    if (JSONValue* jsonValue = GetCurrentBlock().CreateElement(*this, name))
-    {
-        *jsonValue = value;
-        return true;
-    }
-    return false;
+    JSONValue& jsonValue = GetCurrentBlock().CreateElement(*this, name);
+    jsonValue = value;
 }
 
 // Generate serialization implementation (JSON output)
 #define URHO3D_JSON_OUT_IMPL(type, function) \
-    bool JSONOutputArchive::Serialize(const char* name, type& value) \
+    void JSONOutputArchive::Serialize(const char* name, type& value) \
     { \
-        return CreateElement(name, JSONValue{ value }); \
+        CreateElement(name, JSONValue{ value }); \
     }
 
 URHO3D_JSON_OUT_IMPL(bool, SetBool);
@@ -290,321 +173,134 @@ URHO3D_JSON_OUT_IMPL(ea::string, SetString);
 #undef URHO3D_JSON_OUT_IMPL
 
 JSONInputArchiveBlock::JSONInputArchiveBlock(const char* name, ArchiveBlockType type, const JSONValue* value)
-    : name_(name ? name : "")
-    , type_(type)
+    : ArchiveBlockBase(name, type)
     , value_(value)
 {
-    if (value_)
-        nextMapElementIterator_ = value_->GetObject().begin();
 }
 
-bool JSONInputArchiveBlock::ReadCurrentKey(ArchiveBase& archive, ea::string& key)
-{
-    if (type_ != ArchiveBlockType::Map)
-    {
-        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization);
-        assert(0);
-        return false;
-    }
-
-    if (keyRead_)
-    {
-        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization);
-        assert(0);
-        return false;
-    }
-
-    if (nextMapElementIterator_ == value_->GetObject().end())
-    {
-        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, ArchiveBase::keyElementName_);
-        return false;
-    }
-
-    key = nextMapElementIterator_->first;
-    keyRead_ = true;
-    return true;
-}
-
-const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* elementName, const ArchiveBlockType* elementBlockType)
+const JSONValue& JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* elementName, const ArchiveBlockType* elementBlockType)
 {
     // Find appropriate value
     const JSONValue* elementValue = nullptr;
     if (IsArchiveBlockJSONArray(type_))
     {
         if (nextElementIndex_ >= value_->Size())
-        {
-            archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, elementName);
-            return nullptr;
-        }
+            throw archive.ElementNotFoundException(elementName, nextElementIndex_);
 
-        // Read current element from the array
         elementValue = &value_->Get(nextElementIndex_);
+        ++nextElementIndex_;
     }
     else if (IsArchiveBlockJSONObject(type_))
     {
-        if (type_ == ArchiveBlockType::Unordered)
-        {
-            if (!elementName)
-            {
-                archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
-                assert(0);
-                return nullptr;
-            }
+        if (!value_->Contains(elementName))
+            throw archive.ElementNotFoundException(elementName);
 
-            if (!value_->Contains(elementName))
-            {
-                // Not an error in Unordered block
-                return nullptr;
-            }
-
-            // Find element in map
-            elementValue = &value_->Get(elementName);
-        }
-        else if (type_ == ArchiveBlockType::Map)
-        {
-            if (!keyRead_)
-            {
-                archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization);
-                assert(0);
-                return nullptr;
-            }
-
-            if (nextMapElementIterator_ == value_->GetObject().end())
-            {
-                archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, elementName);
-                return nullptr;
-            }
-
-            // Read current element from the map
-            elementValue = &nextMapElementIterator_->second;
-        }
-        else
-        {
-            assert(0);
-            return nullptr;
-        }
+        elementValue = &value_->Get(elementName);
     }
     else
     {
-        assert(0);
-        return nullptr;
+        URHO3D_ASSERT(0);
+        return *value_;
     }
 
     // Check if reading block
-    assert(elementValue);
-    if (elementBlockType)
-    {
-        if (!IsArchiveBlockTypeMatching(*elementValue, *elementBlockType))
-        {
-            archive.SetErrorFormatted(ArchiveBase::errorUnexpectedBlockType_blockName, name_);
-            return nullptr;
-        }
-    }
+    if (elementBlockType && !IsArchiveBlockTypeMatching(*elementValue, *elementBlockType))
+        throw archive.UnexpectedElementValueException(name_);
 
-    // Move to next
-    keyRead_ = false;
-    if (type_ == ArchiveBlockType::Array || type_ == ArchiveBlockType::Sequential)
-        ++nextElementIndex_;
-    else if (type_ == ArchiveBlockType::Map)
-        ++nextMapElementIterator_;
-
-    return elementValue;
+    return *elementValue;
 }
 
-bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
+void JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
-    if (!CheckEOF(name, name))
-        return false;
+    CheckBeforeBlock(name);
+    CheckBlockOrElementName(name);
 
     // Open root block
     if (stack_.empty())
     {
         if (!IsArchiveBlockTypeMatching(rootValue_, type))
-        {
-            SetErrorFormatted(ArchiveBase::errorUnexpectedBlockType_blockName, name);
-            return false;
-        }
+            throw UnexpectedElementValueException(name);
 
         Block frame{ name, type, &rootValue_ };
         sizeHint = frame.GetSizeHint();
         stack_.push_back(frame);
-        return true;
+        return;
     }
 
-    // Try open block
-    if (const JSONValue* blockValue = GetCurrentBlock().ReadElement(*this, name, &type))
-    {
-        Block blockFrame{ name, type, blockValue };
-        sizeHint = blockFrame.GetSizeHint();
-        stack_.push_back(blockFrame);
-        return true;
-    }
+    // Open block
+    const JSONValue& blockValue = GetCurrentBlock().ReadElement(*this, name, &type);
 
-    return false;
+    Block blockFrame{ name, type, &blockValue };
+    sizeHint = blockFrame.GetSizeHint();
+    stack_.push_back(blockFrame);
 }
 
-bool JSONInputArchive::EndBlock()
+void JSONInputArchive::Serialize(const char* name, long long& value)
 {
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
-        return false;
-    }
+    const JSONValue& jsonValue = ReadElement(name);
+    CheckType(name, jsonValue, JSON_STRING);
 
-    stack_.pop_back();
-    if (stack_.empty())
-        CloseArchive();
-    return true;
+    const ea::string stringValue = jsonValue.GetString();
+    value = ToInt64(stringValue);
 }
 
-bool JSONInputArchive::SerializeKey(ea::string& key)
+void JSONInputArchive::Serialize(const char* name, unsigned long long& value)
 {
-    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
-        return false;
+    const JSONValue& jsonValue = ReadElement(name);
+    CheckType(name, jsonValue, JSON_STRING);
 
-    return GetCurrentBlock().ReadCurrentKey(*this, key);
+    const ea::string stringValue = jsonValue.GetString();
+    value = ToUInt64(stringValue);
 }
 
-bool JSONInputArchive::SerializeKey(unsigned& key)
+void JSONInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
-        return false;
+    const JSONValue& jsonValue = ReadElement(name);
+    CheckType(name, jsonValue, JSON_STRING);
 
-    ea::string stringKey;
-    if (GetCurrentBlock().ReadCurrentKey(*this, stringKey))
-    {
-        key = ToUInt(stringKey);
-        return true;
-    }
-    return false;
+    ReadBytesFromHexString(name, jsonValue.GetString(), bytes, size);
 }
 
-bool JSONInputArchive::Serialize(const char* name, long long& value)
+void JSONInputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (const JSONValue* jsonValue = ReadElement(name))
-    {
-        if (jsonValue->IsString())
-        {
-            const ea::string stringValue = jsonValue->GetString();
-            sscanf(stringValue.c_str(), "%lld", &value);
-            return true;
-        }
-    }
-    return false;
+    const JSONValue& jsonValue = ReadElement(name);
+    CheckType(name, jsonValue, JSON_NUMBER);
+
+    value = jsonValue.GetUInt();
 }
 
-bool JSONInputArchive::Serialize(const char* name, unsigned long long& value)
+const JSONValue& JSONInputArchive::ReadElement(const char* name)
 {
-    if (const JSONValue* jsonValue = ReadElement(name))
-    {
-        if (jsonValue->IsString())
-        {
-            const ea::string stringValue = jsonValue->GetString();
-            sscanf(stringValue.c_str(), "%llu", &value);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool JSONInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
-{
-    if (const JSONValue* jsonValue = ReadElement(name))
-    {
-        if (jsonValue->IsString())
-        {
-            if (!HexStringToBuffer(tempBuffer_, jsonValue->GetString()))
-                return false;
-            if (size != tempBuffer_.size())
-                return false;
-            ea::copy(tempBuffer_.begin(), tempBuffer_.end(), static_cast<unsigned char*>(bytes));
-            return true;
-        }
-    }
-    return false;
-}
-
-bool JSONInputArchive::SerializeVLE(const char* name, unsigned& value)
-{
-    if (const JSONValue* jsonValue = ReadElement(name))
-    {
-        if (jsonValue->IsNumber())
-        {
-            value = jsonValue->GetUInt();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool JSONInputArchive::CheckEOF(const char* elementName, const char* debugName)
-{
-    if (HasError())
-        return false;
-
-    if (!ValidateName(elementName))
-    {
-        SetErrorFormatted(ArchiveBase::fatalInvalidName, debugName);
-        return false;
-    }
-
-    if (IsEOF())
-    {
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, debugName);
-        return false;
-    }
-
-    return true;
-}
-
-bool JSONInputArchive::CheckEOFAndRoot(const char* elementName, const char* debugName)
-{
-    if (!CheckEOF(elementName, debugName))
-        return false;
-
-    if (stack_.empty())
-    {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, debugName);
-        assert(0);
-        return false;
-    }
-
-    return true;
-}
-
-const JSONValue* JSONInputArchive::ReadElement(const char* name)
-{
-    if (!CheckEOFAndRoot(name, name))
-        return nullptr;
-
+    CheckBeforeElement(name);
+    CheckBlockOrElementName(name);
     return GetCurrentBlock().ReadElement(*this, name, nullptr);
 }
 
+void JSONInputArchive::CheckType(const char* name, const JSONValue& value, JSONValueType type) const
+{
+    if (value.GetValueType() != type)
+        throw UnexpectedElementValueException(name);
+}
+
 // Generate serialization implementation (JSON input)
-#define URHO3D_JSON_IN_IMPL(type, function, check) \
-    bool JSONInputArchive::Serialize(const char* name, type& value) \
+#define URHO3D_JSON_IN_IMPL(type, function, jsonType) \
+    void JSONInputArchive::Serialize(const char* name, type& value) \
     { \
-        if (const JSONValue* jsonValue = ReadElement(name)) \
-        { \
-            if (jsonValue->check()) \
-            { \
-                value = jsonValue->function(); \
-                return true; \
-            } \
-        } \
-        return false; \
+        const JSONValue& jsonValue = ReadElement(name); \
+        CheckType(name, jsonValue, jsonType); \
+        value = jsonValue.function(); \
     }
 
-URHO3D_JSON_IN_IMPL(bool, GetBool, IsBool);
-URHO3D_JSON_IN_IMPL(signed char, GetInt, IsNumber);
-URHO3D_JSON_IN_IMPL(short, GetInt, IsNumber);
-URHO3D_JSON_IN_IMPL(int, GetInt, IsNumber);
-URHO3D_JSON_IN_IMPL(unsigned char, GetUInt, IsNumber);
-URHO3D_JSON_IN_IMPL(unsigned short, GetUInt, IsNumber);
-URHO3D_JSON_IN_IMPL(unsigned int, GetUInt, IsNumber);
-URHO3D_JSON_IN_IMPL(float, GetFloat, IsNumber);
-URHO3D_JSON_IN_IMPL(double, GetDouble, IsNumber);
-URHO3D_JSON_IN_IMPL(ea::string, GetString, IsString);
+URHO3D_JSON_IN_IMPL(bool, GetBool, JSON_BOOL);
+URHO3D_JSON_IN_IMPL(signed char, GetInt, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(short, GetInt, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(int, GetInt, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(unsigned char, GetUInt, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(unsigned short, GetUInt, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(unsigned int, GetUInt, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(float, GetFloat, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(double, GetDouble, JSON_NUMBER);
+URHO3D_JSON_IN_IMPL(ea::string, GetString, JSON_STRING);
 
 #undef URHO3D_JSON_IN_IMPL
 

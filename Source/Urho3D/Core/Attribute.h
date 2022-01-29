@@ -28,6 +28,8 @@
 #include "../Container/Ptr.h"
 #include "../Core/Variant.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -57,6 +59,7 @@ enum AttributeMode
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
 class Serializable;
+class Object;
 
 /// Abstract base class for invoking attribute accessors.
 class URHO3D_API AttributeAccessor : public RefCounted
@@ -65,9 +68,9 @@ public:
     /// Construct.
     AttributeAccessor() = default;
     /// Get the attribute.
-    virtual void Get(const Serializable* ptr, Variant& dest) const = 0;
+    virtual void Get(const Object* ptr, Variant& dest) const = 0;
     /// Set the attribute.
-    virtual void Set(Serializable* ptr, const Variant& src) = 0;
+    virtual void Set(Object* ptr, const Variant& src) = 0;
 };
 
 /// Description of an automatically serializable variable.
@@ -139,16 +142,20 @@ struct AttributeInfo
     /// Return whether the attribute should be loaded.
     bool ShouldLoad() const { return !!(mode_ & AM_FILE); }
 
-    /// Instance equality operator.
-    bool operator ==(const AttributeInfo& rhs) const
-    {
-        return this == &rhs;
-    }
+    /// Convert enum value to string.
+    const char* ConvertEnumToString(unsigned value) const { return enumNames_[value]; }
 
-    /// Instance inequality operator.
-    bool operator !=(const AttributeInfo& rhs) const
+    /// Convert enum value to integer.
+    unsigned ConvertEnumToUInt(ea::string_view value) const
     {
-        return this != &rhs;
+        unsigned index = 0;
+        for (const char** namePtr = enumNames_; *namePtr; ++namePtr)
+        {
+            if (Compare(ea::string_view(*namePtr), value, false) == 0)
+                return index;
+            ++index;
+        }
+        return M_MAX_UNSIGNED;
     }
 
     /// Attribute type.
@@ -193,17 +200,8 @@ private:
 /// @nobind
 struct AttributeHandle
 {
-    friend class Context;
-public:
-    /// Construct default.
-    AttributeHandle() = default;
-    /// Construct from another handle.
-    AttributeHandle(const AttributeHandle& another) = default;
-private:
-    /// Attribute info.
-    AttributeInfo* attributeInfo_ = nullptr;
-    /// Network attribute info.
-    AttributeInfo* networkAttributeInfo_ = nullptr;
+    friend class ObjectReflection;
+
 public:
     /// Set metadata.
     AttributeHandle& SetMetadata(StringHash key, const Variant& value)
@@ -214,6 +212,12 @@ public:
             networkAttributeInfo_->metadata_[key] = value;
         return *this;
     }
+
+private:
+    /// Attribute info.
+    AttributeInfo* attributeInfo_ = nullptr;
+    /// Network attribute info.
+    AttributeInfo* networkAttributeInfo_ = nullptr;
 };
 
 }

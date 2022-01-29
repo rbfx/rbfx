@@ -124,7 +124,6 @@ static bool consoleOpened = false;
 static ea::string currentLine;
 static ea::vector<ea::string> arguments;
 static ea::string miniDumpDir;
-extern ea::string specifiedExecutableFile;
 
 #if defined(IOS)
 static void GetCPUData(host_basic_info_data_t* data)
@@ -321,7 +320,6 @@ const ea::vector<ea::string>& ParseArguments(const ea::string& cmdLine, bool ski
 
     if (!arguments.empty())
     {
-        specifiedExecutableFile = arguments.front();
         if (skipFirstArgument)
             arguments.pop_front();
     }

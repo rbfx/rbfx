@@ -26,6 +26,8 @@
 
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
+#include "../IO/Archive.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../Resource/JSONValue.h"
 
 namespace Urho3D
@@ -59,6 +61,9 @@ class URHO3D_API Resource : public Object
 public:
     /// Construct.
     explicit Resource(Context* context);
+
+    /// Load resource by reference.
+    static Resource* LoadFromCache(Context* context, StringHash type, const ea::string& name);
 
     /// Load resource synchronously. Call both BeginLoad() & EndLoad() and return true if both succeeded.
     bool Load(Deserializer& source);
@@ -165,6 +170,15 @@ private:
     /// Animation metadata keys.
     StringVector metadataKeys_;
 };
+
+/// Serialize reference to a resource.
+template <class T, std::enable_if_t<std::is_base_of_v<Resource, T>, int> = 0>
+inline void SerializeResource(Archive& archive, const char* name, SharedPtr<T>& value, ResourceRef& resourceRef)
+{
+    SerializeValue(archive, name, resourceRef);
+    if (archive.IsInput())
+        value = SharedPtr<T>(dynamic_cast<T*>(Resource::LoadFromCache(archive.GetContext(), resourceRef.type_, resourceRef.name_)));
+}
 
 inline const ea::string& GetResourceName(Resource* resource)
 {

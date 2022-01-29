@@ -1,0 +1,9 @@
+<material>
+	<technique name="Techniques/DiffUnlitParticleAdd.xml" />
+	<renderorder value="129" />
+	<SoftParticleFadeScale value="1" />
+	<cull value="none" />
+	<shadowcull value="none" />
+	<texture unit="diffuse" name="Textures/RealFire/Fire.png" />
+	<parameter name="MatDiffColor" value="3.441591 3.441591 3.441591 1" />
+</material>

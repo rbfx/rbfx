@@ -34,8 +34,17 @@ using namespace Urho3D;
 namespace Tests
 {
 
+/// Callback used to create context.
+using CreateContextCallback = SharedPtr<Context>(*)();
+
+/// Get or create test context.
+SharedPtr<Context> GetOrCreateContext(CreateContextCallback callback);
+
+/// Reset test context created by GetOrCreateContext.
+void ResetContext();
+
 /// Create test context with all subsystems ready.
-SharedPtr<Context> CreateCompleteTestContext();
+SharedPtr<Context> CreateCompleteContext();
 
 /// Run frame with given time step.
 void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);

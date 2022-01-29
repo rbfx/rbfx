@@ -67,9 +67,6 @@ public:
     /// Handle scene being assigned. This may happen several times during the component's lifetime. Scene-wide subsystems and events are subscribed to here.
     void OnSceneSet(Scene* scene) override;
 
-    /// Returns custom list of attributes that are different per instance.
-    const ea::vector<AttributeInfo>* GetAttributes() const override;
-
     ///
     void SetScreenRect(const IntRect& rect) { screenRect_ = rect; }
     ///
@@ -79,12 +76,6 @@ public:
     static void RegisterObject(Context* context);
 
 protected:
-    /// Method mimicking Context attribute registration, required for using engine attribute macros for registering
-    /// custom per-object attributes.
-    template<typename T> AttributeInfo& RegisterAttribute(const AttributeInfo& attr);
-    ///
-    void RebuildAttributes();
-
     /// Normalized viewport rectangle.
     Rect rect_;
     ///
@@ -93,13 +84,6 @@ protected:
     SharedPtr<Viewport> viewport_;
     /// Current selected renderpath.
     ResourceRef renderPath_;
-
-    /// Flag that triggers rebuilding of attributes.
-    bool attributesDirty_ = true;
-    /// List of attributes available at the moment.
-    ea::vector<AttributeInfo> attributes_;
-    /// Maping of effect tag to effect file.
-    ea::unordered_map<ea::string, ea::string> effects_;
 };
 
 }

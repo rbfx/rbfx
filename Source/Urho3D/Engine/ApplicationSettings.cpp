@@ -22,6 +22,7 @@
 
 #include "../Engine/ApplicationSettings.h"
 #include "../IO/ArchiveSerialization.h"
+#include "../IO/Log.h"
 
 namespace Urho3D
 {
@@ -31,48 +32,15 @@ ApplicationSettings::ApplicationSettings(Context* context)
 {
 }
 
-bool ApplicationSettings::Serialize(Archive& archive)
+void ApplicationSettings::SerializeInBlock(Archive& archive)
 {
-    if (auto block = archive.OpenUnorderedBlock("settings"))
-    {
-        if (!archive.Serialize("defaultScene", defaultScene_))
-            return false;
-
-        if (!SerializeValue(archive, "platforms", platforms_))
-            return false;
-
-        if (auto block = archive.OpenMapBlock("settings", engineParameters_.size()))
-        {
-            if (archive.IsInput())
-            {
-                for (unsigned j = 0; j < block.GetSizeHint(); ++j)
-                {
-                    ea::string key;
-                    if (!archive.SerializeKey(key))
-                        return false;
-                    if (!SerializeValue(archive, "value", engineParameters_[key]))
-                        return false;
-                }
-            }
-            else
-            {
-                for (auto& pair : engineParameters_)
-                {
-                    if (!archive.SerializeKey(const_cast<ea::string&>(pair.first)))
-                        return false;
-                    if (!SerializeValue(archive, "value", pair.second))
-                        return false;
-                }
-            }
-        }
+    SerializeValue(archive, "defaultScene", defaultScene_);
+    SerializeValue(archive, "platforms", platforms_);
+    SerializeMap(archive, "settings", engineParameters_, "value");
 
 #if URHO3D_PLUGINS
-        if (!SerializeVector(archive, "plugins", "plugin", plugins_))
-            return false;
+    SerializeVector(archive, "plugins", plugins_, "plugin");
 #endif
-    }
-
-    return true;
 }
 
 }

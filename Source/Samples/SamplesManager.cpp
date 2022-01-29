@@ -122,7 +122,6 @@
 #if URHO3D_SYSTEMUI
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
-#include "105_Serialization/Serialization.h"
 #if URHO3D_NAVIGATION
 #include "106_BakedLighting/BakedLighting.h"
 #endif
@@ -133,6 +132,7 @@
 #if URHO3D_PHYSICS
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
+#include "110_ParticleGraph/ParticleGraph.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -179,7 +179,7 @@ void SamplesManager::Start()
         [](const std::string& str) { return ea::string(str.c_str()); });
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
-    context_->RegisterFactory<Rotator>();
+    context_->AddReflection<Rotator>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
 
@@ -319,7 +319,6 @@ void SamplesManager::Start()
 #if URHO3D_SYSTEMUI
     RegisterSample<HelloSystemUi>();
 #endif
-    RegisterSample<Serialization>();
 #if URHO3D_NAVIGATION
     RegisterSample<BakedLighting>();
 #endif
@@ -331,6 +330,7 @@ void SamplesManager::Start()
 #if URHO3D_PHYSICS
     RegisterSample<KinematicCharacterDemo>();
 #endif
+    RegisterSample<ParticleGraph>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
@@ -594,7 +594,7 @@ void SamplesManager::OnFrameStart()
 template<typename T>
 void SamplesManager::RegisterSample()
 {
-    context_->RegisterFactory<T>();
+    context_->AddReflection<T>();
 
     auto* button = context_->CreateObject<Button>().Detach();
     button->SetMinHeight(30);

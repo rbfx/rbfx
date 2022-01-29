@@ -383,6 +383,7 @@ enum FaceCameraMode
     FC_LOOKAT_Y,
     FC_LOOKAT_MIXED,
     FC_DIRECTION,
+    FC_AXIS_ANGLE,
 };
 
 /// Shadow type.

@@ -225,7 +225,7 @@ void CustomGeometry::SetNumGeometries(unsigned num)
         if (!geometries_[i])
             geometries_[i] = context_->CreateObject<Geometry>();
 
-        batches_[i].geometry_ = geometries_[i];
+        batches_[i].geometry_ = GetGeometryIfNotEmpty(geometries_[i]);
     }
 }
 
@@ -407,6 +407,7 @@ void CustomGeometry::Commit()
     }
 
     vertexBuffer_->ClearDataLost();
+    SetNumGeometries(geometries_.size());
 }
 
 void CustomGeometry::SetMaterial(Material* material)

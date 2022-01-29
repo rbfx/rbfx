@@ -1044,11 +1044,11 @@ AnimatedAttributeReference AnimationController::ParseAnimatablePath(ea::string_v
 
 Node* AnimationController::GetTrackNodeByNameHash(StringHash trackNameHash, Node* startBone) const
 {
-    //Empty track name means that we animate the node itself
+    // Empty track name means that we animate the node itself
     if (!trackNameHash)
         return node_;
 
-    //If track name hash matches start bone name hash then we animate the start bone
+    // If track name hash matches start bone name hash then we animate the start bone
     if (trackNameHash == startBone->GetNameHash())
         return startBone;
 

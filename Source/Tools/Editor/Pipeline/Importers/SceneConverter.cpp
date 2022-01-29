@@ -60,13 +60,7 @@ bool SceneConverter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 
     StringVector arguments{project->GetProjectPath(), "CookScene", "--input", input->GetResourcePath(), "--output", outputFile};
     ea::string program;
-#if URHO3D_CSHARP && !_WIN32
-    // Editor executable is a C# program interpreted by .net runtime.
-    program = fs->GetInterpreterFileName();
-    arguments.push_front(fs->GetProgramFileName());
-#else
     program = fs->GetProgramFileName();
-#endif
     int result = fs->SystemRun(program, arguments, output);
     if (result != 0)
     {

@@ -37,6 +37,8 @@ public:
     MemoryBuffer(void* data, unsigned size);
     /// Construct as read-only with a pointer and size.
     MemoryBuffer(const void* data, unsigned size);
+    /// Construct as read-only from string.
+    explicit MemoryBuffer(ea::string_view text);
     /// Construct from a vector, which must not go out of scope before MemoryBuffer.
     explicit MemoryBuffer(ByteVector& data);
     /// Construct from a read-only vector, which must not go out of scope before MemoryBuffer.

@@ -243,5 +243,11 @@ bool Tab::DeserializeSelection(const ByteVector& data)
     return SerializeSelection(archive);
 }
 
+bool Tab::IsActive(StringHash tabType) const
+{
+    auto* editor = GetSubsystem<Editor>();
+    auto* tab = editor->GetActiveTab();
+    return tab->GetType() == tabType;
+}
 
 }

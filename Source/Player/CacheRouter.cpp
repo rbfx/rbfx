@@ -63,13 +63,10 @@ bool CacheRouter::AddPackage(PackageFile* packageFile)
         return false;
     }
 
+    // TODO: Revisit
     JSONInputArchive archive(&jsonFile);
     ea::unordered_map<ea::string, ea::string> mapping;
-    if (!SerializeStringMap(archive, "cacheInfo", "map", mapping))
-    {
-        URHO3D_LOGERROR("Failed to deserialize {} in package {}", cacheInfo, packageFile->GetName());
-        return false;
-    }
+    SerializeMap(archive, "cacheInfo", mapping, "map");
 
     mapping_.insert(mapping.begin(), mapping.end());
     return true;

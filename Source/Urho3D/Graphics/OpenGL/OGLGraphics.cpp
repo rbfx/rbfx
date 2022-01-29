@@ -340,9 +340,6 @@ Graphics::Graphics(Context* context) :
 
     context_->RequireSDL(SDL_INIT_VIDEO);
 
-    // Register Graphics library object factories
-    RegisterGraphicsLibrary(context_);
-
 #ifdef __EMSCRIPTEN__
     appContext = context_;
 #endif

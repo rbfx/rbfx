@@ -24,14 +24,52 @@
 
 #include "CommonUtils.h"
 
+#include "Urho3D/IO/IOEvents.h"
+#include "Urho3D/IO/Log.h"
+
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
-#include <Urho3D/Resource/XMLFile.h>
+
+#include <iostream>
 
 namespace Tests
 {
+namespace 
+{
 
-SharedPtr<Context> CreateCompleteTestContext()
+void PrintError(StringHash hash, VariantMap& args)
+{
+    if (args[LogMessage::P_LEVEL].GetInt() == LOG_ERROR)
+    {
+        auto message = args[LogMessage::P_MESSAGE].GetString();
+        std::cerr << "ERROR: " << message.c_str() << std::endl;
+    }
+}
+
+}
+
+static SharedPtr<Context> sharedContext;
+static CreateContextCallback sharedContextCallback;
+
+SharedPtr<Context> GetOrCreateContext(CreateContextCallback callback)
+{
+    if (sharedContext && sharedContextCallback == callback)
+        return sharedContext;
+
+    ResetContext();
+
+    sharedContext = callback();
+    sharedContextCallback = callback;
+    return sharedContext;
+}
+
+void ResetContext()
+{
+    sharedContext = nullptr;
+    sharedContextCallback = nullptr;
+}
+
+SharedPtr<Context> CreateCompleteContext()
 {
     auto context = MakeShared<Context>();
     auto engine = new Engine(context);
@@ -39,6 +77,8 @@ SharedPtr<Context> CreateCompleteTestContext()
     parameters[EP_HEADLESS] = true;
     parameters[EP_LOG_QUIET] = true;
     const bool engineInitialized = engine->Initialize(parameters);
+
+    engine->SubscribeToEvent(E_LOGMESSAGE, PrintError);
     REQUIRE(engineInitialized);
     return context;
 }

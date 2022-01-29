@@ -30,6 +30,8 @@
 
 #include "../Container/Ptr.h"
 #include "../Container/ByteVector.h"
+#include "../Core/Assert.h"
+#include "../Core/Exception.h"
 #include "../Core/TypeTrait.h"
 #include "../Math/Color.h"
 #include "../Math/Matrix3.h"
@@ -43,6 +45,7 @@ namespace Urho3D
 {
 
 class Archive;
+class VariantCurve;
 
 /// Variant's supported types.
 enum VariantType : unsigned char
@@ -74,8 +77,9 @@ enum VariantType : unsigned char
     VAR_RECT,
     VAR_INTVECTOR3,
     VAR_INT64,
-    // Add new types here
     VAR_CUSTOM,
+    VAR_VARIANTCURVE,
+    // Add new types here
     MAX_VAR_TYPES
 };
 
@@ -230,7 +234,7 @@ public:
     /// Convert custom value to string.
     virtual ea::string ToString() const { return EMPTY_STRING; }
     /// Serialize to Archive.
-    virtual bool Serialize(Archive& /*archive*/) { return false; }
+    virtual void Serialize(Archive& /*archive*/, const char* /*name*/) { URHO3D_ASSERT(0); }
 
 private:
     /// Type info.
@@ -290,17 +294,17 @@ template <class T> struct CustomVariantValueTraits
         }
     }
     /// Serialize type.
-    static bool Serialize(Archive& archive, T& value)
+    static void Serialize(Archive& archive, const char* name, T& value)
     {
         if constexpr (IsArchiveSerializable<T>::value)
         {
-            return SerializeValue(archive, "value", value);
+            SerializeValue(archive, name, value);
         }
         else
         {
             (void)value;
             (void)archive;
-            return false;
+            throw ArchiveException("Serialization is not implemented for this Custom type");
         }
     }
 };
@@ -317,7 +321,7 @@ template <class T> struct CustomVariantValueTraits<ea::unique_ptr<T>>
     /// Convert type to string.
     static ea::string ToString(const ea::unique_ptr<T>& value) { return CustomVariantValueTraits<T>::ToString(*value); }
     /// Serialize type.
-    static bool Serialize(Archive& archive, ea::unique_ptr<T>& value) { return CustomVariantValueTraits<T>::Serialize(archive, *value); }
+    static void Serialize(Archive& archive, const char* name, ea::unique_ptr<T>& value) { CustomVariantValueTraits<T>::Serialize(archive, name, *value); }
 };
 
 /// Custom variant value implementation.
@@ -365,7 +369,7 @@ public:
     /// Convert custom value to string.
     ea::string ToString() const override { return Traits::ToString(value_); }
     /// Serialize to Archive.
-    bool Serialize(Archive& archive) override { return Traits::Serialize(archive, value_); }
+    void Serialize(Archive& archive, const char* name) override { Traits::Serialize(archive, name, value_); }
 
 private:
     /// Value.
@@ -408,6 +412,7 @@ union VariantValue
     VariantBuffer buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
+    VariantCurve* variantCurve_;
 
     /// Construct uninitialized.
     VariantValue() { }      // NOLINT(modernize-use-equals-default)
@@ -614,6 +619,12 @@ public:
 
     /// Construct from a Matrix4.
     Variant(const Matrix4& value)       // NOLINT(google-explicit-constructor)
+    {
+        *this = value;
+    }
+
+    /// Construct from a VariantCurve.
+    Variant(const VariantCurve& value)       // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -909,6 +920,9 @@ public:
         return *this;
     }
 
+    /// Assign from a VariantCurve.
+    Variant& operator =(const VariantCurve& rhs);
+
     /// Test for equality with another variant.
     bool operator ==(const Variant& rhs) const;
 
@@ -1071,6 +1085,9 @@ public:
         return type_ == VAR_MATRIX4 ? *value_.matrix4_ == rhs : false;
     }
 
+    /// Test for equality with a VariantCurve. To return true, both the type and value must match.
+    bool operator ==(const VariantCurve& rhs) const;
+
     /// Test for inequality with another variant.
     bool operator !=(const Variant& rhs) const { return !(*this == rhs); }
 
@@ -1160,6 +1177,9 @@ public:
 
     /// Test for inequality with a Matrix4.
     bool operator !=(const Matrix4& rhs) const { return !(*this == rhs); }
+
+    /// Test for inequality with a VariantCurve.
+    bool operator !=(const VariantCurve& rhs) const { return !(*this == rhs); }
 
     /// Set from typename and value strings. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
     void FromString(const ea::string& type, const ea::string& value);
@@ -1398,6 +1418,9 @@ public:
         return type_ == VAR_MATRIX4 ? *value_.matrix4_ : Matrix4::IDENTITY;
     }
 
+    /// Return a VariantCurve or identity on type mismatch.
+    const VariantCurve& GetVariantCurve() const;
+
     /// Return pointer to custom variant value.
     CustomVariantValue* GetCustomVariantValuePtr()
     {
@@ -1446,6 +1469,12 @@ public:
     /// Return true when the variant is empty (i.e. not initialized yet).
     /// @property
     bool IsEmpty() const { return type_ == VAR_NONE; }
+
+    /// Set default value of the type.
+    template <class T> void SetDefault() { const T value{}; *this = value; }
+
+    /// Set default value of the type.
+    void SetDefault(VariantType type);
 
     /// Return the value, template version.
     template <class T> T Get() const;
@@ -1515,6 +1544,8 @@ public:
     static const VariantVector emptyVariantVector;
     /// Empty string vector.
     static const StringVector emptyStringVector;
+    /// Empty variant curve.
+    static const VariantCurve emptyCurve;
 
 private:
     /// Set new type and allocate/deallocate memory as necessary.
@@ -1533,6 +1564,9 @@ template <typename T> Variant MakeCustomValue(const T& value)
     var.SetCustom(value);
     return var;
 }
+
+/// Return variant size in bytes from type. This is not the same as size of Variant class instance, this is a size of corresponding type.
+unsigned GetVariantSize(VariantType type);
 
 /// Return variant type from type.
 template <typename T> VariantType GetVariantType();
@@ -1592,6 +1626,8 @@ template <> inline VariantType GetVariantType<Matrix3x4>() { return VAR_MATRIX3X
 
 template <> inline VariantType GetVariantType<Matrix4>() { return VAR_MATRIX4; }
 
+template <> inline VariantType GetVariantType<VariantCurve>() { return VAR_VARIANTCURVE; }
+
 // Specializations of Variant::Get<T>
 template <> URHO3D_API int Variant::Get<int>() const;
 
@@ -1641,6 +1677,8 @@ template <> URHO3D_API const Matrix3x4& Variant::Get<const Matrix3x4&>() const;
 
 template <> URHO3D_API const Matrix4& Variant::Get<const Matrix4&>() const;
 
+template <> URHO3D_API const VariantCurve& Variant::Get<const VariantCurve&>() const;
+
 template <> URHO3D_API ResourceRef Variant::Get<ResourceRef>() const;
 
 template <> URHO3D_API ResourceRefList Variant::Get<ResourceRefList>() const;
@@ -1678,6 +1716,8 @@ template <> URHO3D_API Matrix3 Variant::Get<Matrix3>() const;
 template <> URHO3D_API Matrix3x4 Variant::Get<Matrix3x4>() const;
 
 template <> URHO3D_API Matrix4 Variant::Get<Matrix4>() const;
+
+template <> URHO3D_API VariantCurve Variant::Get<VariantCurve>() const;
 
 // Implementations
 template <class T> const T* CustomVariantValue::GetValuePtr() const

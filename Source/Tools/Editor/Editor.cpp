@@ -151,7 +151,7 @@ void Editor::Setup()
     engineParameters_[EP_HIGH_DPI] = true;
     engineParameters_[EP_SYSTEMUI_FLAGS] = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt() | ImGuiConfigFlags_ViewportsEnable /*| ImGuiConfigFlags_DpiEnableScaleViewports*/;
 #else
-    engineParameters_[EP_HIGH_DPI] = false;
+    engineParameters_[EP_HIGH_DPI] = true;
 #endif
     // Load editor settings
     {
@@ -167,8 +167,7 @@ void Editor::Setup()
             if (file.LoadFile(editorSettingsFile))
             {
                 JSONInputArchive archive(&file);
-                if (!Serialize(archive))
-                    URHO3D_LOGERROR("Loading of editor settings failed.");
+                ConsumeArchiveException([&]{ SerializeValue(archive, "editor", *this); });
 
                 engineParameters_[EP_WINDOW_WIDTH] = windowSize_.x_;
                 engineParameters_[EP_WINDOW_HEIGHT] = windowSize_.y_;
@@ -281,15 +280,7 @@ void Editor::Start()
 int Editor::RunEditorInstance(const ea::vector<ea::string>& arguments, ea::string& output)
 {
     auto fs = context_->GetSubsystem<FileSystem>();
-
-#if URHO3D_CSHARP && !_WIN32
-    // Editor executable is a C# program interpreted by .net runtime.
-    auto argumentsCopy = arguments;
-    argumentsCopy.push_front(fs->GetProgramFileName());
-    return fs->SystemRun(fs->GetInterpreterFileName(), argumentsCopy, output);
-#else
     return fs->SystemRun(fs->GetProgramFileName(), arguments, output);
-#endif
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
@@ -329,13 +320,9 @@ void Editor::Stop()
 
         JSONFile json(context_);
         JSONOutputArchive archive(&json);
-        if (Serialize(archive))
-        {
-            if (!json.SaveFile(editorSettingsDir + "Editor.json"))
-                URHO3D_LOGERROR("Saving of editor settings failed.");
-        }
-        else
-            URHO3D_LOGERROR("Serializing of editor settings failed.");
+        SerializeValue(archive, "editor", *this);
+        if (!json.SaveFile(editorSettingsDir + "Editor.json"))
+            URHO3D_LOGERROR("Saving of editor settings failed.");
     }
 
     context_->GetSubsystem<WorkQueue>()->Complete(0);
@@ -561,15 +548,16 @@ Tab* Editor::CreateTab(StringHash type)
 StringVector Editor::GetObjectsByCategory(const ea::string& category)
 {
     StringVector result;
-    const auto& factories = context_->GetObjectFactories();
     auto it = context_->GetObjectCategories().find(category);
     if (it != context_->GetObjectCategories().end())
     {
         for (const StringHash& type : it->second)
         {
-            auto jt = factories.find(type);
-            if (jt != factories.end())
-                result.push_back(jt->second->GetTypeName());
+            if (auto reflection = context_->GetReflection(type))
+            {
+                if (reflection->HasObjectFactory())
+                    result.push_back(reflection->GetTypeName());
+            }
         }
     }
     return result;

@@ -255,50 +255,45 @@ const StringVector& PluginManager::GetPluginNames()
     return *pluginNames;
 }
 
-bool PluginManager::Serialize(Archive& archive)
+void PluginManager::SerializeAsArray(Archive& archive)
 {
 #if URHO3D_STATIC
     // In static builds plugins are registered manually by the user.
     SendEvent(E_REGISTERSTATICPLUGINS);
 #else
-    if (auto block = archive.OpenSequentialBlock("plugins"))
+    if (archive.IsInput() && archive.IsUnorderedAccessSupportedInCurrentBlock() && !archive.HasElementOrBlock("plugins"))
+        return;
+
+    auto block = archive.OpenArrayBlock("plugins", plugins_.size());
+    ea::string name;
+    bool isPrivate;
+    for (unsigned i = 0, num = block.GetSizeHint(); i < num; i++)
     {
-        ea::string name;
-        bool isPrivate;
-        for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : plugins_.size(); i < num; i++)
+        if (!archive.IsInput())
         {
-            if (!archive.IsInput())
-            {
-                // ScriptBundlePlugin is special. Only one instance of this plugin exists and it is loaded manually. No point in serializing it.
-                Plugin* plugin = plugins_[i];
+            // ScriptBundlePlugin is special. Only one instance of this plugin exists and it is loaded manually. No point in serializing it.
+            Plugin* plugin = plugins_[i];
 
-                if (!plugin->IsManagedManually())
-                    continue;
+            if (!plugin->IsManagedManually())
+                continue;
 
-                if (!plugin->IsLoaded())
-                    continue;
+            if (!plugin->IsLoaded())
+                continue;
 
-                name = plugin->GetName();
-                isPrivate = plugin->IsPrivate();
-            }
+            name = plugin->GetName();
+            isPrivate = plugin->IsPrivate();
+        }
 
-            if (auto block = archive.OpenUnorderedBlock("plugin"))
-            {
-                if (!SerializeValue(archive, "name", name))
-                    return false;
-                if (!SerializeValue(archive, "private", isPrivate))
-                    return false;
-                if (archive.IsInput())
-                {
-                    if (Plugin* plugin = Load(ModulePlugin::GetTypeStatic(), name))
-                        plugin->SetPrivate(isPrivate);
-                }
-            }
+        auto block = archive.OpenUnorderedBlock("plugin");
+        SerializeValue(archive, "name", name);
+        SerializeValue(archive, "private", isPrivate);
+        if (archive.IsInput())
+        {
+            if (Plugin* plugin = Load(ModulePlugin::GetTypeStatic(), name))
+                plugin->SetPrivate(isPrivate);
         }
     }
 #endif
-
-    return true;
 }
 
 #if URHO3D_STATIC

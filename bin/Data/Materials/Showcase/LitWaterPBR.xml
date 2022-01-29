@@ -4,6 +4,8 @@
     <texture unit="normal" name="Textures/WaterNoise.dds" />
     <parameter name="MatDiffColor" value="0.173 0.294 0.373 0.5" />
     <parameter name="MatSpecColor" value="1.0 1.0 1.0 16" />
+    <parameter name="Roughness" value="0" />
+    <parameter name="Metallic" value="0" />
     <parameter name="UOffset" value="1 0 0 0" />
     <parameter name="VOffset" value="0 1 0 0" />
     <parameter name="NoiseSpeed" value="0.05 0.05" />

@@ -34,7 +34,7 @@
 
 TEST_CASE("Lerp animation blending")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto cache = context->GetSubsystem<ResourceCache>();
 
     auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
@@ -128,7 +128,7 @@ TEST_CASE("Lerp animation blending")
 
 TEST_CASE("Additive animation blending")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto cache = context->GetSubsystem<ResourceCache>();
 
     auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
@@ -222,37 +222,75 @@ TEST_CASE("Additive animation blending")
 
 TEST_CASE("Animation empty track name")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto cache = context->GetSubsystem<ResourceCache>();
+
+    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
+    cache->AddManualResource(model);
 
     auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context, "Tests/TranslateSelf.ani", "",
                     {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, 2.0f);
     cache->AddManualResource(animationTranslateX);
+
+    // Test AnimatedModel mode
     {
         // Setup
         auto scene = MakeShared<Scene>(context);
         scene->CreateComponent<Octree>();
 
         auto node = scene->CreateChild("Node");
+        auto animatedModel = node->CreateComponent<AnimatedModel>();
+        animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
         REQUIRE(animationController->Play(animationTranslateX->GetName(), 0, true));
 
-        Tests::NodeRef nodeRef{scene, "Node"};
+        Tests::NodeRef nodeRef{ scene, "Node" };
+        Tests::NodeRef rootRef{ scene, "Root" };
 
         // Time 0.5: Translate X to -1
         Tests::RunFrame(context, 0.5f, 0.05f);
         REQUIRE(nodeRef->GetPosition().Equals({-1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
 
         // Time 1.5: Translate X to 1
         Tests::SerializeAndDeserializeScene(scene);
         Tests::RunFrame(context, 1.0f, 0.05f);
         REQUIRE(nodeRef->GetPosition().Equals({1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(rootRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+    }
+
+    // Test Node mode
+    {
+        // Setup
+        auto scene = MakeShared<Scene>(context);
+        scene->CreateComponent<Octree>();
+
+        auto node = scene->CreateChild("Node");
+        auto child = node->CreateChild();
+
+        auto animationController = node->CreateComponent<AnimationController>();
+        REQUIRE(animationController->Play(animationTranslateX->GetName(), 0, true));
+
+        Tests::NodeRef nodeRef{ scene, "Node" };
+        Tests::NodeRef childRef{ scene, "" };
+
+        // Time 0.5: Translate X to -1
+        Tests::RunFrame(context, 0.5f, 0.05f);
+        REQUIRE(nodeRef->GetPosition().Equals({-1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(childRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
+
+        // Time 1.5: Translate X to 1
+        Tests::SerializeAndDeserializeScene(scene);
+        Tests::RunFrame(context, 1.0f, 0.05f);
+        REQUIRE(nodeRef->GetPosition().Equals({1.0f, 0.0f, 0.0f}, M_LARGE_EPSILON));
+        REQUIRE(childRef->GetPosition().Equals(Vector3::ZERO, M_LARGE_EPSILON));
     }
 }
+
 TEST_CASE("Animation start bone")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto cache = context->GetSubsystem<ResourceCache>();
 
     auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
@@ -378,7 +416,7 @@ TEST_CASE("Animation start bone")
 
 TEST_CASE("Variant animation tracks")
 {
-    auto context = Tests::CreateCompleteTestContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto cache = context->GetSubsystem<ResourceCache>();
 
     // Prepare resources
@@ -440,14 +478,12 @@ TEST_CASE("Variant animation tracks")
         animation->SetLength(1.0f);
         {
             VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
-            track->baseValue_ = 11.0f;
             track->AddKeyFrame({ 0.0f, 12.0f });
             track->AddKeyFrame({ 0.4f, 16.0f });
             track->Commit();
         }
         {
             VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
-            track->baseValue_ = 11;
             track->AddKeyFrame({ 0.0f, Variant(12) });
             track->AddKeyFrame({ 0.4f, Variant(16) });
             track->Commit();
@@ -487,12 +523,12 @@ TEST_CASE("Variant animation tracks")
     // Test:
     // - Animation1: Lerp(10, 20, 0.75) = 17(.5)
     // - Animation2: Lerp(20, 30, 0.75) = 27(.5)
-    // - Animation3: Lerp(12, 16, 0.75) - 11 = 4
-    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 24(.5)
+    // - Animation3: Lerp(12, 16, 0.75) - 12 = 3
+    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 23
     Tests::RunFrame(context, 0.3f, 0.5f);
     REQUIRE(quad2->GetWorldPosition().Equals({ 0.5f, 1.5f, 0.5f }, M_LARGE_EPSILON));
-    REQUIRE(rootNode->GetVar("Test") == Variant(24));
-    REQUIRE(childNodeText->GetFontSize() == 24.5f);
+    REQUIRE(rootNode->GetVar("Test") == Variant(23));
+    REQUIRE(childNodeText->GetFontSize() == 24.0f);
     REQUIRE(childNodeText->GetText() == "A");
 
     // [Time = 1.0]
@@ -500,12 +536,12 @@ TEST_CASE("Variant animation tracks")
     // Test:
     // - Animation1: Lerp(10, 20, 1.0) = 20
     // - Animation2: Lerp(20, 30, 1.0) = 30
-    // - Animation3: Lerp(12, 16, 1.0) - 11 = 5
-    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 27(.5)
+    // - Animation3: Lerp(12, 16, 1.0) - 12 = 4
+    // - Final: Lerp(Animation1, Animation2, 0.5) + Animation3 * 0.5 = 27
     Tests::SerializeAndDeserializeScene(scene);
     Tests::RunFrame(context, 0.3f, 0.5f);
     REQUIRE(quad2->GetWorldPosition().Equals({ 0.0f, 1.0f, 0.0f }, M_LARGE_EPSILON));
     REQUIRE(rootNode->GetVar("Test") == Variant(27));
-    REQUIRE(childNodeText->GetFontSize() == 27.5f);
+    REQUIRE(childNodeText->GetFontSize() == 27.0f);
     REQUIRE(childNodeText->GetText() == "B");
 }

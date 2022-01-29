@@ -33,17 +33,17 @@ namespace Urho3D
 /// Key-bindable action type.
 enum ActionType : unsigned
 {
-    /// File > Save Project.
     SaveProject,
-    /// File > Open or Create Project.
     OpenProject,
-    /// File > Exit.
     Exit,
-    /// Undo action requested.
     Undo,
-    /// Redo action requested.
     Redo,
-    /// The End.
+    Copy,
+    Cut,
+    Paste,
+    PasteInto,
+    Delete,
+    ClearSelection,
     MaxCount
 };
 
@@ -87,15 +87,12 @@ public:
     /// Construct.
     explicit KeyBindings(Context* context);
     /// Serialize key bindings state.
-    bool Serialize(Archive& archive) override;
+    void SerializeInBlock(Archive& archive) override;
     /// Renders key bindings tab in settings window.
     void RenderSettingsUI();
     /// Bind handler to action.
-    template<typename Receiver>
-    void Bind(ActionType actionType, Receiver* receiver, void(Receiver::*handler)()) { actions_[actionType].onPressed_.Subscribe(receiver, handler); }
-    /// Bind handler to action.
-    template<typename Receiver>
-    void Bind(ActionType actionType, Receiver* receiver, bool(Receiver::*handler)()) { actions_[actionType].onPressed_.Subscribe(receiver, handler); }
+    template<typename Receiver, typename F>
+    auto Bind(ActionType actionType, Receiver* receiver, F handler) { return actions_[actionType].onPressed_.Subscribe(receiver, handler); }
     /// Get a string representing key combination that is bound to specified action.
     const char* GetKeyCombination(ActionType actionType);
 

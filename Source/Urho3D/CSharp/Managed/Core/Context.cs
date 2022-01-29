@@ -82,7 +82,7 @@ namespace Urho3DNet
         public void RemoveFactories(Assembly assembly)
         {
             foreach (var pair in assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
-                RemoveFactory(pair.Item1, pair.Item2.Category);
+                RemoveReflection(pair.Item1);
         }
 
         public void RegisterFactory<T>(string category = "") where T : Object
@@ -106,6 +106,13 @@ namespace Urho3DNet
                 throw new InvalidOperationException("This type can not be registered as factory.");
 
             Urho3D_Context_RegisterFactory(getCPtr(this), type.Name, StringHash.Calculate("SwigDirector_" + baseType.Name), category);
+            if (type.IsSubclassOf(typeof(Serializable)))
+            {
+                using (var serializable = (Serializable)Activator.CreateInstance(type, new object[] { Context.Instance }))
+                {
+                    serializable.RegisterAttributes();
+                }
+            }
         }
 
         // Create an object by type. Return pointer to it or null if no factory found.
@@ -127,24 +134,6 @@ namespace Urho3DNet
         public T GetSubsystem<T>() where T: Object
         {
             return (T) GetSubsystem(new StringHash(typeof(T).Name));
-        }
-
-        // Register object attribute.
-        public AttributeHandle RegisterAttribute<T>(AttributeInfo attributeInfo) where T : Object
-        {
-            return RegisterAttribute(new StringHash(typeof(T).Name), attributeInfo);
-        }
-
-        // Remove object attribute.
-        public void RemoveAttribute<T>(string name) where T : Object
-        {
-            RemoveAttribute(new StringHash(typeof(T).Name), name);
-        }
-
-        // Update object attribute's default value.
-        public void UpdateAttributeDefaultValue<T>(string name, Variant defaultValue) where T : Object
-        {
-            UpdateAttributeDefaultValue(new StringHash(typeof(T).Name), name, defaultValue);
         }
 
         #region Interop
