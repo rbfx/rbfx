@@ -167,7 +167,7 @@ public:
         NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings);
 
     /// Perform network update from the perspective of this client connection.
-    void UpdateNetworkObjects(SharedReplicationState& sharedState, float timeStep);
+    void UpdateNetworkObjects(SharedReplicationState& sharedState);
 
     /// Process messages for this client.
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
@@ -212,8 +212,8 @@ public:
     unsigned GetTraceCapacity() const { return CeilToInt(3.0f * updateFrequency_); } // TODO(network): Fix me
 
 private:
-    void BeginNetworkFrame(float overtime);
-    void PrepareNetworkFrame();
+    void OnInputReady(float timeStep, bool isUpdateNow, float overtime);
+    void OnNetworkUpdate();
 
     ClientReplicationState& GetConnection(AbstractConnection* connection);
 

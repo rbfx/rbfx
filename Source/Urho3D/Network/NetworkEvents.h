@@ -84,12 +84,17 @@ URHO3D_EVENT(E_NETWORKMESSAGE, NetworkMessage)
 URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
 {
     URHO3D_PARAM(P_TIMESTEP, TimeStep);                 // float
-    URHO3D_PARAM(P_UPDATENOW, UpdateNow);               // bool
-    URHO3D_PARAM(P_ACCUMULATEDTIME, AccumulatedTime);   // float
 }
 
-/// Begin the frame of network update on server.
-URHO3D_EVENT(E_BEGINSERVERNETWORKUPDATE, BeginServerNetworkUpdate)
+/// Begin the frame of network update on the server.
+URHO3D_EVENT(E_BEGINSERVERNETWORKFRAME, BeginServerNetworkUpdate)
+{
+}
+
+/// Begin the input frame on the client.
+/// Any client-side simulation at E_BEGINCLIENTNETWORKFRAME is precisely synchronized
+/// with one of the future E_BEGINSERVERNETWORKFRAME.
+URHO3D_EVENT(E_BEGINCLIENTNETWORKFRAME, NetworkClientUpdate)
 {
 }
 
@@ -100,12 +105,6 @@ URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
 
 /// Network update has been sent on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATESENT, NetworkUpdateSent)
-{
-}
-
-/// Network on network client synchronized with server.
-/// It is safe to assume that client state after NetworkClientUpdate is synchronized with server state before NetworkUpdate.
-URHO3D_EVENT(E_NETWORKCLIENTUPDATE, NetworkClientUpdate)
 {
 }
 

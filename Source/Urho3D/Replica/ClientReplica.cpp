@@ -63,7 +63,7 @@ ClientReplicaClock::~ClientReplicaClock()
 {
 }
 
-float ClientReplicaClock::ApplyTimeStep(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates)
+float ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates)
 {
     serverTime_ += SecondsToFrames(timeStep);
     for (const MsgSceneClock& msg : pendingClockUpdates)
@@ -135,8 +135,7 @@ ClientReplica::ClientReplica(
     {
         using namespace InputReady;
         const float timeStep = eventData[P_TIMESTEP].GetFloat();
-        SynchronizeClocks(timeStep);
-        UpdateReplica(timeStep);
+        OnInputReady(timeStep);
     });
 }
 
@@ -364,14 +363,11 @@ ea::string ClientReplica::GetDebugInfo() const
         GetLatestScaledInputTime().GetFrame());
 }
 
-void ClientReplica::SynchronizeClocks(float timeStep)
+void ClientReplica::OnInputReady(float timeStep)
 {
-    ApplyTimeStep(timeStep, pendingClockUpdates_);
+    UpdateClientClocks(timeStep, pendingClockUpdates_);
     pendingClockUpdates_.clear();
-}
 
-void ClientReplica::UpdateReplica(float timeStep)
-{
     const bool isNewInputFrame = IsNewInputFrame();
 
     const auto& networkObjects = replicationManager_->GetNetworkObjects();
@@ -383,7 +379,7 @@ void ClientReplica::UpdateReplica(float timeStep)
     if (isNewInputFrame)
     {
         auto network = GetSubsystem<Network>();
-        network->SendEvent(E_NETWORKCLIENTUPDATE);
+        network->SendEvent(E_BEGINCLIENTNETWORKFRAME);
         SendObjectsFeedbackUnreliable(GetInputTime().GetFrame());
     }
 }

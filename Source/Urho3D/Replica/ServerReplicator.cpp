@@ -199,9 +199,10 @@ ClientSynchronizationState::ClientSynchronizationState(
 
 void ClientSynchronizationState::BeginNetworkFrame(unsigned currentFrame, float overtime)
 {
+    const float timeStep = 1.0f / updateFrequency_;
     frame_ = currentFrame;
     frameLocalTime_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
-    clockTimeAccumulator_ += 1.0f / updateFrequency_;
+    clockTimeAccumulator_ += timeStep;
 }
 
 const Variant& ClientSynchronizationState::GetSetting(const NetworkSetting& setting) const
@@ -504,11 +505,12 @@ void ClientReplicationState::SendUpdateObjectsUnreliable(const SharedReplication
     });
 }
 
-void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& sharedState, float timeStep)
+void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& sharedState)
 {
     if (!IsSynchronized())
         return;
 
+    const float timeStep = 1.0f / updateFrequency_;
     const float relevanceTimeout = GetSetting(NetworkSettings::RelevanceTimeout).GetFloat();
 
     const unsigned indexUpperBound = sharedState.GetIndexUpperBound();
@@ -586,23 +588,12 @@ ServerReplicator::ServerReplicator(NetworkManagerBase* base, Scene* scene)
 
         const bool isUpdateNow = network_->IsUpdateNow();
         const float overtime = network_->GetUpdateOvertime();
-
-        if (isUpdateNow)
-        {
-            BeginNetworkFrame(overtime);
-            physicsSync_.Synchronize(overtime, currentFrame_);
-        }
-        else
-        {
-            physicsSync_.Update(timeStep);
-        }
+        OnInputReady(timeStep, isUpdateNow, overtime);
     });
 
     SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
     {
-        PrepareNetworkFrame();
-        for (auto& [connection, data] : connections_)
-            data->SendMessages(*sharedState_);
+        OnNetworkUpdate();
     });
 }
 
@@ -610,26 +601,32 @@ ServerReplicator::~ServerReplicator()
 {
 }
 
-void ServerReplicator::BeginNetworkFrame(float overtime)
+void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float overtime)
 {
-    ++currentFrame_;
+    if (isUpdateNow)
+    {
+        ++currentFrame_;
+        physicsSync_.Synchronize(overtime, currentFrame_);
 
-    for (auto& [connection, data] : connections_)
-        data->BeginNetworkFrame(currentFrame_, overtime);
-
-    network_->SendEvent(E_BEGINSERVERNETWORKUPDATE);
+        for (auto& [connection, data] : connections_)
+            data->BeginNetworkFrame(currentFrame_, overtime);
+        network_->SendEvent(E_BEGINSERVERNETWORKFRAME);
+    }
+    else
+    {
+        physicsSync_.Update(timeStep);
+    }
 }
 
-void ServerReplicator::PrepareNetworkFrame()
+void ServerReplicator::OnNetworkUpdate()
 {
-    const float timeStep = 1.0f / updateFrequency_;
-
     sharedState_->PrepareForUpdate();
     for (auto& [connection, data] : connections_)
-    {
-        data->UpdateNetworkObjects(*sharedState_, timeStep);
-    }
+        data->UpdateNetworkObjects(*sharedState_);
     sharedState_->CookDeltaUpdates(currentFrame_);
+
+    for (auto& [connection, data] : connections_)
+        data->SendMessages(*sharedState_);
 }
 
 void ServerReplicator::AddConnection(AbstractConnection* connection)
