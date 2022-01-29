@@ -255,6 +255,19 @@ IntVector2 Graphics::GetWindowPosition() const
     return position_;
 }
 
+float Graphics::GetDPIScale() const
+{
+    float result = 1.0;
+    if (logicalWidth_ == 0 && logicalHeight_ == 0) {
+        return result;
+    }
+    if (width_ == 0 && height_ == 0) {
+        return result;
+    }
+    result = static_cast<float>(width_) / static_cast<float>(logicalWidth_);
+    return result;
+}
+
 ea::vector<IntVector3> Graphics::GetResolutions(int monitor) const
 {
     ea::vector<IntVector3> ret;

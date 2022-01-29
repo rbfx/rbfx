@@ -418,6 +418,18 @@ public:
     /// Return window height in pixels.
     /// @property
     int GetHeight() const { return height_; }
+    
+    /// Return window width in points.
+    /// @property
+    int GetLogicalWidth() const { return logicalWidth_; }
+
+    /// Return window height in points.
+    /// @property
+    int GetLogicalHeight() const { return logicalHeight_; }
+    
+    /// Return graphics dpi scale factor
+    /// @property
+    float GetDPIScale() const;
 
     /// Return screen mode parameters.
     const ScreenModeParams& GetScreenModeParams() const { return screenParams_; }
@@ -849,6 +861,10 @@ private:
     int width_{};
     /// Window height in pixels.
     int height_{};
+    /// Window width in points.
+    int logicalWidth_{};
+    /// Window height in points.
+    int logicalHeight_{};
     /// Window position.
     IntVector2 position_;
     /// Screen mode parameters.
