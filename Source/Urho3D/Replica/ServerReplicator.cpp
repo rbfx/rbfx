@@ -56,6 +56,8 @@ unsigned GetIndex(NetworkId networkId)
 SharedReplicationState::SharedReplicationState(NetworkManagerBase* replicationManager)
     : replicationManager_(replicationManager)
 {
+    URHO3D_ASSERT(replicationManager_);
+
     replicationManager_->OnNetworkObjectAdded.Subscribe(this, &SharedReplicationState::OnNetworkObjectAdded);
     replicationManager_->OnNetworkObjectRemoved.Subscribe(this, &SharedReplicationState::OnNetworkObjectRemoved);
 
@@ -570,14 +572,14 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     }
 }
 
-ServerReplicator::ServerReplicator(NetworkManagerBase* base, Scene* scene)
+ServerReplicator::ServerReplicator(Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
-    , base_(base)
     , scene_(scene)
+    , replicationManager_(scene->GetComponent<NetworkManager>())
     , updateFrequency_(network_->GetUpdateFps())
     , physicsSync_(scene_, updateFrequency_, true)
-    , sharedState_(MakeShared<SharedReplicationState>(base_))
+    , sharedState_(MakeShared<SharedReplicationState>(replicationManager_))
 {
     SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
@@ -639,7 +641,7 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
 
     connections_.erase(connection);
     const auto& [iter, insterted] = connections_.emplace(
-        connection, MakeShared<ClientReplicationState>(base_, connection, settings_));
+        connection, MakeShared<ClientReplicationState>(replicationManager_, connection, settings_));
 
     URHO3D_ASSERT(insterted);
     ClientReplicationState& data = *iter->second;
@@ -659,10 +661,10 @@ void ServerReplicator::RemoveConnection(AbstractConnection* connection)
     URHO3D_LOGINFO("Connection {} is removed", connection->ToString());
 }
 
-void ServerReplicator::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+bool ServerReplicator::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     ClientReplicationState& data = GetConnection(connection);
-    data.ProcessMessage(messageId, messageData);
+    return data.ProcessMessage(messageId, messageData);
 }
 
 void ServerReplicator::SetCurrentFrame(unsigned frame)
@@ -692,6 +694,11 @@ ea::string ServerReplicator::GetDebugInfo() const
     }
 
     return result;
+}
+
+const Variant& ServerReplicator::GetSetting(const NetworkSetting& setting) const
+{
+    return GetNetworkSetting(settings_, setting);
 }
 
 unsigned ServerReplicator::GetFeedbackDelay(AbstractConnection* connection) const

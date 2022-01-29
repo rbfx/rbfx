@@ -196,16 +196,17 @@ class URHO3D_API ServerReplicator : public Object
     URHO3D_OBJECT(ServerReplicator, Object);
 
 public:
-    ServerReplicator(NetworkManagerBase* base, Scene* scene);
+    explicit ServerReplicator(Scene* scene);
     ~ServerReplicator() override;
 
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
-    void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
 
     void SetCurrentFrame(unsigned frame);
 
     ea::string GetDebugInfo() const;
+    const Variant& GetSetting(const NetworkSetting& setting) const;
     unsigned GetFeedbackDelay(AbstractConnection* connection) const;
     NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
     unsigned GetCurrentFrame() const { return currentFrame_; }
@@ -218,8 +219,8 @@ private:
     ClientReplicationState& GetConnection(AbstractConnection* connection);
 
     Network* network_{};
-    NetworkManagerBase* base_{};
     Scene* scene_{};
+    NetworkManagerBase* replicationManager_{};
 
     VariantMap settings_;
 

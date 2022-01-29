@@ -277,18 +277,6 @@ Texture2D* Scene::GetLightmapTexture(unsigned index) const
     return index < lightmapTextures_.size() ? lightmapTextures_[index] : nullptr;
 }
 
-NetworkManager* Scene::GetNetworkManager(bool create)
-{
-    if (!networkManager_)
-    {
-        if (create)
-            networkManager_ = GetOrCreateComponent<NetworkManager>(LOCAL);
-        else
-            networkManager_ = GetComponent<NetworkManager>();
-    }
-    return networkManager_;
-}
-
 bool Scene::LoadXML(Deserializer& source)
 {
     URHO3D_PROFILE("LoadSceneXML");

@@ -145,10 +145,6 @@ public:
     /// Return lightmap texture.
     Texture2D* GetLightmapTexture(unsigned index) const;
 
-    /// Get or lazily create network manager.
-    /// TODO(network): Refactor!
-    NetworkManager* GetNetworkManager(bool create = false);
-
     /// Load from an XML file. Return true if successful.
     bool LoadXML(Deserializer& source);
     /// Load from a JSON file. Return true if successful.
@@ -410,9 +406,6 @@ private:
     ResourceRefList lightmaps_;
     /// Loaded lightmap textures.
     ea::vector<SharedPtr<Texture2D>> lightmapTextures_;
-
-    /// Network replication manager.
-    WeakPtr<NetworkManager> networkManager_;
 };
 
 /// Register Scene library objects.
