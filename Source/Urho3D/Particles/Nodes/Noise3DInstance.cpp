@@ -20,6 +20,9 @@
 // THE SOFTWARE.
 //
 
+#include "../Span.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../UpdateContext.h"
 #include "Noise3DInstance.h"
 
 namespace Urho3D

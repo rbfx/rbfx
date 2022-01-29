@@ -20,6 +20,9 @@
 // THE SOFTWARE.
 //
 
+#include "../Span.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../UpdateContext.h"
 #include "CurlNoise3DInstance.h"
 #include "../../Engine/Engine.h"
 

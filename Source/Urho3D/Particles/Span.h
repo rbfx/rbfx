@@ -23,11 +23,12 @@
 #pragma once
 
 #include <EASTL/span.h>
+#include <assert.h>
 
 namespace Urho3D
 {
-struct ParticleGraphPinRef;
 struct UpdateContext;
+struct ParticleGraphPinRef;
 
 enum class ParticleGraphContainerType
 {

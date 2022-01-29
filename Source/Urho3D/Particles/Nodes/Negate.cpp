@@ -21,6 +21,9 @@
 // THE SOFTWARE.
 //
 
+#include "../Span.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../UpdateContext.h"
 #include "../../Precompiled.h"
 #include "Negate.h"
 #include "NegateInstance.h"
