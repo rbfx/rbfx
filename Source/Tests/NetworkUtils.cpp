@@ -160,7 +160,7 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
     data.serverToClient_->SetQuality(quality);
 
     data.clientNetworkManager_->StartClient(data.clientToServer_);
-    serverNetworkManager_->AsServer().AddConnection(data.serverToClient_);
+    serverNetworkManager_->GetServerReplicator()->AddConnection(data.serverToClient_);
 
     clients_.push_back(data);
 }
