@@ -958,8 +958,6 @@ void Network::Update(float timeStep)
         using namespace NetworkInputProcessed;
         VariantMap& eventData = GetEventDataMap();
         eventData[P_TIMESTEP] = timeStep;
-        eventData[P_UPDATENOW] = updateNow_;
-        eventData[P_ACCUMULATEDTIME] = updateAcc_;
         SendEvent(E_NETWORKINPUTPROCESSED, eventData);
     }
 }

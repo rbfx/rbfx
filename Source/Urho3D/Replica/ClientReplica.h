@@ -83,7 +83,7 @@ public:
 protected:
     /// Apply elapsed timestep and accumulated clock updates.
     /// Returns possibly scaled (dilated or contracted) timestep.
-    float ApplyTimeStep(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
+    float UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
 
     Scene* const scene_{};
     AbstractConnection* const connection_{};
@@ -131,8 +131,7 @@ public:
     /// @}
 
 private:
-    void SynchronizeClocks(float timeStep);
-    void UpdateReplica(float timeStep);
+    void OnInputReady(float timeStep);
     void SendObjectsFeedbackUnreliable(unsigned feedbackFrame);
 
     NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned);

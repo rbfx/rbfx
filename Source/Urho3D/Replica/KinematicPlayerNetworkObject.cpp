@@ -70,7 +70,7 @@ void KinematicPlayerNetworkObject::InitializeOnServer()
     const unsigned traceCapacity = networkManager->GetTraceCapacity();
     feedbackVelocity_.Resize(traceCapacity);
 
-    SubscribeToEvent(E_BEGINSERVERNETWORKUPDATE, [this](StringHash, VariantMap&) { OnServerNetworkFrameBegin(); });
+    SubscribeToEvent(E_BEGINSERVERNETWORKFRAME, [this](StringHash, VariantMap&) { OnServerNetworkFrameBegin(); });
 }
 
 void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
