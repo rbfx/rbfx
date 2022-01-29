@@ -335,13 +335,6 @@ void ClientReplica::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
         networkObject->Remove();
 }
 
-unsigned ClientReplica::GetTraceCapacity() const
-{
-    // TODO(network): Refactor
-    float traceDurationInSeconds = 1.0f;
-    return CeilToInt(traceDurationInSeconds * GetUpdateFrequency());
-}
-
 unsigned ClientReplica::GetPositionExtrapolationFrames() const
 {
     // TODO(network): Refactor
@@ -381,7 +374,12 @@ void ClientReplica::OnInputReady(float timeStep)
     if (isNewInputFrame)
     {
         auto network = GetSubsystem<Network>();
+
+        using namespace BeginClientNetworkFrame;
+        auto& eventData = GetEventDataMap();
+        eventData[P_FRAME] = GetInputTime().GetFrame();
         network->SendEvent(E_BEGINCLIENTNETWORKFRAME);
+
         SendObjectsFeedbackUnreliable(GetInputTime().GetFrame());
     }
 }

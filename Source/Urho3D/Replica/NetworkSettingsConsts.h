@@ -84,6 +84,8 @@ URHO3D_NETWORK_SETTING(MinInputBuffering, unsigned, 0);
 URHO3D_NETWORK_SETTING(MaxInputBuffering, unsigned, 8);
 /// Interval in seconds between NetworkObject becoming unneeded for client and replication stopped.
 URHO3D_NETWORK_SETTING(RelevanceTimeout, float, 5.0f);
+/// Duration in seconds of value tracking on server. Used for lag compensation.
+URHO3D_NETWORK_SETTING(ServerTracingDuration, float, 5.0f);
 
 /// @}
 
@@ -100,6 +102,10 @@ URHO3D_NETWORK_SETTING(MinTimeDilation, float, 0.7f);
 URHO3D_NETWORK_SETTING(MaxTimeDilation, float, 1.5f);
 /// Delay in seconds before delivered updates are used for replica interpolation.
 URHO3D_NETWORK_SETTING(InterpolationDelay, float, 0.1f);
+/// Duration in seconds of value tracking on client. Used for interpolation.
+URHO3D_NETWORK_SETTING(ClientTracingDuration, float, 3.0f);
+/// Duration in seconds of value extrapolation. Beyond this limit the value stays fixed.
+URHO3D_NETWORK_SETTING(ExtrapolationDuration, float, 0.5f);
 
 /// @}
 

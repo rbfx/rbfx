@@ -126,7 +126,6 @@ public:
 
     /// Return global properties of client state.
     /// @{
-    unsigned GetTraceCapacity() const;
     unsigned GetPositionExtrapolationFrames() const;
     /// @}
 

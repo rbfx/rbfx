@@ -88,13 +88,13 @@ void NetworkObject::OnNodeSet(Node* node)
 
 void NetworkObject::OnMarkedDirty(Node* node)
 {
-    if (auto networkManager = GetNetworkManager())
-        networkManager->QueueComponentUpdate(this);
+    if (auto replicationManager = GetReplicationManager())
+        replicationManager->QueueComponentUpdate(this);
 }
 
 NetworkObject* NetworkObject::GetOtherNetworkObject(NetworkId networkId) const
 {
-    return GetNetworkManager() ? GetNetworkManager()->GetNetworkObject(networkId) : nullptr;
+    return GetReplicationManager() ? GetReplicationManager()->GetNetworkObject(networkId) : nullptr;
 }
 
 void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
@@ -119,16 +119,6 @@ void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
         if (node_->GetParent() != parentNode)
             node_->SetParent(parentNode);
     }
-}
-
-ClientReplica* NetworkObject::GetClientNetworkManager() const
-{
-    return GetNetworkManager() && GetNetworkManager()->IsReplicatedClient() ? &GetNetworkManager()->AsClient() : nullptr;
-}
-
-ServerReplicator* NetworkObject::GetServerNetworkManager() const
-{
-    return GetNetworkManager() && !GetNetworkManager()->IsReplicatedClient() ? &GetNetworkManager()->AsServer() : nullptr;
 }
 
 NetworkObject* NetworkObject::FindParentNetworkObject() const

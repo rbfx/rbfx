@@ -205,12 +205,15 @@ public:
 
     void SetCurrentFrame(unsigned frame);
 
+    /// Return current state of the replicator.
+    /// @{
     ea::string GetDebugInfo() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
     unsigned GetFeedbackDelay(AbstractConnection* connection) const;
     NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
+    unsigned GetUpdateFrequency() const { return updateFrequency_; }
     unsigned GetCurrentFrame() const { return currentFrame_; }
-    unsigned GetTraceCapacity() const { return CeilToInt(3.0f * updateFrequency_); } // TODO(network): Fix me
+    /// @}
 
 private:
     void OnInputReady(float timeStep, bool isUpdateNow, float overtime);

@@ -29,6 +29,7 @@
 #include "../Network/Network.h"
 #include "../Replica/NetworkObject.h"
 #include "../Replica/NetworkManager.h"
+#include "../Replica/NetworkSettingsConsts.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D
@@ -212,6 +213,33 @@ void NetworkManager::StartClient(AbstractConnection* connectionToServer)
     RemoveAllComponents();
 
     URHO3D_LOGINFO("Started client for scene replication");
+}
+
+unsigned NetworkManager::GetUpdateFrequency() const
+{
+    if (server_)
+        return server_->GetUpdateFrequency();
+    else if (client_ && client_->replica_)
+        return client_->replica_->GetUpdateFrequency();
+    else
+        return NetworkSettings::UpdateFrequency.defaultValue_.GetUInt();
+}
+
+float NetworkManager::GetTraceDurationInSeconds() const
+{
+    if (server_)
+        return server_->GetSetting(NetworkSettings::ServerTracingDuration).GetFloat();
+    else if (client_ && client_->replica_)
+        return client_->replica_->GetSetting(NetworkSettings::ClientTracingDuration).GetFloat();
+    else
+        return 0.0f;
+}
+
+unsigned NetworkManager::GetTraceDurationInFrames() const
+{
+    const unsigned updateFrequency = GetSetting(NetworkSettings::UpdateFrequency).GetUInt();
+    const float duration = GetTraceDurationInSeconds();
+    return ea::max(1, CeilToInt(duration * updateFrequency));
 }
 
 const Variant& NetworkManager::GetSetting(const NetworkSetting& setting) const

@@ -87,15 +87,17 @@ URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
 }
 
 /// Begin the frame of network update on the server.
-URHO3D_EVENT(E_BEGINSERVERNETWORKFRAME, BeginServerNetworkUpdate)
+URHO3D_EVENT(E_BEGINSERVERNETWORKFRAME, BeginServerNetworkFrame)
 {
+    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
 }
 
 /// Begin the input frame on the client.
 /// Any client-side simulation at E_BEGINCLIENTNETWORKFRAME is precisely synchronized
 /// with one of the future E_BEGINSERVERNETWORKFRAME.
-URHO3D_EVENT(E_BEGINCLIENTNETWORKFRAME, NetworkClientUpdate)
+URHO3D_EVENT(E_BEGINCLIENTNETWORKFRAME, BeginClientNetworkFrame)
 {
+    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
 }
 
 /// About to send network update on the client or server.
