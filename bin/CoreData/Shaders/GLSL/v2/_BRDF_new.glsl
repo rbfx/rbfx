@@ -201,7 +201,7 @@ half3 Direct_PBR(const half3 lightColor, const half3 albedo, const half3 specula
     half burley = BurleyDiffuse(roughness, NoV, NoL, VdotH);
 
     half3 specularLight = BRDF_Direct_PBRSpecular(specular, roughness, normal, halfVec, NoH, NoV, NoL, LoH);
-    return NoL * lightColor * (albedo + specularLight);
+    return lightColor * (burley * albedo + specularLight * NoL);
 }
 
 #endif // URHO3D_PHYSICAL_MATERIAL
