@@ -97,28 +97,21 @@ public:
     void StartServer();
     /// Start new client from specified connection.
     void StartClient(AbstractConnection* connectionToServer);
+    /// Process network message either as client or as server.
+    void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
 
-    /// Return current state.
+    /// Return current state specific to client or server.
     /// @{
     unsigned GetUpdateFrequency() const;
     float GetTraceDurationInSeconds() const;
     unsigned GetTraceDurationInFrames() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
+    ea::string GetDebugInfo() const;
     bool IsServer() const { return !!server_; }
     bool IsClient() const { return !!client_; }
     ClientReplica* GetClientReplica() const { return client_ ? client_->replica_ : nullptr; }
     ServerReplicator* GetServerReplicator() const { return server_; }
     /// @}
-
-    /// Return expected client or server network manager.
-    ServerReplicator& AsServer();
-    ClientReplica& AsClient();
-    // TODO(network): Get rid of this
-    bool IsReplicatedClient() const { return client_ && client_->replica_; }
-    ea::string GetDebugInfo() const;
-
-    /// Process network message either as client or as server.
-    void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
 
 private:
     void ProcessMessageOnUninitializedClient(

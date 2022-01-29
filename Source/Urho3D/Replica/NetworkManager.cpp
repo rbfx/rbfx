@@ -252,18 +252,6 @@ const Variant& NetworkManager::GetSetting(const NetworkSetting& setting) const
         return Variant::EMPTY;
 }
 
-ServerReplicator& NetworkManager::AsServer()
-{
-    assert(server_);
-    return *server_;
-}
-
-ClientReplica& NetworkManager::AsClient()
-{
-    assert(client_ && client_->replica_);
-    return *client_->replica_;
-}
-
 void NetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     if (client_)

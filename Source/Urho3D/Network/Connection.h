@@ -340,7 +340,7 @@ private:
     /// Scene.
     WeakPtr<Scene> scene_;
     /// Scene replication and synchronization manager.
-    WeakPtr<NetworkManager> networkManager_;
+    WeakPtr<NetworkManager> replicationManager_;
 
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;

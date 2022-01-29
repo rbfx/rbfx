@@ -196,9 +196,9 @@ void Connection::SetScene(Scene* newScene)
     {
         // Remove replication states and owner references from the previous scene
         scene_->CleanupConnection(this);
-        if (isClient_ && networkManager_)
-            networkManager_->AsServer().RemoveConnection(this);
-        networkManager_ = nullptr;
+        if (replicationManager_ && replicationManager_->IsServer())
+            replicationManager_->GetServerReplicator()->RemoveConnection(this);
+        replicationManager_ = nullptr;
     }
 
     scene_ = newScene;
@@ -210,9 +210,9 @@ void Connection::SetScene(Scene* newScene)
 
     if (isClient_)
     {
-        networkManager_ = scene_->GetOrCreateComponent<NetworkManager>();
-        if (!networkManager_->IsServer())
-            networkManager_->StartServer();
+        replicationManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+        if (!replicationManager_->IsServer())
+            replicationManager_->StartServer();
 
         sceneState_.Clear();
 
@@ -557,8 +557,8 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
                 break;
 
             default:
-                if (networkManager_ && FIRST_NETWORK_MANAGER_MSG <= msgID && msgID < LAST_NETWORK_MANAGER_MSG)
-                    networkManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg);
+                if (replicationManager_ && FIRST_NETWORK_MANAGER_MSG <= msgID && msgID < LAST_NETWORK_MANAGER_MSG)
+                    replicationManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg);
                 else
                     ProcessUnknownMessage(msgID, msg);
                 break;
@@ -1038,7 +1038,7 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
         return;
     }
 
-    if (!scene_ || !networkManager_)
+    if (!scene_ || !replicationManager_ || !replicationManager_->IsServer())
     {
         URHO3D_LOGWARNING("Received a SceneLoaded message without an assigned scene from client " + ToString());
         return;
@@ -1055,7 +1055,7 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
     }
     else
     {
-        networkManager_->AsServer().AddConnection(this);
+        replicationManager_->GetServerReplicator()->AddConnection(this);
         sceneLoaded_ = true;
 
         using namespace ClientSceneLoaded;
@@ -1269,8 +1269,8 @@ void Connection::SetPacketSizeLimit(int limit)
 
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
-    networkManager_ = scene_->GetOrCreateComponent<NetworkManager>();
-    networkManager_->StartClient(this);
+    replicationManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+    replicationManager_->StartClient(this);
     sceneLoaded_ = true;
 
     // Clear all replicated nodes
@@ -1691,8 +1691,8 @@ void Connection::OnPackagesReady()
         // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
         scene_->Clear(true, false);
 
-        networkManager_ = scene_->GetOrCreateComponent<NetworkManager>();
-        networkManager_->StartClient(this);
+        replicationManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+        replicationManager_->StartClient(this);
         sceneLoaded_ = true;
 
         msg_.Clear();
