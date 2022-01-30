@@ -32,10 +32,11 @@
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
-#include <Urho3D/Replica/DefaultNetworkObject.h>
+#include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Replica/NetworkManager.h>
 #include <Urho3D/Replica/NetworkObject.h>
 #include <Urho3D/Replica/NetworkValue.h>
+#include <Urho3D/Replica/ReplicatedNetworkTransform.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace

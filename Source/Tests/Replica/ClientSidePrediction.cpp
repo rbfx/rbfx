@@ -31,7 +31,9 @@
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Replica/ClientInputStatistics.h>
+#include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Replica/KinematicPlayerNetworkObject.h>
+#include <Urho3D/Replica/ReplicatedNetworkTransform.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace

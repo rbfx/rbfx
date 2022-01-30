@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Replica/DefaultNetworkObject.h"
+#include "../Replica/BehaviorNetworkObject.h"
 
 #include <EASTL/optional.h>
 
@@ -34,6 +34,7 @@ namespace Urho3D
 {
 
 class KinematicCharacterController;
+class ReplicatedNetworkTransform;
 
 /// Kinematic controller of the player replicated over network.
 /// TODO(network): Rename to PredictedKinematicController?

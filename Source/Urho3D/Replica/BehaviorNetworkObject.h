@@ -24,53 +24,12 @@
 
 #pragma once
 
-#include "../Replica/NetworkObject.h"
-#include "../Replica/NetworkValue.h"
+#include "../Replica/StaticNetworkObject.h"
 
 namespace Urho3D
 {
 
 class BehaviorNetworkObject;
-class XMLFile;
-
-/// NetworkObject that is replicated on the client from prefab and is not updated afterwards.
-/// Note: object position in the hierarchy of NetworkObject-s is still maintained.
-class URHO3D_API StaticNetworkObject : public NetworkObject
-{
-    URHO3D_OBJECT(StaticNetworkObject, NetworkObject);
-
-public:
-    explicit StaticNetworkObject(Context* context);
-    ~StaticNetworkObject() override;
-
-    static void RegisterObject(Context* context);
-
-    /// Attribute modification. Don't do that after replication!
-    /// @{
-    void SetClientPrefab(XMLFile* prefab);
-    /// @}
-
-    /// Implement NetworkObject
-    /// @{
-    void InitializeOnServer() override;
-
-    void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    bool PrepareReliableDelta(unsigned frame) override;
-    void WriteReliableDelta(unsigned frame, Serializer& dest) override;
-
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
-    void ReadReliableDelta(unsigned frame, Deserializer& src) override;
-    /// @}
-
-protected:
-    ResourceRef GetClientPrefabAttr() const;
-    void SetClientPrefabAttr(const ResourceRef& value);
-
-private:
-    SharedPtr<XMLFile> clientPrefab_;
-
-    NetworkId latestSentParentObject_{InvalidNetworkId};
-};
 
 /// Aspect of network behavior that is injected into BehaviorNetworkObject.
 /// NetworkBehavior should be created only after owner BehaviorNetworkObject is created,
@@ -170,54 +129,6 @@ private:
     unsigned reliableUpdateMask_{};
     unsigned unreliableUpdateMask_{};
     unsigned unreliableFeedbackMask_{};
-};
-
-/// Behavior that replicates transform of the node.
-class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
-{
-    URHO3D_OBJECT(ReplicatedNetworkTransform, NetworkBehavior);
-
-public:
-    static constexpr NetworkCallbackFlags CallbackMask =
-        NetworkCallback::UpdateTransformOnServer | NetworkCallback::UnreliableDelta | NetworkCallback::InterpolateState;
-    static const unsigned NumUploadAttempts = 8;
-
-    explicit ReplicatedNetworkTransform(Context* context);
-    ~ReplicatedNetworkTransform() override;
-
-    static void RegisterObject(Context* context);
-
-    void SetTrackOnly(bool value) { trackOnly_ = value; }
-    bool GetTrackOnly() const { return trackOnly_; }
-
-    /// Implement NetworkBehavior.
-    /// @{
-    void InitializeOnServer() override;
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
-
-    void UpdateTransformOnServer() override;
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
-
-    bool PrepareUnreliableDelta(unsigned frame) override;
-    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
-    void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
-    /// @}
-
-    /// Getters for network properties
-    /// @{
-    Vector3 GetTemporalWorldPosition(const NetworkTime& time) const { return worldPositionTrace_.SampleValid(time); }
-    Quaternion GetTemporalWorldRotation(const NetworkTime& time) const { return worldRotationTrace_.SampleValid(time); }
-    ea::optional<Vector3> GetRawTemporalWorldPosition(unsigned frame) const { return worldPositionTrace_.GetRaw(frame); }
-    ea::optional<Quaternion> GetRawTemporalWorldRotation(unsigned frame) const { return worldRotationTrace_.GetRaw(frame); }
-    /// @}
-
-private:
-    bool trackOnly_{};
-
-    unsigned pendingUploadAttempts_{};
-
-    NetworkValue<Vector3> worldPositionTrace_;
-    NetworkValue<Quaternion> worldRotationTrace_;
 };
 
 };
