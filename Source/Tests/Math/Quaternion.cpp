@@ -27,12 +27,12 @@
 
 using namespace Urho3D;
 
-TEST_CASE("Matrix3 from Axis Angle")
+TEST_CASE("Quaternion from Euler")
 {
-    Vector3 axis(1, -2, 3);
-    axis.Normalize();
-    const Matrix3 matrix(30.0f, axis);
-    const Matrix3 expected = Quaternion(30.0f, axis).RotationMatrix();
+    const Vector3 angles(10, -20, 30);
+    const Matrix3 matrix = Matrix3(angles.y_, Vector3(0, 1, 0)) * Matrix3(angles.x_, Vector3(1, 0, 0))
+        * Matrix3(angles.z_, Vector3(0, 0, 1));
+    const Matrix3 expected = Quaternion(angles).RotationMatrix();
 
     CHECK(matrix.Equals(expected));
 }
