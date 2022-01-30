@@ -32,6 +32,7 @@
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/Navigation/Obstacle.h>
 #include <Urho3D/Navigation/Navigable.h>
 #include <Urho3D/Navigation/NavigationMesh.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -71,7 +72,7 @@ void Navigation::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    Sample::InitMouseMode(MM_FREE);
 }
 
 void Navigation::CreateScene()
@@ -130,6 +131,25 @@ void Navigation::CreateScene()
         boxObject->SetCastShadows(true);
         if (size >= 3.0f)
             boxObject->SetOccluder(true);
+        
+        auto *naviable = boxNode->CreateComponent<Navigable>();
+        naviable->SetRecursive(false);
+    }
+    
+    {
+        Node* boxNode = scene_->CreateChild("Box");
+        float size = 10.0f;
+        boxNode->SetPosition(Vector3(-55, -5, 0));
+        boxNode->SetScale(size);
+        auto* boxObject = boxNode->CreateComponent<StaticModel>();
+        boxObject->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+        boxObject->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
+        boxObject->SetCastShadows(true);
+        if (size >= 3.0f)
+            boxObject->SetOccluder(true);
+        
+        auto *naviable = boxNode->CreateComponent<Navigable>();
+        naviable->SetRecursive(false);
     }
 
     // Create Jack node that will follow the path
@@ -146,10 +166,18 @@ void Navigation::CreateScene()
     navMesh->SetTileSize(32);
     // Create a Navigable component to the scene root. This tags all of the geometry in the scene as being part of the
     // navigation mesh. By default this is recursive, but the recursion could be turned off from Navigable
-    scene_->CreateComponent<Navigable>();
+    auto nav = scene_->CreateComponent<Navigable>();
+    nav->SetRecursive(false);
+    
+    
+    auto navMain = planeNode->CreateComponent<Navigable>();
+    navMain->SetRecursive(false);
+
+    
     // Add padding to the navigation mesh in Y-direction so that we can add objects on top of the tallest boxes
     // in the scene and still update the mesh correctly
     navMesh->SetPadding(Vector3(0.0f, 10.0f, 0.0f));
+//    navMesh->SetTileSize(64);
     // Now build the navigation geometry. This will take some time. Note that the navigation mesh will prefer to use
     // physics geometry from the scene nodes, as it often is simpler, but if it can not find any (like in this example)
     // it will use renderable geometry instead
@@ -174,13 +202,13 @@ void Navigation::CreateUI()
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it will point the raycast target
     auto* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
-    SharedPtr<Cursor> cursor(new Cursor(context_));
-    cursor->SetStyleAuto(style);
-    ui->SetCursor(cursor);
+//    SharedPtr<Cursor> cursor(new Cursor(context_));
+//    cursor->SetStyleAuto(style);
+//    ui->SetCursor(cursor);
 
     // Set starting position of the cursor at the rendering window center
-    auto* graphics = GetSubsystem<Graphics>();
-    cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
+//    auto* graphics = GetSubsystem<Graphics>();
+//    cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct new Text object, set string to display and font to use
     auto* instructionText = ui->GetRoot()->CreateChild<Text>();
@@ -225,7 +253,7 @@ void Navigation::MoveCamera(float timeStep)
     // Right mouse button controls mouse cursor visibility: hide when pressed
     auto* ui = GetSubsystem<UI>();
     auto* input = GetSubsystem<Input>();
-    ui->GetCursor()->SetVisible(!input->GetMouseButtonDown(MOUSEB_RIGHT));
+//    ui->GetCursor()->SetVisible(!input->GetMouseButtonDown(MOUSEB_RIGHT));
 
     // Do not move if the UI has a focused element (the console)
     if (ui->GetFocusElement())
@@ -238,7 +266,7 @@ void Navigation::MoveCamera(float timeStep)
 
     // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
     // Only move the camera when the cursor is hidden
-    if (!ui->GetCursor()->IsVisible())
+    if (input->GetKeyDown(KEY_SPACE))
     {
         IntVector2 mouseMove = input->GetMouseMove();
         yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
@@ -292,7 +320,7 @@ void Navigation::SetPathPoint()
         {
             // Calculate path from Jack's current position to the end point
             endPos_ = pathPos;
-            navMesh->FindPath(currentPath_, jackNode_->GetPosition(), endPos_);
+            navMesh->FindPath(currentPath_, jackNode_->GetPosition(), endPos_, Vector3(3.0, 3.0, 3.0));
         }
     }
 }
@@ -341,6 +369,9 @@ Node* Navigation::CreateMushroom(const Vector3& pos)
     mushroomObject->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
     mushroomObject->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
     mushroomObject->SetCastShadows(true);
+    auto *navigable = mushroomNode->CreateComponent<Navigable>();
+    navigable->SetRecursive(false);
+    
 
     return mushroomNode;
 }
@@ -352,7 +383,7 @@ bool Navigation::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawa
     auto* ui = GetSubsystem<UI>();
     IntVector2 pos = ui->GetCursorPosition();
     // Check the cursor is visible and there is no UI element in front of the cursor
-    if (!ui->GetCursor()->IsVisible() || ui->GetElementAt(pos, true))
+    if (ui->GetElementAt(pos, true))
         return false;
 
     pos = ui->ConvertUIToSystem(pos);
