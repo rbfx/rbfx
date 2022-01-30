@@ -229,7 +229,7 @@ void ClientReplica::ProcessAddObjects(MemoryBuffer& messageData)
         {
             componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
             componentBuffer_.Seek(0);
-            networkObject->ReadSnapshot(messageFrame, componentBuffer_);
+            networkObject->InitializeFromSnapshot(messageFrame, componentBuffer_);
         }
     }
 }
@@ -363,15 +363,10 @@ void ClientReplica::OnInputReady(float timeStep)
     UpdateClientClocks(timeStep, pendingClockUpdates_);
     pendingClockUpdates_.clear();
 
-    const bool isNewInputFrame = IsNewInputFrame();
+    for (NetworkObject* networkObject : replicationManager_->GetNetworkObjects())
+        networkObject->InterpolateState(GetReplicaTime(), GetInputTime());
 
-    const auto& networkObjects = replicationManager_->GetNetworkObjects();
-    for (NetworkObject* networkObject : networkObjects)
-    {
-        networkObject->InterpolateState(GetReplicaTime(), GetInputTime(), isNewInputFrame);
-    }
-
-    if (isNewInputFrame)
+    if (IsNewInputFrame())
     {
         auto network = GetSubsystem<Network>();
 
@@ -398,9 +393,9 @@ void ClientReplica::SendObjectsFeedbackUnreliable(unsigned feedbackFrame)
                 continue;
 
             componentBuffer_.Clear();
-            if (const auto mask = networkObject->GetUnreliableFeedbackMask(feedbackFrame))
+            if (networkObject->PrepareUnreliableFeedback(feedbackFrame))
             {
-                networkObject->WriteUnreliableFeedback(feedbackFrame, mask, componentBuffer_);
+                networkObject->WriteUnreliableFeedback(feedbackFrame, componentBuffer_);
                 sendMessage = true;
                 msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
                 msg.WriteBuffer(componentBuffer_.GetBuffer());

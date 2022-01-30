@@ -42,6 +42,8 @@ class URHO3D_API KinematicPlayerNetworkObject : public NetworkBehavior
     URHO3D_OBJECT(KinematicPlayerNetworkObject, NetworkBehavior);
 
 public:
+    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallback::UnreliableFeedback;
+
     explicit KinematicPlayerNetworkObject(Context* context);
     ~KinematicPlayerNetworkObject() override;
 
@@ -53,13 +55,13 @@ public:
     /// Implementation of NetworkObject
     /// @{
     void InitializeOnServer() override;
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
+
+    bool PrepareUnreliableFeedback(unsigned frame) override;
+    void WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
     void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
-    void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void OnUnreliableDelta(unsigned frame) override;
-    unsigned GetUnreliableFeedbackMask(unsigned frame) override;
-    void WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest) override;
     /// @}
 
 protected:

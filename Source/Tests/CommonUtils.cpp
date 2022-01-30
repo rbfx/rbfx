@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "CommonUtils.h"
 
 #include <Urho3D/Core/CoreEvents.h>

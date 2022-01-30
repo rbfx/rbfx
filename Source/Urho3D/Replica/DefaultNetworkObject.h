@@ -40,11 +40,6 @@ class URHO3D_API StaticNetworkObject : public NetworkObject
     URHO3D_OBJECT(StaticNetworkObject, NetworkObject);
 
 public:
-    /// Masks for reliable update.
-    /// @{
-    static constexpr unsigned ParentObjectMask = 1 << 0;
-    /// @}
-
     explicit StaticNetworkObject(Context* context);
     ~StaticNetworkObject() override;
 
@@ -55,15 +50,15 @@ public:
     void SetClientPrefab(XMLFile* prefab);
     /// @}
 
-    /// Implementation of NetworkObject
+    /// Implement NetworkObject
     /// @{
     void InitializeOnServer() override;
 
     void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    unsigned GetReliableDeltaMask(unsigned frame) override;
-    void WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
+    bool PrepareReliableDelta(unsigned frame) override;
+    void WriteReliableDelta(unsigned frame, Serializer& dest) override;
 
-    void ReadSnapshot(unsigned frame, Deserializer& src) override;
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     /// @}
 
@@ -82,12 +77,15 @@ private:
 /// but before it's replicated to clients (on server) or creation is finished (on client).
 /// This basically means that list of NetworkBehavior-s attached to BehaviorNetworkObject
 /// should stay the same during all lifetime of BehaviorNetworkObject.
-class URHO3D_API NetworkBehavior : public Component
+class URHO3D_API NetworkBehavior
+    : public Component
+    , public ServerNetworkCallback
+    , public ClientNetworkCallback
 {
     URHO3D_OBJECT(NetworkBehavior, Component);
 
 public:
-    explicit NetworkBehavior(Context* context);
+    NetworkBehavior(Context* context, NetworkCallbackFlags callbackMask);
     ~NetworkBehavior() override;
 
     static void RegisterObject(Context* context);
@@ -97,25 +95,12 @@ public:
 
     /// Return owner NetworkObject.
     BehaviorNetworkObject* GetNetworkObject() const { return owner_; }
+    /// Return callback mask.
+    NetworkCallbackFlags GetCallbackMask() const { return callbackMask_; }
 
     /// Callbacks from BehaviorNetworkObject.
     /// @{
-    virtual void InitializeOnServer() {}
-    virtual void UpdateTransformOnServer() {}
-    virtual void WriteSnapshot(unsigned frame, Serializer& dest) {}
-    virtual unsigned GetReliableDeltaMask(unsigned frame) { return 0; }
-    virtual void WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest) {}
-    virtual unsigned GetUnreliableDeltaMask(unsigned frame) { return 0; }
-    virtual void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) {}
-    virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) {}
-
-    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) {}
-    virtual void ReadSnapshot(unsigned frame, Deserializer& src) {} // TODO(network): Rename to InitializeFromSnapshot?
-    virtual void ReadReliableDelta(unsigned frame, Deserializer& src) {}
-    virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src) {}
-    virtual void OnUnreliableDelta(unsigned frame) {}
-    virtual unsigned GetUnreliableFeedbackMask(unsigned frame) { return 0; }
-    virtual void WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest) {}
+    virtual void OnUnreliableDelta(unsigned frame) {} // TODO(network): Revisit, it shouldn't exist
     /// @}
 
 protected:
@@ -126,6 +111,7 @@ protected:
 
 private:
     WeakPtr<BehaviorNetworkObject> owner_;
+    NetworkCallbackFlags callbackMask_;
 };
 
 /// NetworkObject that is composed from the fixed amount of independent behaviors.
@@ -146,23 +132,26 @@ public:
     /// Internal. Mark NetworkObject as invalid and disable all behaviors.
     void InvalidateBehaviors();
 
-    /// Implementation of NetworkObject
+    /// Implement NetworkObject.
     /// @{
     void InitializeOnServer() override;
-    void UpdateTransformOnServer() override;
     void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    unsigned GetReliableDeltaMask(unsigned frame) override;
-    void WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
-    unsigned GetUnreliableDeltaMask(unsigned frame) override;
-    void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
+
+    bool IsRelevantForClient(AbstractConnection* connection) override;
+    void UpdateTransformOnServer() override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+
+    bool PrepareReliableDelta(unsigned frame) override;
+    void WriteReliableDelta(unsigned frame, Serializer& dest) override;
+    bool PrepareUnreliableDelta(unsigned frame) override;
+    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
     void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
 
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
-    void ReadSnapshot(unsigned frame, Deserializer& src) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
-    unsigned GetUnreliableFeedbackMask(unsigned frame) override;
-    void WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest) override;
+    bool PrepareUnreliableFeedback(unsigned frame) override;
+    void WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
     /// @}
 
 private:
@@ -172,11 +161,15 @@ private:
     {
         unsigned bit_{};
         WeakPtr<NetworkBehavior> component_;
-        unsigned tempMask_{};
+        NetworkCallbackFlags callbackMask_;
     };
 
     ea::vector<ConnectedNetworkBehavior> behaviors_;
-    unsigned tempMask_{};
+    NetworkCallbackFlags callbackMask_;
+
+    unsigned reliableUpdateMask_{};
+    unsigned unreliableUpdateMask_{};
+    unsigned unreliableFeedbackMask_{};
 };
 
 /// Behavior that replicates transform of the node.
@@ -185,6 +178,8 @@ class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
     URHO3D_OBJECT(ReplicatedNetworkTransform, NetworkBehavior);
 
 public:
+    static constexpr NetworkCallbackFlags CallbackMask =
+        NetworkCallback::UpdateTransformOnServer | NetworkCallback::UnreliableDelta | NetworkCallback::InterpolateState;
     static const unsigned NumUploadAttempts = 8;
 
     explicit ReplicatedNetworkTransform(Context* context);
@@ -198,12 +193,13 @@ public:
     /// Implement NetworkBehavior.
     /// @{
     void InitializeOnServer() override;
-    void UpdateTransformOnServer() override;
-    unsigned GetUnreliableDeltaMask(unsigned frame) override;
-    void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest) override;
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
 
-    void ReadSnapshot(unsigned frame, Deserializer& src) override;
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame) override;
+    void UpdateTransformOnServer() override;
+    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+
+    bool PrepareUnreliableDelta(unsigned frame) override;
+    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
     /// @}
 

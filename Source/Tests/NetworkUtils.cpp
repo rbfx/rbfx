@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "NetworkUtils.h"
 #include "CommonUtils.h"
 
