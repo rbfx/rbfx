@@ -32,8 +32,59 @@
 #include <Urho3D/Resource/GraphNode.h>
 
 using namespace Urho3D;
-
-TEST_CASE("Validate graph node id when added to scene")
+TEST_CASE("Graph node id when added to graph")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    {
+        auto node = MakeShared<GraphNode>(context);
+        CHECK(node->GetID() == 0);
+        CHECK(node->GetNumInputs() == 0);
+        CHECK(!node->GetInput("x"));
+        auto ref = node->GetOrAddInput("x");
+        CHECK(ref);
+        CHECK(node->GetNumInputs() == 1);
+        CHECK(node->GetInput("x"));
+        CHECK(node->GetInput(0));
+        CHECK(!node->GetInput(1));
+    }
+    {
+        auto node = MakeShared<GraphNode>(context);
+        CHECK(node->GetID() == 0);
+        CHECK(node->GetNumOutputs() == 0);
+        CHECK(!node->GetOutput("x"));
+        auto ref = node->GetOrAddOutput("x");
+        CHECK(ref);
+        CHECK(node->GetNumOutputs() == 1);
+        CHECK(node->GetOutput("x"));
+        CHECK(node->GetOutput(0));
+        CHECK(!node->GetOutput(1));
+    }
+    {
+        auto node = MakeShared<GraphNode>(context);
+        CHECK(node->GetID() == 0);
+        CHECK(node->GetNumEnters() == 0);
+        CHECK(!node->GetEnter("x"));
+        auto ref = node->GetOrAddEnter("x");
+        CHECK(ref);
+        CHECK(node->GetNumEnters() == 1);
+        CHECK(node->GetEnter("x"));
+        CHECK(node->GetEnter(0));
+        CHECK(!node->GetEnter(1));
+    }
+    {
+        auto node = MakeShared<GraphNode>(context);
+        CHECK(node->GetID() == 0);
+        CHECK(node->GetNumExits() == 0);
+        CHECK(!node->GetExit("x"));
+        auto ref = node->GetOrAddExit("x");
+        CHECK(ref);
+        CHECK(node->GetNumExits() == 1);
+        CHECK(node->GetExit("x"));
+        CHECK(node->GetExit(0));
+        CHECK(!node->GetExit(1));
+    }
+}
+TEST_CASE("Validate graph node id when added to graph")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
@@ -106,6 +157,9 @@ TEST_CASE("Test pins deserialization")
                     <properties>
                         <property name="p" type="Vector2" value="1 2" />
                     </properties>
+                    <in>
+                        <pin type="Vector3" name="in3" node="42" pin="out" />
+                    </in>
                 </node>
             </nodes>
         </graph>
@@ -115,16 +169,16 @@ TEST_CASE("Test pins deserialization")
     REQUIRE(node42);
     CHECK(node42->GetName() == "Test");
 
-    CHECK(node42->GetInputs().size() == 3);
-    CHECK(node42->GetOutputs().size() == 1);
-    CHECK(node42->GetEnters().size() == 1);
-    CHECK(node42->GetExits().size() == 1);
+    CHECK(node42->GetNumInputs() == 3);
+    CHECK(node42->GetNumOutputs() == 1);
+    CHECK(node42->GetNumEnters() == 1);
+    CHECK(node42->GetNumExits() == 1);
 
-    CHECK(node42->GetInput("")->GetType() == VAR_NONE);
-    CHECK(node42->GetInput("in2")->GetType() == VAR_VECTOR2);
-    CHECK(node42->GetInput("in3")->GetType() == VAR_VECTOR3);
-    CHECK(node42->GetInput("in3")->GetValue().GetVector3() == Vector3(1,2,3));
-    CHECK(node42->GetOutput("out")->GetType() == VAR_VECTOR3);
+    CHECK(node42->GetInput("").GetPin()->GetType() == VAR_NONE);
+    CHECK(node42->GetInput("in2").GetPin()->GetType() == VAR_VECTOR2);
+    CHECK(node42->GetInput("in3").GetPin()->GetType() == VAR_VECTOR3);
+    CHECK(node42->GetInput("in3").GetPin()->GetValue().GetVector3() == Vector3(1, 2, 3));
+    CHECK(node42->GetOutput("out").GetPin()->GetType() == VAR_VECTOR3);
     CHECK(node42->GetEnter("enter"));
     CHECK(node42->GetExit("exit"));
 
@@ -133,6 +187,10 @@ TEST_CASE("Test pins deserialization")
     CHECK(lastNode->GetName() == "Test2");
     REQUIRE(lastNode->GetProperty("p"));
     CHECK(lastNode->GetProperty("p")->GetVector2() == Vector2(1,2));
+    CHECK(lastNode->GetInput("in3").GetPin()->GetType() == VAR_VECTOR3);
+    REQUIRE(lastNode->GetInput("in3").GetPin()->IsConnected());
+    REQUIRE(lastNode->GetInput("in3").GetConnectedPin<GraphOutPin>());
+    CHECK(lastNode->GetInput("in3").GetConnectedPin<GraphOutPin>().GetPin()->GetName() == "out");
 }
 
 TEST_CASE("Graph serialization roundtrip")
@@ -161,10 +219,10 @@ TEST_CASE("Graph serialization roundtrip")
     auto& out = nodeA->GetOrAddOutput("out");
     auto& enter = nodeC->GetOrAddEnter("enter");
 
-    CHECK(nodeB->GetOrAddInput("in").ConnectTo(out));
+    CHECK(nodeB->GetOrAddInput("in").GetPin()->ConnectTo(out));
     nodeB->GetOrAddOutput("out");
     nodeB->GetOrAddEnter("enter");
-    CHECK(nodeB->GetOrAddExit("exit").ConnectTo(enter));
+    CHECK(nodeB->GetOrAddExit("exit").GetPin()->ConnectTo(enter));
 
     // Save to xml
     VectorBuffer buf;
