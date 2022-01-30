@@ -80,23 +80,20 @@ void StaticNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
     dest.WriteVector3(node_->GetSignedWorldScale());
 }
 
-unsigned StaticNetworkObject::GetReliableDeltaMask(unsigned frame)
+bool StaticNetworkObject::PrepareReliableDelta(unsigned frame)
 {
     const auto parentObject = GetParentNetworkId();
-    if (latestSentParentObject_ != parentObject)
-    {
-        latestSentParentObject_ = parentObject;
-        return ParentObjectMask;
-    }
-    return 0;
+    const bool needUpdate = latestSentParentObject_ != parentObject;
+    latestSentParentObject_ = parentObject;
+    return needUpdate;
 }
 
-void StaticNetworkObject::WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest)
+void StaticNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
 {
     dest.WriteUInt(static_cast<unsigned>(latestSentParentObject_));
 }
 
-void StaticNetworkObject::ReadSnapshot(unsigned frame, Deserializer& src)
+void StaticNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src)
 {
     const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
     SetParentNetworkObject(parentNetworkId);
@@ -144,8 +141,9 @@ void StaticNetworkObject::SetClientPrefabAttr(const ResourceRef& value)
     SetClientPrefab(cache->GetResource<XMLFile>(value.name_));
 }
 
-NetworkBehavior::NetworkBehavior(Context* context)
+NetworkBehavior::NetworkBehavior(Context* context, NetworkCallbackFlags callbackMask)
     : Component(context)
+    , callbackMask_(callbackMask)
 {
 }
 
@@ -200,12 +198,16 @@ void BehaviorNetworkObject::InitializeBehaviors()
         return;
     }
 
+    callbackMask_ = NetworkCallback::None;
     for (NetworkBehavior* networkBehavior : networkBehaviors)
     {
         const unsigned bit = 1 << behaviors_.size();
         WeakPtr<NetworkBehavior> weakPtr{networkBehavior};
+        const auto callbackMask = networkBehavior->GetCallbackMask();
+
         networkBehavior->SetNetworkObject(this);
-        behaviors_.push_back(ConnectedNetworkBehavior{bit, weakPtr});
+        behaviors_.push_back(ConnectedNetworkBehavior{bit, weakPtr, callbackMask});
+        callbackMask_ |= callbackMask;
     }
 }
 
@@ -224,116 +226,155 @@ void BehaviorNetworkObject::InitializeOnServer()
         connectedBehavior.component_->InitializeOnServer();
 }
 
-void BehaviorNetworkObject::UpdateTransformOnServer()
-{
-    BaseClassName::UpdateTransformOnServer();
-
-    for (const auto& connectedBehavior : behaviors_)
-        connectedBehavior.component_->UpdateTransformOnServer();
-}
-
 void BehaviorNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
 {
     BaseClassName::WriteSnapshot(frame, dest);
 
     for (const auto& connectedBehavior : behaviors_)
+    {
         connectedBehavior.component_->WriteSnapshot(frame, dest);
-}
-
-unsigned BehaviorNetworkObject::GetReliableDeltaMask(unsigned frame)
-{
-    const unsigned mask = BaseClassName::GetReliableDeltaMask(frame);
-
-    tempMask_ = 0;
-    for (auto& connectedBehavior : behaviors_)
-    {
-        connectedBehavior.tempMask_ = connectedBehavior.component_->GetReliableDeltaMask(frame);
-        if (connectedBehavior.tempMask_)
-            tempMask_ |= connectedBehavior.bit_;
-    }
-
-    return mask | (tempMask_ ? 2 : 0);
-}
-
-void BehaviorNetworkObject::WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest)
-{
-    BaseClassName::WriteReliableDelta(frame, mask, dest);
-
-    dest.WriteVLE(tempMask_);
-    for (const auto& connectedBehavior : behaviors_)
-    {
-        if (connectedBehavior.tempMask_)
-            connectedBehavior.component_->WriteReliableDelta(frame, connectedBehavior.tempMask_, dest);
     }
 }
 
-unsigned BehaviorNetworkObject::GetUnreliableDeltaMask(unsigned frame)
+void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src)
 {
-    const unsigned mask = BaseClassName::GetUnreliableDeltaMask(frame);
-
-    tempMask_ = 0;
-    for (auto& connectedBehavior : behaviors_)
-    {
-        connectedBehavior.tempMask_ = connectedBehavior.component_->GetUnreliableDeltaMask(frame);
-        if (connectedBehavior.tempMask_)
-            tempMask_ |= connectedBehavior.bit_;
-    }
-
-    return mask | (tempMask_ ? 2 : 0);
-}
-
-void BehaviorNetworkObject::WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest)
-{
-    BaseClassName::WriteUnreliableDelta(frame, mask, dest);
-
-    dest.WriteVLE(tempMask_);
-    for (const auto& connectedBehavior : behaviors_)
-    {
-        if (connectedBehavior.tempMask_)
-            connectedBehavior.component_->WriteUnreliableDelta(frame, connectedBehavior.tempMask_, dest);
-    }
-}
-
-void BehaviorNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
-{
-    BaseClassName::ReadUnreliableFeedback(feedbackFrame, src);
-
-    const unsigned mask = src.ReadVLE();
-    for (const auto& connectedBehavior : behaviors_)
-    {
-        if (mask & connectedBehavior.bit_)
-            connectedBehavior.component_->ReadUnreliableFeedback(feedbackFrame, src);
-    }
-}
-
-void BehaviorNetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
-{
-    BaseClassName::InterpolateState(replicaTime, inputTime, isNewInputFrame);
-
-    for (const auto& connectedBehavior : behaviors_)
-        connectedBehavior.component_->InterpolateState(replicaTime, inputTime, isNewInputFrame);
-}
-
-void BehaviorNetworkObject::ReadSnapshot(unsigned frame, Deserializer& src)
-{
-    BaseClassName::ReadSnapshot(frame, src);
+    BaseClassName::InitializeFromSnapshot(frame, src);
 
     InitializeBehaviors();
 
     // TODO(network): Add validation
     for (const auto& connectedBehavior : behaviors_)
-        connectedBehavior.component_->ReadSnapshot(frame, src);
+        connectedBehavior.component_->InitializeFromSnapshot(frame, src);
+}
+
+bool BehaviorNetworkObject::IsRelevantForClient(AbstractConnection* connection)
+{
+    if (callbackMask_.Test(NetworkCallback::IsRelevantForClient))
+    {
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallback::IsRelevantForClient))
+            {
+                if (!connectedBehavior.component_->IsRelevantForClient(connection))
+                    return false;
+            }
+        }
+    }
+    return true;
+}
+
+void BehaviorNetworkObject::UpdateTransformOnServer()
+{
+    BaseClassName::UpdateTransformOnServer();
+
+    if (callbackMask_.Test(NetworkCallback::UpdateTransformOnServer))
+    {
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallback::UpdateTransformOnServer))
+                connectedBehavior.component_->UpdateTransformOnServer();
+        }
+    }
+}
+
+void BehaviorNetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime)
+{
+    BaseClassName::InterpolateState(replicaTime, inputTime);
+
+    if (callbackMask_.Test(NetworkCallback::InterpolateState))
+    {
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallback::InterpolateState))
+                connectedBehavior.component_->InterpolateState(replicaTime, inputTime);
+        }
+    }
+}
+
+bool BehaviorNetworkObject::PrepareReliableDelta(unsigned frame)
+{
+    bool needUpdate = BaseClassName::PrepareReliableDelta(frame);
+
+    reliableUpdateMask_ = 0;
+    if (callbackMask_.Test(NetworkCallback::ReliableDelta))
+    {
+        for (auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallback::ReliableDelta))
+            {
+                if (connectedBehavior.component_->PrepareReliableDelta(frame))
+                    reliableUpdateMask_ |= connectedBehavior.bit_;
+            }
+        }
+    }
+
+    needUpdate = needUpdate || reliableUpdateMask_ != 0;
+    return needUpdate;
+}
+
+void BehaviorNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
+{
+    BaseClassName::WriteReliableDelta(frame, dest);
+
+    if (callbackMask_.Test(NetworkCallback::ReliableDelta))
+    {
+        dest.WriteVLE(reliableUpdateMask_);
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (reliableUpdateMask_ & connectedBehavior.bit_)
+                connectedBehavior.component_->WriteReliableDelta(frame, dest);
+        }
+    }
 }
 
 void BehaviorNetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
 {
     BaseClassName::ReadReliableDelta(frame, src);
 
-    const unsigned mask = src.ReadVLE();
-    for (const auto& connectedBehavior : behaviors_)
+    if (callbackMask_.Test(NetworkCallback::ReliableDelta))
     {
-        if (mask & connectedBehavior.bit_)
-            connectedBehavior.component_->ReadReliableDelta(frame, src);
+        const unsigned mask = src.ReadVLE();
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (mask & connectedBehavior.bit_)
+                connectedBehavior.component_->ReadReliableDelta(frame, src);
+        }
+    }
+}
+
+bool BehaviorNetworkObject::PrepareUnreliableDelta(unsigned frame)
+{
+    bool needUpdate = BaseClassName::PrepareUnreliableDelta(frame);
+
+    unreliableUpdateMask_ = 0;
+    if (callbackMask_.Test(NetworkCallback::UnreliableDelta))
+    {
+        for (auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallback::UnreliableDelta))
+            {
+                if (connectedBehavior.component_->PrepareUnreliableDelta(frame))
+                    unreliableUpdateMask_ |= connectedBehavior.bit_;
+            }
+        }
+    }
+
+    needUpdate = needUpdate || unreliableUpdateMask_ != 0;
+    return needUpdate;
+}
+
+void BehaviorNetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& dest)
+{
+    BaseClassName::WriteUnreliableDelta(frame, dest);
+
+    if (callbackMask_.Test(NetworkCallback::UnreliableDelta))
+    {
+        dest.WriteVLE(unreliableUpdateMask_);
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (unreliableUpdateMask_ & connectedBehavior.bit_)
+                connectedBehavior.component_->WriteUnreliableDelta(frame, dest);
+        }
     }
 }
 
@@ -341,46 +382,74 @@ void BehaviorNetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& sr
 {
     BaseClassName::ReadUnreliableDelta(frame, src);
 
-    const unsigned mask = src.ReadVLE();
-    for (const auto& connectedBehavior : behaviors_)
+    if (callbackMask_.Test(NetworkCallback::UnreliableDelta))
     {
-        if (mask & connectedBehavior.bit_)
-            connectedBehavior.component_->ReadUnreliableDelta(frame, src);
+        const unsigned mask = src.ReadVLE();
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (mask & connectedBehavior.bit_)
+                connectedBehavior.component_->ReadUnreliableDelta(frame, src);
+        }
     }
 
+    // TODO(network): Remove this
     for (const auto& connectedBehavior : behaviors_)
         connectedBehavior.component_->OnUnreliableDelta(frame);
 }
 
-unsigned BehaviorNetworkObject::GetUnreliableFeedbackMask(unsigned frame)
+bool BehaviorNetworkObject::PrepareUnreliableFeedback(unsigned frame)
 {
-    const unsigned mask = BaseClassName::GetUnreliableFeedbackMask(frame);
+    bool needUpdate = BaseClassName::PrepareUnreliableFeedback(frame);
 
-    tempMask_ = 0;
-    for (auto& connectedBehavior : behaviors_)
+    unreliableFeedbackMask_ = 0;
+    if (callbackMask_.Test(NetworkCallback::UnreliableFeedback))
     {
-        connectedBehavior.tempMask_ = connectedBehavior.component_->GetUnreliableFeedbackMask(frame);
-        if (connectedBehavior.tempMask_)
-            tempMask_ |= connectedBehavior.bit_;
+        for (auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallback::UnreliableFeedback))
+            {
+                if (connectedBehavior.component_->PrepareUnreliableFeedback(frame))
+                    unreliableFeedbackMask_ |= connectedBehavior.bit_;
+            }
+        }
     }
 
-    return mask | (tempMask_ ? 2 : 0);
+    needUpdate = needUpdate || unreliableFeedbackMask_ != 0;
+    return needUpdate;
 }
 
-void BehaviorNetworkObject::WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest)
+void BehaviorNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
 {
-    BaseClassName::WriteUnreliableFeedback(frame, mask, dest);
+    BaseClassName::WriteUnreliableFeedback(frame, dest);
 
-    dest.WriteVLE(tempMask_);
-    for (const auto& connectedBehavior : behaviors_)
+    if (callbackMask_.Test(NetworkCallback::UnreliableFeedback))
     {
-        if (connectedBehavior.tempMask_)
-            connectedBehavior.component_->WriteUnreliableFeedback(frame, connectedBehavior.tempMask_, dest);
+        dest.WriteVLE(unreliableFeedbackMask_);
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (unreliableFeedbackMask_ & connectedBehavior.bit_)
+                connectedBehavior.component_->WriteUnreliableFeedback(frame, dest);
+        }
+    }
+}
+
+void BehaviorNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
+{
+    BaseClassName::ReadUnreliableFeedback(feedbackFrame, src);
+
+    if (callbackMask_.Test(NetworkCallback::UnreliableFeedback))
+    {
+        const unsigned mask = src.ReadVLE();
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (mask & connectedBehavior.bit_)
+                connectedBehavior.component_->ReadUnreliableFeedback(feedbackFrame, src);
+        }
     }
 }
 
 ReplicatedNetworkTransform::ReplicatedNetworkTransform(Context* context)
-    : NetworkBehavior(context)
+    : NetworkBehavior(context, CallbackMask)
 {
 }
 
@@ -405,30 +474,7 @@ void ReplicatedNetworkTransform::InitializeOnServer()
     worldRotationTrace_.Resize(traceDuration);
 }
 
-void ReplicatedNetworkTransform::UpdateTransformOnServer()
-{
-    pendingUploadAttempts_ = NumUploadAttempts;
-}
-
-unsigned ReplicatedNetworkTransform::GetUnreliableDeltaMask(unsigned frame)
-{
-    worldPositionTrace_.Set(frame, node_->GetWorldPosition());
-    worldRotationTrace_.Set(frame, node_->GetWorldRotation());
-    if (pendingUploadAttempts_ > 0)
-    {
-        --pendingUploadAttempts_;
-        return 1;
-    }
-    return 0;
-}
-
-void ReplicatedNetworkTransform::WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest)
-{
-    dest.WriteVector3(node_->GetWorldPosition());
-    dest.WriteQuaternion(node_->GetWorldRotation());
-}
-
-void ReplicatedNetworkTransform::ReadSnapshot(unsigned frame, Deserializer& src)
+void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src)
 {
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
@@ -437,7 +483,12 @@ void ReplicatedNetworkTransform::ReadSnapshot(unsigned frame, Deserializer& src)
     worldRotationTrace_.Resize(traceDuration);
 }
 
-void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
+void ReplicatedNetworkTransform::UpdateTransformOnServer()
+{
+    pendingUploadAttempts_ = NumUploadAttempts;
+}
+
+void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
     if (trackOnly_)
         return;
@@ -452,6 +503,24 @@ void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime
 
     if (auto newWorldRotation = worldRotationTrace_.ReconstructAndSample(replicaTime, {extrapolationInFrames}))
         node_->SetWorldRotation(*newWorldRotation);
+}
+
+bool ReplicatedNetworkTransform::PrepareUnreliableDelta(unsigned frame)
+{
+    worldPositionTrace_.Set(frame, node_->GetWorldPosition());
+    worldRotationTrace_.Set(frame, node_->GetWorldRotation());
+    if (pendingUploadAttempts_ > 0)
+    {
+        --pendingUploadAttempts_;
+        return true;
+    }
+    return false;
+}
+
+void ReplicatedNetworkTransform::WriteUnreliableDelta(unsigned frame, Serializer& dest)
+{
+    dest.WriteVector3(node_->GetWorldPosition());
+    dest.WriteQuaternion(node_->GetWorldRotation());
 }
 
 void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserializer& src)

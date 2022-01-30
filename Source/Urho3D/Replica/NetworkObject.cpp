@@ -145,74 +145,10 @@ void NetworkObject::RemoveChildNetworkObject(NetworkObject* networkObject)
         childrenNetworkObjects_.erase(iter);
 }
 
-bool NetworkObject::IsRelevantForClient(AbstractConnection* connection)
-{
-    return true;
-}
-
-void NetworkObject::InitializeOnServer()
-{
-}
-
-void NetworkObject::UpdateTransformOnServer()
-{
-}
-
-void NetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
-{
-}
-
-unsigned NetworkObject::GetReliableDeltaMask(unsigned frame)
-{
-    return 0;
-}
-
-void NetworkObject::WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest)
-{
-}
-
-unsigned NetworkObject::GetUnreliableDeltaMask(unsigned frame)
-{
-    return 0;
-}
-
-void NetworkObject::WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest)
-{
-}
-
-void NetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
-{
-}
-
-void NetworkObject::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
-{
-}
-
 void NetworkObject::PrepareToRemove()
 {
     if (node_)
         node_->Remove();
-}
-
-void NetworkObject::ReadSnapshot(unsigned frame, Deserializer& src)
-{
-}
-
-void NetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
-{
-}
-
-void NetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& src)
-{
-}
-
-unsigned NetworkObject::GetUnreliableFeedbackMask(unsigned frame)
-{
-    return 0;
-}
-
-void NetworkObject::WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest)
-{
 }
 
 }

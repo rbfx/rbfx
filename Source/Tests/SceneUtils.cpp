@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "SceneUtils.h"
 
 #include <Urho3D/Resource/XMLFile.h>

@@ -137,22 +137,20 @@ void SharedReplicationState::CookDeltaUpdates(unsigned currentFrame)
         NetworkObject* networkObject = replicationManager_->GetNetworkObjectByIndex(i);
         URHO3D_ASSERT(networkObject);
 
-        const unsigned reliableMask = networkObject->GetReliableDeltaMask(currentFrame);
-        if (reliableMask)
+        if (networkObject->PrepareReliableDelta(currentFrame))
         {
             const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-            networkObject->WriteReliableDelta(currentFrame, reliableMask, deltaUpdateBuffer_);
+            networkObject->WriteReliableDelta(currentFrame, deltaUpdateBuffer_);
             const unsigned endOffset = deltaUpdateBuffer_.Tell();
 
             needReliableDeltaUpdate_[i] = true;
             reliableDeltaUpdateData_[i] = {beginOffset, endOffset};
         }
 
-        const unsigned unreliableMask = networkObject->GetUnreliableDeltaMask(currentFrame);
-        if (unreliableMask)
+        if (networkObject->PrepareUnreliableDelta(currentFrame))
         {
             const unsigned beginOffset = deltaUpdateBuffer_.Tell();
-            networkObject->WriteUnreliableDelta(currentFrame, unreliableMask, deltaUpdateBuffer_);
+            networkObject->WriteUnreliableDelta(currentFrame, deltaUpdateBuffer_);
             const unsigned endOffset = deltaUpdateBuffer_.Tell();
 
             needUnreliableDeltaUpdate_[i] = true;

@@ -1,0 +1,121 @@
+//
+// Copyright (c) 2008-2020 the Urho3D project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
+/// \file
+
+#pragma once
+
+#include "../Core/Assert.h"
+#include "../Container/FlagSet.h"
+#include "../Replica/NetworkTime.h"
+
+#include <EASTL/optional.h>
+
+namespace Urho3D
+{
+
+class AbstractConnection;
+class Deserializer;
+class Serializer;
+
+/// Mask used to enable and disable network callbacks.
+/// Note that some callbacks are called unconditionally.
+enum class NetworkCallback
+{
+    None = 0,
+
+    /// Server callbacks
+    /// @{
+    IsRelevantForClient     = 1 << 0,
+    UpdateTransformOnServer = 1 << 1,
+    /// @}
+
+    /// Client callbacks
+    /// @{
+    PrepareToRemove         = 1 << 2,
+    InterpolateState        = 1 << 3,
+    /// @}
+
+    /// Common callbacks
+    /// @{
+    ReliableDelta           = 1 << 4,
+    UnreliableDelta         = 1 << 5,
+    UnreliableFeedback      = 1 << 6,
+    /// @}
+};
+URHO3D_FLAGSET(NetworkCallback, NetworkCallbackFlags);
+
+/// Server-side callbacks for NetworkObject and NetworkBehavior.
+/// ServerReplicator is guaranteed to be present.
+class ServerNetworkCallback
+{
+public:
+    /// Perform initialization. Called once.
+    virtual void InitializeOnServer() {}
+
+    /// Return whether the component should be replicated for specified client connection.
+    /// Component is replicated only if *all* behaviors confirm its relevance.
+    virtual bool IsRelevantForClient(AbstractConnection* connection) { return true; }
+    /// Called when transform of the object is dirtied.
+    virtual void UpdateTransformOnServer() {}
+
+    /// Write full snapshot.
+    virtual void WriteSnapshot(unsigned frame, Serializer& dest) {}
+
+    /// Prepare for reliable delta update and return update mask. If mask is zero, reliable delta update is skipped.
+    virtual bool PrepareReliableDelta(unsigned frame) { return false; }
+    /// Write reliable delta update. Delta is applied to previous delta or snapshot.
+    virtual void WriteReliableDelta(unsigned frame, Serializer& dest) {}
+    /// Prepare for unreliable delta update and return update mask. If mask is zero, unreliable delta update is skipped.
+    virtual bool PrepareUnreliableDelta(unsigned frame) { return false; }
+    /// Write unreliable delta update.
+    virtual void WriteUnreliableDelta(unsigned frame, Serializer& dest) {}
+
+    /// Read unreliable feedback from client.
+    virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) {}
+};
+
+/// Client-side callbacks for NetworkObject and NetworkBehavior.
+/// ClientReplica is guaranteed to be present.
+class ClientNetworkCallback
+{
+public:
+    /// Read full snapshot and initialize object. Called once.
+    virtual void InitializeFromSnapshot(unsigned frame, Deserializer& src) {}
+    /// This component is about to be removed by the authority of the server.
+    virtual void PrepareToRemove() {}
+
+    /// Interpolate replicated state.
+    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime) {}
+
+    /// Read reliable delta update. Delta is applied to previous reliable delta or snapshot message.
+    virtual void ReadReliableDelta(unsigned frame, Deserializer& src) {}
+    /// Read unreliable delta update.
+    virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src) {}
+
+    /// Prepare for unreliable feedback and return feedback mask. If mask is zero, unreliable feedback is skipped.
+    virtual bool PrepareUnreliableFeedback(unsigned frame) { return false; }
+    /// Write unreliable feedback from client.
+    virtual void WriteUnreliableFeedback(unsigned frame, Serializer& dest) {}
+};
+
+}

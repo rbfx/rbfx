@@ -38,7 +38,7 @@ namespace Urho3D
 {
 
 KinematicPlayerNetworkObject::KinematicPlayerNetworkObject(Context* context)
-    : NetworkBehavior(context)
+    : NetworkBehavior(context, CallbackMask)
 {
 }
 
@@ -89,7 +89,7 @@ void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame
     }
 }
 
-void KinematicPlayerNetworkObject::ReadSnapshot(unsigned frame, Deserializer& src)
+void KinematicPlayerNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src)
 {
     networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
@@ -108,29 +108,12 @@ void KinematicPlayerNetworkObject::ReadSnapshot(unsigned frame, Deserializer& sr
     }
 }
 
-void KinematicPlayerNetworkObject::InterpolateState(
-    const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame)
+bool KinematicPlayerNetworkObject::PrepareUnreliableFeedback(unsigned frame)
 {
-    // Do client-side predictions
-    if (kinematicController_ && GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned)
-    {
-        if (isNewInputFrame)
-        {
-            //const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
-            //kinematicController_->SetWalkDirection(velocity_ * timeStep);
-
-            //trackNextStepAsFrame_ = ea::make_pair(*isNewInputFrame, inputTime.GetFrame() - 1);
-        }
-        return;
-    }
+    return true;
 }
 
-unsigned KinematicPlayerNetworkObject::GetUnreliableFeedbackMask(unsigned frame)
-{
-    return 1;
-}
-
-void KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest)
+void KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
 {
     inputBuffer_.push_back(velocity_);
     if (inputBuffer_.size() >= 8)

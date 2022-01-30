@@ -28,6 +28,7 @@
 #include "../Container/FlagSet.h"
 #include "../Scene/Component.h"
 #include "../Network/AbstractConnection.h"
+#include "../Replica/NetworkCallbacks.h"
 #include "../Replica/NetworkManager.h"
 
 #include <EASTL/fixed_vector.h>
@@ -59,7 +60,10 @@ enum class NetworkObjectMode
 /// Don't create more than one NetworkObject per Node.
 ///
 /// Hierarchy is updated after NetworkObject node is dirtied.
-class URHO3D_API NetworkObject : public TrackedComponent<BaseStableTrackedComponent, NetworkManagerBase>
+class URHO3D_API NetworkObject
+    : public TrackedComponent<BaseStableTrackedComponent, NetworkManagerBase>
+    , public ServerNetworkCallback
+    , public ClientNetworkCallback
 {
     URHO3D_OBJECT(NetworkObject, Component);
 
@@ -89,49 +93,9 @@ public:
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 
-    /// Called on server side only. ServerReplicator is guaranteed to be available.
+    /// Implement ClientNetworkCallback.
     /// @{
-
-    /// Return whether the component should be replicated for specified client connection.
-    virtual bool IsRelevantForClient(AbstractConnection* connection);
-    /// Perform server-side initialization. Called once.
-    virtual void InitializeOnServer();
-    /// Called when transform of the object is dirtied.
-    virtual void UpdateTransformOnServer();
-    /// Write full snapshot on server.
-    virtual void WriteSnapshot(unsigned frame, Serializer& dest);
-    /// Return mask for reliable delta update. If mask is zero, write will be omitted.
-    /// TODO(network): Rename this shit!
-    virtual unsigned GetReliableDeltaMask(unsigned frame);
-    /// Write reliable delta update on server. Delta is applied to previous delta or snapshot message.
-    virtual void WriteReliableDelta(unsigned frame, unsigned mask, Serializer& dest);
-    /// Return mask for unreliable delta update. If mask is zero, write will be omitted.
-    virtual unsigned GetUnreliableDeltaMask(unsigned frame);
-    /// Write unreliable delta update on server.
-    virtual void WriteUnreliableDelta(unsigned frame, unsigned mask, Serializer& dest);
-    /// Read unreliable feedback from client.
-    virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src);
-
-    /// @}
-
-    /// Called on client side only. ClientReplica is guaranteed to be available and synchronized.
-    /// @{
-
-    /// Interpolate replicated state.
-    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime, bool isNewInputFrame);
-    /// Prepare to this compnent being removed by the authority of the server.
-    virtual void PrepareToRemove();
-    /// Read full snapshot.
-    virtual void ReadSnapshot(unsigned frame, Deserializer& src); // TODO(network): Rename to InitializeFromSnapshot?
-    /// Read reliable delta update. Delta is applied to previous reliable delta or snapshot message.
-    virtual void ReadReliableDelta(unsigned frame, Deserializer& src);
-    /// Read unreliable delta update.
-    virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src);
-    /// Return mask for unreliable feedback. If mask is zero, write will be omitted.
-    virtual unsigned GetUnreliableFeedbackMask(unsigned frame);
-    /// Write unreliable feedback from client.
-    virtual void WriteUnreliableFeedback(unsigned frame, unsigned mask, Serializer& dest);
-
+    void PrepareToRemove() override;
     /// @}
 
 protected:
