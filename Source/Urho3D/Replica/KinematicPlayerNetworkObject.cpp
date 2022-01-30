@@ -33,6 +33,7 @@
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
 #include "../Network/NetworkEvents.h"
+#include "../Replica/ReplicatedNetworkTransform.h"
 
 namespace Urho3D
 {
