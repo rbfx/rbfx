@@ -20,8 +20,9 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
+#include "../Span.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../UpdateContext.h"
 #include "RenderMeshInstance.h"
 
 #include "../../Graphics/StaticModel.h"

@@ -21,6 +21,9 @@
 // THE SOFTWARE.
 //
 
+#include "../Span.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../UpdateContext.h"
 #include "../../Precompiled.h"
 #include "Clamp.h"
 #include "ClampInstance.h"
