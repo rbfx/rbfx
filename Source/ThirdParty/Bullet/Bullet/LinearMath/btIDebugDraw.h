@@ -4,16 +4,14 @@ Copyright (c) 2003-2009 Erwin Coumans  http://bulletphysics.org
 
 This software is provided 'as-is', without any express or implied warranty.
 In no event will the authors be held liable for any damages arising from the use of this software.
-Permission is granted to anyone to use this software for any purpose, 
-including commercial applications, and to alter it and redistribute it freely, 
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it freely,
 subject to the following restrictions:
 
 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 */
-
-// Modified by Lasse Oorni for Urho3D
 
 #ifndef BT_IDEBUG_DRAW__H
 #define BT_IDEBUG_DRAW__H
@@ -23,7 +21,7 @@ subject to the following restrictions:
 
 ///The btIDebugDraw interface class allows hooking up a debug renderer to visually debug simulations.
 ///Typical use case: create a debug drawer object, and assign it to a btCollisionWorld or btDynamicsWorld using setDebugDrawer and call debugDrawWorld.
-///A class that implements the btIDebugDraw interface has to implement the drawLine method at a minimum.
+///A class that implements the btIDebugDraw interface will need to provide non-empty implementations of the the drawLine and getDebugMode methods at a minimum.
 ///For color arguments the X,Y,Z components refer to Red, Green and Blue each in the range [0..1]
 class btIDebugDraw
 {
@@ -75,8 +73,8 @@ public:
 
 	virtual ~btIDebugDraw(){};
 
-	// Urho3D: added function to test visibility of an AABB
-	virtual bool isVisible(const btVector3& aabbMin,const btVector3& aabbMax) = 0;
+    // Urho3D: added function to test visibility of an AABB
+    virtual bool isVisible(const btVector3& aabbMin, const btVector3& aabbMax) = 0;
 
 	virtual DefaultColors getDefaultColors() const
 	{

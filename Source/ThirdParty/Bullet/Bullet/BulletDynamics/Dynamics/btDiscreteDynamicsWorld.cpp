@@ -13,8 +13,6 @@ subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
-// Modified by Lasse Oorni for Urho3D
-
 #include "btDiscreteDynamicsWorld.h"
 
 //collision detection
@@ -429,19 +427,12 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 
 		saveKinematicState(fixedTimeStep * clampedSimulationSteps);
 
-		// Urho3D: commented out original
-		//applyGravity();
+		applyGravity();
 
 		for (int i = 0; i < clampedSimulationSteps; i++)
 		{
-			// Urho3D: apply gravity on each substep
-			applyGravity();
-
 			internalSingleStepSimulation(fixedTimeStep);
 			synchronizeMotionStates();
-
-			// Urho3D: clear forces on each substep
-			clearForces();
 		}
 	}
 	else

@@ -13,6 +13,8 @@ subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
+// Modified by Theophilus Eriata for the Engine Physics Subsystem.
+
 #ifndef BT_KINEMATIC_CHARACTER_CONTROLLER_H
 #define BT_KINEMATIC_CHARACTER_CONTROLLER_H
 
@@ -127,8 +129,8 @@ public:
 	///btActionInterface interface
 	void debugDraw(btIDebugDraw * debugDrawer);
 
-    // RBFX: Setting new collision shape
-    void setCollisionShape(btConvexShape* shape);
+    // Engine: Setting new collision shape
+    void setCollisionShape(btConvexShape * shape);
 
 	void setUp(const btVector3& up);
 

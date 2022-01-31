@@ -1,6 +1,6 @@
 /*
 Bullet Continuous Collision Detection and Physics Library
-Copyright (c) 2003-2006 Erwin Coumans  http://continuousphysics.com/Bullet/
+Copyright (c) 2003-2006 Erwin Coumans  https://bulletphysics.org
 
 This software is provided 'as-is', without any express or implied warranty.
 In no event will the authors be held liable for any damages arising from the use of this software.
@@ -13,8 +13,6 @@ subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 
 */
-
-// Modified by Lasse Oorni for Urho3D
 
 #include "BulletCollision/CollisionDispatch/btCompoundCollisionAlgorithm.h"
 #include "BulletCollision/CollisionDispatch/btCollisionObject.h"
@@ -236,10 +234,6 @@ void btCompoundCollisionAlgorithm::processCollision(const btCollisionObjectWrapp
 
 	btAssert(colObjWrap->getCollisionShape()->isCompound());
 	const btCompoundShape* compoundShape = static_cast<const btCompoundShape*>(colObjWrap->getCollisionShape());
-
-	// Urho3D: do not go further if compound does not have child shapes, to prevent assert
-	if (!compoundShape->getNumChildShapes())
-		return;
 
 	///btCompoundShape might have changed:
 	////make sure the internal child collision algorithm caches are still valid
