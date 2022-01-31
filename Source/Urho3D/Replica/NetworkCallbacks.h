@@ -105,7 +105,7 @@ public:
     virtual void PrepareToRemove() {}
 
     /// Interpolate replicated state.
-    virtual void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime) {}
+    virtual void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) {}
 
     /// Read reliable delta update. Delta is applied to previous reliable delta or snapshot message.
     virtual void ReadReliableDelta(unsigned frame, Deserializer& src) {}

@@ -163,8 +163,7 @@ void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType,
         const float timeStep = eventData[PhysicsPostUpdate::P_TIMESTEP].GetFloat();
         const float overtime = eventData[PhysicsPostUpdate::P_OVERTIME].GetFloat();
         const float updateFrequency = physicsWorld_->GetFps();
-        const float smoothConstant = 1.0f - Clamp(powf(2.0f, -timeStep * smoothingConstant_), 0.0f, 1.0f);
-        positionOffset_ = Lerp(positionOffset_, Vector3::ZERO, smoothConstant);
+        positionOffset_ = Lerp(positionOffset_, Vector3::ZERO, ExpSmoothing(smoothingConstant_, timeStep));
         latestPosition_ = Lerp(previousPosition_, nextPosition_, overtime * updateFrequency) + positionOffset_;
     }
     else

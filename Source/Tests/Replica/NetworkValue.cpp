@@ -27,21 +27,12 @@
 namespace Urho3D
 {
 
-using DynamicFloat = ea::pair<float, float>;
+using DynamicFloat = ValueWithDerivative<float>;
 
-template <>
-struct NetworkValueTraits<DynamicFloat>
+bool operator==(const ea::optional<DynamicFloat>& lhs, float rhs)
 {
-    static DynamicFloat Interpolate(const DynamicFloat& lhs, const DynamicFloat& rhs, float blendFactor)
-    {
-        return {Lerp(lhs.first, rhs.first, blendFactor), Lerp(lhs.second, rhs.second, blendFactor)};
-    }
-
-    static DynamicFloat Extrapolate(const DynamicFloat& value, float extrapolationFactor)
-    {
-        return DynamicFloat{value.first + value.second * extrapolationFactor, value.second};
-    }
-};
+    return lhs && lhs->value_ == rhs;
+}
 
 }
 
@@ -208,43 +199,59 @@ TEST_CASE("NetworkValue is updated and sampled")
 
 TEST_CASE("NetworkValue is repaired on demand")
 {
-    const unsigned maxExtrapolation = 3;
+    const unsigned maxExtrapolation = 10;
+    const float smoothing = 5.0f;
 
     NetworkValue<DynamicFloat> v;
     v.Resize(10);
     NetworkValueSampler<DynamicFloat> s;
+    s.Setup(maxExtrapolation, smoothing);
 
-    v.Set(5, {5000.0f, 0.0f});
+    // Interpolation is smooth when past frames are added
+    v.Set(5, {5000.0f, 1000.0f});
+    v.Set(7, {7000.0f, 1000.0f});
 
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{4, 0.0f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{4, 0.5f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{5, 0.0f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{5, 0.5f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{6, 0.0f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(4.0f), 0.5f) == 5000.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(4.5f), 0.5f) == 5000.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(5.0f), 0.5f) == 5000.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(5.5f), 0.5f) == 5500.0f);
 
-    v.Set(10, {10000.0f, 1000.0f});
+    v.Set(6, {6000.0f, 1000.0f});
 
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{8, 0.0f}, maxExtrapolation) == DynamicFloat{8000.0f, 600.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{8, 0.5f}, maxExtrapolation) == DynamicFloat{8500.0f, 700.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{9, 0.0f}, maxExtrapolation) == DynamicFloat{9000.0f, 800.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{9, 0.5f}, maxExtrapolation) == DynamicFloat{9500.0f, 900.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{10, 0.0f}, maxExtrapolation) == DynamicFloat{10000.0f, 1000.0f});
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(5.5f), 0.0f) == 5500.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(6.0f), 0.5f) == 6000.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(6.5f), 0.5f) == 6500.0f);
 
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{10, 0.5f}, maxExtrapolation) == DynamicFloat{10500.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{11, 0.0f}, maxExtrapolation) == DynamicFloat{11000.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{11, 0.5f}, maxExtrapolation) == DynamicFloat{11500.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{12, 0.0f}, maxExtrapolation) == DynamicFloat{12000.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{12, 0.5f}, maxExtrapolation) == DynamicFloat{12500.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{13, 0.0f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{13, 0.5f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{14, 0.0f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
+    // Extrapolation is smooth when past frames are added
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(7.0f), 0.5f) == 7000.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(7.5f), 0.5f) == 7500.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(8.0f), 0.5f) == 8000.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(8.5f), 0.5f) == 8500.0f);
 
-    v.Set(13, {13000.0f, 1000.0f});
+    v.Set(8, {8000.0f, 1000.0f});
 
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{14, 0.5f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{15, 0.0f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{15, 0.5f}, maxExtrapolation) == DynamicFloat{14500.0f, 1000.0f});
-    REQUIRE(s.ReconstructAndSample(v, NetworkTime{16, 0.0f}, maxExtrapolation) == DynamicFloat{16000.0f, 1000.0f});
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(8.5f), 0.0f) == 8500.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(9.0f), 0.5f) == 9000.0f);
+
+    // Extrapolation is smooth when unexpected past frames are added
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(11.0f), 2.0f) == 11000.0f);
+
+    v.Set(10, {10000.0f, 2000.0f});
+
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(11.0f), 0.0f) == 11000.0f);
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(11.5f), 0.5f).value_or(0.0f) == Catch::Approx(13000.0f).margin(200.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(12.0f), 0.5f).value_or(0.0f) == Catch::Approx(14000.0f).margin(40.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(12.5f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(6.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(13.0f), 0.5f).value_or(0.0f) == Catch::Approx(16000.0f).margin(1.0f));
+
+    // Transition from extrapolation to interpolation is smooth
+    v.Set(15, {15000.0f, 1000.0f});
+
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(13.0f), 0.0f).value_or(0.0f) == Catch::Approx(16000.0f).margin(1.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(13.5f), 0.5f).value_or(0.0f) == Catch::Approx(13500.0f).margin(600.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(14.0f), 0.5f).value_or(0.0f) == Catch::Approx(14000.0f).margin(100.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(14.5f), 0.5f).value_or(0.0f) == Catch::Approx(14500.0f).margin(20.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(15.0f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(3.0f));
 }
 
 TEST_CASE("NetworkValueVector is updated and sampled")
