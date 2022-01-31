@@ -216,8 +216,8 @@ TEST_CASE("Graph serialization roundtrip")
     track.Commit();
     nodeC->GetOrAddProperty("spline") = track;
 
-    auto& out = nodeA->GetOrAddOutput("out");
-    auto& enter = nodeC->GetOrAddEnter("enter");
+    auto out = nodeA->GetOrAddOutput("out");
+    auto enter = nodeC->GetOrAddEnter("enter");
 
     CHECK(nodeB->GetOrAddInput("in").GetPin()->ConnectTo(out));
     nodeB->GetOrAddOutput("out");
