@@ -512,7 +512,8 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     auto serverTransformB = serverNodeB->GetComponent<ReplicatedNetworkTransform>();
 
     // Animate objects forever
-    serverScene->SubscribeToEvent(serverScene, E_SCENEUPDATE, [&](StringHash, VariantMap& eventData)
+    serverScene->SubscribeToEvent(serverScene, E_SCENEUPDATE,
+        [&](StringHash, VariantMap& eventData)
     {
         const float timeStep = eventData[SceneUpdate::P_TIMESTEP].GetFloat();
         serverNodeA->Translate(timeStep * moveSpeedNodeA * Vector3::LEFT, TS_PARENT);

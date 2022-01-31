@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Network/NetworkEvents.h"
 #include "../Replica/ReplicatedNetworkTransform.h"
 #include "../Replica/NetworkSettingsConsts.h"
 
@@ -51,8 +52,19 @@ void ReplicatedNetworkTransform::InitializeOnServer()
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
 
-    worldPositionTrace_.Resize(traceDuration);
-    worldRotationTrace_.Resize(traceDuration);
+    positionTrace_.Resize(traceDuration);
+    rotationTrace_.Resize(traceDuration);
+
+    server_.previousPosition_ = node_->GetWorldPosition();
+    server_.previousRotation_ = node_->GetWorldRotation();
+
+    SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
+        [this](StringHash, VariantMap& eventData)
+    {
+        using namespace BeginServerNetworkFrame;
+        const unsigned serverFrame = eventData[P_FRAME].GetUInt();
+        OnServerFrameEnd(serverFrame);
+    });
 }
 
 void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src)
@@ -60,13 +72,28 @@ void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserial
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
 
-    worldPositionTrace_.Resize(traceDuration);
-    worldRotationTrace_.Resize(traceDuration);
+    positionTrace_.Resize(traceDuration);
+    rotationTrace_.Resize(traceDuration);
 }
 
 void ReplicatedNetworkTransform::UpdateTransformOnServer()
 {
-    pendingUploadAttempts_ = NumUploadAttempts;
+    server_.pendingUploadAttempts_ = NumUploadAttempts;
+}
+
+void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
+{
+    server_.previousPosition_ = server_.position_;
+    server_.previousRotation_ = server_.rotation_;
+
+    server_.position_ = node_->GetWorldPosition();
+    server_.rotation_ = node_->GetWorldRotation();
+
+    server_.velocity_ = (server_.position_ - server_.previousPosition_);
+    server_.angularVelocity_ = (server_.rotation_ * server_.previousRotation_.Inverse()).AngularVelocity();
+
+    positionTrace_.Set(frame, {server_.position_, server_.velocity_});
+    rotationTrace_.Set(frame, server_.rotation_);
 }
 
 void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime)
@@ -79,20 +106,18 @@ void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime
     const float extrapolationInSeconds = replicationManager->GetSetting(NetworkSettings::ExtrapolationDuration).GetFloat();
     const unsigned extrapolationInFrames = CeilToInt(extrapolationInSeconds * updateFrequency);
 
-    if (auto newWorldPosition = worldPositionTrace_.ReconstructAndSample(replicaTime, {extrapolationInFrames}))
-        node_->SetWorldPosition(*newWorldPosition);
+    if (auto value = client_.positionSampler_.ReconstructAndSample(positionTrace_, replicaTime, extrapolationInFrames))
+        node_->SetWorldPosition(value->position_);
 
-    if (auto newWorldRotation = worldRotationTrace_.ReconstructAndSample(replicaTime, {extrapolationInFrames}))
+    if (auto newWorldRotation = client_.rotationSampler_.ReconstructAndSample(rotationTrace_, replicaTime, extrapolationInFrames))
         node_->SetWorldRotation(*newWorldRotation);
 }
 
 bool ReplicatedNetworkTransform::PrepareUnreliableDelta(unsigned frame)
 {
-    worldPositionTrace_.Set(frame, node_->GetWorldPosition());
-    worldRotationTrace_.Set(frame, node_->GetWorldRotation());
-    if (pendingUploadAttempts_ > 0)
+    if (server_.pendingUploadAttempts_ > 0)
     {
-        --pendingUploadAttempts_;
+        --server_.pendingUploadAttempts_;
         return true;
     }
     return false;
@@ -100,14 +125,42 @@ bool ReplicatedNetworkTransform::PrepareUnreliableDelta(unsigned frame)
 
 void ReplicatedNetworkTransform::WriteUnreliableDelta(unsigned frame, Serializer& dest)
 {
-    dest.WriteVector3(node_->GetWorldPosition());
-    dest.WriteQuaternion(node_->GetWorldRotation());
+    dest.WriteVector3(server_.position_);
+    dest.WriteVector3(server_.velocity_);
+    dest.WriteQuaternion(server_.rotation_);
 }
 
 void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserializer& src)
 {
-    worldPositionTrace_.Set(frame, src.ReadVector3());
-    worldRotationTrace_.Set(frame, src.ReadQuaternion());
+    const Vector3 position = src.ReadVector3();
+    const Vector3 velocity = src.ReadVector3();
+    const Quaternion rotation = src.ReadQuaternion();
+
+    positionTrace_.Set(frame, {position, velocity});
+    rotationTrace_.Set(frame, rotation);
+}
+
+Vector3 ReplicatedNetworkTransform::GetTemporalWorldPosition(const NetworkTime& time) const
+{
+    return positionTrace_.SampleValid(time).position_;
+}
+
+Quaternion ReplicatedNetworkTransform::GetTemporalWorldRotation(const NetworkTime& time) const
+{
+    return rotationTrace_.SampleValid(time);
+}
+
+ea::optional<Vector3> ReplicatedNetworkTransform::GetRawTemporalWorldPosition(unsigned frame) const
+{
+    const auto pav = positionTrace_.GetRaw(frame);
+    if (!pav)
+        return ea::nullopt;
+    return pav->position_;
+}
+
+ea::optional<Quaternion> ReplicatedNetworkTransform::GetRawTemporalWorldRotation(unsigned frame) const
+{
+    return rotationTrace_.GetRaw(frame);
 }
 
 }

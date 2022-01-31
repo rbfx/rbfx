@@ -134,6 +134,9 @@ public:
         FromRotationMatrix(matrix);
     }
 
+    /// Construct from angular velocity assuming unit time.
+    static Quaternion FromAngularVelocity(const Vector3& angularVelocity);
+
 #ifdef URHO3D_SSE
     explicit Quaternion(__m128 wxyz) noexcept
     {
@@ -450,6 +453,8 @@ public:
     /// Return rotation angle.
     /// @property
     float Angle() const;
+    /// Return angular velocity assuming unit time.
+    Vector3 AngularVelocity() const;
     /// Return the rotation matrix that corresponds to this quaternion.
     /// @property
     Matrix3 RotationMatrix() const;

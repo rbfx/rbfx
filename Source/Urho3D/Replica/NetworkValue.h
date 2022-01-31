@@ -42,10 +42,7 @@ struct NetworkValueTraits
 {
     static T Interpolate(const T& lhs, const T& rhs, float blendFactor) { return Lerp(lhs, rhs, blendFactor); }
 
-    static T Extrapolate(const T& first, const T& second, float extrapolationFactor)
-    {
-        return static_cast<T>(second + (second - first) * extrapolationFactor);
-    }
+    static T Extrapolate(const T& value, float extrapolationFactor) { return value; }
 };
 
 template <>
@@ -56,25 +53,7 @@ struct NetworkValueTraits<Quaternion>
         return lhs.Slerp(rhs, blendFactor);
     }
 
-    static Quaternion Extrapolate(const Quaternion& first, const Quaternion& second, float extrapolationFactor)
-    {
-        const Quaternion delta = second * first.Inverse();
-        const Quaternion scaledDelta{delta.Angle() * extrapolationFactor, delta.Axis()};
-        return scaledDelta * second;
-    }
-};
-
-/// Extrapolation settings for NetworkValue and NetworkValueVector.
-struct NetworkValueExtrapolationSettings
-{
-    /// Max number of frames beyond valid frame that can be extrapolated.
-    /// 0 disables extrapolation completely.
-    unsigned maxDistance_{};
-    /// Max number of frames that may affect extrapolation. Frames beyond this range are ignored.
-    unsigned maxLookback_{16};
-    /// Min number of frames required for extrapolation. If there are not enough frames, no extrapolation happens.
-    /// Should be at least 2.
-    unsigned minFrames_{2};
+    static Quaternion Extrapolate(const Quaternion& value, float extrapolationFactor) { return value; }
 };
 
 /// Base class for NetworkValue and NetworkValueVector.
@@ -236,7 +215,7 @@ public:
         return lastFrame_;
     }
 
-    FrameReconstructionBase FindReconstructionBase(unsigned frame, const NetworkValueExtrapolationSettings& settings) const
+    FrameReconstructionBase FindReconstructionBase(unsigned frame) const
     {
         const auto frameBefore = FindClosestAllocatedFrame(frame, true, false);
         const auto frameAfter = FindClosestAllocatedFrame(frame, false, true);
@@ -261,11 +240,8 @@ public:
         if (!frameBefore)
             return {FrameReconstructionMode::None, *frameAfter, *frameAfter};
 
-        // Find extrapolation range
-        const unsigned firstCheckedFrame = MaxFrame(GetFirstFrame(), *frameBefore - settings.maxLookback_);
-        const auto firstValidFrame = FindClosestAllocatedFrame(firstCheckedFrame, false, true);
-        URHO3D_ASSERT(*firstValidFrame && !IsFrameGreaterThan(*firstValidFrame, *frameBefore));
-        return {FrameReconstructionMode::Extrapolate, *firstValidFrame, *frameBefore};
+        // Extrapolate from prior frame
+        return {FrameReconstructionMode::Extrapolate, *frameBefore, *frameBefore};
     }
 
     InterpolationBase GetValidFrameInterpolation(const NetworkTime& time) const
@@ -315,11 +291,9 @@ public:
         return maxOffset >= 0 ? Clamp(static_cast<float>(valueOffset) / maxOffset, 0.0f, 1.0f) : 0.0f;
     }
 
-    static float GetFrameExtrapolationFactor(
-        unsigned lhs, unsigned rhs, unsigned value, const NetworkValueExtrapolationSettings& settings)
+    static float GetFrameExtrapolationFactor(unsigned baseFrame, unsigned extrapolatedFrame, unsigned maxExtrapolation)
     {
-        const unsigned extrapolationDistance = ea::min(value - rhs, settings.maxDistance_);
-        return static_cast<float>(extrapolationDistance) / (rhs - lhs);
+        return static_cast<float>(ea::min(extrapolatedFrame - baseFrame, maxExtrapolation));
     }
 
 private:
@@ -337,6 +311,8 @@ template <class T, class Traits = NetworkValueTraits<T>>
 class NetworkValue : private NetworkValueBase
 {
 public:
+    using NetworkValueBase::IsInitialized;
+
     NetworkValue() = default;
     explicit NetworkValue(const Traits& traits)
         : Traits(traits)
@@ -376,8 +352,7 @@ public:
         return values_[FrameToIndexUnchecked(closestFrame)];
     }
 
-    /// Server-side sampling: interpolate between consequent frames
-    /// or return value of the closest valid frame.
+    /// Interpolate between two frames or return value of the closest valid frame.
     T SampleValid(const NetworkTime& time) const
     {
         const InterpolationBase interpolation = GetValidFrameInterpolation(time);
@@ -391,35 +366,10 @@ public:
 
     T SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
 
-    /// Client-side sampling: sample value reconstructing missing values.
-    ea::optional<T> ReconstructAndSample(const NetworkTime& time, const NetworkValueExtrapolationSettings& settings = {})
+    /// Interpolate between two frames or extrapolate for the latest frame without any filtering.
+    T CalculateReconstructedValue(unsigned frame, unsigned maxExtrapolation) const
     {
-        if (!IsInitialized())
-            return ea::nullopt;
-
-        const unsigned frame = time.GetFrame();
-
-        if (!reconstruct_ || reconstruct_->frame_ != frame)
-        {
-            if (!reconstruct_)
-                reconstruct_ = ReconstructCache{frame};
-
-            if (reconstruct_->frame_ + 1 == frame)
-                reconstruct_->values_[0] = reconstruct_->values_[1];
-            else
-                reconstruct_->values_[0] = CalculateReconstructedValue(frame, settings);
-
-            reconstruct_->values_[1] = CalculateReconstructedValue(frame + 1, settings);
-            reconstruct_->frame_ = frame;
-        }
-
-        return Traits::Interpolate(reconstruct_->values_[0], reconstruct_->values_[1], time.GetSubFrame());
-    }
-
-private:
-    T CalculateReconstructedValue(unsigned frame, const NetworkValueExtrapolationSettings& settings)
-    {
-        const FrameReconstructionBase base = FindReconstructionBase(frame, settings);
+        const FrameReconstructionBase base = FindReconstructionBase(frame);
         const T lastValue = values_[FrameToIndexUnchecked(base.lastFrame_)];
         switch (base.mode_)
         {
@@ -432,22 +382,12 @@ private:
 
         case FrameReconstructionMode::Extrapolate:
         {
-            CollectAllocatedFrames(base.firstFrame_, base.lastFrame_, extrapolationFrames_);
-
-            // Skip extrapolation if not enough data
-            const unsigned numFrames = extrapolationFrames_.size();
-            if (numFrames < settings.minFrames_)
+            // Skip extrapolation if unwanted
+            if (maxExtrapolation == 0)
                 return lastValue;
 
-            // Disable extrapolation immediately if static point detected.
-            const unsigned beforeLastFrame = extrapolationFrames_[numFrames - 2];
-            const T beforeLastValue = values_[FrameToIndexUnchecked(beforeLastFrame)];
-            if (beforeLastValue == lastValue)
-                return lastValue;
-
-            // TODO: Add linear regression?
-            const float factor = GetFrameExtrapolationFactor(beforeLastFrame, base.lastFrame_, frame, settings);
-            return Traits::Extrapolate(beforeLastValue, lastValue, factor);
+            const float factor = GetFrameExtrapolationFactor(base.lastFrame_, frame, maxExtrapolation);
+            return Traits::Extrapolate(lastValue, factor);
         }
 
         case FrameReconstructionMode::None:
@@ -456,16 +396,48 @@ private:
         }
     }
 
+private:
+    ea::vector<T> values_;
+};
+
+/// Helper class that manages continuous sampling of NetworkValue on the client side.
+template <class T, class Traits = NetworkValueTraits<T>>
+class NetworkValueSampler
+{
+public:
+    /// Client-side sampling: sample value reconstructing missing values.
+    ea::optional<T> ReconstructAndSample(const NetworkValue<T, Traits>& value, const NetworkTime& time, unsigned maxExtrapolation = 0)
+    {
+        if (!value.IsInitialized())
+            return ea::nullopt;
+
+        const unsigned frame = time.GetFrame();
+
+        if (!reconstruct_ || reconstruct_->frame_ != frame)
+        {
+            if (!reconstruct_)
+                reconstruct_ = ReconstructCache{frame};
+
+            if (reconstruct_->frame_ + 1 == frame)
+                reconstruct_->values_[0] = reconstruct_->values_[1];
+            else
+                reconstruct_->values_[0] = value.CalculateReconstructedValue(frame, maxExtrapolation);
+
+            reconstruct_->values_[1] = value.CalculateReconstructedValue(frame + 1, maxExtrapolation);
+            reconstruct_->frame_ = frame;
+        }
+
+        return Traits::Interpolate(reconstruct_->values_[0], reconstruct_->values_[1], time.GetSubFrame());
+    }
+
+private:
     struct ReconstructCache
     {
         unsigned frame_{};
         ea::array<T, 2> values_;
     };
 
-    ea::vector<T> values_;
     ea::optional<ReconstructCache> reconstruct_;
-
-    ea::vector<unsigned> extrapolationFrames_;
 };
 
 /// Helper class to interpolate value spans.

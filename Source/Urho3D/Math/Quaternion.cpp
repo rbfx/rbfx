@@ -175,6 +175,18 @@ bool Quaternion::FromLookRotation(const Vector3& direction, const Vector3& up)
         return false;
 }
 
+Quaternion Quaternion::FromAngularVelocity(const Vector3& angularVelocity)
+{
+    const float len2 = angularVelocity.LengthSquared();
+    if (len2 < M_EPSILON * M_EPSILON)
+        return Quaternion::IDENTITY;
+
+    const float len = sqrtf(len2);
+    const Vector3 direction = angularVelocity / len;
+    const float angle = len * M_RADTODEG;
+    return Quaternion{angle, direction};
+}
+
 Vector3 Quaternion::EulerAngles() const
 {
     // Derivation from http://www.geometrictools.com/Documentation/EulerAngles.pdf
@@ -233,6 +245,17 @@ Urho3D::Vector3 Quaternion::Axis() const
 float Quaternion::Angle() const
 {
     return 2 * Acos(w_);
+}
+
+Vector3 Quaternion::AngularVelocity() const
+{
+    const float invW = sqrt(1. - w_ * w_);
+    if (invW < M_EPSILON)
+        return Vector3::ZERO;
+
+    const Vector3 axis = Vector3(x_, y_, z_) / invW;
+    const float angleRad = 2 * acos(w_);
+    return axis * angleRad;
 }
 
 Matrix3 Quaternion::RotationMatrix() const

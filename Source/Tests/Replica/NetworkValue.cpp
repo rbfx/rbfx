@@ -24,6 +24,27 @@
 
 #include <Urho3D/Replica/NetworkValue.h>
 
+namespace Urho3D
+{
+
+using DynamicFloat = ea::pair<float, float>;
+
+template <>
+struct NetworkValueTraits<DynamicFloat>
+{
+    static DynamicFloat Interpolate(const DynamicFloat& lhs, const DynamicFloat& rhs, float blendFactor)
+    {
+        return {Lerp(lhs.first, rhs.first, blendFactor), Lerp(lhs.second, rhs.second, blendFactor)};
+    }
+
+    static DynamicFloat Extrapolate(const DynamicFloat& value, float extrapolationFactor)
+    {
+        return DynamicFloat{value.first + value.second * extrapolationFactor, value.second};
+    }
+};
+
+}
+
 namespace
 {
 
@@ -187,42 +208,43 @@ TEST_CASE("NetworkValue is updated and sampled")
 
 TEST_CASE("NetworkValue is repaired on demand")
 {
-    NetworkValueExtrapolationSettings settings{3};
+    const unsigned maxExtrapolation = 3;
 
-    NetworkValue<float> v;
+    NetworkValue<DynamicFloat> v;
     v.Resize(10);
+    NetworkValueSampler<DynamicFloat> s;
 
-    v.Set(5, 5000.0f);
+    v.Set(5, {5000.0f, 0.0f});
 
-    REQUIRE(v.ReconstructAndSample(NetworkTime{4, 0.0f}, settings) == 5000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{4, 0.5f}, settings) == 5000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{5, 0.0f}, settings) == 5000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{5, 0.5f}, settings) == 5000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{6, 0.0f}, settings) == 5000.0f);
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{4, 0.0f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{4, 0.5f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{5, 0.0f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{5, 0.5f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{6, 0.0f}, maxExtrapolation) == DynamicFloat{5000.0f, 0.0f});
 
-    v.Set(10, 10000.0f);
+    v.Set(10, {10000.0f, 1000.0f});
 
-    REQUIRE(v.ReconstructAndSample(NetworkTime{8, 0.0f}, settings) == 8000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{8, 0.5f}, settings) == 8500.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{9, 0.0f}, settings) == 9000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{9, 0.5f}, settings) == 9500.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{10, 0.0f}, settings) == 10000.0f);
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{8, 0.0f}, maxExtrapolation) == DynamicFloat{8000.0f, 600.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{8, 0.5f}, maxExtrapolation) == DynamicFloat{8500.0f, 700.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{9, 0.0f}, maxExtrapolation) == DynamicFloat{9000.0f, 800.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{9, 0.5f}, maxExtrapolation) == DynamicFloat{9500.0f, 900.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{10, 0.0f}, maxExtrapolation) == DynamicFloat{10000.0f, 1000.0f});
 
-    REQUIRE(v.ReconstructAndSample(NetworkTime{10, 0.5f}, settings) == 10500.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{11, 0.0f}, settings) == 11000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{11, 0.5f}, settings) == 11500.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{12, 0.0f}, settings) == 12000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{12, 0.5f}, settings) == 12500.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{13, 0.0f}, settings) == 13000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{13, 0.5f}, settings) == 13000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{14, 0.0f}, settings) == 13000.0f);
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{10, 0.5f}, maxExtrapolation) == DynamicFloat{10500.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{11, 0.0f}, maxExtrapolation) == DynamicFloat{11000.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{11, 0.5f}, maxExtrapolation) == DynamicFloat{11500.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{12, 0.0f}, maxExtrapolation) == DynamicFloat{12000.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{12, 0.5f}, maxExtrapolation) == DynamicFloat{12500.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{13, 0.0f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{13, 0.5f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{14, 0.0f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
 
-    v.Set(13, 13000.0f);
+    v.Set(13, {13000.0f, 1000.0f});
 
-    REQUIRE(v.ReconstructAndSample(NetworkTime{14, 0.5f}, settings) == 13000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{15, 0.0f}, settings) == 13000.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{15, 0.5f}, settings) == 14500.0f);
-    REQUIRE(v.ReconstructAndSample(NetworkTime{16, 0.0f}, settings) == 16000.0f);
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{14, 0.5f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{15, 0.0f}, maxExtrapolation) == DynamicFloat{13000.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{15, 0.5f}, maxExtrapolation) == DynamicFloat{14500.0f, 1000.0f});
+    REQUIRE(s.ReconstructAndSample(v, NetworkTime{16, 0.0f}, maxExtrapolation) == DynamicFloat{16000.0f, 1000.0f});
 }
 
 TEST_CASE("NetworkValueVector is updated and sampled")

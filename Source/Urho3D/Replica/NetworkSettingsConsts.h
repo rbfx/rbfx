@@ -64,6 +64,14 @@ URHO3D_NETWORK_SETTING(ConnectionId, unsigned, 0);
 
 /// @}
 
+/// Common properties between client and server.
+/// @{
+
+/// Maximum allowed delay between server time and replica time. Client must extrapolate if its delay is bigger.
+URHO3D_NETWORK_SETTING(InterpolationLimit, float, 0.3f);
+
+/// @}
+
 /// Server-only properties ignored by the client.
 /// @{
 
