@@ -20,6 +20,9 @@
 // THE SOFTWARE.
 //
 
+#include "Span.h"
+#include "ParticleGraphLayerInstance.h"
+#include "UpdateContext.h"
 #include "Helpers.h"
 #include "ParticleGraphSystem.h"
 #include "PatternMatchingNode.h"

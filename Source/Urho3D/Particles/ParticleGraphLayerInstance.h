@@ -203,22 +203,4 @@ template <typename ValueType> ea::span<ValueType> ParticleGraphLayerInstance::Ge
     return attr.MakeSpan<ValueType>(temp_);
 }
 
-template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == ParticleGraphContainerType::Span);
-    return layer_->GetSpan<ValueType>(pin.index_);
-}
-
-template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == ParticleGraphContainerType::Scalar);
-    return layer_->GetScalar<ValueType>(pin.index_);
-}
-
-template <typename ValueType> SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == ParticleGraphContainerType::Sparse);
-    return layer_->GetSparse<ValueType>(pin.index_, indices_);
-}
-
 } // namespace Urho3D

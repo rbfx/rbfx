@@ -20,10 +20,12 @@
 // THE SOFTWARE.
 //
 
+#include "../Span.h"
+#include "../ParticleGraphLayerInstance.h"
+#include "../UpdateContext.h"
 #include "Uniform.h"
 
 #include "../Helpers.h"
-#include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
 
 namespace Urho3D

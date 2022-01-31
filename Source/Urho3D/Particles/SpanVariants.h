@@ -1,6 +1,5 @@
-
 //
-// Copyright (c) 2021-2022 the rbfx project.
+// Copyright (c) 2021 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,45 +20,28 @@
 // THE SOFTWARE.
 //
 
-#include "../Span.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../UpdateContext.h"
-#include "../../Precompiled.h"
-#include "EffectTime.h"
-#include "EffectTimeInstance.h"
-#include "../ParticleGraphSystem.h"
+#pragma once
+
+#include "ParticleGraphPin.h"
+#include "UpdateContext.h"
 
 namespace Urho3D
 {
-namespace ParticleGraphNodes
+
+template <typename T> SpanVariant<T>::SpanVariant(UpdateContext& context, ParticleGraphPinRef& pinRef)
 {
-void EffectTime::RegisterObject(ParticleGraphSystem* context)
-{
-    context->AddReflection<EffectTime>();
+    type_ = pinRef.type_;
+    if (type_ == ParticleGraphContainerType::Sparse)
+    {
+        data_ = context.layer_->GetAttributeValues<T>(pinRef.index_).data_;
+        indices_ = context.indices_.data();
+    }
+    else
+    {
+        const auto tempLocation = context.layer_->GetLayer()->GetIntermediateValues()[pinRef.index_];
+        data_ = reinterpret_cast<T*>(context.tempBuffer_.data() + tempLocation.offset_);
+        indices_ = nullptr;
+    }
 }
 
-
-EffectTime::EffectTime(Context* context)
-    : BaseNodeType(context
-    , PinArray {
-        ParticleGraphPin(ParticleGraphPinFlag::Output, "out", ParticleGraphContainerType::Scalar),
-    })
-{
-}
-
-/// Evaluate size required to place new node instance.
-unsigned EffectTime::EvaluateInstanceSize() const
-{
-    return sizeof(EffectTimeInstance);
-}
-
-/// Place new instance at the provided address.
-ParticleGraphNodeInstance* EffectTime::CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer)
-{
-    EffectTimeInstance* instance = new (ptr) EffectTimeInstance();
-    instance->Init(this, layer);
-    return instance;
-}
-
-} // namespace ParticleGraphNodes
 } // namespace Urho3D
