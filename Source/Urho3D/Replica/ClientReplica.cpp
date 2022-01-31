@@ -54,7 +54,7 @@ ClientReplicaClock::ClientReplicaClock(Scene* scene, AbstractConnection* connect
     , physicsSync_(scene_, updateFrequency_, false)
 {
     UpdateServerTime(initialClock, false);
-    replicaTime_.Reset(ToClientTime(serverTime_));
+    replicaTime_.Reset(ToReplicaTime(serverTime_));
     inputTime_.Reset(ToInputTime(serverTime_));
     latestScaledInputTime_ = replicaTime_.Get();
 }
@@ -69,7 +69,7 @@ float ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<Ms
     for (const MsgSceneClock& msg : pendingClockUpdates)
         UpdateServerTime(msg, true);
 
-    replicaTime_.Update(timeStep, ToClientTime(serverTime_));
+    replicaTime_.Update(timeStep, ToReplicaTime(serverTime_));
 
     const NetworkTime previousInputTime = inputTime_.Get();
     const float scaledTimeStep = inputTime_.Update(timeStep, ToInputTime(serverTime_));
@@ -114,10 +114,11 @@ void ClientReplicaClock::UpdateServerTime(const MsgSceneClock& msg, bool skipOut
     serverTime_ += SecondsToFrames(offsetMs * 0.001);
 }
 
-NetworkTime ClientReplicaClock::ToClientTime(const NetworkTime& serverTime) const
+NetworkTime ClientReplicaClock::ToReplicaTime(const NetworkTime& serverTime) const
 {
     const double interpolationDelay = GetSetting(NetworkSettings::InterpolationDelay).GetDouble();
-    const double clientDelay = interpolationDelay + connection_->GetPing() * 0.001;
+    const double interpolationLimit = GetSetting(NetworkSettings::InterpolationLimit).GetDouble();
+    const double clientDelay = ea::min(interpolationLimit, interpolationDelay + connection_->GetPing() * 0.001);
     return serverTime - SecondsToFrames(clientDelay);
 }
 

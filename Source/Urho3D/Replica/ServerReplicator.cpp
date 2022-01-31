@@ -624,6 +624,11 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
 
 void ServerReplicator::OnNetworkUpdate()
 {
+    using namespace EndServerNetworkFrame;
+    auto& eventData = GetEventDataMap();
+    eventData[P_FRAME] = currentFrame_;
+    network_->SendEvent(E_ENDSERVERNETWORKFRAME, eventData);
+
     sharedState_->PrepareForUpdate();
     for (auto& [connection, data] : connections_)
         data->UpdateNetworkObjects(*sharedState_);

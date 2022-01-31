@@ -100,6 +100,12 @@ URHO3D_EVENT(E_BEGINCLIENTNETWORKFRAME, BeginClientNetworkFrame)
     URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
 }
 
+/// End the frame of network update on the server. Happens right before sending user messages.
+URHO3D_EVENT(E_ENDSERVERNETWORKFRAME, EndServerNetworkFrame)
+{
+    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
+}
+
 /// About to send network update on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
 {

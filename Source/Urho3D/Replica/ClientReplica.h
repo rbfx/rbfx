@@ -92,7 +92,7 @@ private:
     SoftNetworkTime InitializeSoftTime() const;
     void UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated);
 
-    NetworkTime ToClientTime(const NetworkTime& serverTime) const;
+    NetworkTime ToReplicaTime(const NetworkTime& serverTime) const;
     NetworkTime ToInputTime(const NetworkTime& serverTime) const;
 
     const VariantMap serverSettings_;

@@ -30,6 +30,36 @@
 namespace Urho3D
 {
 
+/// Position-velocity pair, can be used to interpolate and extrapolate object position.
+struct PositionAndVelocity
+{
+    Vector3 position_;
+    Vector3 velocity_;
+};
+
+template <>
+struct NetworkValueTraits<PositionAndVelocity>
+{
+    static PositionAndVelocity Interpolate(const PositionAndVelocity& lhs, const PositionAndVelocity& rhs, float blendFactor)
+    {
+        const Vector3 newPosition = Lerp(lhs.position_, rhs.position_, blendFactor);
+        const Vector3 newVelocity = Lerp(lhs.velocity_, rhs.velocity_, blendFactor);
+        return {newPosition, newVelocity};
+    }
+
+    static PositionAndVelocity Extrapolate(const PositionAndVelocity& value, float extrapolationFactor)
+    {
+        return PositionAndVelocity{value.position_ + value.velocity_ * extrapolationFactor, value.velocity_};
+    }
+};
+
+/// Rotation-velocity pair, can be used to interpolate and extrapolate object rotation.
+struct RotationAndVelocity
+{
+    Quaternion rotation_;
+    Vector3 angularVelocity_;
+};
+
 /// Behavior that replicates transform of the node.
 class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
 {
@@ -63,19 +93,38 @@ public:
 
     /// Getters for network properties
     /// @{
-    Vector3 GetTemporalWorldPosition(const NetworkTime& time) const { return worldPositionTrace_.SampleValid(time); }
-    Quaternion GetTemporalWorldRotation(const NetworkTime& time) const { return worldRotationTrace_.SampleValid(time); }
-    ea::optional<Vector3> GetRawTemporalWorldPosition(unsigned frame) const { return worldPositionTrace_.GetRaw(frame); }
-    ea::optional<Quaternion> GetRawTemporalWorldRotation(unsigned frame) const { return worldRotationTrace_.GetRaw(frame); }
+    Vector3 GetTemporalWorldPosition(const NetworkTime& time) const;
+    Quaternion GetTemporalWorldRotation(const NetworkTime& time) const;
+    ea::optional<Vector3> GetRawTemporalWorldPosition(unsigned frame) const;
+    ea::optional<Quaternion> GetRawTemporalWorldRotation(unsigned frame) const;
     /// @}
 
 private:
+    void OnServerFrameEnd(unsigned frame);
+
     bool trackOnly_{};
 
-    unsigned pendingUploadAttempts_{};
+    NetworkValue<PositionAndVelocity> positionTrace_;
+    NetworkValue<Quaternion> rotationTrace_;
 
-    NetworkValue<Vector3> worldPositionTrace_;
-    NetworkValue<Quaternion> worldRotationTrace_;
+    struct ServerData
+    {
+        unsigned pendingUploadAttempts_{};
+
+        Vector3 previousPosition_;
+        Quaternion previousRotation_;
+
+        Vector3 position_;
+        Quaternion rotation_;
+        Vector3 velocity_;
+        Vector3 angularVelocity_;
+    } server_;
+
+    struct ClientData
+    {
+        NetworkValueSampler<PositionAndVelocity> positionSampler_;
+        NetworkValueSampler<Quaternion> rotationSampler_;
+    } client_;
 };
 
 };
