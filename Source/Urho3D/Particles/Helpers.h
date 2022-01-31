@@ -130,8 +130,11 @@ template <typename Instance, typename... Values>
 void RunUpdate(UpdateContext& context, Instance& instance, ParticleGraphPinRef* pinRefs)
 {
     auto spans = SpanVariantTuple<Values...>::Make(context, pinRefs);
-    RunUpdate<Instance, decltype(spans), ea::tuple<>, Values...>(
-        context, instance, true, spans, ea::tuple<>());
+    // Slow but small version:
+    ea::apply(instance, ea::tuple_cat(ea::tie(context), ea::make_tuple(static_cast<unsigned>(context.indices_.size())), spans));
+
+    // Fast but compiler memory consuming version:
+    //RunUpdate<Instance, decltype(spans), ea::tuple<>, Values...>(context, instance, true, spans, ea::tuple<>());
 };
 
 template <template <typename> typename T, typename ... Args>
