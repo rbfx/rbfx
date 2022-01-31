@@ -36,24 +36,111 @@
 namespace Urho3D
 {
 
+/// Value with derivative, can be extrapolated.
+template <class T>
+struct ValueWithDerivative
+{
+    T value_{};
+    T derivative_{};
+};
+
+template <class T> inline bool operator==(const ValueWithDerivative<T>& lhs, const T& rhs) { return lhs.value_ == rhs; }
+template <class T> inline bool operator==(const T& lhs, const ValueWithDerivative<T>& rhs) { return lhs == rhs.value_; }
+
 /// Helper class to manipulate values stored in NetworkValue.
 template <class T>
 struct NetworkValueTraits
 {
-    static T Interpolate(const T& lhs, const T& rhs, float blendFactor) { return Lerp(lhs, rhs, blendFactor); }
+    using InternalType = T;
+    using ReturnType = T;
 
-    static T Extrapolate(const T& value, float extrapolationFactor) { return value; }
+    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor) { return Lerp(lhs, rhs, blendFactor); }
+
+    static ReturnType Extract(const InternalType& value) { return value; }
+
+    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor) { return value; }
+
+    static void UpdateCorrection(
+        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
+    {
+        inverseCorrection -= correctValue - oldValue;
+    }
+
+    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
+    {
+        inverseCorrection = Lerp(inverseCorrection, ReturnType{}, blendFactor);
+    }
+
+    static ReturnType ApplyCorrection(const ReturnType& value, const ReturnType& inverseCorrection)
+    {
+        return value + inverseCorrection;
+    }
+};
+
+template <class T>
+struct NetworkValueTraits<ValueWithDerivative<T>>
+{
+    using InternalType = ValueWithDerivative<T>;
+    using ReturnType = T;
+
+    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor)
+    {
+        const T newPosition = Lerp(lhs.value_, rhs.value_, blendFactor);
+        const T newVelocity = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
+        return InternalType{newPosition, newVelocity};
+    }
+
+    static ReturnType Extract(const InternalType& value) { return value.value_; }
+
+    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
+    {
+        return value.value_ + value.derivative_ * extrapolationFactor;
+    }
+
+    static void UpdateCorrection(
+        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
+    {
+        inverseCorrection -= correctValue - oldValue;
+    }
+
+    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
+    {
+        inverseCorrection = Lerp(inverseCorrection, ReturnType{}, blendFactor);
+    }
+
+    static ReturnType ApplyCorrection(const ReturnType& value, const ReturnType& inverseCorrection)
+    {
+        return value + inverseCorrection;
+    }
 };
 
 template <>
 struct NetworkValueTraits<Quaternion>
 {
+    using InternalType = Quaternion;
+    using ReturnType = Quaternion;
+
+    static Quaternion Extract(const Quaternion& value) { return value; }
+
     static Quaternion Interpolate(const Quaternion& lhs, const Quaternion& rhs, float blendFactor)
     {
         return lhs.Slerp(rhs, blendFactor);
     }
 
     static Quaternion Extrapolate(const Quaternion& value, float extrapolationFactor) { return value; }
+
+    static void UpdateCorrection(Quaternion& inverseCorrection, const Quaternion& correctValue, const Quaternion& oldValue)
+    {
+    }
+
+    static void SmoothCorrection(Quaternion& inverseCorrection, float blendFactor)
+    {
+    }
+
+    static Quaternion ApplyCorrection(const Quaternion& value, const Quaternion& inverseCorrection)
+    {
+        return value;
+    }
 };
 
 /// Base class for NetworkValue and NetworkValueVector.
@@ -62,7 +149,8 @@ class NetworkValueBase
 public:
     enum class FrameReconstructionMode
     {
-        None,
+        ExactValue,
+        ApproximateValue,
         Interpolate,
         Extrapolate
     };
@@ -76,8 +164,12 @@ public:
 
     struct InterpolationBase
     {
+        unsigned firstFrame_{};
         unsigned firstIndex_{};
+
+        unsigned secondFrame_{};
         unsigned secondIndex_{};
+
         float blendFactor_{};
     };
 
@@ -224,7 +316,7 @@ public:
         {
             // Frame is present, no reconstruction is needed
             if (*frameBefore == *frameAfter)
-                return {FrameReconstructionMode::None, *frameBefore, *frameAfter};
+                return {FrameReconstructionMode::ExactValue, *frameBefore, *frameAfter};
 
             // Frame is missing but it can be interpolated from past and future
             return {FrameReconstructionMode::Interpolate, *frameBefore, *frameAfter};
@@ -233,12 +325,12 @@ public:
         {
             // Shall never happen for initialized value
             URHO3D_ASSERT(0);
-            return {FrameReconstructionMode::None, lastFrame_, lastFrame_};
+            return {FrameReconstructionMode::ApproximateValue, lastFrame_, lastFrame_};
         }
 
         // Frame is too far in the past, just take whatever we have
         if (!frameBefore)
-            return {FrameReconstructionMode::None, *frameAfter, *frameAfter};
+            return {FrameReconstructionMode::ApproximateValue, *frameAfter, *frameAfter};
 
         // Extrapolate from prior frame
         return {FrameReconstructionMode::Extrapolate, *frameBefore, *frameBefore};
@@ -253,7 +345,7 @@ public:
         if (thisOrPastFrame == frame && time.GetSubFrame() < M_LARGE_EPSILON)
         {
             const unsigned index = FrameToIndexUnchecked(frame);
-            return InterpolationBase{index, index, 0.0f};
+            return InterpolationBase{frame, index, frame, index, 0.0f};
         }
 
         const auto nextOrFutureFrame = FindClosestAllocatedFrame(frame + 1, false, true);
@@ -265,12 +357,12 @@ public:
             const auto extraFutureFrames = static_cast<int>(*nextOrFutureFrame - frame - 1);
             const float adjustedFactor =
                 (extraPastFrames + time.GetSubFrame()) / (extraPastFrames + extraFutureFrames + 1);
-            return InterpolationBase{firstIndex, secondIndex, adjustedFactor};
+            return InterpolationBase{*thisOrPastFrame, firstIndex, *nextOrFutureFrame, secondIndex, adjustedFactor};
         }
 
         const unsigned closestFrame = thisOrPastFrame.value_or(nextOrFutureFrame.value_or(lastFrame_));
         const unsigned index = FrameToIndexUnchecked(closestFrame);
-        return InterpolationBase{index, index, 0.0f};
+        return InterpolationBase{closestFrame, index, closestFrame, index, 0.0f};
     }
 
     void CollectAllocatedFrames(unsigned firstFrame, unsigned lastFrame, ea::vector<unsigned>& frames) const
@@ -311,7 +403,11 @@ template <class T, class Traits = NetworkValueTraits<T>>
 class NetworkValue : private NetworkValueBase
 {
 public:
+    using InternalType = typename Traits::InternalType;
+    using ReturnType = typename Traits::ReturnType;
+
     using NetworkValueBase::IsInitialized;
+    using NetworkValueBase::GetLastFrame;
 
     NetworkValue() = default;
     explicit NetworkValue(const Traits& traits)
@@ -328,7 +424,7 @@ public:
     }
 
     /// Set value for given frame if possible.
-    void Set(unsigned frame, const T& value)
+    void Set(unsigned frame, const InternalType& value)
     {
         if (AllocateFrame(frame))
         {
@@ -338,7 +434,7 @@ public:
     }
 
     /// Return raw value at given frame.
-    ea::optional<T> GetRaw(unsigned frame) const
+    ea::optional<InternalType> GetRaw(unsigned frame) const
     {
         if (const auto index = AllocatedFrameToIndex(frame))
             return values_[*index];
@@ -346,58 +442,47 @@ public:
     }
 
     /// Return closest valid raw value. Prior values take precedence.
-    T GetClosestRaw(unsigned frame) const
+    InternalType GetClosestRaw(unsigned frame) const
     {
         const unsigned closestFrame = GetClosestAllocatedFrame(frame);
         return values_[FrameToIndexUnchecked(closestFrame)];
     }
 
     /// Interpolate between two frames or return value of the closest valid frame.
-    T SampleValid(const NetworkTime& time) const
+    InternalType SampleValid(const NetworkTime& time) const
     {
-        const InterpolationBase interpolation = GetValidFrameInterpolation(time);
-
-        if (interpolation.firstIndex_ == interpolation.secondIndex_)
-            return values_[interpolation.firstIndex_];
-
-        return Traits::Interpolate(
-            values_[interpolation.firstIndex_], values_[interpolation.secondIndex_], interpolation.blendFactor_);
+        return CalculateInterpolatedValue(time).first;
     }
 
-    T SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
-
-    /// Interpolate between two frames or extrapolate for the latest frame without any filtering.
-    T CalculateReconstructedValue(unsigned frame, unsigned maxExtrapolation) const
+    /// Interpolate between two valid frames if possible.
+    ea::optional<InternalType> SamplePrecise(const NetworkTime& time) const
     {
-        const FrameReconstructionBase base = FindReconstructionBase(frame);
-        const T lastValue = values_[FrameToIndexUnchecked(base.lastFrame_)];
-        switch (base.mode_)
-        {
-        case FrameReconstructionMode::Interpolate:
-        {
-            const T firstValue = values_[FrameToIndexUnchecked(base.firstFrame_)];
-            const float factor = GetFrameInterpolationFactor(base.firstFrame_, base.lastFrame_, frame);
-            return Traits::Interpolate(firstValue, lastValue, factor);
-        }
+        const auto [value, isPrecise] = CalculateInterpolatedValue(time);
+        if (!isPrecise)
+            return ea::nullopt;
 
-        case FrameReconstructionMode::Extrapolate:
-        {
-            // Skip extrapolation if unwanted
-            if (maxExtrapolation == 0)
-                return lastValue;
-
-            const float factor = GetFrameExtrapolationFactor(base.lastFrame_, frame, maxExtrapolation);
-            return Traits::Extrapolate(lastValue, factor);
-        }
-
-        case FrameReconstructionMode::None:
-        default:
-            return lastValue;
-        }
+        return value;
     }
 
 private:
-    ea::vector<T> values_;
+    /// Calculate exact, interpolated or nearest valid value. Return whether the result is precise.
+    ea::pair<InternalType, bool> CalculateInterpolatedValue(const NetworkTime& time) const
+    {
+        const InterpolationBase interpolation = GetValidFrameInterpolation(time);
+
+        const InternalType value = interpolation.firstIndex_ == interpolation.secondIndex_
+            ? values_[interpolation.firstIndex_]
+            : Traits::Interpolate(
+                values_[interpolation.firstIndex_], values_[interpolation.secondIndex_], interpolation.blendFactor_);
+
+        const unsigned frame = time.GetFrame();
+        // Consider too old frames "precise" because we are not going to get any new data for them anyway.
+        const bool isPrecise = /*interpolation.firstFrame_ <= frame &&*/ frame <= interpolation.secondFrame_;
+
+        return {value, isPrecise};
+    }
+
+    ea::vector<InternalType> values_;
 };
 
 /// Helper class that manages continuous sampling of NetworkValue on the client side.
@@ -405,39 +490,113 @@ template <class T, class Traits = NetworkValueTraits<T>>
 class NetworkValueSampler
 {
 public:
-    /// Client-side sampling: sample value reconstructing missing values.
-    ea::optional<T> ReconstructAndSample(const NetworkValue<T, Traits>& value, const NetworkTime& time, unsigned maxExtrapolation = 0)
+    using NetworkValueType = NetworkValue<T, Traits>;
+    using InternalType = typename Traits::InternalType;
+    using ReturnType = typename Traits::ReturnType;
+
+    /// Update sampler settings.
+    void Setup(unsigned maxExtrapolation, float smoothingConstant = 0.0f)
+    {
+        maxExtrapolation_ = maxExtrapolation;
+        smoothingConstant_ = smoothingConstant;
+    }
+
+    /// Update sampler state for new time and return current value.
+    ea::optional<ReturnType> UpdateAndSample(
+        const NetworkValueType& value, const NetworkTime& time, float timeStep)
     {
         if (!value.IsInitialized())
             return ea::nullopt;
 
-        const unsigned frame = time.GetFrame();
+        UpdateCorrection(value, timeStep);
+        UpdateCache(value, time.GetFrame());
 
-        if (!reconstruct_ || reconstruct_->frame_ != frame)
-        {
-            if (!reconstruct_)
-                reconstruct_ = ReconstructCache{frame};
-
-            if (reconstruct_->frame_ + 1 == frame)
-                reconstruct_->values_[0] = reconstruct_->values_[1];
-            else
-                reconstruct_->values_[0] = value.CalculateReconstructedValue(frame, maxExtrapolation);
-
-            reconstruct_->values_[1] = value.CalculateReconstructedValue(frame + 1, maxExtrapolation);
-            reconstruct_->frame_ = frame;
-        }
-
-        return Traits::Interpolate(reconstruct_->values_[0], reconstruct_->values_[1], time.GetSubFrame());
+        const ReturnType newValue = CalculateValueFromCache(value, time);
+        previousValue_ = LatestValue{time, newValue};
+        return Traits::ApplyCorrection(newValue, valueCorrection_);
     }
 
 private:
-    struct ReconstructCache
+    float GetExtrapolationFactor(const NetworkTime& time, unsigned baseFrame, unsigned maxExtrapolation) const
     {
-        unsigned frame_{};
-        ea::array<T, 2> values_;
+        const float factor = (time.GetFrame() - baseFrame) + time.GetSubFrame();
+        return ea::min(factor, static_cast<float>(maxExtrapolation));
+    }
+
+    void UpdateCorrection(const NetworkValueType& value, float timeStep)
+    {
+        if (!previousValue_)
+            return;
+
+        Traits::SmoothCorrection(valueCorrection_, ExpSmoothing(smoothingConstant_, timeStep));
+
+        UpdateCache(value, previousValue_->time_.GetFrame());
+        const ReturnType newPreviousValue = CalculateValueFromCache(value, previousValue_->time_);
+        Traits::UpdateCorrection(valueCorrection_, newPreviousValue, previousValue_->value_);
+    }
+
+    void UpdateCache(const NetworkValueType& value, unsigned frame)
+    {
+        // Nothing to do if cache is valid
+        if (interpolationCache_ && interpolationCache_->baseFrame_ == frame)
+            return;
+
+        if (const auto nextValue = value.SamplePrecise(NetworkTime{frame + 1}))
+        {
+            // Update interpolation if has enough data for it.
+            // Get base value from cache if possible, or just take previous frame.
+            const InternalType baseValue = (interpolationCache_ && interpolationCache_->baseFrame_ + 1 == frame)
+                ? interpolationCache_->nextValue_
+                : value.SampleValid(NetworkTime{frame});
+
+            interpolationCache_ = InterpolationCache{frame, baseValue, *nextValue};
+            extrapolationFrame_ = frame + 1;
+        }
+        else
+        {
+            // Update frame used for extrapolation.
+            extrapolationFrame_ = value.GetLastFrame();
+            URHO3D_ASSERT(extrapolationFrame_ && *extrapolationFrame_ < frame + 1);
+        }
+    }
+
+    ReturnType CalculateValueFromCache(const NetworkValueType& value, const NetworkTime& time)
+    {
+        if (interpolationCache_ && interpolationCache_->baseFrame_ == time.GetFrame())
+        {
+            const InternalType value = Traits::Interpolate(
+                interpolationCache_->baseValue_, interpolationCache_->nextValue_, time.GetSubFrame());
+            return Traits::Extract(value);
+        }
+
+        URHO3D_ASSERT(extrapolationFrame_);
+
+        const InternalType baseValue = *value.GetRaw(*extrapolationFrame_);
+        const float factor = GetExtrapolationFactor(time, *extrapolationFrame_, maxExtrapolation_);
+        return Traits::Extrapolate(baseValue, factor);
+    }
+
+    unsigned maxExtrapolation_{};
+    float smoothingConstant_{};
+
+    struct InterpolationCache
+    {
+        unsigned baseFrame_{};
+        InternalType baseValue_{};
+        InternalType nextValue_{};
     };
 
-    ea::optional<ReconstructCache> reconstruct_;
+    struct LatestValue
+    {
+        NetworkTime time_;
+        ReturnType value_{};
+    };
+
+    ea::optional<InterpolationCache> interpolationCache_;
+    ea::optional<LatestValue> previousValue_;
+    ea::optional<unsigned> extrapolationFrame_;
+
+    ReturnType valueCorrection_{};
 };
 
 /// Helper class to interpolate value spans.

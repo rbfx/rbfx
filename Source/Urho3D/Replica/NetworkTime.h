@@ -49,6 +49,13 @@ public:
         Normalize();
     }
 
+    static NetworkTime FromDouble(double frame)
+    {
+        NetworkTime result;
+        result += frame;
+        return result;
+    }
+
     unsigned GetFrame() const { return frame_; }
 
     float GetSubFrame() const { return subFrame_; }

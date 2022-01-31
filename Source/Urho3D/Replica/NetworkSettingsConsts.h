@@ -68,7 +68,7 @@ URHO3D_NETWORK_SETTING(ConnectionId, unsigned, 0);
 /// @{
 
 /// Maximum allowed delay between server time and replica time. Client must extrapolate if its delay is bigger.
-URHO3D_NETWORK_SETTING(InterpolationLimit, float, 0.3f);
+URHO3D_NETWORK_SETTING(InterpolationLimit, float, 0.25f);
 
 /// @}
 
@@ -113,7 +113,7 @@ URHO3D_NETWORK_SETTING(InterpolationDelay, float, 0.1f);
 /// Duration in seconds of value tracking on client. Used for interpolation.
 URHO3D_NETWORK_SETTING(ClientTracingDuration, float, 3.0f);
 /// Duration in seconds of value extrapolation. Beyond this limit the value stays fixed.
-URHO3D_NETWORK_SETTING(ExtrapolationDuration, float, 0.5f);
+URHO3D_NETWORK_SETTING(ExtrapolationLimit, float, 0.5f);
 
 /// @}
 

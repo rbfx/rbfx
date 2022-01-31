@@ -99,7 +99,7 @@ public:
 
     bool IsRelevantForClient(AbstractConnection* connection) override;
     void UpdateTransformOnServer() override;
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
     bool PrepareReliableDelta(unsigned frame) override;
     void WriteReliableDelta(unsigned frame, Serializer& dest) override;

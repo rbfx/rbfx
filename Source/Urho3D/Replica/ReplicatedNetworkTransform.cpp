@@ -45,6 +45,7 @@ void ReplicatedNetworkTransform::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
     URHO3D_ATTRIBUTE("Track Only", bool, trackOnly_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Smoothing Constant", float, smoothingConstant_, DefaultSmoothingConstant, AM_DEFAULT);
 }
 
 void ReplicatedNetworkTransform::InitializeOnServer()
@@ -70,10 +71,16 @@ void ReplicatedNetworkTransform::InitializeOnServer()
 void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src)
 {
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
-    const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
 
+    const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
     positionTrace_.Resize(traceDuration);
     rotationTrace_.Resize(traceDuration);
+
+    const unsigned updateFrequency = replicationManager->GetUpdateFrequency();
+    const float extrapolationInSeconds = replicationManager->GetSetting(NetworkSettings::ExtrapolationLimit).GetFloat();
+    const unsigned extrapolationInFrames = CeilToInt(extrapolationInSeconds * updateFrequency);
+    client_.positionSampler_.Setup(extrapolationInFrames, smoothingConstant_);
+    client_.rotationSampler_.Setup(0);
 }
 
 void ReplicatedNetworkTransform::UpdateTransformOnServer()
@@ -96,21 +103,16 @@ void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
     rotationTrace_.Set(frame, server_.rotation_);
 }
 
-void ReplicatedNetworkTransform::InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void ReplicatedNetworkTransform::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
     if (trackOnly_)
         return;
 
-    const NetworkManager* replicationManager = GetNetworkObject()->GetReplicationManager();
-    const unsigned updateFrequency = replicationManager->GetUpdateFrequency();
-    const float extrapolationInSeconds = replicationManager->GetSetting(NetworkSettings::ExtrapolationDuration).GetFloat();
-    const unsigned extrapolationInFrames = CeilToInt(extrapolationInSeconds * updateFrequency);
+    if (auto newPosition = client_.positionSampler_.UpdateAndSample(positionTrace_, replicaTime, timeStep))
+        node_->SetWorldPosition(*newPosition);
 
-    if (auto value = client_.positionSampler_.ReconstructAndSample(positionTrace_, replicaTime, extrapolationInFrames))
-        node_->SetWorldPosition(value->position_);
-
-    if (auto newWorldRotation = client_.rotationSampler_.ReconstructAndSample(rotationTrace_, replicaTime, extrapolationInFrames))
-        node_->SetWorldRotation(*newWorldRotation);
+    if (auto newRotation = client_.rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, timeStep))
+        node_->SetWorldRotation(*newRotation);
 }
 
 bool ReplicatedNetworkTransform::PrepareUnreliableDelta(unsigned frame)
@@ -142,7 +144,7 @@ void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserialize
 
 Vector3 ReplicatedNetworkTransform::GetTemporalWorldPosition(const NetworkTime& time) const
 {
-    return positionTrace_.SampleValid(time).position_;
+    return positionTrace_.SampleValid(time).value_;
 }
 
 Quaternion ReplicatedNetworkTransform::GetTemporalWorldRotation(const NetworkTime& time) const
@@ -155,7 +157,7 @@ ea::optional<Vector3> ReplicatedNetworkTransform::GetRawTemporalWorldPosition(un
     const auto pav = positionTrace_.GetRaw(frame);
     if (!pav)
         return ea::nullopt;
-    return pav->position_;
+    return pav->value_;
 }
 
 ea::optional<Quaternion> ReplicatedNetworkTransform::GetRawTemporalWorldRotation(unsigned frame) const

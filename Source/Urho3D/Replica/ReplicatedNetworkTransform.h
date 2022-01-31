@@ -31,34 +31,10 @@ namespace Urho3D
 {
 
 /// Position-velocity pair, can be used to interpolate and extrapolate object position.
-struct PositionAndVelocity
-{
-    Vector3 position_;
-    Vector3 velocity_;
-};
-
-template <>
-struct NetworkValueTraits<PositionAndVelocity>
-{
-    static PositionAndVelocity Interpolate(const PositionAndVelocity& lhs, const PositionAndVelocity& rhs, float blendFactor)
-    {
-        const Vector3 newPosition = Lerp(lhs.position_, rhs.position_, blendFactor);
-        const Vector3 newVelocity = Lerp(lhs.velocity_, rhs.velocity_, blendFactor);
-        return {newPosition, newVelocity};
-    }
-
-    static PositionAndVelocity Extrapolate(const PositionAndVelocity& value, float extrapolationFactor)
-    {
-        return PositionAndVelocity{value.position_ + value.velocity_ * extrapolationFactor, value.velocity_};
-    }
-};
+using PositionAndVelocity = ValueWithDerivative<Vector3>;
 
 /// Rotation-velocity pair, can be used to interpolate and extrapolate object rotation.
-struct RotationAndVelocity
-{
-    Quaternion rotation_;
-    Vector3 angularVelocity_;
-};
+//using RotationAndVelocity = ValueWithDerivative<Quaternion>;
 
 /// Behavior that replicates transform of the node.
 class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
@@ -66,6 +42,7 @@ class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
     URHO3D_OBJECT(ReplicatedNetworkTransform, NetworkBehavior);
 
 public:
+    static constexpr float DefaultSmoothingConstant = 15.0f;
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallback::UpdateTransformOnServer | NetworkCallback::UnreliableDelta | NetworkCallback::InterpolateState;
     static const unsigned NumUploadAttempts = 8;
@@ -84,7 +61,7 @@ public:
     void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
 
     void UpdateTransformOnServer() override;
-    void InterpolateState(const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
     bool PrepareUnreliableDelta(unsigned frame) override;
     void WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
@@ -103,6 +80,7 @@ private:
     void OnServerFrameEnd(unsigned frame);
 
     bool trackOnly_{};
+    float smoothingConstant_{DefaultSmoothingConstant};
 
     NetworkValue<PositionAndVelocity> positionTrace_;
     NetworkValue<Quaternion> rotationTrace_;

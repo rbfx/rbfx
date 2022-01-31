@@ -152,6 +152,9 @@ inline T SmoothStep(T lhs, T rhs, T t)
     return t * t * (3.0 - 2.0 * t);
 }
 
+/// Return constant for exponential smoothing.
+template <class T> inline T ExpSmoothing(T constant, T timeStep) { return constant ? T(1) - Clamp(pow(T(2), -timeStep * constant), T(0), T(1)) : T(1); }
+
 /// Return sine of an angle in degrees.
 /// @specialization{float}
 template <class T> inline T Sin(T angle) { return sin(angle * M_DEGTORAD); }

@@ -361,11 +361,11 @@ ea::string ClientReplica::GetDebugInfo() const
 
 void ClientReplica::OnInputReady(float timeStep)
 {
-    UpdateClientClocks(timeStep, pendingClockUpdates_);
+    const float scaledTimeStep = UpdateClientClocks(timeStep, pendingClockUpdates_);
     pendingClockUpdates_.clear();
 
     for (NetworkObject* networkObject : replicationManager_->GetNetworkObjects())
-        networkObject->InterpolateState(GetReplicaTime(), GetInputTime());
+        networkObject->InterpolateState(scaledTimeStep, GetReplicaTime(), GetInputTime());
 
     if (IsNewInputFrame())
     {
