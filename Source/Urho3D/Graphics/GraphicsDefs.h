@@ -350,7 +350,7 @@ enum TextureUnit
     TU_SPECULAR = 2,
     TU_EMISSIVE = 3,
     TU_ENVIRONMENT = 4,
-#ifdef DESKTOP_GRAPHICS
+#if defined(DESKTOP_GRAPHICS) || defined(URHO3D_GLES3)
     TU_VOLUMEMAP = 5,
     TU_CUSTOM1 = 6,
     TU_CUSTOM2 = 7,

@@ -54,6 +54,14 @@
 #define glClearDepth glClearDepthf
 #endif
 
+#ifndef GL_DEPTH_COMPONENT24_OES
+#define GL_DEPTH_COMPONENT24_OES GL_DEPTH_COMPONENT24
+#endif
+
+#ifndef GL_DEPTH24_STENCIL8_OES
+#define GL_DEPTH24_STENCIL8_OES GL_DEPTH24_STENCIL8
+#endif
+
 #ifdef __EMSCRIPTEN__
 #include "../../Input/Input.h"
 #include "../../UI/Cursor.h"

@@ -37,6 +37,14 @@
 
 #include "../../DebugNew.h"
 
+#ifndef GL_DEPTH_COMPONENT24_OES
+#define GL_DEPTH_COMPONENT24_OES GL_DEPTH_COMPONENT24
+#endif
+
+#ifndef GL_DEPTH24_STENCIL8_OES
+#define GL_DEPTH24_STENCIL8_OES GL_DEPTH24_STENCIL8
+#endif
+
 namespace Urho3D
 {
 
