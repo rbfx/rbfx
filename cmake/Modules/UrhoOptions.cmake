@@ -39,6 +39,14 @@ if (NOT MINI_URHO)
     endforeach()
 endif ()
 
+# https://cmake.org/cmake/help/v3.18/policy/CMP0077.html
+# Note that cmake_minimum_required() + project() resets policies, so dependencies using lower CMake version would not
+# properly accept options before we add_subdirectory() them without setting this policy to NEW __in their build script__.
+if (POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+endif ()
+
 foreach (feature ${URHO3D_FEATURES})
     set (URHO3D_${feature} ON)
 endforeach()

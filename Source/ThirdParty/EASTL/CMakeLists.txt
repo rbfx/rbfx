@@ -4,10 +4,6 @@
 cmake_minimum_required(VERSION 3.1)
 project(EASTL)
 
-if (POLICY CMP0077)
-    cmake_policy(SET CMP0077 NEW)   # rbfx
-endif ()
-
 set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/scripts/CMake")
 include(CommonCppFlags)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SIZEOF_VOID_P EQUAL 4 AND

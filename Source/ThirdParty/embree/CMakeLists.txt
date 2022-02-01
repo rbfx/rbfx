@@ -14,10 +14,6 @@ PROJECT(embree${EMBREE_VERSION_MAJOR})
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
-if (POLICY CMP0077)
-    cmake_policy(SET CMP0077 NEW)   # rbfx
-endif ()
-
 # We use our own strip tool on macOS to sign during install. This is required as CMake modifies RPATH of the binary during install.
 IF (APPLE AND EMBREE_SIGN_FILE)
   SET(EMBREE_STRIP ${CMAKE_STRIP})

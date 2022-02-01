@@ -23,11 +23,6 @@
 # Set CMake minimum version. Also set in android/build.gradle for android projects.
 cmake_minimum_required (VERSION 3.14)
 
-# https://cmake.org/cmake/help/v3.18/policy/CMP0077.html
-# Note that cmake_minimum_required() + project() resets policies, so dependencies using lower CMake version would not
-# properly accept options before we add_subdirectory() them without setting this policy to NEW __in their build script__.
-cmake_policy(SET CMP0077 NEW)
-
 # Set C++ standard
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 17)
