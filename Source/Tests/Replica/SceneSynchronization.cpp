@@ -493,17 +493,15 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     auto prefab = GetSimpleTestPrefab(context);
 
     // Setup scenes
-    const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0, 0 };
+    const auto interpolationQuality = Tests::ConnectionQuality{0.08f, 0.12f, 0.20f, 0, 0};
+    const auto extrapolationQuality = Tests::ConnectionQuality{0.25f, 0.35f, 0.40f, 0, 0};
+
     const float moveSpeedNodeA = 1.0f;
     const float rotationSpeedNodeA = 10.0f;
     const float moveSpeedNodeB = 0.1f;
     auto serverScene = MakeShared<Scene>(context);
-    SharedPtr<Scene> clientScenes[] = {
-        MakeShared<Scene>(context),
-        MakeShared<Scene>(context),
-        MakeShared<Scene>(context)
-    };
-
+    SharedPtr<Scene> interpolatingClientScene = MakeShared<Scene>(context);
+    SharedPtr<Scene> extrapolatingClientScene = MakeShared<Scene>(context);
 
     Node* serverNodeA = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Node");
     auto serverTransformA = serverNodeA->GetComponent<ReplicatedNetworkTransform>();
@@ -527,28 +525,43 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     sim.SimulateTime(9.0f);
 
     // Add clients and wait for synchronization
-    for (Scene* clientScene : clientScenes)
-        sim.AddClient(clientScene, quality);
+    sim.AddClient(interpolatingClientScene, interpolationQuality);
+    sim.AddClient(extrapolatingClientScene, extrapolationQuality);
     sim.SimulateTime(9.0f);
 
-    // Expect positions and rotations to be precisely synchronized
-    const float expectedDelay = 0.2;
-    for (Scene* clientScene : clientScenes)
+    // Expect positions and rotations to be precisely synchronized on interpolating client
     {
-        const auto& clientReplica = *clientScene->GetComponent<NetworkManager>()->GetClientReplica();
+        const auto& clientReplica = *interpolatingClientScene->GetComponent<NetworkManager>()->GetClientReplica();
         const NetworkTime replicaTime = clientReplica.GetReplicaTime();
         const double delay = serverReplicator.GetServerTime() - replicaTime;
 
-        auto clientNodeA = clientScene->GetChild("Node", true);
-        auto clientNodeB = clientScene->GetChild("Node Child", true);
+        auto clientNodeA = interpolatingClientScene->GetChild("Node", true);
+        auto clientNodeB = interpolatingClientScene->GetChild("Node Child", true);
 
-        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(expectedDelay).margin(0.03));
+        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.2).margin(0.03));
 
         REQUIRE(serverTransformA->GetTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
-        REQUIRE(serverTransformA->GetTemporalWorldRotation(replicaTime).Equals(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformA->GetTemporalWorldRotation(replicaTime).Equivalent(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));
 
         REQUIRE(serverTransformB->GetTemporalWorldPosition(replicaTime).Equals(clientNodeB->GetWorldPosition(), M_LARGE_EPSILON));
-        REQUIRE(serverTransformB->GetTemporalWorldRotation(replicaTime).Equals(clientNodeB->GetWorldRotation(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformB->GetTemporalWorldRotation(replicaTime).Equivalent(clientNodeB->GetWorldRotation(), M_LARGE_EPSILON));
+    }
+
+    {
+        const auto& clientReplica = *extrapolatingClientScene->GetComponent<NetworkManager>()->GetClientReplica();
+        const NetworkTime replicaTime = clientReplica.GetReplicaTime();
+        const double delay = serverReplicator.GetServerTime() - replicaTime;
+
+        auto clientNodeA = extrapolatingClientScene->GetChild("Node", true);
+        auto clientNodeB = extrapolatingClientScene->GetChild("Node Child", true);
+
+        REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.25).margin(0.03));
+
+        REQUIRE(serverTransformA->GetTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformA->GetTemporalWorldRotation(replicaTime).Equivalent(clientNodeA->GetWorldRotation(), M_LARGE_EPSILON));
+
+        REQUIRE(serverTransformB->GetTemporalWorldPosition(replicaTime).Equals(clientNodeB->GetWorldPosition(), 0.002f));
+        REQUIRE(serverTransformB->GetTemporalWorldRotation(replicaTime).Equivalent(clientNodeB->GetWorldRotation(), M_LARGE_EPSILON));
     }
 }
 

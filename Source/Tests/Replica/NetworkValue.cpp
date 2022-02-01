@@ -24,18 +24,6 @@
 
 #include <Urho3D/Replica/NetworkValue.h>
 
-namespace Urho3D
-{
-
-using DynamicFloat = ValueWithDerivative<float>;
-
-bool operator==(const ea::optional<DynamicFloat>& lhs, float rhs)
-{
-    return lhs && lhs->value_ == rhs;
-}
-
-}
-
 namespace
 {
 
@@ -197,14 +185,14 @@ TEST_CASE("NetworkValue is updated and sampled")
     REQUIRE(v.SampleValid(NetworkTime{6, 0.5f}) == 6500.0f);
 }
 
-TEST_CASE("NetworkValue is repaired on demand")
+TEST_CASE("NetworkValueSampler is smoothly sampled")
 {
     const unsigned maxExtrapolation = 10;
     const float smoothing = 5.0f;
 
-    NetworkValue<DynamicFloat> v;
+    NetworkValue<ValueWithDerivative<float>> v;
     v.Resize(10);
-    NetworkValueSampler<DynamicFloat> s;
+    NetworkValueSampler<ValueWithDerivative<float>> s;
     s.Setup(maxExtrapolation, smoothing);
 
     // Interpolation is smooth when past frames are added
@@ -252,6 +240,56 @@ TEST_CASE("NetworkValue is repaired on demand")
     REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(14.0f), 0.5f).value_or(0.0f) == Catch::Approx(14000.0f).margin(100.0f));
     REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(14.5f), 0.5f).value_or(0.0f) == Catch::Approx(14500.0f).margin(20.0f));
     REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(15.0f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(3.0f));
+}
+
+TEST_CASE("NetworkValueSampler for Quaternion is smoothly sampled")
+{
+    const unsigned maxExtrapolation = 0;
+    const float smoothing = 5.0f;
+
+    NetworkValue<Quaternion> v;
+    v.Resize(10);
+    NetworkValueSampler<Quaternion> s;
+    s.Setup(maxExtrapolation, smoothing);
+
+    v.Set(5, Quaternion{0.0f});
+    v.Set(6, Quaternion{90.0f});
+    v.Set(7, Quaternion{180.0f});
+
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(5.0f), 0.0f)->Equivalent(Quaternion{0.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(5.5f), 0.5f)->Equivalent(Quaternion{45.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(6.0f), 0.5f)->Equivalent(Quaternion{90.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(6.5f), 0.5f)->Equivalent(Quaternion{135.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(7.0f), 0.5f)->Equivalent(Quaternion{180.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(7.5f), 0.5f)->Equivalent(Quaternion{180.0f}));
+
+    v.Set(8, Quaternion{270.0f});
+    v.Set(9, Quaternion{360.0f});
+
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(7.5f), 0.0f)->Equivalent(Quaternion{180.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(8.0f), 0.5f)->Equivalent(Quaternion{270.0f}, 0.003f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(8.5f), 0.5f)->Equivalent(Quaternion{315.0f}, 0.0001f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(9.0f), 0.5f)->Equivalent(Quaternion{360.0f}, 0.00001f));
+}
+
+TEST_CASE("NetworkValueSampler for Quaternion is extrapolated")
+{
+    const unsigned maxExtrapolation = 10;
+    const float smoothing = 5.0f;
+
+    NetworkValue<ValueWithDerivative<Quaternion>> v;
+    v.Resize(10);
+    NetworkValueSampler<ValueWithDerivative<Quaternion>> s;
+    s.Setup(maxExtrapolation, smoothing);
+
+    const Vector3 velocity = Quaternion({90.0f}).AngularVelocity();
+    v.Set(5, {Quaternion{90.0f}, velocity});
+
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(4.0f), 0.0f)->Equivalent(Quaternion{90.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(4.5f), 0.5f)->Equivalent(Quaternion{90.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(5.0f), 0.5f)->Equivalent(Quaternion{90.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(5.5f), 0.5f)->Equivalent(Quaternion{135.0f}));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(6.0f), 0.5f)->Equivalent(Quaternion{180.0f}));
 }
 
 TEST_CASE("NetworkValueVector is updated and sampled")

@@ -100,7 +100,7 @@ void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
     server_.angularVelocity_ = (server_.rotation_ * server_.previousRotation_.Inverse()).AngularVelocity();
 
     positionTrace_.Set(frame, {server_.position_, server_.velocity_});
-    rotationTrace_.Set(frame, server_.rotation_);
+    rotationTrace_.Set(frame, {server_.rotation_, server_.angularVelocity_});
 }
 
 void ReplicatedNetworkTransform::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
@@ -130,6 +130,7 @@ void ReplicatedNetworkTransform::WriteUnreliableDelta(unsigned frame, Serializer
     dest.WriteVector3(server_.position_);
     dest.WriteVector3(server_.velocity_);
     dest.WriteQuaternion(server_.rotation_);
+    dest.WriteVector3(server_.angularVelocity_);
 }
 
 void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserializer& src)
@@ -137,9 +138,10 @@ void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserialize
     const Vector3 position = src.ReadVector3();
     const Vector3 velocity = src.ReadVector3();
     const Quaternion rotation = src.ReadQuaternion();
+    const Vector3 angularVelocity = src.ReadVector3();
 
     positionTrace_.Set(frame, {position, velocity});
-    rotationTrace_.Set(frame, rotation);
+    rotationTrace_.Set(frame, {rotation, angularVelocity});
 }
 
 Vector3 ReplicatedNetworkTransform::GetTemporalWorldPosition(const NetworkTime& time) const
@@ -149,20 +151,19 @@ Vector3 ReplicatedNetworkTransform::GetTemporalWorldPosition(const NetworkTime& 
 
 Quaternion ReplicatedNetworkTransform::GetTemporalWorldRotation(const NetworkTime& time) const
 {
-    return rotationTrace_.SampleValid(time);
+    return rotationTrace_.SampleValid(time).value_;
 }
 
 ea::optional<Vector3> ReplicatedNetworkTransform::GetRawTemporalWorldPosition(unsigned frame) const
 {
-    const auto pav = positionTrace_.GetRaw(frame);
-    if (!pav)
-        return ea::nullopt;
-    return pav->value_;
+    const auto value = positionTrace_.GetRaw(frame);
+    return value ? ea::make_optional(value->value_) : ea::nullopt;
 }
 
 ea::optional<Quaternion> ReplicatedNetworkTransform::GetRawTemporalWorldRotation(unsigned frame) const
 {
-    return rotationTrace_.GetRaw(frame);
+    const auto value = rotationTrace_.GetRaw(frame);
+    return value ? ea::make_optional(value->value_) : ea::nullopt;
 }
 
 }

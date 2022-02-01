@@ -418,6 +418,12 @@ public:
         return Urho3D::Equals(w_, rhs.w_, eps) && Urho3D::Equals(x_, rhs.x_, eps) && Urho3D::Equals(y_, rhs.y_, eps) && Urho3D::Equals(z_, rhs.z_, eps);
     }
 
+    /// Test for equivalence with another quaternion with epsilon.
+    bool Equivalent(const Quaternion& rhs, float eps = M_EPSILON) const
+    {
+        return Urho3D::Equals(Abs(DotProduct(rhs)), 1.0f, eps);
+    }
+
     /// Return whether any element is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(w_) || Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_) || Urho3D::IsNaN(z_); }
 

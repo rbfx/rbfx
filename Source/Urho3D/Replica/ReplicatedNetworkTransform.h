@@ -34,7 +34,7 @@ namespace Urho3D
 using PositionAndVelocity = ValueWithDerivative<Vector3>;
 
 /// Rotation-velocity pair, can be used to interpolate and extrapolate object rotation.
-//using RotationAndVelocity = ValueWithDerivative<Quaternion>;
+using RotationAndVelocity = ValueWithDerivative<Quaternion>;
 
 /// Behavior that replicates transform of the node.
 class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
@@ -83,7 +83,7 @@ private:
     float smoothingConstant_{DefaultSmoothingConstant};
 
     NetworkValue<PositionAndVelocity> positionTrace_;
-    NetworkValue<Quaternion> rotationTrace_;
+    NetworkValue<RotationAndVelocity> rotationTrace_;
 
     struct ServerData
     {
@@ -101,7 +101,7 @@ private:
     struct ClientData
     {
         NetworkValueSampler<PositionAndVelocity> positionSampler_;
-        NetworkValueSampler<Quaternion> rotationSampler_;
+        NetworkValueSampler<RotationAndVelocity> rotationSampler_;
     } client_;
 };
 
