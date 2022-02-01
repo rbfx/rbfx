@@ -199,6 +199,13 @@ set (THIRD_PARTY_DEPENDENCIES
     spirv-cross-msl
     spirv-cross-hlsl
     tinygltf
+    PhysX
+    PhysXFoundation
+    PhysXCooking
+    PhysXVehicle
+    PhysXExtensions
+    PhysXCharacterKinematic
+    PhysXPvdSDK
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
@@ -367,7 +374,7 @@ if (BUILD_SHARED_LIBS)
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
             -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
             -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DTRACY_EXPORTS=1 -DRmlCore_EXPORTS=1
-            -DRmlDebugger_EXPORTS=1
+            -DRmlDebugger_EXPORTS=1 -DPX_PHYSX_CORE_EXPORTS=1 -DPX_PHYSX_FOUNDATION_EXPORTS=1 -DPX_PHYSX_COOKING_EXPORTS=1
     )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)

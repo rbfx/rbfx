@@ -128,6 +128,7 @@ if (NOT MINI_URHO)
     endif ()
 
     if (URHO3D_PHYSICS)
+        add_subdirectory (PhysX)
         add_subdirectory (Bullet)
         add_subdirectory (StanHull)
     endif ()
