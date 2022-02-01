@@ -47,173 +47,6 @@ inline float GetDistanceSquared(const Vector3& lhs, const Vector3& rhs) { return
 inline float GetDistanceSquared(const Quaternion& lhs, const Quaternion& rhs) { return 1.0f - Abs(lhs.DotProduct(rhs)); }
 /// @}
 
-}
-
-/// Value with derivative, can be extrapolated.
-template <class T>
-struct ValueWithDerivative
-{
-    T value_{};
-    T derivative_{};
-};
-
-template <class T> inline bool operator==(const ValueWithDerivative<T>& lhs, const T& rhs) { return lhs.value_ == rhs; }
-template <class T> inline bool operator==(const T& lhs, const ValueWithDerivative<T>& rhs) { return lhs == rhs.value_; }
-
-/// Derivative of a quaternion is angular velocity vector.
-template <>
-struct ValueWithDerivative<Quaternion>
-{
-    Quaternion value_{};
-    Vector3 derivative_{};
-};
-
-/// Helper class to manipulate values stored in NetworkValue.
-template <class T>
-struct NetworkValueTraits
-{
-    using InternalType = T;
-    using ReturnType = T;
-
-    static InternalType Interpolate(
-        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
-    {
-        if (Detail::GetDistanceSquared(lhs, rhs) >= snapThreshold * snapThreshold)
-            return blendFactor < 0.5f ? lhs : rhs;
-        return Lerp(lhs, rhs, blendFactor);
-    }
-
-    static ReturnType Extract(const InternalType& value) { return value; }
-
-    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor) { return value; }
-
-    static void UpdateCorrection(
-        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
-    {
-        inverseCorrection -= correctValue - oldValue;
-    }
-
-    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
-    {
-        inverseCorrection = Lerp(inverseCorrection, ReturnType{}, blendFactor);
-    }
-
-    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
-    {
-        value += inverseCorrection;
-    }
-};
-
-template <>
-struct NetworkValueTraits<Quaternion>
-{
-    using InternalType = Quaternion;
-    using ReturnType = Quaternion;
-
-    static Quaternion Extract(const Quaternion& value) { return value; }
-
-    static Quaternion Interpolate(const Quaternion& lhs, const Quaternion& rhs, float blendFactor, float snapThreshold)
-    {
-        return lhs.Slerp(rhs, blendFactor);
-    }
-
-    static Quaternion Extrapolate(const Quaternion& value, float extrapolationFactor) { return value; }
-
-    static void UpdateCorrection(Quaternion& inverseCorrection, const Quaternion& correctValue, const Quaternion& oldValue)
-    {
-        inverseCorrection = oldValue * correctValue.Inverse() * inverseCorrection;
-    }
-
-    static void SmoothCorrection(Quaternion& inverseCorrection, float blendFactor)
-    {
-        inverseCorrection = inverseCorrection.Slerp(Quaternion::IDENTITY, blendFactor);
-    }
-
-    static void ApplyCorrection(const Quaternion& inverseCorrection, Quaternion& value)
-    {
-        value = inverseCorrection * value;
-    }
-};
-
-template <class T>
-struct NetworkValueTraits<ValueWithDerivative<T>>
-{
-    using InternalType = ValueWithDerivative<T>;
-    using ReturnType = T;
-
-    static InternalType Interpolate(
-        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
-    {
-        if (Detail::GetDistanceSquared(lhs.value_, rhs.value_) >= snapThreshold * snapThreshold)
-            return blendFactor < 0.5f ? lhs : rhs;
-
-        const auto interpolatedValue = Lerp(lhs.value_, rhs.value_, blendFactor);
-        const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
-        return InternalType{interpolatedValue, interpolatedDerivative};
-    }
-
-    static ReturnType Extract(const InternalType& value) { return value.value_; }
-
-    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
-    {
-        return value.value_ + value.derivative_ * extrapolationFactor;
-    }
-
-    static void UpdateCorrection(
-        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
-    {
-        NetworkValueTraits<ReturnType>::UpdateCorrection(inverseCorrection, correctValue, oldValue);
-    }
-
-    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
-    {
-        NetworkValueTraits<ReturnType>::SmoothCorrection(inverseCorrection, blendFactor);
-    }
-
-    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
-    {
-        NetworkValueTraits<ReturnType>::ApplyCorrection(inverseCorrection, value);
-    }
-};
-
-template <>
-struct NetworkValueTraits<ValueWithDerivative<Quaternion>>
-{
-    using InternalType = ValueWithDerivative<Quaternion>;
-    using ReturnType = Quaternion;
-
-    static InternalType Interpolate(
-        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
-    {
-        const auto interpolatedValue = lhs.value_.Slerp(rhs.value_, blendFactor);
-        const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
-        return InternalType{interpolatedValue, interpolatedDerivative};
-    }
-
-    static ReturnType Extract(const InternalType& value) { return value.value_; }
-
-    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
-    {
-        return Quaternion::FromAngularVelocity(value.derivative_ * extrapolationFactor) * value.value_;
-    }
-
-    static void UpdateCorrection(
-        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
-    {
-        NetworkValueTraits<ReturnType>::UpdateCorrection(inverseCorrection, correctValue, oldValue);
-    }
-
-    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
-    {
-        NetworkValueTraits<ReturnType>::SmoothCorrection(inverseCorrection, blendFactor);
-    }
-
-    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
-    {
-        NetworkValueTraits<ReturnType>::ApplyCorrection(inverseCorrection, value);
-    }
-};
-
 /// Base class for NetworkValue and NetworkValueVector.
 class NetworkValueBase
 {
@@ -422,12 +255,211 @@ private:
     ea::vector<bool> hasFrameByIndex_;
 };
 
+/// Helper class to interpolate value spans.
+template <class T, class Traits>
+class InterpolatedConstSpan
+{
+public:
+    explicit InterpolatedConstSpan(ea::span<const T> valueSpan)
+        : first_(valueSpan)
+        , second_(valueSpan)
+        , snapThreshold_(M_LARGE_VALUE)
+    {
+    }
+
+    InterpolatedConstSpan(ea::span<const T> firstSpan, ea::span<const T> secondSpan, float blendFactor, float snapThreshold)
+        : first_(firstSpan)
+        , second_(secondSpan)
+        , blendFactor_(blendFactor)
+        , snapThreshold_(snapThreshold)
+    {
+    }
+
+    T operator[](unsigned index) const { return Traits::Interpolate(first_[index], second_[index], blendFactor_, snapThreshold_); }
+
+    unsigned Size() const { return first_.size(); }
+
+private:
+    ea::span<const T> first_;
+    ea::span<const T> second_;
+    float blendFactor_{};
+    float snapThreshold_{};
+};
+
+}
+
+/// Value with derivative, can be extrapolated.
+template <class T>
+struct ValueWithDerivative
+{
+    T value_{};
+    T derivative_{};
+};
+
+template <class T> inline bool operator==(const ValueWithDerivative<T>& lhs, const T& rhs) { return lhs.value_ == rhs; }
+template <class T> inline bool operator==(const T& lhs, const ValueWithDerivative<T>& rhs) { return lhs == rhs.value_; }
+
+/// Derivative of a quaternion is angular velocity vector.
+template <>
+struct ValueWithDerivative<Quaternion>
+{
+    Quaternion value_{};
+    Vector3 derivative_{};
+};
+
+/// Utility to manipulate values stored in NetworkValue.
+/// @{
+template <class T>
+struct NetworkValueTraits
+{
+    using InternalType = T;
+    using ReturnType = T;
+
+    static InternalType Interpolate(
+        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
+    {
+        if (Detail::GetDistanceSquared(lhs, rhs) >= snapThreshold * snapThreshold)
+            return blendFactor < 0.5f ? lhs : rhs;
+        return Lerp(lhs, rhs, blendFactor);
+    }
+
+    static ReturnType Extract(const InternalType& value) { return value; }
+
+    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor) { return value; }
+
+    static void UpdateCorrection(
+        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
+    {
+        inverseCorrection -= correctValue - oldValue;
+    }
+
+    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
+    {
+        inverseCorrection = Lerp(inverseCorrection, ReturnType{}, blendFactor);
+    }
+
+    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
+    {
+        value += inverseCorrection;
+    }
+};
+
+template <>
+struct NetworkValueTraits<Quaternion>
+{
+    using InternalType = Quaternion;
+    using ReturnType = Quaternion;
+
+    static Quaternion Extract(const Quaternion& value) { return value; }
+
+    static Quaternion Interpolate(const Quaternion& lhs, const Quaternion& rhs, float blendFactor, float snapThreshold)
+    {
+        return lhs.Slerp(rhs, blendFactor);
+    }
+
+    static Quaternion Extrapolate(const Quaternion& value, float extrapolationFactor) { return value; }
+
+    static void UpdateCorrection(Quaternion& inverseCorrection, const Quaternion& correctValue, const Quaternion& oldValue)
+    {
+        inverseCorrection = oldValue * correctValue.Inverse() * inverseCorrection;
+    }
+
+    static void SmoothCorrection(Quaternion& inverseCorrection, float blendFactor)
+    {
+        inverseCorrection = inverseCorrection.Slerp(Quaternion::IDENTITY, blendFactor);
+    }
+
+    static void ApplyCorrection(const Quaternion& inverseCorrection, Quaternion& value)
+    {
+        value = inverseCorrection * value;
+    }
+};
+
+template <class T>
+struct NetworkValueTraits<ValueWithDerivative<T>>
+{
+    using InternalType = ValueWithDerivative<T>;
+    using ReturnType = T;
+
+    static InternalType Interpolate(
+        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
+    {
+        if (Detail::GetDistanceSquared(lhs.value_, rhs.value_) >= snapThreshold * snapThreshold)
+            return blendFactor < 0.5f ? lhs : rhs;
+
+        const auto interpolatedValue = Lerp(lhs.value_, rhs.value_, blendFactor);
+        const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
+        return InternalType{interpolatedValue, interpolatedDerivative};
+    }
+
+    static ReturnType Extract(const InternalType& value) { return value.value_; }
+
+    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
+    {
+        return value.value_ + value.derivative_ * extrapolationFactor;
+    }
+
+    static void UpdateCorrection(
+        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
+    {
+        NetworkValueTraits<ReturnType>::UpdateCorrection(inverseCorrection, correctValue, oldValue);
+    }
+
+    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
+    {
+        NetworkValueTraits<ReturnType>::SmoothCorrection(inverseCorrection, blendFactor);
+    }
+
+    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
+    {
+        NetworkValueTraits<ReturnType>::ApplyCorrection(inverseCorrection, value);
+    }
+};
+
+template <>
+struct NetworkValueTraits<ValueWithDerivative<Quaternion>>
+{
+    using InternalType = ValueWithDerivative<Quaternion>;
+    using ReturnType = Quaternion;
+
+    static InternalType Interpolate(
+        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
+    {
+        const auto interpolatedValue = lhs.value_.Slerp(rhs.value_, blendFactor);
+        const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
+        return InternalType{interpolatedValue, interpolatedDerivative};
+    }
+
+    static ReturnType Extract(const InternalType& value) { return value.value_; }
+
+    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
+    {
+        return Quaternion::FromAngularVelocity(value.derivative_ * extrapolationFactor) * value.value_;
+    }
+
+    static void UpdateCorrection(
+        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
+    {
+        NetworkValueTraits<ReturnType>::UpdateCorrection(inverseCorrection, correctValue, oldValue);
+    }
+
+    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
+    {
+        NetworkValueTraits<ReturnType>::SmoothCorrection(inverseCorrection, blendFactor);
+    }
+
+    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
+    {
+        NetworkValueTraits<ReturnType>::ApplyCorrection(inverseCorrection, value);
+    }
+};
+/// @}
+
 /// Value stored at multiple points of time in ring buffer.
 /// If value was set at least once, it will have at least one valid value forever.
-/// On Server, and values are treated as reliable and piecewise-continuous.
-/// On Client, values may be extrapolated if frames are missing.
+/// Value can be sampled raw or interpolated. No extrapolation is performed.
 template <class T, class Traits = NetworkValueTraits<T>>
-class NetworkValue : private NetworkValueBase
+class NetworkValue : private Detail::NetworkValueBase
 {
 public:
     using InternalType = typename Traits::InternalType;
@@ -513,6 +545,7 @@ private:
 };
 
 /// Helper class that manages continuous sampling of NetworkValue on the client side.
+/// Performs extrapolation and error smoothing.
 template <class T, class Traits = NetworkValueTraits<T>>
 class NetworkValueSampler
 {
@@ -630,45 +663,13 @@ private:
     ReturnType valueCorrection_{};
 };
 
-/// Helper class to interpolate value spans.
-template <class T, class Traits = NetworkValueTraits<T>>
-class InterpolatedConstSpan
-{
-public:
-    explicit InterpolatedConstSpan(ea::span<const T> valueSpan)
-        : first_(valueSpan)
-        , second_(valueSpan)
-        , snapThreshold_(M_LARGE_VALUE)
-    {
-    }
-
-    InterpolatedConstSpan(ea::span<const T> firstSpan, ea::span<const T> secondSpan, float blendFactor, float snapThreshold)
-        : first_(firstSpan)
-        , second_(secondSpan)
-        , blendFactor_(blendFactor)
-        , snapThreshold_(snapThreshold)
-    {
-    }
-
-    T operator[](unsigned index) const { return Traits::Interpolate(first_[index], second_[index], blendFactor_, snapThreshold_); }
-
-    unsigned Size() const { return first_.size(); }
-
-private:
-    ea::span<const T> first_;
-    ea::span<const T> second_;
-    float blendFactor_{};
-    float snapThreshold_{};
-};
-
 /// Similar to NetworkValue, except each frame contains an array of elements.
-/// Does not support client-side reconstruction.
 template <class T, class Traits = NetworkValueTraits<T>>
-class NetworkValueVector : private NetworkValueBase
+class NetworkValueVector : private Detail::NetworkValueBase
 {
 public:
     using ValueSpan = ea::span<const T>;
-    using InterpolatedValueSpan = InterpolatedConstSpan<T, Traits>;
+    using InterpolatedValueSpan = Detail::InterpolatedConstSpan<T, Traits>;
 
     NetworkValueVector() = default;
 
