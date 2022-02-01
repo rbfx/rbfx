@@ -46,6 +46,7 @@ void ReplicatedNetworkTransform::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
     URHO3D_ATTRIBUTE("Track Only", bool, trackOnly_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Smoothing Constant", float, smoothingConstant_, DefaultSmoothingConstant, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Movement Threshold", float, movementThreshold_, DefaultMovementThreshold, AM_DEFAULT);
 }
 
 void ReplicatedNetworkTransform::InitializeOnServer()
@@ -58,6 +59,8 @@ void ReplicatedNetworkTransform::InitializeOnServer()
 
     server_.previousPosition_ = node_->GetWorldPosition();
     server_.previousRotation_ = node_->GetWorldRotation();
+    server_.latestSentPosition_ = server_.previousPosition_;
+    server_.latestSentRotation_ = server_.previousRotation_;
 
     SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
         [this](StringHash, VariantMap& eventData)
@@ -85,7 +88,7 @@ void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserial
 
 void ReplicatedNetworkTransform::UpdateTransformOnServer()
 {
-    server_.pendingUploadAttempts_ = NumUploadAttempts;
+    server_.movedDuringFrame_ = true;
 }
 
 void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
@@ -96,11 +99,34 @@ void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
     server_.position_ = node_->GetWorldPosition();
     server_.rotation_ = node_->GetWorldRotation();
 
-    server_.velocity_ = (server_.position_ - server_.previousPosition_);
-    server_.angularVelocity_ = (server_.rotation_ * server_.previousRotation_.Inverse()).AngularVelocity();
+    if (server_.movedDuringFrame_)
+    {
+        server_.velocity_ = (server_.position_ - server_.previousPosition_);
+        server_.angularVelocity_ = (server_.rotation_ * server_.previousRotation_.Inverse()).AngularVelocity();
+    }
+    else
+    {
+        server_.velocity_ = Vector3::ZERO;
+        server_.angularVelocity_ = Vector3::ZERO;
+    }
 
     positionTrace_.Set(frame, {server_.position_, server_.velocity_});
     rotationTrace_.Set(frame, {server_.rotation_, server_.angularVelocity_});
+
+    if (server_.movedDuringFrame_)
+    {
+        server_.movedDuringFrame_ = false;
+
+        const float positionErrorSquare = (server_.latestSentPosition_ - server_.position_).LengthSquared();
+        const bool isPositionDirty = positionErrorSquare > movementThreshold_ * movementThreshold_;
+        const bool isRotationDirty = server_.latestSentRotation_.Equivalent(server_.rotation_, M_LARGE_EPSILON);
+        if (isPositionDirty || isRotationDirty)
+        {
+            server_.pendingUploadAttempts_ = NumUploadAttempts;
+            server_.latestSentPosition_ = server_.position_;
+            server_.latestSentRotation_ = server_.rotation_;
+        }
+    }
 }
 
 void ReplicatedNetworkTransform::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
