@@ -5,17 +5,17 @@
 	<attribute name="Smoothing Constant" value="50.000000" />
 	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="1252" />
-	<attribute name="Next Replicated Component ID" value="1227" />
-	<attribute name="Next Local Node ID" value="16777319" />
-	<attribute name="Next Local Component ID" value="16777370" />
+	<attribute name="Next Replicated Node ID" value="1281" />
+	<attribute name="Next Replicated Component ID" value="1256" />
+	<attribute name="Next Local Node ID" value="16777323" />
+	<attribute name="Next Local Component ID" value="16777375" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
 	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="20.1484 2.76176 3.08212" />
-		<attribute name="Camera Rotation" value="0.945303 0.245808 0.20761 -0.0536464" />
+		<attribute name="Camera Position" value="2.7397 2.1124 6.40891" />
+		<attribute name="Camera Rotation" value="0.00537767 0.0013981 0.980695 -0.195464" />
 	</component>
 	<component type="RenderPipeline" id="315" />
 	<node id="2">
@@ -1656,5 +1656,18 @@
 				</component>
 			</node>
 		</node>
+	</node>
+	<node id="1280">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="RefractionBox" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.73119 0.893882 2.86593" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="1255">
+			<attribute name="Model" value="Model;Models/Box.mdl" />
+			<attribute name="Material" value="Material;Materials/Refraction.xml" />
+		</component>
 	</node>
 </scene>
