@@ -436,11 +436,11 @@ TEST_CASE("Scene is synchronized between client and server")
 
         REQUIRE(replicatedNodeChild2->GetNumChildren() == 0);
 
-        REQUIRE(replicatedNodeA->GetWorldTransform().Equals(transformReplicatedNodeA));
-        REQUIRE(replicatedNodeB->GetWorldTransform().Equals(transformReplicatedNodeB));
-        REQUIRE(replicatedNodeChild1->GetWorldTransform().Equals(transformReplicatedNodeChild1));
-        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2));
-        REQUIRE(replicatedNodeChild4->GetWorldTransform().Equals(transformReplicatedNodeChild4));
+        REQUIRE(replicatedNodeA->GetWorldTransform().Equals(transformReplicatedNodeA, M_LARGE_EPSILON));
+        REQUIRE(replicatedNodeB->GetWorldTransform().Equals(transformReplicatedNodeB, M_LARGE_EPSILON));
+        REQUIRE(replicatedNodeChild1->GetWorldTransform().Equals(transformReplicatedNodeChild1, M_LARGE_EPSILON));
+        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2, M_LARGE_EPSILON));
+        REQUIRE(replicatedNodeChild4->GetWorldTransform().Equals(transformReplicatedNodeChild4, M_LARGE_EPSILON));
     }
 
     // Remove "Replicated Node A"
@@ -476,10 +476,10 @@ TEST_CASE("Scene is synchronized between client and server")
 
         REQUIRE(replicatedNodeChild2->GetNumChildren() == 0);
 
-        REQUIRE(replicatedNodeB->GetWorldTransform().Equals(transformReplicatedNodeB));
-        REQUIRE(replicatedNodeC->GetWorldTransform().Equals(Matrix3x4::IDENTITY));
-        REQUIRE(replicatedNodeChild1->GetWorldTransform().Equals(transformReplicatedNodeChild1));
-        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2));
+        REQUIRE(replicatedNodeB->GetWorldTransform().Equals(transformReplicatedNodeB, M_LARGE_EPSILON));
+        REQUIRE(replicatedNodeC->GetWorldTransform().Equals(Matrix3x4::IDENTITY, M_LARGE_EPSILON));
+        REQUIRE(replicatedNodeChild1->GetWorldTransform().Equals(transformReplicatedNodeChild1, M_LARGE_EPSILON));
+        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2, M_LARGE_EPSILON));
     }
 
     sim.SimulateTime(1.0f);
@@ -495,6 +495,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     // Setup scenes
     const auto interpolationQuality = Tests::ConnectionQuality{0.08f, 0.12f, 0.20f, 0, 0};
     const auto extrapolationQuality = Tests::ConnectionQuality{0.25f, 0.35f, 0.40f, 0, 0};
+    const float positionError = ReplicatedNetworkTransform::DefaultMovementThreshold;
 
     const float moveSpeedNodeA = 1.0f;
     const float rotationSpeedNodeA = 10.0f;
@@ -542,13 +543,14 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.2).margin(0.03));
 
-        REQUIRE(serverTransformA->GetTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformA->GetTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), positionError));
         REQUIRE(serverTransformA->GetTemporalWorldRotation(replicaTime).Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
 
-        REQUIRE(serverTransformB->GetTemporalWorldPosition(replicaTime).Equals(clientNodeB->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformB->GetTemporalWorldPosition(replicaTime).Equals(clientNodeB->GetWorldPosition(), positionError));
         REQUIRE(serverTransformB->GetTemporalWorldRotation(replicaTime).Equivalent(clientNodeB->GetWorldRotation(), M_EPSILON));
     }
 
+    // Expect positions and rotations to be roughly synchronized on extrapolating client
     {
         const auto& clientReplica = *extrapolatingClientScene->GetComponent<NetworkManager>()->GetClientReplica();
         const NetworkTime replicaTime = clientReplica.GetReplicaTime();
@@ -559,7 +561,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.25).margin(0.03));
 
-        REQUIRE(serverTransformA->GetTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), M_LARGE_EPSILON));
+        REQUIRE(serverTransformA->GetTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), positionError));
         REQUIRE(serverTransformA->GetTemporalWorldRotation(replicaTime).Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
 
         REQUIRE(serverTransformB->GetTemporalWorldPosition(replicaTime).Equals(clientNodeB->GetWorldPosition(), 0.002f));
