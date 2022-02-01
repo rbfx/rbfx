@@ -51,7 +51,7 @@ generators_uwp=('-G' 'Visual Studio 16 2019' '-DCMAKE_SYSTEM_NAME=WindowsStore' 
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
 generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
-generators_ios=('-G' 'Xcode' '-T' 'buildsystem=1')
+generators_ios=('-G' 'Xcode' '-T' 'buildsystem=1' '-DURHO3D_GRAPHICS_API=GLES3')
 
 toolchains_ios=(
     '-DCMAKE_TOOLCHAIN_FILE=cmake/Toolchains/IOS.cmake'
