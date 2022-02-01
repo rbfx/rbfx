@@ -37,14 +37,14 @@
 namespace Urho3D
 {
 
-// TODO(network): Remove!! It's already exists as PacketType
-enum class NetworkMessageFlag
+/// Packet types for outgoing buffers. Outgoing messages are grouped by their type
+enum PacketType
 {
-    None = 0,
-    InOrder = 1 << 0,
-    Reliable = 1 << 1
+    PT_UNRELIABLE_UNORDERED,
+    PT_UNRELIABLE_ORDERED,
+    PT_RELIABLE_UNORDERED,
+    PT_RELIABLE_ORDERED
 };
-URHO3D_FLAGSET(NetworkMessageFlag, NetworkMessageFlags);
 
 /// Interface of connection to another host.
 /// Virtual for easier unit testing.
@@ -99,10 +99,10 @@ public:
     }
 
     template <class T>
-    void SendSerializedMessage(NetworkMessageId messageId, const T& message, NetworkMessageFlags flags)
+    void SendSerializedMessage(NetworkMessageId messageId, const T& message, PacketType messageType)
     {
-        const bool reliable = flags.Test(NetworkMessageFlag::Reliable);
-        const bool inOrder = flags.Test(NetworkMessageFlag::InOrder);
+        const bool reliable = messageType == PT_RELIABLE_ORDERED || messageType == PT_RELIABLE_UNORDERED;
+        const bool inOrder = messageType == PT_RELIABLE_ORDERED || messageType == PT_UNRELIABLE_ORDERED;
 
     #ifdef URHO3D_LOGGING
         const ea::string debugInfo = message.ToString();
@@ -116,10 +116,10 @@ public:
     }
 
     template <class T>
-    void SendGeneratedMessage(NetworkMessageId messageId, NetworkMessageFlags flags, T generator)
+    void SendGeneratedMessage(NetworkMessageId messageId, PacketType messageType, T generator)
     {
-        const bool reliable = flags.Test(NetworkMessageFlag::Reliable);
-        const bool inOrder = flags.Test(NetworkMessageFlag::InOrder);
+        const bool reliable = messageType == PT_RELIABLE_ORDERED || messageType == PT_RELIABLE_UNORDERED;
+        const bool inOrder = messageType == PT_RELIABLE_ORDERED || messageType == PT_UNRELIABLE_ORDERED;
 
     #ifdef URHO3D_LOGGING
         ea::string debugInfo;

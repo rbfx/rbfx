@@ -124,11 +124,6 @@ public:
 
     ea::string GetDebugInfo() const;
 
-    /// Return global properties of client state.
-    /// @{
-    unsigned GetPositionExtrapolationFrames() const;
-    /// @}
-
 private:
     void OnInputReady(float timeStep);
     void SendObjectsFeedbackUnreliable(unsigned feedbackFrame);

@@ -48,6 +48,7 @@ void ReplicatedNetworkTransform::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Smoothing Constant", float, smoothingConstant_, DefaultSmoothingConstant, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Movement Threshold", float, movementThreshold_, DefaultMovementThreshold, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Snap Threshold", float, snapThreshold_, DefaultSnapThreshold, AM_DEFAULT);
+    // TODO(network): Configure interpolation and extrapolation too
 }
 
 void ReplicatedNetworkTransform::InitializeOnServer()
