@@ -47,6 +47,7 @@ void ReplicatedNetworkTransform::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Track Only", bool, trackOnly_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Smoothing Constant", float, smoothingConstant_, DefaultSmoothingConstant, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Movement Threshold", float, movementThreshold_, DefaultMovementThreshold, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Snap Threshold", float, snapThreshold_, DefaultSnapThreshold, AM_DEFAULT);
 }
 
 void ReplicatedNetworkTransform::InitializeOnServer()
@@ -82,8 +83,8 @@ void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserial
     const unsigned updateFrequency = replicationManager->GetUpdateFrequency();
     const float extrapolationInSeconds = replicationManager->GetSetting(NetworkSettings::ExtrapolationLimit).GetFloat();
     const unsigned extrapolationInFrames = CeilToInt(extrapolationInSeconds * updateFrequency);
-    client_.positionSampler_.Setup(extrapolationInFrames, smoothingConstant_);
-    client_.rotationSampler_.Setup(0);
+    client_.positionSampler_.Setup(extrapolationInFrames, smoothingConstant_, snapThreshold_);
+    client_.rotationSampler_.Setup(extrapolationInFrames, smoothingConstant_, M_LARGE_VALUE);
 }
 
 void ReplicatedNetworkTransform::UpdateTransformOnServer()

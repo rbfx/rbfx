@@ -36,6 +36,19 @@
 namespace Urho3D
 {
 
+namespace Detail
+{
+
+/// Return squared distance between points.
+/// @{
+inline float GetDistanceSquared(float lhs, float rhs) { return (lhs - rhs) * (lhs - rhs); }
+inline float GetDistanceSquared(const Vector2& lhs, const Vector2& rhs) { return (lhs - rhs).LengthSquared(); }
+inline float GetDistanceSquared(const Vector3& lhs, const Vector3& rhs) { return (lhs - rhs).LengthSquared(); }
+inline float GetDistanceSquared(const Quaternion& lhs, const Quaternion& rhs) { return 1.0f - Abs(lhs.DotProduct(rhs)); }
+/// @}
+
+}
+
 /// Value with derivative, can be extrapolated.
 template <class T>
 struct ValueWithDerivative
@@ -62,7 +75,13 @@ struct NetworkValueTraits
     using InternalType = T;
     using ReturnType = T;
 
-    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor) { return Lerp(lhs, rhs, blendFactor); }
+    static InternalType Interpolate(
+        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
+    {
+        if (Detail::GetDistanceSquared(lhs, rhs) >= snapThreshold * snapThreshold)
+            return blendFactor < 0.5f ? lhs : rhs;
+        return Lerp(lhs, rhs, blendFactor);
+    }
 
     static ReturnType Extract(const InternalType& value) { return value; }
 
@@ -93,7 +112,7 @@ struct NetworkValueTraits<Quaternion>
 
     static Quaternion Extract(const Quaternion& value) { return value; }
 
-    static Quaternion Interpolate(const Quaternion& lhs, const Quaternion& rhs, float blendFactor)
+    static Quaternion Interpolate(const Quaternion& lhs, const Quaternion& rhs, float blendFactor, float snapThreshold)
     {
         return lhs.Slerp(rhs, blendFactor);
     }
@@ -122,8 +141,12 @@ struct NetworkValueTraits<ValueWithDerivative<T>>
     using InternalType = ValueWithDerivative<T>;
     using ReturnType = T;
 
-    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor)
+    static InternalType Interpolate(
+        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
     {
+        if (Detail::GetDistanceSquared(lhs.value_, rhs.value_) >= snapThreshold * snapThreshold)
+            return blendFactor < 0.5f ? lhs : rhs;
+
         const auto interpolatedValue = Lerp(lhs.value_, rhs.value_, blendFactor);
         const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
         return InternalType{interpolatedValue, interpolatedDerivative};
@@ -159,7 +182,8 @@ struct NetworkValueTraits<ValueWithDerivative<Quaternion>>
     using InternalType = ValueWithDerivative<Quaternion>;
     using ReturnType = Quaternion;
 
-    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor)
+    static InternalType Interpolate(
+        const InternalType& lhs, const InternalType& rhs, float blendFactor, float snapThreshold)
     {
         const auto interpolatedValue = lhs.value_.Slerp(rhs.value_, blendFactor);
         const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
@@ -452,15 +476,15 @@ public:
     }
 
     /// Interpolate between two frames or return value of the closest valid frame.
-    InternalType SampleValid(const NetworkTime& time) const
+    InternalType SampleValid(const NetworkTime& time, float snapThreshold = M_LARGE_VALUE) const
     {
-        return CalculateInterpolatedValue(time).first;
+        return CalculateInterpolatedValue(time, snapThreshold).first;
     }
 
     /// Interpolate between two valid frames if possible.
-    ea::optional<InternalType> SamplePrecise(const NetworkTime& time) const
+    ea::optional<InternalType> SamplePrecise(const NetworkTime& time, float snapThreshold = M_LARGE_VALUE) const
     {
-        const auto [value, isPrecise] = CalculateInterpolatedValue(time);
+        const auto [value, isPrecise] = CalculateInterpolatedValue(time, snapThreshold);
         if (!isPrecise)
             return ea::nullopt;
 
@@ -469,14 +493,14 @@ public:
 
 private:
     /// Calculate exact, interpolated or nearest valid value. Return whether the result is precise.
-    ea::pair<InternalType, bool> CalculateInterpolatedValue(const NetworkTime& time) const
+    ea::pair<InternalType, bool> CalculateInterpolatedValue(const NetworkTime& time, float snapThreshold) const
     {
         const InterpolationBase interpolation = GetValidFrameInterpolation(time);
 
         const InternalType value = interpolation.firstIndex_ == interpolation.secondIndex_
             ? values_[interpolation.firstIndex_]
-            : Traits::Interpolate(
-                values_[interpolation.firstIndex_], values_[interpolation.secondIndex_], interpolation.blendFactor_);
+            : Traits::Interpolate(values_[interpolation.firstIndex_], values_[interpolation.secondIndex_],
+                interpolation.blendFactor_, snapThreshold);
 
         const unsigned frame = time.GetFrame();
         // Consider too old frames "precise" because we are not going to get any new data for them anyway.
@@ -498,10 +522,11 @@ public:
     using ReturnType = typename Traits::ReturnType;
 
     /// Update sampler settings.
-    void Setup(unsigned maxExtrapolation, float smoothingConstant = 0.0f)
+    void Setup(unsigned maxExtrapolation, float smoothingConstant, float snapThreshold)
     {
         maxExtrapolation_ = maxExtrapolation;
         smoothingConstant_ = smoothingConstant;
+        snapThreshold_ = snapThreshold;
     }
 
     /// Update sampler state for new time and return current value.
@@ -546,13 +571,13 @@ private:
         if (interpolationCache_ && interpolationCache_->baseFrame_ == frame)
             return;
 
-        if (const auto nextValue = value.SamplePrecise(NetworkTime{frame + 1}))
+        if (const auto nextValue = value.SamplePrecise(NetworkTime{frame + 1}, snapThreshold_))
         {
             // Update interpolation if has enough data for it.
             // Get base value from cache if possible, or just take previous frame.
             const InternalType baseValue = (interpolationCache_ && interpolationCache_->baseFrame_ + 1 == frame)
                 ? interpolationCache_->nextValue_
-                : value.SampleValid(NetworkTime{frame});
+                : value.SampleValid(NetworkTime{frame}, snapThreshold_);
 
             interpolationCache_ = InterpolationCache{frame, baseValue, *nextValue};
             extrapolationFrame_ = frame + 1;
@@ -570,7 +595,7 @@ private:
         if (interpolationCache_ && interpolationCache_->baseFrame_ == time.GetFrame())
         {
             const InternalType value = Traits::Interpolate(
-                interpolationCache_->baseValue_, interpolationCache_->nextValue_, time.GetSubFrame());
+                interpolationCache_->baseValue_, interpolationCache_->nextValue_, time.GetSubFrame(), snapThreshold_);
             return Traits::Extract(value);
         }
 
@@ -583,6 +608,7 @@ private:
 
     unsigned maxExtrapolation_{};
     float smoothingConstant_{};
+    float snapThreshold_{M_LARGE_VALUE};
 
     struct InterpolationCache
     {
@@ -612,17 +638,19 @@ public:
     explicit InterpolatedConstSpan(ea::span<const T> valueSpan)
         : first_(valueSpan)
         , second_(valueSpan)
+        , snapThreshold_(M_LARGE_VALUE)
     {
     }
 
-    InterpolatedConstSpan(ea::span<const T> firstSpan, ea::span<const T> secondSpan, float blendFactor)
+    InterpolatedConstSpan(ea::span<const T> firstSpan, ea::span<const T> secondSpan, float blendFactor, float snapThreshold)
         : first_(firstSpan)
         , second_(secondSpan)
         , blendFactor_(blendFactor)
+        , snapThreshold_(snapThreshold)
     {
     }
 
-    T operator[](unsigned index) const { return Traits::Interpolate(first_[index], second_[index], blendFactor_); }
+    T operator[](unsigned index) const { return Traits::Interpolate(first_[index], second_[index], blendFactor_, snapThreshold_); }
 
     unsigned Size() const { return first_.size(); }
 
@@ -630,6 +658,7 @@ private:
     ea::span<const T> first_;
     ea::span<const T> second_;
     float blendFactor_{};
+    float snapThreshold_{};
 };
 
 /// Similar to NetworkValue, except each frame contains an array of elements.
@@ -680,7 +709,7 @@ public:
 
     /// Server-side sampling: interpolate between consequent frames
     /// or return value of the closest valid frame.
-    InterpolatedValueSpan SampleValid(const NetworkTime& time) const
+    InterpolatedValueSpan SampleValid(const NetworkTime& time, float snapThreshold = M_LARGE_VALUE) const
     {
         const InterpolationBase interpolation = GetValidFrameInterpolation(time);
 
@@ -688,10 +717,10 @@ public:
             return InterpolatedValueSpan{GetSpanForIndex(interpolation.firstIndex_)};
 
         return InterpolatedValueSpan{GetSpanForIndex(interpolation.firstIndex_),
-            GetSpanForIndex(interpolation.secondIndex_), interpolation.blendFactor_};
+            GetSpanForIndex(interpolation.secondIndex_), interpolation.blendFactor_, snapThreshold};
     }
 
-    InterpolatedValueSpan SampleValid(unsigned frame) const { return SampleValid(NetworkTime{frame}); }
+    //InterpolatedValueSpan SampleValid(unsigned frame, float snapThreshold = M_LARGE_VALUE) const { return SampleValid(NetworkTime{frame}); }
 
 private:
     ValueSpan GetSpanForIndex(unsigned index) const
