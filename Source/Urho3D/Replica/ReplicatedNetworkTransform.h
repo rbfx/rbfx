@@ -44,6 +44,7 @@ class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
 public:
     static constexpr float DefaultSmoothingConstant = 15.0f;
     static constexpr float DefaultMovementThreshold = 0.001f;
+    static constexpr float DefaultSnapThreshold = 5.0f;
     static const unsigned NumUploadAttempts = 8;
 
     static constexpr NetworkCallbackFlags CallbackMask =
@@ -84,6 +85,7 @@ private:
     bool trackOnly_{};
     float smoothingConstant_{DefaultSmoothingConstant};
     float movementThreshold_{DefaultMovementThreshold};
+    float snapThreshold_{DefaultSnapThreshold};
 
     NetworkValue<PositionAndVelocity> positionTrace_;
     NetworkValue<RotationAndVelocity> rotationTrace_;

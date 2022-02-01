@@ -189,11 +189,12 @@ TEST_CASE("NetworkValueSampler is smoothly sampled")
 {
     const unsigned maxExtrapolation = 10;
     const float smoothing = 5.0f;
+    const float snapThreshold = 10000.0f;
 
     NetworkValue<ValueWithDerivative<float>> v;
-    v.Resize(10);
+    v.Resize(11);
     NetworkValueSampler<ValueWithDerivative<float>> s;
-    s.Setup(maxExtrapolation, smoothing);
+    s.Setup(maxExtrapolation, smoothing, snapThreshold);
 
     // Interpolation is smooth when past frames are added
     v.Set(5, {5000.0f, 1000.0f});
@@ -240,6 +241,20 @@ TEST_CASE("NetworkValueSampler is smoothly sampled")
     REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(14.0f), 0.5f).value_or(0.0f) == Catch::Approx(14000.0f).margin(100.0f));
     REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(14.5f), 0.5f).value_or(0.0f) == Catch::Approx(14500.0f).margin(20.0f));
     REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(15.0f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(3.0f));
+
+    // Snap threshold is exceeded and value is snapped
+    v.Set(25, {25000.0f, 1000.0f});
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(15.5f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.6f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(16.0f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(16.5f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(17.0f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(17.5f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(18.0f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(18.5f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(19.0f), 0.5f).value_or(0.0f) == Catch::Approx(15000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(20.5f), 1.5f).value_or(0.0f) == Catch::Approx(25000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(25.0f), 4.5f).value_or(0.0f) == Catch::Approx(25000.0f).margin(0.0f));
+    REQUIRE(s.UpdateAndSample(v, NetworkTime::FromDouble(25.5f), 0.5f).value_or(0.0f) == Catch::Approx(25500.0f).margin(0.0f));
 }
 
 TEST_CASE("NetworkValueSampler for Quaternion is smoothly sampled")
@@ -250,7 +265,7 @@ TEST_CASE("NetworkValueSampler for Quaternion is smoothly sampled")
     NetworkValue<Quaternion> v;
     v.Resize(10);
     NetworkValueSampler<Quaternion> s;
-    s.Setup(maxExtrapolation, smoothing);
+    s.Setup(maxExtrapolation, smoothing, M_LARGE_VALUE);
 
     v.Set(5, Quaternion{0.0f});
     v.Set(6, Quaternion{90.0f});
@@ -280,7 +295,7 @@ TEST_CASE("NetworkValueSampler for Quaternion is extrapolated")
     NetworkValue<ValueWithDerivative<Quaternion>> v;
     v.Resize(10);
     NetworkValueSampler<ValueWithDerivative<Quaternion>> s;
-    s.Setup(maxExtrapolation, smoothing);
+    s.Setup(maxExtrapolation, smoothing, M_LARGE_VALUE);
 
     const Vector3 velocity = Quaternion({90.0f}).AngularVelocity();
     v.Set(5, {Quaternion{90.0f}, velocity});
