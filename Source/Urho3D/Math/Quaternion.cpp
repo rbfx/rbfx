@@ -39,7 +39,7 @@ void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
     Vector3 normAxis = axis.Normalized();
     float sinAngle;
     float cosAngle;
-    SinCos2(angle, sinAngle, cosAngle);
+    SinCos(angle*0.5f, sinAngle, cosAngle);
 
     w_ = cosAngle;
     x_ = normAxis.x_ * sinAngle;
@@ -56,9 +56,9 @@ void Quaternion::FromEulerAngles(float x, float y, float z)
     float cosY;
     float sinZ;
     float cosZ;
-    SinCos2(x, sinX, cosX);
-    SinCos2(y, sinY, cosY);
-    SinCos2(z, sinZ, cosZ);
+    SinCos(x * 0.5f, sinX, cosX);
+    SinCos(y * 0.5f, sinY, cosY);
+    SinCos(z * 0.5f, sinZ, cosZ);
 
     w_ = cosY * cosX * cosZ + sinY * sinX * sinZ;
     x_ = cosY * sinX * cosZ + sinY * cosX * sinZ;

@@ -90,8 +90,8 @@ public:
     bool SaveResource() override;
     ///
     StringHash GetResourceType() override { return XMLFile::GetTypeStatic(); };
-    /// Called when tab focused.
-    void OnFocused() override;
+    ///
+    void OnUpdateFocused() override;
     /// Modify current scene selection.
     void ModifySelection(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components, SelectionMode mode);
     /// Modify current scene selection.

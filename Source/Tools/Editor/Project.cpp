@@ -133,6 +133,22 @@ bool Project::LoadProject(const ea::string& projectPath, bool disableAssetImport
         if (!file.LoadFile(filePath))
             return false;
     }
+
+#if URHO3D_PLUGINS
+    // Clean up old copies of reloadable files.
+    if (!context_->GetSubsystem<Engine>()->IsHeadless())
+    {
+        // Normal execution cleans up old versions of plugins.
+        StringVector files;
+        fs->ScanDir(files, fs->GetProgramDir(), "", SCAN_FILES, false);
+        for (const ea::string& fileName : files)
+        {
+            if (std::regex_match(fileName.c_str(), std::regex("^.*[0-9]+\\.(dll|dylib|so)$")))
+                fs->Delete(fs->GetProgramDir() + fileName);
+        }
+    }
+#endif
+
     // Loading is performed even on empty file. Give a chance for serialization function to do default setup in case of missing data.
     JSONInputArchive archive(&file);
     SerializeValue(archive, "project", *this);
@@ -210,23 +226,10 @@ bool Project::LoadProject(const ea::string& projectPath, bool disableAssetImport
         ui->LoadFont(Format("Fonts/{}", font));
 #endif
 
-#if URHO3D_PLUGINS
-    // Clean up old copies of reloadable files.
-    if (!context_->GetSubsystem<Engine>()->IsHeadless())
-    {
-        // Normal execution cleans up old versions of plugins.
-        StringVector files;
-        fs->ScanDir(files, fs->GetProgramDir(), "", SCAN_FILES, false);
-        for (const ea::string& fileName : files)
-        {
-            if (std::regex_match(fileName.c_str(), std::regex("^.*[0-9]+\\.(dll|dylib|so)$")))
-                fs->Delete(fs->GetProgramDir() + fileName);
-        }
-    }
-#if URHO3D_CSHARP
+#if URHO3D_PLUGINS && URHO3D_CSHARP
     plugins_->Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
 #endif
-#endif
+
     if (!disableAssetImport)
     {
         pipeline_->EnableWatcher();
