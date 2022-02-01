@@ -47,6 +47,14 @@ struct ValueWithDerivative
 template <class T> inline bool operator==(const ValueWithDerivative<T>& lhs, const T& rhs) { return lhs.value_ == rhs; }
 template <class T> inline bool operator==(const T& lhs, const ValueWithDerivative<T>& rhs) { return lhs == rhs.value_; }
 
+/// Derivative of a quaternion is angular velocity vector.
+template <>
+struct ValueWithDerivative<Quaternion>
+{
+    Quaternion value_{};
+    Vector3 derivative_{};
+};
+
 /// Helper class to manipulate values stored in NetworkValue.
 template <class T>
 struct NetworkValueTraits
@@ -71,46 +79,9 @@ struct NetworkValueTraits
         inverseCorrection = Lerp(inverseCorrection, ReturnType{}, blendFactor);
     }
 
-    static ReturnType ApplyCorrection(const ReturnType& value, const ReturnType& inverseCorrection)
+    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
     {
-        return value + inverseCorrection;
-    }
-};
-
-template <class T>
-struct NetworkValueTraits<ValueWithDerivative<T>>
-{
-    using InternalType = ValueWithDerivative<T>;
-    using ReturnType = T;
-
-    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor)
-    {
-        const T newPosition = Lerp(lhs.value_, rhs.value_, blendFactor);
-        const T newVelocity = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
-        return InternalType{newPosition, newVelocity};
-    }
-
-    static ReturnType Extract(const InternalType& value) { return value.value_; }
-
-    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
-    {
-        return value.value_ + value.derivative_ * extrapolationFactor;
-    }
-
-    static void UpdateCorrection(
-        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
-    {
-        inverseCorrection -= correctValue - oldValue;
-    }
-
-    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
-    {
-        inverseCorrection = Lerp(inverseCorrection, ReturnType{}, blendFactor);
-    }
-
-    static ReturnType ApplyCorrection(const ReturnType& value, const ReturnType& inverseCorrection)
-    {
-        return value + inverseCorrection;
+        value += inverseCorrection;
     }
 };
 
@@ -131,15 +102,91 @@ struct NetworkValueTraits<Quaternion>
 
     static void UpdateCorrection(Quaternion& inverseCorrection, const Quaternion& correctValue, const Quaternion& oldValue)
     {
+        inverseCorrection = oldValue * correctValue.Inverse() * inverseCorrection;
     }
 
     static void SmoothCorrection(Quaternion& inverseCorrection, float blendFactor)
     {
+        inverseCorrection = inverseCorrection.Slerp(Quaternion::IDENTITY, blendFactor);
     }
 
-    static Quaternion ApplyCorrection(const Quaternion& value, const Quaternion& inverseCorrection)
+    static void ApplyCorrection(const Quaternion& inverseCorrection, Quaternion& value)
     {
-        return value;
+        value = inverseCorrection * value;
+    }
+};
+
+template <class T>
+struct NetworkValueTraits<ValueWithDerivative<T>>
+{
+    using InternalType = ValueWithDerivative<T>;
+    using ReturnType = T;
+
+    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor)
+    {
+        const auto interpolatedValue = Lerp(lhs.value_, rhs.value_, blendFactor);
+        const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
+        return InternalType{interpolatedValue, interpolatedDerivative};
+    }
+
+    static ReturnType Extract(const InternalType& value) { return value.value_; }
+
+    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
+    {
+        return value.value_ + value.derivative_ * extrapolationFactor;
+    }
+
+    static void UpdateCorrection(
+        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
+    {
+        NetworkValueTraits<ReturnType>::UpdateCorrection(inverseCorrection, correctValue, oldValue);
+    }
+
+    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
+    {
+        NetworkValueTraits<ReturnType>::SmoothCorrection(inverseCorrection, blendFactor);
+    }
+
+    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
+    {
+        NetworkValueTraits<ReturnType>::ApplyCorrection(inverseCorrection, value);
+    }
+};
+
+template <>
+struct NetworkValueTraits<ValueWithDerivative<Quaternion>>
+{
+    using InternalType = ValueWithDerivative<Quaternion>;
+    using ReturnType = Quaternion;
+
+    static InternalType Interpolate(const InternalType& lhs, const InternalType& rhs, float blendFactor)
+    {
+        const auto interpolatedValue = lhs.value_.Slerp(rhs.value_, blendFactor);
+        const auto interpolatedDerivative = Lerp(lhs.derivative_, rhs.derivative_, blendFactor);
+        return InternalType{interpolatedValue, interpolatedDerivative};
+    }
+
+    static ReturnType Extract(const InternalType& value) { return value.value_; }
+
+    static ReturnType Extrapolate(const InternalType& value, float extrapolationFactor)
+    {
+        return Quaternion::FromAngularVelocity(value.derivative_ * extrapolationFactor) * value.value_;
+    }
+
+    static void UpdateCorrection(
+        ReturnType& inverseCorrection, const ReturnType& correctValue, const ReturnType& oldValue)
+    {
+        NetworkValueTraits<ReturnType>::UpdateCorrection(inverseCorrection, correctValue, oldValue);
+    }
+
+    static void SmoothCorrection(ReturnType& inverseCorrection, float blendFactor)
+    {
+        NetworkValueTraits<ReturnType>::SmoothCorrection(inverseCorrection, blendFactor);
+    }
+
+    static void ApplyCorrection(const ReturnType& inverseCorrection, ReturnType& value)
+    {
+        NetworkValueTraits<ReturnType>::ApplyCorrection(inverseCorrection, value);
     }
 };
 
@@ -147,21 +194,6 @@ struct NetworkValueTraits<Quaternion>
 class NetworkValueBase
 {
 public:
-    enum class FrameReconstructionMode
-    {
-        ExactValue,
-        ApproximateValue,
-        Interpolate,
-        Extrapolate
-    };
-
-    struct FrameReconstructionBase
-    {
-        FrameReconstructionMode mode_{};
-        unsigned firstFrame_{};
-        unsigned lastFrame_{};
-    };
-
     struct InterpolationBase
     {
         unsigned firstFrame_{};
@@ -305,35 +337,6 @@ public:
         if (const auto closestFrame = FindClosestAllocatedFrame(frame, true, true))
             return *closestFrame;
         return lastFrame_;
-    }
-
-    FrameReconstructionBase FindReconstructionBase(unsigned frame) const
-    {
-        const auto frameBefore = FindClosestAllocatedFrame(frame, true, false);
-        const auto frameAfter = FindClosestAllocatedFrame(frame, false, true);
-
-        if (frameBefore && frameAfter)
-        {
-            // Frame is present, no reconstruction is needed
-            if (*frameBefore == *frameAfter)
-                return {FrameReconstructionMode::ExactValue, *frameBefore, *frameAfter};
-
-            // Frame is missing but it can be interpolated from past and future
-            return {FrameReconstructionMode::Interpolate, *frameBefore, *frameAfter};
-        }
-        else if (!frameBefore && !frameAfter)
-        {
-            // Shall never happen for initialized value
-            URHO3D_ASSERT(0);
-            return {FrameReconstructionMode::ApproximateValue, lastFrame_, lastFrame_};
-        }
-
-        // Frame is too far in the past, just take whatever we have
-        if (!frameBefore)
-            return {FrameReconstructionMode::ApproximateValue, *frameAfter, *frameAfter};
-
-        // Extrapolate from prior frame
-        return {FrameReconstructionMode::Extrapolate, *frameBefore, *frameBefore};
     }
 
     InterpolationBase GetValidFrameInterpolation(const NetworkTime& time) const
@@ -511,9 +514,11 @@ public:
         UpdateCorrection(value, timeStep);
         UpdateCache(value, time.GetFrame());
 
-        const ReturnType newValue = CalculateValueFromCache(value, time);
-        previousValue_ = LatestValue{time, newValue};
-        return Traits::ApplyCorrection(newValue, valueCorrection_);
+        ReturnType sampledValue = CalculateValueFromCache(value, time);
+        previousValue_ = TimeAndValue{time, sampledValue};
+
+        Traits::ApplyCorrection(valueCorrection_, sampledValue);
+        return sampledValue;
     }
 
 private:
@@ -586,14 +591,14 @@ private:
         InternalType nextValue_{};
     };
 
-    struct LatestValue
+    struct TimeAndValue
     {
         NetworkTime time_;
         ReturnType value_{};
     };
 
     ea::optional<InterpolationCache> interpolationCache_;
-    ea::optional<LatestValue> previousValue_;
+    ea::optional<TimeAndValue> previousValue_;
     ea::optional<unsigned> extrapolationFrame_;
 
     ReturnType valueCorrection_{};

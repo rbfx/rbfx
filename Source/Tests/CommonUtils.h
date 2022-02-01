@@ -160,6 +160,7 @@ DEFINE_STRING_MAKER(Variant, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector2, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector3, value.ToString().c_str());
 DEFINE_STRING_MAKER(Vector4, value.ToString().c_str());
+DEFINE_STRING_MAKER(Quaternion, value.ToString().c_str());
 
 #undef DEFINE_STRING_MAKER
 
