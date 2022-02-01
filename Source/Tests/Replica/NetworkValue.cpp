@@ -45,8 +45,8 @@ bool IsSame(ea::optional<ea::span<const T>> lhs, std::initializer_list<T> rhs)
     return lhs && IsSame(*lhs, rhs);
 }
 
-template <class T>
-bool IsSame(InterpolatedConstSpan<T> lhs, std::initializer_list<T> rhs)
+template <class T, class Traits>
+bool IsSame(Detail::InterpolatedConstSpan<T, Traits> lhs, std::initializer_list<T> rhs)
 {
     if (lhs.Size() != rhs.size())
         return false;
@@ -58,8 +58,8 @@ bool IsSame(InterpolatedConstSpan<T> lhs, std::initializer_list<T> rhs)
     return true;
 }
 
-template <class T>
-bool IsSame(ea::optional<InterpolatedConstSpan<T>> lhs, std::initializer_list<T> rhs)
+template <class T, class Traits>
+bool IsSame(ea::optional<Detail::InterpolatedConstSpan<T, Traits>> lhs, std::initializer_list<T> rhs)
 {
     return lhs && IsSame(*lhs, rhs);
 }
