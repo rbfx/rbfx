@@ -43,9 +43,11 @@ class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
 
 public:
     static constexpr float DefaultSmoothingConstant = 15.0f;
+    static constexpr float DefaultMovementThreshold = 0.001f;
+    static const unsigned NumUploadAttempts = 8;
+
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallback::UpdateTransformOnServer | NetworkCallback::UnreliableDelta | NetworkCallback::InterpolateState;
-    static const unsigned NumUploadAttempts = 8;
 
     explicit ReplicatedNetworkTransform(Context* context);
     ~ReplicatedNetworkTransform() override;
@@ -81,6 +83,7 @@ private:
 
     bool trackOnly_{};
     float smoothingConstant_{DefaultSmoothingConstant};
+    float movementThreshold_{DefaultMovementThreshold};
 
     NetworkValue<PositionAndVelocity> positionTrace_;
     NetworkValue<RotationAndVelocity> rotationTrace_;
@@ -96,6 +99,10 @@ private:
         Quaternion rotation_;
         Vector3 velocity_;
         Vector3 angularVelocity_;
+
+        bool movedDuringFrame_{};
+        Vector3 latestSentPosition_;
+        Quaternion latestSentRotation_;
     } server_;
 
     struct ClientData
