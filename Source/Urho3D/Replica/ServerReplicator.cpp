@@ -216,7 +216,7 @@ void ClientSynchronizationState::SendMessages()
     if (!synchronizationMagic_)
     {
         const unsigned magic = MakeMagic();
-        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, NetworkMessageFlag::Reliable);
+        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, PT_RELIABLE_UNORDERED);
         synchronizationMagic_ = magic;
     }
 
@@ -230,7 +230,7 @@ void ClientSynchronizationState::SendMessages()
         UpdateInputBuffer();
 
         const MsgSceneClock msg{frame_, frameLocalTime_, inputDelay_ + inputBufferSize_};
-        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, NetworkMessageFlag::None);
+        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, PT_UNRELIABLE_UNORDERED);
     }
 }
 
@@ -373,8 +373,7 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 
 void ClientReplicationState::SendRemoveObjects()
 {
-    connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS,
-        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+    connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS, PT_RELIABLE_ORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         if (debugInfo)
@@ -398,8 +397,7 @@ void ClientReplicationState::SendRemoveObjects()
 
 void ClientReplicationState::SendAddObjects()
 {
-    connection_->SendGeneratedMessage(MSG_ADD_OBJECTS,
-        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+    connection_->SendGeneratedMessage(MSG_ADD_OBJECTS, PT_RELIABLE_ORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteUInt(GetCurrentFrame());
@@ -432,8 +430,7 @@ void ClientReplicationState::SendAddObjects()
 
 void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE,
-        NetworkMessageFlag::InOrder | NetworkMessageFlag::Reliable,
+    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE, PT_RELIABLE_ORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteUInt(GetCurrentFrame());
@@ -469,7 +466,7 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
 
 void ClientReplicationState::SendUpdateObjectsUnreliable(const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, NetworkMessageFlag::None,
+    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         bool sendMessage = false;

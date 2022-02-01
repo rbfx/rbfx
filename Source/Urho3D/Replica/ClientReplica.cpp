@@ -336,13 +336,6 @@ void ClientReplica::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
         networkObject->Remove();
 }
 
-unsigned ClientReplica::GetPositionExtrapolationFrames() const
-{
-    // TODO(network): Refactor
-    float positionExtrapolationTimeInSeconds = 0.25;
-    return RoundToInt(positionExtrapolationTimeInSeconds * GetUpdateFrequency());
-}
-
 ea::string ClientReplica::GetDebugInfo() const
 {
     static const ea::string unnamedScene = "Unnamed";
@@ -382,7 +375,7 @@ void ClientReplica::OnInputReady(float timeStep)
 
 void ClientReplica::SendObjectsFeedbackUnreliable(unsigned feedbackFrame)
 {
-    connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, NetworkMessageFlag::None,
+    connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteUInt(feedbackFrame);

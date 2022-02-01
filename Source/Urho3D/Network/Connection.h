@@ -110,14 +110,6 @@ enum ObserverPositionSendMode
     OPSM_POSITION_ROTATION
 };
 
-/// Packet types for outgoing buffers. Outgoing messages are grouped by their type
-enum PacketType {
-    PT_UNRELIABLE_UNORDERED,
-    PT_UNRELIABLE_ORDERED,
-    PT_RELIABLE_UNORDERED,
-    PT_RELIABLE_ORDERED
-};
-
 /// %Connection to a remote network host.
 class URHO3D_API Connection : public AbstractConnection
 {

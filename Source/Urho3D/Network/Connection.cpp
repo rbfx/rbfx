@@ -430,7 +430,7 @@ void Connection::SendAllBuffers()
         auto& buffer = outgoingBuffer_[PT_UNRELIABLE_UNORDERED];
         while (const auto clockMessage = clock_->PollMessage())
         {
-            SendGeneratedMessage(MSG_CLOCK_SYNC, NetworkMessageFlag::None,
+            SendGeneratedMessage(MSG_CLOCK_SYNC, PT_UNRELIABLE_UNORDERED,
                 [&](VectorBuffer& msg, ea::string* debugInfo)
             {
                 clockMessage->Save(msg);

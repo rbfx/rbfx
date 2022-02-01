@@ -297,7 +297,7 @@ void NetworkManager::ProcessMessageOnUninitializedClient(
             GetScene(), connection, *client_->initialClock_, *client_->serverSettings_);
 
         connection->SendSerializedMessage(
-            MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, NetworkMessageFlag::Reliable);
+            MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PT_RELIABLE_UNORDERED);
     }
 }
 
