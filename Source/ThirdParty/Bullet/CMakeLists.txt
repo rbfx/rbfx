@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2020 the Urho3D project.
+# Copyright (c) 2017-2020 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ target_include_directories(Bullet SYSTEM
 )
 
 if (URHO3D_SSE)
-    target_compile_definitions(Bullet PUBLIC -DBT_USE_SSE=1)
+    target_compile_definitions(Bullet PUBLIC -DBT_USE_SSE=1 -DBT_THREADSAFE=1)
 endif ()
 
 if (NOT MINI_URHO)

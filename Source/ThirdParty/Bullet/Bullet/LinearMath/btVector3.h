@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003-2006 Gino van den Bergen / Erwin Coumans  http://continuousphysics.com/Bullet/
+Copyright (c) 2003-2006 Gino van den Bergen / Erwin Coumans  https://bulletphysics.org
 
 This software is provided 'as-is', without any express or implied warranty.
 In no event will the authors be held liable for any damages arising from the use of this software.
@@ -11,8 +11,6 @@ subject to the following restrictions:
 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 */
-
-// Modified by Yao Wei Tjong for Urho3D
 
 #ifndef BT_VECTOR3_H
 #define BT_VECTOR3_H
@@ -1000,13 +998,7 @@ SIMD_FORCE_INLINE btVector3 btVector3::rotate(const btVector3& wAxis, const btSc
 SIMD_FORCE_INLINE long btVector3::maxDot(const btVector3* array, long array_count, btScalar& dotOut) const
 {
 #if (defined BT_USE_SSE && defined BT_USE_SIMD_VECTOR3 && defined BT_USE_SSE_IN_API) || defined(BT_USE_NEON)
-
-// Urho3D: commented out original
-//#if defined _WIN32 || defined(BT_USE_SSE)
-
-// Urho3D: to be consistent with the function return below
-#ifdef BT_USE_SSE
-
+#if defined _WIN32 || defined(BT_USE_SSE)
 	const long scalar_cutoff = 10;
 	long _maxdot_large(const float* array, const float* vec, unsigned long array_count, float* dotOut);
 #elif defined BT_USE_NEON
