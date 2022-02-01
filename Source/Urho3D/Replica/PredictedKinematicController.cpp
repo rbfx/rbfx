@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../Replica/KinematicPlayerNetworkObject.h"
+#include "../Replica/PredictedKinematicController.h"
 
 #ifdef URHO3D_PHYSICS
 #include "../Core/Context.h"
@@ -38,26 +38,26 @@
 namespace Urho3D
 {
 
-KinematicPlayerNetworkObject::KinematicPlayerNetworkObject(Context* context)
+PredictedKinematicController::PredictedKinematicController(Context* context)
     : NetworkBehavior(context, CallbackMask)
 {
 }
 
-KinematicPlayerNetworkObject::~KinematicPlayerNetworkObject()
+PredictedKinematicController::~PredictedKinematicController()
 {
 }
 
-void KinematicPlayerNetworkObject::RegisterObject(Context* context)
+void PredictedKinematicController::RegisterObject(Context* context)
 {
-    context->RegisterFactory<KinematicPlayerNetworkObject>();
+    context->RegisterFactory<PredictedKinematicController>();
 }
 
-void KinematicPlayerNetworkObject::SetWalkVelocity(const Vector3& velocity)
+void PredictedKinematicController::SetWalkVelocity(const Vector3& velocity)
 {
     if (GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientReplicated)
     {
         URHO3D_LOGWARNING(
-            "KinematicPlayerNetworkObject::SetWalkVelocity is called for object {} even tho this client doesn't own it",
+            "PredictedKinematicController::SetWalkVelocity is called for object {} even tho this client doesn't own it",
             ToString(GetNetworkObject()->GetNetworkId()));
         return;
     }
@@ -65,7 +65,7 @@ void KinematicPlayerNetworkObject::SetWalkVelocity(const Vector3& velocity)
     velocity_ = velocity;
 }
 
-void KinematicPlayerNetworkObject::InitializeOnServer()
+void PredictedKinematicController::InitializeOnServer()
 {
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
@@ -80,7 +80,7 @@ void KinematicPlayerNetworkObject::InitializeOnServer()
     });
 }
 
-void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
+void PredictedKinematicController::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
 {
     const unsigned n = src.ReadVLE();
     for (unsigned i = 0; i < n; ++i)
@@ -90,7 +90,7 @@ void KinematicPlayerNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame
     }
 }
 
-void KinematicPlayerNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src)
+void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deserializer& src)
 {
     networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
@@ -109,12 +109,12 @@ void KinematicPlayerNetworkObject::InitializeFromSnapshot(unsigned frame, Deseri
     }
 }
 
-bool KinematicPlayerNetworkObject::PrepareUnreliableFeedback(unsigned frame)
+bool PredictedKinematicController::PrepareUnreliableFeedback(unsigned frame)
 {
     return true;
 }
 
-void KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
+void PredictedKinematicController::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
 {
     inputBuffer_.push_back(velocity_);
     if (inputBuffer_.size() >= 8)
@@ -125,7 +125,7 @@ void KinematicPlayerNetworkObject::WriteUnreliableFeedback(unsigned frame, Seria
         dest.WriteVector3(v);
 }
 
-void KinematicPlayerNetworkObject::OnUnreliableDelta(unsigned frame)
+void PredictedKinematicController::OnUnreliableDelta(unsigned frame)
 {
     if (!kinematicController_ || !networkTransform_)
         return;
@@ -133,7 +133,7 @@ void KinematicPlayerNetworkObject::OnUnreliableDelta(unsigned frame)
     compareNextStepToFrame_ = frame;
 }
 
-void KinematicPlayerNetworkObject::CorrectAgainstFrame(unsigned frame)
+void PredictedKinematicController::CorrectAgainstFrame(unsigned frame)
 {
     // Skip frames without confirmed data (shouldn't happen too ofter)
     const auto confirmedPosition = networkTransform_->GetRawTemporalWorldPosition(frame);
@@ -161,7 +161,7 @@ void KinematicPlayerNetworkObject::CorrectAgainstFrame(unsigned frame)
     }
 }
 
-void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin(unsigned serverFrame)
+void PredictedKinematicController::OnServerNetworkFrameBegin(unsigned serverFrame)
 {
     if (AbstractConnection* owner = GetNetworkObject()->GetOwnerConnection())
     {
@@ -175,7 +175,7 @@ void KinematicPlayerNetworkObject::OnServerNetworkFrameBegin(unsigned serverFram
     }
 }
 
-void KinematicPlayerNetworkObject::OnPhysicsSynchronizedOnClient(unsigned networkFrame)
+void PredictedKinematicController::OnPhysicsSynchronizedOnClient(unsigned networkFrame)
 {
     if (kinematicController_)
     {

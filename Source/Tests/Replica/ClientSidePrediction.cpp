@@ -32,7 +32,7 @@
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Replica/ClientInputStatistics.h>
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
-#include <Urho3D/Replica/KinematicPlayerNetworkObject.h>
+#include <Urho3D/Replica/PredictedKinematicController.h>
 #include <Urho3D/Replica/ReplicatedNetworkTransform.h>
 #include <Urho3D/Resource/XMLFile.h>
 
@@ -58,7 +58,7 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedNetworkTransform>();
-    node->CreateComponent<KinematicPlayerNetworkObject>();
+    node->CreateComponent<PredictedKinematicController>();
 
     auto kinematicController = node->CreateComponent<KinematicCharacterController>();
     kinematicController->SetHeight(2.0f);
@@ -124,7 +124,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     const unsigned inputDelay = serverReplicator.GetFeedbackDelay(sim.GetServerToClientConnection(clientScene));
 
     Node* clientNode = clientScene->GetChild("Player", true);
-    auto clientObject = clientNode->GetComponent<KinematicPlayerNetworkObject>();
+    auto clientObject = clientNode->GetComponent<PredictedKinematicController>();
 
     REQUIRE(serverNode->GetWorldPosition().ToXZ() == Vector2::ZERO);
     REQUIRE(serverNode->GetWorldPosition().y_ == Catch::Approx(1.0f).margin(0.1f));
@@ -192,7 +192,7 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     // Wait for synchronization and start tracking
     sim.SimulateTime(9.0f);
     Node* clientNode = clientScene->GetChild("Player", true);
-    auto clientObject = clientNode->GetComponent<KinematicPlayerNetworkObject>();
+    auto clientObject = clientNode->GetComponent<PredictedKinematicController>();
 
     Tests::AttributeTracker serverPosition(context);
     serverPosition.Track(serverNode, "Position");

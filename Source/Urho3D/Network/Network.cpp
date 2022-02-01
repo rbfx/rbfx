@@ -37,7 +37,7 @@
 #include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
 #include "../Replica/BehaviorNetworkObject.h"
-#include "../Replica/KinematicPlayerNetworkObject.h"
+#include "../Replica/PredictedKinematicController.h"
 #include "../Replica/NetworkManager.h"
 #include "../Replica/NetworkObject.h"
 #include "../Replica/ReplicatedNetworkTransform.h"
@@ -1106,7 +1106,7 @@ void RegisterNetworkLibrary(Context* context)
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
 #ifdef URHO3D_PHYSICS
-    KinematicPlayerNetworkObject::RegisterObject(context);
+    PredictedKinematicController::RegisterObject(context);
 #endif
 }
 
