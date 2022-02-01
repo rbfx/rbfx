@@ -160,7 +160,8 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(1.0f);
 
     // Expect server and client positions to match
-    CHECK(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), 0.001)); // TODO(network): Reuse constant
+    const float positionError = ReplicatedNetworkTransform::DefaultMovementThreshold;
+    CHECK(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), positionError));
 }
 
 TEST_CASE("Client-side prediction is stable when latency is stable")
