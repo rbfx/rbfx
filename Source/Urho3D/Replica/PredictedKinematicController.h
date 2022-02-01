@@ -38,15 +38,15 @@ class ReplicatedNetworkTransform;
 
 /// Kinematic controller of the player replicated over network.
 /// TODO(network): Rename to PredictedKinematicController?
-class URHO3D_API KinematicPlayerNetworkObject : public NetworkBehavior
+class URHO3D_API PredictedKinematicController : public NetworkBehavior
 {
-    URHO3D_OBJECT(KinematicPlayerNetworkObject, NetworkBehavior);
+    URHO3D_OBJECT(PredictedKinematicController, NetworkBehavior);
 
 public:
     static constexpr NetworkCallbackFlags CallbackMask = NetworkCallback::UnreliableFeedback;
 
-    explicit KinematicPlayerNetworkObject(Context* context);
-    ~KinematicPlayerNetworkObject() override;
+    explicit PredictedKinematicController(Context* context);
+    ~PredictedKinematicController() override;
 
     static void RegisterObject(Context* context);
 
