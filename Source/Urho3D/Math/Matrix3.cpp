@@ -38,6 +38,27 @@ const Matrix3 Matrix3::ZERO(
 
 const Matrix3 Matrix3::IDENTITY;
 
+void Matrix3::FromAngleAxis(float angle, const Vector3& axis)
+{
+    Vector3 normAxis = axis.Normalized();
+    float sinAngle;
+    float cosAngle;
+    SinCos(angle, sinAngle, cosAngle);
+    const float _cosAngle = 1.0f - cosAngle;
+
+    m00_ = cosAngle + normAxis.x_ * normAxis.x_ * _cosAngle;
+    m10_ = normAxis.y_ * normAxis.x_ * _cosAngle + normAxis.z_ * sinAngle;
+    m20_ = normAxis.z_ * normAxis.x_ * _cosAngle - normAxis.y_ * sinAngle;
+
+    m01_ = normAxis.x_ * normAxis.y_ * _cosAngle - normAxis.z_ * sinAngle;
+    m11_ = cosAngle + normAxis.y_ * normAxis.y_ * _cosAngle;
+    m21_ = normAxis.z_ * normAxis.y_ * _cosAngle + normAxis.x_ * sinAngle;
+
+    m02_ = normAxis.x_ * normAxis.z_ * _cosAngle + normAxis.y_ * sinAngle;
+    m12_ = normAxis.y_ * normAxis.z_ * _cosAngle - normAxis.x_ * sinAngle;
+    m22_ = cosAngle + normAxis.z_ * normAxis.z_ * _cosAngle;
+}
+
 float Matrix3::Determinant() const
 {
     return m00_ * m11_ * m22_ +

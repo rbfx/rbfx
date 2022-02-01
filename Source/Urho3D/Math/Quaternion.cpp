@@ -37,9 +37,9 @@ const Quaternion Quaternion::ZERO{ 0.0f, 0.0f, 0.0f, 0.0f };
 void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
 {
     Vector3 normAxis = axis.Normalized();
-    angle *= M_DEGTORAD_2;
-    float sinAngle = sinf(angle);
-    float cosAngle = cosf(angle);
+    float sinAngle;
+    float cosAngle;
+    SinCos(angle*0.5f, sinAngle, cosAngle);
 
     w_ = cosAngle;
     x_ = normAxis.x_ * sinAngle;
@@ -50,15 +50,15 @@ void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
 void Quaternion::FromEulerAngles(float x, float y, float z)
 {
     // Order of rotations: Z first, then X, then Y (mimics typical FPS camera with gimbal lock at top/bottom)
-    x *= M_DEGTORAD_2;
-    y *= M_DEGTORAD_2;
-    z *= M_DEGTORAD_2;
-    float sinX = sinf(x);
-    float cosX = cosf(x);
-    float sinY = sinf(y);
-    float cosY = cosf(y);
-    float sinZ = sinf(z);
-    float cosZ = cosf(z);
+    float sinX;
+    float cosX;
+    float sinY;
+    float cosY;
+    float sinZ;
+    float cosZ;
+    SinCos(x * 0.5f, sinX, cosX);
+    SinCos(y * 0.5f, sinY, cosY);
+    SinCos(z * 0.5f, sinZ, cosZ);
 
     w_ = cosY * cosX * cosZ + sinY * sinX * sinZ;
     x_ = cosY * sinX * cosZ + sinY * cosX * sinZ;
@@ -224,7 +224,10 @@ float Quaternion::RollAngle() const
 
 Urho3D::Vector3 Quaternion::Axis() const
 {
-    return Vector3(x_, y_, z_) / sqrt(1. - w_ * w_);
+    float axisScaleInv = static_cast<float>(sqrt(1. - w_ * w_));
+    if (axisScaleInv < 1e-6f)
+        return Vector3::UP;
+    return Vector3(x_, y_, z_) / axisScaleInv;
 }
 
 float Quaternion::Angle() const
