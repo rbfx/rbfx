@@ -38,8 +38,9 @@ namespace Urho3D
 {
 
 class AbstractConnection;
-class NetworkObject;
+class Network;
 class NetworkManagerBase;
+class NetworkObject;
 class Scene;
 struct NetworkSetting;
 

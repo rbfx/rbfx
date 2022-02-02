@@ -33,6 +33,7 @@
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
 #include "../Network/NetworkEvents.h"
+#include "../Replica/NetworkSettingsConsts.h"
 #include "../Replica/ReplicatedNetworkTransform.h"
 
 namespace Urho3D
@@ -62,24 +63,70 @@ void PredictedKinematicController::SetWalkVelocity(const Vector3& velocity)
         return;
     }
 
-    velocity_ = velocity;
+    walkVelocity_ = velocity;
 }
 
 void PredictedKinematicController::InitializeOnServer()
 {
+    InitializeCommon();
+    if (!IsConnectedToComponents())
+        return;
+
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
+
     feedbackVelocity_.Resize(traceDuration);
 
     SubscribeToEvent(E_BEGINSERVERNETWORKFRAME,
         [this](StringHash, VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
-        const unsigned serverFrame = eventData[P_FRAME].GetUInt();
-        OnServerNetworkFrameBegin(serverFrame);
+        const unsigned frame = eventData[P_FRAME].GetUInt();
+        OnServerFrameBegin(frame);
     });
 }
 
+void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deserializer& src)
+{
+    InitializeCommon();
+    if (!IsConnectedToComponents())
+        return;
+
+    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
+    const bool isOwned = GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned;
+
+    if (isOwned)
+    {
+        networkTransform_->SetTrackOnly(true);
+
+        const unsigned maxInputFrames = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
+        client_.input_.set_capacity(maxInputFrames);
+
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
+            [this](StringHash, VariantMap& eventData)
+        {
+            const Variant& networkFrame = eventData[PhysicsPreStep::P_NETWORKFRAME];
+            if (!networkFrame.IsEmpty())
+                OnPhysicsSynchronizedOnClient(networkFrame.GetUInt());
+        });
+    }
+}
+
+void PredictedKinematicController::InitializeCommon()
+{
+    networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
+    kinematicController_ = node_->GetComponent<KinematicCharacterController>();
+
+    physicsWorld_ = node_->GetScene()->GetComponent<PhysicsWorld>();
+    physicsStepTime_ = physicsWorld_ ? 1.0f / physicsWorld_->GetFps() : 0.0f;
+}
+
+bool PredictedKinematicController::PrepareUnreliableFeedback(unsigned frame)
+{
+    return true;
+}
+
+/// TODO(network): rewrite
 void PredictedKinematicController::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
 {
     const unsigned n = src.ReadVLE();
@@ -90,35 +137,24 @@ void PredictedKinematicController::ReadUnreliableFeedback(unsigned feedbackFrame
     }
 }
 
-void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deserializer& src)
-{
-    networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
-    kinematicController_ = node_->GetComponent<KinematicCharacterController>();
-
-    if (GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned)
-    {
-        networkTransform_->SetTrackOnly(true);
-
-        const auto physicsWorld = node_->GetScene()->GetComponent<PhysicsWorld>();
-        SubscribeToEvent(physicsWorld, E_PHYSICSPRESTEP, [this](StringHash, VariantMap& eventData)
-        {
-            const Variant& networkFrame = eventData[PhysicsPreStep::P_NETWORKFRAME];
-            if (!networkFrame.IsEmpty())
-                OnPhysicsSynchronizedOnClient(networkFrame.GetUInt());
-        });
-    }
-}
-
-bool PredictedKinematicController::PrepareUnreliableFeedback(unsigned frame)
-{
-    return true;
-}
-
+/// TODO(network): rewrite
 void PredictedKinematicController::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
 {
-    inputBuffer_.push_back(velocity_);
+    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
+    const unsigned maxRedundancy = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
+    const unsigned maxSize = client_.input_.size();
+    const unsigned desiredRedundancy = 16;
+    const unsigned inputBufferSize = ea::min({desiredRedundancy, maxRedundancy, maxSize});
+
+    inputBuffer_.clear();
+    for (unsigned i = 0; i < inputBufferSize; ++i)
+        inputBuffer_.push_back(client_.input_[maxSize - inputBufferSize + i].walkVelocity_);
+
+    /*(URHO3D_ASSERT(client_.input_.empty() || client_.input_.back().frame_ == frame);
+
+    inputBuffer_.push_back(walkVelocity_);
     if (inputBuffer_.size() >= 8)
-        inputBuffer_.pop_front();
+        inputBuffer_.pop_front();*/
 
     dest.WriteVLE(inputBuffer_.size());
     for (const Vector3& v : inputBuffer_)
@@ -127,41 +163,9 @@ void PredictedKinematicController::WriteUnreliableFeedback(unsigned frame, Seria
 
 void PredictedKinematicController::OnUnreliableDelta(unsigned frame)
 {
-    if (!kinematicController_ || !networkTransform_)
-        return;
-
-    compareNextStepToFrame_ = frame;
 }
 
-void PredictedKinematicController::CorrectAgainstFrame(unsigned frame)
-{
-    // Skip frames without confirmed data (shouldn't happen too ofter)
-    const auto confirmedPosition = networkTransform_->GetRawTemporalWorldPosition(frame);
-    if (!confirmedPosition)
-        return;
-
-    // Skip if no predicted frame (shouldn't happen too ofter as well)
-    const auto greaterOrEqual = [&](const auto& frameAndPosition) { return frameAndPosition.first >= frame; };
-    const auto iter = ea::find_if(predictedWorldPositions_.begin(), predictedWorldPositions_.end(), greaterOrEqual);
-    predictedWorldPositions_.erase(predictedWorldPositions_.begin(), iter);
-    if (predictedWorldPositions_.empty() || predictedWorldPositions_.front().first != frame)
-        return;
-
-    const Vector3 predictedPosition = predictedWorldPositions_.front().second;
-    const Vector3 offset = *confirmedPosition - predictedPosition;
-    if (!offset.Equals(Vector3::ZERO, 0.001f))
-    {
-        const auto replicationManager = GetNetworkObject()->GetReplicationManager();
-        // TODO(network): Refactor
-        const float smoothConstant = 15.0f;
-        kinematicController_->AdjustRawPosition(offset, smoothConstant);
-        predictedWorldPositions_.clear();
-        //for (auto& [predictionFrame, otherPredictedPosition] : predictedWorldPositions_)
-        //    otherPredictedPosition += offset;
-    }
-}
-
-void PredictedKinematicController::OnServerNetworkFrameBegin(unsigned serverFrame)
+void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
 {
     if (AbstractConnection* owner = GetNetworkObject()->GetOwnerConnection())
     {
@@ -169,27 +173,91 @@ void PredictedKinematicController::OnServerNetworkFrameBegin(unsigned serverFram
         if (const auto newVelocity = feedbackVelocity_.GetRaw(serverFrame))
         {
             auto kinematicController = node_->GetComponent<KinematicCharacterController>();
-            const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
-            kinematicController->SetWalkDirection(*newVelocity * timeStep);
+            kinematicController->SetWalkDirection(*newVelocity * physicsStepTime_);
         }
+        else
+            // TODO(network): Revisit logging
+            URHO3D_LOGWARNING("PredictedKinematicController skipped input frame #{} on server", serverFrame);
     }
 }
 
-void PredictedKinematicController::OnPhysicsSynchronizedOnClient(unsigned networkFrame)
+void PredictedKinematicController::OnPhysicsSynchronizedOnClient(unsigned frame)
 {
-    if (kinematicController_)
+    if (!IsConnectedToComponents())
+        return;
+
+    CheckAndCorrectController(frame);
+    TrackCurrentInput(frame);
+
+    // Apply actions
+    kinematicController_->SetWalkDirection(walkVelocity_ * physicsStepTime_);
+}
+
+void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
+{
+    // Skip if not ready
+    const auto latestConfirmedFrame = networkTransform_->GetLatestReceivedFrame();
+    if (client_.input_.empty() || !latestConfirmedFrame)
+        return;
+
+    // Apply only latest confirmed state only once.
+    if (client_.latestConfirmedFrame_ && *client_.latestConfirmedFrame_ == *latestConfirmedFrame)
+        return;
+
+    // Avoid re-adjusting affected frames to stabilize behavior.
+    if (client_.latestAffectedFrame_ && NetworkTime{*latestConfirmedFrame} - NetworkTime{*client_.latestAffectedFrame_} <= 0.0)
+        return;
+
+    // Skip if cannot find matching input frame for whatever reason
+    const auto nextInputFrameIter = ea::find_if(client_.input_.begin(), client_.input_.end(),
+        [&](const InputFrame& inputFrame) { return inputFrame.frame_ == *latestConfirmedFrame + 1; });
+    if (nextInputFrameIter == client_.input_.end())
+        return;
+
+    const unsigned nextInputFrameIndex = nextInputFrameIter - client_.input_.begin();
+    if (AdjustConfirmedFrame(*latestConfirmedFrame, nextInputFrameIndex))
+        client_.latestAffectedFrame_ = frame;
+    client_.latestConfirmedFrame_ = *latestConfirmedFrame;
+}
+
+bool PredictedKinematicController::AdjustConfirmedFrame(unsigned confirmedFrame, unsigned nextInputFrameIndex)
+{
+    const float movementThreshold = networkTransform_->GetMovementThreshold();
+    const float smoothingConstant = networkTransform_->GetSmoothingConstant();
+
+    const auto confirmedPosition = networkTransform_->GetRawTemporalWorldPosition(confirmedFrame);
+    URHO3D_ASSERT(confirmedPosition);
+
+    const InputFrame& nextInput = client_.input_[nextInputFrameIndex];
+    const Vector3 offset = *confirmedPosition - nextInput.startPosition_;
+    if (!offset.Equals(Vector3::ZERO, movementThreshold))
     {
-        const float timeStep = 1.0f / GetScene()->GetComponent<PhysicsWorld>()->GetFps(); // TODO(network): Remove before merge!!!
-        kinematicController_->SetWalkDirection(velocity_ * timeStep);
-
-        if (compareNextStepToFrame_)
-        {
-            CorrectAgainstFrame(*compareNextStepToFrame_);
-            compareNextStepToFrame_ = ea::nullopt;
-        }
-
-        predictedWorldPositions_.emplace_back(networkFrame - 1, kinematicController_->GetRawPosition());
+        kinematicController_->AdjustRawPosition(offset, smoothingConstant);
+        return true;
     }
+    return false;
+}
+
+void PredictedKinematicController::TrackCurrentInput(unsigned frame)
+{
+    InputFrame currentInput;
+    currentInput.frame_ = frame;
+    currentInput.walkVelocity_ = walkVelocity_;
+    currentInput.startPosition_ = kinematicController_->GetRawPosition();
+
+    if (!client_.input_.empty())
+    {
+        InputFrame lastFrame = client_.input_.back();
+        while (lastFrame.frame_ + 1 != frame)
+        {
+            ++lastFrame.frame_;
+            // TODO(network): Revisit logging
+            // TODO(network): Consider this on correction
+            URHO3D_LOGWARNING("PredictedKinematicController skipped input frame #{} on client", lastFrame.frame_);
+            client_.input_.push_back(lastFrame);
+        }
+    }
+    client_.input_.push_back(currentInput);
 }
 
 }

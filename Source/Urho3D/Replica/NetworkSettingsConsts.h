@@ -122,6 +122,10 @@ URHO3D_NETWORK_SETTING(InterpolationDelay, float, 0.1f);
 URHO3D_NETWORK_SETTING(ClientTracingDuration, float, 3.0f);
 /// Duration in seconds of value extrapolation. Beyond this limit the value stays fixed.
 URHO3D_NETWORK_SETTING(ExtrapolationLimit, float, 0.5f);
+/// Maximum number of input frames tracked by the client.
+URHO3D_NETWORK_SETTING(MaxInputFrames, unsigned, 256);
+/// Maximum number of input frames sent to server including relevant frame.
+URHO3D_NETWORK_SETTING(MaxInputRedundancy, unsigned, 32);
 
 /// @}
 

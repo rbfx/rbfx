@@ -194,4 +194,9 @@ ea::optional<Quaternion> ReplicatedNetworkTransform::GetRawTemporalWorldRotation
     return value ? ea::make_optional(value->value_) : ea::nullopt;
 }
 
+ea::optional<unsigned> ReplicatedNetworkTransform::GetLatestReceivedFrame() const
+{
+    return positionTrace_.IsInitialized() ? ea::make_optional(positionTrace_.GetLastFrame()) : ea::nullopt;
+}
+
 }

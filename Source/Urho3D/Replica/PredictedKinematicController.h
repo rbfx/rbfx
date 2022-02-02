@@ -27,6 +27,8 @@
 #include "../Replica/BehaviorNetworkObject.h"
 
 #include <EASTL/optional.h>
+#include <EASTL/vector.h>
+#include <EASTL/bonus/ring_buffer.h>
 
 #ifdef URHO3D_PHYSICS
 
@@ -51,6 +53,8 @@ public:
 
     /// Set desired walk velocity on the owner client.
     void SetWalkVelocity(const Vector3& velocity);
+    /// Return whether the behavior is properly connected to components.
+    bool IsConnectedToComponents() const { return physicsWorld_ && networkTransform_ && kinematicController_; }
 
     /// Implementation of NetworkObject
     /// @{
@@ -64,24 +68,48 @@ public:
     void OnUnreliableDelta(unsigned frame) override;
     /// @}
 
-protected:
-    /// Called when frame begins on server.
-    void OnServerNetworkFrameBegin(unsigned serverFrame);
-    /// Called when physics step is over.
-    void OnPhysicsSynchronizedOnClient(unsigned networkFrame);
-    void CorrectAgainstFrame(unsigned frame);
-
 private:
+    void InitializeCommon();
+
+    void OnServerFrameBegin(unsigned serverFrame);
+
+    void OnPhysicsSynchronizedOnClient(unsigned frame);
+    void CheckAndCorrectController(unsigned frame);
+    bool AdjustConfirmedFrame(unsigned confirmedFrame, unsigned nextInputFrameIndex);
+    void TrackCurrentInput(unsigned frame);
+
     WeakPtr<ReplicatedNetworkTransform> networkTransform_;
     WeakPtr<KinematicCharacterController> kinematicController_;
-    Vector3 velocity_;
+    WeakPtr<PhysicsWorld> physicsWorld_;
+
+    /// Dynamic attributes.
+    /// @{
+    Vector3 walkVelocity_;
+    /// @}
+
+    struct InputFrame
+    {
+        unsigned frame_{};
+        Vector3 startPosition_;
+        Vector3 walkVelocity_;
+    };
+
+    struct ServerData
+    {
+
+    } server_;
+
+    struct ClientData
+    {
+        ea::ring_buffer<InputFrame> input_;
+        ea::optional<unsigned> latestConfirmedFrame_;
+        ea::optional<unsigned> latestAffectedFrame_;
+    } client_;
+
+    float physicsStepTime_{};
 
     /// Client only: track of predicted positions for unprocessed.
-    ea::vector<ea::pair<unsigned, Vector3>> predictedWorldPositions_;
     ea::vector<Vector3> inputBuffer_;
-    /// Client only: whether to track next physics step.
-    ea::optional<ea::pair<unsigned, unsigned>> trackNextStepAsFrame_;
-    ea::optional<unsigned> compareNextStepToFrame_;
 
     /// Server only: feedback from client.
     NetworkValue<Vector3> feedbackVelocity_;

@@ -57,6 +57,12 @@ public:
 
     void SetTrackOnly(bool value) { trackOnly_ = value; }
     bool GetTrackOnly() const { return trackOnly_; }
+    void SetSmoothingConstant(float value) { smoothingConstant_ = value; }
+    float GetSmoothingConstant() const { return smoothingConstant_; }
+    void SetMovementThreshold(float value) { movementThreshold_ = value; }
+    float GetMovementThreshold() const { return movementThreshold_; }
+    void SetSnapThreshold(float value) { snapThreshold_ = value; }
+    float GetSnapThreshold() const { return snapThreshold_; }
 
     /// Implement NetworkBehavior.
     /// @{
@@ -77,6 +83,7 @@ public:
     Quaternion GetTemporalWorldRotation(const NetworkTime& time) const;
     ea::optional<Vector3> GetRawTemporalWorldPosition(unsigned frame) const;
     ea::optional<Quaternion> GetRawTemporalWorldRotation(unsigned frame) const;
+    ea::optional<unsigned> GetLatestReceivedFrame() const;
     /// @}
 
 private:
