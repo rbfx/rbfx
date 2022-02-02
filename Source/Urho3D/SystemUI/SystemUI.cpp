@@ -221,7 +221,7 @@ void SystemUI::OnInputEnd(VariantMap& args)
 #else
         ImGui_ImplDX9_NewFrame();
 #endif
-        ImGui_ImplSDL2_NewFrame(graphics->GetWindow());
+        ImGui_ImplSDL2_NewFrame();
     }
 
     ui::NewFrame();
