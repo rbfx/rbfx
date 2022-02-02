@@ -115,6 +115,7 @@ public:
     static double QuantizeDuration(double duration, unsigned millisecondsInQuant = MillisecondsInQuant);
 
     explicit NetworkSimulator(Scene* serverScene, unsigned seed = 0);
+    ~NetworkSimulator();
     void AddClient(Scene* clientScene, const ConnectionQuality& quality);
 
     static void SimulateEngineFrame(Context* context, float timeStep);

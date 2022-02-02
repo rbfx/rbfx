@@ -50,6 +50,12 @@ inline void SetNetworkSetting(VariantMap& map, const NetworkSetting& key, const 
     map[key.name_] = value;
 }
 
+/// Set network setting in the map to default value.
+inline void SetDefaultNetworkSetting(VariantMap& map, const NetworkSetting& key)
+{
+    map[key.name_] = key.defaultValue_;
+}
+
 /// Network parameters supported by the engine
 namespace NetworkSettings
 {
@@ -57,6 +63,8 @@ namespace NetworkSettings
 /// Internal properties. Do not override.
 /// @{
 
+/// Version of internal protocol.
+URHO3D_NETWORK_SETTING(InternalProtocolVersion, unsigned, 1);
 /// Update frequency of the server, frames per second.
 URHO3D_NETWORK_SETTING(UpdateFrequency, unsigned, 30);
 /// Connection ID of current client.

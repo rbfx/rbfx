@@ -103,6 +103,10 @@ public:
     /// Set simulated packet loss probability between 0.0 - 1.0.
     /// @property
     void SetSimulatedPacketLoss(float probability);
+    /// Test only. Set whether to send events as server.
+    void SetSimulateServerEvents(bool enable) { simulateServerEvents_ = enable; }
+    /// Test only. Set whether to send events as client.
+    void SetSimulateClientEvents(bool enable) { simulateClientEvents_ = enable; }
     /// Register a remote event as allowed to be received. There is also a fixed blacklist of events that can not be allowed in any case, such as ConsoleCommand.
     void RegisterRemoteEvent(StringHash eventType);
     /// Unregister a remote event as allowed to received.
@@ -182,6 +186,14 @@ private:
     void HandleIncomingPacket(SLNet::Packet* packet, bool isServer);
     /// Return hash of endpoint.
     static unsigned long GetEndpointHash(const SLNet::AddressOrGUID& endpoint);
+
+    void SendNetworkUpdateEvent(StringHash eventType, bool isServer);
+
+    /// Used for testing only
+    /// @{
+    bool simulateServerEvents_{};
+    bool simulateClientEvents_{};
+    /// @}
 
     /// Properties that need connection reset to apply
     /// @{

@@ -82,10 +82,13 @@ public:
 private:
     void OnServerFrameEnd(unsigned frame);
 
+    /// Attributes independent on the client and the server.
+    /// @{
     bool trackOnly_{};
     float smoothingConstant_{DefaultSmoothingConstant};
     float movementThreshold_{DefaultMovementThreshold};
     float snapThreshold_{DefaultSnapThreshold};
+    /// @}
 
     NetworkValue<PositionAndVelocity> positionTrace_;
     NetworkValue<RotationAndVelocity> rotationTrace_;

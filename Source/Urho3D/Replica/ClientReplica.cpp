@@ -130,6 +130,7 @@ NetworkTime ClientReplicaClock::ToInputTime(const NetworkTime& serverTime) const
 ClientReplica::ClientReplica(
     Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
+    , network_(GetSubsystem<Network>())
     , replicationManager_(scene->GetComponent<NetworkManager>())
 {
     URHO3D_ASSERT(replicationManager_);
@@ -140,7 +141,17 @@ ClientReplica::ClientReplica(
         const float timeStep = eventData[P_TIMESTEP].GetFloat();
         OnInputReady(timeStep);
     });
+
+    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap& eventData)
+    {
+        using namespace NetworkUpdate;
+        const bool isServer = eventData[P_ISSERVER].GetBool();
+        if (!isServer)
+            OnNetworkUpdate();
+    });
 }
+
+ClientReplica::~ClientReplica() {}
 
 bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData)
 {
@@ -362,12 +373,21 @@ void ClientReplica::OnInputReady(float timeStep)
 
     if (IsNewInputFrame())
     {
-        auto network = GetSubsystem<Network>();
-
         using namespace BeginClientNetworkFrame;
         auto& eventData = GetEventDataMap();
         eventData[P_FRAME] = GetInputTime().GetFrame();
-        network->SendEvent(E_BEGINCLIENTNETWORKFRAME);
+        network_->SendEvent(E_BEGINCLIENTNETWORKFRAME);
+    }
+}
+
+void ClientReplica::OnNetworkUpdate()
+{
+    if (IsNewInputFrame())
+    {
+        using namespace EndClientNetworkFrame;
+        auto& eventData = GetEventDataMap();
+        eventData[P_FRAME] = GetInputTime().GetFrame();
+        network_->SendEvent(E_ENDCLIENTNETWORKFRAME);
 
         SendObjectsFeedbackUnreliable(GetInputTime().GetFrame());
     }

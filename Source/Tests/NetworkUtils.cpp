@@ -140,8 +140,16 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
     , random_(seed)
     , serverScene_(serverScene)
 {
+    network_->SetSimulateServerEvents(true);
+    network_->SetSimulateClientEvents(true);
     serverNetworkManager_ = serverScene_->GetOrCreateComponent<NetworkManager>();
     serverNetworkManager_->StartServer();
+}
+
+NetworkSimulator::~NetworkSimulator()
+{
+    network_->SetSimulateServerEvents(false);
+    network_->SetSimulateClientEvents(false);
 }
 
 void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& quality)

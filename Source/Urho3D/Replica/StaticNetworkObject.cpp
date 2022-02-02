@@ -52,7 +52,7 @@ void StaticNetworkObject::SetClientPrefab(XMLFile* prefab)
         return;
     }
 
-    // TODO(network): Revisit?
+    // TODO(network): Revisit? Maybe pass isOwned to InitializeFromSnapshot?
     if (GetNetworkMode() == NetworkObjectMode::Server)
     {
         URHO3D_LOGERROR("StaticNetworkObject::SetClientPrefab is called for object {} which is already replicated",

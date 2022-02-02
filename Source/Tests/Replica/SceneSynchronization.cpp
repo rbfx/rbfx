@@ -742,36 +742,23 @@ TEST_CASE("Physics is synchronized with network updates")
     sim.AddClient(clientScene, quality);
     sim.SimulateTime(10.0f);
 
-    // Expect to have alternating frames:
-    // - ...
-    // - (end frame)
-    // - E_PHYSICSPRESTEP
-    // - (end frame)
-    // - E_PHYSICSPRESTEP
-    // - E_NETWORKUPDATE
-    // - (end frame)
-    // - E_PHYSICSPRESTEP
-    // - (end frame)
-    // - E_PHYSICSPRESTEP
-    // - E_NETWORKUPDATE
-    // - (end frame)
-    // - ...
-
     auto serverEventTracker = MakeShared<Tests::FrameEventTracker>(context);
     serverEventTracker->TrackEvent(serverPhysicsWorld, E_PHYSICSPRESTEP);
-    serverEventTracker->TrackEvent(E_NETWORKUPDATE);
+    serverEventTracker->TrackEvent(E_BEGINSERVERNETWORKFRAME);
+    serverEventTracker->TrackEvent(E_ENDSERVERNETWORKFRAME);
 
     auto clientEventTracker = MakeShared<Tests::FrameEventTracker>(context);
     clientEventTracker->TrackEvent(clientPhysicsWorld, E_PHYSICSPRESTEP);
     clientEventTracker->TrackEvent(E_BEGINCLIENTNETWORKFRAME);
+    clientEventTracker->TrackEvent(E_ENDCLIENTNETWORKFRAME);
 
     sim.SimulateTime(1.0f);
-    serverEventTracker->SkipFramesUntilEvent(E_NETWORKUPDATE);
+    serverEventTracker->SkipFramesUntilEvent(E_ENDSERVERNETWORKFRAME);
     clientEventTracker->SkipFramesUntilEvent(E_BEGINCLIENTNETWORKFRAME, 2);
 
     REQUIRE(serverEventTracker->GetNumFrames() > 4);
     REQUIRE(clientEventTracker->GetNumFrames() > 4);
 
-    serverEventTracker->ValidatePattern({{E_PHYSICSPRESTEP, E_PHYSICSPRESTEP, E_NETWORKUPDATE}, {}, {}, {}});
-    clientEventTracker->ValidatePattern({{E_BEGINCLIENTNETWORKFRAME, E_PHYSICSPRESTEP}, {}, {E_PHYSICSPRESTEP}, {}});
+    serverEventTracker->ValidatePattern({{E_BEGINSERVERNETWORKFRAME, E_PHYSICSPRESTEP, E_PHYSICSPRESTEP, E_ENDSERVERNETWORKFRAME}, {}, {}, {}});
+    clientEventTracker->ValidatePattern({{E_BEGINCLIENTNETWORKFRAME, E_PHYSICSPRESTEP, E_ENDCLIENTNETWORKFRAME}, {}, {E_PHYSICSPRESTEP}, {}});
 }

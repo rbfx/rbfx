@@ -85,8 +85,8 @@ protected:
     /// Returns possibly scaled (dilated or contracted) timestep.
     float UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
 
-    Scene* const scene_{};
-    AbstractConnection* const connection_{};
+    const WeakPtr<Scene> scene_;
+    const WeakPtr<AbstractConnection> connection_;
 
 private:
     SoftNetworkTime InitializeSoftTime() const;
@@ -119,6 +119,7 @@ class URHO3D_API ClientReplica : public ClientReplicaClock
 public:
     ClientReplica(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
         const VariantMap& serverSettings);
+    ~ClientReplica() override;
 
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
 
@@ -126,6 +127,7 @@ public:
 
 private:
     void OnInputReady(float timeStep);
+    void OnNetworkUpdate();
     void SendObjectsFeedbackUnreliable(unsigned feedbackFrame);
 
     NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned);
@@ -138,7 +140,8 @@ private:
     void ProcessUpdateObjectsReliable(MemoryBuffer& messageData);
     void ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData);
 
-    NetworkManagerBase* replicationManager_{};
+    const WeakPtr<Network> network_;
+    const WeakPtr<NetworkManagerBase> replicationManager_;
 
     ea::vector<MsgSceneClock> pendingClockUpdates_;
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;

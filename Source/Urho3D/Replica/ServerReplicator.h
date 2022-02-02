@@ -221,9 +221,9 @@ private:
 
     ClientReplicationState& GetConnection(AbstractConnection* connection);
 
-    Network* network_{};
-    Scene* scene_{};
-    NetworkManagerBase* replicationManager_{};
+    const WeakPtr<Network> network_;
+    const WeakPtr<Scene> scene_;
+    const WeakPtr<NetworkManagerBase> replicationManager_;
 
     VariantMap settings_;
 

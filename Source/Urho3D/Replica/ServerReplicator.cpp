@@ -576,6 +576,7 @@ ServerReplicator::ServerReplicator(Scene* scene)
     , physicsSync_(scene_, updateFrequency_, true)
     , sharedState_(MakeShared<SharedReplicationState>(replicationManager_))
 {
+    SetDefaultNetworkSetting(settings_, NetworkSettings::InternalProtocolVersion);
     SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
     SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
@@ -588,9 +589,12 @@ ServerReplicator::ServerReplicator(Scene* scene)
         OnInputReady(timeStep, isUpdateNow, overtime);
     });
 
-    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap&)
+    SubscribeToEvent(network_, E_NETWORKUPDATE, [this](StringHash, VariantMap& eventData)
     {
-        OnNetworkUpdate();
+        using namespace NetworkUpdate;
+        const bool isServer = eventData[P_ISSERVER].GetBool();
+        if (isServer)
+            OnNetworkUpdate();
     });
 }
 
