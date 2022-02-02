@@ -1,15 +1,13 @@
-#if defined _MSC_VER || defined __CYGWIN__ || defined _WIN32
-# ifndef WIN32_LEAN_AND_MEAN
-#  define WIN32_LEAN_AND_MEAN
-# endif
-# ifndef NOMINMAX
-#  define NOMINMAX
-# endif
-#endif
 #ifdef _MSC_VER
 #  pragma warning(disable:4996)
 #endif
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  ifndef NOMINMAX
+#    define NOMINMAX
+#  endif
 #  include <windows.h>
 #  include <malloc.h>
 #else
@@ -40,7 +38,7 @@
 
 #include "TracySystem.hpp"
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 extern "C" typedef HRESULT (WINAPI *t_SetThreadDescription)( HANDLE, PCWSTR );
 extern "C" typedef HRESULT (WINAPI *t_GetThreadDescription)( HANDLE, PWSTR* );
 #endif
@@ -56,19 +54,19 @@ namespace tracy
 namespace detail
 {
 
-TRACY_API uint64_t GetThreadHandleImpl()
+TRACY_API uint32_t GetThreadHandleImpl()
 {
-#if defined _WIN32 || defined __CYGWIN__
-    static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
-    return uint64_t( GetCurrentThreadId() );
+#if defined _WIN32
+    static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint32_t ), "Thread handle too big to fit in protocol" );
+    return uint32_t( GetCurrentThreadId() );
 #elif defined __APPLE__
     uint64_t id;
     pthread_threadid_np( pthread_self(), &id );
-    return id;
+    return uint32_t( id );
 #elif defined __ANDROID__
-    return (uint64_t)gettid();
+    return (uint32_t)gettid();
 #elif defined __linux__
-    return (uint64_t)syscall( SYS_gettid );
+    return (uint32_t)syscall( SYS_gettid );
 #elif defined __FreeBSD__
     long id;
     thr_self( &id );
@@ -80,8 +78,13 @@ TRACY_API uint64_t GetThreadHandleImpl()
 #elif defined __OpenBSD__
     return getthrid();
 #else
-    static_assert( sizeof( decltype( pthread_self() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
-    return uint64_t( pthread_self() );
+    // To add support for a platform, retrieve and return the kernel thread identifier here.
+    //
+    // Note that pthread_t (as for example returned by pthread_self()) is *not* a kernel
+    // thread identifier. It is a pointer to a library-allocated data structure instead.
+    // Such pointers will be reused heavily, making the pthread_t non-unique. Additionally
+    // a 64-bit pointer cannot be reliably truncated to 32 bits.
+    #error "Unsupported platform!"
 #endif
 
 }
@@ -91,7 +94,7 @@ TRACY_API uint64_t GetThreadHandleImpl()
 #ifdef TRACY_ENABLE
 struct ThreadNameData
 {
-    uint64_t id;
+    uint32_t id;
     const char* name;
     ThreadNameData* next;
 };
@@ -123,7 +126,7 @@ void ThreadNameMsvcMagic( const THREADNAME_INFO& info )
 
 TRACY_API void SetThreadName( const char* name )
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     static auto _SetThreadDescription = (t_SetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "SetThreadDescription" );
     if( _SetThreadDescription )
     {
@@ -142,7 +145,7 @@ TRACY_API void SetThreadName( const char* name )
         ThreadNameMsvcMagic( info );
 #  endif
     }
-#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__ && !defined __CYGWIN__
+#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
     {
         const auto sz = strlen( name );
         if( sz <= 15 )
@@ -173,7 +176,7 @@ TRACY_API void SetThreadName( const char* name )
 #endif
 }
 
-TRACY_API const char* GetThreadName( uint64_t id )
+TRACY_API const char* GetThreadName( uint32_t id )
 {
     static char buf[256];
 #ifdef TRACY_ENABLE
@@ -187,7 +190,7 @@ TRACY_API const char* GetThreadName( uint64_t id )
         ptr = ptr->next;
     }
 #else
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
     static auto _GetThreadDescription = (t_GetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetThreadDescription" );
     if( _GetThreadDescription )
     {
@@ -213,7 +216,7 @@ TRACY_API const char* GetThreadName( uint64_t id )
     int tid = (int) syscall( SYS_gettid );
 #   endif
     snprintf( path, sizeof( path ), "/proc/self/task/%d/comm", tid );
-    sprintf( buf, "%" PRIu64, id );
+    sprintf( buf, "%" PRIu32, id );
 #   ifndef __ANDROID__
     pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, &cs );
 #   endif
@@ -235,7 +238,7 @@ TRACY_API const char* GetThreadName( uint64_t id )
     return buf;
 #  endif
 #endif
-    sprintf( buf, "%" PRIu64, id );
+    sprintf( buf, "%" PRIu32, id );
     return buf;
 }
 

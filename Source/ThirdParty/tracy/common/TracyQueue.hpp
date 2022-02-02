@@ -21,6 +21,7 @@ enum class QueueType : uint8_t
     Callstack,
     CallstackAlloc,
     CallstackSample,
+    CallstackSampleContextSwitch,
     FrameImage,
     ZoneBegin,
     ZoneBeginCallstack,
@@ -55,6 +56,13 @@ enum class QueueType : uint8_t
     ThreadWakeup,
     GpuTime,
     GpuContextName,
+    CallstackFrameSize,
+    SymbolInformation,
+    CodeInformation,
+    ExternalNameMetadata,
+    SymbolCodeMetadata,
+    FiberEnter,
+    FiberLeave,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -76,10 +84,7 @@ enum class QueueType : uint8_t
     MessageLiteralCallstack,
     MessageLiteralColorCallstack,
     GpuNewContext,
-    CallstackFrameSize,
     CallstackFrame,
-    SymbolInformation,
-    CodeInformation,
     SysTimeReport,
     TidToPid,
     HwSampleCpuCycle,
@@ -92,6 +97,7 @@ enum class QueueType : uint8_t
     ParamSetup,
     AckServerQueryNoop,
     AckSourceCodeNotAvailable,
+    AckSymbolCodeNotAvailable,
     CpuTopology,
     SingleStringData,
     SecondStringData,
@@ -108,6 +114,7 @@ enum class QueueType : uint8_t
     ExternalThreadName,
     SymbolCode,
     SourceCode,
+    FiberName,
     NUM_TYPES
 };
 
@@ -115,7 +122,7 @@ enum class QueueType : uint8_t
 
 struct QueueThreadContext
 {
-    uint64_t thread;
+    uint32_t thread;
 };
 
 struct QueueZoneBeginLean
@@ -128,14 +135,29 @@ struct QueueZoneBegin : public QueueZoneBeginLean
     uint64_t srcloc;    // ptr
 };
 
+struct QueueZoneBeginThread : public QueueZoneBegin
+{
+    uint32_t thread;
+};
+
 struct QueueZoneEnd
 {
     int64_t time;
 };
 
+struct QueueZoneEndThread : public QueueZoneEnd
+{
+    uint32_t thread;
+};
+
 struct QueueZoneValidation
 {
     uint32_t id;
+};
+
+struct QueueZoneValidationThread : public QueueZoneValidation
+{
+    uint32_t thread;
 };
 
 struct QueueZoneColor
@@ -145,9 +167,19 @@ struct QueueZoneColor
     uint8_t b;
 };
 
+struct QueueZoneColorThread : public QueueZoneColor
+{
+    uint32_t thread;
+};
+
 struct QueueZoneValue
 {
     uint64_t value;
+};
+
+struct QueueZoneValueThread : public QueueZoneValue
+{
+    uint32_t thread;
 };
 
 struct QueueStringTransfer
@@ -191,6 +223,11 @@ struct QueueZoneTextFat
     uint16_t size;
 };
 
+struct QueueZoneTextFatThread : public QueueZoneTextFat
+{
+    uint32_t thread;
+};
+
 enum class LockType : uint8_t
 {
     Lockable,
@@ -205,6 +242,19 @@ struct QueueLockAnnounce
     LockType type;
 };
 
+struct QueueFiberEnter
+{
+    int64_t time;
+    uint64_t fiber;     // ptr
+    uint32_t thread;
+};
+
+struct QueueFiberLeave
+{
+    int64_t time;
+    uint32_t thread;
+};
+
 struct QueueLockTerminate
 {
     uint32_t id;
@@ -213,28 +263,28 @@ struct QueueLockTerminate
 
 struct QueueLockWait
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockObtain
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockRelease
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockMark
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     uint64_t srcloc;    // ptr
 };
@@ -287,9 +337,19 @@ struct QueueMessageLiteral : public QueueMessage
     uint64_t text;      // ptr
 };
 
+struct QueueMessageLiteralThread : public QueueMessageLiteral
+{
+    uint32_t thread;
+};
+
 struct QueueMessageColorLiteral : public QueueMessageColor
 {
     uint64_t text;      // ptr
+};
+
+struct QueueMessageColorLiteralThread : public QueueMessageColorLiteral
+{
+    uint32_t thread;
 };
 
 struct QueueMessageFat : public QueueMessage
@@ -298,10 +358,20 @@ struct QueueMessageFat : public QueueMessage
     uint16_t size;
 };
 
+struct QueueMessageFatThread : public QueueMessageFat
+{
+    uint32_t thread;
+};
+
 struct QueueMessageColorFat : public QueueMessageColor
 {
     uint64_t text;      // ptr
     uint16_t size;
+};
+
+struct QueueMessageColorFatThread : public QueueMessageColorFat
+{
+    uint32_t thread;
 };
 
 // Don't change order, only add new entries at the end, this is also used on trace dumps!
@@ -324,7 +394,7 @@ struct QueueGpuNewContext
 {
     int64_t cpuTime;
     int64_t gpuTime;
-    uint64_t thread;
+    uint32_t thread;
     float period;
     uint8_t context;
     GpuContextFlags flags;
@@ -334,7 +404,7 @@ struct QueueGpuNewContext
 struct QueueGpuZoneBeginLean
 {
     int64_t cpuTime;
-    uint64_t thread;
+    uint32_t thread;
     uint16_t queryId;
     uint8_t context;
 };
@@ -347,7 +417,7 @@ struct QueueGpuZoneBegin : public QueueGpuZoneBeginLean
 struct QueueGpuZoneEnd
 {
     int64_t cpuTime;
-    uint64_t thread;
+    uint32_t thread;
     uint16_t queryId;
     uint8_t context;
 };
@@ -386,7 +456,7 @@ struct QueueMemNamePayload
 struct QueueMemAlloc
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
     uint64_t ptr;
     char size[6];
 };
@@ -394,7 +464,7 @@ struct QueueMemAlloc
 struct QueueMemFree
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
     uint64_t ptr;
 };
 
@@ -403,16 +473,26 @@ struct QueueCallstackFat
     uint64_t ptr;
 };
 
+struct QueueCallstackFatThread : public QueueCallstackFat
+{
+    uint32_t thread;
+};
+
 struct QueueCallstackAllocFat
 {
     uint64_t ptr;
     uint64_t nativePtr;
 };
 
+struct QueueCallstackAllocFatThread : public QueueCallstackAllocFat
+{
+    uint32_t thread;
+};
+
 struct QueueCallstackSample
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
 };
 
 struct QueueCallstackSampleFat : public QueueCallstackSample
@@ -424,6 +504,12 @@ struct QueueCallstackFrameSize
 {
     uint64_t ptr;
     uint8_t size;
+};
+
+struct QueueCallstackFrameSizeFat : public QueueCallstackFrameSize
+{
+    uint64_t data;
+    uint64_t imageName;
 };
 
 struct QueueCallstackFrame
@@ -439,17 +525,34 @@ struct QueueSymbolInformation
     uint64_t symAddr;
 };
 
+struct QueueSymbolInformationFat : public QueueSymbolInformation
+{
+    uint64_t fileString;
+    uint8_t needFree;
+};
+
 struct QueueCodeInformation
 {
-    uint64_t ptr;
-    uint32_t line;
     uint64_t symAddr;
+    uint32_t line;
+    uint64_t ptrOffset;
+};
+
+struct QueueCodeInformationFat : public QueueCodeInformation
+{
+    uint64_t fileString;
+    uint8_t needFree;
 };
 
 struct QueueCrashReport
 {
     int64_t time;
     uint64_t text;      // ptr
+};
+
+struct QueueCrashReportThread
+{
+    uint32_t thread;
 };
 
 struct QueueSysTime
@@ -461,8 +564,8 @@ struct QueueSysTime
 struct QueueContextSwitch
 {
     int64_t time;
-    uint64_t oldThread;
-    uint64_t newThread;
+    uint32_t oldThread;
+    uint32_t newThread;
     uint8_t cpu;
     uint8_t reason;
     uint8_t state;
@@ -471,7 +574,7 @@ struct QueueContextSwitch
 struct QueueThreadWakeup
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
 };
 
 struct QueueTidToPid
@@ -514,6 +617,20 @@ struct QueueCpuTopology
     uint32_t thread;
 };
 
+struct QueueExternalNameMetadata
+{
+    uint64_t thread;
+    uint64_t name;
+    uint64_t threadName;
+};
+
+struct QueueSymbolCodeMetadata
+{
+    uint64_t symbol;
+    uint64_t ptr;
+    uint32_t size;
+};
+
 struct QueueHeader
 {
     union
@@ -531,16 +648,22 @@ struct QueueItem
         QueueThreadContext threadCtx;
         QueueZoneBegin zoneBegin;
         QueueZoneBeginLean zoneBeginLean;
+        QueueZoneBeginThread zoneBeginThread;
         QueueZoneEnd zoneEnd;
+        QueueZoneEndThread zoneEndThread;
         QueueZoneValidation zoneValidation;
+        QueueZoneValidationThread zoneValidationThread;
         QueueZoneColor zoneColor;
+        QueueZoneColorThread zoneColorThread;
         QueueZoneValue zoneValue;
+        QueueZoneValueThread zoneValueThread;
         QueueStringTransfer stringTransfer;
         QueueFrameMark frameMark;
         QueueFrameImage frameImage;
         QueueFrameImageFat frameImageFat;
         QueueSourceLocation srcloc;
         QueueZoneTextFat zoneTextFat;
+        QueueZoneTextFatThread zoneTextFatThread;
         QueueLockAnnounce lockAnnounce;
         QueueLockTerminate lockTerminate;
         QueueLockWait lockWait;
@@ -553,9 +676,13 @@ struct QueueItem
         QueueMessage message;
         QueueMessageColor messageColor;
         QueueMessageLiteral messageLiteral;
+        QueueMessageLiteralThread messageLiteralThread;
         QueueMessageColorLiteral messageColorLiteral;
+        QueueMessageColorLiteralThread messageColorLiteralThread;
         QueueMessageFat messageFat;
+        QueueMessageFatThread messageFatThread;
         QueueMessageColorFat messageColorFat;
+        QueueMessageColorFatThread messageColorFatThread;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneBeginLean gpuZoneBeginLean;
@@ -568,14 +695,20 @@ struct QueueItem
         QueueMemFree memFree;
         QueueMemNamePayload memName;
         QueueCallstackFat callstackFat;
+        QueueCallstackFatThread callstackFatThread;
         QueueCallstackAllocFat callstackAllocFat;
+        QueueCallstackAllocFatThread callstackAllocFatThread;
         QueueCallstackSample callstackSample;
         QueueCallstackSampleFat callstackSampleFat;
         QueueCallstackFrameSize callstackFrameSize;
+        QueueCallstackFrameSizeFat callstackFrameSizeFat;
         QueueCallstackFrame callstackFrame;
         QueueSymbolInformation symbolInformation;
+        QueueSymbolInformationFat symbolInformationFat;
         QueueCodeInformation codeInformation;
+        QueueCodeInformationFat codeInformationFat;
         QueueCrashReport crashReport;
+        QueueCrashReportThread crashReportThread;
         QueueSysTime sysTime;
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;
@@ -584,6 +717,10 @@ struct QueueItem
         QueuePlotConfig plotConfig;
         QueueParamSetup paramSetup;
         QueueCpuTopology cpuTopology;
+        QueueExternalNameMetadata externalNameMetadata;
+        QueueSymbolCodeMetadata symbolCodeMetadata;
+        QueueFiberEnter fiberEnter;
+        QueueFiberLeave fiberLeave;
     };
 };
 #pragma pack()
@@ -605,6 +742,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // callstack
     sizeof( QueueHeader ),                                  // callstack alloc
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample ), // context switch
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
@@ -639,6 +777,13 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
     sizeof( QueueHeader ) + sizeof( QueueGpuContextName ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
+    sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
+    sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
+    sizeof( QueueHeader ),                                  // ExternalNameMetadata - not for wire transfer
+    sizeof( QueueHeader ),                                  // SymbolCodeMetadata - not for wire transfer
+    sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
+    sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
@@ -661,10 +806,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessageLiteral ),  // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessageColorLiteral ), // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
-    sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
-    sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
-    sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cpu cycle
@@ -677,6 +819,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // server query acknowledgement
     sizeof( QueueHeader ),                                  // source code not available
+    sizeof( QueueHeader ),                                  // symbol code not available
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data
     sizeof( QueueHeader ),                                  // second string data
@@ -694,6 +837,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // external thread name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // symbol code
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // source code
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // fiber name
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

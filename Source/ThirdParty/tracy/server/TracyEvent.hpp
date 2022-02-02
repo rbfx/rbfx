@@ -264,6 +264,8 @@ struct SampleData
 
 enum { SampleDataSize = sizeof( SampleData ) };
 
+struct SampleDataSort { bool operator()( const SampleData& lhs, const SampleData& rhs ) { return lhs.time.Val() < rhs.time.Val(); }; };
+
 
 struct SampleDataRange
 {
@@ -457,15 +459,27 @@ struct CallstackFrameData
 enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };
 
 
-struct CallstackFrameTree
+struct MemCallstackFrameTree
 {
-    CallstackFrameTree( CallstackFrameId id ) : frame( id ), alloc( 0 ), count( 0 ) {}
+    MemCallstackFrameTree( CallstackFrameId id ) : frame( id ), alloc( 0 ), count( 0 ) {}
 
     CallstackFrameId frame;
     uint64_t alloc;
     uint32_t count;
-    unordered_flat_map<uint64_t, CallstackFrameTree> children;
+    unordered_flat_map<uint64_t, MemCallstackFrameTree> children;
     unordered_flat_set<uint32_t> callstacks;
+};
+
+enum { MemCallstackFrameTreeSize = sizeof( MemCallstackFrameTree ) };
+
+
+struct CallstackFrameTree
+{
+    CallstackFrameTree( CallstackFrameId id ) : frame( id ), count( 0 ) {}
+
+    CallstackFrameId frame;
+    uint32_t count;
+    unordered_flat_map<uint64_t, CallstackFrameTree> children;
 };
 
 enum { CallstackFrameTreeSize = sizeof( CallstackFrameTree ) };
@@ -484,6 +498,7 @@ enum { CrashEventSize = sizeof( CrashEvent ) };
 
 struct ContextSwitchData
 {
+    enum : int8_t { Fiber = 99 };
     enum : int8_t { NoState = 100 };
     enum : int8_t { Wakeup = -2 };
 
@@ -500,6 +515,8 @@ struct ContextSwitchData
     tracy_force_inline void SetState( int8_t state ) { memcpy( &_end_reason_state, &state, 1 ); }
     tracy_force_inline int64_t WakeupVal() const { return _wakeup.Val(); }
     tracy_force_inline void SetWakeup( int64_t wakeup ) { assert( wakeup < (int64_t)( 1ull << 47 ) ); _wakeup.SetVal( wakeup ); }
+    tracy_force_inline uint16_t Thread() const { return _thread; }
+    tracy_force_inline void SetThread( uint16_t thread ) { _thread = thread; }
 
     tracy_force_inline void SetStartCpu( int64_t start, uint8_t cpu ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_cpu = ( uint64_t( start ) << 16 ) | cpu; }
     tracy_force_inline void SetEndReasonState( int64_t end, int8_t reason, int8_t state ) { assert( end < (int64_t)( 1ull << 47 ) ); _end_reason_state = ( uint64_t( end ) << 16 ) | ( uint64_t( reason ) << 8 ) | uint8_t( state ); }
@@ -507,6 +524,7 @@ struct ContextSwitchData
     uint64_t _start_cpu;
     uint64_t _end_reason_state;
     Int48 _wakeup;
+    uint16_t _thread;
 };
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
@@ -601,52 +619,17 @@ struct GhostZone
 
 enum { GhostZoneSize = sizeof( GhostZone ) };
 
+
+struct ChildSample
+{
+    Int48 time;
+    uint64_t addr;
+};
+
+enum { ChildSampleSize = sizeof( ChildSample ) };
+
 #pragma pack()
 
-
-using SrcLocCountMap = unordered_flat_map<int16_t, size_t>;
-
-static tracy_force_inline void IncSrcLocCount( SrcLocCountMap& countMap, int16_t srcloc )
-{
-    const auto it = countMap.find( srcloc );
-    if( it == countMap.end() )
-    {
-        countMap.emplace( srcloc, 1 );
-        return;
-    }
-
-    assert( it->second != 0 );
-    it->second++;
-}
-
-static tracy_force_inline bool DecSrcLocCount( SrcLocCountMap& countMap, int16_t srcloc )
-{
-    const auto it = countMap.find( srcloc );
-    assert( it != countMap.end() );
-    assert( it->second != 0 );
-
-    if( it->second == 1 )
-    {
-        countMap.erase( it );
-        return false;
-    }
-
-    it->second--;
-    return true;
-}
-
-static tracy_force_inline bool HasSrcLocCount( const SrcLocCountMap& countMap, int16_t srcloc )
-{
-    const auto it = countMap.find( srcloc );
-
-    if( it != countMap.end() )
-    {
-        assert( it->second != 0 );
-        return true;
-    }
-
-    return false;
-}
 
 struct ThreadData
 {
@@ -654,7 +637,6 @@ struct ThreadData
     uint64_t count;
     Vector<short_ptr<ZoneEvent>> timeline;
     Vector<short_ptr<ZoneEvent>> stack;
-    SrcLocCountMap stackCount;
     Vector<short_ptr<MessageData>> messages;
     uint32_t nextZoneId;
     Vector<uint32_t> zoneIdStack;
@@ -662,13 +644,18 @@ struct ThreadData
     Vector<int64_t> childTimeStack;
     Vector<GhostZone> ghostZones;
     uint64_t ghostIdx;
+    SortedVector<SampleData, SampleDataSort> postponedSamples;
 #endif
     Vector<SampleData> samples;
     SampleData pendingSample;
+    Vector<SampleData> ctxSwitchSamples;
     uint64_t kernelSampleCnt;
+    uint8_t isFiber;
+    ThreadData* fiber;
+    uint8_t* stackCount;
 
-    tracy_force_inline void IncStackCount( int16_t srcloc ) { IncSrcLocCount( stackCount, srcloc ); }
-    tracy_force_inline bool DecStackCount( int16_t srcloc ) { return DecSrcLocCount( stackCount, srcloc ); }
+    tracy_force_inline void IncStackCount( int16_t srcloc ) { stackCount[uint16_t(srcloc)]++; }
+    tracy_force_inline bool DecStackCount( int16_t srcloc ) { return --stackCount[uint16_t(srcloc)] != 0; }
 };
 
 struct GpuCtxThreadData
@@ -753,6 +740,7 @@ struct PlotData
     uint64_t name;
     double min;
     double max;
+    double sum;
     SortedVector<PlotItem, PlotItemSort> data;
     PlotType type;
     PlotValueFormatting format;
@@ -840,6 +828,7 @@ struct SymbolStats
 {
     uint32_t incl, excl;
     unordered_flat_map<uint32_t, uint32_t> parents;
+    unordered_flat_map<uint32_t, uint32_t> baseParents;
 };
 
 enum { SymbolStatsSize = sizeof( SymbolStats ) };

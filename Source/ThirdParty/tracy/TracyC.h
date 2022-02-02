@@ -73,6 +73,13 @@ typedef const void* TracyCZoneCtx;
 #define TracyCMessageCS(x,y,z,w)
 #define TracyCMessageLCS(x,y,z)
 
+#define TracyCIsConnected 0
+
+#ifdef TRACY_FIBERS
+#  define TracyCFiberEnter(fiber)
+#  define TracyCFiberLeave
+#endif
+
 #else
 
 #ifndef TracyConcat
@@ -97,6 +104,38 @@ struct ___tracy_c_zone_context
     int active;
 };
 
+struct ___tracy_gpu_time_data
+{
+    int64_t gpuTime;
+    uint16_t queryId;
+    uint8_t context;
+};
+
+struct ___tracy_gpu_zone_begin_data {
+    uint64_t srcloc;
+    uint16_t queryId;
+    uint8_t context;
+};
+
+struct ___tracy_gpu_zone_end_data {
+    uint16_t queryId;
+    uint8_t context;
+};
+
+struct ___tracy_gpu_new_context_data {
+    int64_t gpuTime;
+    float period;
+    uint8_t context;
+    uint8_t flags;
+    uint8_t type;
+};
+
+struct ___tracy_gpu_context_name_data {
+    uint8_t context;
+    const char* name;
+    uint16_t len;
+};
+
 // Some containers don't support storing const types.
 // This struct, as visible to user, is immutable, so treat it as if const was declared here.
 typedef /*const*/ struct ___tracy_c_zone_context TracyCZoneCtx;
@@ -119,6 +158,20 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size );
 TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color );
 TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value );
+
+TRACY_API void ___tracy_emit_gpu_zone_begin_alloc( const struct ___tracy_gpu_zone_begin_data );
+TRACY_API void ___tracy_emit_gpu_zone_end( const struct ___tracy_gpu_zone_end_data data );
+TRACY_API void ___tracy_emit_gpu_time( const struct ___tracy_gpu_time_data );
+TRACY_API void ___tracy_emit_gpu_new_context( const struct ___tracy_gpu_new_context_data );
+TRACY_API void ___tracy_emit_gpu_context_name( const struct ___tracy_gpu_context_name_data );
+
+TRACY_API void ___tracy_emit_gpu_zone_begin_alloc_serial( const struct ___tracy_gpu_zone_begin_data );
+TRACY_API void ___tracy_emit_gpu_zone_end_serial( const struct ___tracy_gpu_zone_end_data data );
+TRACY_API void ___tracy_emit_gpu_time_serial( const struct ___tracy_gpu_time_data );
+TRACY_API void ___tracy_emit_gpu_new_context_serial( const struct ___tracy_gpu_new_context_data );
+TRACY_API void ___tracy_emit_gpu_context_name_serial( const struct ___tracy_gpu_context_name_data );
+
+TRACY_API int ___tracy_connected(void);
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyCZone( ctx, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __func__,  __FILE__, (uint32_t)__LINE__, 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
@@ -203,7 +256,7 @@ TRACY_API void ___tracy_emit_plot( const char* name, double val );
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
-#define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color );
+#define TracyCAppInfo( txt, size ) ___tracy_emit_message_appinfo( txt, size );
 
 
 #ifdef TRACY_HAS_CALLSTACK
@@ -246,6 +299,16 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #  define TracyCMessageLS( txt, depth ) TracyCMessageL( txt )
 #  define TracyCMessageCS( txt, size, color, depth ) TracyCMessageC( txt, size, color )
 #  define TracyCMessageLCS( txt, color, depth ) TracyCMessageLC( txt, color )
+#endif
+
+#define TracyCIsConnected ___tracy_connected()
+
+TRACY_API void ___tracy_fiber_enter( const char* fiber );
+TRACY_API void ___tracy_fiber_leave( void );
+
+#ifdef TRACY_FIBERS
+#  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
+#  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif
 
 #endif

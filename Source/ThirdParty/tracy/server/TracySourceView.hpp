@@ -10,6 +10,7 @@
 #include "TracyDecayValue.hpp"
 #include "TracySourceContents.hpp"
 #include "TracySourceTokenizer.hpp"
+#include "../common/TracyForceInline.hpp"
 #include "../common/TracyProtocol.hpp"
 
 struct ImFont;
@@ -141,12 +142,13 @@ private:
 public:
     using GetWindowCallback = void*(*)();
 
-    SourceView( ImFont* font, GetWindowCallback gwcb );
+    SourceView( GetWindowCallback gwcb );
 
+    void UpdateFont( ImFont* fixed, ImFont* small ) { m_font = fixed; m_smallFont = small; }
     void SetCpuId( uint32_t cpuid );
 
     void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );
-    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view );
+    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view );
     void Render( Worker& worker, View& view );
 
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
@@ -168,13 +170,15 @@ private:
     void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
     void RenderHwLinePart( size_t cycles, size_t retired, size_t branchRetired, size_t branchMiss, size_t cacheRef, size_t cacheMiss, size_t branchRel, size_t branchRelMax, size_t cacheRel, size_t cacheRelMax, const ImVec2& ts );
 
-    void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
-    void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
+    void SelectLine( uint32_t line, const Worker* worker, bool updateAsmLine = true, uint64_t targetAddr = 0, bool changeAsmLine = true );
+    void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool updateAsmLine = true, uint64_t targetAddr = 0, bool changeAsmLine = true );
     void SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker );
 
     void GatherIpHwStats( AddrStatData& as, Worker& worker, const View& view, CostType cost );
     void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
     void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
+    void GatherChildStats( uint64_t baseAddr, unordered_flat_map<uint64_t, uint32_t>& vec, Worker& worker, bool limitView, const View& view );
+
     uint32_t CountAsmIpStats( uint64_t baseAddr, const Worker& worker, bool limitView, const View& view );
     void CountHwStats( AddrStatData& as, Worker& worker, const View& view );
 
@@ -186,11 +190,17 @@ private:
     void CheckRead( size_t line, RegsX86 reg, size_t limit );
     void CheckWrite( size_t line, RegsX86 reg, size_t limit );
 
+    bool IsInContext( const Worker& worker, uint64_t addr ) const;
+
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
 #endif
 
+    tracy_force_inline void SetFont();
+    tracy_force_inline void UnsetFont();
+
     ImFont* m_font;
+    ImFont* m_smallFont;
     uint64_t m_symAddr;
     uint64_t m_baseAddr;
     uint64_t m_targetAddr;
@@ -213,6 +223,7 @@ private:
     uint64_t m_jumpPopupAddr;
     bool m_hwSamples, m_hwSamplesRelative;
     bool m_childCalls;
+    bool m_childCallList;
     CostType m_cost;
 
     SourceContents m_source;
@@ -245,6 +256,7 @@ private:
 
     float m_srcWidth;
     float m_asmWidth;
+    float m_jumpOffset;
 
     GetWindowCallback m_gwcb;
     Tokenizer m_tokenizer;
