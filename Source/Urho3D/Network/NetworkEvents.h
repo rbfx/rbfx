@@ -92,6 +92,12 @@ URHO3D_EVENT(E_BEGINSERVERNETWORKFRAME, BeginServerNetworkFrame)
     URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
 }
 
+/// End the frame of network update on the server. Happens right before sending messages to the clients.
+URHO3D_EVENT(E_ENDSERVERNETWORKFRAME, EndServerNetworkFrame)
+{
+    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
+}
+
 /// Begin the input frame on the client.
 /// Any client-side simulation at E_BEGINCLIENTNETWORKFRAME is precisely synchronized
 /// with one of the future E_BEGINSERVERNETWORKFRAME.
@@ -100,8 +106,8 @@ URHO3D_EVENT(E_BEGINCLIENTNETWORKFRAME, BeginClientNetworkFrame)
     URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
 }
 
-/// End the frame of network update on the server. Happens right before sending user messages.
-URHO3D_EVENT(E_ENDSERVERNETWORKFRAME, EndServerNetworkFrame)
+/// End the input frame on the client. Happens right before sending messages to the server.
+URHO3D_EVENT(E_ENDCLIENTNETWORKFRAME, EndClientNetworkFrame)
 {
     URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
 }
@@ -109,11 +115,13 @@ URHO3D_EVENT(E_ENDSERVERNETWORKFRAME, EndServerNetworkFrame)
 /// About to send network update on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
 {
+    URHO3D_PARAM(P_ISSERVER, IsServer);                 // bool
 }
 
 /// Network update has been sent on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATESENT, NetworkUpdateSent)
 {
+    URHO3D_PARAM(P_ISSERVER, IsServer);                 // bool
 }
 
 /// Scene load failed, either due to file not found or checksum error.

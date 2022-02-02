@@ -37,7 +37,6 @@ class KinematicCharacterController;
 class ReplicatedNetworkTransform;
 
 /// Kinematic controller of the player replicated over network.
-/// TODO(network): Rename to PredictedKinematicController?
 class URHO3D_API PredictedKinematicController : public NetworkBehavior
 {
     URHO3D_OBJECT(PredictedKinematicController, NetworkBehavior);

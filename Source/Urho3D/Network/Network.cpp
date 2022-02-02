@@ -968,11 +968,10 @@ void Network::PostUpdate(float timeStep)
 {
     URHO3D_PROFILE("PostUpdateNetwork");
 
-    // Check if periodic update should happen now
-    if (updateNow_)
+    // Update periodically on the server
+    if (updateNow_ && (IsServerRunning() || simulateServerEvents_))
     {
-        // Notify of the impending update to allow for example updated client controls to be set
-        SendEvent(E_NETWORKUPDATE);
+        SendNetworkUpdateEvent(E_NETWORKUPDATE, true);
 
         if (IsServerRunning())
         {
@@ -1006,22 +1005,21 @@ void Network::PostUpdate(float timeStep)
             }
         }
 
+        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, true);
+    }
+
+    // Always update on the client
+    if (serverConnection_ || simulateClientEvents_)
+    {
+        SendNetworkUpdateEvent(E_NETWORKUPDATE, false);
+
         if (serverConnection_)
         {
-            // Send the client update
-            serverConnection_->SendClientUpdate();
             serverConnection_->SendRemoteEvents();
             serverConnection_->SendAllBuffers();
         }
 
-        // Notify that the update was sent
-        SendEvent(E_NETWORKUPDATESENT);
-    }
-    else if (serverConnection_)
-    {
-        // Send events and messages to server immediately
-        serverConnection_->SendRemoteEvents();
-        serverConnection_->SendAllBuffers();
+        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
     }
 }
 
@@ -1088,6 +1086,14 @@ void Network::ConfigureNetworkSimulator()
 unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
 {
     return SLNet::AddressOrGUID::ToInteger(endpoint);
+}
+
+void Network::SendNetworkUpdateEvent(StringHash eventType, bool isServer)
+{
+    using namespace NetworkUpdate;
+    auto& eventData = GetEventDataMap();
+    eventData[P_ISSERVER] = isServer;
+    SendEvent(eventType, eventData);
 }
 
 void RegisterNetworkLibrary(Context* context)
