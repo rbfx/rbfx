@@ -44,7 +44,7 @@ class URHO3D_API PredictedKinematicController : public NetworkBehavior
     URHO3D_OBJECT(PredictedKinematicController, NetworkBehavior);
 
 public:
-    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallback::UnreliableFeedback;
+    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallback::UnreliableFeedback | NetworkCallback::InterpolateState;
 
     explicit PredictedKinematicController(Context* context);
     ~PredictedKinematicController() override;
@@ -61,14 +61,22 @@ public:
     void InitializeOnServer() override;
     void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
 
+    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+
     bool PrepareUnreliableFeedback(unsigned frame) override;
     void WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
     void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
-
-    void OnUnreliableDelta(unsigned frame) override;
     /// @}
 
 private:
+    struct InputFrame
+    {
+        bool isLost_{};
+        unsigned frame_{};
+        Vector3 startPosition_;
+        Vector3 walkVelocity_;
+    };
+
     void InitializeCommon();
 
     void OnServerFrameBegin(unsigned serverFrame);
@@ -77,6 +85,9 @@ private:
     void CheckAndCorrectController(unsigned frame);
     bool AdjustConfirmedFrame(unsigned confirmedFrame, unsigned nextInputFrameIndex);
     void TrackCurrentInput(unsigned frame);
+
+    void WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const;
+    void ReadInputFrame(unsigned frame, Deserializer& src);
 
     WeakPtr<ReplicatedNetworkTransform> networkTransform_;
     WeakPtr<KinematicCharacterController> kinematicController_;
@@ -87,29 +98,25 @@ private:
     Vector3 walkVelocity_;
     /// @}
 
-    struct InputFrame
-    {
-        unsigned frame_{};
-        Vector3 startPosition_;
-        Vector3 walkVelocity_;
-    };
+    float physicsStepTime_{};
+    unsigned maxRedundancy_{};
+    unsigned maxInputFrames_{};
 
     struct ServerData
     {
-
+        NetworkValue<InputFrame> input_;
+        unsigned totalFrames_{};
+        unsigned lostFrames_{};
     } server_;
 
     struct ClientData
     {
+        unsigned desiredRedundancy_{};
         ea::ring_buffer<InputFrame> input_;
         ea::optional<unsigned> latestConfirmedFrame_;
         ea::optional<unsigned> latestAffectedFrame_;
     } client_;
 
-    float physicsStepTime_{};
-
-    /// Client only: track of predicted positions for unprocessed.
-    ea::vector<Vector3> inputBuffer_;
 
     /// Server only: feedback from client.
     NetworkValue<Vector3> feedbackVelocity_;

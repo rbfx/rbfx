@@ -492,11 +492,22 @@ public:
         }
     }
 
+    /// Return whether the frame is present.
+    bool Has(unsigned frame) const { return AllocatedFrameToIndex(frame).has_value(); }
+
     /// Return raw value at given frame.
     ea::optional<InternalType> GetRaw(unsigned frame) const
     {
         if (const auto index = AllocatedFrameToIndex(frame))
             return values_[*index];
+        return ea::nullopt;
+    }
+
+    /// Return raw value at the given or prior frame.
+    ea::optional<ea::pair<InternalType, unsigned>> GetRawOrPrior(unsigned frame) const
+    {
+        if (const auto closestFrame = FindClosestAllocatedFrame(frame, true, false))
+            return ea::make_pair(values_[FrameToIndexUnchecked(*closestFrame)], *closestFrame);
         return ea::nullopt;
     }
 

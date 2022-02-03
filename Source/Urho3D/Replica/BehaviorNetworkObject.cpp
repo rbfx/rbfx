@@ -278,10 +278,6 @@ void BehaviorNetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& sr
                 connectedBehavior.component_->ReadUnreliableDelta(frame, src);
         }
     }
-
-    // TODO(network): Remove this
-    for (const auto& connectedBehavior : behaviors_)
-        connectedBehavior.component_->OnUnreliableDelta(frame);
 }
 
 bool BehaviorNetworkObject::PrepareUnreliableFeedback(unsigned frame)

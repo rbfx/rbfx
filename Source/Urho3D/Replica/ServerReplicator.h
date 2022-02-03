@@ -174,6 +174,12 @@ public:
     /// Send messages to connection for current frame.
     void SendMessages(const SharedReplicationState& sharedState);
 
+    /// Manage reported input loss.
+    /// @{
+    void SetReportedInputLoss(float loss) { reportedLoss_ = loss; }
+    float GetReportedInputLoss() const { return reportedLoss_;}
+    /// @}
+
 private:
     void ProcessObjectsFeedbackUnreliable(MemoryBuffer& messageData);
     void SendRemoveObjects();
@@ -188,6 +194,8 @@ private:
     ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
 
     VectorBuffer componentBuffer_;
+
+    float reportedLoss_{};
 };
 
 /// Server part of NetworkManager subsystem.
@@ -202,6 +210,7 @@ public:
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
     bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    void ReportInputLoss(AbstractConnection* connection, float percentLoss);
 
     void SetCurrentFrame(unsigned frame);
 

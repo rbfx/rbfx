@@ -250,11 +250,12 @@ void ClientSynchronizationState::UpdateInputBuffer()
 {
     inputBufferFilter_.AddValue(inputStats_.GetRecommendedBufferSize());
 
-    const int bufferSizeTweak = GetSetting(NetworkSettings::InputBufferingTweak).GetInt();
-    const int newInputBufferSize = bufferSizeTweak + static_cast<int>(inputBufferFilter_.GetStabilizedAverageMaxValue());
+    const float tweakA = GetSetting(NetworkSettings::InputBufferingTweakA).GetFloat();
+    const float tweakB = GetSetting(NetworkSettings::InputBufferingTweakB).GetFloat();
+    const int newInputBufferSize = RoundToInt(tweakA * inputBufferFilter_.GetStabilizedAverageMaxValue() + tweakB);
 
-    const int minInputBuffer = GetSetting(NetworkSettings::MinInputBuffering).GetUInt();
-    const int maxInputBuffer = GetSetting(NetworkSettings::MaxInputBuffering).GetUInt();
+    const int minInputBuffer = GetSetting(NetworkSettings::InputBufferingMin).GetUInt();
+    const int maxInputBuffer = GetSetting(NetworkSettings::InputBufferingMax).GetUInt();
     inputBufferSize_ = Clamp(newInputBufferSize, minInputBuffer, maxInputBuffer);
 }
 
@@ -675,6 +676,13 @@ bool ServerReplicator::ProcessMessage(AbstractConnection* connection, NetworkMes
     return data.ProcessMessage(messageId, messageData);
 }
 
+void ServerReplicator::ReportInputLoss(AbstractConnection* connection, float percentLoss)
+{
+    // TODO(network): Handle expired connections
+    ClientReplicationState& clientState = GetConnection(connection);
+    clientState.SetReportedInputLoss(percentLoss);
+}
+
 void ServerReplicator::SetCurrentFrame(unsigned frame)
 {
     currentFrame_ = frame;
@@ -697,8 +705,9 @@ ea::string ServerReplicator::GetDebugInfo() const
 
     for (const auto& [connection, data] : connections_)
     {
-        result += Format("Connection {}: Ping {}ms, Input delay {}+{} frames\n",
-            connection->ToString(), connection->GetPing(), data->GetInputDelay(), data->GetInputBufferSize());
+        result += Format("Connection {}: Ping {}ms, InDelay {}+{} frames, InLoss {}%\n",
+            connection->ToString(), connection->GetPing(), data->GetInputDelay(), data->GetInputBufferSize(),
+            CeilToInt(data->GetReportedInputLoss() * 100.0f));
     }
 
     return result;
