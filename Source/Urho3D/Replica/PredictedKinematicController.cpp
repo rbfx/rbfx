@@ -76,6 +76,7 @@ void PredictedKinematicController::InitializeOnServer()
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
 
     feedbackVelocity_.Resize(traceDuration);
+    server_.input_.Resize(maxInputFrames_);
 
     SubscribeToEvent(E_BEGINSERVERNETWORKFRAME,
         [this](StringHash, VariantMap& eventData)
@@ -99,8 +100,7 @@ void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deseri
     {
         networkTransform_->SetTrackOnly(true);
 
-        const unsigned maxInputFrames = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
-        client_.input_.set_capacity(maxInputFrames);
+        client_.input_.set_capacity(maxInputFrames_);
 
         SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
             [this](StringHash, VariantMap& eventData)
@@ -112,13 +112,23 @@ void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deseri
     }
 }
 
+void PredictedKinematicController::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+{
+    client_.desiredRedundancy_ = ea::max(1, FloorToInt(inputTime - replicaTime));
+}
+
 void PredictedKinematicController::InitializeCommon()
 {
+    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
+
     networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
 
     physicsWorld_ = node_->GetScene()->GetComponent<PhysicsWorld>();
     physicsStepTime_ = physicsWorld_ ? 1.0f / physicsWorld_->GetFps() : 0.0f;
+
+    maxInputFrames_ = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
+    maxRedundancy_ = replicationManager->GetSetting(NetworkSettings::MaxInputRedundancy).GetUInt();
 }
 
 bool PredictedKinematicController::PrepareUnreliableFeedback(unsigned frame)
@@ -126,58 +136,60 @@ bool PredictedKinematicController::PrepareUnreliableFeedback(unsigned frame)
     return true;
 }
 
-/// TODO(network): rewrite
-void PredictedKinematicController::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
-{
-    const unsigned n = src.ReadVLE();
-    for (unsigned i = 0; i < n; ++i)
-    {
-        const Vector3 newVelocity = src.ReadVector3();
-        feedbackVelocity_.Set(feedbackFrame - n + i + 1, newVelocity);
-    }
-}
-
-/// TODO(network): rewrite
 void PredictedKinematicController::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
 {
-    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
-    const unsigned maxRedundancy = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
+    if (client_.input_.empty() || client_.input_.back().frame_ != frame)
+    {
+        URHO3D_ASSERTLOG(0, "NetworkObject {}: Unexpected call to WriteUnreliableFeedback",
+            ToString(GetNetworkObject()->GetNetworkId()));
+        return;
+    }
+
     const unsigned maxSize = client_.input_.size();
-    const unsigned desiredRedundancy = 16;
-    const unsigned inputBufferSize = ea::min({desiredRedundancy, maxRedundancy, maxSize});
+    const unsigned inputBufferSize = ea::min({client_.desiredRedundancy_, maxRedundancy_, maxSize});
 
-    inputBuffer_.clear();
-    for (unsigned i = 0; i < inputBufferSize; ++i)
-        inputBuffer_.push_back(client_.input_[maxSize - inputBufferSize + i].walkVelocity_);
-
-    /*(URHO3D_ASSERT(client_.input_.empty() || client_.input_.back().frame_ == frame);
-
-    inputBuffer_.push_back(walkVelocity_);
-    if (inputBuffer_.size() >= 8)
-        inputBuffer_.pop_front();*/
-
-    dest.WriteVLE(inputBuffer_.size());
-    for (const Vector3& v : inputBuffer_)
-        dest.WriteVector3(v);
+    dest.WriteVLE(inputBufferSize);
+    ea::for_each_n(client_.input_.rbegin(), inputBufferSize,
+        [&](const InputFrame& inputFrame) { WriteInputFrame(inputFrame, dest); });
 }
 
-void PredictedKinematicController::OnUnreliableDelta(unsigned frame)
+void PredictedKinematicController::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
 {
+    const unsigned numInputFrames = ea::min(src.ReadVLE(), maxRedundancy_);
+    for (unsigned i = 0; i < numInputFrames; ++i)
+        ReadInputFrame(feedbackFrame - i, src);
 }
 
 void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
 {
-    if (AbstractConnection* owner = GetNetworkObject()->GetOwnerConnection())
+    if (!IsConnectedToComponents())
+        return;
+
+    if (const auto frameDataAndIndex = server_.input_.GetRawOrPrior(serverFrame))
     {
-        // TODO(network): Use prior values as well
-        if (const auto newVelocity = feedbackVelocity_.GetRaw(serverFrame))
-        {
-            auto kinematicController = node_->GetComponent<KinematicCharacterController>();
-            kinematicController->SetWalkDirection(*newVelocity * physicsStepTime_);
-        }
-        else
-            // TODO(network): Revisit logging
-            URHO3D_LOGWARNING("PredictedKinematicController skipped input frame #{} on server", serverFrame);
+        const auto& [currentInput, currentInputFrame] = *frameDataAndIndex;
+        kinematicController_->SetWalkDirection(currentInput.walkVelocity_ * physicsStepTime_);
+
+        if (currentInputFrame != serverFrame)
+            ++server_.lostFrames_;
+    }
+    else
+    {
+        ++server_.lostFrames_;
+    }
+    ++server_.totalFrames_;
+
+    static const unsigned batchSize = 100;
+    if (server_.totalFrames_ >= batchSize)
+    {
+        const float loss = static_cast<float>(server_.lostFrames_) / server_.totalFrames_;
+        server_.lostFrames_ = 0;
+        server_.totalFrames_ = 0;
+
+        const auto replicationManager = GetNetworkObject()->GetReplicationManager();
+        ServerReplicator* serverReplicator = replicationManager->GetServerReplicator();
+        AbstractConnection* ownerConnection = GetNetworkObject()->GetOwnerConnection();
+        serverReplicator->ReportInputLoss(ownerConnection, loss);
     }
 }
 
@@ -210,7 +222,7 @@ void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
 
     // Skip if cannot find matching input frame for whatever reason
     const auto nextInputFrameIter = ea::find_if(client_.input_.begin(), client_.input_.end(),
-        [&](const InputFrame& inputFrame) { return inputFrame.frame_ == *latestConfirmedFrame + 1; });
+        [&](const InputFrame& inputFrame) { return !inputFrame.isLost_ && inputFrame.frame_ == *latestConfirmedFrame + 1; });
     if (nextInputFrameIter == client_.input_.end())
         return;
 
@@ -240,24 +252,53 @@ bool PredictedKinematicController::AdjustConfirmedFrame(unsigned confirmedFrame,
 
 void PredictedKinematicController::TrackCurrentInput(unsigned frame)
 {
+    if (!client_.input_.empty())
+    {
+        const unsigned previousInputFrame = client_.input_.back().frame_;
+        const auto numSkippedFrames = static_cast<int>(frame - previousInputFrame) - 1;
+        if (numSkippedFrames > 0)
+        {
+            if (numSkippedFrames >= client_.input_.capacity())
+                client_.input_.clear();
+            else
+            {
+                InputFrame lastFrame = client_.input_.back();
+                lastFrame.isLost_ = true;
+                for (int i = 1; i <= numSkippedFrames; ++i)
+                {
+                    lastFrame.frame_ = previousInputFrame;
+                    client_.input_.push_back(lastFrame);
+                }
+            }
+
+            URHO3D_LOGWARNING("NetworkObject {}: skipped {} input frames on client starting from #{}",
+                ToString(GetNetworkObject()->GetNetworkId()), numSkippedFrames, previousInputFrame);
+        }
+    }
+
     InputFrame currentInput;
     currentInput.frame_ = frame;
     currentInput.walkVelocity_ = walkVelocity_;
     currentInput.startPosition_ = kinematicController_->GetRawPosition();
-
-    if (!client_.input_.empty())
-    {
-        InputFrame lastFrame = client_.input_.back();
-        while (lastFrame.frame_ + 1 != frame)
-        {
-            ++lastFrame.frame_;
-            // TODO(network): Revisit logging
-            // TODO(network): Consider this on correction
-            URHO3D_LOGWARNING("PredictedKinematicController skipped input frame #{} on client", lastFrame.frame_);
-            client_.input_.push_back(lastFrame);
-        }
-    }
     client_.input_.push_back(currentInput);
+}
+
+void PredictedKinematicController::WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const
+{
+    dest.WriteVector3(inputFrame.walkVelocity_);
+}
+
+void PredictedKinematicController::ReadInputFrame(unsigned frame, Deserializer& src)
+{
+    const Vector3 walkVelocity = src.ReadVector3();
+
+    InputFrame inputFrame;
+    inputFrame.frame_ = frame;
+    inputFrame.walkVelocity_ = walkVelocity;
+    if (!server_.input_.Has(frame))
+        server_.input_.Set(frame, inputFrame);
+
+    feedbackVelocity_.Set(frame, walkVelocity);
 }
 
 }

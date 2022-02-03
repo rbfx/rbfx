@@ -47,7 +47,8 @@ void ClientInputStatistics::OnInputReceived(unsigned frame)
     if (delta <= 0)
         return;
 
-    for (int i = 0; i < ea::min(delta, maxInputLoss_); ++i)
+    const int numLostFrames = ea::min(delta, maxInputLoss_) - 1;
+    for (int i = 0; i <= numLostFrames; ++i)
         numLostFrames_.push_back(i);
 
     UpdateHistogram();

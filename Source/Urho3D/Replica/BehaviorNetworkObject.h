@@ -57,11 +57,6 @@ public:
     /// Return callback mask.
     NetworkCallbackFlags GetCallbackMask() const { return callbackMask_; }
 
-    /// Callbacks from BehaviorNetworkObject.
-    /// @{
-    virtual void OnUnreliableDelta(unsigned frame) {} // TODO(network): Revisit, it shouldn't exist
-    /// @}
-
 protected:
     /// Component implementation
     /// @{

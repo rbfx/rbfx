@@ -77,6 +77,10 @@ URHO3D_NETWORK_SETTING(ConnectionId, unsigned, 0);
 
 /// Maximum allowed delay between server time and replica time. Client must extrapolate if its delay is bigger.
 URHO3D_NETWORK_SETTING(InterpolationLimit, float, 0.25f);
+/// Maximum number of input frames tracked by the client.
+URHO3D_NETWORK_SETTING(MaxInputFrames, unsigned, 256);
+/// Maximum number of input frames sent to server including relevant frame.
+URHO3D_NETWORK_SETTING(MaxInputRedundancy, unsigned, 32);
 
 /// @}
 
@@ -91,13 +95,12 @@ URHO3D_NETWORK_SETTING(InputDelayFilterBufferSize, unsigned, 11);
 URHO3D_NETWORK_SETTING(InputBufferingFilterBufferSize, unsigned, 11);
 /// Number of frames used to evaluate recommended input buffering.
 URHO3D_NETWORK_SETTING(InputBufferingWindowSize, unsigned, 128);
-/// Additional number of buffered input frames.
-/// Use positive to add extra buffering. Use negative value to suppress recommended buffering.
-URHO3D_NETWORK_SETTING(InputBufferingTweak, int, 1);
-/// Minimal number of buffered input frames.
-URHO3D_NETWORK_SETTING(MinInputBuffering, unsigned, 0);
-/// Maximal number of buffered input frames.
-URHO3D_NETWORK_SETTING(MaxInputBuffering, unsigned, 8);
+/// Input buffering is calculated as `clamp(round(x*tweakA + tweakB), min, max)`,
+/// where x is magical statistics that roughly corresponds to the max amount of consecutive frame loss.
+URHO3D_NETWORK_SETTING(InputBufferingTweakA, float, 1.3f);
+URHO3D_NETWORK_SETTING(InputBufferingTweakB, float, 1.0f);
+URHO3D_NETWORK_SETTING(InputBufferingMin, unsigned, 0);
+URHO3D_NETWORK_SETTING(InputBufferingMax, unsigned, 8);
 /// Interval in seconds between NetworkObject becoming unneeded for client and replication stopped.
 URHO3D_NETWORK_SETTING(RelevanceTimeout, float, 5.0f);
 /// Duration in seconds of value tracking on server. Used for lag compensation.
@@ -122,10 +125,6 @@ URHO3D_NETWORK_SETTING(InterpolationDelay, float, 0.1f);
 URHO3D_NETWORK_SETTING(ClientTracingDuration, float, 3.0f);
 /// Duration in seconds of value extrapolation. Beyond this limit the value stays fixed.
 URHO3D_NETWORK_SETTING(ExtrapolationLimit, float, 0.5f);
-/// Maximum number of input frames tracked by the client.
-URHO3D_NETWORK_SETTING(MaxInputFrames, unsigned, 256);
-/// Maximum number of input frames sent to server including relevant frame.
-URHO3D_NETWORK_SETTING(MaxInputRedundancy, unsigned, 32);
 
 /// @}
 
