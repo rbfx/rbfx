@@ -1,21 +1,25 @@
+#include <errno.h>
+
 namespace tracy
 {
 
-template<size_t Size>
 class RingBuffer
 {
 public:
-    RingBuffer( int fd, int id )
-        : m_id( id )
+    RingBuffer( unsigned int size, int fd, int id, int cpu = -1 )
+        : m_size( size )
+        , m_id( id )
+        , m_cpu( cpu )
         , m_fd( fd )
     {
         const auto pageSize = uint32_t( getpagesize() );
-        assert( Size >= pageSize );
-        assert( __builtin_popcount( Size ) == 1 );
-        m_mapSize = Size + pageSize;
+        assert( size >= pageSize );
+        assert( __builtin_popcount( size ) == 1 );
+        m_mapSize = size + pageSize;
         auto mapAddr = mmap( nullptr, m_mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
-        if( !mapAddr )
+        if( mapAddr == MAP_FAILED )
         {
+            TracyDebug( "mmap failed: errno %i (%s)\n", errno, strerror( errno ) );
             m_fd = 0;
             m_metadata = nullptr;
             close( fd );
@@ -53,6 +57,7 @@ public:
 
     bool IsValid() const { return m_metadata != nullptr; }
     int GetId() const { return m_id; }
+    int GetCpu() const { return m_cpu; }
 
     void Enable()
     {
@@ -61,16 +66,18 @@ public:
 
     void Read( void* dst, uint64_t offset, uint64_t cnt )
     {
-        auto src = ( m_tail + offset ) % Size;
-        if( src + cnt <= Size )
+        const auto size = m_size;
+        auto src = ( m_tail + offset ) % size;
+        if( src + cnt <= size )
         {
             memcpy( dst, m_buffer + src, cnt );
         }
         else
         {
-            const auto s0 = Size - src;
-            memcpy( dst, m_buffer + src, s0 );
-            memcpy( (char*)dst + s0, m_buffer, cnt - s0 );
+            const auto s0 = size - src;
+            const auto buf = m_buffer;
+            memcpy( dst, buf + src, s0 );
+            memcpy( (char*)dst + s0, buf, cnt - s0 );
         }
     }
 
@@ -110,9 +117,11 @@ private:
         std::atomic_store_explicit( (volatile std::atomic<uint64_t>*)&m_metadata->data_tail, m_tail, std::memory_order_release );
     }
 
+    unsigned int m_size;
     uint64_t m_tail;
     char* m_buffer;
     int m_id;
+    int m_cpu;
     perf_event_mmap_page* m_metadata;
 
     size_t m_mapSize;

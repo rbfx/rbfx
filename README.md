@@ -100,7 +100,7 @@ rbfx uses the following third-party libraries:
 - stb_vorbis 1.13b (https://nothings.org)
 - WebP (https://chromium.googlesource.com/webm/libwebp)
 - ETCPACK (https://github.com/Ericsson/ETCPACK)
-- Dear ImGui 1.85 (https://github.com/ocornut/imgui/tree/docking)
+- Dear ImGui 1.86 (https://github.com/ocornut/imgui/tree/docking)
 - tracy 0.7.8 (https://bitbucket.org/wolfpld/tracy/)
 - capstone (http://www.capstone-engine.org/)
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)

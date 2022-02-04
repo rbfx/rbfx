@@ -42,8 +42,8 @@
 #include "../../client/tracy_rpmalloc.hpp"
 
 #include "imgui_freetype.h"
-#include "Arimo.hpp"
-#include "Cousine.hpp"
+#include "DroidSans.hpp"
+#include "FiraCodeRetina.hpp"
 #include "FontAwesomeSolid.hpp"
 #include "icon.hpp"
 #include "ResolvService.hpp"
@@ -140,9 +140,9 @@ static bool showReleaseNotes = false;
 static std::string releaseNotes;
 static std::string readCapture;
 
-void RunOnMainThread( std::function<void()> cb )
+void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
 {
-    if( std::this_thread::get_id() == mainThread )
+    if( !forceDelay && std::this_thread::get_id() == mainThread )
     {
         cb();
     }
@@ -151,6 +151,32 @@ void RunOnMainThread( std::function<void()> cb )
         std::lock_guard<std::mutex> lock( mainThreadLock );
         mainThreadTasks.emplace_back( cb );
     }
+}
+
+static void LoadFonts( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
+{
+}
+
+static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
+{
+    LoadFonts( scale, cb_fixedWidth, cb_bigFont, cb_smallFont );
+
+    auto& style = ImGui::GetStyle();
+    style = ImGuiStyle();
+    ImGui::StyleColorsDark();
+    style.WindowBorderSize = 1.f * scale;
+    style.FrameBorderSize = 1.f * scale;
+    style.FrameRounding = 5.f;
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
+    style.Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
+    style.ScaleAllSizes( scale );
+}
+
+static void SetupScaleCallback( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
+{
+    RunOnMainThread( [scale, &cb_fixedWidth, &cb_bigFont, &cb_smallFont] { SetupDPIScale( scale * dpiScale, cb_fixedWidth, cb_bigFont, cb_smallFont ); }, true );
 }
 
 void* GetMainWindowNative()
@@ -282,6 +308,8 @@ public:
             0x0020, 0x00FF, // Basic Latin + Latin Supplement
             0x03BC, 0x03BC, // micro
             0x03C3, 0x03C3, // small sigma
+            0x2013, 0x2013, // en dash
+            0x2264, 0x2264, // less-than or equal to
             0,
         };
         static const ImWchar rangesIcons[] = {
@@ -289,11 +317,13 @@ public:
             0
         };
 
-        context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, "Arimo", rangesBasic, 15.0f);
-        context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, "FontAwesome", rangesIcons, 14.0f, true);
-        fixedWidth = context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, "Cousine", nullptr, 15.0f);
-        bigFont = context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 20.0f);
-        smallFont = context_->GetSubsystem<SystemUI>()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 10.0f);
+        SystemUI* systemUI = context_->GetSubsystem<SystemUI>();
+        systemUI->AddFontCompressed(tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, "DroidSans", rangesBasic, 15.0f);
+        systemUI->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, "FontAwesome", rangesIcons, 14.0f, true);
+        fixedWidth = systemUI->AddFontCompressed(tracy::FiraCodeRetina_compressed_data, tracy::FiraCodeRetina_compressed_size, "FiraCodeRetina", nullptr, 15.0f);
+        bigFont = systemUI->AddFontCompressed(tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, "DroidSans", nullptr, 21.0f);
+        systemUI->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, "FontAwesome", rangesIcons, 20.0f, true);
+        smallFont = systemUI->AddFontCompressed(tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, "DroidSans", nullptr, 10.0f);
 
         if (!readCapture.empty())
         {
@@ -578,14 +608,14 @@ public:
                 {
                     std::string addrPart = std::string( addr, ptr );
                     uint16_t portPart = (uint16_t)atoi( ptr+1 );
-                    view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
                 }
                 else
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
                 }
             }
-            ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
+            ImGui::SameLine( 0, ImGui::GetTextLineHeight() * 2 );
 
 #ifndef TRACY_NO_FILESELECTOR
             if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
@@ -602,7 +632,7 @@ public:
                             loadThread = std::thread([this, f] {
                                 try
                                 {
-                                    view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                                    view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
                                 }
                                 catch( const tracy::UnsupportedVersion& e )
                                 {
@@ -631,7 +661,7 @@ public:
             if( badVer.state != tracy::BadVersionState::Ok )
             {
                 if( loadThread.joinable() ) { loadThread.join(); }
-                tracy::BadVersion( badVer );
+                tracy::BadVersion( badVer, bigFont );
             }
 #endif
 
@@ -645,12 +675,7 @@ public:
                 {
                     ImGui::SameLine();
                     tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
-                    if( ImGui::IsItemHovered() )
-                    {
-                        ImGui::BeginTooltip();
-                        ImGui::TextUnformatted( "Filters are active" );
-                        ImGui::EndTooltip();
-                    }
+                    tracy::TooltipIfHovered( "Filters are active" );
                     if( showFilter )
                     {
                         ImGui::SameLine();
@@ -664,7 +689,7 @@ public:
                 }
                 if( showFilter )
                 {
-                    const auto w = ImGui::GetFontSize() * 12;
+                    const auto w = ImGui::GetTextLineHeight() * 12;
                     ImGui::Separator();
                     addrFilter.Draw( "Address filter", w );
                     portFilter.Draw( "Port filter", w );
@@ -703,7 +728,7 @@ public:
                     ImGui::PushID( idx++ );
                     const bool selected = ImGui::Selectable( name->second.c_str(), &sel, flags );
                     ImGui::PopID();
-                    if( ImGui::IsItemHovered() )
+                    if( ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
                     {
                         char portstr[32];
                         sprintf( portstr, "%" PRIu16, v.second.port );
@@ -725,7 +750,7 @@ public:
                     }
                     if( selected && !loadThread.joinable() )
                     {
-                        view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                        view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
                     }
                     ImGui::NextColumn();
                     const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
@@ -822,7 +847,9 @@ public:
         }
         if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
         {
+            ImGui::PushFont( bigFont );
             tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
+            ImGui::PopFont();
 
             animTime += ImGui::GetIO().DeltaTime;
             tracy::DrawWaitingDots( animTime );
@@ -897,7 +924,7 @@ public:
             viewShutdown.store( ViewShutdown::False, std::memory_order_relaxed );
             if( reconnect )
             {
-                view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
             }
             break;
         default:
@@ -906,7 +933,9 @@ public:
         if( ImGui::BeginPopupModal( "Capture cleanup...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
         {
             if( viewShutdown.load( std::memory_order_relaxed ) != ViewShutdown::True ) ImGui::CloseCurrentPopup();
+            ImGui::PushFont( bigFont );
             tracy::TextCentered( ICON_FA_BROOM );
+            ImGui::PopFont();
             animTime += ImGui::GetIO().DeltaTime;
             tracy::DrawWaitingDots( animTime );
             ImGui::TextUnformatted( "Please wait, cleanup is in progress" );

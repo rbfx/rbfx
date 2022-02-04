@@ -1,10 +1,6 @@
 #cmake_minimum_required(VERSION 2.6)
 project(capstone)
 
-if (POLICY CMP0077)
-    cmake_policy(SET CMP0077 NEW)   # rbfx
-endif ()
-
 set(VERSION_MAJOR 5)
 set(VERSION_MINOR 0)
 set(VERSION_PATCH 0)
