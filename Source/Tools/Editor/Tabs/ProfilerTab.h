@@ -40,7 +40,7 @@ public:
     ~ProfilerTab();
 
     bool RenderWindowContent() override;
-    void RunOnMainThread(std::function<void()> cb);
+    void RunOnMainThread(std::function<void()> cb, bool forceDelay = false);
 #if URHO3D_PROFILING
     std::unique_ptr<tracy::View> view_;
 #endif

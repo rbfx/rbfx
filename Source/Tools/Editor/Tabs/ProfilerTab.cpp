@@ -35,7 +35,7 @@ namespace Urho3D
 {
 
 static ProfilerTab* profilerTab = nullptr;
-static void RunOnMainThread(std::function<void()> cb) { profilerTab->RunOnMainThread(std::move(cb)); }
+static void RunOnMainThread(std::function<void()> cb, bool forceDelay = false) { profilerTab->RunOnMainThread(std::move(cb), forceDelay); }
 
 ProfilerTab::ProfilerTab(Context* context)
     : Tab(context)
@@ -94,9 +94,9 @@ bool ProfilerTab::RenderWindowContent()
     return true;
 }
 
-void ProfilerTab::RunOnMainThread(std::function<void()> cb)
+void ProfilerTab::RunOnMainThread(std::function<void()> cb, bool forceDelay)
 {
-    if (Thread::IsMainThread())
+    if (!forceDelay && Thread::IsMainThread())
         cb();
     else
     {

@@ -496,6 +496,12 @@ enum class DirectLightingMode
     DeferredPBR
 };
 
+enum class BRDFMode
+{
+    Lambertian,
+    Burley
+};
+
 enum class SpecularQuality
 {
     Disabled,
@@ -519,6 +525,7 @@ struct SceneProcessorSettings
     bool depthPrePass_{ false };
     bool enableShadows_{ true };
     DirectLightingMode lightingMode_{};
+    BRDFMode brdfMode_{BRDFMode::Lambertian};
     unsigned directionalShadowSize_{ 1024 };
     unsigned spotShadowSize_{ 1024 };
     unsigned pointShadowSize_{ 256 };
@@ -547,6 +554,7 @@ struct SceneProcessorSettings
         CombineHash(hash, MakeHash(reflectionQuality_));
         CombineHash(hash, enableShadows_);
         CombineHash(hash, MakeHash(lightingMode_));
+        CombineHash(hash, MakeHash(brdfMode_));
         return hash;
     }
 
@@ -570,6 +578,7 @@ struct SceneProcessorSettings
             && depthPrePass_ == rhs.depthPrePass_
             && enableShadows_ == rhs.enableShadows_
             && lightingMode_ == rhs.lightingMode_
+            && brdfMode_ == rhs.brdfMode_
             && directionalShadowSize_ == rhs.directionalShadowSize_
             && spotShadowSize_ == rhs.spotShadowSize_
             && pointShadowSize_ == rhs.pointShadowSize_;
