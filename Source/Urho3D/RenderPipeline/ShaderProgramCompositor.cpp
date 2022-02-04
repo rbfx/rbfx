@@ -154,6 +154,16 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
 
         if (settings_.sceneProcessor_.reflectionQuality_ == ReflectionQuality::Vertex)
             result.commonShaderDefines_ += "URHO3D_VERTEX_REFLECTION ";
+
+        switch (settings_.sceneProcessor_.brdfMode_)
+        {
+        case BRDFMode::Burley:
+            result.pixelShaderDefines_ += "URHO3D_BRDF_BURLEY ";
+            break;
+        default:
+            result.pixelShaderDefines_ += "URHO3D_BRDF_LAMBERTIAN ";
+            break;
+        }
     }
 
     if (flags.Test(DrawableProcessorPassFlag::NeedReadableDepth) && settings_.renderBufferManager_.readableDepth_)
