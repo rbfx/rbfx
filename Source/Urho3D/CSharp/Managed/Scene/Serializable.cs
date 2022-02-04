@@ -51,7 +51,7 @@ namespace Urho3DNet
             VariantType = type;
         }
 
-        public override void Get(Serializable ptr, Variant dest)
+        public override void Get(Object ptr, Variant dest)
         {
             switch (VariantType)
             {
@@ -141,7 +141,7 @@ namespace Urho3DNet
             }
         }
 
-        public override void Set(Serializable ptr, Variant src)
+        public override void Set(Object ptr, Variant src)
         {
             if (src == null || src.Type == VariantType.VarNone)
             {
@@ -249,7 +249,7 @@ namespace Urho3DNet
             VariantType = type;
         }
 
-        public override void Get(Serializable ptr, Variant dest)
+        public override void Get(Object ptr, Variant dest)
         {
             switch (VariantType)
             {
@@ -339,7 +339,7 @@ namespace Urho3DNet
             }
         }
 
-        public override void Set(Serializable ptr, Variant src)
+        public override void Set(Object ptr, Variant src)
         {
             if (src == null || src.Type == VariantType.VarNone)
             {

@@ -37,61 +37,10 @@ public:
     ParticleGraphSystem(Context* context);
 
     ~ParticleGraphSystem() override;
-
-    ///// Create a particle graph node by type hash. Return pointer to it or null if no factory found.
-    //SharedPtr<ParticleGraphNode> CreateParticleGraphNode(StringHash objectType);
-
-    ///// Register a factory for an particle graph node type.
-    //void RegisterParticleGraphNodeFactory(ObjectFactory* factory);
-
-    ///// Template version of registering a particle node factory.
-    //template <class T = void, class... Rest> void RegisterParticleGraphNodeFactory();
-
-    ///// Register object attribute.
-    //void RegisterAttribute(StringHash objectType, const AttributeInfo& attr);
-    ///// Template version of registering an object attribute.
-    //template <class T> void RegisterAttribute(const AttributeInfo& attr);
-
-    ///// Return a specific attribute description for an object, or null if not found.
-    //AttributeInfo* GetAttribute(StringHash objectType, StringHash nameHash);
-    ///// Template version of returning a specific attribute description.
-    //template <class T> AttributeInfo* GetAttribute(StringHash nameHash);
-
-    ///// Return attribute descriptions for an object type, or null if none defined.
-    //const ea::vector<AttributeInfo>* GetAttributes(StringHash type) const
-    //{
-    //    auto i = attributes_.find(type);
-    //    return i != attributes_.end() ? &i->second : nullptr;
-    //}
-
-private:
-    /*/// Particle graph node factories.
-    FactoryMap particleNodeFactories_;
-    /// Attribute descriptions per object type.
-    ea::unordered_map<StringHash, ea::vector<AttributeInfo>> attributes_;*/
 };
-//
-//// Helper function that terminate looping of argument list.
-//template <> inline void ParticleGraphSystem::RegisterParticleGraphNodeFactory() {}
-//
-//template <class T, class... Rest> void ParticleGraphSystem::RegisterParticleGraphNodeFactory()
-//{
-//    RegisterParticleGraphNodeFactory(new ObjectFactoryImpl<T>(context_));
-//    RegisterParticleGraphNodeFactory<Rest...>();
-//}
-//
-//template <class T> void ParticleGraphSystem::RegisterAttribute(const AttributeInfo& attr)
-//{
-//    //AttributeHandle
-//    RegisterAttribute(T::GetTypeStatic(), attr);
-//}
-//template <class T> AttributeInfo* ParticleGraphSystem::GetAttribute(StringHash nameHash)
-//{
-//    return GetAttribute(T::GetTypeStatic(), nameHash);
-//}
 
 
-/// Register Graphics library objects.
+/// Register Particle Graph library objects.
 /// @nobind
 void URHO3D_API RegisterParticleGraphLibrary(Context* context, ParticleGraphSystem* system);
 
