@@ -5,8 +5,8 @@
 	<attribute name="Smoothing Constant" value="50.000000" />
 	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="1281" />
-	<attribute name="Next Replicated Component ID" value="1256" />
+	<attribute name="Next Replicated Node ID" value="1282" />
+	<attribute name="Next Replicated Component ID" value="1257" />
 	<attribute name="Next Local Node ID" value="16777323" />
 	<attribute name="Next Local Component ID" value="16777375" />
 	<attribute name="Variables" />
@@ -14,8 +14,8 @@
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
 	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="29.085 9.2637 12.4012" />
-		<attribute name="Camera Rotation" value="-0.307503 -0.0660184 0.927892 -0.20025" />
+		<attribute name="Camera Position" value="2.7397 2.1124 6.40891" />
+		<attribute name="Camera Rotation" value="0.00537767 0.0013981 0.980695 -0.195464" />
 	</component>
 	<component type="RenderPipeline" id="315" />
 	<node id="2">
@@ -1659,15 +1659,28 @@
 	</node>
 	<node id="1280">
 		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="RefractionBox" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.73119 0.893882 2.86593" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="1255">
+			<attribute name="Model" value="Model;Models/Box.mdl" />
+			<attribute name="Material" value="Material;Materials/Refraction.xml" />
+		</component>
+	</node>
+	<node id="1281">
+		<attribute name="Is Enabled" value="true" />
 		<attribute name="Name" value="RealFire" />
 		<attribute name="Tags" />
 		<attribute name="Position" value="21.638 0 -8.35565" />
 		<attribute name="Rotation" value="1 0 0 0" />
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
-		<component type="ParticleGraphEmitter" id="1255">
+		<component type="ParticleGraphEmitter" id="1256">
 			<attribute name="Effect" value="ParticleGraphEffect;Particle/RealFire.xml" />
 			<attribute name="Animation LOD Bias" value="0" />
 		</component>
-	</node>
+	</node>	
 </scene>

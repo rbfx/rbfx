@@ -398,9 +398,6 @@ template<typename T> inline T Wrap(T value, T min, T max)
 /// Calculate both sine and cosine, with angle in degrees.
 URHO3D_API void SinCos(float angle, float& sin, float& cos);
 
-/// Calculate both sine and cosine, with half angle in degrees.
-URHO3D_API void SinCos2(float angle, float& sin, float& cos);
-
 }
 
 #ifdef _MSC_VER

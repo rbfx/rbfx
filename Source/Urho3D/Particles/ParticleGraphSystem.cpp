@@ -22,12 +22,8 @@
 
 #include "ParticleGraphSystem.h"
 
-#include "ParticleGraphNode.h"
 #include "ParticleGraphEmitter.h"
 #include "ParticleGraphLayer.h"
-#include "../IO/Log.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Model.h"
 
 namespace Urho3D
 {
@@ -48,59 +44,6 @@ ParticleGraphSystem::ParticleGraphSystem(Context* context)
 ParticleGraphSystem::~ParticleGraphSystem()
 {
 }
-
-//ParticleGraphSystem::~ParticleGraphSystem() { particleNodeFactories_.clear(); }
-//
-//SharedPtr<ParticleGraphNode> ParticleGraphSystem::CreateParticleGraphNode(StringHash objectType)
-//{
-//    auto i = particleNodeFactories_.find(objectType);
-//    if (i != particleNodeFactories_.end())
-//    {
-//        SharedPtr<ParticleGraphNode> node;
-//        node.StaticCast(i->second->CreateObject());
-//        return node;
-//    }
-//    return SharedPtr<ParticleGraphNode>();
-//}
-//
-//void ParticleGraphSystem::RegisterParticleGraphNodeFactory(ObjectFactory* factory)
-//{
-//    if (!factory)
-//        return;
-//
-//    auto it = particleNodeFactories_.find(factory->GetType());
-//    if (it != particleNodeFactories_.end())
-//    {
-//        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
-//                         factory->GetTypeName().c_str(), it->second->GetTypeName().c_str());
-//        assert(false);
-//        return;
-//    }
-//    particleNodeFactories_[factory->GetType()] = factory;
-//}
-//
-//void ParticleGraphSystem::RegisterAttribute(StringHash objectType, const AttributeInfo& attr)
-//{
-//    ea::vector<AttributeInfo>& objectAttributes = attributes_[objectType];
-//    objectAttributes.push_back(attr);
-//}
-//
-//AttributeInfo* ParticleGraphSystem::GetAttribute(StringHash objectType, StringHash nameHash)
-//{
-//    auto i = attributes_.find(objectType);
-//    if (i == attributes_.end())
-//        return nullptr;
-//
-//    ea::vector<AttributeInfo>& infos = i->second;
-//
-//    for (auto j = infos.begin(); j != infos.end(); ++j)
-//    {
-//        if (j->nameHash_ == nameHash)
-//            return &(*j);
-//    }
-//
-//    return nullptr;
-//}
 
 void RegisterParticleGraphLibrary(Context* context, ParticleGraphSystem* system)
 {

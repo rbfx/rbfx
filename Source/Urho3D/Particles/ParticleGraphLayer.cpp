@@ -201,7 +201,7 @@ void ParticleGraphLayer::RegisterObject(Context* context)
 }
 /// Construct ParticleGraphLayer.
 ParticleGraphLayer::ParticleGraphLayer(Context* context)
-    : Object(context)
+    : Serializable(context)
     , capacity_(DefaultCapacity)
     , timeScale_(1.0f)
     , duration_(DefaultDuration)

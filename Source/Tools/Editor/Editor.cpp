@@ -361,15 +361,7 @@ void Editor::OnUpdate(VariantMap& args)
         for (auto& tab : tabsCopy)
         {
             if (tab->RenderWindow())
-            {
-                // Only active window may override another active window
-                if (activeTab_ != tab && tab->IsActive())
-                {
-                    activeTab_ = tab;
-                    tab->OnFocused();
-                }
                 hasModified |= tab->IsModified();
-            }
             else if (!tab->IsUtility())
                 // Content tabs get closed permanently
                 tabs_.erase(tabs_.find(tab));

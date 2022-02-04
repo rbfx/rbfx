@@ -36,7 +36,7 @@ namespace Urho3D
 {
 
 ParticleGraphNode::ParticleGraphNode(Context* context)
-    : Object(context)
+    : Serializable(context)
     , graph_(nullptr)
     , index_(0)
 {

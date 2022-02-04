@@ -211,9 +211,10 @@ void KeyBindings::OnInputEnd(StringHash, VariantMap&)
         QualifierFlags qualifiersDown = GetCurrentQualifiers() & action.qualifiers_;
         if (qualifiersDown == action.qualifiers_)
         {
-            bool keyPressed = ui::IsKeyPressed(action.key_);
-            action.isDown_ = keyPressed || ui::IsKeyDown(action.key_);
-            if (keyPressed)
+            action.isPressed_ = ui::IsKeyPressed(action.key_);
+            action.isDown_ = action.isPressed_ || ui::IsKeyDown(action.key_);
+            action.isReleased_ = ui::IsKeyReleased(action.key_);
+            if (action.isPressed_)
             {
                 action.onPressed_(this);
                 break;
@@ -273,6 +274,21 @@ void KeyBindings::SortActions()
             nb += ((unsigned)actions_[b].qualifiers_ >> i) & 1u;
         return na > nb;
     });
+}
+
+bool KeyBindings::IsActionPressed(ActionType actionType)
+{
+    return actions_[actionType].isPressed_;
+}
+
+bool KeyBindings::IsActionReleased(ActionType actionType)
+{
+    return actions_[actionType].isReleased_;
+}
+
+bool KeyBindings::IsActionActive(ActionType actionType)
+{
+    return actions_[actionType].isDown_;
 }
 
 }

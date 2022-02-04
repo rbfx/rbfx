@@ -56,4 +56,10 @@ void HierarchyTab::SetProvider(IHierarchyProvider* provider)
         URHO3D_LOGERROR("Classes that inherit IHierarchyProvider must also inherit RefCounted.");
 }
 
+void HierarchyTab::OnUpdateFocused()
+{
+    if (Tab* tab = static_cast<Tab*>(provider_.first.Get()))
+        tab->OnUpdateFocused();
+}
+
 }
