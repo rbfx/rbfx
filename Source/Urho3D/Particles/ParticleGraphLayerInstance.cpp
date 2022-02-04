@@ -128,7 +128,7 @@ void ParticleGraphLayerInstance::Update(float timeStep)
 
 unsigned ParticleGraphLayerInstance::GetNumAttributes() const
 {
-    return layer_->GetAttributes().GetNumAttributes();
+    return layer_->GetAttributeLayout().GetNumAttributes();
 }
 
 void ParticleGraphLayerInstance::MarkForDeletion(unsigned particleIndex)

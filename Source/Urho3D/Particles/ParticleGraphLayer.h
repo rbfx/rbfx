@@ -26,18 +26,19 @@
 #include "ParticleGraphPin.h"
 
 #include "../Resource/Resource.h"
+#include "../Scene/Serializable.h"
 
 #include <EASTL/optional.h>
 
 namespace Urho3D
 {
 
-class URHO3D_API ParticleGraphLayer : public Object
+class URHO3D_API ParticleGraphLayer : public Serializable
 {
     static constexpr float DefaultDuration = 1.0f;
     static constexpr unsigned DefaultCapacity = 16;
 
-    URHO3D_OBJECT(ParticleGraphLayer, Object)
+    URHO3D_OBJECT(ParticleGraphLayer, Serializable)
 public:
     /// Layout of attribute buffer
     struct AttributeBufferLayout
@@ -126,7 +127,7 @@ public:
 
     /// Return attributes memory layout.
     /// @property
-    const ParticleGraphAttributeLayout& GetAttributes() const { return attributes_; }
+    const ParticleGraphAttributeLayout& GetAttributeLayout() const { return attributes_; }
 
     /// Return intermediate memory layout.
     /// @property

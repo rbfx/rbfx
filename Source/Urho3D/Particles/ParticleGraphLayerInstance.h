@@ -187,7 +187,7 @@ template <typename T> inline SparseSpan<T> ParticleGraphLayerInstance::GetAttrib
 
 template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::GetSparse(unsigned attributeIndex, const ea::span<unsigned>& indices)
 {
-    const auto& attr = layer_->GetAttributes().GetSpan(attributeIndex);
+    const auto& attr = layer_->GetAttributeLayout().GetSpan(attributeIndex);
     const auto values = attr.MakeSpan<ValueType>(attributes_);
     return SparseSpan<ValueType>(values, indices);
 }

@@ -26,8 +26,9 @@
 #include "../Resource/Resource.h"
 #include "../IO/Archive.h"
 #include "../IO/ArchiveSerialization.h"
+#include "../Resource/GraphNode.h"
+#include "../Scene/Serializable.h"
 #include "ParticleGraphPin.h"
-#include "Urho3D/Resource/GraphNode.h"
 
 namespace Urho3D
 {
@@ -37,9 +38,9 @@ class ParticleGraphReader;
 class ParticleGraphWriter;
 class ParticleGraph;
 
-class URHO3D_API ParticleGraphNode : public Object
+class URHO3D_API ParticleGraphNode : public Serializable
 {
-    URHO3D_OBJECT(ParticleGraphNode, Object)
+    URHO3D_OBJECT(ParticleGraphNode, Serializable)
 
 public:
     static constexpr unsigned INVALID_PIN = std::numeric_limits<unsigned>::max();
