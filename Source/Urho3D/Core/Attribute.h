@@ -59,6 +59,7 @@ enum AttributeMode
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
 class Serializable;
+class Object;
 
 /// Abstract base class for invoking attribute accessors.
 class URHO3D_API AttributeAccessor : public RefCounted
@@ -67,9 +68,9 @@ public:
     /// Construct.
     AttributeAccessor() = default;
     /// Get the attribute.
-    virtual void Get(const Serializable* ptr, Variant& dest) const = 0;
+    virtual void Get(const Object* ptr, Variant& dest) const = 0;
     /// Set the attribute.
-    virtual void Set(Serializable* ptr, const Variant& src) = 0;
+    virtual void Set(Object* ptr, const Variant& src) = 0;
 };
 
 /// Description of an automatically serializable variable.
