@@ -29,7 +29,7 @@
 #include "../Scene/Component.h"
 #include "../Network/AbstractConnection.h"
 #include "../Replica/NetworkCallbacks.h"
-#include "../Replica/NetworkManager.h"
+#include "../Replica/ReplicationManager.h"
 
 #include <EASTL/fixed_vector.h>
 #include <EASTL/optional.h>
@@ -61,7 +61,7 @@ enum class NetworkObjectMode
 ///
 /// Hierarchy is updated after NetworkObject node is dirtied.
 class URHO3D_API NetworkObject
-    : public TrackedComponent<BaseStableTrackedComponent, NetworkManagerBase>
+    : public TrackedComponent<BaseStableTrackedComponent, NetworkObjectRegistry>
     , public NetworkCallback
 {
     URHO3D_OBJECT(NetworkObject, Component);
@@ -75,7 +75,7 @@ public:
 
     static void RegisterObject(Context* context);
 
-    /// Internal API for NetworkManager.
+    /// Internal API for ReplicationManager.
     /// @{
     void UpdateObjectHierarchy();
     void SetNetworkId(NetworkId networkId) { SetStableId(networkId); }
@@ -84,7 +84,7 @@ public:
 
     /// Return current or last NetworkId. Return InvalidNetworkId if not registered.
     NetworkId GetNetworkId() const { return GetStableId(); }
-    NetworkManager* GetReplicationManager() const { return static_cast<NetworkManager*>(GetRegistry()); }
+    ReplicationManager* GetReplicationManager() const { return static_cast<ReplicationManager*>(GetRegistry()); }
     NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
@@ -114,7 +114,7 @@ private:
     void AddChildNetworkObject(NetworkObject* networkObject);
     void RemoveChildNetworkObject(NetworkObject* networkObject);
 
-    /// NetworkManager corresponding to the NetworkObject.
+    /// ReplicationManager corresponding to the NetworkObject.
     NetworkObjectMode networkMode_{};
     WeakPtr<AbstractConnection> ownerConnection_{};
 

@@ -44,16 +44,16 @@ class Network;
 class NetworkObject;
 class NetworkSetting;
 
-/// Part of NetworkManager used by both client and server, and referenced by components.
-class URHO3D_API NetworkManagerBase : public BaseStableComponentRegistry
+/// Part of ReplicationManager used by both client and server, and referenced by components.
+class URHO3D_API NetworkObjectRegistry : public BaseStableComponentRegistry
 {
-    URHO3D_OBJECT(NetworkManagerBase, BaseStableComponentRegistry);
+    URHO3D_OBJECT(NetworkObjectRegistry, BaseStableComponentRegistry);
 
 public:
     Signal<void(NetworkObject*)> OnNetworkObjectAdded;
     Signal<void(NetworkObject*)> OnNetworkObjectRemoved;
 
-    explicit NetworkManagerBase(Context* context);
+    explicit NetworkObjectRegistry(Context* context);
 
     /// Process components
     /// @{
@@ -63,19 +63,15 @@ public:
     void UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
     /// @}
 
-    Scene* GetScene() const { return scene_; }
     const auto GetNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }
     unsigned GetNetworkIndexUpperBound() const { return GetStableIndexUpperBound(); }
     NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
 
 private:
-    Scene* scene_{};
-
     ea::vector<bool> networkObjectsDirty_;
 
 protected:
-    void OnSceneSet(Scene* scene) override;
     void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
     void OnComponentRemoved(BaseTrackedComponent* baseComponent) override;
 };
@@ -88,14 +84,14 @@ enum ReplicationManagerMode
 };
 
 /// Root level scene component that manages Scene replication both on client and server.
-/// TODO(network): Rename to ReplicationManager
-class URHO3D_API NetworkManager : public NetworkManagerBase
+/// Local Scene should have an instance of ReplicationManager in order to use NetworkObject-s in standalone mode.
+class URHO3D_API ReplicationManager : public NetworkObjectRegistry
 {
-    URHO3D_OBJECT(NetworkManager, NetworkManagerBase);
+    URHO3D_OBJECT(ReplicationManager, NetworkObjectRegistry);
 
 public:
-    explicit NetworkManager(Context* context);
-    ~NetworkManager() override;
+    explicit ReplicationManager(Context* context);
+    ~ReplicationManager() override;
 
     static void RegisterObject(Context* context);
 

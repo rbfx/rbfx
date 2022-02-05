@@ -37,7 +37,6 @@ namespace Urho3D
 {
 
 class File;
-class NetworkManager;
 class PackageFile;
 class Texture2D;
 

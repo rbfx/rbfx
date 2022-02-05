@@ -38,7 +38,7 @@ unsigned currentSimulationStep = 0;
 
 unsigned ManualConnection::systemTime = 0;
 
-ManualConnection::ManualConnection(Context* context, NetworkManager* sink, unsigned seed)
+ManualConnection::ManualConnection(Context* context, ReplicationManager* sink, unsigned seed)
     : AbstractConnection(context)
     , sink_(sink)
     , random_(seed)
@@ -142,8 +142,8 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
 {
     network_->SetSimulateServerEvents(true);
     network_->SetSimulateClientEvents(true);
-    serverNetworkManager_ = serverScene_->GetOrCreateComponent<NetworkManager>();
-    serverNetworkManager_->StartServer();
+    serverReplicationManager_ = serverScene_->GetOrCreateComponent<ReplicationManager>();
+    serverReplicationManager_->StartServer();
 }
 
 NetworkSimulator::~NetworkSimulator()
@@ -156,17 +156,17 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
 {
     PerClient data;
     data.clientScene_ = clientScene;
-    data.clientNetworkManager_ = clientScene->GetOrCreateComponent<NetworkManager>();
-    data.clientToServer_ = MakeShared<ManualConnection>(context_, serverNetworkManager_, random_.GetUInt());
-    data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientNetworkManager_, random_.GetUInt());
+    data.clientReplicationManager_ = clientScene->GetOrCreateComponent<ReplicationManager>();
+    data.clientToServer_ = MakeShared<ManualConnection>(context_, serverReplicationManager_, random_.GetUInt());
+    data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientReplicationManager_, random_.GetUInt());
 
     data.clientToServer_->SetSinkConnection(data.serverToClient_);
     data.clientToServer_->SetQuality(quality);
     data.serverToClient_->SetSinkConnection(data.clientToServer_);
     data.serverToClient_->SetQuality(quality);
 
-    data.clientNetworkManager_->StartClient(data.clientToServer_);
-    serverNetworkManager_->GetServerReplicator()->AddConnection(data.serverToClient_);
+    data.clientReplicationManager_->StartClient(data.clientToServer_);
+    serverReplicationManager_->GetServerReplicator()->AddConnection(data.serverToClient_);
 
     clients_.push_back(data);
 }
@@ -177,8 +177,8 @@ void NetworkSimulator::RemoveClient(Scene* clientScene)
     if (iter == clients_.end())
         return;
 
-    iter->clientNetworkManager_->StartStandalone();
-    serverNetworkManager_->GetServerReplicator()->RemoveConnection(iter->serverToClient_);
+    iter->clientReplicationManager_->StartStandalone();
+    serverReplicationManager_->GetServerReplicator()->RemoveConnection(iter->serverToClient_);
     clients_.erase(iter);
 }
 

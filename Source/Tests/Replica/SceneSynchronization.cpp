@@ -33,7 +33,7 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
-#include <Urho3D/Replica/NetworkManager.h>
+#include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Replica/NetworkObject.h>
 #include <Urho3D/Replica/NetworkValue.h>
 #include <Urho3D/Replica/ReplicatedNetworkTransform.h>
@@ -228,18 +228,18 @@ TEST_CASE("Time is synchronized between client and server")
     Tests::NetworkSimulator sim(serverScene, seed);
     sim.AddClient(clientScene, quality);
 
-    auto& serverReplicator = *serverScene->GetComponent<NetworkManager>()->GetServerReplicator();
+    auto& serverReplicator = *serverScene->GetComponent<ReplicationManager>()->GetServerReplicator();
 
     // Simulate a few millseconds, not enough for synchronization due to ping
     sim.SimulateTime(0.5f);
-    REQUIRE_FALSE(clientScene->GetComponent<NetworkManager>()->GetClientReplica());
+    REQUIRE_FALSE(clientScene->GetComponent<ReplicationManager>()->GetClientReplica());
 
     // Simulate a few more seconds, should be somehow synchronized
     sim.SimulateTime(0.5f);
     sim.SimulateTime(9.0f);
 
-    REQUIRE(clientScene->GetComponent<NetworkManager>()->GetClientReplica());
-    const auto& clientReplica = *clientScene->GetComponent<NetworkManager>()->GetClientReplica();
+    REQUIRE(clientScene->GetComponent<ReplicationManager>()->GetClientReplica());
+    const auto& clientReplica = *clientScene->GetComponent<ReplicationManager>()->GetClientReplica();
 
     const float syncError = ea::max(0.5f, (quality.maxPing_ - quality.minPing_) * Tests::NetworkSimulator::FramesInSecond);
     const auto startTime = fps * 10;
@@ -524,7 +524,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
     // Spend some time alone
     Tests::NetworkSimulator sim(serverScene);
-    const auto& serverReplicator = *serverScene->GetComponent<NetworkManager>()->GetServerReplicator();
+    const auto& serverReplicator = *serverScene->GetComponent<ReplicationManager>()->GetServerReplicator();
     sim.SimulateTime(9.0f);
 
     // Add clients and wait for synchronization
@@ -534,7 +534,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
     // Expect positions and rotations to be precisely synchronized on interpolating client
     {
-        const auto& clientReplica = *interpolatingClientScene->GetComponent<NetworkManager>()->GetClientReplica();
+        const auto& clientReplica = *interpolatingClientScene->GetComponent<ReplicationManager>()->GetClientReplica();
         const NetworkTime replicaTime = clientReplica.GetReplicaTime();
         const double delay = serverReplicator.GetServerTime() - replicaTime;
 
@@ -552,7 +552,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
     // Expect positions and rotations to be roughly synchronized on extrapolating client
     {
-        const auto& clientReplica = *extrapolatingClientScene->GetComponent<NetworkManager>()->GetClientReplica();
+        const auto& clientReplica = *extrapolatingClientScene->GetComponent<ReplicationManager>()->GetClientReplica();
         const NetworkTime replicaTime = clientReplica.GetReplicaTime();
         const double delay = serverReplicator.GetServerTime() - replicaTime;
 

@@ -49,7 +49,7 @@ namespace Urho3D
 class ClockSynchronizer;
 class File;
 class MemoryBuffer;
-class NetworkManager;
+class ReplicationManager;
 class Node;
 class Scene;
 class Serializable;
@@ -332,7 +332,7 @@ private:
     /// Scene.
     WeakPtr<Scene> scene_;
     /// Scene replication and synchronization manager.
-    WeakPtr<NetworkManager> replicationManager_;
+    WeakPtr<ReplicationManager> replicationManager_;
 
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
