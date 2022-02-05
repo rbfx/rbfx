@@ -36,6 +36,7 @@ namespace Urho3D
 class URHO3D_API ParticleGraphLayer : public Serializable
 {
     static constexpr float DefaultDuration = 1.0f;
+    static constexpr float DefaultTimeScale = 1.0f;
     static constexpr unsigned DefaultCapacity = 16;
 
     URHO3D_OBJECT(ParticleGraphLayer, Serializable)
