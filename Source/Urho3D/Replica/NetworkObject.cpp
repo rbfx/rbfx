@@ -36,9 +36,9 @@ NetworkObject::~NetworkObject() = default;
 
 void NetworkObject::SetOwner(AbstractConnection* owner)
 {
-    if (networkMode_ != NetworkObjectMode::Draft)
+    if (networkMode_ != NetworkObjectMode::Standalone)
     {
-        URHO3D_ASSERTLOG(0, "NetworkObject::SetOwner may be called only for NetworkObject in Draft mode");
+        URHO3D_ASSERTLOG(0, "NetworkObject::SetOwner may be called only for NetworkObject in Standalone mode");
         return;
     }
 

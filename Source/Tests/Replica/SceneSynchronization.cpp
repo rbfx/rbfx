@@ -664,28 +664,28 @@ TEST_CASE("Ownership is consistent on server and on clients")
         Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Unowned Node");
 
         auto object = node->GetDerivedComponent<NetworkObject>();
-        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Standalone);
     }
     {
         Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Owned Node 0");
 
         auto object = node->GetDerivedComponent<NetworkObject>();
         object->SetOwner(sim.GetServerToClientConnection(clientScenes[0]));
-        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Standalone);
     }
     {
         Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Owned Node 1");
 
         auto object = node->GetDerivedComponent<NetworkObject>();
         object->SetOwner(sim.GetServerToClientConnection(clientScenes[1]));
-        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Standalone);
     }
     {
         Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Owned Node 2");
 
         auto object = node->GetDerivedComponent<NetworkObject>();
         object->SetOwner(sim.GetServerToClientConnection(clientScenes[2]));
-        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Draft);
+        REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Standalone);
     }
     sim.SimulateTime(10.0f);
 

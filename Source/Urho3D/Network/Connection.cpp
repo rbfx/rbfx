@@ -196,8 +196,8 @@ void Connection::SetScene(Scene* newScene)
     {
         // Remove replication states and owner references from the previous scene
         scene_->CleanupConnection(this);
-        if (replicationManager_ && replicationManager_->IsServer())
-            replicationManager_->GetServerReplicator()->RemoveConnection(this);
+        if (replicationManager_)
+            replicationManager_->DropConnection(this);
         replicationManager_ = nullptr;
     }
 

@@ -39,7 +39,7 @@ class Serializer;
 
 /// Mask used to enable and disable network callbacks.
 /// Note that some callbacks are called unconditionally.
-enum class NetworkCallback
+enum class NetworkCallbackMask
 {
     None = 0,
 
@@ -62,7 +62,7 @@ enum class NetworkCallback
     UnreliableFeedback      = 1 << 6,
     /// @}
 };
-URHO3D_FLAGSET(NetworkCallback, NetworkCallbackFlags);
+URHO3D_FLAGSET(NetworkCallbackMask, NetworkCallbackFlags);
 
 /// Server-side callbacks for NetworkObject and NetworkBehavior.
 /// ServerReplicator is guaranteed to be present.
@@ -116,6 +116,14 @@ public:
     virtual bool PrepareUnreliableFeedback(unsigned frame) { return false; }
     /// Write unreliable feedback from client.
     virtual void WriteUnreliableFeedback(unsigned frame, Serializer& dest) {}
+};
+
+/// Aggregate network-related callbacks used by NetworkObject and NetworkBehavior.
+class NetworkCallback : public ServerNetworkCallback, public ClientNetworkCallback
+{
+public:
+    /// Initialize object in standalone mode when neither server nor client is running.
+    virtual void InitializeStandalone() {};
 };
 
 }

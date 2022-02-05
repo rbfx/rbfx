@@ -57,11 +57,12 @@ SharedPtr<Scene> CreateTestScene(Context* context)
 SharedPtr<XMLFile> CreateTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
-    node->CreateComponent<ReplicatedNetworkTransform>();
-    node->CreateComponent<PredictedKinematicController>();
 
     auto kinematicController = node->CreateComponent<KinematicCharacterController>();
     kinematicController->SetHeight(2.0f);
+
+    node->CreateComponent<ReplicatedNetworkTransform>();
+    node->CreateComponent<PredictedKinematicController>();
 
     auto prefab = MakeShared<XMLFile>(context);
     XMLElement prefabRootElement = prefab->CreateRoot("node");
@@ -140,18 +141,17 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(4.0f);
 
     // Expect client node at about the specified position.
-    const float physicsError = 0.05f;
     const float networkError = 1 * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
     {
         CHECK(clientNode->GetWorldPosition().x_ == 0.0f);
-        CHECK(clientNode->GetWorldPosition().z_ == Catch::Approx(10.0f - physicsError).margin(networkError));
+        CHECK(clientNode->GetWorldPosition().z_ == Catch::Approx(10.0f).margin(networkError));
     }
 
     // Expect server lagging behind, with max error about 1 + ping frames.
     {
         const float serverDelay = inputDelay * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
         CHECK(serverNode->GetWorldPosition().x_ == 0.0f);
-        CHECK(serverNode->GetWorldPosition().z_ == Catch::Approx(10.0f - physicsError - serverDelay).margin(networkError));
+        CHECK(serverNode->GetWorldPosition().z_ == Catch::Approx(10.0f - serverDelay).margin(networkError));
         CHECK(serverNode->GetWorldPosition().z_ < clientNode->GetWorldPosition().z_);
     }
 
@@ -162,6 +162,18 @@ TEST_CASE("Client-side prediction is consistent with server")
     // Expect server and client positions to match
     const float positionError = ReplicatedNetworkTransform::DefaultMovementThreshold;
     CHECK(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), positionError));
+
+    // Remove client connection and simulate more movement
+    sim.RemoveClient(clientScene);
+    clientObject->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
+    sim.SimulateTime(5.0f);
+
+    // Expect client node at about the specified position.
+    {
+        const float transitionError = networkError / 2;
+        CHECK(clientNode->GetWorldPosition().x_ == 0.0f);
+        CHECK(clientNode->GetWorldPosition().z_ == Catch::Approx(20.0f).margin(transitionError + networkError));
+    }
 }
 
 TEST_CASE("Client-side prediction is stable when latency is stable")
@@ -207,6 +219,10 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     for (unsigned actionIndex = 0; actionIndex < 100; ++actionIndex)
     {
         clientObject->SetWalkVelocity(direction);
+        const bool needJump = sim.GetRandom().GetBool(0.1f);
+        if (needJump)
+            clientObject->SetJump();
+
         direction *= -1.0f;
 
         const float duration = sim.GetRandom().GetFloat(0.01f, 0.25f);
@@ -223,4 +239,25 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     // Compare every 4th element because client and server are synchronized only on frames
     for (unsigned i = 0; i < numValues; i += 4)
         REQUIRE(serverPositionValues[i].GetVector3() == clientPositionValues[i].GetVector3());
+}
+
+TEST_CASE("PredictedKinematicController works standalone")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(
+        context, "@/ClientSidePrediction/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
+
+    auto standaloneScene = CreateTestScene(context);
+    standaloneScene->CreateComponent<NetworkManager>();
+
+    Node* standaloneNode = Tests::SpawnOnServer<BehaviorNetworkObject>(standaloneScene, prefab, "Player", {0.0f, 0.96f, 0.0f});
+    auto standaloneObject = standaloneNode->GetComponent<PredictedKinematicController>();
+
+    const float moveVelocity = 2.0f;
+    standaloneObject->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
+    Tests::NetworkSimulator::SimulateTime(context, 5.0f);
+
+    CHECK(standaloneNode->GetWorldPosition().x_ == 0.0f);
+    CHECK(standaloneNode->GetWorldPosition().z_ == Catch::Approx(10.0f).margin(0.1f));
 }

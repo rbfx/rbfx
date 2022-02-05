@@ -80,7 +80,15 @@ protected:
     void OnComponentRemoved(BaseTrackedComponent* baseComponent) override;
 };
 
+enum ReplicationManagerMode
+{
+    Standalone,
+    Server,
+    Client
+};
+
 /// Root level scene component that manages Scene replication both on client and server.
+/// TODO(network): Rename to ReplicationManager
 class URHO3D_API NetworkManager : public NetworkManagerBase
 {
     URHO3D_OBJECT(NetworkManager, NetworkManagerBase);
@@ -91,14 +99,16 @@ public:
 
     static void RegisterObject(Context* context);
 
-    /// Stop whatever client or server logic is going on.
-    void Stop();
+    /// Stop whatever client or server logic is going on and continue standalone.
+    void StartStandalone();
     /// Start new server from current state.
     void StartServer();
-    /// Start new client from specified connection.
+    /// Start new client from specified connection. Removes all existing objects.
     void StartClient(AbstractConnection* connectionToServer);
     /// Process network message either as client or as server.
     void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    /// Process connection dropped. Removes client connection for server, converts scene to standalone for client.
+    void DropConnection(AbstractConnection* connection);
 
     /// Return current state specific to client or server.
     /// @{
@@ -107,13 +117,18 @@ public:
     unsigned GetTraceDurationInFrames() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
     ea::string GetDebugInfo() const;
-    bool IsServer() const { return !!server_; }
-    bool IsClient() const { return !!client_; }
+    bool IsStandalone() const { return mode_ == ReplicationManagerMode::Standalone; }
+    bool IsServer() const { return mode_ == ReplicationManagerMode::Server; }
+    bool IsClient() const { return mode_ == ReplicationManagerMode::Client; }
     ClientReplica* GetClientReplica() const { return client_ ? client_->replica_ : nullptr; }
     ServerReplicator* GetServerReplicator() const { return server_; }
     /// @}
 
+protected:
+    void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
+
 private:
+    void Stop();
     void ProcessMessageOnUninitializedClient(
         AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
 
@@ -129,6 +144,7 @@ private:
         SharedPtr<ClientReplica> replica_;
     };
 
+    ReplicationManagerMode mode_{};
     SharedPtr<ServerReplicator> server_;
     ea::optional<ClientData> client_;
 };

@@ -75,6 +75,8 @@ void BehaviorNetworkObject::RegisterObject(Context* context)
 
 void BehaviorNetworkObject::InitializeBehaviors()
 {
+    InvalidateBehaviors();
+
     ea::vector<NetworkBehavior*> networkBehaviors;
     node_->GetDerivedComponents(networkBehaviors, true);
 
@@ -85,7 +87,6 @@ void BehaviorNetworkObject::InitializeBehaviors()
         return;
     }
 
-    callbackMask_ = NetworkCallback::None;
     for (NetworkBehavior* networkBehavior : networkBehaviors)
     {
         const unsigned bit = 1 << behaviors_.size();
@@ -100,7 +101,18 @@ void BehaviorNetworkObject::InitializeBehaviors()
 
 void BehaviorNetworkObject::InvalidateBehaviors()
 {
+    callbackMask_ = NetworkCallbackMask::None;
     behaviors_.clear();
+}
+
+void BehaviorNetworkObject::InitializeStandalone()
+{
+    BaseClassName::InitializeStandalone();
+
+    InitializeBehaviors();
+
+    for (const auto& connectedBehavior : behaviors_)
+        connectedBehavior.component_->InitializeStandalone();
 }
 
 void BehaviorNetworkObject::InitializeOnServer()
@@ -136,11 +148,11 @@ void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer&
 
 bool BehaviorNetworkObject::IsRelevantForClient(AbstractConnection* connection)
 {
-    if (callbackMask_.Test(NetworkCallback::IsRelevantForClient))
+    if (callbackMask_.Test(NetworkCallbackMask::IsRelevantForClient))
     {
         for (const auto& connectedBehavior : behaviors_)
         {
-            if (connectedBehavior.callbackMask_.Test(NetworkCallback::IsRelevantForClient))
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::IsRelevantForClient))
             {
                 if (!connectedBehavior.component_->IsRelevantForClient(connection))
                     return false;
@@ -154,11 +166,11 @@ void BehaviorNetworkObject::UpdateTransformOnServer()
 {
     BaseClassName::UpdateTransformOnServer();
 
-    if (callbackMask_.Test(NetworkCallback::UpdateTransformOnServer))
+    if (callbackMask_.Test(NetworkCallbackMask::UpdateTransformOnServer))
     {
         for (const auto& connectedBehavior : behaviors_)
         {
-            if (connectedBehavior.callbackMask_.Test(NetworkCallback::UpdateTransformOnServer))
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::UpdateTransformOnServer))
                 connectedBehavior.component_->UpdateTransformOnServer();
         }
     }
@@ -168,11 +180,11 @@ void BehaviorNetworkObject::InterpolateState(float timeStep, const NetworkTime& 
 {
     BaseClassName::InterpolateState(timeStep, replicaTime, inputTime);
 
-    if (callbackMask_.Test(NetworkCallback::InterpolateState))
+    if (callbackMask_.Test(NetworkCallbackMask::InterpolateState))
     {
         for (const auto& connectedBehavior : behaviors_)
         {
-            if (connectedBehavior.callbackMask_.Test(NetworkCallback::InterpolateState))
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::InterpolateState))
                 connectedBehavior.component_->InterpolateState(timeStep, replicaTime, inputTime);
         }
     }
@@ -183,11 +195,11 @@ bool BehaviorNetworkObject::PrepareReliableDelta(unsigned frame)
     bool needUpdate = BaseClassName::PrepareReliableDelta(frame);
 
     reliableUpdateMask_ = 0;
-    if (callbackMask_.Test(NetworkCallback::ReliableDelta))
+    if (callbackMask_.Test(NetworkCallbackMask::ReliableDelta))
     {
         for (auto& connectedBehavior : behaviors_)
         {
-            if (connectedBehavior.callbackMask_.Test(NetworkCallback::ReliableDelta))
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::ReliableDelta))
             {
                 if (connectedBehavior.component_->PrepareReliableDelta(frame))
                     reliableUpdateMask_ |= connectedBehavior.bit_;
@@ -203,7 +215,7 @@ void BehaviorNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
 {
     BaseClassName::WriteReliableDelta(frame, dest);
 
-    if (callbackMask_.Test(NetworkCallback::ReliableDelta))
+    if (callbackMask_.Test(NetworkCallbackMask::ReliableDelta))
     {
         dest.WriteVLE(reliableUpdateMask_);
         for (const auto& connectedBehavior : behaviors_)
@@ -218,7 +230,7 @@ void BehaviorNetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
 {
     BaseClassName::ReadReliableDelta(frame, src);
 
-    if (callbackMask_.Test(NetworkCallback::ReliableDelta))
+    if (callbackMask_.Test(NetworkCallbackMask::ReliableDelta))
     {
         const unsigned mask = src.ReadVLE();
         for (const auto& connectedBehavior : behaviors_)
@@ -234,11 +246,11 @@ bool BehaviorNetworkObject::PrepareUnreliableDelta(unsigned frame)
     bool needUpdate = BaseClassName::PrepareUnreliableDelta(frame);
 
     unreliableUpdateMask_ = 0;
-    if (callbackMask_.Test(NetworkCallback::UnreliableDelta))
+    if (callbackMask_.Test(NetworkCallbackMask::UnreliableDelta))
     {
         for (auto& connectedBehavior : behaviors_)
         {
-            if (connectedBehavior.callbackMask_.Test(NetworkCallback::UnreliableDelta))
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::UnreliableDelta))
             {
                 if (connectedBehavior.component_->PrepareUnreliableDelta(frame))
                     unreliableUpdateMask_ |= connectedBehavior.bit_;
@@ -254,7 +266,7 @@ void BehaviorNetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& des
 {
     BaseClassName::WriteUnreliableDelta(frame, dest);
 
-    if (callbackMask_.Test(NetworkCallback::UnreliableDelta))
+    if (callbackMask_.Test(NetworkCallbackMask::UnreliableDelta))
     {
         dest.WriteVLE(unreliableUpdateMask_);
         for (const auto& connectedBehavior : behaviors_)
@@ -269,7 +281,7 @@ void BehaviorNetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& sr
 {
     BaseClassName::ReadUnreliableDelta(frame, src);
 
-    if (callbackMask_.Test(NetworkCallback::UnreliableDelta))
+    if (callbackMask_.Test(NetworkCallbackMask::UnreliableDelta))
     {
         const unsigned mask = src.ReadVLE();
         for (const auto& connectedBehavior : behaviors_)
@@ -285,11 +297,11 @@ bool BehaviorNetworkObject::PrepareUnreliableFeedback(unsigned frame)
     bool needUpdate = BaseClassName::PrepareUnreliableFeedback(frame);
 
     unreliableFeedbackMask_ = 0;
-    if (callbackMask_.Test(NetworkCallback::UnreliableFeedback))
+    if (callbackMask_.Test(NetworkCallbackMask::UnreliableFeedback))
     {
         for (auto& connectedBehavior : behaviors_)
         {
-            if (connectedBehavior.callbackMask_.Test(NetworkCallback::UnreliableFeedback))
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::UnreliableFeedback))
             {
                 if (connectedBehavior.component_->PrepareUnreliableFeedback(frame))
                     unreliableFeedbackMask_ |= connectedBehavior.bit_;
@@ -305,7 +317,7 @@ void BehaviorNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& 
 {
     BaseClassName::WriteUnreliableFeedback(frame, dest);
 
-    if (callbackMask_.Test(NetworkCallback::UnreliableFeedback))
+    if (callbackMask_.Test(NetworkCallbackMask::UnreliableFeedback))
     {
         dest.WriteVLE(unreliableFeedbackMask_);
         for (const auto& connectedBehavior : behaviors_)
@@ -320,7 +332,7 @@ void BehaviorNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deser
 {
     BaseClassName::ReadUnreliableFeedback(feedbackFrame, src);
 
-    if (callbackMask_.Test(NetworkCallback::UnreliableFeedback))
+    if (callbackMask_.Test(NetworkCallbackMask::UnreliableFeedback))
     {
         const unsigned mask = src.ReadVLE();
         for (const auto& connectedBehavior : behaviors_)
