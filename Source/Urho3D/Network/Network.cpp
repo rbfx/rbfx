@@ -455,13 +455,14 @@ bool Network::StartServer(unsigned short port, unsigned int maxConnections)
 void Network::StopServer()
 {
     clientConnections_.clear();
-    isServer_ = false;
 
     if (!rakPeer_)
         return;
 
     if (!IsServerRunning())
         return;
+
+    isServer_ = false;
     // Provide 300 ms to notify
     rakPeer_->Shutdown(300);
 
