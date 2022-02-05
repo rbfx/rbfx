@@ -171,6 +171,17 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
     clients_.push_back(data);
 }
 
+void NetworkSimulator::RemoveClient(Scene* clientScene)
+{
+    const auto iter = FindClientIter(clientScene);
+    if (iter == clients_.end())
+        return;
+
+    iter->clientNetworkManager_->StartStandalone();
+    serverNetworkManager_->GetServerReplicator()->RemoveConnection(iter->serverToClient_);
+    clients_.erase(iter);
+}
+
 void NetworkSimulator::SimulateEngineFrame(float timeStep)
 {
     const unsigned elapsedNetworkMilliseconds = static_cast<unsigned>(timeStep * MillisecondsInFrame * FramesInSecond);
@@ -202,7 +213,27 @@ void NetworkSimulator::SimulateEngineFrame(Context* context, float timeStep)
     time->EndFrame();
 }
 
+void NetworkSimulator::SimulateTime(Context* context, float time, unsigned millisecondsInQuant)
+{
+    SimulateTimeCallback(time, millisecondsInQuant,
+        [&](float timeStep)
+    {
+        SimulateEngineFrame(context, timeStep);
+    });
+}
+
 void NetworkSimulator::SimulateTime(float time, unsigned millisecondsInQuant)
+{
+    SimulateTimeCallback(time, millisecondsInQuant,
+        [&](float timeStep)
+    {
+        ManualConnection::systemTime += millisecondsInQuant;
+        SimulateEngineFrame(timeStep);
+    });
+}
+
+void NetworkSimulator::SimulateTimeCallback(
+    float time, unsigned millisecondsInQuant, ea::function<void(float timeStep)> callback)
 {
     REQUIRE(MillisecondsInFrame % millisecondsInQuant == 0);
 
@@ -213,16 +244,14 @@ void NetworkSimulator::SimulateTime(float time, unsigned millisecondsInQuant)
 
     for (unsigned i = 0; i < numSteps; ++i)
     {
-        ManualConnection::systemTime += millisecondsInQuant;
         currentSimulationStep = i;
-        SimulateEngineFrame(timeStep);
+        callback(timeStep);
     }
 }
 
 AbstractConnection* NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
 {
-    const auto isSameScene = [&](const PerClient& data) { return data.clientScene_ == clientScene; };
-    const auto iter = ea::find_if(clients_.begin(), clients_.end(), isSameScene);
+    const auto iter = FindClientIter(clientScene);
     return iter != clients_.end() ? iter->serverToClient_ : nullptr;
 }
 

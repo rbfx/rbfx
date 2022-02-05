@@ -110,8 +110,8 @@ public:
     void SetMaxSlope(float maxSlope);
     /// Return max slope angle in degrees.
     float GetMaxSlope() const { return maxSlope_; }
-    /// Set walk direction. This is neither a direction nor a velocity, but the amount to increment the position each simulation iteration, regardless of dt.
-    void SetWalkDirection(const Vector3& walkDir);
+    /// Set walk increment. This is neither a direction nor a velocity, but the amount to increment the position each simulation iteration, regardless of dt.
+    void SetWalkIncrement(const Vector3& walkDir);
     /// Check if character in on the ground.
     bool OnGround() const;
     /// Jump.

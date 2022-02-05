@@ -32,14 +32,14 @@ namespace Urho3D
 class BehaviorNetworkObject;
 
 /// Aspect of network behavior that is injected into BehaviorNetworkObject.
+///
 /// NetworkBehavior should be created only after owner BehaviorNetworkObject is created,
 /// but before it's replicated to clients (on server) or creation is finished (on client).
 /// This basically means that list of NetworkBehavior-s attached to BehaviorNetworkObject
 /// should stay the same during all lifetime of BehaviorNetworkObject.
 class URHO3D_API NetworkBehavior
     : public Component
-    , public ServerNetworkCallback
-    , public ClientNetworkCallback
+    , public NetworkCallback
 {
     URHO3D_OBJECT(NetworkBehavior, Component);
 
@@ -88,6 +88,7 @@ public:
 
     /// Implement NetworkObject.
     /// @{
+    void InitializeStandalone() override;
     void InitializeOnServer() override;
     void WriteSnapshot(unsigned frame, Serializer& dest) override;
     void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;

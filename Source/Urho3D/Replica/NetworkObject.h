@@ -42,9 +42,9 @@ class AbstractConnection;
 enum class NetworkObjectMode
 {
     /// Default state of NetworkObject.
-    /// If scene is not replicated from/to, NetworkObject in such scene stays as Draft.
-    /// If scene is replicated, NetworkObject is a draft until it's processed by Network subsystem.
-    Draft,
+    /// If scene is not replicated from/to, NetworkObject in such scene stays Standalone.
+    /// If scene is replicated, NetworkObject is Standalone until it's processed by Network subsystem.
+    Standalone,
     /// Object is on server and is replicated to clients.
     Server,
     /// Object is on client and is replicated from the server.
@@ -62,8 +62,7 @@ enum class NetworkObjectMode
 /// Hierarchy is updated after NetworkObject node is dirtied.
 class URHO3D_API NetworkObject
     : public TrackedComponent<BaseStableTrackedComponent, NetworkManagerBase>
-    , public ServerNetworkCallback
-    , public ClientNetworkCallback
+    , public NetworkCallback
 {
     URHO3D_OBJECT(NetworkObject, Component);
 
@@ -90,6 +89,8 @@ public:
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
     NetworkObjectMode GetNetworkMode() const { return networkMode_; }
+    bool IsStandalone() const { return networkMode_ == NetworkObjectMode::Standalone; }
+    bool IsOwnedByThisClient() const { return networkMode_ == NetworkObjectMode::ClientOwned; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 
@@ -115,7 +116,7 @@ private:
 
     /// NetworkManager corresponding to the NetworkObject.
     NetworkObjectMode networkMode_{};
-    AbstractConnection* ownerConnection_{};
+    WeakPtr<AbstractConnection> ownerConnection_{};
 
     /// NetworkObject hierarchy
     /// @{

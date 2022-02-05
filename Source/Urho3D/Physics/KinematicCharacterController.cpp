@@ -432,7 +432,7 @@ void KinematicCharacterController::SetMaxSlope(float maxSlope)
     }
 }
 
-void KinematicCharacterController::SetWalkDirection(const Vector3& walkDir)
+void KinematicCharacterController::SetWalkIncrement(const Vector3& walkDir)
 {
     kinematicController_->setWalkDirection(ToBtVector3(walkDir));
 }

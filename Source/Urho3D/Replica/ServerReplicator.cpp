@@ -644,8 +644,8 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
 {
     if (connections_.contains(connection))
     {
-        URHO3D_LOGWARNING("Connection {} is already added", connection->ToString());
-        assert(0);
+        URHO3D_ASSERTLOG(0, "Connection {} is already added", connection->ToString());
+        return;
     }
 
     connections_.erase(connection);
@@ -662,8 +662,8 @@ void ServerReplicator::RemoveConnection(AbstractConnection* connection)
 {
     if (!connections_.contains(connection))
     {
-        URHO3D_LOGWARNING("Connection {} is not added", connection->ToString());
-        assert(0);
+        URHO3D_ASSERTLOG(0, "Connection {} is not added", connection->ToString());
+        return;
     }
 
     connections_.erase(connection);

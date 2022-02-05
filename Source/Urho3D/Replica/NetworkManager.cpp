@@ -93,24 +93,18 @@ void NetworkManagerBase::QueueComponentUpdate(NetworkObject* networkObject)
 void NetworkManagerBase::RemoveAllComponents()
 {
     ea::vector<WeakPtr<Node>> nodesToRemove;
-    for (Component* component : GetTrackedComponents())
-    {
-        if (auto networkObject = static_cast<NetworkObject*>(component))
-            nodesToRemove.emplace_back(networkObject->GetNode());
-    }
-    unsigned numRemovedNodes = 0;
+    for (NetworkObject* networkObject : GetNetworkObjects())
+        nodesToRemove.emplace_back(networkObject->GetNode());
+
     for (Node* node : nodesToRemove)
     {
         if (node)
-        {
             node->Remove();
-            ++numRemovedNodes;
-        }
     }
 
     networkObjectsDirty_.clear();
 
-    URHO3D_LOGINFO("{} nodes removed on NetworkObject cleanup", numRemovedNodes);
+    URHO3D_LOGINFO("{} instances of NetworkObject removed", nodesToRemove.size());
 }
 
 void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const
@@ -172,13 +166,26 @@ NetworkObject* NetworkManagerBase::GetNetworkObjectByIndex(unsigned networkIndex
 
 NetworkManager::NetworkManager(Context* context)
     : NetworkManagerBase(context)
-{}
+{
+}
 
 NetworkManager::~NetworkManager() = default;
 
 void NetworkManager::RegisterObject(Context* context)
 {
     context->RegisterFactory<NetworkManager>("");
+}
+
+void NetworkManager::OnComponentAdded(BaseTrackedComponent* baseComponent)
+{
+    BaseClassName::OnComponentAdded(baseComponent);
+
+    if (IsStandalone())
+    {
+        auto networkObject = static_cast<NetworkObject*>(baseComponent);
+        networkObject->SetNetworkMode(NetworkObjectMode::Standalone);
+        networkObject->InitializeStandalone();
+    }
 }
 
 void NetworkManager::Stop()
@@ -194,11 +201,30 @@ void NetworkManager::Stop()
         URHO3D_LOGINFO("Stopped server for scene replication");
         server_ = nullptr;
     }
+
+    mode_ = ReplicationManagerMode::Standalone;
+}
+
+void NetworkManager::StartStandalone()
+{
+    Stop();
+
+    mode_ = ReplicationManagerMode::Standalone;
+
+    for (NetworkObject* networkObject : GetNetworkObjects())
+    {
+        networkObject->SetNetworkMode(NetworkObjectMode::Standalone);
+        networkObject->InitializeStandalone();
+    }
+
+    URHO3D_LOGINFO("Started standalone scene replication");
 }
 
 void NetworkManager::StartServer()
 {
     Stop();
+
+    mode_ = ReplicationManagerMode::Server;
 
     server_ = MakeShared<ServerReplicator>(GetScene());
 
@@ -208,6 +234,8 @@ void NetworkManager::StartServer()
 void NetworkManager::StartClient(AbstractConnection* connectionToServer)
 {
     Stop();
+
+    mode_ = ReplicationManagerMode::Client;
 
     client_ = ClientData{WeakPtr<AbstractConnection>(connectionToServer)};
     RemoveAllComponents();
@@ -267,6 +295,14 @@ void NetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessa
     {
         server_->ProcessMessage(connection, messageId, messageData);
     }
+}
+
+void NetworkManager::DropConnection(AbstractConnection* connection)
+{
+    if (server_)
+        server_->RemoveConnection(connection);
+    else if (client_ && client_->connection_ == connection)
+        StartStandalone();
 }
 
 void NetworkManager::ProcessMessageOnUninitializedClient(

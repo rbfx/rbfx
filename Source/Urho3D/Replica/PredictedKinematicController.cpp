@@ -55,15 +55,60 @@ void PredictedKinematicController::RegisterObject(Context* context)
 
 void PredictedKinematicController::SetWalkVelocity(const Vector3& velocity)
 {
-    if (GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientReplicated)
+    if (!IsConnectedToStandaloneComponents())
+        return;
+
+    NetworkObject* networkObject = GetNetworkObject();
+    URHO3D_ASSERT(networkObject);
+
+    if (networkObject->IsStandalone() || networkObject->IsOwnedByThisClient())
+    {
+        walkVelocity_ = velocity;
+    }
+    else
     {
         URHO3D_LOGWARNING(
-            "PredictedKinematicController::SetWalkVelocity is called for object {} even tho this client doesn't own it",
-            ToString(GetNetworkObject()->GetNetworkId()));
-        return;
+            "PredictedKinematicController::SetWalkVelocity is called for object {} by the client that doesn't own this object.",
+            ToString(networkObject->GetNetworkId()));
     }
+}
 
-    walkVelocity_ = velocity;
+void PredictedKinematicController::SetJump()
+{
+    if (!IsConnectedToStandaloneComponents())
+        return;
+
+    NetworkObject* networkObject = GetNetworkObject();
+    URHO3D_ASSERT(networkObject);
+
+    if (networkObject->IsStandalone())
+    {
+        if (kinematicController_->OnGround())
+            kinematicController_->Jump();
+    }
+    else if (networkObject->IsOwnedByThisClient())
+    {
+        needJump_ = true;
+    }
+    else
+    {
+        URHO3D_LOGWARNING(
+            "PredictedKinematicController::SetJump is called for object {} by the client that doesn't own this object.",
+            ToString(networkObject->GetNetworkId()));
+    }
+}
+
+void PredictedKinematicController::InitializeStandalone()
+{
+    InitializeCommon();
+    if (!IsConnectedToStandaloneComponents())
+        return;
+
+    SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
+        [this](StringHash, VariantMap& eventData)
+    {
+        kinematicController_->SetWalkIncrement(walkVelocity_ * physicsStepTime_);
+    });
 }
 
 void PredictedKinematicController::InitializeOnServer()
@@ -75,7 +120,6 @@ void PredictedKinematicController::InitializeOnServer()
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
 
-    feedbackVelocity_.Resize(traceDuration);
     server_.input_.Resize(maxInputFrames_);
 
     SubscribeToEvent(E_BEGINSERVERNETWORKFRAME,
@@ -119,16 +163,24 @@ void PredictedKinematicController::InterpolateState(float timeStep, const Networ
 
 void PredictedKinematicController::InitializeCommon()
 {
-    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
+    UnsubscribeFromEvent(E_BEGINSERVERNETWORKFRAME);
+    UnsubscribeFromEvent(E_PHYSICSPRESTEP);
 
     networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
 
-    physicsWorld_ = node_->GetScene()->GetComponent<PhysicsWorld>();
-    physicsStepTime_ = physicsWorld_ ? 1.0f / physicsWorld_->GetFps() : 0.0f;
+    if (Scene* scene = node_->GetScene())
+    {
+        physicsWorld_ = scene->GetComponent<PhysicsWorld>();
+        physicsStepTime_ = physicsWorld_ ? 1.0f / physicsWorld_->GetFps() : 0.0f;
+    }
 
-    maxInputFrames_ = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
-    maxRedundancy_ = replicationManager->GetSetting(NetworkSettings::MaxInputRedundancy).GetUInt();
+    if (NetworkObject* networkObject = GetNetworkObject())
+    {
+        const auto replicationManager = networkObject->GetReplicationManager();
+        maxInputFrames_ = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
+        maxRedundancy_ = replicationManager->GetSetting(NetworkSettings::MaxInputRedundancy).GetUInt();
+    }
 }
 
 bool PredictedKinematicController::PrepareUnreliableFeedback(unsigned frame)
@@ -168,7 +220,9 @@ void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
     if (const auto frameDataAndIndex = server_.input_.GetRawOrPrior(serverFrame))
     {
         const auto& [currentInput, currentInputFrame] = *frameDataAndIndex;
-        kinematicController_->SetWalkDirection(currentInput.walkVelocity_ * physicsStepTime_);
+        kinematicController_->SetWalkIncrement(currentInput.walkVelocity_ * physicsStepTime_);
+        if (currentInput.needJump_ && kinematicController_->OnGround())
+            kinematicController_->Jump();
 
         if (currentInputFrame != serverFrame)
             ++server_.lostFrames_;
@@ -188,8 +242,8 @@ void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
 
         const auto replicationManager = GetNetworkObject()->GetReplicationManager();
         ServerReplicator* serverReplicator = replicationManager->GetServerReplicator();
-        AbstractConnection* ownerConnection = GetNetworkObject()->GetOwnerConnection();
-        serverReplicator->ReportInputLoss(ownerConnection, loss);
+        if (AbstractConnection* ownerConnection = GetNetworkObject()->GetOwnerConnection())
+            serverReplicator->ReportInputLoss(ownerConnection, loss);
     }
 }
 
@@ -202,7 +256,10 @@ void PredictedKinematicController::OnPhysicsSynchronizedOnClient(unsigned frame)
     TrackCurrentInput(frame);
 
     // Apply actions
-    kinematicController_->SetWalkDirection(walkVelocity_ * physicsStepTime_);
+    kinematicController_->SetWalkIncrement(walkVelocity_ * physicsStepTime_);
+    if (needJump_ && kinematicController_->OnGround())
+        kinematicController_->Jump();
+    needJump_ = false;
 }
 
 void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
@@ -280,25 +337,28 @@ void PredictedKinematicController::TrackCurrentInput(unsigned frame)
     currentInput.frame_ = frame;
     currentInput.walkVelocity_ = walkVelocity_;
     currentInput.startPosition_ = kinematicController_->GetRawPosition();
+    currentInput.needJump_ = needJump_;
     client_.input_.push_back(currentInput);
 }
 
 void PredictedKinematicController::WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const
 {
     dest.WriteVector3(inputFrame.walkVelocity_);
+    dest.WriteBool(inputFrame.needJump_);
 }
 
 void PredictedKinematicController::ReadInputFrame(unsigned frame, Deserializer& src)
 {
     const Vector3 walkVelocity = src.ReadVector3();
+    const bool needJump = src.ReadBool();
 
     InputFrame inputFrame;
     inputFrame.frame_ = frame;
     inputFrame.walkVelocity_ = walkVelocity;
+    inputFrame.needJump_ = needJump;
+
     if (!server_.input_.Has(frame))
         server_.input_.Set(frame, inputFrame);
-
-    feedbackVelocity_.Set(frame, walkVelocity);
 }
 
 }

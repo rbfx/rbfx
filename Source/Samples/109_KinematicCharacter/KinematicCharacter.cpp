@@ -121,7 +121,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         curMoveDir_ = curMoveDir_.Lerp(velocity, 0.03f);
     }
 
-    kinematicController_->SetWalkDirection(curMoveDir_ * (softGrounded ? MOVE_FORCE : INAIR_MOVE_FORCE));
+    kinematicController_->SetWalkIncrement(curMoveDir_ * (softGrounded ? MOVE_FORCE : INAIR_MOVE_FORCE));
 
     if (softGrounded)
     {

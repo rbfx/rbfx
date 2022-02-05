@@ -116,9 +116,12 @@ public:
 
     explicit NetworkSimulator(Scene* serverScene, unsigned seed = 0);
     ~NetworkSimulator();
+
     void AddClient(Scene* clientScene, const ConnectionQuality& quality);
+    void RemoveClient(Scene* clientScene);
 
     static void SimulateEngineFrame(Context* context, float timeStep);
+    static void SimulateTime(Context* context, float time, unsigned millisecondsInQuant = MillisecondsInQuant);
 
     void SimulateEngineFrame(float timeStep);
     void SimulateTime(float time, unsigned millisecondsInQuant = MillisecondsInQuant);
@@ -128,6 +131,14 @@ public:
     RandomEngine& GetRandom() { return random_; }
 
 private:
+    static void SimulateTimeCallback(float time, unsigned millisecondsInQuant, ea::function<void(float timeStep)> callback);
+
+    auto FindClientIter(Scene* scene)
+    {
+        const auto isSameScene = [&](const PerClient& data) { return data.clientScene_ == scene; };
+        return ea::find_if(clients_.begin(), clients_.end(), isSameScene);
+    }
+
     struct PerClient
     {
         Scene* clientScene_;

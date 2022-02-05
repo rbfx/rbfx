@@ -48,7 +48,7 @@ public:
     static const unsigned NumUploadAttempts = 8;
 
     static constexpr NetworkCallbackFlags CallbackMask =
-        NetworkCallback::UpdateTransformOnServer | NetworkCallback::UnreliableDelta | NetworkCallback::InterpolateState;
+        NetworkCallbackMask::UpdateTransformOnServer | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState;
 
     explicit ReplicatedNetworkTransform(Context* context);
     ~ReplicatedNetworkTransform() override;

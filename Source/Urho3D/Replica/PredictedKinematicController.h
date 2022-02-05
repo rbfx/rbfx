@@ -44,7 +44,7 @@ class URHO3D_API PredictedKinematicController : public NetworkBehavior
     URHO3D_OBJECT(PredictedKinematicController, NetworkBehavior);
 
 public:
-    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallback::UnreliableFeedback | NetworkCallback::InterpolateState;
+    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::UnreliableFeedback | NetworkCallbackMask::InterpolateState;
 
     explicit PredictedKinematicController(Context* context);
     ~PredictedKinematicController() override;
@@ -53,11 +53,15 @@ public:
 
     /// Set desired walk velocity on the owner client.
     void SetWalkVelocity(const Vector3& velocity);
+    /// Set whether to jump on the next update. Automatically reset on jump.
+    void SetJump();
     /// Return whether the behavior is properly connected to components.
     bool IsConnectedToComponents() const { return physicsWorld_ && networkTransform_ && kinematicController_; }
+    bool IsConnectedToStandaloneComponents() const { return physicsWorld_ && kinematicController_; }
 
     /// Implementation of NetworkObject
     /// @{
+    void InitializeStandalone() override;
     void InitializeOnServer() override;
     void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
 
@@ -75,6 +79,7 @@ private:
         unsigned frame_{};
         Vector3 startPosition_;
         Vector3 walkVelocity_;
+        bool needJump_{};
     };
 
     void InitializeCommon();
@@ -96,6 +101,7 @@ private:
     /// Dynamic attributes.
     /// @{
     Vector3 walkVelocity_;
+    bool needJump_{};
     /// @}
 
     float physicsStepTime_{};
@@ -116,10 +122,6 @@ private:
         ea::optional<unsigned> latestConfirmedFrame_;
         ea::optional<unsigned> latestAffectedFrame_;
     } client_;
-
-
-    /// Server only: feedback from client.
-    NetworkValue<Vector3> feedbackVelocity_;
 };
 
 #endif
