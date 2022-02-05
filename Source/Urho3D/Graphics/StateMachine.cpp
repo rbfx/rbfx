@@ -126,6 +126,17 @@ void StateMachine::SetState(const ea::string &state)
     }
 }
 
+void StateMachine::FinishTransition()
+{
+    bool transition = transition_;
+    if (transition) 
+    {
+        ClearTranitionData();
+        CheckTransitions();
+        UpdateStateCombined();
+    }
+}
+
 void StateMachine::OnUpdate(float timeStep, float elapsedTime)
 {
     if (!transition_) 

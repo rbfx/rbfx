@@ -127,6 +127,8 @@ public:
     StateMachineState GetCurrentState() const { return stateCurrentCombined_; }
     /// Set new current state
     void SetState(const ea::string &state);
+    
+    void FinishTransition();
     /// Update transitions
     void OnUpdate(float timeStep, float elapsedTime);
     /// Indicates when state machine is assigned to runner
