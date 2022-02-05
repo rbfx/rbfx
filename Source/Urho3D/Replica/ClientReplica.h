@@ -125,6 +125,7 @@ public:
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
 
     ea::string GetDebugInfo() const;
+    const auto& GetOwnedNetworkObjects() const { return ownedObjects_; };
 
 private:
     void OnInputReady(float timeStep);
