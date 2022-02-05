@@ -220,6 +220,8 @@ void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
     if (const auto frameDataAndIndex = server_.input_.GetRawOrPrior(serverFrame))
     {
         const auto& [currentInput, currentInputFrame] = *frameDataAndIndex;
+
+        node_->SetWorldRotation(currentInput.rotation_);
         kinematicController_->SetWalkIncrement(currentInput.walkVelocity_ * physicsStepTime_);
         if (currentInput.needJump_ && kinematicController_->OnGround())
             kinematicController_->Jump();
@@ -338,6 +340,7 @@ void PredictedKinematicController::TrackCurrentInput(unsigned frame)
     currentInput.walkVelocity_ = walkVelocity_;
     currentInput.startPosition_ = kinematicController_->GetRawPosition();
     currentInput.needJump_ = needJump_;
+    currentInput.rotation_ = node_->GetWorldRotation();
     client_.input_.push_back(currentInput);
 }
 
@@ -345,17 +348,20 @@ void PredictedKinematicController::WriteInputFrame(const InputFrame& inputFrame,
 {
     dest.WriteVector3(inputFrame.walkVelocity_);
     dest.WriteBool(inputFrame.needJump_);
+    dest.WriteQuaternion(inputFrame.rotation_);
 }
 
 void PredictedKinematicController::ReadInputFrame(unsigned frame, Deserializer& src)
 {
     const Vector3 walkVelocity = src.ReadVector3();
     const bool needJump = src.ReadBool();
+    const Quaternion rotation = src.ReadQuaternion();
 
     InputFrame inputFrame;
     inputFrame.frame_ = frame;
     inputFrame.walkVelocity_ = walkVelocity;
     inputFrame.needJump_ = needJump;
+    inputFrame.rotation_ = rotation;
 
     if (!server_.input_.Has(frame))
         server_.input_.Set(frame, inputFrame);

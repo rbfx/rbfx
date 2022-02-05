@@ -169,7 +169,7 @@ protected:
     ea::unique_ptr<btPairCachingGhostObject> pairCachingGhostObject_;
     ea::unique_ptr<btKinematicCharacterController> kinematicController_;
 
-    Vector3 colShapeOffset_{ Vector3::ZERO };
+    Vector3 colShapeOffset_{ 0.0f, 0.9f, 0.0f };
     bool readdToWorld_{ false };
 
     /// Offset used for smooth Node position adjustment.
