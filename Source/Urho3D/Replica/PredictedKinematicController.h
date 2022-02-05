@@ -79,6 +79,7 @@ private:
         unsigned frame_{};
         Vector3 startPosition_;
         Vector3 walkVelocity_;
+        Quaternion rotation_;
         bool needJump_{};
     };
 

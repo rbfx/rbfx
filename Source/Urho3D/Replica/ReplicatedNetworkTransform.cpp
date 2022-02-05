@@ -121,7 +121,7 @@ void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
 
         const float positionErrorSquare = (server_.latestSentPosition_ - server_.position_).LengthSquared();
         const bool isPositionDirty = positionErrorSquare > movementThreshold_ * movementThreshold_;
-        const bool isRotationDirty = server_.latestSentRotation_.Equivalent(server_.rotation_, M_LARGE_EPSILON);
+        const bool isRotationDirty = !server_.latestSentRotation_.Equivalent(server_.rotation_, M_LARGE_EPSILON);
         if (isPositionDirty || isRotationDirty)
         {
             server_.pendingUploadAttempts_ = NumUploadAttempts;
