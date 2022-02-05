@@ -131,7 +131,6 @@
 #if URHO3D_PHYSICS
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
-#include "110_ParticleGraph/ParticleGraph.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -328,7 +327,6 @@ void SamplesManager::Start()
 #if URHO3D_PHYSICS
     RegisterSample<KinematicCharacterDemo>();
 #endif
-    RegisterSample<ParticleGraph>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
