@@ -121,7 +121,7 @@ TEST_CASE("Client-side prediction is consistent with server")
 
     // Wait for synchronization, expect controller on the ground
     sim.SimulateTime(10.0f);
-    const auto& serverReplicator = *serverScene->GetComponent<NetworkManager>()->GetServerReplicator();
+    const auto& serverReplicator = *serverScene->GetComponent<ReplicationManager>()->GetServerReplicator();
     const unsigned inputDelay = serverReplicator.GetFeedbackDelay(sim.GetServerToClientConnection(clientScene));
 
     Node* clientNode = clientScene->GetChild("Player", true);
@@ -249,7 +249,7 @@ TEST_CASE("PredictedKinematicController works standalone")
         context, "@/ClientSidePrediction/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
 
     auto standaloneScene = CreateTestScene(context);
-    standaloneScene->CreateComponent<NetworkManager>();
+    standaloneScene->CreateComponent<ReplicationManager>();
 
     Node* standaloneNode = Tests::SpawnOnServer<BehaviorNetworkObject>(standaloneScene, prefab, "Player", {0.0f, 0.96f, 0.0f});
     auto standaloneObject = standaloneNode->GetComponent<PredictedKinematicController>();

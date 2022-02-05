@@ -28,25 +28,19 @@
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
 #include "../Replica/NetworkObject.h"
-#include "../Replica/NetworkManager.h"
+#include "../Replica/ReplicationManager.h"
 #include "../Replica/NetworkSettingsConsts.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D
 {
 
-NetworkManagerBase::NetworkManagerBase(Context* context)
+NetworkObjectRegistry::NetworkObjectRegistry(Context* context)
     : BaseStableComponentRegistry(context, NetworkObject::GetTypeStatic())
 {
 }
 
-void NetworkManagerBase::OnSceneSet(Scene* scene)
-{
-    scene_ = scene;
-    BaseClassName::OnSceneSet(scene);
-}
-
-void NetworkManagerBase::OnComponentAdded(BaseTrackedComponent* baseComponent)
+void NetworkObjectRegistry::OnComponentAdded(BaseTrackedComponent* baseComponent)
 {
     BaseClassName::OnComponentAdded(baseComponent);
 
@@ -64,7 +58,7 @@ void NetworkManagerBase::OnComponentAdded(BaseTrackedComponent* baseComponent)
     URHO3D_LOGINFO("NetworkObject {} is added", ToString(networkId));
 }
 
-void NetworkManagerBase::OnComponentRemoved(BaseTrackedComponent* baseComponent)
+void NetworkObjectRegistry::OnComponentRemoved(BaseTrackedComponent* baseComponent)
 {
     auto networkObject = static_cast<NetworkObject*>(baseComponent);
 
@@ -77,7 +71,7 @@ void NetworkManagerBase::OnComponentRemoved(BaseTrackedComponent* baseComponent)
     BaseClassName::OnComponentRemoved(baseComponent);
 }
 
-void NetworkManagerBase::QueueComponentUpdate(NetworkObject* networkObject)
+void NetworkObjectRegistry::QueueComponentUpdate(NetworkObject* networkObject)
 {
     const NetworkId networkId = networkObject->GetNetworkId();
     if (GetNetworkObject(networkId) != networkObject)
@@ -90,7 +84,7 @@ void NetworkManagerBase::QueueComponentUpdate(NetworkObject* networkObject)
     networkObjectsDirty_[index] = true;
 }
 
-void NetworkManagerBase::RemoveAllComponents()
+void NetworkObjectRegistry::RemoveAllComponents()
 {
     ea::vector<WeakPtr<Node>> nodesToRemove;
     for (NetworkObject* networkObject : GetNetworkObjects())
@@ -107,7 +101,7 @@ void NetworkManagerBase::RemoveAllComponents()
     URHO3D_LOGINFO("{} instances of NetworkObject removed", nodesToRemove.size());
 }
 
-void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const
+void NetworkObjectRegistry::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const
 {
     networkObjects.clear();
 
@@ -142,7 +136,7 @@ void NetworkManagerBase::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>&
     }
 }
 
-ea::string NetworkManager::GetDebugInfo() const
+ea::string ReplicationManager::GetDebugInfo() const
 {
     if (client_ && client_->replica_)
         return client_->replica_->GetDebugInfo();
@@ -154,29 +148,29 @@ ea::string NetworkManager::GetDebugInfo() const
         return "";
 }
 
-NetworkObject* NetworkManagerBase::GetNetworkObject(NetworkId networkId, bool checkVersion) const
+NetworkObject* NetworkObjectRegistry::GetNetworkObject(NetworkId networkId, bool checkVersion) const
 {
     return static_cast<NetworkObject*>(GetTrackedComponentByStableId(networkId, checkVersion));
 }
 
-NetworkObject* NetworkManagerBase::GetNetworkObjectByIndex(unsigned networkIndex) const
+NetworkObject* NetworkObjectRegistry::GetNetworkObjectByIndex(unsigned networkIndex) const
 {
     return static_cast<NetworkObject*>(GetTrackedComponentByStableIndex(networkIndex));
 }
 
-NetworkManager::NetworkManager(Context* context)
-    : NetworkManagerBase(context)
+ReplicationManager::ReplicationManager(Context* context)
+    : NetworkObjectRegistry(context)
 {
 }
 
-NetworkManager::~NetworkManager() = default;
+ReplicationManager::~ReplicationManager() = default;
 
-void NetworkManager::RegisterObject(Context* context)
+void ReplicationManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NetworkManager>("");
+    context->RegisterFactory<ReplicationManager>("");
 }
 
-void NetworkManager::OnComponentAdded(BaseTrackedComponent* baseComponent)
+void ReplicationManager::OnComponentAdded(BaseTrackedComponent* baseComponent)
 {
     BaseClassName::OnComponentAdded(baseComponent);
 
@@ -188,7 +182,7 @@ void NetworkManager::OnComponentAdded(BaseTrackedComponent* baseComponent)
     }
 }
 
-void NetworkManager::Stop()
+void ReplicationManager::Stop()
 {
     if (client_)
     {
@@ -205,7 +199,7 @@ void NetworkManager::Stop()
     mode_ = ReplicationManagerMode::Standalone;
 }
 
-void NetworkManager::StartStandalone()
+void ReplicationManager::StartStandalone()
 {
     Stop();
 
@@ -220,7 +214,7 @@ void NetworkManager::StartStandalone()
     URHO3D_LOGINFO("Started standalone scene replication");
 }
 
-void NetworkManager::StartServer()
+void ReplicationManager::StartServer()
 {
     Stop();
 
@@ -231,7 +225,7 @@ void NetworkManager::StartServer()
     URHO3D_LOGINFO("Started server for scene replication");
 }
 
-void NetworkManager::StartClient(AbstractConnection* connectionToServer)
+void ReplicationManager::StartClient(AbstractConnection* connectionToServer)
 {
     Stop();
 
@@ -243,7 +237,7 @@ void NetworkManager::StartClient(AbstractConnection* connectionToServer)
     URHO3D_LOGINFO("Started client for scene replication");
 }
 
-unsigned NetworkManager::GetUpdateFrequency() const
+unsigned ReplicationManager::GetUpdateFrequency() const
 {
     if (server_)
         return server_->GetUpdateFrequency();
@@ -253,7 +247,7 @@ unsigned NetworkManager::GetUpdateFrequency() const
         return NetworkSettings::UpdateFrequency.defaultValue_.GetUInt();
 }
 
-float NetworkManager::GetTraceDurationInSeconds() const
+float ReplicationManager::GetTraceDurationInSeconds() const
 {
     if (server_)
         return server_->GetSetting(NetworkSettings::ServerTracingDuration).GetFloat();
@@ -263,14 +257,14 @@ float NetworkManager::GetTraceDurationInSeconds() const
         return 0.0f;
 }
 
-unsigned NetworkManager::GetTraceDurationInFrames() const
+unsigned ReplicationManager::GetTraceDurationInFrames() const
 {
     const unsigned updateFrequency = GetSetting(NetworkSettings::UpdateFrequency).GetUInt();
     const float duration = GetTraceDurationInSeconds();
     return ea::max(1, CeilToInt(duration * updateFrequency));
 }
 
-const Variant& NetworkManager::GetSetting(const NetworkSetting& setting) const
+const Variant& ReplicationManager::GetSetting(const NetworkSetting& setting) const
 {
     if (server_)
         return server_->GetSetting(setting);
@@ -280,7 +274,7 @@ const Variant& NetworkManager::GetSetting(const NetworkSetting& setting) const
         return Variant::EMPTY;
 }
 
-void NetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+void ReplicationManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     if (client_)
     {
@@ -297,7 +291,7 @@ void NetworkManager::ProcessMessage(AbstractConnection* connection, NetworkMessa
     }
 }
 
-void NetworkManager::DropConnection(AbstractConnection* connection)
+void ReplicationManager::DropConnection(AbstractConnection* connection)
 {
     if (server_)
         server_->RemoveConnection(connection);
@@ -305,7 +299,7 @@ void NetworkManager::DropConnection(AbstractConnection* connection)
         StartStandalone();
 }
 
-void NetworkManager::ProcessMessageOnUninitializedClient(
+void ReplicationManager::ProcessMessageOnUninitializedClient(
     AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     URHO3D_ASSERT(client_ && !client_->replica_);

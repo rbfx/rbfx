@@ -74,7 +74,7 @@ enum NetworkMessageId
     /// Message used to synchronize clock between client and server.
     MSG_CLOCK_SYNC = 0x9A,
 
-    /// Messages processed by NetworkManager
+    /// Messages processed by ReplicationManager
     /// @{
     FIRST_NETWORK_MANAGER_MSG = 200,
 

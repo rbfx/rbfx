@@ -39,7 +39,7 @@ namespace Urho3D
 
 class AbstractConnection;
 class Network;
-class NetworkManagerBase;
+class NetworkObjectRegistry;
 class NetworkObject;
 class Scene;
 struct NetworkSetting;
@@ -112,7 +112,7 @@ private:
     PhysicsTickSynchronizer physicsSync_;
 };
 
-/// Client part of NetworkManager subsystem.
+/// Client part of ReplicationManager subsystem.
 class URHO3D_API ClientReplica : public ClientReplicaClock
 {
     URHO3D_OBJECT(ClientReplica, ClientReplicaClock);
@@ -142,7 +142,7 @@ private:
     void ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData);
 
     const WeakPtr<Network> network_;
-    const WeakPtr<NetworkManagerBase> replicationManager_;
+    const WeakPtr<NetworkObjectRegistry> objectRegistry_;
 
     ea::vector<MsgSceneClock> pendingClockUpdates_;
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;

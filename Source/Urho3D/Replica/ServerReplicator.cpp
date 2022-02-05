@@ -32,7 +32,7 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Replica/NetworkObject.h"
-#include "../Replica/NetworkManager.h"
+#include "../Replica/ReplicationManager.h"
 #include "../Replica/NetworkSettingsConsts.h"
 #include "../Replica/ServerReplicator.h"
 #include "../Scene/Scene.h"
@@ -53,15 +53,15 @@ unsigned GetIndex(NetworkId networkId)
 
 }
 
-SharedReplicationState::SharedReplicationState(NetworkManagerBase* replicationManager)
-    : replicationManager_(replicationManager)
+SharedReplicationState::SharedReplicationState(NetworkObjectRegistry* objectRegistry)
+    : objectRegistry_(objectRegistry)
 {
-    URHO3D_ASSERT(replicationManager_);
+    URHO3D_ASSERT(objectRegistry_);
 
-    replicationManager_->OnNetworkObjectAdded.Subscribe(this, &SharedReplicationState::OnNetworkObjectAdded);
-    replicationManager_->OnNetworkObjectRemoved.Subscribe(this, &SharedReplicationState::OnNetworkObjectRemoved);
+    objectRegistry_->OnNetworkObjectAdded.Subscribe(this, &SharedReplicationState::OnNetworkObjectAdded);
+    objectRegistry_->OnNetworkObjectRemoved.Subscribe(this, &SharedReplicationState::OnNetworkObjectRemoved);
 
-    for (NetworkObject* networkObject : replicationManager_->GetNetworkObjects())
+    for (NetworkObject* networkObject : objectRegistry_->GetNetworkObjects())
         recentlyAddedComponents_.emplace(networkObject->GetNetworkId());
 }
 
@@ -81,7 +81,7 @@ void SharedReplicationState::PrepareForUpdate()
     ResetFrameBuffers();
     InitializeNewObjects();
 
-    replicationManager_->UpdateAndSortNetworkObjects(sortedNetworkObjects_);
+    objectRegistry_->UpdateAndSortNetworkObjects(sortedNetworkObjects_);
 }
 
 void SharedReplicationState::ResetFrameBuffers()
@@ -106,7 +106,7 @@ void SharedReplicationState::InitializeNewObjects()
 {
     for (NetworkId networkId : recentlyAddedComponents_)
     {
-        NetworkObject* networkObject = replicationManager_->GetNetworkObject(networkId);
+        NetworkObject* networkObject = objectRegistry_->GetNetworkObject(networkId);
         if (!networkObject)
         {
             URHO3D_ASSERTLOG(0, "Cannot find recently added NetworkObject");
@@ -134,7 +134,7 @@ void SharedReplicationState::CookDeltaUpdates(unsigned currentFrame)
         if (!isDeltaUpdateQueued_[i])
             continue;
 
-        NetworkObject* networkObject = replicationManager_->GetNetworkObjectByIndex(i);
+        NetworkObject* networkObject = objectRegistry_->GetNetworkObjectByIndex(i);
         URHO3D_ASSERT(networkObject);
 
         if (networkObject->PrepareReliableDelta(currentFrame))
@@ -161,7 +161,7 @@ void SharedReplicationState::CookDeltaUpdates(unsigned currentFrame)
 
 unsigned SharedReplicationState::GetIndexUpperBound() const
 {
-    return replicationManager_->GetNetworkIndexUpperBound();
+    return objectRegistry_->GetNetworkIndexUpperBound();
 }
 
 ea::optional<ConstByteSpan> SharedReplicationState::GetReliableUpdateByIndex(unsigned index) const
@@ -185,8 +185,8 @@ ConstByteSpan SharedReplicationState::GetSpanData(const DeltaBufferSpan& span) c
 }
 
 ClientSynchronizationState::ClientSynchronizationState(
-    NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings)
-    : replicationManager_(replicationManager)
+    NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings)
+    : objectRegistry_(objectRegistry)
     , connection_(connection)
     , settings_(settings)
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
@@ -299,8 +299,8 @@ unsigned ClientSynchronizationState::MakeMagic() const
 }
 
 ClientReplicationState::ClientReplicationState(
-    NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings)
-    : ClientSynchronizationState(replicationManager, connection, settings)
+    NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings)
+    : ClientSynchronizationState(objectRegistry, connection, settings)
 {
 }
 
@@ -351,7 +351,7 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
         messageData.ReadBuffer(componentBuffer_.GetBuffer());
 
-        NetworkObject* networkObject = replicationManager_->GetNetworkObject(networkId);
+        NetworkObject* networkObject = objectRegistry_->GetNetworkObject(networkId);
         if (!networkObject)
         {
             URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}",
@@ -572,10 +572,10 @@ ServerReplicator::ServerReplicator(Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
     , scene_(scene)
-    , replicationManager_(scene->GetComponent<NetworkManager>())
+    , objectRegistry_(scene->GetComponent<ReplicationManager>())
     , updateFrequency_(network_->GetUpdateFps())
     , physicsSync_(scene_, updateFrequency_, true)
-    , sharedState_(MakeShared<SharedReplicationState>(replicationManager_))
+    , sharedState_(MakeShared<SharedReplicationState>(objectRegistry_))
 {
     SetDefaultNetworkSetting(settings_, NetworkSettings::InternalProtocolVersion);
     SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
@@ -650,7 +650,7 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
 
     connections_.erase(connection);
     const auto& [iter, insterted] = connections_.emplace(
-        connection, MakeShared<ClientReplicationState>(replicationManager_, connection, settings_));
+        connection, MakeShared<ClientReplicationState>(objectRegistry_, connection, settings_));
 
     URHO3D_ASSERT(insterted);
     ClientReplicationState& data = *iter->second;

@@ -25,7 +25,7 @@
 #include <Urho3D/Container/ByteVector.h>
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/AbstractConnection.h>
-#include <Urho3D/Replica/NetworkManager.h>
+#include <Urho3D/Replica/ReplicationManager.h>
 
 #include <EASTL/vector.h>
 #include <EASTL/unordered_map.h>
@@ -58,7 +58,7 @@ class ManualConnection : public AbstractConnection
 public:
     static unsigned systemTime;
 
-    ManualConnection(Context* context, NetworkManager* sink, unsigned seed);
+    ManualConnection(Context* context, ReplicationManager* sink, unsigned seed);
 
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
     void SetQuality(const ConnectionQuality& quality) { quality_ = quality; }
@@ -87,7 +87,7 @@ private:
     void SendOrderedMessages(ea::vector<InternalMessage>& messages);
     void SendUnorderedMessages(ea::vector<InternalMessage>& messages);
 
-    NetworkManager* sink_{};
+    ReplicationManager* sink_{};
     AbstractConnection* sinkConnection_{};
     RandomEngine random_;
 
@@ -142,7 +142,7 @@ private:
     struct PerClient
     {
         Scene* clientScene_;
-        NetworkManager* clientNetworkManager_{};
+        ReplicationManager* clientReplicationManager_{};
         SharedPtr<Tests::ManualConnection> clientToServer_;
         SharedPtr<Tests::ManualConnection> serverToClient_;
     };
@@ -152,7 +152,7 @@ private:
     RandomEngine random_;
 
     Scene* serverScene_{};
-    NetworkManager* serverNetworkManager_{};
+    ReplicationManager* serverReplicationManager_{};
 
     ea::vector<PerClient> clients_;
 };

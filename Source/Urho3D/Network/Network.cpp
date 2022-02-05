@@ -38,7 +38,7 @@
 #include "../Network/Protocol.h"
 #include "../Replica/BehaviorNetworkObject.h"
 #include "../Replica/PredictedKinematicController.h"
-#include "../Replica/NetworkManager.h"
+#include "../Replica/ReplicationManager.h"
 #include "../Replica/NetworkObject.h"
 #include "../Replica/ReplicatedNetworkTransform.h"
 #include "../Replica/StaticNetworkObject.h"
@@ -1099,8 +1099,8 @@ void Network::SendNetworkUpdateEvent(StringHash eventType, bool isServer)
 void RegisterNetworkLibrary(Context* context)
 {
     // TODO(network): Revisit
-    context->RegisterFactory<NetworkManagerBase>();
-    context->RegisterFactory<NetworkManager>();
+    context->RegisterFactory<NetworkObjectRegistry>();
+    context->RegisterFactory<ReplicationManager>();
 
     NetworkObject::RegisterObject(context);
     StaticNetworkObject::RegisterObject(context);

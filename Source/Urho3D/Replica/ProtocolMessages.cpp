@@ -22,7 +22,7 @@
 
 #include "../Replica/ProtocolMessages.h"
 
-#include "../Replica/NetworkManager.h"
+#include "../Replica/ReplicationManager.h"
 
 #include "../Core/StringUtils.h"
 

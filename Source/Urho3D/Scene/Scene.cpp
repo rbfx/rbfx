@@ -31,7 +31,6 @@
 #include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
-#include "../Replica/NetworkManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"

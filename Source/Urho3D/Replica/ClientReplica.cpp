@@ -30,7 +30,7 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Replica/NetworkObject.h"
-#include "../Replica/NetworkManager.h"
+#include "../Replica/ReplicationManager.h"
 #include "../Replica/NetworkSettingsConsts.h"
 #include "../Replica/ClientReplica.h"
 #include "../Scene/Scene.h"
@@ -131,9 +131,9 @@ ClientReplica::ClientReplica(
     Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
     , network_(GetSubsystem<Network>())
-    , replicationManager_(scene->GetComponent<NetworkManager>())
+    , objectRegistry_(scene->GetComponent<ReplicationManager>())
 {
-    URHO3D_ASSERT(replicationManager_);
+    URHO3D_ASSERT(objectRegistry_);
 
     SubscribeToEvent(E_INPUTREADY, [this](StringHash, VariantMap& eventData)
     {
@@ -214,7 +214,7 @@ void ClientReplica::ProcessRemoveObjects(MemoryBuffer& messageData)
     while (!messageData.IsEof())
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
-        WeakPtr<NetworkObject> networkObject{ replicationManager_->GetNetworkObject(networkId) };
+        WeakPtr<NetworkObject> networkObject{ objectRegistry_->GetNetworkObject(networkId) };
         if (!networkObject)
         {
             URHO3D_LOGWARNING("Cannot find NetworkObject {} to remove", ToString(networkId));
@@ -304,7 +304,7 @@ NetworkObject* ClientReplica::CreateNetworkObject(NetworkId networkId, StringHas
     else
         networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
 
-    if (NetworkObject* oldNetworkObject = replicationManager_->GetNetworkObject(networkId, false))
+    if (NetworkObject* oldNetworkObject = objectRegistry_->GetNetworkObject(networkId, false))
     {
         URHO3D_LOGWARNING("NetworkObject {} overwrites existing NetworkObject {}",
             ToString(networkId),
@@ -319,7 +319,7 @@ NetworkObject* ClientReplica::CreateNetworkObject(NetworkId networkId, StringHas
 
 NetworkObject* ClientReplica::GetCheckedNetworkObject(NetworkId networkId, StringHash componentType)
 {
-    NetworkObject* networkObject = replicationManager_->GetNetworkObject(networkId);
+    NetworkObject* networkObject = objectRegistry_->GetNetworkObject(networkId);
     if (!networkObject)
     {
         URHO3D_LOGWARNING("Cannot find existing NetworkObject {}", ToString(networkId));
@@ -368,7 +368,7 @@ void ClientReplica::OnInputReady(float timeStep)
     const float scaledTimeStep = UpdateClientClocks(timeStep, pendingClockUpdates_);
     pendingClockUpdates_.clear();
 
-    for (NetworkObject* networkObject : replicationManager_->GetNetworkObjects())
+    for (NetworkObject* networkObject : objectRegistry_->GetNetworkObjects())
         networkObject->InterpolateState(scaledTimeStep, GetReplicaTime(), GetInputTime());
 
     if (IsNewInputFrame())

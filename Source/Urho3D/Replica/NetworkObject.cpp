@@ -30,7 +30,7 @@
 namespace Urho3D
 {
 
-NetworkObject::NetworkObject(Context* context) : TrackedComponent<BaseStableTrackedComponent, NetworkManagerBase>(context) {}
+NetworkObject::NetworkObject(Context* context) : TrackedComponent<BaseStableTrackedComponent, NetworkObjectRegistry>(context) {}
 
 NetworkObject::~NetworkObject() = default;
 

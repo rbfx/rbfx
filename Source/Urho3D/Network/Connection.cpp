@@ -35,7 +35,7 @@
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
-#include "../Replica/NetworkManager.h"
+#include "../Replica/ReplicationManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -210,7 +210,7 @@ void Connection::SetScene(Scene* newScene)
 
     if (isClient_)
     {
-        replicationManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
         if (!replicationManager_->IsServer())
             replicationManager_->StartServer();
 
@@ -1269,7 +1269,7 @@ void Connection::SetPacketSizeLimit(int limit)
 
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
-    replicationManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+    replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
     replicationManager_->StartClient(this);
     sceneLoaded_ = true;
 
@@ -1691,7 +1691,7 @@ void Connection::OnPackagesReady()
         // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
         scene_->Clear(true, false);
 
-        replicationManager_ = scene_->GetOrCreateComponent<NetworkManager>();
+        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
         replicationManager_->StartClient(this);
         sceneLoaded_ = true;
 

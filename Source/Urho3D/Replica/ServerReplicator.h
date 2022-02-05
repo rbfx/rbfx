@@ -44,7 +44,7 @@ namespace Urho3D
 class AbstractConnection;
 class Network;
 class NetworkObject;
-class NetworkManagerBase;
+class NetworkObjectRegistry;
 class Scene;
 struct NetworkSetting;
 
@@ -52,7 +52,7 @@ struct NetworkSetting;
 class SharedReplicationState : public RefCounted
 {
 public:
-    explicit SharedReplicationState(NetworkManagerBase* replicationManager);
+    explicit SharedReplicationState(NetworkObjectRegistry* objectRegistry);
 
     /// Initial preparation for network update.
     void PrepareForUpdate();
@@ -86,7 +86,7 @@ private:
 
     ConstByteSpan GetSpanData(const DeltaBufferSpan& span) const;
 
-    const WeakPtr<NetworkManagerBase> replicationManager_{};
+    const WeakPtr<NetworkObjectRegistry> objectRegistry_{};
 
     ea::unordered_set<NetworkId> recentlyRemovedComponents_;
     ea::unordered_set<NetworkId> recentlyAddedComponents_;
@@ -107,7 +107,7 @@ class ClientSynchronizationState : public RefCounted
 {
 public:
     ClientSynchronizationState(
-        NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings);
 
     /// Begin network frame. Overtime indicates how much time has passed since actual frame start time.
     void BeginNetworkFrame(unsigned currentFrame, float overtime);
@@ -129,7 +129,7 @@ protected:
     /// Notify statistics aggregator that user input has received for specified frame.
     void OnInputReceived(unsigned inputFrame);
 
-    const WeakPtr<NetworkManagerBase> replicationManager_;
+    const WeakPtr<NetworkObjectRegistry> objectRegistry_;
     const WeakPtr<AbstractConnection> connection_;
     VariantMap settings_;
     const unsigned updateFrequency_{};
@@ -164,7 +164,7 @@ struct ClientReplicationState : public ClientSynchronizationState
 {
 public:
     ClientReplicationState(
-        NetworkManagerBase* replicationManager, AbstractConnection* connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings);
 
     /// Perform network update from the perspective of this client connection.
     void UpdateNetworkObjects(SharedReplicationState& sharedState);
@@ -198,7 +198,7 @@ private:
     float reportedLoss_{};
 };
 
-/// Server part of NetworkManager subsystem.
+/// Server part of ReplicationManager subsystem.
 class URHO3D_API ServerReplicator : public Object
 {
     URHO3D_OBJECT(ServerReplicator, Object);
@@ -232,7 +232,7 @@ private:
 
     const WeakPtr<Network> network_;
     const WeakPtr<Scene> scene_;
-    const WeakPtr<NetworkManagerBase> replicationManager_;
+    const WeakPtr<NetworkObjectRegistry> objectRegistry_;
 
     VariantMap settings_;
 
