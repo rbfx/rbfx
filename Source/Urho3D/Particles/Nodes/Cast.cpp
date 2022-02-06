@@ -42,13 +42,13 @@ namespace {
 static ea::vector<NodePattern> CastPatterns{
     MakePattern(
         CastInstance<float, int>()
-        , PinPattern<float>("x")
-        , PinPattern<int>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<int>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         CastInstance<int, float>()
-        , PinPattern<int>("x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<int>("x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

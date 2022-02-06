@@ -40,7 +40,8 @@ struct NodePattern
     typedef ea::function<void(UpdateContext& context, ParticleGraphPinRef*)> UpdateFunction;
 
     explicit NodePattern(UpdateFunction&& update);
-    NodePattern& WithPin(PinPatternBase&& pin0);
+
+    NodePattern& WithPin(ParticleGraphPin&& pin0);
 
     bool Match(const ea::span<ParticleGraphPin>& pins) const;
 
@@ -48,16 +49,16 @@ struct NodePattern
 
     template <typename T> void SetPins(T lastPin)
     {
-        pins_.emplace_back(lastPin.flags_, lastPin.name_, GetVariantType<typename T::Type>());
+        pins_.emplace_back(lastPin.GetFlags(), lastPin.GetName(), GetVariantType<typename T::Type>());
     }
     template <typename T, typename... Rest> void SetPins(T lastPin, Rest... restPins)
     {
-        pins_.emplace_back(lastPin.flags_, lastPin.name_, GetVariantType<typename T::Type>());
+        pins_.emplace_back(lastPin.GetFlags(), lastPin.GetName(), GetVariantType<typename T::Type>());
         SetPins(restPins...);
     }
 
     UpdateFunction updateFunction_;
-    ea::fixed_vector<PinPatternBase, ExpectedNumberOfPins> pins_;
+    ea::fixed_vector<ParticleGraphPin, ExpectedNumberOfPins> pins_;
 };
 
 template <typename Lambda, typename... Args> NodePattern MakePattern(Lambda lambda, Args... args)

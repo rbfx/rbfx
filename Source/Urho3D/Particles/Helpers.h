@@ -36,49 +36,15 @@ namespace Urho3D
 namespace ParticleGraphNodes
 {
 
-struct PinPatternBase
-{
-    PinPatternBase(ParticleGraphPinFlags flags, ea::string_view name, VariantType type = VAR_NONE)
-        : flags_(flags)
-        , name_(name)
-        , nameHash_(name)
-        , type_(type)
-    {
-    }
-    PinPatternBase(ea::string_view name, VariantType type = VAR_NONE)
-        : PinPatternBase(ParticleGraphPinFlag::Input, name, type)
-    {
-    }
-    ParticleGraphPinFlags flags_;
-    ea::string_view name_;
-    StringHash nameHash_;
-    VariantType type_;
-};
-
-template <typename T> struct PinPattern : public PinPatternBase
-{
-    typedef T Type;
-
-    PinPattern(ParticleGraphPinFlags flags, const char* name)
-        : PinPatternBase(flags, name, GetVariantType<T>())
-    {
-    }
-    PinPattern(const char* name)
-        : PinPatternBase(name, GetVariantType<T>())
-    {
-    }
-};
-
 template <typename T>
 struct GetPinType
 {
     typedef T Type;
 };
-template <typename T> struct GetPinType<PinPattern<T>>
+template <typename T> struct GetPinType<ParticleGraphTypedPin<T>>
 {
     typedef T Type;
 };
-
 
 /// Abstract update runner.
 template <typename Instance, typename SpanTuple, typename Tuple>

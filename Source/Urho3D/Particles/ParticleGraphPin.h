@@ -80,6 +80,10 @@ public:
     /// @property
     bool IsInput() const { return flags_.Test(ParticleGraphPinFlag::Input); }
 
+    /// Get pin flags.
+    /// @property
+    ParticleGraphPinFlags GetFlags() const { return flags_; }
+
     /// Name of the pin for visual editor.
     /// @property
     const ea::string& GetName() const { return name_; }
@@ -163,7 +167,18 @@ private:
     friend class ParticleGraphNode;
 };
 
-/// Serialize pin.
-//bool SerializeValue(Archive& archive, const char* name, ParticleGraphPin& value);
+template <typename T> struct ParticleGraphTypedPin : public ParticleGraphPin
+{
+    typedef T Type;
+
+    ParticleGraphTypedPin(ParticleGraphPinFlags flags, const char* name)
+        : ParticleGraphPin(flags, name, GetVariantType<T>())
+    {
+    }
+    ParticleGraphTypedPin(const char* name)
+        : ParticleGraphPin(ParticleGraphPinFlag::Input, name, GetVariantType<T>())
+    {
+    }
+};
 
 }

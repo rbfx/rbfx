@@ -42,13 +42,13 @@ namespace {
 static ea::vector<NodePattern> LengthPatterns{
     MakePattern(
         LengthInstance<Vector3, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         LengthInstance<Vector2, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

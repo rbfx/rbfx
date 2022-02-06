@@ -42,28 +42,28 @@ namespace {
 static ea::vector<NodePattern> TimeStepScalePatterns{
     MakePattern(
         TimeStepScaleInstance<float, float>()
-        , PinPattern<float>("x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         TimeStepScaleInstance<Vector2, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         TimeStepScaleInstance<Vector3, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         TimeStepScaleInstance<Vector4, Vector4>()
-        , PinPattern<Vector4>("x")
-        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector4>("x")
+        , ParticleGraphTypedPin<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         TimeStepScaleInstance<Color, Color>()
-        , PinPattern<Color>("x")
-        , PinPattern<Color>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Color>("x")
+        , ParticleGraphTypedPin<Color>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

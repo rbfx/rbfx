@@ -42,36 +42,36 @@ namespace {
 static ea::vector<NodePattern> MakePatterns{
     MakePattern(
         MakeInstance<float, float, Vector2>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         MakeInstance<int, int, IntVector2>()
-        , PinPattern<int>("x")
-        , PinPattern<int>("y")
-        , PinPattern<IntVector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<int>("x")
+        , ParticleGraphTypedPin<int>("y")
+        , ParticleGraphTypedPin<IntVector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         MakeInstance<float, float, float, Vector3>()
-        , PinPattern<float>("x")
-        , PinPattern<float>("y")
-        , PinPattern<float>("z")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>("y")
+        , ParticleGraphTypedPin<float>("z")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         MakeInstance<Vector3, Quaternion, Vector3, Matrix3x4>()
-        , PinPattern<Vector3>("translation")
-        , PinPattern<Quaternion>("rotation")
-        , PinPattern<Vector3>("scale")
-        , PinPattern<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("translation")
+        , ParticleGraphTypedPin<Quaternion>("rotation")
+        , ParticleGraphTypedPin<Vector3>("scale")
+        , ParticleGraphTypedPin<Matrix3x4>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         MakeInstance<float, float, float, Quaternion>()
-        , PinPattern<float>("pitch")
-        , PinPattern<float>("yaw")
-        , PinPattern<float>("roll")
-        , PinPattern<Quaternion>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("pitch")
+        , ParticleGraphTypedPin<float>("yaw")
+        , ParticleGraphTypedPin<float>("roll")
+        , ParticleGraphTypedPin<Quaternion>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

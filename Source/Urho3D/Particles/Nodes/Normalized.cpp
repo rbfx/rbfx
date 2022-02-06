@@ -42,18 +42,18 @@ namespace {
 static ea::vector<NodePattern> NormalizedPatterns{
     MakePattern(
         NormalizedInstance<Vector3, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         NormalizedInstance<Vector2, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         NormalizedInstance<Quaternion, Quaternion>()
-        , PinPattern<Quaternion>("x")
-        , PinPattern<Quaternion>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Quaternion>("x")
+        , ParticleGraphTypedPin<Quaternion>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

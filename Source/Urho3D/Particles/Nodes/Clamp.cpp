@@ -42,23 +42,23 @@ namespace {
 static ea::vector<NodePattern> ClampPatterns{
     MakePattern(
         ClampInstance<float, float>()
-        , PinPattern<float>("x")
-        , PinPattern<float>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<float>("x")
+        , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         ClampInstance<Vector2, Vector2>()
-        , PinPattern<Vector2>("x")
-        , PinPattern<Vector2>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector2>("x")
+        , ParticleGraphTypedPin<Vector2>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         ClampInstance<Vector3, Vector3>()
-        , PinPattern<Vector3>("x")
-        , PinPattern<Vector3>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector3>("x")
+        , ParticleGraphTypedPin<Vector3>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
         ClampInstance<Vector4, Vector4>()
-        , PinPattern<Vector4>("x")
-        , PinPattern<Vector4>(ParticleGraphPinFlag::Output, "out")
+        , ParticleGraphTypedPin<Vector4>("x")
+        , ParticleGraphTypedPin<Vector4>(ParticleGraphPinFlag::Output, "out")
     ),
 };
 } // namespace

@@ -46,7 +46,7 @@ NodePattern::NodePattern(UpdateFunction&& update)
 {
 }
 
-NodePattern& NodePattern::WithPin(PinPatternBase&& pin)
+NodePattern& NodePattern::WithPin(ParticleGraphPin&& pin)
 {
     pins_.push_back(ea::move(pin));
     return *this;
@@ -59,9 +59,9 @@ bool NodePattern::Match(const ea::span<ParticleGraphPin>& pins) const {
     }
     for (unsigned i = 0; i < pins.size(); ++i)
     {
-        if (pins[i].GetNameHash() != this->pins_[i].nameHash_)
+        if (pins[i].GetNameHash() != this->pins_[i].GetNameHash())
             return false;
-        if (pins[i].GetValueType() != this->pins_[i].type_)
+        if (pins[i].GetValueType() != this->pins_[i].GetRequestedType())
             return false;
     }
     return true;
@@ -77,18 +77,18 @@ VariantType NodePattern::EvaluateOutputPinType(const ea::span<ParticleGraphPin>&
     VariantType res = VAR_NONE;
     for (unsigned i = 0; i < pins.size(); ++i)
     {
-        if (pins[i].GetNameHash() != this->pins_[i].nameHash_)
+        if (pins[i].GetNameHash() != this->pins_[i].GetNameHash())
             return VAR_NONE;
         if (pins[i].IsInput())
         {
-            if (pins[i].GetValueType() != this->pins_[i].type_)
+            if (pins[i].GetValueType() != this->pins_[i].GetRequestedType())
                 return VAR_NONE;
         }
         else
         {
-            if (outputPin.GetNameHash() == this->pins_[i].nameHash_)
+            if (outputPin.GetNameHash() == this->pins_[i].GetNameHash())
             {
-                res = this->pins_[i].type_;
+                res = this->pins_[i].GetRequestedType();
             }
         }
     }
