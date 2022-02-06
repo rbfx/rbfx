@@ -97,7 +97,7 @@ bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
     unsigned particlesToEmit = static_cast<unsigned>(emitCounterReminder_);
     emitCounterReminder_ -= static_cast<float>(particlesToEmit);
 
-    particlesToEmit = std::min(particlesToEmit, indices_.size() - activeParticles_);
+    particlesToEmit = Urho3D::Min(particlesToEmit, indices_.size() - activeParticles_);
     if (!particlesToEmit)
         return false;
 
