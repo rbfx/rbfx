@@ -90,6 +90,7 @@ public:
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
     NetworkObjectMode GetNetworkMode() const { return networkMode_; }
     bool IsStandalone() const { return networkMode_ == NetworkObjectMode::Standalone; }
+    bool IsServer() const { return networkMode_ == NetworkObjectMode::Server; }
     bool IsOwnedByThisClient() const { return networkMode_ == NetworkObjectMode::ClientOwned; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }

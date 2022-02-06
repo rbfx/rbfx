@@ -34,6 +34,7 @@
 #include "../Replica/NetworkSettingsConsts.h"
 #include "../Replica/ClientReplica.h"
 #include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 
 #include <EASTL/numeric.h>
 
@@ -63,27 +64,25 @@ ClientReplicaClock::~ClientReplicaClock()
 {
 }
 
-float ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates)
+void ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates)
 {
     serverTime_ += SecondsToFrames(timeStep);
     for (const MsgSceneClock& msg : pendingClockUpdates)
         UpdateServerTime(msg, true);
 
-    replicaTime_.Update(timeStep, ToReplicaTime(serverTime_));
+    replicaTimeStep_ = replicaTime_.Update(timeStep, ToReplicaTime(serverTime_));
 
     const NetworkTime previousInputTime = inputTime_.Get();
-    const float scaledTimeStep = inputTime_.Update(timeStep, ToInputTime(serverTime_));
+    inputTimeStep_ = inputTime_.Update(timeStep, ToInputTime(serverTime_));
 
-    if (timeStep != scaledTimeStep)
+    if (timeStep != inputTimeStep_)
         latestScaledInputTime_ = inputTime_.Get();
 
     isNewInputFrame_ = previousInputTime.GetFrame() != inputTime_.Get().GetFrame();
     if (isNewInputFrame_)
         physicsSync_.Synchronize(inputTime_.Get().GetFrame(), inputTime_.Get().GetSubFrame() / updateFrequency_);
     else
-        physicsSync_.Update(scaledTimeStep);
-
-    return scaledTimeStep;
+        physicsSync_.Update(inputTimeStep_);
 }
 
 const Variant& ClientReplicaClock::GetSetting(const NetworkSetting& setting) const
@@ -201,6 +200,17 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     default:
         return false;
     }
+}
+
+void ClientReplica::ProcessSceneUpdate()
+{
+    VariantMap& eventData = GetEventDataMap();
+
+    using namespace SceneNetworkUpdate;
+    eventData[P_SCENE] = scene_;
+    eventData[P_TIMESTEP_REPLICA] = GetReplicaTimeStep();
+    eventData[P_TIMESTEP_INPUT] = GetInputTimeStep();
+    scene_->SendEvent(E_SCENENETWORKUPDATE, eventData);
 }
 
 void ClientReplica::ProcessSceneClock(const MsgSceneClock& msg)
@@ -365,11 +375,11 @@ ea::string ClientReplica::GetDebugInfo() const
 
 void ClientReplica::OnInputReady(float timeStep)
 {
-    const float scaledTimeStep = UpdateClientClocks(timeStep, pendingClockUpdates_);
+    UpdateClientClocks(timeStep, pendingClockUpdates_);
     pendingClockUpdates_.clear();
 
     for (NetworkObject* networkObject : objectRegistry_->GetNetworkObjects())
-        networkObject->InterpolateState(scaledTimeStep, GetReplicaTime(), GetInputTime());
+        networkObject->InterpolateState(GetInputTimeStep(), GetReplicaTime(), GetInputTime());
 
     if (IsNewInputFrame())
     {

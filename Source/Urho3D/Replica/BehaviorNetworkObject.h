@@ -102,14 +102,17 @@ public:
 
     bool PrepareReliableDelta(unsigned frame) override;
     void WriteReliableDelta(unsigned frame, Serializer& dest) override;
+    void ReadReliableDelta(unsigned frame, Deserializer& src) override;
+
     bool PrepareUnreliableDelta(unsigned frame) override;
     void WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
-    void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
-
-    void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
+
     bool PrepareUnreliableFeedback(unsigned frame) override;
     void WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
+    void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
+
+    void Update(float replicaTimeStep, float inputTimeStep) override;
     /// @}
 
 private:
