@@ -60,6 +60,7 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
 
     auto kinematicController = node->CreateComponent<KinematicCharacterController>();
     kinematicController->SetHeight(2.0f);
+    kinematicController->SetOffset({0.0f, 1.0f, 0.0f});
 
     node->CreateComponent<ReplicatedNetworkTransform>();
     node->CreateComponent<PredictedKinematicController>();
@@ -128,10 +129,10 @@ TEST_CASE("Client-side prediction is consistent with server")
     auto clientObject = clientNode->GetComponent<PredictedKinematicController>();
 
     REQUIRE(serverNode->GetWorldPosition().ToXZ() == Vector2::ZERO);
-    REQUIRE(serverNode->GetWorldPosition().y_ == Catch::Approx(1.0f).margin(0.1f));
+    REQUIRE(serverNode->GetWorldPosition().y_ == Catch::Approx(0.0f).margin(0.1f));
 
     REQUIRE(clientNode->GetWorldPosition().ToXZ() == Vector2::ZERO);
-    REQUIRE(clientNode->GetWorldPosition().y_ == Catch::Approx(1.0f).margin(0.1f));
+    REQUIRE(clientNode->GetWorldPosition().y_ == Catch::Approx(0.0f).margin(0.1f));
 
     // Start movement at some random point, move for about 5 seconds with velocity of 2 units/second
     sim.SimulateTime(0.01f);
@@ -209,8 +210,12 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
 
     Tests::AttributeTracker serverPosition(context);
     serverPosition.Track(serverNode, "Position");
+    Tests::AttributeTracker serverRotation(context);
+    serverRotation.Track(serverNode, "Rotation");
     Tests::AttributeTracker clientPosition(context);
     clientPosition.Track(clientNode, "Position");
+    Tests::AttributeTracker clientRotation(context);
+    clientRotation.Track(clientNode, "Rotation");
     sim.SimulateTime(1.0f);
 
     // Start random movement.
@@ -218,6 +223,8 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     Vector3 direction = Vector3::LEFT * 5.0;
     for (unsigned actionIndex = 0; actionIndex < 100; ++actionIndex)
     {
+        const float rotation = sim.GetRandom().GetFloat(0.0f, 360.0f);
+        clientNode->SetWorldRotation(Quaternion{rotation, Vector3::UP});
         clientObject->SetWalkVelocity(direction);
         const bool needJump = sim.GetRandom().GetBool(0.1f);
         if (needJump)
@@ -230,15 +237,18 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     }
 
     serverPosition.SkipUntilChanged();
+    serverRotation.SkipUntilChanged();
     clientPosition.SkipUntilChanged();
+    clientRotation.SkipUntilChanged();
 
-    const auto& serverPositionValues = serverPosition.GetValues();
-    const auto& clientPositionValues = clientPosition.GetValues();
-    const unsigned numValues = ea::min(serverPositionValues.size(), clientPositionValues.size());
+    const unsigned numValues = ea::min({serverPosition.Size(), serverRotation.Size(), clientPosition.Size(), clientRotation.Size()});
 
     // Compare every 4th element because client and server are synchronized only on frames
     for (unsigned i = 0; i < numValues; i += 4)
-        REQUIRE(serverPositionValues[i].GetVector3() == clientPositionValues[i].GetVector3());
+    {
+        REQUIRE(serverPosition[i].GetVector3() == clientPosition[i].GetVector3());
+        REQUIRE(serverRotation[i].GetQuaternion() == clientRotation[i].GetQuaternion());
+    }
 }
 
 TEST_CASE("PredictedKinematicController works standalone")
