@@ -92,6 +92,7 @@ public:
     bool IsStandalone() const { return networkMode_ == NetworkObjectMode::Standalone; }
     bool IsServer() const { return networkMode_ == NetworkObjectMode::Server; }
     bool IsOwnedByThisClient() const { return networkMode_ == NetworkObjectMode::ClientOwned; }
+    bool IsReplicatedClient() const { return networkMode_ == NetworkObjectMode::ClientReplicated; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 
