@@ -172,29 +172,27 @@ void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserialize
     rotationTrace_.Set(frame, {rotation, angularVelocity});
 }
 
-Vector3 ReplicatedNetworkTransform::GetTemporalWorldPosition(const NetworkTime& time) const
+Vector3 ReplicatedNetworkTransform::SampleTemporalWorldPosition(const NetworkTime& time) const
 {
     return positionTrace_.SampleValid(time).value_;
 }
 
-Quaternion ReplicatedNetworkTransform::GetTemporalWorldRotation(const NetworkTime& time) const
+Quaternion ReplicatedNetworkTransform::SampleTemporalWorldRotation(const NetworkTime& time) const
 {
     return rotationTrace_.SampleValid(time).value_;
 }
 
-ea::optional<Vector3> ReplicatedNetworkTransform::GetRawTemporalWorldPosition(unsigned frame) const
+ea::optional<PositionAndVelocity> ReplicatedNetworkTransform::GetTemporalWorldPosition(unsigned frame) const
 {
-    const auto value = positionTrace_.GetRaw(frame);
-    return value ? ea::make_optional(value->value_) : ea::nullopt;
+    return positionTrace_.GetRaw(frame);
 }
 
-ea::optional<Quaternion> ReplicatedNetworkTransform::GetRawTemporalWorldRotation(unsigned frame) const
+ea::optional<RotationAndVelocity> ReplicatedNetworkTransform::GetTemporalWorldRotation(unsigned frame) const
 {
-    const auto value = rotationTrace_.GetRaw(frame);
-    return value ? ea::make_optional(value->value_) : ea::nullopt;
+    return rotationTrace_.GetRaw(frame);
 }
 
-ea::optional<unsigned> ReplicatedNetworkTransform::GetLatestReceivedFrame() const
+ea::optional<unsigned> ReplicatedNetworkTransform::GetLatestFrame() const
 {
     return positionTrace_.IsInitialized() ? ea::make_optional(positionTrace_.GetLastFrame()) : ea::nullopt;
 }

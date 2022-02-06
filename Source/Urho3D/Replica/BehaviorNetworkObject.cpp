@@ -105,6 +105,22 @@ void BehaviorNetworkObject::InvalidateBehaviors()
     behaviors_.clear();
 }
 
+NetworkBehavior* BehaviorNetworkObject::GetNetworkBehavior(StringHash componentType, unsigned index) const
+{
+    for (const auto& connectedBehavior : behaviors_)
+    {
+        URHO3D_ASSERT(connectedBehavior.component_);
+        if (connectedBehavior.component_->GetType() == componentType)
+        {
+            if (index == 0)
+                return connectedBehavior.component_;
+            else
+                --index;
+        }
+    }
+    return nullptr;
+}
+
 void BehaviorNetworkObject::InitializeStandalone()
 {
     BaseClassName::InitializeStandalone();

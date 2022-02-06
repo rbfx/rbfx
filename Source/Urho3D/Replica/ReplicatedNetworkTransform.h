@@ -79,11 +79,11 @@ public:
 
     /// Getters for network properties
     /// @{
-    Vector3 GetTemporalWorldPosition(const NetworkTime& time) const;
-    Quaternion GetTemporalWorldRotation(const NetworkTime& time) const;
-    ea::optional<Vector3> GetRawTemporalWorldPosition(unsigned frame) const;
-    ea::optional<Quaternion> GetRawTemporalWorldRotation(unsigned frame) const;
-    ea::optional<unsigned> GetLatestReceivedFrame() const;
+    Vector3 SampleTemporalWorldPosition(const NetworkTime& time) const;
+    Quaternion SampleTemporalWorldRotation(const NetworkTime& time) const;
+    ea::optional<PositionAndVelocity> GetTemporalWorldPosition(unsigned frame) const;
+    ea::optional<RotationAndVelocity> GetTemporalWorldRotation(unsigned frame) const;
+    ea::optional<unsigned> GetLatestFrame() const;
     /// @}
 
 private:

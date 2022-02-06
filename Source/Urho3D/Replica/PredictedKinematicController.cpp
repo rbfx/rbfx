@@ -267,7 +267,7 @@ void PredictedKinematicController::OnPhysicsSynchronizedOnClient(unsigned frame)
 void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
 {
     // Skip if not ready
-    const auto latestConfirmedFrame = networkTransform_->GetLatestReceivedFrame();
+    const auto latestConfirmedFrame = networkTransform_->GetLatestFrame();
     if (client_.input_.empty() || !latestConfirmedFrame)
         return;
 
@@ -296,11 +296,11 @@ bool PredictedKinematicController::AdjustConfirmedFrame(unsigned confirmedFrame,
     const float movementThreshold = networkTransform_->GetMovementThreshold();
     const float smoothingConstant = networkTransform_->GetSmoothingConstant();
 
-    const auto confirmedPosition = networkTransform_->GetRawTemporalWorldPosition(confirmedFrame);
+    const auto confirmedPosition = networkTransform_->GetTemporalWorldPosition(confirmedFrame);
     URHO3D_ASSERT(confirmedPosition);
 
     const InputFrame& nextInput = client_.input_[nextInputFrameIndex];
-    const Vector3 offset = *confirmedPosition - nextInput.startPosition_;
+    const Vector3 offset = confirmedPosition->value_ - nextInput.startPosition_;
     if (!offset.Equals(Vector3::ZERO, movementThreshold))
     {
         kinematicController_->AdjustRawPosition(offset, smoothingConstant);

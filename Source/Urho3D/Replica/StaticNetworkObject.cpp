@@ -109,6 +109,7 @@ void StaticNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& s
         resolver.AddNode(nodeID, node_);
 
         node_->LoadXML(prefabRootElement, resolver, true, true, LOCAL, false);
+        node_->ApplyAttributes();
     }
 
     node_->SetName(src.ReadString());

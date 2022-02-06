@@ -85,6 +85,9 @@ public:
 
     /// Internal. Mark NetworkObject as invalid and disable all behaviors.
     void InvalidateBehaviors();
+    /// Return behavior by type.
+    NetworkBehavior* GetNetworkBehavior(StringHash componentType, unsigned index = 0) const;
+    template <class T> T* GetNetworkBehavior(unsigned index = 0) const { return static_cast<T*>(GetNetworkBehavior(T::GetTypeStatic(), index)); }
 
     /// Implement NetworkObject.
     /// @{
