@@ -59,6 +59,12 @@ public:
     bool IsConnectedToComponents() const { return physicsWorld_ && networkTransform_ && kinematicController_; }
     bool IsConnectedToStandaloneComponents() const { return physicsWorld_ && kinematicController_; }
 
+    /// Return effective current velocity of the controller.
+    /// Available for all three modes: server, replicating client and owner client.
+    /// Velocity is synchronized between server and replicating client,
+    /// but is not synchronized for owner client.
+    const Vector3& GetVelocity() const { return effectiveVelocity_; }
+
     /// Implementation of NetworkObject
     /// @{
     void InitializeStandalone() override;
@@ -91,6 +97,8 @@ private:
     void CheckAndCorrectController(unsigned frame);
     bool AdjustConfirmedFrame(unsigned confirmedFrame, unsigned nextInputFrameIndex);
     void TrackCurrentInput(unsigned frame);
+    void ApplyActionsOnClient();
+    void UpdateEffectiveVelocity(float timeStep);
 
     void WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const;
     void ReadInputFrame(unsigned frame, Deserializer& src);
@@ -99,12 +107,10 @@ private:
     WeakPtr<KinematicCharacterController> kinematicController_;
     WeakPtr<PhysicsWorld> physicsWorld_;
 
-    /// Dynamic attributes.
-    /// @{
-    Vector3 walkVelocity_;
-    bool needJump_{};
-    /// @}
+    Vector3 previousPosition_;
+    Vector3 effectiveVelocity_;
 
+    float networkStepTime_{};
     float physicsStepTime_{};
     unsigned maxRedundancy_{};
     unsigned maxInputFrames_{};
@@ -118,6 +124,9 @@ private:
 
     struct ClientData
     {
+        Vector3 walkVelocity_;
+        bool needJump_{};
+
         unsigned desiredRedundancy_{};
         ea::ring_buffer<InputFrame> input_;
         ea::optional<unsigned> latestConfirmedFrame_;

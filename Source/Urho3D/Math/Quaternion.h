@@ -135,6 +135,7 @@ public:
     }
 
     /// Construct from angular velocity assuming unit time.
+    /// Note: Absolute value of angular velocity is measured in radians.
     static Quaternion FromAngularVelocity(const Vector3& angularVelocity);
 
 #ifdef URHO3D_SSE
@@ -460,6 +461,7 @@ public:
     /// @property
     float Angle() const;
     /// Return angular velocity assuming unit time.
+    /// Note: Absolute value of angular velocity is measured in radians.
     Vector3 AngularVelocity() const;
     /// Return the rotation matrix that corresponds to this quaternion.
     /// @property

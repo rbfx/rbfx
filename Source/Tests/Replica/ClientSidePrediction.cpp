@@ -118,6 +118,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     // Create nodes
     Node* serverNode = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Player", {0.0f, 10.0f, 0.0f});
     auto serverObject = serverNode->GetComponent<BehaviorNetworkObject>();
+    auto serverController = serverNode->GetComponent<PredictedKinematicController>();
     serverObject->SetOwner(sim.GetServerToClientConnection(clientScene));
 
     // Wait for synchronization, expect controller on the ground
@@ -126,7 +127,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     const unsigned inputDelay = serverReplicator.GetFeedbackDelay(sim.GetServerToClientConnection(clientScene));
 
     Node* clientNode = clientScene->GetChild("Player", true);
-    auto clientObject = clientNode->GetComponent<PredictedKinematicController>();
+    auto clientController = clientNode->GetComponent<PredictedKinematicController>();
 
     REQUIRE(serverNode->GetWorldPosition().ToXZ() == Vector2::ZERO);
     REQUIRE(serverNode->GetWorldPosition().y_ == Catch::Approx(0.0f).margin(0.1f));
@@ -137,9 +138,13 @@ TEST_CASE("Client-side prediction is consistent with server")
     // Start movement at some random point, move for about 5 seconds with velocity of 2 units/second
     sim.SimulateTime(0.01f);
     const float moveVelocity = 2.0f;
-    clientObject->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
+    clientController->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
     sim.SimulateTime(0.99f);
     sim.SimulateTime(4.0f);
+
+    // Expect specified velocity
+    CHECK(clientController->GetVelocity().Equals(Vector3::FORWARD * moveVelocity, 0.02f));
+    CHECK(serverController->GetVelocity().Equals(Vector3::FORWARD * moveVelocity, 0.02f));
 
     // Expect client node at about the specified position.
     const float networkError = 1 * moveVelocity * (1.0f / Tests::NetworkSimulator::FramesInSecond);
@@ -157,7 +162,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     }
 
     // Stop movement and wait for a while
-    clientObject->SetWalkVelocity(Vector3::ZERO);
+    clientController->SetWalkVelocity(Vector3::ZERO);
     sim.SimulateTime(1.0f);
 
     // Expect server and client positions to match
@@ -166,7 +171,7 @@ TEST_CASE("Client-side prediction is consistent with server")
 
     // Remove client connection and simulate more movement
     sim.RemoveClient(clientScene);
-    clientObject->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
+    clientController->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
     sim.SimulateTime(5.0f);
 
     // Expect client node at about the specified position.
@@ -267,6 +272,8 @@ TEST_CASE("PredictedKinematicController works standalone")
     const float moveVelocity = 2.0f;
     standaloneObject->SetWalkVelocity(Vector3::FORWARD * moveVelocity);
     Tests::NetworkSimulator::SimulateTime(context, 5.0f);
+
+    CHECK(standaloneObject->GetVelocity().Equals(Vector3::FORWARD * moveVelocity, 0.02f));
 
     CHECK(standaloneNode->GetWorldPosition().x_ == 0.0f);
     CHECK(standaloneNode->GetWorldPosition().z_ == Catch::Approx(10.0f).margin(0.1f));
