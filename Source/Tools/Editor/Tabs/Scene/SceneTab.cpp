@@ -1027,7 +1027,7 @@ void SceneTab::RenderNodeContextMenu()
                     if (components.empty())
                         continue;
 
-                    if (ui::BeginMenu(category.c_str()))
+                    if (ui::BeginMenu(category.empty()?"Misc":category.c_str()))
                     {
                         ea::quick_sort(components.begin(), components.end());
 
