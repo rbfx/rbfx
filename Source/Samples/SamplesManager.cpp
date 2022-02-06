@@ -133,6 +133,13 @@
 #if URHO3D_PHYSICS
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
+#if URHO3D_RMLUI
+#if URHO3D_NETWORK
+#if URHO3D_PHYSICS
+#include "110_AdvancedNetworking/AdvancedNetworking.h"
+#endif
+#endif
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -328,6 +335,13 @@ void SamplesManager::Start()
     RegisterSample<RenderingShowcase>();
 #if URHO3D_PHYSICS
     RegisterSample<KinematicCharacterDemo>();
+#endif
+#if URHO3D_RMLUI
+#if URHO3D_NETWORK
+#if URHO3D_PHYSICS
+    RegisterSample<AdvancedNetworking>();
+#endif
+#endif
 #endif
 
     if (!commandLineArgs_.empty())
