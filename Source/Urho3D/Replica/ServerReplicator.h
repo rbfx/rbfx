@@ -210,6 +210,7 @@ public:
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
     bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    void ProcessSceneUpdate();
     void ReportInputLoss(AbstractConnection* connection, float percentLoss);
 
     void SetCurrentFrame(unsigned frame);

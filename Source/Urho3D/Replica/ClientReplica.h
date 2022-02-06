@@ -74,17 +74,19 @@ public:
     /// Return replica interpolation time which is always behind server time.
     /// Scene is expected to be exactly replicated at replica time.
     NetworkTime GetReplicaTime() const { return replicaTime_.Get(); }
+    float GetReplicaTimeStep() const { return replicaTimeStep_; }
 
     /// Return time at which ongoing client input will be processed on server.
     /// Input time is always ahead of server.
     NetworkTime GetInputTime() const { return inputTime_.Get(); }
+    float GetInputTimeStep() const { return inputTimeStep_; }
     bool IsNewInputFrame() const { return isNewInputFrame_; }
     NetworkTime GetLatestScaledInputTime() const { return latestScaledInputTime_; }
 
 protected:
     /// Apply elapsed timestep and accumulated clock updates.
     /// Returns possibly scaled (dilated or contracted) timestep.
-    float UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
+    void UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
 
     const WeakPtr<Scene> scene_;
     const WeakPtr<AbstractConnection> connection_;
@@ -108,7 +110,11 @@ private:
     bool isNewInputFrame_{};
 
     SoftNetworkTime replicaTime_;
+    float replicaTimeStep_{};
+
     SoftNetworkTime inputTime_;
+    float inputTimeStep_{};
+
     PhysicsTickSynchronizer physicsSync_;
 };
 
@@ -123,6 +129,7 @@ public:
     ~ClientReplica() override;
 
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
+    void ProcessSceneUpdate();
 
     ea::string GetDebugInfo() const;
     const auto& GetOwnedNetworkObjects() const { return ownedObjects_; };

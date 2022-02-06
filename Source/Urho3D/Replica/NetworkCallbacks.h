@@ -60,6 +60,8 @@ enum class NetworkCallbackMask
     ReliableDelta           = 1 << 4,
     UnreliableDelta         = 1 << 5,
     UnreliableFeedback      = 1 << 6,
+
+    Update                  = 1 << 7,
     /// @}
 };
 URHO3D_FLAGSET(NetworkCallbackMask, NetworkCallbackFlags);
@@ -124,6 +126,8 @@ class NetworkCallback : public ServerNetworkCallback, public ClientNetworkCallba
 public:
     /// Initialize object in standalone mode when neither server nor client is running.
     virtual void InitializeStandalone() {};
+    /// Process generic network update.
+    virtual void Update(float replicaTimeStep, float inputTimeStep) {}
 };
 
 }

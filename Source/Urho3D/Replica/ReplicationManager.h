@@ -121,9 +121,11 @@ public:
     /// @}
 
 protected:
+    void OnSceneSet(Scene* scene) override;
     void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
 
 private:
+    void OnSceneUpdate(float timeStep);
     void Stop();
     void ProcessMessageOnUninitializedClient(
         AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);

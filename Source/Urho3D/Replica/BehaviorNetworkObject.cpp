@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Replica/BehaviorNetworkObject.h"
+#include "../Scene/SceneEvents.h"
 
 namespace Urho3D
 {
@@ -96,6 +97,19 @@ void BehaviorNetworkObject::InitializeBehaviors()
         networkBehavior->SetNetworkObject(this);
         behaviors_.push_back(ConnectedNetworkBehavior{bit, weakPtr, callbackMask});
         callbackMask_ |= callbackMask;
+    }
+
+    UnsubscribeFromEvent(E_SCENENETWORKUPDATE);
+    if (callbackMask_.Test(NetworkCallbackMask::Update))
+    {
+        SubscribeToEvent(GetScene(), E_SCENENETWORKUPDATE,
+            [this](StringHash, VariantMap& eventData)
+        {
+            using namespace SceneNetworkUpdate;
+            const float replicaTimeStep = eventData[P_TIMESTEP_REPLICA].GetFloat();
+            const float inputTimeStep = eventData[P_TIMESTEP_INPUT].GetFloat();
+            Update(replicaTimeStep, inputTimeStep);
+        });
     }
 }
 
@@ -356,6 +370,17 @@ void BehaviorNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deser
             if (mask & connectedBehavior.bit_)
                 connectedBehavior.component_->ReadUnreliableFeedback(feedbackFrame, src);
         }
+    }
+}
+
+void BehaviorNetworkObject::Update(float replicaTimeStep, float inputTimeStep)
+{
+    BaseClassName::Update(replicaTimeStep, inputTimeStep);
+
+    for (const auto& connectedBehavior : behaviors_)
+    {
+        if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::Update))
+            connectedBehavior.component_->Update(replicaTimeStep, inputTimeStep);
     }
 }
 

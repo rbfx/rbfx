@@ -31,6 +31,7 @@
 #include "../Replica/ReplicationManager.h"
 #include "../Replica/NetworkSettingsConsts.h"
 #include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 
 namespace Urho3D
 {
@@ -170,6 +171,24 @@ void ReplicationManager::RegisterObject(Context* context)
     context->RegisterFactory<ReplicationManager>("");
 }
 
+void ReplicationManager::OnSceneSet(Scene* scene)
+{
+    BaseClassName::OnSceneSet(scene);
+
+    if (scene)
+    {
+        SubscribeToEvent(scene, E_SCENEUPDATE,
+            [this](StringHash, VariantMap& eventData)
+        {
+            using namespace SceneUpdate;
+            const float timeStep = eventData[P_TIMESTEP].GetFloat();
+            OnSceneUpdate(timeStep);
+        });
+    }
+    else
+        UnsubscribeFromEvent(E_SCENEUPDATE);
+}
+
 void ReplicationManager::OnComponentAdded(BaseTrackedComponent* baseComponent)
 {
     BaseClassName::OnComponentAdded(baseComponent);
@@ -179,6 +198,49 @@ void ReplicationManager::OnComponentAdded(BaseTrackedComponent* baseComponent)
         auto networkObject = static_cast<NetworkObject*>(baseComponent);
         networkObject->SetNetworkMode(NetworkObjectMode::Standalone);
         networkObject->InitializeStandalone();
+    }
+}
+
+void ReplicationManager::OnSceneUpdate(float timeStep)
+{
+    switch (mode_)
+    {
+    case ReplicationManagerMode::Standalone:
+    {
+        URHO3D_ASSERT(!server_ && !client_);
+
+        Scene* scene = GetScene();
+        VariantMap& eventData = GetEventDataMap();
+
+        using namespace SceneNetworkUpdate;
+        eventData[P_SCENE] = scene;
+        eventData[P_TIMESTEP_REPLICA] = timeStep;
+        eventData[P_TIMESTEP_INPUT] = timeStep;
+        scene->SendEvent(E_SCENENETWORKUPDATE, eventData);
+
+        break;
+    }
+    case ReplicationManagerMode::Server:
+    {
+        URHO3D_ASSERT(server_);
+
+        server_->ProcessSceneUpdate();
+
+        break;
+    }
+
+    case ReplicationManagerMode::Client:
+    {
+        URHO3D_ASSERT(client_);
+
+        if (client_->replica_)
+            client_->replica_->ProcessSceneUpdate();
+
+        break;
+    }
+
+    default:
+        break;
     }
 }
 

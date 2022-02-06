@@ -676,6 +676,21 @@ bool ServerReplicator::ProcessMessage(AbstractConnection* connection, NetworkMes
     return data.ProcessMessage(messageId, messageData);
 }
 
+void ServerReplicator::ProcessSceneUpdate()
+{
+    if (network_->IsUpdateNow())
+    {
+        VariantMap& eventData = GetEventDataMap();
+        const float fixedTimeStep = 1.0f / GetUpdateFrequency();
+
+        using namespace SceneNetworkUpdate;
+        eventData[P_SCENE] = scene_;
+        eventData[P_TIMESTEP_REPLICA] = fixedTimeStep;
+        eventData[P_TIMESTEP_INPUT] = fixedTimeStep;
+        scene_->SendEvent(E_SCENENETWORKUPDATE, eventData);
+    }
+}
+
 void ServerReplicator::ReportInputLoss(AbstractConnection* connection, float percentLoss)
 {
     // TODO(network): Handle expired connections

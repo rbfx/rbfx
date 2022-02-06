@@ -34,6 +34,18 @@ URHO3D_EVENT(E_SCENEUPDATE, SceneUpdate)
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 }
 
+/// Network-aware scene update.
+/// In standalone mode, SceneNetworkUpdate is equivalent to SceneUpdate.
+/// In server mode, SceneNetworkUpdate is called once per network frame with fixed timestep.
+/// In client mode, SceneNetworkUpdate is called on each rendered frame like SceneUpdate,
+/// but timesteps are properly scaled according to network clocks.
+URHO3D_EVENT(E_SCENENETWORKUPDATE, SceneNetworkUpdate)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                       // Scene pointer
+    URHO3D_PARAM(P_TIMESTEP_REPLICA, TimeStepReplica);  // float
+    URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
+}
+
 /// Scene subsystem update.
 URHO3D_EVENT(E_SCENESUBSYSTEMUPDATE, SceneSubsystemUpdate)
 {
