@@ -115,6 +115,9 @@ void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
     positionTrace_.Set(frame, {server_.position_, server_.velocity_});
     rotationTrace_.Set(frame, {server_.rotation_, server_.angularVelocity_});
 
+    if (server_.pendingUploadAttempts_ > 0)
+        --server_.pendingUploadAttempts_;
+
     if (server_.movedDuringFrame_)
     {
         server_.movedDuringFrame_ = false;
@@ -145,12 +148,7 @@ void ReplicatedNetworkTransform::InterpolateState(float timeStep, const NetworkT
 
 bool ReplicatedNetworkTransform::PrepareUnreliableDelta(unsigned frame)
 {
-    if (server_.pendingUploadAttempts_ > 0)
-    {
-        --server_.pendingUploadAttempts_;
-        return true;
-    }
-    return false;
+    return server_.pendingUploadAttempts_ > 0;
 }
 
 void ReplicatedNetworkTransform::WriteUnreliableDelta(unsigned frame, Serializer& dest)
@@ -172,22 +170,22 @@ void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserialize
     rotationTrace_.Set(frame, {rotation, angularVelocity});
 }
 
-Vector3 ReplicatedNetworkTransform::SampleTemporalWorldPosition(const NetworkTime& time) const
+PositionAndVelocity ReplicatedNetworkTransform::SampleTemporalPosition(const NetworkTime& time) const
 {
-    return positionTrace_.SampleValid(time).value_;
+    return positionTrace_.SampleValid(time);
 }
 
-Quaternion ReplicatedNetworkTransform::SampleTemporalWorldRotation(const NetworkTime& time) const
+RotationAndVelocity ReplicatedNetworkTransform::SampleTemporalRotation(const NetworkTime& time) const
 {
-    return rotationTrace_.SampleValid(time).value_;
+    return rotationTrace_.SampleValid(time);
 }
 
-ea::optional<PositionAndVelocity> ReplicatedNetworkTransform::GetTemporalWorldPosition(unsigned frame) const
+ea::optional<PositionAndVelocity> ReplicatedNetworkTransform::GetTemporalPosition(unsigned frame) const
 {
     return positionTrace_.GetRaw(frame);
 }
 
-ea::optional<RotationAndVelocity> ReplicatedNetworkTransform::GetTemporalWorldRotation(unsigned frame) const
+ea::optional<RotationAndVelocity> ReplicatedNetworkTransform::GetTemporalRotation(unsigned frame) const
 {
     return rotationTrace_.GetRaw(frame);
 }

@@ -63,7 +63,7 @@ void PredictedKinematicController::SetWalkVelocity(const Vector3& velocity)
 
     if (networkObject->IsStandalone() || networkObject->IsOwnedByThisClient())
     {
-        walkVelocity_ = velocity;
+        client_.walkVelocity_ = velocity;
     }
     else
     {
@@ -81,14 +81,9 @@ void PredictedKinematicController::SetJump()
     NetworkObject* networkObject = GetNetworkObject();
     URHO3D_ASSERT(networkObject);
 
-    if (networkObject->IsStandalone())
+    if (networkObject->IsStandalone() || networkObject->IsOwnedByThisClient())
     {
-        if (kinematicController_->OnGround())
-            kinematicController_->Jump();
-    }
-    else if (networkObject->IsOwnedByThisClient())
-    {
-        needJump_ = true;
+        client_.needJump_ = true;
     }
     else
     {
@@ -107,7 +102,8 @@ void PredictedKinematicController::InitializeStandalone()
     SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
         [this](StringHash, VariantMap& eventData)
     {
-        kinematicController_->SetWalkIncrement(walkVelocity_ * physicsStepTime_);
+        UpdateEffectiveVelocity(physicsStepTime_);
+        ApplyActionsOnClient();
     });
 }
 
@@ -158,7 +154,22 @@ void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deseri
 
 void PredictedKinematicController::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
-    client_.desiredRedundancy_ = ea::max(1, FloorToInt(inputTime - replicaTime));
+    if (!IsConnectedToComponents())
+        return;
+
+    NetworkObject* networkObject = GetNetworkObject();
+    if (!networkObject->IsOwnedByThisClient())
+    {
+        // Get velocity without interpolation within frame
+        ReplicationManager* replicationManager = networkObject->GetReplicationManager();
+        const float derivativeTimeStep = 1.0f / replicationManager->GetUpdateFrequency();
+        const auto positionAndVelocity = networkTransform_->SampleTemporalPosition(NetworkTime{replicaTime.GetFrame()});
+        effectiveVelocity_ = positionAndVelocity.derivative_ * derivativeTimeStep;
+    }
+    else
+    {
+        client_.desiredRedundancy_ = ea::max(1, FloorToInt(inputTime - replicaTime));
+    }
 }
 
 void PredictedKinematicController::InitializeCommon()
@@ -168,6 +179,8 @@ void PredictedKinematicController::InitializeCommon()
 
     networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
+
+    previousPosition_ = node_->GetWorldPosition();
 
     if (Scene* scene = node_->GetScene())
     {
@@ -180,6 +193,7 @@ void PredictedKinematicController::InitializeCommon()
         const auto replicationManager = networkObject->GetReplicationManager();
         maxInputFrames_ = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
         maxRedundancy_ = replicationManager->GetSetting(NetworkSettings::MaxInputRedundancy).GetUInt();
+        networkStepTime_ = 1.0f / replicationManager->GetUpdateFrequency();
     }
 }
 
@@ -216,6 +230,8 @@ void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
 {
     if (!IsConnectedToComponents())
         return;
+
+    UpdateEffectiveVelocity(networkStepTime_);
 
     if (const auto frameDataAndIndex = server_.input_.GetRawOrPrior(serverFrame))
     {
@@ -256,12 +272,23 @@ void PredictedKinematicController::OnPhysicsSynchronizedOnClient(unsigned frame)
 
     CheckAndCorrectController(frame);
     TrackCurrentInput(frame);
+    ApplyActionsOnClient();
+    UpdateEffectiveVelocity(networkStepTime_);
+}
 
-    // Apply actions
-    kinematicController_->SetWalkIncrement(walkVelocity_ * physicsStepTime_);
-    if (needJump_ && kinematicController_->OnGround())
+void PredictedKinematicController::ApplyActionsOnClient()
+{
+    kinematicController_->SetWalkIncrement(client_.walkVelocity_ * physicsStepTime_);
+    if (client_.needJump_ && kinematicController_->OnGround())
         kinematicController_->Jump();
-    needJump_ = false;
+    client_.needJump_ = false;
+}
+
+void PredictedKinematicController::UpdateEffectiveVelocity(float timeStep)
+{
+    const Vector3 currentPosition = node_->GetWorldPosition();
+    effectiveVelocity_ = (currentPosition - previousPosition_) / timeStep;
+    previousPosition_ = currentPosition;
 }
 
 void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
@@ -296,7 +323,7 @@ bool PredictedKinematicController::AdjustConfirmedFrame(unsigned confirmedFrame,
     const float movementThreshold = networkTransform_->GetMovementThreshold();
     const float smoothingConstant = networkTransform_->GetSmoothingConstant();
 
-    const auto confirmedPosition = networkTransform_->GetTemporalWorldPosition(confirmedFrame);
+    const auto confirmedPosition = networkTransform_->GetTemporalPosition(confirmedFrame);
     URHO3D_ASSERT(confirmedPosition);
 
     const InputFrame& nextInput = client_.input_[nextInputFrameIndex];
@@ -337,9 +364,9 @@ void PredictedKinematicController::TrackCurrentInput(unsigned frame)
 
     InputFrame currentInput;
     currentInput.frame_ = frame;
-    currentInput.walkVelocity_ = walkVelocity_;
+    currentInput.walkVelocity_ = client_.walkVelocity_;
     currentInput.startPosition_ = kinematicController_->GetRawPosition();
-    currentInput.needJump_ = needJump_;
+    currentInput.needJump_ = client_.needJump_;
     currentInput.rotation_ = node_->GetWorldRotation();
     client_.input_.push_back(currentInput);
 }

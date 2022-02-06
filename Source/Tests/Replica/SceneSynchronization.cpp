@@ -543,11 +543,11 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.2).margin(0.03));
 
-        REQUIRE(serverTransformA->SampleTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), positionError));
-        REQUIRE(serverTransformA->SampleTemporalWorldRotation(replicaTime).Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
+        REQUIRE(serverTransformA->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeA->GetWorldPosition(), positionError));
+        REQUIRE(serverTransformA->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
 
-        REQUIRE(serverTransformB->SampleTemporalWorldPosition(replicaTime).Equals(clientNodeB->GetWorldPosition(), positionError));
-        REQUIRE(serverTransformB->SampleTemporalWorldRotation(replicaTime).Equivalent(clientNodeB->GetWorldRotation(), M_EPSILON));
+        REQUIRE(serverTransformB->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeB->GetWorldPosition(), positionError));
+        REQUIRE(serverTransformB->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeB->GetWorldRotation(), M_EPSILON));
     }
 
     // Expect positions and rotations to be roughly synchronized on extrapolating client
@@ -561,11 +561,11 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.25).margin(0.03));
 
-        REQUIRE(serverTransformA->SampleTemporalWorldPosition(replicaTime).Equals(clientNodeA->GetWorldPosition(), positionError));
-        REQUIRE(serverTransformA->SampleTemporalWorldRotation(replicaTime).Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
+        REQUIRE(serverTransformA->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeA->GetWorldPosition(), positionError));
+        REQUIRE(serverTransformA->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
 
-        REQUIRE(serverTransformB->SampleTemporalWorldPosition(replicaTime).Equals(clientNodeB->GetWorldPosition(), 0.002f));
-        REQUIRE(serverTransformB->SampleTemporalWorldRotation(replicaTime).Equivalent(clientNodeB->GetWorldRotation(), M_EPSILON));
+        REQUIRE(serverTransformB->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeB->GetWorldPosition(), 0.002f));
+        REQUIRE(serverTransformB->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeB->GetWorldRotation(), M_EPSILON));
     }
 }
 
