@@ -179,7 +179,7 @@ void SamplesManager::Start()
         [](const std::string& str) { return ea::string(str.c_str()); });
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
-    context_->AddReflection<Rotator>();
+    context_->AddFactoryReflection<Rotator>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
 
@@ -592,7 +592,7 @@ void SamplesManager::OnFrameStart()
 template<typename T>
 void SamplesManager::RegisterSample()
 {
-    context_->AddReflection<T>();
+    context_->AddFactoryReflection<T>();
 
     auto* button = context_->CreateObject<Button>().Detach();
     button->SetMinHeight(30);

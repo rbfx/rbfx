@@ -40,7 +40,7 @@ NetworkBehavior::~NetworkBehavior()
 
 void NetworkBehavior::RegisterObject(Context* context)
 {
-    context->RegisterFactory<NetworkBehavior>();
+    context->AddReflection<NetworkBehavior>();
 }
 
 void NetworkBehavior::SetNetworkObject(BehaviorNetworkObject* owner)

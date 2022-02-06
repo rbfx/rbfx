@@ -52,7 +52,7 @@ public:
     /// Called when plugin is being unloaded. Unregister all custom components and unsubscribe from events here.
     virtual void Unload() { }
     /// Register a factory for an object type and specify the object category.
-    template<typename T> ObjectReflection* AddReflection(ea::string_view category = "");
+    template<typename T> ObjectReflection* AddFactoryReflection(ea::string_view category = "");
 
 protected:
     /// Record type factory that will be unregistered on plugin unload.
@@ -64,9 +64,9 @@ private:
 };
 
 template<typename T>
-ObjectReflection* PluginApplication::AddReflection(ea::string_view category)
+ObjectReflection* PluginApplication::AddFactoryReflection(ea::string_view category)
 {
-    auto reflection = context_->AddReflection<T>(category);
+    auto reflection = context_->AddFactoryReflection<T>(category);
     if (reflection)
         RegisterPluginType(T::GetTypeStatic());
     return reflection;

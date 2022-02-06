@@ -100,7 +100,7 @@ public:
 #endif
 
     /// Deprecated. Use RegisterObject instead.
-    template <class T> void RegisterFactory(const char* category = "") { AddReflection<T>(category); }
+    template <class T> void RegisterFactory(const char* category = "") { AddFactoryReflection<T>(category); }
     /// Template version of registering subsystem.
     template <class T> T* RegisterSubsystem();
     /// Template version of removing a subsystem.

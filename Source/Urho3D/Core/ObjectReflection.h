@@ -118,7 +118,8 @@ public:
     template <class T> ObjectReflection* Reflect();
 
     /// Add new object reflection with factory and assign it to the category.
-    template <class T> ObjectReflection* AddReflection(ea::string_view category = "");
+    template <class T> ObjectReflection* AddReflection(ea::string_view category = "") { return AddReflectionInternal<T, false>(category); }
+    template <class T> ObjectReflection* AddFactoryReflection(ea::string_view category = "") { return AddReflectionInternal<T, true>(category); }
 
     /// Return existing reflection for given type.
     ObjectReflection* GetReflection(StringHash typeNameHash);
@@ -152,6 +153,8 @@ public:
     const ea::unordered_map<ea::string, ea::vector<StringHash>>& GetObjectCategories() const { return categories_; }
 
 private:
+    template <class T, bool RequireFactory> ObjectReflection* AddReflectionInternal(ea::string_view category);
+
     void ErrorReflectionNotFound(StringHash typeNameHash) const;
     void ErrorDuplicateReflection(StringHash typeNameHash) const;
     void AddReflectionToCurrentCategory(ObjectReflection* reflection);
@@ -175,8 +178,8 @@ ObjectReflection* ObjectReflectionRegistry::Reflect()
     return Reflect(T::GetTypeInfoStatic());
 }
 
-template <class T>
-ObjectReflection* ObjectReflectionRegistry::AddReflection(ea::string_view category)
+template <class T, bool RequireFactory>
+ObjectReflection* ObjectReflectionRegistry::AddReflectionInternal(ea::string_view category)
 {
     if (IsReflected<T>())
     {
@@ -186,8 +189,12 @@ ObjectReflection* ObjectReflectionRegistry::AddReflection(ea::string_view catego
     else
     {
         ObjectReflection* reflection = Reflect<T>();
-        if constexpr(ea::is_constructible_v<T, Context*>)
+        constexpr bool isConstructible = ea::is_constructible_v<T, Context*>;
+        static_assert(isConstructible || !RequireFactory, "Object should be constructible from Context*");
+
+        if constexpr(isConstructible)
             reflection->SetObjectFactory<T>();
+
         if (!category.empty())
             SetReflectionCategory<T>(category);
         return reflection;

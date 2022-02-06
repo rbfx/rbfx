@@ -55,7 +55,7 @@ Ragdolls::Ragdolls(Context* context) :
 {
     // Register an object factory for our custom CreateRagdoll component so that we can create them to scene nodes
     if (!context->IsReflected<CreateRagdoll>())
-        context->AddReflection<CreateRagdoll>();
+        context->AddFactoryReflection<CreateRagdoll>();
 }
 
 void Ragdolls::Start()
