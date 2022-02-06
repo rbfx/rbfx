@@ -134,6 +134,8 @@ public:
     }
 
     const ea::vector<Variant>& GetValues() const { return recordedValues_; }
+    unsigned Size() const { return recordedValues_.size(); }
+    const Variant& operator[](unsigned i) const { return recordedValues_[i]; }
 
 private:
     ea::vector<ea::pair<WeakPtr<Serializable>, ea::string>> trackers_;
