@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1637,6 +1637,8 @@ void Connection::OnPackagesReady()
 
         if (extension == ".xml")
             success = scene_->LoadAsyncXML(file);
+        else if (extension == ".json")
+            success = scene_->LoadAsyncJSON(file);
         else
             success = scene_->LoadAsync(file);
 

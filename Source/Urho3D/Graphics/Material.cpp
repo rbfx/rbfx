@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1300,6 +1300,7 @@ void Material::ResetToDefaults()
 
     batchedParameterUpdate_ = true;
     shaderParameters_.clear();
+    shaderParameterAnimationInfos_.clear();
     SetShaderParameter("UOffset", Vector4(1.0f, 0.0f, 0.0f, 0.0f));
     SetShaderParameter("VOffset", Vector4(0.0f, 1.0f, 0.0f, 0.0f));
     SetShaderParameter("MatDiffColor", Vector4::ONE);
@@ -1319,6 +1320,7 @@ void Material::ResetToDefaults()
     renderOrder_ = DEFAULT_RENDER_ORDER;
     occlusion_ = true;
 
+    UpdateEventSubscription();
     RefreshShaderParameterHash();
     RefreshMemoryUse();
 }

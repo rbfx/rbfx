@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ namespace Urho3D
 
 /// Declare FlagSet for specific enum and create operators for automatic FlagSet construction.
 #define URHO3D_FLAGSET(enumName, flagsetName) \
-    URHO3D_AUTOMATIC_FLAGSET(enumName); \
+    URHO3D_AUTOMATIC_FLAGSET(enumName) \
     using flagsetName = Urho3D::FlagSet<enumName>
 
 /// A set of flags defined by an Enum.
