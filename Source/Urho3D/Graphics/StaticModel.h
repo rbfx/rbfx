@@ -52,6 +52,9 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Process raycast with custom transform.
+    void ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox,
+        const Matrix3x4& worldTransform, ea::vector<RayQueryResult>& results);
     /// Process octree raycast. May be called from a worker thread.
     void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.

@@ -67,6 +67,8 @@ public:
     void ConnectToServer(const ea::string& address);
     void Stop();
 
+    bool GetCheatAutoMovement() const { return cheatAutoMovement_; }
+
 private:
     void OnNodeSet(Node* node) override;
     void Update(float timeStep) override;
@@ -74,6 +76,8 @@ private:
     Rml::DataModelHandle model_;
     int serverPort_{2345};
     Rml::String connectionAddress_{"localhost"};
+
+    bool cheatAutoMovement_{};
 };
 
 /// Scene network replication example.
@@ -153,4 +157,9 @@ private:
     SharedPtr<Text> statsText_;
     /// Statistics UI update timer
     Timer statsTimer_;
+
+    /// Timer user for auto movement.
+    float autoMovementTimer_{};
+    /// Current phase of auto movement.
+    unsigned autoMovementPhase_{};
 };

@@ -119,9 +119,9 @@ void Drawable::OnSetEnabled()
         RemoveFromOctree();
 }
 
-void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+void Drawable::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox, ea::vector<RayQueryResult>& results)
 {
-    float distance = query.ray_.HitDistance(GetWorldBoundingBox());
+    float distance = query.ray_.HitDistance(worldBoundingBox);
     if (distance < query.maxDistance_)
     {
         RayQueryResult result;
@@ -133,6 +133,11 @@ void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryR
         result.subObject_ = M_MAX_UNSIGNED;
         results.push_back(result);
     }
+}
+
+void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+{
+    ProcessCustomRayQuery(query, GetWorldBoundingBox(), results);
 }
 
 void Drawable::UpdateBatches(const FrameInfo& frame)

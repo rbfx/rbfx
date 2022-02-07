@@ -45,6 +45,7 @@ inline float GetDistanceSquared(float lhs, float rhs) { return (lhs - rhs) * (lh
 inline float GetDistanceSquared(const Vector2& lhs, const Vector2& rhs) { return (lhs - rhs).LengthSquared(); }
 inline float GetDistanceSquared(const Vector3& lhs, const Vector3& rhs) { return (lhs - rhs).LengthSquared(); }
 inline float GetDistanceSquared(const Quaternion& lhs, const Quaternion& rhs) { return 1.0f - Abs(lhs.DotProduct(rhs)); }
+template <class T> inline float GetDistanceSquared(const T& lhs, const T& rhs) { return 0.0f; }
 /// @}
 
 /// Base class for NetworkValue and NetworkValueVector.
@@ -693,14 +694,28 @@ public:
         values_.resize(size_ * capacity);
     }
 
-    /// Set value for given frame if possible.
-    void Set(unsigned frame, ValueSpan value)
+    /// Return dynamic size of the vector.
+    unsigned Size() const { return size_; }
+
+    /// Set value and return uninitialized buffer to be filled.
+    ea::span<T> SetUninitialized(unsigned frame)
     {
         if (AllocateFrame(frame))
         {
             const unsigned index = FrameToIndexUnchecked(frame);
+            return {&values_[index * size_], size_};
+        }
+        return {};
+    }
+
+    /// Set value for given frame if possible.
+    void Set(unsigned frame, ValueSpan value)
+    {
+        const auto dest = SetUninitialized(frame);
+        if (!dest.empty())
+        {
             const unsigned count = ea::min<unsigned>(value.size(), size_);
-            ea::copy_n(value.begin(), count, &values_[index * size_]);
+            ea::copy_n(value.begin(), count, dest.begin());
         }
     }
 

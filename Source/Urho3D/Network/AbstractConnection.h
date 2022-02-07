@@ -156,6 +156,7 @@ public:
         static const ea::unordered_set<NetworkMessageId> traceMessages = {
             MSG_CLOCK_SYNC,
             MSG_CONTROLS,
+            MSG_REMOTEEVENT,
 
             MSG_SCENE_CLOCK,
             MSG_UPDATE_OBJECTS_RELIABLE,

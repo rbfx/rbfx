@@ -12,7 +12,7 @@
                 <div id="title">Settings</div>
             </handle>
         </div>
-        <div style="position: absolute; top: 25pt; bottom: 10pt; left: 0pt; right: 7pt;">
+        <div>
             <div data-if="!isServer && !isClient">
                 <button data-event-click="onConnectToServer">Connect to server</button>
                 at
@@ -26,6 +26,9 @@
             </div>
             <div data-if="isClient">
                 <button data-event-click="onStop">Disconnect from server</button><br/>
+                <br/>
+                <h5>Cheats</h5>
+                <label><input type="checkbox" value="cheatAutoMovement" data-checked="cheatAutoMovement"/>Automatic movement</label><br/>
             </div>
         </div>
     </div>

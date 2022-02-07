@@ -35,9 +35,8 @@
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/Input/Controls.h>
-#include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Input/Input.h>
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/Connection.h>
 #include <Urho3D/Network/Network.h>
@@ -50,6 +49,7 @@
 #include <Urho3D/Replica/PredictedKinematicController.h>
 #include <Urho3D/Replica/ReplicatedTransform.h>
 #include <Urho3D/Replica/ReplicationManager.h>
+#include <Urho3D/Replica/TrackedAnimatedModel.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/Scene/Scene.h>
@@ -68,6 +68,7 @@ static constexpr float CAMERA_DISTANCE = 5.0f;
 static constexpr float CAMERA_OFFSET = 2.0f;
 static constexpr float WALK_VELOCITY = 3.35f;
 static constexpr float HIT_DISTANCE = 100.0f;
+static constexpr float AUTO_MOVEMENT_DURATION = 1.0f;
 
 URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYCAST, AdvancedNetworkingRaycast)
 {
@@ -310,6 +311,7 @@ void AdvancedNetworkingUI::OnNodeSet(Node* node)
         constructor.Bind("connectionAddress", &connectionAddress_);
         constructor.BindFunc("isServer", [=](Rml::Variant& result) { result = network->IsServerRunning(); });
         constructor.BindFunc("isClient", [=](Rml::Variant& result) { result = network->GetServerConnection() != nullptr; });
+        constructor.Bind("cheatAutoMovement", &cheatAutoMovement_);
 
         constructor.BindEventCallback("onStartServer",
             [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { StartServer(); });
@@ -602,14 +604,41 @@ void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& r
 
     // Perform raycast using target position instead of ray direction
     // to get better precision on origin mismatch.
-    const auto hitPosition = RaycastImportantGeometries(Ray{origin, raycastInfo.target_ - origin});
+    auto* octree = scene_->GetComponent<Octree>();
+    const Ray ray{origin, raycastInfo.target_ - origin};
+
+    // Query static scene geometry
+    RayOctreeQuery query(ray, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY, IMPORTANT_VIEW_MASK);
+    octree->RaycastSingle(query);
+
+    // Query dynamic network objects
+    for (NetworkObject* networkObject : replicationManager->GetNetworkObjects())
+    {
+        // Ignore caster
+        if (networkObject == clientObject)
+            continue;
+
+        auto behaviorNetworkObject = dynamic_cast<BehaviorNetworkObject*>(networkObject);
+        if (!behaviorNetworkObject)
+            continue;
+
+        auto trackedModelAnimation = behaviorNetworkObject->GetNetworkBehavior<TrackedAnimatedModel>();
+        if (!trackedModelAnimation)
+            continue;
+
+        trackedModelAnimation->ProcessTemporalRayQuery(raycastInfo.replicaTime_, query, query.result_);
+    }
+
+    // Sort by distance
+    ea::quick_sort(query.result_.begin(), query.result_.end(),
+        [](const RayQueryResult& lhs, const RayQueryResult& rhs) { return lhs.distance_ < rhs.distance_; });
 
     // Send result to the client
     using namespace AdvancedNetworkingRayhit;
     auto& eventData = GetEventDataMap();
     eventData[P_ORIGIN] = origin;
-    if (hitPosition)
-        eventData[P_POSITION] = *hitPosition;
+    if (!query.result_.empty())
+        eventData[P_POSITION] = query.result_[0].position_;
     raycastInfo.clientConnection_->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYHIT, false, eventData);
 }
 
@@ -693,16 +722,33 @@ void AdvancedNetworking::ProcessClientMovement(NetworkObject* clientObject)
     Node* clientNode = clientObject->GetNode();
     auto clientController = clientNode->GetComponent<PredictedKinematicController>();
 
+    // Process auto movement cheat
+    const bool autoMovement = ui_->GetCheatAutoMovement();
+    if (!autoMovement)
+    {
+        autoMovementTimer_ = AUTO_MOVEMENT_DURATION;
+        autoMovementPhase_ = 0;
+    }
+    else
+    {
+        autoMovementTimer_ -= GetSubsystem<Time>()->GetTimeStep();
+        if (autoMovementTimer_ < 0.0f)
+        {
+            autoMovementTimer_ = AUTO_MOVEMENT_DURATION;
+            autoMovementPhase_ = (autoMovementPhase_ + 1) % 4;
+        }
+    }
+
     // Calculate movement direction
     const Quaternion rotation(0.0f, yaw_, 0.0f);
     Vector3 direction;
-    if (input->GetKeyDown(KEY_W))
+    if (input->GetKeyDown(KEY_W) || (autoMovement && autoMovementPhase_ == 3))
         direction += rotation * Vector3::FORWARD;
-    if (input->GetKeyDown(KEY_S))
+    if (input->GetKeyDown(KEY_S) || (autoMovement && autoMovementPhase_ == 1))
         direction += rotation * Vector3::BACK;
-    if (input->GetKeyDown(KEY_A))
+    if (input->GetKeyDown(KEY_A) || (autoMovement && autoMovementPhase_ == 2))
         direction += rotation * Vector3::LEFT;
-    if (input->GetKeyDown(KEY_D))
+    if (input->GetKeyDown(KEY_D) || (autoMovement && autoMovementPhase_ == 0))
         direction += rotation * Vector3::RIGHT;
     direction = direction.NormalizedOrDefault();
 
