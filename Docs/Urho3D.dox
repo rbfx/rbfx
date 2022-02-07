@@ -36,7 +36,7 @@ For further reference, see:
 \ref Navigation "Navigation" <br>
 \ref IK "Inverse Kinematics" <br>
 \ref UI "User interface" <br>
-\ref Urho2D "Urho2D" <br>
+\ref Urho2D_and_Physics2D "Urho2D and Physics2D" <br>
 \ref Serialization "Serialization" <br>
 \ref Network "Networking" <br>
 \ref Multithreading "Multithreading" <br>
@@ -87,7 +87,8 @@ License / copyright information included with the assets as necessary. All other
 
 \page License License
 
-Copyright (c) 2008-2020 the Urho3D project.
+Copyright (c) 2008-2022 the Urho3D project.
+Copyright (c) 2017-2022 the rbfx project.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

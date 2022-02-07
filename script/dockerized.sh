@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2008-2020 the Urho3D project.
+# Copyright (c) 2008-2022 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,10 @@
 #
 
 if [[ $# -eq 0 ]]; then echo "Usage: dockerized.sh linux|mingw|android|rpi|arm|web [command]"; exit 1; fi
+if [[ $(id -u) -eq 0 ]]; then echo "Should not run using sudo or root user"; exit 1; fi
 
+SCRIPT_DIR=$(cd "${0%/*}" || exit 1; pwd)
 PROJECT_DIR=$(cd "${0%/*}/.." || exit 1; pwd)
-
-if [[ ! $DBE_TAG ]]; then
-    # If the command failed or not on a tag then use 'master' by default
-    DBE_TAG=$(git describe --exact-match 2>/dev/null || echo master)
-fi
-
-BuildEnvironment=-$1; shift
-BuildEnvironment=${BuildEnvironment/-base}
 
 # Determine which tool is available to use
 if ! docker --version >/dev/null 2>&1; then
@@ -57,8 +51,25 @@ d () {
     fi
 }
 
+if [[ ! $DBE_NAME ]]; then
+    DBE_NAME=${registry}urho3d/dockerized
+fi
+
+if [[ ! $DBE_TAG ]]; then
+    # If the command failed or not on a tag then use 'master' by default
+    DBE_TAG=$(git describe --exact-match 2>/dev/null || echo master)
+fi
+
+platform=$1; shift
+
+if [[ "$DBE_NAMING_SCHEME" == "tag" ]]; then
+  dbe_image=$DBE_NAME:$DBE_TAG-$platform
+else
+  dbe_image=$DBE_NAME-$platform:$DBE_TAG
+fi
+
 if [[ $DBE_REFRESH == 1 ]]; then
-  d pull "${registry}urho3d/dockerized$BuildEnvironment:$DBE_TAG"
+  d pull $dbe_image
 fi
 if [[ $GITHUB_ACTIONS ]]; then
   mkdir -p $GITHUB_WORKSPACE/build/cache
@@ -71,18 +82,18 @@ if [[ $use_podman ]] || ( [[ $(d version -f '{{.Client.Version}}') =~ ^([0-9]+)\
     # podman or newer Docker client
     d run $interactive -t --rm -h fishtank $run_option \
         -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" -e PROJECT_DIR="$PROJECT_DIR" \
-        --env-file "$PROJECT_DIR/script/.env-file" \
+        --env-file "$SCRIPT_DIR/.env-file" \
         --mount type=bind,source="$PROJECT_DIR",target="$PROJECT_DIR" \
         $mount_home_dir \
-        "${registry}urho3d/dockerized$BuildEnvironment:$DBE_TAG" "$@"
+        $dbe_image "$@"
 else
     # Fallback workaround on older Docker CLI version
     d run $interactive -t --rm -h fishtank \
         -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" -e PROJECT_DIR="$PROJECT_DIR" \
-        --env-file <(perl -ne 'chomp; print "$_\n" if defined $ENV{$_}' "$PROJECT_DIR/script/.env-file") \
+        --env-file <(perl -ne 'chomp; print "$_\n" if defined $ENV{$_}' "$SCRIPT_DIR/.env-file") \
         --mount type=bind,source="$PROJECT_DIR",target="$PROJECT_DIR" \
         $mount_home_dir \
-        "urho3d/dockerized$BuildEnvironment:$DBE_TAG" "$@"
+        $dbe_image "$@"
 fi
 
 # vi: set ts=4 sw=4 expandtab:

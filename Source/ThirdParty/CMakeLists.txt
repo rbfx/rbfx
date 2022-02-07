@@ -119,7 +119,7 @@ if (NOT MINI_URHO)
         add_subdirectory (Recast)
     endif ()
 
-    if (URHO3D_URHO2D)
+    if (URHO3D_PHYSICS2D)
         add_subdirectory (Box2D)
     endif ()
 

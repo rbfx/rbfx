@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,8 +32,8 @@
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsWorld.h"
 #endif
-#ifdef URHO3D_URHO2D
-#include "../Urho2D/PhysicsWorld2D.h"
+#ifdef URHO3D_PHYSICS2D
+#include "../Physics2D/PhysicsWorld2D.h"
 #endif
 
 #include "../DebugNew.h"
@@ -305,7 +305,7 @@ Component* Component::GetFixedUpdateSource()
 #ifdef URHO3D_PHYSICS
         ret = scene->GetComponent<PhysicsWorld>();
 #endif
-#ifdef URHO3D_URHO2D
+#ifdef URHO3D_PHYSICS2D
         if (!ret)
             ret = scene->GetComponent<PhysicsWorld2D>();
 #endif

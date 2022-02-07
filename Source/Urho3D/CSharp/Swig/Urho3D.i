@@ -43,6 +43,9 @@ using namespace Urho3D;
 %apply float FIXED[]                { float[] };
 %apply double FIXED[]               { double[] };
 
+%apply float { float32 };
+%apply int { int32 };
+
 %typemap(csvarout) void* VOID_INT_PTR %{
   get {
     var ret = $imcall;$excode
@@ -853,31 +856,10 @@ using ImGuiConfigFlags = unsigned;
 %rename(GetLayerType) Urho3D::TmxLayer2D::GetType;
 
 %ignore Urho3D::AnimationSet2D::GetSpriterData;
-%ignore Urho3D::PhysicsWorld2D::DrawTransform;
 
 // SWIG applies `override new` modifier by mistake.
 %csmethodmodifiers Urho3D::Drawable2D::OnSceneSet "protected override";
 %csmethodmodifiers Urho3D::Drawable2D::OnMarkedDirty "protected override";
-
-%apply float { float32 };
-%apply int { int32 };
-%apply void* VOID_INT_PTR {
-	b2Body*,
-	b2Contact*,
-	b2Fixture*,
-	b2Joint*,
-	b2Manifold*,
-	b2World*
-}
-
-// b2Draw implementation
-%ignore Urho3D::PhysicsWorld2D::DrawPolygon;
-%ignore Urho3D::PhysicsWorld2D::DrawSolidPolygon;
-%ignore Urho3D::PhysicsWorld2D::DrawCircle;
-%ignore Urho3D::PhysicsWorld2D::DrawSolidCircle;
-%ignore Urho3D::PhysicsWorld2D::DrawSegment;
-%ignore Urho3D::PhysicsWorld2D::DrawTransform;
-%ignore Urho3D::PhysicsWorld2D::DrawPoint;
 
 %ignore Urho3D::ViewBatchInfo2D;
 %ignore Urho3D::SourceBatch2D;
@@ -904,32 +886,57 @@ using ImGuiConfigFlags = unsigned;
 %include "Urho3D/Urho2D/StretchableSprite2D.h"
 %include "Urho3D/Urho2D/TileMap2D.h"
 
-%include "Urho3D/Urho2D/CollisionShape2D.h"
-%include "Urho3D/Urho2D/CollisionPolygon2D.h"
-%include "Urho3D/Urho2D/CollisionEdge2D.h"
-%include "Urho3D/Urho2D/CollisionChain2D.h"
-%include "Urho3D/Urho2D/CollisionCircle2D.h"
-%include "Urho3D/Urho2D/CollisionBox2D.h"
-%include "Urho3D/Urho2D/Constraint2D.h"
-%include "Urho3D/Urho2D/ConstraintFriction2D.h"
-%include "Urho3D/Urho2D/ConstraintPulley2D.h"
-%include "Urho3D/Urho2D/ConstraintGear2D.h"
-%include "Urho3D/Urho2D/ConstraintRevolute2D.h"
-%include "Urho3D/Urho2D/ConstraintMotor2D.h"
-%include "Urho3D/Urho2D/ConstraintRope2D.h"
-%include "Urho3D/Urho2D/ConstraintMouse2D.h"
-%include "Urho3D/Urho2D/ConstraintWeld2D.h"
-%include "Urho3D/Urho2D/ConstraintDistance2D.h"
-%include "Urho3D/Urho2D/ConstraintPrismatic2D.h"
-%include "Urho3D/Urho2D/ConstraintWheel2D.h"
-%include "Urho3D/Urho2D/RigidBody2D.h"
-%include "Urho3D/Urho2D/PhysicsWorld2D.h"
-
 %template(Sprite2DMap) eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::Sprite2D>>;
-%template(PhysicsRaycastResult2DArray) eastl::vector<Urho3D::PhysicsRaycastResult2D>;
-%template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
 %template(MaterialVector) eastl::vector<Urho3D::SharedPtr<Urho3D::Material>>;
 %template(TileMapObject2DVector) eastl::vector<Urho3D::SharedPtr<Urho3D::TileMapObject2D>>;
+#endif
+
+// --------------------------------------- Physics2D ---------------------------------------
+#if URHO3D_PHYSICS2D
+%ignore Urho3D::PhysicsWorld2D::DrawTransform;
+
+%apply void* VOID_INT_PTR {
+	b2Body*,
+	b2Contact*,
+	b2Fixture*,
+	b2Joint*,
+	b2Manifold*,
+	b2World*
+}
+
+// b2Draw implementation
+%ignore Urho3D::PhysicsWorld2D::DrawPolygon;
+%ignore Urho3D::PhysicsWorld2D::DrawSolidPolygon;
+%ignore Urho3D::PhysicsWorld2D::DrawCircle;
+%ignore Urho3D::PhysicsWorld2D::DrawSolidCircle;
+%ignore Urho3D::PhysicsWorld2D::DrawSegment;
+%ignore Urho3D::PhysicsWorld2D::DrawTransform;
+%ignore Urho3D::PhysicsWorld2D::DrawPoint;
+
+%include "generated/Urho3D/_pre_physics2d.i"
+%include "Urho3D/Physics2D/CollisionShape2D.h"
+%include "Urho3D/Physics2D/CollisionPolygon2D.h"
+%include "Urho3D/Physics2D/CollisionEdge2D.h"
+%include "Urho3D/Physics2D/CollisionChain2D.h"
+%include "Urho3D/Physics2D/CollisionCircle2D.h"
+%include "Urho3D/Physics2D/CollisionBox2D.h"
+%include "Urho3D/Physics2D/Constraint2D.h"
+%include "Urho3D/Physics2D/ConstraintFriction2D.h"
+%include "Urho3D/Physics2D/ConstraintPulley2D.h"
+%include "Urho3D/Physics2D/ConstraintGear2D.h"
+%include "Urho3D/Physics2D/ConstraintRevolute2D.h"
+%include "Urho3D/Physics2D/ConstraintMotor2D.h"
+%include "Urho3D/Physics2D/ConstraintRope2D.h"
+%include "Urho3D/Physics2D/ConstraintMouse2D.h"
+%include "Urho3D/Physics2D/ConstraintWeld2D.h"
+%include "Urho3D/Physics2D/ConstraintDistance2D.h"
+%include "Urho3D/Physics2D/ConstraintPrismatic2D.h"
+%include "Urho3D/Physics2D/ConstraintWheel2D.h"
+%include "Urho3D/Physics2D/RigidBody2D.h"
+%include "Urho3D/Physics2D/PhysicsWorld2D.h"
+
+%template(PhysicsRaycastResult2DArray) eastl::vector<Urho3D::PhysicsRaycastResult2D>;
+%template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
 #endif
 
 %template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>;

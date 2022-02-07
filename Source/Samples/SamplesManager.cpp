@@ -75,15 +75,17 @@
 #if URHO3D_SYSTEMUI
 #include "26_ConsoleInput/ConsoleInput.h"
 #endif
-#if URHO3D_URHO2D
-#include "27_Urho2DPhysics/Urho2DPhysics.h"
-#include "28_Urho2DPhysicsRope/Urho2DPhysicsRope.h"
+#if URHO3D_PHYSICS2D
+#include "27_Physics2D/Urho2DPhysics.h"
+#include "28_Physics2DRope/Urho2DPhysicsRope.h"
 #endif
 #include "29_SoundSynthesis/SoundSynthesis.h"
 #include "30_LightAnimation/LightAnimation.h"
 #include "31_MaterialAnimation/MaterialAnimation.h"
+#if URHO3D_PHYSICS2D
+#include "32_Physics2DConstraints/Urho2DConstraints.h"
+#endif
 #if URHO3D_URHO2D
-#include "32_Urho2DConstraints/Urho2DConstraints.h"
 #include "33_Urho2DSpriterAnimation/Urho2DSpriterAnimation.h"
 #endif
 #include "34_DynamicGeometry/DynamicGeometry.h"
