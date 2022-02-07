@@ -36,16 +36,29 @@ using PositionAndVelocity = ValueWithDerivative<Vector3>;
 /// Rotation-velocity pair, can be used to interpolate and extrapolate object rotation.
 using RotationAndVelocity = ValueWithDerivative<Quaternion>;
 
+/// Mode of rotation replication.
+enum class ReplicatedRotationMode
+{
+    None,
+    XYZ,
+    // TODO: Support
+    //Y,
+};
+
 /// Behavior that replicates transform of the node.
 class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
 {
     URHO3D_OBJECT(ReplicatedNetworkTransform, NetworkBehavior);
 
 public:
+    static constexpr unsigned DefaultNumUploadAttempts = 8;
     static constexpr float DefaultSmoothingConstant = 15.0f;
     static constexpr float DefaultMovementThreshold = 0.001f;
     static constexpr float DefaultSnapThreshold = 5.0f;
-    static const unsigned NumUploadAttempts = 8;
+    static constexpr bool DefaultSynchronizePosition = true;
+    static constexpr ReplicatedRotationMode DefaultSynchronizeRotation = ReplicatedRotationMode::XYZ;
+    static constexpr bool DefaultExtrapolatePosition = true;
+    static constexpr bool DefaultExtrapolateRotation = false;
 
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallbackMask::UpdateTransformOnServer | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState;
@@ -55,6 +68,8 @@ public:
 
     static void RegisterObject(Context* context);
 
+    void SetNumUploadAttempts(unsigned value) { numUploadAttempts_ = value; }
+    unsigned GetNumUploadAttempts() const { return numUploadAttempts_; }
     void SetTrackOnly(bool value) { trackOnly_ = value; }
     bool GetTrackOnly() const { return trackOnly_; }
     void SetSmoothingConstant(float value) { smoothingConstant_ = value; }
@@ -64,9 +79,19 @@ public:
     void SetSnapThreshold(float value) { snapThreshold_ = value; }
     float GetSnapThreshold() const { return snapThreshold_; }
 
+    void SetSynchronizePosition(bool value) { synchronizePosition_ = value; }
+    bool GetSynchronizePosition() const { return synchronizePosition_; }
+    void SetSynchronizeRotation(ReplicatedRotationMode value) { synchronizeRotation_ = value; }
+    ReplicatedRotationMode GetSynchronizeRotation() const { return synchronizeRotation_; }
+    void SetExtrapolatePosition(bool value) { extrapolatePosition_ = value; }
+    bool GetExtrapolatePosition() const { return extrapolatePosition_; }
+    void SetExtrapolateRotation(bool value) { extrapolateRotation_ = value; }
+    bool GetExtrapolateRotation() const { return extrapolateRotation_; }
+
     /// Implement NetworkBehavior.
     /// @{
     void InitializeOnServer() override;
+    void WriteSnapshot(unsigned frame, Serializer& dest) override;
     void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
 
     void UpdateTransformOnServer() override;
@@ -87,14 +112,24 @@ public:
     /// @}
 
 private:
+    void InitializeCommon();
     void OnServerFrameEnd(unsigned frame);
 
     /// Attributes independent on the client and the server.
     /// @{
+    unsigned numUploadAttempts_{DefaultNumUploadAttempts};
     bool trackOnly_{};
     float smoothingConstant_{DefaultSmoothingConstant};
     float movementThreshold_{DefaultMovementThreshold};
     float snapThreshold_{DefaultSnapThreshold};
+    /// @}
+
+    /// Attributes matching on the client and the server.
+    /// @{
+    bool synchronizePosition_{DefaultSynchronizePosition};
+    ReplicatedRotationMode synchronizeRotation_{DefaultSynchronizeRotation};
+    bool extrapolatePosition_{DefaultExtrapolatePosition};
+    bool extrapolateRotation_{DefaultExtrapolateRotation};
     /// @}
 
     NetworkValue<PositionAndVelocity> positionTrace_;
