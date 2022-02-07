@@ -24,21 +24,36 @@
 
 #include "Sample.h"
 
+#include <Urho3D/Network/Connection.h>
 #include <Urho3D/Network/Protocol.h>
+#include <Urho3D/Replica/NetworkTime.h>
 #include <Urho3D/RmlUI/RmlUIComponent.h>
 
 #include <RmlUi/Core/DataModelHandle.h>
+
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
 
 class Button;
 class Connection;
+class NetworkObject;
 class Scene;
 class Text;
 class UIElement;
 
 }
+
+/// Server-side raycast info to be processed.
+struct ServerRaycastInfo
+{
+    WeakPtr<Connection> clientConnection_;
+    Vector3 origin_;
+    Vector3 target_;
+    NetworkTime replicaTime_;
+    NetworkTime inputTime_;
+};
 
 /// UI widget to manage server and client settings.
 class AdvancedNetworkingUI : public RmlUIComponent
@@ -97,24 +112,40 @@ private:
     void SetupViewport();
     /// Subscribe to update, UI and network events.
     void SubscribeToEvents();
-    /// Create a controllable ball object and return its scene node.
-    Node* CreateControllableObject(Connection* owner);
     /// Read input and move the camera.
     void MoveCamera();
     /// Update statistics text.
     void UpdateStats();
-    /// Handle the logic post-update event.
-    void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
+    /// Perform raycast against important geometries in the scene.
+    ea::optional<Vector3> RaycastImportantGeometries(const Ray& ray) const;
+
+    /// Process pending raycasts on the server.
+    void ProcessRaycastsOnServer();
+    /// Process single raycast on the server.
+    void ProcessSingleRaycastOnServer(const ServerRaycastInfo& raycastInfo);
+    /// Create a controllable ball object and return its scene node.
+    Node* CreateControllableObject(Connection* owner);
     /// Handle a client connecting to the server.
     void HandleClientConnected(StringHash eventType, VariantMap& eventData);
     /// Handle a client disconnecting from the server.
     void HandleClientDisconnected(StringHash eventType, VariantMap& eventData);
 
+    /// Process movement of the client on the client side.
+    void ProcessClientMovement(NetworkObject* clientObject);
+    /// Perform a raycast request on the client side.
+    void RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay);
+    /// Add debug marker for ray hits.
+    void AddHitMarker(const Vector3& position, bool isConfirmed);
+
     /// UI with client and server settings.
     AdvancedNetworkingUI* ui_{};
 
+    /// Collection of temporary nodes used for hit markers.
+    Node* hitMarkers_{};
     /// Mapping from client connections to controllable objects.
     ea::unordered_map<Connection*, WeakPtr<Node> > serverObjects_;
+    /// Queue of pending raycast requests on the server.
+    ea::vector<ServerRaycastInfo> serverRaycasts_;
     /// Instructions text.
     SharedPtr<Text> instructionsText_;
 
