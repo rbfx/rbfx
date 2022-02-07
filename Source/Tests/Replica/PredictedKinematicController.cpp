@@ -33,7 +33,7 @@
 #include <Urho3D/Replica/ClientInputStatistics.h>
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Replica/PredictedKinematicController.h>
-#include <Urho3D/Replica/ReplicatedNetworkTransform.h>
+#include <Urho3D/Replica/ReplicatedTransform.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace
@@ -62,7 +62,7 @@ SharedPtr<XMLFile> CreateTestPrefab(Context* context)
     kinematicController->SetHeight(2.0f);
     kinematicController->SetOffset({0.0f, 1.0f, 0.0f});
 
-    node->CreateComponent<ReplicatedNetworkTransform>();
+    node->CreateComponent<ReplicatedTransform>();
     node->CreateComponent<PredictedKinematicController>();
 
     auto prefab = MakeShared<XMLFile>(context);
@@ -166,7 +166,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     sim.SimulateTime(1.0f);
 
     // Expect server and client positions to match
-    const float positionError = ReplicatedNetworkTransform::DefaultMovementThreshold;
+    const float positionError = ReplicatedTransform::DefaultMovementThreshold;
     CHECK(serverNode->GetWorldPosition().Equals(clientNode->GetWorldPosition(), positionError));
 
     // Remove client connection and simulate more movement

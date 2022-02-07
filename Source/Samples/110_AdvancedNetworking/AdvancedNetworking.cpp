@@ -47,7 +47,7 @@
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Replica/PredictedKinematicController.h>
-#include <Urho3D/Replica/ReplicatedNetworkTransform.h>
+#include <Urho3D/Replica/ReplicatedTransform.h>
 #include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
@@ -61,15 +61,15 @@
 
 #include <Urho3D/DebugNew.h>
 
-class AdvancedNetworkingReplicatedAnimation : public NetworkBehavior
+class AdvancedNetworkingPlayer : public NetworkBehavior
 {
-    URHO3D_OBJECT(AdvancedNetworkingReplicatedAnimation, NetworkBehavior);
+    URHO3D_OBJECT(AdvancedNetworkingPlayer, NetworkBehavior);
 
 public:
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::Update | NetworkCallbackMask::InterpolateState;
 
-    explicit AdvancedNetworkingReplicatedAnimation(Context* context)
+    explicit AdvancedNetworkingPlayer(Context* context)
         : NetworkBehavior(context, CallbackMask)
     {
     }
@@ -164,7 +164,7 @@ private:
         animationTrace_.Resize(traceDuration);
         rotationTrace_.Resize(traceDuration);
 
-        networkTransform_ = GetNetworkObject()->GetNetworkBehavior<ReplicatedNetworkTransform>();
+        replicatedTransform_ = GetNetworkObject()->GetNetworkBehavior<ReplicatedTransform>();
         networkController_ = GetNetworkObject()->GetNetworkBehavior<PredictedKinematicController>();
 
         kinematicController_ = networkController_->GetComponent<KinematicCharacterController>();
@@ -222,7 +222,7 @@ private:
     const float jumpThreshold_{0.2f};
     const float fadeTime_{0.1f};
 
-    WeakPtr<ReplicatedNetworkTransform> networkTransform_;
+    WeakPtr<ReplicatedTransform> replicatedTransform_;
     WeakPtr<PredictedKinematicController> networkController_;
 
     WeakPtr<KinematicCharacterController> kinematicController_;
@@ -312,8 +312,8 @@ void AdvancedNetworking::Start(const ea::vector<ea::string>& args)
     if (!context_->IsReflected<AdvancedNetworkingUI>())
         context_->RegisterFactory<AdvancedNetworkingUI>();
 
-    if (!context_->IsReflected<AdvancedNetworkingReplicatedAnimation>())
-        context_->RegisterFactory<AdvancedNetworkingReplicatedAnimation>();
+    if (!context_->IsReflected<AdvancedNetworkingPlayer>())
+        context_->RegisterFactory<AdvancedNetworkingPlayer>();
 
     // Execute base class startup
     Sample::Start();
@@ -508,9 +508,10 @@ Node* AdvancedNetworking::CreateControllableObject(Connection* owner)
 
 void AdvancedNetworking::MoveCamera()
 {
-    // Right mouse button controls mouse cursor visibility: hide when pressed
     auto* ui = GetSubsystem<UI>();
     auto* input = GetSubsystem<Input>();
+
+    // Right mouse button controls mouse cursor visibility: hide when pressed
     ui->GetCursor()->SetVisible(!input->GetMouseButtonDown(MOUSEB_RIGHT));
 
     // Mouse sensitivity as degrees per pixel

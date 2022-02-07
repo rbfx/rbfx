@@ -6,7 +6,7 @@
 	<attribute name="Scale" value="1 1 1" />
 	<attribute name="Variables" />
 	<component type="KinematicCharacterController" id="1"/>
-	<component type="ReplicatedNetworkTransform" id="4"/>
+	<component type="ReplicatedTransform" id="4"/>
 	<component type="PredictedKinematicController" id="3"/>
 	<node id="2">
 		<attribute name="Name" value="Model" />
@@ -20,7 +20,7 @@
 			<attribute name="Cast Shadows" value="true" />
 		</component>
 		<component type="AnimationController" id="5"/>
-		<component type="AdvancedNetworkingReplicatedAnimation" id="6"/>
+		<component type="AdvancedNetworkingPlayer" id="6"/>
 	</node>
 	<node id="1">
 		<attribute name="Name" value="Light" />

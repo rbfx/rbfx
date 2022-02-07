@@ -40,7 +40,7 @@
 #include "../Replica/PredictedKinematicController.h"
 #include "../Replica/ReplicationManager.h"
 #include "../Replica/NetworkObject.h"
-#include "../Replica/ReplicatedNetworkTransform.h"
+#include "../Replica/ReplicatedTransform.h"
 #include "../Replica/StaticNetworkObject.h"
 #include "../Scene/Scene.h"
 
@@ -1108,7 +1108,7 @@ void RegisterNetworkLibrary(Context* context)
     BehaviorNetworkObject::RegisterObject(context);
 
     NetworkBehavior::RegisterObject(context);
-    ReplicatedNetworkTransform::RegisterObject(context);
+    ReplicatedTransform::RegisterObject(context);
 
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);

@@ -36,7 +36,7 @@ namespace Urho3D
 {
 
 class KinematicCharacterController;
-class ReplicatedNetworkTransform;
+class ReplicatedTransform;
 
 /// Kinematic controller of the player replicated over network.
 class URHO3D_API PredictedKinematicController : public NetworkBehavior
@@ -56,7 +56,7 @@ public:
     /// Set whether to jump on the next update. Automatically reset on jump.
     void SetJump();
     /// Return whether the behavior is properly connected to components.
-    bool IsConnectedToComponents() const { return physicsWorld_ && networkTransform_ && kinematicController_; }
+    bool IsConnectedToComponents() const { return physicsWorld_ && replicatedTransform_ && kinematicController_; }
     bool IsConnectedToStandaloneComponents() const { return physicsWorld_ && kinematicController_; }
 
     /// Return effective current velocity of the controller.
@@ -103,7 +103,7 @@ private:
     void WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const;
     void ReadInputFrame(unsigned frame, Deserializer& src);
 
-    WeakPtr<ReplicatedNetworkTransform> networkTransform_;
+    WeakPtr<ReplicatedTransform> replicatedTransform_;
     WeakPtr<KinematicCharacterController> kinematicController_;
     WeakPtr<PhysicsWorld> physicsWorld_;
 

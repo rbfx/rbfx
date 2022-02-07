@@ -24,7 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Network/NetworkEvents.h"
-#include "../Replica/ReplicatedNetworkTransform.h"
+#include "../Replica/ReplicatedTransform.h"
 #include "../Replica/NetworkSettingsConsts.h"
 
 namespace Urho3D
@@ -41,18 +41,18 @@ const StringVector replicatedRotationModeNames = {
 
 }
 
-ReplicatedNetworkTransform::ReplicatedNetworkTransform(Context* context)
+ReplicatedTransform::ReplicatedTransform(Context* context)
     : NetworkBehavior(context, CallbackMask)
 {
 }
 
-ReplicatedNetworkTransform::~ReplicatedNetworkTransform()
+ReplicatedTransform::~ReplicatedTransform()
 {
 }
 
-void ReplicatedNetworkTransform::RegisterObject(Context* context)
+void ReplicatedTransform::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ReplicatedNetworkTransform>();
+    context->RegisterFactory<ReplicatedTransform>();
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 
@@ -68,7 +68,7 @@ void ReplicatedNetworkTransform::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Extrapolate Rotation", bool, extrapolateRotation_, DefaultExtrapolateRotation, AM_DEFAULT);
 }
 
-void ReplicatedNetworkTransform::InitializeOnServer()
+void ReplicatedTransform::InitializeOnServer()
 {
     InitializeCommon();
 
@@ -86,7 +86,7 @@ void ReplicatedNetworkTransform::InitializeOnServer()
     });
 }
 
-void ReplicatedNetworkTransform::WriteSnapshot(unsigned frame, Serializer& dest)
+void ReplicatedTransform::WriteSnapshot(unsigned frame, Serializer& dest)
 {
     ea::bitset<32> flags;
     flags[0] = synchronizePosition_;
@@ -96,7 +96,7 @@ void ReplicatedNetworkTransform::WriteSnapshot(unsigned frame, Serializer& dest)
     dest.WriteVLE(flags.to_uint32());
 }
 
-void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src)
+void ReplicatedTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src)
 {
     InitializeCommon();
 
@@ -114,12 +114,12 @@ void ReplicatedNetworkTransform::InitializeFromSnapshot(unsigned frame, Deserial
     client_.rotationSampler_.Setup(extrapolateRotation_ ? extrapolationInFrames : 0, smoothingConstant_, M_LARGE_VALUE);
 }
 
-void ReplicatedNetworkTransform::UpdateTransformOnServer()
+void ReplicatedTransform::UpdateTransformOnServer()
 {
     server_.movedDuringFrame_ = true;
 }
 
-void ReplicatedNetworkTransform::InitializeCommon()
+void ReplicatedTransform::InitializeCommon()
 {
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
@@ -128,7 +128,7 @@ void ReplicatedNetworkTransform::InitializeCommon()
     rotationTrace_.Resize(traceDuration);
 }
 
-void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
+void ReplicatedTransform::OnServerFrameEnd(unsigned frame)
 {
     server_.previousPosition_ = server_.position_;
     server_.previousRotation_ = server_.rotation_;
@@ -169,7 +169,7 @@ void ReplicatedNetworkTransform::OnServerFrameEnd(unsigned frame)
     }
 }
 
-void ReplicatedNetworkTransform::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void ReplicatedTransform::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
     if (trackOnly_)
         return;
@@ -187,12 +187,12 @@ void ReplicatedNetworkTransform::InterpolateState(float timeStep, const NetworkT
     }
 }
 
-bool ReplicatedNetworkTransform::PrepareUnreliableDelta(unsigned frame)
+bool ReplicatedTransform::PrepareUnreliableDelta(unsigned frame)
 {
     return server_.pendingUploadAttempts_ > 0 || numUploadAttempts_ == 0;
 }
 
-void ReplicatedNetworkTransform::WriteUnreliableDelta(unsigned frame, Serializer& dest)
+void ReplicatedTransform::WriteUnreliableDelta(unsigned frame, Serializer& dest)
 {
     if (synchronizePosition_)
     {
@@ -207,7 +207,7 @@ void ReplicatedNetworkTransform::WriteUnreliableDelta(unsigned frame, Serializer
     }
 }
 
-void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserializer& src)
+void ReplicatedTransform::ReadUnreliableDelta(unsigned frame, Deserializer& src)
 {
     if (synchronizePosition_)
     {
@@ -226,27 +226,27 @@ void ReplicatedNetworkTransform::ReadUnreliableDelta(unsigned frame, Deserialize
     }
 }
 
-PositionAndVelocity ReplicatedNetworkTransform::SampleTemporalPosition(const NetworkTime& time) const
+PositionAndVelocity ReplicatedTransform::SampleTemporalPosition(const NetworkTime& time) const
 {
     return positionTrace_.SampleValid(time);
 }
 
-RotationAndVelocity ReplicatedNetworkTransform::SampleTemporalRotation(const NetworkTime& time) const
+RotationAndVelocity ReplicatedTransform::SampleTemporalRotation(const NetworkTime& time) const
 {
     return rotationTrace_.SampleValid(time);
 }
 
-ea::optional<PositionAndVelocity> ReplicatedNetworkTransform::GetTemporalPosition(unsigned frame) const
+ea::optional<PositionAndVelocity> ReplicatedTransform::GetTemporalPosition(unsigned frame) const
 {
     return positionTrace_.GetRaw(frame);
 }
 
-ea::optional<RotationAndVelocity> ReplicatedNetworkTransform::GetTemporalRotation(unsigned frame) const
+ea::optional<RotationAndVelocity> ReplicatedTransform::GetTemporalRotation(unsigned frame) const
 {
     return rotationTrace_.GetRaw(frame);
 }
 
-ea::optional<unsigned> ReplicatedNetworkTransform::GetLatestFrame() const
+ea::optional<unsigned> ReplicatedTransform::GetLatestFrame() const
 {
     return positionTrace_.IsInitialized() ? ea::make_optional(positionTrace_.GetLastFrame()) : ea::nullopt;
 }
