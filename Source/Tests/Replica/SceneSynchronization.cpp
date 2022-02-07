@@ -293,9 +293,11 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
     Node* serverNodeA = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Node");
     auto serverTransformA = serverNodeA->GetComponent<ReplicatedNetworkTransform>();
+    serverTransformA->SetExtrapolateRotation(true);
 
     Node* serverNodeB = Tests::SpawnOnServer<BehaviorNetworkObject>(serverNodeA, prefab, "Node Child", { 0.0f, 0.0f, 1.0f });
     auto serverTransformB = serverNodeB->GetComponent<ReplicatedNetworkTransform>();
+    serverTransformB->SetExtrapolateRotation(true);
 
     // Animate objects forever
     serverScene->SubscribeToEvent(serverScene, E_SCENEUPDATE,
