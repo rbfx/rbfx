@@ -36,7 +36,7 @@
 #include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Replica/NetworkObject.h>
 #include <Urho3D/Replica/NetworkValue.h>
-#include <Urho3D/Replica/ReplicatedNetworkTransform.h>
+#include <Urho3D/Replica/ReplicatedTransform.h>
 #include <Urho3D/Resource/XMLFile.h>
 
 namespace
@@ -45,7 +45,7 @@ namespace
 SharedPtr<XMLFile> CreateComplexTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
-    node->CreateComponent<ReplicatedNetworkTransform>();
+    node->CreateComponent<ReplicatedTransform>();
 
     auto staticModel = node->CreateComponent<StaticModel>();
     staticModel->SetCastShadows(true);
@@ -68,7 +68,7 @@ XMLFile* GetComplexTestPrefab(Context* context)
 SharedPtr<XMLFile> CreateSimpleTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
-    node->CreateComponent<ReplicatedNetworkTransform>();
+    node->CreateComponent<ReplicatedTransform>();
 
     return Tests::ConvertNodeToPrefab(node);
 }
@@ -280,7 +280,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     // Setup scenes
     const auto interpolationQuality = Tests::ConnectionQuality{0.08f, 0.12f, 0.20f, 0, 0};
     const auto extrapolationQuality = Tests::ConnectionQuality{0.25f, 0.35f, 0.40f, 0, 0};
-    const float positionError = ReplicatedNetworkTransform::DefaultMovementThreshold;
+    const float positionError = ReplicatedTransform::DefaultMovementThreshold;
 
     const float moveSpeedNodeA = 1.0f;
     const float rotationSpeedNodeA = 10.0f;
@@ -292,11 +292,11 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     extrapolatingClientScene->SetName("Extrapolation Scene");
 
     Node* serverNodeA = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Node");
-    auto serverTransformA = serverNodeA->GetComponent<ReplicatedNetworkTransform>();
+    auto serverTransformA = serverNodeA->GetComponent<ReplicatedTransform>();
     serverTransformA->SetExtrapolateRotation(true);
 
     Node* serverNodeB = Tests::SpawnOnServer<BehaviorNetworkObject>(serverNodeA, prefab, "Node Child", { 0.0f, 0.0f, 1.0f });
-    auto serverTransformB = serverNodeB->GetComponent<ReplicatedNetworkTransform>();
+    auto serverTransformB = serverNodeB->GetComponent<ReplicatedTransform>();
     serverTransformB->SetExtrapolateRotation(true);
 
     // Animate objects forever

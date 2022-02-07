@@ -41,7 +41,7 @@ class UIElement;
 }
 
 /// UI widget to manage server and client settings.
-class URHO3D_API AdvancedNetworkingUI : public RmlUIComponent
+class AdvancedNetworkingUI : public RmlUIComponent
 {
     URHO3D_OBJECT(AdvancedNetworkingUI, RmlUIComponent);
 

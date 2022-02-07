@@ -46,9 +46,9 @@ enum class ReplicatedRotationMode
 };
 
 /// Behavior that replicates transform of the node.
-class URHO3D_API ReplicatedNetworkTransform : public NetworkBehavior
+class URHO3D_API ReplicatedTransform : public NetworkBehavior
 {
-    URHO3D_OBJECT(ReplicatedNetworkTransform, NetworkBehavior);
+    URHO3D_OBJECT(ReplicatedTransform, NetworkBehavior);
 
 public:
     static constexpr unsigned DefaultNumUploadAttempts = 8;
@@ -63,8 +63,8 @@ public:
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallbackMask::UpdateTransformOnServer | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState;
 
-    explicit ReplicatedNetworkTransform(Context* context);
-    ~ReplicatedNetworkTransform() override;
+    explicit ReplicatedTransform(Context* context);
+    ~ReplicatedTransform() override;
 
     static void RegisterObject(Context* context);
 

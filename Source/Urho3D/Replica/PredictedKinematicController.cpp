@@ -34,7 +34,7 @@
 #include "../Scene/Scene.h"
 #include "../Network/NetworkEvents.h"
 #include "../Replica/NetworkSettingsConsts.h"
-#include "../Replica/ReplicatedNetworkTransform.h"
+#include "../Replica/ReplicatedTransform.h"
 
 namespace Urho3D
 {
@@ -138,7 +138,7 @@ void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deseri
 
     if (isOwned)
     {
-        networkTransform_->SetTrackOnly(true);
+        replicatedTransform_->SetTrackOnly(true);
 
         client_.input_.set_capacity(maxInputFrames_);
 
@@ -163,7 +163,7 @@ void PredictedKinematicController::InterpolateState(float timeStep, const Networ
         // Get velocity without interpolation within frame
         ReplicationManager* replicationManager = networkObject->GetReplicationManager();
         const float derivativeTimeStep = 1.0f / replicationManager->GetUpdateFrequency();
-        const auto positionAndVelocity = networkTransform_->SampleTemporalPosition(NetworkTime{replicaTime.GetFrame()});
+        const auto positionAndVelocity = replicatedTransform_->SampleTemporalPosition(NetworkTime{replicaTime.GetFrame()});
         effectiveVelocity_ = positionAndVelocity.derivative_ * derivativeTimeStep;
     }
     else
@@ -177,7 +177,7 @@ void PredictedKinematicController::InitializeCommon()
     UnsubscribeFromEvent(E_BEGINSERVERNETWORKFRAME);
     UnsubscribeFromEvent(E_PHYSICSPRESTEP);
 
-    networkTransform_ = node_->GetComponent<ReplicatedNetworkTransform>();
+    replicatedTransform_ = node_->GetComponent<ReplicatedTransform>();
     kinematicController_ = node_->GetComponent<KinematicCharacterController>();
 
     previousPosition_ = node_->GetWorldPosition();
@@ -294,7 +294,7 @@ void PredictedKinematicController::UpdateEffectiveVelocity(float timeStep)
 void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
 {
     // Skip if not ready
-    const auto latestConfirmedFrame = networkTransform_->GetLatestFrame();
+    const auto latestConfirmedFrame = replicatedTransform_->GetLatestFrame();
     if (client_.input_.empty() || !latestConfirmedFrame)
         return;
 
@@ -320,10 +320,10 @@ void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
 
 bool PredictedKinematicController::AdjustConfirmedFrame(unsigned confirmedFrame, unsigned nextInputFrameIndex)
 {
-    const float movementThreshold = networkTransform_->GetMovementThreshold();
-    const float smoothingConstant = networkTransform_->GetSmoothingConstant();
+    const float movementThreshold = replicatedTransform_->GetMovementThreshold();
+    const float smoothingConstant = replicatedTransform_->GetSmoothingConstant();
 
-    const auto confirmedPosition = networkTransform_->GetTemporalPosition(confirmedFrame);
+    const auto confirmedPosition = replicatedTransform_->GetTemporalPosition(confirmedFrame);
     URHO3D_ASSERT(confirmedPosition);
 
     const InputFrame& nextInput = client_.input_[nextInputFrameIndex];
