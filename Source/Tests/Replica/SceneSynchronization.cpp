@@ -476,7 +476,7 @@ TEST_CASE("Ownership is consistent on server and on clients")
     }
     sim.SimulateTime(10.0f);
 
-    // Check ownership
+    // Check ownership of objects
     const auto getObject = [](Scene* scene, const ea::string& name)
     {
         return scene->GetChild(name, true)->GetDerivedComponent<NetworkObject>();
@@ -501,4 +501,37 @@ TEST_CASE("Ownership is consistent on server and on clients")
     REQUIRE(getObject(clientScenes[2], "Owned Node 0")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
     REQUIRE(getObject(clientScenes[2], "Owned Node 1")->GetNetworkMode() == NetworkObjectMode::ClientReplicated);
     REQUIRE(getObject(clientScenes[2], "Owned Node 2")->GetNetworkMode() == NetworkObjectMode::ClientOwned);
+
+    // Check client-side arrays
+    const auto getClientReplica = [](Scene* scene)
+    {
+        return scene->GetComponent<ReplicationManager>()->GetClientReplica();
+    };
+
+    REQUIRE(getClientReplica(clientScenes[0])->GetOwnedNetworkObject() == getObject(clientScenes[0], "Owned Node 0"));
+    REQUIRE(getClientReplica(clientScenes[1])->GetOwnedNetworkObject() == getObject(clientScenes[1], "Owned Node 1"));
+    REQUIRE(getClientReplica(clientScenes[2])->GetOwnedNetworkObject() == getObject(clientScenes[2], "Owned Node 2"));
+
+    // Check server-side arrays
+    auto serverReplicator = serverScene->GetComponent<ReplicationManager>()->GetServerReplicator();
+
+    REQUIRE(serverReplicator->GetNetworkObjectOwnedByConnection(sim.GetServerToClientConnection(clientScenes[0])) == getObject(serverScene, "Owned Node 0"));
+    REQUIRE(serverReplicator->GetNetworkObjectOwnedByConnection(sim.GetServerToClientConnection(clientScenes[1])) == getObject(serverScene, "Owned Node 1"));
+    REQUIRE(serverReplicator->GetNetworkObjectOwnedByConnection(sim.GetServerToClientConnection(clientScenes[2])) == getObject(serverScene, "Owned Node 2"));
+
+    // Remove all owned nodes
+    serverScene->GetChild("Owned Node 0", true)->Remove();
+    serverScene->GetChild("Owned Node 1", true)->Remove();
+    serverScene->GetChild("Owned Node 2", true)->Remove();
+
+    sim.SimulateTime(10.0f);
+
+    REQUIRE(getClientReplica(clientScenes[0])->GetOwnedNetworkObject() == nullptr);
+    REQUIRE(getClientReplica(clientScenes[1])->GetOwnedNetworkObject() == nullptr);
+    REQUIRE(getClientReplica(clientScenes[2])->GetOwnedNetworkObject() == nullptr);
+
+    REQUIRE(serverReplicator->GetNetworkObjectOwnedByConnection(sim.GetServerToClientConnection(clientScenes[0])) == nullptr);
+    REQUIRE(serverReplicator->GetNetworkObjectOwnedByConnection(sim.GetServerToClientConnection(clientScenes[1])) == nullptr);
+    REQUIRE(serverReplicator->GetNetworkObjectOwnedByConnection(sim.GetServerToClientConnection(clientScenes[2])) == nullptr);
+
 }
