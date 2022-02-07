@@ -66,6 +66,7 @@ public:
     const auto& GetRecentlyRemovedObjects() const { return recentlyRemovedComponents_; }
     const auto& GetSortedObjects() const { return sortedNetworkObjects_; }
     unsigned GetIndexUpperBound() const;
+    const ea::unordered_set<NetworkObject*>& GetOwnedObjectsByConnection(AbstractConnection* connection) const;
     ea::optional<ConstByteSpan> GetReliableUpdateByIndex(unsigned index) const;
     ea::optional<ConstByteSpan> GetUnreliableUpdateByIndex(unsigned index) const;
     /// @}
@@ -100,6 +101,8 @@ private:
     VectorBuffer deltaUpdateBuffer_;
     ea::vector<DeltaBufferSpan> reliableDeltaUpdateData_;
     ea::vector<DeltaBufferSpan> unreliableDeltaUpdateData_;
+
+    ea::unordered_map<AbstractConnection*, ea::unordered_set<NetworkObject*>> ownedObjectsByConnection_;
 };
 
 /// Clock synchronization state specific to individual client connection.
@@ -220,6 +223,8 @@ public:
     ea::string GetDebugInfo() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
     unsigned GetFeedbackDelay(AbstractConnection* connection) const;
+    const ea::unordered_set<NetworkObject*>& GetNetworkObjectsOwnedByConnection(AbstractConnection* connection) const;
+    NetworkObject* GetNetworkObjectOwnedByConnection(AbstractConnection* connection) const;
     NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
     unsigned GetCurrentFrame() const { return currentFrame_; }

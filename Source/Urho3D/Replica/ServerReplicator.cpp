@@ -62,7 +62,7 @@ SharedReplicationState::SharedReplicationState(NetworkObjectRegistry* objectRegi
     objectRegistry_->OnNetworkObjectRemoved.Subscribe(this, &SharedReplicationState::OnNetworkObjectRemoved);
 
     for (NetworkObject* networkObject : objectRegistry_->GetNetworkObjects())
-        recentlyAddedComponents_.emplace(networkObject->GetNetworkId());
+        OnNetworkObjectAdded(networkObject);
 }
 
 void SharedReplicationState::OnNetworkObjectAdded(NetworkObject* networkObject)
@@ -74,6 +74,14 @@ void SharedReplicationState::OnNetworkObjectRemoved(NetworkObject* networkObject
 {
     if (recentlyAddedComponents_.erase(networkObject->GetNetworkId()) == 0)
         recentlyRemovedComponents_.insert(networkObject->GetNetworkId());
+
+    if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
+    {
+        auto& ownedObjects = ownedObjectsByConnection_[ownerConnection];
+        ownedObjects.erase(networkObject);
+        if (ownedObjects.empty())
+            ownedObjectsByConnection_.erase(ownerConnection);
+    }
 }
 
 void SharedReplicationState::PrepareForUpdate()
@@ -115,6 +123,9 @@ void SharedReplicationState::InitializeNewObjects()
 
         networkObject->SetNetworkMode(NetworkObjectMode::Server);
         networkObject->InitializeOnServer();
+
+        if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
+            ownedObjectsByConnection_[ownerConnection].insert(networkObject);
     }
     recentlyAddedComponents_.clear();
 }
@@ -162,6 +173,13 @@ void SharedReplicationState::CookDeltaUpdates(unsigned currentFrame)
 unsigned SharedReplicationState::GetIndexUpperBound() const
 {
     return objectRegistry_->GetNetworkIndexUpperBound();
+}
+
+const ea::unordered_set<NetworkObject*>& SharedReplicationState::GetOwnedObjectsByConnection(AbstractConnection* connection) const
+{
+    static const ea::unordered_set<NetworkObject*> emptyCollection;
+    const auto iter = ownedObjectsByConnection_.find(connection);
+    return iter != ownedObjectsByConnection_.end() ? iter->second : emptyCollection;
 }
 
 ea::optional<ConstByteSpan> SharedReplicationState::GetReliableUpdateByIndex(unsigned index) const
@@ -737,6 +755,17 @@ unsigned ServerReplicator::GetFeedbackDelay(AbstractConnection* connection) cons
 {
     const auto iter = connections_.find(connection);
     return iter != connections_.end() ? iter->second->GetInputDelay() + iter->second->GetInputBufferSize() : 0;
+}
+
+const ea::unordered_set<NetworkObject*>& ServerReplicator::GetNetworkObjectsOwnedByConnection(AbstractConnection* connection) const
+{
+    return sharedState_->GetOwnedObjectsByConnection(connection);
+}
+
+NetworkObject* ServerReplicator::GetNetworkObjectOwnedByConnection(AbstractConnection* connection) const
+{
+    const auto& ownedObjects = GetNetworkObjectsOwnedByConnection(connection);
+    return ownedObjects.size() == 1 ? *ownedObjects.begin() : nullptr;
 }
 
 }
