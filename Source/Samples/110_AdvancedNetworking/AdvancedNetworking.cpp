@@ -22,6 +22,7 @@
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Camera.h>
@@ -61,11 +62,35 @@
 
 #include <Urho3D/DebugNew.h>
 
+static constexpr unsigned IMPORTANT_VIEW_MASK = 0x1;
+static constexpr unsigned UNIMPORTANT_VIEW_MASK = 0x2;
+static constexpr float CAMERA_DISTANCE = 5.0f;
+static constexpr float CAMERA_OFFSET = 2.0f;
+static constexpr float WALK_VELOCITY = 3.35f;
+static constexpr float HIT_DISTANCE = 100.0f;
+
+URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYCAST, AdvancedNetworkingRaycast)
+{
+    URHO3D_PARAM(P_ORIGIN, Origin);
+    URHO3D_PARAM(P_TARGET, Target);
+    URHO3D_PARAM(P_REPLICA_FRAME, ReplicaFrame);
+    URHO3D_PARAM(P_REPLICA_SUBFRAME, ReplicaSubFrame);
+    URHO3D_PARAM(P_INPUT_FRAME, InputFrame);
+    URHO3D_PARAM(P_INPUT_SUBFRAME, InputSubFrame);
+}
+
+URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYHIT, AdvancedNetworkingRayhit)
+{
+    URHO3D_PARAM(P_ORIGIN, Origin);
+    URHO3D_PARAM(P_POSITION, Position);
+}
+
 class AdvancedNetworkingPlayer : public NetworkBehavior
 {
     URHO3D_OBJECT(AdvancedNetworkingPlayer, NetworkBehavior);
 
 public:
+    static constexpr unsigned RingBufferSize = 8;
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::Update | NetworkCallbackMask::InterpolateState;
 
@@ -79,11 +104,20 @@ public:
         InitializeCommon();
 
         animationController_->SetEnabled(false);
+
+        // On server, all players are unimportant because they are moving and need temporal raycasts
+        auto animatedModel = GetComponent<AnimatedModel>();
+        animatedModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
     }
 
     void InitializeFromSnapshot(unsigned frame, Deserializer& src) override
     {
         InitializeCommon();
+
+        // Mark all players except ourselves as important for raycast.
+        auto animatedModel = GetComponent<AnimatedModel>();
+        const bool isOwned = GetNetworkObject()->IsOwnedByThisClient();
+        animatedModel->SetViewMask(isOwned ? UNIMPORTANT_VIEW_MASK : IMPORTANT_VIEW_MASK);
 
         // TODO(network): Revisit
         //rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
@@ -372,6 +406,9 @@ void AdvancedNetworking::CreateScene()
     light->SetColor(Color(0.2f, 0.2f, 0.2f));
     light->SetSpecularIntensity(1.0f);
 
+    // Create collection of hit markers
+    hitMarkers_ = scene_->CreateChild("Hit Markers", LOCAL);
+
     // Create a "floor" consisting of several tiles. Make the tiles physical but leave small cracks between them
     for (int y = -20; y <= 20; ++y)
     {
@@ -380,9 +417,11 @@ void AdvancedNetworking::CreateScene()
             Node* floorNode = scene_->CreateChild("FloorTile", LOCAL);
             floorNode->SetPosition(Vector3(x * 20.2f, -0.5f, y * 20.2f));
             floorNode->SetScale(Vector3(20.0f, 1.0f, 20.0f));
-            auto* floorObject = floorNode->CreateComponent<StaticModel>();
-            floorObject->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
-            floorObject->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
+
+            auto* floorModel = floorNode->CreateComponent<StaticModel>();
+            floorModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+            floorModel->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
+            floorModel->SetViewMask(IMPORTANT_VIEW_MASK);
 
             auto* body = floorNode->CreateComponent<RigidBody>();
             body->SetFriction(1.0f);
@@ -405,6 +444,7 @@ void AdvancedNetworking::CreateScene()
         auto* obstacleModel = obstacleNode->CreateComponent<StaticModel>();
         obstacleModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
         obstacleModel->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
+        obstacleModel->SetViewMask(IMPORTANT_VIEW_MASK);
 
         auto* body = obstacleNode->CreateComponent<RigidBody>();
         body->SetFriction(1.0f);
@@ -478,14 +518,99 @@ void AdvancedNetworking::SetupViewport()
 
 void AdvancedNetworking::SubscribeToEvents()
 {
+    // Subscribe to raycast events.
+    SubscribeToEvent(E_ADVANCEDNETWORKING_RAYCAST,
+        [this](StringHash, VariantMap& eventData)
+    {
+        using namespace AdvancedNetworkingRaycast;
+        ServerRaycastInfo info;
+
+        info.clientConnection_.Reset(static_cast<Connection*>(eventData[RemoteEventData::P_CONNECTION].GetPtr()));
+        info.origin_ = eventData[P_ORIGIN].GetVector3();
+        info.target_ = eventData[P_TARGET].GetVector3();
+        info.replicaTime_ = NetworkTime{eventData[P_REPLICA_FRAME].GetUInt(), eventData[P_REPLICA_SUBFRAME].GetFloat()};
+        info.inputTime_ = NetworkTime{eventData[P_INPUT_FRAME].GetUInt(), eventData[P_INPUT_SUBFRAME].GetFloat()};
+
+        serverRaycasts_.push_back(info);
+    });
+
+    // Subscribe to rayhit events.
+    SubscribeToEvent(E_ADVANCEDNETWORKING_RAYHIT,
+        [this](StringHash, VariantMap& eventData)
+    {
+        using namespace AdvancedNetworkingRayhit;
+        const Variant& position = eventData[P_POSITION];
+        if (!position.IsEmpty())
+            AddHitMarker(position.GetVector3(), true);
+    });
+
     // Subscribe HandlePostUpdate() method for processing update events. Subscribe to PostUpdate instead
     // of the usual Update so that physics simulation has already proceeded for the frame, and can
     // accurately follow the object with the camera
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(AdvancedNetworking, HandlePostUpdate));
+    SubscribeToEvent(E_POSTUPDATE,
+        [this](StringHash, VariantMap& eventData)
+    {
+        ProcessRaycastsOnServer();
+        MoveCamera();
+        UpdateStats();
+    });
 
     // Subscribe to network events
     SubscribeToEvent(E_CLIENTCONNECTED, URHO3D_HANDLER(AdvancedNetworking, HandleClientConnected));
     SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(AdvancedNetworking, HandleClientDisconnected));
+
+    auto* network = GetSubsystem<Network>();
+    network->RegisterRemoteEvent(E_ADVANCEDNETWORKING_RAYCAST);
+    network->RegisterRemoteEvent(E_ADVANCEDNETWORKING_RAYHIT);
+}
+
+void AdvancedNetworking::ProcessRaycastsOnServer()
+{
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+    ServerReplicator* serverReplicator = replicationManager ? replicationManager->GetServerReplicator() : nullptr;
+    if (!serverReplicator)
+        return;
+
+    // Process and dequeue raycasts when possible.
+    const NetworkTime serverTime = serverReplicator->GetServerTime();
+    const auto processRaycast = [&](const ServerRaycastInfo& raycastInfo)
+    {
+        if (!raycastInfo.clientConnection_)
+            return true;
+
+        // Don't process too early, server time should be greater than input time on client.
+        if (serverTime - raycastInfo.inputTime_ < 0.0f)
+            return false;
+
+        ProcessSingleRaycastOnServer(raycastInfo);
+        return true;
+    };
+
+    serverRaycasts_.erase(
+        ea::remove_if(serverRaycasts_.begin(), serverRaycasts_.end(), processRaycast), serverRaycasts_.end());
+}
+
+void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& raycastInfo)
+{
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+    ServerReplicator* serverReplicator = replicationManager->GetServerReplicator();
+
+    // Get reliable origin from server data, not trusting client with this
+    NetworkObject* clientObject = serverReplicator->GetNetworkObjectOwnedByConnection(raycastInfo.clientConnection_);
+    auto replicatedTransform = clientObject->GetNode()->GetComponent<ReplicatedTransform>(true);
+    const Vector3 origin = replicatedTransform->SampleTemporalPosition(raycastInfo.inputTime_).value_ + Vector3::UP * CAMERA_OFFSET;
+
+    // Perform raycast using target position instead of ray direction
+    // to get better precision on origin mismatch.
+    const auto hitPosition = RaycastImportantGeometries(Ray{origin, raycastInfo.target_ - origin});
+
+    // Send result to the client
+    using namespace AdvancedNetworkingRayhit;
+    auto& eventData = GetEventDataMap();
+    eventData[P_ORIGIN] = origin;
+    if (hitPosition)
+        eventData[P_POSITION] = *hitPosition;
+    raycastInfo.clientConnection_->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYHIT, false, eventData);
 }
 
 Node* AdvancedNetworking::CreateControllableObject(Connection* owner)
@@ -493,13 +618,16 @@ Node* AdvancedNetworking::CreateControllableObject(Connection* owner)
     auto* cache = GetSubsystem<ResourceCache>();
     auto prefab = cache->GetResource<XMLFile>("Objects/AdvancedNetworkingPlayer.xml");
 
+    // Instantiate most of the components from prefab so they will be replicated on the client.
     const Vector3 position{Random(20.0f) - 10.0f, 5.0f, Random(20.0f) - 10.0f};
     Node* playerNode = scene_->InstantiateXML(prefab->GetRoot(), position, Quaternion::IDENTITY, LOCAL);
 
+    // NetworkObject should never be a part of client prefab
     auto networkObject = playerNode->CreateComponent<BehaviorNetworkObject>();
     networkObject->SetClientPrefab(prefab);
     networkObject->SetOwner(owner);
 
+    // Change light color on the server only
     Light* playerLight = playerNode->GetComponent<Light>(true);
     playerLight->SetColor(Color::GREEN);
 
@@ -532,43 +660,124 @@ void AdvancedNetworking::MoveCamera()
 
     // Only move the camera / show instructions if we have a controllable object
     bool showInstructions = false;
+
+    // Process client-side input
     auto replicationManager = scene_->GetComponent<ReplicationManager>();
     auto clientReplica = replicationManager ? replicationManager->GetClientReplica() : nullptr;
-    if (clientReplica && !clientReplica->GetOwnedNetworkObjects().empty())
+    if (clientReplica && clientReplica->HasOwnedNetworkObjects())
     {
-        NetworkObject* clientObject = *clientReplica->GetOwnedNetworkObjects().begin();
-        Node* clientNode = clientObject->GetNode();
-        auto clientController = clientNode->GetComponent<PredictedKinematicController>();
+        NetworkObject* clientObject = clientReplica->GetOwnedNetworkObject();
 
-        // Set desired movement
-        const Quaternion rotation(0.0f, yaw_, 0.0f);
-        Vector3 direction;
-        if (input->GetKeyDown(KEY_W))
-            direction += rotation * Vector3::FORWARD;
-        if (input->GetKeyDown(KEY_S))
-            direction += rotation * Vector3::BACK;
-        if (input->GetKeyDown(KEY_A))
-            direction += rotation * Vector3::LEFT;
-        if (input->GetKeyDown(KEY_D))
-            direction += rotation * Vector3::RIGHT;
+        ProcessClientMovement(clientObject);
 
-        direction = direction.NormalizedOrDefault();
-        const bool needJump = input->GetKeyDown(KEY_SPACE);
+        if (input->GetMouseButtonPress(MOUSEB_LEFT))
+        {
+            auto* renderer = GetSubsystem<Renderer>();
+            Viewport* viewport = renderer->GetViewport(0);
+            const IntVector2 mousePos = input->GetMousePosition();
+            const Ray screenRay = viewport->GetScreenRay(mousePos.x_, mousePos.y_);
 
-        const float walkVelocity = 3.35f;
-        clientController->SetWalkVelocity(direction * walkVelocity);
-        if (needJump)
-            clientController->SetJump();
+            RequestClientRaycast(clientObject, screenRay);
+        }
 
-        // Move camera some distance away from the player
-        const float CAMERA_DISTANCE = 5.0f;
-        const float CAMERA_OFFSET = 2.0f;
-        cameraNode_->SetPosition(clientNode->GetPosition()
-            + cameraNode_->GetRotation() * Vector3::BACK * CAMERA_DISTANCE + Vector3::UP * CAMERA_OFFSET);
         showInstructions = true;
     }
 
     instructionsText_->SetVisible(showInstructions);
+}
+
+void AdvancedNetworking::ProcessClientMovement(NetworkObject* clientObject)
+{
+    auto* input = GetSubsystem<Input>();
+
+    Node* clientNode = clientObject->GetNode();
+    auto clientController = clientNode->GetComponent<PredictedKinematicController>();
+
+    // Calculate movement direction
+    const Quaternion rotation(0.0f, yaw_, 0.0f);
+    Vector3 direction;
+    if (input->GetKeyDown(KEY_W))
+        direction += rotation * Vector3::FORWARD;
+    if (input->GetKeyDown(KEY_S))
+        direction += rotation * Vector3::BACK;
+    if (input->GetKeyDown(KEY_A))
+        direction += rotation * Vector3::LEFT;
+    if (input->GetKeyDown(KEY_D))
+        direction += rotation * Vector3::RIGHT;
+    direction = direction.NormalizedOrDefault();
+
+    // Ability to jump is checked inside of PredictedKinematicController
+    const bool needJump = input->GetKeyDown(KEY_SPACE);
+
+    // Apply user input. It may happen at any point in game cycle.
+    // Note that this input will not take effect immediately.
+    clientController->SetWalkVelocity(direction * WALK_VELOCITY);
+    if (needJump)
+        clientController->SetJump();
+
+    // Focus camera on client node
+    cameraNode_->SetPosition(clientNode->GetPosition()
+        + cameraNode_->GetRotation() * Vector3::BACK * CAMERA_DISTANCE + Vector3::UP * CAMERA_OFFSET);
+}
+
+void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay)
+{
+    auto* network = GetSubsystem<Network>();
+    Connection* serverConnection = network->GetServerConnection();
+
+    // Get current client times so server knows when the raycast was performed
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+    ClientReplica* clientReplica = replicationManager->GetClientReplica();
+
+    const NetworkTime replicaTime = clientReplica->GetReplicaTime();
+    const NetworkTime inputTime = clientReplica->GetInputTime();
+
+    // First, check if user even clicked on anything, using raw screen ray.
+    // If user didn't click anything, just use far position of the ray.
+    const Vector3 defaultAimPosition = screenRay.origin_ + screenRay.direction_ * HIT_DISTANCE;
+
+    // Second, perform an actual raycast from the player model to the aim point.
+    const Vector3 aimPosition = RaycastImportantGeometries(screenRay).value_or(defaultAimPosition);
+    const Vector3 origin = clientObject->GetNode()->GetWorldPosition() + Vector3::UP * CAMERA_OFFSET;
+    const Ray castRay{origin, aimPosition - origin};
+
+    // If hit on client, add marker
+    if (auto hitPosition = RaycastImportantGeometries(castRay))
+        AddHitMarker(*hitPosition, false);
+
+    // Send event to the server regardless
+    using namespace AdvancedNetworkingRaycast;
+    VariantMap& eventData = GetEventDataMap();
+    eventData[P_ORIGIN] = origin;
+    eventData[P_TARGET] = aimPosition;
+    eventData[P_REPLICA_FRAME] = replicaTime.GetFrame();
+    eventData[P_REPLICA_SUBFRAME] = replicaTime.GetSubFrame();
+    eventData[P_INPUT_FRAME] = inputTime.GetFrame();
+    eventData[P_INPUT_SUBFRAME] = inputTime.GetSubFrame();
+    serverConnection->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYCAST, false, eventData);
+}
+
+void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+
+    Node* markerNode = hitMarkers_->CreateChild("Client Hit");
+    markerNode->SetPosition(position);
+
+    auto markerModel = markerNode->CreateComponent<StaticModel>();
+    markerModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
+    if (isConfirmed)
+    {
+        markerNode->SetScale(0.15f);
+        markerModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+        markerModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/GlowingGreen.xml"));
+    }
+    else
+    {
+        markerNode->SetScale(0.2f);
+        markerModel->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
+        markerModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/MattRed.xml"));
+    }
 }
 
 void AdvancedNetworking::UpdateStats()
@@ -611,14 +820,16 @@ void AdvancedNetworking::UpdateStats()
     statsText_->SetText(stats);
 }
 
-void AdvancedNetworking::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
+ea::optional<Vector3> AdvancedNetworking::RaycastImportantGeometries(const Ray& ray) const
 {
-    // TODO(network): Remove
-    //scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetOrCreateComponent<DebugRenderer>(), false);
+    auto* octree = scene_->GetComponent<Octree>();
 
-    // We only rotate the camera according to mouse movement since last frame, so do not need the time step
-    MoveCamera();
-    UpdateStats();
+    RayOctreeQuery query(ray, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY, IMPORTANT_VIEW_MASK);
+    octree->RaycastSingle(query);
+
+    if (!query.result_.empty())
+        return query.result_[0].position_;
+    return ea::nullopt;
 }
 
 void AdvancedNetworking::HandleClientConnected(StringHash eventType, VariantMap& eventData)
