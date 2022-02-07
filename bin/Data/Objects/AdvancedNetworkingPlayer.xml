@@ -21,6 +21,7 @@
 		</component>
 		<component type="AnimationController" id="5"/>
 		<component type="AdvancedNetworkingPlayer" id="6"/>
+		<component type="TrackedAnimatedModel" id="7"/>
 	</node>
 	<node id="1">
 		<attribute name="Name" value="Light" />

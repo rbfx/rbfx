@@ -187,6 +187,8 @@ public:
 
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
+    /// Process raycast with custom transform.
+    void ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox, ea::vector<RayQueryResult>& results);
     /// Process octree raycast. May be called from a worker thread.
     virtual void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results);
     /// Update before octree reinsertion. Is called from a worker thread.

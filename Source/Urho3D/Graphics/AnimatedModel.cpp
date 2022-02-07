@@ -149,22 +149,23 @@ void AnimatedModel::ApplyAttributes()
         AssignBoneNodes();
 }
 
-void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+void AnimatedModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox,
+    const Matrix3x4& worldTransform, ea::span<const Matrix3x4> boneWorldTransforms,
+    ea::vector<RayQueryResult>& results)
 {
     // If no bones or no bone-level testing, use the StaticModel test
     RayQueryLevel level = query.level_;
     if (level < RAY_TRIANGLE || !skeleton_.GetNumBones())
     {
-        StaticModel::ProcessRayQuery(query, results);
+        StaticModel::ProcessCustomRayQuery(query, worldBoundingBox, worldTransform, results);
         return;
     }
 
     // Check ray hit distance to AABB before proceeding with bone-level tests
-    if (query.ray_.HitDistance(GetWorldBoundingBox()) >= query.maxDistance_)
+    if (query.ray_.HitDistance(worldBoundingBox) >= query.maxDistance_)
         return;
 
     const ea::vector<Bone>& bones = skeleton_.GetBones();
-    Sphere boneSphere;
 
     for (unsigned i = 0; i < bones.size(); ++i)
     {
@@ -174,12 +175,15 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQ
 
         float distance;
 
+        // Keep this check to reuse this function for normal raycast without dedicated array of matrices.
+        const Matrix3x4& transform =
+            i < boneWorldTransforms.size() ? boneWorldTransforms[i] : bone.node_->GetWorldTransform();
+
         // Use hitbox if available
         if (bone.collisionMask_ & BONECOLLISION_BOX)
         {
             // Do an initial crude test using the bone's AABB
             const BoundingBox& box = bone.boundingBox_;
-            const Matrix3x4& transform = bone.node_->GetWorldTransform();
             distance = query.ray_.HitDistance(box.Transformed(transform));
             if (distance >= query.maxDistance_)
                 continue;
@@ -195,7 +199,8 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQ
         }
         else if (bone.collisionMask_ & BONECOLLISION_SPHERE)
         {
-            boneSphere.center_ = bone.node_->GetWorldPosition();
+            Sphere boneSphere;
+            boneSphere.center_ = transform.Translation();
             boneSphere.radius_ = bone.radius_;
             distance = query.ray_.HitDistance(boneSphere);
             if (distance >= query.maxDistance_)
@@ -214,6 +219,11 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQ
         result.subObject_ = i;
         results.push_back(result);
     }
+}
+
+void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+{
+    ProcessCustomRayQuery(query, GetWorldBoundingBox(), node_->GetWorldTransform(), {}, results);
 }
 
 void AnimatedModel::Update(const FrameInfo& frame)

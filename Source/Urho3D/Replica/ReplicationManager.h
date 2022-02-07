@@ -55,6 +55,8 @@ public:
 
     explicit NetworkObjectRegistry(Context* context);
 
+    static void RegisterObject(Context* context);
+
     /// Process components
     /// @{
     void QueueComponentUpdate(NetworkObject* networkObject);

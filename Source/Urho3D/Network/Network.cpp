@@ -37,11 +37,12 @@
 #include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
 #include "../Replica/BehaviorNetworkObject.h"
-#include "../Replica/PredictedKinematicController.h"
-#include "../Replica/ReplicationManager.h"
 #include "../Replica/NetworkObject.h"
+#include "../Replica/PredictedKinematicController.h"
 #include "../Replica/ReplicatedTransform.h"
+#include "../Replica/ReplicationManager.h"
 #include "../Replica/StaticNetworkObject.h"
+#include "../Replica/TrackedAnimatedModel.h"
 #include "../Scene/Scene.h"
 
 #include <slikenet/MessageIdentifiers.h>
@@ -1099,9 +1100,8 @@ void Network::SendNetworkUpdateEvent(StringHash eventType, bool isServer)
 
 void RegisterNetworkLibrary(Context* context)
 {
-    // TODO(network): Revisit
-    context->RegisterFactory<NetworkObjectRegistry>();
-    context->RegisterFactory<ReplicationManager>();
+    NetworkObjectRegistry::RegisterObject(context);
+    ReplicationManager::RegisterObject(context);
 
     NetworkObject::RegisterObject(context);
     StaticNetworkObject::RegisterObject(context);
@@ -1109,6 +1109,7 @@ void RegisterNetworkLibrary(Context* context)
 
     NetworkBehavior::RegisterObject(context);
     ReplicatedTransform::RegisterObject(context);
+    TrackedAnimatedModel::RegisterObject(context);
 
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
