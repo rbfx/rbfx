@@ -55,7 +55,7 @@ if (URHO3D_PROFILING)
         target_compile_definitions (Tracy INTERFACE ${TRACY_OPTIONS_PUBLIC})
     endif ()
 
-    find_package(TBB)
+    find_package(TBB QUIET)
     if (TBB_FOUND)
         if (BUILD_SHARED_LIBS)
             target_link_libraries(Tracy PUBLIC TBB::tbb)
