@@ -45,9 +45,9 @@ class NetworkObject;
 class NetworkSetting;
 
 /// Part of ReplicationManager used by both client and server, and referenced by components.
-class URHO3D_API NetworkObjectRegistry : public BaseStableComponentRegistry
+class URHO3D_API NetworkObjectRegistry : public ReferencedComponentRegistryBase
 {
-    URHO3D_OBJECT(NetworkObjectRegistry, BaseStableComponentRegistry);
+    URHO3D_OBJECT(NetworkObjectRegistry, ReferencedComponentRegistryBase);
 
 public:
     Signal<void(NetworkObject*)> OnNetworkObjectAdded;
@@ -66,7 +66,7 @@ public:
     /// @}
 
     const auto GetNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }
-    unsigned GetNetworkIndexUpperBound() const { return GetStableIndexUpperBound(); }
+    unsigned GetNetworkIndexUpperBound() const { return GetReferenceIndexUpperBound(); }
     NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
 
@@ -74,8 +74,8 @@ private:
     ea::vector<bool> networkObjectsDirty_;
 
 protected:
-    void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
-    void OnComponentRemoved(BaseTrackedComponent* baseComponent) override;
+    void OnComponentAdded(TrackedComponentBase* baseComponent) override;
+    void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 };
 
 enum ReplicationManagerMode
@@ -124,7 +124,7 @@ public:
 
 protected:
     void OnSceneSet(Scene* scene) override;
-    void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
+    void OnComponentAdded(TrackedComponentBase* baseComponent) override;
 
 private:
     void OnSceneUpdate(float timeStep);

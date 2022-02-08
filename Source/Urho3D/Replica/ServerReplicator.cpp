@@ -48,7 +48,7 @@ namespace
 
 unsigned GetIndex(NetworkId networkId)
 {
-    return DeconstructStableComponentId(networkId).first;
+    return DeconstructComponentReference(networkId).first;
 }
 
 }

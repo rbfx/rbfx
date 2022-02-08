@@ -95,11 +95,6 @@ enum NetworkMessageId
     MSG_USER = 512
 };
 
-/// ID used to identify replicated component within Scene.
-enum StableComponentId : unsigned {};
-using NetworkId = StableComponentId;
-static const NetworkId InvalidNetworkId = static_cast<NetworkId>(0);
-
 /// Package file fragment size.
 static const unsigned PACKAGE_FRAGMENT_SIZE = 1024;
 

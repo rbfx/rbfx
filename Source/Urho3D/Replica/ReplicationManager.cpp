@@ -37,7 +37,7 @@ namespace Urho3D
 {
 
 NetworkObjectRegistry::NetworkObjectRegistry(Context* context)
-    : BaseStableComponentRegistry(context, NetworkObject::GetTypeStatic())
+    : ReferencedComponentRegistryBase(context, NetworkObject::GetTypeStatic())
 {
 }
 
@@ -46,14 +46,14 @@ void NetworkObjectRegistry::RegisterObject(Context* context)
     context->RegisterFactory<NetworkObjectRegistry>();
 }
 
-void NetworkObjectRegistry::OnComponentAdded(BaseTrackedComponent* baseComponent)
+void NetworkObjectRegistry::OnComponentAdded(TrackedComponentBase* baseComponent)
 {
     BaseClassName::OnComponentAdded(baseComponent);
 
     auto networkObject = static_cast<NetworkObject*>(baseComponent);
 
     const NetworkId networkId = networkObject->GetNetworkId();
-    const auto [index, version] = DeconstructStableComponentId(networkId);
+    const auto [index, version] = DeconstructComponentReference(networkId);
 
     if (networkObjectsDirty_.size() <= index)
         networkObjectsDirty_.resize(index + 1);
@@ -64,7 +64,7 @@ void NetworkObjectRegistry::OnComponentAdded(BaseTrackedComponent* baseComponent
     URHO3D_LOGINFO("NetworkObject {} is added", ToString(networkId));
 }
 
-void NetworkObjectRegistry::OnComponentRemoved(BaseTrackedComponent* baseComponent)
+void NetworkObjectRegistry::OnComponentRemoved(TrackedComponentBase* baseComponent)
 {
     auto networkObject = static_cast<NetworkObject*>(baseComponent);
 
@@ -86,7 +86,7 @@ void NetworkObjectRegistry::QueueComponentUpdate(NetworkObject* networkObject)
         return;
     }
 
-    const auto index = DeconstructStableComponentId(networkId).first;
+    const auto index = DeconstructComponentReference(networkId).first;
     networkObjectsDirty_[index] = true;
 }
 
@@ -156,12 +156,12 @@ ea::string ReplicationManager::GetDebugInfo() const
 
 NetworkObject* NetworkObjectRegistry::GetNetworkObject(NetworkId networkId, bool checkVersion) const
 {
-    return static_cast<NetworkObject*>(GetTrackedComponentByStableId(networkId, checkVersion));
+    return static_cast<NetworkObject*>(GetTrackedComponentByReference(networkId, checkVersion));
 }
 
 NetworkObject* NetworkObjectRegistry::GetNetworkObjectByIndex(unsigned networkIndex) const
 {
-    return static_cast<NetworkObject*>(GetTrackedComponentByStableIndex(networkIndex));
+    return static_cast<NetworkObject*>(GetTrackedComponentByReferenceIndex(networkIndex));
 }
 
 ReplicationManager::ReplicationManager(Context* context)
@@ -196,7 +196,7 @@ void ReplicationManager::OnSceneSet(Scene* scene)
         UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void ReplicationManager::OnComponentAdded(BaseTrackedComponent* baseComponent)
+void ReplicationManager::OnComponentAdded(TrackedComponentBase* baseComponent)
 {
     BaseClassName::OnComponentAdded(baseComponent);
 

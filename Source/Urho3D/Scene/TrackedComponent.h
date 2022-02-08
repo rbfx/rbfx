@@ -33,12 +33,12 @@ namespace Urho3D
 /// Base class for simple tracked component.
 /// It maintains up-to-date 0-based index in the registry.
 /// Index may change during the lifetime of the component!
-class URHO3D_API BaseTrackedComponent : public Component
+class URHO3D_API TrackedComponentBase : public Component
 {
-    URHO3D_OBJECT(BaseTrackedComponent, Component);
+    URHO3D_OBJECT(TrackedComponentBase, Component);
 
 public:
-    explicit BaseTrackedComponent(Context* context) : Component(context) {}
+    explicit TrackedComponentBase(Context* context) : Component(context) {}
 
     /// Manage index of the component in the registry.
     /// @{
@@ -56,92 +56,93 @@ private:
     unsigned indexInArray_{M_MAX_UNSIGNED};
 };
 
-/// Base class for component registry that keeps components derived from BaseTrackedComponent.
-class URHO3D_API BaseComponentRegistry : public Component
+/// Base class for component registry that keeps components derived from TrackedComponentBase.
+class URHO3D_API TrackedComponentRegistryBase : public Component
 {
-    URHO3D_OBJECT(BaseComponentRegistry, Component);
+    URHO3D_OBJECT(TrackedComponentRegistryBase, Component);
 
 public:
-    BaseComponentRegistry(Context* context, StringHash componentType);
+    TrackedComponentRegistryBase(Context* context, StringHash componentType);
 
-    BaseTrackedComponent* GetTrackedComponentByIndex(unsigned index) const;
+    TrackedComponentBase* GetTrackedComponentByIndex(unsigned index) const;
     unsigned GetNumTrackedComponents() const { return componentsArray_.size(); }
-    ea::span<BaseTrackedComponent* const> GetTrackedComponents() const { return componentsArray_; }
+    ea::span<TrackedComponentBase* const> GetTrackedComponents() const { return componentsArray_; }
 
     /// Internal. Manage tracked components.
     /// @{
-    void AddTrackedComponent(BaseTrackedComponent* component);
-    void RemoveTrackedComponent(BaseTrackedComponent* component);
+    void AddTrackedComponent(TrackedComponentBase* component);
+    void RemoveTrackedComponent(TrackedComponentBase* component);
     /// @}
 
 protected:
     void OnSceneSet(Scene* scene) override;
 
-    virtual void OnComponentAdded(BaseTrackedComponent* baseComponent) {}
-    virtual void OnComponentMoved(BaseTrackedComponent* baseComponent, unsigned oldIndex) {}
-    virtual void OnComponentRemoved(BaseTrackedComponent* baseComponent) {}
+    virtual void OnComponentAdded(TrackedComponentBase* baseComponent) {}
+    virtual void OnComponentMoved(TrackedComponentBase* baseComponent, unsigned oldIndex) {}
+    virtual void OnComponentRemoved(TrackedComponentBase* baseComponent) {}
 
 private:
     void InitializeTrackedComponents();
     void DeinitializeTrackedComponents();
 
     const StringHash componentType_{};
-    ea::vector<BaseTrackedComponent*> componentsArray_;
+    ea::vector<TrackedComponentBase*> componentsArray_;
 };
 
 /// Strongly typed component ID. Default value is considered invalid.
-enum StableComponentId : unsigned;
-URHO3D_API StableComponentId ConstructStableComponentId(unsigned index, unsigned version);
-URHO3D_API ea::pair<unsigned, unsigned> DeconstructStableComponentId(StableComponentId componentId);
-URHO3D_API ea::string ToString(StableComponentId value);
+enum ComponentReference : unsigned;
+static constexpr ComponentReference InvalidComponentReference = ComponentReference{};
+URHO3D_API ComponentReference ConstructComponentReference(unsigned index, unsigned version);
+URHO3D_API ea::pair<unsigned, unsigned> DeconstructComponentReference(ComponentReference componentId);
+URHO3D_API ea::string ToString(ComponentReference value);
 
-/// Base class for tracked component with ID that is stable during object lifetime.
-class URHO3D_API BaseStableTrackedComponent : public BaseTrackedComponent
+/// Base class for tracked component with reference that is stable during object lifetime.
+class URHO3D_API ReferencedComponentBase : public TrackedComponentBase
 {
-    URHO3D_OBJECT(BaseStableTrackedComponent, BaseTrackedComponent);
+    URHO3D_OBJECT(ReferencedComponentBase, TrackedComponentBase);
 
 public:
-    explicit BaseStableTrackedComponent(Context* context) : BaseTrackedComponent(context) {}
+    explicit ReferencedComponentBase(Context* context) : TrackedComponentBase(context) {}
 
-    /// Manage stable ID of the component.
+    /// Manage reference to this component.
     /// @{
-    void SetStableId(StableComponentId id) { stableId_ = id; }
-    StableComponentId GetStableId() const { return stableId_; }
+    void SetReference(ComponentReference reference) { componentReference_ = reference; }
+    ComponentReference GetReference() const { return componentReference_; }
     /// @}
 
 private:
-    StableComponentId stableId_{};
+    ComponentReference componentReference_{};
 };
 
-/// Base class for component registry that keeps components derived from BaseStableTrackedComponent.
-class URHO3D_API BaseStableComponentRegistry : public BaseComponentRegistry
+/// Base class for component registry that keeps components derived from ReferencedComponentBase.
+class URHO3D_API ReferencedComponentRegistryBase : public TrackedComponentRegistryBase
 {
-    URHO3D_OBJECT(BaseStableComponentRegistry, BaseComponentRegistry);
+    URHO3D_OBJECT(ReferencedComponentRegistryBase, TrackedComponentRegistryBase);
 
 public:
-    BaseStableComponentRegistry(Context* context, StringHash componentType);
+    ReferencedComponentRegistryBase(Context* context, StringHash componentType);
 
-    BaseStableTrackedComponent* GetTrackedComponentByStableId(StableComponentId id, bool checkVersion = true) const;
-    BaseStableTrackedComponent* GetTrackedComponentByStableIndex(unsigned index) const;
+    ReferencedComponentBase* GetTrackedComponentByReference(ComponentReference id, bool checkVersion = true) const;
+    ReferencedComponentBase* GetTrackedComponentByReferenceIndex(unsigned index) const;
 
-    unsigned GetStableIndexUpperBound() const { return stableIndexToEntry_.size(); }
+    unsigned GetReferenceIndexUpperBound() const { return referenceIndexToEntry_.size(); }
 
 protected:
-    void OnComponentAdded(BaseTrackedComponent* baseComponent) override;
-    void OnComponentRemoved(BaseTrackedComponent* baseComponent) override;
+    void OnComponentAdded(TrackedComponentBase* baseComponent) override;
+    void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 
 private:
     struct RegistryEntry
     {
-        BaseStableTrackedComponent* component_{};
+        ReferencedComponentBase* component_{};
         unsigned version_{};
     };
 
-    unsigned AllocateStableIndex();
+    unsigned AllocateReferenceIndex();
     void EnsureIndex(unsigned index);
 
-    IndexAllocator<> stableIndexAllocator_;
-    ea::vector<RegistryEntry> stableIndexToEntry_;
+    IndexAllocator<> referenceIndexAllocator_;
+    ea::vector<RegistryEntry> referenceIndexToEntry_;
 };
 
 /// Indicates that object should remove self from registry if disabled.
@@ -149,7 +150,7 @@ struct EnabledOnlyTag {};
 
 /// Return base component type for given registry type.
 template <class T>
-using BaseComponentTypeForRegistry = ea::conditional_t<ea::is_base_of_v<BaseStableComponentRegistry, T>, BaseStableTrackedComponent, BaseTrackedComponent>;
+using BaseComponentTypeForRegistry = ea::conditional_t<ea::is_base_of_v<ReferencedComponentRegistryBase, T>, ReferencedComponentBase, TrackedComponentBase>;
 
 /// Template base of any TrackedComponent that automatically registers itself in registry.
 template <class RegistryComponentType, class ... Tags>

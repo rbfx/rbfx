@@ -30,6 +30,7 @@
 #include "../IO/VectorBuffer.h"
 #include "../Network/ClockSynchronizer.h"
 #include "../Replica/ClientInputStatistics.h"
+#include "../Replica/NetworkId.h"
 #include "../Replica/TickSynchronizer.h"
 #include "../Replica/ProtocolMessages.h"
 
