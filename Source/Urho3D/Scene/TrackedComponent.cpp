@@ -38,18 +38,18 @@ constexpr unsigned versionOffset = 24;
 
 }
 
-BaseComponentRegistry::BaseComponentRegistry(Context* context, StringHash componentType)
+TrackedComponentRegistryBase::TrackedComponentRegistryBase(Context* context, StringHash componentType)
     : Component(context)
     , componentType_(componentType)
 {
 }
 
-BaseTrackedComponent* BaseComponentRegistry::GetTrackedComponentByIndex(unsigned index) const
+TrackedComponentBase* TrackedComponentRegistryBase::GetTrackedComponentByIndex(unsigned index) const
 {
     return index < componentsArray_.size() ? componentsArray_[index] : nullptr;
 }
 
-void BaseComponentRegistry::AddTrackedComponent(BaseTrackedComponent* component)
+void TrackedComponentRegistryBase::AddTrackedComponent(TrackedComponentBase* component)
 {
     const unsigned oldIndex = component->GetIndexInArray();
     if (oldIndex != M_MAX_UNSIGNED)
@@ -65,7 +65,7 @@ void BaseComponentRegistry::AddTrackedComponent(BaseTrackedComponent* component)
     OnComponentAdded(component);
 }
 
-void BaseComponentRegistry::RemoveTrackedComponent(BaseTrackedComponent* component)
+void TrackedComponentRegistryBase::RemoveTrackedComponent(TrackedComponentBase* component)
 {
     const unsigned index = component->GetIndexInArray();
     if (index == M_MAX_UNSIGNED)
@@ -85,7 +85,7 @@ void BaseComponentRegistry::RemoveTrackedComponent(BaseTrackedComponent* compone
     const unsigned numComponents = componentsArray_.size();
     if (numComponents > 1 && index + 1 != numComponents)
     {
-        BaseTrackedComponent* replacement = componentsArray_.back();
+        TrackedComponentBase* replacement = componentsArray_.back();
         componentsArray_[index] = replacement;
         replacement->SetIndexInArray(index);
         OnComponentMoved(replacement, numComponents - 1);
@@ -95,7 +95,7 @@ void BaseComponentRegistry::RemoveTrackedComponent(BaseTrackedComponent* compone
     component->SetIndexInArray(M_MAX_UNSIGNED);
 }
 
-void BaseComponentRegistry::OnSceneSet(Scene* scene)
+void TrackedComponentRegistryBase::OnSceneSet(Scene* scene)
 {
     if (scene)
         InitializeTrackedComponents();
@@ -103,7 +103,7 @@ void BaseComponentRegistry::OnSceneSet(Scene* scene)
         DeinitializeTrackedComponents();
 }
 
-void BaseComponentRegistry::InitializeTrackedComponents()
+void TrackedComponentRegistryBase::InitializeTrackedComponents()
 {
     Scene* scene = GetScene();
     if (!scene)
@@ -115,9 +115,9 @@ void BaseComponentRegistry::InitializeTrackedComponents()
         componentsArray_.clear();
     }
 
-    ea::vector<BaseTrackedComponent*> components;
+    ea::vector<TrackedComponentBase*> components;
     scene->GetDerivedComponents(components, true);
-    for (BaseTrackedComponent* component : components)
+    for (TrackedComponentBase* component : components)
     {
         if (!component->IsInstanceOf(componentType_))
             continue;
@@ -130,9 +130,9 @@ void BaseComponentRegistry::InitializeTrackedComponents()
     }
 }
 
-void BaseComponentRegistry::DeinitializeTrackedComponents()
+void TrackedComponentRegistryBase::DeinitializeTrackedComponents()
 {
-    for (BaseTrackedComponent* component : componentsArray_)
+    for (TrackedComponentBase* component : componentsArray_)
     {
         OnComponentRemoved(component);
         component->SetIndexInArray(M_MAX_UNSIGNED);
@@ -141,136 +141,136 @@ void BaseComponentRegistry::DeinitializeTrackedComponents()
     componentsArray_.clear();
 }
 
-StableComponentId ConstructStableComponentId(unsigned index, unsigned version)
+ComponentReference ConstructComponentReference(unsigned index, unsigned version)
 {
     unsigned result = 0;
     result |= (index & maxIndex) << indexOffset;
     result |= (version & maxVersion) << versionOffset;
-    return static_cast<StableComponentId>(result);
+    return static_cast<ComponentReference>(result);
 }
 
-ea::pair<unsigned, unsigned> DeconstructStableComponentId(StableComponentId componentId)
+ea::pair<unsigned, unsigned> DeconstructComponentReference(ComponentReference componentId)
 {
     const auto value = static_cast<unsigned>(componentId);
     return {(value >> indexOffset) & maxIndex, (value >> versionOffset) & maxVersion};
 }
 
-ea::string ToString(StableComponentId value)
+ea::string ToString(ComponentReference value)
 {
-    const auto [index, version] = DeconstructStableComponentId(value);
-    return value == StableComponentId{} ? "(null)" : Format("{}:{}", index, version);
+    const auto [index, version] = DeconstructComponentReference(value);
+    return value == InvalidComponentReference ? "(null)" : Format("{}:{}", index, version);
 }
 
-BaseStableComponentRegistry::BaseStableComponentRegistry(Context* context, StringHash componentType)
-    : BaseComponentRegistry(context, componentType)
+ReferencedComponentRegistryBase::ReferencedComponentRegistryBase(Context* context, StringHash componentType)
+    : TrackedComponentRegistryBase(context, componentType)
 {
 }
 
-BaseStableTrackedComponent* BaseStableComponentRegistry::GetTrackedComponentByStableId(StableComponentId id, bool checkVersion) const
+ReferencedComponentBase* ReferencedComponentRegistryBase::GetTrackedComponentByReference(ComponentReference id, bool checkVersion) const
 {
-    const auto [index, version] = DeconstructStableComponentId(id);
-    if (index >= stableIndexToEntry_.size())
+    const auto [index, version] = DeconstructComponentReference(id);
+    if (index >= referenceIndexToEntry_.size())
         return nullptr;
 
-    const RegistryEntry& entry = stableIndexToEntry_[index];
+    const RegistryEntry& entry = referenceIndexToEntry_[index];
     return (!checkVersion || entry.version_ == version) ? entry.component_ : nullptr;
 }
 
-BaseStableTrackedComponent* BaseStableComponentRegistry::GetTrackedComponentByStableIndex(unsigned index) const
+ReferencedComponentBase* ReferencedComponentRegistryBase::GetTrackedComponentByReferenceIndex(unsigned index) const
 {
-    return index < stableIndexToEntry_.size() ? stableIndexToEntry_[index].component_ : nullptr;
+    return index < referenceIndexToEntry_.size() ? referenceIndexToEntry_[index].component_ : nullptr;
 }
 
-void BaseStableComponentRegistry::OnComponentAdded(BaseTrackedComponent* baseComponent)
+void ReferencedComponentRegistryBase::OnComponentAdded(TrackedComponentBase* baseComponent)
 {
-    auto component = static_cast<BaseStableTrackedComponent*>(baseComponent);
-    StableComponentId stableId = component->GetStableId();
+    auto component = static_cast<ReferencedComponentBase*>(baseComponent);
+    ComponentReference reference = component->GetReference();
 
     // Try to reuse existing ID if possible
-    if (stableId != StableComponentId{})
+    if (reference != InvalidComponentReference)
     {
-        if (GetTrackedComponentByStableId(stableId) == component)
+        if (GetTrackedComponentByReference(reference) == component)
         {
-            URHO3D_ASSERTLOG(0, "Component is already tracked as {}", ToString(stableId));
+            URHO3D_ASSERTLOG(0, "Component is already tracked as {}", ToString(reference));
             return;
         }
 
-        const auto [index, version] = DeconstructStableComponentId(stableId);
-        BaseStableTrackedComponent* otherComponent = GetTrackedComponentByStableIndex(index);
+        const auto [index, version] = DeconstructComponentReference(reference);
+        ReferencedComponentBase* otherComponent = GetTrackedComponentByReferenceIndex(index);
         if (otherComponent)
         {
             URHO3D_LOGWARNING("Another component is already tracked as {}");
-            stableId = StableComponentId{};
+            reference = InvalidComponentReference;
         }
         else
         {
             EnsureIndex(index);
-            stableIndexToEntry_[index].version_ = version;
+            referenceIndexToEntry_[index].version_ = version;
         }
     }
 
     // Allocate new ID if needed
-    if (stableId == StableComponentId{})
+    if (reference == InvalidComponentReference)
     {
-        const unsigned index = AllocateStableIndex();
-        stableId = ConstructStableComponentId(index, stableIndexToEntry_[index].version_);
+        const unsigned index = AllocateReferenceIndex();
+        reference = ConstructComponentReference(index, referenceIndexToEntry_[index].version_);
     }
 
-    const auto [index, version] = DeconstructStableComponentId(stableId);
+    const auto [index, version] = DeconstructComponentReference(reference);
 
-    RegistryEntry& entry = stableIndexToEntry_[index];
+    RegistryEntry& entry = referenceIndexToEntry_[index];
     entry.component_ = component;
 
-    component->SetStableId(stableId);
+    component->SetReference(reference);
 }
 
-void BaseStableComponentRegistry::OnComponentRemoved(BaseTrackedComponent* baseComponent)
+void ReferencedComponentRegistryBase::OnComponentRemoved(TrackedComponentBase* baseComponent)
 {
-    auto component = static_cast<BaseStableTrackedComponent*>(baseComponent);
-    const StableComponentId stableId = component->GetStableId();
+    auto component = static_cast<ReferencedComponentBase*>(baseComponent);
+    const ComponentReference reference = component->GetReference();
 
-    if (stableId == StableComponentId{})
+    if (reference == InvalidComponentReference)
     {
         URHO3D_ASSERTLOG(0, "Component is not tracked");
         return;
     }
-    if (GetTrackedComponentByStableId(stableId) != component)
+    if (GetTrackedComponentByReference(reference) != component)
     {
-        URHO3D_ASSERTLOG(0, "Component array is corrupted at {}", ToString(stableId));
+        URHO3D_ASSERTLOG(0, "Component array is corrupted at {}", ToString(reference));
         return;
     }
 
-    component->SetStableId(StableComponentId{});
+    component->SetReference(InvalidComponentReference);
 
-    const auto [index, version] = DeconstructStableComponentId(stableId);
+    const auto [index, version] = DeconstructComponentReference(reference);
 
-    RegistryEntry& entry = stableIndexToEntry_[index];
+    RegistryEntry& entry = referenceIndexToEntry_[index];
     entry.component_ = nullptr;
     entry.version_ = (entry.version_ + 1) % maxVersion;
 
-    stableIndexAllocator_.Release(index);
+    referenceIndexAllocator_.Release(index);
 }
 
-unsigned BaseStableComponentRegistry::AllocateStableIndex()
+unsigned ReferencedComponentRegistryBase::AllocateReferenceIndex()
 {
     // May need more than one attept if some indices are taken bypassing IndexAllocator
     for (unsigned i = 0; i <= maxIndex; ++i)
     {
-        const unsigned index = stableIndexAllocator_.Allocate();
+        const unsigned index = referenceIndexAllocator_.Allocate();
         EnsureIndex(index);
-        if (!stableIndexToEntry_[index].component_)
+        if (!referenceIndexToEntry_[index].component_)
             return index;
     }
 
-    URHO3D_LOGERROR("Failed to allocate stable index for component");
+    URHO3D_LOGERROR("Failed to allocate reference for component");
     assert(0);
     return 0;
 }
 
-void BaseStableComponentRegistry::EnsureIndex(unsigned index)
+void ReferencedComponentRegistryBase::EnsureIndex(unsigned index)
 {
-    if (index >= stableIndexToEntry_.size())
-        stableIndexToEntry_.resize(index + 1);
+    if (index >= referenceIndexToEntry_.size())
+        referenceIndexToEntry_.resize(index + 1);
 }
 
 }

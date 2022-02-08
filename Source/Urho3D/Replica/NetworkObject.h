@@ -64,7 +64,7 @@ class URHO3D_API NetworkObject
     : public TrackedComponent<NetworkObjectRegistry>
     , public NetworkCallback
 {
-    URHO3D_OBJECT(NetworkObject, BaseStableTrackedComponent);
+    URHO3D_OBJECT(NetworkObject, ReferencedComponentBase);
 
 public:
     explicit NetworkObject(Context* context);
@@ -78,12 +78,12 @@ public:
     /// Internal API for ReplicationManager.
     /// @{
     void UpdateObjectHierarchy();
-    void SetNetworkId(NetworkId networkId) { SetStableId(networkId); }
+    void SetNetworkId(NetworkId networkId) { SetReference(networkId); }
     void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
     /// @}
 
     /// Return current or last NetworkId. Return InvalidNetworkId if not registered.
-    NetworkId GetNetworkId() const { return GetStableId(); }
+    NetworkId GetNetworkId() const { return GetReference(); }
     ReplicationManager* GetReplicationManager() const { return static_cast<ReplicationManager*>(GetRegistry()); }
     NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }

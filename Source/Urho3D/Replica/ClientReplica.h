@@ -27,6 +27,7 @@
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Replica/TickSynchronizer.h"
+#include "../Replica/NetworkId.h"
 #include "../Replica/NetworkTime.h"
 #include "../Replica/ProtocolMessages.h"
 
