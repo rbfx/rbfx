@@ -47,6 +47,7 @@
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Replica/PredictedKinematicController.h>
+#include <Urho3D/Replica/ReplicatedAnimation.h>
 #include <Urho3D/Replica/ReplicatedTransform.h>
 #include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Replica/TrackedAnimatedModel.h>
@@ -90,9 +91,9 @@ URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYHIT, AdvancedNetworkingRayhit)
 /// - Animation synchronization;
 /// - Player rotation synchronization;
 /// - View mask assignment for easy raycasting.
-class AdvancedNetworkingPlayer : public NetworkBehavior
+class AdvancedNetworkingPlayer : public ReplicatedAnimation
 {
-    URHO3D_OBJECT(AdvancedNetworkingPlayer, NetworkBehavior);
+    URHO3D_OBJECT(AdvancedNetworkingPlayer, ReplicatedAnimation);
 
 public:
     static constexpr unsigned RingBufferSize = 8;
@@ -100,114 +101,8 @@ public:
         NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::Update | NetworkCallbackMask::InterpolateState;
 
     explicit AdvancedNetworkingPlayer(Context* context)
-        : NetworkBehavior(context, CallbackMask)
+        : ReplicatedAnimation(context, CallbackMask)
     {
-    }
-
-    void InitializeOnServer() override
-    {
-        InitializeCommon();
-
-        animationController_->SetEnabled(false);
-
-        // On server, all players are unimportant because they are moving and need temporal raycasts
-        auto animatedModel = GetComponent<AnimatedModel>();
-        animatedModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
-    }
-
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override
-    {
-        InitializeCommon();
-
-        // Mark all players except ourselves as important for raycast.
-        auto animatedModel = GetComponent<AnimatedModel>();
-        animatedModel->SetViewMask(isOwned ? UNIMPORTANT_VIEW_MASK : IMPORTANT_VIEW_MASK);
-
-        // TODO(network): Revisit
-        //rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
-    }
-
-    bool PrepareUnreliableDelta(unsigned frame) override
-    {
-        return true;
-    }
-
-    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override
-    {
-        const ea::string& currentAnimationName = animations_[currentAnimation_]->GetName();
-        const float currentTime = animationController_->GetTime(currentAnimationName);
-
-        dest.WriteVLE(currentAnimation_);
-        dest.WriteFloat(currentTime);
-        dest.WriteQuaternion(node_->GetWorldRotation());
-    }
-
-    void ReadUnreliableDelta(unsigned frame, Deserializer& src) override
-    {
-        const unsigned animationIndex = src.ReadVLE();
-        const float animationTime = src.ReadFloat();
-        const Quaternion rotation = src.ReadQuaternion();
-
-        animationTrace_.Set(frame, {animationIndex, animationTime});
-        rotationTrace_.Set(frame, rotation);
-    }
-
-    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
-    {
-        NetworkObject* networkObject = GetNetworkObject();
-
-        if (networkObject->IsReplicatedClient())
-        {
-            if (auto newRotation = rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, timeStep))
-                node_->SetWorldRotation(*newRotation);
-
-            // TODO(network): Extract this?
-            ReplicationManager* replicationManager = networkObject->GetReplicationManager();
-            if (const auto animationSample = animationTrace_.GetRawOrPrior(replicaTime.GetFrame()))
-            {
-                const auto& [value, confirmedFrame] = *animationSample;
-                const auto& [animationIndex, animationTime] = value;
-
-                const ea::string& animationName = animations_[animationIndex]->GetName();
-                animationController_->PlayExclusive(animationName, 0, false, fadeTime_);
-
-                const float networkTimeStep = 1.0f / replicationManager->GetUpdateFrequency();
-                const float delay = (replicaTime - NetworkTime{confirmedFrame}) * networkTimeStep;
-                animationController_->SetTime(animationName, Mod(animationTime + delay, animations_[animationIndex]->GetLength()));
-            }
-        }
-    }
-
-    void Update(float replicaTimeStep, float inputTimeStep) override
-    {
-        NetworkObject* networkObject = GetNetworkObject();
-        if (networkObject->IsServer())
-        {
-            UpdateAnimations();
-            animationController_->Update(replicaTimeStep);
-        }
-        else if (networkObject->IsOwnedByThisClient() || networkObject->IsStandalone())
-        {
-            UpdateAnimations();
-        }
-    }
-
-private:
-    void InitializeCommon()
-    {
-        NetworkObject* networkObject = GetNetworkObject();
-        ReplicationManager* replicationManager = networkObject->GetReplicationManager();
-        const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
-
-        animationTrace_.Resize(traceDuration);
-        rotationTrace_.Resize(traceDuration);
-
-        replicatedTransform_ = GetNetworkObject()->GetNetworkBehavior<ReplicatedTransform>();
-        networkController_ = GetNetworkObject()->GetNetworkBehavior<PredictedKinematicController>();
-
-        kinematicController_ = networkController_->GetComponent<KinematicCharacterController>();
-        animationController_ = GetNode()->GetComponent<AnimationController>();
-
         auto cache = GetSubsystem<ResourceCache>();
         animations_ = {
             cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani"),
@@ -216,12 +111,131 @@ private:
         };
     }
 
+    /// Initialize component on the server.
+    void InitializeOnServer() override
+    {
+        BaseClassName::InitializeOnServer();
+
+        InitializeCommon();
+
+        // On server, all players are unimportant because they are moving and need temporal raycasts
+        auto animatedModel = GetComponent<AnimatedModel>();
+        animatedModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
+    }
+
+    /// Initialize component on the client.
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override
+    {
+        BaseClassName::InitializeFromSnapshot(frame, src, isOwned);
+
+        InitializeCommon();
+
+        // Mark all players except ourselves as important for raycast.
+        auto animatedModel = GetComponent<AnimatedModel>();
+        animatedModel->SetViewMask(isOwned ? UNIMPORTANT_VIEW_MASK : IMPORTANT_VIEW_MASK);
+
+        // Setup client-side containers
+        ReplicationManager* replicationManager = GetNetworkObject()->GetReplicationManager();
+        const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
+
+        animationTrace_.Resize(traceDuration);
+        rotationTrace_.Resize(traceDuration);
+
+        // TODO(network): Revisit
+        //rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
+    }
+
+    /// Always send animation updates for simplicity.
+    bool PrepareUnreliableDelta(unsigned frame) override
+    {
+        BaseClassName::PrepareUnreliableDelta(frame);
+
+        return true;
+    }
+
+    /// Write current animation state and rotation on server.
+    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override
+    {
+        BaseClassName::WriteUnreliableDelta(frame, dest);
+
+        const ea::string& currentAnimationName = animations_[currentAnimation_]->GetName();
+        const float currentTime = animationController_->GetTime(currentAnimationName);
+
+        dest.WriteVLE(currentAnimation_);
+        dest.WriteFloat(currentTime);
+        dest.WriteQuaternion(node_->GetWorldRotation());
+    }
+
+    /// Read current animation state on replicating client.
+    void ReadUnreliableDelta(unsigned frame, Deserializer& src) override
+    {
+        BaseClassName::ReadUnreliableDelta(frame, src);
+
+        const unsigned animationIndex = src.ReadVLE();
+        const float animationTime = src.ReadFloat();
+        const Quaternion rotation = src.ReadQuaternion();
+
+        animationTrace_.Set(frame, {animationIndex, animationTime});
+        rotationTrace_.Set(frame, rotation);
+    }
+
+    /// Perform interpolation of received data on replicated client.
+    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+    {
+        BaseClassName::InterpolateState(timeStep, replicaTime, inputTime);
+
+        if (!GetNetworkObject()->IsReplicatedClient())
+            return;
+
+        // Interpolate player rotation
+        if (auto newRotation = rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, timeStep))
+            node_->SetWorldRotation(*newRotation);
+
+        // Extrapolate animation time from trace
+        if (const auto animationSample = animationTrace_.GetRawOrPrior(replicaTime.GetFrame()))
+        {
+            const auto& [value, sampleFrame] = *animationSample;
+            const auto& [animationIndex, animationTime] = value;
+
+            // Just play most recent received animation
+            Animation* animation = animations_[animationIndex];
+            animationController_->PlayExclusive(animation->GetName(), 0, false, fadeTime_);
+
+            // Adjust time to stay synchronized with server
+            const float delay = (replicaTime - NetworkTime{sampleFrame}) * networkFrameDuration_;
+            const float time = Mod(animationTime + delay, animation->GetLength());
+            animationController_->SetTime(animation->GetName(), time);
+        }
+    }
+
+    void Update(float replicaTimeStep, float inputTimeStep) override
+    {
+        if (!GetNetworkObject()->IsReplicatedClient())
+            UpdateAnimations();
+
+        BaseClassName::Update(replicaTimeStep, inputTimeStep);
+    }
+
+private:
+    void InitializeCommon()
+    {
+        ReplicationManager* replicationManager = GetNetworkObject()->GetReplicationManager();
+        networkFrameDuration_ = 1.0f / replicationManager->GetUpdateFrequency();
+
+        // Resolve dependencies
+        replicatedTransform_ = GetNetworkObject()->GetNetworkBehavior<ReplicatedTransform>();
+        networkController_ = GetNetworkObject()->GetNetworkBehavior<PredictedKinematicController>();
+        kinematicController_ = networkController_->GetComponent<KinematicCharacterController>();
+    }
+
     void UpdateAnimations()
     {
+        // Get current state of the controller to deduce animation from
         const bool isGrounded = kinematicController_->OnGround();
         const Vector3 velocity = networkController_->GetVelocity();
         const Vector3 walkDirection = Vector3::FromXZ(velocity.ToXZ().NormalizedOrDefault(Vector2::ZERO, 0.1f));
 
+        // Start jump if has high vertical velocity and hasn't jumped yet
         if ((currentAnimation_ != ANIM_JUMP) && velocity.y_ > jumpThreshold_)
         {
             animationController_->PlayExclusive(animations_[ANIM_JUMP]->GetName(), 0, false, fadeTime_);
@@ -229,46 +243,43 @@ private:
             currentAnimation_ = ANIM_JUMP;
         }
 
+        // Rotate player both on ground and in the air
         // TODO(network): Smooth this
         if (walkDirection != Vector3::ZERO)
             node_->SetWorldRotation(Quaternion{Vector3::BACK, walkDirection});
 
+        // If on the ground, either walk or stay idle
         if (isGrounded)
         {
-            if (walkDirection != Vector3::ZERO)
-            {
-                node_->SetWorldRotation(Quaternion{Vector3::BACK, walkDirection});
-                animationController_->PlayExclusive(animations_[ANIM_WALK]->GetName(), 0, true, fadeTime_);
-                currentAnimation_ = ANIM_WALK;
-            }
-            else
-            {
-                animationController_->PlayExclusive(animations_[ANIM_IDLE]->GetName(), 0, true, fadeTime_);
-                currentAnimation_ = ANIM_IDLE;
-            }
+            currentAnimation_ = walkDirection != Vector3::ZERO ? ANIM_WALK : ANIM_IDLE;
+            animationController_->PlayExclusive(animations_[currentAnimation_]->GetName(), 0, true, fadeTime_);
         }
     }
 
+    /// Enum that represents current animation state and corresponding animations.
     enum
     {
         ANIM_IDLE,
         ANIM_WALK,
         ANIM_JUMP,
     };
+    ea::vector<Animation*> animations_;
 
+    /// Animation parameters.
     const float moveThreshold_{0.1f};
     const float jumpThreshold_{0.2f};
     const float fadeTime_{0.1f};
 
+    /// Dependencies of this behaviors.
     WeakPtr<ReplicatedTransform> replicatedTransform_;
     WeakPtr<PredictedKinematicController> networkController_;
-
     WeakPtr<KinematicCharacterController> kinematicController_;
-    WeakPtr<AnimationController> animationController_;
 
-    ea::vector<Animation*> animations_;
-
+    /// Index of current animation tracked on server for simplicity.
     unsigned currentAnimation_{};
+
+    /// Client-side containers that keep aggregated data from the server for the future sampling.
+    float networkFrameDuration_{};
     NetworkValue<ea::pair<unsigned, float>> animationTrace_;
     NetworkValue<Quaternion> rotationTrace_;
     NetworkValueSampler<Quaternion> rotationSampler_;
