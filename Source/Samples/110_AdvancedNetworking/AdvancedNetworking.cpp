@@ -33,7 +33,9 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Renderer.h>
+#include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Input/Input.h>
@@ -435,17 +437,28 @@ void AdvancedNetworking::CreateScene()
     Node* zoneNode = scene_->CreateChild("Zone", LOCAL);
     auto* zone = zoneNode->CreateComponent<Zone>();
     zone->SetBoundingBox(BoundingBox(-1000.0f, 1000.0f));
-    zone->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
+    zone->SetAmbientColor(Color::GRAY);
+    zone->SetBackgroundBrightness(1.0f);
+    zone->SetFogColor(Color::WHITE);
     zone->SetFogStart(100.0f);
     zone->SetFogEnd(300.0f);
+    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/Skybox.xml"));
+
+    // Create skybox.
+    Node* skyNode = scene_->CreateChild("Sky");
+    skyNode->SetScale(500.0f); // The scale actually does not matter
+    auto* skybox = skyNode->CreateComponent<Skybox>();
+    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    skybox->SetMaterial(cache->GetResource<Material>("Materials/Skybox.xml"));
 
     // Create a directional light without shadows
     Node* lightNode = scene_->CreateChild("DirectionalLight", LOCAL);
-    lightNode->SetDirection(Vector3(0.5f, -1.0f, 0.5f));
+    lightNode->SetDirection(Vector3(0.5f, -1.0f, -0.5f));
     auto* light = lightNode->CreateComponent<Light>();
     light->SetLightType(LIGHT_DIRECTIONAL);
-    light->SetColor(Color(0.2f, 0.2f, 0.2f));
-    light->SetSpecularIntensity(1.0f);
+    light->SetColor(Color::WHITE * 0.2f);
+    light->SetCastShadows(true);
+    light->SetShadowCascade(CascadeParameters{10.0f, 23.0f, 45.0f, 70.0f, 50.0f});
 
     // Create collection of hit markers
     hitMarkers_ = scene_->CreateChild("Hit Markers", LOCAL);
@@ -486,6 +499,7 @@ void AdvancedNetworking::CreateScene()
         obstacleModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
         obstacleModel->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
         obstacleModel->SetViewMask(IMPORTANT_VIEW_MASK);
+        obstacleModel->SetCastShadows(true);
 
         auto* body = obstacleNode->CreateComponent<RigidBody>();
         body->SetFriction(1.0f);
@@ -845,6 +859,11 @@ void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
+    // Prevent overflow
+    if (hitMarkers_->GetNumChildren() >= 200)
+        hitMarkers_->GetChild(0u)->Remove();
+
+    // Add new marker: red sphere for client hits, green cube for server confirmations
     Node* markerNode = hitMarkers_->CreateChild("Client Hit");
     markerNode->SetPosition(position);
 
@@ -860,7 +879,7 @@ void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
     {
         markerNode->SetScale(0.2f);
         markerModel->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
-        markerModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/MattRed.xml"));
+        markerModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/GlowingRed.xml"));
     }
 }
 
