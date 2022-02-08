@@ -37,6 +37,7 @@
 #include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
 #include "../Replica/BehaviorNetworkObject.h"
+#include "../Replica/FilteredByDistance.h"
 #include "../Replica/NetworkObject.h"
 #include "../Replica/PredictedKinematicController.h"
 #include "../Replica/ReplicatedAnimation.h"
@@ -735,6 +736,45 @@ bool Network::CheckRemoteEvent(StringHash eventType) const
     return allowedRemoteEvents_.contains(eventType);
 }
 
+ea::string Network::GetDebugInfo() const
+{
+    ea::string result;
+    ea::hash_set<ReplicationManager*> replicationManagers;
+
+    if (Connection* connection = GetServerConnection())
+    {
+        result += Format("Server Connection {}: {}p-{}b/s in, {}p-{}b/s out\n",
+            connection->ToString(),
+            connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec());
+
+        if (Scene* scene = connection->GetScene())
+        {
+            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+                replicationManagers.insert(replicationManager);
+        }
+    }
+
+    for (Connection* connection : GetClientConnections())
+    {
+        result += Format("Client Connection {}: {}p-{}b/s in, {}p-{}b/s out\n",
+            connection->ToString(),
+            connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec());
+
+        if (Scene* scene = connection->GetScene())
+        {
+            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+                replicationManagers.insert(replicationManager);
+        }
+    }
+
+    for (ReplicationManager* replicationManager : replicationManagers)
+        result += replicationManager->GetDebugInfo();
+
+    return result;
+}
+
 void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
 {
     unsigned char packetID = packet->data[0];
@@ -1018,6 +1058,8 @@ void Network::PostUpdate(float timeStep)
 
         if (serverConnection_)
         {
+            if (updateNow_)
+                serverConnection_->SendClientUpdate();
             serverConnection_->SendRemoteEvents();
             serverConnection_->SendAllBuffers();
         }
@@ -1112,6 +1154,7 @@ void RegisterNetworkLibrary(Context* context)
     ReplicatedAnimation::RegisterObject(context);
     ReplicatedTransform::RegisterObject(context);
     TrackedAnimatedModel::RegisterObject(context);
+    FilteredByDistance::RegisterObject(context);
 #ifdef URHO3D_PHYSICS
     PredictedKinematicController::RegisterObject(context);
 #endif

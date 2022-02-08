@@ -215,20 +215,20 @@ void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer&
         connectedBehavior.component_->InitializeFromSnapshot(frame, src, isOwned);
 }
 
-bool BehaviorNetworkObject::IsRelevantForClient(AbstractConnection* connection)
+ea::optional<NetworkObjectRelevance> BehaviorNetworkObject::GetRelevanceForClient(AbstractConnection* connection)
 {
-    if (callbackMask_.Test(NetworkCallbackMask::IsRelevantForClient))
+    if (callbackMask_.Test(NetworkCallbackMask::GetRelevanceForClient))
     {
         for (const auto& connectedBehavior : behaviors_)
         {
-            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::IsRelevantForClient))
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::GetRelevanceForClient))
             {
-                if (!connectedBehavior.component_->IsRelevantForClient(connection))
-                    return false;
+                if (const auto relevance = connectedBehavior.component_->GetRelevanceForClient(connection))
+                    return relevance;
             }
         }
     }
-    return true;
+    return NetworkObjectRelevance::Normal;
 }
 
 void BehaviorNetworkObject::UpdateTransformOnServer()

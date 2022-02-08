@@ -247,11 +247,11 @@ public:
 
     /// Return bytes received per second.
     /// @property
-    float GetBytesInPerSec() const;
+    unsigned long long GetBytesInPerSec() const;
 
     /// Return bytes sent per second.
     /// @property
-    float GetBytesOutPerSec() const;
+    unsigned long long GetBytesOutPerSec() const;
 
     /// Return packets received per second.
     /// @property

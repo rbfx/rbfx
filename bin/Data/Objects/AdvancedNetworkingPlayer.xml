@@ -8,7 +8,19 @@
 	<component type="KinematicCharacterController" id="1"/>
 	<component type="ReplicatedTransform" id="4"/>
 	<component type="PredictedKinematicController" id="3"/>
-	<node id="2">
+	<component type="FilteredByDistance" id="8">
+		<attribute name="Outer Relevance" value="Irrelevant" />
+		<attribute name="Distance" value="100" />
+	</component>
+	<component type="FilteredByDistance" id="9">
+		<attribute name="Outer Relevance" value="Update Every 4 Frames" />
+		<attribute name="Distance" value="60" />
+	</component>
+	<component type="FilteredByDistance" id="10">
+		<attribute name="Outer Relevance" value="Update Every 2 Frames" />
+		<attribute name="Distance" value="30" />
+	</component>
+		<node id="2">
 		<attribute name="Name" value="Model" />
 		<attribute name="Position" value="0 0 0" />
 		<attribute name="Rotation" value="0 0 1 0" />

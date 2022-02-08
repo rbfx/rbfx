@@ -330,8 +330,8 @@ void Connection::SendRemoteEvents()
         sprintf(statsBuffer, "RTT %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s, Last heard %u", GetRoundTripTime(),
             GetPacketsInPerSec(),
             GetPacketsOutPerSec(),
-            GetBytesInPerSec(),
-            GetBytesOutPerSec(),
+            (float)GetBytesInPerSec(),
+            (float)GetBytesOutPerSec(),
             GetLastHeardTime());
         URHO3D_LOGINFO(statsBuffer);
     }
@@ -1137,26 +1137,26 @@ unsigned Connection::GetLastHeardTime() const
     return const_cast<Timer&>(lastHeardTimer_).GetMSec(false);
 }
 
-float Connection::GetBytesInPerSec() const
+unsigned long long Connection::GetBytesInPerSec() const
 {
     if (peer_)
     {
         SLNet::RakNetStatistics stats{};
         if (peer_->GetStatistics(address_->systemAddress, &stats))
-            return (float)stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_RECEIVED];
+            return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_RECEIVED];
     }
-    return 0.0f;
+    return 0;
 }
 
-float Connection::GetBytesOutPerSec() const
+unsigned long long Connection::GetBytesOutPerSec() const
 {
     if (peer_)
     {
         SLNet::RakNetStatistics stats{};
         if (peer_->GetStatistics(address_->systemAddress, &stats))
-            return (float)stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_SENT];
+            return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_SENT];
     }
-    return 0.0f;
+    return 0;
 }
 
 int Connection::GetPacketsInPerSec() const

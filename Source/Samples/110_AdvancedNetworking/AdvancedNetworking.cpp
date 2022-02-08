@@ -866,42 +866,12 @@ void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
 
 void AdvancedNetworking::UpdateStats()
 {
-    auto network = GetSubsystem<Network>();
-    ea::string stats;
-
-    int packetsIn = 0;
-    int packetsOut = 0;
-    ea::hash_set<ReplicationManager*> networkManagers;
-    if (Connection* serverConnection = network->GetServerConnection())
+    if (statsTimer_.GetMSec(false) >= 333)
     {
-        packetsIn = serverConnection->GetPacketsInPerSec();
-        packetsOut = serverConnection->GetPacketsOutPerSec();
-        if (Scene* scene = serverConnection->GetScene())
-        {
-            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
-                networkManagers.insert(replicationManager);
-        }
+        statsTimer_.Reset();
+        auto network = GetSubsystem<Network>();
+        statsText_->SetText(network->GetDebugInfo());
     }
-    else
-    {
-        for (Connection* clientConnection : network->GetClientConnections())
-        {
-            packetsIn += clientConnection->GetPacketsInPerSec();
-            packetsOut += clientConnection->GetPacketsOutPerSec();
-            if (Scene* scene = clientConnection->GetScene())
-            {
-                if (auto replicationManager = scene->GetComponent<ReplicationManager>())
-                    networkManagers.insert(replicationManager);
-            }
-        }
-    }
-
-    stats += Format("{:4} packets/s in\n", packetsIn);
-    stats += Format("{:4} packets/s out\n", packetsOut);
-    for (ReplicationManager* replicationManager : networkManagers)
-        stats += replicationManager->GetDebugInfo();
-
-    statsText_->SetText(stats);
 }
 
 ea::optional<Vector3> AdvancedNetworking::RaycastImportantGeometries(const Ray& ray) const
