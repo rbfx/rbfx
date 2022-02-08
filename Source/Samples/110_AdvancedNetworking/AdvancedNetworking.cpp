@@ -580,7 +580,9 @@ void AdvancedNetworking::ProcessRaycastsOnServer()
 
     // Process and dequeue raycasts when possible.
     const NetworkTime serverTime = serverReplicator->GetServerTime();
-    const auto processRaycast = [&](const ServerRaycastInfo& raycastInfo)
+
+    ea::erase_if(serverRaycasts_,
+        [&](const ServerRaycastInfo& raycastInfo)
     {
         if (!raycastInfo.clientConnection_)
             return true;
@@ -591,10 +593,7 @@ void AdvancedNetworking::ProcessRaycastsOnServer()
 
         ProcessSingleRaycastOnServer(raycastInfo);
         return true;
-    };
-
-    serverRaycasts_.erase(
-        ea::remove_if(serverRaycasts_.begin(), serverRaycasts_.end(), processRaycast), serverRaycasts_.end());
+    });
 }
 
 void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& raycastInfo)

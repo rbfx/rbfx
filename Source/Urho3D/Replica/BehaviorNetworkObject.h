@@ -51,6 +51,8 @@ public:
 
     /// Internal. Set owner NetworkObject.
     void SetNetworkObject(BehaviorNetworkObject* owner);
+    /// Internal. Find closest parent NetworkObject.
+    NetworkObject* FindClosestNetworkObject() const;
 
     /// Return owner NetworkObject.
     BehaviorNetworkObject* GetNetworkObject() const { return owner_; }
