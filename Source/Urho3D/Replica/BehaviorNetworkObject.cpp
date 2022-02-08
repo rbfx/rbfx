@@ -49,6 +49,15 @@ void NetworkBehavior::SetNetworkObject(BehaviorNetworkObject* owner)
     owner_ = owner;
 }
 
+NetworkObject* NetworkBehavior::FindClosestNetworkObject() const
+{
+    if (!node_)
+        return nullptr;
+    if (auto sibling = node_->GetDerivedComponent<NetworkObject>())
+        return sibling;
+    return node_->GetParentDerivedComponent<NetworkObject>(true);
+}
+
 void NetworkBehavior::OnNodeSet(Node* node)
 {
     if (!node && owner_)
@@ -80,6 +89,9 @@ void BehaviorNetworkObject::InitializeBehaviors()
 
     ea::vector<NetworkBehavior*> networkBehaviors;
     node_->GetDerivedComponents(networkBehaviors, true);
+
+    ea::erase_if(networkBehaviors,
+        [this](NetworkBehavior* networkBehavior) { return networkBehavior->FindClosestNetworkObject() != this; });
 
     if (networkBehaviors.size() > MaxNumBehaviors)
     {
@@ -159,10 +171,14 @@ void BehaviorNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
 {
     BaseClassName::WriteSnapshot(frame, dest);
 
+    // Write metadata of connected behaviors for validation
+    dest.WriteVLE(behaviors_.size());
     for (const auto& connectedBehavior : behaviors_)
-    {
+        dest.WriteStringHash(connectedBehavior.component_->GetType());
+
+    // Write actual behaviors data
+    for (const auto& connectedBehavior : behaviors_)
         connectedBehavior.component_->WriteSnapshot(frame, dest);
-    }
 }
 
 void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src)
@@ -171,7 +187,30 @@ void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer&
 
     InitializeBehaviors();
 
-    // TODO(network): Add validation
+    // Read and check behaviors
+    const unsigned expectedNumBehaviors = src.ReadVLE();
+    if (expectedNumBehaviors != behaviors_.size())
+    {
+        URHO3D_LOGERROR("Number of behaviors in NetworkObject {} doesn't match on the client ({}) and the server ({})",
+            ToString(GetNetworkId()), behaviors_.size(), expectedNumBehaviors);
+        InvalidateBehaviors();
+        return;
+    }
+
+    for (unsigned i = 0; i < expectedNumBehaviors; ++i)
+    {
+        const StringHash expectedType = src.ReadStringHash();
+        NetworkBehavior* behavior = behaviors_[i].component_;
+        if (expectedType != behavior->GetType())
+        {
+            URHO3D_LOGERROR("Type of behavior #{} in NetworkObject {} doesn't match on the client ({}) and the server ({})",
+                i, ToString(GetNetworkId()), behavior->GetType().ToDebugString(), expectedType.ToDebugString());
+            InvalidateBehaviors();
+            return;
+        }
+    }
+
+    // Read behaviors only if matching
     for (const auto& connectedBehavior : behaviors_)
         connectedBehavior.component_->InitializeFromSnapshot(frame, src);
 }

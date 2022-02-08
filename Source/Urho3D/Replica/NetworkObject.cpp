@@ -52,7 +52,7 @@ void NetworkObject::RegisterObject(Context* context)
 
 void NetworkObject::UpdateObjectHierarchy()
 {
-    NetworkObject* newParentNetworkObject = FindParentNetworkObject();
+    NetworkObject* newParentNetworkObject = node_->GetParentDerivedComponent<NetworkObject>(true);
     if (newParentNetworkObject != parentNetworkObject_)
     {
         if (parentNetworkObject_)
@@ -119,18 +119,6 @@ void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
         if (node_->GetParent() != parentNode)
             node_->SetParent(parentNode);
     }
-}
-
-NetworkObject* NetworkObject::FindParentNetworkObject() const
-{
-    Node* parent = node_->GetParent();
-    while (parent)
-    {
-        if (auto networkObject = parent->GetDerivedComponent<NetworkObject>())
-            return networkObject;
-        parent = parent->GetParent();
-    }
-    return nullptr;
 }
 
 void NetworkObject::AddChildNetworkObject(NetworkObject* networkObject)

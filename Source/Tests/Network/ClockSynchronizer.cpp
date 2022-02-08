@@ -87,8 +87,7 @@ private:
 
     static void ProcessAndRemove(ClockSynchronizer& sync, unsigned currentTime, MessageQueue& queue)
     {
-        queue.erase(ea::remove_if(queue.begin(), queue.end(),
-            [&](const auto& timeAndMessage)
+        ea::erase_if(queue, [&](const auto& timeAndMessage)
         {
             if (timeAndMessage.first <= currentTime)
             {
@@ -96,7 +95,7 @@ private:
                 return true;
             }
             return false;
-        }), queue.end());
+        });
     }
 
     ea::function<unsigned()> getRandomDelay_;

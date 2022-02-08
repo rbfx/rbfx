@@ -154,7 +154,7 @@ protected:
     {
         assert(!invocationInProgress_);
         const auto isExpired = [](const Subscription& subscription) { return !subscription.receiver_; };
-        subscriptions_.erase(ea::remove_if(subscriptions_.begin(), subscriptions_.end(), isExpired), subscriptions_.end());
+        ea::erase_if(subscriptions_, isExpired);
     }
 
     template <class Receiver, class Callback>
