@@ -236,7 +236,7 @@ float Quaternion::RollAngle() const
 
 Urho3D::Vector3 Quaternion::Axis() const
 {
-    float axisScaleInv = static_cast<float>(sqrt(1. - w_ * w_));
+    float axisScaleInv = static_cast<float>(sqrt(Max(0.0f, 1.0f - w_ * w_)));
     if (axisScaleInv < 1e-6f)
         return Vector3::UP;
     return Vector3(x_, y_, z_) / axisScaleInv;
@@ -249,11 +249,11 @@ float Quaternion::Angle() const
 
 Vector3 Quaternion::AngularVelocity() const
 {
-    const float invW = sqrt(1. - w_ * w_);
-    if (invW < M_EPSILON)
+    const float axisScaleInv = sqrt(Max(0.0f, 1.0f - w_ * w_));
+    if (axisScaleInv < M_EPSILON)
         return Vector3::ZERO;
 
-    const Vector3 axis = Vector3(x_, y_, z_) / invW;
+    const Vector3 axis = Vector3(x_, y_, z_) / axisScaleInv;
     const float angleRad = 2 * acos(w_);
     return axis * angleRad;
 }

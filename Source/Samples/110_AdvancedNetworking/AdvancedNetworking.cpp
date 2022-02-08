@@ -70,6 +70,7 @@ static constexpr float CAMERA_OFFSET = 2.0f;
 static constexpr float WALK_VELOCITY = 3.35f;
 static constexpr float HIT_DISTANCE = 100.0f;
 static constexpr float AUTO_MOVEMENT_DURATION = 1.0f;
+static constexpr float MAX_ROTATION_SPEED = 360.0f;
 
 URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYCAST, AdvancedNetworkingRaycast)
 {
@@ -85,6 +86,26 @@ URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYHIT, AdvancedNetworkingRayhit)
 {
     URHO3D_PARAM(P_ORIGIN, Origin);
     URHO3D_PARAM(P_POSITION, Position);
+}
+
+/// Return shortest angle between two angles.
+float ShortestAngle(float lhs, float rhs)
+{
+    const float delta = Mod(rhs - lhs + 180.0f, 360.0f) - 180.0f;
+    return delta < -180.0f ? delta + 360.0f : delta;
+}
+
+/// Helper function to smoothly transform one quaternion into another.
+Quaternion TransformRotation(const Quaternion& base, const Quaternion& target, float maxAngularVelocity)
+{
+    const float baseYaw = base.YawAngle();
+    const float targetYaw = target.YawAngle();
+    if (Equals(baseYaw, targetYaw, 0.1f))
+        return base;
+
+    const float shortestAngle = ShortestAngle(baseYaw, targetYaw);
+    const float delta = Sign(shortestAngle) * ea::min(Abs(shortestAngle), maxAngularVelocity);
+    return Quaternion{baseYaw + delta, Vector3::UP};
 }
 
 /// Custom networking component that handles all sample-specific behaviors:
@@ -141,8 +162,8 @@ public:
         animationTrace_.Resize(traceDuration);
         rotationTrace_.Resize(traceDuration);
 
-        // TODO(network): Revisit
-        //rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
+        // Smooth rotation a bit, but without extrapolation
+        rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
     }
 
     /// Always send animation updates for simplicity.
@@ -211,7 +232,7 @@ public:
     void Update(float replicaTimeStep, float inputTimeStep) override
     {
         if (!GetNetworkObject()->IsReplicatedClient())
-            UpdateAnimations();
+            UpdateAnimations(inputTimeStep);
 
         BaseClassName::Update(replicaTimeStep, inputTimeStep);
     }
@@ -228,7 +249,7 @@ private:
         kinematicController_ = networkController_->GetComponent<KinematicCharacterController>();
     }
 
-    void UpdateAnimations()
+    void UpdateAnimations(float timeStep)
     {
         // Get current state of the controller to deduce animation from
         const bool isGrounded = kinematicController_->OnGround();
@@ -244,9 +265,12 @@ private:
         }
 
         // Rotate player both on ground and in the air
-        // TODO(network): Smooth this
         if (walkDirection != Vector3::ZERO)
-            node_->SetWorldRotation(Quaternion{Vector3::BACK, walkDirection});
+        {
+            const Quaternion targetRotation{Vector3::BACK, walkDirection};
+            const float maxAngularVelocity = MAX_ROTATION_SPEED * timeStep;
+            node_->SetWorldRotation(TransformRotation(node_->GetWorldRotation(), targetRotation, maxAngularVelocity));
+        }
 
         // If on the ground, either walk or stay idle
         if (isGrounded)
