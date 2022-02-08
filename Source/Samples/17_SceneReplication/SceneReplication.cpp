@@ -78,7 +78,7 @@ struct PlayerControls
 /// Simple controller that implements sample networking logic:
 /// - Synchronize light color on setup;
 /// - Deliver client input to server.
-class URHO3D_API SceneReplicationPlayer : public NetworkBehavior
+class SceneReplicationPlayer : public NetworkBehavior
 {
     URHO3D_OBJECT(SceneReplicationPlayer, NetworkBehavior);
 

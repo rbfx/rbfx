@@ -39,6 +39,7 @@
 #include "../Replica/BehaviorNetworkObject.h"
 #include "../Replica/NetworkObject.h"
 #include "../Replica/PredictedKinematicController.h"
+#include "../Replica/ReplicatedAnimation.h"
 #include "../Replica/ReplicatedTransform.h"
 #include "../Replica/ReplicationManager.h"
 #include "../Replica/StaticNetworkObject.h"
@@ -1108,14 +1109,15 @@ void RegisterNetworkLibrary(Context* context)
     BehaviorNetworkObject::RegisterObject(context);
 
     NetworkBehavior::RegisterObject(context);
+    ReplicatedAnimation::RegisterObject(context);
     ReplicatedTransform::RegisterObject(context);
     TrackedAnimatedModel::RegisterObject(context);
-
-    NetworkPriority::RegisterObject(context);
-    Connection::RegisterObject(context);
 #ifdef URHO3D_PHYSICS
     PredictedKinematicController::RegisterObject(context);
 #endif
+
+    NetworkPriority::RegisterObject(context);
+    Connection::RegisterObject(context);
 }
 
 }
