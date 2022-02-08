@@ -247,11 +247,19 @@ void ClientReplica::ProcessAddObjects(MemoryBuffer& messageData)
         messageData.ReadBuffer(componentBuffer_.GetBuffer());
 
         const bool isOwned = ownerConnectionId == GetConnectionId();
-        if (NetworkObject* networkObject = CreateNetworkObject(networkId, componentType, isOwned))
+        if (NetworkObject* networkObject = CreateNetworkObject(networkId, componentType))
         {
             componentBuffer_.Resize(componentBuffer_.GetBuffer().size());
             componentBuffer_.Seek(0);
-            networkObject->InitializeFromSnapshot(messageFrame, componentBuffer_);
+            networkObject->InitializeFromSnapshot(messageFrame, componentBuffer_, isOwned);
+
+            if (isOwned)
+            {
+                networkObject->SetNetworkMode(NetworkObjectMode::ClientOwned);
+                ownedObjects_.insert(WeakPtr<NetworkObject>(networkObject));
+            }
+            else
+                networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
         }
     }
 }
@@ -295,7 +303,7 @@ void ClientReplica::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData)
     }
 }
 
-NetworkObject* ClientReplica::CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned)
+NetworkObject* ClientReplica::CreateNetworkObject(NetworkId networkId, StringHash componentType)
 {
     auto networkObject = DynamicCast<NetworkObject>(context_->CreateObject(componentType));
     if (!networkObject)
@@ -305,14 +313,6 @@ NetworkObject* ClientReplica::CreateNetworkObject(NetworkId networkId, StringHas
         return nullptr;
     }
     networkObject->SetNetworkId(networkId);
-
-    if (isOwned)
-    {
-        networkObject->SetNetworkMode(NetworkObjectMode::ClientOwned);
-        ownedObjects_.insert(WeakPtr<NetworkObject>(networkObject));
-    }
-    else
-        networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);
 
     if (NetworkObject* oldNetworkObject = objectRegistry_->GetNetworkObject(networkId, false))
     {

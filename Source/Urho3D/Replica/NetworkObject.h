@@ -88,13 +88,18 @@ public:
     NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
+    AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
+    unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
+
+    /// Return network mode.
+    /// Network mode is configured only *after* InitializeOnServer and InitializeFromSnapshot callbacks.
+    /// Before these callbacks the object is considered Standalone.
+    /// This is useful to prevent changes in already initialized objects.
     NetworkObjectMode GetNetworkMode() const { return networkMode_; }
     bool IsStandalone() const { return networkMode_ == NetworkObjectMode::Standalone; }
     bool IsServer() const { return networkMode_ == NetworkObjectMode::Server; }
     bool IsOwnedByThisClient() const { return networkMode_ == NetworkObjectMode::ClientOwned; }
     bool IsReplicatedClient() const { return networkMode_ == NetworkObjectMode::ClientReplicated; }
-    AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
-    unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 
     /// Implement ClientNetworkCallback.
     /// @{

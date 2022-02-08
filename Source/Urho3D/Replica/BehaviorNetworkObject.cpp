@@ -181,9 +181,9 @@ void BehaviorNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
         connectedBehavior.component_->WriteSnapshot(frame, dest);
 }
 
-void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src)
+void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
 {
-    BaseClassName::InitializeFromSnapshot(frame, src);
+    BaseClassName::InitializeFromSnapshot(frame, src, isOwned);
 
     InitializeBehaviors();
 
@@ -212,7 +212,7 @@ void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer&
 
     // Read behaviors only if matching
     for (const auto& connectedBehavior : behaviors_)
-        connectedBehavior.component_->InitializeFromSnapshot(frame, src);
+        connectedBehavior.component_->InitializeFromSnapshot(frame, src, isOwned);
 }
 
 bool BehaviorNetworkObject::IsRelevantForClient(AbstractConnection* connection)

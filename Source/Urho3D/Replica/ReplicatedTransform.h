@@ -92,7 +92,7 @@ public:
     /// @{
     void InitializeOnServer() override;
     void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
 
     void UpdateTransformOnServer() override;
     void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;

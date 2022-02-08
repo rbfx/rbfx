@@ -102,7 +102,7 @@ class ClientNetworkCallback
 {
 public:
     /// Read full snapshot and initialize object. Called once.
-    virtual void InitializeFromSnapshot(unsigned frame, Deserializer& src) {}
+    virtual void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) {}
     /// This component is about to be removed by the authority of the server.
     virtual void PrepareToRemove() {}
 

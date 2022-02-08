@@ -121,8 +121,8 @@ void SharedReplicationState::InitializeNewObjects()
             continue;
         }
 
-        networkObject->SetNetworkMode(NetworkObjectMode::Server);
         networkObject->InitializeOnServer();
+        networkObject->SetNetworkMode(NetworkObjectMode::Server);
 
         if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
             ownedObjectsByConnection_[ownerConnection].insert(networkObject);

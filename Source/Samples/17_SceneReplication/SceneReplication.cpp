@@ -104,7 +104,7 @@ public:
     }
 
     /// Read object color on the client.
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override
     {
         auto* light = GetComponent<Light>();
         light->SetColor(src.ReadColor());

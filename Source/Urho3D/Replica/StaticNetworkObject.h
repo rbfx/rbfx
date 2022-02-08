@@ -56,7 +56,7 @@ public:
     bool PrepareReliableDelta(unsigned frame) override;
     void WriteReliableDelta(unsigned frame, Serializer& dest) override;
 
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
     void ReadReliableDelta(unsigned frame, Deserializer& src) override;
     /// @}
 

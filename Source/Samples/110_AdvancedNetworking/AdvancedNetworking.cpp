@@ -115,13 +115,12 @@ public:
         animatedModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
     }
 
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override
     {
         InitializeCommon();
 
         // Mark all players except ourselves as important for raycast.
         auto animatedModel = GetComponent<AnimatedModel>();
-        const bool isOwned = GetNetworkObject()->IsOwnedByThisClient();
         animatedModel->SetViewMask(isOwned ? UNIMPORTANT_VIEW_MASK : IMPORTANT_VIEW_MASK);
 
         // TODO(network): Revisit

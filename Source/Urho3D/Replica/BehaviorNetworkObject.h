@@ -96,7 +96,7 @@ public:
     void InitializeStandalone() override;
     void InitializeOnServer() override;
     void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src) override;
+    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
 
     bool IsRelevantForClient(AbstractConnection* connection) override;
     void UpdateTransformOnServer() override;
