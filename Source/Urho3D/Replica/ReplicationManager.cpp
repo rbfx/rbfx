@@ -182,6 +182,8 @@ void ReplicationManager::OnSceneSet(Scene* scene)
 
     if (scene)
     {
+        URHO3D_ASSERT(!IsReplicated(), "ReplicationManager shall never be replicated component");
+
         SubscribeToEvent(scene, E_SCENEUPDATE,
             [this](StringHash, VariantMap& eventData)
         {

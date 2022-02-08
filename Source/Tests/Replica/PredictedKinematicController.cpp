@@ -264,7 +264,7 @@ TEST_CASE("PredictedKinematicController works standalone")
         context, "@/ClientSidePrediction/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
 
     auto standaloneScene = CreateTestScene(context);
-    standaloneScene->CreateComponent<ReplicationManager>();
+    standaloneScene->CreateComponent<ReplicationManager>(LOCAL);
 
     Node* standaloneNode = Tests::SpawnOnServer<BehaviorNetworkObject>(standaloneScene, prefab, "Player", {0.0f, 0.96f, 0.0f});
     auto standaloneObject = standaloneNode->GetComponent<PredictedKinematicController>();
