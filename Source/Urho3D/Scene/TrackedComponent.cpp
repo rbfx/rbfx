@@ -115,18 +115,17 @@ void BaseComponentRegistry::InitializeTrackedComponents()
         componentsArray_.clear();
     }
 
-    ea::vector<Component*> components;
-    scene->GetComponents(components, true);
-    for (Component* component : components)
+    ea::vector<BaseTrackedComponent*> components;
+    scene->GetDerivedComponents(components, true);
+    for (BaseTrackedComponent* component : components)
     {
         if (!component->IsInstanceOf(componentType_))
             continue;
 
-        auto trackedComponent = static_cast<BaseTrackedComponent*>(component);
-        if (trackedComponent->ShouldBeTrackedInRegistry())
+        if (component->ShouldBeTrackedInRegistry())
         {
-            trackedComponent->ReconnectToRegistry();
-            AddTrackedComponent(trackedComponent);
+            component->ReconnectToRegistry();
+            AddTrackedComponent(component);
         }
     }
 }

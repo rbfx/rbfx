@@ -628,8 +628,8 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
         ++currentFrame_;
         physicsSync_.Synchronize(overtime, currentFrame_);
 
-        for (auto& [connection, data] : connections_)
-            data->BeginNetworkFrame(currentFrame_, overtime);
+        for (auto& [connection, clientState] : connections_)
+            clientState->BeginNetworkFrame(currentFrame_, overtime);
 
         using namespace BeginServerNetworkFrame;
         auto& eventData = GetEventDataMap();
@@ -650,12 +650,12 @@ void ServerReplicator::OnNetworkUpdate()
     network_->SendEvent(E_ENDSERVERNETWORKFRAME, eventData);
 
     sharedState_->PrepareForUpdate();
-    for (auto& [connection, data] : connections_)
-        data->UpdateNetworkObjects(*sharedState_);
+    for (auto& [connection, clientState] : connections_)
+        clientState->UpdateNetworkObjects(*sharedState_);
     sharedState_->CookDeltaUpdates(currentFrame_);
 
-    for (auto& [connection, data] : connections_)
-        data->SendMessages(*sharedState_);
+    for (auto& [connection, clientState] : connections_)
+        clientState->SendMessages(*sharedState_);
 }
 
 void ServerReplicator::AddConnection(AbstractConnection* connection)
@@ -669,9 +669,6 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
     connections_.erase(connection);
     const auto& [iter, insterted] = connections_.emplace(
         connection, MakeShared<ClientReplicationState>(objectRegistry_, connection, settings_));
-
-    URHO3D_ASSERT(insterted);
-    ClientReplicationState& data = *iter->second;
 
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
@@ -690,8 +687,9 @@ void ServerReplicator::RemoveConnection(AbstractConnection* connection)
 
 bool ServerReplicator::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
-    ClientReplicationState& data = GetConnection(connection);
-    return data.ProcessMessage(messageId, messageData);
+    if (ClientReplicationState* clientState = GetClientState(connection))
+        return clientState->ProcessMessage(messageId, messageData);
+    return false;
 }
 
 void ServerReplicator::ProcessSceneUpdate()
@@ -711,9 +709,8 @@ void ServerReplicator::ProcessSceneUpdate()
 
 void ServerReplicator::ReportInputLoss(AbstractConnection* connection, float percentLoss)
 {
-    // TODO(network): Handle expired connections
-    ClientReplicationState& clientState = GetConnection(connection);
-    clientState.SetReportedInputLoss(percentLoss);
+    if (ClientReplicationState* clientState = GetClientState(connection))
+        clientState->SetReportedInputLoss(percentLoss);
 }
 
 void ServerReplicator::SetCurrentFrame(unsigned frame)
@@ -721,11 +718,10 @@ void ServerReplicator::SetCurrentFrame(unsigned frame)
     currentFrame_ = frame;
 }
 
-ClientReplicationState& ServerReplicator::GetConnection(AbstractConnection* connection)
+ClientReplicationState* ServerReplicator::GetClientState(AbstractConnection* connection) const
 {
-    const auto iter = connections_.find(connection);
-    assert(iter != connections_.end());
-    return *iter->second;
+    auto iter = connections_.find(connection);
+    return iter != connections_.end() ? iter->second : nullptr;
 }
 
 ea::string ServerReplicator::GetDebugInfo() const
@@ -736,11 +732,11 @@ ea::string ServerReplicator::GetDebugInfo() const
         !scene_->GetName().empty() ? scene_->GetName() : "Unnamed",
         currentFrame_);
 
-    for (const auto& [connection, data] : connections_)
+    for (const auto& [connection, clientState] : connections_)
     {
         result += Format("Connection {}: Ping {}ms, InDelay {}+{} frames, InLoss {}%\n",
-            connection->ToString(), connection->GetPing(), data->GetInputDelay(), data->GetInputBufferSize(),
-            CeilToInt(data->GetReportedInputLoss() * 100.0f));
+            connection->ToString(), connection->GetPing(), clientState->GetInputDelay(), clientState->GetInputBufferSize(),
+            CeilToInt(clientState->GetReportedInputLoss() * 100.0f));
     }
 
     return result;

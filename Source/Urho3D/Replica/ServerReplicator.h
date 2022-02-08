@@ -234,7 +234,7 @@ private:
     void OnInputReady(float timeStep, bool isUpdateNow, float overtime);
     void OnNetworkUpdate();
 
-    ClientReplicationState& GetConnection(AbstractConnection* connection);
+    ClientReplicationState* GetClientState(AbstractConnection* connection) const;
 
     const WeakPtr<Network> network_;
     const WeakPtr<Scene> scene_;

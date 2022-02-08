@@ -557,10 +557,10 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
                 break;
 
             default:
-                if (replicationManager_ && FIRST_NETWORK_MANAGER_MSG <= msgID && msgID < LAST_NETWORK_MANAGER_MSG)
-                    replicationManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg);
-                else
-                    ProcessUnknownMessage(msgID, msg);
+                if (replicationManager_ && replicationManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg))
+                    break;
+
+                ProcessUnknownMessage(msgID, msg);
                 break;
         }
     }

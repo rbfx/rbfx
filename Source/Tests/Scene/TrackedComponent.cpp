@@ -27,18 +27,18 @@
 
 class TestComponentRegistry : public BaseStableComponentRegistry
 {
-    URHO3D_OBJECT(TestComponentRegistry, Component);
+    URHO3D_OBJECT(TestComponentRegistry, BaseStableComponentRegistry);
 
 public:
     explicit TestComponentRegistry(Context* context);
 };
 
-class TestTrackedComponent : public TrackedComponent<BaseStableTrackedComponent, TestComponentRegistry, EnabledOnlyTag>
+class TestTrackedComponent : public TrackedComponent<TestComponentRegistry, EnabledOnlyTag>
 {
-    URHO3D_OBJECT(TestTrackedComponent, Component);
+    URHO3D_OBJECT(TestTrackedComponent, BaseStableTrackedComponent);
 
 public:
-    using TrackedComponent<BaseStableTrackedComponent, TestComponentRegistry, EnabledOnlyTag>::TrackedComponent;
+    using TrackedComponent<TestComponentRegistry, EnabledOnlyTag>::TrackedComponent;
 };
 
 TestComponentRegistry::TestComponentRegistry(Context* context)

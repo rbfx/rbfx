@@ -147,12 +147,18 @@ private:
 /// Indicates that object should remove self from registry if disabled.
 struct EnabledOnlyTag {};
 
-/// Template version of BaseTrackedComponent that automatically registers self in registry.
-template <class TrackedComponentType, class RegistryComponentType, class ... Tags>
-class TrackedComponent : public TrackedComponentType, public Tags...
+/// Return base component type for given registry type.
+template <class T>
+using BaseComponentTypeForRegistry = ea::conditional_t<ea::is_base_of_v<BaseStableComponentRegistry, T>, BaseStableTrackedComponent, BaseTrackedComponent>;
+
+/// Template base of any TrackedComponent that automatically registers itself in registry.
+template <class RegistryComponentType, class ... Tags>
+class TrackedComponent
+    : public BaseComponentTypeForRegistry<RegistryComponentType>
+    , public Tags...
 {
 public:
-    explicit TrackedComponent(Context* context) : TrackedComponentType(context) {}
+    explicit TrackedComponent(Context* context) : BaseComponentTypeForRegistry<RegistryComponentType>(context) {}
 
     RegistryComponentType* GetRegistry() const { return registry_; }
 
@@ -167,7 +173,6 @@ public:
     void ReconnectToRegistry() override
     {
         Scene* scene = this->GetScene();
-        // TODO(network): Revisit derived-ness
         registry_ = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
     }
 
