@@ -322,7 +322,7 @@ ClientReplicationState::ClientReplicationState(
 {
 }
 
-void ClientReplicationState::SendMessages(const SharedReplicationState& sharedState)
+void ClientReplicationState::SendMessages(unsigned currentFrame, const SharedReplicationState& sharedState)
 {
     ClientSynchronizationState::SendMessages();
 
@@ -331,7 +331,7 @@ void ClientReplicationState::SendMessages(const SharedReplicationState& sharedSt
         SendRemoveObjects();
         SendAddObjects();
         SendUpdateObjectsReliable(sharedState);
-        SendUpdateObjectsUnreliable(sharedState);
+        SendUpdateObjectsUnreliable(currentFrame, sharedState);
     }
 }
 
@@ -483,7 +483,7 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
     });
 }
 
-void ClientReplicationState::SendUpdateObjectsUnreliable(const SharedReplicationState& sharedState)
+void ClientReplicationState::SendUpdateObjectsUnreliable(unsigned currentFrame, const SharedReplicationState& sharedState)
 {
     connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
@@ -501,6 +501,10 @@ void ClientReplicationState::SendUpdateObjectsUnreliable(const SharedReplication
 
             const auto updateSpan = sharedState.GetUnreliableUpdateByIndex(index);
             if (!updateSpan)
+                continue;
+
+            URHO3D_ASSERT(componentsRelevance_[index] != NetworkObjectRelevance::Irrelevant);
+            if (currentFrame % static_cast<unsigned>(componentsRelevance_[index]) != 0)
                 continue;
 
             sendMessage = true;
@@ -530,7 +534,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     const float relevanceTimeout = GetSetting(NetworkSettings::RelevanceTimeout).GetFloat();
 
     const unsigned indexUpperBound = sharedState.GetIndexUpperBound();
-    isComponentReplicated_.resize(indexUpperBound);
+    componentsRelevance_.resize(indexUpperBound);
     componentsRelevanceTimeouts_.resize(indexUpperBound);
 
     pendingRemovedComponents_.clear();
@@ -540,9 +544,9 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     for (NetworkId networkId : sharedState.GetRecentlyRemovedObjects())
     {
         const unsigned index = GetIndex(networkId);
-        if (isComponentReplicated_[index])
+        if (componentsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
         {
-            isComponentReplicated_[index] = false;
+            componentsRelevance_[index] = NetworkObjectRelevance::Irrelevant;
             pendingRemovedComponents_.push_back(networkId);
         }
     }
@@ -553,13 +557,13 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
         const NetworkId networkId = networkObject->GetNetworkId();
         const unsigned index = GetIndex(networkId);
 
-        if (!isComponentReplicated_[index])
+        if (componentsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
         {
-            if (networkObject->IsRelevantForClient(connection_))
+            componentsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
+            if (componentsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
             {
                 // Begin replication of component, queue snapshot
                 componentsRelevanceTimeouts_[index] = relevanceTimeout;
-                isComponentReplicated_[index] = true;
                 pendingUpdatedComponents_.push_back({ networkObject, true });
             }
         }
@@ -568,10 +572,10 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
             componentsRelevanceTimeouts_[index] -= timeStep;
             if (componentsRelevanceTimeouts_[index] < 0.0f)
             {
-                if (!networkObject->IsRelevantForClient(connection_))
+                componentsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
+                if (componentsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
                 {
                     // Remove irrelevant component
-                    isComponentReplicated_[index] = false;
                     pendingRemovedComponents_.push_back(networkId);
                     continue;
                 }
@@ -655,7 +659,7 @@ void ServerReplicator::OnNetworkUpdate()
     sharedState_->CookDeltaUpdates(currentFrame_);
 
     for (auto& [connection, clientState] : connections_)
-        clientState->SendMessages(*sharedState_);
+        clientState->SendMessages(currentFrame_, *sharedState_);
 }
 
 void ServerReplicator::AddConnection(AbstractConnection* connection)

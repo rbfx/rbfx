@@ -176,7 +176,7 @@ public:
     /// Process messages for this client.
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
     /// Send messages to connection for current frame.
-    void SendMessages(const SharedReplicationState& sharedState);
+    void SendMessages(unsigned currentFrame, const SharedReplicationState& sharedState);
 
     /// Manage reported input loss.
     /// @{
@@ -189,9 +189,9 @@ private:
     void SendRemoveObjects();
     void SendAddObjects();
     void SendUpdateObjectsReliable(const SharedReplicationState& sharedState);
-    void SendUpdateObjectsUnreliable(const SharedReplicationState& sharedState);
+    void SendUpdateObjectsUnreliable(unsigned currentFrame, const SharedReplicationState& sharedState);
 
-    ea::bitvector<> isComponentReplicated_;
+    ea::vector<NetworkObjectRelevance> componentsRelevance_;
     ea::vector<float> componentsRelevanceTimeouts_;
 
     ea::vector<NetworkId> pendingRemovedComponents_;

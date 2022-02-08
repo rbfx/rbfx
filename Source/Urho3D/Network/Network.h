@@ -161,6 +161,8 @@ public:
     bool IsServerRunning() const;
     /// Return whether a remote event is allowed to be received.
     bool CheckRemoteEvent(StringHash eventType) const;
+    /// Return aggregated debug info.
+    ea::string GetDebugInfo() const;
 
     /// Return the package download cache directory.
     /// @property

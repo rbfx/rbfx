@@ -24,26 +24,35 @@
 
 #pragma once
 
-#include "../Scene/TrackedComponent.h"
+#include "../Replica/BehaviorNetworkObject.h"
 
 namespace Urho3D
 {
 
-/// ID used to identify unique NetworkObject within Scene.
-using NetworkId = ComponentReference;
-static constexpr NetworkId InvalidNetworkId = NetworkId{};
-
-/// Relevance of the NetworkObject.
-/// If 0, NetworkObject is irrelevant for the client.
-/// If not 0, indicates how often the NetworkObject receives unreliable updates:
-/// - 1: send every update;
-/// - 2: send every second update;
-/// - 3: send every third update;
-/// - etc
-enum class NetworkObjectRelevance : unsigned char
+/// Behavior that filters NetworkObject by the minimum distance to the client.
+/// If the distance is less than the threshold, no relevance is reported.
+/// If the distance is greater than the threshold, specified relevance or irrelevance is reported.
+class URHO3D_API FilteredByDistance : public NetworkBehavior
 {
-    Irrelevant = 0,
-    Normal = 1,
+    URHO3D_OBJECT(FilteredByDistance, NetworkBehavior);
+
+public:
+    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::GetRelevanceForClient;
+    static constexpr float DefaultDistance = 100.0f;
+
+    explicit FilteredByDistance(Context* context);
+    ~FilteredByDistance() override;
+
+    static void RegisterObject(Context* context);
+
+    /// Implement NetworkBehavior.
+    /// @{
+    ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) override;
+    /// @}
+
+private:
+    NetworkObjectRelevance relevance_{};
+    float distance_{DefaultDistance};
 };
 
-}
+};

@@ -26,6 +26,7 @@
 
 #include "../Core/Assert.h"
 #include "../Container/FlagSet.h"
+#include "../Replica/NetworkId.h"
 #include "../Replica/NetworkTime.h"
 
 #include <EASTL/optional.h>
@@ -45,7 +46,7 @@ enum class NetworkCallbackMask
 
     /// Server callbacks
     /// @{
-    IsRelevantForClient     = 1 << 0,
+    GetRelevanceForClient   = 1 << 0,
     UpdateTransformOnServer = 1 << 1,
     /// @}
 
@@ -74,9 +75,9 @@ public:
     /// Perform initialization. Called once.
     virtual void InitializeOnServer() {}
 
-    /// Return whether the component should be replicated for specified client connection.
-    /// Component is replicated only if *all* behaviors confirm its relevance.
-    virtual bool IsRelevantForClient(AbstractConnection* connection) { return true; }
+    /// Return whether the component should be replicated for specified client connection, and how frequently.
+    /// The first reported valid relevance is used.
+    virtual ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) { return ea::nullopt; }
     /// Called when transform of the object is dirtied.
     virtual void UpdateTransformOnServer() {}
 
