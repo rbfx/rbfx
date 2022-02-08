@@ -43,6 +43,7 @@
 		<attribute name="Variables" />
 		<component type="Light" id="2">
 			<attribute name="Color" value="1 1 0 1" />
+			<attribute name="Brightness Multiplier" value="0.5" />
 		</component>
 	</node>
 </node>
