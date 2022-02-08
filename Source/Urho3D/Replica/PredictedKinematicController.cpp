@@ -127,14 +127,11 @@ void PredictedKinematicController::InitializeOnServer()
     });
 }
 
-void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deserializer& src)
+void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
 {
     InitializeCommon();
     if (!IsConnectedToComponents())
         return;
-
-    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
-    const bool isOwned = GetNetworkObject()->GetNetworkMode() == NetworkObjectMode::ClientOwned;
 
     if (isOwned)
     {

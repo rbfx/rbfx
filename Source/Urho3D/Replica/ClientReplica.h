@@ -141,7 +141,7 @@ private:
     void OnNetworkUpdate();
     void SendObjectsFeedbackUnreliable(unsigned feedbackFrame);
 
-    NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType, bool isOwned);
+    NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType);
     NetworkObject* GetCheckedNetworkObject(NetworkId networkId, StringHash componentType);
     void RemoveNetworkObject(WeakPtr<NetworkObject> networkObject);
 

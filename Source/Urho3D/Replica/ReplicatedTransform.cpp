@@ -96,7 +96,7 @@ void ReplicatedTransform::WriteSnapshot(unsigned frame, Serializer& dest)
     dest.WriteVLE(flags.to_uint32());
 }
 
-void ReplicatedTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src)
+void ReplicatedTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
 {
     InitializeCommon();
 

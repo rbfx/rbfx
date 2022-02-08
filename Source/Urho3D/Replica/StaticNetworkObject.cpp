@@ -52,8 +52,7 @@ void StaticNetworkObject::SetClientPrefab(XMLFile* prefab)
         return;
     }
 
-    // TODO(network): Revisit? Maybe pass isOwned to InitializeFromSnapshot?
-    if (GetNetworkMode() == NetworkObjectMode::Server)
+    if (!IsStandalone())
     {
         URHO3D_LOGERROR("StaticNetworkObject::SetClientPrefab is called for object {} which is already replicated",
             ToString(GetNetworkId()));
@@ -92,7 +91,7 @@ void StaticNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
     dest.WriteUInt(static_cast<unsigned>(latestSentParentObject_));
 }
 
-void StaticNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src)
+void StaticNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
 {
     const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
     SetParentNetworkObject(parentNetworkId);
