@@ -86,6 +86,10 @@ URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYHIT, AdvancedNetworkingRayhit)
     URHO3D_PARAM(P_POSITION, Position);
 }
 
+/// Custom networking component that handles all sample-specific behaviors:
+/// - Animation synchronization;
+/// - Player rotation synchronization;
+/// - View mask assignment for easy raycasting.
 class AdvancedNetworkingPlayer : public NetworkBehavior
 {
     URHO3D_OBJECT(AdvancedNetworkingPlayer, NetworkBehavior);
@@ -345,6 +349,7 @@ AdvancedNetworking::AdvancedNetworking(Context* context) :
 
 void AdvancedNetworking::Start(const ea::vector<ea::string>& args)
 {
+    // Register sample types
     if (!context_->IsReflected<AdvancedNetworkingUI>())
         context_->RegisterFactory<AdvancedNetworkingUI>();
 

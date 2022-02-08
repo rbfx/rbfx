@@ -142,7 +142,7 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
 {
     network_->SetSimulateServerEvents(true);
     network_->SetSimulateClientEvents(true);
-    serverReplicationManager_ = serverScene_->GetOrCreateComponent<ReplicationManager>();
+    serverReplicationManager_ = serverScene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
     serverReplicationManager_->StartServer();
 }
 
@@ -156,7 +156,7 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
 {
     PerClient data;
     data.clientScene_ = clientScene;
-    data.clientReplicationManager_ = clientScene->GetOrCreateComponent<ReplicationManager>();
+    data.clientReplicationManager_ = clientScene->GetOrCreateComponent<ReplicationManager>(LOCAL);
     data.clientToServer_ = MakeShared<ManualConnection>(context_, serverReplicationManager_, random_.GetUInt());
     data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientReplicationManager_, random_.GetUInt());
 
