@@ -61,10 +61,10 @@ enum class NetworkObjectMode
 ///
 /// Hierarchy is updated after NetworkObject node is dirtied.
 class URHO3D_API NetworkObject
-    : public TrackedComponent<BaseStableTrackedComponent, NetworkObjectRegistry>
+    : public TrackedComponent<NetworkObjectRegistry>
     , public NetworkCallback
 {
-    URHO3D_OBJECT(NetworkObject, Component);
+    URHO3D_OBJECT(NetworkObject, BaseStableTrackedComponent);
 
 public:
     explicit NetworkObject(Context* context);

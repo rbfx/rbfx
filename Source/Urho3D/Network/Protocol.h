@@ -74,30 +74,22 @@ enum NetworkMessageId
     /// Message used to synchronize clock between client and server.
     MSG_CLOCK_SYNC = 0x9A,
 
-    /// Messages processed by ReplicationManager
-    /// @{
-    FIRST_NETWORK_MANAGER_MSG = 200,
-
-    /// TODO: Reuse constant when SWIG supports it.
-    /// Server->Client: deliver networking settings.
+    /// Server->Client. ReplicationManager message. Deliver networking settings.
     MSG_CONFIGURE = 200,
-    /// Server->Client: current server time and dynamic connection properties.
+    /// Server->Client. ReplicationManager message. Send server time and dynamic properties of the client connection.
     MSG_SCENE_CLOCK,
-    /// Client->Server: client is synchronized and is ready for replication.
+    /// Client->Server. ReplicationManager message. Notify server that the client is ready for replication.
     MSG_SYNCHRONIZED,
-    /// Server->Client:
+    /// Server->Client. ReplicationManager message. Remove replicated NetworkObjects.
     MSG_REMOVE_OBJECTS,
-    /// Server->Client:
+    /// Server->Client. ReplicationManager message. Create replicated NetworkObjects from snapshots.
     MSG_ADD_OBJECTS,
-    /// Server->Client:
+    /// Server->Client. ReplicationManager message. Perform ordered and reliable update of NetworkObjects.
     MSG_UPDATE_OBJECTS_RELIABLE,
-    /// Server->Client:
+    /// Server->Client. ReplicationManager message. Perform unordered and unreliable update of NetworkObjects.
     MSG_UPDATE_OBJECTS_UNRELIABLE,
-    /// Client->Server:
+    /// Client->Server. ReplicationManager message. Perform unordered and unreliable update of owned NetworkObjects from client to server.
     MSG_OBJECTS_FEEDBACK_UNRELIABLE,
-
-    LAST_NETWORK_MANAGER_MSG,
-    /// @}
 
     /// Message IDs starting from MSG_USER are reserved for the end user.
     MSG_USER = 512

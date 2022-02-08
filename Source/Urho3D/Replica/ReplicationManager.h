@@ -104,7 +104,7 @@ public:
     /// Start new client from specified connection. Removes all existing objects.
     void StartClient(AbstractConnection* connectionToServer);
     /// Process network message either as client or as server.
-    void ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     /// Process connection dropped. Removes client connection for server, converts scene to standalone for client.
     void DropConnection(AbstractConnection* connection);
 
@@ -129,8 +129,9 @@ protected:
 private:
     void OnSceneUpdate(float timeStep);
     void Stop();
-    void ProcessMessageOnUninitializedClient(
+    bool ProcessMessageOnUninitializedClient(
         AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    ea::string GetUninitializedClientDebugInfo() const;
 
     struct ClientData
     {

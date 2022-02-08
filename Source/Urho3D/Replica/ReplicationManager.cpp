@@ -147,7 +147,7 @@ ea::string ReplicationManager::GetDebugInfo() const
     if (client_ && client_->replica_)
         return client_->replica_->GetDebugInfo();
     else if (client_)
-        return "Pending synchronization..."; // TODO(network): Revisit formatting
+        return GetUninitializedClientDebugInfo();
     else if (server_)
         return server_->GetDebugInfo();
     else
@@ -343,21 +343,19 @@ const Variant& ReplicationManager::GetSetting(const NetworkSetting& setting) con
         return Variant::EMPTY;
 }
 
-void ReplicationManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+bool ReplicationManager::ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     if (client_)
     {
         // If replica is not initialized, collect initialization data
         if (!client_->replica_)
-            ProcessMessageOnUninitializedClient(connection, messageId, messageData);
+            return ProcessMessageOnUninitializedClient(connection, messageId, messageData);
         else if (client_->replica_)
-            client_->replica_->ProcessMessage(messageId, messageData);
+            return client_->replica_->ProcessMessage(messageId, messageData);
     }
 
     if (server_)
-    {
-        server_->ProcessMessage(connection, messageId, messageData);
-    }
+        return server_->ProcessMessage(connection, messageId, messageData);
 }
 
 void ReplicationManager::DropConnection(AbstractConnection* connection)
@@ -368,7 +366,7 @@ void ReplicationManager::DropConnection(AbstractConnection* connection)
         StartStandalone();
 }
 
-void ReplicationManager::ProcessMessageOnUninitializedClient(
+bool ReplicationManager::ProcessMessageOnUninitializedClient(
     AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     URHO3D_ASSERT(client_ && !client_->replica_);
@@ -388,6 +386,10 @@ void ReplicationManager::ProcessMessageOnUninitializedClient(
 
         client_->initialClock_ = msg;
     }
+    else
+    {
+        return false;
+    }
 
     // If ready, initialize
     if (connection->IsClockSynchronized() && client_->IsReadyToInitialize())
@@ -398,6 +400,21 @@ void ReplicationManager::ProcessMessageOnUninitializedClient(
         connection->SendSerializedMessage(
             MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PT_RELIABLE_UNORDERED);
     }
+
+    return true;
+}
+
+ea::string ReplicationManager::GetUninitializedClientDebugInfo() const
+{
+    ea::vector<ea::string> waitList;
+    if (client_->connection_ && !client_->connection_->IsClockSynchronized())
+        waitList.push_back("system clock");
+    if (!client_->serverSettings_)
+        waitList.push_back("settings");
+    if (!client_->initialClock_ || waitList.empty())
+        waitList.push_back("server scene time");
+
+    return Format("Connecting... Waiting for {}...", ea::string::joined(waitList, ", "));
 }
 
 }
