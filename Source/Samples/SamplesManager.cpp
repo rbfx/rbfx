@@ -194,7 +194,8 @@ void SamplesManager::Start()
     input->SetMouseVisible(true);
 
 #if URHO3D_SYSTEMUI
-    context_->GetSubsystem<Engine>()->CreateDebugHud()->ToggleAll();
+    if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
+        debugHud->ToggleAll();
 #endif
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
