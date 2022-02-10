@@ -133,7 +133,7 @@ void FrameEventTracker::SkipFramesUntilEvent(StringHash eventType, unsigned hits
     });
 }
 
-void FrameEventTracker::ValidatePattern(ea::vector<ea::vector<StringHash>> pattern) const
+void FrameEventTracker::ValidatePattern(const ea::vector<ea::vector<StringHash>>& pattern) const
 {
     const unsigned numFrames = recordedFrames_.size();
     REQUIRE(numFrames >= pattern.size());

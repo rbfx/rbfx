@@ -64,7 +64,8 @@ void NetworkObject::UpdateObjectHierarchy()
             parentNetworkObject_->AddChildNetworkObject(this);
     }
 
-    UpdateTransformOnServer();
+    if (IsServer())
+        UpdateTransformOnServer();
 }
 
 void NetworkObject::OnNodeSet(Node* node)
@@ -89,7 +90,7 @@ void NetworkObject::OnNodeSet(Node* node)
 void NetworkObject::OnMarkedDirty(Node* node)
 {
     if (auto replicationManager = GetReplicationManager())
-        replicationManager->QueueComponentUpdate(this);
+        replicationManager->QueueNetworkObjectUpdate(this);
 }
 
 NetworkObject* NetworkObject::GetOtherNetworkObject(NetworkId networkId) const

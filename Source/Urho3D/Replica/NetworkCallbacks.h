@@ -78,7 +78,7 @@ public:
     /// Return whether the component should be replicated for specified client connection, and how frequently.
     /// The first reported valid relevance is used.
     virtual ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) { return ea::nullopt; }
-    /// Called when transform of the object is dirtied.
+    /// Called when world transform or parent of the object is updated in Server mode.
     virtual void UpdateTransformOnServer() {}
 
     /// Write full snapshot.

@@ -59,10 +59,12 @@ public:
 
     /// Process components
     /// @{
-    void QueueComponentUpdate(NetworkObject* networkObject);
-    void RemoveAllComponents();
+    void RemoveAllNetworkObjects();
 
-    void UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
+    void QueueNetworkObjectUpdate(NetworkObject* networkObject);
+    void UpdateNetworkObjects();
+
+    void GetSortedNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
     /// @}
 
     const auto GetNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }

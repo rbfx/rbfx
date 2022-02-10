@@ -67,13 +67,13 @@ SharedReplicationState::SharedReplicationState(NetworkObjectRegistry* objectRegi
 
 void SharedReplicationState::OnNetworkObjectAdded(NetworkObject* networkObject)
 {
-    recentlyAddedComponents_.insert(networkObject->GetNetworkId());
+    recentlyAddedObjects_.insert(networkObject->GetNetworkId());
 }
 
 void SharedReplicationState::OnNetworkObjectRemoved(NetworkObject* networkObject)
 {
-    if (recentlyAddedComponents_.erase(networkObject->GetNetworkId()) == 0)
-        recentlyRemovedComponents_.insert(networkObject->GetNetworkId());
+    if (recentlyAddedObjects_.erase(networkObject->GetNetworkId()) == 0)
+        recentlyRemovedObjects_.insert(networkObject->GetNetworkId());
 
     if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
     {
@@ -89,7 +89,7 @@ void SharedReplicationState::PrepareForUpdate()
     ResetFrameBuffers();
     InitializeNewObjects();
 
-    objectRegistry_->UpdateAndSortNetworkObjects(sortedNetworkObjects_);
+    objectRegistry_->GetSortedNetworkObjects(sortedNetworkObjects_);
 }
 
 void SharedReplicationState::ResetFrameBuffers()
@@ -112,7 +112,7 @@ void SharedReplicationState::ResetFrameBuffers()
 
 void SharedReplicationState::InitializeNewObjects()
 {
-    for (NetworkId networkId : recentlyAddedComponents_)
+    for (NetworkId networkId : recentlyAddedObjects_)
     {
         NetworkObject* networkObject = objectRegistry_->GetNetworkObject(networkId);
         if (!networkObject)
@@ -127,7 +127,7 @@ void SharedReplicationState::InitializeNewObjects()
         if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
             ownedObjectsByConnection_[ownerConnection].insert(networkObject);
     }
-    recentlyAddedComponents_.clear();
+    recentlyAddedObjects_.clear();
 }
 
 void SharedReplicationState::QueueDeltaUpdate(NetworkObject* networkObject)
@@ -138,7 +138,7 @@ void SharedReplicationState::QueueDeltaUpdate(NetworkObject* networkObject)
 
 void SharedReplicationState::CookDeltaUpdates(unsigned currentFrame)
 {
-    recentlyRemovedComponents_.clear();
+    recentlyRemovedObjects_.clear();
 
     for (unsigned i = 0; i < isDeltaUpdateQueued_.size(); ++i)
     {
@@ -397,7 +397,7 @@ void ClientReplicationState::SendRemoveObjects()
     {
         if (debugInfo)
         {
-            for (NetworkId networkId : pendingRemovedComponents_)
+            for (NetworkId networkId : pendingRemovedObjects_)
             {
                 if (!debugInfo->empty())
                     debugInfo->append(", ");
@@ -406,10 +406,10 @@ void ClientReplicationState::SendRemoveObjects()
         }
 
         msg.WriteUInt(GetCurrentFrame());
-        for (NetworkId networkId : pendingRemovedComponents_)
+        for (NetworkId networkId : pendingRemovedObjects_)
             msg.WriteUInt(static_cast<unsigned>(networkId));
 
-        const bool sendMessage = !pendingRemovedComponents_.empty();
+        const bool sendMessage = !pendingRemovedObjects_.empty();
         return sendMessage;
     });
 }
@@ -422,7 +422,7 @@ void ClientReplicationState::SendAddObjects()
         msg.WriteUInt(GetCurrentFrame());
 
         bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedComponents_)
+        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
         {
             if (!isSnapshot)
                 continue;
@@ -455,7 +455,7 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
         msg.WriteUInt(GetCurrentFrame());
 
         bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedComponents_)
+        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
         {
             const unsigned index = GetIndex(networkObject->GetNetworkId());
             if (isSnapshot)
@@ -492,7 +492,7 @@ void ClientReplicationState::SendUpdateObjectsUnreliable(unsigned currentFrame, 
 
         msg.WriteUInt(GetCurrentFrame());
 
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedComponents_)
+        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
         {
             // Skip redundant updates, both if update is empty or if snapshot was already sent
             const unsigned index = GetIndex(networkObject->GetNetworkId());
@@ -503,8 +503,8 @@ void ClientReplicationState::SendUpdateObjectsUnreliable(unsigned currentFrame, 
             if (!updateSpan)
                 continue;
 
-            URHO3D_ASSERT(componentsRelevance_[index] != NetworkObjectRelevance::Irrelevant);
-            if (currentFrame % static_cast<unsigned>(componentsRelevance_[index]) != 0)
+            URHO3D_ASSERT(objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant);
+            if (currentFrame % static_cast<unsigned>(objectsRelevance_[index]) != 0)
                 continue;
 
             sendMessage = true;
@@ -534,20 +534,20 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     const float relevanceTimeout = GetSetting(NetworkSettings::RelevanceTimeout).GetFloat();
 
     const unsigned indexUpperBound = sharedState.GetIndexUpperBound();
-    componentsRelevance_.resize(indexUpperBound);
-    componentsRelevanceTimeouts_.resize(indexUpperBound);
+    objectsRelevance_.resize(indexUpperBound);
+    objectsRelevanceTimeouts_.resize(indexUpperBound);
 
-    pendingRemovedComponents_.clear();
-    pendingUpdatedComponents_.clear();
+    pendingRemovedObjects_.clear();
+    pendingUpdatedObjects_.clear();
 
     // Process removed components first
     for (NetworkId networkId : sharedState.GetRecentlyRemovedObjects())
     {
         const unsigned index = GetIndex(networkId);
-        if (componentsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
+        if (objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
         {
-            componentsRelevance_[index] = NetworkObjectRelevance::Irrelevant;
-            pendingRemovedComponents_.push_back(networkId);
+            objectsRelevance_[index] = NetworkObjectRelevance::Irrelevant;
+            pendingRemovedObjects_.push_back(networkId);
         }
     }
 
@@ -557,35 +557,35 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
         const NetworkId networkId = networkObject->GetNetworkId();
         const unsigned index = GetIndex(networkId);
 
-        if (componentsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
+        if (objectsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
         {
-            componentsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
-            if (componentsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
+            objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
+            if (objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
             {
                 // Begin replication of component, queue snapshot
-                componentsRelevanceTimeouts_[index] = relevanceTimeout;
-                pendingUpdatedComponents_.push_back({ networkObject, true });
+                objectsRelevanceTimeouts_[index] = relevanceTimeout;
+                pendingUpdatedObjects_.push_back({ networkObject, true });
             }
         }
         else
         {
-            componentsRelevanceTimeouts_[index] -= timeStep;
-            if (componentsRelevanceTimeouts_[index] < 0.0f)
+            objectsRelevanceTimeouts_[index] -= timeStep;
+            if (objectsRelevanceTimeouts_[index] < 0.0f)
             {
-                componentsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
-                if (componentsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
+                objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
+                if (objectsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
                 {
                     // Remove irrelevant component
-                    pendingRemovedComponents_.push_back(networkId);
+                    pendingRemovedObjects_.push_back(networkId);
                     continue;
                 }
 
-                componentsRelevanceTimeouts_[index] = relevanceTimeout;
+                objectsRelevanceTimeouts_[index] = relevanceTimeout;
             }
 
             // Queue non-snapshot update
             sharedState.QueueDeltaUpdate(networkObject);
-            pendingUpdatedComponents_.push_back({ networkObject, false });
+            pendingUpdatedObjects_.push_back({ networkObject, false });
         }
     }
 }

@@ -77,7 +77,7 @@ void NetworkObjectRegistry::OnComponentRemoved(TrackedComponentBase* baseCompone
     BaseClassName::OnComponentRemoved(baseComponent);
 }
 
-void NetworkObjectRegistry::QueueComponentUpdate(NetworkObject* networkObject)
+void NetworkObjectRegistry::QueueNetworkObjectUpdate(NetworkObject* networkObject)
 {
     const NetworkId networkId = networkObject->GetNetworkId();
     if (GetNetworkObject(networkId) != networkObject)
@@ -90,7 +90,7 @@ void NetworkObjectRegistry::QueueComponentUpdate(NetworkObject* networkObject)
     networkObjectsDirty_[index] = true;
 }
 
-void NetworkObjectRegistry::RemoveAllComponents()
+void NetworkObjectRegistry::RemoveAllNetworkObjects()
 {
     ea::vector<WeakPtr<Node>> nodesToRemove;
     for (NetworkObject* networkObject : GetNetworkObjects())
@@ -107,11 +107,8 @@ void NetworkObjectRegistry::RemoveAllComponents()
     URHO3D_LOGINFO("{} instances of NetworkObject removed", nodesToRemove.size());
 }
 
-void NetworkObjectRegistry::UpdateAndSortNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const
+void NetworkObjectRegistry::UpdateNetworkObjects()
 {
-    networkObjects.clear();
-
-    // Update hierarchy
     for (unsigned index = 0; index < networkObjectsDirty_.size(); ++index)
     {
         if (!networkObjectsDirty_[index])
@@ -123,6 +120,11 @@ void NetworkObjectRegistry::UpdateAndSortNetworkObjects(ea::vector<NetworkObject
             networkObject->GetNode()->GetWorldTransform();
         }
     }
+}
+
+void NetworkObjectRegistry::GetSortedNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const
+{
+    networkObjects.clear();
 
     // Enumerate roots
     for (Component* component : GetTrackedComponents())
@@ -191,9 +193,18 @@ void ReplicationManager::OnSceneSet(Scene* scene)
             const float timeStep = eventData[P_TIMESTEP].GetFloat();
             OnSceneUpdate(timeStep);
         });
+
+        SubscribeToEvent(scene, E_SCENEPOSTUPDATE,
+            [this](StringHash, VariantMap& eventData)
+        {
+            UpdateNetworkObjects();
+        });
     }
     else
+    {
         UnsubscribeFromEvent(E_SCENEUPDATE);
+        UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
+    }
 }
 
 void ReplicationManager::OnComponentAdded(TrackedComponentBase* baseComponent)
@@ -301,7 +312,7 @@ void ReplicationManager::StartClient(AbstractConnection* connectionToServer)
     mode_ = ReplicationManagerMode::Client;
 
     client_ = ClientData{WeakPtr<AbstractConnection>(connectionToServer)};
-    RemoveAllComponents();
+    RemoveAllNetworkObjects();
 
     URHO3D_LOGINFO("Started client for scene replication");
 }
