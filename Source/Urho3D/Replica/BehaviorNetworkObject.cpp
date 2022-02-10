@@ -228,7 +228,7 @@ ea::optional<NetworkObjectRelevance> BehaviorNetworkObject::GetRelevanceForClien
             }
         }
     }
-    return NetworkObjectRelevance::Normal;
+    return ea::nullopt;
 }
 
 void BehaviorNetworkObject::UpdateTransformOnServer()

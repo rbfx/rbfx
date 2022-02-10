@@ -503,8 +503,12 @@ void ClientReplicationState::SendUpdateObjectsUnreliable(unsigned currentFrame, 
             if (!updateSpan)
                 continue;
 
-            URHO3D_ASSERT(objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant);
-            if (currentFrame % static_cast<unsigned>(objectsRelevance_[index]) != 0)
+            const NetworkObjectRelevance relevance = objectsRelevance_[index];
+            URHO3D_ASSERT(relevance != NetworkObjectRelevance::Irrelevant);
+            if (relevance == NetworkObjectRelevance::NoUpdates)
+                continue;
+
+            if (currentFrame % static_cast<unsigned>(relevance) != 0)
                 continue;
 
             sendMessage = true;
@@ -534,7 +538,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     const float relevanceTimeout = GetSetting(NetworkSettings::RelevanceTimeout).GetFloat();
 
     const unsigned indexUpperBound = sharedState.GetIndexUpperBound();
-    objectsRelevance_.resize(indexUpperBound);
+    objectsRelevance_.resize(indexUpperBound, NetworkObjectRelevance::Irrelevant);
     objectsRelevanceTimeouts_.resize(indexUpperBound);
 
     pendingRemovedObjects_.clear();
@@ -559,7 +563,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
 
         if (objectsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
         {
-            objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
+            objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates);
             if (objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
             {
                 // Begin replication of component, queue snapshot
@@ -572,7 +576,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
             objectsRelevanceTimeouts_[index] -= timeStep;
             if (objectsRelevanceTimeouts_[index] < 0.0f)
             {
-                objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::Normal);
+                objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates);
                 if (objectsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
                 {
                     // Remove irrelevant component

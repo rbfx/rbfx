@@ -31,19 +31,6 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-const StringVector relevanceNames = {
-    "Irrelevant",
-    "Update Every Frame",
-    "Update Every 2 Frames",
-    "Update Every 3 Frames",
-    "Update Every 4 Frames"
-};
-
-}
-
 FilteredByDistance::FilteredByDistance(Context* context)
     : NetworkBehavior(context, CallbackMask)
 {
@@ -59,7 +46,8 @@ void FilteredByDistance::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 
-    URHO3D_ENUM_ATTRIBUTE("Outer Relevance", relevance_, relevanceNames, NetworkObjectRelevance{}, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Is Relevant", bool, isRelevant_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Update Period", unsigned, updatePeriod_, 0, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Distance", float, distance_, DefaultDistance, AM_DEFAULT);
 }
 
@@ -86,7 +74,11 @@ ea::optional<NetworkObjectRelevance> FilteredByDistance::GetRelevanceForClient(A
     if (distanceToConnectionObjects < distance_)
         return ea::nullopt;
 
-    return relevance_;
+    if (!isRelevant_)
+        return NetworkObjectRelevance::Irrelevant;
+
+    static constexpr auto maxPeriod = static_cast<unsigned>(NetworkObjectRelevance::MaxPeriod);
+    return static_cast<NetworkObjectRelevance>(ea::min(updatePeriod_, maxPeriod));
 }
 
 }

@@ -51,7 +51,8 @@ public:
     /// @}
 
 private:
-    NetworkObjectRelevance relevance_{};
+    bool isRelevant_{true};
+    unsigned updatePeriod_{};
     float distance_{DefaultDistance};
 };
 
