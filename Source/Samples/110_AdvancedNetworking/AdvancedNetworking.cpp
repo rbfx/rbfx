@@ -522,6 +522,9 @@ void AdvancedNetworking::CreateUI()
     Node* node = scene_->CreateChild("UI", LOCAL);
     ui_ = node->CreateComponent<AdvancedNetworkingUI>();
 
+    if (GetSubsystem<Engine>()->IsHeadless())
+        return;
+
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
     UIElement* root = ui->GetRoot();
@@ -561,6 +564,9 @@ void AdvancedNetworking::CreateUI()
 
 void AdvancedNetworking::SetupViewport()
 {
+    if (GetSubsystem<Engine>()->IsHeadless())
+        return;
+
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
@@ -603,8 +609,11 @@ void AdvancedNetworking::SubscribeToEvents()
         [this](StringHash, VariantMap& eventData)
     {
         ProcessRaycastsOnServer();
-        MoveCamera();
-        UpdateStats();
+        if (!GetSubsystem<Engine>()->IsHeadless())
+        {
+            MoveCamera();
+            UpdateStats();
+        }
     });
 
     // Subscribe to network events
