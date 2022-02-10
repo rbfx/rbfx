@@ -34,16 +34,15 @@ using NetworkId = ComponentReference;
 static constexpr NetworkId InvalidNetworkId = NetworkId{};
 
 /// Relevance of the NetworkObject.
-/// If 0, NetworkObject is irrelevant for the client.
-/// If not 0, indicates how often the NetworkObject receives unreliable updates:
-/// - 1: send every update;
-/// - 2: send every second update;
-/// - 3: send every third update;
-/// - etc
-enum class NetworkObjectRelevance : unsigned char
+/// If greater than 0, indicates the period of unreliable updates of the NetworkObject.
+/// Therefore, it's safe to use any positive number as NetworkObjectRelevance.
+enum class NetworkObjectRelevance : signed char
 {
-    Irrelevant = 0,
-    Normal = 1,
+    Irrelevant = -1,
+    NoUpdates = 0,
+    NormalUpdates = 1,
+
+    MaxPeriod = 127
 };
 
 }

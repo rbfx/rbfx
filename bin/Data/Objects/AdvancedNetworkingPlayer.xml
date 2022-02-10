@@ -9,15 +9,15 @@
 	<component type="ReplicatedTransform" id="4"/>
 	<component type="PredictedKinematicController" id="3"/>
 	<component type="FilteredByDistance" id="8">
-		<attribute name="Outer Relevance" value="Irrelevant" />
+		<attribute name="Update Period" value="0" />
 		<attribute name="Distance" value="100" />
 	</component>
 	<component type="FilteredByDistance" id="9">
-		<attribute name="Outer Relevance" value="Update Every 4 Frames" />
+		<attribute name="Update Period" value="4" />
 		<attribute name="Distance" value="60" />
 	</component>
 	<component type="FilteredByDistance" id="10">
-		<attribute name="Outer Relevance" value="Update Every 2 Frames" />
+		<attribute name="Update Period" value="2" />
 		<attribute name="Distance" value="30" />
 	</component>
 		<node id="2">
