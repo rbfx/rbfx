@@ -49,7 +49,7 @@ public:
     /// @{
     void InitializeStandalone() override;
     void InitializeOnServer() override;
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
     void Update(float replicaTimeStep, float inputTimeStep) override;
     /// @}

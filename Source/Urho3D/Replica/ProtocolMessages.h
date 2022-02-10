@@ -25,6 +25,7 @@
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/Protocol.h"
+#include "../Replica/NetworkId.h"
 
 namespace Urho3D
 {
@@ -58,7 +59,7 @@ struct MsgSynchronized
 
 struct MsgSceneClock
 {
-    unsigned latestFrame_{};
+    NetworkFrame latestFrame_{};
     unsigned latestFrameTime_{};
     unsigned inputDelay_{};
 

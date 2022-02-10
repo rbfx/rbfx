@@ -917,7 +917,7 @@ void PhysicsWorld::PreStep(float timeStep)
     eventData[P_TIMESTEP] = timeStep;
     if (synchronizedStep_ && synchronizedStep_->offset_ <= 0)
     {
-        eventData[P_NETWORKFRAME] = synchronizedStep_->networkFrame_;
+        eventData[P_NETWORKFRAME] = static_cast<long long>(synchronizedStep_->networkFrame_);
         synchronizedStep_ = ea::nullopt;
     }
     SendEvent(E_PHYSICSPRESTEP, eventData);

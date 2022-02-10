@@ -77,22 +77,22 @@ TEST_CASE("Client input quality is evaluated")
 {
     ClientInputStatistics stats(10, 8);
 
-    stats.OnInputReceived(1001);
-    stats.OnInputReceived(1002);
-    stats.OnInputReceived(1004);
-    stats.OnInputReceived(1005);
-    stats.OnInputReceived(1007);
-    stats.OnInputReceived(1009);
-    stats.OnInputReceived(1010);
+    stats.OnInputReceived(NetworkFrame{1001});
+    stats.OnInputReceived(NetworkFrame{1002});
+    stats.OnInputReceived(NetworkFrame{1004});
+    stats.OnInputReceived(NetworkFrame{1005});
+    stats.OnInputReceived(NetworkFrame{1007});
+    stats.OnInputReceived(NetworkFrame{1009});
+    stats.OnInputReceived(NetworkFrame{1010});
     REQUIRE(stats.GetRecommendedBufferSize() == 1);
 
-    stats.OnInputReceived(1020);
+    stats.OnInputReceived(NetworkFrame{1020});
     REQUIRE(stats.GetRecommendedBufferSize() == 1);
 
-    stats.OnInputReceived(1023);
-    stats.OnInputReceived(1024);
-    stats.OnInputReceived(1026);
-    stats.OnInputReceived(1030);
+    stats.OnInputReceived(NetworkFrame{1023});
+    stats.OnInputReceived(NetworkFrame{1024});
+    stats.OnInputReceived(NetworkFrame{1026});
+    stats.OnInputReceived(NetworkFrame{1030});
     REQUIRE(stats.GetRecommendedBufferSize() == 2);
 }
 

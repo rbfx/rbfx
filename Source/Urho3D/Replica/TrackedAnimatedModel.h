@@ -58,7 +58,7 @@ public:
     /// @}
 
 private:
-    void OnServerFrameEnd(unsigned frame);
+    void OnServerFrameEnd(NetworkFrame frame);
 
     /// Attributes independent on the client and the server.
     /// @{

@@ -82,19 +82,19 @@ public:
     virtual void UpdateTransformOnServer() {}
 
     /// Write full snapshot.
-    virtual void WriteSnapshot(unsigned frame, Serializer& dest) {}
+    virtual void WriteSnapshot(NetworkFrame frame, Serializer& dest) {}
 
     /// Prepare for reliable delta update and return update mask. If mask is zero, reliable delta update is skipped.
-    virtual bool PrepareReliableDelta(unsigned frame) { return false; }
+    virtual bool PrepareReliableDelta(NetworkFrame frame) { return false; }
     /// Write reliable delta update. Delta is applied to previous delta or snapshot.
-    virtual void WriteReliableDelta(unsigned frame, Serializer& dest) {}
+    virtual void WriteReliableDelta(NetworkFrame frame, Serializer& dest) {}
     /// Prepare for unreliable delta update and return update mask. If mask is zero, unreliable delta update is skipped.
-    virtual bool PrepareUnreliableDelta(unsigned frame) { return false; }
+    virtual bool PrepareUnreliableDelta(NetworkFrame frame) { return false; }
     /// Write unreliable delta update.
-    virtual void WriteUnreliableDelta(unsigned frame, Serializer& dest) {}
+    virtual void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) {}
 
     /// Read unreliable feedback from client.
-    virtual void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) {}
+    virtual void ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src) {}
 };
 
 /// Client-side callbacks for NetworkObject and NetworkBehavior.
@@ -103,7 +103,7 @@ class ClientNetworkCallback
 {
 public:
     /// Read full snapshot and initialize object. Called once.
-    virtual void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) {}
+    virtual void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) {}
     /// This component is about to be removed by the authority of the server.
     virtual void PrepareToRemove() {}
 
@@ -111,14 +111,14 @@ public:
     virtual void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) {}
 
     /// Read reliable delta update. Delta is applied to previous reliable delta or snapshot message.
-    virtual void ReadReliableDelta(unsigned frame, Deserializer& src) {}
+    virtual void ReadReliableDelta(NetworkFrame frame, Deserializer& src) {}
     /// Read unreliable delta update.
-    virtual void ReadUnreliableDelta(unsigned frame, Deserializer& src) {}
+    virtual void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) {}
 
     /// Prepare for unreliable feedback and return feedback mask. If mask is zero, unreliable feedback is skipped.
-    virtual bool PrepareUnreliableFeedback(unsigned frame) { return false; }
+    virtual bool PrepareUnreliableFeedback(NetworkFrame frame) { return false; }
     /// Write unreliable feedback from client.
-    virtual void WriteUnreliableFeedback(unsigned frame, Serializer& dest) {}
+    virtual void WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest) {}
 };
 
 /// Aggregate network-related callbacks used by NetworkObject and NetworkBehavior.

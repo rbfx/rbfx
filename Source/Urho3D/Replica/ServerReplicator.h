@@ -60,7 +60,7 @@ public:
     /// Request delta update to be prepared for specified object.
     void QueueDeltaUpdate(NetworkObject* networkObject);
     /// Cook all requested delta updates.
-    void CookDeltaUpdates(unsigned currentFrame);
+    void CookDeltaUpdates(NetworkFrame currentFrame);
 
     /// Return state of the current frame.
     /// @{
@@ -114,13 +114,13 @@ public:
         NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings);
 
     /// Begin network frame. Overtime indicates how much time has passed since actual frame start time.
-    void BeginNetworkFrame(unsigned currentFrame, float overtime);
+    void BeginNetworkFrame(NetworkFrame currentFrame, float overtime);
 
     /// Return current state and properties
     /// @{
     const Variant& GetSetting(const NetworkSetting& setting) const;
     bool IsSynchronized() const { return synchronized_; }
-    unsigned GetCurrentFrame() const { return frame_; }
+    NetworkFrame GetCurrentFrame() const { return frame_; }
     unsigned GetInputDelay() const { return inputDelay_; };
     unsigned GetInputBufferSize() const { return inputBufferSize_; };
     /// @}
@@ -131,7 +131,7 @@ protected:
     /// Process messages for this client.
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
     /// Notify statistics aggregator that user input has received for specified frame.
-    void OnInputReceived(unsigned inputFrame);
+    void OnInputReceived(NetworkFrame inputFrame);
 
     const WeakPtr<NetworkObjectRegistry> objectRegistry_;
     const WeakPtr<AbstractConnection> connection_;
@@ -149,7 +149,7 @@ private:
     ea::optional<unsigned> synchronizationMagic_;
     bool synchronized_{};
 
-    unsigned frame_{};
+    NetworkFrame frame_{};
     unsigned frameLocalTime_{};
 
     ea::optional<unsigned> latestProcessedPingTimestamp_;
@@ -176,7 +176,7 @@ public:
     /// Process messages for this client.
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
     /// Send messages to connection for current frame.
-    void SendMessages(unsigned currentFrame, const SharedReplicationState& sharedState);
+    void SendMessages(NetworkFrame currentFrame, const SharedReplicationState& sharedState);
 
     /// Manage reported input loss.
     /// @{
@@ -189,7 +189,7 @@ private:
     void SendRemoveObjects();
     void SendAddObjects();
     void SendUpdateObjectsReliable(const SharedReplicationState& sharedState);
-    void SendUpdateObjectsUnreliable(unsigned currentFrame, const SharedReplicationState& sharedState);
+    void SendUpdateObjectsUnreliable(NetworkFrame currentFrame, const SharedReplicationState& sharedState);
 
     ea::vector<NetworkObjectRelevance> objectsRelevance_;
     ea::vector<float> objectsRelevanceTimeouts_;
@@ -217,7 +217,7 @@ public:
     void ProcessSceneUpdate();
     void ReportInputLoss(AbstractConnection* connection, float percentLoss);
 
-    void SetCurrentFrame(unsigned frame);
+    void SetCurrentFrame(NetworkFrame frame);
 
     /// Return current state of the replicator.
     /// @{
@@ -228,7 +228,7 @@ public:
     NetworkObject* GetNetworkObjectOwnedByConnection(AbstractConnection* connection) const;
     NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
-    unsigned GetCurrentFrame() const { return currentFrame_; }
+    NetworkFrame GetCurrentFrame() const { return currentFrame_; }
     /// @}
 
 private:
@@ -244,7 +244,7 @@ private:
     VariantMap settings_;
 
     const unsigned updateFrequency_{};
-    unsigned currentFrame_{};
+    NetworkFrame currentFrame_{};
 
     PhysicsTickSynchronizer physicsSync_;
 

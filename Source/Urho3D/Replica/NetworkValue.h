@@ -54,10 +54,10 @@ class NetworkValueBase
 public:
     struct InterpolationBase
     {
-        unsigned firstFrame_{};
+        NetworkFrame firstFrame_{};
         unsigned firstIndex_{};
 
-        unsigned secondFrame_{};
+        NetworkFrame secondFrame_{};
         unsigned secondIndex_{};
 
         float blendFactor_{};
@@ -67,17 +67,8 @@ public:
 
     bool IsInitialized() const { return initialized_; }
     unsigned GetCapacity() const { return hasFrameByIndex_.size(); }
-    unsigned GetFirstFrame() const { return lastFrame_ - GetCapacity() + 1; }
-    unsigned GetLastFrame() const { return lastFrame_; }
-
-    /// Intransitive frame comparison
-    /// @{
-    static int CompareFrames(unsigned lhs, unsigned rhs) { return Sign(static_cast<int>(lhs - rhs)); }
-    static bool IsFrameGreaterThan(unsigned lhs, unsigned rhs) { return CompareFrames(lhs, rhs) > 0; }
-    static bool IsFrameLessThan(unsigned lhs, unsigned rhs) { return CompareFrames(lhs, rhs) < 0; }
-    static unsigned MaxFrame(unsigned lhs, unsigned rhs) { return IsFrameGreaterThan(lhs, rhs) ? lhs : rhs; }
-    static unsigned MinFrame(unsigned lhs, unsigned rhs) { return IsFrameLessThan(lhs, rhs) ? lhs : rhs; }
-    /// @}
+    NetworkFrame GetFirstFrame() const { return lastFrame_ - GetCapacity() + 1; }
+    NetworkFrame GetLastFrame() const { return lastFrame_; }
 
     void Resize(unsigned capacity)
     {
@@ -87,23 +78,23 @@ public:
         hasFrameByIndex_.resize(capacity);
     }
 
-    ea::optional<unsigned> FrameToIndex(unsigned frame) const
+    ea::optional<unsigned> FrameToIndex(NetworkFrame frame) const
     {
         const auto capacity = GetCapacity();
-        const auto behind = static_cast<int>(lastFrame_ - frame);
+        const auto behind = lastFrame_ - frame;
         if (behind >= 0 && behind < capacity)
             return (lastIndex_ + capacity - behind) % capacity;
         return ea::nullopt;
     }
 
-    unsigned FrameToIndexUnchecked(unsigned frame) const
+    unsigned FrameToIndexUnchecked(NetworkFrame frame) const
     {
         const auto index = FrameToIndex(frame);
         URHO3D_ASSERT(index);
         return *index;
     }
 
-    ea::optional<unsigned> AllocatedFrameToIndex(unsigned frame) const
+    ea::optional<unsigned> AllocatedFrameToIndex(NetworkFrame frame) const
     {
         if (auto index = FrameToIndex(frame))
         {
@@ -113,7 +104,7 @@ public:
         return ea::nullopt;
     }
 
-    bool AllocateFrame(unsigned frame)
+    bool AllocateFrame(NetworkFrame frame)
     {
         URHO3D_ASSERT(!hasFrameByIndex_.empty());
 
@@ -129,15 +120,15 @@ public:
         }
 
         // Roll ring buffer forward if frame is greater
-        if (IsFrameGreaterThan(frame, lastFrame_))
+        if (frame > lastFrame_)
         {
             const int offset = static_cast<int>(frame - lastFrame_);
-            lastFrame_ += offset;
+            lastFrame_ = frame;
             lastIndex_ = (lastIndex_ + offset) % GetCapacity();
 
             // Reset skipped frames
-            const unsigned firstSkippedFrame = MaxFrame(lastFrame_ - offset + 1, GetFirstFrame());
-            for (unsigned skippedFrame = firstSkippedFrame; skippedFrame != lastFrame_; ++skippedFrame)
+            const NetworkFrame firstSkippedFrame = ea::max(lastFrame_ - offset + 1, GetFirstFrame());
+            for (NetworkFrame skippedFrame = firstSkippedFrame; skippedFrame != lastFrame_; ++skippedFrame)
                 hasFrameByIndex_[FrameToIndexUnchecked(skippedFrame)] = false;
 
             hasFrameByIndex_[lastIndex_] = true;
@@ -155,20 +146,20 @@ public:
         return false;
     }
 
-    bool HasFrame(unsigned frame) const { return AllocatedFrameToIndex(frame).has_value(); }
+    bool HasFrame(NetworkFrame frame) const { return AllocatedFrameToIndex(frame).has_value(); }
 
-    ea::optional<unsigned> FindClosestAllocatedFrame(unsigned frame, bool searchPast, bool searchFuture) const
+    ea::optional<NetworkFrame> FindClosestAllocatedFrame(NetworkFrame frame, bool searchPast, bool searchFuture) const
     {
         if (HasFrame(frame))
             return frame;
 
-        const unsigned firstFrame = GetFirstFrame();
+        const NetworkFrame firstFrame = GetFirstFrame();
 
         // Search past values if any
-        if (searchPast && IsFrameGreaterThan(frame, firstFrame))
+        if (searchPast && (frame > firstFrame))
         {
-            const unsigned lastCheckedFrame = MinFrame(lastFrame_, frame - 1);
-            for (unsigned pastFrame = lastCheckedFrame; pastFrame != firstFrame - 1; --pastFrame)
+            const NetworkFrame lastCheckedFrame = ea::min(lastFrame_, frame - 1);
+            for (NetworkFrame pastFrame = lastCheckedFrame; pastFrame != firstFrame - 1; --pastFrame)
             {
                 if (HasFrame(pastFrame))
                     return pastFrame;
@@ -176,10 +167,10 @@ public:
         }
 
         // Search future values if any
-        if (searchFuture && IsFrameLessThan(frame, lastFrame_))
+        if (searchFuture && (frame < lastFrame_))
         {
-            const unsigned firstCheckedFrame = MaxFrame(firstFrame, frame + 1);
-            for (unsigned futureFrame = firstCheckedFrame; futureFrame != lastFrame_ + 1; ++futureFrame)
+            const NetworkFrame firstCheckedFrame = ea::max(firstFrame, frame + 1);
+            for (NetworkFrame futureFrame = firstCheckedFrame; futureFrame != lastFrame_ + 1; ++futureFrame)
             {
                 if (HasFrame(futureFrame))
                     return futureFrame;
@@ -189,7 +180,7 @@ public:
         return ea::nullopt;
     }
 
-    unsigned GetClosestAllocatedFrame(unsigned frame) const
+    NetworkFrame GetClosestAllocatedFrame(NetworkFrame frame) const
     {
         URHO3D_ASSERT(initialized_);
         if (const auto closestFrame = FindClosestAllocatedFrame(frame, true, true))
@@ -199,11 +190,11 @@ public:
 
     InterpolationBase GetValidFrameInterpolation(const NetworkTime& time) const
     {
-        const unsigned frame = time.GetFrame();
+        const NetworkFrame frame = time.Frame();
         const auto thisOrPastFrame = FindClosestAllocatedFrame(frame, true, false);
 
         // Optimize for exact queries
-        if (thisOrPastFrame == frame && time.GetSubFrame() < M_LARGE_EPSILON)
+        if (thisOrPastFrame == frame && time.Fraction() < M_LARGE_EPSILON)
         {
             const unsigned index = FrameToIndexUnchecked(frame);
             return InterpolationBase{frame, index, frame, index, 0.0f};
@@ -217,41 +208,18 @@ public:
             const auto extraPastFrames = static_cast<int>(frame - *thisOrPastFrame);
             const auto extraFutureFrames = static_cast<int>(*nextOrFutureFrame - frame - 1);
             const float adjustedFactor =
-                (extraPastFrames + time.GetSubFrame()) / (extraPastFrames + extraFutureFrames + 1);
+                (extraPastFrames + time.Fraction()) / (extraPastFrames + extraFutureFrames + 1);
             return InterpolationBase{*thisOrPastFrame, firstIndex, *nextOrFutureFrame, secondIndex, adjustedFactor};
         }
 
-        const unsigned closestFrame = thisOrPastFrame.value_or(nextOrFutureFrame.value_or(lastFrame_));
+        const NetworkFrame closestFrame = thisOrPastFrame.value_or(nextOrFutureFrame.value_or(lastFrame_));
         const unsigned index = FrameToIndexUnchecked(closestFrame);
         return InterpolationBase{closestFrame, index, closestFrame, index, 0.0f};
     }
 
-    void CollectAllocatedFrames(unsigned firstFrame, unsigned lastFrame, ea::vector<unsigned>& frames) const
-    {
-        frames.clear();
-        for (unsigned frame = firstFrame; frame != lastFrame + 1; ++frame)
-        {
-            const unsigned index = FrameToIndexUnchecked(frame);
-            if (hasFrameByIndex_[index])
-                frames.push_back(frame);
-        }
-    }
-
-    static float GetFrameInterpolationFactor(unsigned lhs, unsigned rhs, unsigned value)
-    {
-        const auto valueOffset = static_cast<int>(value - lhs);
-        const auto maxOffset = static_cast<int>(rhs - lhs);
-        return maxOffset >= 0 ? Clamp(static_cast<float>(valueOffset) / maxOffset, 0.0f, 1.0f) : 0.0f;
-    }
-
-    static float GetFrameExtrapolationFactor(unsigned baseFrame, unsigned extrapolatedFrame, unsigned maxExtrapolation)
-    {
-        return static_cast<float>(ea::min(extrapolatedFrame - baseFrame, maxExtrapolation));
-    }
-
 private:
     bool initialized_{};
-    unsigned lastFrame_{};
+    NetworkFrame lastFrame_{};
     unsigned lastIndex_{};
     ea::vector<bool> hasFrameByIndex_;
 };
@@ -484,7 +452,7 @@ public:
     }
 
     /// Set value for given frame if possible.
-    void Set(unsigned frame, const InternalType& value)
+    void Set(NetworkFrame frame, const InternalType& value)
     {
         if (AllocateFrame(frame))
         {
@@ -494,10 +462,10 @@ public:
     }
 
     /// Return whether the frame is present.
-    bool Has(unsigned frame) const { return AllocatedFrameToIndex(frame).has_value(); }
+    bool Has(NetworkFrame frame) const { return AllocatedFrameToIndex(frame).has_value(); }
 
     /// Return raw value at given frame.
-    ea::optional<InternalType> GetRaw(unsigned frame) const
+    ea::optional<InternalType> GetRaw(NetworkFrame frame) const
     {
         if (const auto index = AllocatedFrameToIndex(frame))
             return values_[*index];
@@ -505,7 +473,7 @@ public:
     }
 
     /// Return raw value at the given or prior frame.
-    ea::optional<ea::pair<InternalType, unsigned>> GetRawOrPrior(unsigned frame) const
+    ea::optional<ea::pair<InternalType, NetworkFrame>> GetRawOrPrior(NetworkFrame frame) const
     {
         if (const auto closestFrame = FindClosestAllocatedFrame(frame, true, false))
             return ea::make_pair(values_[FrameToIndexUnchecked(*closestFrame)], *closestFrame);
@@ -513,9 +481,9 @@ public:
     }
 
     /// Return closest valid raw value. Prior values take precedence.
-    InternalType GetClosestRaw(unsigned frame) const
+    InternalType GetClosestRaw(NetworkFrame frame) const
     {
-        const unsigned closestFrame = GetClosestAllocatedFrame(frame);
+        const NetworkFrame closestFrame = GetClosestAllocatedFrame(frame);
         return values_[FrameToIndexUnchecked(closestFrame)];
     }
 
@@ -546,7 +514,7 @@ private:
             : Traits::Interpolate(values_[interpolation.firstIndex_], values_[interpolation.secondIndex_],
                 interpolation.blendFactor_, snapThreshold);
 
-        const unsigned frame = time.GetFrame();
+        const NetworkFrame frame = time.Frame();
         // Consider too old frames "precise" because we are not going to get any new data for them anyway.
         const bool isPrecise = /*interpolation.firstFrame_ <= frame &&*/ frame <= interpolation.secondFrame_;
 
@@ -582,7 +550,7 @@ public:
             return ea::nullopt;
 
         UpdateCorrection(value, timeStep);
-        UpdateCache(value, time.GetFrame());
+        UpdateCache(value, time.Frame());
 
         ReturnType sampledValue = CalculateValueFromCache(value, time);
         previousValue_ = TimeAndValue{time, sampledValue};
@@ -592,9 +560,9 @@ public:
     }
 
 private:
-    float GetExtrapolationFactor(const NetworkTime& time, unsigned baseFrame, unsigned maxExtrapolation) const
+    float GetExtrapolationFactor(const NetworkTime& time, NetworkFrame baseFrame, unsigned maxExtrapolation) const
     {
-        const float factor = (time.GetFrame() - baseFrame) + time.GetSubFrame();
+        const float factor = (time.Frame() - baseFrame) + time.Fraction();
         return ea::min(factor, static_cast<float>(maxExtrapolation));
     }
 
@@ -605,12 +573,12 @@ private:
 
         Traits::SmoothCorrection(valueCorrection_, ExpSmoothing(smoothingConstant_, timeStep));
 
-        UpdateCache(value, previousValue_->time_.GetFrame());
+        UpdateCache(value, previousValue_->time_.Frame());
         const ReturnType newPreviousValue = CalculateValueFromCache(value, previousValue_->time_);
         Traits::UpdateCorrection(valueCorrection_, newPreviousValue, previousValue_->value_);
     }
 
-    void UpdateCache(const NetworkValueType& value, unsigned frame)
+    void UpdateCache(const NetworkValueType& value, NetworkFrame frame)
     {
         // Nothing to do if cache is valid
         if (interpolationCache_ && interpolationCache_->baseFrame_ == frame)
@@ -637,10 +605,10 @@ private:
 
     ReturnType CalculateValueFromCache(const NetworkValueType& value, const NetworkTime& time)
     {
-        if (interpolationCache_ && interpolationCache_->baseFrame_ == time.GetFrame())
+        if (interpolationCache_ && interpolationCache_->baseFrame_ == time.Frame())
         {
             const InternalType value = Traits::Interpolate(
-                interpolationCache_->baseValue_, interpolationCache_->nextValue_, time.GetSubFrame(), snapThreshold_);
+                interpolationCache_->baseValue_, interpolationCache_->nextValue_, time.Fraction(), snapThreshold_);
             return Traits::Extract(value);
         }
 
@@ -657,7 +625,7 @@ private:
 
     struct InterpolationCache
     {
-        unsigned baseFrame_{};
+        NetworkFrame baseFrame_{};
         InternalType baseValue_{};
         InternalType nextValue_{};
     };
@@ -670,7 +638,7 @@ private:
 
     ea::optional<InterpolationCache> interpolationCache_;
     ea::optional<TimeAndValue> previousValue_;
-    ea::optional<unsigned> extrapolationFrame_;
+    ea::optional<NetworkFrame> extrapolationFrame_;
 
     ReturnType valueCorrection_{};
 };
@@ -698,7 +666,7 @@ public:
     unsigned Size() const { return size_; }
 
     /// Set value and return uninitialized buffer to be filled.
-    ea::span<T> SetUninitialized(unsigned frame)
+    ea::span<T> SetUninitialized(NetworkFrame frame)
     {
         if (AllocateFrame(frame))
         {
@@ -709,7 +677,7 @@ public:
     }
 
     /// Set value for given frame if possible.
-    void Set(unsigned frame, ValueSpan value)
+    void Set(NetworkFrame frame, ValueSpan value)
     {
         const auto dest = SetUninitialized(frame);
         if (!dest.empty())
@@ -720,7 +688,7 @@ public:
     }
 
     /// Return raw value at given frame.
-    ea::optional<ValueSpan> GetRaw(unsigned frame) const
+    ea::optional<ValueSpan> GetRaw(NetworkFrame frame) const
     {
         if (const auto index = AllocatedFrameToIndex(frame))
             return GetSpanForIndex(*index);
@@ -728,9 +696,9 @@ public:
     }
 
     /// Return closest valid raw value, if possible. Prior values take precedence.
-    ValueSpan GetClosestRaw(unsigned frame) const
+    ValueSpan GetClosestRaw(NetworkFrame frame) const
     {
-        const unsigned closestFrame = GetClosestAllocatedFrame(frame);
+        const NetworkFrame closestFrame = GetClosestAllocatedFrame(frame);
         return GetSpanForIndex(FrameToIndexUnchecked(closestFrame));
     }
 
@@ -746,8 +714,6 @@ public:
         return InterpolatedValueSpan{GetSpanForIndex(interpolation.firstIndex_),
             GetSpanForIndex(interpolation.secondIndex_), interpolation.blendFactor_, snapThreshold};
     }
-
-    //InterpolatedValueSpan SampleValid(unsigned frame, float snapThreshold = M_LARGE_VALUE) const { return SampleValid(NetworkTime{frame}); }
 
 private:
     ValueSpan GetSpanForIndex(unsigned index) const

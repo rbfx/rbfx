@@ -76,55 +76,55 @@ TEST_CASE("Time is synchronized between client and server")
 
     const float syncError = ea::max(0.5f, (quality.maxPing_ - quality.minPing_) * Tests::NetworkSimulator::FramesInSecond);
     const auto startTime = fps * 10;
-    REQUIRE(serverReplicator.GetCurrentFrame() == startTime);
-    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{startTime}) < syncError);
+    REQUIRE(serverReplicator.GetCurrentFrame() == NetworkFrame{startTime});
+    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{NetworkFrame{startTime}}) < syncError);
 
     // Simulate some time, should be precisely synchronized afterwards
     sim.SimulateTime(initialSyncTime);
-    REQUIRE(serverReplicator.GetCurrentFrame() == startTime + fps * initialSyncTime);
-    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{startTime + fps * initialSyncTime}) < frameErrorTolarance);
+    REQUIRE(serverReplicator.GetCurrentFrame() == NetworkFrame{startTime + fps * initialSyncTime});
+    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{NetworkFrame{startTime + fps * initialSyncTime}}) < frameErrorTolarance);
 
     // Simulate more time, expect time to stay synchronized
-    const unsigned syncFrame1 = clientReplica.GetLatestScaledInputTime().GetFrame();
+    const NetworkFrame syncFrame1 = clientReplica.GetLatestScaledInputTime().Frame();
     sim.SimulateTime(initialWaitTime);
 
-    REQUIRE(serverReplicator.GetCurrentFrame() == startTime + fps * (initialSyncTime + initialWaitTime));
-    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{startTime + fps * (initialSyncTime + initialWaitTime)}) < frameErrorTolarance);
-    REQUIRE(clientReplica.GetLatestScaledInputTime().GetFrame() == syncFrame1);
+    REQUIRE(serverReplicator.GetCurrentFrame() == NetworkFrame{startTime + fps * (initialSyncTime + initialWaitTime)});
+    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{NetworkFrame{startTime + fps * (initialSyncTime + initialWaitTime)}}) < frameErrorTolarance);
+    REQUIRE(clientReplica.GetLatestScaledInputTime().Frame() == syncFrame1);
 
     // Warp time close to 2^32 and simulate some time, expect time to be resynchronized
-    const auto bigTime = M_MAX_UNSIGNED - fps * 30;
-    serverReplicator.SetCurrentFrame(bigTime / 3);
+    const long long bigTime = M_MAX_UNSIGNED - fps * 30;
+    serverReplicator.SetCurrentFrame(NetworkFrame{bigTime / 3});
     sim.SimulateTime(5.0f);
-    serverReplicator.SetCurrentFrame(bigTime / 3 * 2);
+    serverReplicator.SetCurrentFrame(NetworkFrame{bigTime / 3 * 2});
     sim.SimulateTime(5.0f);
-    serverReplicator.SetCurrentFrame(bigTime);
+    serverReplicator.SetCurrentFrame(NetworkFrame{bigTime});
     sim.SimulateTime(forwardSyncTime);
 
-    REQUIRE(serverReplicator.GetCurrentFrame() == bigTime + fps * forwardSyncTime);
-    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{bigTime + fps * forwardSyncTime}) < frameErrorTolarance);
+    REQUIRE(serverReplicator.GetCurrentFrame() == NetworkFrame{bigTime + fps * forwardSyncTime});
+    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{NetworkFrame{bigTime + fps * forwardSyncTime}}) < frameErrorTolarance);
 
     // Simulate more time, expect time to stay synchronized
-    const unsigned syncFrame2 = clientReplica.GetLatestScaledInputTime().GetFrame();
+    const NetworkFrame syncFrame2 = clientReplica.GetLatestScaledInputTime().Frame();
     sim.SimulateTime(forwardWaitTime);
 
-    REQUIRE(serverReplicator.GetCurrentFrame() == bigTime + fps * (forwardSyncTime + forwardWaitTime));
-    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{bigTime + fps * (forwardSyncTime + forwardWaitTime)}) < frameErrorTolarance);
-    REQUIRE(clientReplica.GetLatestScaledInputTime().GetFrame() == syncFrame2);
+    REQUIRE(serverReplicator.GetCurrentFrame() == NetworkFrame{bigTime + fps * (forwardSyncTime + forwardWaitTime)});
+    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{NetworkFrame{bigTime + fps * (forwardSyncTime + forwardWaitTime)}}) < frameErrorTolarance);
+    REQUIRE(clientReplica.GetLatestScaledInputTime().Frame() == syncFrame2);
 
     // Warp time 1 second back and simulate some time, expect time to be resynchronized
-    const unsigned baseTime = bigTime + fps * (forwardSyncTime + forwardWaitTime);
-    serverReplicator.SetCurrentFrame(baseTime - fps * 1);
+    const long long baseTime = bigTime + fps * (forwardSyncTime + forwardWaitTime);
+    serverReplicator.SetCurrentFrame(NetworkFrame{baseTime - fps * 1});
     sim.SimulateTime(backwardSyncTime + 1);
 
-    REQUIRE(serverReplicator.GetCurrentFrame() == baseTime + fps * backwardSyncTime);
-    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{baseTime + fps * backwardSyncTime}) < frameErrorTolarance);
+    REQUIRE(serverReplicator.GetCurrentFrame() == NetworkFrame{baseTime + fps * backwardSyncTime});
+    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{NetworkFrame{baseTime + fps * backwardSyncTime}}) < frameErrorTolarance);
 
     // Simulate more time, expect time to stay synchronized
-    const unsigned syncFrame3 = clientReplica.GetLatestScaledInputTime().GetFrame();
+    const NetworkFrame syncFrame3 = clientReplica.GetLatestScaledInputTime().Frame();
     sim.SimulateTime(backwardWaitTime);
 
-    REQUIRE(serverReplicator.GetCurrentFrame() == baseTime + fps * (backwardSyncTime + backwardWaitTime));
-    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{baseTime + fps * (backwardSyncTime + backwardWaitTime)}) < frameErrorTolarance);
-    //REQUIRE(clientReplica.GetLatestScaledInputTime().GetFrame() == syncFrame3);
+    REQUIRE(serverReplicator.GetCurrentFrame() == NetworkFrame{baseTime + fps * (backwardSyncTime + backwardWaitTime)});
+    REQUIRE(std::abs(clientReplica.GetServerTime() - NetworkTime{NetworkFrame{baseTime + fps * (backwardSyncTime + backwardWaitTime)}}) < frameErrorTolarance);
+    //REQUIRE(clientReplica.GetLatestScaledInputTime().Frame() == syncFrame3);
 }

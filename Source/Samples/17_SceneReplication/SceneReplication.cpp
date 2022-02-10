@@ -97,46 +97,46 @@ public:
     const PlayerControls& GetControls() const { return controls_; }
 
     /// Write object color on the server.
-    void WriteSnapshot(unsigned frame, Serializer& dest) override
+    void WriteSnapshot(NetworkFrame frame, Serializer& dest) override
     {
         auto* light = GetComponent<Light>();
         dest.WriteColor(light->GetColor());
     }
 
     /// Read object color on the client.
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override
     {
         auto* light = GetComponent<Light>();
         light->SetColor(src.ReadColor());
     }
 
     /// Always send controls.
-    bool PrepareUnreliableFeedback(unsigned frame) override { return true; }
+    bool PrepareUnreliableFeedback(NetworkFrame frame) override { return true; }
 
     /// Write controls on the client.
-    void WriteUnreliableFeedback(unsigned frame, Serializer& dest) override
-
+    void WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest) override
     {
         dest.WriteFloat(controls_.yaw_);
         dest.WriteVLE(controls_.buttons_);
     }
+
     /// Read controls on the server.
-    void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override
+    void ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src) override
     {
         // Skip outdated controls
-        if (controlsTime_ && (*controlsTime_ - NetworkTime{feedbackFrame} >= 0))
+        if (lastFeedbackFrame_ && (*lastFeedbackFrame_ >= feedbackFrame))
             return;
 
         controls_.yaw_ = src.ReadFloat();
         controls_.buttons_ = src.ReadVLE();
-        controlsTime_ = NetworkTime{feedbackFrame};
+        lastFeedbackFrame_ = feedbackFrame;
     }
 
 private:
     /// Most recent player controls.
     PlayerControls controls_;
     /// Time when latest player controls were received.
-    ea::optional<NetworkTime> controlsTime_;
+    ea::optional<NetworkFrame> lastFeedbackFrame_;
 };
 
 SceneReplication::SceneReplication(Context* context) :

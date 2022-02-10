@@ -31,37 +31,37 @@ namespace Urho3D
 
 ea::string NetworkTime::ToString() const
 {
-    return Format("#{}:{:.2f}", frame_, subFrame_);
+    return Format("#{}:{:.2f}", frame_, fraction_);
 }
 
 void NetworkTime::Normalize()
 {
-    while (subFrame_ < 0.0)
+    while (fraction_ < 0.0)
     {
         --frame_;
-        subFrame_ += 1.0;
+        fraction_ += 1.0;
     }
 
-    while (subFrame_ >= 1.0)
+    while (fraction_ >= 1.0)
     {
         ++frame_;
-        subFrame_ -= 1.0;
+        fraction_ -= 1.0;
     }
 }
 
 void NetworkTime::AddDelta(double delta)
 {
-    const int deltaInt = static_cast<int>(delta);
-    const float deltaFract = delta - deltaInt;
-    frame_ += deltaInt;
-    subFrame_ += deltaFract;
+    const auto deltaInt = static_cast<long long>(delta);
+    const double deltaFract = delta - deltaInt;
+    frame_ = frame_ + deltaInt;
+    fraction_ += deltaFract;
     Normalize();
 }
 
 double NetworkTime::GetDelta(const NetworkTime& origin) const
 {
-    const auto deltaInt = static_cast<int>(frame_ - origin.frame_);
-    const double deltaFract = subFrame_ - origin.subFrame_;
+    const auto deltaInt = frame_ - origin.frame_;
+    const double deltaFract = fraction_ - origin.fraction_;
     return deltaInt + deltaFract;
 }
 

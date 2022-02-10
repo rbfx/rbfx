@@ -64,14 +64,14 @@ ea::string MsgSynchronized::ToString() const
 
 void MsgSceneClock::Save(VectorBuffer& dest) const
 {
-    dest.WriteUInt(latestFrame_);
+    dest.WriteInt64(static_cast<long long>(latestFrame_));
     dest.WriteVLE(latestFrameTime_);
     dest.WriteVLE(inputDelay_);
 }
 
 void MsgSceneClock::Load(MemoryBuffer& src)
 {
-    latestFrame_ = src.ReadUInt();
+    latestFrame_ = static_cast<NetworkFrame>(src.ReadInt64());
     latestFrameTime_ = src.ReadVLE();
     inputDelay_ = src.ReadVLE();
 }

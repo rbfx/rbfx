@@ -89,13 +89,13 @@ URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
 /// Begin the frame of network update on the server.
 URHO3D_EVENT(E_BEGINSERVERNETWORKFRAME, BeginServerNetworkFrame)
 {
-    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
 }
 
 /// End the frame of network update on the server. Happens right before sending messages to the clients.
 URHO3D_EVENT(E_ENDSERVERNETWORKFRAME, EndServerNetworkFrame)
 {
-    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
 }
 
 /// Begin the input frame on the client.
@@ -103,13 +103,13 @@ URHO3D_EVENT(E_ENDSERVERNETWORKFRAME, EndServerNetworkFrame)
 /// with one of the future E_BEGINSERVERNETWORKFRAME.
 URHO3D_EVENT(E_BEGINCLIENTNETWORKFRAME, BeginClientNetworkFrame)
 {
-    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
 }
 
 /// End the input frame on the client. Happens right before sending messages to the server.
 URHO3D_EVENT(E_ENDCLIENTNETWORKFRAME, EndClientNetworkFrame)
 {
-    URHO3D_PARAM(P_FRAME, Frame);                       // unsigned
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
 }
 
 /// About to send network update on the client or server.

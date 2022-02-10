@@ -28,6 +28,7 @@
 #include "../Math/BoundingBox.h"
 #include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
+#include "../Replica/NetworkTime.h"
 #include "../Scene/Component.h"
 
 #include <Bullet/LinearMath/btIDebugDraw.h>
@@ -64,7 +65,7 @@ struct CollisionGeometryData;
 struct SynchronizedPhysicsStep
 {
     unsigned offset_{};
-    unsigned networkFrame_{};
+    NetworkFrame networkFrame_{};
 };
 
 /// Physics raycast hit.

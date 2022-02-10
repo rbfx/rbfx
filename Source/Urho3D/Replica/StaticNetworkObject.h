@@ -52,12 +52,12 @@ public:
     /// @{
     void InitializeOnServer() override;
 
-    void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    bool PrepareReliableDelta(unsigned frame) override;
-    void WriteReliableDelta(unsigned frame, Serializer& dest) override;
+    void WriteSnapshot(NetworkFrame frame, Serializer& dest) override;
+    bool PrepareReliableDelta(NetworkFrame frame) override;
+    void WriteReliableDelta(NetworkFrame frame, Serializer& dest) override;
 
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
-    void ReadReliableDelta(unsigned frame, Deserializer& src) override;
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
+    void ReadReliableDelta(NetworkFrame frame, Deserializer& src) override;
     /// @}
 
 protected:

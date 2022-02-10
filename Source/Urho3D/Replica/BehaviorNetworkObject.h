@@ -95,24 +95,24 @@ public:
     /// @{
     void InitializeStandalone() override;
     void InitializeOnServer() override;
-    void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
+    void WriteSnapshot(NetworkFrame frame, Serializer& dest) override;
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
     ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) override;
     void UpdateTransformOnServer() override;
     void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
-    bool PrepareReliableDelta(unsigned frame) override;
-    void WriteReliableDelta(unsigned frame, Serializer& dest) override;
-    void ReadReliableDelta(unsigned frame, Deserializer& src) override;
+    bool PrepareReliableDelta(NetworkFrame frame) override;
+    void WriteReliableDelta(NetworkFrame frame, Serializer& dest) override;
+    void ReadReliableDelta(NetworkFrame frame, Deserializer& src) override;
 
-    bool PrepareUnreliableDelta(unsigned frame) override;
-    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
-    void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
+    bool PrepareUnreliableDelta(NetworkFrame frame) override;
+    void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override;
+    void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override;
 
-    bool PrepareUnreliableFeedback(unsigned frame) override;
-    void WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
-    void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
+    bool PrepareUnreliableFeedback(NetworkFrame frame) override;
+    void WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest) override;
+    void ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src) override;
 
     void Update(float replicaTimeStep, float inputTimeStep) override;
     /// @}

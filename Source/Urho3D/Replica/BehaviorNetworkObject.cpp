@@ -167,7 +167,7 @@ void BehaviorNetworkObject::InitializeOnServer()
         connectedBehavior.component_->InitializeOnServer();
 }
 
-void BehaviorNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
+void BehaviorNetworkObject::WriteSnapshot(NetworkFrame frame, Serializer& dest)
 {
     BaseClassName::WriteSnapshot(frame, dest);
 
@@ -181,7 +181,7 @@ void BehaviorNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
         connectedBehavior.component_->WriteSnapshot(frame, dest);
 }
 
-void BehaviorNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
+void BehaviorNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
 {
     BaseClassName::InitializeFromSnapshot(frame, src, isOwned);
 
@@ -259,7 +259,7 @@ void BehaviorNetworkObject::InterpolateState(float timeStep, const NetworkTime& 
     }
 }
 
-bool BehaviorNetworkObject::PrepareReliableDelta(unsigned frame)
+bool BehaviorNetworkObject::PrepareReliableDelta(NetworkFrame frame)
 {
     bool needUpdate = BaseClassName::PrepareReliableDelta(frame);
 
@@ -280,7 +280,7 @@ bool BehaviorNetworkObject::PrepareReliableDelta(unsigned frame)
     return needUpdate;
 }
 
-void BehaviorNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
+void BehaviorNetworkObject::WriteReliableDelta(NetworkFrame frame, Serializer& dest)
 {
     BaseClassName::WriteReliableDelta(frame, dest);
 
@@ -295,7 +295,7 @@ void BehaviorNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
     }
 }
 
-void BehaviorNetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
+void BehaviorNetworkObject::ReadReliableDelta(NetworkFrame frame, Deserializer& src)
 {
     BaseClassName::ReadReliableDelta(frame, src);
 
@@ -310,7 +310,7 @@ void BehaviorNetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
     }
 }
 
-bool BehaviorNetworkObject::PrepareUnreliableDelta(unsigned frame)
+bool BehaviorNetworkObject::PrepareUnreliableDelta(NetworkFrame frame)
 {
     bool needUpdate = BaseClassName::PrepareUnreliableDelta(frame);
 
@@ -331,7 +331,7 @@ bool BehaviorNetworkObject::PrepareUnreliableDelta(unsigned frame)
     return needUpdate;
 }
 
-void BehaviorNetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& dest)
+void BehaviorNetworkObject::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
 {
     BaseClassName::WriteUnreliableDelta(frame, dest);
 
@@ -346,7 +346,7 @@ void BehaviorNetworkObject::WriteUnreliableDelta(unsigned frame, Serializer& des
     }
 }
 
-void BehaviorNetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& src)
+void BehaviorNetworkObject::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
 {
     BaseClassName::ReadUnreliableDelta(frame, src);
 
@@ -361,7 +361,7 @@ void BehaviorNetworkObject::ReadUnreliableDelta(unsigned frame, Deserializer& sr
     }
 }
 
-bool BehaviorNetworkObject::PrepareUnreliableFeedback(unsigned frame)
+bool BehaviorNetworkObject::PrepareUnreliableFeedback(NetworkFrame frame)
 {
     bool needUpdate = BaseClassName::PrepareUnreliableFeedback(frame);
 
@@ -382,7 +382,7 @@ bool BehaviorNetworkObject::PrepareUnreliableFeedback(unsigned frame)
     return needUpdate;
 }
 
-void BehaviorNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
+void BehaviorNetworkObject::WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest)
 {
     BaseClassName::WriteUnreliableFeedback(frame, dest);
 
@@ -397,7 +397,7 @@ void BehaviorNetworkObject::WriteUnreliableFeedback(unsigned frame, Serializer& 
     }
 }
 
-void BehaviorNetworkObject::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
+void BehaviorNetworkObject::ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src)
 {
     BaseClassName::ReadUnreliableFeedback(feedbackFrame, src);
 

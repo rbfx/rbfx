@@ -136,7 +136,7 @@ void SharedReplicationState::QueueDeltaUpdate(NetworkObject* networkObject)
     isDeltaUpdateQueued_[index] = true;
 }
 
-void SharedReplicationState::CookDeltaUpdates(unsigned currentFrame)
+void SharedReplicationState::CookDeltaUpdates(NetworkFrame currentFrame)
 {
     recentlyRemovedObjects_.clear();
 
@@ -215,7 +215,7 @@ ClientSynchronizationState::ClientSynchronizationState(
     SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
 }
 
-void ClientSynchronizationState::BeginNetworkFrame(unsigned currentFrame, float overtime)
+void ClientSynchronizationState::BeginNetworkFrame(NetworkFrame currentFrame, float overtime)
 {
     const float timeStep = 1.0f / updateFrequency_;
     frame_ = currentFrame;
@@ -306,7 +306,7 @@ bool ClientSynchronizationState::ProcessMessage(NetworkMessageId messageId, Memo
     }
 }
 
-void ClientSynchronizationState::OnInputReceived(unsigned inputFrame)
+void ClientSynchronizationState::OnInputReceived(NetworkFrame inputFrame)
 {
     inputStats_.OnInputReceived(inputFrame);
 }
@@ -322,7 +322,7 @@ ClientReplicationState::ClientReplicationState(
 {
 }
 
-void ClientReplicationState::SendMessages(unsigned currentFrame, const SharedReplicationState& sharedState)
+void ClientReplicationState::SendMessages(NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
     ClientSynchronizationState::SendMessages();
 
@@ -361,7 +361,7 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
         return;
     }
 
-    const unsigned feedbackFrame = messageData.ReadUInt();
+    const auto feedbackFrame = static_cast<NetworkFrame>(messageData.ReadInt64());
     OnInputReceived(feedbackFrame);
 
     while (!messageData.IsEof())
@@ -405,7 +405,7 @@ void ClientReplicationState::SendRemoveObjects()
             }
         }
 
-        msg.WriteUInt(GetCurrentFrame());
+        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
         for (NetworkId networkId : pendingRemovedObjects_)
             msg.WriteUInt(static_cast<unsigned>(networkId));
 
@@ -419,7 +419,7 @@ void ClientReplicationState::SendAddObjects()
     connection_->SendGeneratedMessage(MSG_ADD_OBJECTS, PT_RELIABLE_ORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
-        msg.WriteUInt(GetCurrentFrame());
+        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
 
         bool sendMessage = false;
         for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
@@ -452,7 +452,7 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
     connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE, PT_RELIABLE_ORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
-        msg.WriteUInt(GetCurrentFrame());
+        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
 
         bool sendMessage = false;
         for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
@@ -483,14 +483,14 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
     });
 }
 
-void ClientReplicationState::SendUpdateObjectsUnreliable(unsigned currentFrame, const SharedReplicationState& sharedState)
+void ClientReplicationState::SendUpdateObjectsUnreliable(NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
     connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         bool sendMessage = false;
 
-        msg.WriteUInt(GetCurrentFrame());
+        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
 
         for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
         {
@@ -508,7 +508,7 @@ void ClientReplicationState::SendUpdateObjectsUnreliable(unsigned currentFrame, 
             if (relevance == NetworkObjectRelevance::NoUpdates)
                 continue;
 
-            if (currentFrame % static_cast<unsigned>(relevance) != 0)
+            if (static_cast<long long>(currentFrame) % static_cast<unsigned>(relevance) != 0)
                 continue;
 
             sendMessage = true;
@@ -634,14 +634,14 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
     if (isUpdateNow)
     {
         ++currentFrame_;
-        physicsSync_.Synchronize(overtime, currentFrame_);
+        physicsSync_.Synchronize(currentFrame_, overtime);
 
         for (auto& [connection, clientState] : connections_)
             clientState->BeginNetworkFrame(currentFrame_, overtime);
 
         using namespace BeginServerNetworkFrame;
         auto& eventData = GetEventDataMap();
-        eventData[P_FRAME] = currentFrame_;
+        eventData[P_FRAME] = static_cast<long long>(currentFrame_);
         network_->SendEvent(E_BEGINSERVERNETWORKFRAME, eventData);
     }
     else
@@ -654,7 +654,7 @@ void ServerReplicator::OnNetworkUpdate()
 {
     using namespace EndServerNetworkFrame;
     auto& eventData = GetEventDataMap();
-    eventData[P_FRAME] = currentFrame_;
+    eventData[P_FRAME] = static_cast<long long>(currentFrame_);
     network_->SendEvent(E_ENDSERVERNETWORKFRAME, eventData);
 
     sharedState_->PrepareForUpdate();
@@ -721,7 +721,7 @@ void ServerReplicator::ReportInputLoss(AbstractConnection* connection, float per
         clientState->SetReportedInputLoss(percentLoss);
 }
 
-void ServerReplicator::SetCurrentFrame(unsigned frame)
+void ServerReplicator::SetCurrentFrame(NetworkFrame frame)
 {
     currentFrame_ = frame;
 }

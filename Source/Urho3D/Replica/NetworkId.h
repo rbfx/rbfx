@@ -45,4 +45,41 @@ enum class NetworkObjectRelevance : signed char
     MaxPeriod = 127
 };
 
+/// Network frame that represents discrete time on the server.
+/// It's usually non-negative, but it's signed for simpler maths.
+enum class NetworkFrame : long long
+{
+    Min = ea::numeric_limits<long long>::min(),
+    Max = ea::numeric_limits<long long>::max()
+};
+
+inline NetworkFrame& operator++(NetworkFrame& frame)
+{
+    URHO3D_ASSERT(frame != NetworkFrame::Max);
+    frame = static_cast<NetworkFrame>(static_cast<long long>(frame) + 1);
+    return frame;
+}
+
+inline NetworkFrame& operator--(NetworkFrame& frame)
+{
+    URHO3D_ASSERT(frame != NetworkFrame::Min);
+    frame = static_cast<NetworkFrame>(static_cast<long long>(frame) - 1);
+    return frame;
+}
+
+inline long long operator-(NetworkFrame lhs, NetworkFrame rhs)
+{
+    return static_cast<long long>(lhs) - static_cast<long long>(rhs);
+}
+
+inline NetworkFrame operator+(NetworkFrame lhs, long long rhs)
+{
+    return static_cast<NetworkFrame>(static_cast<long long>(lhs) + rhs);
+}
+
+inline NetworkFrame operator-(NetworkFrame lhs, long long rhs)
+{
+    return static_cast<NetworkFrame>(static_cast<long long>(lhs) - rhs);
+}
+
 }

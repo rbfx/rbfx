@@ -144,7 +144,7 @@ public:
     }
 
     /// Initialize component on the client.
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override
     {
         BaseClassName::InitializeFromSnapshot(frame, src, isOwned);
 
@@ -166,7 +166,7 @@ public:
     }
 
     /// Always send animation updates for simplicity.
-    bool PrepareUnreliableDelta(unsigned frame) override
+    bool PrepareUnreliableDelta(NetworkFrame frame) override
     {
         BaseClassName::PrepareUnreliableDelta(frame);
 
@@ -174,7 +174,7 @@ public:
     }
 
     /// Write current animation state and rotation on server.
-    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override
+    void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override
     {
         BaseClassName::WriteUnreliableDelta(frame, dest);
 
@@ -187,7 +187,7 @@ public:
     }
 
     /// Read current animation state on replicating client.
-    void ReadUnreliableDelta(unsigned frame, Deserializer& src) override
+    void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override
     {
         BaseClassName::ReadUnreliableDelta(frame, src);
 
@@ -212,7 +212,7 @@ public:
             node_->SetWorldRotation(*newRotation);
 
         // Extrapolate animation time from trace
-        if (const auto animationSample = animationTrace_.GetRawOrPrior(replicaTime.GetFrame()))
+        if (const auto animationSample = animationTrace_.GetRawOrPrior(replicaTime.Frame()))
         {
             const auto& [value, sampleFrame] = *animationSample;
             const auto& [animationIndex, animationTime] = value;
@@ -580,8 +580,8 @@ void AdvancedNetworking::SubscribeToEvents()
         info.clientConnection_.Reset(static_cast<Connection*>(eventData[RemoteEventData::P_CONNECTION].GetPtr()));
         info.origin_ = eventData[P_ORIGIN].GetVector3();
         info.target_ = eventData[P_TARGET].GetVector3();
-        info.replicaTime_ = NetworkTime{eventData[P_REPLICA_FRAME].GetUInt(), eventData[P_REPLICA_SUBFRAME].GetFloat()};
-        info.inputTime_ = NetworkTime{eventData[P_INPUT_FRAME].GetUInt(), eventData[P_INPUT_SUBFRAME].GetFloat()};
+        info.replicaTime_ = NetworkTime{static_cast<NetworkFrame>(eventData[P_REPLICA_FRAME].GetInt64()), eventData[P_REPLICA_SUBFRAME].GetFloat()};
+        info.inputTime_ = NetworkTime{static_cast<NetworkFrame>(eventData[P_INPUT_FRAME].GetInt64()), eventData[P_INPUT_SUBFRAME].GetFloat()};
 
         serverRaycasts_.push_back(info);
     });
@@ -845,10 +845,10 @@ void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const
     VariantMap& eventData = GetEventDataMap();
     eventData[P_ORIGIN] = origin;
     eventData[P_TARGET] = aimPosition;
-    eventData[P_REPLICA_FRAME] = replicaTime.GetFrame();
-    eventData[P_REPLICA_SUBFRAME] = replicaTime.GetSubFrame();
-    eventData[P_INPUT_FRAME] = inputTime.GetFrame();
-    eventData[P_INPUT_SUBFRAME] = inputTime.GetSubFrame();
+    eventData[P_REPLICA_FRAME] = static_cast<long long>(replicaTime.Frame());
+    eventData[P_REPLICA_SUBFRAME] = replicaTime.Fraction();
+    eventData[P_INPUT_FRAME] = static_cast<long long>(inputTime.Frame());
+    eventData[P_INPUT_SUBFRAME] = inputTime.Fraction();
     serverConnection->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYCAST, false, eventData);
 }
 
