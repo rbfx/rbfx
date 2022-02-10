@@ -64,12 +64,12 @@ void TrackedAnimatedModel::InitializeOnServer()
         [this](StringHash, VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
-        const unsigned serverFrame = eventData[P_FRAME].GetUInt();
+        const auto serverFrame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
         OnServerFrameEnd(serverFrame);
     });
 }
 
-void TrackedAnimatedModel::OnServerFrameEnd(unsigned frame)
+void TrackedAnimatedModel::OnServerFrameEnd(NetworkFrame frame)
 {
     if (!animatedModel_)
         return;
@@ -132,7 +132,7 @@ void TrackedAnimatedModel::ProcessTemporalRayQuery(const NetworkTime& time, cons
     if (numBones != bonePositionsTrace_.Size() || numBones != boneRotationsTrace_.Size())
         return;
 
-    const BoundingBox worldBoundingBox = boundingBoxTrace_.GetClosestRaw(time.GetFrame());
+    const BoundingBox worldBoundingBox = boundingBoxTrace_.GetClosestRaw(time.Frame());
     const Matrix3x4 worldTransform = transformTrace_.SampleValid(time);
     const auto bonePositions = bonePositionsTrace_.SampleValid(time);
     const auto boneRotations = boneRotationsTrace_.SampleValid(time);

@@ -78,9 +78,9 @@ void ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<Msg
     if (timeStep != inputTimeStep_)
         latestScaledInputTime_ = inputTime_.Get();
 
-    isNewInputFrame_ = previousInputTime.GetFrame() != inputTime_.Get().GetFrame();
+    isNewInputFrame_ = previousInputTime.Frame() != inputTime_.Get().Frame();
     if (isNewInputFrame_)
-        physicsSync_.Synchronize(inputTime_.Get().GetFrame(), inputTime_.Get().GetSubFrame() / updateFrequency_);
+        physicsSync_.Synchronize(inputTime_.Get().Frame(), inputTime_.Get().Fraction() / updateFrequency_);
     else
         physicsSync_.Update(inputTimeStep_);
 }
@@ -101,7 +101,7 @@ SoftNetworkTime ClientReplicaClock::InitializeSoftTime() const
 
 void ClientReplicaClock::UpdateServerTime(const MsgSceneClock& msg, bool skipOutdated)
 {
-    if (skipOutdated && NetworkTime{msg.latestFrame_} - NetworkTime{latestServerFrame_} < 0.0)
+    if (skipOutdated && (msg.latestFrame_ < latestServerFrame_))
         return;
 
     const unsigned serverFrameTime = connection_->RemoteToLocalTime(msg.latestFrameTime_);
@@ -237,7 +237,7 @@ void ClientReplica::ProcessRemoveObjects(MemoryBuffer& messageData)
 
 void ClientReplica::ProcessAddObjects(MemoryBuffer& messageData)
 {
-    const unsigned messageFrame = messageData.ReadUInt();
+    const auto messageFrame = static_cast<NetworkFrame>(messageData.ReadInt64());
     while (!messageData.IsEof())
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
@@ -266,7 +266,7 @@ void ClientReplica::ProcessAddObjects(MemoryBuffer& messageData)
 
 void ClientReplica::ProcessUpdateObjectsReliable(MemoryBuffer& messageData)
 {
-    const unsigned messageFrame = messageData.ReadUInt();
+    const auto messageFrame = static_cast<NetworkFrame>(messageData.ReadInt64());
     while (!messageData.IsEof())
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
@@ -285,7 +285,7 @@ void ClientReplica::ProcessUpdateObjectsReliable(MemoryBuffer& messageData)
 
 void ClientReplica::ProcessUpdateObjectsUnreliable(MemoryBuffer& messageData)
 {
-    const unsigned messageFrame = messageData.ReadUInt();
+    const auto messageFrame = static_cast<NetworkFrame>(messageData.ReadInt64());
 
     while (!messageData.IsEof())
     {
@@ -368,9 +368,9 @@ ea::string ClientReplica::GetDebugInfo() const
         sceneName,
         connection_->GetPing(),
         ea::max(0, CeilToInt(inputDelayMs)),
-        GetServerTime().GetFrame(),
+        GetServerTime().Frame(),
         ea::max(0, CeilToInt(replicaDelayMs)),
-        GetLatestScaledInputTime().GetFrame());
+        GetLatestScaledInputTime().Frame());
 }
 
 void ClientReplica::OnInputReady(float timeStep)
@@ -385,7 +385,7 @@ void ClientReplica::OnInputReady(float timeStep)
     {
         using namespace BeginClientNetworkFrame;
         auto& eventData = GetEventDataMap();
-        eventData[P_FRAME] = GetInputTime().GetFrame();
+        eventData[P_FRAME] = static_cast<long long>(GetInputTime().Frame());
         network_->SendEvent(E_BEGINCLIENTNETWORKFRAME);
     }
 }
@@ -396,19 +396,19 @@ void ClientReplica::OnNetworkUpdate()
     {
         using namespace EndClientNetworkFrame;
         auto& eventData = GetEventDataMap();
-        eventData[P_FRAME] = GetInputTime().GetFrame();
+        eventData[P_FRAME] = static_cast<long long>(GetInputTime().Frame());
         network_->SendEvent(E_ENDCLIENTNETWORKFRAME);
 
-        SendObjectsFeedbackUnreliable(GetInputTime().GetFrame());
+        SendObjectsFeedbackUnreliable(GetInputTime().Frame());
     }
 }
 
-void ClientReplica::SendObjectsFeedbackUnreliable(unsigned feedbackFrame)
+void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
     connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
-        msg.WriteUInt(feedbackFrame);
+        msg.WriteInt64(static_cast<long long>(feedbackFrame));
 
         bool sendMessage = false;
         for (NetworkObject* networkObject : ownedObjects_)

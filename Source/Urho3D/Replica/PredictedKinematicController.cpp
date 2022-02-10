@@ -122,12 +122,12 @@ void PredictedKinematicController::InitializeOnServer()
         [this](StringHash, VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
-        const unsigned frame = eventData[P_FRAME].GetUInt();
+        const auto frame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
         OnServerFrameBegin(frame);
     });
 }
 
-void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
+void PredictedKinematicController::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
 {
     InitializeCommon();
     if (!IsConnectedToComponents())
@@ -144,7 +144,7 @@ void PredictedKinematicController::InitializeFromSnapshot(unsigned frame, Deseri
         {
             const Variant& networkFrame = eventData[PhysicsPreStep::P_NETWORKFRAME];
             if (!networkFrame.IsEmpty())
-                OnPhysicsSynchronizedOnClient(networkFrame.GetUInt());
+                OnPhysicsSynchronizedOnClient(static_cast<NetworkFrame>(networkFrame.GetInt64()));
         });
     }
 }
@@ -160,7 +160,7 @@ void PredictedKinematicController::InterpolateState(float timeStep, const Networ
         // Get velocity without interpolation within frame
         ReplicationManager* replicationManager = networkObject->GetReplicationManager();
         const float derivativeTimeStep = 1.0f / replicationManager->GetUpdateFrequency();
-        const auto positionAndVelocity = replicatedTransform_->SampleTemporalPosition(NetworkTime{replicaTime.GetFrame()});
+        const auto positionAndVelocity = replicatedTransform_->SampleTemporalPosition(NetworkTime{replicaTime.Frame()});
         effectiveVelocity_ = positionAndVelocity.derivative_ * derivativeTimeStep;
     }
     else
@@ -194,12 +194,12 @@ void PredictedKinematicController::InitializeCommon()
     }
 }
 
-bool PredictedKinematicController::PrepareUnreliableFeedback(unsigned frame)
+bool PredictedKinematicController::PrepareUnreliableFeedback(NetworkFrame frame)
 {
     return true;
 }
 
-void PredictedKinematicController::WriteUnreliableFeedback(unsigned frame, Serializer& dest)
+void PredictedKinematicController::WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest)
 {
     if (client_.input_.empty() || client_.input_.back().frame_ != frame)
     {
@@ -216,14 +216,14 @@ void PredictedKinematicController::WriteUnreliableFeedback(unsigned frame, Seria
         [&](const InputFrame& inputFrame) { WriteInputFrame(inputFrame, dest); });
 }
 
-void PredictedKinematicController::ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src)
+void PredictedKinematicController::ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src)
 {
     const unsigned numInputFrames = ea::min(src.ReadVLE(), maxRedundancy_);
     for (unsigned i = 0; i < numInputFrames; ++i)
         ReadInputFrame(feedbackFrame - i, src);
 }
 
-void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
+void PredictedKinematicController::OnServerFrameBegin(NetworkFrame serverFrame)
 {
     if (!IsConnectedToComponents())
         return;
@@ -262,7 +262,7 @@ void PredictedKinematicController::OnServerFrameBegin(unsigned serverFrame)
     }
 }
 
-void PredictedKinematicController::OnPhysicsSynchronizedOnClient(unsigned frame)
+void PredictedKinematicController::OnPhysicsSynchronizedOnClient(NetworkFrame frame)
 {
     if (!IsConnectedToComponents())
         return;
@@ -288,7 +288,7 @@ void PredictedKinematicController::UpdateEffectiveVelocity(float timeStep)
     previousPosition_ = currentPosition;
 }
 
-void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
+void PredictedKinematicController::CheckAndCorrectController(NetworkFrame frame)
 {
     // Skip if not ready
     const auto latestConfirmedFrame = replicatedTransform_->GetLatestFrame();
@@ -300,7 +300,7 @@ void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
         return;
 
     // Avoid re-adjusting affected frames to stabilize behavior.
-    if (client_.latestAffectedFrame_ && NetworkTime{*latestConfirmedFrame} - NetworkTime{*client_.latestAffectedFrame_} <= 0.0)
+    if (client_.latestAffectedFrame_ && (*latestConfirmedFrame <= *client_.latestAffectedFrame_))
         return;
 
     // Skip if cannot find matching input frame for whatever reason
@@ -315,7 +315,7 @@ void PredictedKinematicController::CheckAndCorrectController(unsigned frame)
     client_.latestConfirmedFrame_ = *latestConfirmedFrame;
 }
 
-bool PredictedKinematicController::AdjustConfirmedFrame(unsigned confirmedFrame, unsigned nextInputFrameIndex)
+bool PredictedKinematicController::AdjustConfirmedFrame(NetworkFrame confirmedFrame, unsigned nextInputFrameIndex)
 {
     const float movementThreshold = replicatedTransform_->GetMovementThreshold();
     const float smoothingConstant = replicatedTransform_->GetSmoothingConstant();
@@ -333,11 +333,11 @@ bool PredictedKinematicController::AdjustConfirmedFrame(unsigned confirmedFrame,
     return false;
 }
 
-void PredictedKinematicController::TrackCurrentInput(unsigned frame)
+void PredictedKinematicController::TrackCurrentInput(NetworkFrame frame)
 {
     if (!client_.input_.empty())
     {
-        const unsigned previousInputFrame = client_.input_.back().frame_;
+        const NetworkFrame previousInputFrame = client_.input_.back().frame_;
         const auto numSkippedFrames = static_cast<int>(frame - previousInputFrame) - 1;
         if (numSkippedFrames > 0)
         {
@@ -375,7 +375,7 @@ void PredictedKinematicController::WriteInputFrame(const InputFrame& inputFrame,
     dest.WriteQuaternion(inputFrame.rotation_);
 }
 
-void PredictedKinematicController::ReadInputFrame(unsigned frame, Deserializer& src)
+void PredictedKinematicController::ReadInputFrame(NetworkFrame frame, Deserializer& src)
 {
     const Vector3 walkVelocity = src.ReadVector3();
     const bool needJump = src.ReadBool();

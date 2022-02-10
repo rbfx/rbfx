@@ -38,7 +38,7 @@ public:
     ClientInputStatistics(unsigned windowSize, unsigned maxInputLoss);
 
     /// Notify that the input was received for given frame.
-    void OnInputReceived(unsigned frame);
+    void OnInputReceived(NetworkFrame frame);
 
     unsigned GetRecommendedBufferSize() const { return bufferSize_; }
 
@@ -48,7 +48,7 @@ private:
 
     const int maxInputLoss_;
 
-    ea::optional<unsigned> latestInputFrame_{};
+    ea::optional<NetworkFrame> latestInputFrame_{};
     ea::ring_buffer<unsigned> numLostFrames_;
 
     ea::vector<unsigned> histogram_;

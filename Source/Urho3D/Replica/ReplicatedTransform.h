@@ -91,29 +91,29 @@ public:
     /// Implement NetworkBehavior.
     /// @{
     void InitializeOnServer() override;
-    void WriteSnapshot(unsigned frame, Serializer& dest) override;
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
+    void WriteSnapshot(NetworkFrame frame, Serializer& dest) override;
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
     void UpdateTransformOnServer() override;
     void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
-    bool PrepareUnreliableDelta(unsigned frame) override;
-    void WriteUnreliableDelta(unsigned frame, Serializer& dest) override;
-    void ReadUnreliableDelta(unsigned frame, Deserializer& src) override;
+    bool PrepareUnreliableDelta(NetworkFrame frame) override;
+    void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override;
+    void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override;
     /// @}
 
     /// Getters for network properties
     /// @{
     PositionAndVelocity SampleTemporalPosition(const NetworkTime& time) const;
     RotationAndVelocity SampleTemporalRotation(const NetworkTime& time) const;
-    ea::optional<PositionAndVelocity> GetTemporalPosition(unsigned frame) const;
-    ea::optional<RotationAndVelocity> GetTemporalRotation(unsigned frame) const;
-    ea::optional<unsigned> GetLatestFrame() const;
+    ea::optional<PositionAndVelocity> GetTemporalPosition(NetworkFrame frame) const;
+    ea::optional<RotationAndVelocity> GetTemporalRotation(NetworkFrame frame) const;
+    ea::optional<NetworkFrame> GetLatestFrame() const;
     /// @}
 
 private:
     void InitializeCommon();
-    void OnServerFrameEnd(unsigned frame);
+    void OnServerFrameEnd(NetworkFrame frame);
 
     /// Attributes independent on the client and the server.
     /// @{

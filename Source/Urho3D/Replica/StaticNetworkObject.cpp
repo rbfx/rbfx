@@ -67,7 +67,7 @@ void StaticNetworkObject::InitializeOnServer()
     latestSentParentObject_ = GetParentNetworkId();
 }
 
-void StaticNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
+void StaticNetworkObject::WriteSnapshot(NetworkFrame frame, Serializer& dest)
 {
     dest.WriteUInt(static_cast<unsigned>(GetParentNetworkId()));
     dest.WriteString(clientPrefab_ ? clientPrefab_->GetName() : EMPTY_STRING);
@@ -78,7 +78,7 @@ void StaticNetworkObject::WriteSnapshot(unsigned frame, Serializer& dest)
     dest.WriteVector3(node_->GetSignedWorldScale());
 }
 
-bool StaticNetworkObject::PrepareReliableDelta(unsigned frame)
+bool StaticNetworkObject::PrepareReliableDelta(NetworkFrame frame)
 {
     const auto parentObject = GetParentNetworkId();
     const bool needUpdate = latestSentParentObject_ != parentObject;
@@ -86,12 +86,12 @@ bool StaticNetworkObject::PrepareReliableDelta(unsigned frame)
     return needUpdate;
 }
 
-void StaticNetworkObject::WriteReliableDelta(unsigned frame, Serializer& dest)
+void StaticNetworkObject::WriteReliableDelta(NetworkFrame frame, Serializer& dest)
 {
     dest.WriteUInt(static_cast<unsigned>(latestSentParentObject_));
 }
 
-void StaticNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
+void StaticNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
 {
     const auto parentNetworkId = static_cast<NetworkId>(src.ReadUInt());
     SetParentNetworkObject(parentNetworkId);
@@ -123,7 +123,7 @@ void StaticNetworkObject::InitializeFromSnapshot(unsigned frame, Deserializer& s
     node_->SetTransform(localTransform);
 }
 
-void StaticNetworkObject::ReadReliableDelta(unsigned frame, Deserializer& src)
+void StaticNetworkObject::ReadReliableDelta(NetworkFrame frame, Deserializer& src)
 {
     const auto parentObject = static_cast<NetworkId>(src.ReadUInt());
     SetParentNetworkObject(parentObject);

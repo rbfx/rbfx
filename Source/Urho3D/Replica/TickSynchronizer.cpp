@@ -155,7 +155,7 @@ PhysicsTickSynchronizer::~PhysicsTickSynchronizer()
 #endif
 }
 
-void PhysicsTickSynchronizer::Synchronize(unsigned networkFrame, float overtime)
+void PhysicsTickSynchronizer::Synchronize(NetworkFrame networkFrame, float overtime)
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)

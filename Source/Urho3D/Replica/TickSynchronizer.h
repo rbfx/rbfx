@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Core/Object.h"
+#include "../Replica/NetworkTime.h"
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsWorld.h"
 #endif
@@ -75,7 +76,7 @@ public:
     PhysicsTickSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer);
     ~PhysicsTickSynchronizer();
 
-    void Synchronize(unsigned networkFrame, float overtime);
+    void Synchronize(NetworkFrame networkFrame, float overtime);
     void Update(float timeStep);
 
 protected:

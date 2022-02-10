@@ -59,7 +59,7 @@ void ReplicatedAnimation::InitializeOnServer()
     animationController_->SetEnabled(false);
 }
 
-void ReplicatedAnimation::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
+void ReplicatedAnimation::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
 {
     InitializeCommon();
 }

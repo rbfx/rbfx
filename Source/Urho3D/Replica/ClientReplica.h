@@ -106,7 +106,7 @@ private:
 
     unsigned inputDelay_{};
     NetworkTime serverTime_;
-    unsigned latestServerFrame_{};
+    NetworkFrame latestServerFrame_{};
     NetworkTime latestScaledInputTime_{};
     bool isNewInputFrame_{};
 
@@ -140,7 +140,7 @@ public:
 private:
     void OnInputReady(float timeStep);
     void OnNetworkUpdate();
-    void SendObjectsFeedbackUnreliable(unsigned feedbackFrame);
+    void SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame);
 
     NetworkObject* CreateNetworkObject(NetworkId networkId, StringHash componentType);
     NetworkObject* GetCheckedNetworkObject(NetworkId networkId, StringHash componentType);

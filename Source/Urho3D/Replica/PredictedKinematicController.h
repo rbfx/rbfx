@@ -69,20 +69,20 @@ public:
     /// @{
     void InitializeStandalone() override;
     void InitializeOnServer() override;
-    void InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned) override;
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
     void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
-    bool PrepareUnreliableFeedback(unsigned frame) override;
-    void WriteUnreliableFeedback(unsigned frame, Serializer& dest) override;
-    void ReadUnreliableFeedback(unsigned feedbackFrame, Deserializer& src) override;
+    bool PrepareUnreliableFeedback(NetworkFrame frame) override;
+    void WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest) override;
+    void ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src) override;
     /// @}
 
 private:
     struct InputFrame
     {
         bool isLost_{};
-        unsigned frame_{};
+        NetworkFrame frame_{};
         Vector3 startPosition_;
         Vector3 walkVelocity_;
         Quaternion rotation_;
@@ -91,17 +91,17 @@ private:
 
     void InitializeCommon();
 
-    void OnServerFrameBegin(unsigned serverFrame);
+    void OnServerFrameBegin(NetworkFrame serverFrame);
 
-    void OnPhysicsSynchronizedOnClient(unsigned frame);
-    void CheckAndCorrectController(unsigned frame);
-    bool AdjustConfirmedFrame(unsigned confirmedFrame, unsigned nextInputFrameIndex);
-    void TrackCurrentInput(unsigned frame);
+    void OnPhysicsSynchronizedOnClient(NetworkFrame frame);
+    void CheckAndCorrectController(NetworkFrame frame);
+    bool AdjustConfirmedFrame(NetworkFrame confirmedFrame, unsigned nextInputFrameIndex);
+    void TrackCurrentInput(NetworkFrame frame);
     void ApplyActionsOnClient();
     void UpdateEffectiveVelocity(float timeStep);
 
     void WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const;
-    void ReadInputFrame(unsigned frame, Deserializer& src);
+    void ReadInputFrame(NetworkFrame frame, Deserializer& src);
 
     WeakPtr<ReplicatedTransform> replicatedTransform_;
     WeakPtr<KinematicCharacterController> kinematicController_;
@@ -129,8 +129,8 @@ private:
 
         unsigned desiredRedundancy_{};
         ea::ring_buffer<InputFrame> input_;
-        ea::optional<unsigned> latestConfirmedFrame_;
-        ea::optional<unsigned> latestAffectedFrame_;
+        ea::optional<NetworkFrame> latestConfirmedFrame_;
+        ea::optional<NetworkFrame> latestAffectedFrame_;
     } client_;
 };
 

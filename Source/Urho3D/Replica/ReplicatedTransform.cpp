@@ -81,12 +81,12 @@ void ReplicatedTransform::InitializeOnServer()
         [this](StringHash, VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
-        const unsigned serverFrame = eventData[P_FRAME].GetUInt();
+        const auto serverFrame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
         OnServerFrameEnd(serverFrame);
     });
 }
 
-void ReplicatedTransform::WriteSnapshot(unsigned frame, Serializer& dest)
+void ReplicatedTransform::WriteSnapshot(NetworkFrame frame, Serializer& dest)
 {
     ea::bitset<32> flags;
     flags[0] = synchronizePosition_;
@@ -96,7 +96,7 @@ void ReplicatedTransform::WriteSnapshot(unsigned frame, Serializer& dest)
     dest.WriteVLE(flags.to_uint32());
 }
 
-void ReplicatedTransform::InitializeFromSnapshot(unsigned frame, Deserializer& src, bool isOwned)
+void ReplicatedTransform::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
 {
     InitializeCommon();
 
@@ -128,7 +128,7 @@ void ReplicatedTransform::InitializeCommon()
     rotationTrace_.Resize(traceDuration);
 }
 
-void ReplicatedTransform::OnServerFrameEnd(unsigned frame)
+void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
 {
     server_.previousPosition_ = server_.position_;
     server_.previousRotation_ = server_.rotation_;
@@ -187,12 +187,12 @@ void ReplicatedTransform::InterpolateState(float timeStep, const NetworkTime& re
     }
 }
 
-bool ReplicatedTransform::PrepareUnreliableDelta(unsigned frame)
+bool ReplicatedTransform::PrepareUnreliableDelta(NetworkFrame frame)
 {
     return server_.pendingUploadAttempts_ > 0 || numUploadAttempts_ == 0;
 }
 
-void ReplicatedTransform::WriteUnreliableDelta(unsigned frame, Serializer& dest)
+void ReplicatedTransform::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
 {
     if (synchronizePosition_)
     {
@@ -207,7 +207,7 @@ void ReplicatedTransform::WriteUnreliableDelta(unsigned frame, Serializer& dest)
     }
 }
 
-void ReplicatedTransform::ReadUnreliableDelta(unsigned frame, Deserializer& src)
+void ReplicatedTransform::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
 {
     if (synchronizePosition_)
     {
@@ -236,17 +236,17 @@ RotationAndVelocity ReplicatedTransform::SampleTemporalRotation(const NetworkTim
     return rotationTrace_.SampleValid(time);
 }
 
-ea::optional<PositionAndVelocity> ReplicatedTransform::GetTemporalPosition(unsigned frame) const
+ea::optional<PositionAndVelocity> ReplicatedTransform::GetTemporalPosition(NetworkFrame frame) const
 {
     return positionTrace_.GetRaw(frame);
 }
 
-ea::optional<RotationAndVelocity> ReplicatedTransform::GetTemporalRotation(unsigned frame) const
+ea::optional<RotationAndVelocity> ReplicatedTransform::GetTemporalRotation(NetworkFrame frame) const
 {
     return rotationTrace_.GetRaw(frame);
 }
 
-ea::optional<unsigned> ReplicatedTransform::GetLatestFrame() const
+ea::optional<NetworkFrame> ReplicatedTransform::GetLatestFrame() const
 {
     return positionTrace_.IsInitialized() ? ea::make_optional(positionTrace_.GetLastFrame()) : ea::nullopt;
 }

@@ -24,8 +24,10 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "../Core/Assert.h"
+#include "../Replica/NetworkId.h"
 
+#include <EASTL/numeric_limits.h>
 #include <EASTL/string.h>
 
 namespace Urho3D
@@ -42,9 +44,9 @@ class URHO3D_API NetworkTime
 public:
     NetworkTime() = default;
 
-    explicit NetworkTime(unsigned frame, float subFrame = 0.0f)
+    explicit NetworkTime(NetworkFrame frame, float subFrame = 0.0f)
         : frame_(frame)
-        , subFrame_(subFrame)
+        , fraction_(subFrame)
     {
         Normalize();
     }
@@ -56,9 +58,9 @@ public:
         return result;
     }
 
-    unsigned GetFrame() const { return frame_; }
+    NetworkFrame Frame() const { return frame_; }
 
-    float GetSubFrame() const { return subFrame_; }
+    float Fraction() const { return fraction_; }
 
     ea::string ToString() const;
 
@@ -90,7 +92,7 @@ public:
 
     double operator-(const NetworkTime& rhs) const { return GetDelta(rhs); }
 
-    bool operator==(const NetworkTime& rhs) const { return frame_ == rhs.frame_ && subFrame_ == rhs.subFrame_; }
+    bool operator==(const NetworkTime& rhs) const { return frame_ == rhs.frame_ && fraction_ == rhs.fraction_; }
 
     bool operator!=(const NetworkTime& rhs) const { return !(*this == rhs); }
 
@@ -99,8 +101,8 @@ private:
     void AddDelta(double delta);
     double GetDelta(const NetworkTime& origin) const;
 
-    unsigned frame_{};
-    float subFrame_{};
+    NetworkFrame frame_{};
+    float fraction_{};
 };
 
 /// Helper class to smoothly adjust NetworkTime on client.

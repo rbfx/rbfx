@@ -33,7 +33,7 @@ ClientInputStatistics::ClientInputStatistics(unsigned windowSize, unsigned maxIn
     numLostFrames_.set_capacity(windowSize);
 }
 
-void ClientInputStatistics::OnInputReceived(unsigned frame)
+void ClientInputStatistics::OnInputReceived(NetworkFrame frame)
 {
     if (!latestInputFrame_)
     {
@@ -42,7 +42,7 @@ void ClientInputStatistics::OnInputReceived(unsigned frame)
     }
 
     // Skip outdated inputs
-    const auto delta = RoundToInt(NetworkTime{frame} - NetworkTime{*latestInputFrame_});
+    const auto delta = static_cast<int>(frame - *latestInputFrame_);
     latestInputFrame_ = frame;
     if (delta <= 0)
         return;
