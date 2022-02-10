@@ -64,7 +64,7 @@ public:
 
     /// Return state of the current frame.
     /// @{
-    const auto& GetRecentlyRemovedObjects() const { return recentlyRemovedComponents_; }
+    const auto& GetRecentlyRemovedObjects() const { return recentlyRemovedObjects_; }
     const auto& GetSortedObjects() const { return sortedNetworkObjects_; }
     unsigned GetIndexUpperBound() const;
     const ea::unordered_set<NetworkObject*>& GetOwnedObjectsByConnection(AbstractConnection* connection) const;
@@ -90,8 +90,8 @@ private:
 
     const WeakPtr<NetworkObjectRegistry> objectRegistry_{};
 
-    ea::unordered_set<NetworkId> recentlyRemovedComponents_;
-    ea::unordered_set<NetworkId> recentlyAddedComponents_;
+    ea::unordered_set<NetworkId> recentlyRemovedObjects_;
+    ea::unordered_set<NetworkId> recentlyAddedObjects_;
 
     ea::vector<NetworkObject*> sortedNetworkObjects_;
 
@@ -191,11 +191,11 @@ private:
     void SendUpdateObjectsReliable(const SharedReplicationState& sharedState);
     void SendUpdateObjectsUnreliable(unsigned currentFrame, const SharedReplicationState& sharedState);
 
-    ea::vector<NetworkObjectRelevance> componentsRelevance_;
-    ea::vector<float> componentsRelevanceTimeouts_;
+    ea::vector<NetworkObjectRelevance> objectsRelevance_;
+    ea::vector<float> objectsRelevanceTimeouts_;
 
-    ea::vector<NetworkId> pendingRemovedComponents_;
-    ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedComponents_;
+    ea::vector<NetworkId> pendingRemovedObjects_;
+    ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedObjects_;
 
     VectorBuffer componentBuffer_;
 
@@ -250,7 +250,6 @@ private:
 
     SharedPtr<SharedReplicationState> sharedState_;
     ea::unordered_map<AbstractConnection*, SharedPtr<ClientReplicationState>> connections_;
-    VectorBuffer componentBuffer_;
 };
 
 }

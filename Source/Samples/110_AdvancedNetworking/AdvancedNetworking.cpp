@@ -37,7 +37,6 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/IO/Log.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/Connection.h>
@@ -45,7 +44,6 @@
 #include <Urho3D/Network/NetworkEvents.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/KinematicCharacterController.h>
-#include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Replica/PredictedKinematicController.h>
@@ -59,7 +57,6 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
-#include <Urho3D/UI/UIEvents.h>
 
 #include "AdvancedNetworking.h"
 

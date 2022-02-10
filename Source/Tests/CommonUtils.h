@@ -93,7 +93,7 @@ public:
     }
 
     void SkipFramesUntilEvent(StringHash eventType, unsigned hits = 1);
-    void ValidatePattern(ea::vector<ea::vector<StringHash>> pattern) const;
+    void ValidatePattern(const ea::vector<ea::vector<StringHash>>& pattern) const;
 
 private:
     struct EventRecord
