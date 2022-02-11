@@ -78,13 +78,14 @@ void RunFrame(Context* context, float timeStep, float maxTimeStep)
     while (timeStep > 0.0f);
 }
 
-Resource* GetOrCreateResource(Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
+Resource* GetOrCreateResource(
+    Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory)
 {
     auto cache = context->GetSubsystem<ResourceCache>();
     if (auto resource = cache->GetResource(type, name))
         return resource;
 
-    auto resource = factory();
+    auto resource = factory(context);
     resource->SetName(name);
     cache->AddManualResource(resource);
     return resource;

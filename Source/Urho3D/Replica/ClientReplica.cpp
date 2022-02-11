@@ -220,7 +220,7 @@ void ClientReplica::ProcessSceneClock(const MsgSceneClock& msg)
 
 void ClientReplica::ProcessRemoveObjects(MemoryBuffer& messageData)
 {
-    const unsigned messageFrame = messageData.ReadUInt();
+    const auto messageFrame = static_cast<NetworkFrame>(messageData.ReadInt64());
     while (!messageData.IsEof())
     {
         const auto networkId = static_cast<NetworkId>(messageData.ReadUInt());
@@ -351,6 +351,13 @@ void ClientReplica::RemoveNetworkObject(WeakPtr<NetworkObject> networkObject)
 {
     if (networkObject->GetNetworkMode() == NetworkObjectMode::ClientOwned)
         ownedObjects_.erase(networkObject);
+
+    Node* parentNode = networkObject->GetNode()->GetParent();
+    for (NetworkObject* childNetworkObject : networkObject->GetChildrenNetworkObjects())
+    {
+        if (childNetworkObject)
+            childNetworkObject->GetNode()->SetParent(parentNode);
+    }
 
     networkObject->PrepareToRemove();
     if (networkObject)

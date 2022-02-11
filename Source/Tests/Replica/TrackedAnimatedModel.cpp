@@ -35,13 +35,22 @@
 #include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Replica/TrackedAnimatedModel.h>
 
+namespace
+{
+
+SharedPtr<Model> CreateTestAnimatedModel(Context* context)
+{
+    return Tests::CreateSkinnedQuad_Model(context)->ExportModel();
+}
+
+}
+
 TEST_CASE("TrackedAnimatedModel tracks bones on server")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto model = Tests::GetOrCreateResource<Model>(
-        context, "@/TrackedAnimatedModel/TestModel.mdl", [&] { return Tests::CreateSkinnedQuad_Model(context)->ExportModel(); });
+    auto model = Tests::GetOrCreateResource<Model>(context, "@/TrackedAnimatedModel/TestModel.mdl", CreateTestAnimatedModel);
 
     // Setup scene
     auto serverScene = MakeShared<Scene>(context);

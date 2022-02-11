@@ -45,6 +45,16 @@ public:
 
     static void RegisterObject(Context* context);
 
+    /// Manage attributes.
+    /// @{
+    void SetRelevant(bool value) { isRelevant_ = value; }
+    bool IsRelevant() const { return isRelevant_; }
+    void SetUpdatePeriod(unsigned value) { updatePeriod_ = value; }
+    unsigned GetUpdatePeriod() const { return updatePeriod_; }
+    void SetDistance(float value) { distance_ = value; }
+    float GetDistance() const { return distance_; }
+    /// @}
+
     /// Implement NetworkBehavior.
     /// @{
     ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) override;
