@@ -101,8 +101,7 @@ TEST_CASE("Client-side prediction is consistent with server")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(
-        context, "@/ClientSidePrediction/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/PredictedKinematicController/TestPrefab.xml", CreateTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
@@ -187,8 +186,7 @@ TEST_CASE("Client-side prediction is stable when latency is stable")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(
-        context, "@/ClientSidePrediction/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/PredictedKinematicController/TestPrefab.xml", CreateTestPrefab);
 
     // Setup scenes
     const unsigned seed = GENERATE(0, 1, 2);
@@ -260,8 +258,7 @@ TEST_CASE("PredictedKinematicController works standalone")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    auto prefab = Tests::GetOrCreateResource<XMLFile>(
-        context, "@/ClientSidePrediction/TestPrefab.xml", [&] { return CreateTestPrefab(context); });
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/PredictedKinematicController/TestPrefab.xml", CreateTestPrefab);
 
     auto standaloneScene = CreateTestScene(context);
     standaloneScene->CreateComponent<ReplicationManager>(LOCAL);

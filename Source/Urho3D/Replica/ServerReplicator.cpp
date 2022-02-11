@@ -559,24 +559,33 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     for (NetworkObject* networkObject : sharedState.GetSortedObjects())
     {
         const NetworkId networkId = networkObject->GetNetworkId();
+        const NetworkId parentNetworkId = networkObject->GetParentNetworkId();
         const unsigned index = GetIndex(networkId);
 
-        if (objectsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
+        const bool wasRelevant = objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant;
+        const bool isParentRelevant = parentNetworkId == InvalidNetworkId
+            || objectsRelevance_[GetIndex(parentNetworkId)] != NetworkObjectRelevance::Irrelevant;
+
+        if (!wasRelevant && isParentRelevant)
         {
+            // Begin replication of the object if both the object and its parent are relevant
             objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates);
             if (objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
             {
-                // Begin replication of component, queue snapshot
                 objectsRelevanceTimeouts_[index] = relevanceTimeout;
                 pendingUpdatedObjects_.push_back({ networkObject, true });
             }
         }
-        else
+        else if (wasRelevant)
         {
+            // If replicating, check periodically (abort replication immediately if parent is removed)
             objectsRelevanceTimeouts_[index] -= timeStep;
-            if (objectsRelevanceTimeouts_[index] < 0.0f)
+            if (objectsRelevanceTimeouts_[index] < 0.0f || !isParentRelevant)
             {
-                objectsRelevance_[index] = networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates);
+                objectsRelevance_[index] = isParentRelevant
+                    ? networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates)
+                    : NetworkObjectRelevance::Irrelevant;
+
                 if (objectsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
                 {
                     // Remove irrelevant component

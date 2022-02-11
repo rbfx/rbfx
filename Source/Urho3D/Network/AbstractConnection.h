@@ -153,17 +153,19 @@ public:
 
     LogLevel GetMessageLogLevel(NetworkMessageId messageId) const
     {
-        static const ea::unordered_set<NetworkMessageId> traceMessages = {
-            MSG_CLOCK_SYNC,
-            MSG_CONTROLS,
-            MSG_REMOTEEVENT,
+        static const ea::unordered_set<NetworkMessageId> debugMessages = {
+            MSG_IDENTITY,
+            MSG_SCENELOADED,
+            MSG_REQUESTPACKAGE,
 
-            MSG_SCENE_CLOCK,
-            MSG_UPDATE_OBJECTS_RELIABLE,
-            MSG_UPDATE_OBJECTS_UNRELIABLE,
-            MSG_OBJECTS_FEEDBACK_UNRELIABLE,
+            MSG_LOADSCENE,
+            MSG_SCENECHECKSUMERROR,
+            MSG_PACKAGEINFO,
+
+            MSG_CONFIGURE,
+            MSG_SYNCHRONIZED,
         };
-        return traceMessages.contains(messageId) ? LOG_TRACE : LOG_DEBUG;
+        return debugMessages.contains(messageId) ? LOG_DEBUG : LOG_TRACE;
     }
     /// @}
 

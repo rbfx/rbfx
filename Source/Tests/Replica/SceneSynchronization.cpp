@@ -59,12 +59,6 @@ SharedPtr<XMLFile> CreateComplexTestPrefab(Context* context)
     return Tests::ConvertNodeToPrefab(node);
 }
 
-XMLFile* GetComplexTestPrefab(Context* context)
-{
-    return Tests::GetOrCreateResource<XMLFile>(
-        context, "@/SceneSynchronization/ComplexTestPrefab.xml", [&] { return CreateComplexTestPrefab(context); });
-}
-
 SharedPtr<XMLFile> CreateSimpleTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
@@ -73,11 +67,6 @@ SharedPtr<XMLFile> CreateSimpleTestPrefab(Context* context)
     return Tests::ConvertNodeToPrefab(node);
 }
 
-XMLFile* GetSimpleTestPrefab(Context* context)
-{
-    return Tests::GetOrCreateResource<XMLFile>(
-        context, "@/SceneSynchronization/SimpleTestPrefab.xml", [&] { return CreateSimpleTestPrefab(context); });
-}
 
 }
 
@@ -87,7 +76,7 @@ TEST_CASE("Scene is synchronized between client and server")
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
     const float syncDelay = 0.25f;
 
-    auto prefab = GetSimpleTestPrefab(context);
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/SimpleTestPrefab.xml", CreateSimpleTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
@@ -267,7 +256,33 @@ TEST_CASE("Scene is synchronized between client and server")
         REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2, M_LARGE_EPSILON));
     }
 
-    sim.SimulateTime(1.0f);
+    // Re-parent "Replicated Node Child 2" to Scene
+    // Remove "Replicated Node Child 1", "Replicated Node B", "Replicated Node C"
+    {
+        auto replicatedNodeChild1 = serverScene->GetChild("Replicated Node Child 1", true);
+        auto replicatedNodeChild2 = serverScene->GetChild("Replicated Node Child 2", true);
+        auto replicatedNodeB = serverScene->GetChild("Replicated Node B", true);
+        auto replicatedNodeC = serverScene->GetChild("Replicated Node C", true);
+
+        replicatedNodeChild2->SetParent(serverScene);
+        replicatedNodeChild1->Remove();
+        replicatedNodeB->Remove();
+        replicatedNodeC->Remove();
+    }
+
+    sim.SimulateTime(syncDelay);
+
+    for (Scene* clientScene : clientScenes)
+    {
+        auto clientOnlyNode = clientScene->GetChild("Client Only Node", true);
+        auto replicatedNodeChild2 = clientScene->GetChild("Replicated Node Child 2", true);
+
+        REQUIRE(clientScene->GetNumChildren() == 2);
+        REQUIRE(clientScene == clientOnlyNode->GetParent());
+        REQUIRE(clientScene == replicatedNodeChild2->GetParent());
+
+        REQUIRE(replicatedNodeChild2->GetWorldTransform().Equals(transformReplicatedNodeChild2, M_LARGE_EPSILON));
+    }
 }
 
 TEST_CASE("Position and rotation are synchronized between client and server")
@@ -275,7 +290,7 @@ TEST_CASE("Position and rotation are synchronized between client and server")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = GetSimpleTestPrefab(context);
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/SimpleTestPrefab.xml", CreateSimpleTestPrefab);
 
     // Setup scenes
     const auto interpolationQuality = Tests::ConnectionQuality{0.08f, 0.12f, 0.20f, 0, 0};
@@ -361,7 +376,7 @@ TEST_CASE("Prefabs are replicated on clients")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = GetComplexTestPrefab(context);
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/ComplexTestPrefab.xml", CreateComplexTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };
@@ -430,7 +445,7 @@ TEST_CASE("Ownership is consistent on server and on clients")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     context->GetSubsystem<Network>()->SetUpdateFps(Tests::NetworkSimulator::FramesInSecond);
 
-    auto prefab = GetSimpleTestPrefab(context);
+    auto prefab = Tests::GetOrCreateResource<XMLFile>(context, "@/SceneSynchronization/SimpleTestPrefab.xml", CreateSimpleTestPrefab);
 
     // Setup scenes
     const auto quality = Tests::ConnectionQuality{ 0.08f, 0.12f, 0.20f, 0.02f, 0.02f };

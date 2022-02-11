@@ -60,11 +60,12 @@ SharedPtr<Context> CreateCompleteContext();
 void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALUE);
 
 /// Return resource by name. Creates and adds manual resource if missing.
-Resource* GetOrCreateResource(Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>()> factory);
+Resource* GetOrCreateResource(
+    Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory);
 
 /// Return resource by name. Creates and adds manual resource if missing.
 template <class T>
-T* GetOrCreateResource(Context* context, const ea::string& name, ea::function<SharedPtr<Resource>()> factory)
+T* GetOrCreateResource(Context* context, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory)
 {
     return dynamic_cast<T*>(GetOrCreateResource(context, T::GetTypeStatic(), name, factory));
 }
