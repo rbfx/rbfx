@@ -25,10 +25,12 @@
 #include "ParticleGraphEffect.h"
 #include "../Graphics/Drawable.h"
 #include "../Scene/Component.h"
+
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {
+
 class ParticleGraphLayerInstance;
 class ParticleGraphNodeInstance;
 
@@ -43,14 +45,12 @@ public:
     /// Destruct.
     ~ParticleGraphEmitter() override;
     /// Register object factory.
-    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
     /// Set particle effect.
-    /// @property
     void SetEffect(ParticleGraphEffect* effect);
     /// Reset the particle emitter completely. Removes current particles, sets emitting state on, and resets the
     /// emission timer.
@@ -60,7 +60,6 @@ public:
     void ApplyEffect();
 
     /// Return particle effect.
-    /// @property
     ParticleGraphEffect* GetEffect() const;
 
     /// Set particles effect attribute.

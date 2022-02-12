@@ -68,11 +68,14 @@
 
 namespace Urho3D
 {
+
 class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
 {
+
 void RegisterGraphNodes(ParticleGraphSystem* context);
+
 }
 
 } // namespace Urho3D

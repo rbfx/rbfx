@@ -28,6 +28,7 @@
 
 namespace Urho3D
 {
+
 class URHO3D_API ParicleGraphUniform
 {
 public:
@@ -35,15 +36,12 @@ public:
     Variant value_;
 
     /// Get uniform name.
-    /// @property
     const ea::string& GetName() const { return name_; }
 
     /// Get uniform name hash.
-    /// @property
     StringHash GetNameHash() const { return nameHash_; }
 
     /// Set property name.
-    /// @property
     void SetName(const ea::string_view name)
     {
         name_ = name;
@@ -83,7 +81,6 @@ public:
     void Update(float timeStep);
 
     /// Get number of attributes.
-    /// @property 
     unsigned GetNumAttributes() const;
 
     /// Get attribute values.
@@ -147,9 +144,9 @@ private:
     /// All indices of the particle system.
     ea::span<unsigned> indices_;
     /// Particle indices to be removed.
-    ea::span<unsigned> destuctionQueue_;
+    ea::span<unsigned> destructionQueue_;
     /// Number of particles to destroy at end of the frame.
-    unsigned destuctionQueueSize_;
+    unsigned destructionQueueSize_;
     /// Number of active particles.
     unsigned activeParticles_;
     /// Reference to layer.
@@ -164,9 +161,9 @@ private:
 
 inline void ParticleGraphLayerInstance::DestroyParticles()
 {
-    if (!destuctionQueueSize_)
+    if (!destructionQueueSize_)
         return;
-    auto queue = destuctionQueue_.subspan(0, destuctionQueueSize_);
+    auto queue = destructionQueue_.subspan(0, destructionQueueSize_);
     ea::sort(queue.begin(), queue.end(), ea::greater<float>());
     //TODO: Eliminate duplicates.
     for (unsigned index: queue)
@@ -174,7 +171,7 @@ inline void ParticleGraphLayerInstance::DestroyParticles()
         ea::swap(indices_[index], indices_[activeParticles_ - 1]);
         --activeParticles_;
     }
-    destuctionQueueSize_ = 0;
+    destructionQueueSize_ = 0;
 }
 
 /// Get attribute values.
@@ -191,12 +188,14 @@ template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::
     const auto values = attr.MakeSpan<ValueType>(attributes_);
     return SparseSpan<ValueType>(values, indices);
 }
+
 template <typename ValueType> ScalarSpan<ValueType> ParticleGraphLayerInstance::GetScalar(unsigned pinIndex)
 {
     const auto& attr = layer_->GetIntermediateValues()[pinIndex];
     const auto values = attr.MakeSpan<ValueType>(temp_);
     return ScalarSpan<ValueType>(values);
 }
+
 template <typename ValueType> ea::span<ValueType> ParticleGraphLayerInstance::GetSpan(unsigned pinIndex)
 {
     const auto& attr = layer_->GetIntermediateValues()[pinIndex];

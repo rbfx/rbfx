@@ -22,8 +22,6 @@
 
 #include "../Core/VariantCurve.h"
 #include "../IO/ArchiveSerialization.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/Resource.h"
 
 namespace Urho3D
 {

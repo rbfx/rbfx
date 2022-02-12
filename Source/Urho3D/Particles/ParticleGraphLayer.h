@@ -40,6 +40,7 @@ class URHO3D_API ParticleGraphLayer : public Serializable
     static constexpr unsigned DefaultCapacity = 16;
 
     URHO3D_OBJECT(ParticleGraphLayer, Serializable)
+
 public:
     /// Layout of attribute buffer
     struct AttributeBufferLayout
@@ -70,39 +71,30 @@ public:
     /// Destruct.
     virtual ~ParticleGraphLayer();
     /// Register object factory.
-    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Get maximum number of particles the layer can hold.
-    /// @property 
     unsigned GetCapacity() const { return capacity_; }
 
     /// Set maximum number of particles the layer can hold.
-    /// @property
     void SetCapacity(unsigned capacity);
 
     /// Get time step scale.
-    /// @property
     float GetTimeScale() const { return timeScale_; }
 
     /// Set time step scale.
-    /// @property
     void SetTimeScale(float timeScale);
 
     /// Is effect looped.
-    /// @property
     bool IsLoop() const { return loop_; }
 
     /// Set effect loop flag.
-    /// @property
     void SetLoop(bool loop);
 
     /// Get effect duration in seconds.
-    /// @property
     float GetDuration() const { return duration_; }
 
     /// Set effect duration in seconds.
-    /// @property
     void SetDuration(float duration);
 
     /// Get emit graph.
@@ -123,26 +115,22 @@ public:
     bool Commit();
 
     /// Return attribute buffer layout.
-    /// @property
     const AttributeBufferLayout& GetAttributeBufferLayout() const;
 
     /// Return attributes memory layout.
-    /// @property
     const ParticleGraphAttributeLayout& GetAttributeLayout() const { return attributes_; }
 
     /// Return intermediate memory layout.
-    /// @property
     const ParticleGraphBufferLayout& GetIntermediateValues() const { return tempMemory_; }
 
     /// Return size of temp buffer in bytes.
-    /// @property
     unsigned GetTempBufferSize() const;
 
     /// Serialize from/to archive.
     void SerializeInBlock(Archive& archive) override;
 
 private:
-    /// is the effect committed.
+    /// Is the effect committed.
     ea::optional<bool> committed_;
     /// Maximum number of particles.
     unsigned capacity_{DefaultCapacity};

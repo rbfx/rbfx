@@ -35,7 +35,7 @@ namespace Urho3D
 
 ParticleGraphLayerInstance::ParticleGraphLayerInstance()
     : activeParticles_(0)
-    , destuctionQueueSize_(0)
+    , destructionQueueSize_(0)
 {
 }
 
@@ -83,14 +83,14 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     {
         indices_[i] = i;
     }
-    destuctionQueue_ = layout.destructionQueue_.MakeSpan<unsigned>(attributes_);
+    destructionQueue_ = layout.destructionQueue_.MakeSpan<unsigned>(attributes_);
     Reset();
 }
 
 bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
 {
     emitCounterReminder_ += numParticles;
-    
+
     if (emitCounterReminder_ < 1.0f)
         return true;
 
@@ -137,10 +137,10 @@ void ParticleGraphLayerInstance::MarkForDeletion(unsigned particleIndex)
         return;
 
     //TODO: if buffer is full sort and eliminate duplicates.
-    if (destuctionQueueSize_ < destuctionQueue_.size())
+    if (destructionQueueSize_ < destructionQueue_.size())
     {
-        destuctionQueue_[destuctionQueueSize_] = particleIndex;
-        ++destuctionQueueSize_;
+        destructionQueue_[destructionQueueSize_] = particleIndex;
+        ++destructionQueueSize_;
     }
 }
 

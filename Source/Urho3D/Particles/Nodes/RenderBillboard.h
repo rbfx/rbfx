@@ -41,7 +41,6 @@ public:
     /// Construct RenderBillboard.
     explicit RenderBillboard(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.
@@ -51,45 +50,33 @@ public:
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
     /// Set Material.
-    /// @property
     void SetMaterial(ResourceRef value);
     /// Get Material.
-    /// @property
     ResourceRef GetMaterial() const;
 
     /// Set Rows.
-    /// @property
     void SetRows(int value);
     /// Get Rows.
-    /// @property
     int GetRows() const;
 
     /// Set Columns.
-    /// @property
     void SetColumns(int value);
     /// Get Columns.
-    /// @property
     int GetColumns() const;
 
     /// Set Face Camera Mode.
-    /// @property
     void SetFaceCameraMode(int value);
     /// Get Face Camera Mode.
-    /// @property
     int GetFaceCameraMode() const;
 
     /// Set Sort By Distance.
-    /// @property
     void SetSortByDistance(bool value);
     /// Get Sort By Distance.
-    /// @property
     bool GetSortByDistance() const;
 
     /// Set Is Worldspace.
-    /// @property
     void SetIsWorldspace(bool value);
     /// Get Is Worldspace.
-    /// @property
     bool GetIsWorldspace() const;
 
 protected:

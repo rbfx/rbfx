@@ -50,7 +50,6 @@ void ParticleGraphEffect::RegisterObject(Context* context)
     context->RegisterFactory<ParticleGraphEffect>();
 }
 
-/// Set number of layers.
 void ParticleGraphEffect::SetNumLayers(unsigned numLayers)
 {
     while (numLayers < layers_.size())
@@ -64,19 +63,15 @@ void ParticleGraphEffect::SetNumLayers(unsigned numLayers)
     }
 }
 
-/// Get number of layers.
 unsigned ParticleGraphEffect::GetNumLayers() const
 {
     return static_cast<unsigned>(layers_.size());
 }
 
-/// Get layer by index.
 SharedPtr<ParticleGraphLayer> ParticleGraphEffect::GetLayer(unsigned layerIndex) const
 {
     return layers_[layerIndex];
 }
-
-
 
 bool ParticleGraphEffect::BeginLoad(Deserializer& source)
 {

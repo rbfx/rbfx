@@ -36,6 +36,7 @@ ParticleGraphPin::ParticleGraphPin()
     , flags_(ParticleGraphPinFlag::Input)
 {
 }
+
 ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, ParticleGraphContainerType container)
     : containerType_(container)
     , name_(name)
@@ -45,8 +46,9 @@ ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string
     , requestedValueType_(VAR_NONE)
 {
 }
-ParticleGraphPin::ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, VariantType type,
-                                           ParticleGraphContainerType container)
+
+ParticleGraphPin::ParticleGraphPin(
+    ParticleGraphPinFlags flags, const ea::string& name, VariantType type, ParticleGraphContainerType container)
     : containerType_(container)
     , name_(name)
     , nameHash_(name)

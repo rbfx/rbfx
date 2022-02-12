@@ -28,6 +28,7 @@
 
 namespace Urho3D
 {
+
 class ParticleGraphLayer;
 class XMLFile;
 
@@ -42,7 +43,6 @@ public:
     /// Destruct.
     ~ParticleGraphEffect() override;
     /// Register object factory.
-    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Set number of layers.
@@ -57,15 +57,13 @@ public:
     bool BeginLoad(Deserializer& source) override;
     /// Finish resource loading. Always called from the main thread. Return true if successful.
     bool EndLoad() override;
-    
+
     /// Save resource. Return true if successful.
     bool Save(Serializer& dest) const override;
     /// Serialize from/to archive. Return true if successful.
     void SerializeInBlock(Archive& archive) override;
 
-
 private:
-
     /// Reset to defaults.
     void ResetToDefaults();
 

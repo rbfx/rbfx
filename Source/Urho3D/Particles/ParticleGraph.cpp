@@ -34,17 +34,13 @@
 namespace Urho3D
 {
 
-/// Construct ParticleGraphLayer.
 ParticleGraph::ParticleGraph(Context* context)
     : Object(context)
 {
 }
 
-/// Destruct ParticleGraphLayer.
 ParticleGraph::~ParticleGraph() = default;
 
-/// Add node to the graph.
-/// Returns node index;
 unsigned ParticleGraph::Add(const SharedPtr<ParticleGraphNode> node)
 {
     if (!node)
@@ -84,7 +80,6 @@ bool ParticleGraph::SaveGraph(Graph& graph)
     return writer.Write();
 }
 
-/// Serialize from/to archive. Return true if successful.
 bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
 {
     if (auto block = archive.OpenUnorderedBlock(blockName))

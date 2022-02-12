@@ -41,7 +41,6 @@ public:
     /// Construct.
     explicit Constant(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
 protected:

@@ -28,6 +28,7 @@
 
 namespace Urho3D
 {
+
 class ParticleGraphNode;
 class ParticleGraphReader;
 class ParticleGraphWriter;
@@ -50,7 +51,6 @@ public:
     unsigned Add(const SharedPtr<ParticleGraphNode> node);
 
     /// Get number of nodes.
-    /// @property
     unsigned GetNumNodes() const;
 
     /// Get node by index.
@@ -90,10 +90,10 @@ private:
     ParticleGraphSystem* system_;
     ea::vector<unsigned> nodes_;
 };
+
 class ParticleGraphReader
 {
 public:
-
     ParticleGraphReader(ParticleGraph& particleGraph, Graph& graph);
 
     /// Load graph.

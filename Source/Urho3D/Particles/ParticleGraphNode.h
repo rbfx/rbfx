@@ -52,7 +52,6 @@ public:
     ~ParticleGraphNode() override;
 
     /// Get graph.
-    /// @property 
     ParticleGraph* GetGraph() { return graph_; }
 
     /// Get number of pins.

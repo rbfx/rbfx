@@ -41,7 +41,6 @@ public:
     /// Construct Bounce.
     explicit Bounce(Context* context);
     /// Register particle node factory.
-    /// @nobind
     static void RegisterObject(ParticleGraphSystem* context);
 
     /// Evaluate size required to place new node instance.
@@ -51,17 +50,13 @@ public:
     ParticleGraphNodeInstance* CreateInstanceAt(void* ptr, ParticleGraphLayerInstance* layer) override;
 
     /// Set Dampen.
-    /// @property
     void SetDampen(float value);
     /// Get Dampen.
-    /// @property
     float GetDampen() const;
 
     /// Set BounceFactor.
-    /// @property
     void SetBounceFactor(float value);
     /// Get BounceFactor.
-    /// @property
     float GetBounceFactor() const;
 
 protected:

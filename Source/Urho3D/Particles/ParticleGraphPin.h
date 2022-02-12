@@ -30,6 +30,7 @@
 
 namespace Urho3D
 {
+
 class ParticleGraphLayerInstance;
 
 enum class ParticleGraphPinFlag
@@ -72,32 +73,26 @@ public:
     ParticleGraphPin();
     /// Construct pin.
     ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, VariantType type = VAR_NONE,
-                         ParticleGraphContainerType container = ParticleGraphContainerType::Auto);
+        ParticleGraphContainerType container = ParticleGraphContainerType::Auto);
     /// Construct pin.
     ParticleGraphPin(ParticleGraphPinFlags flags, const ea::string& name, ParticleGraphContainerType container);
 
     /// Get input pin flag.
-    /// @property
     bool IsInput() const { return flags_.Test(ParticleGraphPinFlag::Input); }
 
     /// Get pin flags.
-    /// @property
     ParticleGraphPinFlags GetFlags() const { return flags_; }
 
     /// Name of the pin for visual editor.
-    /// @property
     const ea::string& GetName() const { return name_; }
 
     /// Name hash of the pin.
-    /// @property
     StringHash GetNameHash() const { return nameHash_; }
 
     /// Requested value type of the pin. VAR_NONE for autodetected value type.
-    /// @property
     VariantType GetRequestedType() const { return requestedValueType_; }
 
     /// Value type of the pin evaluated at the runtime.
-    /// @property
     VariantType GetValueType() const { return valueType_; }
 
     /// Get attribute index for sparse span.
@@ -130,7 +125,6 @@ protected:
     bool SetValueType(VariantType valueType);
 
     /// Get input pin flag.
-    /// @property
     void SetIsInput(bool isInput);
 
 private:

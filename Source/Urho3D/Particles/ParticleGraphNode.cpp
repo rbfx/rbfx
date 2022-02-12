@@ -129,7 +129,7 @@ bool ParticleGraphNode::Save(ParticleGraphWriter& writer, GraphNode& node)
         return false;
     if (!SavePins(writer, node))
         return false;
-    
+
     return true;
 }
 

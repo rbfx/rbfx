@@ -27,6 +27,7 @@
 
 namespace Urho3D
 {
+
 struct UpdateContext;
 struct ParticleGraphPinRef;
 
@@ -82,12 +83,14 @@ template <typename T> struct SpanVariant
     typedef ea::remove_cv_t<T> value_type;
 
     SpanVariant() = default;
+
     SpanVariant(ParticleGraphContainerType type, T* data, unsigned* indices)
         : type_(type)
         , data_(data)
         , indices_(indices)
     {
     }
+
     SpanVariant(UpdateContext& context, ParticleGraphPinRef& pinRef);
 
     inline T& operator[](unsigned index)
@@ -100,6 +103,7 @@ template <typename T> struct SpanVariant
         default: return *data_;
         }
     }
+
     T* GetSpan()
     {
         assert(type_ == ParticleGraphContainerType::Span);
@@ -117,6 +121,7 @@ template <typename T> struct SpanVariant
         assert(type_ == ParticleGraphContainerType::Sparse);
         return SparseSpan<T>(data_, indices_);
     }
+
     ParticleGraphContainerType type_{ParticleGraphContainerType::Scalar};
     T* data_;
     unsigned* indices_;

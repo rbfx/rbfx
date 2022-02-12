@@ -24,31 +24,18 @@
 
 #include "ParticleGraphEmitter.h"
 #include "ParticleGraphPin.h"
+#include "../Core/NonCopyable.h"
 
 namespace Urho3D
 {
 
-class URHO3D_API ParticleGraphNodeInstance
+class URHO3D_API ParticleGraphNodeInstance : public NonCopyable
 {
 public:
-    /// Delete default copy constructor.
-    ParticleGraphNodeInstance(ParticleGraphNodeInstance&) = delete;
-    ParticleGraphNodeInstance& operator=(const ParticleGraphNodeInstance&) = delete;
-    /// Delete default move constructor.
-    ParticleGraphNodeInstance(ParticleGraphNodeInstance&&) = delete;
-    ParticleGraphNodeInstance& operator=(ParticleGraphNodeInstance&&) = delete;
-
-    /// Construct.
     ParticleGraphNodeInstance();
-
-
-    /// Destruct.
     virtual ~ParticleGraphNodeInstance();
 
-    /// Update.
     virtual void Update(UpdateContext& context) = 0;
-
-    /// Update.
     virtual void Reset();
 };
 

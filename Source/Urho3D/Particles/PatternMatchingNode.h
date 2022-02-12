@@ -51,6 +51,7 @@ struct NodePattern
     {
         pins_.emplace_back(lastPin.GetFlags(), lastPin.GetName(), GetVariantType<typename T::Type>());
     }
+
     template <typename T, typename... Rest> void SetPins(T lastPin, Rest... restPins)
     {
         pins_.emplace_back(lastPin.GetFlags(), lastPin.GetName(), GetVariantType<typename T::Type>());
@@ -117,6 +118,7 @@ protected:
     const ea::vector<NodePattern>& patterns_;
     ea::fixed_vector<ParticleGraphPin, NodePattern::ExpectedNumberOfPins> pins_;
 };
+
 } // namespace ParticleGraphNodes
 
 } // namespace Urho3D

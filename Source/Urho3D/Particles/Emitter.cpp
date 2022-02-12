@@ -30,8 +30,10 @@ namespace Urho3D
 
 namespace ParticleGraphNodes
 {
+
 namespace
 {
+
 const char* emitFromNames[]{"Base", "Volume", "Surface", "Edge", "Vertex", nullptr};
 
 }

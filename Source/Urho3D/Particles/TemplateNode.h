@@ -33,6 +33,7 @@ namespace Urho3D
 
 namespace ParticleGraphNodes
 {
+
 /// Template for a particle graph node class.
 template <typename Instance, typename... Values> class TemplateNode : public ParticleGraphNode
 {
@@ -47,6 +48,7 @@ protected:
     {
         *pins = (*src).WithType(GetVariantType<LastValue>());
     }
+
     template <typename First, typename Second, typename... PinTypes>
     void SetPinTypes(ParticleGraphPin* pins, const ParticleGraphPin* src)
     {

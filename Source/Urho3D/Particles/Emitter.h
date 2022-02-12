@@ -27,6 +27,7 @@
 
 namespace Urho3D
 {
+
 class ParticleGraphSystem;
 
 namespace ParticleGraphNodes
