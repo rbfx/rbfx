@@ -55,7 +55,7 @@ TEST_CASE("TrackedAnimatedModel tracks bones on server")
     // Setup scene
     auto serverScene = MakeShared<Scene>(context);
 
-    Node* node = serverScene->CreateChild("Node");
+    Node* node = serverScene->CreateChild("Node", LOCAL);
     node->CreateComponent<BehaviorNetworkObject>();
     auto animatedModel = node->CreateComponent<AnimatedModel>();
     animatedModel->SetModel(model);

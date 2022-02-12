@@ -442,7 +442,7 @@ void AdvancedNetworking::CreateScene()
     zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/Skybox.xml"));
 
     // Create skybox.
-    Node* skyNode = scene_->CreateChild("Sky");
+    Node* skyNode = scene_->CreateChild("Sky", LOCAL);
     skyNode->SetScale(500.0f); // The scale actually does not matter
     auto* skybox = skyNode->CreateComponent<Skybox>();
     skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
@@ -870,7 +870,7 @@ void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
         hitMarkers_->GetChild(0u)->Remove();
 
     // Add new marker: red sphere for client hits, green cube for server confirmations
-    Node* markerNode = hitMarkers_->CreateChild("Client Hit");
+    Node* markerNode = hitMarkers_->CreateChild("Client Hit", LOCAL);
     markerNode->SetPosition(position);
 
     auto markerModel = markerNode->CreateComponent<StaticModel>();
