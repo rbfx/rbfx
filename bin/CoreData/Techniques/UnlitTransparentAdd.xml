@@ -1,0 +1,4 @@
+<technique vs="M_Default" ps="M_Default" vsdefines="UNLIT ADDITIVE" psdefines="UNLIT ADDITIVE">
+    <pass name="alpha" depthwrite="false" blend="add" />
+    <pass name="shadow" vs="M_Default" ps="M_Default" excludes="UNLIT SOFTPARTICLES ADDITIVE" />
+</technique>

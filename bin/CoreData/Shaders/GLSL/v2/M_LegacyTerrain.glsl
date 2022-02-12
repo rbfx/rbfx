@@ -51,7 +51,7 @@ void main()
 #endif
 
     half3 finalColor = GetFinalColor(surfaceData);
-    gl_FragColor.rgb = ApplyFog(finalColor, surfaceData.fogFactor);
-    gl_FragColor.a = GetFinalAlpha(surfaceData);
+    half finalAlpha = GetFinalAlpha(surfaceData);
+    gl_FragColor = GetFragColor(ApplyFog(finalColor, surfaceData.fogFactor), finalAlpha);
 }
 #endif

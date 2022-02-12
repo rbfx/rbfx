@@ -163,11 +163,7 @@ void _GetFragmentAlbedoSpecular(const half oneMinusReflectivity, out half4 albed
         if (albedoInput.a < 0.5)
             discard;
     #endif
-    
-    #ifdef ADDITIVE
-        albedoInput.rgb = albedoInput.rgb * albedoInput.a;
-    #endif
-    
+
     albedo = GammaToLightSpaceAlpha(cMatDiffColor) * DiffMap_ToLight(albedoInput);
 #else
     albedo = GammaToLightSpaceAlpha(cMatDiffColor);

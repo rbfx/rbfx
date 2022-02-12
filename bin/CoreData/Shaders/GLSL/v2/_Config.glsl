@@ -85,6 +85,9 @@
 /// Whether to unpack normal from red and alpha channels of normal map.
 // #define PACKEDNORMAL
 
+/// Indicates that the alpha will be discarded, so any kind of attenuation should be performed by modulating the output color itself.
+// #define ADDITIVE
+
 
 /// =================================== Deprecated material defines ===================================
 
