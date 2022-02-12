@@ -335,11 +335,11 @@ void ParticleGraphLayer::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "loop", loop_);
 
     SerializeOptionalValue(archive, "emit", emit_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+        [&](Archive& archive, const char* name, auto& value) { SerializeValue(archive, name, *value); });
     SerializeOptionalValue(archive, "init", init_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+        [&](Archive& archive, const char* name, auto& value) { SerializeValue(archive, name, *value); });
     SerializeOptionalValue(archive, "update", update_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { value->Serialize(archive, name); });
+        [&](Archive& archive, const char* name, auto& value) { SerializeValue(archive, name, *value); });
 
     if (archive.IsInput())
     {

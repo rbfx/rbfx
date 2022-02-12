@@ -745,101 +745,6 @@ bool Variant::IsZero() const
     }
 }
 
-void Variant::SetDefault(VariantType type)
-{
-    switch (type)
-    {
-    case VAR_NONE:
-        Clear();
-        break;
-    case VAR_INT:
-        SetDefault<int>();
-        break;
-    case VAR_BOOL:
-        SetDefault<bool>();
-        break;
-    case VAR_FLOAT:
-        SetDefault<float>();
-        break;
-    case VAR_VECTOR2:
-        SetDefault<Vector2>();
-        break;
-    case VAR_VECTOR3:
-        SetDefault<Vector3>();
-        break;
-    case VAR_VECTOR4:
-        SetDefault<Vector4>();
-        break;
-    case VAR_QUATERNION:
-        SetDefault<Quaternion>();
-        break;
-    case VAR_COLOR:
-        SetDefault<Color>();
-        break;
-    case VAR_STRING:
-        SetDefault<ea::string>();
-        break;
-    case VAR_BUFFER:
-        SetDefault<ea::string>();
-        break;
-    case VAR_VOIDPTR:
-        SetDefault<void*>();
-        break;
-    case VAR_RESOURCEREF:
-        SetDefault<void*>();
-        break;
-    case VAR_RESOURCEREFLIST:
-        SetDefault<ResourceRefList>();
-        break;
-    case VAR_VARIANTVECTOR:
-        SetDefault<VariantVector>();
-        break;
-    case VAR_VARIANTMAP:
-        SetDefault<VariantMap>();
-        break;
-    case VAR_INTRECT:
-        SetDefault<IntRect>();
-        break;
-    case VAR_INTVECTOR2:
-        SetDefault<IntVector2>();
-        break;
-    case VAR_PTR:
-        SetDefault<RefCounted*>();
-        break;
-    case VAR_MATRIX3:
-        SetDefault<Matrix3>();
-        break;
-    case VAR_MATRIX3X4:
-        SetDefault<Matrix3x4>();
-        break;
-    case VAR_MATRIX4:
-        SetDefault<Matrix4>();
-        break;
-    case VAR_DOUBLE:
-        SetDefault<double>();
-        break;
-    case VAR_STRINGVECTOR:
-        SetDefault<StringVector>();
-        break;
-    case VAR_RECT:
-        SetDefault<Rect>();
-        break;
-    case VAR_INTVECTOR3:
-        SetDefault<IntVector3>();
-        break;
-    case VAR_INT64:
-        SetDefault<long long>();
-        break;
-    case VAR_CUSTOM:
-        //SetDefault<?>();
-        break;
-    case VAR_VARIANTCURVE:
-        SetDefault<VariantCurve>();
-        break;
-    default: ;
-    }
-}
-
 void Variant::SetType(VariantType newType)
 {
     if (type_ == newType)
@@ -1341,7 +1246,7 @@ unsigned Variant::ToHash() const
     }
 }
 
-unsigned GetVariantSize(VariantType variant)
+unsigned GetVariantTypeSize(VariantType variant)
 {
     switch (variant)
     {

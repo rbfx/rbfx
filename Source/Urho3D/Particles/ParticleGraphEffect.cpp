@@ -129,24 +129,15 @@ bool ParticleGraphEffect::Save(Serializer& dest) const
 
 void ParticleGraphEffect::SerializeInBlock(Archive& archive)
 {
-    //SerializeVectorAsObjects(archive, "particleGraphEffect", layers_ , "layer");
-    
-    unsigned numElements = layers_.size();
-    auto block = archive.OpenArrayBlock("layers", numElements);
+    const bool loading = archive.IsInput();
 
-    if (archive.IsInput())
+    SerializeVectorAsObjects(archive, "layers", layers_, "layer",
+        [&](Archive& archive, const char* name, SharedPtr<ParticleGraphLayer>& value)
     {
-        numElements = block.GetSizeHint();
-        layers_.clear();
-        layers_.resize(numElements);
-        for (unsigned i = 0; i < numElements; ++i)
-        {
-            layers_[i] = MakeShared<ParticleGraphLayer>(context_);
-        }
-    }
-
-    for (unsigned i = 0; i < numElements; ++i)
-        SerializeValue(archive, "layer", *layers_[i]);
+        if (loading)
+            value = MakeShared<ParticleGraphLayer>(context_);
+        SerializeValue(archive, name, *value);
+    });
 }
 
 

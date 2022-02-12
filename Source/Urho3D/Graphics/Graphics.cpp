@@ -71,10 +71,6 @@
 
 namespace Urho3D
 {
-namespace ParticleGraphNodes
-{
-void RegisterGraphNodes(Context* context);
-} // namespace ParticleGraphNodes
 
 GraphicsCaps Graphics::caps;
 

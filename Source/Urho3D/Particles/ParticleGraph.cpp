@@ -80,24 +80,19 @@ bool ParticleGraph::SaveGraph(Graph& graph)
     return writer.Write();
 }
 
-bool ParticleGraph::Serialize(Archive& archive, const char* blockName)
+void ParticleGraph::SerializeInBlock(Archive& archive)
 {
-    if (auto block = archive.OpenUnorderedBlock(blockName))
+    Graph graph(context_);
+    if (archive.IsInput())
     {
-        Graph graph(context_);
-        if (archive.IsInput())
-        {
-            graph.SerializeInBlock(archive);
-            LoadGraph(graph);
-        }
-        else
-        {
-            SaveGraph(graph);
-            graph.SerializeInBlock(archive);
-        }
-        return true;
+        graph.SerializeInBlock(archive);
+        LoadGraph(graph);
     }
-    return false;
+    else
+    {
+        SaveGraph(graph);
+        graph.SerializeInBlock(archive);
+    }
 }
 
 ParticleGraphWriter::ParticleGraphWriter(ParticleGraph& particleGraph, Graph& graph)
@@ -189,15 +184,13 @@ unsigned ParticleGraphReader::ReadNode(unsigned id)
             if (pin.GetConnectedNodeIndex() == ParticleGraph::INVALID_NODE_INDEX)
             {
                 auto constNode = MakeShared<ParticleGraphNodes::Constant>(system_->GetContext());
-                Variant v;
-                v.SetDefault(pin.GetRequestedType());
-                constNode->SetValue(v);
+                constNode->SetValue(Variant(pin.GetRequestedType()));
                 auto constIndex = particleGraph_.Add(constNode);
                 dstNode->SetPinSource(i, constIndex, 0);
             }
         }
     }
-   
+
     auto dstIndex =  particleGraph_.Add(dstNode);
     nodes_[id] = dstIndex;
     return dstIndex;

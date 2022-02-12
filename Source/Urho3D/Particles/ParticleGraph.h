@@ -63,7 +63,7 @@ public:
     bool SaveGraph(Graph& graph);
 
     /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, const char* blockName);
+    void SerializeInBlock(Archive& archive) override;
 
 private:
     /// Nodes in the graph;
