@@ -47,9 +47,6 @@
 #include <cstdio>
 
 #ifdef _WIN32
-#ifndef _MSC_VER
-#define _WIN32_IE 0x501
-#endif
 #include <windows.h>
 #include <shellapi.h>
 #include <direct.h>
