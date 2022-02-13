@@ -741,12 +741,16 @@ ea::string Network::GetDebugInfo() const
     ea::string result;
     ea::hash_set<ReplicationManager*> replicationManagers;
 
+    const unsigned localTime = Time::GetSystemTime();
+    result += Format("Local Time {}\n", localTime);
+
     if (Connection* connection = GetServerConnection())
     {
-        result += Format("Server Connection {}: {}p-{}b/s in, {}p-{}b/s out\n",
+        result += Format("Server Connection {}: {}p-{}b/s in, {}p-{}b/s out, Remote Time {}\n",
             connection->ToString(),
             connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
-            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec());
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec(),
+            connection->LocalToRemoteTime(localTime));
 
         if (Scene* scene = connection->GetScene())
         {
@@ -757,10 +761,11 @@ ea::string Network::GetDebugInfo() const
 
     for (Connection* connection : GetClientConnections())
     {
-        result += Format("Client Connection {}: {}p-{}b/s in, {}p-{}b/s out\n",
+        result += Format("Client Connection {}: {}p-{}b/s in, {}p-{}b/s out, Remote Time {}\n",
             connection->ToString(),
             connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
-            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec());
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec(),
+            connection->LocalToRemoteTime(localTime));
 
         if (Scene* scene = connection->GetScene())
         {

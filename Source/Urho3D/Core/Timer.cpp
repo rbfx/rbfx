@@ -74,14 +74,10 @@ Time::~Time()
 
 static unsigned Tick()
 {
-#ifdef _WIN32
-    return (unsigned)SDL_GetTicks();
-#elif __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
     return (unsigned)emscripten_get_now();
 #else
-    struct timeval time{};
-    gettimeofday(&time, nullptr);
-    return (unsigned)(time.tv_sec * 1000 + time.tv_usec / 1000);
+    return SDL_GetTicks();
 #endif
 }
 

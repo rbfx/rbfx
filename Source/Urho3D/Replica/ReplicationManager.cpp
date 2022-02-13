@@ -367,6 +367,8 @@ bool ReplicationManager::ProcessMessage(AbstractConnection* connection, NetworkM
 
     if (server_)
         return server_->ProcessMessage(connection, messageId, messageData);
+
+    return false;
 }
 
 void ReplicationManager::DropConnection(AbstractConnection* connection)
