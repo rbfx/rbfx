@@ -32,6 +32,64 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/UI/Text3D.h>
 
+namespace
+{
+
+SharedPtr<Model> CreateTestSkinnedModel(Context* context)
+{
+    return Tests::CreateSkinnedQuad_Model(context)->ExportModel();
+}
+
+SharedPtr<Animation> CreateTestTranslateXAnimation(Context* context)
+{
+    return Tests::CreateLoopedTranslationAnimation(context, "", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+}
+
+}
+
+TEST_CASE("Animation of hierarchical models is stable")
+{
+    const int numNodes = 20;
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimatedModel/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimatedModel/TranslateX.ani", CreateTestTranslateXAnimation);
+
+    // Create hierarchical scene
+    auto scene = MakeShared<Scene>(context);
+    scene->CreateComponent<Octree>();
+
+    ea::vector<Node*> nodes;
+    Node* parent = scene;
+    for (int i = 0; i < numNodes; ++i)
+    {
+        Node* child = parent->CreateChild("Child");
+        nodes.push_back(child);
+
+        auto animatedModel = child->CreateComponent<AnimatedModel>();
+        animatedModel->SetModel(model);
+
+        auto controller = child->CreateComponent<AnimationController>();
+        controller->Play(animationTranslateX->GetName(), 0, true);
+
+        parent = child->GetChild("Quad 2", true);
+    }
+
+    const auto getNodePositions = [&]()
+    {
+        ea::vector<Vector3> positions;
+        for (Node* node : nodes)
+            positions.push_back(node->GetWorldPosition());
+        return positions;
+    };
+
+    // Run time and expect precise animations
+    Tests::RunFrame(context, 1.0f / 16, 1.0f / 64);
+    const auto positions = getNodePositions();
+    for (int i = 0; i < numNodes; ++i)
+        REQUIRE(positions[i].x_ == i * -0.125f);
+}
+
 TEST_CASE("Lerp animation blending")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
