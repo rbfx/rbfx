@@ -82,15 +82,14 @@ bool ParticleGraphEffect::BeginLoad(Deserializer& source)
 
     ea::string extension = GetExtension(source.GetName());
 
-    bool success = false;
-
     ResetToDefaults();
 
-    loadXMLFile_ = context_->CreateObject<XMLFile>();
-    if (!loadXMLFile_->Load(source))
+    const auto loadXMLFile = MakeShared<XMLFile>(context_);
+    if (!loadXMLFile->Load(source))
         return false;
 
-    return true;
+    XMLInputArchive archive(loadXMLFile);
+    return ConsumeArchiveException([&]() { SerializeValue(archive, "particleGraphEffect", *this); });
 }
 
 void ParticleGraphEffect::ResetToDefaults()
@@ -109,9 +108,6 @@ bool ParticleGraphEffect::EndLoad()
     //if (!graphics)
     //    return true;
 
-    XMLInputArchive archive(loadXMLFile_);
-    auto block = archive.OpenUnorderedBlock("particleGraphEffect");
-    SerializeInBlock(archive);
     //if (archive.HasError())
     //    URHO3D_LOGERROR(archive.GetErrorString());
     return true;

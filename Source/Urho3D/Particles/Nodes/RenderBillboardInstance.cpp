@@ -77,6 +77,9 @@ void RenderBillboardInstance::Prepare(unsigned numParticles)
     }
     cols_ = Max(1, renderBillboard->GetColumns());
     rows_ = Max(1, renderBillboard->GetRows());
+    auto crop = renderBillboard->GetCrop();
+    cropSize_ = crop.Size();
+    cropOffset_ = crop.Min();
     uvTileSize_ = Vector2(1.0f / static_cast<float>(cols_), 1.0f / static_cast<float>(rows_));
 }
 
@@ -86,15 +89,15 @@ void RenderBillboardInstance::UpdateParticle(
     auto* billboard = billboardSet_->GetBillboard(index);
     billboard->enabled_ = true;
     billboard->position_ = pos;
-    billboard->size_ = size;
+    billboard->size_ = size * cropSize_;
     billboard->color_ = color;
     billboard->rotation_ = rotation;
     billboard->direction_ = direction;
     const int frame = static_cast<int>(frameIndex);
     const unsigned x = frame % cols_;
     const unsigned y = (frame / cols_);
-    const auto uvMin = Vector2(x, y) * uvTileSize_;
-    const auto uvMax = uvMin + uvTileSize_;
+    const auto uvMin = (Vector2(x, y) + cropOffset_) * uvTileSize_;
+    const auto uvMax = uvMin + uvTileSize_ * cropSize_;
     billboard->uv_ = Rect(uvMin, uvMax);
 }
 

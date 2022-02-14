@@ -63,6 +63,8 @@ protected:
     unsigned cols_{};
     unsigned rows_{};
     Vector2 uvTileSize_;
+    Vector2 cropOffset_;
+    Vector2 cropSize_;
 };
 
 } // namespace ParticleGraphNodes

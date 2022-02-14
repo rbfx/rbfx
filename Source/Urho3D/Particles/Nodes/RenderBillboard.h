@@ -79,6 +79,11 @@ public:
     /// Get Is Worldspace.
     bool GetIsWorldspace() const;
 
+    /// Set Crop.
+    void SetCrop(Rect value);
+    /// Get Crop.
+    Rect GetCrop() const;
+
 protected:
     ResourceRef material_{};
     int rows_{};
@@ -86,6 +91,7 @@ protected:
     int faceCameraMode_{};
     bool sortByDistance_{};
     bool isWorldspace_{};
+    Rect crop_{Rect::POSITIVE};
 };
 
 } // namespace ParticleGraphNodes

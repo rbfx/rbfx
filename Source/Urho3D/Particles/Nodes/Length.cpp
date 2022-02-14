@@ -41,12 +41,12 @@ void Length::RegisterObject(ParticleGraphSystem* context)
 namespace {
 static ea::vector<NodePattern> LengthPatterns{
     MakePattern(
-        LengthInstance<Vector3, Vector3>()
+        LengthInstance<Vector3, float>()
         , ParticleGraphTypedPin<Vector3>("x")
         , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),
     MakePattern(
-        LengthInstance<Vector2, Vector2>()
+        LengthInstance<Vector2, float>()
         , ParticleGraphTypedPin<Vector2>("x")
         , ParticleGraphTypedPin<float>(ParticleGraphPinFlag::Output, "out")
     ),

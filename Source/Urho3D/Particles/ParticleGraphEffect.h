@@ -70,9 +70,6 @@ private:
 private:
     /// Effect layers.
     ea::vector<SharedPtr<ParticleGraphLayer>> layers_;
-
-    /// XML file used while loading.
-    SharedPtr<XMLFile> loadXMLFile_;
 };
 
 }

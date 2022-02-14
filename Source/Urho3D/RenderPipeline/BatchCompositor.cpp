@@ -379,8 +379,6 @@ void BatchCompositor::FinalizeShadowBatchesComposition()
     for (const auto& splitAndKey : delayedShadowBatches_)
     {
         const PipelineBatchDesc& desc = splitAndKey.second;
-        if (!desc.geometry_)
-            continue;
         ShadowSplitProcessor& split = *splitAndKey.first;
         ctx.shadowSplitIndex_ = split.GetSplitIndex();
         PipelineState* pipelineState = shadowCache_.GetOrCreatePipelineState(desc.GetKey(), ctx, batchStateCacheCallback_);
