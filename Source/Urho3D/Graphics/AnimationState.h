@@ -27,7 +27,9 @@
 #include <EASTL/unordered_map.h>
 
 #include "../Container/Ptr.h"
+#include "../Graphics/Skeleton.h"
 #include "../Math/StringHash.h"
+#include "../Math/Transform.h"
 
 namespace Urho3D
 {
@@ -58,9 +60,20 @@ enum AnimationBlendMode
 struct URHO3D_API ModelAnimationStateTrack
 {
     const AnimationTrack* track_{};
+    unsigned boneIndex_{};
     Bone* bone_{};
     WeakPtr<Node> node_;
-    unsigned keyFrame_{};
+    // Single AnimationState is never applied to more than one AnimatedModel, so it's okay to have it mutable here.
+    mutable unsigned keyFrame_{};
+};
+
+/// Output that aggregates all ModelAnimationStateTrack-s targeted at the same node.
+struct ModelAnimationOutput
+{
+    AnimationChannelFlags dirty_;
+    Transform localToParent_;
+    // Unused by AnimationState, but it's just convinient to have here.
+    Matrix3x4 localToComponent_;
 };
 
 /// Per-track data of node model animation.
@@ -182,14 +195,16 @@ public:
     /// @property
     unsigned char GetLayer() const { return layer_; }
 
-    /// Apply animation to a skeleton. Transform changes are applied silently, so the model needs to dirty its root model afterward.
-    void ApplyModelTracks();
+    /// Apply animation to a skeleton.
+    void CalculateModelTracks(ea::vector<ModelAnimationOutput>& output) const;
     /// Apply animation to a scene node hierarchy.
     void ApplyNodeTracks();
     /// Apply animation to attributes.
     void ApplyAttributeTracks();
 
 private:
+    /// Apply value of transformation track to the output.
+    void CalulcateTransformTrack(ModelAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const;
     /// Apply single transformation track to target object. Key frame hint is updated on call.
     void ApplyTransformTrack(const AnimationTrack& track,
         Node* node, Bone* bone, unsigned& frame, float weight, bool silent);

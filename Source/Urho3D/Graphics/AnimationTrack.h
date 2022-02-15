@@ -27,19 +27,11 @@
 #include "../Container/FlagSet.h"
 #include "../Container/KeyFrameSet.h"
 #include "../Core/VariantCurve.h"
+#include "../Graphics/Skeleton.h"
 #include "../Math/Transform.h"
 
 namespace Urho3D
 {
-
-enum AnimationChannel : unsigned char
-{
-    CHANNEL_NONE = 0x0,
-    CHANNEL_POSITION = 0x1,
-    CHANNEL_ROTATION = 0x2,
-    CHANNEL_SCALE = 0x4,
-};
-URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
 
 /// Skeletal animation keyframe.
 /// TODO: Replace inheritance with composition?

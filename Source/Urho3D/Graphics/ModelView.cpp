@@ -1234,6 +1234,7 @@ void ModelView::ExportModel(Model* model) const
             skeleton.SetRootBoneIndex(boneIndex);
     }
 
+    skeleton.UpdateBoneOrder();
     model->SetSkeleton(skeleton);
 }
 

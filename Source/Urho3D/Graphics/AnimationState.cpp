@@ -336,18 +336,20 @@ float AnimationState::GetLength() const
     return animation_ ? animation_->GetLength() : 0.0f;
 }
 
-void AnimationState::ApplyModelTracks()
+void AnimationState::CalculateModelTracks(ea::vector<ModelAnimationOutput>& output) const
 {
     if (!animation_ || !IsEnabled())
         return;
 
-    for (ModelAnimationStateTrack& stateTrack : modelTracks_)
+    for (const ModelAnimationStateTrack& stateTrack : modelTracks_)
     {
         // Do not apply if the bone has animation disabled
         if (!stateTrack.bone_->animated_)
             continue;
 
-        ApplyTransformTrack(*stateTrack.track_, stateTrack.node_, stateTrack.bone_, stateTrack.keyFrame_, weight_, true);
+        URHO3D_ASSERT(output.size() > stateTrack.boneIndex_);
+        ModelAnimationOutput& trackOutput = output[stateTrack.boneIndex_];
+        CalulcateTransformTrack(trackOutput, *stateTrack.track_, stateTrack.keyFrame_, weight_);
     }
 }
 
@@ -370,6 +372,79 @@ void AnimationState::ApplyAttributeTracks()
     for (AttributeAnimationStateTrack& stateTrack : attributeTracks_)
     {
         ApplyAttributeTrack(stateTrack, weight_);
+    }
+}
+
+void AnimationState::CalulcateTransformTrack(ModelAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const
+{
+    if (track.keyFrames_.empty())
+        return;
+
+    const bool isFullWeight = Equals(weight, 1.0f);
+    const AnimationKeyFrame& baseValue = track.keyFrames_.front();
+
+    Transform sampledValue;
+    track.Sample(time_, animation_->GetLength(), looped_, frame, sampledValue);
+
+    if (blendingMode_ == ABM_ADDITIVE)
+    {
+        // In additive mode, check for output being already initialzed
+        if ((track.channelMask_ & output.dirty_).Test(CHANNEL_POSITION))
+        {
+            const Vector3 delta = sampledValue.position_ - baseValue.position_;
+            output.localToParent_.position_ += delta * weight;
+        }
+
+        if ((track.channelMask_ & output.dirty_).Test(CHANNEL_ROTATION))
+        {
+            const Quaternion delta = sampledValue.rotation_ * baseValue.rotation_.Inverse();
+            if (isFullWeight)
+                output.localToParent_.rotation_ = delta * output.localToParent_.rotation_;
+            else
+                output.localToParent_.rotation_ = Quaternion::IDENTITY.Slerp(delta, weight) * output.localToParent_.rotation_;
+        }
+
+        if ((track.channelMask_ & output.dirty_).Test(CHANNEL_SCALE))
+        {
+            const Vector3 delta = sampledValue.scale_ - baseValue.scale_;
+            output.localToParent_.scale_ += delta * weight;
+        }
+    }
+    else
+    {
+        // In interpolation mode, disable interpolation if output is not initialzed yet
+        if (track.channelMask_.Test(CHANNEL_POSITION))
+        {
+            if (!isFullWeight && output.dirty_.Test(CHANNEL_POSITION))
+                output.localToParent_.position_ = output.localToParent_.position_.Lerp(sampledValue.position_, weight);
+            else
+            {
+                output.dirty_ |= CHANNEL_POSITION;
+                output.localToParent_.position_ = sampledValue.position_;
+            }
+        }
+
+        if (track.channelMask_.Test(CHANNEL_ROTATION))
+        {
+            if (!isFullWeight && output.dirty_.Test(CHANNEL_ROTATION))
+                output.localToParent_.rotation_ = output.localToParent_.rotation_.Slerp(sampledValue.rotation_, weight);
+            else
+            {
+                output.dirty_ |= CHANNEL_ROTATION;
+                output.localToParent_.rotation_ = sampledValue.rotation_;
+            }
+        }
+
+        if (track.channelMask_.Test(CHANNEL_SCALE))
+        {
+            if (!isFullWeight && output.dirty_.Test(CHANNEL_SCALE))
+                output.localToParent_.scale_ = output.localToParent_.scale_.Lerp(sampledValue.scale_, weight);
+            else
+            {
+                output.dirty_ |= CHANNEL_SCALE;
+                output.localToParent_.scale_ = sampledValue.scale_;
+            }
+        }
     }
 }
 
