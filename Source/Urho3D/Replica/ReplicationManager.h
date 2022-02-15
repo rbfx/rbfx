@@ -67,7 +67,11 @@ public:
     void GetSortedNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
     /// @}
 
-    const auto GetNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }
+    TransformedSpan<TrackedComponentBase* const, NetworkObject* const, StaticCaster<NetworkObject* const>>
+    GetNetworkObjects() const
+    {
+        return StaticCastSpan<NetworkObject* const>(GetTrackedComponents());
+    }
     unsigned GetNetworkIndexUpperBound() const { return GetReferenceIndexUpperBound(); }
     NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;

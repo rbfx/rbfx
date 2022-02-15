@@ -87,7 +87,7 @@ public:
     ReplicationManager* GetReplicationManager() const { return static_cast<ReplicationManager*>(GetRegistry()); }
     NetworkId GetParentNetworkId() const { return parentNetworkObject_ ? parentNetworkObject_->GetNetworkId() : InvalidNetworkId; }
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
-    const auto& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
+    const ea::vector<WeakPtr<NetworkObject>>& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
     AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 

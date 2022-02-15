@@ -64,8 +64,8 @@ public:
 
     /// Return state of the current frame.
     /// @{
-    const auto& GetRecentlyRemovedObjects() const { return recentlyRemovedObjects_; }
-    const auto& GetSortedObjects() const { return sortedNetworkObjects_; }
+    const ea::unordered_set<NetworkId>& GetRecentlyRemovedObjects() const { return recentlyRemovedObjects_; }
+    const ea::vector<NetworkObject*>& GetSortedObjects() const { return sortedNetworkObjects_; }
     unsigned GetIndexUpperBound() const;
     const ea::unordered_set<NetworkObject*>& GetOwnedObjectsByConnection(AbstractConnection* connection) const;
     ea::optional<ConstByteSpan> GetReliableUpdateByIndex(unsigned index) const;

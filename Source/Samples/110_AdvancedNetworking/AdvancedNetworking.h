@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,63 +23,20 @@
 
 #pragma once
 
+
 #include "Sample.h"
+#include "ServerRaycastInfo.h"
 
 #include <Urho3D/Network/Connection.h>
-#include <Urho3D/Network/Protocol.h>
-#include <Urho3D/Replica/NetworkTime.h>
-#include <Urho3D/RmlUI/RmlUIComponent.h>
-
-#include <RmlUi/Core/DataModelHandle.h>
 
 #include <EASTL/optional.h>
 
 namespace Urho3D
 {
-
-class Button;
-class Connection;
 class NetworkObject;
-class Scene;
-class Text;
-class UIElement;
-
 }
 
-/// Server-side raycast info to be processed.
-struct ServerRaycastInfo
-{
-    WeakPtr<Connection> clientConnection_;
-    Vector3 origin_;
-    Vector3 target_;
-    NetworkTime replicaTime_;
-    NetworkTime inputTime_;
-};
-
-/// UI widget to manage server and client settings.
-class AdvancedNetworkingUI : public RmlUIComponent
-{
-    URHO3D_OBJECT(AdvancedNetworkingUI, RmlUIComponent);
-
-public:
-    using RmlUIComponent::RmlUIComponent;
-
-    void StartServer();
-    void ConnectToServer(const ea::string& address);
-    void Stop();
-
-    bool GetCheatAutoMovement() const { return cheatAutoMovement_; }
-
-private:
-    void OnNodeSet(Node* node) override;
-    void Update(float timeStep) override;
-
-    Rml::DataModelHandle model_;
-    int serverPort_{2345};
-    Rml::String connectionAddress_{"localhost"};
-
-    bool cheatAutoMovement_{};
-};
+class AdvancedNetworkingUI;
 
 /// Scene network replication example.
 /// This sample demonstrates:
@@ -88,7 +46,7 @@ private:
 ///     - Controlling a physics object's movement by applying forces
 class AdvancedNetworking : public Sample
 {
-    URHO3D_OBJECT(AdvancedNetworking, Sample);
+    URHO3D_OBJECT(AdvancedNetworking, Sample)
 
 public:
     /// Construct.

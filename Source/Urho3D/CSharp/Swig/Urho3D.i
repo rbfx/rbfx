@@ -743,6 +743,21 @@ public:
 %include "Urho3D/Network/Protocol.h"
 
 %template(ConnectionVector) eastl::vector<Urho3D::SharedPtr<Urho3D::Connection>>;
+
+%include "Urho3D/Replica/BehaviorNetworkObject.h"
+%include "Urho3D/Replica/ClientInputStatistics.h"
+%include "Urho3D/Replica/ClientReplica.h"
+%include "Urho3D/Replica/FilteredByDistance.h"
+%include "Urho3D/Replica/NetworkObject.h"
+%include "Urho3D/Replica/NetworkTime.h"
+%include "Urho3D/Replica/PredictedKinematicController.h"
+%include "Urho3D/Replica/ReplicatedAnimation.h"
+%include "Urho3D/Replica/ReplicatedTransform.h"
+%include "Urho3D/Replica/ReplicationManager.h"
+%include "Urho3D/Replica/ServerReplicator.h"
+%include "Urho3D/Replica/StaticNetworkObject.h"
+%include "Urho3D/Replica/TickSynchronizer.h"
+%include "Urho3D/Replica/TrackedAnimatedModel.h"
 #endif
 
 //// --------------------------------------- Physics ---------------------------------------
