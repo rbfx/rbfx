@@ -75,7 +75,6 @@ void TrackedAnimatedModel::OnServerFrameEnd(NetworkFrame frame)
         return;
 
     animatedModel_->ApplyAnimation();
-    animatedModel_->UpdateBoneBoundingBox();
 
     const auto& bones = animatedModel_->GetSkeleton().GetBones();
     const unsigned numBones = bones.size();

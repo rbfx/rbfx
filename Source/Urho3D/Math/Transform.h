@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Math/Matrix3x4.h"
 #include "../Math/Vector3.h"
 #include "../Math/Quaternion.h"
 
@@ -34,7 +35,9 @@ struct Transform
 {
     Vector3 position_;
     Quaternion rotation_;
-    Vector3 scale_{ Vector3::ONE };
+    Vector3 scale_{Vector3::ONE};
+
+    Matrix3x4 ToMatrix3x4() const { return Matrix3x4(position_, rotation_, scale_); };
 };
 
 }

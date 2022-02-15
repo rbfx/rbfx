@@ -30,6 +30,16 @@
 namespace Urho3D
 {
 
+enum AnimationChannel : unsigned char
+{
+    CHANNEL_NONE = 0,
+    CHANNEL_POSITION = 1 << 0,
+    CHANNEL_ROTATION = 1 << 1,
+    CHANNEL_SCALE    = 1 << 2,
+    CHANNEL_ALL = CHANNEL_POSITION | CHANNEL_ROTATION | CHANNEL_SCALE
+};
+URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
+
 enum BoneCollisionShape : unsigned char
 {
     BONECOLLISION_NONE = 0x0,
@@ -116,11 +126,16 @@ public:
     void SetNumBones(unsigned numBones);
     /// Clear bones.
     void ClearBones();
+    /// Recalculate order of bones in hierarchy, from parents to children.
+    void UpdateBoneOrder();
     /// Reset all animating bones to initial positions.
     void Reset();
 
     /// Return all bones.
     const ea::vector<Bone>& GetBones() const { return bones_; }
+
+    /// Return order of bones from parents to children.
+    const ea::vector<unsigned>& GetBonesOrder() const { return bonesOrder_; }
 
     /// Return modifiable bones.
     ea::vector<Bone>& GetModifiableBones() { return bones_; }
@@ -156,6 +171,8 @@ public:
 private:
     /// Bones.
     ea::vector<Bone> bones_;
+    /// Indices of bones ordered from root to children.
+    ea::vector<unsigned> bonesOrder_;
     /// Root bone index.
     unsigned rootBoneIndex_;
 };

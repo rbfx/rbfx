@@ -22,9 +22,11 @@
 
 #pragma once
 
+#include "../Container/MultiVector.h"
 #include "../Core/Mutex.h"
 #include "../Graphics/Drawable.h"
 #include "../Graphics/OctreeQuery.h"
+#include "../Math/Transform.h"
 
 namespace Urho3D
 {
@@ -271,6 +273,9 @@ public:
     void QueueUpdate(Drawable* drawable);
     /// Cancel drawable object's update.
     void CancelUpdate(Drawable* drawable);
+    /// Queue Node transform update to be applied after threaded update.
+    /// Should be called only during Drawable::Update.
+    void QueueNodeTransformUpdate(Node* node, const Transform& transform);
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(bool depthTest);
 
@@ -286,6 +291,8 @@ private:
     ea::vector<Drawable*> drawableUpdates_;
     /// Drawable objects that were inserted during threaded update phase.
     ea::vector<Drawable*> threadedDrawableUpdates_;
+    /// Node transforms to be applied before reinsertion.
+    MultiVector<ea::pair<Node*, Transform>> pendingNodeTransforms_;
     /// All Drawable objects.
     ea::vector<Drawable*> drawables_;
     /// Mutex for octree reinsertions.

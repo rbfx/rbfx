@@ -498,7 +498,10 @@ void Octree::Update(const FrameInfo& frame)
         auto* queue = GetSubsystem<WorkQueue>();
         scene->BeginThreadedUpdate();
 
-        int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
+        const unsigned numThreads = queue->GetNumThreads() + 1;
+        pendingNodeTransforms_.Clear(numThreads);
+
+        int numWorkItems = numThreads; // Worker threads + main thread
         int drawablesPerItem = Max((int)(drawableUpdates_.size() / numWorkItems), 1);
 
         auto start = drawableUpdates_.begin();
@@ -561,6 +564,9 @@ void Octree::Update(const FrameInfo& frame)
     if (!drawableUpdates_.empty())
     {
         URHO3D_PROFILE("ReinsertToOctree");
+
+        for (const auto& [node, transform] : pendingNodeTransforms_)
+            node->SetTransform(transform.position_, transform.rotation_, transform.scale_);
 
         for (auto i = drawableUpdates_.begin(); i != drawableUpdates_.end(); ++i)
         {
@@ -771,6 +777,11 @@ void Octree::CancelUpdate(Drawable* drawable)
     // when removing a drawable from octree, which should only ever happen from the main thread.
     drawableUpdates_.erase_first(drawable);
     drawable->updateQueued_ = false;
+}
+
+void Octree::QueueNodeTransformUpdate(Node* node, const Transform& transform)
+{
+    pendingNodeTransforms_.EmplaceBack(WorkQueue::GetThreadIndex(), node, transform);
 }
 
 void Octree::DrawDebugGeometry(bool depthTest)

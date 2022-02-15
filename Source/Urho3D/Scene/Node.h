@@ -28,6 +28,8 @@
 #include "../Math/Matrix3x4.h"
 #include "../Scene/Animatable.h"
 
+#include <atomic>
+
 namespace Urho3D
 {
 
@@ -757,7 +759,7 @@ private:
     /// World-space transform matrix.
     mutable Matrix3x4 worldTransform_;
     /// World transform needs update flag.
-    mutable bool dirty_;
+    mutable std::atomic_bool dirty_;
     /// Enabled flag.
     bool enabled_;
     /// Last SetEnabled flag before any SetDeepEnabled.
