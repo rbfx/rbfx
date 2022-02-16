@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,17 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Urho2D/AnimatedSprite2D.h>
-#include <Urho3D/Urho2D/AnimationSet2D.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/MemoryBuffer.h>
-#include <Urho3D/Urho2D/PhysicsWorld2D.h>
-#include <Urho3D/Urho2D/RigidBody2D.h>
+#include <Urho3D/Physics2D/PhysicsWorld2D.h>
+#include <Urho3D/Physics2D/RigidBody2D.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Urho2D/AnimatedSprite2D.h>
+#include <Urho3D/Urho2D/AnimationSet2D.h>
 
 #include <Urho3D/DebugNew.h>
 
@@ -54,7 +54,7 @@ Character2D::Character2D(Context* context) :
 
 void Character2D::RegisterObject(Context* context)
 {
-    context->AddReflection<Character2D>();
+    context->AddFactoryReflection<Character2D>();
 
     // These macros register the class attributes to the Context for automatic load / save handling.
     // We specify the 'Default' attribute mode which means it will be used both for saving into file, and network replication.

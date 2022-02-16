@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,14 +50,10 @@ public:
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
 
-    /// Return character position in world space.
-    Vector3 GetPosition() const;
-    /// Return character rotation in world space.
-    Quaternion GetRotation() const;
-    /// Set character position and rotation in world space as an atomic operation.
-    void SetTransform(const Vector3& position, const Quaternion& rotation);
-    /// Get character position and rotation in world space.
-    void GetTransform(Vector3& position, Quaternion& rotation) const;
+    /// Return character position in world space without interpolation.
+    Vector3 GetRawPosition() const;
+    /// Adjust position of kinematic body.
+    void AdjustRawPosition(const Vector3& offset, float smoothConstant);
 
     /// Set collision layer.
     void SetCollisionLayer(unsigned layer);
@@ -114,8 +110,8 @@ public:
     void SetMaxSlope(float maxSlope);
     /// Return max slope angle in degrees.
     float GetMaxSlope() const { return maxSlope_; }
-    /// Set walk direction. This is neither a direction nor a velocity, but the amount to increment the position each simulation iteration, regardless of dt.
-    void SetWalkDirection(const Vector3& walkDir);
+    /// Set walk increment. This is neither a direction nor a velocity, but the amount to increment the position each simulation iteration, regardless of dt.
+    void SetWalkIncrement(const Vector3& walkDir);
     /// Check if character in on the ground.
     bool OnGround() const;
     /// Jump.
@@ -132,8 +128,6 @@ public:
     void SetLinearVelocity(const Vector3 &velocity);
     /// Return linear velocity.
     const Vector3 GetLinearVelocity() const;
-    /// Teleport character into new position.
-    void Warp(const Vector3 &position);
     /// Draw debug geometry.
     virtual void DrawDebugGeometry();
 
@@ -141,13 +135,18 @@ protected:
     btCapsuleShape* GetOrCreateShape();
     void ResetShape();
     void ReleaseKinematic();
-    void ApplySettings(bool reapply=false);
+    void ApplySettings(bool readdToWorld);
     void OnNodeSet(Node* node) override;
     void OnSceneSet(Scene* scene) override;
     void AddKinematicToWorld();
     void RemoveKinematicFromWorld();
-    /// Handle physics post-step event.
-    virtual void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
+
+    /// Instantly reset character position to new value.
+    void WarpKinematic(const Vector3& position);
+
+    void HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData);
+    void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
+    void HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData);
 
 protected:
     unsigned colLayer_{ 1 };
@@ -170,8 +169,19 @@ protected:
     ea::unique_ptr<btPairCachingGhostObject> pairCachingGhostObject_;
     ea::unique_ptr<btKinematicCharacterController> kinematicController_;
 
-    Vector3 colShapeOffset_{ Vector3::ZERO };
-    bool reapplyAttributes_{ false };
+    Vector3 colShapeOffset_{ 0.0f, 0.9f, 0.0f };
+    bool readdToWorld_{ false };
+
+    /// Offset used for smooth Node position adjustment.
+    Vector3 positionOffset_;
+    /// Constant used to fade out position offset.
+    float smoothingConstant_{};
+    /// Position used for interpolation and the final result.
+    /// @{
+    Vector3 previousPosition_;
+    Vector3 nextPosition_;
+    Vector3 latestPosition_;
+    /// @}
 };
 
 }

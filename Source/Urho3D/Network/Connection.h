@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@
 #include "../Core/Timer.h"
 #include "../Input/Controls.h"
 #include "../IO/VectorBuffer.h"
+#include "../Network/AbstractConnection.h"
 #include "../Scene/ReplicationState.h"
 
 namespace SLNet
@@ -45,8 +46,10 @@ namespace SLNet
 namespace Urho3D
 {
 
+class ClockSynchronizer;
 class File;
 class MemoryBuffer;
+class ReplicationManager;
 class Node;
 class Scene;
 class Serializable;
@@ -107,20 +110,14 @@ enum ObserverPositionSendMode
     OPSM_POSITION_ROTATION
 };
 
-/// Packet types for outgoing buffers. Outgoing messages are grouped by their type
-enum PacketType {
-    PT_UNRELIABLE_UNORDERED,
-    PT_UNRELIABLE_ORDERED,
-    PT_RELIABLE_UNORDERED,
-    PT_RELIABLE_ORDERED
-};
-
 /// %Connection to a remote network host.
-class URHO3D_API Connection : public Object
+class URHO3D_API Connection : public AbstractConnection
 {
-    URHO3D_OBJECT(Connection, Object);
+    URHO3D_OBJECT(Connection, AbstractConnection);
 
 public:
+    using AbstractConnection::SendMessage;
+
     /// Construct with context, RakNet connection address and Raknet peer pointer.
     Connection(Context* context);
     /// Destruct.
@@ -131,12 +128,20 @@ public:
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
+    /// Implement AbstractConnection
+    /// @{
+    void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) override;
+    ea::string ToString() const override;
+    bool IsClockSynchronized() const override;
+    unsigned RemoteToLocalTime(unsigned time) const override;
+    unsigned LocalToRemoteTime(unsigned time) const override;
+    unsigned GetLocalTime() const override;
+    unsigned GetLocalTimeOfLatestRoundtrip() const override;
+    unsigned GetPing() const override;
+    /// @}
+
     /// Get packet type based on the message parameters
     PacketType GetPacketType(bool reliable, bool inOrder);
-    /// Send a message.
-    void SendMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID = 0);
-    /// Send a message.
-    void SendMessage(int msgID, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes, unsigned contentID = 0);
     /// Send a remote event.
     void SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData = Variant::emptyVariantMap);
     /// Send a remote event with the specified node as sender.
@@ -242,11 +247,11 @@ public:
 
     /// Return bytes received per second.
     /// @property
-    float GetBytesInPerSec() const;
+    unsigned long long GetBytesInPerSec() const;
 
     /// Return bytes sent per second.
     /// @property
-    float GetBytesOutPerSec() const;
+    unsigned long long GetBytesOutPerSec() const;
 
     /// Return packets received per second.
     /// @property
@@ -256,8 +261,6 @@ public:
     /// @property
     int GetPacketsOutPerSec() const;
 
-    /// Return an address:port string.
-    ea::string ToString() const;
     /// Return number of package downloads remaining.
     /// @property
     unsigned GetNumDownloads() const;
@@ -324,8 +327,13 @@ private:
     /// Handle all packages loaded successfully. Also called directly on MSG_LOADSCENE if there are none.
     void OnPackagesReady();
 
+    /// Utility to keep server and client clocks synchronized.
+    ea::unique_ptr<ClockSynchronizer> clock_;
     /// Scene.
     WeakPtr<Scene> scene_;
+    /// Scene replication and synchronization manager.
+    WeakPtr<ReplicationManager> replicationManager_;
+
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.
@@ -338,8 +346,6 @@ private:
     ea::unordered_map<unsigned, ea::vector<unsigned char> > componentLatestData_;
     /// Node ID's to process during a replication update.
     ea::hash_set<unsigned> nodesToProcess_;
-    /// Reusable message buffer.
-    VectorBuffer msg_;
     /// Queued remote events.
     ea::vector<RemoteEvent> remoteEvents_;
     /// Scene file to load once all packages (if any) have been downloaded.

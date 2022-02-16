@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,18 @@ URHO3D_EVENT(E_SCENEUPDATE, SceneUpdate)
 {
     URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+}
+
+/// Network-aware scene update.
+/// In standalone mode, SceneNetworkUpdate is equivalent to SceneUpdate.
+/// In server mode, SceneNetworkUpdate is called once per network frame with fixed timestep.
+/// In client mode, SceneNetworkUpdate is called on each rendered frame like SceneUpdate,
+/// but timesteps are properly scaled according to network clocks.
+URHO3D_EVENT(E_SCENENETWORKUPDATE, SceneNetworkUpdate)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                       // Scene pointer
+    URHO3D_PARAM(P_TIMESTEP_REPLICA, TimeStepReplica);  // float
+    URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
 }
 
 /// Scene subsystem update.

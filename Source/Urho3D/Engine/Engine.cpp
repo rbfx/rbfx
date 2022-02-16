@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,6 +57,9 @@
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsWorld.h"
 #include "../Physics/RaycastVehicle.h"
+#endif
+#ifdef URHO3D_PHYSICS2D
+#include "../Physics2D/Physics2D.h"
 #endif
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
@@ -177,6 +180,10 @@ Engine::Engine(Context* context) :
 
 #ifdef URHO3D_PHYSICS
     RegisterPhysicsLibrary(context_);
+#endif
+
+#ifdef URHO3D_PHYSICS2D
+    RegisterPhysics2DLibrary(context_);
 #endif
 
 #ifdef URHO3D_NAVIGATION
@@ -734,11 +741,15 @@ void Engine::Update()
 {
     URHO3D_PROFILE("Update");
 
-    // Logic update event
     using namespace Update;
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_TIMESTEP] = timeStep_;
+
+    // Pre-update event that indicates
+    SendEvent(E_INPUTREADY, eventData);
+
+    // Logic update event
     SendEvent(E_UPDATE, eventData);
 
     // Logic post-update event

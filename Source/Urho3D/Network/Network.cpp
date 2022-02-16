@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,15 +27,24 @@
 #include "../Core/Profiler.h"
 #include "../Engine/EngineEvents.h"
 #include "../IO/FileSystem.h"
-#include "../Input/InputEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
+#include "../Input/InputEvents.h"
 #include "../Network/HttpRequest.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
+#include "../Replica/BehaviorNetworkObject.h"
+#include "../Replica/FilteredByDistance.h"
+#include "../Replica/NetworkObject.h"
+#include "../Replica/PredictedKinematicController.h"
+#include "../Replica/ReplicatedAnimation.h"
+#include "../Replica/ReplicatedTransform.h"
+#include "../Replica/ReplicationManager.h"
+#include "../Replica/StaticNetworkObject.h"
+#include "../Replica/TrackedAnimatedModel.h"
 #include "../Scene/Scene.h"
 
 #include <slikenet/MessageIdentifiers.h>
@@ -190,15 +199,13 @@ static const char* RAKNET_MESSAGEID_STRINGS[] = {
     "ID_USER_PACKET_ENUM"
 };
 
-static const int DEFAULT_UPDATE_FPS = 30;
 static const int SERVER_TIMEOUT_TIME = 10000;
 
 Network::Network(Context* context) :
     Object(context),
-    updateFps_(DEFAULT_UPDATE_FPS),
     simulatedLatency_(0),
     simulatedPacketLoss_(0.0f),
-    updateInterval_(1.0f / (float)DEFAULT_UPDATE_FPS),
+    updateInterval_(1.0f / updateFps_),
     updateAcc_(0.0f),
     isServer_(false),
     scene_(nullptr),
@@ -379,7 +386,6 @@ bool Network::Connect(const ea::string& address, unsigned short port, Scene* sce
         rakPeerClient_->Startup(2, &socket, 1);
     }
 
-    //isServer_ = false;
     SLNet::ConnectionAttemptResult connectResult = rakPeerClient_->Connect(address.c_str(), port, password_.c_str(), password_.length());
     if (connectResult == SLNet::CONNECTION_ATTEMPT_STARTED)
     {
@@ -458,6 +464,8 @@ void Network::StopServer()
 
     if (!IsServerRunning())
         return;
+
+    isServer_ = false;
     // Provide 300 ms to notify
     rakPeer_->Shutdown(300);
 
@@ -570,11 +578,49 @@ void Network::BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrde
     }
 }
 
-void Network::SetUpdateFps(int fps)
+void Network::SetUpdateFps(unsigned fps)
 {
+    if (IsServerRunning())
+    {
+        URHO3D_LOGERROR("Cannot change update frequency of running server. Attempted to change frequency from {} to {}.", updateFps_, fps);
+        return;
+    }
+
     updateFps_ = Max(fps, 1);
     updateInterval_ = 1.0f / (float)updateFps_;
     updateAcc_ = 0.0f;
+}
+
+void Network::SetPingIntervalMs(unsigned interval)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change ping interval for currently active connections.");
+
+    pingIntervalMs_ = interval;
+}
+
+void Network::SetMaxPingIntervalMs(unsigned interval)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change max ping for currently active connections.");
+
+    maxPingMs_ = interval;
+}
+
+void Network::SetClockBufferSize(unsigned size)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change sync buffer size for currently active connections.");
+
+    clockBufferSize_ = size;
+}
+
+void Network::SetPingBufferSize(unsigned size)
+{
+    if (IsServerRunning() || GetServerConnection())
+        URHO3D_LOGWARNING("Cannot change ping buffer size for currently active connections.");
+
+    pingBufferSize_ = size;
 }
 
 void Network::SetSimulatedLatency(int ms)
@@ -688,6 +734,50 @@ bool Network::IsServerRunning() const
 bool Network::CheckRemoteEvent(StringHash eventType) const
 {
     return allowedRemoteEvents_.contains(eventType);
+}
+
+ea::string Network::GetDebugInfo() const
+{
+    ea::string result;
+    ea::hash_set<ReplicationManager*> replicationManagers;
+
+    const unsigned localTime = Time::GetSystemTime();
+    result += Format("Local Time {}\n", localTime);
+
+    if (Connection* connection = GetServerConnection())
+    {
+        result += Format("Server Connection {}: {}p-{}b/s in, {}p-{}b/s out, Remote Time {}\n",
+            connection->ToString(),
+            connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec(),
+            connection->LocalToRemoteTime(localTime));
+
+        if (Scene* scene = connection->GetScene())
+        {
+            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+                replicationManagers.insert(replicationManager);
+        }
+    }
+
+    for (Connection* connection : GetClientConnections())
+    {
+        result += Format("Client Connection {}: {}p-{}b/s in, {}p-{}b/s out, Remote Time {}\n",
+            connection->ToString(),
+            connection->GetPacketsInPerSec(), connection->GetBytesInPerSec(),
+            connection->GetPacketsOutPerSec(), connection->GetBytesOutPerSec(),
+            connection->LocalToRemoteTime(localTime));
+
+        if (Scene* scene = connection->GetScene())
+        {
+            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+                replicationManagers.insert(replicationManager);
+        }
+    }
+
+    for (ReplicationManager* replicationManager : replicationManagers)
+        result += replicationManager->GetDebugInfo();
+
+    return result;
 }
 
 void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
@@ -888,7 +978,13 @@ void Network::Update(float timeStep)
 {
     URHO3D_PROFILE("UpdateNetwork");
 
-    //Process all incoming messages for the server
+    // Check if periodic update should happen now
+    updateAcc_ += timeStep;
+    updateNow_ = updateAcc_ >= updateInterval_;
+    if (updateNow_)
+        updateAcc_ = fmodf(updateAcc_, updateInterval_);
+
+    // Process all incoming messages for the server
     if (rakPeer_->IsActive())
     {
         while (SLNet::Packet* packet = rakPeer_->Receive())
@@ -907,20 +1003,23 @@ void Network::Update(float timeStep)
             rakPeerClient_->DeallocatePacket(packet);
         }
     }
+
+    {
+        using namespace NetworkInputProcessed;
+        VariantMap& eventData = GetEventDataMap();
+        eventData[P_TIMESTEP] = timeStep;
+        SendEvent(E_NETWORKINPUTPROCESSED, eventData);
+    }
 }
 
 void Network::PostUpdate(float timeStep)
 {
     URHO3D_PROFILE("PostUpdateNetwork");
 
-    // Check if periodic update should happen now
-    updateAcc_ += timeStep;
-    bool updateNow = updateAcc_ >= updateInterval_;
-    if (updateNow)
+    // Update periodically on the server
+    if (updateNow_ && (IsServerRunning() || simulateServerEvents_))
     {
-        // Notify of the impending update to allow for example updated client controls to be set
-        SendEvent(E_NETWORKUPDATE);
-        updateAcc_ = fmodf(updateAcc_, updateInterval_);
+        SendNetworkUpdateEvent(E_NETWORKUPDATE, true);
 
         if (IsServerRunning())
         {
@@ -954,16 +1053,23 @@ void Network::PostUpdate(float timeStep)
             }
         }
 
+        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, true);
+    }
+
+    // Always update on the client
+    if (serverConnection_ || simulateClientEvents_)
+    {
+        SendNetworkUpdateEvent(E_NETWORKUPDATE, false);
+
         if (serverConnection_)
         {
-            // Send the client update
-            serverConnection_->SendClientUpdate();
+            if (updateNow_)
+                serverConnection_->SendClientUpdate();
             serverConnection_->SendRemoteEvents();
             serverConnection_->SendAllBuffers();
         }
 
-        // Notify that the update was sent
-        SendEvent(E_NETWORKUPDATESENT);
+        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
     }
 }
 
@@ -1032,8 +1138,32 @@ unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
     return SLNet::AddressOrGUID::ToInteger(endpoint);
 }
 
+void Network::SendNetworkUpdateEvent(StringHash eventType, bool isServer)
+{
+    using namespace NetworkUpdate;
+    auto& eventData = GetEventDataMap();
+    eventData[P_ISSERVER] = isServer;
+    SendEvent(eventType, eventData);
+}
+
 void RegisterNetworkLibrary(Context* context)
 {
+    NetworkObjectRegistry::RegisterObject(context);
+    ReplicationManager::RegisterObject(context);
+
+    NetworkObject::RegisterObject(context);
+    StaticNetworkObject::RegisterObject(context);
+    BehaviorNetworkObject::RegisterObject(context);
+
+    NetworkBehavior::RegisterObject(context);
+    ReplicatedAnimation::RegisterObject(context);
+    ReplicatedTransform::RegisterObject(context);
+    TrackedAnimatedModel::RegisterObject(context);
+    FilteredByDistance::RegisterObject(context);
+#ifdef URHO3D_PHYSICS
+    PredictedKinematicController::RegisterObject(context);
+#endif
+
     NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
 }

@@ -91,6 +91,7 @@ endif ()
 
 if (URHO3D_NETWORK)
     define_engine_source_files (Network)
+    define_engine_source_files (Replica)
 endif ()
 
 if (URHO3D_PHYSICS)
@@ -99,6 +100,10 @@ endif ()
 
 if (URHO3D_URHO2D)
     define_engine_source_files (Urho2D)
+endif ()
+
+if (URHO3D_PHYSICS2D)
+    define_engine_source_files (Physics2D)
 endif ()
 
 if (URHO3D_SYSTEMUI)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -99,7 +99,7 @@ inline T Abs(T value) { return value >= 0.0 ? value : -value; }
 /// Return the sign of a float (-1, 0 or 1).
 /// @specialization{float}
 template <class T>
-inline T Sign(T value) { return value > 0.0 ? 1.0 : (value < 0.0 ? -1.0 : 0.0); }
+inline T Sign(T value) { return value > 0 ? T(1) : (value < 0 ? T(-1) : T(0)); }
 
 /// Convert degrees to radians.
 template <class T>
@@ -151,6 +151,9 @@ inline T SmoothStep(T lhs, T rhs, T t)
     t = Clamp((t - lhs) / (rhs - lhs), T(0.0), T(1.0)); // Saturate t
     return t * t * (3.0 - 2.0 * t);
 }
+
+/// Return constant for exponential smoothing.
+template <class T> inline T ExpSmoothing(T constant, T timeStep) { return constant ? T(1) - Clamp(pow(T(2), -timeStep * constant), T(0), T(1)) : T(1); }
 
 /// Return sine of an angle in degrees.
 /// @specialization{float}

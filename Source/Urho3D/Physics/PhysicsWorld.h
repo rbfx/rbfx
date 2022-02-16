@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,15 +28,19 @@
 #include "../Math/BoundingBox.h"
 #include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
+#include "../Replica/NetworkTime.h"
 #include "../Scene/Component.h"
 
 #include <Bullet/LinearMath/btIDebugDraw.h>
+
+#include <EASTL/optional.h>
 
 class btCollisionConfiguration;
 class btCollisionShape;
 class btBroadphaseInterface;
 class btConstraintSolver;
 class btDiscreteDynamicsWorld;
+class btCustomDiscreteDynamicsWorld;
 class btDispatcher;
 class btDynamicsWorld;
 class btPersistentManifold;
@@ -57,6 +61,12 @@ class Serializer;
 class XMLElement;
 
 struct CollisionGeometryData;
+
+struct SynchronizedPhysicsStep
+{
+    unsigned offset_{};
+    NetworkFrame networkFrame_{};
+};
 
 /// Physics raycast hit.
 struct URHO3D_API PhysicsRaycastResult
@@ -166,6 +176,8 @@ public:
 
     /// Step the simulation forward.
     void Update(float timeStep);
+    /// Custom simulation with explicit steps and extrapolation/interpolation time.
+    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<SynchronizedPhysicsStep> sync);
     /// Refresh collisions only without updating dynamics.
     void UpdateCollisions();
     /// Set simulation substeps per second.
@@ -279,7 +291,7 @@ public:
     void SetDebugDepthTest(bool enable);
 
     /// Return the Bullet physics world.
-    btDiscreteDynamicsWorld* GetWorld() { return world_.get(); }
+    btDiscreteDynamicsWorld* GetWorld() const;
 
     /// Clean up the geometry cache.
     void CleanupGeometryCache();
@@ -312,12 +324,17 @@ protected:
 private:
     /// Handle the scene subsystem update event, step simulation here.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
+    /// Trigger before physics update, before any of simulation steps.
+    void PreUpdate(float timeStep);
+    /// Trigger after physics update, after all of simulation steps.
+    void PostUpdate(float timeStep, float overtime);
     /// Trigger update before each physics simulation step.
     void PreStep(float timeStep);
     /// Trigger update after each physics simulation step.
     void PostStep(float timeStep);
     /// Send accumulated collision events.
     void SendCollisionEvents();
+    void ApplyDelayedWorldTransforms();
 
     /// Bullet collision configuration.
     btCollisionConfiguration* collisionConfiguration_{};
@@ -328,7 +345,7 @@ private:
     /// Bullet constraint solver.
     ea::unique_ptr<btConstraintSolver> solver_;
     /// Bullet physics world.
-    ea::unique_ptr<btDiscreteDynamicsWorld> world_;
+    ea::unique_ptr<btCustomDiscreteDynamicsWorld> world_;
     /// Extra weak pointer to scene to allow for cleanup in case the world is destroyed before other components.
     WeakPtr<Scene> scene_;
     /// Rigid bodies in the world.
@@ -359,6 +376,8 @@ private:
     unsigned fps_{DEFAULT_FPS};
     /// Maximum number of simulation substeps per frame. 0 (default) unlimited, or negative values for adaptive timestep.
     int maxSubSteps_{};
+    /// Indicates which physical step is synchronized with network frame.
+    ea::optional<SynchronizedPhysicsStep> synchronizedStep_;
     /// Time accumulator for non-interpolated mode.
     float timeAcc_{};
     /// Maximum angular velocity for network replication.

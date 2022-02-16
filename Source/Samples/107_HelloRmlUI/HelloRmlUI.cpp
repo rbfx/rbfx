@@ -119,7 +119,7 @@ void HelloRmlUI::Start()
 {
     // Register custom components.
     if (!context_->IsReflected<SimpleWindow>())
-        context_->AddReflection<SimpleWindow>();
+        context_->AddFactoryReflection<SimpleWindow>();
 
     // Execute base class startup
     Sample::Start();

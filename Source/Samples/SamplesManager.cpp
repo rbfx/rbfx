@@ -75,15 +75,17 @@
 #if URHO3D_SYSTEMUI
 #include "26_ConsoleInput/ConsoleInput.h"
 #endif
-#if URHO3D_URHO2D
-#include "27_Urho2DPhysics/Urho2DPhysics.h"
-#include "28_Urho2DPhysicsRope/Urho2DPhysicsRope.h"
+#if URHO3D_PHYSICS2D
+#include "27_Physics2D/Urho2DPhysics.h"
+#include "28_Physics2DRope/Urho2DPhysicsRope.h"
 #endif
 #include "29_SoundSynthesis/SoundSynthesis.h"
 #include "30_LightAnimation/LightAnimation.h"
 #include "31_MaterialAnimation/MaterialAnimation.h"
+#if URHO3D_PHYSICS2D
+#include "32_Physics2DConstraints/Urho2DConstraints.h"
+#endif
 #if URHO3D_URHO2D
-#include "32_Urho2DConstraints/Urho2DConstraints.h"
 #include "33_Urho2DSpriterAnimation/Urho2DSpriterAnimation.h"
 #endif
 #include "34_DynamicGeometry/DynamicGeometry.h"
@@ -131,6 +133,13 @@
 #if URHO3D_PHYSICS
 #include "109_KinematicCharacter/KinematicCharacterDemo.h"
 #endif
+#if URHO3D_RMLUI
+#if URHO3D_NETWORK
+#if URHO3D_PHYSICS
+#include "110_AdvancedNetworking/AdvancedNetworking.h"
+#endif
+#endif
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -177,7 +186,7 @@ void SamplesManager::Start()
         [](const std::string& str) { return ea::string(str.c_str()); });
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
-    context_->AddReflection<Rotator>();
+    context_->AddFactoryReflection<Rotator>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
 
@@ -185,7 +194,8 @@ void SamplesManager::Start()
     input->SetMouseVisible(true);
 
 #if URHO3D_SYSTEMUI
-    context_->GetSubsystem<Engine>()->CreateDebugHud()->ToggleAll();
+    if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
+        debugHud->ToggleAll();
 #endif
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
@@ -326,6 +336,13 @@ void SamplesManager::Start()
     RegisterSample<RenderingShowcase>();
 #if URHO3D_PHYSICS
     RegisterSample<KinematicCharacterDemo>();
+#endif
+#if URHO3D_RMLUI
+#if URHO3D_NETWORK
+#if URHO3D_PHYSICS
+    RegisterSample<AdvancedNetworking>();
+#endif
+#endif
 #endif
 
     if (!commandLineArgs_.empty())
@@ -590,7 +607,7 @@ void SamplesManager::OnFrameStart()
 template<typename T>
 void SamplesManager::RegisterSample()
 {
-    context_->AddReflection<T>();
+    context_->AddFactoryReflection<T>();
 
     auto* button = context_->CreateObject<Button>().Detach();
     button->SetMinHeight(30);

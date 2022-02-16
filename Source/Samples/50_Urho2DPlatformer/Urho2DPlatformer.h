@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 class Character2D;
 class Sample2D;
 
-/// Urho2D platformer example.
+/// 2D platformer example.
 /// This sample demonstrates:
 ///    - Creating an orthogonal 2D scene from tile map file
 ///    - Displaying the scene using the Renderer subsystem

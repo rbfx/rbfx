@@ -1,6 +1,6 @@
 //
 
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -119,9 +119,9 @@ void Drawable::OnSetEnabled()
         RemoveFromOctree();
 }
 
-void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+void Drawable::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox, ea::vector<RayQueryResult>& results)
 {
-    float distance = query.ray_.HitDistance(GetWorldBoundingBox());
+    float distance = query.ray_.HitDistance(worldBoundingBox);
     if (distance < query.maxDistance_)
     {
         RayQueryResult result;
@@ -133,6 +133,11 @@ void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryR
         result.subObject_ = M_MAX_UNSIGNED;
         results.push_back(result);
     }
+}
+
+void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
+{
+    ProcessCustomRayQuery(query, GetWorldBoundingBox(), results);
 }
 
 void Drawable::UpdateBatches(const FrameInfo& frame)
@@ -629,7 +634,7 @@ bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFil
                     ea::string output = "f ";
                     if (hasNormals)
                     {
-                        output.append_sprintf("%l/%l/%l %l/%l/%l %l/%l/%l", currentPositionIndex + longIndices[0],
+                        output.append_sprintf("%u/%u/%u %u/%u/%u %u/%u/%u", currentPositionIndex + longIndices[0],
                             currentUVIndex + longIndices[0], currentNormalIndex + longIndices[0],
                             currentPositionIndex + longIndices[1], currentUVIndex + longIndices[1],
                             currentNormalIndex + longIndices[1], currentPositionIndex + longIndices[2],
@@ -638,7 +643,7 @@ bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFil
                     else if (hasNormals || hasUV)
                     {
                         unsigned secondTraitIndex = hasNormals ? currentNormalIndex : currentUVIndex;
-                        output.append_sprintf("%l%s%l %l%s%l %l%s%l", currentPositionIndex + longIndices[0],
+                        output.append_sprintf("%u%s%u %u%s%u %u%s%u", currentPositionIndex + longIndices[0],
                             slashCharacter.c_str(), secondTraitIndex + longIndices[0],
                             currentPositionIndex + longIndices[1], slashCharacter.c_str(),
                             secondTraitIndex + longIndices[1], currentPositionIndex + longIndices[2],
@@ -646,7 +651,7 @@ bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFil
                     }
                     else
                     {
-                        output.append_sprintf("%l %l %l", currentPositionIndex + longIndices[0],
+                        output.append_sprintf("%u %u %u", currentPositionIndex + longIndices[0],
                             currentPositionIndex + longIndices[1], currentPositionIndex + longIndices[2]);
                     }
                     outputFile->WriteLine(output);

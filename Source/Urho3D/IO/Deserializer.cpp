@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -276,12 +276,18 @@ StringHash Deserializer::ReadStringHash()
     return StringHash(ReadUInt());
 }
 
-ea::vector<unsigned char> Deserializer::ReadBuffer()
+ByteVector Deserializer::ReadBuffer()
 {
-    ea::vector<unsigned char> ret(ReadVLE());
-    if (ret.size())
-        Read(&ret[0], ret.size());
+    ByteVector ret;
+    ReadBuffer(ret);
     return ret;
+}
+
+void Deserializer::ReadBuffer(ByteVector& byteVector)
+{
+    byteVector.resize(ReadVLE());
+    if (!byteVector.empty())
+        Read(byteVector.data(), byteVector.size());
 }
 
 ResourceRef Deserializer::ReadResourceRef()

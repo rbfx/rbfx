@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ enum Orientation2D
 };
 
 /// Tile map information.
-/// @fakeref
+/// @nocount
 struct URHO3D_API TileMapInfo2D
 {
     /// Orientation.

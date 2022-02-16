@@ -154,7 +154,7 @@ void LightProbeGroup::CollectLightProbes(Scene* scene,
     scene->GetComponents(lightProbeGroups, true);
 
     const auto isNotEnabled = [](const LightProbeGroup* lightProbeGroup) { return !lightProbeGroup->IsEnabledEffective(); };
-    lightProbeGroups.erase(ea::remove_if(lightProbeGroups.begin(), lightProbeGroups.end(), isNotEnabled), lightProbeGroups.end());
+    ea::erase_if(lightProbeGroups, isNotEnabled);
 
     CollectLightProbes(lightProbeGroups, collection, bakedData, reload);
 }

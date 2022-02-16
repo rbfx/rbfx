@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,7 @@ Ragdolls::Ragdolls(Context* context) :
 {
     // Register an object factory for our custom CreateRagdoll component so that we can create them to scene nodes
     if (!context->IsReflected<CreateRagdoll>())
-        context->AddReflection<CreateRagdoll>();
+        context->AddFactoryReflection<CreateRagdoll>();
 }
 
 void Ragdolls::Start()

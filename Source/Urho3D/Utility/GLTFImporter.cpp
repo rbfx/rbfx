@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Functors.h"
 #include "../Core/Context.h"
 #include "../Core/Exception.h"
 #include "../Graphics/AnimatedModel.h"
@@ -72,13 +73,6 @@ namespace
 {
 
 const unsigned MaxNameAssignTries = 64*1024;
-
-template <class T>
-struct StaticCaster
-{
-    template <class U>
-    T operator() (U x) const { return static_cast<T>(x); }
-};
 
 template <class T, unsigned N, class U>
 ea::array<T, N> ToArray(const U& vec)

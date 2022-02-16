@@ -66,7 +66,7 @@ public:
 
     static void RegisterObject(Context* context, PluginApplication* plugin)
     {
-        plugin->AddReflection<FPSCameraController>("User Components");
+        plugin->AddFactoryReflection<FPSCameraController>("User Components");
     }
 };
 

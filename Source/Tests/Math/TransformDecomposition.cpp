@@ -44,7 +44,7 @@ void TestTransformDecomposition(const Vector3& translation, const Quaternion& ro
         CHECK(translation.x_ == Approx(decomposedTranslation.x_).margin(M_EPSILON));
         CHECK(translation.y_ == Approx(decomposedTranslation.y_).margin(M_EPSILON));
         CHECK(translation.z_ == Approx(decomposedTranslation.z_).margin(M_EPSILON));
-        CHECK(Abs(rotation.DotProduct(decomposedRotation)) == Approx(1.0f).margin(M_EPSILON));
+        CHECK(rotation.Equivalent(decomposedRotation, M_EPSILON));
         CHECK(scale.x_ == Approx(decomposedScale.x_).margin(M_EPSILON));
         CHECK(scale.y_ == Approx(decomposedScale.y_).margin(M_EPSILON));
         CHECK(scale.z_ == Approx(decomposedScale.z_).margin(M_EPSILON));
@@ -58,7 +58,7 @@ void TestTransformDecomposition(const Vector3& translation, const Quaternion& ro
         CHECK(translation.x_ == Approx(decomposedTranslation.x_).margin(M_EPSILON));
         CHECK(translation.y_ == Approx(decomposedTranslation.y_).margin(M_EPSILON));
         CHECK(translation.z_ == Approx(decomposedTranslation.z_).margin(M_EPSILON));
-        CHECK(Abs(rotation.DotProduct(decomposedRotation)) == Approx(1.0f).margin(M_EPSILON));
+        CHECK(rotation.Equivalent(decomposedRotation, M_EPSILON));
         CHECK(scale.x_ == Approx(decomposedScale.x_).margin(M_EPSILON));
         CHECK(scale.y_ == Approx(decomposedScale.y_).margin(M_EPSILON));
         CHECK(scale.z_ == Approx(decomposedScale.z_).margin(M_EPSILON));

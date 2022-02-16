@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2020 the rbfx project.
+# Copyright (c) 2017-2022 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,7 @@ if (URHO3D_PROFILING)
         target_compile_definitions (Tracy INTERFACE ${TRACY_OPTIONS_PUBLIC})
     endif ()
 
-    find_package(TBB)
+    find_package(TBB QUIET)
     if (TBB_FOUND)
         if (BUILD_SHARED_LIBS)
             target_link_libraries(Tracy PUBLIC TBB::tbb)

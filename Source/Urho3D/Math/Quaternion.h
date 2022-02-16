@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -133,6 +133,10 @@ public:
     {
         FromRotationMatrix(matrix);
     }
+
+    /// Construct from angular velocity assuming unit time.
+    /// Note: Absolute value of angular velocity is measured in radians.
+    static Quaternion FromAngularVelocity(const Vector3& angularVelocity);
 
 #ifdef URHO3D_SSE
     explicit Quaternion(__m128 wxyz) noexcept
@@ -415,6 +419,12 @@ public:
         return Urho3D::Equals(w_, rhs.w_, eps) && Urho3D::Equals(x_, rhs.x_, eps) && Urho3D::Equals(y_, rhs.y_, eps) && Urho3D::Equals(z_, rhs.z_, eps);
     }
 
+    /// Test for equivalence with another quaternion with epsilon.
+    bool Equivalent(const Quaternion& rhs, float eps = M_EPSILON) const
+    {
+        return Urho3D::Equals(Abs(DotProduct(rhs)), 1.0f, eps);
+    }
+
     /// Return whether any element is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(w_) || Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_) || Urho3D::IsNaN(z_); }
 
@@ -450,6 +460,9 @@ public:
     /// Return rotation angle.
     /// @property
     float Angle() const;
+    /// Return angular velocity assuming unit time.
+    /// Note: Absolute value of angular velocity is measured in radians.
+    Vector3 AngularVelocity() const;
     /// Return the rotation matrix that corresponds to this quaternion.
     /// @property
     Matrix3 RotationMatrix() const;

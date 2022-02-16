@@ -1024,7 +1024,7 @@ void SceneTab::RenderNodeContextMenu()
                 for (const ea::string& category : categories)
                 {
                     auto components = editor->GetObjectsByCategory(category);
-                    if (components.empty())
+                    if (components.empty() || category.empty())
                         continue;
 
                     if (ui::BeginMenu(category.c_str()))

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -407,25 +407,15 @@ public:
     /// Point to the object.
     T* operator ->() const
     {
-        T* rawPtr = Get();
-        assert(rawPtr);
-        return rawPtr;
+        assert(!Expired());
+        return ptr_;
     }
 
     /// Dereference the object.
     T& operator *() const
     {
-        T* rawPtr = Get();
-        assert(rawPtr);
-        return *rawPtr;
-    }
-
-    /// Subscript the object if applicable.
-    T& operator [](int index)
-    {
-        T* rawPtr = Get();
-        assert(rawPtr);
-        return (*rawPtr)[index];
+        assert(!Expired());
+        return ptr_;
     }
 
     /// Test for equality with another weak pointer.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,7 @@
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Replica/BehaviorNetworkObject.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
@@ -67,14 +68,88 @@ static const unsigned CTRL_BACK = 2;
 static const unsigned CTRL_LEFT = 4;
 static const unsigned CTRL_RIGHT = 8;
 
+/// Controls data.
+struct PlayerControls
+{
+    float yaw_{};
+    unsigned buttons_{};
+};
+
+/// Simple controller that implements sample networking logic:
+/// - Synchronize light color on setup;
+/// - Deliver client input to server.
+class SceneReplicationPlayer : public NetworkBehavior
+{
+    URHO3D_OBJECT(SceneReplicationPlayer, NetworkBehavior);
+
+public:
+    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::UnreliableFeedback;
+
+    explicit SceneReplicationPlayer(Context* context)
+        : NetworkBehavior(context, CallbackMask)
+    {
+    }
+
+    /// Set current controls on client side.
+    void SetControls(const PlayerControls& controls) { controls_ = controls; }
+
+    /// Return latest received controls on server side.
+    const PlayerControls& GetControls() const { return controls_; }
+
+    /// Write object color on the server.
+    void WriteSnapshot(NetworkFrame frame, Serializer& dest) override
+    {
+        auto* light = GetComponent<Light>();
+        dest.WriteColor(light->GetColor());
+    }
+
+    /// Read object color on the client.
+    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override
+    {
+        auto* light = GetComponent<Light>();
+        light->SetColor(src.ReadColor());
+    }
+
+    /// Always send controls.
+    bool PrepareUnreliableFeedback(NetworkFrame frame) override { return true; }
+
+    /// Write controls on the client.
+    void WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest) override
+    {
+        dest.WriteFloat(controls_.yaw_);
+        dest.WriteVLE(controls_.buttons_);
+    }
+
+    /// Read controls on the server.
+    void ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src) override
+    {
+        // Skip outdated controls
+        if (lastFeedbackFrame_ && (*lastFeedbackFrame_ >= feedbackFrame))
+            return;
+
+        controls_.yaw_ = src.ReadFloat();
+        controls_.buttons_ = src.ReadVLE();
+        lastFeedbackFrame_ = feedbackFrame;
+    }
+
+private:
+    /// Most recent player controls.
+    PlayerControls controls_;
+    /// Time when latest player controls were received.
+    ea::optional<NetworkFrame> lastFeedbackFrame_;
+};
 
 SceneReplication::SceneReplication(Context* context) :
     Sample(context)
 {
 }
 
-void SceneReplication::Start()
+void SceneReplication::Start(const ea::vector<ea::string>& args)
 {
+    // Register sample types
+    if (!context_->IsReflected<SceneReplicationPlayer>())
+        context_->RegisterFactory<SceneReplicationPlayer>();
+
     // Execute base class startup
     Sample::Start();
 
@@ -92,6 +167,15 @@ void SceneReplication::Start()
 
     // Set the mouse mode to use in the sample
     Sample::InitMouseMode(MM_RELATIVE);
+
+    // Process command line
+    if (args.size() >= 2)
+    {
+        if (args[1] == "StartServer")
+            HandleStartServer({}, GetEventDataMap());
+        else if (args[1] == "Connect")
+            HandleConnect({}, GetEventDataMap());
+    }
 }
 
 void SceneReplication::CreateScene()
@@ -280,35 +364,37 @@ void SceneReplication::UpdateButtons()
     textEdit_->SetVisible(!serverConnection && !serverRunning);
 }
 
-Node* SceneReplication::CreateControllableObject()
+Node* SceneReplication::CreateControllableObject(Connection* owner)
 {
     auto* cache = GetSubsystem<ResourceCache>();
+    auto prefab = cache->GetResource<XMLFile>("Objects/SceneReplicationPlayer.xml");
 
-    // Create the scene node & visual representation. This will be a replicated object
-    Node* ballNode = scene_->CreateChild("Ball");
-    ballNode->SetPosition(Vector3(Random(40.0f) - 20.0f, 5.0f, Random(40.0f) - 20.0f));
-    ballNode->SetScale(0.5f);
-    auto* ballObject = ballNode->CreateComponent<StaticModel>();
-    ballObject->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
-    ballObject->SetMaterial(cache->GetResource<Material>("Materials/StoneSmall.xml"));
+    // Instantiate common components from prefab so they will be replicated on the client.
+    const Vector3 position{Vector3(Random(40.0f) - 20.0f, 5.0f, Random(40.0f) - 20.0f)};
+    Node* playerNode = scene_->InstantiateXML(prefab->GetRoot(), position, Quaternion::IDENTITY, LOCAL);
+    playerNode->SetName("Ball");
 
-    // Create the physics components
-    auto* body = ballNode->CreateComponent<RigidBody>();
+    // NetworkObject should never be a part of client prefab
+    auto networkObject = playerNode->CreateComponent<BehaviorNetworkObject>();
+    networkObject->SetClientPrefab(prefab);
+    networkObject->SetOwner(owner);
+
+    // Create the physics components on server only
+    auto* body = playerNode->CreateComponent<RigidBody>();
     body->SetMass(1.0f);
     body->SetFriction(1.0f);
     // In addition to friction, use motion damping so that the ball can not accelerate limitlessly
     body->SetLinearDamping(0.5f);
     body->SetAngularDamping(0.5f);
-    auto* shape = ballNode->CreateComponent<CollisionShape>();
+    auto* shape = playerNode->CreateComponent<CollisionShape>();
     shape->SetSphere(1.0f);
 
-    // Create a random colored point light at the ball so that can see better where is going
-    auto* light = ballNode->CreateComponent<Light>();
-    light->SetRange(3.0f);
+    // Assign a random color to the point light at the ball
+    auto* light = playerNode->GetComponent<Light>();
     light->SetColor(
         Color(0.5f + ((unsigned)Rand() & 1u) * 0.5f, 0.5f + ((unsigned)Rand() & 1u) * 0.5f, 0.5f + ((unsigned)Rand() & 1u) * 0.5f));
 
-    return ballNode;
+    return playerNode;
 }
 
 void SceneReplication::MoveCamera()
@@ -387,28 +473,30 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
     Connection* serverConnection = network->GetServerConnection();
 
     // Client: collect controls
-    if (serverConnection)
+    if (serverConnection && clientObjectID_)
     {
         auto* ui = GetSubsystem<UI>();
         auto* input = GetSubsystem<Input>();
-        Controls controls;
 
-        // Copy mouse yaw
-        controls.yaw_ = yaw_;
-
-        // Only apply WASD controls if there is no focused UI element
-        if (!ui->GetFocusElement())
+        if (Node* playerNode = scene_->GetNode(clientObjectID_))
         {
-            controls.Set(CTRL_FORWARD, input->GetKeyDown(KEY_W));
-            controls.Set(CTRL_BACK, input->GetKeyDown(KEY_S));
-            controls.Set(CTRL_LEFT, input->GetKeyDown(KEY_A));
-            controls.Set(CTRL_RIGHT, input->GetKeyDown(KEY_D));
-        }
+            PlayerControls controls;
 
-        serverConnection->SetControls(controls);
-        // In case the server wants to do position-based interest management using the NetworkPriority components, we should also
-        // tell it our observer (camera) position. In this sample it is not in use, but eg. the NinjaSnowWar game uses it
-        serverConnection->SetPosition(cameraNode_->GetPosition());
+            // Copy mouse yaw
+            controls.yaw_ = yaw_;
+
+            // Only apply WASD controls if there is no focused UI element
+            if (!ui->GetFocusElement())
+            {
+                controls.buttons_ |= input->GetKeyDown(KEY_W) ? CTRL_FORWARD : 0;
+                controls.buttons_ |= input->GetKeyDown(KEY_S) ? CTRL_BACK : 0;
+                controls.buttons_ |= input->GetKeyDown(KEY_A) ? CTRL_LEFT : 0;
+                controls.buttons_ |= input->GetKeyDown(KEY_D) ? CTRL_RIGHT : 0;
+            }
+
+            auto* player = playerNode->GetComponent<SceneReplicationPlayer>();
+            player->SetControls(controls);
+        }
     }
     // Server: apply controls to client objects
     else if (network->IsServerRunning())
@@ -419,14 +507,15 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
         {
             Connection* connection = connections[i];
             // Get the object this connection is controlling
-            Node* ballNode = serverObjects_[connection];
-            if (!ballNode)
+            Node* playerNode = serverObjects_[connection];
+            if (!playerNode)
                 continue;
 
-            auto* body = ballNode->GetComponent<RigidBody>();
+            auto* body = playerNode->GetComponent<RigidBody>();
+            auto* player = playerNode->GetComponent<SceneReplicationPlayer>();
 
             // Get the last controls sent by the client
-            const Controls& controls = connection->GetControls();
+            const PlayerControls& controls = player->GetControls();
             // Torque is relative to the forward vector
             Quaternion rotation(0.0f, controls.yaw_, 0.0f);
 
@@ -506,7 +595,7 @@ void SceneReplication::HandleClientConnected(StringHash eventType, VariantMap& e
     newConnection->SetScene(scene_);
 
     // Then create a controllable object for that client
-    Node* newObject = CreateControllableObject();
+    Node* newObject = CreateControllableObject(newConnection);
     serverObjects_[newConnection] = newObject;
 
     // Finally send the object's node ID using a remote event
