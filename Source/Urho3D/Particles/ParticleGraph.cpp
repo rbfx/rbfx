@@ -68,7 +68,6 @@ SharedPtr<ParticleGraphNode> ParticleGraph::GetNode(unsigned index) const
 
 bool ParticleGraph::LoadGraph(Graph& graph)
 {
-    //Clear();
     ParticleGraphReader reader(*this, graph);
     return reader.Read();
 }

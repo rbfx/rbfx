@@ -75,21 +75,15 @@ SharedPtr<ParticleGraphLayer> ParticleGraphEffect::GetLayer(unsigned layerIndex)
 
 bool ParticleGraphEffect::BeginLoad(Deserializer& source)
 {
-    // In headless mode, do not actually load the material, just return success
-    //auto* graphics = GetSubsystem<Graphics>();
-    //if (!graphics)
-    //    return true;
-
     ea::string extension = GetExtension(source.GetName());
 
     ResetToDefaults();
 
-    const auto loadXMLFile = MakeShared<XMLFile>(context_);
-    if (!loadXMLFile->Load(source))
+    const auto xmlFile = MakeShared<XMLFile>(context_);
+    if (!xmlFile->Load(source))
         return false;
 
-    XMLInputArchive archive(loadXMLFile);
-    return ConsumeArchiveException([&]() { SerializeValue(archive, "particleGraphEffect", *this); });
+    return xmlFile->LoadObject("particleGraphEffect", *this);
 }
 
 void ParticleGraphEffect::ResetToDefaults()
@@ -101,25 +95,11 @@ void ParticleGraphEffect::ResetToDefaults()
     layers_.clear();
 }
 
-bool ParticleGraphEffect::EndLoad()
-{
-    // In headless mode, do not actually load the material, just return success
-    //auto* graphics = GetSubsystem<Graphics>();
-    //if (!graphics)
-    //    return true;
-
-    //if (archive.HasError())
-    //    URHO3D_LOGERROR(archive.GetErrorString());
-    return true;
-}
-
 bool ParticleGraphEffect::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
-    XMLOutputArchive archive(xml);
-    auto block = archive.OpenUnorderedBlock("particleGraphEffect");
-    const_cast<ParticleGraphEffect*>(this)->SerializeInBlock(archive);
-    xml->Save(dest);
+    const auto xmlFile = MakeShared<XMLFile>(context_);
+    xmlFile->SaveObject("particleGraphEffect", *this);
+    xmlFile->Save(dest);
     return true;
 }
 

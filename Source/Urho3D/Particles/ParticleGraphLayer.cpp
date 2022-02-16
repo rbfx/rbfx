@@ -184,7 +184,8 @@ struct ParticleGraphAttributeBuilder
 
         for (unsigned i = 0; i < graphNodes; ++i)
         {
-            if (!BuildNode(graph, i)) return false;
+            if (!BuildNode(graph, i))
+                return false;
         }
         return true;
     }

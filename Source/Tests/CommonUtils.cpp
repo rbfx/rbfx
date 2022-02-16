@@ -25,8 +25,8 @@
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
-#include <Urho3D/Core/IOEvents.h>
-#include <Urho3D/Core/Log.h>
+#include <Urho3D/IO/IOEvents.h>
+#include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Serializable.h>
@@ -35,7 +35,7 @@
 
 namespace Tests
 {
-namespace 
+namespace
 {
 
 void PrintError(StringHash hash, VariantMap& args)
