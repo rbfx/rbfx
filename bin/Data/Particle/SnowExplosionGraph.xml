@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<particleGraphEffect>
+	<layer type="ParticleGraphLayer" capacity="10">
+		<emit>
+			<nodes>
+				<node id="1" name="SetAttribute">
+					<pins>
+						<pin type="Vector3" name="" value="0 0 0"/>
+						<pin direction="Out" type="Vector3" name="pos" />
+					</pins>
+				</node>
+				<node id="2" name="SetAttribute">
+					<pins>
+						<pin type="Vector3" name="" value="0 0.5 0"/>
+						<pin direction="Out" type="Vector3" name="vel" />
+					</pins>
+				</node>
+			</nodes>
+		</emit>
+		<update>
+			<nodes>
+				<node id="1" name="RenderBillboard">
+					<properties>
+						<property name="Material">
+							<value type="ResourceRef" value="Material;Materials/Particle.xml" />
+						</property>
+					</properties>
+				<pins>
+					<pin name="pos" type="Vector3" node="5" pin="pos" />
+					<pin name="size" type="Vector2" value="1 1" />
+				</pins>
+			</node>
+				<node id="2" name="GetAttribute">
+					<pins>
+						<pin direction="Out" type="Vector3" name="pos" />
+					</pins>
+				</node>
+				<node id="3" name="GetAttribute">
+					<pins>
+						<pin direction="Out" type="Vector3" name="vel" />
+					</pins>
+				</node>
+				<node id="4" name="Bounce">
+					<pins>
+						<pin type="Vector3" name="position" node="2" pin="pos" />
+						<pin type="Vector3" name="velocity" node="3" pin="vel"/>
+						<pin direction="Out" type="Vector3" name="newPosition" />
+						<pin direction="Out" type="Vector3" name="newVelocity" />
+					</pins>
+				</node>
+				<node id="5" name="SetAttribute">
+					<pins>
+						<pin type="Vector3" name="" node="4" pin="newPosition"/>
+						<pin direction="Out" type="Vector3" name="pos" />
+					</pins>
+				</node>
+				<node id="6" name="SetAttribute">
+					<pins>
+						<pin type="Vector3" name="" node="4" pin="newVelocity"/>
+						<pin direction="Out" type="Vector3" name="vel" />
+					</pins>
+				</node>
+			</nodes>
+		</update>
+	</layer>
+</particleGraphEffect>
