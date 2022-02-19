@@ -124,6 +124,8 @@ void BillboardSet::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Can Be Occluded", IsOccludee, SetOccludee, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Cast Shadows", bool, castShadows_, false, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Face Camera Mode", GetFaceCameraMode, SetFaceCameraMode, FaceCameraMode, faceCameraModeNames, FC_ROTATE_XYZ, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Use Override Rotation", GetUseOverrideRotation, SetUseOverrideRotation, bool, false, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Override Rotation", GetOverrideRotation, SetOverrideRotation, Quaternion, Quaternion::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Min Angle", GetMinAngle, SetMinAngle, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Shadow Distance", GetShadowDistance, SetShadowDistance, float, 0.0f, AM_DEFAULT);
@@ -236,10 +238,19 @@ void BillboardSet::UpdateGeometry(const FrameInfo& frame)
         CalculateFixedScreenSize(frame);
 
     // If using camera facing, re-update the rotation for the current view now
-    if (faceCameraMode_ != FC_NONE && faceCameraMode_ != FC_AXIS_ANGLE)
+    if (useOverrideRotation_)
     {
-        transforms_[1] = Matrix3x4(Vector3::ZERO, frame.camera_->GetFaceCameraRotation(node_->GetWorldPosition(),
-            node_->GetWorldRotation(), faceCameraMode_, minAngle_), Vector3::ONE);
+        transforms_[1] = Matrix3x4(Vector3::ZERO, overrideRotation_, Vector3::ONE);
+    }
+    else
+    {
+        if (faceCameraMode_ != FC_NONE && faceCameraMode_ != FC_AXIS_ANGLE)
+        {
+            transforms_[1] = Matrix3x4(Vector3::ZERO,
+                frame.camera_->GetFaceCameraRotation(
+                    node_->GetWorldPosition(), node_->GetWorldRotation(), faceCameraMode_, minAngle_),
+                Vector3::ONE);
+        }
     }
 
     if (bufferSizeDirty_ || indexBuffer_->IsDataLost())
@@ -341,6 +352,18 @@ void BillboardSet::SetFaceCameraMode(FaceCameraMode mode)
         faceCameraMode_ = mode;
         MarkNetworkUpdate();
     }
+}
+
+void BillboardSet::SetUseOverrideRotation(bool enable)
+{
+    useOverrideRotation_ = enable;
+    MarkNetworkUpdate();
+}
+
+void BillboardSet::SetOverrideRotation(Quaternion rotation)
+{
+    overrideRotation_ = rotation;
+    MarkNetworkUpdate();
 }
 
 void BillboardSet::SetMinAngle(float angle)
