@@ -23,11 +23,7 @@
 
 #include "AdvancedNetworkingUI.h"
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Graphics/AnimationController.h>
-#include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/Network.h>
-#include <Urho3D/Replica/PredictedKinematicController.h>
 #include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/Scene/Scene.h>
 

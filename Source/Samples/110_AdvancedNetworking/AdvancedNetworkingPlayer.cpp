@@ -30,10 +30,9 @@
 #include <Urho3D/Replica/ReplicatedTransform.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
-using namespace  Urho3D;
-
-namespace 
+namespace
 {
+
 /// Return shortest angle between two angles.
 float ShortestAngle(float lhs, float rhs)
 {
@@ -66,7 +65,6 @@ AdvancedNetworkingPlayer::AdvancedNetworkingPlayer(Context* context)
     };
 }
 
-  /// Initialize component on the server.
 void AdvancedNetworkingPlayer::InitializeOnServer()
 {
     BaseClassName::InitializeOnServer();
@@ -78,7 +76,6 @@ void AdvancedNetworkingPlayer::InitializeOnServer()
     animatedModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
 }
 
-/// Initialize component on the client.
 void AdvancedNetworkingPlayer::InitializeFromSnapshot(
     Urho3D::NetworkFrame frame, Urho3D::Deserializer& src, bool isOwned)
 {
@@ -101,7 +98,6 @@ void AdvancedNetworkingPlayer::InitializeFromSnapshot(
     rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
 }
 
-/// Always send animation updates for simplicity.
 bool AdvancedNetworkingPlayer::PrepareUnreliableDelta(NetworkFrame frame)
 {
     BaseClassName::PrepareUnreliableDelta(frame);
@@ -109,7 +105,6 @@ bool AdvancedNetworkingPlayer::PrepareUnreliableDelta(NetworkFrame frame)
     return true;
 }
 
-/// Write current animation state and rotation on server.
 void AdvancedNetworkingPlayer::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
 {
     BaseClassName::WriteUnreliableDelta(frame, dest);
@@ -122,7 +117,6 @@ void AdvancedNetworkingPlayer::WriteUnreliableDelta(NetworkFrame frame, Serializ
     dest.WriteQuaternion(node_->GetWorldRotation());
 }
 
-/// Read current animation state on replicating client.
 void AdvancedNetworkingPlayer::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
 {
     BaseClassName::ReadUnreliableDelta(frame, src);
@@ -135,7 +129,6 @@ void AdvancedNetworkingPlayer::ReadUnreliableDelta(NetworkFrame frame, Deseriali
     rotationTrace_.Set(frame, rotation);
 }
 
-/// Perform interpolation of received data on replicated client.
 void AdvancedNetworkingPlayer::InterpolateState(
     float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {

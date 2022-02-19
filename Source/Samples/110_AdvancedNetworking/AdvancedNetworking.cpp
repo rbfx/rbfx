@@ -59,7 +59,7 @@
 #include "AdvancedNetworking.h"
 #include "AdvancedNetworkingPlayer.h"
 #include "AdvancedNetworkingUI.h"
-#include "ServerRaycastInfo.h"
+#include "AdvancedNetworkingRaycast.h"
 
 #include <Urho3D/DebugNew.h>
 
@@ -68,22 +68,6 @@ static constexpr float CAMERA_OFFSET = 2.0f;
 static constexpr float WALK_VELOCITY = 3.35f;
 static constexpr float HIT_DISTANCE = 100.0f;
 static constexpr float AUTO_MOVEMENT_DURATION = 1.0f;
-
-URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYCAST, AdvancedNetworkingRaycast)
-{
-    URHO3D_PARAM(P_ORIGIN, Origin);
-    URHO3D_PARAM(P_TARGET, Target);
-    URHO3D_PARAM(P_REPLICA_FRAME, ReplicaFrame);
-    URHO3D_PARAM(P_REPLICA_SUBFRAME, ReplicaSubFrame);
-    URHO3D_PARAM(P_INPUT_FRAME, InputFrame);
-    URHO3D_PARAM(P_INPUT_SUBFRAME, InputSubFrame);
-}
-
-URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYHIT, AdvancedNetworkingRayhit)
-{
-    URHO3D_PARAM(P_ORIGIN, Origin);
-    URHO3D_PARAM(P_POSITION, Position);
-}
 
 AdvancedNetworking::AdvancedNetworking(Context* context) :
     Sample(context)

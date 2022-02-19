@@ -23,9 +23,8 @@
 
 #pragma once
 
-
 #include "Sample.h"
-#include "ServerRaycastInfo.h"
+#include "AdvancedNetworkingRaycast.h"
 
 #include <Urho3D/Network/Connection.h>
 

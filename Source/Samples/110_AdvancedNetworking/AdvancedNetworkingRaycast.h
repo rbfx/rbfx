@@ -23,16 +23,10 @@
 
 #pragma once
 
-
-#include "Sample.h"
-
 #include <Urho3D/Network/Connection.h>
 #include <Urho3D/Replica/NetworkTime.h>
-#include <Urho3D/RmlUI/RmlUIComponent.h>
 
-#include <RmlUi/Core/DataModelHandle.h>
-
-#include <EASTL/optional.h>
+using namespace Urho3D;
 
 /// Server-side raycast info to be processed.
 struct ServerRaycastInfo
@@ -43,5 +37,21 @@ struct ServerRaycastInfo
     NetworkTime replicaTime_;
     NetworkTime inputTime_;
 };
+
+URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYCAST, AdvancedNetworkingRaycast)
+{
+    URHO3D_PARAM(P_ORIGIN, Origin);
+    URHO3D_PARAM(P_TARGET, Target);
+    URHO3D_PARAM(P_REPLICA_FRAME, ReplicaFrame);
+    URHO3D_PARAM(P_REPLICA_SUBFRAME, ReplicaSubFrame);
+    URHO3D_PARAM(P_INPUT_FRAME, InputFrame);
+    URHO3D_PARAM(P_INPUT_SUBFRAME, InputSubFrame);
+}
+
+URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYHIT, AdvancedNetworkingRayhit)
+{
+    URHO3D_PARAM(P_ORIGIN, Origin);
+    URHO3D_PARAM(P_POSITION, Position);
+}
 
 

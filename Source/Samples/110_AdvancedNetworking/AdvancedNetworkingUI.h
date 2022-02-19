@@ -23,26 +23,12 @@
 
 #pragma once
 
-#include "Sample.h"
-
 #include <Urho3D/Network/Connection.h>
-#include <Urho3D/Replica/NetworkTime.h>
 #include <Urho3D/RmlUI/RmlUIComponent.h>
 
 #include <RmlUi/Core/DataModelHandle.h>
 
-namespace Urho3D
-{
-
-class Button;
-class Connection;
-class NetworkObject;
-class Scene;
-class Text;
-class UIElement;
-
-}
-
+using namespace Urho3D;
 
 /// UI widget to manage server and client settings.
 class AdvancedNetworkingUI : public RmlUIComponent

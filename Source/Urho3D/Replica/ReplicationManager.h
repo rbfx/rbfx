@@ -52,6 +52,7 @@ class URHO3D_API NetworkObjectRegistry : public ReferencedComponentRegistryBase
 public:
     Signal<void(NetworkObject*)> OnNetworkObjectAdded;
     Signal<void(NetworkObject*)> OnNetworkObjectRemoved;
+    using NetworkObjectSpan = TransformedSpan<TrackedComponentBase* const, NetworkObject* const, StaticCaster<NetworkObject* const>>;
 
     explicit NetworkObjectRegistry(Context* context);
 
@@ -67,11 +68,7 @@ public:
     void GetSortedNetworkObjects(ea::vector<NetworkObject*>& networkObjects) const;
     /// @}
 
-    TransformedSpan<TrackedComponentBase* const, NetworkObject* const, StaticCaster<NetworkObject* const>>
-    GetNetworkObjects() const
-    {
-        return StaticCastSpan<NetworkObject* const>(GetTrackedComponents());
-    }
+    NetworkObjectSpan GetNetworkObjects() const { return StaticCastSpan<NetworkObject* const>(GetTrackedComponents()); }
     unsigned GetNetworkIndexUpperBound() const { return GetReferenceIndexUpperBound(); }
     NetworkObject* GetNetworkObject(NetworkId networkId, bool checkVersion = true) const;
     NetworkObject* GetNetworkObjectByIndex(unsigned networkIndex) const;
