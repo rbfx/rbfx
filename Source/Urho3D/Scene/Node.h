@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -403,6 +403,9 @@ public:
     /// Return direct child of this node which contains specified indirect child.
     Node* GetDirectChildFor(Node* indirectChild) const;
 
+    /// Return whether the node is the root of the transform hierarchy. If true, local transform and world transform are the same.
+    bool IsTransformHierarchyRoot() const;
+
     /// Return whether is enabled. Disables nodes effectively disable all their components.
     /// @property
     bool IsEnabled() const { return enabled_; }
@@ -676,7 +679,7 @@ public:
         CreateMode mode = REPLICATED);
     /// Load components from XML data and optionally load child nodes.
     bool LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
-        CreateMode mode = REPLICATED);
+        CreateMode mode = REPLICATED, bool removeComponents = true);
     /// Load components from XML data and optionally load child nodes.
     bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
         CreateMode mode = REPLICATED);

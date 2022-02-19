@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,9 +37,9 @@ const Quaternion Quaternion::ZERO{ 0.0f, 0.0f, 0.0f, 0.0f };
 void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
 {
     Vector3 normAxis = axis.Normalized();
-    angle *= M_DEGTORAD_2;
-    float sinAngle = sinf(angle);
-    float cosAngle = cosf(angle);
+    float sinAngle;
+    float cosAngle;
+    SinCos(angle*0.5f, sinAngle, cosAngle);
 
     w_ = cosAngle;
     x_ = normAxis.x_ * sinAngle;
@@ -50,15 +50,15 @@ void Quaternion::FromAngleAxis(float angle, const Vector3& axis)
 void Quaternion::FromEulerAngles(float x, float y, float z)
 {
     // Order of rotations: Z first, then X, then Y (mimics typical FPS camera with gimbal lock at top/bottom)
-    x *= M_DEGTORAD_2;
-    y *= M_DEGTORAD_2;
-    z *= M_DEGTORAD_2;
-    float sinX = sinf(x);
-    float cosX = cosf(x);
-    float sinY = sinf(y);
-    float cosY = cosf(y);
-    float sinZ = sinf(z);
-    float cosZ = cosf(z);
+    float sinX;
+    float cosX;
+    float sinY;
+    float cosY;
+    float sinZ;
+    float cosZ;
+    SinCos(x * 0.5f, sinX, cosX);
+    SinCos(y * 0.5f, sinY, cosY);
+    SinCos(z * 0.5f, sinZ, cosZ);
 
     w_ = cosY * cosX * cosZ + sinY * sinX * sinZ;
     x_ = cosY * sinX * cosZ + sinY * cosX * sinZ;
@@ -175,6 +175,18 @@ bool Quaternion::FromLookRotation(const Vector3& direction, const Vector3& up)
         return false;
 }
 
+Quaternion Quaternion::FromAngularVelocity(const Vector3& angularVelocity)
+{
+    const float len2 = angularVelocity.LengthSquared();
+    if (len2 < M_EPSILON * M_EPSILON)
+        return Quaternion::IDENTITY;
+
+    const float len = sqrtf(len2);
+    const Vector3 direction = angularVelocity / len;
+    const float angle = len * M_RADTODEG;
+    return Quaternion{angle, direction};
+}
+
 Vector3 Quaternion::EulerAngles() const
 {
     // Derivation from http://www.geometrictools.com/Documentation/EulerAngles.pdf
@@ -224,12 +236,26 @@ float Quaternion::RollAngle() const
 
 Urho3D::Vector3 Quaternion::Axis() const
 {
-    return Vector3(x_, y_, z_) / sqrt(1. - w_ * w_);
+    float axisScaleInv = static_cast<float>(sqrt(Max(0.0f, 1.0f - w_ * w_)));
+    if (axisScaleInv < 1e-6f)
+        return Vector3::UP;
+    return Vector3(x_, y_, z_) / axisScaleInv;
 }
 
 float Quaternion::Angle() const
 {
     return 2 * Acos(w_);
+}
+
+Vector3 Quaternion::AngularVelocity() const
+{
+    const float axisScaleInv = sqrt(Max(0.0f, 1.0f - w_ * w_));
+    if (axisScaleInv < M_EPSILON)
+        return Vector3::ZERO;
+
+    const Vector3 axis = Vector3(x_, y_, z_) / axisScaleInv;
+    const float angleRad = 2 * acos(w_);
+    return axis * angleRad;
 }
 
 Matrix3 Quaternion::RotationMatrix() const

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -101,7 +101,7 @@ public:
     /// Set vertex blended color for start of trail.
     /// @property
     void SetStartColor(const Color& color);
-    /// Set vertex blended scale for end of trail.
+    /// Set vertex blended color for end of trail.
     /// @property
     void SetEndColor(const Color& color);
     /// Set vertex blended color for start of trail.

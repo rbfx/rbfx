@@ -42,6 +42,8 @@ public:
     bool RenderWindowContent() override;
     ///
     void SetProvider(IHierarchyProvider* provider);
+    ///
+    void OnUpdateFocused() override;
 
 protected:
     ea::pair<WeakPtr<RefCounted>, IHierarchyProvider*> provider_;

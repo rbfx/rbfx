@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,7 +50,7 @@ public:
     explicit SceneReplication(Context* context);
 
     /// Setup after engine initialization and before running the main loop.
-    void Start() override;
+    void Start(const ea::vector<ea::string>& args) override;
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
@@ -76,7 +76,7 @@ private:
     /// Update visibility of buttons according to connection and server status.
     void UpdateButtons();
     /// Create a controllable ball object and return its scene node.
-    Node* CreateControllableObject();
+    Node* CreateControllableObject(Connection* owner);
     /// Read input and move the camera.
     void MoveCamera();
     /// Handle the physics world pre-step event.

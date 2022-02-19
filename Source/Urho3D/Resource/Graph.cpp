@@ -50,6 +50,41 @@ void Graph::Clear()
     }
     nodes_.clear();
 }
+/// Connect exit pin to enter pin.
+void Graph::Connect(GraphPinRef<GraphExitPin> pin, GraphPinRef<GraphEnterPin> target) {
+
+}
+
+/// Connect input pin to output pin.
+void Graph::Connect(GraphPinRef<GraphInPin> pin, GraphPinRef<GraphOutPin> target) {
+    
+}
+
+/// Get pin connected to the exit pin.
+GraphPinRef<GraphEnterPin> Graph::GetConnectedPin(GraphExitPin& pin) const
+{
+    if (!pin.targetNode_)
+        return {};
+
+    if (auto target = GetNode(pin.targetNode_))
+    {
+        return target->GetEnter(pin.targetPin_);
+    }
+    return {};
+}
+
+/// Get pin connected to the input pin.
+GraphPinRef<GraphOutPin> Graph::GetConnectedPin(GraphInPin& pin) const
+{
+    if (!pin.targetNode_)
+        return {};
+
+    if (auto target = GetNode(pin.targetNode_))
+    {
+        return target->GetOutput(pin.targetPin_);
+    }
+    return {};
+}
 
 void Graph::GetNodeIds(ea::vector<unsigned>& ids) const
 {

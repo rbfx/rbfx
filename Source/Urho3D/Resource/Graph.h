@@ -27,6 +27,11 @@
 namespace Urho3D
 {
 class GraphNode;
+class GraphExitPin;
+class GraphEnterPin;
+class GraphInPin;
+class GraphOutPin;
+template <typename PinType> class GraphPinRef;
 
 /// Abstract graph to store connected nodes.
 class URHO3D_API Graph : public Object
@@ -73,6 +78,18 @@ public:
 
     /// Remove all nodes.
     void Clear();
+
+    /// Connect exit pin to enter pin.
+    void Connect(GraphPinRef<GraphExitPin> pin, GraphPinRef<GraphEnterPin> target);
+
+    /// Connect input pin to output pin.
+    void Connect(GraphPinRef<GraphInPin> pin, GraphPinRef<GraphOutPin> target);
+
+    /// Get pin connected to the exit pin.
+    GraphPinRef<GraphEnterPin> GetConnectedPin(GraphExitPin& pin) const;
+
+    /// Get pin connected to the input pin.
+    GraphPinRef<GraphOutPin> GetConnectedPin(GraphInPin& pin) const;
 
 private:
     /// Get free node ID.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,7 @@ KinematicCharacterController::KinematicCharacterController(Context* context)
     : Component(context)
 {
     pairCachingGhostObject_ = ea::make_unique<btPairCachingGhostObject>();
-    pairCachingGhostObject_->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+    pairCachingGhostObject_->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
 }
 
 KinematicCharacterController::~KinematicCharacterController()
@@ -85,16 +85,16 @@ void KinematicCharacterController::OnSetAttribute(const AttributeInfo& attr, con
 {
     Serializable::OnSetAttribute(attr, src);
 
-    reapplyAttributes_ = true;
+    readdToWorld_ = true;
 }
 
 void KinematicCharacterController::ApplyAttributes()
 {
     AddKinematicToWorld();
-    if (reapplyAttributes_)
+    if (readdToWorld_)
     {
         ApplySettings(true);
-        reapplyAttributes_ = false;
+        readdToWorld_ = false;
     }
 }
 
@@ -128,18 +128,50 @@ void KinematicCharacterController::OnSceneSet(Scene* scene)
         {
             AddKinematicToWorld();
         }
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPreUpdate));
         SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostUpdate));
     }
     else
     {
         RemoveKinematicFromWorld();
+        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPREUPDATE);
         UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTSTEP);
+        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTUPDATE);
+    }
+}
+
+void KinematicCharacterController::HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData)
+{
+    const Vector3 position = node_->GetWorldPosition();
+    if (!position.Equals(latestPosition_, M_LARGE_EPSILON))
+    {
+        WarpKinematic(position);
     }
 }
 
 void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData)
 {
-    node_->SetWorldPosition(GetPosition());
+    previousPosition_ = nextPosition_;
+    nextPosition_ = GetRawPosition();
+}
+
+void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData)
+{
+    if (physicsWorld_ && physicsWorld_->GetInterpolation())
+    {
+        const float timeStep = eventData[PhysicsPostUpdate::P_TIMESTEP].GetFloat();
+        const float overtime = eventData[PhysicsPostUpdate::P_OVERTIME].GetFloat();
+        const float updateFrequency = physicsWorld_->GetFps();
+        positionOffset_ = Lerp(positionOffset_, Vector3::ZERO, ExpSmoothing(smoothingConstant_, timeStep));
+        latestPosition_ = Lerp(previousPosition_, nextPosition_, overtime * updateFrequency) + positionOffset_;
+    }
+    else
+    {
+        latestPosition_ = nextPosition_;
+    }
+
+    node_->SetWorldPosition(latestPosition_);
 }
 
 btCapsuleShape* KinematicCharacterController::GetOrCreateShape()
@@ -177,7 +209,7 @@ void KinematicCharacterController::AddKinematicToWorld()
                                                        btColShape,
                                                        stepHeight_, ToBtVector3(Vector3::UP));
             // apply default settings
-            ApplySettings();
+            ApplySettings(false);
 
             btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
             phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
@@ -186,7 +218,7 @@ void KinematicCharacterController::AddKinematicToWorld()
     }
 }
 
-void KinematicCharacterController::ApplySettings(bool reapply)
+void KinematicCharacterController::ApplySettings(bool readdToWorld)
 {
     kinematicController_->setGravity(ToBtVector3(gravity_));
     kinematicController_->setLinearDamping(linearDamping_);
@@ -197,14 +229,14 @@ void KinematicCharacterController::ApplySettings(bool reapply)
     kinematicController_->setJumpSpeed(jumpSpeed_);
     kinematicController_->setFallSpeed(fallSpeed_);
 
-    if (reapply && pairCachingGhostObject_)
+    if (readdToWorld && pairCachingGhostObject_)
     {
         btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
         phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
         phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
     }
 
-    SetTransform(node_->GetWorldPosition(), node_->GetWorldRotation());
+    WarpKinematic(node_->GetWorldPosition());
 }
 
 void KinematicCharacterController::RemoveKinematicFromWorld()
@@ -260,32 +292,28 @@ void KinematicCharacterController::SetCollisionLayerAndMask(unsigned layer, unsi
     }
 }
 
-Vector3 KinematicCharacterController::GetPosition() const
+Vector3 KinematicCharacterController::GetRawPosition() const
 {
     btTransform t = pairCachingGhostObject_->getWorldTransform();
     return ToVector3(t.getOrigin()) - colShapeOffset_;
 }
 
-Quaternion KinematicCharacterController::GetRotation() const
+void KinematicCharacterController::AdjustRawPosition(const Vector3& offset, float smoothConstant)
 {
-    btTransform t = pairCachingGhostObject_->getWorldTransform();
-    return ToQuaternion(t.getRotation());
+    smoothingConstant_ = smoothConstant;
+    positionOffset_ -= offset;
+    WarpKinematic(GetRawPosition() + offset);
+    node_->SetWorldPosition(latestPosition_);
 }
 
-void KinematicCharacterController::SetTransform(const Vector3& position, const Quaternion& rotation)
+void KinematicCharacterController::WarpKinematic(const Vector3& position)
 {
-    btTransform worldTrans;
-    worldTrans.setIdentity();
-    worldTrans.setRotation(ToBtQuaternion(rotation));
-    worldTrans.setOrigin(ToBtVector3(position));
-    pairCachingGhostObject_->setWorldTransform(worldTrans);
-}
+    latestPosition_ = position + positionOffset_;
+    previousPosition_ = position;
+    nextPosition_ = position;
 
-void KinematicCharacterController::GetTransform(Vector3& position, Quaternion& rotation) const
-{
-    btTransform worldTrans = pairCachingGhostObject_->getWorldTransform();
-    rotation = ToQuaternion(worldTrans.getRotation());
-    position = ToVector3(worldTrans.getOrigin());
+    const btVector3 objectPosition = ToBtVector3(position + colShapeOffset_);
+    pairCachingGhostObject_->setWorldTransform(btTransform(btQuaternion::getIdentity(), objectPosition));
 }
 
 void KinematicCharacterController::SetLinearDamping(float linearDamping)
@@ -404,7 +432,7 @@ void KinematicCharacterController::SetMaxSlope(float maxSlope)
     }
 }
 
-void KinematicCharacterController::SetWalkDirection(const Vector3& walkDir)
+void KinematicCharacterController::SetWalkIncrement(const Vector3& walkDir)
 {
     kinematicController_->setWalkDirection(ToBtVector3(walkDir));
 }
@@ -447,11 +475,6 @@ void KinematicCharacterController::SetLinearVelocity(const Vector3 &velocity)
 const Vector3 KinematicCharacterController::GetLinearVelocity() const
 {
     return ToVector3(kinematicController_->getLinearVelocity());
-}
-
-void KinematicCharacterController::Warp(const Vector3 &position)
-{
-    kinematicController_->warp(ToBtVector3(position));
 }
 
 void KinematicCharacterController::DrawDebugGeometry()

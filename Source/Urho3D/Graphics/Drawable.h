@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -187,6 +187,8 @@ public:
 
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
+    /// Process raycast with custom transform.
+    void ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox, ea::vector<RayQueryResult>& results);
     /// Process octree raycast. May be called from a worker thread.
     virtual void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results);
     /// Update before octree reinsertion. Is called from a worker thread.

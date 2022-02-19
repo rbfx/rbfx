@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -77,18 +77,24 @@ void StaticModel::RegisterObject(Context* context)
 
 void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
+    ProcessCustomRayQuery(query, GetWorldBoundingBox(), node_->GetWorldTransform(), results);
+}
+
+void StaticModel::ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox,
+    const Matrix3x4& worldTransform, ea::vector<RayQueryResult>& results)
+{
     RayQueryLevel level = query.level_;
 
     switch (level)
     {
     case RAY_AABB:
-        Drawable::ProcessRayQuery(query, results);
+        Drawable::ProcessCustomRayQuery(query, worldBoundingBox, results);
         break;
 
     case RAY_OBB:
     case RAY_TRIANGLE:
     case RAY_TRIANGLE_UV:
-        Matrix3x4 inverse(node_->GetWorldTransform().Inverse());
+        Matrix3x4 inverse(worldTransform.Inverse());
         Ray localRay = query.ray_.Transformed(inverse);
         float distance = localRay.HitDistance(boundingBox_);
         Vector3 normal = -query.ray_.direction_;
@@ -110,7 +116,7 @@ void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQue
                     if (geometryDistance < query.maxDistance_ && geometryDistance < distance)
                     {
                         distance = geometryDistance;
-                        normal = (node_->GetWorldTransform() * Vector4(geometryNormal, 0.0f)).Normalized();
+                        normal = (worldTransform * Vector4(geometryNormal, 0.0f)).Normalized();
                         hitBatch = i;
                     }
                 }

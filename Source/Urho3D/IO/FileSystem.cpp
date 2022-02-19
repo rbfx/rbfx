@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,9 +47,6 @@
 #include <cstdio>
 
 #ifdef _WIN32
-#ifndef _MSC_VER
-#define _WIN32_IE 0x501
-#endif
 #include <windows.h>
 #include <shellapi.h>
 #include <direct.h>

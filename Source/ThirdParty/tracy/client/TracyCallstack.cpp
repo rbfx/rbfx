@@ -3,6 +3,7 @@
 #include <string.h>
 #include "TracyCallstack.hpp"
 #include "TracyFastVector.hpp"
+#include "TracyStringHelpers.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyStackFrames.hpp"
 #include "TracyDebug.hpp"
@@ -54,44 +55,6 @@ extern "C"
 namespace tracy
 {
 
-static inline char* CopyString( const char* src, size_t sz )
-{
-    assert( strlen( src ) == sz );
-    auto dst = (char*)tracy_malloc( sz + 1 );
-    memcpy( dst, src, sz );
-    dst[sz] = '\0';
-    return dst;
-}
-
-static inline char* CopyString( const char* src )
-{
-    const auto sz = strlen( src );
-    auto dst = (char*)tracy_malloc( sz + 1 );
-    memcpy( dst, src, sz );
-    dst[sz] = '\0';
-    return dst;
-}
-
-static inline char* CopyStringFast( const char* src, size_t sz )
-{
-    assert( strlen( src ) == sz );
-    auto dst = (char*)tracy_malloc_fast( sz + 1 );
-    memcpy( dst, src, sz );
-    dst[sz] = '\0';
-    return dst;
-}
-
-static inline char* CopyStringFast( const char* src )
-{
-    const auto sz = strlen( src );
-    auto dst = (char*)tracy_malloc_fast( sz + 1 );
-    memcpy( dst, src, sz );
-    dst[sz] = '\0';
-    return dst;
-}
-
-
-
 #if TRACY_HAS_CALLSTACK == 1
 
 enum { MaxCbTrace = 16 };
@@ -102,20 +65,19 @@ CallstackEntry cb_data[MaxCbTrace];
 
 extern "C"
 {
-    typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
     typedef DWORD (__stdcall *t_SymAddrIncludeInlineTrace)( HANDLE hProcess, DWORD64 Address );
     typedef BOOL (__stdcall *t_SymQueryInlineTrace)( HANDLE hProcess, DWORD64 StartAddress, DWORD StartContext, DWORD64 StartRetAddress, DWORD64 CurAddress, LPDWORD CurContext, LPDWORD CurFrameIndex );
     typedef BOOL (__stdcall *t_SymFromInlineContext)( HANDLE hProcess, DWORD64 Address, ULONG InlineContext, PDWORD64 Displacement, PSYMBOL_INFO Symbol );
     typedef BOOL (__stdcall *t_SymGetLineFromInlineContext)( HANDLE hProcess, DWORD64 qwAddr, ULONG InlineContext, DWORD64 qwModuleBaseAddress, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64 );
 
-    t_RtlWalkFrameChain RtlWalkFrameChain = 0;
+    TRACY_API ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChain = 0;
     t_SymAddrIncludeInlineTrace _SymAddrIncludeInlineTrace = 0;
     t_SymQueryInlineTrace _SymQueryInlineTrace = 0;
     t_SymFromInlineContext _SymFromInlineContext = 0;
     t_SymGetLineFromInlineContext _SymGetLineFromInlineContext = 0;
 }
 
-#ifndef __CYGWIN__
+
 struct ModuleCache
 {
     uint64_t start;
@@ -130,15 +92,16 @@ struct KernelDriver
 {
     uint64_t addr;
     const char* mod;
+    const char* path;
 };
 
 KernelDriver* s_krnlCache = nullptr;
 size_t s_krnlCacheCnt;
-#endif
+
 
 void InitCallstack()
 {
-    RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
+    ___tracy_RtlWalkFrameChain = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
     _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymAddrIncludeInlineTrace" );
     _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymQueryInlineTrace" );
     _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymFromInlineContext" );
@@ -152,7 +115,6 @@ void InitCallstack()
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 
-#ifndef __CYGWIN__
     DWORD needed;
     LPVOID dev[4096];
     if( EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0 )
@@ -174,7 +136,7 @@ void InitCallstack()
                 buf[0] = '<';
                 memcpy( buf+1, fn, len );
                 memcpy( buf+len+1, ">", 2 );
-                s_krnlCache[cnt++] = KernelDriver { (uint64_t)dev[i], buf };
+                s_krnlCache[cnt] = KernelDriver { (uint64_t)dev[i], buf };
 
                 const auto len = GetDeviceDriverFileNameA( dev[i], fn, sizeof( fn ) );
                 if( len != 0 )
@@ -190,7 +152,15 @@ void InitCallstack()
                     }
 
                     SymLoadModuleEx( GetCurrentProcess(), nullptr, path, nullptr, (DWORD64)dev[i], 0, nullptr, 0 );
+
+                    const auto psz = strlen( path );
+                    auto pptr = (char*)tracy_malloc_fast( psz+1 );
+                    memcpy( pptr, path, psz );
+                    pptr[psz] = '\0';
+                    s_krnlCache[cnt].path = pptr;
                 }
+
+                cnt++;
             }
         }
         s_krnlCacheCnt = cnt;
@@ -231,19 +201,10 @@ void InitCallstack()
             }
         }
     }
-#endif
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
 #endif
-}
-
-TRACY_API uintptr_t* CallTrace( int depth )
-{
-    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
-    const auto num = RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
-    *trace = num;
-    return trace;
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )
@@ -274,11 +235,19 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
-static const char* GetModuleName( uint64_t addr )
+const char* GetKernelModulePath( uint64_t addr )
+{
+    assert( addr >> 63 != 0 );
+    if( !s_krnlCache ) return nullptr;
+    auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
+    if( it == s_krnlCache + s_krnlCacheCnt ) return nullptr;
+    return it->path;
+}
+
+static const char* GetModuleNameAndPrepareSymbols( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {
-#ifndef __CYGWIN__
         if( s_krnlCache )
         {
             auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
@@ -287,11 +256,9 @@ static const char* GetModuleName( uint64_t addr )
                 return it->mod;
             }
         }
-#endif
         return "<kernel>";
     }
 
-#ifndef __CYGWIN__
     for( auto& v : *s_modCache )
     {
         if( addr >= v.start && addr < v.end )
@@ -320,6 +287,8 @@ static const char* GetModuleName( uint64_t addr )
                     const auto res = GetModuleFileNameA( mod[i], name, 1021 );
                     if( res > 0 )
                     {
+                        // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
+                        SymLoadModuleEx(proc, NULL, name, NULL, (DWORD64)info.lpBaseOfDll, info.SizeOfImage, NULL, 0);
                         auto ptr = name + res;
                         while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
                         if( ptr > name ) ptr++;
@@ -338,8 +307,6 @@ static const char* GetModuleName( uint64_t addr )
             }
         }
     }
-#endif
-
     return "[unknown]";
 }
 
@@ -353,26 +320,27 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     DBGHELP_LOCK;
 #endif
     const auto res = SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line );
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
-    if( res == 0 )
+    if( res == 0 || line.LineNumber >= 0xF00000 )
     {
         sym.file = "[unknown]";
         sym.line = 0;
+        sym.needFree = false;
     }
     else
     {
-        sym.file = line.FileName;
+        sym.file = CopyString( line.FileName );
         sym.line = line.LineNumber;
+        sym.needFree = true;
     }
-    sym.needFree = false;
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
+#endif
     return sym;
 }
 
 CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 {
-    CallstackSymbolData sym;
+    CallstackSymbolData sym = {};
     const auto proc = GetCurrentProcess();
     bool done = false;
 
@@ -400,8 +368,9 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
         {
             if( _SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) != 0 )
             {
-                sym.file = line.FileName;
+                sym.file = CopyString( line.FileName );
                 sym.line = line.LineNumber;
+                sym.needFree = true;
                 done = true;
 
                 if( _SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0 )
@@ -418,16 +387,19 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 #endif
     if( !done )
     {
-        if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
+        const auto res = SymGetLineFromAddr64( proc, ptr, &displacement, &line );
+        if( res == 0 || line.LineNumber >= 0xF00000 )
         {
             sym.file = "[unknown]";
             sym.line = 0;
             sym.symAddr = 0;
+            sym.needFree = false;
         }
         else
         {
-            sym.file = line.FileName;
+            sym.file = CopyString( line.FileName );
             sym.line = line.LineNumber;
+            sym.needFree = true;
 
             if( SymFromAddr( proc, ptr, nullptr, si ) != 0 )
             {
@@ -442,7 +414,6 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
 #endif
-    sym.needFree = false;
     return sym;
 }
 
@@ -455,6 +426,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
+
+    const auto moduleName = GetModuleNameAndPrepareSymbols(ptr);
+
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
     DWORD ctx = 0;
@@ -483,7 +457,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = MaxNameSize;
 
-    const auto moduleName = GetModuleName( ptr );
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
 
     IMAGEHLP_LINE64 line;
@@ -492,7 +465,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     {
         const char* filename;
-        if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
+        const auto res = SymGetLineFromAddr64( proc, ptr, &displacement, &line );
+        if( res == 0 || line.LineNumber >= 0xF00000 )
         {
             filename = "[unknown]";
             cb_data[write].line = 0;
@@ -561,6 +535,18 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
+
+extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len );
+
+#ifndef TRACY_DEMANGLE
+extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len )
+{
+    if( !mangled || mangled[0] != '_' ) return 0;
+    int status;
+    abi::__cxa_demangle( mangled, out, &len, &status );
+    return status == 0;
+}
+#endif
 
 enum { MaxCbTrace = 16 };
 
@@ -800,17 +786,7 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         {
             symname = dlinfo.dli_sname;
             symoff = (char*)pc - (char*)dlinfo.dli_saddr;
-
-            if( symname && symname[0] == '_' )
-            {
-                size_t len = DemangleBufLen;
-                int status;
-                abi::__cxa_demangle( symname, demangled, &len, &status );
-                if( status == 0 )
-                {
-                    symname = demangled;
-                }
-            }
+            if( ___tracy_demangle( symname, demangled, DemangleBufLen ) ) symname = demangled;
         }
 
         if( !symname ) symname = "[unknown]";
@@ -841,18 +817,9 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         {
             function = "[unknown]";
         }
-        else
+        else if( ___tracy_demangle( function, demangled, DemangleBufLen ) )
         {
-            if( function[0] == '_' )
-            {
-                size_t len = DemangleBufLen;
-                int status;
-                abi::__cxa_demangle( function, demangled, &len, &status );
-                if( status == 0 )
-                {
-                    function = demangled;
-                }
-            }
+            function = demangled;
         }
 
         cb_data[cb_num].name = CopyStringFast( function );
@@ -984,7 +951,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     static CallstackEntry cb;
     cb.line = 0;
 
-    char* demangled = nullptr;
+    enum { DemangleBufLen = 64*1024 };
+    char demangled[DemangleBufLen];
+
     const char* symname = nullptr;
     const char* symloc = nullptr;
     auto vptr = (void*)ptr;
@@ -998,17 +967,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         symname = dlinfo.dli_sname;
         symoff = (char*)ptr - (char*)dlinfo.dli_saddr;
         symaddr = dlinfo.dli_saddr;
-
-        if( symname && symname[0] == '_' )
-        {
-            size_t len = 0;
-            int status;
-            demangled = abi::__cxa_demangle( symname, nullptr, &len, &status );
-            if( status == 0 )
-            {
-                symname = demangled;
-            }
-        }
+        if( ___tracy_demangle( symname, demangled, DemangleBufLen ) ) symname = demangled;
     }
 
     if( !symname ) symname = "[unknown]";
@@ -1033,8 +992,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     cb.file = CopyString( "[unknown]" );
     cb.symLen = 0;
     cb.symAddr = (uint64_t)symaddr;
-
-    if( demangled ) free( demangled );
 
     return { &cb, 1, symloc };
 }

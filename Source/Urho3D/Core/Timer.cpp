@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,8 @@
 #include "../Core/Profiler.h"
 #include "../Core/Timer.h"
 
+#include <SDL/SDL_timer.h>
+
 #include <ctime>
 
 #ifdef _WIN32
@@ -42,10 +44,6 @@
 
 namespace Urho3D
 {
-
-URHO3D_EVENT(E_ENDFRAMEPRIVATE, EndFramePrivate)
-{
-}
 
 bool HiresTimer::supported(false);
 long long HiresTimer::frequency(1000);
@@ -76,14 +74,10 @@ Time::~Time()
 
 static unsigned Tick()
 {
-#ifdef _WIN32
-    return (unsigned)GetTickCount();
-#elif __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
     return (unsigned)emscripten_get_now();
 #else
-    struct timeval time{};
-    gettimeofday(&time, nullptr);
-    return (unsigned)(time.tv_sec * 1000 + time.tv_usec / 1000);
+    return SDL_GetTicks();
 #endif
 }
 
@@ -100,7 +94,7 @@ static long long HiresTick()
 #ifndef UWP
     }
     else
-        return GetTickCount();
+        return SDL_GetTicks();
 #endif
 #elif __EMSCRIPTEN__
     return (long long)(emscripten_get_now()*1000.0);

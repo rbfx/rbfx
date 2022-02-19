@@ -23,11 +23,6 @@
 # Set CMake minimum version. Also set in android/build.gradle for android projects.
 cmake_minimum_required (VERSION 3.14)
 
-# https://cmake.org/cmake/help/v3.18/policy/CMP0077.html
-# Note that cmake_minimum_required() + project() resets policies, so dependencies using lower CMake version would not
-# properly accept options before we add_subdirectory() them without setting this policy to NEW __in their build script__.
-cmake_policy(SET CMP0077 NEW)
-
 # Set C++ standard
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 17)
@@ -417,6 +412,7 @@ endif ()
 message(STATUS "  Graphics        ${URHO3D_GRAPHICS_API}")
 message(STATUS "  SSE             ${URHO3D_SSE}")
 message(STATUS "  2D              ${URHO3D_URHO2D}")
+message(STATUS "  Physics2D       ${URHO3D_PHYSICS2D}")
 message(STATUS "  Glow            ${URHO3D_GLOW}")
 message(STATUS "  IK              ${URHO3D_IK}")
 message(STATUS "  Threading       ${URHO3D_THREADING}")
@@ -427,6 +423,7 @@ message(STATUS "  Samples         ${URHO3D_SAMPLES}")
 message(STATUS "  Testing         ${URHO3D_TESTING}")
 message(STATUS "  WebP            ${URHO3D_WEBP}")
 message(STATUS "  RmlUI           ${URHO3D_RMLUI}")
+message(STATUS "  Particle Graph  ${URHO3D_PARTICLE_GRAPH}")
 message(STATUS "  CSharp          ${URHO3D_CSHARP}")
 if (URHO3D_CSHARP)
     message(STATUS "    Targeting:    ${URHO3D_NETFX}")

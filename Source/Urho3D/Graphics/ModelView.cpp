@@ -387,7 +387,7 @@ void NormalizeModelVertexMorphVector(ModelVertexMorphVector& morphVector)
     morphVector.erase(ea::unique(morphVector.begin(), morphVector.end(), isEqual), morphVector.end());
 
     // Remove empty elements
-    morphVector.erase(ea::remove_if(morphVector.begin(), morphVector.end(), isEmpty), morphVector.end());
+    ea::erase_if(morphVector, isEmpty);
 }
 
 void ModelVertexFormat::MergeFrom(const ModelVertexFormat& rhs)

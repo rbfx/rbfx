@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ class IndexBuffer;
 class VertexBuffer;
 
 /// One billboard in the billboard set.
-/// @fakeref
+/// @nocount
 struct URHO3D_API Billboard
 {
     /// Instance equality operator.
@@ -178,6 +178,8 @@ public:
     VariantVector GetBillboardsAttr() const;
     /// Return billboards attribute for network replication.
     const ea::vector<unsigned char>& GetNetBillboardsAttr() const;
+    /// Return FaceCameraMode enum value names.
+    static const char** GetFaceCameraModeNames();
 
 protected:
     /// Recalculate the world-space bounding box.
@@ -209,6 +211,12 @@ private:
     void UpdateBufferSize();
     /// Rewrite billboard vertex buffer.
     void UpdateVertexBuffer(const FrameInfo& frame);
+    ///
+    void BuildDefaultVertexBuffer(unsigned enabledBillboards, float* dest, const Vector3& billboardScale);
+    ///
+    void BuildDirectionVertexBuffer(unsigned enabledBillboards, float* dest, const Vector3& billboardScale);
+    ///
+    void BuildAxisAngleVertexBuffer(unsigned enabledBillboards, float* dest, const Vector3& billboardScale);
     /// Calculate billboard scale factors in fixed screen size mode.
     void CalculateFixedScreenSize(const FrameInfo& frame);
 

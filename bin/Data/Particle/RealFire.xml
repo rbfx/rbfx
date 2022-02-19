@@ -1,0 +1,2160 @@
+<particleGraphEffect>
+<layers>
+<layer type="ParticleGraphLayer" capacity="20" timeScale="1" duration="1" loop="True">
+<emit>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="10" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStepScale">
+			<in>
+				<pin name="x" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="3" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="4" name="BurstTimer">
+			<properties>
+				<property name="Delay" type="Float" value="0" />
+				<property name="Interval" type="Float" value="0.01" />
+				<property name="Cycles" type="Int" value="1" />
+			</properties>
+			<in>
+				<pin name="count" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="Add">
+			<in>
+				<pin name="x" node="2" pin="out" />
+				<pin name="y" node="4" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="6" name="Emit">
+			<in>
+				<pin name="count" type="Float" node="5" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</emit>
+<init>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Random">
+			<properties>
+				<property name="Min" type="Float" value="0" />
+				<property name="Max" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="rnd" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1.2" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="7" name="Lerp">
+			<in>
+				<pin name="x" node="5" pin="out" />
+				<pin name="y" node="6" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="8" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="7" pin="out" />
+			</in>
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="9" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="360" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="10" name="Lerp">
+			<in>
+				<pin name="x" node="1" pin="out" />
+				<pin name="y" node="9" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="11" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="10" pin="out" />
+			</in>
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="12" name="Cone">
+			<properties>
+				<property name="Radius" type="Float" value="0.6" />
+				<property name="Radius Thickness" type="Float" value="1" />
+				<property name="Angle" type="Float" value="10.96718" />
+				<property name="Length" type="Float" value="5" />
+				<property name="Translation" type="Vector3" value="0 0 0" />
+				<property name="Rotation" type="Quaternion" value="0.7071068 -0.7071068 0 0" />
+				<property name="Scale" type="Vector3" value="1 1 1" />
+				<property name="From" type="Int" value="0" />
+			</properties>
+			<out>
+				<pin name="position" type="Vector3" />
+				<pin name="velocity" type="Vector3" />
+			</out>
+		</node>
+		<node id="13" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="12" pin="position" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="14" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="2" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="15" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1.5" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="16" name="Lerp">
+			<in>
+				<pin name="x" node="14" pin="out" />
+				<pin name="y" node="15" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="17" name="Multiply">
+			<in>
+				<pin name="x" node="16" pin="out" />
+				<pin name="y" node="12" pin="velocity" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="18" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="17" pin="out" />
+			</in>
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="19" name="Constant">
+			<properties>
+				<property name="Value" type="Vector3" value="0 0 0" />
+			</properties>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="20" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="19" pin="out" />
+			</in>
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="21" name="Constant">
+			<properties>
+				<property name="Value" type="Color" value="1 1 1 1" />
+			</properties>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="22" name="SetAttribute">
+			<in>
+				<pin name="" type="Color" node="21" pin="out" />
+			</in>
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="23" name="Lerp">
+			<in>
+				<pin name="x" node="14" pin="out" />
+				<pin name="y" node="15" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="24" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="23" pin="out" />
+			</in>
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+	</nodes>
+</init>
+<update>
+	<nodes>
+		<node id="1" name="GetAttribute">
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStep">
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Add">
+			<in>
+				<pin name="x" node="1" pin="time" />
+				<pin name="y" node="2" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="GetAttribute">
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Expire">
+			<in>
+				<pin name="time" node="4" pin="time" />
+				<pin name="lifetime" node="5" pin="lifetime" />
+			</in>
+		</node>
+		<node id="7" name="GetAttribute">
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="8" name="GetAttribute">
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="9" name="GetAttribute">
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="10" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="11" name="GetAttribute">
+			<out>
+				<pin name="rnd" type="Float" />
+			</out>
+		</node>
+		<node id="12" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0.1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="13" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0.2" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="14" name="Lerp">
+			<in>
+				<pin name="x" node="12" pin="out" />
+				<pin name="y" node="13" pin="out" />
+				<pin name="t" type="Float" node="11" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="15" name="Make">
+			<in>
+				<pin name="x" type="Float" node="10" pin="out" />
+				<pin name="y" type="Float" node="14" pin="out" />
+				<pin name="z" type="Float" node="10" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="16" name="Constant">
+			<properties>
+				<property name="Value" type="Vector3" value="0 0 0" />
+			</properties>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="17" name="Add">
+			<in>
+				<pin name="x" node="15" pin="out" />
+				<pin name="y" node="16" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="18" name="Add">
+			<in>
+				<pin name="x" node="17" pin="out" />
+				<pin name="y" node="16" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="19" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="20" name="Multiply">
+			<in>
+				<pin name="x" node="18" pin="out" />
+				<pin name="y" node="19" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="21" name="Subtract">
+			<in>
+				<pin name="x" node="20" pin="out" />
+				<pin name="y" node="9" pin="prevVel" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="22" name="Add">
+			<in>
+				<pin name="x" node="8" pin="vel" />
+				<pin name="y" node="21" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="23" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="20" pin="out" />
+			</in>
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="24" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="22" pin="out" />
+			</in>
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="25" name="Move">
+			<in>
+				<pin name="position" type="Vector3" node="7" pin="pos" />
+				<pin name="velocity" type="Vector3" node="24" pin="vel" />
+			</in>
+			<out>
+				<pin name="newPosition" type="Vector3" />
+			</out>
+		</node>
+		<node id="26" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="25" pin="newPosition" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="27" name="GetAttribute">
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="28" name="Divide">
+			<in>
+				<pin name="x" node="4" pin="time" />
+				<pin name="y" type="Float" node="5" pin="lifetime" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="29" name="Curve">
+			<properties>
+				<property name="Curve" type="VariantCurve">
+					<value name="" type="Color" interpolation="linear" splineTension="0.5"><keyframes>
+					<keyframe time="0" value="0 0 0 0" />
+					<keyframe time="0.1647059" value="1 1 1 1" />
+					<keyframe time="0.8294194" value="1 1 1 1" />
+					<keyframe time="1" value="0 0 0 0" /></keyframes>
+					</value>
+				</property>
+			</properties>
+			<in>
+				<pin name="t" type="Float" node="28" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="30" name="Multiply">
+			<in>
+				<pin name="x" node="27" pin="color" />
+				<pin name="y" node="29" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="31" name="GetAttribute">
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+		<node id="32" name="Curve">
+			<properties>
+				<property name="Curve" type="VariantCurve">
+					<value name="" type="Float" interpolation="linear" splineTension="0.5"><keyframes>
+					<keyframe time="0" value="0.2862701" />
+					<keyframe time="1" value="1" /></keyframes>
+					</value>
+				</property>
+			</properties>
+			<in>
+				<pin name="t" type="Float" node="28" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="33" name="Multiply">
+			<in>
+				<pin name="x" node="31" pin="size" />
+				<pin name="y" node="32" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="34" name="Make">
+			<in>
+				<pin name="x" type="Float" node="33" pin="out" />
+				<pin name="y" type="Float" node="33" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Vector2" />
+			</out>
+		</node>
+		<node id="35" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="64" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="36" name="Multiply">
+			<in>
+				<pin name="x" node="28" pin="out" />
+				<pin name="y" node="35" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="37" name="Constant">
+			<properties>
+				<property name="Value" type="Vector3" value="0 1 0" />
+			</properties>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="38" name="GetAttribute">
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="39" name="RenderBillboard">
+			<properties>
+				<property name="Material" type="ResourceRef" value="Material;Materials/RealFire/Fire.xml" />
+				<property name="Rows" type="Int" value="8" />
+				<property name="Columns" type="Int" value="8" />
+				<property name="Face Camera Mode" type="Int" value="1" />
+				<property name="Sort By Distance" type="Bool" value="True" />
+				<property name="Is Worldspace" type="Bool" value="False" />
+			</properties>
+			<in>
+				<pin name="pos" type="Vector3" node="26" pin="pos" />
+				<pin name="size" type="Vector2" node="34" pin="out" />
+				<pin name="frame" type="Float" node="36" pin="out" />
+				<pin name="color" type="Color" node="30" pin="out" />
+				<pin name="rotation" type="Float" node="38" pin="rotation" />
+				<pin name="direction" type="Vector3" node="37" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</update>
+</layer>
+<layer type="ParticleGraphLayer" capacity="100" timeScale="1" duration="1" loop="True">
+<emit>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="15" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStepScale">
+			<in>
+				<pin name="x" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="3" name="Emit">
+			<in>
+				<pin name="count" type="Float" node="2" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</emit>
+<init>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Random">
+			<properties>
+				<property name="Min" type="Float" value="0" />
+				<property name="Max" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="rnd" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="3" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="4" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="7" name="Lerp">
+			<in>
+				<pin name="x" node="5" pin="out" />
+				<pin name="y" node="6" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="8" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="7" pin="out" />
+			</in>
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="9" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="360" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="10" name="Lerp">
+			<in>
+				<pin name="x" node="1" pin="out" />
+				<pin name="y" node="9" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="11" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="10" pin="out" />
+			</in>
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="12" name="Cone">
+			<properties>
+				<property name="Radius" type="Float" value="0.5" />
+				<property name="Radius Thickness" type="Float" value="1" />
+				<property name="Angle" type="Float" value="11.72583" />
+				<property name="Length" type="Float" value="2.47" />
+				<property name="Translation" type="Vector3" value="0 0.5 0" />
+				<property name="Rotation" type="Quaternion" value="0.7071068 -0.7071068 0 0" />
+				<property name="Scale" type="Vector3" value="1 1 1" />
+				<property name="From" type="Int" value="1" />
+			</properties>
+			<out>
+				<pin name="position" type="Vector3" />
+				<pin name="velocity" type="Vector3" />
+			</out>
+		</node>
+		<node id="13" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="12" pin="position" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="14" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1.5" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="15" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="16" name="Lerp">
+			<in>
+				<pin name="x" node="14" pin="out" />
+				<pin name="y" node="15" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="17" name="Multiply">
+			<in>
+				<pin name="x" node="16" pin="out" />
+				<pin name="y" node="12" pin="velocity" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="18" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="17" pin="out" />
+			</in>
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="19" name="Constant">
+			<properties>
+				<property name="Value" type="Vector3" value="0 0 0" />
+			</properties>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="20" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="19" pin="out" />
+			</in>
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="21" name="Constant">
+			<properties>
+				<property name="Value" type="Color" value="1 1 1 0.6352941" />
+			</properties>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="22" name="SetAttribute">
+			<in>
+				<pin name="" type="Color" node="21" pin="out" />
+			</in>
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="23" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="3.5" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="24" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="5" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="25" name="Lerp">
+			<in>
+				<pin name="x" node="23" pin="out" />
+				<pin name="y" node="24" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="26" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="25" pin="out" />
+			</in>
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+	</nodes>
+</init>
+<update>
+	<nodes>
+		<node id="1" name="GetAttribute">
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStep">
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Add">
+			<in>
+				<pin name="x" node="1" pin="time" />
+				<pin name="y" node="2" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="GetAttribute">
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Expire">
+			<in>
+				<pin name="time" node="4" pin="time" />
+				<pin name="lifetime" node="5" pin="lifetime" />
+			</in>
+		</node>
+		<node id="7" name="GetAttribute">
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="8" name="GetAttribute">
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="9" name="GetAttribute">
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="10" name="CurlNoise3D">
+			<in>
+				<pin name="x" type="Vector3" node="7" pin="pos" />
+			</in>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="11" name="Add">
+			<in>
+				<pin name="x" node="8" pin="vel" />
+				<pin name="y" node="10" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="12" name="Subtract">
+			<in>
+				<pin name="x" node="10" pin="out" />
+				<pin name="y" node="9" pin="prevVel" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="13" name="Add">
+			<in>
+				<pin name="x" node="11" pin="out" />
+				<pin name="y" node="12" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="14" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="10" pin="out" />
+			</in>
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="15" name="GetAttribute">
+			<out>
+				<pin name="rnd" type="Float" />
+			</out>
+		</node>
+		<node id="16" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="17" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0.2" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="18" name="Lerp">
+			<in>
+				<pin name="x" node="16" pin="out" />
+				<pin name="y" node="17" pin="out" />
+				<pin name="t" type="Float" node="15" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="19" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="20" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0.5" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="21" name="Lerp">
+			<in>
+				<pin name="x" node="19" pin="out" />
+				<pin name="y" node="20" pin="out" />
+				<pin name="t" type="Float" node="15" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="22" name="Lerp">
+			<in>
+				<pin name="x" node="16" pin="out" />
+				<pin name="y" node="17" pin="out" />
+				<pin name="t" type="Float" node="15" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="23" name="Make">
+			<in>
+				<pin name="x" type="Float" node="18" pin="out" />
+				<pin name="y" type="Float" node="21" pin="out" />
+				<pin name="z" type="Float" node="22" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="24" name="ApplyForce">
+			<in>
+				<pin name="velocity" type="Vector3" node="13" pin="out" />
+				<pin name="force" type="Vector3" node="23" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="25" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="24" pin="out" />
+			</in>
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="26" name="Move">
+			<in>
+				<pin name="position" type="Vector3" node="7" pin="pos" />
+				<pin name="velocity" type="Vector3" node="25" pin="vel" />
+			</in>
+			<out>
+				<pin name="newPosition" type="Vector3" />
+			</out>
+		</node>
+		<node id="27" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="26" pin="newPosition" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="28" name="GetAttribute">
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="29" name="Divide">
+			<in>
+				<pin name="x" node="4" pin="time" />
+				<pin name="y" type="Float" node="5" pin="lifetime" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="30" name="Curve">
+			<properties>
+				<property name="Curve" type="VariantCurve">
+					<value name="" type="Color" interpolation="linear" splineTension="0.5"><keyframes>
+					<keyframe time="0" value="0.9921569 0.4 0.1372549 0" />
+					<keyframe time="0.09706264" value="0.9921569 0.4 0.1372549 1" />
+					<keyframe time="0.2294194" value="0.9921569 0.4 0.1372549 1" />
+					<keyframe time="0.3235371" value="0.8941177 0.4039216 0.1882353 1" />
+					<keyframe time="0.7735256" value="0.4235294 0.4235294 0.4235294 0.3333333" />
+					<keyframe time="1" value="0.6509804 0.6509804 0.6509804 0" /></keyframes>
+					</value>
+				</property>
+			</properties>
+			<in>
+				<pin name="t" type="Float" node="29" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="31" name="Multiply">
+			<in>
+				<pin name="x" node="28" pin="color" />
+				<pin name="y" node="30" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="32" name="GetAttribute">
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+		<node id="33" name="Curve">
+			<properties>
+				<property name="Curve" type="VariantCurve">
+					<value name="" type="Float" interpolation="linear" splineTension="0.5"><keyframes>
+					<keyframe time="0" value="0.3320825" />
+					<keyframe time="0.7977028" value="0.9923668" /></keyframes>
+					</value>
+				</property>
+			</properties>
+			<in>
+				<pin name="t" type="Float" node="29" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="34" name="Multiply">
+			<in>
+				<pin name="x" node="32" pin="size" />
+				<pin name="y" node="33" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="35" name="Make">
+			<in>
+				<pin name="x" type="Float" node="34" pin="out" />
+				<pin name="y" type="Float" node="34" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Vector2" />
+			</out>
+		</node>
+		<node id="36" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="64" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="37" name="Multiply">
+			<in>
+				<pin name="x" node="29" pin="out" />
+				<pin name="y" node="36" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="38" name="Constant">
+			<properties>
+				<property name="Value" type="Vector3" value="0 1 0" />
+			</properties>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="39" name="GetAttribute">
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="40" name="RenderBillboard">
+			<properties>
+				<property name="Material" type="ResourceRef" value="Material;Materials/RealFire/Smoke.xml" />
+				<property name="Rows" type="Int" value="8" />
+				<property name="Columns" type="Int" value="8" />
+				<property name="Face Camera Mode" type="Int" value="1" />
+				<property name="Sort By Distance" type="Bool" value="True" />
+				<property name="Is Worldspace" type="Bool" value="False" />
+			</properties>
+			<in>
+				<pin name="pos" type="Vector3" node="27" pin="pos" />
+				<pin name="size" type="Vector2" node="35" pin="out" />
+				<pin name="frame" type="Float" node="37" pin="out" />
+				<pin name="color" type="Color" node="31" pin="out" />
+				<pin name="rotation" type="Float" node="39" pin="rotation" />
+				<pin name="direction" type="Vector3" node="38" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</update>
+</layer>
+<layer type="ParticleGraphLayer" capacity="300" timeScale="1.25" duration="1" loop="True">
+<emit>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="100" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStepScale">
+			<in>
+				<pin name="x" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="3" name="Emit">
+			<in>
+				<pin name="count" type="Float" node="2" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</emit>
+<init>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Random">
+			<properties>
+				<property name="Min" type="Float" value="0" />
+				<property name="Max" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="rnd" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="2" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="3" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="7" name="Lerp">
+			<in>
+				<pin name="x" node="5" pin="out" />
+				<pin name="y" node="6" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="8" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="7" pin="out" />
+			</in>
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="9" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="90" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="10" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="9" pin="out" />
+			</in>
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="11" name="Cone">
+			<properties>
+				<property name="Radius" type="Float" value="0.5789332" />
+				<property name="Radius Thickness" type="Float" value="1" />
+				<property name="Angle" type="Float" value="26.43781" />
+				<property name="Length" type="Float" value="0.85" />
+				<property name="Translation" type="Vector3" value="0 0 0" />
+				<property name="Rotation" type="Quaternion" value="0.7071068 -0.7071068 0 0" />
+				<property name="Scale" type="Vector3" value="1 1 1" />
+				<property name="From" type="Int" value="1" />
+			</properties>
+			<out>
+				<pin name="position" type="Vector3" />
+				<pin name="velocity" type="Vector3" />
+			</out>
+		</node>
+		<node id="12" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="11" pin="position" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="13" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="14" name="Lerp">
+			<in>
+				<pin name="x" node="13" pin="out" />
+				<pin name="y" node="5" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="15" name="Multiply">
+			<in>
+				<pin name="x" node="14" pin="out" />
+				<pin name="y" node="11" pin="velocity" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="16" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="15" pin="out" />
+			</in>
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="17" name="Constant">
+			<properties>
+				<property name="Value" type="Vector3" value="0 0 0" />
+			</properties>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="18" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="17" pin="out" />
+			</in>
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="19" name="Constant">
+			<properties>
+				<property name="Value" type="Color" value="1 0.3577148 0 1" />
+			</properties>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="20" name="SetAttribute">
+			<in>
+				<pin name="" type="Color" node="19" pin="out" />
+			</in>
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="21" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0.025" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="22" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0.0125" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="23" name="Lerp">
+			<in>
+				<pin name="x" node="21" pin="out" />
+				<pin name="y" node="22" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="24" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="23" pin="out" />
+			</in>
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+	</nodes>
+</init>
+<update>
+	<nodes>
+		<node id="1" name="GetAttribute">
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStep">
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Add">
+			<in>
+				<pin name="x" node="1" pin="time" />
+				<pin name="y" node="2" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="GetAttribute">
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Expire">
+			<in>
+				<pin name="time" node="4" pin="time" />
+				<pin name="lifetime" node="5" pin="lifetime" />
+			</in>
+		</node>
+		<node id="7" name="GetAttribute">
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="8" name="GetAttribute">
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="9" name="GetAttribute">
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="10" name="CurlNoise3D">
+			<in>
+				<pin name="x" type="Vector3" node="7" pin="pos" />
+			</in>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="11" name="Add">
+			<in>
+				<pin name="x" node="8" pin="vel" />
+				<pin name="y" node="10" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="12" name="Subtract">
+			<in>
+				<pin name="x" node="10" pin="out" />
+				<pin name="y" node="9" pin="prevVel" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="13" name="Add">
+			<in>
+				<pin name="x" node="11" pin="out" />
+				<pin name="y" node="12" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="14" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="10" pin="out" />
+			</in>
+			<out>
+				<pin name="prevVel" type="Vector3" />
+			</out>
+		</node>
+		<node id="15" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="13" pin="out" />
+			</in>
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="16" name="Move">
+			<in>
+				<pin name="position" type="Vector3" node="7" pin="pos" />
+				<pin name="velocity" type="Vector3" node="15" pin="vel" />
+			</in>
+			<out>
+				<pin name="newPosition" type="Vector3" />
+			</out>
+		</node>
+		<node id="17" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="16" pin="newPosition" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="18" name="GetAttribute">
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="19" name="Divide">
+			<in>
+				<pin name="x" node="4" pin="time" />
+				<pin name="y" type="Float" node="5" pin="lifetime" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="20" name="Curve">
+			<properties>
+				<property name="Curve" type="VariantCurve">
+					<value name="" type="Color" interpolation="linear" splineTension="0.5"><keyframes>
+					<keyframe time="0" value="0 0 0 0" />
+					<keyframe time="0.08235294" value="0.9921569 0.9490196 0.9176471 0.8745098" />
+					<keyframe time="0.09411765" value="0.9921569 0.945098 0.9058824 1" />
+					<keyframe time="0.802945" value="0.9333333 0.5137255 0.1960784 1" />
+					<keyframe time="0.8117647" value="0.8901961 0.4901961 0.1882353 1" />
+					<keyframe time="1" value="0 0 0 0" /></keyframes>
+					</value>
+				</property>
+			</properties>
+			<in>
+				<pin name="t" type="Float" node="19" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="21" name="Multiply">
+			<in>
+				<pin name="x" node="18" pin="color" />
+				<pin name="y" node="20" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="22" name="GetAttribute">
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+		<node id="23" name="Length">
+			<in>
+				<pin name="x" node="15" pin="vel" />
+			</in>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="24" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="25" name="Multiply">
+			<in>
+				<pin name="x" node="23" pin="out" />
+				<pin name="y" node="24" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="26" name="Add">
+			<in>
+				<pin name="x" node="25" pin="out" />
+				<pin name="y" node="24" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="27" name="Multiply">
+			<in>
+				<pin name="x" node="22" pin="size" />
+				<pin name="y" node="26" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="28" name="Make">
+			<in>
+				<pin name="x" type="Float" node="27" pin="out" />
+				<pin name="y" type="Float" node="22" pin="size" />
+			</in>
+			<out>
+				<pin name="out" type="Vector2" />
+			</out>
+		</node>
+		<node id="29" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="30" name="Multiply">
+			<in>
+				<pin name="x" node="19" pin="out" />
+				<pin name="y" node="29" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="31" name="Normalized">
+			<in>
+				<pin name="x" node="15" pin="vel" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="32" name="Negate">
+			<in>
+				<pin name="x" node="27" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="33" name="Multiply">
+			<in>
+				<pin name="x" node="31" pin="out" />
+				<pin name="y" node="32" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="34" name="Add">
+			<in>
+				<pin name="x" node="17" pin="pos" />
+				<pin name="y" node="33" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="35" name="GetAttribute">
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="36" name="RenderBillboard">
+			<properties>
+				<property name="Material" type="ResourceRef" value="Material;Materials/RealFire/Embers.xml" />
+				<property name="Rows" type="Int" value="0" />
+				<property name="Columns" type="Int" value="0" />
+				<property name="Face Camera Mode" type="Int" value="6" />
+				<property name="Sort By Distance" type="Bool" value="True" />
+				<property name="Is Worldspace" type="Bool" value="False" />
+			</properties>
+			<in>
+				<pin name="pos" type="Vector3" node="34" pin="out" />
+				<pin name="size" type="Vector2" node="28" pin="out" />
+				<pin name="frame" type="Float" node="30" pin="out" />
+				<pin name="color" type="Color" node="21" pin="out" />
+				<pin name="rotation" type="Float" node="35" pin="rotation" />
+				<pin name="direction" type="Vector3" node="31" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</update>
+</layer>
+<layer type="ParticleGraphLayer" capacity="32" timeScale="1" duration="1" loop="True">
+<emit>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="10" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStepScale">
+			<in>
+				<pin name="x" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="3" name="Emit">
+			<in>
+				<pin name="count" type="Float" node="2" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</emit>
+<init>
+	<nodes>
+		<node id="1" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="1" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Random">
+			<properties>
+				<property name="Min" type="Float" value="0" />
+				<property name="Max" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="rnd" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="2" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1.5" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="7" name="Lerp">
+			<in>
+				<pin name="x" node="5" pin="out" />
+				<pin name="y" node="6" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="8" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="7" pin="out" />
+			</in>
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="9" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="-360" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="10" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="360" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="11" name="Lerp">
+			<in>
+				<pin name="x" node="9" pin="out" />
+				<pin name="y" node="10" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="12" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="11" pin="out" />
+			</in>
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="13" name="Cone">
+			<properties>
+				<property name="Radius" type="Float" value="0.5" />
+				<property name="Radius Thickness" type="Float" value="1" />
+				<property name="Angle" type="Float" value="8" />
+				<property name="Length" type="Float" value="5" />
+				<property name="Translation" type="Vector3" value="0 0 0" />
+				<property name="Rotation" type="Quaternion" value="0.7071068 -0.7071068 0 0" />
+				<property name="Scale" type="Vector3" value="1 1 1" />
+				<property name="From" type="Int" value="0" />
+			</properties>
+			<out>
+				<pin name="position" type="Vector3" />
+				<pin name="velocity" type="Vector3" />
+			</out>
+		</node>
+		<node id="14" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="13" pin="position" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="15" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="1" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="16" name="Lerp">
+			<in>
+				<pin name="x" node="15" pin="out" />
+				<pin name="y" node="5" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="17" name="Multiply">
+			<in>
+				<pin name="x" node="16" pin="out" />
+				<pin name="y" node="13" pin="velocity" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="18" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="17" pin="out" />
+			</in>
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="19" name="Constant">
+			<properties>
+				<property name="Value" type="Color" value="1 1 1 1" />
+			</properties>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="20" name="SetAttribute">
+			<in>
+				<pin name="" type="Color" node="19" pin="out" />
+			</in>
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="21" name="Lerp">
+			<in>
+				<pin name="x" node="15" pin="out" />
+				<pin name="y" node="5" pin="out" />
+				<pin name="t" type="Float" node="4" pin="rnd" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="22" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="21" pin="out" />
+			</in>
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+	</nodes>
+</init>
+<update>
+	<nodes>
+		<node id="1" name="GetAttribute">
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="2" name="TimeStep">
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="3" name="Add">
+			<in>
+				<pin name="x" node="1" pin="time" />
+				<pin name="y" node="2" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="4" name="SetAttribute">
+			<in>
+				<pin name="" type="Float" node="3" pin="out" />
+			</in>
+			<out>
+				<pin name="time" type="Float" />
+			</out>
+		</node>
+		<node id="5" name="GetAttribute">
+			<out>
+				<pin name="lifetime" type="Float" />
+			</out>
+		</node>
+		<node id="6" name="Expire">
+			<in>
+				<pin name="time" node="4" pin="time" />
+				<pin name="lifetime" node="5" pin="lifetime" />
+			</in>
+		</node>
+		<node id="7" name="GetAttribute">
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="8" name="GetAttribute">
+			<out>
+				<pin name="vel" type="Vector3" />
+			</out>
+		</node>
+		<node id="9" name="Move">
+			<in>
+				<pin name="position" type="Vector3" node="7" pin="pos" />
+				<pin name="velocity" type="Vector3" node="8" pin="vel" />
+			</in>
+			<out>
+				<pin name="newPosition" type="Vector3" />
+			</out>
+		</node>
+		<node id="10" name="SetAttribute">
+			<in>
+				<pin name="" type="Vector3" node="9" pin="newPosition" />
+			</in>
+			<out>
+				<pin name="pos" type="Vector3" />
+			</out>
+		</node>
+		<node id="11" name="GetAttribute">
+			<out>
+				<pin name="color" type="Color" />
+			</out>
+		</node>
+		<node id="12" name="Divide">
+			<in>
+				<pin name="x" node="4" pin="time" />
+				<pin name="y" type="Float" node="5" pin="lifetime" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="13" name="Curve">
+			<properties>
+				<property name="Curve" type="VariantCurve">
+					<value name="" type="Color" interpolation="linear" splineTension="0.5"><keyframes>
+					<keyframe time="0" value="1 1 1 0" />
+					<keyframe time="0.2" value="1 1 1 1" />
+					<keyframe time="1" value="1 1 1 0" /></keyframes>
+					</value>
+				</property>
+			</properties>
+			<in>
+				<pin name="t" type="Float" node="12" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Color" />
+			</out>
+		</node>
+		<node id="14" name="Multiply">
+			<in>
+				<pin name="x" node="11" pin="color" />
+				<pin name="y" node="13" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="15" name="GetAttribute">
+			<out>
+				<pin name="size" type="Float" />
+			</out>
+		</node>
+		<node id="16" name="Curve">
+			<properties>
+				<property name="Curve" type="VariantCurve">
+					<value name="" type="Float" interpolation="linear" splineTension="0.5"><keyframes>
+					<keyframe time="0" value="0.2213745" />
+					<keyframe time="1" value="1" /></keyframes>
+					</value>
+				</property>
+			</properties>
+			<in>
+				<pin name="t" type="Float" node="12" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="17" name="Multiply">
+			<in>
+				<pin name="x" node="15" pin="size" />
+				<pin name="y" node="16" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="18" name="Make">
+			<in>
+				<pin name="x" type="Float" node="17" pin="out" />
+				<pin name="y" type="Float" node="17" pin="out" />
+			</in>
+			<out>
+				<pin name="out" type="Vector2" />
+			</out>
+		</node>
+		<node id="19" name="Constant">
+			<properties>
+				<property name="Value" type="Float" value="0" />
+			</properties>
+			<out>
+				<pin name="out" type="Float" />
+			</out>
+		</node>
+		<node id="20" name="Multiply">
+			<in>
+				<pin name="x" node="12" pin="out" />
+				<pin name="y" node="19" pin="out" />
+			</in>
+			<out>
+				<pin name="out" />
+			</out>
+		</node>
+		<node id="21" name="Constant">
+			<properties>
+				<property name="Value" type="Vector3" value="0 1 0" />
+			</properties>
+			<out>
+				<pin name="out" type="Vector3" />
+			</out>
+		</node>
+		<node id="22" name="GetAttribute">
+			<out>
+				<pin name="rotation" type="Float" />
+			</out>
+		</node>
+		<node id="23" name="RenderBillboard">
+			<properties>
+				<property name="Material" type="ResourceRef" value="Material;Materials/RealFire/Distortion.xml" />
+				<property name="Rows" type="Int" value="0" />
+				<property name="Columns" type="Int" value="0" />
+				<property name="Face Camera Mode" type="Int" value="1" />
+				<property name="Sort By Distance" type="Bool" value="True" />
+				<property name="Is Worldspace" type="Bool" value="False" />
+			</properties>
+			<in>
+				<pin name="pos" type="Vector3" node="10" pin="pos" />
+				<pin name="size" type="Vector2" node="18" pin="out" />
+				<pin name="frame" type="Float" node="20" pin="out" />
+				<pin name="color" type="Color" node="14" pin="out" />
+				<pin name="rotation" type="Float" node="22" pin="rotation" />
+				<pin name="direction" type="Vector3" node="21" pin="out" />
+			</in>
+		</node>
+	</nodes>
+</update>
+</layer>
+</layers>
+</particleGraphEffect>

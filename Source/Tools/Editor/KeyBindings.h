@@ -75,6 +75,10 @@ struct KeyBoundAction : KeyCombination
     ea::string binding_{};
     /// Set to true when key combination is held down.
     bool isDown_ = false;
+    /// Set to true when key combination is pressed on current frame.
+    bool isPressed_ = false;
+    /// Set to true when key combination is released on current frame.
+    bool isReleased_ = false;
     /// Sent when key combination is pressed.
     Signal<void()> onPressed_{};
 };
@@ -95,6 +99,12 @@ public:
     auto Bind(ActionType actionType, Receiver* receiver, F handler) { return actions_[actionType].onPressed_.Subscribe(receiver, handler); }
     /// Get a string representing key combination that is bound to specified action.
     const char* GetKeyCombination(ActionType actionType);
+    ///
+    bool IsActionPressed(ActionType actionType);
+    ///
+    bool IsActionReleased(ActionType actionType);
+    /// Return true when keys corresponding to specified action are held down.
+    bool IsActionActive(ActionType actionType);
 
 protected:
     /// Handle object initialization.

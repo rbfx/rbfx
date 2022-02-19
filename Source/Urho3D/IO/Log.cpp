@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -354,6 +354,7 @@ Logger Log::GetOrCreateLogger(const ea::string& name)
     if (!logger)
     {
         logger = std::make_shared<spdlog::logger>(name, impl_->sinkProxy_);
+        logger->set_level(ConvertLogLevel(level_));
         spdlog::register_logger(logger);
     }
 

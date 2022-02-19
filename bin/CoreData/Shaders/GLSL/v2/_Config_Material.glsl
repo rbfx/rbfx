@@ -63,6 +63,12 @@
     #endif
 #endif
 
+#if defined(ADDITIVE) || defined(URHO3D_ADDITIVE_LIGHT_PASS)
+    #ifndef URHO3D_ADDITIVE_BLENDING
+        #define URHO3D_ADDITIVE_BLENDING
+    #endif
+#endif
+
 /// =================================== Configure material with color output ===================================
 
 #if !defined(URHO3D_DEPTH_ONLY_PASS) && !defined(URHO3D_LIGHT_VOLUME_PASS)

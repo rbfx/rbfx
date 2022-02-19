@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -76,6 +76,12 @@ public:
         m21_(data[7]),
         m22_(data[8])
     {
+    }
+
+    /// Construct from an angle (in degrees) and axis.
+    Matrix3(float angle, const Vector3& axis) noexcept
+    {
+        FromAngleAxis(angle, axis);
     }
 
     /// Assign from another matrix.
@@ -172,6 +178,9 @@ public:
             m20_ * rhs.m02_ + m21_ * rhs.m12_ + m22_ * rhs.m22_
         );
     }
+
+    /// Define from an angle (in degrees) and axis.
+    void FromAngleAxis(float angle, const Vector3& axis);
 
     /// Set scaling elements.
     void SetScale(const Vector3& scale)

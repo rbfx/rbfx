@@ -80,7 +80,7 @@ void main()
     surfaceData.backgroundColor = mix(surfaceData.backgroundColor, GammaToLightSpace(cMatDiffColor.rgb), cMatDiffColor.a);
 #endif
 
-#ifdef URHO3D_ADDITIVE_LIGHT_PASS
+#ifdef URHO3D_ADDITIVE_BLENDING
     gl_FragColor = vec4(ApplyFog(reflectedColor.rgb, surfaceData.fogFactor), 0.0);
 #else
     gl_FragColor = vec4(mix(surfaceData.backgroundColor, reflectedColor.rgb, reflectedColor.a), 1.0);

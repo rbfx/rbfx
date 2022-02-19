@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -61,6 +61,11 @@ public:
     bool LoadJSON(const JSONValue& source) override;
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     void ApplyAttributes() override;
+
+    /// Process raycast with custom transform.
+    void ProcessCustomRayQuery(const RayOctreeQuery& query, const BoundingBox& worldBoundingBox,
+        const Matrix3x4& worldTransform, ea::span<const Matrix3x4> boneWorldTransforms,
+        ea::vector<RayQueryResult>& results);
     /// Process octree raycast. May be called from a worker thread.
     void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Update before octree reinsertion. Is called from a worker thread.

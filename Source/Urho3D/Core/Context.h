@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -100,7 +100,7 @@ public:
 #endif
 
     /// Deprecated. Use RegisterObject instead.
-    template <class T> void RegisterFactory(const char* category = "") { AddReflection<T>(category); }
+    template <class T> void RegisterFactory(const char* category = "") { AddFactoryReflection<T>(category); }
     /// Template version of registering subsystem.
     template <class T> T* RegisterSubsystem();
     /// Template version of removing a subsystem.

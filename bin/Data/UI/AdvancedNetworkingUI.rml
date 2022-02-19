@@ -1,0 +1,38 @@
+<rml>
+<head>
+    <link type="text/rcss" href="rml.rcss"/>
+    <link type="text/rcss" href="default.rcss"/>
+    <title>Inspector</title>
+</head>
+
+<body id="window" style="width: 45%; left: 10%; top: 1%">
+    <div data-model="AdvancedNetworkingUI_model">
+        <div id="titlebar">
+            <handle move_target="#document">
+                <div id="title">Settings</div>
+            </handle>
+        </div>
+        <div>
+            <div data-if="!isServer && !isClient">
+                <button data-event-click="onConnectToServer">Connect to server</button>
+                at
+                <input type="text" data-value="connectionAddress"/>
+                :{{port}}
+                <br/>
+                <button data-event-click="onStartServer">Start server</button>at port {{port}}<br/>
+            </div>
+            <div data-if="isServer">
+                <button data-event-click="onStop">Stop server</button><br/>
+            </div>
+            <div data-if="isClient">
+                <button data-event-click="onStop">Disconnect from server</button><br/>
+                <br/>
+                <h5>Cheats</h5>
+                <label><input type="checkbox" value="cheatAutoMovement" data-checked="cheatAutoMovement"/>Automatic movement</label><br/>
+            </div>
+        </div>
+    </div>
+    <handle size_target="#document" class="resize-handle"></handle>
+</body>
+
+</rml>

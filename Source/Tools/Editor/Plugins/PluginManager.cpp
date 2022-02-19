@@ -41,10 +41,6 @@
 namespace Urho3D
 {
 
-URHO3D_EVENT(E_ENDFRAMEPRIVATE, EndFramePrivate)
-{
-}
-
 PluginManager::PluginManager(Context* context)
     : Object(context)
 {

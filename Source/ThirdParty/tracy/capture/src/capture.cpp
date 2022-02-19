@@ -158,7 +158,7 @@ int main( int argc, char** argv )
         {
             printf( "\33[2K\r\033[36;1m%7.2f Mbps", mbps );
         }
-        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| \033[33mNet: \033[32m%s \033[0m| \033[33mMem: \033[31;1m%s\033[0m | \033[33mTime: %s\033[0m",
+        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| \033[33mTx: \033[32m%s \033[0m| \033[31;1m%s\033[0m | \033[33m%s\033[0m",
             compRatio * 100.f,
             mbps / compRatio,
             tracy::MemSizeToString( netTotal ),
@@ -183,6 +183,10 @@ int main( int argc, char** argv )
     {
         printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
         auto& fd = worker.GetFailureData();
+        if( !fd.message.empty() )
+        {
+            printf( "\nContext: %s", fd.message.c_str() );
+        }
         if( fd.callstack != 0 )
         {
             printf( "\n\033[1mFailure callstack:\033[0m\n" );

@@ -39,6 +39,14 @@ if (NOT MINI_URHO)
     endforeach()
 endif ()
 
+# https://cmake.org/cmake/help/v3.18/policy/CMP0077.html
+# Note that cmake_minimum_required() + project() resets policies, so dependencies using lower CMake version would not
+# properly accept options before we add_subdirectory() them without setting this policy to NEW __in their build script__.
+if (POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+endif ()
+
 foreach (feature ${URHO3D_FEATURES})
     set (URHO3D_${feature} ON)
 endforeach()
@@ -107,7 +115,9 @@ cmake_dependent_option(URHO3D_PROFILING_FALLBACK "Profiler uses low-precision ti
 cmake_dependent_option(URHO3D_PROFILING_SYSTRACE "Profiler systrace support enabled"                     OFF                  "URHO3D_PROFILING"              OFF)
 option                (URHO3D_SYSTEMUI           "Build SystemUI subsystem"                              ${URHO3D_ENABLE_ALL})
 option                (URHO3D_URHO2D             "2D subsystem enabled"                                  ${URHO3D_ENABLE_ALL})
+option                (URHO3D_PHYSICS2D          "2D physics subsystem enabled"                          ${URHO3D_ENABLE_ALL})
 option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI middleware"                  ${URHO3D_ENABLE_ALL})
+option                (URHO3D_PARTICLE_GRAPH     "Particle Graph Effects"                                ${URHO3D_ENABLE_ALL})
 
 # Features
 set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})

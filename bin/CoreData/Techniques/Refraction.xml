@@ -1,0 +1,3 @@
+<technique vs="Refraction" ps="Refraction">
+    <pass name="alpha" depthwrite="false" />
+</technique>

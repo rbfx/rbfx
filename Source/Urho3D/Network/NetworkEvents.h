@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -80,14 +80,48 @@ URHO3D_EVENT(E_NETWORKMESSAGE, NetworkMessage)
     URHO3D_PARAM(P_DATA, Data);                    // Buffer
 }
 
+/// Incoming network messages are processed on the client or server.
+URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
+{
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);                 // float
+}
+
+/// Begin the frame of network update on the server.
+URHO3D_EVENT(E_BEGINSERVERNETWORKFRAME, BeginServerNetworkFrame)
+{
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
+}
+
+/// End the frame of network update on the server. Happens right before sending messages to the clients.
+URHO3D_EVENT(E_ENDSERVERNETWORKFRAME, EndServerNetworkFrame)
+{
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
+}
+
+/// Begin the input frame on the client.
+/// Any client-side simulation at E_BEGINCLIENTNETWORKFRAME is precisely synchronized
+/// with one of the future E_BEGINSERVERNETWORKFRAME.
+URHO3D_EVENT(E_BEGINCLIENTNETWORKFRAME, BeginClientNetworkFrame)
+{
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
+}
+
+/// End the input frame on the client. Happens right before sending messages to the server.
+URHO3D_EVENT(E_ENDCLIENTNETWORKFRAME, EndClientNetworkFrame)
+{
+    URHO3D_PARAM(P_FRAME, Frame);                       // long long
+}
+
 /// About to send network update on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
 {
+    URHO3D_PARAM(P_ISSERVER, IsServer);                 // bool
 }
 
 /// Network update has been sent on the client or server.
 URHO3D_EVENT(E_NETWORKUPDATESENT, NetworkUpdateSent)
 {
+    URHO3D_PARAM(P_ISSERVER, IsServer);                 // bool
 }
 
 /// Scene load failed, either due to file not found or checksum error.

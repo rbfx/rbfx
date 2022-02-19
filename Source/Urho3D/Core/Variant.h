@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1558,6 +1558,9 @@ template <typename T> Variant MakeCustomValue(const T& value)
     var.SetCustom(value);
     return var;
 }
+
+/// Return variant size in bytes from type. This is not the same as size of Variant class instance, this is a size of corresponding type.
+unsigned GetVariantTypeSize(VariantType type);
 
 /// Return variant type from type.
 template <typename T> VariantType GetVariantType();

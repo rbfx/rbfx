@@ -97,14 +97,10 @@ bool Tab::RenderWindow()
         if (targetID)
             ui::SetNextWindowDockID(targetID, ImGuiCond_Once);
     }
-    bool wasRendered = isRendered_;
     wasOpen_ = open_;
 
     if (activateTab_)
-    {
         open_ = true;
-        isActive_ = true;
-    }
 
     if (open_)
     {
@@ -131,18 +127,17 @@ bool Tab::RenderWindow()
                 }
             }
 
-            if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+            if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+                OnUpdateFocused();
+            else
             {
-                if (!wasRendered)                                                                                   // Just activated
-                    ui::SetWindowFocus();
-                else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
+                if (input->IsMouseVisible() && ui::IsAnyMouseDown())
                 {
                     if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))                                        // Interacting
                         ui::SetWindowFocus();
                 }
             }
 
-            isActive_ = ui::IsWindowFocused();
             bool shouldBeOpen = RenderWindowContent();
             if (open_)
                 open_ = shouldBeOpen;
@@ -150,7 +145,6 @@ bool Tab::RenderWindow()
             {
                 // Tab is possibly closing, lets not override that condition.
             }
-            isRendered_ = true;
 
             if (noContentPadding)
                 ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
@@ -165,11 +159,6 @@ bool Tab::RenderWindow()
         ui::End();
         if (noContentPadding)
             ui::PopStyleVar();
-    }
-    else
-    {
-        isActive_ = false;
-        isRendered_ = false;
     }
 
     return open_;
@@ -241,13 +230,6 @@ bool Tab::DeserializeSelection(const ByteVector& data)
     VectorBuffer buffer(data);
     BinaryInputArchive archive(context_, buffer);
     return SerializeSelection(archive);
-}
-
-bool Tab::IsActive(StringHash tabType) const
-{
-    auto* editor = GetSubsystem<Editor>();
-    auto* tab = editor->GetActiveTab();
-    return tab->GetType() == tabType;
 }
 
 }

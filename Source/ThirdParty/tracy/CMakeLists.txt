@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2020 the rbfx project.
+# Copyright (c) 2017-2022 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@ if (URHO3D_PROFILING)
 
     list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySystem.cpp)
     set (TRACY_OPTIONS_PUBLIC -DTRACY_ENABLE=1 -DTRACY_ON_DEMAND=1 -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1)
-    set (TRACY_OPTIONS_PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -D_USE_MATH_DEFINES)
+    set (TRACY_OPTIONS_PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -D_USE_MATH_DEFINES -DZSTD_DISABLE_ASM=1)
 
     if (NOT URHO3D_PROFILING_SYSTRACE)
         list (APPEND TRACY_OPTIONS_PUBLIC -DTRACY_NO_SYSTEM_TRACING=1)
@@ -55,12 +55,12 @@ if (URHO3D_PROFILING)
         target_compile_definitions (Tracy INTERFACE ${TRACY_OPTIONS_PUBLIC})
     endif ()
 
-    find_package(TBB)
+    find_package(TBB QUIET)
     if (TBB_FOUND)
         if (BUILD_SHARED_LIBS)
-            target_link_libraries(Tracy PUBLIC ${TBB_IMPORTED_TARGETS})
+            target_link_libraries(Tracy PUBLIC TBB::tbb)
         else ()
-            target_link_libraries(Tracy INTERFACE ${TBB_IMPORTED_TARGETS})
+            target_link_libraries(Tracy INTERFACE TBB::tbb)
         endif ()
     endif ()
 
@@ -68,6 +68,9 @@ if (URHO3D_PROFILING)
         # Set up common parameters of profiler target
         macro (setup_tracy_profiler_target TARGET)
             target_include_directories(${TARGET} PRIVATE server)
+            if (TARGET TBB::tbb)
+                target_link_libraries(${TARGET} PRIVATE TBB::tbb)
+            endif ()
             target_link_libraries(${TARGET} PUBLIC Urho3D IconFontCppHeaders)
             target_compile_definitions(${TARGET} PUBLIC ${TRACY_OPTIONS_PUBLIC} PRIVATE ${TRACY_OPTIONS_PRIVATE})
             if (MSVC)

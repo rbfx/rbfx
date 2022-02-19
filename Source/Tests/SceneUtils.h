@@ -32,6 +32,9 @@ namespace Tests
 /// Serialize and deserialize Scene. Should preserve functional state of nodes and components.
 void SerializeAndDeserializeScene(Scene* scene);
 
+/// Convert Node to prefab.
+SharedPtr<XMLFile> ConvertNodeToPrefab(Node* node);
+
 /// Return attribute value as variant.
 Variant GetAttributeValue(const ea::pair<Serializable*, unsigned>& ref);
 

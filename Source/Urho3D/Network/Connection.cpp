@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,13 @@
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../IO/PackageFile.h"
+#include "../Network/ClockSynchronizer.h"
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
+#include "../Replica/ReplicationManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -72,7 +74,7 @@ PackageUpload::PackageUpload() :
 }
 
 Connection::Connection(Context* context) :
-    Object(context),
+    AbstractConnection(context),
     timeStamp_(0),
     peer_(nullptr),
     sendMode_(OPSM_NONE),
@@ -102,6 +104,10 @@ void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, 
     sceneState_.connection_ = this;
     port_ = address.systemAddress.GetPort();
     SetAddressOrGUID(address);
+
+    auto network = GetSubsystem<Network>();
+    clock_ = ea::make_unique<ClockSynchronizer>(network->GetPingIntervalMs(), network->GetMaxPingIntervalMs(),
+        network->GetClockBufferSize(), network->GetPingBufferSize());
 }
 
 void Connection::RegisterObject(Context* context)
@@ -123,13 +129,7 @@ PacketType Connection::GetPacketType(bool reliable, bool inOrder)
     return PT_UNRELIABLE_UNORDERED;
 }
 
-void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID)
-{
-    SendMessage(msgID, reliable, inOrder, msg.GetData(), msg.GetSize(), contentID);
-}
-
-void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes,
-    unsigned contentID)
+void Connection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
 {
     if (numBytes && !data)
     {
@@ -149,7 +149,7 @@ void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const unsig
         buffer.WriteUInt((unsigned int)MSG_PACKED_MESSAGE);
     }
 
-    buffer.WriteUInt((unsigned int) msgID);
+    buffer.WriteUInt((unsigned int)messageId);
     buffer.WriteUInt(numBytes);
     buffer.Write(data, numBytes);
 }
@@ -196,6 +196,9 @@ void Connection::SetScene(Scene* newScene)
     {
         // Remove replication states and owner references from the previous scene
         scene_->CleanupConnection(this);
+        if (replicationManager_)
+            replicationManager_->DropConnection(this);
+        replicationManager_ = nullptr;
     }
 
     scene_ = newScene;
@@ -207,6 +210,10 @@ void Connection::SetScene(Scene* newScene)
 
     if (isClient_)
     {
+        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
+        if (!replicationManager_->IsServer())
+            replicationManager_->StartServer();
+
         sceneState_.Clear();
 
         // When scene is assigned on the server, instruct the client to load it. This may require downloading packages
@@ -308,7 +315,7 @@ void Connection::SendClientUpdate()
         msg_.WriteVector3(position_);
     if (sendMode_ >= OPSM_POSITION_ROTATION)
         msg_.WritePackedQuaternion(rotation_);
-    SendMessage(MSG_CONTROLS, false, false, msg_, CONTROLS_CONTENT_ID);
+    SendMessage(MSG_CONTROLS, false, false, msg_);
 
     ++timeStamp_;
 }
@@ -323,8 +330,8 @@ void Connection::SendRemoteEvents()
         sprintf(statsBuffer, "RTT %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s, Last heard %u", GetRoundTripTime(),
             GetPacketsInPerSec(),
             GetPacketsOutPerSec(),
-            GetBytesInPerSec(),
-            GetBytesOutPerSec(),
+            (float)GetBytesInPerSec(),
+            (float)GetBytesOutPerSec(),
             GetLastHeardTime());
         URHO3D_LOGINFO(statsBuffer);
     }
@@ -417,6 +424,21 @@ void Connection::SendBuffer(PacketType type)
 
 void Connection::SendAllBuffers()
 {
+    // Send clock messages at the last time to have better precision
+    if (clock_)
+    {
+        auto& buffer = outgoingBuffer_[PT_UNRELIABLE_UNORDERED];
+        while (const auto clockMessage = clock_->PollMessage())
+        {
+            SendGeneratedMessage(MSG_CLOCK_SYNC, PT_UNRELIABLE_UNORDERED,
+                [&](VectorBuffer& msg, ea::string* debugInfo)
+            {
+                clockMessage->Save(msg);
+                return true;
+            });
+        }
+    }
+
     SendBuffer(PT_RELIABLE_ORDERED);
     SendBuffer(PT_RELIABLE_UNORDERED);
     SendBuffer(PT_UNRELIABLE_ORDERED);
@@ -524,7 +546,20 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
             case MSG_PACKAGEINFO:
                 ProcessPackageInfo(msgID, msg);
                 break;
+
+            case MSG_CLOCK_SYNC:
+                if (clock_)
+                {
+                    ClockSynchronizerMessage clockMessage;
+                    clockMessage.Load(msg);
+                    clock_->ProcessMessage(clockMessage);
+                }
+                break;
+
             default:
+                if (replicationManager_ && replicationManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg))
+                    break;
+
                 ProcessUnknownMessage(msgID, msg);
                 break;
         }
@@ -1003,7 +1038,7 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
         return;
     }
 
-    if (!scene_)
+    if (!scene_ || !replicationManager_ || !replicationManager_->IsServer())
     {
         URHO3D_LOGWARNING("Received a SceneLoaded message without an assigned scene from client " + ToString());
         return;
@@ -1020,6 +1055,7 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
     }
     else
     {
+        replicationManager_->GetServerReplicator()->AddConnection(this);
         sceneLoaded_ = true;
 
         using namespace ClientSceneLoaded;
@@ -1101,26 +1137,26 @@ unsigned Connection::GetLastHeardTime() const
     return const_cast<Timer&>(lastHeardTimer_).GetMSec(false);
 }
 
-float Connection::GetBytesInPerSec() const
+unsigned long long Connection::GetBytesInPerSec() const
 {
     if (peer_)
     {
         SLNet::RakNetStatistics stats{};
         if (peer_->GetStatistics(address_->systemAddress, &stats))
-            return (float)stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_RECEIVED];
+            return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_RECEIVED];
     }
-    return 0.0f;
+    return 0;
 }
 
-float Connection::GetBytesOutPerSec() const
+unsigned long long Connection::GetBytesOutPerSec() const
 {
     if (peer_)
     {
         SLNet::RakNetStatistics stats{};
         if (peer_->GetStatistics(address_->systemAddress, &stats))
-            return (float)stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_SENT];
+            return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_SENT];
     }
-    return 0.0f;
+    return 0;
 }
 
 int Connection::GetPacketsInPerSec() const
@@ -1135,7 +1171,37 @@ int Connection::GetPacketsOutPerSec() const
 
 ea::string Connection::ToString() const
 {
-    return GetAddress() + ":" + ea::to_string(GetPort());
+    return Format("#{} {}:{}", GetObjectID(), GetAddress(), GetPort());
+}
+
+bool Connection::IsClockSynchronized() const
+{
+    return clock_ && clock_->IsReady();
+}
+
+unsigned Connection::RemoteToLocalTime(unsigned time) const
+{
+    return clock_ ? clock_->RemoteToLocal(time) : time;
+}
+
+unsigned Connection::LocalToRemoteTime(unsigned time) const
+{
+    return clock_ ? clock_->LocalToRemote(time) : time;
+}
+
+unsigned Connection::GetLocalTime() const
+{
+    return Time::GetSystemTime();
+}
+
+unsigned Connection::GetLocalTimeOfLatestRoundtrip() const
+{
+    return clock_ ? clock_->GetLocalTimeOfLatestRoundtrip() : 0;
+}
+
+unsigned Connection::GetPing() const
+{
+    return clock_ ? clock_->GetPing() : 0;
 }
 
 unsigned Connection::GetNumDownloads() const
@@ -1203,6 +1269,8 @@ void Connection::SetPacketSizeLimit(int limit)
 
 void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
 {
+    replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
+    replicationManager_->StartClient(this);
     sceneLoaded_ = true;
 
     // Clear all replicated nodes
@@ -1356,7 +1424,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
             msg_.WriteNetID(node->GetID());
             node->WriteLatestDataUpdate(msg_, timeStamp_);
 
-            SendMessage(MSG_NODELATESTDATA, true, false, msg_, node->GetID());
+            SendMessage(MSG_NODELATESTDATA, true, false, msg_);
         }
 
         // Send deltaupdate if remaining dirty bits, or vars have changed
@@ -1434,7 +1502,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
                     msg_.WriteNetID(component->GetID());
                     component->WriteLatestDataUpdate(msg_, timeStamp_);
 
-                    SendMessage(MSG_COMPONENTLATESTDATA, true, false, msg_, component->GetID());
+                    SendMessage(MSG_COMPONENTLATESTDATA, true, false, msg_);
                 }
 
                 // Send deltaupdate if remaining dirty bits
@@ -1622,6 +1690,9 @@ void Connection::OnPackagesReady()
     {
         // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
         scene_->Clear(true, false);
+
+        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
+        replicationManager_->StartClient(this);
         sceneLoaded_ = true;
 
         msg_.Clear();
@@ -1637,6 +1708,8 @@ void Connection::OnPackagesReady()
 
         if (extension == ".xml")
             success = scene_->LoadAsyncXML(file);
+        else if (extension == ".json")
+            success = scene_->LoadAsyncJSON(file);
         else
             success = scene_->LoadAsync(file);
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -52,14 +52,15 @@ void Sample::Start()
         // On desktop platform, do not detect touch when we already got a joystick
         SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(Sample, HandleTouchBegin));
 
-    // Create logo
-    CreateLogo();
-
-    // Set custom window Title & Icon
-    SetWindowTitleAndIcon();
-
-    // Create console and debug HUD
-    CreateConsoleAndDebugHud();
+    if (!GetSubsystem<Engine>()->IsHeadless())
+    {
+        // Create logo
+        CreateLogo();
+        // Set custom window Title & Icon
+        SetWindowTitleAndIcon();
+        // Create console and debug HUD
+        CreateConsoleAndDebugHud();
+    }
 
     // Subscribe key down event
     SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(Sample, HandleKeyDown));

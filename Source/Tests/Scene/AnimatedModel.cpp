@@ -414,6 +414,23 @@ TEST_CASE("Animation start bone")
     }
 }
 
+TEST_CASE("Variant animation track loop")
+{
+    VariantCurve curve;
+    auto white = Color(1.0f, 1.0f, 1.0f, 1.0f);
+    auto black = Color(0.0f, 0.0f, 0.0f, 0.0f);
+    curve.AddKeyFrame(VariantCurvePoint{0.0f, white});
+    curve.AddKeyFrame(VariantCurvePoint{0.99f, white});
+    curve.AddKeyFrame(VariantCurvePoint{1.0f, black});
+    curve.Commit();
+
+    unsigned frameIndex;
+    Color unloopedValue = curve.Sample(1.0f + M_EPSILON/2.0f, 1.0f, false, frameIndex).GetColor();
+    CHECK(unloopedValue.Equals(black));
+    Color loopedValue = curve.Sample(1.0f + M_EPSILON / 2.0f, 1.0f, true, frameIndex).GetColor();
+    CHECK(loopedValue.Equals(white));
+}
+
 TEST_CASE("Variant animation tracks")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);

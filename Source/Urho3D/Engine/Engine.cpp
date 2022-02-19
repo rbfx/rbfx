@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -58,6 +58,9 @@
 #include "../Physics/PhysicsWorld.h"
 #include "../Physics/RaycastVehicle.h"
 #endif
+#ifdef URHO3D_PHYSICS2D
+#include "../Physics2D/Physics2D.h"
+#endif
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
 #ifndef URHO3D_D3D9
@@ -73,6 +76,9 @@
 #include "../Urho2D/Urho2D.h"
 #endif
 #include "../Engine/EngineEvents.h"
+#ifdef URHO3D_PARTICLE_GRAPH
+#include "../Particles/ParticleGraphSystem.h"
+#endif
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -176,6 +182,10 @@ Engine::Engine(Context* context) :
     RegisterPhysicsLibrary(context_);
 #endif
 
+#ifdef URHO3D_PHYSICS2D
+    RegisterPhysics2DLibrary(context_);
+#endif
+
 #ifdef URHO3D_NAVIGATION
     RegisterNavigationLibrary(context_);
 #endif
@@ -214,6 +224,9 @@ bool Engine::Initialize(const VariantMap& parameters)
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
     }
+#ifdef URHO3D_PARTICLE_GRAPH
+    context_->RegisterSubsystem(new ParticleGraphSystem(context_));
+#endif
 
 #ifdef URHO3D_URHO2D
     // 2D graphics library is dependent on 3D graphics library
@@ -728,11 +741,15 @@ void Engine::Update()
 {
     URHO3D_PROFILE("Update");
 
-    // Logic update event
     using namespace Update;
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_TIMESTEP] = timeStep_;
+
+    // Pre-update event that indicates
+    SendEvent(E_INPUTREADY, eventData);
+
+    // Logic update event
     SendEvent(E_UPDATE, eventData);
 
     // Logic post-update event

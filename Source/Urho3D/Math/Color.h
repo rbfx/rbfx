@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2008-2022 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -120,6 +120,9 @@ public:
 
     /// Multiply with a scalar.
     Color operator *(float rhs) const { return Color(r_ * rhs, g_ * rhs, b_ * rhs, a_ * rhs); }
+
+    /// Modulate color.
+    Color operator *(const Color& rhs) const { return Color(r_ * rhs.r_, g_ * rhs.g_, b_ * rhs.b_, a_ * rhs.a_); }
 
     /// Add a color.
     Color operator +(const Color& rhs) const { return Color(r_ + rhs.r_, g_ + rhs.g_, b_ + rhs.b_, a_ + rhs.a_); }

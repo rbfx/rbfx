@@ -46,19 +46,6 @@ template <typename T, size_t nodeCount> struct GraphNodeMapHelper
         return nullptr;
     }
 
-    T& GetOrAdd(const ea::string_view name, ea::function<T()> add)
-    {
-        for (T& val : vector_)
-        {
-            if (val.GetName() == name)
-                return val;
-        }
-        T value = add();
-        value.SetName(name);
-        vector_.push_back(ea::move(value));
-        return vector_.back();
-    }
-
     T& GetOrAdd(const ea::string_view name)
     {
         for (T& val : vector_)
@@ -136,70 +123,112 @@ GraphNode* GraphNode::WithProperty(const ea::string_view name, const Variant& va
     return this;
 }
 
-GraphInPin* GraphNode::GetInput(const ea::string_view name) { return MakeMapHelper(inputPins_).Get(name); }
-
-GraphInPin& GraphNode::GetOrAddInput(const ea::string_view name)
+GraphPinRef<GraphInPin> GraphNode::GetInput(const ea::string_view name)
 {
-    return MakeMapHelper(inputPins_).GetOrAdd(name, [this]() { return GraphInPin(this); });
+    return GraphPinRef(this, MakeMapHelper(inputPins_).Get(name));
+}
+
+GraphPinRef<GraphInPin> GraphNode::GetInput(unsigned index)
+{
+    if (index >= inputPins_.size())
+        return {};
+    return GraphPinRef(this, &inputPins_[index]);
+}
+
+GraphPinRef<GraphInPin> GraphNode::GetOrAddInput(const ea::string_view name)
+{
+    return GraphPinRef(this, &MakeMapHelper(inputPins_).GetOrAdd(name));
 }
 
 GraphNode* GraphNode::WithInput(const ea::string_view name, VariantType type)
 {
-    auto& pin = GetOrAddInput(name);
-    pin.SetName(name);
-    pin.type_ = type;
+    auto pin = GetOrAddInput(name);
+    pin.GetPin()->SetName(name);
+    pin.GetPin()->type_ = type;
     return this;
 }
 
 GraphNode* GraphNode::WithInput(const ea::string_view name, const Variant& value)
 {
-    auto& pin = GetOrAddInput(name);
-    pin.SetName(name);
-    pin.type_ = value.GetType();
-    pin.SetValue(value);
+    auto pin = GetOrAddInput(name);
+    pin.GetPin()->SetName(name);
+    pin.GetPin()->type_ = value.GetType();
+    pin.GetPin()->SetValue(value);
     return this;
 }
 
-GraphNode* GraphNode::WithInput(const ea::string_view name, GraphOutPin* outputPin, VariantType type)
+GraphNode* GraphNode::WithInput(const ea::string_view name, GraphPinRef<GraphOutPin> outputPin, VariantType type)
 {
-    auto& pin = GetOrAddInput(name);
-    pin.SetName(name);
-    pin.type_ = type;
+    auto pin = GetOrAddInput(name);
+    pin.GetPin()->SetName(name);
+    pin.GetPin()->type_ = type;
     if (outputPin)
     {
-        pin.ConnectTo(*outputPin);
+        pin.GetPin()->ConnectTo(outputPin);
     }
     return this;
 }
 
-GraphOutPin& GraphNode::GetOrAddOutput(const ea::string_view name)
+GraphPinRef<GraphOutPin> GraphNode::GetOrAddOutput(const ea::string_view name)
 {
-    return MakeMapHelper(outputPins_).GetOrAdd(name, [this]() { return GraphOutPin(this); });
+    return GraphPinRef(this, &MakeMapHelper(outputPins_).GetOrAdd(name));
 }
 
 GraphNode* GraphNode::WithOutput(const ea::string_view name, VariantType type)
 {
-    auto& pin = GetOrAddOutput(name);
-    pin.SetName(name);
-    pin.type_ = type;
+    auto pin = GetOrAddOutput(name);
+    pin.GetPin()->SetName(name);
+    pin.GetPin()->type_ = type;
     return this;
 }
 
-GraphOutPin* GraphNode::GetOutput(const ea::string_view name) { return MakeMapHelper(outputPins_).Get(name); }
-
-GraphExitPin* GraphNode::GetExit(const ea::string_view name) { return MakeMapHelper(exitPins_).Get(name); }
-
-GraphExitPin& GraphNode::GetOrAddExit(const ea::string_view name)
+GraphPinRef<GraphOutPin> GraphNode::GetOutput(const ea::string_view name)
 {
-    return MakeMapHelper(exitPins_).GetOrAdd(name, [this]() { return GraphExitPin(this); });
+    return GraphPinRef(this, MakeMapHelper(outputPins_).Get(name));
 }
 
-GraphEnterPin& GraphNode::GetOrAddEnter(const ea::string_view name)
+GraphPinRef<GraphOutPin> GraphNode::GetOutput(unsigned index)
 {
-    return MakeMapHelper(enterPins_).GetOrAdd(name, [this]() { return GraphEnterPin(this); });
+    if (index >= outputPins_.size())
+        return {};
+
+    return GraphPinRef(this, &outputPins_[index]);
 }
 
-GraphEnterPin* GraphNode::GetEnter(const ea::string_view name) { return MakeMapHelper(enterPins_).Get(name); }
+GraphPinRef<GraphExitPin> GraphNode::GetExit(const ea::string_view name)
+{
+    return GraphPinRef(this, MakeMapHelper(exitPins_).Get(name));
+}
+
+GraphPinRef<GraphExitPin> GraphNode::GetExit(unsigned index)
+{
+    if (index >= exitPins_.size())
+        return {};
+    return GraphPinRef(this, &exitPins_[index]);
+}
+
+GraphPinRef<GraphExitPin> GraphNode::GetOrAddExit(const ea::string_view name)
+{
+    return GraphPinRef(this, &MakeMapHelper(exitPins_).GetOrAdd(name));
+}
+
+GraphPinRef<GraphEnterPin> GraphNode::GetOrAddEnter(const ea::string_view name)
+{
+    return GraphPinRef(this, &MakeMapHelper(enterPins_).GetOrAdd(name));
+}
+
+GraphPinRef<GraphEnterPin> GraphNode::GetEnter(const ea::string_view name)
+{
+    return GraphPinRef(this, MakeMapHelper(enterPins_).Get(name));
+}
+
+GraphPinRef<GraphEnterPin> GraphNode::GetEnter(unsigned index)
+{
+    if (index >= enterPins_.size())
+        return {};
+
+    return GraphPinRef(this, &enterPins_[index]);
+}
 
 void GraphNode::SetName(const ea::string& name)
 {

@@ -22,7 +22,7 @@
 # Modified by Yao Wei Tjong for Urho3D, the modified portion is licensed under below license
 
 #
-# Copyright (c) 2008-2020 the Urho3D project.
+# Copyright (c) 2008-2022 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -500,6 +500,9 @@ if(USE_GCC OR USE_CLANG)
   if(HAVE_NO_UNDEFINED)
     list(APPEND EXTRA_LDFLAGS "-Wl,--no-undefined")
   endif()
+
+  # Urho3D - Wayland quick fix
+  list(APPEND EXTRA_CFLAGS "-fcommon")
 endif()
 
 if(ASSEMBLY)
