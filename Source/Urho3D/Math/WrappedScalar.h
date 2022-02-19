@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "../Math/MathDefs.h"
 
 namespace Urho3D
 {
@@ -133,10 +133,6 @@ public:
     {
     }
 
-    T Value() const { return value_; }
-    T Min() const { return min_; }
-    T Max() const { return max_; }
-
     /// Reset value.
     void Set(T value)
     {
@@ -189,9 +185,28 @@ public:
         return {oldValue, value_, min_, max_, 0};
     }
 
+    /// Clamp boundaries.
+    WrappedScalar<T> MinMaxClamped(T minValue, T maxValue) const
+    {
+        return {value_, ea::max(minValue, min_), ea::min(maxValue, max_)};
+    }
+
+    T Value() const { return value_; }
+    T Min() const { return min_; }
+    T Max() const { return max_; }
+
+    bool operator==(const WrappedScalar<T>& rhs) const
+    {
+        return min_ == rhs.min_
+            && max_ == rhs.max_
+            && value_ == rhs.value_;
+    }
+
+    bool operator!=(const WrappedScalar<T>& rhs) const { return !(*this == rhs); }
+
 private:
-    T min_{};
-    T max_{};
+    T min_{-M_LARGE_VALUE};
+    T max_{M_LARGE_VALUE};
     T value_{};
 };
 

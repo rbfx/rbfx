@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
@@ -28,6 +29,7 @@
 #include <Urho3D/Physics/KinematicCharacterController.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Math/Ray.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/DebugNew.h>
@@ -74,6 +76,11 @@ void KinematicCharacter::Start()
 
 void KinematicCharacter::FixedUpdate(float timeStep)
 {
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
+    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
+    auto* jumpAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Jump1.ani");
+
     // Update the in air timer. Reset if grounded
     if (!onGround_)
         inAirTimer_ += timeStep;
@@ -139,10 +146,6 @@ void KinematicCharacter::FixedUpdate(float timeStep)
                 okToJump_ = false;
                 jumpStarted_ = true;
                 kinematicController_->Jump();
-
-                animController_->StopLayer(0);
-                animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, false, 0.2f);
-                animController_->SetTime("Models/Mutant/Mutant_Jump1.ani", 0);
             }
         }
         else
@@ -156,17 +159,16 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         // Play walk animation if moving on ground, otherwise fade it out
         if ((softGrounded) && !moveDir.Equals(Vector3::ZERO))
         {
-            animController_->PlayExclusive("Models/Mutant/Mutant_Run.ani", 0, true, 0.2f);
+            animController_->PlayExistingExclusive(AnimationParameters{runAnimation}.Looped(), 0.2f);
         }
         else
         {
-            animController_->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true, 0.2f);
+            animController_->PlayExistingExclusive(AnimationParameters{idleAnimation}.Looped(), 0.2f);
         }
     }
     else if (jumpStarted_)
     {
-        animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.3f);
-        animController_->SetTime("Models/Mutant/Mutant_Jump1.ani", 0);
+        animController_->PlayNewExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
         jumpStarted_ = false;
     }
     else
@@ -178,7 +180,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
                                                                          maxDistance, segmentDistance, 0xffff);
         if (result.body_ && result.distance_ > 0.7f )
         {
-            animController_->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, true, 0.2f);
+            animController_->PlayExistingExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
         }
     }
 }

@@ -135,7 +135,7 @@ void RibbonTrailDemo::CreateScene()
 
     // Create animation controller and play attack animation.
     ninjaAnimCtrl_ = ninjaNode->CreateComponent<AnimationController>();
-    ninjaAnimCtrl_->PlayExclusive("Models/NinjaSnowWar/Ninja_Attack3.ani", 0, true, 0.0f);
+    ninjaAnimCtrl_->PlayNewExclusive(AnimationParameters{context_, "Models/NinjaSnowWar/Ninja_Attack3.ani"}.Looped());
 
     // Add ribbon trail to tip of sword.
     Node* swordTip = ninjaNode->GetChild("Joint29", true);
@@ -266,7 +266,7 @@ void RibbonTrailDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
         Quaternion());
 
     // Get elapsed attack animation time.
-    float swordAnimTime = ninjaAnimCtrl_->GetAnimationState(ea::string("Models/NinjaSnowWar/Ninja_Attack3.ani"))->GetTime();
+    float swordAnimTime = ninjaAnimCtrl_->GetTime("Models/NinjaSnowWar/Ninja_Attack3.ani");
 
     // Stop emitting trail when sword is finished slashing.
     if (!swordTrail_->IsEmitting() && swordAnimTime > swordTrailStartTime_ && swordAnimTime < swordTrailEndTime_)

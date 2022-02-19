@@ -56,8 +56,9 @@ enum AnimationBlendMode
 };
 
 /// Per-track data of skinned model animation.
+/// TODO(animation): Handle Animation reload when tracks are playing?
 /// TODO(animation): Do we want per-bone weights?
-struct URHO3D_API ModelAnimationStateTrack
+struct ModelAnimationStateTrack
 {
     const AnimationTrack* track_{};
     unsigned boneIndex_{};
@@ -77,7 +78,7 @@ struct ModelAnimationOutput
 };
 
 /// Per-track data of node model animation.
-struct URHO3D_API NodeAnimationStateTrack
+struct NodeAnimationStateTrack
 {
     const AnimationTrack* track_{};
     WeakPtr<Node> node_;
@@ -102,7 +103,7 @@ struct AnimatedAttributeReference
 };
 
 /// Per-track data of attribute animation.
-struct URHO3D_API AttributeAnimationStateTrack
+struct AttributeAnimationStateTrack
 {
     const VariantAnimationTrack* track_{};
     AnimatedAttributeReference attribute_;
@@ -114,11 +115,13 @@ class URHO3D_API AnimationState : public RefCounted
 {
 public:
     /// Construct with animated model and animation pointers.
-    AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation);
+    AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation = nullptr);
     /// Construct with root scene node and animation pointers.
-    AnimationState(AnimationController* controller, Node* node, Animation* animation);
+    AnimationState(AnimationController* controller, Node* node, Animation* animation = nullptr);
     /// Destruct.
     ~AnimationState() override;
+    /// Initialize basic properties of the state and dirty tracks.
+    void Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode);
 
     /// Modify tracks. For internal use only.
     /// @{
