@@ -467,7 +467,7 @@ public:
     /// Return rotation angle.
     /// @property
     float Angle() const;
-    /// Returns the angle in degrees between two rotations /a/ and /b/.
+    /// Returns the angle in degrees between this quaternion a and another quaternion b.
     /// @property
     float Angle(const Quaternion& b);
     /// Return angular velocity assuming unit time.
