@@ -35,8 +35,7 @@ enum AnimationChannel : unsigned char
     CHANNEL_NONE = 0,
     CHANNEL_POSITION = 1 << 0,
     CHANNEL_ROTATION = 1 << 1,
-    CHANNEL_SCALE    = 1 << 2,
-    CHANNEL_ALL = CHANNEL_POSITION | CHANNEL_ROTATION | CHANNEL_SCALE
+    CHANNEL_SCALE    = 1 << 2
 };
 URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
 

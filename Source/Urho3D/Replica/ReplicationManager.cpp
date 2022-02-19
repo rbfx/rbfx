@@ -228,7 +228,7 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
         URHO3D_ASSERT(!server_ && !client_);
 
         Scene* scene = GetScene();
-        VariantMap& eventData = GetEventDataMap();
+        VariantMap& eventData = scene->GetEventDataMap();
 
         using namespace SceneNetworkUpdate;
         eventData[P_SCENE] = scene;

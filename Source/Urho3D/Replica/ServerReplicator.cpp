@@ -649,7 +649,7 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
             clientState->BeginNetworkFrame(currentFrame_, overtime);
 
         using namespace BeginServerNetworkFrame;
-        auto& eventData = GetEventDataMap();
+        auto& eventData = network_->GetEventDataMap();
         eventData[P_FRAME] = static_cast<long long>(currentFrame_);
         network_->SendEvent(E_BEGINSERVERNETWORKFRAME, eventData);
     }
@@ -662,7 +662,7 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
 void ServerReplicator::OnNetworkUpdate()
 {
     using namespace EndServerNetworkFrame;
-    auto& eventData = GetEventDataMap();
+    auto& eventData = network_->GetEventDataMap();
     eventData[P_FRAME] = static_cast<long long>(currentFrame_);
     network_->SendEvent(E_ENDSERVERNETWORKFRAME, eventData);
 
@@ -713,7 +713,7 @@ void ServerReplicator::ProcessSceneUpdate()
 {
     if (network_->IsUpdateNow())
     {
-        VariantMap& eventData = GetEventDataMap();
+        VariantMap& eventData = scene_->GetEventDataMap();
         const float fixedTimeStep = 1.0f / GetUpdateFrequency();
 
         using namespace SceneNetworkUpdate;
