@@ -135,12 +135,11 @@ void SkeletalAnimation::CreateScene()
         // Create an AnimationState for a walk animation. Its time position will need to be manually updated to advance the
         // animation, The alternative would be to use an AnimationController component which updates the animation automatically,
         // but we need to update the model's position manually in any case
-        const ea::string walkAnimationName = "Models/Kachujin/Kachujin_Walk.ani";
-        auto* walkAnimation = cache->GetResource<Animation>(walkAnimationName);
+        auto* walkAnimation = cache->GetResource<Animation>("Models/Kachujin/Kachujin_Walk.ani");
+        const float startTime = Random(walkAnimation->GetLength());
 
         auto animationController = modelNode->CreateComponent<AnimationController>();
-        animationController->Play(walkAnimationName, 0, true);
-        animationController->SetTime(walkAnimationName, Random(walkAnimation->GetLength()));
+        animationController->PlayNewExclusive(AnimationParameters{walkAnimation}.Looped().Time(startTime));
 
         // Create our custom Mover3D component that will move & animate the model during each frame's update
         auto* mover = modelNode->CreateComponent<Mover3D>();

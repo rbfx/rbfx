@@ -21,11 +21,13 @@
 //
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 
@@ -62,6 +64,11 @@ void Character::Start()
 
 void Character::FixedUpdate(float timeStep)
 {
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
+    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
+    auto* jumpAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Jump1.ani");
+
     /// \todo Could cache the components for faster access instead of finding them each frame
     auto* body = GetComponent<RigidBody>();
     auto* animCtrl = node_->GetComponent<AnimationController>(true);
@@ -110,7 +117,8 @@ void Character::FixedUpdate(float timeStep)
             {
                 body->ApplyImpulse(Vector3::UP * JUMP_FORCE);
                 okToJump_ = false;
-                animCtrl->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, false, 0.2f);
+                onGround_ = false;
+                animCtrl->PlayNewExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
             }
         }
         else
@@ -119,15 +127,15 @@ void Character::FixedUpdate(float timeStep)
 
     if ( !onGround_ )
     {
-        animCtrl->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, false, 0.2f);
+        animCtrl->PlayExistingExclusive(AnimationParameters{jumpAnimation}.KeepOnCompletion(), 0.2f);
     }
     else
     {
         // Play walk animation if moving on ground, otherwise fade it out
         if (softGrounded && !moveDir.Equals(Vector3::ZERO))
-            animCtrl->PlayExclusive("Models/Mutant/Mutant_Run.ani", 0, true, 0.2f);
+            animCtrl->PlayExistingExclusive(AnimationParameters{runAnimation}.Looped(), 0.2f);
         else
-            animCtrl->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true, 0.2f);
+            animCtrl->PlayExistingExclusive(AnimationParameters{idleAnimation}.Looped(), 0.2f);
 
         // Set walk animation speed proportional to velocity
         animCtrl->SetSpeed("Models/Mutant/Mutant_Run.ani", planeVelocity.Length() * 0.3f);

@@ -97,6 +97,14 @@ AnimationState::AnimationState(AnimationController* controller, Node* node, Anim
 
 AnimationState::~AnimationState() = default;
 
+void AnimationState::Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode)
+{
+    animation_ = animation;
+    startBone_ = startBone;
+    blendingMode_ = blendMode;
+    MarkTracksDirty();
+}
+
 bool AnimationState::AreTracksDirty() const
 {
     return tracksDirty_;

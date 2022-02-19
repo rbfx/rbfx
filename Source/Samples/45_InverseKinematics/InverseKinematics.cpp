@@ -119,7 +119,7 @@ void InverseKinematics::CreateScene()
 
     // Create animation controller and play walk animation
     jackAnimCtrl_ = jackNode_->CreateComponent<AnimationController>();
-    jackAnimCtrl_->PlayExclusive("Models/Jack_Walk.ani", 0, true, 0.0f);
+    jackAnimCtrl_->PlayNewExclusive(AnimationParameters{context_, "Models/Jack_Walk.ani"}.Looped());
 
     // We need to attach two inverse kinematic effectors to Jack's feet to
     // control the grounding.

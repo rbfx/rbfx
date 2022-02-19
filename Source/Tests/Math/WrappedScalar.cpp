@@ -276,6 +276,8 @@ TEST_CASE("WrappedScalar is clamped on update and returns expected ranges")
 
     Value scalar(0.0f, 1.0f, 2.5f);
 
+    REQUIRE(scalar == Value{}.MinMaxClamped(1.0f, 2.5f));
+
     REQUIRE(scalar.Value() == 1.0f);
 
     REQUIRE(scalar.UpdateClamped(0.5f) == Range{1.0f, 1.5f, 1.0f, 2.5f, 0});

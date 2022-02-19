@@ -99,7 +99,7 @@ void LightAnimation::CreateScene()
 
     // Apply light animation to light node
     auto* animationController = lightNode->CreateComponent<AnimationController>();
-    animationController->Play("Animations/LightAnimation.xml", 0, true);
+    animationController->PlayNew(AnimationParameters{context_, "Animations/LightAnimation.xml"}.Looped());
 
     // Create text animation
     SharedPtr<ValueAnimation> textAnimation(new ValueAnimation(context_));

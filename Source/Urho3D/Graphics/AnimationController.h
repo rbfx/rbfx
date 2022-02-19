@@ -23,75 +23,77 @@
 #pragma once
 
 #include "../IO/VectorBuffer.h"
+#include "../Math/WrappedScalar.h"
 #include "../Scene/Component.h"
 #include "../Graphics/AnimationState.h"
 #include "../Graphics/AnimationStateSource.h"
+
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
 
 class AnimatedModel;
 class Animation;
+struct AnimationTriggerPoint;
 struct Bone;
 
-/// Control data for an animation.
-/// @nocount
-struct URHO3D_API AnimationControl
+/// State and parameters of playing Animation.
+struct URHO3D_API AnimationParameters
 {
-    /// Construct with defaults.
-    AnimationControl() :
-        speed_(1.0f),
-        targetWeight_(0.0f),
-        fadeTime_(0.0f),
-        autoFadeTime_(0.0f),
-        setTimeTtl_(0.0f),
-        setWeightTtl_(0.0f),
-        setTime_(0),
-        setWeight_(0),
-        setTimeRev_(0),
-        setWeightRev_(0),
-        removeOnCompletion_(true)
-    {
-    }
+    AnimationParameters() = default;
+    explicit AnimationParameters(Animation* animation);
+    AnimationParameters(Context* context, const ea::string& animationName);
 
-    /// Instance equality operator.
-    bool operator ==(const AnimationControl& rhs) const
-    {
-        return this == &rhs;
-    }
+    /// Factory helpers.
+    /// @{
+    AnimationParameters& Looped();
+    AnimationParameters& StartBone(const ea::string& startBone);
+    AnimationParameters& Layer(unsigned layer);
+    AnimationParameters& Time(float time);
+    AnimationParameters& Additive();
+    AnimationParameters& Weight(float weight);
+    AnimationParameters& Speed(float speed);
+    AnimationParameters& KeepOnCompletion();
+    /// @}
 
-    /// Instance inequality operator.
-    bool operator !=(const AnimationControl& rhs) const
-    {
-        return this != &rhs;
-    }
+    /// Animation to be played.
+    /// Animation can be replicated over network only if is exists as named Resource on all machines.
+    Animation* animation_{};
+    StringHash animationName_;
 
-    /// Animation resource name.
-    ea::string name_;
-    /// Animation resource name hash.
-    StringHash hash_;
-    /// Animation speed.
-    float speed_;
-    /// Animation target weight.
-    float targetWeight_;
-    /// Animation weight fade time, 0 if no fade.
-    float fadeTime_;
-    /// Animation autofade on stop -time, 0 if disabled.
-    float autoFadeTime_;
-    /// Set time command time-to-live.
-    float setTimeTtl_;
-    /// Set weight command time-to-live.
-    float setWeightTtl_;
-    /// Set time command.
-    unsigned short setTime_;
-    /// Set weight command.
-    unsigned char setWeight_;
-    /// Set time command revision.
-    unsigned char setTimeRev_;
-    /// Set weight command revision.
-    unsigned char setWeightRev_;
-    /// Sets whether this should automatically be removed when it finishes playing.
-    bool removeOnCompletion_;
+    /// Static animation parameters that change rarely.
+    /// @{
+    bool looped_{};
+    bool removeOnCompletion_{true};
+    unsigned layer_{};
+    AnimationBlendMode blendMode_{};
+    ea::string startBone_;
+    float autoFadeOutTime_{};
+    /// @}
+
+    /// Dynamic animation parameters that change often.
+    /// @{
+    WrappedScalar<float> time_{0.0f, 0.0f, M_LARGE_VALUE};
+    float speed_{1.0f};
+
+    bool removeOnZeroWeight_{};
+    float weight_{1.0f};
+    float targetWeight_{1.0f};
+    float targetWeightDelay_{};
+    /// @}
+
+    /// Internal.
+    /// @{
+    bool removed_{};
+    /// @}
+
+    /// Serialization utilities.
+    /// @{
+    static constexpr unsigned NumVariants = 15;
+    static AnimationParameters FromVariantSpan(Context* context, ea::span<const Variant> variants);
+    void ToVariantSpan(ea::span<Variant> variants) const;
+    /// @}
 };
 
 /// %Component that drives an AnimatedModel's animations.
@@ -118,100 +120,60 @@ public:
 
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep);
-    /// Play an animation and set full target weight. Name must be the full resource name. Return true on success.
-    bool Play(const ea::string& name, unsigned char layer, bool looped, float fadeInTime = 0.0f);
-    /// Play an animation, set full target weight and fade out all other animations on the same layer. Name must be the full resource name. Return true on success.
-    bool PlayExclusive(const ea::string& name, unsigned char layer, bool looped, float fadeTime = 0.0f);
-    /// Stop an animation. Zero fadetime is instant. Return true on success.
-    bool Stop(const ea::string& name, float fadeOutTime = 0.0f);
-    /// Stop all animations on a specific layer. Zero fadetime is instant.
-    void StopLayer(unsigned char layer, float fadeOutTime = 0.0f);
-    /// Stop all animations. Zero fadetime is instant.
-    void StopAll(float fadeOutTime = 0.0f);
-    /// Fade animation to target weight. Return true on success.
-    bool Fade(const ea::string& name, float targetWeight, float fadeTime);
-    /// Fade other animations on the same layer to target weight. Return true on success.
-    bool FadeOthers(const ea::string& name, float targetWeight, float fadeTime);
 
-    /// Set animation blending layer priority. Return true on success.
-    bool SetLayer(const ea::string& name, unsigned char layer);
-    /// Set animation start bone. Return true on success.
-    bool SetStartBone(const ea::string& name, const ea::string& startBoneName);
-    /// Set animation time position. Return true on success.
-    bool SetTime(const ea::string& name, float time);
-    /// Set animation weight. Return true on success.
-    bool SetWeight(const ea::string& name, float weight);
-    /// Set animation looping. Return true on success.
-    bool SetLooped(const ea::string& name, bool enable);
-    /// Set animation speed. Return true on success.
-    bool SetSpeed(const ea::string& name, float speed);
-    /// Set animation autofade at end (non-looped animations only). Zero time disables. Return true on success.
-    bool SetAutoFade(const ea::string& name, float fadeOutTime);
-    /// Set whether an animation auto-removes on completion.
-    bool SetRemoveOnCompletion(const ea::string& name, bool removeOnCompletion);
-    /// Set animation blending mode. Return true on success.
-    bool SetBlendMode(const ea::string& name, AnimationBlendMode mode);
-
-    /// Return whether an animation is active. Note that non-looping animations that are being clamped at the end also return true.
-    bool IsPlaying(const ea::string& name) const;
-    /// Return whether any animation is active on a specific layer.
-    bool IsPlaying(unsigned char layer) const;
-    /// Return whether an animation is fading in.
-    bool IsFadingIn(const ea::string& name) const;
-    /// Return whether an animation is fading out.
-    bool IsFadingOut(const ea::string& name) const;
-    /// Return whether an animation is at its end. Will return false if the animation is not active at all.
-    bool IsAtEnd(const ea::string& name) const;
-    /// Return animation blending layer.
-    unsigned char GetLayer(const ea::string& name) const;
-    /// Return animation time position.
-    float GetTime(const ea::string& name) const;
-    /// Return animation weight.
-    float GetWeight(const ea::string& name) const;
-    /// Return animation looping.
-    bool IsLooped(const ea::string& name) const;
-    /// Return animation blending mode.
-    AnimationBlendMode GetBlendMode(const ea::string& name) const;
-    /// Return animation length.
-    float GetLength(const ea::string& name) const;
-    /// Return animation speed.
-    float GetSpeed(const ea::string& name) const;
-    /// Return animation fade target weight.
-    float GetFadeTarget(const ea::string& name) const;
-    /// Return animation fade time.
-    float GetFadeTime(const ea::string& name) const;
-    /// Return animation autofade time.
-    float GetAutoFade(const ea::string& name) const;
-    /// Return whether animation auto-removes on completion, or false if no such animation.
-    bool GetRemoveOnCompletion(const ea::string& name) const;
-    /// Find an animation state by animation name.
-    AnimationState* GetAnimationState(const ea::string& name) const;
-    /// Find an animation state by animation name hash.
-    AnimationState* GetAnimationState(StringHash nameHash) const;
-    /// Return the animation control structures for inspection.
-    const ea::vector<AnimationControl>& GetAnimations() const { return animations_; }
-
-    /// Set animation control structures attribute.
-    void SetAnimationsAttr(const VariantVector& value);
-    /// Set animations attribute for network replication.
-    void SetNetAnimationsAttr(const ea::vector<unsigned char>& value);
-    /// Set node animation states attribute.
-    void SetNodeAnimationStatesAttr(const VariantVector& value);
-    /// Return animation control structures attribute.
-    VariantVector GetAnimationsAttr() const;
-    /// Return animations attribute for network replication.
-    const ea::vector<unsigned char>& GetNetAnimationsAttr() const;
-    /// Return node animation states attribute.
-    VariantVector GetNodeAnimationStatesAttr() const;
-
-    /// Array of AnimationState objects created by AnimationController.
+    /// Manage played animations on low level.
     /// @{
-    void SetAnimationStatesAttr(const VariantVector& value);
-    VariantVector GetAnimationStatesAttr() const;
+    void AddAnimation(const AnimationParameters& params);
+    void UpdateAnimation(unsigned index, const AnimationParameters& params);
+    void RemoveAnimation(unsigned index);
+    unsigned GetNumAnimations() const { return animations_.size(); }
+    unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
+    const AnimationParameters& GetAnimationParameters(unsigned index) const { return animations_[index].params_; }
     /// @}
 
+    /// Manage played animations on high level.
+    /// @{
+    unsigned FindLastAnimation(Animation* animation) const;
+    const AnimationParameters* GetLastAnimationParameters(Animation* animation) const;
+    bool IsPlaying(Animation* animation) const;
+    unsigned PlayNew(const AnimationParameters& params, float fadeInTime = 0.0f);
+    unsigned PlayNewExclusive(const AnimationParameters& params, float fadeInTime = 0.0f);
+    unsigned PlayExisting(const AnimationParameters& params, float fadeInTime = 0.0f);
+    unsigned PlayExistingExclusive(const AnimationParameters& params, float fadeInTime = 0.0f);
+    void Fade(Animation* animation, float targetWeight, float fadeTime);
+    void Stop(Animation* animation, float fadeTime = 0.0f);
+    void StopLayer(unsigned layer, float fadeTime = 0.0f);
+    void StopLayerExcept(unsigned layer, unsigned exceptionIndex, float fadeTime = 0.0f);
+    void StopAll(float fadeTime = 0.0f);
+
+    bool UpdateAnimationTime(Animation* animation, float time);
+    bool UpdateAnimationWeight(Animation* animation, float weight);
+    bool UpdateAnimationSpeed(Animation* animation, float speed);
+    /// @}
+
+    /// Deprecated.
+    /// @{
+    bool Play(const ea::string& name, unsigned char layer, bool looped, float fadeInTime = 0.0f);
+    bool PlayExclusive(const ea::string& name, unsigned char layer, bool looped, float fadeTime = 0.0f);
+    bool Stop(const ea::string& name, float fadeOutTime = 0.0f);
+
+    bool SetTime(const ea::string& name, float time);
+    bool SetWeight(const ea::string& name, float weight);
+    bool SetSpeed(const ea::string& name, float speed);
+
+    bool IsPlaying(const ea::string& name) const;
+    float GetTime(const ea::string& name) const;
+    float GetWeight(const ea::string& name) const;
+    float GetSpeed(const ea::string& name) const;
+    /// @}
+
+    /// Set animation parameters attribute.
+    void SetAnimationsAttr(const VariantVector& value);
+    /// Return animation parameters attribute.
+    VariantVector GetAnimationsAttr() const;
+
     /// Mark animation state order dirty. For internal use only.
-    void MarkAnimationStateOrderDirty() { animationStateOrderDirty_ = true; }
+    void MarkAnimationStateOrderDirty() { animationStatesDirty_ = true; }
 
 protected:
     /// Handle node being assigned.
@@ -220,14 +182,10 @@ protected:
     void OnSceneSet(Scene* scene) override;
 
 private:
-    /// Add an animation state either to AnimatedModel or as a node animation.
-    AnimationState* AddAnimationState(Animation* animation);
-    /// Remove an animation state.
-    void RemoveAnimationState(AnimationState* state);
-    /// Find the internal index and animation state of an animation.
-    void FindAnimation(const ea::string& name, unsigned& index, AnimationState*& state) const;
     /// Handle scene post-update event.
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
+    /// Sort animations states according to the layers.
+    void SortAnimationStates();
     /// Update animation state tracks so they are connected to correct animatable objects.
     void UpdateAnimationStateTracks(AnimationState* state);
     /// Connect to AnimatedModel if possible.
@@ -236,16 +194,33 @@ private:
     AnimatedAttributeReference ParseAnimatablePath(ea::string_view path, Node* startNode);
     /// Get animated node (bone or owner node) by track name hash
     Node* GetTrackNodeByNameHash(StringHash trackNameHash, Node* startBone) const;
+    /// Deprecated. Get animation by resource name.
+    Animation* GetAnimationByName(const ea::string& name) const;
 
+    /// Update single animation.
+    /// @{
+    bool UpdateAnimationTime(AnimationParameters& params, float timeStep);
+    void ApplyAutoFadeOut(AnimationParameters& params) const;
+    void UpdateAnimationWeight(AnimationParameters& params, float timeStep) const;
+    void ApplyAnimationRemoval(AnimationParameters& params, bool isCompleted) const;
+    void CommitAnimationParams(const AnimationParameters& params, AnimationState* state) const;
+    /// @}
 
-    /// Animation control structures.
-    ea::vector<AnimationControl> animations_;
-    /// Attribute buffer for network replication.
-    mutable VectorBuffer attrBuffer_;
+    /// Currently playing animations.
+    struct AnimationInstance
+    {
+        AnimationParameters params_;
+        SharedPtr<AnimationState> state_;
+    };
+    ea::vector<AnimationInstance> animations_;
+    ea::vector<AnimationInstance> animationsSortBuffer_;
+
+    /// Triggers to be fired. Processed all at once due to possible side effects.
+    ea::vector<ea::pair<Animation*, const AnimationTriggerPoint*>> pendingTriggers_;
 
     /// Internal dirty flags cleaned on Update.
     /// @{
-    bool animationStateOrderDirty_{};
+    bool animationStatesDirty_{};
     /// @}
 };
 

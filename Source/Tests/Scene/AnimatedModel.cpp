@@ -120,10 +120,9 @@ TEST_CASE("Lerp animation blending")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/Rotate.ani", 0, true);
-        animationController->Play("Tests/TranslateX.ani", 0, true);
-        animationController->Play("Tests/TranslateZ.ani", 1, true);
-        animationController->SetWeight("Tests/TranslateZ.ani", 0.75f);
+        animationController->PlayNew(AnimationParameters{animationRotate}.Looped());
+        animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped());
+        animationController->PlayNew(AnimationParameters{animationTranslateZ}.Looped().Layer(1).Weight(0.75f));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -157,10 +156,9 @@ TEST_CASE("Lerp animation blending")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/Rotate.ani", 0, true);
-        animationController->Play("Tests/TranslateX.ani", 0, true);
-        animationController->Play("Tests/TranslateZ.ani", 1, true);
-        animationController->SetWeight("Tests/TranslateZ.ani", 0.75f);
+        animationController->PlayNew(AnimationParameters{animationRotate}.Looped());
+        animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped());
+        animationController->PlayNew(AnimationParameters{animationTranslateZ}.Looped().Layer(1).Weight(0.75f));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -214,10 +212,8 @@ TEST_CASE("Additive animation blending")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/TranslateX.ani", 0, true);
-        animationController->Play("Tests/TranslateZ_Model.ani", 1, true);
-        animationController->SetWeight("Tests/TranslateZ_Model.ani", 0.75f);
-        animationController->SetBlendMode("Tests/TranslateZ_Model.ani", ABM_ADDITIVE);
+        animationController->PlayNew(AnimationParameters{modelAnimationTranslateX}.Looped());
+        animationController->PlayNew(AnimationParameters{modelAnimationTranslateZ}.Looped().Additive().Layer(1).Weight(0.75f));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -251,10 +247,9 @@ TEST_CASE("Additive animation blending")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/TranslateX.ani", 0, true);
-        animationController->Play("Tests/TranslateZ_Node.ani", 1, true);
-        animationController->SetWeight("Tests/TranslateZ_Node.ani", 0.75f);
-        animationController->SetBlendMode("Tests/TranslateZ_Node.ani", ABM_ADDITIVE);
+        animationController->PlayNew(AnimationParameters{modelAnimationTranslateX}.Looped());
+        // TODO(animation): Do we still need separate animation
+        animationController->PlayNew(AnimationParameters{nodeAnimationTranslateZ}.Looped().Additive().Layer(1).Weight(0.75f));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -301,7 +296,7 @@ TEST_CASE("Animation empty track name")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        REQUIRE(animationController->Play(animationTranslateX->GetName(), 0, true));
+        animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped());
 
         Tests::NodeRef nodeRef{ scene, "Node" };
         Tests::NodeRef rootRef{ scene, "Root" };
@@ -328,7 +323,7 @@ TEST_CASE("Animation empty track name")
         auto child = node->CreateChild();
 
         auto animationController = node->CreateComponent<AnimationController>();
-        REQUIRE(animationController->Play(animationTranslateX->GetName(), 0, true));
+        animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped());
 
         Tests::NodeRef nodeRef{ scene, "Node" };
         Tests::NodeRef childRef{ scene, "" };
@@ -374,8 +369,7 @@ TEST_CASE("Animation start bone")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 1");
+        animationController->PlayNew(AnimationParameters{animation}.Looped().StartBone("Quad 1"));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -401,8 +395,7 @@ TEST_CASE("Animation start bone")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 2");
+        animationController->PlayNew(AnimationParameters{animation}.Looped().StartBone("Quad 2"));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -428,8 +421,7 @@ TEST_CASE("Animation start bone")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 1");
+        animationController->PlayNew(AnimationParameters{animation}.Looped().StartBone("Quad 1"));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -455,8 +447,7 @@ TEST_CASE("Animation start bone")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/TranslateXZ.ani", 0, true);
-        animationController->SetStartBone("Tests/TranslateXZ.ani", "Quad 2");
+        animationController->PlayNew(AnimationParameters{animation}.Looped().StartBone("Quad 2"));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -580,12 +571,9 @@ TEST_CASE("Variant animation tracks")
         auto text = childNode->CreateComponent<Text3D>();
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->Play("Tests/Animation1.ani", 0, false);
-        animationController->Play("Tests/Animation2.ani", 1, false);
-        animationController->SetWeight("Tests/Animation2.ani", 0.5f);
-        animationController->Play("Tests/Animation3.ani", 2, false);
-        animationController->SetBlendMode("Tests/Animation3.ani", ABM_ADDITIVE);
-        animationController->SetWeight("Tests/Animation3.ani", 0.5f);
+        animationController->PlayNew(AnimationParameters{cache->GetResource<Animation>("Tests/Animation1.ani")});
+        animationController->PlayNew(AnimationParameters{cache->GetResource<Animation>("Tests/Animation2.ani")}.Layer(1).Weight(0.5f));
+        animationController->PlayNew(AnimationParameters{cache->GetResource<Animation>("Tests/Animation3.ani")}.Layer(2).Additive().Weight(0.5f));
     }
 
     // Assert
