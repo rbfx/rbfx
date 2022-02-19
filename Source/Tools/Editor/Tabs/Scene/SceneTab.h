@@ -198,6 +198,8 @@ protected:
     void RenderDebugInfo();
     /// Editor camera rotation guide at the top-right corner.
     void RenderViewManipulator(ImRect rect);
+    /// Refocus Editor camera to the selected node.
+    void RefocusToNode(Camera* camera, StringHash cameraControllerType, float timeStep, bool updatePressed);
 
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
@@ -247,6 +249,14 @@ protected:
     unsigned reorderingId_ = M_MAX_UNSIGNED;
     ///
     unsigned reorderingInitialPos_ = M_MAX_UNSIGNED;
+    /// Check if the viewport needs to refocus to a component.
+    bool isRefocusEnabled_ = false;
+    /// Target refocus rotation.
+    Quaternion targetRotation_ = Quaternion::ZERO;
+    /// Target refocus position.
+    Vector3 targetPosition_ = Vector3::ZERO;
+    /// Current elapsed time since last update to peform some editor utility functions.
+    float timeStep_ { 1.0f / 60.0f};
 };
 
 };

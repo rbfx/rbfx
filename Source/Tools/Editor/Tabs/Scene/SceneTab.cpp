@@ -170,6 +170,16 @@ void SceneTab::OnUpdateFocused()
     if (ui::IsAnyItemActive())
         return;
 
+    Scene* scene = GetScene();
+    bool isMode3D_;
+    StringHash cameraControllerType;
+
+    if (scene)
+    {
+        isMode3D_ = !scene->GetComponent<EditorSceneSettings>()->GetCamera2D();
+        cameraControllerType = isMode3D_ ? DebugCameraController3D::GetTypeStatic() : DebugCameraController2D::GetTypeStatic();
+    }
+
     Editor* editor = GetSubsystem<Editor>();
     if (editor->keyBindings_.IsActionPressed(ActionType::Copy))
         CopySelection();
@@ -195,6 +205,9 @@ void SceneTab::OnUpdateFocused()
             gizmo_.SetOperation(GIZMOOP_ROTATE);
         else if (ui::IsKeyPressed(KEY_R))
             gizmo_.SetOperation(GIZMOOP_SCALE);
+
+        if (ui::IsKeyPressed(KEY_F) && scene)
+            RefocusToNode(GetCamera(), cameraControllerType, timeStep_, true);
     }
 }
 
@@ -887,7 +900,7 @@ void SceneTab::OnUpdate(VariantMap& args)
     if (scene == nullptr)
         return;
 
-    float timeStep = args[Update::P_TIMESTEP].GetFloat();
+    timeStep_ = args[Update::P_TIMESTEP].GetFloat();
     bool isMode3D_ = !scene->GetComponent<EditorSceneSettings>()->GetCamera2D();
     StringHash cameraControllerType = isMode3D_ ? DebugCameraController3D::GetTypeStatic() : DebugCameraController2D::GetTypeStatic();
     if (Camera* camera = GetCamera())
@@ -912,9 +925,11 @@ void SceneTab::OnUpdate(VariantMap& args)
                         controller3D->ClearRotationCenter();
                     }
                 }
-                component->RunFrame(timeStep);
+                component->RunFrame(timeStep_);
             }
         }
+
+        RefocusToNode(camera, cameraControllerType, timeStep_, false);
     }
 }
 
@@ -1632,6 +1647,64 @@ void SceneTab::RenderViewManipulator(ImRect rect)
     // Eat click event so selection does not change.
     if (ui::IsItemClicked(MOUSEB_LEFT))
         isClickedLeft_ = isClickedRight_ = isViewportActive_ = false;
+}
+
+void SceneTab::RefocusToNode(Camera* camera, StringHash cameraControllerType, float timeStep, bool updatePressed)
+{
+    if (updatePressed)
+    {
+        if (camera)
+        {
+            auto* component = static_cast<DebugCameraController*>(camera->GetComponent(cameraControllerType));
+            if (component != nullptr)
+            {
+                if (!selectedNodes_.empty())
+                {
+                    ea::hash_set<WeakPtr<Node>>::iterator iter = selectedNodes_.begin();
+                    WeakPtr<Node> selectedNode = *iter;
+
+                    if (selectedNode)
+                    {
+                        isRefocusEnabled_ = true;
+
+                        targetRotation_ = selectedNode->GetWorldRotation();
+                        targetPosition_ = selectedNode->GetWorldPosition();
+
+                        URHO3D_LOGINFO("Refocused to {} node", selectedNode->GetName());
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        if (camera && isRefocusEnabled_)
+        {
+            auto* component = static_cast<DebugCameraController*>(camera->GetComponent(cameraControllerType));
+            if (component != nullptr)
+            {
+                float speed = 5.f;
+                Vector3 translationOffset = Vector3(0.0f, 1.0f, -1.0f);
+                auto* controlNode = component->GetNode();
+
+                Quaternion localRot = targetRotation_;
+
+                if (targetRotation_.FromLookRotation((targetPosition_ - controlNode->GetWorldPosition()).Normalized()))
+                {
+                    controlNode->SetWorldRotation(controlNode->GetWorldRotation().Slerp(localRot, speed * timeStep));
+                }
+
+                controlNode->SetWorldPosition(
+                    controlNode->GetWorldPosition().Lerp(targetPosition_ + translationOffset, speed * timeStep));
+
+                if ((controlNode->GetWorldRotation().Angle(targetRotation_) < M_EPSILON)
+                    && controlNode->GetWorldPosition().Equals(targetPosition_ + translationOffset, 1.0f))
+                {
+                    isRefocusEnabled_ = false;
+                }
+            }
+        }
+    }
 }
 
 void SceneTab::Close()
