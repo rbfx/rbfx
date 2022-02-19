@@ -30,7 +30,7 @@ namespace Urho3D
 /// Range between two WrappedScalar values.
 /// Preserves direction of change.
 template <class T>
-class URHO3D_API WrappedScalarRange
+class WrappedScalarRange
 {
 public:
     WrappedScalarRange(T value, T minValue, T maxValue)
@@ -121,7 +121,7 @@ private:
 
 /// Wrapped value between min and max boundaries.
 template <class T>
-class URHO3D_API WrappedScalar
+class WrappedScalar
 {
 public:
     WrappedScalar() = default;

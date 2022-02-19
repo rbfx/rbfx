@@ -29,7 +29,6 @@
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/UI/Text3D.h>
 
 namespace
@@ -42,18 +41,110 @@ SharedPtr<Model> CreateTestSkinnedModel(Context* context)
 
 SharedPtr<Animation> CreateTestTranslateXAnimation(Context* context)
 {
-    return Tests::CreateLoopedTranslationAnimation(context, "", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+    return Tests::CreateLoopedTranslationAnimation(context, "", "Quad 2", {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, 2.0f);
+}
+
+SharedPtr<Animation> CreateTestTranslateZAnimation(Context* context)
+{
+    return Tests::CreateLoopedTranslationAnimation(context, "", "Quad 2", {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 2.0f}, 2.0f);
+}
+
+SharedPtr<Animation> CreateTestTranslateXZAnimation(Context* context)
+{
+    const auto translateX = Tests::CreateLoopedTranslationAnimation(context, "", "Quad 1", {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, 2.0f);
+    const auto translateZ = Tests::CreateLoopedTranslationAnimation(context, "", "Quad 2", {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 2.0f}, 2.0f);
+    return Tests::CreateCombinedAnimation(context, "", {translateX, translateZ});
+}
+
+SharedPtr<Animation> CreateTestRotationAnimation(Context* context)
+{
+    return Tests::CreateLoopedRotationAnimation(context, "", "Quad 1", Vector3::UP, 2.0f);
+}
+
+SharedPtr<Animation> CreateTestUnnamedTranslateXAnimation(Context* context)
+{
+    return Tests::CreateLoopedTranslationAnimation(context, "", "", { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
+}
+
+SharedPtr<Animation> CreateTestVariantAnimation1(Context* context)
+{
+    auto animation = MakeShared<Animation>(context);
+    animation->SetLength(1.0f);
+    {
+        AnimationTrack* track = animation->CreateTrack("Quad 2");
+        track->channelMask_ = CHANNEL_POSITION;
+
+        track->AddKeyFrame({ 0.0f, Vector3::ONE });
+        track->AddKeyFrame({ 0.6f, Vector3::ZERO });
+    }
+    {
+        VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Text");
+        track->AddKeyFrame({ 0.0f, Variant("A") });
+        track->AddKeyFrame({ 0.4f, Variant("B") });
+        track->Commit();
+    }
+    {
+        VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
+        track->AddKeyFrame({ 0.0f, 10.0f });
+        track->AddKeyFrame({ 0.4f, 20.0f });
+        track->Commit();
+    }
+    {
+        VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
+        track->AddKeyFrame({ 0.0f, Variant(10) });
+        track->AddKeyFrame({ 0.4f, Variant(20) });
+        track->Commit();
+    }
+    return animation;
+}
+
+SharedPtr<Animation> CreateTestVariantAnimation2(Context* context)
+{
+    auto animation = MakeShared<Animation>(context);
+    animation->SetLength(1.0f);
+    {
+        VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
+        track->AddKeyFrame({ 0.0f, 20.0f });
+        track->AddKeyFrame({ 0.4f, 30.0f });
+        track->Commit();
+    }
+    {
+        VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
+        track->AddKeyFrame({ 0.0f, Variant(20) });
+        track->AddKeyFrame({ 0.4f, Variant(30) });
+        track->Commit();
+    }
+    return animation;
+}
+
+SharedPtr<Animation> CreateTestVariantAnimation3(Context* context)
+{
+    auto animation = MakeShared<Animation>(context);
+    animation->SetLength(1.0f);
+    {
+        VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
+        track->AddKeyFrame({ 0.0f, 12.0f });
+        track->AddKeyFrame({ 0.4f, 16.0f });
+        track->Commit();
+    }
+    {
+        VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
+        track->AddKeyFrame({ 0.0f, Variant(12) });
+        track->AddKeyFrame({ 0.4f, Variant(16) });
+        track->Commit();
+    }
+    return animation;
 }
 
 }
 
-TEST_CASE("Animation of hierarchical models is stable")
+TEST_CASE("Animation of hierarchical AnimatedModels is stable")
 {
     const int numNodes = 20;
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimatedModel/SkinnedModel.mdl", CreateTestSkinnedModel);
-    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimatedModel/TranslateX.ani", CreateTestTranslateXAnimation);
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateX.ani", CreateTestTranslateXAnimation);
 
     // Create hierarchical scene
     auto scene = MakeShared<Scene>(context);
@@ -90,24 +181,14 @@ TEST_CASE("Animation of hierarchical models is stable")
         REQUIRE(positions[i].x_ == i * -0.125f);
 }
 
-TEST_CASE("Lerp animation blending")
+TEST_CASE("Animations are blended with linear interpolation")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto cache = context->GetSubsystem<ResourceCache>();
 
-    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
-    cache->AddManualResource(model);
-
-    auto animationRotate = Tests::CreateLoopedRotationAnimation(context,
-        "Tests/Rotate.ani", "Quad 1", Vector3::UP, 2.0f);
-    auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
-        "Tests/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
-    auto animationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "Tests/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
-
-    cache->AddManualResource(animationRotate);
-    cache->AddManualResource(animationTranslateX);
-    cache->AddManualResource(animationTranslateZ);
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateX.ani", CreateTestTranslateXAnimation);
+    auto animationTranslateZ = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateZ.ani", CreateTestTranslateZAnimation);
+    auto animationRotate = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/Rotation.ani", CreateTestRotationAnimation);
 
     // Test AnimatedModel mode
     {
@@ -182,24 +263,13 @@ TEST_CASE("Lerp animation blending")
     }
 }
 
-TEST_CASE("Additive animation blending")
+TEST_CASE("Animations are blended additively")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto cache = context->GetSubsystem<ResourceCache>();
 
-    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
-    cache->AddManualResource(model);
-
-    auto modelAnimationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
-        "Tests/TranslateX.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
-    auto modelAnimationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "Tests/TranslateZ_Model.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
-    auto nodeAnimationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "Tests/TranslateZ_Node.ani", "Quad 2", { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
-
-    cache->AddManualResource(modelAnimationTranslateX);
-    cache->AddManualResource(modelAnimationTranslateZ);
-    cache->AddManualResource(nodeAnimationTranslateZ);
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateX.ani", CreateTestTranslateXAnimation);
+    auto animationTranslateZ = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateZ.ani", CreateTestTranslateZAnimation);
 
     // Test AnimatedModel mode
     {
@@ -212,8 +282,8 @@ TEST_CASE("Additive animation blending")
         animatedModel->SetModel(model);
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->PlayNew(AnimationParameters{modelAnimationTranslateX}.Looped());
-        animationController->PlayNew(AnimationParameters{modelAnimationTranslateZ}.Looped().Additive().Layer(1).Weight(0.75f));
+        animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped());
+        animationController->PlayNew(AnimationParameters{animationTranslateZ}.Looped().Additive().Layer(1).Weight(0.75f));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -247,9 +317,8 @@ TEST_CASE("Additive animation blending")
         auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->PlayNew(AnimationParameters{modelAnimationTranslateX}.Looped());
-        // TODO(animation): Do we still need separate animation
-        animationController->PlayNew(AnimationParameters{nodeAnimationTranslateZ}.Looped().Additive().Layer(1).Weight(0.75f));
+        animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped());
+        animationController->PlayNew(AnimationParameters{animationTranslateZ}.Looped().Additive().Layer(1).Weight(0.75f));
 
         // Assert
         Tests::NodeRef quad2{ scene, "Quad 2" };
@@ -273,17 +342,12 @@ TEST_CASE("Additive animation blending")
     }
 }
 
-TEST_CASE("Animation empty track name")
+TEST_CASE("Animation track with empty name is applied to the owner node itself")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto cache = context->GetSubsystem<ResourceCache>();
 
-    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
-    cache->AddManualResource(model);
-
-    auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context, "Tests/TranslateSelf.ani", "",
-                    {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, 2.0f);
-    cache->AddManualResource(animationTranslateX);
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/UnnamedTranslateX.ani", CreateTestUnnamedTranslateXAnimation);
 
     // Test AnimatedModel mode
     {
@@ -341,22 +405,12 @@ TEST_CASE("Animation empty track name")
     }
 }
 
-TEST_CASE("Animation start bone")
+TEST_CASE("Animation is filtered when start bone is specified")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto cache = context->GetSubsystem<ResourceCache>();
 
-    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
-    cache->AddManualResource(model);
-
-    auto animationTranslateX = Tests::CreateLoopedTranslationAnimation(context,
-        "Tests/TranslateX.ani", "Quad 1", { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, 2.0f);
-    auto animationTranslateZ = Tests::CreateLoopedTranslationAnimation(context,
-        "Tests/TranslateZ.ani", "Quad 2", { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 2.0f }, 2.0f);
-    auto animation = Tests::CreateCombinedAnimation(context,
-        "Tests/TranslateXZ.ani", { animationTranslateX, animationTranslateZ });
-
-    cache->AddManualResource(animation);
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animation = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateXZ.ani", CreateTestTranslateXZAnimation);
 
     // Test AnimatedModel mode: both animations
     {
@@ -463,7 +517,7 @@ TEST_CASE("Animation start bone")
     }
 }
 
-TEST_CASE("Variant animation track loop")
+TEST_CASE("VariantCurve is sample with looping and without it")
 {
     VariantCurve curve;
     auto white = Color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -474,88 +528,21 @@ TEST_CASE("Variant animation track loop")
     curve.Commit();
 
     unsigned frameIndex;
-    Color unloopedValue = curve.Sample(1.0f + M_EPSILON/2.0f, 1.0f, false, frameIndex).GetColor();
+    Color unloopedValue = curve.Sample(1.0f + M_EPSILON / 2.0f, 1.0f, false, frameIndex).GetColor();
     CHECK(unloopedValue.Equals(black));
     Color loopedValue = curve.Sample(1.0f + M_EPSILON / 2.0f, 1.0f, true, frameIndex).GetColor();
     CHECK(loopedValue.Equals(white));
 }
 
-TEST_CASE("Variant animation tracks")
+TEST_CASE("Variant animation tracks are applied to components with optional blending")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto cache = context->GetSubsystem<ResourceCache>();
 
     // Prepare resources
-    auto model = Tests::CreateSkinnedQuad_Model(context)->ExportModel("@/SkinnedQuad.mdl");
-    cache->AddManualResource(model);
-
-    {
-        auto animation = MakeShared<Animation>(context);
-        animation->SetName("Tests/Animation1.ani");
-        animation->SetLength(1.0f);
-        {
-            AnimationTrack* track = animation->CreateTrack("Quad 2");
-            track->channelMask_ = CHANNEL_POSITION;
-
-            track->AddKeyFrame({ 0.0f, Vector3::ONE });
-            track->AddKeyFrame({ 0.6f, Vector3::ZERO });
-        }
-        {
-            VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Text");
-            track->AddKeyFrame({ 0.0f, Variant("A") });
-            track->AddKeyFrame({ 0.4f, Variant("B") });
-            track->Commit();
-        }
-        {
-            VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
-            track->AddKeyFrame({ 0.0f, 10.0f });
-            track->AddKeyFrame({ 0.4f, 20.0f });
-            track->Commit();
-        }
-        {
-            VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
-            track->AddKeyFrame({ 0.0f, Variant(10) });
-            track->AddKeyFrame({ 0.4f, Variant(20) });
-            track->Commit();
-        }
-        cache->AddManualResource(animation);
-    }
-    {
-        auto animation = MakeShared<Animation>(context);
-        animation->SetName("Tests/Animation2.ani");
-        animation->SetLength(1.0f);
-        {
-            VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
-            track->AddKeyFrame({ 0.0f, 20.0f });
-            track->AddKeyFrame({ 0.4f, 30.0f });
-            track->Commit();
-        }
-        {
-            VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
-            track->AddKeyFrame({ 0.0f, Variant(20) });
-            track->AddKeyFrame({ 0.4f, Variant(30) });
-            track->Commit();
-        }
-        cache->AddManualResource(animation);
-    }
-    {
-        auto animation = MakeShared<Animation>(context);
-        animation->SetName("Tests/Animation3.ani");
-        animation->SetLength(1.0f);
-        {
-            VariantAnimationTrack* track = animation->CreateVariantTrack("Child Node/@Text3D/Font Size");
-            track->AddKeyFrame({ 0.0f, 12.0f });
-            track->AddKeyFrame({ 0.4f, 16.0f });
-            track->Commit();
-        }
-        {
-            VariantAnimationTrack* track = animation->CreateVariantTrack("@/Variables/Test");
-            track->AddKeyFrame({ 0.0f, Variant(12) });
-            track->AddKeyFrame({ 0.4f, Variant(16) });
-            track->Commit();
-        }
-        cache->AddManualResource(animation);
-    }
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animation1 = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/VariantAnimation1.ani", CreateTestVariantAnimation1);
+    auto animation2 = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/VariantAnimation2.ani", CreateTestVariantAnimation2);
+    auto animation3 = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/VariantAnimation3.ani", CreateTestVariantAnimation3);
 
     // Setup
     auto scene = MakeShared<Scene>(context);
@@ -571,9 +558,9 @@ TEST_CASE("Variant animation tracks")
         auto text = childNode->CreateComponent<Text3D>();
 
         auto animationController = node->CreateComponent<AnimationController>();
-        animationController->PlayNew(AnimationParameters{cache->GetResource<Animation>("Tests/Animation1.ani")});
-        animationController->PlayNew(AnimationParameters{cache->GetResource<Animation>("Tests/Animation2.ani")}.Layer(1).Weight(0.5f));
-        animationController->PlayNew(AnimationParameters{cache->GetResource<Animation>("Tests/Animation3.ani")}.Layer(2).Additive().Weight(0.5f));
+        animationController->PlayNew(AnimationParameters{animation1});
+        animationController->PlayNew(AnimationParameters{animation2}.Layer(1).Weight(0.5f));
+        animationController->PlayNew(AnimationParameters{animation3}.Layer(2).Additive().Weight(0.5f));
     }
 
     // Assert
