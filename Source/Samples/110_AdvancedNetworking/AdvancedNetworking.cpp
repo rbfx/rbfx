@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +23,7 @@
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
-#include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/Animation.h>
-#include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -43,7 +42,6 @@
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Network/NetworkEvents.h>
 #include <Urho3D/Physics/CollisionShape.h>
-#include <Urho3D/Physics/KinematicCharacterController.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Replica/PredictedKinematicController.h>
@@ -59,321 +57,17 @@
 #include <Urho3D/UI/UI.h>
 
 #include "AdvancedNetworking.h"
+#include "AdvancedNetworkingPlayer.h"
+#include "AdvancedNetworkingUI.h"
+#include "AdvancedNetworkingRaycast.h"
 
 #include <Urho3D/DebugNew.h>
 
-static constexpr unsigned IMPORTANT_VIEW_MASK = 0x1;
-static constexpr unsigned UNIMPORTANT_VIEW_MASK = 0x2;
 static constexpr float CAMERA_DISTANCE = 5.0f;
 static constexpr float CAMERA_OFFSET = 2.0f;
 static constexpr float WALK_VELOCITY = 3.35f;
 static constexpr float HIT_DISTANCE = 100.0f;
 static constexpr float AUTO_MOVEMENT_DURATION = 1.0f;
-static constexpr float MAX_ROTATION_SPEED = 360.0f;
-
-URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYCAST, AdvancedNetworkingRaycast)
-{
-    URHO3D_PARAM(P_ORIGIN, Origin);
-    URHO3D_PARAM(P_TARGET, Target);
-    URHO3D_PARAM(P_REPLICA_FRAME, ReplicaFrame);
-    URHO3D_PARAM(P_REPLICA_SUBFRAME, ReplicaSubFrame);
-    URHO3D_PARAM(P_INPUT_FRAME, InputFrame);
-    URHO3D_PARAM(P_INPUT_SUBFRAME, InputSubFrame);
-}
-
-URHO3D_EVENT(E_ADVANCEDNETWORKING_RAYHIT, AdvancedNetworkingRayhit)
-{
-    URHO3D_PARAM(P_ORIGIN, Origin);
-    URHO3D_PARAM(P_POSITION, Position);
-}
-
-/// Return shortest angle between two angles.
-float ShortestAngle(float lhs, float rhs)
-{
-    const float delta = Mod(rhs - lhs + 180.0f, 360.0f) - 180.0f;
-    return delta < -180.0f ? delta + 360.0f : delta;
-}
-
-/// Helper function to smoothly transform one quaternion into another.
-Quaternion TransformRotation(const Quaternion& base, const Quaternion& target, float maxAngularVelocity)
-{
-    const float baseYaw = base.YawAngle();
-    const float targetYaw = target.YawAngle();
-    if (Equals(baseYaw, targetYaw, 0.1f))
-        return base;
-
-    const float shortestAngle = ShortestAngle(baseYaw, targetYaw);
-    const float delta = Sign(shortestAngle) * ea::min(Abs(shortestAngle), maxAngularVelocity);
-    return Quaternion{baseYaw + delta, Vector3::UP};
-}
-
-/// Custom networking component that handles all sample-specific behaviors:
-/// - Animation synchronization;
-/// - Player rotation synchronization;
-/// - View mask assignment for easy raycasting.
-class AdvancedNetworkingPlayer : public ReplicatedAnimation
-{
-    URHO3D_OBJECT(AdvancedNetworkingPlayer, ReplicatedAnimation);
-
-public:
-    static constexpr unsigned RingBufferSize = 8;
-    static constexpr NetworkCallbackFlags CallbackMask =
-        NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::Update | NetworkCallbackMask::InterpolateState;
-
-    explicit AdvancedNetworkingPlayer(Context* context)
-        : ReplicatedAnimation(context, CallbackMask)
-    {
-        auto cache = GetSubsystem<ResourceCache>();
-        animations_ = {
-            cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani"),
-            cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani"),
-            cache->GetResource<Animation>("Models/Mutant/Mutant_Jump1.ani"),
-        };
-    }
-
-    /// Initialize component on the server.
-    void InitializeOnServer() override
-    {
-        BaseClassName::InitializeOnServer();
-
-        InitializeCommon();
-
-        // On server, all players are unimportant because they are moving and need temporal raycasts
-        auto animatedModel = GetComponent<AnimatedModel>();
-        animatedModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
-    }
-
-    /// Initialize component on the client.
-    void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override
-    {
-        BaseClassName::InitializeFromSnapshot(frame, src, isOwned);
-
-        InitializeCommon();
-
-        // Mark all players except ourselves as important for raycast.
-        auto animatedModel = GetComponent<AnimatedModel>();
-        animatedModel->SetViewMask(isOwned ? UNIMPORTANT_VIEW_MASK : IMPORTANT_VIEW_MASK);
-
-        // Setup client-side containers
-        ReplicationManager* replicationManager = GetNetworkObject()->GetReplicationManager();
-        const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
-
-        animationTrace_.Resize(traceDuration);
-        rotationTrace_.Resize(traceDuration);
-
-        // Smooth rotation a bit, but without extrapolation
-        rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
-    }
-
-    /// Always send animation updates for simplicity.
-    bool PrepareUnreliableDelta(NetworkFrame frame) override
-    {
-        BaseClassName::PrepareUnreliableDelta(frame);
-
-        return true;
-    }
-
-    /// Write current animation state and rotation on server.
-    void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override
-    {
-        BaseClassName::WriteUnreliableDelta(frame, dest);
-
-        const ea::string& currentAnimationName = animations_[currentAnimation_]->GetName();
-        const float currentTime = animationController_->GetTime(currentAnimationName);
-
-        dest.WriteVLE(currentAnimation_);
-        dest.WriteFloat(currentTime);
-        dest.WriteQuaternion(node_->GetWorldRotation());
-    }
-
-    /// Read current animation state on replicating client.
-    void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override
-    {
-        BaseClassName::ReadUnreliableDelta(frame, src);
-
-        const unsigned animationIndex = src.ReadVLE();
-        const float animationTime = src.ReadFloat();
-        const Quaternion rotation = src.ReadQuaternion();
-
-        animationTrace_.Set(frame, {animationIndex, animationTime});
-        rotationTrace_.Set(frame, rotation);
-    }
-
-    /// Perform interpolation of received data on replicated client.
-    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
-    {
-        BaseClassName::InterpolateState(timeStep, replicaTime, inputTime);
-
-        if (!GetNetworkObject()->IsReplicatedClient())
-            return;
-
-        // Interpolate player rotation
-        if (auto newRotation = rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, timeStep))
-            node_->SetWorldRotation(*newRotation);
-
-        // Extrapolate animation time from trace
-        if (const auto animationSample = animationTrace_.GetRawOrPrior(replicaTime.Frame()))
-        {
-            const auto& [value, sampleFrame] = *animationSample;
-            const auto& [animationIndex, animationTime] = value;
-
-            // Just play most recent received animation
-            Animation* animation = animations_[animationIndex];
-            animationController_->PlayExclusive(animation->GetName(), 0, false, fadeTime_);
-
-            // Adjust time to stay synchronized with server
-            const float delay = (replicaTime - NetworkTime{sampleFrame}) * networkFrameDuration_;
-            const float time = Mod(animationTime + delay, animation->GetLength());
-            animationController_->SetTime(animation->GetName(), time);
-        }
-    }
-
-    void Update(float replicaTimeStep, float inputTimeStep) override
-    {
-        if (!GetNetworkObject()->IsReplicatedClient())
-            UpdateAnimations(inputTimeStep);
-
-        BaseClassName::Update(replicaTimeStep, inputTimeStep);
-    }
-
-private:
-    void InitializeCommon()
-    {
-        ReplicationManager* replicationManager = GetNetworkObject()->GetReplicationManager();
-        networkFrameDuration_ = 1.0f / replicationManager->GetUpdateFrequency();
-
-        // Resolve dependencies
-        replicatedTransform_ = GetNetworkObject()->GetNetworkBehavior<ReplicatedTransform>();
-        networkController_ = GetNetworkObject()->GetNetworkBehavior<PredictedKinematicController>();
-        kinematicController_ = networkController_->GetComponent<KinematicCharacterController>();
-    }
-
-    void UpdateAnimations(float timeStep)
-    {
-        // Get current state of the controller to deduce animation from
-        const bool isGrounded = kinematicController_->OnGround();
-        const Vector3 velocity = networkController_->GetVelocity();
-        const Vector3 walkDirection = Vector3::FromXZ(velocity.ToXZ().NormalizedOrDefault(Vector2::ZERO, 0.1f));
-
-        // Start jump if has high vertical velocity and hasn't jumped yet
-        if ((currentAnimation_ != ANIM_JUMP) && velocity.y_ > jumpThreshold_)
-        {
-            animationController_->PlayExclusive(animations_[ANIM_JUMP]->GetName(), 0, false, fadeTime_);
-            animationController_->SetTime(animations_[ANIM_JUMP]->GetName(), 0);
-            currentAnimation_ = ANIM_JUMP;
-        }
-
-        // Rotate player both on ground and in the air
-        if (walkDirection != Vector3::ZERO)
-        {
-            const Quaternion targetRotation{Vector3::BACK, walkDirection};
-            const float maxAngularVelocity = MAX_ROTATION_SPEED * timeStep;
-            node_->SetWorldRotation(TransformRotation(node_->GetWorldRotation(), targetRotation, maxAngularVelocity));
-        }
-
-        // If on the ground, either walk or stay idle
-        if (isGrounded)
-        {
-            currentAnimation_ = walkDirection != Vector3::ZERO ? ANIM_WALK : ANIM_IDLE;
-            animationController_->PlayExclusive(animations_[currentAnimation_]->GetName(), 0, true, fadeTime_);
-        }
-    }
-
-    /// Enum that represents current animation state and corresponding animations.
-    enum
-    {
-        ANIM_IDLE,
-        ANIM_WALK,
-        ANIM_JUMP,
-    };
-    ea::vector<Animation*> animations_;
-
-    /// Animation parameters.
-    const float moveThreshold_{0.1f};
-    const float jumpThreshold_{0.2f};
-    const float fadeTime_{0.1f};
-
-    /// Dependencies of this behaviors.
-    WeakPtr<ReplicatedTransform> replicatedTransform_;
-    WeakPtr<PredictedKinematicController> networkController_;
-    WeakPtr<KinematicCharacterController> kinematicController_;
-
-    /// Index of current animation tracked on server for simplicity.
-    unsigned currentAnimation_{};
-
-    /// Client-side containers that keep aggregated data from the server for the future sampling.
-    float networkFrameDuration_{};
-    NetworkValue<ea::pair<unsigned, float>> animationTrace_;
-    NetworkValue<Quaternion> rotationTrace_;
-    NetworkValueSampler<Quaternion> rotationSampler_;
-};
-
-void AdvancedNetworkingUI::StartServer()
-{
-    Stop();
-
-    Network* network = GetSubsystem<Network>();
-    network->StartServer(serverPort_);
-}
-
-void AdvancedNetworkingUI::ConnectToServer(const ea::string& address)
-{
-    Stop();
-
-    Network* network = GetSubsystem<Network>();
-    network->Connect(address, serverPort_, GetScene());
-}
-
-void AdvancedNetworkingUI::Stop()
-{
-    Network* network = GetSubsystem<Network>();
-    network->Disconnect();
-    network->StopServer();
-}
-
-void AdvancedNetworkingUI::OnNodeSet(Node* node)
-{
-    BaseClassName::OnNodeSet(node);
-    RmlUI* rmlUI = GetUI();
-    Network* network = GetSubsystem<Network>();
-    Rml::Context* rmlContext = rmlUI->GetRmlContext();
-
-    if (node != nullptr && !model_)
-    {
-        Rml::DataModelConstructor constructor = rmlContext->CreateDataModel("AdvancedNetworkingUI_model");
-        if (!constructor)
-            return;
-
-        constructor.Bind("port", &serverPort_);
-        constructor.Bind("connectionAddress", &connectionAddress_);
-        constructor.BindFunc("isServer", [=](Rml::Variant& result) { result = network->IsServerRunning(); });
-        constructor.BindFunc("isClient", [=](Rml::Variant& result) { result = network->GetServerConnection() != nullptr; });
-        constructor.Bind("cheatAutoMovement", &cheatAutoMovement_);
-
-        constructor.BindEventCallback("onStartServer",
-            [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { StartServer(); });
-        constructor.BindEventCallback("onConnectToServer",
-            [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { ConnectToServer(connectionAddress_); });
-        constructor.BindEventCallback("onStop",
-            [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { Stop(); });
-
-        model_ = constructor.GetModelHandle();
-
-        SetResource("UI/AdvancedNetworkingUI.rml");
-        SetOpen(true);
-    }
-    else if (node == nullptr && model_)
-    {
-        rmlContext->RemoveDataModel("AdvancedNetworkingUI_model");
-        model_ = nullptr;
-    }
-}
-
-void AdvancedNetworkingUI::Update(float timeStep)
-{
-    model_.DirtyVariable("isServer");
-    model_.DirtyVariable("isClient");
-}
 
 AdvancedNetworking::AdvancedNetworking(Context* context) :
     Sample(context)

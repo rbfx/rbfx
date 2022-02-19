@@ -133,7 +133,7 @@ public:
     void ProcessSceneUpdate();
 
     ea::string GetDebugInfo() const;
-    const auto& GetOwnedNetworkObjects() const { return ownedObjects_; };
+    const ea::unordered_set<WeakPtr<NetworkObject>>& GetOwnedNetworkObjects() const { return ownedObjects_; };
     bool HasOwnedNetworkObjects() const { return !ownedObjects_.empty(); }
     NetworkObject* GetOwnedNetworkObject() const { return ownedObjects_.size() == 1 ? *ownedObjects_.begin() : nullptr; }
 
