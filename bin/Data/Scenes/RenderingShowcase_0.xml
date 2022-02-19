@@ -5,17 +5,17 @@
 	<attribute name="Smoothing Constant" value="50.000000" />
 	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="1281" />
-	<attribute name="Next Replicated Component ID" value="1256" />
-	<attribute name="Next Local Node ID" value="16777323" />
-	<attribute name="Next Local Component ID" value="16777375" />
+	<attribute name="Next Replicated Node ID" value="1340" />
+	<attribute name="Next Replicated Component ID" value="1314" />
+	<attribute name="Next Local Node ID" value="16777331" />
+	<attribute name="Next Local Component ID" value="16777385" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
 	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="2.7397 2.1124 6.40891" />
-		<attribute name="Camera Rotation" value="0.00537767 0.0013981 0.980695 -0.195464" />
+		<attribute name="Camera Position" value="31.3187 19.6742 -1.10012" />
+		<attribute name="Camera Rotation" value="-0.229934 -0.136128 0.828436 -0.492233" />
 	</component>
 	<component type="RenderPipeline" id="315" />
 	<node id="2">
@@ -1669,5 +1669,39 @@
 			<attribute name="Model" value="Model;Models/Box.mdl" />
 			<attribute name="Material" value="Material;Materials/Refraction.xml" />
 		</component>
+	</node>
+	<node id="1310">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Particles" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="22.5 0 -7.5" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<node id="1311">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Plane" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="9.9 1 9.9" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1285">
+				<attribute name="Model" value="Model;Models/PlaneTess.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+			</component>
+		</node>
+		<node id="1281">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="RealFire" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="ParticleGraphEmitter" id="1256">
+				<attribute name="Effect" value="ParticleGraphEffect;Particle/RealFire.xml" />
+			</component>
+		</node>
 	</node>
 </scene>

@@ -25,6 +25,7 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/ParticleEffect.h>
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -203,7 +204,7 @@ bool GetContentResourceType(Context* context, const ea::string& resourcePath, Re
     case CTYPE_UILAYOUT:
     case CTYPE_UISTYLE:
     {
-        types.emplace_back(BinaryFile::GetTypeStatic());    // rml, rcss
+        types.emplace_back(BinaryFile::GetTypeStatic()); // rml, rcss
         break;
     }
     case CTYPE_MODEL:
@@ -222,6 +223,10 @@ bool GetContentResourceType(Context* context, const ea::string& resourcePath, Re
         break;
     }
     case CTYPE_PARTICLE:
+    {
+        types.emplace_back(ParticleEffect::GetTypeStatic());
+        break;
+    }
     case CTYPE_RENDERPATH:
     case CTYPE_TEXTUREXML:
     {

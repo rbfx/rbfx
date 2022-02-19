@@ -1559,6 +1559,9 @@ template <typename T> Variant MakeCustomValue(const T& value)
     return var;
 }
 
+/// Return variant size in bytes from type. This is not the same as size of Variant class instance, this is a size of corresponding type.
+unsigned GetVariantTypeSize(VariantType type);
+
 /// Return variant type from type.
 template <typename T> VariantType GetVariantType();
 

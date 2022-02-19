@@ -1,0 +1,10 @@
+<material>
+	<technique name="Techniques/UnlitTransparentAdd.xml" />
+	<shader vsdefines="SOFTPARTICLES" psdefines="SOFTPARTICLES" />
+	<renderorder value="129" />
+	<cull value="ccw" />
+	<shadowcull value="ccw" />
+	<texture unit="diffuse" name="Textures/RealFire/Circle.png" />
+	<parameter name="MatDiffColor" value="2.828427 2.828427 2.828427 1" />
+	<parameter name="FadeOffsetScale" value="0 0.5" />
+</material>
