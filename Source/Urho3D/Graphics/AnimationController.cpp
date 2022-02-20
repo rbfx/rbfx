@@ -71,12 +71,12 @@ AnimationParameters::AnimationParameters(Context* context, const ea::string& ani
 bool AnimationParameters::RemoveDelayed(float fadeTime)
 {
     const bool alreadyRemoved = Equals(targetWeight_, 0.0f, M_LARGE_EPSILON);
-    const float effectiveFadeTime = alreadyRemoved ? ea::min(targetWeightDelay_, fadeTime) : fadeTime;
+    const float effectiveDelay = alreadyRemoved ? ea::min(targetWeightDelay_, fadeTime) : fadeTime;
 
-    const bool changed = !removeOnZeroWeight_ || targetWeightDelay_ != effectiveFadeTime || targetWeight_ != 0.0f;
+    const bool changed = !removeOnZeroWeight_ || targetWeightDelay_ != effectiveDelay || targetWeight_ != 0.0f;
 
     removeOnZeroWeight_ = true;
-    targetWeightDelay_ = effectiveFadeTime;
+    targetWeightDelay_ = effectiveDelay;
     targetWeight_ = 0.0f;
 
     return changed;
@@ -314,7 +314,7 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
     // Try to match old animation states for all remaining states
     for (unsigned i = 0; i < numNewAnimations; ++i)
     {
-        const AnimationParameters& newParams = tempAnimations_[i].params_;
+        AnimationParameters& newParams = tempAnimations_[i].params_;
         if (newParams.removed_)
             continue;
 
@@ -325,6 +325,12 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
         {
             tempAnimations_[i].state_ = oldIter->state_;
             oldIter->params_.merged_ = true;
+
+            // Keep original weight for smooth transition when merged
+            newParams.weight_ = oldIter->params_.weight_;
+            // Keep original delay if weight didn't change, extend delay up to minimum value otherwise
+            const bool weightChanged = !Equals(newParams.targetWeight_, oldIter->params_.targetWeight_, M_LARGE_EPSILON);
+            newParams.targetWeightDelay_ = weightChanged ? ea::max(newParams.targetWeightDelay_, fadeTime) : oldIter->params_.targetWeightDelay_;
         }
     }
 
@@ -336,6 +342,9 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
     // Append new animations
     for (const AnimationInstance& instance : tempAnimations_)
     {
+        if (instance.params_.removed_)
+            continue;
+
         if (!instance.state_)
         {
             PlayNew(instance.params_, fadeTime);
@@ -344,6 +353,7 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
         {
             EnsureStateInitialized(instance.state_, instance.params_);
             animations_.push_back(instance);
+            animationStatesDirty_ = true;
         }
     }
 }
@@ -409,6 +419,13 @@ void AnimationController::GetAnimationParameters(ea::vector<AnimationParameters>
     result.clear();
     for (const AnimationInstance& instance : animations_)
         result.push_back(instance.params_);
+}
+
+ea::vector<AnimationParameters> AnimationController::GetAnimationParameters() const
+{
+    ea::vector<AnimationParameters> params;
+    GetAnimationParameters(params);
+    return params;
 }
 
 unsigned AnimationController::FindLastAnimation(Animation* animation) const
