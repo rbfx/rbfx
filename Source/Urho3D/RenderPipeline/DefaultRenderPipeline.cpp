@@ -187,6 +187,14 @@ void DefaultRenderPipelineView::ApplySettings()
         postProcessPasses_.push_back(pass);
     }
 
+    if (settings_.chromaticAberration_)
+    {
+        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
+            PostProcessPassFlag::NeedColorOutputReadAndWrite,
+            BLEND_REPLACE, "v2/P_ChromaticAberration", "");
+        postProcessPasses_.push_back(pass);
+    }
+
     postProcessFlags_ = {};
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessFlags_ |= postProcessPass->GetExecutionFlags();
