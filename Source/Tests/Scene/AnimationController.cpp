@@ -595,3 +595,155 @@ TEST_CASE("Variant animation tracks are applied to components with optional blen
     REQUIRE(childNodeText->GetFontSize() == 27.0f);
     REQUIRE(childNodeText->GetText() == "B");
 }
+
+TEST_CASE("AnimationControlled merges animations from external state")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
+    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateX.ani", CreateTestTranslateXAnimation);
+    auto animationTranslateZ = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateZ.ani", CreateTestTranslateZAnimation);
+    auto animationRotate = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/Rotation.ani", CreateTestRotationAnimation);
+
+    // Setup scene
+    auto scene = MakeShared<Scene>(context);
+
+    auto node = scene->CreateChild("Node");
+    auto animationController = node->CreateComponent<AnimationController>();
+    auto nodeQuad1 = node->CreateChild("Quad 1");
+    auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
+
+    const auto getAnimations = [&]()
+    {
+        ea::vector<AnimationParameters> params;
+        animationController->GetAnimationParameters(params);
+        return params;
+    };
+
+    // Play animations
+    // The only non-looped animation will end in 0.5 seconds and will be fading out 0.5 more seconds
+    animationController->PlayNew(AnimationParameters{animationRotate}.Looped(), 0.5f);
+    animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped().Speed(2.0f));
+    animationController->PlayNew(AnimationParameters{animationTranslateX}.Speed(4.0f).AutoFadeOut(0.5f));
+    animationController->PlayNew(AnimationParameters{animationTranslateZ}.Looped().Additive().Layer(1).Weight(0.75f));
+
+    // Spend some time
+    animationController->Update(0.25f);
+    const auto animations_0_25 = getAnimations();
+
+    animationController->Update(0.5f);
+    const auto animations_0_75 = getAnimations();
+
+    REQUIRE(animations_0_75.size() == 4);
+
+    REQUIRE(animations_0_75[0].animation_ == animationRotate);
+    REQUIRE(animations_0_75[0].time_.Value() == 0.75f);
+    REQUIRE(animations_0_75[0].weight_ == 1.0f);
+
+    REQUIRE(animations_0_75[1].animation_ == animationTranslateX);
+    REQUIRE(animations_0_75[1].time_.Value() == 1.5f);
+    REQUIRE(animations_0_75[1].weight_ == 1.0f);
+
+    REQUIRE(animations_0_75[2].animation_ == animationTranslateX);
+    REQUIRE(animations_0_75[2].time_.Value() == 2.0f);
+    REQUIRE(animations_0_75[2].weight_ == 0.5f);
+
+    REQUIRE(animations_0_75[3].animation_ == animationTranslateZ);
+    REQUIRE(animations_0_75[3].time_.Value() == 0.75f);
+    REQUIRE(animations_0_75[3].weight_ == 0.75f);
+
+    // Merge state from 0.25 with 0.5 delay, except to remain unchanged
+    animationController->ReplaceAnimations(animations_0_25, 0.5f, 0.25f);
+    animationController->Update(0.0f);
+    REQUIRE(animations_0_75 == getAnimations());
+
+    // Spend more time
+    animationController->Update(0.5f);
+    const auto animations_1_25 = getAnimations();
+
+    REQUIRE(animations_1_25.size() == 3);
+
+    REQUIRE(animations_1_25[0].animation_ == animationRotate);
+    REQUIRE(animations_1_25[0].time_.Value() == 1.25f);
+    REQUIRE(animations_1_25[0].weight_ == 1.0f);
+
+    REQUIRE(animations_1_25[1].animation_ == animationTranslateX);
+    REQUIRE(animations_1_25[1].time_.Value() == 0.5f);
+    REQUIRE(animations_1_25[1].weight_ == 1.0f);
+
+    REQUIRE(animations_1_25[2].animation_ == animationTranslateZ);
+    REQUIRE(animations_1_25[2].time_.Value() == 1.25f);
+    REQUIRE(animations_1_25[2].weight_ == 0.75f);
+
+    // Merge state from 0.25 with 1.0 delay, except to remain unchanged
+    animationController->ReplaceAnimations(animations_0_25, 1.0f, 0.25f);
+    animationController->Update(0.0f);
+    REQUIRE(animations_1_25 == getAnimations());
+
+    // Merge state from 0.75 with 0.5 delay, except to remain unchanged
+    animationController->ReplaceAnimations(animations_0_75, 0.5f, 0.25f);
+    animationController->Update(0.0f);
+    REQUIRE(animations_1_25 == getAnimations());
+
+    // Play new animation with fade-in
+    animationController->PlayNew(AnimationParameters{animationTranslateZ}, 0.5f);
+    animationController->Update(0.25f);
+    const auto animations_1_5 = getAnimations();
+
+    REQUIRE(animations_1_5.size() == 4);
+
+    REQUIRE(animations_1_5[0].animation_ == animationRotate);
+    REQUIRE(animations_1_5[0].time_.Value() == 1.5f);
+    REQUIRE(animations_1_5[0].weight_ == 1.0f);
+
+    REQUIRE(animations_1_5[1].animation_ == animationTranslateX);
+    REQUIRE(animations_1_5[1].time_.Value() == 1.0f);
+    REQUIRE(animations_1_5[1].weight_ == 1.0f);
+
+    REQUIRE(animations_1_5[2].animation_ == animationTranslateZ);
+    REQUIRE(animations_1_5[2].time_.Value() == 1.5f);
+    REQUIRE(animations_1_5[2].weight_ == 0.75f);
+
+    REQUIRE(animations_1_5[3].animation_ == animationTranslateZ);
+    REQUIRE(animations_1_5[3].time_.Value() == 0.25f);
+    REQUIRE(animations_1_5[3].weight_ == 0.5f);
+
+    // Merge state from 0.25 with 0.0 delay, except to fade out added animation and fade in already removed animation
+    animationController->ReplaceAnimations(animations_0_25, 0.0f, 0.25f);
+    animationController->Update(0.0f);
+
+    const auto animations_0_25_B = getAnimations();
+    REQUIRE(animations_0_25_B.size() == 5);
+
+    REQUIRE(animations_0_25_B[0].animation_ == animationTranslateZ); // removed on merge
+    REQUIRE(animations_0_25_B[0].time_.Value() == 0.25f);
+    REQUIRE(animations_0_25_B[0].weight_ == 0.5f);
+    REQUIRE(animations_0_25_B[0].targetWeight_ == 0.0f);
+
+    REQUIRE(animations_0_25_B[1].animation_ == animationRotate); // merged
+    REQUIRE(animations_0_25_B[1].time_.Value() == 0.25f);
+    REQUIRE(animations_0_25_B[1].weight_ == 0.5f);
+    REQUIRE(animations_0_25_B[1].targetWeight_ == 1.0f);
+
+    REQUIRE(animations_0_25_B[2].animation_ == animationTranslateX); // merged
+    REQUIRE(animations_0_25_B[2].time_.Value() == 0.5f);
+    REQUIRE(animations_0_25_B[2].weight_ == 1.0f);
+    REQUIRE(animations_0_25_B[2].targetWeight_ == 1.0f);
+
+    REQUIRE(animations_0_25_B[3].animation_ == animationTranslateX); // added
+    REQUIRE(animations_0_25_B[3].time_.Value() == 1.0f);
+    REQUIRE(animations_0_25_B[3].weight_ == 0.0f);
+    REQUIRE(animations_0_25_B[3].targetWeight_ == 1.0f);
+
+    REQUIRE(animations_0_25_B[4].animation_ == animationTranslateZ); // merged
+    REQUIRE(animations_0_25_B[4].time_.Value() == 0.25f);
+    REQUIRE(animations_0_25_B[4].weight_ == 0.75f);
+    REQUIRE(animations_0_25_B[4].targetWeight_ == 0.75f);
+
+    // Spend 0.5 seconds, expect state to converge
+    animationController->Update(0.5f);
+    REQUIRE(animations_0_75 == getAnimations());
+
+    animationController->Update(0.5f);
+    REQUIRE(animations_1_25 == getAnimations());
+}

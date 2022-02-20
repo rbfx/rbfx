@@ -43,16 +43,6 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-bool CompareLayers(const SharedPtr<AnimationState>& lhs, const SharedPtr<AnimationState>& rhs)
-{
-    return lhs->GetLayer() < rhs->GetLayer();
-}
-
-}
-
 static const unsigned char CTRL_LOOPED = 0x1;
 static const unsigned char CTRL_STARTBONE = 0x2;
 static const unsigned char CTRL_AUTOFADE = 0x4;
@@ -76,6 +66,20 @@ AnimationParameters::AnimationParameters(Animation* animation)
 AnimationParameters::AnimationParameters(Context* context, const ea::string& animationName)
     : AnimationParameters(context->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationName))
 {
+}
+
+bool AnimationParameters::RemoveDelayed(float fadeTime)
+{
+    const bool alreadyRemoved = Equals(targetWeight_, 0.0f, M_LARGE_EPSILON);
+    const float effectiveFadeTime = alreadyRemoved ? ea::min(targetWeightDelay_, fadeTime) : fadeTime;
+
+    const bool changed = !removeOnZeroWeight_ || targetWeightDelay_ != effectiveFadeTime || targetWeight_ != 0.0f;
+
+    removeOnZeroWeight_ = true;
+    targetWeightDelay_ = effectiveFadeTime;
+    targetWeight_ = 0.0f;
+
+    return changed;
 }
 
 AnimationParameters& AnimationParameters::Looped()
@@ -118,6 +122,12 @@ AnimationParameters& AnimationParameters::Weight(float weight)
 AnimationParameters& AnimationParameters::Speed(float speed)
 {
     speed_ = speed;
+    return *this;
+}
+
+AnimationParameters& AnimationParameters::AutoFadeOut(float fadeOut)
+{
+    autoFadeOutTime_ = fadeOut;
     return *this;
 }
 
@@ -186,6 +196,30 @@ void AnimationParameters::ToVariantSpan(ea::span<Variant> variants) const
     URHO3D_ASSERT(index == NumVariants);
 }
 
+bool AnimationParameters::IsMergeableWith(const AnimationParameters& rhs) const
+{
+    return animation_ == rhs.animation_ && instanceIndex_ == rhs.instanceIndex_;
+}
+
+bool AnimationParameters::operator==(const AnimationParameters& rhs) const
+{
+    return animation_ == rhs.animation_
+        && animationName_ == rhs.animationName_
+        && instanceIndex_ == rhs.instanceIndex_
+        && looped_ == rhs.looped_
+        && removeOnCompletion_ == rhs.removeOnCompletion_
+        && layer_ == rhs.layer_
+        && blendMode_ == rhs.blendMode_
+        && startBone_ == rhs.startBone_
+        && autoFadeOutTime_ == rhs.autoFadeOutTime_
+        && time_ == rhs.time_
+        && speed_ == rhs.speed_
+        && removeOnZeroWeight_ == rhs.removeOnZeroWeight_
+        && weight_ == rhs.weight_
+        && targetWeight_ == rhs.targetWeight_
+        && targetWeightDelay_ == rhs.targetWeightDelay_;
+}
+
 AnimationController::AnimationController(Context* context) :
     AnimationStateSource(context)
 {
@@ -225,13 +259,9 @@ void AnimationController::Update(float timeStep)
     pendingTriggers_.clear();
     for (auto& [params, state] : animations_)
     {
-        const bool isCompleted = UpdateAnimationTime(params, timeStep);
-        if (isCompleted)
-            ApplyAutoFadeOut(params);
-        UpdateAnimationWeight(params, timeStep);
-        ApplyAnimationRemoval(params, isCompleted);
+        UpdateInstance(params, timeStep, true);
         if (!params.removed_)
-            CommitAnimationParams(params, state);
+            UpdateState(state, params);
     }
     ea::erase_if(animations_, [](const AnimationInstance& value) { return value.params_.removed_; });
 
@@ -268,6 +298,56 @@ void AnimationController::Update(float timeStep)
     }
 }
 
+void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime)
+{
+    // Upload new parameters and correct them according to elapsed time, some states may be removed
+    const unsigned numNewAnimations = newAnimations.size();
+    tempAnimations_.clear();
+    tempAnimations_.resize(numNewAnimations);
+
+    for (unsigned i = 0; i < numNewAnimations; ++i)
+    {
+        tempAnimations_[i].params_ = newAnimations[i];
+        UpdateInstance(tempAnimations_[i].params_, elapsedTime, false);
+    }
+
+    // Try to match old animation states for all remaining states
+    for (unsigned i = 0; i < numNewAnimations; ++i)
+    {
+        const AnimationParameters& newParams = tempAnimations_[i].params_;
+        if (newParams.removed_)
+            continue;
+
+        const auto oldIter = ea::find_if(animations_.begin(), animations_.end(),
+            [&](const AnimationInstance& instance) { return !instance.params_.merged_ && instance.params_.IsMergeableWith(newParams); });
+
+        if (oldIter != animations_.end())
+        {
+            tempAnimations_[i].state_ = oldIter->state_;
+            oldIter->params_.merged_ = true;
+        }
+    }
+
+    // Remove all merged states from the animations, and fade out unmerged animations
+    ea::erase_if(animations_, [](const AnimationInstance& instance) { return instance.params_.merged_; });
+    for (AnimationInstance& instance : animations_)
+        instance.params_.RemoveDelayed(fadeTime);
+
+    // Append new animations
+    for (const AnimationInstance& instance : tempAnimations_)
+    {
+        if (!instance.state_)
+        {
+            PlayNew(instance.params_, fadeTime);
+        }
+        else
+        {
+            EnsureStateInitialized(instance.state_, instance.params_);
+            animations_.push_back(instance);
+        }
+    }
+}
+
 void AnimationController::AddAnimation(const AnimationParameters& params)
 {
     if (!params.animation_)
@@ -276,14 +356,16 @@ void AnimationController::AddAnimation(const AnimationParameters& params)
         return;
     }
 
+    const unsigned instanceIndex = ea::count_if(animations_.begin(), animations_.end(),
+        [&](const AnimationInstance& instance) { return instance.params_.animation_ == params.animation_; });
+
     AnimationInstance& instance = animations_.emplace_back();
     instance.params_ = params;
+    instance.params_.instanceIndex_ = instanceIndex;
 
     auto* model = GetComponent<AnimatedModel>();
     instance.state_ = model ? MakeShared<AnimationState>(this, model) : MakeShared<AnimationState>(this, node_);
-    instance.state_->Initialize(instance.params_.animation_, instance.params_.startBone_, instance.params_.blendMode_);
-
-    CommitAnimationParams(instance.params_, instance.state_);
+    EnsureStateInitialized(instance.state_, instance.params_);
 
     animationStatesDirty_ = true;
 }
@@ -297,16 +379,17 @@ void AnimationController::UpdateAnimation(unsigned index, const AnimationParamet
     }
 
     AnimationInstance& instance = animations_[index];
-    const bool initParamsChanged = instance.params_.animation_ != params.animation_
-        || instance.params_.startBone_ != params.startBone_ || instance.params_.blendMode_ != params.blendMode_;
-    if (initParamsChanged)
-        instance.state_->Initialize(params.animation_, params.startBone_, params.blendMode_);
+    if (instance.params_.animation_ != params.animation_ || instance.params_.instanceIndex_ != params.instanceIndex_)
+    {
+        URHO3D_ASSERTLOG(0, "Animation and instance index cannot be changed by AnimationController::UpdateAnimation");
+        return;
+    }
+
+    EnsureStateInitialized(instance.state_, params);
     if (instance.params_.layer_ != params.layer_)
         animationStatesDirty_ = true;
 
     instance.params_ = params;
-
-    CommitAnimationParams(instance.params_, instance.state_);
 }
 
 void AnimationController::RemoveAnimation(unsigned index)
@@ -319,6 +402,13 @@ void AnimationController::RemoveAnimation(unsigned index)
 
     animations_.erase_at(index);
     animationStatesDirty_ = true;
+}
+
+void AnimationController::GetAnimationParameters(ea::vector<AnimationParameters>& result) const
+{
+    result.clear();
+    for (const AnimationInstance& instance : animations_)
+        result.push_back(instance.params_);
 }
 
 unsigned AnimationController::FindLastAnimation(Animation* animation) const
@@ -404,13 +494,8 @@ void AnimationController::Stop(Animation* animation, float fadeTime)
     if (index != M_MAX_UNSIGNED)
     {
         AnimationParameters params = GetAnimationParameters(index);
-        if (params.targetWeight_ != 0.0f)
-        {
-            params.targetWeight_ = 0.0f;
-            params.targetWeightDelay_ = fadeTime;
-            params.removeOnZeroWeight_ = true;
+        if (params.RemoveDelayed(fadeTime))
             UpdateAnimation(index, params);
-        }
     }
 }
 
@@ -423,13 +508,8 @@ void AnimationController::StopLayer(unsigned layer, float fadeTime)
             continue;
 
         AnimationParameters params = GetAnimationParameters(index);
-        if (params.targetWeight_ != 0.0f)
-        {
-            params.targetWeight_ = 0.0f;
-            params.targetWeightDelay_ = fadeTime;
-            params.removeOnZeroWeight_ = true;
+        if (params.RemoveDelayed(fadeTime))
             UpdateAnimation(index, params);
-        }
     }
 }
 
@@ -442,13 +522,8 @@ void AnimationController::StopLayerExcept(unsigned layer, unsigned exceptionInde
             continue;
 
         AnimationParameters params = GetAnimationParameters(index);
-        if (params.targetWeight_ != 0.0f)
-        {
-            params.targetWeight_ = 0.0f;
-            params.targetWeightDelay_ = fadeTime;
-            params.removeOnZeroWeight_ = true;
+        if (params.RemoveDelayed(fadeTime))
             UpdateAnimation(index, params);
-        }
     }
 }
 
@@ -457,10 +532,8 @@ void AnimationController::StopAll(float fadeTime)
     for (unsigned index = 0; index < animations_.size(); ++index)
     {
         AnimationParameters params = GetAnimationParameters(index);
-        params.targetWeight_ = 0.0f;
-        params.targetWeightDelay_ = fadeTime;
-        params.removeOnZeroWeight_ = true;
-        UpdateAnimation(index, params);
+        if (params.RemoveDelayed(fadeTime))
+            UpdateAnimation(index, params);
     }
 }
 
@@ -505,7 +578,7 @@ bool AnimationController::UpdateAnimationSpeed(Animation* animation, float speed
     return false;
 }
 
-bool AnimationController::Play(const ea::string& name, unsigned char layer, bool looped, float fadeInTime)
+bool AnimationController::Play(const ea::string& name, unsigned char layer, bool looped, float fadeTime)
 {
     Animation* animation = GetAnimationByName(name);
     if (!animation)
@@ -514,7 +587,7 @@ bool AnimationController::Play(const ea::string& name, unsigned char layer, bool
     auto params = AnimationParameters{animation}.Layer(layer);
     params.removeOnZeroWeight_ = true;
     params.looped_ = looped;
-    PlayExisting(params, fadeInTime);
+    PlayExisting(params, fadeTime);
     return true;
 }
 
@@ -524,13 +597,23 @@ bool AnimationController::PlayExclusive(const ea::string& name, unsigned char la
     return Play(name, layer, looped, fadeTime);
 }
 
-bool AnimationController::Stop(const ea::string& name, float fadeOutTime)
+bool AnimationController::Fade(const ea::string& name, float targetWeight, float fadeTime)
 {
     Animation* animation = GetAnimationByName(name);
     if (!animation)
         return false;
 
-    Stop(animation, fadeOutTime);
+    Fade(animation, targetWeight, fadeTime);
+    return true;
+}
+
+bool AnimationController::Stop(const ea::string& name, float fadeTime)
+{
+    Animation* animation = GetAnimationByName(name);
+    if (!animation)
+        return false;
+
+    Stop(animation, fadeTime);
     return true;
 }
 
@@ -740,43 +823,61 @@ Animation* AnimationController::GetAnimationByName(const ea::string& name) const
     return cache->GetResource<Animation>(name);
 }
 
-bool AnimationController::UpdateAnimationTime(AnimationParameters& params, float timeStep)
+void AnimationController::UpdateInstance(AnimationParameters& params, float timeStep, bool fireTriggers)
+{
+    const auto overtime = UpdateInstanceTime(params, timeStep, fireTriggers);
+    const bool isCompleted = overtime.has_value();
+    UpdateInstanceWeight(params, timeStep);
+
+    if (isCompleted)
+        ApplyInstanceAutoFadeOut(params, *overtime);
+    ApplyInstanceRemoval(params, isCompleted);
+}
+
+ea::optional<float> AnimationController::UpdateInstanceTime(AnimationParameters& params, float timeStep, bool fireTriggers)
 {
     const float scaledTimeStep = timeStep * params.speed_;
     if (scaledTimeStep == 0.0f)
-        return false;
+        return ea::nullopt;
 
     const auto delta = params.looped_
         ? params.time_.UpdateWrapped(scaledTimeStep)
-        : params.time_.UpdateClamped(scaledTimeStep);
+        : params.time_.UpdateClamped(scaledTimeStep, true);
 
-    const bool timeAtBegin = delta.End() == delta.Min();
-    const bool timeAtEnd = delta.End() == delta.Max();
-    const bool isCompleted = !params.looped_ && (params.speed_ > 0 ? timeAtEnd : timeAtBegin);
+    const float positiveOvertime = delta.End() - delta.Max();
+    const float negativeOvertime = delta.End() - delta.Min();
+    const bool isCompleted = !params.looped_ && (params.speed_ > 0 ? positiveOvertime >= 0 : negativeOvertime <= 0);
 
-    const float length = params.animation_->GetLength();
-    for (const AnimationTriggerPoint& trigger : params.animation_->GetTriggers())
+    const float scaledOvertime = isCompleted ? (params.speed_ > 0 ? positiveOvertime : negativeOvertime) : 0.0f;
+
+    if (fireTriggers)
     {
-        if (delta.ContainsExcludingBegin(ea::min(trigger.time_, length)))
-            pendingTriggers_.emplace_back(params.animation_, &trigger);
+        const float length = params.animation_->GetLength();
+        for (const AnimationTriggerPoint& trigger : params.animation_->GetTriggers())
+        {
+            if (delta.ContainsExcludingBegin(ea::min(trigger.time_, length)))
+                pendingTriggers_.emplace_back(params.animation_, &trigger);
+        }
     }
 
-    return isCompleted;
+    return isCompleted ? ea::make_optional(scaledOvertime / params.speed_) : ea::nullopt;
 }
 
-void AnimationController::ApplyAutoFadeOut(AnimationParameters& params) const
+void AnimationController::ApplyInstanceAutoFadeOut(AnimationParameters& params, float overtime) const
 {
     // Apply auto fade out only if enabled and if not fading out already
     if (params.targetWeight_ == 0.0f || params.autoFadeOutTime_ == 0.0f)
         return;
 
     params.targetWeight_ = 0.0f;
-    params.targetWeightDelay_ = params.autoFadeOutTime_;
+    params.targetWeightDelay_ = ea::max(0.0f, params.autoFadeOutTime_ - overtime);
     params.removeOnZeroWeight_ = true;
-    params.removeOnCompletion_ = false;
+
+    const float fraction = ea::min(1.0f, overtime / params.autoFadeOutTime_);
+    params.weight_ = Lerp(params.weight_, 0.0f, fraction);
 }
 
-void AnimationController::UpdateAnimationWeight(AnimationParameters& params, float timeStep) const
+void AnimationController::UpdateInstanceWeight(AnimationParameters& params, float timeStep) const
 {
     if (params.targetWeightDelay_ <= 0.0f)
     {
@@ -789,18 +890,22 @@ void AnimationController::UpdateAnimationWeight(AnimationParameters& params, flo
     params.targetWeightDelay_ = ea::max(0.0f, params.targetWeightDelay_ - timeStep);
 }
 
-void AnimationController::ApplyAnimationRemoval(AnimationParameters& params, bool isCompleted) const
+void AnimationController::ApplyInstanceRemoval(AnimationParameters& params, bool isCompleted) const
 {
-    if (params.removeOnCompletion_ && isCompleted)
+    if (params.removeOnCompletion_ && params.autoFadeOutTime_ == 0.0f && isCompleted)
         params.removed_ = true;
     if (params.removeOnZeroWeight_ && params.weight_ < M_LARGE_EPSILON)
         params.removed_ = true;
 }
 
-void AnimationController::CommitAnimationParams(const AnimationParameters& params, AnimationState* state) const
+void AnimationController::EnsureStateInitialized(AnimationState* state, const AnimationParameters& params)
 {
-    state->SetTime(params.time_.Value());
-    state->SetWeight(params.weight_);
+    state->Initialize(params.animation_, params.startBone_, params.blendMode_);
+}
+
+void AnimationController::UpdateState(AnimationState* state, const AnimationParameters& params) const
+{
+    state->Update(params.time_.Value(), params.weight_);
 }
 
 void AnimationController::SortAnimationStates()
@@ -810,12 +915,12 @@ void AnimationController::SortAnimationStates()
     if (numAnimations == 0)
         return;
 
-    animationsSortBuffer_.resize(numAnimations * 2);
-    ea::copy(animations_.begin(), animations_.end(), animationsSortBuffer_.begin());
+    tempAnimations_.resize(numAnimations * 2);
+    ea::copy(animations_.begin(), animations_.end(), tempAnimations_.begin());
 
-    const auto beginIter = animationsSortBuffer_.begin();
-    const auto endIter = ea::next(animationsSortBuffer_.begin(), numAnimations);
-    ea::merge_sort_buffer(beginIter, endIter, &animationsSortBuffer_[numAnimations],
+    const auto beginIter = tempAnimations_.begin();
+    const auto endIter = ea::next(tempAnimations_.begin(), numAnimations);
+    ea::merge_sort_buffer(beginIter, endIter, &tempAnimations_[numAnimations],
         [](const AnimationInstance& lhs, const AnimationInstance& rhs) { return lhs.params_.layer_ < rhs.params_.layer_; });
     ea::transform(beginIter, endIter, animationStates_.begin(),
         [](const AnimationInstance& value) { return value.state_; });
