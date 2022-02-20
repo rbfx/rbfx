@@ -596,11 +596,10 @@ TEST_CASE("Variant animation tracks are applied to components with optional blen
     REQUIRE(childNodeText->GetText() == "B");
 }
 
-TEST_CASE("AnimationControlled merges animations from external state")
+TEST_CASE("AnimationController merges animations from external state")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    auto model = Tests::GetOrCreateResource<Model>(context, "@Tests/AnimationController/SkinnedModel.mdl", CreateTestSkinnedModel);
     auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateX.ani", CreateTestTranslateXAnimation);
     auto animationTranslateZ = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateZ.ani", CreateTestTranslateZAnimation);
     auto animationRotate = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/Rotation.ani", CreateTestRotationAnimation);
@@ -609,16 +608,8 @@ TEST_CASE("AnimationControlled merges animations from external state")
     auto scene = MakeShared<Scene>(context);
 
     auto node = scene->CreateChild("Node");
+    node->CreateChild("Quad 1")->CreateChild("Quad 2");
     auto animationController = node->CreateComponent<AnimationController>();
-    auto nodeQuad1 = node->CreateChild("Quad 1");
-    auto nodeQuad2 = nodeQuad1->CreateChild("Quad 2");
-
-    const auto getAnimations = [&]()
-    {
-        ea::vector<AnimationParameters> params;
-        animationController->GetAnimationParameters(params);
-        return params;
-    };
 
     // Play animations
     // The only non-looped animation will end in 0.5 seconds and will be fading out 0.5 more seconds
@@ -629,10 +620,10 @@ TEST_CASE("AnimationControlled merges animations from external state")
 
     // Spend some time
     animationController->Update(0.25f);
-    const auto animations_0_25 = getAnimations();
+    const auto animations_0_25 = animationController->GetAnimationParameters();
 
     animationController->Update(0.5f);
-    const auto animations_0_75 = getAnimations();
+    const auto animations_0_75 = animationController->GetAnimationParameters();
 
     REQUIRE(animations_0_75.size() == 4);
 
@@ -655,11 +646,14 @@ TEST_CASE("AnimationControlled merges animations from external state")
     // Merge state from 0.25 with 0.5 delay, except to remain unchanged
     animationController->ReplaceAnimations(animations_0_25, 0.5f, 0.25f);
     animationController->Update(0.0f);
-    REQUIRE(animations_0_75 == getAnimations());
+    REQUIRE(animations_0_75 == animationController->GetAnimationParameters());
 
     // Spend more time
-    animationController->Update(0.5f);
-    const auto animations_1_25 = getAnimations();
+    animationController->Update(0.25f);
+    const auto animations_1_0 = animationController->GetAnimationParameters();
+
+    animationController->Update(0.25f);
+    const auto animations_1_25 = animationController->GetAnimationParameters();
 
     REQUIRE(animations_1_25.size() == 3);
 
@@ -678,17 +672,17 @@ TEST_CASE("AnimationControlled merges animations from external state")
     // Merge state from 0.25 with 1.0 delay, except to remain unchanged
     animationController->ReplaceAnimations(animations_0_25, 1.0f, 0.25f);
     animationController->Update(0.0f);
-    REQUIRE(animations_1_25 == getAnimations());
+    REQUIRE(animations_1_25 == animationController->GetAnimationParameters());
 
     // Merge state from 0.75 with 0.5 delay, except to remain unchanged
     animationController->ReplaceAnimations(animations_0_75, 0.5f, 0.25f);
     animationController->Update(0.0f);
-    REQUIRE(animations_1_25 == getAnimations());
+    REQUIRE(animations_1_25 == animationController->GetAnimationParameters());
 
-    // Play new animation with fade-in
+    // Play new animation with fade-in, expect animation added
     animationController->PlayNew(AnimationParameters{animationTranslateZ}, 0.5f);
     animationController->Update(0.25f);
-    const auto animations_1_5 = getAnimations();
+    const auto animations_1_5 = animationController->GetAnimationParameters();
 
     REQUIRE(animations_1_5.size() == 4);
 
@@ -708,21 +702,22 @@ TEST_CASE("AnimationControlled merges animations from external state")
     REQUIRE(animations_1_5[3].time_.Value() == 0.25f);
     REQUIRE(animations_1_5[3].weight_ == 0.5f);
 
-    // Merge state from 0.25 with 0.0 delay, except to fade out added animation and fade in already removed animation
-    animationController->ReplaceAnimations(animations_0_25, 0.0f, 0.25f);
+    // Merge state from 0.25 with 0.0 delay, except to fade out newly added animation and fade in already removed animation
+    animationController->ReplaceAnimations(animations_0_25, 0.0f, 0.5f);
     animationController->Update(0.0f);
 
-    const auto animations_0_25_B = getAnimations();
+    const auto animations_0_25_B = animationController->GetAnimationParameters();
     REQUIRE(animations_0_25_B.size() == 5);
 
     REQUIRE(animations_0_25_B[0].animation_ == animationTranslateZ); // removed on merge
     REQUIRE(animations_0_25_B[0].time_.Value() == 0.25f);
     REQUIRE(animations_0_25_B[0].weight_ == 0.5f);
     REQUIRE(animations_0_25_B[0].targetWeight_ == 0.0f);
+    REQUIRE(animations_0_25_B[0].targetWeightDelay_ == 0.5f);
 
     REQUIRE(animations_0_25_B[1].animation_ == animationRotate); // merged
     REQUIRE(animations_0_25_B[1].time_.Value() == 0.25f);
-    REQUIRE(animations_0_25_B[1].weight_ == 0.5f);
+    REQUIRE(animations_0_25_B[1].weight_ == 1.0f);
     REQUIRE(animations_0_25_B[1].targetWeight_ == 1.0f);
 
     REQUIRE(animations_0_25_B[2].animation_ == animationTranslateX); // merged
@@ -734,16 +729,126 @@ TEST_CASE("AnimationControlled merges animations from external state")
     REQUIRE(animations_0_25_B[3].time_.Value() == 1.0f);
     REQUIRE(animations_0_25_B[3].weight_ == 0.0f);
     REQUIRE(animations_0_25_B[3].targetWeight_ == 1.0f);
+    REQUIRE(animations_0_25_B[3].targetWeightDelay_ == 0.5f);
 
     REQUIRE(animations_0_25_B[4].animation_ == animationTranslateZ); // merged
     REQUIRE(animations_0_25_B[4].time_.Value() == 0.25f);
     REQUIRE(animations_0_25_B[4].weight_ == 0.75f);
     REQUIRE(animations_0_25_B[4].targetWeight_ == 0.75f);
 
-    // Spend 0.5 seconds, expect state to converge
-    animationController->Update(0.5f);
-    REQUIRE(animations_0_75 == getAnimations());
+    // Spend 0.25 seconds, expect continued fading
+    animationController->Update(0.25f);
+    const auto animations_0_5_B = animationController->GetAnimationParameters();
 
-    animationController->Update(0.5f);
-    REQUIRE(animations_1_25 == getAnimations());
+    REQUIRE(animations_0_5_B[0].animation_ == animationTranslateZ); // removed on merge
+    REQUIRE(animations_0_5_B[0].time_.Value() == 0.5f);
+    REQUIRE(animations_0_5_B[0].weight_ == 0.25f);
+    REQUIRE(animations_0_5_B[0].targetWeight_ == 0.0f);
+    REQUIRE(animations_0_5_B[0].targetWeightDelay_ == 0.25f);
+
+    REQUIRE(animations_0_5_B[3].animation_ == animationTranslateX); // added
+    REQUIRE(animations_0_5_B[3].time_.Value() == 2.0f);
+    REQUIRE(animations_0_5_B[3].weight_ == 0.5f);
+    REQUIRE(animations_0_5_B[3].targetWeight_ == 0.0f);
+    REQUIRE(animations_0_5_B[3].targetWeightDelay_ == 0.5f);
+
+    // Merge same state again, expect to remain unchanged
+    animationController->ReplaceAnimations(animations_0_25, 0.25f, 0.5f);
+    animationController->Update(0.0f);
+    REQUIRE(animations_0_5_B == animationController->GetAnimationParameters());
+
+    // Spend 0.25 seconds, expect continued fading
+    animationController->Update(0.25f);
+    const auto animations_0_75_B = animationController->GetAnimationParameters();
+
+    REQUIRE(animations_0_75_B[2].animation_ == animationTranslateX); // added
+    REQUIRE(animations_0_75_B[2].time_.Value() == 2.0f);
+    REQUIRE(animations_0_75_B[2].weight_ == 0.25f);
+    REQUIRE(animations_0_75_B[2].targetWeight_ == 0.0f);
+    REQUIRE(animations_0_75_B[2].targetWeightDelay_ == 0.25f);
+
+    REQUIRE(animations_0_75[0] == animations_0_75_B[0]);
+    REQUIRE(animations_0_75[1] == animations_0_75_B[1]);
+    REQUIRE(animations_0_75[3] == animations_0_75_B[3]);
+
+    // Merge same state again, expect to remain unchanged
+    animationController->ReplaceAnimations(animations_0_25, 0.5f, 0.5f);
+    animationController->Update(0.0f);
+    REQUIRE(animations_0_75_B == animationController->GetAnimationParameters());
+
+    // Spend more time, expect fully converged
+    animationController->Update(0.25f);
+    REQUIRE(animations_1_0 == animationController->GetAnimationParameters());
+
+    animationController->Update(0.25f);
+    REQUIRE(animations_1_25 == animationController->GetAnimationParameters());
+}
+
+TEST_CASE("AnimationController merges result in smooth transition")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto animationTranslateX = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateX.ani", CreateTestTranslateXAnimation);
+    auto animationTranslateZ = Tests::GetOrCreateResource<Animation>(context, "@Tests/AnimationController/TranslateZ.ani", CreateTestTranslateZAnimation);
+
+    // Setup scene
+    auto scene = MakeShared<Scene>(context);
+    auto node = scene->CreateChild("Node");
+    node->CreateChild("Quad 1")->CreateChild("Quad 2");
+    auto animationController = node->CreateComponent<AnimationController>();
+
+    // Play one animation
+    animationController->PlayNew(AnimationParameters{animationTranslateX}.Looped());
+    animationController->Update(5.0);
+
+    // Play another animation and record smooth transition
+    animationController->PlayNewExclusive(AnimationParameters{animationTranslateZ}.Looped(), 1.0f);
+    const auto animations1 = animationController->GetAnimationParameters();
+    animationController->Update(0.25);
+    const auto animations2 = animationController->GetAnimationParameters();
+    animationController->Update(0.25);
+    const auto animations3 = animationController->GetAnimationParameters();
+    animationController->Update(0.25);
+    const auto animations4 = animationController->GetAnimationParameters();
+    animationController->Update(0.25);
+    const auto animations5 = animationController->GetAnimationParameters();
+
+    animationController->Update(0.0);
+
+    // Setup another scene
+    auto scene2 = MakeShared<Scene>(context);
+    auto node2 = scene2->CreateChild("Node");
+    node2->CreateChild("Quad 1")->CreateChild("Quad 2");
+    auto animationController2 = node2->CreateComponent<AnimationController>();
+
+    // Play one animation on another scene
+    animationController2->PlayNew(AnimationParameters{animationTranslateX}.Looped());
+    animationController2->Update(5.0);
+
+    // Reconstruct animation controller animation from the recording
+    animationController2->ReplaceAnimations(animations1, 2.0f, 1.0f);
+    const auto animations1B = animationController2->GetAnimationParameters();
+    REQUIRE(animations1B == animations1);
+
+    animationController2->Update(0.25);
+    animationController2->ReplaceAnimations(animations2, 2.0f, 1.0f);
+    const auto animations2B = animationController2->GetAnimationParameters();
+    REQUIRE(animations2B == animations2);
+
+    animationController2->Update(0.25);
+    animationController2->ReplaceAnimations(animations3, 2.0f, 1.0f);
+    const auto animations3B = animationController2->GetAnimationParameters();
+    REQUIRE(animations3B == animations3);
+
+    animationController2->Update(0.25);
+    animationController2->ReplaceAnimations(animations4, 2.0f, 1.0f);
+    const auto animations4B = animationController2->GetAnimationParameters();
+    REQUIRE(animations4B == animations4);
+
+    animationController2->Update(0.25);
+    animationController2->ReplaceAnimations(animations5, 2.0f, 1.0f);
+    const auto animations5B = animationController2->GetAnimationParameters();
+    REQUIRE(animations5B == animations5);
+
+    animationController2->Update(0.25);
 }

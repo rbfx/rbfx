@@ -138,6 +138,7 @@ public:
     void UpdateAnimation(unsigned index, const AnimationParameters& params);
     void RemoveAnimation(unsigned index);
     void GetAnimationParameters(ea::vector<AnimationParameters>& result) const;
+    ea::vector<AnimationParameters> GetAnimationParameters() const;
     unsigned GetNumAnimations() const { return animations_.size(); }
     unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
     const AnimationParameters& GetAnimationParameters(unsigned index) const { return animations_[index].params_; }
