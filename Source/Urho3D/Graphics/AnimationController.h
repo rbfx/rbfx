@@ -28,6 +28,7 @@
 #include "../Graphics/AnimationState.h"
 #include "../Graphics/AnimationStateSource.h"
 
+#include <EASTL/optional.h>
 #include <EASTL/span.h>
 
 namespace Urho3D
@@ -45,6 +46,9 @@ struct URHO3D_API AnimationParameters
     explicit AnimationParameters(Animation* animation);
     AnimationParameters(Context* context, const ea::string& animationName);
 
+    /// Helper utility to fade animation out and remove it later.
+    bool RemoveDelayed(float fadeTime);
+
     /// Factory helpers.
     /// @{
     AnimationParameters& Looped();
@@ -54,6 +58,7 @@ struct URHO3D_API AnimationParameters
     AnimationParameters& Additive();
     AnimationParameters& Weight(float weight);
     AnimationParameters& Speed(float speed);
+    AnimationParameters& AutoFadeOut(float fadeOut);
     AnimationParameters& KeepOnCompletion();
     /// @}
 
@@ -61,6 +66,7 @@ struct URHO3D_API AnimationParameters
     /// Animation can be replicated over network only if is exists as named Resource on all machines.
     Animation* animation_{};
     StringHash animationName_;
+    unsigned instanceIndex_{};
 
     /// Static animation parameters that change rarely.
     /// @{
@@ -83,16 +89,19 @@ struct URHO3D_API AnimationParameters
     float targetWeightDelay_{};
     /// @}
 
-    /// Internal.
-    /// @{
+    /// Internal flags for easier algorithms. Never stored between API calls.
     bool removed_{};
-    /// @}
+    bool merged_{};
 
-    /// Serialization utilities.
+    /// Serialization, test and misc utilities.
     /// @{
     static constexpr unsigned NumVariants = 15;
     static AnimationParameters FromVariantSpan(Context* context, ea::span<const Variant> variants);
     void ToVariantSpan(ea::span<Variant> variants) const;
+    bool IsMergeableWith(const AnimationParameters& rhs) const;
+
+    bool operator==(const AnimationParameters& rhs) const;
+    bool operator!=(const AnimationParameters& rhs) const { return !(*this == rhs); }
     /// @}
 };
 
@@ -120,12 +129,15 @@ public:
 
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep);
+    /// Smoothly replace existing animations with animations from external source.
+    void ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime);
 
     /// Manage played animations on low level.
     /// @{
     void AddAnimation(const AnimationParameters& params);
     void UpdateAnimation(unsigned index, const AnimationParameters& params);
     void RemoveAnimation(unsigned index);
+    void GetAnimationParameters(ea::vector<AnimationParameters>& result) const;
     unsigned GetNumAnimations() const { return animations_.size(); }
     unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
     const AnimationParameters& GetAnimationParameters(unsigned index) const { return animations_[index].params_; }
@@ -153,9 +165,10 @@ public:
 
     /// Deprecated.
     /// @{
-    bool Play(const ea::string& name, unsigned char layer, bool looped, float fadeInTime = 0.0f);
+    bool Play(const ea::string& name, unsigned char layer, bool looped, float fadeTime = 0.0f);
     bool PlayExclusive(const ea::string& name, unsigned char layer, bool looped, float fadeTime = 0.0f);
-    bool Stop(const ea::string& name, float fadeOutTime = 0.0f);
+    bool Fade(const ea::string& name, float targetWeight, float fadeTime = 0.0f);
+    bool Stop(const ea::string& name, float fadeTime = 0.0f);
 
     bool SetTime(const ea::string& name, float time);
     bool SetWeight(const ea::string& name, float weight);
@@ -199,11 +212,14 @@ private:
 
     /// Update single animation.
     /// @{
-    bool UpdateAnimationTime(AnimationParameters& params, float timeStep);
-    void ApplyAutoFadeOut(AnimationParameters& params) const;
-    void UpdateAnimationWeight(AnimationParameters& params, float timeStep) const;
-    void ApplyAnimationRemoval(AnimationParameters& params, bool isCompleted) const;
-    void CommitAnimationParams(const AnimationParameters& params, AnimationState* state) const;
+    void UpdateInstance(AnimationParameters& params, float timeStep, bool fireTriggers);
+    ea::optional<float> UpdateInstanceTime(AnimationParameters& params, float timeStep, bool fireTriggers);
+    void ApplyInstanceAutoFadeOut(AnimationParameters& params, float overtime) const;
+    void UpdateInstanceWeight(AnimationParameters& params, float timeStep) const;
+    void ApplyInstanceRemoval(AnimationParameters& params, bool isCompleted) const;
+
+    void EnsureStateInitialized(AnimationState* state, const AnimationParameters& params);
+    void UpdateState(AnimationState* state, const AnimationParameters& params) const;
     /// @}
 
     /// Currently playing animations.
@@ -213,7 +229,7 @@ private:
         SharedPtr<AnimationState> state_;
     };
     ea::vector<AnimationInstance> animations_;
-    ea::vector<AnimationInstance> animationsSortBuffer_;
+    ea::vector<AnimationInstance> tempAnimations_;
 
     /// Triggers to be fired. Processed all at once due to possible side effects.
     ea::vector<ea::pair<Animation*, const AnimationTriggerPoint*>> pendingTriggers_;

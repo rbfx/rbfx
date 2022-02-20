@@ -177,12 +177,12 @@ public:
         return {oldValue, value_, min_, max_, numWraps};
     }
 
-    /// Add delta to the scalar, clamping value at the boundaries. Return the range of the change.
-    WrappedScalarRange<T> UpdateClamped(T delta)
+    /// Add delta to the scalar, clamping value at the boundaries. Return the range of the change. Optionally returns out-of-bounds range instead of clamped one.
+    WrappedScalarRange<T> UpdateClamped(T delta, bool returnOutOfBounds = false)
     {
         const auto oldValue = value_;
         value_ = Clamp(value_ + delta, min_, max_);
-        return {oldValue, value_, min_, max_, 0};
+        return {oldValue, returnOutOfBounds ? oldValue + delta : value_, min_, max_, 0};
     }
 
     /// Clamp boundaries.

@@ -101,7 +101,7 @@ Resource* GetOrCreateResource(
     Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory)
 {
     auto cache = context->GetSubsystem<ResourceCache>();
-    if (auto resource = cache->GetResource(type, name))
+    if (auto resource = cache->GetResource(type, name, false))
         return resource;
 
     auto resource = factory(context);

@@ -99,10 +99,19 @@ AnimationState::~AnimationState() = default;
 
 void AnimationState::Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode)
 {
-    animation_ = animation;
-    startBone_ = startBone;
-    blendingMode_ = blendMode;
-    MarkTracksDirty();
+    if (animation_ != animation || startBone_ != startBone || blendMode != blendingMode_)
+    {
+        animation_ = animation;
+        startBone_ = startBone;
+        blendingMode_ = blendMode;
+        MarkTracksDirty();
+    }
+}
+
+void AnimationState::Update(float time, float weight)
+{
+    SetTime(time);
+    SetWeight(weight);
 }
 
 bool AnimationState::AreTracksDirty() const

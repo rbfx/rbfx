@@ -120,8 +120,10 @@ public:
     AnimationState(AnimationController* controller, Node* node, Animation* animation = nullptr);
     /// Destruct.
     ~AnimationState() override;
-    /// Initialize basic properties of the state and dirty tracks.
+    /// Initialize static properties of the state and dirty tracks.
     void Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode);
+    /// Update dynamic properies of the state.
+    void Update(float time, float weight);
 
     /// Modify tracks. For internal use only.
     /// @{
