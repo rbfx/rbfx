@@ -130,7 +130,7 @@ void main()
     vec2 screenSize = textureSize(sDiffMap, 0);
 
     const float MAX_DIST_PX = 50.0;
-    float max_distort_px = MAX_DIST_PX * 0.5; // INTENSITY
+    float max_distort_px = MAX_DIST_PX * CAINTENSITY;
     vec2 max_distort = vec2(max_distort_px) / screenSize.xy;
     vec2 min_distort = 0.5 * max_distort;
 

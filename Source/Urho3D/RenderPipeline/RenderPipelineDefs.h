@@ -696,7 +696,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     ToneMappingMode toneMapping_{};
     PostProcessAntialiasing antialiasing_{};
     bool greyScale_{};
-    bool chromaticAberration_{};
+    float chromaticAberration_{};
     /// @}
 
     /// Utility operators
