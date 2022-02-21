@@ -67,7 +67,9 @@ void AdvancedNetworkingUI::OnNodeSet(Node* node)
         constructor.Bind("connectionAddress", &connectionAddress_);
         constructor.BindFunc("isServer", [=](Rml::Variant& result) { result = network->IsServerRunning(); });
         constructor.BindFunc("isClient", [=](Rml::Variant& result) { result = network->GetServerConnection() != nullptr; });
-        constructor.Bind("cheatAutoMovement", &cheatAutoMovement_);
+        constructor.Bind("cheatAutoMovementCircle", &cheatAutoMovementCircle_);
+        constructor.Bind("cheatAutoAimHand", &cheatAutoAimHand_);
+        constructor.Bind("cheatAutoClick", &checkAutoClick_);
 
         constructor.BindEventCallback("onStartServer",
             [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { StartServer(); });

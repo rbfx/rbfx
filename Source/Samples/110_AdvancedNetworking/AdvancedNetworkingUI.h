@@ -42,7 +42,9 @@ public:
     void ConnectToServer(const ea::string& address);
     void Stop();
 
-    bool GetCheatAutoMovement() const { return cheatAutoMovement_; }
+    bool GetCheatAutoMovementCircle() const { return cheatAutoMovementCircle_; }
+    bool GetCheatAutoAimHand() const { return cheatAutoAimHand_; }
+    bool GetCheatAutoClick() const { return checkAutoClick_; }
 
 private:
     void OnNodeSet(Node* node) override;
@@ -52,5 +54,7 @@ private:
     int serverPort_{2345};
     Rml::String connectionAddress_{"localhost"};
 
-    bool cheatAutoMovement_{};
+    bool cheatAutoMovementCircle_{};
+    bool cheatAutoAimHand_{};
+    bool checkAutoClick_{};
 };

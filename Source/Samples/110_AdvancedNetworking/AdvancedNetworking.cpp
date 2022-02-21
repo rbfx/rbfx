@@ -67,7 +67,6 @@ static constexpr float CAMERA_DISTANCE = 5.0f;
 static constexpr float CAMERA_OFFSET = 2.0f;
 static constexpr float WALK_VELOCITY = 3.35f;
 static constexpr float HIT_DISTANCE = 100.0f;
-static constexpr float AUTO_MOVEMENT_DURATION = 1.0f;
 
 AdvancedNetworking::AdvancedNetworking(Context* context) :
     Sample(context)
@@ -451,7 +450,15 @@ void AdvancedNetworking::MoveCamera()
 
         ProcessClientMovement(clientObject);
 
-        if (input->GetMouseButtonPress(MOUSEB_LEFT))
+        bool autoClick = false;
+        if (ui_->GetCheatAutoClick())
+        {
+            autoClick = autoClickTimer_.GetMSec(false) >= 250;
+            if (autoClick)
+                autoClickTimer_.Reset();
+        }
+
+        if (input->GetMouseButtonPress(MOUSEB_LEFT) || autoClick)
         {
             auto* renderer = GetSubsystem<Renderer>();
             Viewport* viewport = renderer->GetViewport(0);
@@ -475,20 +482,11 @@ void AdvancedNetworking::ProcessClientMovement(NetworkObject* clientObject)
     auto clientController = clientNode->GetComponent<PredictedKinematicController>();
 
     // Process auto movement cheat
-    const bool autoMovement = ui_->GetCheatAutoMovement();
-    if (!autoMovement)
+    const bool autoMovement = ui_->GetCheatAutoMovementCircle();
+    if (autoMovement && autoMovementTimer_.GetMSec(false) >= 1000)
     {
-        autoMovementTimer_ = AUTO_MOVEMENT_DURATION;
-        autoMovementPhase_ = 0;
-    }
-    else
-    {
-        autoMovementTimer_ -= GetSubsystem<Time>()->GetTimeStep();
-        if (autoMovementTimer_ < 0.0f)
-        {
-            autoMovementTimer_ = AUTO_MOVEMENT_DURATION;
-            autoMovementPhase_ = (autoMovementPhase_ + 1) % 4;
-        }
+        autoMovementTimer_.Reset();
+        autoMovementPhase_ = (autoMovementPhase_ + 1) % 4;
     }
 
     // Calculate movement direction
@@ -518,6 +516,39 @@ void AdvancedNetworking::ProcessClientMovement(NetworkObject* clientObject)
         + cameraNode_->GetRotation() * Vector3::BACK * CAMERA_DISTANCE + Vector3::UP * CAMERA_OFFSET);
 }
 
+Vector3 AdvancedNetworking::GetAimPosition(const Vector3& playerPosition, const Ray& screenRay) const
+{
+    if (ui_->GetCheatAutoAimHand())
+    {
+        ea::vector<AnimatedModel*> models;
+        scene_->GetComponents(models, true);
+
+        AnimatedModel* closestModel{};
+        float closestDistance{};
+        for (AnimatedModel* model : models)
+        {
+            if (model->GetViewMask() == UNIMPORTANT_VIEW_MASK)
+                continue;
+
+            const float distance = model->GetNode()->GetWorldPosition().DistanceToPoint(playerPosition);
+            if (!closestModel || distance < closestDistance)
+            {
+                closestModel = model;
+                closestDistance = distance;
+            }
+        }
+
+        if (closestModel)
+        {
+            Node* aimNode = closestModel->GetSkeleton().GetBone("Mutant:RightHandIndex2")->node_;
+            return aimNode->GetWorldPosition();
+        }
+    }
+
+    const Vector3 defaultAimPosition = screenRay.origin_ + screenRay.direction_ * HIT_DISTANCE;
+    return RaycastImportantGeometries(screenRay).value_or(defaultAimPosition);
+}
+
 void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay)
 {
     auto* network = GetSubsystem<Network>();
@@ -530,12 +561,8 @@ void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const
     const NetworkTime replicaTime = clientReplica->GetReplicaTime();
     const NetworkTime inputTime = clientReplica->GetInputTime();
 
-    // First, check if user even clicked on anything, using raw screen ray.
-    // If user didn't click anything, just use far position of the ray.
-    const Vector3 defaultAimPosition = screenRay.origin_ + screenRay.direction_ * HIT_DISTANCE;
-
     // Second, perform an actual raycast from the player model to the aim point.
-    const Vector3 aimPosition = RaycastImportantGeometries(screenRay).value_or(defaultAimPosition);
+    const Vector3 aimPosition = GetAimPosition(clientObject->GetNode()->GetWorldPosition(), screenRay);
     const Vector3 origin = clientObject->GetNode()->GetWorldPosition() + Vector3::UP * CAMERA_OFFSET;
     const Ray castRay{origin, aimPosition - origin};
 
