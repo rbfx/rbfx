@@ -1760,6 +1760,10 @@ void Renderer::Initialize()
     initialized_ = true;
 
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Renderer, HandleRenderUpdate));
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&)
+    {
+        frameStats_ = FrameStatistics{};
+    });
 
     URHO3D_LOGINFO("Initialized renderer");
 }
