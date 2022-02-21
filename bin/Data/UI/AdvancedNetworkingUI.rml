@@ -14,21 +14,23 @@
         </div>
         <div>
             <div data-if="!isServer && !isClient">
-                <button data-event-click="onConnectToServer">Connect to server</button>
+                <button data-event-click="onConnectToServer">Connect to Server</button>
                 at
                 <input type="text" data-value="connectionAddress"/>
                 :{{port}}
                 <br/>
-                <button data-event-click="onStartServer">Start server</button>at port {{port}}<br/>
+                <button data-event-click="onStartServer">Start Server</button>at port {{port}}<br/>
             </div>
             <div data-if="isServer">
-                <button data-event-click="onStop">Stop server</button><br/>
+                <button data-event-click="onStop">Stop Server</button><br/>
             </div>
             <div data-if="isClient">
-                <button data-event-click="onStop">Disconnect from server</button><br/>
+                <button data-event-click="onStop">Disconnect from Server</button><br/>
                 <br/>
                 <h5>Cheats</h5>
-                <label><input type="checkbox" value="cheatAutoMovement" data-checked="cheatAutoMovement"/>Automatic movement</label><br/>
+                <label><input type="checkbox" value="cheatAutoMovementCircle" data-checked="cheatAutoMovementCircle"/>Automatic Movement (Circle)</label><br/>
+                <label><input type="checkbox" value="cheatAutoAimHand" data-checked="cheatAutoAimHand"/>Automatic Aim (Hand)</label><br/>
+                <label><input type="checkbox" value="cheatAutoClick" data-checked="cheatAutoClick"/>Automatic Click (0.25 sec)</label><br/>
             </div>
         </div>
     </div>

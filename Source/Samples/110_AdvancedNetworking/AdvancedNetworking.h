@@ -93,6 +93,8 @@ private:
 
     /// Process movement of the client on the client side.
     void ProcessClientMovement(NetworkObject* clientObject);
+    /// Return aim position from a screen ray.
+    Vector3 GetAimPosition(const Vector3& playerPosition, const Ray& screenRay) const;
     /// Perform a raycast request on the client side.
     void RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay);
     /// Add debug marker for ray hits.
@@ -115,8 +117,10 @@ private:
     /// Statistics UI update timer
     Timer statsTimer_;
 
-    /// Timer user for auto movement.
-    float autoMovementTimer_{};
+    /// Timer used for auto movement.
+    Timer autoMovementTimer_{};
     /// Current phase of auto movement.
     unsigned autoMovementPhase_{};
+    /// Timer used for auto clicker.
+    Timer autoClickTimer_{};
 };
