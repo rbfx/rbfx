@@ -184,6 +184,14 @@ enum SkinningMode
     SKINNING_SOFTWARE,
 };
 
+/// Statistics collected during the last frame.
+/// TODO: Move other metrics here.
+struct FrameStatistics
+{
+    unsigned animations_{};
+    unsigned changedAnimations_{};
+};
+
 /// High-level rendering subsystem. Manages drawing of 3D views.
 class URHO3D_API Renderer : public Object
 {
@@ -490,6 +498,10 @@ public:
     /// Return the frame update parameters.
     const FrameInfo& GetFrameInfo() const { return frame_; }
 
+    /// Return statistics of current frame.
+    const FrameStatistics& GetFrameStats() const { return frameStats_; }
+    FrameStatistics& GetMutableFrameStats() { return frameStats_; }
+
     /// Update for rendering. Called by HandleRenderUpdate().
     void Update(float timeStep);
     /// Render. Called by Engine.
@@ -731,6 +743,8 @@ private:
     /// Pipeline state cache.
     SharedPtr<PipelineStateCache> pipelineStateCache_;
     SharedPtr<DrawCommandQueue> defaultDrawQueue_;
+
+    FrameStatistics frameStats_;
 };
 
 }

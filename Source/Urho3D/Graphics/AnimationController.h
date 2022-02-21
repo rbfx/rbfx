@@ -234,10 +234,13 @@ private:
 
     /// Triggers to be fired. Processed all at once due to possible side effects.
     ea::vector<ea::pair<Animation*, const AnimationTriggerPoint*>> pendingTriggers_;
+    /// Revision that tracks substantial updates of animation state.
+    unsigned revision_{};
 
     /// Internal dirty flags cleaned on Update.
     /// @{
     bool animationStatesDirty_{};
+    bool revisionDirty_{};
     /// @}
 };
 

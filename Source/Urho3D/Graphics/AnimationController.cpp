@@ -29,6 +29,7 @@
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/AnimationState.h"
 #include "../Graphics/DrawableEvents.h"
+#include "../Graphics/Renderer.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
@@ -255,6 +256,22 @@ void AnimationController::OnSetEnabled()
 
 void AnimationController::Update(float timeStep)
 {
+    // Update stats
+    if (auto renderer = GetSubsystem<Renderer>())
+    {
+        FrameStatistics& stats = renderer->GetMutableFrameStats();
+        ++stats.animations_;
+        if (revisionDirty_)
+            ++stats.changedAnimations_;
+    }
+
+    // Update revision
+    if (revisionDirty_)
+    {
+        ++revision_;
+        revisionDirty_ = false;
+    }
+
     // Update individual animations
     pendingTriggers_.clear();
     for (auto& [params, state] : animations_)
@@ -353,9 +370,11 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
         {
             EnsureStateInitialized(instance.state_, instance.params_);
             animations_.push_back(instance);
-            animationStatesDirty_ = true;
         }
     }
+
+    animationStatesDirty_ = true;
+    revisionDirty_ = true;
 }
 
 void AnimationController::AddAnimation(const AnimationParameters& params)
@@ -378,6 +397,7 @@ void AnimationController::AddAnimation(const AnimationParameters& params)
     EnsureStateInitialized(instance.state_, instance.params_);
 
     animationStatesDirty_ = true;
+    revisionDirty_ = true;
 }
 
 void AnimationController::UpdateAnimation(unsigned index, const AnimationParameters& params)
@@ -399,7 +419,11 @@ void AnimationController::UpdateAnimation(unsigned index, const AnimationParamet
     if (instance.params_.layer_ != params.layer_)
         animationStatesDirty_ = true;
 
-    instance.params_ = params;
+    if (instance.params_ != params)
+    {
+        instance.params_ = params;
+        revisionDirty_ = true;
+    }
 }
 
 void AnimationController::RemoveAnimation(unsigned index)
@@ -412,6 +436,7 @@ void AnimationController::RemoveAnimation(unsigned index)
 
     animations_.erase_at(index);
     animationStatesDirty_ = true;
+    revisionDirty_ = true;
 }
 
 void AnimationController::GetAnimationParameters(ea::vector<AnimationParameters>& result) const
@@ -610,8 +635,15 @@ bool AnimationController::Play(const ea::string& name, unsigned char layer, bool
 
 bool AnimationController::PlayExclusive(const ea::string& name, unsigned char layer, bool looped, float fadeTime)
 {
-    StopLayer(layer, fadeTime);
-    return Play(name, layer, looped, fadeTime);
+    Animation* animation = GetAnimationByName(name);
+    if (!animation)
+        return false;
+
+    auto params = AnimationParameters{animation}.Layer(layer);
+    params.removeOnZeroWeight_ = true;
+    params.looped_ = looped;
+    PlayExistingExclusive(params, fadeTime);
+    return true;
 }
 
 bool AnimationController::Fade(const ea::string& name, float targetWeight, float fadeTime)

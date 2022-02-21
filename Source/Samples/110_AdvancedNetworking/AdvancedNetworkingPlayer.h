@@ -92,7 +92,7 @@ private:
 
     /// Animation parameters.
     const float moveThreshold_{0.1f};
-    const float jumpThreshold_{0.2f};
+    const float jumpThreshold_{5.0f};
     const float fadeTime_{0.1f};
 
     /// Dependencies of this behaviors.

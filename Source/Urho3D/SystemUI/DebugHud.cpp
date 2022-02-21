@@ -63,7 +63,7 @@ static const unsigned FPS_UPDATE_INTERVAL_MS = 500;
 DebugHud::DebugHud(Context* context)
     : Object(context)
 {
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(DebugHud, OnRenderDebugUI));
+    SubscribeToEvent(E_ENDALLVIEWSRENDER, URHO3D_HANDLER(DebugHud, OnRenderDebugUI));
 }
 
 DebugHud::~DebugHud()
@@ -140,14 +140,16 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
     Graphics* graphics = GetSubsystem<Graphics>();
     if (mode & DEBUGHUD_SHOW_STATS)
     {
-        // Update stats regardless of them being shown.
+        const FrameStatistics& stats = renderer->GetFrameStats();
+
         if (fpsTimer_.GetMSec(false) > FPS_UPDATE_INTERVAL_MS)
         {
             fps_ = static_cast<unsigned int>(Round(context_->GetSubsystem<Time>()->GetFramesPerSecond()));
+            ea::swap(numChangedAnimations_[0], numChangedAnimations_[1]);
+            numChangedAnimations_[1] = 0;
             fpsTimer_.Reset();
         }
 
-        ea::string stats;
         unsigned primitives, batches;
         if (!useRendererStats_)
         {
@@ -159,6 +161,8 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
             primitives = context_->GetSubsystem<Renderer>()->GetNumPrimitives();
             batches = context_->GetSubsystem<Renderer>()->GetNumBatches();
         }
+
+        numChangedAnimations_[1] += stats.changedAnimations_;
 
         float left_offset = ui::GetCursorPos().x;
 
@@ -175,6 +179,8 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
         ui::Text("Shadowmaps %u", renderer->GetNumShadowMaps(true));
         ui::SetCursorPosX(left_offset);
         ui::Text("Occluders %u", renderer->GetNumOccluders(true));
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Animations %u(%u)", stats.animations_, numChangedAnimations_[0]);
         ui::SetCursorPosX(left_offset);
 
         for (auto i = appStats_.begin(); i != appStats_.end(); ++i)

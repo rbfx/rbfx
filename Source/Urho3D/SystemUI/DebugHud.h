@@ -100,6 +100,7 @@ private:
     Timer fpsTimer_{};
     /// Calculated fps
     unsigned fps_ = 0;
+    unsigned numChangedAnimations_[2]{};
 };
 
 }
