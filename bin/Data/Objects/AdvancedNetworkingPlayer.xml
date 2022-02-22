@@ -6,7 +6,9 @@
 	<attribute name="Scale" value="1 1 1" />
 	<attribute name="Variables" />
 	<component type="KinematicCharacterController" id="1"/>
-	<component type="ReplicatedTransform" id="4"/>
+	<component type="ReplicatedTransform" id="4">
+		<attribute name="Synchronize Rotation" value="None" />
+	</component>
 	<component type="PredictedKinematicController" id="3"/>
 	<component type="FilteredByDistance" id="8">
 		<attribute name="Update Period" value="0" />
@@ -32,8 +34,12 @@
 			<attribute name="Cast Shadows" value="true" />
 		</component>
 		<component type="AnimationController" id="5"/>
-		<component type="AdvancedNetworkingPlayer" id="6"/>
+		<component type="ReplicatedAnimation" id="6"/>
 		<component type="TrackedAnimatedModel" id="7"/>
+		<component type="ReplicatedTransform" id="11">
+			<attribute name="Synchronize Position" value="0" />
+		</component>
+		<component type="AdvancedNetworkingPlayer" id="12"/>
 	</node>
 	<node id="1">
 		<attribute name="Name" value="Light" />

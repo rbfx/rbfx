@@ -142,6 +142,7 @@ public:
     unsigned GetNumAnimations() const { return animations_.size(); }
     unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
     const AnimationParameters& GetAnimationParameters(unsigned index) const { return animations_[index].params_; }
+    unsigned GetRevision() const { return revision_; }
     /// @}
 
     /// Manage played animations on high level.

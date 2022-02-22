@@ -70,8 +70,12 @@ public:
 
     void SetNumUploadAttempts(unsigned value) { numUploadAttempts_ = value; }
     unsigned GetNumUploadAttempts() const { return numUploadAttempts_; }
-    void SetTrackOnly(bool value) { trackOnly_ = value; }
-    bool GetTrackOnly() const { return trackOnly_; }
+    void SetReplicateOwner(bool value) { replicateOwner_ = value; }
+    bool GetReplicateOwner() const { return replicateOwner_; }
+    void SetPositionTrackOnly(bool value) { positionTrackOnly_ = value; }
+    bool GetPositionTrackOnly() const { return positionTrackOnly_; }
+    void SetRotationTrackOnly(bool value) { rotationTrackOnly_ = value; }
+    bool GetRotationTrackOnly() const { return rotationTrackOnly_; }
     void SetSmoothingConstant(float value) { smoothingConstant_ = value; }
     float GetSmoothingConstant() const { return smoothingConstant_; }
     void SetMovementThreshold(float value) { movementThreshold_ = value; }
@@ -118,7 +122,9 @@ private:
     /// Attributes independent on the client and the server.
     /// @{
     unsigned numUploadAttempts_{DefaultNumUploadAttempts};
-    bool trackOnly_{};
+    bool replicateOwner_{};
+    bool positionTrackOnly_{};
+    bool rotationTrackOnly_{};
     float smoothingConstant_{DefaultSmoothingConstant};
     float movementThreshold_{DefaultMovementThreshold};
     float snapThreshold_{DefaultSnapThreshold};
