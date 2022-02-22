@@ -45,14 +45,12 @@ static constexpr float MAX_ROTATION_SPEED = 360.0f;
 /// - Animation synchronization;
 /// - Player rotation synchronization;
 /// - View mask assignment for easy raycasting.
-class AdvancedNetworkingPlayer : public ReplicatedAnimation
+class AdvancedNetworkingPlayer : public NetworkBehavior
 {
-    URHO3D_OBJECT(AdvancedNetworkingPlayer, ReplicatedAnimation);
+    URHO3D_OBJECT(AdvancedNetworkingPlayer, NetworkBehavior);
 
 public:
-    static constexpr unsigned RingBufferSize = 8;
-    static constexpr NetworkCallbackFlags CallbackMask =
-        NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::Update | NetworkCallbackMask::InterpolateState;
+    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::Update;
 
     explicit AdvancedNetworkingPlayer(Context* context);
 
@@ -61,18 +59,6 @@ public:
 
     /// Initialize component on the client.
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
-
-    /// Always send animation updates for simplicity.
-    bool PrepareUnreliableDelta(NetworkFrame frame) override;
-
-    /// Write current animation state and rotation on server.
-    void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override;
-
-    /// Read current animation state on replicating client.
-    void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override;
-
-    /// Perform interpolation of received data on replicated client.
-    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime);
 
     void Update(float replicaTimeStep, float inputTimeStep) override;
 
@@ -96,6 +82,7 @@ private:
     const float fadeTime_{0.1f};
 
     /// Dependencies of this behaviors.
+    WeakPtr<AnimationController> animationController_;
     WeakPtr<ReplicatedTransform> replicatedTransform_;
     WeakPtr<PredictedKinematicController> networkController_;
     WeakPtr<KinematicCharacterController> kinematicController_;
@@ -104,8 +91,8 @@ private:
     unsigned currentAnimation_{};
 
     /// Client-side containers that keep aggregated data from the server for the future sampling.
-    float networkFrameDuration_{};
-    NetworkValue<ea::pair<unsigned, float>> animationTrace_;
-    NetworkValue<Quaternion> rotationTrace_;
-    NetworkValueSampler<Quaternion> rotationSampler_;
+    //float networkFrameDuration_{};
+    //NetworkValue<ea::pair<unsigned, float>> animationTrace_;
+    //NetworkValue<Quaternion> rotationTrace_;
+    //NetworkValueSampler<Quaternion> rotationSampler_;
 };

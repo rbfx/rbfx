@@ -57,7 +57,9 @@ void ReplicatedTransform::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 
     URHO3D_ATTRIBUTE("Num Upload Attempts", unsigned, numUploadAttempts_, DefaultNumUploadAttempts, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Track Only", bool, trackOnly_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Replicate Owner", bool, replicateOwner_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Position Track Only", bool, positionTrackOnly_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation Track Only", bool, rotationTrackOnly_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Smoothing Constant", float, smoothingConstant_, DefaultSmoothingConstant, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Movement Threshold", float, movementThreshold_, DefaultMovementThreshold, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Snap Threshold", float, snapThreshold_, DefaultSnapThreshold, AM_DEFAULT);
@@ -171,16 +173,16 @@ void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
 
 void ReplicatedTransform::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
-    if (trackOnly_)
+    if (!replicateOwner_ && GetNetworkObject()->IsOwnedByThisClient())
         return;
 
-    if (synchronizePosition_)
+    if (!positionTrackOnly_ && synchronizePosition_)
     {
         if (auto newPosition = client_.positionSampler_.UpdateAndSample(positionTrace_, replicaTime, timeStep))
             node_->SetWorldPosition(*newPosition);
     }
 
-    if (synchronizeRotation_ != ReplicatedRotationMode::None)
+    if (!rotationTrackOnly_ && synchronizeRotation_ != ReplicatedRotationMode::None)
     {
         if (auto newRotation = client_.rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, timeStep))
             node_->SetWorldRotation(*newRotation);

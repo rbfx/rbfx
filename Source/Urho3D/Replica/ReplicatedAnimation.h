@@ -30,6 +30,7 @@ namespace Urho3D
 {
 
 class AnimationController;
+struct AnimationParameters;
 
 /// Behavior that replicates animation over network.
 /// TODO: This behavior doesn't really replicate any animation now, it only does essential setup on the server.
@@ -38,12 +39,23 @@ class URHO3D_API ReplicatedAnimation : public NetworkBehavior
     URHO3D_OBJECT(ReplicatedAnimation, NetworkBehavior);
 
 public:
-    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::Update;
+    static constexpr unsigned DefaultNumUploadAttempts = 4;
+    static constexpr unsigned DefaultSmoothingTime = 0.2f;
 
-    explicit ReplicatedAnimation(Context* context, NetworkCallbackFlags derivedClassMask = NetworkCallbackMask::None);
+    static constexpr NetworkCallbackFlags CallbackMask =
+        NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState | NetworkCallbackMask::Update;
+
+    explicit ReplicatedAnimation(Context* context);
     ~ReplicatedAnimation() override;
 
     static void RegisterObject(Context* context);
+
+    void SetNumUploadAttempts(unsigned value) { numUploadAttempts_ = value; }
+    unsigned GetNumUploadAttempts() const { return numUploadAttempts_; }
+    void SetReplicateOwner(bool value) { replicateOwner_ = value; }
+    bool GetReplicateOwner() const { return replicateOwner_; }
+    void SetSmoothingTime(float value) { smoothingTime_ = value; }
+    float GetSmoothingTime() const { return smoothingTime_; }
 
     /// Implement NetworkBehavior.
     /// @{
@@ -51,14 +63,48 @@ public:
     void InitializeOnServer() override;
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
+    bool PrepareUnreliableDelta(NetworkFrame frame) override;
+    void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override;
+    void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override;
+
+    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
     void Update(float replicaTimeStep, float inputTimeStep) override;
     /// @}
 
 private:
     void InitializeCommon();
+    void OnServerFrameEnd(NetworkFrame frame);
 
-protected:
+    using AnimationSnapshot = VariantVector;
+
+    void WriteSnapshot(Serializer& dest) const;
+    AnimationSnapshot ReadSnapshot(Deserializer& src) const;
+    void DecodeSnapshot(const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const;
+
     WeakPtr<AnimationController> animationController_;
+
+    /// Attributes independent on the client and the server.
+    /// @{
+    unsigned numUploadAttempts_{DefaultNumUploadAttempts};
+    bool replicateOwner_{};
+    float smoothingTime_{DefaultSmoothingTime};
+    /// @}
+
+    struct ServerData
+    {
+        unsigned pendingUploadAttempts_{};
+        unsigned latestRevision_{};
+    } server_;
+
+    struct ClientData
+    {
+        float networkStepTime_{};
+
+        ea::optional<NetworkFrame> latestAppliedFrame_;
+        ea::vector<AnimationParameters> snapshotAnimations_;
+
+        NetworkValue<AnimationSnapshot> animationTrace_;
+    } client_;
 };
 
 };

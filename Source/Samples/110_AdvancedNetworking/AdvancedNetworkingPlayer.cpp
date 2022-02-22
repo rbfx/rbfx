@@ -55,7 +55,7 @@ Quaternion TransformRotation(const Quaternion& base, const Quaternion& target, f
 }
 
 AdvancedNetworkingPlayer::AdvancedNetworkingPlayer(Context* context)
-    : ReplicatedAnimation(context, CallbackMask)
+    : NetworkBehavior(context, CallbackMask)
 {
     auto cache = GetSubsystem<ResourceCache>();
     animations_ = {
@@ -86,92 +86,17 @@ void AdvancedNetworkingPlayer::InitializeFromSnapshot(
     // Mark all players except ourselves as important for raycast.
     auto animatedModel = GetComponent<AnimatedModel>();
     animatedModel->SetViewMask(isOwned ? UNIMPORTANT_VIEW_MASK : IMPORTANT_VIEW_MASK);
-
-    // Setup client-side containers
-    ReplicationManager* replicationManager = GetNetworkObject()->GetReplicationManager();
-    const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
-
-    animationTrace_.Resize(traceDuration);
-    rotationTrace_.Resize(traceDuration);
-
-    // Smooth rotation a bit, but without extrapolation
-    rotationSampler_.Setup(0, 15.0f, M_LARGE_VALUE);
-}
-
-bool AdvancedNetworkingPlayer::PrepareUnreliableDelta(NetworkFrame frame)
-{
-    BaseClassName::PrepareUnreliableDelta(frame);
-
-    return true;
-}
-
-void AdvancedNetworkingPlayer::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
-{
-    BaseClassName::WriteUnreliableDelta(frame, dest);
-
-    const ea::string& currentAnimationName = animations_[currentAnimation_]->GetName();
-    const float currentTime = animationController_->GetTime(currentAnimationName);
-
-    dest.WriteVLE(currentAnimation_);
-    dest.WriteFloat(currentTime);
-    dest.WriteQuaternion(node_->GetWorldRotation());
-}
-
-void AdvancedNetworkingPlayer::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
-{
-    BaseClassName::ReadUnreliableDelta(frame, src);
-
-    const unsigned animationIndex = src.ReadVLE();
-    const float animationTime = src.ReadFloat();
-    const Quaternion rotation = src.ReadQuaternion();
-
-    animationTrace_.Set(frame, {animationIndex, animationTime});
-    rotationTrace_.Set(frame, rotation);
-}
-
-void AdvancedNetworkingPlayer::InterpolateState(
-    float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
-{
-    BaseClassName::InterpolateState(timeStep, replicaTime, inputTime);
-
-    if (!GetNetworkObject()->IsReplicatedClient())
-        return;
-
-    // Interpolate player rotation
-    if (auto newRotation = rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, timeStep))
-        node_->SetWorldRotation(*newRotation);
-
-    // Extrapolate animation time from trace
-    if (const auto animationSample = animationTrace_.GetRawOrPrior(replicaTime.Frame()))
-    {
-        const auto& [value, sampleFrame] = *animationSample;
-        const auto& [animationIndex, animationTime] = value;
-
-        // Just play most recent received animation
-        Animation* animation = animations_[animationIndex];
-        animationController_->PlayExclusive(animation->GetName(), 0, false, fadeTime_);
-
-        // Adjust time to stay synchronized with server
-        const float delay = (replicaTime - NetworkTime{sampleFrame}) * networkFrameDuration_;
-        const float time = Mod(animationTime + delay, animation->GetLength());
-        animationController_->SetTime(animation->GetName(), time);
-    }
 }
 
 void AdvancedNetworkingPlayer::Update(float replicaTimeStep, float inputTimeStep)
 {
     if (!GetNetworkObject()->IsReplicatedClient())
         UpdateAnimations(inputTimeStep);
-
-    BaseClassName::Update(replicaTimeStep, inputTimeStep);
 }
 
 void AdvancedNetworkingPlayer::InitializeCommon()
 {
-    ReplicationManager* replicationManager = GetNetworkObject()->GetReplicationManager();
-    networkFrameDuration_ = 1.0f / replicationManager->GetUpdateFrequency();
-
-    // Resolve dependencies
+    animationController_ = GetComponent<AnimationController>();
     replicatedTransform_ = GetNetworkObject()->GetNetworkBehavior<ReplicatedTransform>();
     networkController_ = GetNetworkObject()->GetNetworkBehavior<PredictedKinematicController>();
     kinematicController_ = networkController_->GetComponent<KinematicCharacterController>();

@@ -135,7 +135,7 @@ void PredictedKinematicController::InitializeFromSnapshot(NetworkFrame frame, De
 
     if (isOwned)
     {
-        replicatedTransform_->SetTrackOnly(true);
+        replicatedTransform_->SetPositionTrackOnly(true);
 
         client_.input_.set_capacity(maxInputFrames_);
 

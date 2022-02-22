@@ -436,6 +436,7 @@ public:
 
     using NetworkValueBase::IsInitialized;
     using NetworkValueBase::GetLastFrame;
+    using NetworkValueBase::FindClosestAllocatedFrame;
 
     NetworkValue() = default;
     explicit NetworkValue(const Traits& traits)
@@ -470,6 +471,12 @@ public:
         if (const auto index = AllocatedFrameToIndex(frame))
             return values_[*index];
         return ea::nullopt;
+    }
+
+    /// Return raw valid value at given frame.
+    const InternalType& GetRawUnchecked(NetworkFrame frame) const
+    {
+        return values_[FrameToIndexUnchecked(frame)];
     }
 
     /// Return raw value at the given or prior frame.
