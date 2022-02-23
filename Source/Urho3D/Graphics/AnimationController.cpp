@@ -44,6 +44,29 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+const StringVector animationParametersNames =
+{
+    "Animation Count",
+    "   Animation",
+    "   Is Looped",
+    "   Remove On Completion",
+    "   Layer",
+    "   Blend Mode",
+    "   Start Bone",
+    "   Auto Fade Out Time",
+    "   Time",
+    "   Min Time",
+    "   Max Time",
+    "   Speed",
+    "   Remove On Zero Weight",
+    "   Weight",
+    "   Target Weight",
+    "   Target Weight Delay",
+};
+
 enum class AnimationParameterMask
 {
     InstanceIndex       = 1 << 0,
@@ -64,12 +87,14 @@ enum class AnimationParameterMask
 };
 URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
+}
+
 extern const char* LOGIC_CATEGORY;
 
 AnimationParameters::AnimationParameters(Animation* animation)
     : animation_(animation)
     , animationName_(animation ? animation_->GetNameHash() : StringHash{})
-    , time_{0.0f, 0.0f, animation_ ? animation_->GetLength() : 0.0f}
+    , time_{0.0f, 0.0f, animation_ ? animation_->GetLength() : M_LARGE_VALUE}
 {
 }
 
@@ -166,7 +191,8 @@ AnimationParameters AnimationParameters::FromVariantSpan(Context* context, ea::s
     const float time = variants[index++].GetFloat();
     const float minTime = variants[index++].GetFloat();
     const float maxTime = variants[index++].GetFloat();
-    result.time_ = {time, minTime, maxTime};
+    const float effectiveMaxTime = maxTime == M_LARGE_VALUE && result.animation_ ? result.animation_->GetLength() : maxTime;
+    result.time_ = {time, minTime, effectiveMaxTime};
 
     result.speed_ = variants[index++].GetFloat();
     result.removeOnZeroWeight_ = variants[index++].GetBool();
@@ -340,8 +366,8 @@ void AnimationController::RegisterObject(Context* context)
     context->RegisterFactory<AnimationController>(LOGIC_CATEGORY);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector,
-        AM_FILE | AM_NOEDIT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animations", GetAnimationsAttr, SetAnimationsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
+        .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, animationParametersNames);
 }
 
 void AnimationController::ApplyAttributes()
@@ -383,6 +409,8 @@ void AnimationController::Update(float timeStep)
     pendingTriggers_.clear();
     for (auto& [params, state] : animations_)
     {
+        if (!params.animation_)
+            continue;
         UpdateInstance(params, timeStep, true);
         if (!params.removed_)
             UpdateState(state, params);
@@ -518,12 +546,6 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
 
 void AnimationController::AddAnimation(const AnimationParameters& params)
 {
-    if (!params.animation_)
-    {
-        URHO3D_ASSERTLOG(0, "Null animation in AnimationController::AddAnimation");
-        return;
-    }
-
     const unsigned instanceIndex = ea::count_if(animations_.begin(), animations_.end(),
         [&](const AnimationInstance& instance) { return instance.params_.animation_ == params.animation_; });
 
@@ -853,26 +875,22 @@ float AnimationController::GetSpeed(const ea::string& name) const
 void AnimationController::SetAnimationsAttr(const VariantVector& value)
 {
     animations_.clear();
+    revisionDirty_ = true;
     if (value.empty() || value[0].GetType() != VAR_INT)
         return;
 
     const unsigned numAnimations = value[0].GetUInt();
-    if (value.size() != numAnimations * AnimationParameters::NumVariants + 1)
-        return;
+    const unsigned numLoadedAnimations = ea::min(numAnimations, (value.size() - 1) / AnimationParameters::NumVariants);
 
     const ea::span<const Variant> valueSpan{value};
-    for (unsigned i = 0; i < numAnimations; ++i)
+    for (unsigned i = 0; i < numLoadedAnimations; ++i)
     {
         const auto span = valueSpan.subspan(1 + i * AnimationParameters::NumVariants, AnimationParameters::NumVariants);
         const auto params = AnimationParameters::FromVariantSpan(context_, span);
-        if (!params.animation_)
-        {
-            URHO3D_LOGWARNING("Unknown Animation '{}' is skipped on load", span[0].ToString());
-            continue;
-        }
-
         AddAnimation(params);
     }
+    for (unsigned i = numLoadedAnimations; i < numAnimations; ++i)
+        AddAnimation(AnimationParameters{nullptr});
 }
 
 VariantVector AnimationController::GetAnimationsAttr() const
@@ -1124,6 +1142,12 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
 
     // Reset internal state. Shouldn't cause any reallocations due to simple vectors inside.
     state->ClearAllTracks();
+
+    if (!animation)
+    {
+        state->OnTracksReady();
+        return;
+    }
 
     // Use root node or start bone node if specified
     // Note: bone tracks are resolved starting from root bone node,
