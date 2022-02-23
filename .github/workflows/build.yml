@@ -568,6 +568,7 @@ jobs:
           - rel
 
     env:
+      BINARYEN_CORES: 1
       ci_platform: web
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
