@@ -147,9 +147,11 @@ void PredictedKinematicController::InitializeFromSnapshot(NetworkFrame frame, De
                 OnPhysicsSynchronizedOnClient(static_cast<NetworkFrame>(networkFrame.GetInt64()));
         });
     }
+    else
+        kinematicController_->SetGravity(Vector3::ZERO);
 }
 
-void PredictedKinematicController::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void PredictedKinematicController::InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
     if (!IsConnectedToComponents())
         return;

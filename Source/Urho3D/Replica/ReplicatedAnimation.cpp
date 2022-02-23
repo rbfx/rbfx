@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Network/NetworkEvents.h"
 #include "../Replica/ReplicatedAnimation.h"
@@ -63,6 +64,9 @@ void ReplicatedAnimation::InitializeOnServer()
 
     server_.latestRevision_ = animationController_->GetRevision();
 
+    UpdateLookupsOnServer();
+    server_.newAnimationLookups_.clear();
+
     SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
         [this](StringHash, VariantMap& eventData)
     {
@@ -70,6 +74,15 @@ void ReplicatedAnimation::InitializeOnServer()
         const auto serverFrame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
         OnServerFrameEnd(serverFrame);
     });
+}
+
+void ReplicatedAnimation::WriteSnapshot(NetworkFrame frame, Serializer& dest)
+{
+    dest.WriteVLE(animationLookup_.size());
+    for (const auto& [nameHash, name] : animationLookup_)
+        dest.WriteString(name);
+
+    WriteSnapshot(dest);
 }
 
 void ReplicatedAnimation::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
@@ -84,6 +97,12 @@ void ReplicatedAnimation::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     client_.networkStepTime_ = 1.0f / replicationManager->GetUpdateFrequency();
     client_.animationTrace_.Resize(traceDuration);
     client_.latestAppliedFrame_ = ea::nullopt;
+
+    ReadLookupsOnClient(src);
+
+    // Read initial animations
+    const AnimationSnapshot snapshot = ReadSnapshot(src);
+    client_.animationTrace_.Set(frame, snapshot);
 }
 
 void ReplicatedAnimation::InitializeCommon()
@@ -109,6 +128,36 @@ void ReplicatedAnimation::OnServerFrameEnd(NetworkFrame frame)
     {
         server_.latestRevision_ = revision;
         server_.pendingUploadAttempts_ = numUploadAttempts_;
+        UpdateLookupsOnServer();
+    }
+    else
+    {
+        server_.newAnimationLookups_.clear();
+    }
+}
+
+void ReplicatedAnimation::UpdateLookupsOnServer()
+{
+    server_.newAnimationLookups_.clear();
+    for (unsigned i = 0; i < animationController_->GetNumAnimations(); ++i)
+    {
+        const AnimationParameters& params = animationController_->GetAnimationParameters(i);
+        if (animationLookup_.find(params.animationName_) != animationLookup_.end())
+            continue;
+
+        const ea::string& name = params.animation_->GetName();
+        animationLookup_[StringHash{name}] = name;
+        server_.newAnimationLookups_.push_back(name);
+    }
+}
+
+void ReplicatedAnimation::ReadLookupsOnClient(Deserializer& src)
+{
+    const unsigned numLookups = src.ReadVLE();
+    for (unsigned i = 0; i < numLookups; ++i)
+    {
+        const ea::string name = src.ReadString();
+        animationLookup_[StringHash{name}] = name;
     }
 }
 
@@ -134,6 +183,23 @@ void ReplicatedAnimation::DecodeSnapshot(const AnimationSnapshot& snapshot, ea::
         result[i] = AnimationParameters::FromVariantSpan(context_, {&snapshot[i * AnimationParameters::NumVariants + 1], AnimationParameters::NumVariants});
 }
 
+bool ReplicatedAnimation::PrepareReliableDelta(NetworkFrame frame)
+{
+    return !server_.newAnimationLookups_.empty();
+}
+
+void ReplicatedAnimation::WriteReliableDelta(NetworkFrame frame, Serializer& dest)
+{
+    dest.WriteVLE(server_.newAnimationLookups_.size());
+    for (const ea::string& name : server_.newAnimationLookups_)
+        dest.WriteString(name);
+}
+
+void ReplicatedAnimation::ReadReliableDelta(NetworkFrame frame, Deserializer& src)
+{
+    ReadLookupsOnClient(src);
+}
+
 bool ReplicatedAnimation::PrepareUnreliableDelta(NetworkFrame frame)
 {
     return animationController_ && (server_.pendingUploadAttempts_ > 0 || numUploadAttempts_ == 0);
@@ -150,23 +216,24 @@ void ReplicatedAnimation::ReadUnreliableDelta(NetworkFrame frame, Deserializer& 
     client_.animationTrace_.Set(frame, snapshot);
 }
 
-void ReplicatedAnimation::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void ReplicatedAnimation::InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
     if (!animationController_ || !GetNetworkObject()->IsReplicatedClient())
         return;
 
     // Find extrapolation point
-    const auto closestPriorFrame = client_.animationTrace_.FindClosestAllocatedFrame(replicaTime.Frame(), true, false);
+    const NetworkTime adjustedReplicaTime = replicaTime - replicaTimeStep / client_.networkStepTime_;
+    const auto closestPriorFrame = client_.animationTrace_.FindClosestAllocatedFrame(adjustedReplicaTime.Frame(), true, false);
     if (!closestPriorFrame || *closestPriorFrame == client_.latestAppliedFrame_)
         return;
 
+    const bool firstUpdate = !client_.latestAppliedFrame_.has_value();
     client_.latestAppliedFrame_ = *closestPriorFrame;
     const AnimationSnapshot& snapshot = client_.animationTrace_.GetRawUnchecked(*closestPriorFrame);
     DecodeSnapshot(snapshot, client_.snapshotAnimations_);
 
-    // TODO: Should subtract timeStep here as well, but it works better this way this way for some reason
-    const float delay = (replicaTime - NetworkTime{*closestPriorFrame}) * client_.networkStepTime_;
-    animationController_->ReplaceAnimations(client_.snapshotAnimations_, delay, smoothingTime_);
+    const float delay = (adjustedReplicaTime - NetworkTime{*closestPriorFrame}) * client_.networkStepTime_;
+    animationController_->ReplaceAnimations(client_.snapshotAnimations_, delay, firstUpdate ? 0.0f : smoothingTime_);
 }
 
 void ReplicatedAnimation::Update(float replicaTimeStep, float inputTimeStep)

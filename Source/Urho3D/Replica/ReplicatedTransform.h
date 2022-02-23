@@ -99,7 +99,7 @@ public:
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
     void UpdateTransformOnServer() override;
-    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
     bool PrepareUnreliableDelta(NetworkFrame frame) override;
     void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override;
