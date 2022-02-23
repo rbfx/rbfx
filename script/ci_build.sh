@@ -81,6 +81,9 @@ quirks_web=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
 )
+quirks_web_rel=(
+    '-DCMAKE_CXX_FLAGS=-O2'
+)
 quirks_dll=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
 quirks_windows_msvc_x86=('-A' 'Win32')
@@ -194,6 +197,7 @@ function action-generate() {
     v="quirks_${ci_lib_type}[@]";                           ci_cmake_params+=("${!v}")
     v="quirks_${ci_platform}_${ci_compiler}_${ci_arch}[@]"; ci_cmake_params+=("${!v}")
     v="quirks_${ci_platform}_${ci_arch}[@]";                ci_cmake_params+=("${!v}")
+    v="quirks_${ci_platform}_${ci_build_type}[@]";          ci_cmake_params+=("${!v}")
     v="quirks_${ci_platform}[@]";                           ci_cmake_params+=("${!v}")
 
     ci_cmake_params+=(
