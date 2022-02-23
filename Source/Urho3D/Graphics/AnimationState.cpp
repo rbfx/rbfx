@@ -154,7 +154,12 @@ void AnimationState::OnTracksReady()
 
 void AnimationState::SetLooped(bool looped)
 {
-    looped_ = looped;
+    if (looped_ != looped)
+    {
+        looped_ = looped;
+        if (model_)
+            model_->MarkAnimationDirty();
+    }
 }
 
 void AnimationState::SetWeight(float weight)
@@ -171,16 +176,6 @@ void AnimationState::SetWeight(float weight)
     }
 }
 
-void AnimationState::SetBlendMode(AnimationBlendMode mode)
-{
-    if (blendingMode_ != mode)
-    {
-        blendingMode_ = mode;
-        if (model_)
-            model_->MarkAnimationDirty();
-    }
-}
-
 void AnimationState::SetTime(float time)
 {
     if (!animation_)
@@ -192,148 +187,6 @@ void AnimationState::SetTime(float time)
         time_ = time;
         if (model_)
             model_->MarkAnimationDirty();
-    }
-}
-
-void AnimationState::SetStartBone(const ea::string& name)
-{
-    if (!animation_)
-        return;
-
-    if (name != startBone_)
-    {
-        startBone_ = name;
-        MarkTracksDirty();
-        if (model_)
-            model_->MarkAnimationDirty();
-    }
-}
-
-void AnimationState::AddWeight(float delta)
-{
-    if (delta == 0.0f)
-        return;
-
-    SetWeight(GetWeight() + delta);
-}
-
-void AnimationState::AddTime(float delta)
-{
-    if (!animation_ || (!model_ && !node_))
-        return;
-
-    float length = animation_->GetLength();
-    if (delta == 0.0f || length == 0.0f)
-        return;
-
-    bool sendFinishEvent = false;
-
-    float oldTime = GetTime();
-    float time = oldTime + delta;
-    if (looped_)
-    {
-        while (time >= length)
-        {
-            time -= length;
-            sendFinishEvent = true;
-        }
-        while (time < 0.0f)
-        {
-            time += length;
-            sendFinishEvent = true;
-        }
-    }
-
-    SetTime(time);
-
-    if (!looped_)
-    {
-        if (delta > 0.0f && oldTime < length && GetTime() == length)
-            sendFinishEvent = true;
-        else if (delta < 0.0f && oldTime > 0.0f && GetTime() == 0.0f)
-            sendFinishEvent = true;
-    }
-
-    // Process finish event
-    if (sendFinishEvent)
-    {
-        using namespace AnimationFinished;
-
-        WeakPtr<AnimationState> self(this);
-        WeakPtr<Node> senderNode(model_ ? model_->GetNode() : node_.Get());
-
-        VariantMap& eventData = senderNode->GetEventDataMap();
-        eventData[P_NODE] = senderNode;
-        eventData[P_ANIMATION] = animation_;
-        eventData[P_NAME] = animation_->GetAnimationName();
-        eventData[P_LOOPED] = looped_;
-
-        // Note: this may cause arbitrary deletion of animation states, including the one we are currently processing
-        senderNode->SendEvent(E_ANIMATIONFINISHED, eventData);
-        if (senderNode.Expired() || self.Expired())
-            return;
-    }
-
-    // Process animation triggers
-    if (animation_->GetNumTriggers())
-    {
-        bool wrap = false;
-
-        if (delta > 0.0f)
-        {
-            if (oldTime > time)
-            {
-                oldTime -= length;
-                wrap = true;
-            }
-        }
-        if (delta < 0.0f)
-        {
-            if (time > oldTime)
-            {
-                time -= length;
-                wrap = true;
-            }
-        }
-        if (oldTime > time)
-            ea::swap(oldTime, time);
-
-        const ea::vector<AnimationTriggerPoint>& triggers = animation_->GetTriggers();
-        for (auto i = triggers.begin(); i != triggers.end(); ++i)
-        {
-            float frameTime = i->time_;
-            if (looped_ && wrap)
-                frameTime = fmodf(frameTime, length);
-
-            if (oldTime <= frameTime && time > frameTime)
-            {
-                using namespace AnimationTrigger;
-
-                WeakPtr<AnimationState> self(this);
-                WeakPtr<Node> senderNode(model_ ? model_->GetNode() : node_.Get());
-
-                VariantMap& eventData = senderNode->GetEventDataMap();
-                eventData[P_NODE] = senderNode;
-                eventData[P_ANIMATION] = animation_;
-                eventData[P_NAME] = animation_->GetAnimationName();
-                eventData[P_TIME] = i->time_;
-                eventData[P_DATA] = i->data_;
-
-                // Note: this may cause arbitrary deletion of animation states, including the one we are currently processing
-                senderNode->SendEvent(E_ANIMATIONTRIGGER, eventData);
-                if (senderNode.Expired() || self.Expired())
-                    return;
-            }
-        }
-    }
-}
-
-void AnimationState::SetLayer(unsigned char layer)
-{
-    if (layer != layer_)
-    {
-        layer_ = layer;
-        controller_->MarkAnimationStateOrderDirty();
     }
 }
 
@@ -586,6 +439,7 @@ void AnimationState::ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrac
         node->SetVar(StringHash(stateTrack.attribute_.subAttributeKey_), newValue);
         break;
     }
+
     case AnimatedAttributeType::AnimatedModelMorphs:
     {
         assert(dynamic_cast<AnimatedModel*>(serializable));

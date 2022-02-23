@@ -191,9 +191,6 @@ public:
     /// Return animation parameters attribute.
     VariantVector GetAnimationsAttr() const;
 
-    /// Mark animation state order dirty. For internal use only.
-    void MarkAnimationStateOrderDirty() { animationStatesDirty_ = true; }
-
 protected:
     /// Handle node being assigned.
     void OnNodeSet(Node* node) override;
