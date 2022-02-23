@@ -100,7 +100,7 @@ public:
 
     ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) override;
     void UpdateTransformOnServer() override;
-    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
     bool PrepareReliableDelta(NetworkFrame frame) override;
     void WriteReliableDelta(NetworkFrame frame, Serializer& dest) override;

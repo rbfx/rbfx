@@ -40,10 +40,10 @@ class URHO3D_API ReplicatedAnimation : public NetworkBehavior
 
 public:
     static constexpr unsigned DefaultNumUploadAttempts = 4;
-    static constexpr unsigned DefaultSmoothingTime = 0.2f;
+    static constexpr float DefaultSmoothingTime = 0.2f;
 
     static constexpr NetworkCallbackFlags CallbackMask =
-        NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState | NetworkCallbackMask::Update;
+        NetworkCallbackMask::ReliableDelta | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState | NetworkCallbackMask::Update;
 
     explicit ReplicatedAnimation(Context* context);
     ~ReplicatedAnimation() override;
@@ -57,22 +57,31 @@ public:
     void SetSmoothingTime(float value) { smoothingTime_ = value; }
     float GetSmoothingTime() const { return smoothingTime_; }
 
+    const StringMap& GetAnimationLookup() const { return animationLookup_; }
+
     /// Implement NetworkBehavior.
     /// @{
     void InitializeStandalone() override;
     void InitializeOnServer() override;
+    void WriteSnapshot(NetworkFrame frame, Serializer& dest) override;
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
+
+    bool PrepareReliableDelta(NetworkFrame frame) override;
+    void WriteReliableDelta(NetworkFrame frame, Serializer& dest) override;
+    void ReadReliableDelta(NetworkFrame frame, Deserializer& src) override;
 
     bool PrepareUnreliableDelta(NetworkFrame frame) override;
     void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override;
     void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override;
 
-    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
     void Update(float replicaTimeStep, float inputTimeStep) override;
     /// @}
 
 private:
     void InitializeCommon();
+    void UpdateLookupsOnServer();
+    void ReadLookupsOnClient(Deserializer& src);
     void OnServerFrameEnd(NetworkFrame frame);
 
     using AnimationSnapshot = VariantVector;
@@ -90,10 +99,13 @@ private:
     float smoothingTime_{DefaultSmoothingTime};
     /// @}
 
+    StringMap animationLookup_;
+
     struct ServerData
     {
         unsigned pendingUploadAttempts_{};
         unsigned latestRevision_{};
+        ea::vector<ea::string> newAnimationLookups_;
     } server_;
 
     struct ClientData

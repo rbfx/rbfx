@@ -245,16 +245,17 @@ void BehaviorNetworkObject::UpdateTransformOnServer()
     }
 }
 
-void BehaviorNetworkObject::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void BehaviorNetworkObject::InterpolateState(
+    float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
-    BaseClassName::InterpolateState(timeStep, replicaTime, inputTime);
+    BaseClassName::InterpolateState(replicaTimeStep, inputTimeStep, replicaTime, inputTime);
 
     if (callbackMask_.Test(NetworkCallbackMask::InterpolateState))
     {
         for (const auto& connectedBehavior : behaviors_)
         {
             if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::InterpolateState))
-                connectedBehavior.component_->InterpolateState(timeStep, replicaTime, inputTime);
+                connectedBehavior.component_->InterpolateState(replicaTimeStep, inputTimeStep, replicaTime, inputTime);
         }
     }
 }

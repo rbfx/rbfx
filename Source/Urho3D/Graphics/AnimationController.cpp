@@ -143,7 +143,7 @@ AnimationParameters AnimationParameters::FromVariantSpan(Context* context, ea::s
     AnimationParameters result;
     unsigned index = 0;
 
-    const ea::string animationName = variants[index++].GetString();
+    const ea::string animationName = variants[index++].GetResourceRef().name_;
     result.animation_ = context->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationName);
     result.animationName_ = result.animation_ ? result.animation_->GetNameHash() : StringHash{};
 
@@ -174,7 +174,7 @@ void AnimationParameters::ToVariantSpan(ea::span<Variant> variants) const
 {
     unsigned index = 0;
 
-    variants[index++] = animation_ ? animation_->GetName() : EMPTY_STRING;
+    variants[index++] = ResourceRef{Animation::GetTypeStatic(), animation_ ? animation_->GetName() : EMPTY_STRING};
 
     variants[index++] = looped_;
     variants[index++] = removeOnCompletion_;

@@ -171,20 +171,20 @@ void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
     }
 }
 
-void ReplicatedTransform::InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void ReplicatedTransform::InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
     if (!replicateOwner_ && GetNetworkObject()->IsOwnedByThisClient())
         return;
 
     if (!positionTrackOnly_ && synchronizePosition_)
     {
-        if (auto newPosition = client_.positionSampler_.UpdateAndSample(positionTrace_, replicaTime, timeStep))
+        if (auto newPosition = client_.positionSampler_.UpdateAndSample(positionTrace_, replicaTime, replicaTimeStep))
             node_->SetWorldPosition(*newPosition);
     }
 
     if (!rotationTrackOnly_ && synchronizeRotation_ != ReplicatedRotationMode::None)
     {
-        if (auto newRotation = client_.rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, timeStep))
+        if (auto newRotation = client_.rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, replicaTimeStep))
             node_->SetWorldRotation(*newRotation);
     }
 }

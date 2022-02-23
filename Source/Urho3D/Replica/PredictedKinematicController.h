@@ -71,7 +71,7 @@ public:
     void InitializeOnServer() override;
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
-    void InterpolateState(float timeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 
     bool PrepareUnreliableFeedback(NetworkFrame frame) override;
     void WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest) override;

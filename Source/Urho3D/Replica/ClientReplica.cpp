@@ -386,7 +386,7 @@ void ClientReplica::OnInputReady(float timeStep)
     pendingClockUpdates_.clear();
 
     for (NetworkObject* networkObject : objectRegistry_->GetNetworkObjects())
-        networkObject->InterpolateState(GetInputTimeStep(), GetReplicaTime(), GetInputTime());
+        networkObject->InterpolateState(GetReplicaTimeStep(), GetInputTimeStep(), GetReplicaTime(), GetInputTime());
 
     if (IsNewInputFrame())
     {
