@@ -82,7 +82,7 @@ quirks_web=(
     '-DURHO3D_CSHARP=OFF'
 )
 quirks_web_rel=(
-    '-DCMAKE_CXX_FLAGS=-O2'
+    '-DCI_WEB_RELEASE=ON'
 )
 quirks_dll=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
