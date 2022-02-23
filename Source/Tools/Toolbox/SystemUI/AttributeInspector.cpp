@@ -209,6 +209,10 @@ bool RenderAnimatedModelMorphsAttribute(ByteVector& value, Object* eventSender)
         modified |= ui::DragFloat("", &weight, 1.0f / 255.0f, 0.0f, 1.0f, "%.3f");
         value[morphIndex] = static_cast<unsigned char>(Round(weight * 255.0f));
     }
+
+    if (value.empty())
+        ui::NewLine();
+
     return modified;
 }
 
