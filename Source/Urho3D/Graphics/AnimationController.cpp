@@ -44,16 +44,25 @@
 namespace Urho3D
 {
 
-static const unsigned char CTRL_LOOPED = 0x1;
-static const unsigned char CTRL_STARTBONE = 0x2;
-static const unsigned char CTRL_AUTOFADE = 0x4;
-static const unsigned char CTRL_SETTIME = 0x08;
-static const unsigned char CTRL_SETWEIGHT = 0x10;
-static const unsigned char CTRL_REMOVEONCOMPLETION = 0x20;
-static const unsigned char CTRL_ADDITIVE = 0x40;
-static const float EXTRA_ANIM_FADEOUT_TIME = 0.1f;
-static const float COMMAND_STAY_TIME = 0.25f;
-static const unsigned MAX_NODE_ANIMATION_STATES = 256;
+enum class AnimationParameterMask
+{
+    InstanceIndex       = 1 << 0,
+    Looped              = 1 << 1,
+    RemoveOnCompletion  = 1 << 2,
+    Layer               = 1 << 3,
+    Additive            = 1 << 4,
+    StartBone           = 1 << 5,
+    AutoFadeOutTime     = 1 << 6,
+    Time                = 1 << 7,
+    MinTime             = 1 << 8,
+    MaxTime             = 1 << 9,
+    Speed               = 1 << 10,
+    RemoveOnZeroWeight  = 1 << 11,
+    Weight              = 1 << 12,
+    TargetWeight        = 1 << 13,
+    TargetWeightDelay   = 1 << 14
+};
+URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
 extern const char* LOGIC_CATEGORY;
 
@@ -195,6 +204,104 @@ void AnimationParameters::ToVariantSpan(ea::span<Variant> variants) const
     variants[index++] = targetWeightDelay_;
 
     URHO3D_ASSERT(index == NumVariants);
+}
+
+AnimationParameters AnimationParameters::Deserialize(Animation* animation, Deserializer& src)
+{
+    AnimationParameters result{animation};
+
+    const auto flags = static_cast<AnimationParameterFlags>(src.ReadVLE());
+
+    if (flags.Test(AnimationParameterMask::InstanceIndex))
+        result.instanceIndex_ = src.ReadVLE();
+
+    result.looped_ = flags.Test(AnimationParameterMask::Looped);
+
+    result.removeOnCompletion_ = flags.Test(AnimationParameterMask::RemoveOnCompletion);
+
+    if (flags.Test(AnimationParameterMask::Layer))
+        result.layer_ = src.ReadVLE();
+
+    result.blendMode_ = flags.Test(AnimationParameterMask::Additive) ? ABM_ADDITIVE : ABM_LERP;
+
+    if (flags.Test(AnimationParameterMask::StartBone))
+        result.startBone_ = src.ReadString();
+
+    if (flags.Test(AnimationParameterMask::AutoFadeOutTime))
+        result.autoFadeOutTime_ = src.ReadFloat();
+
+    float time = 0.0f;
+    float minTime = 0.0f;
+    float maxTime = result.animation_ ? result.animation_->GetLength() : 0.0f;
+
+    if (flags.Test(AnimationParameterMask::Time))
+        time = src.ReadFloat();
+    if (flags.Test(AnimationParameterMask::MinTime))
+        minTime = src.ReadFloat();
+    if (flags.Test(AnimationParameterMask::MaxTime))
+        maxTime = src.ReadFloat();
+
+    result.time_ = {time, minTime, maxTime};
+
+    if (flags.Test(AnimationParameterMask::Speed))
+        result.speed_ = src.ReadFloat();
+
+    result.removeOnZeroWeight_ = flags.Test(AnimationParameterMask::RemoveOnZeroWeight);
+
+    if (flags.Test(AnimationParameterMask::Weight))
+        result.weight_ = src.ReadFloat();
+
+    if (flags.Test(AnimationParameterMask::TargetWeight))
+        result.targetWeight_ = src.ReadFloat();
+
+    if (flags.Test(AnimationParameterMask::TargetWeightDelay))
+        result.targetWeightDelay_ = src.ReadFloat();
+
+    return result;
+}
+
+void AnimationParameters::Serialize(Serializer& dest) const
+{
+    AnimationParameterFlags flags;
+    flags.Set(AnimationParameterMask::InstanceIndex, instanceIndex_ != 0);
+    flags.Set(AnimationParameterMask::Looped, looped_);
+    flags.Set(AnimationParameterMask::RemoveOnCompletion, removeOnCompletion_);
+    flags.Set(AnimationParameterMask::Layer, layer_ != 0);
+    flags.Set(AnimationParameterMask::Additive, blendMode_ == ABM_ADDITIVE);
+    flags.Set(AnimationParameterMask::StartBone, startBone_.empty());
+    flags.Set(AnimationParameterMask::AutoFadeOutTime, autoFadeOutTime_ != 0.0f);
+    flags.Set(AnimationParameterMask::Time, time_.Value() != 0.0f);
+    flags.Set(AnimationParameterMask::MinTime, time_.Min() != 0.0f);
+    flags.Set(AnimationParameterMask::MaxTime, animation_ && time_.Max() != animation_->GetLength());
+    flags.Set(AnimationParameterMask::Speed, speed_ != 1.0f);
+    flags.Set(AnimationParameterMask::RemoveOnZeroWeight, removeOnZeroWeight_);
+    flags.Set(AnimationParameterMask::Weight, weight_ != 1.0f);
+    flags.Set(AnimationParameterMask::TargetWeight, targetWeight_ != 1.0f);
+    flags.Set(AnimationParameterMask::TargetWeightDelay, targetWeightDelay_ != 0.0f);
+
+    dest.WriteVLE(flags.AsInteger());
+    if (flags.Test(AnimationParameterMask::InstanceIndex))
+        dest.WriteVLE(instanceIndex_);
+    if (flags.Test(AnimationParameterMask::Layer))
+        dest.WriteVLE(layer_);
+    if (flags.Test(AnimationParameterMask::StartBone))
+        dest.WriteString(startBone_);
+    if (flags.Test(AnimationParameterMask::AutoFadeOutTime))
+        dest.WriteFloat(autoFadeOutTime_);
+    if (flags.Test(AnimationParameterMask::Time))
+        dest.WriteFloat(time_.Value());
+    if (flags.Test(AnimationParameterMask::MinTime))
+        dest.WriteFloat(time_.Min());
+    if (flags.Test(AnimationParameterMask::MaxTime))
+        dest.WriteFloat(time_.Max());
+    if (flags.Test(AnimationParameterMask::Speed))
+        dest.WriteFloat(speed_);
+    if (flags.Test(AnimationParameterMask::Weight))
+        dest.WriteFloat(weight_);
+    if (flags.Test(AnimationParameterMask::TargetWeight))
+        dest.WriteFloat(targetWeight_);
+    if (flags.Test(AnimationParameterMask::TargetWeightDelay))
+        dest.WriteFloat(targetWeightDelay_);
 }
 
 bool AnimationParameters::IsMergeableWith(const AnimationParameters& rhs) const
@@ -954,7 +1061,7 @@ void AnimationController::EnsureStateInitialized(AnimationState* state, const An
 
 void AnimationController::UpdateState(AnimationState* state, const AnimationParameters& params) const
 {
-    state->Update(params.time_.Value(), params.weight_);
+    state->Update(params.looped_, params.time_.Value(), params.weight_);
 }
 
 void AnimationController::SortAnimationStates()

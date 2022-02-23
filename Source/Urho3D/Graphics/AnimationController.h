@@ -98,6 +98,10 @@ struct URHO3D_API AnimationParameters
     static constexpr unsigned NumVariants = 15;
     static AnimationParameters FromVariantSpan(Context* context, ea::span<const Variant> variants);
     void ToVariantSpan(ea::span<Variant> variants) const;
+
+    static AnimationParameters Deserialize(Animation* animation, Deserializer& src);
+    void Serialize(Serializer& dest) const;
+
     bool IsMergeableWith(const AnimationParameters& rhs) const;
 
     bool operator==(const AnimationParameters& rhs) const;

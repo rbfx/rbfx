@@ -115,15 +115,15 @@ class URHO3D_API AnimationState : public RefCounted
 {
 public:
     /// Construct with animated model and animation pointers.
-    AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation = nullptr);
+    AnimationState(AnimationController* controller, AnimatedModel* model);
     /// Construct with root scene node and animation pointers.
-    AnimationState(AnimationController* controller, Node* node, Animation* animation = nullptr);
+    AnimationState(AnimationController* controller, Node* node);
     /// Destruct.
     ~AnimationState() override;
-    /// Initialize static properties of the state and dirty tracks.
+    /// Initialize static properties of the state and dirty tracks if changed.
     void Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode);
     /// Update dynamic properies of the state.
-    void Update(float time, float weight);
+    void Update(bool looped, float time, float weight);
 
     /// Modify tracks. For internal use only.
     /// @{

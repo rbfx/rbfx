@@ -26,9 +26,12 @@
 
 #include "../Replica/BehaviorNetworkObject.h"
 
+#include <EASTL/fixed_vector.h>
+
 namespace Urho3D
 {
 
+class Animation;
 class AnimationController;
 struct AnimationParameters;
 
@@ -39,6 +42,7 @@ class URHO3D_API ReplicatedAnimation : public NetworkBehavior
     URHO3D_OBJECT(ReplicatedAnimation, NetworkBehavior);
 
 public:
+    static constexpr unsigned SmallSnapshotSize = 256;
     static constexpr unsigned DefaultNumUploadAttempts = 4;
     static constexpr float DefaultSmoothingTime = 0.2f;
 
@@ -84,9 +88,10 @@ private:
     void ReadLookupsOnClient(Deserializer& src);
     void OnServerFrameEnd(NetworkFrame frame);
 
-    using AnimationSnapshot = VariantVector;
+    using AnimationSnapshot = ea::fixed_vector<unsigned char, SmallSnapshotSize>;
 
-    void WriteSnapshot(Serializer& dest) const;
+    Animation* GetAnimationByHash(StringHash nameHash) const;
+    void WriteSnapshot(Serializer& dest);
     AnimationSnapshot ReadSnapshot(Deserializer& src) const;
     void DecodeSnapshot(const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const;
 
@@ -106,6 +111,7 @@ private:
         unsigned pendingUploadAttempts_{};
         unsigned latestRevision_{};
         ea::vector<ea::string> newAnimationLookups_;
+        VectorBuffer snapshotBuffer_;
     } server_;
 
     struct ClientData

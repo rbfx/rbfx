@@ -27,6 +27,7 @@
 #include "../Graphics/AnimationController.h"
 #include "../Network/NetworkEvents.h"
 #include "../Replica/ReplicatedAnimation.h"
+#include "../Resource/ResourceCache.h"
 
 namespace Urho3D
 {
@@ -161,26 +162,50 @@ void ReplicatedAnimation::ReadLookupsOnClient(Deserializer& src)
     }
 }
 
-void ReplicatedAnimation::WriteSnapshot(Serializer& dest) const
+Animation* ReplicatedAnimation::GetAnimationByHash(StringHash nameHash) const
 {
-    // TODO(animation): Refactor me
-    VariantVector buf = animationController_->GetAnimationsAttr();
-    dest.WriteVariantVector(buf);
+    const auto iter = animationLookup_.find(nameHash);
+    if (iter == animationLookup_.end())
+        return nullptr;
+
+    return GetSubsystem<ResourceCache>()->GetResource<Animation>(iter->second);
+}
+
+void ReplicatedAnimation::WriteSnapshot(Serializer& dest)
+{
+    server_.snapshotBuffer_.Clear();
+
+    const unsigned numAnimations = animationController_->GetNumAnimations();
+    for (unsigned i = 0; i < numAnimations; ++i)
+    {
+        const AnimationParameters& params = animationController_->GetAnimationParameters(i);
+        server_.snapshotBuffer_.WriteStringHash(params.animationName_);
+        params.Serialize(server_.snapshotBuffer_);
+    }
+
+    dest.WriteBuffer(server_.snapshotBuffer_.GetBuffer());
 }
 
 ReplicatedAnimation::AnimationSnapshot ReplicatedAnimation::ReadSnapshot(Deserializer& src) const
 {
-    // TODO(animation): Refactor me
-    return src.ReadVariantVector();
+    const unsigned size = src.ReadVLE();
+
+    AnimationSnapshot result(size);
+    src.Read(result.data(), size);
+    return result;
 }
 
 void ReplicatedAnimation::DecodeSnapshot(const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const
 {
-    // TODO(animation): Refactor me
     result.clear();
-    result.resize(snapshot[0].GetUInt());
-    for (unsigned i = 0; i < result.size(); ++i)
-        result[i] = AnimationParameters::FromVariantSpan(context_, {&snapshot[i * AnimationParameters::NumVariants + 1], AnimationParameters::NumVariants});
+    MemoryBuffer src{snapshot.data(), snapshot.size()};
+    while (!src.IsEof())
+    {
+        Animation* animation = GetAnimationByHash(src.ReadStringHash());
+        const auto params = AnimationParameters::Deserialize(animation, src);
+        if (animation)
+            result.push_back(params);
+    }
 }
 
 bool ReplicatedAnimation::PrepareReliableDelta(NetworkFrame frame)
