@@ -142,21 +142,9 @@ public:
     /// Set blending weight.
     /// @property
     void SetWeight(float weight);
-    /// Set blending mode.
-    /// @property
-    void SetBlendMode(AnimationBlendMode mode);
     /// Set time position. Does not fire animation triggers.
     /// @property
     void SetTime(float time);
-    /// Set start bone name.
-    void SetStartBone(const ea::string& name);
-    /// Modify blending weight.
-    void AddWeight(float delta);
-    /// Modify time position. %Animation triggers will be fired.
-    void AddTime(float delta);
-    /// Set blending layer.
-    /// @property
-    void SetLayer(unsigned char layer);
 
     /// Return animation.
     /// @property
@@ -196,10 +184,6 @@ public:
     /// @property
     float GetLength() const;
 
-    /// Return blending layer.
-    /// @property
-    unsigned char GetLayer() const { return layer_; }
-
     /// Apply animation to a skeleton.
     void CalculateModelTracks(ea::vector<ModelAnimationOutput>& output) const;
     /// Apply animation to a scene node hierarchy.
@@ -233,7 +217,6 @@ private:
     bool looped_{};
     float weight_{};
     float time_{};
-    unsigned char layer_{};
     AnimationBlendMode blendingMode_{};
     ea::string startBone_;
     /// @}
