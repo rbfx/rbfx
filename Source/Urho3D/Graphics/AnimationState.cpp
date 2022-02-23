@@ -81,17 +81,15 @@ Variant BlendAdditive(const Variant& oldValue, const Variant& newValue, const Va
 
 }
 
-AnimationState::AnimationState(AnimationController* controller, AnimatedModel* model, Animation* animation) :
+AnimationState::AnimationState(AnimationController* controller, AnimatedModel* model) :
     controller_(controller),
-    model_(model),
-    animation_(animation)
+    model_(model)
 {
 }
 
-AnimationState::AnimationState(AnimationController* controller, Node* node, Animation* animation) :
+AnimationState::AnimationState(AnimationController* controller, Node* node) :
     controller_(controller),
-    node_(node),
-    animation_(animation)
+    node_(node)
 {
 }
 
@@ -108,8 +106,9 @@ void AnimationState::Initialize(Animation* animation, const ea::string& startBon
     }
 }
 
-void AnimationState::Update(float time, float weight)
+void AnimationState::Update(bool looped, float time, float weight)
 {
+    SetLooped(looped);
     SetTime(time);
     SetWeight(weight);
 }
