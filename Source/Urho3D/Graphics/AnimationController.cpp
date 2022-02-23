@@ -400,13 +400,45 @@ void AnimationController::Update(float timeStep)
             UpdateAnimationStateTracks(state);
     }
 
-    // Node hierarchy animations need to be applied manually
+    // Node and attribute animations need to be applied manually
+    CommitNodeAndAttributeAnimations();
+}
+
+void AnimationController::CommitNodeAndAttributeAnimations()
+{
+    for (auto& [node, value] : animatedNodes_)
+        value.dirty_ = {};
+    for (auto& [attribute, value] : animatedAttributes_)
+        value = Variant::EMPTY;
+
     for (AnimationState* state : animationStates_)
     {
-        state->ApplyNodeTracks();
-        state->ApplyAttributeTracks();
+        state->CalculateNodeTracks(animatedNodes_);
+        state->CalculateAttributeTracks(animatedAttributes_);
     }
 
+    for (const auto& [node, value] : animatedNodes_)
+    {
+        if (value.dirty_)
+        {
+            if (value.dirty_.Test(CHANNEL_POSITION))
+                node->SetPosition(value.localToParent_.position_);
+            if (value.dirty_.Test(CHANNEL_ROTATION))
+                node->SetRotation(value.localToParent_.rotation_);
+            if (value.dirty_.Test(CHANNEL_SCALE))
+                node->SetScale(value.localToParent_.scale_);
+        }
+    }
+    for (const auto& [attribute, value] : animatedAttributes_)
+    {
+        if (value.IsEmpty())
+            continue;
+        attribute.SetValue(value);
+    }
+}
+
+void AnimationController::SendTriggerEvents()
+{
     for (const auto& [animation, trigger] : pendingTriggers_)
     {
         using namespace AnimationTrigger;

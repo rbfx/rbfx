@@ -225,6 +225,9 @@ private:
     void UpdateState(AnimationState* state, const AnimationParameters& params) const;
     /// @}
 
+    void CommitNodeAndAttributeAnimations();
+    void SendTriggerEvents();
+
     /// Currently playing animations.
     struct AnimationInstance
     {
@@ -244,6 +247,12 @@ private:
     bool animationStatesDirty_{};
     bool revisionDirty_{};
     /// @}
+
+    /// Temporary buffers for animated values.
+    /// TODO: Nodes may be expired for unused elements!
+    /// TODO: Revisit allocations?
+    ea::unordered_map<Node*, NodeAnimationOutput> animatedNodes_;
+    ea::unordered_map<AnimatedAttributeReference, Variant> animatedAttributes_;
 };
 
 }
