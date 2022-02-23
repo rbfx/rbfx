@@ -880,7 +880,8 @@ void AnimationController::SetAnimationsAttr(const VariantVector& value)
         return;
 
     const unsigned numAnimations = value[0].GetUInt();
-    const unsigned numLoadedAnimations = ea::min(numAnimations, (value.size() - 1) / AnimationParameters::NumVariants);
+    const unsigned numAnimationsSet = (value.size() - 1) / AnimationParameters::NumVariants;
+    const unsigned numLoadedAnimations = ea::min(numAnimations, numAnimationsSet);
 
     const ea::span<const Variant> valueSpan{value};
     for (unsigned i = 0; i < numLoadedAnimations; ++i)
