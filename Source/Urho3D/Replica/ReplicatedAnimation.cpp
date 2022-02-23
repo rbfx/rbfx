@@ -223,6 +223,8 @@ void ReplicatedAnimation::WriteReliableDelta(NetworkFrame frame, Serializer& des
 void ReplicatedAnimation::ReadReliableDelta(NetworkFrame frame, Deserializer& src)
 {
     ReadLookupsOnClient(src);
+    // Reset latest frame to reapply animations just in case.
+    client_.latestAppliedFrame_ = ea::nullopt;
 }
 
 bool ReplicatedAnimation::PrepareUnreliableDelta(NetworkFrame frame)
@@ -246,7 +248,7 @@ void ReplicatedAnimation::InterpolateState(float replicaTimeStep, float inputTim
     if (!animationController_ || !GetNetworkObject()->IsReplicatedClient())
         return;
 
-    // Find extrapolation point
+    // Subtract time step because it is will be applied during Update
     const NetworkTime adjustedReplicaTime = replicaTime - replicaTimeStep / client_.networkStepTime_;
     const auto closestPriorFrame = client_.animationTrace_.FindClosestAllocatedFrame(adjustedReplicaTime.Frame(), true, false);
     if (!closestPriorFrame || *closestPriorFrame == client_.latestAppliedFrame_)
