@@ -170,7 +170,7 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ENUM_ATTRIBUTE_EX("Tone Mapping Mode", settings_.toneMapping_, MarkSettingsDirty, toneMappingModeNames, ToneMappingMode::None, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Post Process Antialiasing", settings_.antialiasing_, MarkSettingsDirty, postProcessAntialiasingNames, PostProcessAntialiasing::None, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Post Process Grey Scale", bool, settings_.greyScale_, MarkSettingsDirty, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Chromatic Aberration Intensity", float, settings_.chromaticAberration_, MarkSettingsDirty, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Chromatic Aberration Intensity", float, settings_.chromaticAberration_, MarkSettingsDirty, 0.5f, AM_DEFAULT);
 }
 
 void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)

@@ -179,19 +179,19 @@ void DefaultRenderPipelineView::ApplySettings()
         break;
     }
 
-    if (settings_.greyScale_)
-    {
-        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            PostProcessPassFlag::NeedColorOutputReadAndWrite,
-            BLEND_REPLACE, "v2/P_GreyScale", "");
-        postProcessPasses_.push_back(pass);
-    }
-
     if (settings_.chromaticAberration_)
     {
         auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
             PostProcessPassFlag::NeedColorOutputReadAndWrite,
             BLEND_REPLACE, "v2/P_ChromaticAberration", "CAINTENSITY="+ea::to_string(settings_.chromaticAberration_));
+        postProcessPasses_.push_back(pass);
+    }
+
+    if (settings_.greyScale_)
+    {
+        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
+            PostProcessPassFlag::NeedColorOutputReadAndWrite,
+            BLEND_REPLACE, "v2/P_GreyScale", "");
         postProcessPasses_.push_back(pass);
     }
 
