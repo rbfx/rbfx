@@ -415,7 +415,7 @@ public:
     T& operator *() const
     {
         assert(!Expired());
-        return ptr_;
+        return *ptr_;
     }
 
     /// Test for equality with another weak pointer.

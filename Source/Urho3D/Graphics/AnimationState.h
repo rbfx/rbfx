@@ -55,34 +55,36 @@ enum AnimationBlendMode
     ABM_ADDITIVE
 };
 
-/// Per-track data of skinned model animation.
-/// TODO(animation): Handle Animation reload when tracks are playing?
-/// TODO(animation): Do we want per-bone weights?
-struct ModelAnimationStateTrack
-{
-    const AnimationTrack* track_{};
-    unsigned boneIndex_{};
-    Bone* bone_{};
-    WeakPtr<Node> node_;
-    // Single AnimationState is never applied to more than one AnimatedModel, so it's okay to have it mutable here.
-    mutable unsigned keyFrame_{};
-};
-
-/// Output that aggregates all ModelAnimationStateTrack-s targeted at the same node.
-struct ModelAnimationOutput
-{
-    AnimationChannelFlags dirty_;
-    Transform localToParent_;
-    // Unused by AnimationState, but it's just convinient to have here.
-    Matrix3x4 localToComponent_;
-};
-
-/// Per-track data of node model animation.
+/// Transform track applied to the Node that is not used as Bone for AnimatedModel.
 struct NodeAnimationStateTrack
 {
     const AnimationTrack* track_{};
     WeakPtr<Node> node_;
-    unsigned keyFrame_{};
+    // It's temporary cache and it's never accessed from multiple threads, so it's okay to have it mutable here.
+    mutable unsigned keyFrame_{};
+};
+
+/// Output that aggregates all NodeAnimationStateTrack-s targeted at the same node.
+struct NodeAnimationOutput
+{
+    AnimationChannelFlags dirty_;
+    Transform localToParent_;
+};
+
+/// Transform track applied to the Bone of AnimatedModel.
+/// TODO(animation): Handle Animation reload when tracks are playing?
+/// TODO(animation): Do we want per-bone weights?
+struct ModelAnimationStateTrack : public NodeAnimationStateTrack
+{
+    unsigned boneIndex_{};
+    Bone* bone_{};
+};
+
+/// Output that aggregates all ModelAnimationStateTrack-s targeted at the same bone.
+struct ModelAnimationOutput : public NodeAnimationOutput
+{
+    // Unused by AnimationState, but it's just convinient to have here.
+    Matrix3x4 localToComponent_;
 };
 
 /// Custom attribute type, used to support sub-attribute animation in special cases.
@@ -94,20 +96,42 @@ enum class AnimatedAttributeType
 };
 
 /// Reference to attribute or sub-attribute;
-struct AnimatedAttributeReference
+struct URHO3D_API AnimatedAttributeReference
 {
     WeakPtr<Serializable> serializable_;
     unsigned attributeIndex_{};
     AnimatedAttributeType attributeType_{};
     unsigned subAttributeKey_{};
+
+    /// Set value for attribute. Reference must be valid.
+    void SetValue(const Variant& value) const;
+
+    /// Can be used as key in hash map
+    /// @{
+    unsigned ToHash() const
+    {
+        unsigned result{};
+        CombineHash(result, MakeHash(serializable_.Get()));
+        CombineHash(result, attributeIndex_);
+        CombineHash(result, subAttributeKey_);
+        return result;
+    }
+    bool operator==(const AnimatedAttributeReference& rhs) const
+    {
+        return serializable_ == rhs.serializable_
+            && attributeIndex_ == rhs.attributeIndex_
+            && subAttributeKey_ == rhs.subAttributeKey_;
+    }
+    bool operator!=(const AnimatedAttributeReference& rhs) const { return !(*this == rhs); }
+    /// @}
 };
 
-/// Per-track data of attribute animation.
+/// Value track applied to the specific attribute or sub-attribute.
 struct AttributeAnimationStateTrack
 {
     const VariantAnimationTrack* track_{};
     AnimatedAttributeReference attribute_;
-    unsigned keyFrame_{};
+    mutable unsigned keyFrame_{};
 };
 
 /// %Animation instance.
@@ -184,21 +208,18 @@ public:
     /// @property
     float GetLength() const;
 
-    /// Apply animation to a skeleton.
+    /// Calculate animation for the model skeleton.
     void CalculateModelTracks(ea::vector<ModelAnimationOutput>& output) const;
     /// Apply animation to a scene node hierarchy.
-    void ApplyNodeTracks();
+    void CalculateNodeTracks(ea::unordered_map<Node*, NodeAnimationOutput>& output) const;
     /// Apply animation to attributes.
-    void ApplyAttributeTracks();
+    void CalculateAttributeTracks(ea::unordered_map<AnimatedAttributeReference, Variant>& output) const;
 
 private:
     /// Apply value of transformation track to the output.
-    void CalulcateTransformTrack(ModelAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const;
-    /// Apply single transformation track to target object. Key frame hint is updated on call.
-    void ApplyTransformTrack(const AnimationTrack& track,
-        Node* node, Bone* bone, unsigned& frame, float weight, bool silent);
+    void CalulcateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const;
     /// Apply single attribute track to target object. Key frame hint is updated on call.
-    void ApplyAttributeTrack(AttributeAnimationStateTrack& stateTrack, float weight);
+    void CalulcateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const;
 
     /// Owner controller.
     WeakPtr<AnimationController> controller_;
