@@ -33,6 +33,7 @@
 #include "../SystemUI/SystemUI.h"
 #include "../SystemUI/Console.h"
 #include "../SystemUI/DebugHud.h"
+#include "../SystemUI/Gizmo.h"
 #endif
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
@@ -160,6 +161,9 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_RMLUI
     RegisterRmlUILibrary(context_);
     context_->RegisterSubsystem(new RmlUI(context_));
+#endif
+#ifdef URHO3D_SYSTEMUI
+    Gizmo::RegisterObject(context_);
 #endif
 
 #ifdef URHO3D_GLOW

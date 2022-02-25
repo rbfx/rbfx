@@ -23,6 +23,8 @@
 #pragma once
 
 #include "Sample.h"
+
+#include <Urho3D/SystemUI/Gizmo.h>
 #include <Urho3D/SystemUI/SystemMessageBox.h>
 
 /// This example demonstrates creation and use of debug UIs using ImGui. Also it demonstrates Console and system message
@@ -60,6 +62,10 @@ private:
 
     /// Reference holding message box.
     SharedPtr<SystemMessageBox> messageBox_;
+    /// Box node.
+    SharedPtr<Node> boxNode_;
+    /// Box node.
+    SharedPtr<Gizmo> gizmo_;
     /// Flag controlling display of imgui demo window.
     bool metricsOpen_ = false;
 };

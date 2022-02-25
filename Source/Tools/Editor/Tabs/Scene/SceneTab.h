@@ -27,8 +27,7 @@
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/Scene/SceneManager.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include <Toolbox/SystemUI/Gizmo.h>
-#include <Toolbox/Graphics/SceneView.h>
+#include <Urho3D/SystemUI/Gizmo.h>
 #include "Tabs/BaseResourceTab.h"
 #include "Tabs/Scene/SceneClipboard.h"
 

@@ -34,6 +34,11 @@ Gizmo::~Gizmo()
     UnsubscribeFromAllEvents();
 }
 
+void Gizmo::RegisterObject(Context* context)
+{
+    context->RegisterFactory<Gizmo>();
+}
+
 bool Gizmo::IsActive() const
 {
     return ImGuizmo::IsUsing();
@@ -42,6 +47,11 @@ bool Gizmo::IsActive() const
 bool Gizmo::ManipulateNode(const Camera* camera, Node* node)
 {
     return Manipulate(camera, &node, &node + 1);
+}
+
+bool Gizmo::ManipulateNodes(const Camera* camera, ea::vector<Node*>& nodes)
+{
+    return Manipulate(camera, nodes.begin(), nodes.end());
 }
 
 void Gizmo::RenderUI()
@@ -119,7 +129,7 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
     // Scaling is always done in local space even for multiselections.
     if (operation_ == GIZMOOP_SCALE)
         mode = ImGuizmo::LOCAL;
-        // Any other operations on multiselections are done in world space.
+    // Any other operations on multiselections are done in world space.
     if (begin + 1 != end)   // nodes.size() > 1
         mode = ImGuizmo::WORLD;
 
@@ -128,9 +138,25 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
     Matrix4 tran = currentOrigin.Transpose();
     Matrix4 delta;
 
-    ImGuiWindow* window = ui::GetCurrentWindow();
-    ImGuizmo::SetDrawlist();
-    ImGuizmo::SetRect(window->Pos.x, window->Pos.y, window->Size.x, window->Size.y);
+    if (window_)
+    {
+        ImGuizmo::SetDrawlist();
+        ImGuizmo::SetRect(window_->Pos.x, window_->Pos.y, window_->Size.x, window_->Size.y);
+    }
+    else
+    {
+#ifdef IMGUI_HAS_VIEWPORT
+        ImVec2 pos = ImGui::GetMainViewport()->Pos;
+        ImVec2 size = ImGui::GetMainViewport()->Size;
+#else
+        ImGuiIO& io = ImGui::GetIO();
+        ImVec2 pos = ImVec2(0, 0);
+        ImVec2 size = io.DisplaySize;
+#endif
+
+        ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
+        ImGuizmo::SetDrawlist(ui::GetBackgroundDrawList());
+    }
     ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
 
     if (IsActive())

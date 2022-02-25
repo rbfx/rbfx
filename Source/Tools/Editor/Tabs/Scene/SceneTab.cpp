@@ -239,6 +239,7 @@ bool SceneTab::RenderWindowContent()
     viewportSplitter_.SetCurrentChannel(window->DrawList, 2);
     RenderToolbarButtons();
     viewportSplitter_.SetCurrentChannel(window->DrawList, 1);
+    gizmo_.SetWindow(window);
     gizmo_.Manipulate(GetCamera(), selectedNodes_);
     viewportSplitter_.SetCurrentChannel(window->DrawList, 0);
     ui::SetCursorPos({0, 0});

@@ -2,7 +2,7 @@
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/SystemUI/SystemUIEvents.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include <Toolbox/SystemUI/Gizmo.h>
+#include <Urho3D/SystemUI/Gizmo.h>
 #include "UndoStack.h"
 
 namespace Urho3D

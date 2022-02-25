@@ -28,12 +28,15 @@
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Renderer.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Console.h>
 
 #include "HelloSystemUI.h"
+
 
 #include <Urho3D/DebugNew.h>
 
@@ -73,6 +76,8 @@ void HelloSystemUi::SubscribeToEvents()
 
 void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
 {
+    gizmo_->ManipulateNode(cameraNode_->GetComponent<Camera>(), boxNode_);
+
     ui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
     ui::SetNextWindowPos(ImVec2(200, 300), ImGuiCond_FirstUseEver);
     if (ui::Begin("Sample SystemUI", 0, ImGuiWindowFlags_NoSavedSettings))
@@ -98,6 +103,8 @@ void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
 
         if (ui::Button("Toggle metrics window"))
             metricsOpen_ ^= true;
+
+        gizmo_->RenderUI();
     }
     ui::End();
     if (metricsOpen_)
@@ -136,4 +143,12 @@ void HelloSystemUi::CreateScene()
     cameraNode_ = scene_->CreateChild("Camera");
     auto camera = cameraNode_->CreateComponent<Camera>();
     GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
+
+    boxNode_ = scene_->CreateChild("Box");
+    boxNode_->SetPosition(cameraNode_->LocalToWorld(Vector3::FORWARD * 3.0f));
+    const auto staticModel = boxNode_->CreateComponent<StaticModel>();
+    staticModel->SetModel(GetSubsystem<ResourceCache>()->GetResource<Model>("Models/Box.mdl"));
+    staticModel->SetMaterial(GetSubsystem<ResourceCache>()->GetResource<Material>("Materials/DefaultGrey.xml"));
+
+    gizmo_ = MakeShared<Gizmo>(context_);
 }

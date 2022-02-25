@@ -821,11 +821,16 @@ using ImGuiConfigFlags = unsigned;
 %ignore ImGui::pdpx;
 %ignore ImGui::pdpy;
 %ignore ImGui::pdp;
+%ignore Urho3D::Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end);
+%csconstvalue("7") Urho3D::GIZMOOP_TRANSLATE;
+%csconstvalue("120") Urho3D::GIZMOOP_ROTATE;
+%csconstvalue("896") Urho3D::GIZMOOP_SCALE;
 %apply unsigned short INPUT[] { ImWchar* };
 
 %include "generated/Urho3D/_pre_systemui.i"
 %include "Urho3D/SystemUI/Console.h"
 %include "Urho3D/SystemUI/DebugHud.h"
+%include "Urho3D/SystemUI/Gizmo.h"
 %include "Urho3D/SystemUI/SystemMessageBox.h"
 %include "Urho3D/SystemUI/SystemUI.h"
 #endif
