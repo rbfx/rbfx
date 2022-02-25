@@ -210,7 +210,12 @@ protected:
     }
 
 private:
+#ifdef SWIG
+    static constexpr bool IsOnlyEnabledTracked = false;
+#else
     static constexpr bool IsOnlyEnabledTracked = TupleHasTypeV<EnabledOnlyTag, ea::tuple<Tags...>>;
+#endif
+
 
     WeakPtr<RegistryComponentType> registry_;
 };

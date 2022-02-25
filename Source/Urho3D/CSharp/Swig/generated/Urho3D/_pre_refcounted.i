@@ -1,5 +1,11 @@
 URHO3D_REFCOUNTED(Urho3D::Object);
 URHO3D_REFCOUNTED(Urho3D::ObjectReflection);
+URHO3D_REFCOUNTED(Urho3D::TrackedComponentRegistryBase);
+URHO3D_REFCOUNTED(Urho3D::ReferencedComponentRegistryBase);
+URHO3D_REFCOUNTED(Urho3D::NetworkObjectRegistry);
+//URHO3D_REFCOUNTED(Urho3D::BehaviorNetworkObject);
+//URHO3D_REFCOUNTED(Urho3D::StaticNetworkObject);
+//URHO3D_REFCOUNTED(Urho3D::NetworkObject);
 URHO3D_REFCOUNTED(Urho3D::Time);
 URHO3D_REFCOUNTED(Urho3D::ValueCache);
 URHO3D_REFCOUNTED(Urho3D::AttributeAccessor);
