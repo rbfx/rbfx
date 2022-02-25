@@ -22,13 +22,10 @@
 
 #pragma once
 
-#include "ToolboxAPI.h"
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/Node.h>
-#include <Urho3D/Graphics/Camera.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/SystemUI/SystemUIEvents.h>
+#include "../Scene/Scene.h"
+#include "../Scene/Node.h"
+#include "../Graphics/Camera.h"
+#include "../SystemUI/SystemUI.h"
 #include <ImGuizmo/ImGuizmo.h>
 
 namespace Urho3D
@@ -42,7 +39,7 @@ enum GizmoOperation
     GIZMOOP_MAX
 };
 
-class URHO3D_TOOLBOX_API Gizmo : public Object
+class URHO3D_API Gizmo : public Object
 {
     URHO3D_OBJECT(Gizmo, Object);
 public:
@@ -50,11 +47,18 @@ public:
     explicit Gizmo(Context* context);
     /// Destruct.
     ~Gizmo() override;
+    /// Register object factory.
+    static void RegisterObject(Context* context);
     /// Manipulate node. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param node to be manipulated.
     /// \returns true if node was manipulated on current frame.
     bool ManipulateNode(const Camera* camera, Node* node);
+    /// Manipulate multiple nodes. Should be called from within E_UPDATE event.
+    /// \param camera which observes the node.
+    /// \param nodes to be manipulated.
+    /// \returns true if node was manipulated on current frame.
+    bool ManipulateNodes(const Camera* camera, ea::vector<Node*>& nodes);
     /// Manipulate multiple nodes. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
@@ -74,7 +78,11 @@ public:
     /// Set operation mode. Possible modes: rotation, translation and scaling.
     void SetOperation(GizmoOperation operation) { operation_ = operation; }
     /// Get current manipulation mode.
-    GizmoOperation GetOperation() const { return operation_; };
+    GizmoOperation GetOperation() const { return operation_; }
+    /// Set operation mode. Possible modes: rotation, translation and scaling.
+    void SetWindow(ImGuiWindow* window) { window_ = window; }
+    /// Get current manipulation mode.
+    ImGuiWindow* GetWindow() const { return window_; }
     /// Set transform space in which gizmo should operate. Parent transform space is not supported.
     void SetTransformSpace(TransformSpace transformSpace) { transformSpace_ = transformSpace; }
     /// Get transform space in which gizmo is operating.
@@ -114,6 +122,8 @@ protected:
     ea::unordered_map<Node*, Matrix3x4> initialTransforms_;
     ///
     ea::vector<Node*> manipulatedNodes_;
+    /// Window pointer the gizmo should be rendered at.
+    ImGuiWindow* window_{};
 };
 
 }
