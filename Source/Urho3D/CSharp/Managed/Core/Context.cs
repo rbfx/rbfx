@@ -90,6 +90,16 @@ namespace Urho3DNet
             RegisterFactory(typeof(T), category);
         }
 
+        public bool IsReflected<T>() where T : Object
+        {
+            return IsReflected(typeof(T));
+        }
+
+        public bool IsReflected(Type type)
+        {
+            return IsReflected(new StringHash(type));
+        }
+
         public void RegisterFactory(Type type, string category="")
         {
             if (!type.IsSubclassOf(typeof(Object)))

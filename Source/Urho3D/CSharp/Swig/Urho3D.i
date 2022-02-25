@@ -512,6 +512,7 @@ public:
 %include "Urho3D/Scene/ObjectAnimation.h"
 %include "Urho3D/Scene/SceneResolver.h"
 %include "Urho3D/Scene/UnknownComponent.h"
+%include "Urho3D/Scene/TrackedComponent.h"
 
 // --------------------------------------- Extra components ---------------------------------------
 %include "Urho3D/Input/FreeFlyController.h"
@@ -744,18 +745,23 @@ public:
 
 %template(ConnectionVector) eastl::vector<Urho3D::SharedPtr<Urho3D::Connection>>;
 
+%typemap(csbase) Urho3D::NetworkFrame "long";
+%csconstvalue("long.MinValue") Urho3D::NetworkFrame::Min;
+%csconstvalue("long.MaxValue") Urho3D::NetworkFrame::Max;
+
+%include "Urho3D/Replica/NetworkObject.h"
+%include "Urho3D/Replica/StaticNetworkObject.h"
 %include "Urho3D/Replica/BehaviorNetworkObject.h"
 %include "Urho3D/Replica/ClientInputStatistics.h"
 %include "Urho3D/Replica/ClientReplica.h"
 %include "Urho3D/Replica/FilteredByDistance.h"
-%include "Urho3D/Replica/NetworkObject.h"
 %include "Urho3D/Replica/NetworkTime.h"
+%include "Urho3D/Replica/NetworkId.h"
 %include "Urho3D/Replica/PredictedKinematicController.h"
 %include "Urho3D/Replica/ReplicatedAnimation.h"
 %include "Urho3D/Replica/ReplicatedTransform.h"
 %include "Urho3D/Replica/ReplicationManager.h"
 %include "Urho3D/Replica/ServerReplicator.h"
-%include "Urho3D/Replica/StaticNetworkObject.h"
 %include "Urho3D/Replica/TickSynchronizer.h"
 %include "Urho3D/Replica/TrackedAnimatedModel.h"
 #endif
