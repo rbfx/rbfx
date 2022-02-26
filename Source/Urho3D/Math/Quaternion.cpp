@@ -247,6 +247,12 @@ float Quaternion::Angle() const
     return 2 * Acos(w_);
 }
 
+float Quaternion::Angle(const Quaternion& b)
+{
+    float dot = DotProduct(b);
+    return IsEqualUsingDot(dot) ? 0.0f : Acos(Min(Abs(dot), 1.0F)) * 2.0F * M_RADTODEG;
+}
+
 Vector3 Quaternion::AngularVelocity() const
 {
     const float axisScaleInv = sqrt(Max(0.0f, 1.0f - w_ * w_));

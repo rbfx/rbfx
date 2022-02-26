@@ -425,6 +425,13 @@ public:
         return Urho3D::Equals(Abs(DotProduct(rhs)), 1.0f, eps);
     }
 
+    /// Test if the dot product of two quaternions are equal with epsilon.
+    bool IsEqualUsingDot(float dot, float eps = M_EPSILON)
+    {
+        // Returns false in the presence of NaN values.
+        return dot > 1.0f - eps;
+    }
+
     /// Return whether any element is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(w_) || Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_) || Urho3D::IsNaN(z_); }
 
@@ -460,6 +467,9 @@ public:
     /// Return rotation angle.
     /// @property
     float Angle() const;
+    /// Returns the angle in degrees between this quaternion a and another quaternion b.
+    /// @property
+    float Angle(const Quaternion& b);
     /// Return angular velocity assuming unit time.
     /// Note: Absolute value of angular velocity is measured in radians.
     Vector3 AngularVelocity() const;
