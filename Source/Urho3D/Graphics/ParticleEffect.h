@@ -190,12 +190,39 @@ public:
     /// Set negative direction limit.
     /// @property
     void SetMinDirection(const Vector3& direction);
+    /// Set negative direction x limit.
+    /// @property
+    void SetMinDirectionX(float factor);
+    /// Set negative direction y limit.
+    /// @property
+    void SetMinDirectionY(float factor);
+    /// Set negative direction z limit.
+    /// @property
+    void SetMinDirectionZ(float factor);
     /// Set positive direction limit.
     /// @property
     void SetMaxDirection(const Vector3& direction);
+    /// Set positive direction x limit.
+    /// @property
+    void SetMaxDirectionX(float factor);
+    /// Set positive direction y limit.
+    /// @property
+    void SetMaxDirectionY(float factor);
+    /// Set positive direction z limit.
+    /// @property
+    void SetMaxDirectionZ(float factor);
     /// Set constant force acting on particles.
     /// @property
     void SetConstantForce(const Vector3& force);
+    /// Set constant force acting on the x direction of the particles.
+    /// @property
+    void SetConstantForceX(float force);
+    /// Set constant force acting on the y direction of the particles.
+    /// @property
+    void SetConstantForceY(float force);
+    /// Set constant force acting on the z direction of the particles.
+    /// @property
+    void SetConstantForceZ(float force);
     /// Set particle velocity damping force.
     /// @property
     void SetDampingForce(float force);
@@ -214,9 +241,21 @@ public:
     /// Set particle minimum size.
     /// @property
     void SetMinParticleSize(const Vector2& size);
+    /// Set particle minimum x size.
+    /// @property
+    void SetMinParticleSizeX(float factor);
+    /// Set particle minimum y size.
+    /// @property
+    void SetMinParticleSizeY(float factor);
     /// Set particle maximum size.
     /// @property
     void SetMaxParticleSize(const Vector2& size);
+    /// Set particle maximum x size.
+    /// @property
+    void SetMaxParticleSizeX(float factor);
+    /// Set particle maximum y size.
+    /// @property
+    void SetMaxParticleSizeY(float factor);
     /// Set particle minimum time to live.
     /// @property
     void SetMinTimeToLive(float time);

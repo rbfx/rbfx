@@ -492,14 +492,59 @@ void ParticleEffect::SetMinDirection(const Vector3& direction)
     directionMin_ = direction;
 }
 
+void ParticleEffect::SetMinDirectionX(float factor)
+{
+    directionMin_.x_ = factor;
+}
+
+void ParticleEffect::SetMinDirectionY(float factor)
+{
+    directionMin_.y_ = factor;
+}
+
+void ParticleEffect::SetMinDirectionZ(float factor)
+{
+    directionMin_.z_ = factor;
+}
+
 void ParticleEffect::SetMaxDirection(const Vector3& direction)
 {
     directionMax_ = direction;
 }
 
+void ParticleEffect::SetMaxDirectionX(float factor)
+{
+    directionMax_.x_ = factor;
+}
+
+void ParticleEffect::SetMaxDirectionY(float factor)
+{
+    directionMax_.y_ = factor;
+}
+
+void ParticleEffect::SetMaxDirectionZ(float factor)
+{
+    directionMax_.z_ = factor;
+}
+
 void ParticleEffect::SetConstantForce(const Vector3& force)
 {
     constantForce_ = force;
+}
+
+void ParticleEffect::SetConstantForceX(float force)
+{
+    constantForce_.x_ = force;
+}
+
+void ParticleEffect::SetConstantForceY(float force)
+{
+    constantForce_.y_ = force;
+}
+
+void ParticleEffect::SetConstantForceZ(float force)
+{
+    constantForce_.z_ = force;
 }
 
 void ParticleEffect::SetDampingForce(float force)
@@ -532,9 +577,29 @@ void ParticleEffect::SetMinParticleSize(const Vector2& size)
     sizeMin_ = size;
 }
 
+void ParticleEffect::SetMinParticleSizeX(float factor)
+{
+    sizeMin_.x_ = factor;
+}
+
+void ParticleEffect::SetMinParticleSizeY(float factor)
+{
+    sizeMin_.y_ = factor;
+}
+
 void ParticleEffect::SetMaxParticleSize(const Vector2& size)
 {
     sizeMax_ = size;
+}
+
+void ParticleEffect::SetMaxParticleSizeX(float factor)
+{
+    sizeMax_.x_ = factor;
+}
+
+void ParticleEffect::SetMaxParticleSizeY(float factor)
+{
+    sizeMax_.y_ = factor;
 }
 
 void ParticleEffect::SetMinTimeToLive(float time)
