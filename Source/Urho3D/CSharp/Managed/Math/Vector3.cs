@@ -64,6 +64,12 @@ namespace Urho3DNet
             Z = data[2];
         }
 
+        /// Construct from 2D vector in X0Z plane.
+        public static Vector3 FromXZ(Vector2 vector, float y = 0.0f)
+        {
+            return new Vector3( vector.X, y, vector.Y);
+        }
+
         /// Test for equality with another vector without epsilon.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(in Vector3 lhs, in Vector3 rhs)
@@ -269,6 +275,19 @@ namespace Urho3DNet
             }
         }
 
+        /// Return normalized to unit length or zero if length is too small.
+        public Vector3 NormalizedOrDefault
+        {
+            get
+            {
+                float lenSquared = LengthSquared;
+                if (lenSquared < MathDefs.LargeEpsilon * MathDefs.LargeEpsilon)
+                    return Vector3.Zero;
+                float invLen = 1.0f / (float)Math.Sqrt(lenSquared);
+                return this * invLen;
+            }
+        }
+
         /// Return float data.
         public float[] Data => new[] {X, Y, Z};
 
@@ -357,6 +376,20 @@ namespace Urho3DNet
         public static float StableRandom(in Vector3 seed)
         {
             return Vector2.StableRandom(new Vector2(Vector2.StableRandom(new Vector2(seed.X, seed.Y)), seed.Z));
+        }
+
+        /// Return 2D vector (z component is ignored).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector2 ToVector2()
+        {
+            return new Vector2(X, Y);
+        }
+
+        /// Return x and z components as 2D vector (y component is ignored).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector2 ToXZ()
+        {
+            return new Vector2 ( X, Z );
         }
 
         /// X coordinate.

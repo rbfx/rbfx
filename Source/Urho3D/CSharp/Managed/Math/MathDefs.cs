@@ -99,6 +99,11 @@ namespace Urho3DNet
         public const float Epsilon = 0.000001f;
 
         /// <summary>
+        /// Defines the large epsilon value. It is larger than builtin MathDefs.Epsilon.
+        /// </summary>
+        public const float LargeEpsilon = 0.00005f;
+
+        /// <summary>
         /// Minimal near clippi8ng value.
         /// </summary>
         public const float MinNearClip = 0.01f;
