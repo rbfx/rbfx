@@ -156,7 +156,7 @@ bool Project::LoadProject(const ea::string& projectPath, bool disableAssetImport
     // Default resources directory for new projects.
     if (resourcePaths_.empty())
     {
-        resourcePaths_.push_back("Resources/");
+        resourcePaths_.push_back("Data/");
         resourcePaths_.push_back("CoreData/");
     }
 
