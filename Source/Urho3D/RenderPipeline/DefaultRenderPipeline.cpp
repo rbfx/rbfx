@@ -344,9 +344,14 @@ void DefaultRenderPipelineView::Render()
             sceneProcessor_->RenderSceneBatches("DepthPrePass", camera, depthPrePass_->GetBaseBatches());
     }
 
-    sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches());
-    sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches());
-    sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches());
+    const ShaderParameterDesc cameraParameters[] = {
+        {VSP_GBUFFEROFFSETS, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
+        {PSP_GBUFFERINVSIZE, renderBufferManager_->GetInvOutputSize()},
+    };
+
+    sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters);
+    sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters);
+    sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters);
 
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
@@ -362,10 +367,6 @@ void DefaultRenderPipelineView::Render()
     };
 #endif
 
-    const ShaderParameterDesc cameraParameters[] = {
-        { VSP_GBUFFEROFFSETS, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale() },
-        { PSP_GBUFFERINVSIZE, renderBufferManager_->GetInvOutputSize() },
-    };
     sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
         depthAndColorTextures, cameraParameters);
     sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches());
