@@ -24,22 +24,106 @@
 
 #pragma once
 
-#include "../Math/SphericalHarmonics.h"
+#include "../Container/TransformedSpan.h"
+#include "../Graphics/ReflectionProbeData.h"
+#include "../Math/BoundingBox.h"
+#include "../Scene/Component.h"
+#include "../Scene/TrackedComponent.h"
 
 namespace Urho3D
 {
 
 class TextureCube;
+class ReflectionProbe;
 
-/// Reflection probe data. Reused by actual reflection probes and zones.
-struct ReflectionProbeData
+/// Reflection probe manager.
+class URHO3D_API ReflectionProbeManager : public TrackedComponentRegistryBase
 {
-    /// Reflection map, should never be null.
-    TextureCube* reflectionMap_{};
-    /// Roughness to LOD factor. Should be equal to log2(NumLODs - 1).
-    float roughnessToLODFactor_{};
-    /// Smallest LOD of reflection represented as SH. Used by GL ES to approximate textureCubeLod.
-    SphericalHarmonicsDot9 reflectionMapSH_;
+    URHO3D_OBJECT(ReflectionProbeManager, TrackedComponentRegistryBase);
+
+public:
+    using ReflectionProbeSpan = TransformedSpan<TrackedComponentBase* const, ReflectionProbe* const, StaticCaster<ReflectionProbe* const>>;
+
+    explicit ReflectionProbeManager(Context* context);
+    ~ReflectionProbeManager() override;
+    static void RegisterObject(Context* context);
+
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    /// Mark reflection probe as dirty, i.e. position or dimensions changed.
+    void MarkReflectionProbeDirty(ReflectionProbe* reflectionProbe, bool transformOnly);
+    /// Update reflection probes if dirty.
+    void Update();
+
+    /// Query two most important reflection probes.
+    void QueryDynamicProbes(const BoundingBox& worldBoundingBox, ea::span<ReflectionProbeReference, 2> probes);
+    void QueryStaticProbes(const BoundingBox& worldBoundingBox, ea::span<ReflectionProbeReference, 2> probes,
+        float& cacheDistanceSquared);
+
+    /// Return all reflection probes.
+    ReflectionProbeSpan GetReflectionProbes() const { return StaticCastSpan<ReflectionProbe* const>(GetTrackedComponents()); }
+    unsigned GetRevision() const { return revision_; }
+    bool HasStaticProbes() const { return !staticProbes_.empty(); }
+    bool HasDynamicProbes() const { return !dynamicProbes_.empty(); }
+
+protected:
+    void OnComponentAdded(TrackedComponentBase* baseComponent) override;
+    void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
+
+private:
+    bool arraysDirty_{};
+    ea::vector<ReflectionProbe*> dynamicProbes_;
+    ea::vector<ReflectionProbe*> staticProbes_;
+    unsigned revision_{};
 };
+
+/// Reflection probe component that specifies reflection applied within a region.
+class URHO3D_API ReflectionProbe : public TrackedComponent<ReflectionProbeManager, EnabledOnlyTag>
+{
+    URHO3D_OBJECT(ReflectionProbe, TrackedComponentBase);
+
+public:
+    explicit ReflectionProbe(Context* context);
+    ~ReflectionProbe() override;
+    static void RegisterObject(Context* context);
+
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    /// Manage properties.
+    /// @{
+    void SetDynamic(bool dynamic);
+    bool IsDynamic() const { return dynamic_; }
+    void SetBoundingBox(const BoundingBox& box);
+    const BoundingBox& GetBoundingBox() const { return boundingBox_; }
+    void SetTexture(TextureCube* texture);
+    TextureCube* GetTexture() const { return texture_; }
+    void SetTextureAttr(const ResourceRef& value);
+    ResourceRef GetTextureAttr() const;
+    void SetPriority(int priority);
+    int GetPriority() const { return priority_; }
+    void SetApproximationColor(const Color& value);
+    Color GetApproximationColor() const;
+    /// @}
+
+    const ReflectionProbeData& GetProbeData() const { return data_; }
+    const Matrix3x4& GetWorldToLocal() const { return worldToLocal_; }
+
+protected:
+    void OnNodeSet(Node* node) override;
+    void OnMarkedDirty(Node* node) override;
+
+private:
+    void MarkComponentDirty();
+    void MarkTransformDirty();
+
+    bool dynamic_{};
+    BoundingBox boundingBox_{-Vector3::ONE, Vector3::ONE};
+    SharedPtr<TextureCube> texture_;
+    int priority_{};
+
+    ReflectionProbeData data_;
+    Matrix3x4 worldToLocal_;
+};
+
 
 }

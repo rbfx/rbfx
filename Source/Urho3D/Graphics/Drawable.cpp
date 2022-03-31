@@ -55,6 +55,11 @@ static const ea::vector<ea::string> giTypeNames = {
     "Blend Light Probes"
 };
 
+static const ea::vector<ea::string> reflectionModeNames = {
+    "Zone",
+    "Nearest Probe",
+};
+
 SourceBatch::SourceBatch() = default;
 
 SourceBatch::SourceBatch(const SourceBatch& batch) = default;
@@ -107,6 +112,8 @@ void Drawable::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Shadow Mask", int, shadowMask_, DEFAULT_SHADOWMASK, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Zone Mask", GetZoneMask, SetZoneMask, unsigned, DEFAULT_ZONEMASK, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Global Illumination", GetGlobalIlluminationType, SetGlobalIlluminationType, GlobalIlluminationType, giTypeNames, GlobalIlluminationType::None, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Reflection Mode", GetReflectionMode, SetReflectionMode, ReflectionMode, reflectionModeNames, ReflectionMode::NearestProbe, AM_DEFAULT);
+    // TODO(reflection): Revisit default reflection mode
 }
 
 void Drawable::OnSetEnabled()
@@ -259,6 +266,13 @@ void Drawable::SetGlobalIlluminationType(GlobalIlluminationType type)
 {
     giType_ = type;
     MarkPipelineStateHashDirty();
+    MarkNetworkUpdate();
+}
+
+void Drawable::SetReflectionMode(ReflectionMode mode)
+{
+    reflectionMode_ = mode;
+    //MarkPipelineStateHashDirty();
     MarkNetworkUpdate();
 }
 

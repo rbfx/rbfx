@@ -263,6 +263,14 @@ public:
         return copy;
     }
 
+    /// Return this bounding box clipped by another box.
+    BoundingBox Clipped(const BoundingBox& box) const
+    {
+        BoundingBox copy = *this;
+        copy.Clip(box);
+        return copy;
+    }
+
     /// Return true if this bounding box is defined via a previous call to Define() or Merge().
     bool Defined() const
     {
@@ -280,6 +288,13 @@ public:
     /// Return half-size.
     /// @property
     Vector3 HalfSize() const { return (max_ - min_) * 0.5f; }
+
+    /// Return volume.
+    float Volume() const
+    {
+        const Vector3 size = Size();
+        return size.x_ * size.y_ * size.z_;
+    }
 
     /// Return transformed by a 3x3 matrix.
     BoundingBox Transformed(const Matrix3& transform) const;
