@@ -24,7 +24,7 @@
 
 #include "../Core/ThreadSafeCache.h"
 #include "../Graphics/Drawable.h"
-#include "../Graphics/ReflectionProbe.h"
+#include "../Graphics/ReflectionProbeData.h"
 #include "../Graphics/Texture.h"
 #include "../Math/Color.h"
 #include "../Math/SphericalHarmonics.h"

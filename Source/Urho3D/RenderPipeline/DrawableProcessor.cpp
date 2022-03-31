@@ -27,6 +27,7 @@
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
@@ -329,6 +330,45 @@ void DrawableProcessor::UpdateDrawableZone(const BoundingBox& boundingBox, Drawa
     }
 }
 
+void DrawableProcessor::UpdateDrawableReflection(const BoundingBox& boundingBox, Drawable* drawable) const
+{
+    const ReflectionMode mode = drawable->GetReflectionMode();
+    if (mode == ReflectionMode::Zone)
+        return;
+
+    ReflectionProbeManager* manager = frameInfo_.reflectionProbeManager_;
+
+    const Vector3 drawableCenter = boundingBox.Center();
+    CachedDrawableReflection& cachedReflection = drawable->GetMutableCachedReflection();
+
+    if (!manager->HasStaticProbes())
+    {
+        for (ReflectionProbeReference& ref : cachedReflection.probes_)
+            ref.Reset();
+    }
+    else
+    {
+        const float drawableCacheDistanceSquared = (cachedReflection.cachePosition_ - drawableCenter).LengthSquared();
+
+        const bool forcedUpdate = !std::isfinite(drawableCacheDistanceSquared)
+            || cachedReflection.cacheRevision_ != manager->GetRevision();
+        if (forcedUpdate || drawableCacheDistanceSquared >= cachedReflection.cacheInvalidationDistanceSquared_)
+        {
+            manager->QueryStaticProbes(boundingBox, cachedReflection.staticProbes_,
+                cachedReflection.cacheInvalidationDistanceSquared_);
+            cachedReflection.cacheRevision_ = manager->GetRevision();
+            cachedReflection.cachePosition_ = drawableCenter;
+        }
+
+        cachedReflection.probes_ = cachedReflection.staticProbes_;
+    }
+
+    if (manager->HasDynamicProbes())
+    {
+        manager->QueryDynamicProbes(boundingBox, cachedReflection.probes_);
+    }
+}
+
 void DrawableProcessor::QueueDrawableGeometryUpdate(unsigned threadIndex, Drawable* drawable)
 {
     const UpdateGeometryType updateGeometryType = drawable->GetUpdateGeometryType();
@@ -399,6 +439,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
 
         // Update zone
         UpdateDrawableZone(boundingBox, drawable);
+        UpdateDrawableReflection(boundingBox, drawable);
 
         // Do not add "infinite" objects like skybox to prevent shadow map focusing behaving erroneously
         if (!zRange.IsValid())
@@ -467,6 +508,14 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                 lightAccumulator.sphericalHarmonics_ += cachedZone.zone_->GetAmbientLighting();
 
             lightAccumulator.reflectionProbe_ = cachedZone.zone_->GetReflectionProbe();
+
+            // Apply reflection probe
+            if (drawable->GetReflectionMode() != ReflectionMode::Zone)
+            {
+                const CachedDrawableReflection& reflection = drawable->GetMutableCachedReflection();
+                if (const ReflectionProbeData* probeData = reflection.probes_[0].data_)
+                    lightAccumulator.reflectionProbe_ = probeData;
+            }
         }
 
         // Store geometry

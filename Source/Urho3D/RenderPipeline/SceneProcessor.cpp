@@ -29,6 +29,7 @@
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/OctreeQuery.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Technique.h"
@@ -224,6 +225,13 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
         ? frameInfo_.viewport_->GetCullCamera()
         : frameInfo_.viewport_->GetCamera();
     frameInfo_.octree_ = frameInfo_.scene_ ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
+
+    // TODO: Revisit singleton components
+    if (frameInfo_.octree_)
+    {
+        frameInfo_.reflectionProbeManager_ = frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL);
+        frameInfo_.reflectionProbeManager_->Update();
+    }
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }
