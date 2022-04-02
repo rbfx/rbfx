@@ -254,6 +254,13 @@
     #endif
 #endif
 
+/// If planar reflection is used, disable reflection blending.
+#ifdef URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
+    #ifdef URHO3D_BLEND_REFLECTIONS
+        #undef URHO3D_BLEND_REFLECTIONS
+    #endif
+#endif
+
 /// If shadow normal offset is enabled, vertex shader needs normal.
 #ifdef URHO3D_SHADOW_NORMAL_OFFSET
     #ifndef URHO3D_VERTEX_NEED_NORMAL
