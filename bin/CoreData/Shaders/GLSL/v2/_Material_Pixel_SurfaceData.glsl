@@ -50,8 +50,12 @@ struct SurfaceData
 #endif
 
 #ifdef URHO3D_SURFACE_NEED_REFLECTION_COLOR
-    /// Reflection color.
-    half4 reflectionColor;
+    /// Reflection color (first reflection).
+    half4 reflectionColor0;
+#ifdef URHO3D_BLEND_REFLECTIONS
+    /// Reflection color (second reflection).
+    half4 reflectionColor1;
+#endif
 #endif
 
 #ifdef URHO3D_SURFACE_NEED_BACKGROUND_COLOR

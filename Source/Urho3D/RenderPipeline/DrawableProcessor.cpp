@@ -489,6 +489,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
         if (needAmbient)
         {
             const GlobalIlluminationType giType = drawable->GetGlobalIlluminationType();
+            const ReflectionMode reflectionMode = drawable->GetReflectionMode();
 
             // Reset SH from GI if possible/needed, reset to zero otherwise
             if (gi_ && giType >= GlobalIlluminationType::BlendLightProbes)
@@ -507,14 +508,26 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
             else
                 lightAccumulator.sphericalHarmonics_ += cachedZone.zone_->GetAmbientLighting();
 
-            lightAccumulator.reflectionProbe_ = cachedZone.zone_->GetReflectionProbe();
+            lightAccumulator.reflectionProbes_[0] = cachedZone.zone_->GetReflectionProbe();
+            lightAccumulator.reflectionProbes_[1] = lightAccumulator.reflectionProbes_[0];
+            lightAccumulator.reflectionProbesBlendFactor_ = 0.0f;
 
             // Apply reflection probe
-            if (drawable->GetReflectionMode() != ReflectionMode::Zone)
+            if (reflectionMode != ReflectionMode::Zone)
             {
                 const CachedDrawableReflection& reflection = drawable->GetMutableCachedReflection();
-                if (const ReflectionProbeData* probeData = reflection.probes_[0].data_)
-                    lightAccumulator.reflectionProbe_ = probeData;
+                const ReflectionProbeReference& probe0 = reflection.probes_[0];
+                const ReflectionProbeReference& probe1 = reflection.probes_[1];
+
+                if (probe0.data_)
+                    lightAccumulator.reflectionProbes_[0] = probe0.data_;
+
+                if (reflectionMode > ReflectionMode::NearestProbe && probe1.data_)
+                {
+                    lightAccumulator.reflectionProbes_[1] = probe1.data_;
+                    lightAccumulator.reflectionProbesBlendFactor_ =
+                        1.0f - Clamp(probe0.volume_ / probe1.volume_, 0.0f, 1.0f);
+                }
             }
         }
 

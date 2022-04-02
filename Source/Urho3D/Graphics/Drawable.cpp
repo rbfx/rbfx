@@ -58,6 +58,7 @@ static const ea::vector<ea::string> giTypeNames = {
 static const ea::vector<ea::string> reflectionModeNames = {
     "Zone",
     "Nearest Probe",
+    "Blend Probes"
 };
 
 SourceBatch::SourceBatch() = default;
@@ -272,7 +273,7 @@ void Drawable::SetGlobalIlluminationType(GlobalIlluminationType type)
 void Drawable::SetReflectionMode(ReflectionMode mode)
 {
     reflectionMode_ = mode;
-    //MarkPipelineStateHashDirty();
+    MarkPipelineStateHashDirty();
     MarkNetworkUpdate();
 }
 
@@ -335,6 +336,7 @@ unsigned Drawable::RecalculatePipelineStateHash() const
     unsigned hash = 0;
     CombineHash(hash, GetLightMaskInZone() & PORTABLE_LIGHTMASK);
     CombineHash(hash, static_cast<unsigned>(giType_));
+    CombineHash(hash, reflectionMode_ <= ReflectionMode::NearestProbe);
     return hash;
 }
 

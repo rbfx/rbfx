@@ -17,27 +17,57 @@
 #ifdef URHO3D_IS_LIT
 
 #ifdef URHO3D_AMBIENT_PASS
+    #ifdef URHO3D_PHYSICAL_MATERIAL
+    half3 GetPhysicalReflectionColor(const half3 sourceColor, const half3 averageColor, const half roughness)
+    {
+        #ifdef URHO3D_BLUR_REFLECTION
+            return GammaToLinearSpace(sourceColor);
+        #else
+            return mix(GammaToLinearSpace(sourceColor), averageColor, roughness * roughness);
+        #endif
+    }
+    #endif
+
     /// Calculate ambient lighting.
     half3 CalculateAmbientLighting(const SurfaceData surfaceData)
     {
     #ifdef URHO3D_PHYSICAL_MATERIAL
-        half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;
-        #ifdef URHO3D_BLUR_REFLECTION
-            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor.rgb);
+
+        #ifdef URHO3D_BLEND_REFLECTIONS
+            half3 linearReflectionColor0 = GetPhysicalReflectionColor(
+                surfaceData.reflectionColor0.rgb, cReflectionAverageColor0, surfaceData.roughness);
+            half3 linearReflectionColor1 = GetPhysicalReflectionColor(
+                surfaceData.reflectionColor1.rgb, cReflectionAverageColor1, surfaceData.roughness);
+
+            half3 linearReflectionColor = mix(
+                linearReflectionColor0, linearReflectionColor1, cReflectionBlendFactor);
         #else
-            half3 linearReflectionColor = mix(GammaToLinearSpace(surfaceData.reflectionColor.rgb),
-                cReflectionAverageColor, surfaceData.roughness * surfaceData.roughness);
+            half3 linearReflectionColor = GetPhysicalReflectionColor(
+                surfaceData.reflectionColor0.rgb, cReflectionAverageColor0, surfaceData.roughness);
         #endif
+
+        half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;
         half3 diffuseAndSpecularColor = Indirect_PBR(
             surfaceData.ambientLighting, linearReflectionColor,
             surfaceData.albedo.rgb, surfaceData.specular,
             surfaceData.roughness, NoV);
+
     #elif defined(URHO3D_REFLECTION_MAPPING)
+
+        #ifdef URHO3D_BLEND_REFLECTIONS
+            half3 gammaReflectionColor = mix(
+                surfaceData.reflectionColor0.rgb, surfaceData.reflectionColor1.rgb, cReflectionBlendFactor);
+        #else
+            half3 gammaReflectionColor = surfaceData.reflectionColor0.rgb;
+        #endif
+
         half3 diffuseAndSpecularColor = Indirect_SimpleReflection(
-            surfaceData.ambientLighting, surfaceData.reflectionColor.rgb, surfaceData.albedo.rgb, cMatEnvMapColor);
+            surfaceData.ambientLighting, gammaReflectionColor, surfaceData.albedo.rgb, cMatEnvMapColor);
+
     #else
-        half3 diffuseAndSpecularColor = Indirect_Simple(
-            surfaceData.ambientLighting, surfaceData.albedo.rgb, cMatEnvMapColor);
+
+        half3 diffuseAndSpecularColor = Indirect_Simple(surfaceData.ambientLighting, surfaceData.albedo.rgb);
+
     #endif
         return diffuseAndSpecularColor * surfaceData.occlusion + surfaceData.emission;
     }

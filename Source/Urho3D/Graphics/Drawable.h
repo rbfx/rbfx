@@ -91,7 +91,8 @@ enum class GlobalIlluminationType
 enum class ReflectionMode
 {
     Zone,
-    NearestProbe
+    NearestProbe,
+    BlendProbes,
 };
 
 /// Rendering frame update parameters.
