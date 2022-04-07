@@ -53,19 +53,19 @@ public:
     /// \param camera which observes the node.
     /// \param node to be manipulated.
     /// \returns true if node was manipulated on current frame.
-    bool ManipulateNode(const Camera* camera, Node* node);
+    bool ManipulateNode(const Camera* camera, Node* node, float* snap);
     /// Manipulate multiple nodes. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param nodes to be manipulated.
     /// \returns true if node was manipulated on current frame.
-    bool ManipulateNodes(const Camera* camera, ea::vector<Node*>& nodes);
+    bool ManipulateNodes(const Camera* camera, ea::vector<Node*>& nodes, float* snap);
     /// Manipulate multiple nodes. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
     /// \returns true if node was manipulated on current frame.
-    bool Manipulate(const Camera* camera, Node** begin, Node** end);
+    bool Manipulate(const Camera* camera, Node** begin, Node** end, float* snap);
     template<typename Container>
-    bool Manipulate(const Camera* camera, const Container& container)
+    bool Manipulate(const Camera* camera, const Container& container, float* snap)
     {
         manipulatedNodes_.clear();
         for (Node* node : container)
@@ -73,7 +73,7 @@ public:
             if (node)
                 manipulatedNodes_.push_back(node);
         }
-        return Manipulate(camera, manipulatedNodes_.begin(), manipulatedNodes_.end());
+        return Manipulate(camera, manipulatedNodes_.begin(), manipulatedNodes_.end(), snap);
     }
     /// Set operation mode. Possible modes: rotation, translation and scaling.
     void SetOperation(GizmoOperation operation) { operation_ = operation; }
