@@ -32,7 +32,135 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+void AppendReference(ea::span<ReflectionProbeReference, 2> result, const ReflectionProbeReference& newReference)
+{
+    if (!result[0] || newReference.IsMoreImportantThan(result[0]))
+    {
+        // Insert first
+        result[1] = result[0];
+        result[0] = newReference;
+    }
+    else if (!result[1] || newReference.IsMoreImportantThan(result[1]))
+    {
+        // Insert second
+        result[1] = newReference;
+    }
+    // Drop
+}
+
+void SplitBoundingVolumes(ea::span<ReflectionProbeBVH> result, ea::span<const InternalReflectionProbeData*> probes)
+{
+    URHO3D_ASSERT(!probes.empty());
+
+    const unsigned capacity = result.size();
+    URHO3D_ASSERT(capacity > 0);
+    URHO3D_ASSERT(IsPowerOfTwo(capacity + 1));
+
+    if (probes.size() == 1)
+    {
+        result[0].data_.emplace(*probes[0]);
+        result[0].worldBoundingBox_ = result[0].data_->GetWorldBoundingBox();
+        return;
+    }
+
+    result[0].data_.reset();
+    result[0].worldBoundingBox_ = BoundingBox{};
+    for (const InternalReflectionProbeData* probeData : probes)
+        result[0].worldBoundingBox_.Merge(probeData->GetWorldBoundingBox());
+
+    const Vector3 size = result[0].worldBoundingBox_.Size();
+    const int splitAxis = size.x_ > size.y_ && size.x_ > size.z_ ? 0 : size.y_ > size.z_ ? 1 : 2;
+    ea::sort(probes.begin(), probes.end(),
+        [splitAxis](const InternalReflectionProbeData* lhs, const InternalReflectionProbeData* rhs)
+    {
+        const Vector3 lhsCenter = lhs->GetWorldBoundingBox().Center();
+        const Vector3 rhsCenter = rhs->GetWorldBoundingBox().Center();
+        return lhsCenter.Data()[splitAxis] < rhsCenter.Data()[splitAxis];
+    });
+
+    const unsigned median = probes.size() / 2;
+    SplitBoundingVolumes(result.subspan(1u, capacity / 2),
+        probes.subspan(0, median));
+    SplitBoundingVolumes(result.subspan(1u + capacity / 2, capacity / 2),
+        probes.subspan(median, probes.size() - median));
+}
+
+void BuildBVH(ea::vector<ReflectionProbeBVH>& result, const ea::vector<ReflectionProbe*>& probes)
+{
+    result.clear();
+    if (probes.empty())
+        return;
+
+    const unsigned numProbes = probes.size();
+
+    ea::vector<InternalReflectionProbeData> probesData;
+    probesData.reserve(numProbes);
+    for (ReflectionProbe* probe : probes)
+        probesData.emplace_back(probe);
+
+    ea::vector<const InternalReflectionProbeData*> probesDataPtrs;
+    probesDataPtrs.reserve(numProbes);
+    for (const InternalReflectionProbeData& probeData : probesData)
+        probesDataPtrs.push_back(&probeData);
+
+    result.resize(NextPowerOfTwo(numProbes) * 2 - 1);
+    SplitBoundingVolumes(result, probesDataPtrs);
+}
+
+void QueryBVH(ea::vector<const ReflectionProbeBVH*>& intersections,
+    ea::span<const ReflectionProbeBVH> bvh, const BoundingBox& worldBoundingBox)
+{
+    // Early return if outside
+    if (bvh[0].worldBoundingBox_.IsInside(worldBoundingBox) == OUTSIDE)
+        return;
+
+    // Check leafs
+    if (bvh.size() == 1)
+    {
+        if (const auto& probeData = bvh[0].data_)
+            intersections.push_back(&bvh[0]);
+        return;
+    }
+
+    // Check children
+    URHO3D_ASSERT(bvh.size() % 2 == 1);
+    const unsigned stride = bvh.size() / 2;
+    QueryBVH(intersections, bvh.subspan(1, stride), worldBoundingBox);
+    QueryBVH(intersections, bvh.subspan(1 + stride, stride), worldBoundingBox);
+}
+
+}
+
 extern const char* SCENE_CATEGORY;
+
+InternalReflectionProbeData::InternalReflectionProbeData(ReflectionProbe* probe)
+    : probe_(probe)
+    , data_(&probe_->GetProbeData())
+    , priority_(probe_->GetPriority())
+{
+    Update();
+}
+
+void InternalReflectionProbeData::Update()
+{
+    Node* node = probe_->GetNode();
+    const Matrix3x4& worldTransform = node->GetWorldTransform();
+    worldToLocal_ = worldTransform.Inverse();
+    localBoundingBox_ = probe_->GetBoundingBox();
+    worldBoundingBox_ = probe_->GetBoundingBox().Transformed(worldTransform);
+}
+
+ea::optional<float> InternalReflectionProbeData::GetIntersectionVolume(const BoundingBox& worldBoundingBox) const
+{
+    const BoundingBox localBoundingBox = worldBoundingBox.Transformed(worldToLocal_);
+    const BoundingBox clippedBoundingBox = localBoundingBox.Clipped(localBoundingBox_);
+    if (clippedBoundingBox.Defined())
+        return clippedBoundingBox.Volume() / localBoundingBox.Volume();
+    return ea::nullopt;
+}
 
 ReflectionProbeManager::ReflectionProbeManager(Context* context)
     : TrackedComponentRegistryBase(context, ReflectionProbe::GetTypeStatic())
@@ -47,6 +175,8 @@ ReflectionProbeManager::~ReflectionProbeManager()
 void ReflectionProbeManager::RegisterObject(Context* context)
 {
     context->RegisterFactory<ReflectionProbeManager>();
+
+    URHO3D_ATTRIBUTE("Query Padding", float, queryPadding_, DefaultQueryPadding, AM_DEFAULT);
 }
 
 void ReflectionProbeManager::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -79,46 +209,65 @@ void ReflectionProbeManager::Update()
         dynamicProbes_.clear();
         for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
         {
-            if (1 || reflectionProbe->IsDynamic()) // TODO(reflection): Implement me
-                dynamicProbes_.push_back(reflectionProbe);
+            if (reflectionProbe->IsDynamic())
+                dynamicProbes_.emplace_back(reflectionProbe);
             else
                 staticProbes_.push_back(reflectionProbe);
         }
+
+        BuildBVH(staticProbesBvh_, staticProbes_);
+
         revision_ = ea::max(1u, revision_ + 1);
+        arraysDirty_ = false;
     }
+
+    for (InternalReflectionProbeData& probeData : dynamicProbes_)
+        probeData.Update();
 }
 
 void ReflectionProbeManager::QueryDynamicProbes(const BoundingBox& worldBoundingBox,
-    ea::span<ReflectionProbeReference, 2> probes)
+    ea::span<ReflectionProbeReference, 2> probes) const
 {
-    for (ReflectionProbe* probe : dynamicProbes_)
+    for (const InternalReflectionProbeData& probeData : dynamicProbes_)
     {
-        const BoundingBox localBoundingBox = worldBoundingBox.Transformed(probe->GetWorldToLocal());
-        const BoundingBox clippedBoundingBox = localBoundingBox.Clipped(probe->GetBoundingBox());
-        if (clippedBoundingBox.Defined())
+        if (const auto volume = probeData.GetIntersectionVolume(worldBoundingBox))
         {
-            const float volume = clippedBoundingBox.Volume() / localBoundingBox.Volume();
-            if (!probes[0].data_)
-            {
-                probes[0].data_ = &probe->GetProbeData();
-                probes[0].priority_ = probe->GetPriority();
-                probes[0].volume_ = volume;
-            }
-            else if (probes[0].priority_ < probe->GetPriority() || probes[0].volume_ < volume)
-            {
-                probes[1] = probes[0];
-                probes[0].data_ = &probe->GetProbeData();
-                probes[0].priority_ = probe->GetPriority();
-                probes[0].volume_ = volume;
-            }
+            const ReflectionProbeReference newReference{probeData.data_, probeData.priority_, *volume};
+            AppendReference(probes, newReference);
         }
     }
 }
 
 void ReflectionProbeManager::QueryStaticProbes(const BoundingBox& worldBoundingBox,
-    ea::span<ReflectionProbeReference, 2> probes, float& cacheDistanceSquared)
+    ea::span<ReflectionProbeReference, 2> probes, float& cacheDistanceSquared) const
 {
+    static thread_local ea::vector<const ReflectionProbeBVH*> tempIntersectedProbes;
+    auto& intersectedProbes = tempIntersectedProbes;
+    intersectedProbes.clear();
 
+    for (ReflectionProbeReference& ref : probes)
+        ref.Reset();
+
+    QueryBVH(intersectedProbes, staticProbesBvh_, worldBoundingBox.Padded(Vector3::ONE * queryPadding_));
+
+    cacheDistanceSquared = queryPadding_;
+    for (const ReflectionProbeBVH* node : intersectedProbes)
+    {
+        const float signedDistance = node->worldBoundingBox_.SignedDistanceToBoundingBox(worldBoundingBox);
+        if (signedDistance > 0.0f)
+            cacheDistanceSquared = ea::min(cacheDistanceSquared, signedDistance);
+        else
+        {
+            const InternalReflectionProbeData& probeData = *node->data_;
+            if (const auto volume = probeData.GetIntersectionVolume(worldBoundingBox))
+            {
+                const ReflectionProbeReference newReference{probeData.data_, probeData.priority_, *volume};
+                AppendReference(probes, newReference);
+            }
+
+            cacheDistanceSquared = ea::min(cacheDistanceSquared, -signedDistance);
+        }
+    }
 }
 
 ReflectionProbe::ReflectionProbe(Context* context)
@@ -212,7 +361,6 @@ void ReflectionProbe::MarkComponentDirty()
 
 void ReflectionProbe::MarkTransformDirty()
 {
-    worldToLocal_ = node_ ? node_->GetWorldTransform().Inverse() : Matrix3x4::IDENTITY;
     if (ReflectionProbeManager* manager = GetRegistry())
         manager->MarkReflectionProbeDirty(this, true);
 }

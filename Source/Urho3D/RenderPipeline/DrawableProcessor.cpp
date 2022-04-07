@@ -323,6 +323,7 @@ void DrawableProcessor::UpdateDrawableZone(const BoundingBox& boundingBox, Drawa
 
     // Force update if bounding box is invalid
     const bool forcedUpdate = !std::isfinite(drawableCacheDistanceSquared);
+    // TODO: Do we want strict compare here too?
     if (forcedUpdate || drawableCacheDistanceSquared >= cachedZone.cacheInvalidationDistanceSquared_)
     {
         cachedZone = frameInfo_.octree_->QueryZone(drawableCenter, drawable->GetZoneMask());
@@ -352,7 +353,7 @@ void DrawableProcessor::UpdateDrawableReflection(const BoundingBox& boundingBox,
 
         const bool forcedUpdate = !std::isfinite(drawableCacheDistanceSquared)
             || cachedReflection.cacheRevision_ != manager->GetRevision();
-        if (forcedUpdate || drawableCacheDistanceSquared >= cachedReflection.cacheInvalidationDistanceSquared_)
+        if (forcedUpdate || drawableCacheDistanceSquared > cachedReflection.cacheInvalidationDistanceSquared_)
         {
             manager->QueryStaticProbes(boundingBox, cachedReflection.staticProbes_,
                 cachedReflection.cacheInvalidationDistanceSquared_);
