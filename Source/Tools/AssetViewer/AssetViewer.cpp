@@ -187,7 +187,7 @@ public:
         }
 
         if (node_ && context_->GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
-            gizmo_.ManipulateNode(camera_, parentNode_);
+            gizmo_.ManipulateNode(camera_, parentNode_, nullptr);
     }
 
     void OnFileDrop(VariantMap& args)
