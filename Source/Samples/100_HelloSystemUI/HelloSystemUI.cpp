@@ -76,7 +76,7 @@ void HelloSystemUi::SubscribeToEvents()
 
 void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
 {
-    gizmo_->ManipulateNode(cameraNode_->GetComponent<Camera>(), boxNode_);
+    gizmo_->ManipulateNode(cameraNode_->GetComponent<Camera>(), boxNode_, nullptr);
 
     ui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
     ui::SetNextWindowPos(ImVec2(200, 300), ImGuiCond_FirstUseEver);
