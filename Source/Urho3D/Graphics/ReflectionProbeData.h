@@ -50,6 +50,13 @@ struct ReflectionProbeReference
     float volume_{};
 
     void Reset() { data_ = nullptr; }
+
+    operator bool() const { return !!data_; }
+
+    bool IsMoreImportantThan(const ReflectionProbeReference& other) const
+    {
+        return other.priority_ < priority_ || other.volume_ < volume_;
+    }
 };
 
 }

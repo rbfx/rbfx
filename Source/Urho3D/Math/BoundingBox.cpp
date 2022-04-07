@@ -207,7 +207,30 @@ float BoundingBox::SignedDistanceToPoint(const Vector3& point) const
     const Vector3 absOffset = VectorAbs(Center() - point);
     const Vector3 delta = absOffset - HalfSize();
     const float outerDistance = VectorMax(Vector3::ZERO, delta).Length();
-    const float innerDistance = -ea::min(-delta.x_, ea::min(-delta.y_, -delta.z_));
+    const float innerDistance = ea::max(delta.x_, ea::max(delta.y_, delta.z_));
+    return innerDistance < 0 ? innerDistance : outerDistance;
+}
+
+float BoundingBox::DistanceToBoundingBox(const BoundingBox& box) const
+{
+    const Vector3 absOffset = VectorAbs(Center() - box.Center());
+    const Vector3 maxHalfSize = VectorMax(HalfSize(), box.HalfSize());
+    const Vector3 minHalfSize = VectorMin(HalfSize(), box.HalfSize());
+
+    const Vector3 delta = absOffset - maxHalfSize - minHalfSize;
+    return VectorMax(Vector3::ZERO, delta).Length();
+}
+
+float BoundingBox::SignedDistanceToBoundingBox(const BoundingBox& box) const
+{
+    const Vector3 absOffset = VectorAbs(Center() - box.Center());
+    const Vector3 maxHalfSize = VectorMax(HalfSize(), box.HalfSize());
+    const Vector3 minHalfSize = VectorMin(HalfSize(), box.HalfSize());
+
+    const Vector3 outerDelta = absOffset - maxHalfSize - minHalfSize;
+    const float outerDistance = VectorMax(Vector3::ZERO, outerDelta).Length();
+    const Vector3 innerDelta = maxHalfSize - absOffset - minHalfSize;
+    const float innerDistance = -ea::min(innerDelta.x_, ea::min(innerDelta.y_, innerDelta.z_));
     return innerDistance < 0 ? innerDistance : outerDistance;
 }
 

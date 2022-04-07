@@ -30,11 +30,42 @@
 #include "../Scene/Component.h"
 #include "../Scene/TrackedComponent.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
 class TextureCube;
 class ReflectionProbe;
+
+/// Cached internal structure for reflection probe search.
+class InternalReflectionProbeData
+{
+public:
+    explicit InternalReflectionProbeData(ReflectionProbe* probe);
+
+    void Update();
+
+    ea::optional<float> GetIntersectionVolume(const BoundingBox& worldBoundingBox) const;
+    const BoundingBox& GetWorldBoundingBox() const { return worldBoundingBox_; }
+
+public:
+    ReflectionProbe* const probe_{};
+    const ReflectionProbeData* const data_{};
+    const int priority_{};
+
+private:
+    Matrix3x4 worldToLocal_{};
+    BoundingBox localBoundingBox_{};
+    BoundingBox worldBoundingBox_{};
+};
+
+/// Node of static reflection probes tree.
+struct ReflectionProbeBVH
+{
+    BoundingBox worldBoundingBox_;
+    ea::optional<InternalReflectionProbeData> data_;
+};
 
 /// Reflection probe manager.
 class URHO3D_API ReflectionProbeManager : public TrackedComponentRegistryBase
@@ -43,6 +74,7 @@ class URHO3D_API ReflectionProbeManager : public TrackedComponentRegistryBase
 
 public:
     using ReflectionProbeSpan = TransformedSpan<TrackedComponentBase* const, ReflectionProbe* const, StaticCaster<ReflectionProbe* const>>;
+    static constexpr float DefaultQueryPadding = 2.0f;
 
     explicit ReflectionProbeManager(Context* context);
     ~ReflectionProbeManager() override;
@@ -56,9 +88,9 @@ public:
     void Update();
 
     /// Query two most important reflection probes.
-    void QueryDynamicProbes(const BoundingBox& worldBoundingBox, ea::span<ReflectionProbeReference, 2> probes);
+    void QueryDynamicProbes(const BoundingBox& worldBoundingBox, ea::span<ReflectionProbeReference, 2> probes) const;
     void QueryStaticProbes(const BoundingBox& worldBoundingBox, ea::span<ReflectionProbeReference, 2> probes,
-        float& cacheDistanceSquared);
+        float& cacheDistanceSquared) const;
 
     /// Return all reflection probes.
     ReflectionProbeSpan GetReflectionProbes() const { return StaticCastSpan<ReflectionProbe* const>(GetTrackedComponents()); }
@@ -72,9 +104,12 @@ protected:
 
 private:
     bool arraysDirty_{};
-    ea::vector<ReflectionProbe*> dynamicProbes_;
+    ea::vector<InternalReflectionProbeData> dynamicProbes_;
     ea::vector<ReflectionProbe*> staticProbes_;
+    ea::vector<ReflectionProbeBVH> staticProbesBvh_;
     unsigned revision_{};
+
+    float queryPadding_{DefaultQueryPadding};
 };
 
 /// Reflection probe component that specifies reflection applied within a region.
@@ -106,7 +141,6 @@ public:
     /// @}
 
     const ReflectionProbeData& GetProbeData() const { return data_; }
-    const Matrix3x4& GetWorldToLocal() const { return worldToLocal_; }
 
 protected:
     void OnNodeSet(Node* node) override;
@@ -122,7 +156,6 @@ private:
     int priority_{};
 
     ReflectionProbeData data_;
-    Matrix3x4 worldToLocal_;
 };
 
 

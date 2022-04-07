@@ -393,7 +393,7 @@ void ZoneLookupIndex::Commit()
 CachedDrawableZone ZoneLookupIndex::QueryZone(const Vector3& position, unsigned zoneMask) const
 {
     float minDistanceToOtherZone = M_LARGE_VALUE;
-    float distanceToBestZone = M_LARGE_VALUE;
+    float distanceToBestZoneBorder = M_LARGE_VALUE;
     Zone* bestZone = nullptr;
 
     const unsigned numZones = zones_.size();
@@ -415,11 +415,11 @@ CachedDrawableZone ZoneLookupIndex::QueryZone(const Vector3& position, unsigned 
         {
             // Zone may affect point
             bestZone = zones_[i];
-            distanceToBestZone = -signedDistance;
+            distanceToBestZoneBorder = -signedDistance;
         }
     }
 
-    const float cacheInvalidationDistance = ea::min(minDistanceToOtherZone, distanceToBestZone);
+    const float cacheInvalidationDistance = ea::min(minDistanceToOtherZone, distanceToBestZoneBorder);
     return { bestZone ? bestZone : defaultZone_, position, cacheInvalidationDistance * cacheInvalidationDistance };
 }
 
