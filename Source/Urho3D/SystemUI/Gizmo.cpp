@@ -44,16 +44,16 @@ bool Gizmo::IsActive() const
     return ImGuizmo::IsUsing();
 }
 
-bool Gizmo::ManipulateNode(const Camera* camera, Node* node)
+bool Gizmo::ManipulateNode(const Camera* camera, Node* node, float* snap)
 {
-    return Manipulate(camera, &node, &node + 1);
+    return Manipulate(camera, &node, &node + 1, snap);
 }
 
-bool Gizmo::ManipulateNodes(const Camera* camera, ea::vector<Node*>& nodes)
+bool Gizmo::ManipulateNodes(const Camera* camera, ea::vector<Node*>& nodes, float* snap)
 {
-    return Manipulate(camera, nodes.begin(), nodes.end());
+    return Manipulate(camera, nodes.begin(), nodes.end(), snap);
 }
-
+    
 void Gizmo::RenderUI()
 {
     ui::TextUnformatted("Op:");
@@ -95,7 +95,7 @@ int Gizmo::GetSelectionCenter(Vector3& outCenter, Node** begin, Node** end)
     return count;
 }
 
-bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
+bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end, float* snap)
 {
     if (begin == end)
         return false;
@@ -137,6 +137,7 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
     Matrix4 proj = camera->GetProjection().Transpose();
     Matrix4 tran = currentOrigin.Transpose();
     Matrix4 delta;
+    float transSnap[3] = { *snap, *snap, *snap };
 
     if (window_)
     {
@@ -157,7 +158,7 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
         ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
         ImGuizmo::SetDrawlist(ui::GetBackgroundDrawList());
     }
-    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
+    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, transSnap);
 
     if (IsActive())
     {
