@@ -224,14 +224,11 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.camera_ = frameInfo_.viewport_->GetCullCamera()
         ? frameInfo_.viewport_->GetCullCamera()
         : frameInfo_.viewport_->GetCamera();
-    frameInfo_.octree_ = frameInfo_.scene_ ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
 
-    // TODO: Revisit singleton components
-    if (frameInfo_.octree_)
-    {
-        frameInfo_.reflectionProbeManager_ = frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL);
-        frameInfo_.reflectionProbeManager_->Update();
-    }
+    frameInfo_.octree_ = frameInfo_.scene_
+        ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
+    frameInfo_.reflectionProbeManager_ = frameInfo_.octree_
+        ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL) : nullptr;
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }

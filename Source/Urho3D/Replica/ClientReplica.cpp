@@ -256,7 +256,7 @@ void ClientReplica::ProcessAddObjects(MemoryBuffer& messageData)
             if (isOwned)
             {
                 networkObject->SetNetworkMode(NetworkObjectMode::ClientOwned);
-                ownedObjects_.insert(WeakPtr<NetworkObject>(networkObject));
+                ownedObjects_.emplace(WeakPtr<NetworkObject>(networkObject));
             }
             else
                 networkObject->SetNetworkMode(NetworkObjectMode::ClientReplicated);

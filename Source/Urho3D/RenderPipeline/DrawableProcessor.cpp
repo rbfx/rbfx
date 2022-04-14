@@ -523,12 +523,15 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                 if (probe0.data_)
                     lightAccumulator.reflectionProbes_[0] = probe0.data_;
 
+#ifdef DESKTOP_GRAPHICS
                 if (reflectionMode > ReflectionMode::NearestProbe && probe1.data_)
                 {
                     lightAccumulator.reflectionProbes_[1] = probe1.data_;
-                    lightAccumulator.reflectionProbesBlendFactor_ =
-                        1.0f - Clamp(probe0.volume_ / probe1.volume_, 0.0f, 1.0f);
+                    lightAccumulator.reflectionProbesBlendFactor_ = probe0.priority_ != probe1.priority_
+                        ? 1.0f - probe0.volume_
+                        : probe1.volume_ / (probe0.volume_ + probe1.volume_);
                 }
+#endif
             }
         }
 

@@ -32,6 +32,7 @@
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
@@ -597,7 +598,16 @@ void Octree::Update(const FrameInfo& frame)
     }
 
     drawableUpdates_.clear();
+
+    // Update other singletons.
+    // TODO: Refactor it, maybe split Octree?
     zones_.Commit();
+
+    if (scene)
+    {
+        if (auto reflectionProbeManager = scene->GetComponent<ReflectionProbeManager>())
+            reflectionProbeManager->Update();
+    }
 }
 
 void Octree::AddManualDrawable(Drawable* drawable)
