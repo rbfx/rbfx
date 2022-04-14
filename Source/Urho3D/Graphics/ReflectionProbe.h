@@ -31,12 +31,14 @@
 #include "../Scene/TrackedComponent.h"
 
 #include <EASTL/optional.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
 
 class TextureCube;
 class ReflectionProbe;
+class RenderPipeline;
 
 /// Cached internal structure for reflection probe search.
 class InternalReflectionProbeData
@@ -75,6 +77,7 @@ class URHO3D_API ReflectionProbeManager : public TrackedComponentRegistryBase
 public:
     using ReflectionProbeSpan = TransformedSpan<TrackedComponentBase* const, ReflectionProbe* const, StaticCaster<ReflectionProbe* const>>;
     static constexpr float DefaultQueryPadding = 2.0f;
+    static constexpr unsigned DefaultRenderBudget = 6;
 
     explicit ReflectionProbeManager(Context* context);
     ~ReflectionProbeManager() override;
@@ -103,6 +106,15 @@ protected:
     void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 
 private:
+    void UpdateArrays();
+    void UpdateQueuedProbes();
+
+    struct ReflectionProbeFace
+    {
+        WeakPtr<ReflectionProbe> probe_;
+        CubeMapFace face_{};
+    };
+
     bool arraysDirty_{};
     ea::vector<InternalReflectionProbeData> dynamicProbes_;
     ea::vector<ReflectionProbe*> staticProbes_;
@@ -110,6 +122,11 @@ private:
     unsigned revision_{};
 
     float queryPadding_{DefaultQueryPadding};
+    unsigned renderBudget_{DefaultRenderBudget};
+
+    SharedPtr<RenderPipeline> renderPipeline_;
+    ea::unordered_set<WeakPtr<ReflectionProbe>> probesToUpdate_;
+    ea::vector<ReflectionProbeFace> queuedProbes_;
 };
 
 /// Reflection probe component that specifies reflection applied within a region.
@@ -123,6 +140,10 @@ public:
     static void RegisterObject(Context* context);
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    void AllocateRenderSurfaces();
+    void DeallocateRenderSurfaces();
+    RenderSurface* GetRenderSurface(CubeMapFace face) const;
 
     /// Manage properties.
     /// @{
@@ -149,6 +170,7 @@ protected:
 private:
     void MarkComponentDirty();
     void MarkTransformDirty();
+    void UpdateProbeData();
 
     bool dynamic_{};
     BoundingBox boundingBox_{-Vector3::ONE, Vector3::ONE};
@@ -156,6 +178,9 @@ private:
     int priority_{};
 
     ReflectionProbeData data_;
+
+    SharedPtr<TextureCube> renderTexture_;
+    ea::array<SharedPtr<Node>, MAX_CUBEMAP_FACES> renderCameras_;
 };
 
 

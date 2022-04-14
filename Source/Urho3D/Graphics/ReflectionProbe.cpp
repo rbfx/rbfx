@@ -23,9 +23,12 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/TextureCube.h"
+#include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
 
@@ -34,6 +37,15 @@ namespace Urho3D
 
 namespace
 {
+
+Quaternion faceRotations[MAX_CUBEMAP_FACES] = {
+    Quaternion(0, 90, 0),
+    Quaternion(0, -90, 0),
+    Quaternion(-90, 0, 0),
+    Quaternion(90, 0, 0),
+    Quaternion(0, 0, 0),
+    Quaternion(0, 180, 0),
+};
 
 void AppendReference(ea::span<ReflectionProbeReference, 2> result, const ReflectionProbeReference& newReference)
 {
@@ -177,6 +189,7 @@ void ReflectionProbeManager::RegisterObject(Context* context)
     context->RegisterFactory<ReflectionProbeManager>();
 
     URHO3D_ATTRIBUTE("Query Padding", float, queryPadding_, DefaultQueryPadding, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Render Budget", unsigned, renderBudget_, DefaultRenderBudget, AM_DEFAULT);
 }
 
 void ReflectionProbeManager::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -187,12 +200,15 @@ void ReflectionProbeManager::DrawDebugGeometry(DebugRenderer* debug, bool depthT
 
 void ReflectionProbeManager::OnComponentAdded(TrackedComponentBase* baseComponent)
 {
-    MarkReflectionProbeDirty(static_cast<ReflectionProbe*>(baseComponent), false);
+    auto probe = static_cast<ReflectionProbe*>(baseComponent);
+    MarkReflectionProbeDirty(probe, false);
+    probe->AllocateRenderSurfaces();
 }
 
 void ReflectionProbeManager::OnComponentRemoved(TrackedComponentBase* baseComponent)
 {
-    MarkReflectionProbeDirty(static_cast<ReflectionProbe*>(baseComponent), false);
+    auto probe = static_cast<ReflectionProbe*>(baseComponent);
+    MarkReflectionProbeDirty(probe, false);
 }
 
 void ReflectionProbeManager::MarkReflectionProbeDirty(ReflectionProbe* reflectionProbe, bool transformOnly)
@@ -205,24 +221,69 @@ void ReflectionProbeManager::Update()
 {
     if (arraysDirty_)
     {
-        staticProbes_.clear();
-        dynamicProbes_.clear();
-        for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
-        {
-            if (reflectionProbe->IsDynamic())
-                dynamicProbes_.emplace_back(reflectionProbe);
-            else
-                staticProbes_.push_back(reflectionProbe);
-        }
-
+        UpdateArrays();
         BuildBVH(staticProbesBvh_, staticProbes_);
-
-        revision_ = ea::max(1u, revision_ + 1);
-        arraysDirty_ = false;
     }
 
     for (InternalReflectionProbeData& probeData : dynamicProbes_)
         probeData.Update();
+
+    // TODO(reflection): Remove this hack, support different probe types
+    if (probesToUpdate_.empty())
+    {
+        for (const InternalReflectionProbeData& probeData : dynamicProbes_)
+            probesToUpdate_.emplace(probeData.probe_);
+        for (ReflectionProbe* probe : staticProbes_)
+            probesToUpdate_.emplace(probe);
+    }
+
+    if (queuedProbes_.empty())
+        UpdateQueuedProbes();
+
+    for (const ReflectionProbeFace& probeFace : queuedProbes_)
+    {
+        if (!probeFace.probe_)
+            continue;
+
+        RenderSurface* renderSurface = probeFace.probe_->GetRenderSurface(probeFace.face_);
+        renderSurface->QueueUpdate();
+    }
+    queuedProbes_.clear();
+
+    // TODO: Fix me
+    /*if (!renderPipeline_)
+    {
+        renderPipeline_ = MakeShared<RenderPipeline>(context_);
+    }*/
+}
+
+void ReflectionProbeManager::UpdateArrays()
+{
+    staticProbes_.clear();
+    dynamicProbes_.clear();
+    for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
+    {
+        if (reflectionProbe->IsDynamic())
+            dynamicProbes_.emplace_back(reflectionProbe);
+        else
+            staticProbes_.push_back(reflectionProbe);
+    }
+
+    revision_ = ea::max(1u, revision_ + 1);
+    arraysDirty_ = false;
+}
+
+void ReflectionProbeManager::UpdateQueuedProbes()
+{
+    for (const auto& probe : probesToUpdate_)
+    {
+        if (!probe)
+            continue;
+
+        for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
+            queuedProbes_.push_back(ReflectionProbeFace{probe, static_cast<CubeMapFace>(face)});
+    }
+    probesToUpdate_.clear();
 }
 
 void ReflectionProbeManager::QueryDynamicProbes(const BoundingBox& worldBoundingBox,
@@ -298,6 +359,45 @@ void ReflectionProbe::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         debug->AddBoundingBox(boundingBox_, node_->GetWorldTransform(), Color::BLUE, depthTest);
 }
 
+void ReflectionProbe::AllocateRenderSurfaces()
+{
+    if (renderTexture_)
+        return;
+
+    // TODO(reflection): Make configurable
+    renderTexture_ = MakeShared<TextureCube>(context_);
+    renderTexture_->SetSize(256, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
+    for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
+    {
+        auto cameraNode = MakeShared<Node>(context_);
+        cameraNode->SetWorldRotation(faceRotations[face]);
+        auto camera = cameraNode->CreateComponent<Camera>();
+        camera->SetFov(90.0f);
+        camera->SetNearClip(0.01f);
+        camera->SetFarClip(100.0f);
+        camera->SetAspectRatio(1.0f);
+        renderCameras_[face] = cameraNode;
+
+        auto viewport = MakeShared<Viewport>(context_);
+        viewport->SetScene(GetScene());
+        viewport->SetCamera(camera);
+
+        RenderSurface* surface = renderTexture_->GetRenderSurface(static_cast<CubeMapFace>(face));
+        surface->SetViewport(0, viewport);
+    }
+    UpdateProbeData();
+}
+
+void ReflectionProbe::DeallocateRenderSurfaces()
+{
+    renderTexture_ = nullptr;
+}
+
+RenderSurface* ReflectionProbe::GetRenderSurface(CubeMapFace face) const
+{
+    return renderTexture_ ? renderTexture_->GetRenderSurface(face) : nullptr;
+}
+
 void ReflectionProbe::SetDynamic(bool dynamic)
 {
     if (dynamic_ != dynamic)
@@ -319,8 +419,7 @@ void ReflectionProbe::SetBoundingBox(const BoundingBox& box)
 void ReflectionProbe::SetTexture(TextureCube* texture)
 {
     texture_ = texture;
-    data_.reflectionMap_ = texture_;
-    data_.roughnessToLODFactor_ = data_.reflectionMap_ ? LogBaseTwo(data_.reflectionMap_->GetWidth()) : 1.0f;
+    UpdateProbeData();
 }
 
 void ReflectionProbe::SetTextureAttr(const ResourceRef& value)
@@ -363,6 +462,20 @@ void ReflectionProbe::MarkTransformDirty()
 {
     if (ReflectionProbeManager* manager = GetRegistry())
         manager->MarkReflectionProbeDirty(this, true);
+
+    // TODO(reflection): Extract from here
+    if (renderTexture_)
+    {
+        for (Node* cameraNode : renderCameras_)
+            cameraNode->SetWorldPosition(node_->GetWorldPosition());
+    }
+}
+
+void ReflectionProbe::UpdateProbeData()
+{
+    // TODO(reflection): Handle SH here too
+    data_.reflectionMap_ = texture_ ? texture_ : renderTexture_;
+    data_.roughnessToLODFactor_ = data_.reflectionMap_ ? LogBaseTwo(data_.reflectionMap_->GetWidth()) : 1.0f;
 }
 
 void ReflectionProbe::OnNodeSet(Node* node)
