@@ -129,19 +129,21 @@ void QueryBVH(ea::vector<const ReflectionProbeBVH*>& intersections,
     if (bvh[0].worldBoundingBox_.IsInside(worldBoundingBox) == OUTSIDE)
         return;
 
-    // Check leafs
-    if (bvh.size() == 1)
+    // If node with probe, store and stop
+    if (const auto& probeData = bvh[0].data_)
     {
-        if (const auto& probeData = bvh[0].data_)
-            intersections.push_back(&bvh[0]);
+        intersections.push_back(&bvh[0]);
         return;
     }
 
     // Check children
-    URHO3D_ASSERT(bvh.size() % 2 == 1);
-    const unsigned stride = bvh.size() / 2;
-    QueryBVH(intersections, bvh.subspan(1, stride), worldBoundingBox);
-    QueryBVH(intersections, bvh.subspan(1 + stride, stride), worldBoundingBox);
+    if (bvh.size() > 1)
+    {
+        URHO3D_ASSERT(bvh.size() % 2 == 1);
+        const unsigned stride = bvh.size() / 2;
+        QueryBVH(intersections, bvh.subspan(1, stride), worldBoundingBox);
+        QueryBVH(intersections, bvh.subspan(1 + stride, stride), worldBoundingBox);
+    }
 }
 
 }
