@@ -394,20 +394,25 @@ void RibbonTrail::UpdateBatches(const FrameInfo& frame)
         bufferDirty_ = true;
         previousOffset_ = offset;
     }
+
+    if (bufferSizeDirty_ || indexBuffer_->IsDataLost())
+        RequestUpdateBatchesDelayed(frame);
+}
+
+void RibbonTrail::UpdateBatchesDelayed(const FrameInfo& frame)
+{
+    UpdateBufferSize();
 }
 
 void RibbonTrail::UpdateGeometry(const FrameInfo& frame)
 {
-    if (bufferSizeDirty_ || indexBuffer_->IsDataLost())
-        UpdateBufferSize();
-
     if (bufferDirty_ || vertexBuffer_->IsDataLost())
         UpdateVertexBuffer(frame);
 }
 
 UpdateGeometryType RibbonTrail::GetUpdateGeometryType()
 {
-    if (bufferDirty_ || bufferSizeDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
+    if (bufferDirty_ || vertexBuffer_->IsDataLost())
         return UPDATE_MAIN_THREAD;
     else
         return UPDATE_NONE;

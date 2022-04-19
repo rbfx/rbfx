@@ -83,6 +83,7 @@ public:
 
     void Update();
     void PrepareInstancingBuffer();
+    void PrepareDrawablesBeforeRendering();
     void RenderShadowMaps();
     void RenderSceneBatches(ea::string_view debugName, Camera* camera,
         const PipelineBatchGroup<PipelineBatchByState>& batchGroup,

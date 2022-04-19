@@ -134,9 +134,12 @@ void Text3D::UpdateBatches(const FrameInfo& frame)
             break;
         }
     }
+
+    if (geometryDirty_ || fontDataLost_ || vertexBuffer_->IsDataLost())
+        RequestUpdateBatchesDelayed(frame);
 }
 
-void Text3D::UpdateGeometry(const FrameInfo& frame)
+void Text3D::UpdateBatchesDelayed(const FrameInfo& frame)
 {
     if (fontDataLost_)
     {
@@ -145,10 +148,6 @@ void Text3D::UpdateGeometry(const FrameInfo& frame)
         UpdateTextMaterials();
         fontDataLost_ = false;
     }
-
-    // In case is being rendered from multiple views, recalculate camera facing & fixed size
-    if (faceCameraMode_ != FC_NONE || fixedScreenSize_)
-        CalculateFixedScreenSize(frame);
 
     if (geometryDirty_)
     {
@@ -171,9 +170,16 @@ void Text3D::UpdateGeometry(const FrameInfo& frame)
     geometryDirty_ = false;
 }
 
+void Text3D::UpdateGeometry(const FrameInfo& frame)
+{
+    // In case is being rendered from multiple views, recalculate camera facing & fixed size
+    if (faceCameraMode_ != FC_NONE || fixedScreenSize_)
+        CalculateFixedScreenSize(frame);
+}
+
 UpdateGeometryType Text3D::GetUpdateGeometryType()
 {
-    if (geometryDirty_ || fontDataLost_ || vertexBuffer_->IsDataLost() || faceCameraMode_ != FC_NONE || fixedScreenSize_)
+    if (faceCameraMode_ != FC_NONE || fixedScreenSize_)
         return UPDATE_MAIN_THREAD;
     else
         return UPDATE_NONE;

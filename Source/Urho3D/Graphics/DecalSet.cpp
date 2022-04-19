@@ -224,22 +224,25 @@ void DecalSet::UpdateBatches(const FrameInfo& frame)
     batches_[0].distance_ = distance_;
     if (!skinned_)
         batches_[0].worldTransform_ = &worldTransform;
+
+    if (bufferDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
+        RequestUpdateBatchesDelayed(frame);
+}
+
+void DecalSet::UpdateBatchesDelayed(const FrameInfo& frame)
+{
+    UpdateBuffers();
 }
 
 void DecalSet::UpdateGeometry(const FrameInfo& frame)
 {
-    if (bufferDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
-        UpdateBuffers();
-
     if (skinningDirty_)
         UpdateSkinning();
 }
 
 UpdateGeometryType DecalSet::GetUpdateGeometryType()
 {
-    if (bufferDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
-        return UPDATE_MAIN_THREAD;
-    else if (skinningDirty_)
+    if (skinningDirty_)
         return UPDATE_WORKER_THREAD;
     else
         return UPDATE_NONE;

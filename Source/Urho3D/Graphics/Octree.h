@@ -24,6 +24,7 @@
 
 #include "../Container/MultiVector.h"
 #include "../Core/Mutex.h"
+#include "../Core/WorkQueue.h"
 #include "../Graphics/Drawable.h"
 #include "../Graphics/OctreeQuery.h"
 #include "../Math/Transform.h"
@@ -292,7 +293,7 @@ private:
     /// Drawable objects that were inserted during threaded update phase.
     ea::vector<Drawable*> threadedDrawableUpdates_;
     /// Node transforms to be applied before reinsertion.
-    MultiVector<ea::pair<Node*, Transform>> pendingNodeTransforms_;
+    WorkQueueVector<ea::pair<Node*, Transform>> pendingNodeTransforms_;
     /// All Drawable objects.
     ea::vector<Drawable*> drawables_;
     /// Mutex for octree reinsertions.
