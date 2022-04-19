@@ -26,6 +26,7 @@
 #include <EASTL/sort.h>
 
 #include "../Core/Context.h"
+#include "../Core/WorkQueue.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../IO/File.h"
@@ -480,6 +481,15 @@ void Drawable::RemoveFromOctree()
 
         octree->RemoveDrawable(this, octant_);
     }
+}
+
+void Drawable::RequestUpdateBatchesDelayed(const FrameInfo& frame)
+{
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->CallFromMainThread([this, &frame](unsigned)
+    {
+        UpdateBatchesDelayed(frame);
+    });
 }
 
 bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)

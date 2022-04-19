@@ -289,6 +289,7 @@ void DefaultRenderPipelineView::Render()
     // HACK: Graphics may keep expired vertex buffers for some reason, reset it just in case
     graphics_->SetVertexBuffer(nullptr);
 
+    sceneProcessor_->PrepareDrawablesBeforeRendering();
     sceneProcessor_->PrepareInstancingBuffer();
     sceneProcessor_->RenderShadowMaps();
 

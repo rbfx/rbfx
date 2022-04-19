@@ -79,6 +79,8 @@ WorkQueue::WorkQueue(Context* context) :
     maxNonThreadedWorkMs_(5)
 {
     currentThreadIndex = 0;
+    maxThreadIndex = 1;
+    mainThreadTasks_.Clear();
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(WorkQueue, HandleBeginFrame));
 }
 
@@ -111,9 +113,21 @@ void WorkQueue::CreateThreads(unsigned numThreads)
         thread->Run();
         threads_.push_back(thread);
     }
+    mainThreadTasks_.Clear();
 #else
     URHO3D_LOGERROR("Can not create worker threads as threading is disabled");
 #endif
+}
+
+void WorkQueue::CallFromMainThread(WorkFunction workFunction)
+{
+    if (GetThreadIndex() == 0)
+    {
+        workFunction(0);
+        return;
+    }
+
+    mainThreadTasks_.Insert(ea::move(workFunction));
 }
 
 SharedPtr<WorkItem> WorkQueue::GetFreeItem()
@@ -312,6 +326,8 @@ void WorkQueue::Complete(unsigned priority)
 
     PurgeCompleted(priority);
     completing_ = false;
+
+    ProcessMainThreadTasks();
 }
 
 unsigned WorkQueue::GetNumIncomplete(unsigned priority) const
@@ -335,6 +351,13 @@ bool WorkQueue::IsCompleted(unsigned priority) const
     }
 
     return true;
+}
+
+void WorkQueue::ProcessMainThreadTasks()
+{
+    for (const auto& callback : mainThreadTasks_)
+        callback(0);
+    mainThreadTasks_.Clear();
 }
 
 void WorkQueue::ProcessItems(unsigned threadIndex)
@@ -433,6 +456,8 @@ void WorkQueue::ReturnToPool(SharedPtr<WorkItem>& item)
 
 void WorkQueue::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 {
+    ProcessMainThreadTasks();
+
     // If no worker threads, complete low-priority work here
     if (threads_.empty() && !queue_.empty())
     {

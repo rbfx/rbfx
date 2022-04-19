@@ -28,7 +28,6 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/Thread.h"
-#include "../Core/WorkQueue.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
@@ -499,10 +498,9 @@ void Octree::Update(const FrameInfo& frame)
         auto* queue = GetSubsystem<WorkQueue>();
         scene->BeginThreadedUpdate();
 
-        const unsigned numThreads = queue->GetNumThreads() + 1;
-        pendingNodeTransforms_.Clear(numThreads);
+        pendingNodeTransforms_.Clear();
 
-        int numWorkItems = numThreads; // Worker threads + main thread
+        int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
         int drawablesPerItem = Max((int)(drawableUpdates_.size() / numWorkItems), 1);
 
         auto start = drawableUpdates_.begin();
@@ -791,7 +789,7 @@ void Octree::CancelUpdate(Drawable* drawable)
 
 void Octree::QueueNodeTransformUpdate(Node* node, const Transform& transform)
 {
-    pendingNodeTransforms_.EmplaceBack(WorkQueue::GetThreadIndex(), node, transform);
+    pendingNodeTransforms_.Emplace(node, transform);
 }
 
 void Octree::DrawDebugGeometry(bool depthTest)

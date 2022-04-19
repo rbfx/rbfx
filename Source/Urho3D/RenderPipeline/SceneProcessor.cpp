@@ -316,8 +316,6 @@ void SceneProcessor::Update()
     drawableProcessor_->ProcessLights(this);
     drawableProcessor_->ProcessForwardLighting();
 
-    drawableProcessor_->UpdateGeometries();
-
     batchCompositor_->ComposeSceneBatches();
     if (settings_.enableShadows_)
         batchCompositor_->ComposeShadowBatches();
@@ -346,6 +344,11 @@ void SceneProcessor::PrepareInstancingBuffer()
         pass->PrepareInstacingBuffer(batchRenderer_);
 
     instancingBuffer_->End();
+}
+
+void SceneProcessor::PrepareDrawablesBeforeRendering()
+{
+    drawableProcessor_->UpdateGeometries();
 }
 
 void SceneProcessor::RenderShadowMaps()

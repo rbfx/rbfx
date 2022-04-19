@@ -222,6 +222,8 @@ public:
     virtual void Update(const FrameInfo& frame) { }
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     virtual void UpdateBatches(const FrameInfo& frame);
+    /// Batch update from main thread. Called on demand only if RequestUpdateBatchesDelayed() is called from UpdateBatches().
+    virtual void UpdateBatchesDelayed(const FrameInfo& frame) { }
     /// Prepare geometry for rendering.
     virtual void UpdateGeometry(const FrameInfo& frame) { }
 
@@ -474,6 +476,8 @@ protected:
     void AddToOctree();
     /// Remove from octree.
     void RemoveFromOctree();
+    /// Request UpdateBatchesDelayed call from main thread.
+    void RequestUpdateBatchesDelayed(const FrameInfo& frame);
 
     /// Move into another octree octant.
     void SetOctant(Octant* octant) { octant_ = octant; }

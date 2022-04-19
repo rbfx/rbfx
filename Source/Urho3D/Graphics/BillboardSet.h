@@ -88,6 +88,8 @@ public:
     void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
+    /// Batch update from main thread. Called on demand only if RequestUpdateBatchesDelayed() is called from UpdateBatches().
+    void UpdateBatchesDelayed(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update).
     void UpdateGeometry(const FrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
@@ -217,6 +219,8 @@ private:
     void BuildDirectionVertexBuffer(unsigned enabledBillboards, float* dest, const Vector3& billboardScale);
     ///
     void BuildAxisAngleVertexBuffer(unsigned enabledBillboards, float* dest, const Vector3& billboardScale);
+    /// Return currently requested format of vertex buffer.
+    unsigned GetVertexBufferFormat() const;
     /// Calculate billboard scale factors in fixed screen size mode.
     void CalculateFixedScreenSize(const FrameInfo& frame);
 
