@@ -17,33 +17,19 @@
 #ifdef URHO3D_IS_LIT
 
 #ifdef URHO3D_AMBIENT_PASS
-    #ifdef URHO3D_PHYSICAL_MATERIAL
-    half3 GetPhysicalReflectionColor(const half3 sourceColor, const half3 averageColor, const half roughness)
-    {
-        #ifdef URHO3D_BLUR_REFLECTION
-            return GammaToLinearSpace(sourceColor);
-        #else
-            return mix(GammaToLinearSpace(sourceColor), averageColor, roughness * roughness);
-        #endif
-    }
-    #endif
-
     /// Calculate ambient lighting.
     half3 CalculateAmbientLighting(const SurfaceData surfaceData)
     {
     #ifdef URHO3D_PHYSICAL_MATERIAL
 
         #ifdef URHO3D_BLEND_REFLECTIONS
-            half3 linearReflectionColor0 = GetPhysicalReflectionColor(
-                surfaceData.reflectionColor0.rgb, cReflectionAverageColor0, surfaceData.roughness);
-            half3 linearReflectionColor1 = GetPhysicalReflectionColor(
-                surfaceData.reflectionColor1.rgb, cReflectionAverageColor1, surfaceData.roughness);
+            half3 linearReflectionColor0 = GammaToLinearSpace(surfaceData.reflectionColor0.rgb);
+            half3 linearReflectionColor1 = GammaToLinearSpace(surfaceData.reflectionColor1.rgb);
 
             half3 linearReflectionColor = mix(
                 linearReflectionColor0, linearReflectionColor1, cReflectionBlendFactor);
         #else
-            half3 linearReflectionColor = GetPhysicalReflectionColor(
-                surfaceData.reflectionColor0.rgb, cReflectionAverageColor0, surfaceData.roughness);
+            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor0.rgb);
         #endif
 
         half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;

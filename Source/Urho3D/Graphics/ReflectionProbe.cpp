@@ -521,7 +521,6 @@ void ReflectionProbe::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Priority", GetPriority, SetPriority, int, 0, AM_DEFAULT);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureAttr, SetTextureAttr, ResourceRef, ResourceRef(TextureCube::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Approximation Color", GetApproximationColor, SetApproximationColor, Color, Color::BLACK, AM_DEFAULT);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Texture Size", GetTextureSize, SetTextureSize, unsigned, CubemapRenderingParameters::DefaultTextureSize, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, unsigned, CubemapRenderingParameters::DefaultViewMask, AM_DEFAULT);
@@ -604,16 +603,6 @@ void ReflectionProbe::SetPriority(int priority)
         priority_ = priority;
         MarkComponentDirty();
     }
-}
-
-void ReflectionProbe::SetApproximationColor(const Color& value)
-{
-    data_.reflectionMapSH_ = SphericalHarmonicsDot9(value);
-}
-
-Color ReflectionProbe::GetApproximationColor() const
-{
-    return Color(data_.reflectionMapSH_.EvaluateAverage());
 }
 
 void ReflectionProbe::SetTextureSize(unsigned value)

@@ -68,12 +68,8 @@ UNIFORM_BUFFER_END(1, Camera)
 /// Disabled if pass has no ambient lighting.
 #ifdef URHO3D_AMBIENT_PASS
 UNIFORM_BUFFER_BEGIN(2, Zone)
-    /// Average reflection color in linear space used to approximate roughness if textureCubeLod is not supported.
-    UNIFORM(half3 cReflectionAverageColor0)
     /// Multiplier used to convert roughness factor to LOD of reflection cubemap.
     UNIFORM(half cRoughnessToLODFactor0)
-    /// Same parameters for second reflection.
-    UNIFORM(half3 cReflectionAverageColor1)
     UNIFORM(half cRoughnessToLODFactor1)
     /// Factor used to blend two reflections.
     UNIFORM(half cReflectionBlendFactor)

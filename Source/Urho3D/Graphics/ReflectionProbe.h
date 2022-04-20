@@ -205,8 +205,6 @@ public:
     TextureCube* GetTexture() const { return texture_; }
     void SetTextureAttr(const ResourceRef& value);
     ResourceRef GetTextureAttr() const;
-    void SetApproximationColor(const Color& value);
-    Color GetApproximationColor() const;
 
     const CubemapRenderingParameters& GetCubemapRenderingParams() const { return cubemapRenderingParams_; }
     void SetTextureSize(unsigned value);

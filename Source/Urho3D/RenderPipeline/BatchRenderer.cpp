@@ -554,12 +554,8 @@ private:
         if (!enabled_.colorOutput_)
             return;
 
-        drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionAverageColor0,
-            current_.reflectionProbes_[0]->reflectionMapSH_.EvaluateAverage());
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
             current_.reflectionProbes_[0]->roughnessToLODFactor_);
-        drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionAverageColor1,
-            current_.reflectionProbes_[1]->reflectionMapSH_.EvaluateAverage());
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor1,
             current_.reflectionProbes_[1]->roughnessToLODFactor_);
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionBlendFactor,

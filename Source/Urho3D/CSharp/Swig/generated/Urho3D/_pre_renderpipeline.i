@@ -42,8 +42,6 @@
 //%ignore Urho3D::ShaderConsts::Camera_FogColor;
 //%constant Urho3D::ConstString CameraNormaloffsetscale = Urho3D::ShaderConsts::Camera_NormalOffsetScale;
 //%ignore Urho3D::ShaderConsts::Camera_NormalOffsetScale;
-//%constant Urho3D::ConstString ZoneReflectionaveragecolor = Urho3D::ShaderConsts::Zone_ReflectionAverageColor;
-//%ignore Urho3D::ShaderConsts::Zone_ReflectionAverageColor;
 //%constant Urho3D::ConstString ZoneRoughnesstolodfactor = Urho3D::ShaderConsts::Zone_RoughnessToLODFactor;
 //%ignore Urho3D::ShaderConsts::Zone_RoughnessToLODFactor;
 //%constant Urho3D::ConstString LightLightpos = Urho3D::ShaderConsts::Light_LightPos;
