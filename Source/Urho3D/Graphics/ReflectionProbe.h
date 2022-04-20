@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Container/TransformedSpan.h"
+#include "../Graphics/CubemapRenderer.h"
 #include "../Graphics/ReflectionProbeData.h"
 #include "../Math/BoundingBox.h"
 #include "../Scene/Component.h"
@@ -86,8 +87,15 @@ public:
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
     /// Mark reflection probe as dirty, i.e. position or dimensions changed.
-    void MarkReflectionProbeDirty(ReflectionProbe* reflectionProbe, bool transformOnly);
-    /// Update reflection probes if dirty.
+    void MarkProbeDirty(ReflectionProbe* reflectionProbe);
+    void MarkProbeTransformDirty(ReflectionProbe* reflectionProbe);
+    void MarkProbeRealtimeDirty(ReflectionProbe* reflectionProbe);
+    /// Queue reflection probe rendering as soon as possible.
+    void QueueProbeUpdate(ReflectionProbe* reflectionProbe);
+    /// Queue rendering of all Baked reflection probes.
+    void QueueBakeAll();
+
+    /// Update reflection probes if dirty. Usually called internally once per frame.
     void Update();
 
     /// Query two most important reflection probes.
@@ -97,36 +105,64 @@ public:
 
     /// Return all reflection probes.
     ReflectionProbeSpan GetReflectionProbes() const { return StaticCastSpan<ReflectionProbe* const>(GetTrackedComponents()); }
-    unsigned GetRevision() const { return revision_; }
-    bool HasStaticProbes() const { return !staticProbes_.empty(); }
-    bool HasDynamicProbes() const { return !dynamicProbes_.empty(); }
+    unsigned GetRevision() const { return spatial_.revision_; }
+    bool HasStaticProbes() const { return !spatial_.immovableProbes_.empty(); }
+    bool HasDynamicProbes() const { return !spatial_.movableProbes_.empty(); }
 
 protected:
+    void OnSceneSet(Scene* scene) override;
     void OnComponentAdded(TrackedComponentBase* baseComponent) override;
     void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 
 private:
-    void UpdateArrays();
-    void UpdateQueuedProbes();
+    void UpdateSpatialCache();
+    void UpdateAutoQueueCache();
+    void FillUpdateQueue();
+    void ConsumeUpdateQueue();
+    ea::string GetBakedProbeFilePath() const;
+    ea::string SaveTextureToFile(TextureCube* texture, const ea::string& filePath, const ea::string& fileName);
 
-    struct ReflectionProbeFace
+    struct QueuedReflectionProbe
     {
         WeakPtr<ReflectionProbe> probe_;
-        CubeMapFace face_{};
+        WeakPtr<CubemapRenderer> cubemapRenderer_;
     };
 
-    bool arraysDirty_{};
-    ea::vector<InternalReflectionProbeData> dynamicProbes_;
-    ea::vector<ReflectionProbe*> staticProbes_;
-    ea::vector<ReflectionProbeBVH> staticProbesBvh_;
-    unsigned revision_{};
+    struct SpatialCache
+    {
+        bool dirty_{};
+        unsigned revision_{};
+
+        ea::vector<InternalReflectionProbeData> movableProbes_;
+        ea::vector<ReflectionProbe*> immovableProbes_;
+        ea::vector<ReflectionProbeBVH> immovableProbesBvh_;
+    } spatial_;
+
+    struct AutoQueueCache
+    {
+        bool dirty_{};
+        ea::vector<ReflectionProbe*> realtimeProbes_;
+    } autoQueue_;
+
+    static constexpr unsigned MaxStaticUpdates = 1;
+
+    SharedPtr<CubemapRenderer> cubemapRenderer_;
 
     float queryPadding_{DefaultQueryPadding};
     unsigned renderBudget_{DefaultRenderBudget};
 
-    SharedPtr<RenderPipeline> renderPipeline_;
     ea::unordered_set<WeakPtr<ReflectionProbe>> probesToUpdate_;
-    ea::vector<ReflectionProbeFace> queuedProbes_;
+    ea::vector<QueuedReflectionProbe> updateQueue_;
+    ea::vector<QueuedReflectionProbe> frameUpdates_;
+};
+
+/// Type of reflection probe.
+enum class ReflectionProbeType
+{
+    Baked,
+    Mixed,
+    Dynamic,
+    CustomTexture,
 };
 
 /// Reflection probe component that specifies reflection applied within a region.
@@ -141,27 +177,50 @@ public:
 
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
-    void AllocateRenderSurfaces();
-    void DeallocateRenderSurfaces();
-    RenderSurface* GetRenderSurface(CubeMapFace face) const;
+    /// Queue ReflectionProbe to be re-rendered as soon as possible.
+    void QueueRender();
+
+    /// Return cubemap renderer, available for dynamic probes.
+    CubemapRenderer* GetCubemapRenderer() const { return dynamicProbeRenderer_; }
+    /// Return writeable cubemap, available for mixed probes.
+    TextureCube* GetMixedProbeTexture() const { return mixedProbeTexture_; }
 
     /// Manage properties.
     /// @{
-    void SetDynamic(bool dynamic);
-    bool IsDynamic() const { return dynamic_; }
+    void SetMovable(bool movable);
+    bool IsMovable() const { return movable_; }
+    void SetProbeType(ReflectionProbeType probeType);
+    ReflectionProbeType GetProbeType() const { return probeType_; }
+    void SetRealtimeUpdate(bool realtimeUpdate);
+    bool IsRealtimeUpdate() const { return realtimeUpdate_; }
+    void SetSlicedUpdate(bool slicedUpdate) { slicedUpdate_ = slicedUpdate; }
+    bool IsSlicedUpdate() const { return slicedUpdate_; }
+
     void SetBoundingBox(const BoundingBox& box);
     const BoundingBox& GetBoundingBox() const { return boundingBox_; }
+    void SetPriority(int priority);
+    int GetPriority() const { return priority_; }
+
     void SetTexture(TextureCube* texture);
     TextureCube* GetTexture() const { return texture_; }
     void SetTextureAttr(const ResourceRef& value);
     ResourceRef GetTextureAttr() const;
-    void SetPriority(int priority);
-    int GetPriority() const { return priority_; }
     void SetApproximationColor(const Color& value);
     Color GetApproximationColor() const;
+
+    const CubemapRenderingParameters& GetCubemapRenderingParams() const { return cubemapRenderingParams_; }
+    void SetTextureSize(unsigned value);
+    unsigned GetTextureSize() const { return cubemapRenderingParams_.textureSize_; }
+    void SetViewMask(unsigned value);
+    unsigned GetViewMask() const { return cubemapRenderingParams_.viewMask_; }
+    void SetNearClip(float value);
+    float GetNearClip() const { return cubemapRenderingParams_.nearClip_; }
+    void SetFarClip(float value);
+    float GetFarClip() const { return cubemapRenderingParams_.farClip_; }
     /// @}
 
     const ReflectionProbeData& GetProbeData() const { return data_; }
+    bool IsRenderOnWake() const { return probeType_ == ReflectionProbeType::Mixed || probeType_ == ReflectionProbeType::Dynamic; }
 
 protected:
     void OnNodeSet(Node* node) override;
@@ -170,17 +229,27 @@ protected:
 private:
     void MarkComponentDirty();
     void MarkTransformDirty();
+    void MarkRealtimeDirty();
+
+    void UpdateCubemapRenderer();
     void UpdateProbeData();
 
-    bool dynamic_{};
+    bool movable_{};
+    ReflectionProbeType probeType_{};
+    bool realtimeUpdate_{};
+    bool slicedUpdate_{};
+
     BoundingBox boundingBox_{-Vector3::ONE, Vector3::ONE};
-    SharedPtr<TextureCube> texture_;
     int priority_{};
+
+    SharedPtr<TextureCube> texture_;
+
+    CubemapRenderingParameters cubemapRenderingParams_;
 
     ReflectionProbeData data_;
 
-    SharedPtr<TextureCube> renderTexture_;
-    ea::array<SharedPtr<Node>, MAX_CUBEMAP_FACES> renderCameras_;
+    SharedPtr<CubemapRenderer> dynamicProbeRenderer_;
+    SharedPtr<TextureCube> mixedProbeTexture_;
 };
 
 

@@ -79,17 +79,20 @@ void DefaultRenderPipelineView::SetSettings(const RenderPipelineSettings& settin
 
 void DefaultRenderPipelineView::SendViewEvent(StringHash eventType)
 {
+    Texture* parentTexture = frameInfo_.renderTarget_ ? frameInfo_.renderTarget_->GetParentTexture() : nullptr;
+
     using namespace BeginViewRender;
 
     VariantMap& eventData = GetEventDataMap();
 
     eventData[P_RENDERPIPELINEVIEW] = this;
     eventData[P_SURFACE] = frameInfo_.renderTarget_;
-    eventData[P_TEXTURE] = frameInfo_.renderTarget_ ? frameInfo_.renderTarget_->GetParentTexture() : nullptr;
+    eventData[P_TEXTURE] = parentTexture;
     eventData[P_SCENE] = sceneProcessor_->GetFrameInfo().scene_;
     eventData[P_CAMERA] = sceneProcessor_->GetFrameInfo().camera_;
 
-    renderer_->SendEvent(eventType, eventData);
+    Object* sender = parentTexture ? static_cast<Object*>(parentTexture) : renderer_;
+    sender->SendEvent(eventType, eventData);
 }
 
 void DefaultRenderPipelineView::ApplySettings()
@@ -198,6 +201,9 @@ void DefaultRenderPipelineView::ApplySettings()
 bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* viewport)
 {
     URHO3D_PROFILE("SetupRenderPipeline");
+
+    if (!viewport->GetScene())
+        return false;
 
     // Lazy initialize heavy objects
     if (!sceneProcessor_)

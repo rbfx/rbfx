@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<cubemap>
+	<face name="ReflectionProbe-1610-0.png" />
+	<face name="ReflectionProbe-1610-1.png" />
+	<face name="ReflectionProbe-1610-2.png" />
+	<face name="ReflectionProbe-1610-3.png" />
+	<face name="ReflectionProbe-1610-4.png" />
+	<face name="ReflectionProbe-1610-5.png" />
+</cubemap>
