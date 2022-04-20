@@ -51,9 +51,7 @@ namespace ShaderConsts
     URHO3D_SHADER_CONST(Camera, FogColor);
     URHO3D_SHADER_CONST(Camera, NormalOffsetScale);
 
-    URHO3D_SHADER_CONST(Zone, ReflectionAverageColor0);
     URHO3D_SHADER_CONST(Zone, RoughnessToLODFactor0);
-    URHO3D_SHADER_CONST(Zone, ReflectionAverageColor1);
     URHO3D_SHADER_CONST(Zone, RoughnessToLODFactor1);
     URHO3D_SHADER_CONST(Zone, ReflectionBlendFactor);
 

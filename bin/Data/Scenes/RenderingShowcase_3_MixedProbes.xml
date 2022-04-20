@@ -97,7 +97,6 @@
 			<attribute name="Variables" />
 			<component type="ReflectionProbe" id="1625">
 				<attribute name="Priority" value="1" />
-				<attribute name="Approximation Color" value="1 1 1 1" />
 			</component>
 		</node>
 	</node>

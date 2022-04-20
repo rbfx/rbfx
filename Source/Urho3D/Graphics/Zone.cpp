@@ -449,7 +449,6 @@ void Zone::UpdateCachedData()
         if (!data.reflectionMap_ && renderer)
             data.reflectionMap_ = renderer->GetBlackCubeMap();
         data.roughnessToLODFactor_ = data.reflectionMap_ ? LogBaseTwo(data.reflectionMap_->GetWidth()) : 1.0f;
-        data.reflectionMapSH_ = cachedTextureLighting_.Get();
 
         reflectionProbeData_.Restore(data);
     }
