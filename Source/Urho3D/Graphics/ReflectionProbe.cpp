@@ -26,10 +26,14 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/TextureCube.h"
+#include "../IO/FileSystem.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
+#include "../Resource/XMLElement.h"
+#include "../Resource/XMLFile.h"
 #include "../Scene/Node.h"
 
 namespace Urho3D
@@ -38,13 +42,11 @@ namespace Urho3D
 namespace
 {
 
-Quaternion faceRotations[MAX_CUBEMAP_FACES] = {
-    Quaternion(0, 90, 0),
-    Quaternion(0, -90, 0),
-    Quaternion(-90, 0, 0),
-    Quaternion(90, 0, 0),
-    Quaternion(0, 0, 0),
-    Quaternion(0, 180, 0),
+static const ea::vector<ea::string> reflectionProbeTypeNames = {
+    "Baked",
+    "Mixed",
+    "Dynamic",
+    "Custom Texture",
 };
 
 void AppendReference(ea::span<ReflectionProbeReference, 2> result, const ReflectionProbeReference& newReference)
@@ -179,6 +181,7 @@ ea::optional<float> InternalReflectionProbeData::GetIntersectionVolume(const Bou
 ReflectionProbeManager::ReflectionProbeManager(Context* context)
     : TrackedComponentRegistryBase(context, ReflectionProbe::GetTypeStatic())
 {
+    // TODO(reflection): Handle device loss
 }
 
 ReflectionProbeManager::~ReflectionProbeManager()
@@ -190,6 +193,8 @@ void ReflectionProbeManager::RegisterObject(Context* context)
 {
     context->RegisterFactory<ReflectionProbeManager>();
 
+    URHO3D_ACTION_STATIC_LABEL("Bake!", QueueBakeAll, "Renders all baked reflection probes");
+
     URHO3D_ATTRIBUTE("Query Padding", float, queryPadding_, DefaultQueryPadding, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Render Budget", unsigned, renderBudget_, DefaultRenderBudget, AM_DEFAULT);
 }
@@ -200,98 +205,255 @@ void ReflectionProbeManager::DrawDebugGeometry(DebugRenderer* debug, bool depthT
         reflectionProbe->DrawDebugGeometry(debug, depthTest);
 }
 
+void ReflectionProbeManager::OnSceneSet(Scene* scene)
+{
+    if (scene)
+        cubemapRenderer_ = MakeShared<CubemapRenderer>(scene);
+    else
+        cubemapRenderer_ = nullptr;
+}
+
 void ReflectionProbeManager::OnComponentAdded(TrackedComponentBase* baseComponent)
 {
     auto probe = static_cast<ReflectionProbe*>(baseComponent);
-    MarkReflectionProbeDirty(probe, false);
-    probe->AllocateRenderSurfaces();
+    MarkProbeDirty(probe);
+
+    if (probe->IsRenderOnWake())
+        probe->QueueRender();
 }
 
 void ReflectionProbeManager::OnComponentRemoved(TrackedComponentBase* baseComponent)
 {
     auto probe = static_cast<ReflectionProbe*>(baseComponent);
-    MarkReflectionProbeDirty(probe, false);
+    MarkProbeDirty(probe);
 }
 
-void ReflectionProbeManager::MarkReflectionProbeDirty(ReflectionProbe* reflectionProbe, bool transformOnly)
+void ReflectionProbeManager::MarkProbeDirty(ReflectionProbe* reflectionProbe)
 {
-    if (!reflectionProbe->IsDynamic() || !transformOnly)
-        arraysDirty_ = true;
+    spatial_.dirty_ = true;
+    autoQueue_.dirty_ = true;
+}
+
+void ReflectionProbeManager::MarkProbeTransformDirty(ReflectionProbe* reflectionProbe)
+{
+    if (!reflectionProbe->IsMovable())
+    {
+        spatial_.dirty_ = true;
+        autoQueue_.dirty_ = true;
+    }
+}
+
+void ReflectionProbeManager::MarkProbeRealtimeDirty(ReflectionProbe* reflectionProbe)
+{
+    autoQueue_.dirty_ = true;
+}
+
+void ReflectionProbeManager::QueueProbeUpdate(ReflectionProbe* reflectionProbe)
+{
+    if (reflectionProbe->GetProbeType() != ReflectionProbeType::CustomTexture)
+        probesToUpdate_.emplace(reflectionProbe);
+}
+
+void ReflectionProbeManager::QueueBakeAll()
+{
+    for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
+        QueueProbeUpdate(reflectionProbe);
 }
 
 void ReflectionProbeManager::Update()
 {
-    if (arraysDirty_)
-    {
-        UpdateArrays();
-        BuildBVH(staticProbesBvh_, staticProbes_);
-    }
+    if (spatial_.dirty_)
+        UpdateSpatialCache();
 
-    for (InternalReflectionProbeData& probeData : dynamicProbes_)
+    if (autoQueue_.dirty_)
+        UpdateAutoQueueCache();
+
+    for (InternalReflectionProbeData& probeData : spatial_.movableProbes_)
         probeData.Update();
 
-    // TODO(reflection): Remove this hack, support different probe types
-    if (probesToUpdate_.empty())
-    {
-        for (const InternalReflectionProbeData& probeData : dynamicProbes_)
-            probesToUpdate_.emplace(probeData.probe_);
-        for (ReflectionProbe* probe : staticProbes_)
-            probesToUpdate_.emplace(probe);
-    }
+    for (ReflectionProbe* probe : autoQueue_.realtimeProbes_)
+        QueueProbeUpdate(probe);
 
-    if (queuedProbes_.empty())
-        UpdateQueuedProbes();
+    if (updateQueue_.empty())
+        FillUpdateQueue();
 
-    for (const ReflectionProbeFace& probeFace : queuedProbes_)
-    {
-        if (!probeFace.probe_)
-            continue;
-
-        RenderSurface* renderSurface = probeFace.probe_->GetRenderSurface(probeFace.face_);
-        renderSurface->QueueUpdate();
-    }
-    queuedProbes_.clear();
-
-    // TODO: Fix me
-    /*if (!renderPipeline_)
-    {
-        renderPipeline_ = MakeShared<RenderPipeline>(context_);
-    }*/
+    ConsumeUpdateQueue();
 }
 
-void ReflectionProbeManager::UpdateArrays()
+void ReflectionProbeManager::UpdateSpatialCache()
 {
-    staticProbes_.clear();
-    dynamicProbes_.clear();
+    spatial_.immovableProbes_.clear();
+    spatial_.movableProbes_.clear();
+
     for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
     {
-        if (reflectionProbe->IsDynamic())
-            dynamicProbes_.emplace_back(reflectionProbe);
+        if (reflectionProbe->IsMovable())
+            spatial_.movableProbes_.emplace_back(reflectionProbe);
         else
-            staticProbes_.push_back(reflectionProbe);
+            spatial_.immovableProbes_.push_back(reflectionProbe);
     }
 
-    revision_ = ea::max(1u, revision_ + 1);
-    arraysDirty_ = false;
+    spatial_.revision_ = ea::max(1u, spatial_.revision_ + 1);
+    spatial_.dirty_ = false;
+
+    BuildBVH(spatial_.immovableProbesBvh_, spatial_.immovableProbes_);
 }
 
-void ReflectionProbeManager::UpdateQueuedProbes()
+void ReflectionProbeManager::UpdateAutoQueueCache()
+{
+    autoQueue_.realtimeProbes_.clear();
+
+    for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
+    {
+        if (reflectionProbe->IsRealtimeUpdate())
+            autoQueue_.realtimeProbes_.push_back(reflectionProbe);
+    }
+
+    autoQueue_.dirty_ = false;
+}
+
+void ReflectionProbeManager::FillUpdateQueue()
 {
     for (const auto& probe : probesToUpdate_)
     {
         if (!probe)
             continue;
 
-        for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
-            queuedProbes_.push_back(ReflectionProbeFace{probe, static_cast<CubeMapFace>(face)});
+        WeakPtr<CubemapRenderer> cubemapRenderer{probe->GetCubemapRenderer()};
+        updateQueue_.push_back(QueuedReflectionProbe{probe, ea::move(cubemapRenderer)});
     }
     probesToUpdate_.clear();
+}
+
+void ReflectionProbeManager::ConsumeUpdateQueue()
+{
+    unsigned numStaticProbesRendered = 0;
+    unsigned numRenderedFaces = 0;
+    for (QueuedReflectionProbe& queuedProbe : updateQueue_)
+    {
+        if (numRenderedFaces >= renderBudget_ && renderBudget_ > 0)
+            break;
+
+        ReflectionProbe* probe = queuedProbe.probe_;
+        if (!probe)
+            continue;
+
+        const Vector3 position = probe->GetNode()->GetWorldPosition();
+
+        // Skip custom texture probes
+        if (probe->GetProbeType() == ReflectionProbeType::CustomTexture)
+        {
+            queuedProbe = {};
+            continue;
+        }
+
+        // Render dynamic probe
+        if (CubemapRenderer* probeRenderer = queuedProbe.cubemapRenderer_)
+        {
+            const CubemapUpdateResult result = probeRenderer->Update(position, probe->IsSlicedUpdate());
+
+            numRenderedFaces += result.numRenderedFaces_;
+            if (result.isComplete_)
+                queuedProbe = {};
+            continue;
+        }
+
+        // Skip static probes if out of budget
+        if (numStaticProbesRendered >= MaxStaticUpdates)
+            continue;
+
+        // Render mixed probe
+        if (TextureCube* probeTexture = probe->GetMixedProbeTexture())
+        {
+            cubemapRenderer_->Define(probe->GetCubemapRenderingParams());
+            cubemapRenderer_->OverrideOutputTexture(probeTexture);
+            const CubemapUpdateResult result = cubemapRenderer_->Update(position, false);
+            URHO3D_ASSERT(result.isComplete_);
+
+            cubemapRenderer_->OnCubemapRendered.Subscribe(this,
+                [probe](ReflectionProbeManager* self, TextureCube* texture)
+            {
+                self->cubemapRenderer_->OverrideOutputTexture(nullptr);
+                return false;
+            });
+        }
+        else
+        {
+            // Render baked probe
+            cubemapRenderer_->Define(probe->GetCubemapRenderingParams());
+            const CubemapUpdateResult result = cubemapRenderer_->Update(position, false);
+            URHO3D_ASSERT(result.isComplete_);
+
+            cubemapRenderer_->OnCubemapRendered.Subscribe(this,
+                [probe](ReflectionProbeManager* self, TextureCube* texture)
+            {
+                const ea::string filePath = self->GetBakedProbeFilePath();
+                const ea::string fileName = Format("ReflectionProbe-{}", probe->GetID());
+                const ea::string textureFileName = self->SaveTextureToFile(texture, filePath, fileName);
+
+                probe->SetTextureAttr(ResourceRef{TextureCube::GetTypeStatic(), textureFileName});
+                return false;
+            });
+        }
+
+        numRenderedFaces += MAX_CUBEMAP_FACES;
+        queuedProbe = {};
+        ++numStaticProbesRendered;
+    }
+
+    ea::erase_if(updateQueue_, [](const QueuedReflectionProbe& queuedProbe)
+    {
+        return !queuedProbe.probe_;
+    });
+}
+
+ea::string ReflectionProbeManager::GetBakedProbeFilePath() const
+{
+    if (Scene* scene = GetScene())
+    {
+        const ea::string sceneFileName = scene->GetFileName();
+        if (!sceneFileName.empty())
+        {
+            const ea::string probePath = ReplaceExtension(sceneFileName, "");
+            return Format("{}/Textures", probePath);
+        }
+    }
+    return ea::string();
+}
+
+ea::string ReflectionProbeManager::SaveTextureToFile(
+    TextureCube* texture, const ea::string& filePath, const ea::string& fileName)
+{
+    if (filePath.empty())
+    {
+        URHO3D_LOGERROR("Cannot save reflection probe texture to file");
+        return EMPTY_STRING;
+    }
+
+    const ea::string textureFileName = Format("{}/{}.xml", filePath, fileName);
+
+    // TODO(reflection): Save mips?
+    auto xmlFile = MakeShared<XMLFile>(context_);
+    XMLElement rootElement = xmlFile->GetOrCreateRoot("cubemap");
+    for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
+    {
+        const ea::string faceFileName = Format("{}-{}.png", fileName, face);
+
+        auto image = texture->GetImage(static_cast<CubeMapFace>(face));
+        image->SavePNG(Format("{}/{}", filePath, faceFileName));
+
+        XMLElement faceElement = rootElement.CreateChild("face");
+        faceElement.SetAttribute("name", faceFileName);
+    }
+    xmlFile->SaveFile(textureFileName);
+
+    return textureFileName;
 }
 
 void ReflectionProbeManager::QueryDynamicProbes(const BoundingBox& worldBoundingBox,
     ea::span<ReflectionProbeReference, 2> probes) const
 {
-    for (const InternalReflectionProbeData& probeData : dynamicProbes_)
+    for (const InternalReflectionProbeData& probeData : spatial_.movableProbes_)
     {
         if (const auto volume = probeData.GetIntersectionVolume(worldBoundingBox))
         {
@@ -311,7 +473,7 @@ void ReflectionProbeManager::QueryStaticProbes(const BoundingBox& worldBoundingB
     for (ReflectionProbeReference& ref : probes)
         ref.Reset();
 
-    QueryBVH(intersectedProbes, staticProbesBvh_, worldBoundingBox.Padded(Vector3::ONE * queryPadding_));
+    QueryBVH(intersectedProbes, spatial_.immovableProbesBvh_, worldBoundingBox.Padded(Vector3::ONE * queryPadding_));
 
     cacheDistanceSquared = queryPadding_;
     for (const ReflectionProbeBVH* node : intersectedProbes)
@@ -346,13 +508,25 @@ void ReflectionProbe::RegisterObject(Context* context)
 {
     context->RegisterFactory<ReflectionProbe>(SCENE_CATEGORY);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Is Dynamic", IsDynamic, SetDynamic, bool, false, AM_DEFAULT);
+    URHO3D_ACTION_STATIC_LABEL("Render!", QueueRender, "Renders cubemap for reflection probe");
+
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Movable", IsMovable, SetMovable, bool, false, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Probe Type", GetProbeType, SetProbeType, ReflectionProbeType, reflectionProbeTypeNames, ReflectionProbeType::Baked, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Realtime Update", IsRealtimeUpdate, SetRealtimeUpdate, bool, false, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Sliced Update", IsSlicedUpdate, SetSlicedUpdate, bool, false, AM_DEFAULT);
+
     URHO3D_ATTRIBUTE_EX("Bounding Box Min", Vector3, boundingBox_.min_, MarkTransformDirty, -Vector3::ONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bounding Box Max", Vector3, boundingBox_.max_, MarkTransformDirty, Vector3::ONE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureAttr, SetTextureAttr, ResourceRef, ResourceRef(TextureCube::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Priority", GetPriority, SetPriority, int, 0, AM_DEFAULT);
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureAttr, SetTextureAttr, ResourceRef, ResourceRef(TextureCube::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Approximation Color", GetApproximationColor, SetApproximationColor, Color, Color::BLACK, AM_DEFAULT);
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Texture Size", GetTextureSize, SetTextureSize, unsigned, CubemapRenderingParameters::DefaultTextureSize, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, unsigned, CubemapRenderingParameters::DefaultViewMask, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Near Clip", GetNearClip, SetNearClip, float, CubemapRenderingParameters::DefaultNearClip, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Far Clip", GetFarClip, SetFarClip, float, CubemapRenderingParameters::DefaultFarClip, AM_DEFAULT);
 }
 
 void ReflectionProbe::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -361,51 +535,39 @@ void ReflectionProbe::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         debug->AddBoundingBox(boundingBox_, node_->GetWorldTransform(), Color::BLUE, depthTest);
 }
 
-void ReflectionProbe::AllocateRenderSurfaces()
+void ReflectionProbe::QueueRender()
 {
-    if (renderTexture_)
-        return;
+    if (ReflectionProbeManager* manager = GetRegistry())
+        manager->QueueProbeUpdate(this);
+}
 
-    // TODO(reflection): Make configurable
-    renderTexture_ = MakeShared<TextureCube>(context_);
-    renderTexture_->SetSize(256, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
-    for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
+void ReflectionProbe::SetMovable(bool movable)
+{
+    if (movable_ != movable)
     {
-        auto cameraNode = MakeShared<Node>(context_);
-        cameraNode->SetWorldRotation(faceRotations[face]);
-        auto camera = cameraNode->CreateComponent<Camera>();
-        camera->SetFov(90.0f);
-        camera->SetNearClip(0.01f);
-        camera->SetFarClip(100.0f);
-        camera->SetAspectRatio(1.0f);
-        renderCameras_[face] = cameraNode;
-
-        auto viewport = MakeShared<Viewport>(context_);
-        viewport->SetScene(GetScene());
-        viewport->SetCamera(camera);
-
-        RenderSurface* surface = renderTexture_->GetRenderSurface(static_cast<CubeMapFace>(face));
-        surface->SetViewport(0, viewport);
-    }
-    UpdateProbeData();
-}
-
-void ReflectionProbe::DeallocateRenderSurfaces()
-{
-    renderTexture_ = nullptr;
-}
-
-RenderSurface* ReflectionProbe::GetRenderSurface(CubeMapFace face) const
-{
-    return renderTexture_ ? renderTexture_->GetRenderSurface(face) : nullptr;
-}
-
-void ReflectionProbe::SetDynamic(bool dynamic)
-{
-    if (dynamic_ != dynamic)
-    {
-        dynamic_ = dynamic;
+        movable_ = movable;
         MarkComponentDirty();
+    }
+}
+
+void ReflectionProbe::SetProbeType(ReflectionProbeType probeType)
+{
+    if (probeType_ != probeType)
+    {
+        probeType_ = probeType;
+        UpdateCubemapRenderer();
+
+        if (IsRenderOnWake())
+            QueueRender();
+    }
+}
+
+void ReflectionProbe::SetRealtimeUpdate(bool realtimeUpdate)
+{
+    if (realtimeUpdate_ != realtimeUpdate)
+    {
+        realtimeUpdate_ = realtimeUpdate;
+        MarkRealtimeDirty();
     }
 }
 
@@ -454,29 +616,110 @@ Color ReflectionProbe::GetApproximationColor() const
     return Color(data_.reflectionMapSH_.EvaluateAverage());
 }
 
+void ReflectionProbe::SetTextureSize(unsigned value)
+{
+    if (cubemapRenderingParams_.textureSize_ != value)
+    {
+        cubemapRenderingParams_.textureSize_ = value;
+        if (dynamicProbeRenderer_)
+            dynamicProbeRenderer_->Define(cubemapRenderingParams_);
+        if (mixedProbeTexture_)
+            mixedProbeTexture_->SetSize(value, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
+        UpdateProbeData();
+    }
+}
+
+void ReflectionProbe::SetViewMask(unsigned value)
+{
+    if (cubemapRenderingParams_.viewMask_ != value)
+    {
+        cubemapRenderingParams_.viewMask_ = value;
+        if (dynamicProbeRenderer_)
+            dynamicProbeRenderer_->Define(cubemapRenderingParams_);
+    }
+}
+
+void ReflectionProbe::SetNearClip(float value)
+{
+    if (cubemapRenderingParams_.nearClip_ != value)
+    {
+        cubemapRenderingParams_.nearClip_ = value;
+        if (dynamicProbeRenderer_)
+            dynamicProbeRenderer_->Define(cubemapRenderingParams_);
+    }
+}
+
+void ReflectionProbe::SetFarClip(float value)
+{
+    if (cubemapRenderingParams_.farClip_ != value)
+    {
+        cubemapRenderingParams_.farClip_ = value;
+        if (dynamicProbeRenderer_)
+            dynamicProbeRenderer_->Define(cubemapRenderingParams_);
+    }
+}
+
 void ReflectionProbe::MarkComponentDirty()
 {
     if (ReflectionProbeManager* manager = GetRegistry())
-        manager->MarkReflectionProbeDirty(this, false);
+        manager->MarkProbeDirty(this);
 }
 
 void ReflectionProbe::MarkTransformDirty()
 {
     if (ReflectionProbeManager* manager = GetRegistry())
-        manager->MarkReflectionProbeDirty(this, true);
+        manager->MarkProbeTransformDirty(this);
+}
 
-    // TODO(reflection): Extract from here
-    if (renderTexture_)
+void ReflectionProbe::MarkRealtimeDirty()
+{
+    if (ReflectionProbeManager* manager = GetRegistry())
+        manager->MarkProbeRealtimeDirty(this);
+}
+
+void ReflectionProbe::UpdateCubemapRenderer()
+{
+    Scene* scene = GetScene();
+    if (!scene || probeType_ == ReflectionProbeType::Baked || probeType_ == ReflectionProbeType::CustomTexture)
     {
-        for (Node* cameraNode : renderCameras_)
-            cameraNode->SetWorldPosition(node_->GetWorldPosition());
+        dynamicProbeRenderer_ = nullptr;
+        mixedProbeTexture_ = nullptr;
+        UpdateProbeData();
+        return;
+    }
+
+    switch (probeType_)
+    {
+    case ReflectionProbeType::Dynamic:
+        if (!dynamicProbeRenderer_)
+        {
+            dynamicProbeRenderer_ = MakeShared<CubemapRenderer>(scene);
+            dynamicProbeRenderer_->Define(cubemapRenderingParams_);
+            mixedProbeTexture_ = nullptr;
+            UpdateProbeData();
+        }
+        break;
+    case ReflectionProbeType::Mixed:
+        if (!mixedProbeTexture_)
+        {
+            mixedProbeTexture_ = MakeShared<TextureCube>(context_);
+            CubemapRenderer::DefineTexture(mixedProbeTexture_, cubemapRenderingParams_);
+            dynamicProbeRenderer_ = nullptr;
+            UpdateProbeData();
+        }
+        break;
     }
 }
 
 void ReflectionProbe::UpdateProbeData()
 {
     // TODO(reflection): Handle SH here too
-    data_.reflectionMap_ = texture_ ? texture_ : renderTexture_;
+    if (dynamicProbeRenderer_)
+        data_.reflectionMap_ = dynamicProbeRenderer_->GetTexture();
+    else if (mixedProbeTexture_)
+        data_.reflectionMap_ = mixedProbeTexture_;
+    else
+        data_.reflectionMap_ = texture_;
     data_.roughnessToLODFactor_ = data_.reflectionMap_ ? LogBaseTwo(data_.reflectionMap_->GetWidth()) : 1.0f;
 }
 
@@ -487,6 +730,8 @@ void ReflectionProbe::OnNodeSet(Node* node)
         node->AddListener(this);
         MarkTransformDirty();
     }
+
+    UpdateCubemapRenderer();
 }
 
 void ReflectionProbe::OnMarkedDirty(Node* node)
