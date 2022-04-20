@@ -74,6 +74,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest /W4 /permissive-")
+    # rbfx: Wait until this fix is merged to EASTL https://github.com/electronicarts/EASTL/pull/459
+    # HACK: https://github.com/microsoft/vcpkg/pull/21538
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.31.30911.95")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:static_assert-")
+    endif()
 endif()
 
 
