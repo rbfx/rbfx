@@ -53,13 +53,14 @@ const char* GEOMETRY_CATEGORY = "Geometry";
 static const ea::vector<ea::string> giTypeNames = {
     "None",
     "Use LightMap",
-    "Blend Light Probes"
+    "Blend Light Probes",
 };
 
 static const ea::vector<ea::string> reflectionModeNames = {
     "Zone",
     "Nearest Probe",
-    "Blend Probes"
+    "Blend Probes",
+    "Blend Probes and Zone",
 };
 
 SourceBatch::SourceBatch() = default;
@@ -337,7 +338,7 @@ unsigned Drawable::RecalculatePipelineStateHash() const
     unsigned hash = 0;
     CombineHash(hash, GetLightMaskInZone() & PORTABLE_LIGHTMASK);
     CombineHash(hash, static_cast<unsigned>(giType_));
-    CombineHash(hash, reflectionMode_ <= ReflectionMode::NearestProbe);
+    CombineHash(hash, reflectionMode_ >= ReflectionMode::BlendProbes);
     return hash;
 }
 

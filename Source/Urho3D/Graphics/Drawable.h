@@ -93,6 +93,7 @@ enum class ReflectionMode
     Zone,
     NearestProbe,
     BlendProbes,
+    BlendProbesAndZone
 };
 
 /// Rendering frame update parameters.
