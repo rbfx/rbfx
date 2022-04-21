@@ -496,7 +496,7 @@ protected:
     /// Global illumination type.
     GlobalIlluminationType giType_{};
     /// Reflection mode.
-    ReflectionMode reflectionMode_{ReflectionMode::NearestProbe};
+    ReflectionMode reflectionMode_{ReflectionMode::BlendProbesAndZone};
     /// Bounding box dirty flag.
     bool worldBoundingBoxDirty_;
     /// Shadowcaster flag.

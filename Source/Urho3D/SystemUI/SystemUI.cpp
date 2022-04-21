@@ -119,11 +119,11 @@ void SystemUI::PlatformShutdown()
     referencedTextures_.clear();
     ClearPerScreenFonts();
 #if URHO3D_OPENGL
-    ImGui_ImplOpenGL3_DestroyDeviceObjects();
+    ImGui_ImplOpenGL3_Shutdown();
 #elif URHO3D_D3D11
-    ImGui_ImplDX11_InvalidateDeviceObjects();
+    ImGui_ImplDX11_Shutdown();
 #else
-    ImGui_ImplDX9_InvalidateDeviceObjects();
+    ImGui_ImplDX9_Shutdown();
 #endif
     ImGui_ImplSDL2_Shutdown();
 }

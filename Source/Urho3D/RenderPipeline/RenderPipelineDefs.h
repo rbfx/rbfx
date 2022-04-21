@@ -692,6 +692,11 @@ enum class PostProcessAntialiasing
 /// Settings of default render pipeline.
 struct RenderPipelineSettings : public ShaderProgramCompositorSettings
 {
+    /// Global pipeline settings
+    /// @{
+    bool drawDebugGeometry_{true};
+    /// @}
+
     /// Post-processing settings
     /// @{
     AutoExposurePassSettings autoExposure_;
@@ -721,6 +726,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     bool operator==(const RenderPipelineSettings& rhs) const
     {
         return ShaderProgramCompositorSettings::operator==(rhs)
+            && drawDebugGeometry_ == rhs.drawDebugGeometry_
             && autoExposure_ == rhs.autoExposure_
             && bloom_ == rhs.bloom_
             && toneMapping_ == rhs.toneMapping_

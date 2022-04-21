@@ -119,6 +119,9 @@ private:
     void UpdateAutoQueueCache();
     void FillUpdateQueue();
     void ConsumeUpdateQueue();
+
+    void RestoreCubemaps();
+
     ea::string GetBakedProbeFilePath() const;
     ea::string SaveTextureToFile(TextureCube* texture, const ea::string& filePath, const ea::string& fileName);
 

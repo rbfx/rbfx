@@ -1602,7 +1602,7 @@ void Renderer::UpdateQueuedViewport(unsigned index)
     Viewport* viewport = queuedViewports_[index].second;
 
     // Null pointer means backbuffer view. Differentiate between that and an expired rendersurface
-    if ((renderTarget && renderTarget.Expired()) || !viewport)
+    if ((renderTarget && renderTarget.Expired()) || !viewport || !viewport->GetScene())
         return;
 
     // (Re)allocate the view structure if necessary
