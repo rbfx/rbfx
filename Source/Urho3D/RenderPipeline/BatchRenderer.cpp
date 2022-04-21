@@ -554,12 +554,35 @@ private:
         if (!enabled_.colorOutput_)
             return;
 
+        if (settings_.cubemapBoxProjection_)
+        {
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter0,
+                current_.reflectionProbes_[0]->cubemapCenter_);
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin0,
+                Vector4(current_.reflectionProbes_[0]->projectionBox_.min_, 0.0));
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax0,
+                Vector4(current_.reflectionProbes_[0]->projectionBox_.max_, 0.0));
+        }
+
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
             current_.reflectionProbes_[0]->roughnessToLODFactor_);
+
+#ifdef DESKTOP_GRAPHICS
+        if (settings_.cubemapBoxProjection_)
+        {
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter1,
+                current_.reflectionProbes_[1]->cubemapCenter_);
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin1,
+                Vector4(current_.reflectionProbes_[1]->projectionBox_.min_, 0.0));
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax1,
+                Vector4(current_.reflectionProbes_[1]->projectionBox_.max_, 0.0));
+        }
+
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor1,
             current_.reflectionProbes_[1]->roughnessToLODFactor_);
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionBlendFactor,
             current_.reflectionProbesBlendFactor_);
+#endif
     }
 
     void AddVertexLightConstants()

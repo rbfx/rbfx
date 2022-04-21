@@ -137,6 +137,9 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
 
     if (!flags.Test(DrawableProcessorPassFlag::DepthOnlyPass))
     {
+        if (settings_.sceneProcessor_.cubemapBoxProjection_)
+            result.commonShaderDefines_ += "URHO3D_BOX_PROJECTION ";
+
         if (settings_.sceneProcessor_.linearSpaceLighting_)
             result.commonShaderDefines_ += "URHO3D_GAMMA_CORRECTION ";
 

@@ -522,6 +522,10 @@ void ReflectionProbe::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureAttr, SetTextureAttr, ResourceRef, ResourceRef(TextureCube::GetTypeStatic()), AM_DEFAULT);
 
+    URHO3D_ACCESSOR_ATTRIBUTE("Use Box Projection", IsBoxProjectionUsed, SetBoxProjectionUsed, bool, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Projection Box Min", Vector3, projectionBox_.min_, UpdateProbeBoxData, -Vector3::ONE, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Projection Box Max", Vector3, projectionBox_.max_, UpdateProbeBoxData, Vector3::ONE, AM_DEFAULT);
+
     URHO3D_ACCESSOR_ATTRIBUTE("Texture Size", GetTextureSize, SetTextureSize, unsigned, CubemapRenderingParameters::DefaultTextureSize, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, unsigned, CubemapRenderingParameters::DefaultViewMask, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Near Clip", GetNearClip, SetNearClip, float, CubemapRenderingParameters::DefaultNearClip, AM_DEFAULT);
@@ -531,7 +535,11 @@ void ReflectionProbe::RegisterObject(Context* context)
 void ReflectionProbe::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (debug && IsEnabledEffective())
+    {
         debug->AddBoundingBox(boundingBox_, node_->GetWorldTransform(), Color::BLUE, depthTest);
+        if (useBoxProjection_)
+            debug->AddBoundingBox(data_.projectionBox_, Matrix3x4::IDENTITY, Color::MAGENTA, depthTest);
+    }
 }
 
 void ReflectionProbe::QueueRender()
@@ -582,13 +590,22 @@ void ReflectionProbe::SetBoundingBox(const BoundingBox& box)
 void ReflectionProbe::SetTexture(TextureCube* texture)
 {
     texture_ = texture;
-    UpdateProbeData();
+    UpdateProbeTextureData();
 }
 
 void ReflectionProbe::SetTextureAttr(const ResourceRef& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     SetTexture(cache->GetResource<TextureCube>(value.name_));
+}
+
+void ReflectionProbe::SetBoxProjectionUsed(bool useBoxProjection)
+{
+    if (useBoxProjection_ != useBoxProjection)
+    {
+        useBoxProjection_ = useBoxProjection;
+        UpdateProbeBoxData();
+    }
 }
 
 ResourceRef ReflectionProbe::GetTextureAttr() const
@@ -613,8 +630,8 @@ void ReflectionProbe::SetTextureSize(unsigned value)
         if (dynamicProbeRenderer_)
             dynamicProbeRenderer_->Define(cubemapRenderingParams_);
         if (mixedProbeTexture_)
-            mixedProbeTexture_->SetSize(value, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
-        UpdateProbeData();
+            CubemapRenderer::DefineTexture(mixedProbeTexture_, cubemapRenderingParams_);
+        UpdateProbeTextureData();
     }
 }
 
@@ -658,6 +675,8 @@ void ReflectionProbe::MarkTransformDirty()
 {
     if (ReflectionProbeManager* manager = GetRegistry())
         manager->MarkProbeTransformDirty(this);
+
+    UpdateProbeBoxData();
 }
 
 void ReflectionProbe::MarkRealtimeDirty()
@@ -673,7 +692,7 @@ void ReflectionProbe::UpdateCubemapRenderer()
     {
         dynamicProbeRenderer_ = nullptr;
         mixedProbeTexture_ = nullptr;
-        UpdateProbeData();
+        UpdateProbeTextureData();
         return;
     }
 
@@ -685,7 +704,7 @@ void ReflectionProbe::UpdateCubemapRenderer()
             dynamicProbeRenderer_ = MakeShared<CubemapRenderer>(scene);
             dynamicProbeRenderer_->Define(cubemapRenderingParams_);
             mixedProbeTexture_ = nullptr;
-            UpdateProbeData();
+            UpdateProbeTextureData();
         }
         break;
     case ReflectionProbeType::Mixed:
@@ -694,15 +713,14 @@ void ReflectionProbe::UpdateCubemapRenderer()
             mixedProbeTexture_ = MakeShared<TextureCube>(context_);
             CubemapRenderer::DefineTexture(mixedProbeTexture_, cubemapRenderingParams_);
             dynamicProbeRenderer_ = nullptr;
-            UpdateProbeData();
+            UpdateProbeTextureData();
         }
         break;
     }
 }
 
-void ReflectionProbe::UpdateProbeData()
+void ReflectionProbe::UpdateProbeTextureData()
 {
-    // TODO(reflection): Handle SH here too
     if (dynamicProbeRenderer_)
         data_.reflectionMap_ = dynamicProbeRenderer_->GetTexture();
     else if (mixedProbeTexture_)
@@ -710,6 +728,20 @@ void ReflectionProbe::UpdateProbeData()
     else
         data_.reflectionMap_ = texture_;
     data_.roughnessToLODFactor_ = data_.reflectionMap_ ? LogBaseTwo(data_.reflectionMap_->GetWidth()) : 1.0f;
+}
+
+void ReflectionProbe::UpdateProbeBoxData()
+{
+    if (!useBoxProjection_ || !node_)
+    {
+        data_.cubemapCenter_ = Vector4::ZERO;
+        return;
+    }
+
+    const Vector3 position = node_->GetWorldPosition();
+    data_.cubemapCenter_ = Vector4(position, 1.0);
+    data_.projectionBox_.min_ = position + projectionBox_.min_;
+    data_.projectionBox_.max_ = position + projectionBox_.max_;
 }
 
 void ReflectionProbe::OnNodeSet(Node* node)
