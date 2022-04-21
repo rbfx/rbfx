@@ -87,7 +87,7 @@
 			<attribute name="Material" value="Material;Materials/Constant/MetallicR3.xml" />
 			<attribute name="Cast Shadows" value="true" />
 			<attribute name="View Mask" value="1" />
-			<attribute name="Reflection Mode" value="Blend Probes" />
+			<attribute name="Reflection Mode" value="Blend Probes and Zone" />
 		</component>
 		<node id="1652">
 			<attribute name="Is Enabled" value="false" />
