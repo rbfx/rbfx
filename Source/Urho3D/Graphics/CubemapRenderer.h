@@ -28,6 +28,7 @@
 #include "../Core/Signal.h"
 #include "../Graphics/ReflectionProbeData.h"
 #include "../Math/BoundingBox.h"
+#include "../RenderPipeline/RenderPipeline.h"
 #include "../Scene/Component.h"
 #include "../Scene/TrackedComponent.h"
 
@@ -64,7 +65,6 @@ struct CubemapRenderingParameters
     unsigned viewMask_{DefaultViewMask};
     float nearClip_{DefaultNearClip};
     float farClip_{DefaultFarClip};
-    // TODO(reflection): More parameters?
 };
 
 /// Utility class that handles cubemap rendering from scene.
@@ -87,6 +87,7 @@ public:
     TextureCube* GetTexture() const { return renderTexture_; }
 
 private:
+    void InitializeRenderPipeline();
     void InitializeCameras();
     void InitializeTexture(const CubemapRenderingParameters& params);
     void ConnectViewportsToTexture(TextureCube* texture);
@@ -103,7 +104,7 @@ private:
     ea::array<SharedPtr<Node>, MAX_CUBEMAP_FACES> renderCameras_;
     ea::array<SharedPtr<Viewport>, MAX_CUBEMAP_FACES> viewports_;
 
-    // TODO(reflection): Use custom pipeline here!
+    SharedPtr<RenderPipeline> renderPipeline_;
     SharedPtr<TextureCube> renderTexture_;
     WeakPtr<TextureCube> overrideTexture_;
 

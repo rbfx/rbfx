@@ -27,28 +27,6 @@
 #include "../RenderPipeline/DefaultRenderPipeline.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
-/*
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/Viewport.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../RenderPipeline/InstancingBuffer.h"
-#include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
-#include "../RenderPipeline/AutoExposurePass.h"
-#include "../RenderPipeline/ToneMappingPass.h"
-#include "../RenderPipeline/BloomPass.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Scene/Scene.h"
-#if URHO3D_SYSTEMUI
-    #include "../SystemUI/SystemUI.h"
-#endif
-
-#include <EASTL/fixed_vector.h>
-#include <EASTL/vector_map.h>
-#include <EASTL/sort.h>*/
 
 #include "../DebugNew.h"
 
@@ -171,6 +149,7 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ENUM_ATTRIBUTE_EX("Tone Mapping Mode", settings_.toneMapping_, MarkSettingsDirty, toneMappingModeNames, ToneMappingMode::None, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Post Process Antialiasing", settings_.antialiasing_, MarkSettingsDirty, postProcessAntialiasingNames, PostProcessAntialiasing::None, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Post Process Grey Scale", bool, settings_.greyScale_, MarkSettingsDirty, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Draw Debug Geometry", bool, settings_.drawDebugGeometry_, MarkSettingsDirty, true, AM_DEFAULT);
 }
 
 void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)

@@ -382,7 +382,7 @@ void DefaultRenderPipelineView::Render()
         postProcessPass->Execute();
 
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
-    if (debug && debug->IsEnabledEffective() && debug->HasContent())
+    if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
         renderBufferManager_->SetOutputRenderTargers();
         debug->SetView(sceneProcessor_->GetFrameInfo().camera_);

@@ -181,7 +181,10 @@ ea::optional<float> InternalReflectionProbeData::GetIntersectionVolume(const Bou
 ReflectionProbeManager::ReflectionProbeManager(Context* context)
     : TrackedComponentRegistryBase(context, ReflectionProbe::GetTypeStatic())
 {
-    // TODO(reflection): Handle device loss
+    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&)
+    {
+        RestoreCubemaps();
+    });
 }
 
 ReflectionProbeManager::~ReflectionProbeManager()
@@ -405,6 +408,15 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
     {
         return !queuedProbe.probe_;
     });
+}
+
+void ReflectionProbeManager::RestoreCubemaps()
+{
+    for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
+    {
+        if (reflectionProbe->IsRenderOnWake())
+            QueueProbeUpdate(reflectionProbe);
+    }
 }
 
 ea::string ReflectionProbeManager::GetBakedProbeFilePath() const

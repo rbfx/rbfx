@@ -112,6 +112,7 @@ void RenderingShowcase::CreateScene()
     probeObject_ = probeObjectNode->CreateComponent<StaticModel>();
     probeObject_->SetModel(cache->GetResource<Model>("Models/TeaPot.mdl"));
     probeObject_->SetCastShadows(true);
+    probeObject_->SetViewMask(0x1);
     probeObject_->SetGlobalIlluminationType(GlobalIlluminationType::BlendLightProbes);
     probeObject_->SetReflectionMode(ReflectionMode::BlendProbesAndZone);
 }

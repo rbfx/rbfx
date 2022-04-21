@@ -53,12 +53,22 @@ CubemapRenderer::CubemapRenderer(Scene* scene)
     : Object(scene->GetContext())
     , scene_(scene)
 {
+    InitializeRenderPipeline();
     InitializeCameras();
     Define(CubemapRenderingParameters{});
 }
 
 CubemapRenderer::~CubemapRenderer()
 {
+}
+
+void CubemapRenderer::InitializeRenderPipeline()
+{
+    renderPipeline_ = MakeShared<RenderPipeline>(context_);
+
+    RenderPipelineSettings settings = renderPipeline_->GetSettings();
+    settings.drawDebugGeometry_ = false;
+    renderPipeline_->SetSettings(settings);
 }
 
 void CubemapRenderer::InitializeCameras()
@@ -72,10 +82,7 @@ void CubemapRenderer::InitializeCameras()
         camera->SetAspectRatio(1.0f);
         renderCameras_[face] = cameraNode;
 
-        auto viewport = MakeShared<Viewport>(context_);
-        viewport->SetScene(scene_);
-        viewport->SetCamera(camera);
-        viewports_[face] = viewport;
+        viewports_[face] = MakeShared<Viewport>(context_, scene_, camera, IntRect::ZERO, renderPipeline_);
     }
 }
 
@@ -220,7 +227,7 @@ void CubemapRenderer::ProcessFaceRendered()
 
 void CubemapRenderer::ProcessCubemapRendered()
 {
-    // TODO(reflection): Filter here? Maybe use Signal? Send E_CUBEMAPCAPTUREUPDATE?
+    // TODO(reflection): Filter cubemap here
     TextureCube* destinationTexture = overrideTexture_ ? overrideTexture_ : renderTexture_;
     OnCubemapRendered(this, destinationTexture);
 }
