@@ -688,6 +688,9 @@ void Octree::RemoveDrawable(Drawable* drawable, Octant* octant)
     drawables_.pop_back();
     drawable->SetDrawableIndex(M_MAX_UNSIGNED);
     drawable->updateQueued_ = false;
+
+    drawable->GetMutableCachedZone() = {};
+    drawable->GetMutableCachedReflection() = {};
 }
 
 void Octree::MarkZoneDirty(Zone* zone)

@@ -475,12 +475,12 @@ void ReflectionProbeManager::QueryStaticProbes(const BoundingBox& worldBoundingB
 
     QueryBVH(intersectedProbes, spatial_.immovableProbesBvh_, worldBoundingBox.Padded(Vector3::ONE * queryPadding_));
 
-    cacheDistanceSquared = queryPadding_;
+    float cacheDistance = queryPadding_;
     for (const ReflectionProbeBVH* node : intersectedProbes)
     {
         const float signedDistance = node->worldBoundingBox_.SignedDistanceToBoundingBox(worldBoundingBox);
         if (signedDistance > 0.0f)
-            cacheDistanceSquared = ea::min(cacheDistanceSquared, signedDistance);
+            cacheDistance = ea::min(cacheDistance, signedDistance);
         else
         {
             const InternalReflectionProbeData& probeData = *node->data_;
@@ -490,9 +490,10 @@ void ReflectionProbeManager::QueryStaticProbes(const BoundingBox& worldBoundingB
                 AppendReference(probes, newReference);
             }
 
-            cacheDistanceSquared = ea::min(cacheDistanceSquared, -signedDistance);
+            cacheDistance = ea::min(cacheDistance, -signedDistance);
         }
     }
+    cacheDistanceSquared = cacheDistance * cacheDistance;
 }
 
 ReflectionProbe::ReflectionProbe(Context* context)
