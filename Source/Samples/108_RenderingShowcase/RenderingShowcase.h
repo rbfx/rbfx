@@ -81,6 +81,14 @@ private:
         "            <attribute name=\"Text\" value=\"TAB\" />"
         "        </element>"
         "    </add>"
+        "    <remove sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]/attribute[@name='Is Visible']\" />"
+        "    <replace sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]/element[./attribute[@name='Name' and @value='Label']]/attribute[@name='Text']/@value\">Toggle Object</replace>"
+        "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
+        "        <element type=\"Text\">"
+        "            <attribute name=\"Name\" value=\"KeyBinding\" />"
+        "            <attribute name=\"Text\" value=\"F\" />"
+        "        </element>"
+        "    </add>"
         "</patch>";
     }
 
@@ -92,6 +100,8 @@ private:
     unsigned sceneIndex_{};
     /// Index of current scene rendering mode, i.e. inner index of sceneNames_.
     unsigned sceneMode_{};
+    /// Index of probe object material. 0 corresponds to the disabled probe object.
+    unsigned probeMaterialIndex_{};
     /// List of all available scenes.
     ea::vector<ea::vector<ea::string>> sceneNames_;
 };
