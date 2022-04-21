@@ -206,6 +206,11 @@ public:
     void SetTextureAttr(const ResourceRef& value);
     ResourceRef GetTextureAttr() const;
 
+    void SetBoxProjectionUsed(bool useBoxProjection);
+    bool IsBoxProjectionUsed() const { return useBoxProjection_; }
+    void SetProjectionBox(const BoundingBox& box);
+    const BoundingBox& GetProjectionBox() const { return projectionBox_; }
+
     const CubemapRenderingParameters& GetCubemapRenderingParams() const { return cubemapRenderingParams_; }
     void SetTextureSize(unsigned value);
     unsigned GetTextureSize() const { return cubemapRenderingParams_.textureSize_; }
@@ -230,7 +235,8 @@ private:
     void MarkRealtimeDirty();
 
     void UpdateCubemapRenderer();
-    void UpdateProbeData();
+    void UpdateProbeTextureData();
+    void UpdateProbeBoxData();
 
     bool movable_{};
     ReflectionProbeType probeType_{};
@@ -239,6 +245,9 @@ private:
 
     BoundingBox boundingBox_{-Vector3::ONE, Vector3::ONE};
     int priority_{};
+
+    bool useBoxProjection_{};
+    BoundingBox projectionBox_{-Vector3::ONE, Vector3::ONE};
 
     SharedPtr<TextureCube> texture_;
 

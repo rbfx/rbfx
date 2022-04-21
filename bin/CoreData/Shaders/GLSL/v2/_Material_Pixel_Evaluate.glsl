@@ -23,13 +23,13 @@
     #ifdef URHO3D_PHYSICAL_MATERIAL
 
         #ifdef URHO3D_BLEND_REFLECTIONS
-            half3 linearReflectionColor0 = GammaToLinearSpace(surfaceData.reflectionColor0.rgb);
-            half3 linearReflectionColor1 = GammaToLinearSpace(surfaceData.reflectionColor1.rgb);
+            half3 linearReflectionColor0 = GammaToLinearSpace(surfaceData.reflectionColor[0].rgb);
+            half3 linearReflectionColor1 = GammaToLinearSpace(surfaceData.reflectionColor[1].rgb);
 
             half3 linearReflectionColor = mix(
                 linearReflectionColor0, linearReflectionColor1, cReflectionBlendFactor);
         #else
-            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor0.rgb);
+            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor[0].rgb);
         #endif
 
         half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;
@@ -42,9 +42,9 @@
 
         #ifdef URHO3D_BLEND_REFLECTIONS
             half3 gammaReflectionColor = mix(
-                surfaceData.reflectionColor0.rgb, surfaceData.reflectionColor1.rgb, cReflectionBlendFactor);
+                surfaceData.reflectionColor[0].rgb, surfaceData.reflectionColor[1].rgb, cReflectionBlendFactor);
         #else
-            half3 gammaReflectionColor = surfaceData.reflectionColor0.rgb;
+            half3 gammaReflectionColor = surfaceData.reflectionColor[0].rgb;
         #endif
 
         half3 diffuseAndSpecularColor = Indirect_SimpleReflection(

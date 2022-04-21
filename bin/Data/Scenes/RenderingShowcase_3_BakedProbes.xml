@@ -117,7 +117,7 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="ReflectionProbe" id="1610">
-				<attribute name="Bounding Box Min" value="-2 -1.8 -3.2" />
+				<attribute name="Bounding Box Min" value="-2 -1.8 -2.3" />
 				<attribute name="Bounding Box Max" value="2.8 2.4 2.3" />
 				<attribute name="Texture" value="TextureCube;Scenes/RenderingShowcase_3_BakedProbes/Textures/ReflectionProbe-1610.xml" />
 				<attribute name="Texture Size" value="128" />
@@ -185,7 +185,7 @@
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="Box" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="-2.70983 0 2.12043" />
+			<attribute name="Position" value="-2.70983 2.84175 2.12043" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="3 6 1" />
 			<attribute name="Variables" />
@@ -200,7 +200,7 @@
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="Box" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="-4.43875 -0.177259 0" />
+			<attribute name="Position" value="-4.43875 2.3717 0" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 4 5" />
 			<attribute name="Variables" />
@@ -230,7 +230,7 @@
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="Box" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="-2.18446 0.391306 -2.11017" />
+			<attribute name="Position" value="-2.18446 2.57845 -2.11017" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="3 2 1" />
 			<attribute name="Variables" />

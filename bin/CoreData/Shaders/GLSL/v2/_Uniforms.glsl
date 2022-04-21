@@ -68,6 +68,14 @@ UNIFORM_BUFFER_END(1, Camera)
 /// Disabled if pass has no ambient lighting.
 #ifdef URHO3D_AMBIENT_PASS
 UNIFORM_BUFFER_BEGIN(2, Zone)
+#ifdef URHO3D_BOX_PROJECTION
+    UNIFORM_HIGHP(vec4 cCubemapCenter0)
+    UNIFORM_HIGHP(vec4 cCubemapCenter1)
+    UNIFORM_HIGHP(vec4 cProjectionBoxMin0)
+    UNIFORM_HIGHP(vec4 cProjectionBoxMin1)
+    UNIFORM_HIGHP(vec4 cProjectionBoxMax0)
+    UNIFORM_HIGHP(vec4 cProjectionBoxMax1)
+#endif
     /// Multiplier used to convert roughness factor to LOD of reflection cubemap.
     UNIFORM(half cRoughnessToLODFactor0)
     UNIFORM(half cRoughnessToLODFactor1)
