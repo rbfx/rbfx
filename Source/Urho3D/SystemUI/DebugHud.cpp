@@ -210,6 +210,10 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
 
 void DebugHud::OnRenderDebugUI(StringHash, VariantMap&)
 {
+    const ImGuiContext& g = *ui::GetCurrentContext();
+    if (!g.WithinFrameScope)
+        return;
+
     ImGuiViewport* viewport = ui::GetMainViewport();
     ui::SetNextWindowPos(viewport->Pos);
     ui::SetNextWindowSize(viewport->Size);

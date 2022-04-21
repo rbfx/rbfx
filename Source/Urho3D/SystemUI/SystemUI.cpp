@@ -283,7 +283,8 @@ void SystemUI::OnRenderEnd()
         enableWrapping_ = false;
 
     ImGuiIO& io = ui::GetIO();
-    ui::Render();
+    if (imContext_->WithinFrameScope)
+        ui::Render();
 
     // Apply mouse wrapping in the same way ImGUI controls mouse
     if (enableWrapping_)
