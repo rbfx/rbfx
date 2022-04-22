@@ -1,3 +1,5 @@
+#ifndef _PCH_H
+#define _PCH_H
 //
 // Copyright (C) 2018 The Khronos Group Inc.
 // All rights reserved.
@@ -32,4 +34,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include "pch.h"
+#include "hlslAttributes.h"
+#include "hlslGrammar.h"
+#include "hlslParseHelper.h"
+#include "hlslScanContext.h"
+
+#include "../MachineIndependent/Scan.h"
+#include "../MachineIndependent/preprocessor/PpContext.h"
+
+#include "../OSDependent/osinclude.h"
+
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <functional>
+#include <set>
+
+#endif /* _PCH_H */
