@@ -185,9 +185,19 @@ View* Viewport::GetView() const
 
 RenderPipelineView* Viewport::GetRenderPipelineView() const
 {
-    if (!autoRenderPipeline_ || (renderPipeline_ && renderPipeline_->GetScene() == scene_))
-        return renderPipelineView_;
-    return nullptr;
+    // Render pipeline is null or expired
+    if (!renderPipeline_)
+        return nullptr;
+
+    // Automatic pipeline is not from the scene
+    if (autoRenderPipeline_ && renderPipeline_->GetScene() != scene_)
+        return nullptr;
+
+    // View is expired or outdated
+    if (!renderPipelineView_ || renderPipelineView_->GetRenderPipeline() != renderPipeline_)
+        return nullptr;
+
+    return renderPipelineView_;
 }
 
 RenderPath* Viewport::GetRenderPath() const
@@ -270,6 +280,7 @@ Vector3 Viewport::ScreenToWorldPoint(int x, int y, float depth) const
 void Viewport::AllocateView()
 {
 #ifndef URHO3D_LEGACY_RENDERER
+    // If automatic render pipeline, expire it on scene mismatch
     if (autoRenderPipeline_ && renderPipeline_ && renderPipeline_->GetScene() != scene_)
         renderPipeline_ = nullptr;
 
@@ -280,7 +291,8 @@ void Viewport::AllocateView()
             renderPipeline_ = scene_->CreateComponent<RenderPipeline>();
     }
 
-    if (!renderPipelineView_ && renderPipeline_)
+    // Expire view on pipeline mismatch
+    if (renderPipeline_ && (!renderPipelineView_ || renderPipelineView_->GetRenderPipeline() != renderPipeline_))
         renderPipelineView_ = renderPipeline_->Instantiate();
 #endif
 

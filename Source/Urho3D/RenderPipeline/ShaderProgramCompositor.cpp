@@ -286,8 +286,10 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
         result.commonShaderDefines_ += "URHO3D_HAS_LIGHTMAP ";
 
 #ifdef DESKTOP_GRAPHICS
+#ifndef GL_ES_VERSION_2_0
     if (drawable->GetReflectionMode() >= ReflectionMode::BlendProbes)
         result.commonShaderDefines_ += "URHO3D_BLEND_REFLECTIONS ";
+#endif
 #endif
 
     static const ea::string ambientModeDefines[] = {
