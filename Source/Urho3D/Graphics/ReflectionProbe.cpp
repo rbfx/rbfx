@@ -205,7 +205,7 @@ void ReflectionProbeManager::RegisterObject(Context* context)
 void ReflectionProbeManager::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     for (ReflectionProbe* reflectionProbe : GetReflectionProbes())
-        reflectionProbe->DrawDebugGeometry(debug, depthTest);
+        reflectionProbe->DrawDebugGeometry(debug, depthTest, true);
 }
 
 void ReflectionProbeManager::OnSceneSet(Scene* scene)
@@ -545,14 +545,19 @@ void ReflectionProbe::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Far Clip", GetFarClip, SetFarClip, float, CubemapRenderingParameters::DefaultFarClip, AM_DEFAULT);
 }
 
-void ReflectionProbe::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+void ReflectionProbe::DrawDebugGeometry(DebugRenderer* debug, bool depthTest, bool compact)
 {
     if (debug && IsEnabledEffective())
     {
         debug->AddBoundingBox(boundingBox_, node_->GetWorldTransform(), Color::BLUE, depthTest);
-        if (useBoxProjection_)
+        if (!compact && useBoxProjection_)
             debug->AddBoundingBox(data_.projectionBox_, Matrix3x4::IDENTITY, Color::MAGENTA, depthTest);
     }
+}
+
+void ReflectionProbe::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    DrawDebugGeometry(debug, depthTest, false);
 }
 
 void ReflectionProbe::QueueRender()

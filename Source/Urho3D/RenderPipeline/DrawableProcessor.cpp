@@ -368,6 +368,15 @@ void DrawableProcessor::UpdateDrawableReflection(const BoundingBox& boundingBox,
     {
         manager->QueryDynamicProbes(boundingBox, cachedReflection.probes_);
     }
+
+    // Estimate Zone weight and replace 2nd probe if it's less important
+    auto& probes = cachedReflection.probes_;
+    if (probes[1] && mode == ReflectionMode::BlendProbesAndZone)
+    {
+        const float zoneWeight = ea::max(0.0f, 1.0f - probes[0].volume_ - probes[1].volume_);
+        if (zoneWeight > probes[1].volume_)
+            probes[1].Reset();
+    }
 }
 
 void DrawableProcessor::QueueDrawableGeometryUpdate(unsigned threadIndex, Drawable* drawable)
