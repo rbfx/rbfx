@@ -287,7 +287,7 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
 
 #ifdef DESKTOP_GRAPHICS
     if (drawable->GetReflectionMode() >= ReflectionMode::BlendProbes)
-        result.pixelShaderDefines_ += "URHO3D_BLEND_REFLECTIONS ";
+        result.commonShaderDefines_ += "URHO3D_BLEND_REFLECTIONS ";
 #endif
 
     static const ea::string ambientModeDefines[] = {
