@@ -1,0 +1,5 @@
+<renderpath>
+    <command type="quad" tag="ChromaticAberration" vs="ChromaticAberration" ps="ChromaticAberration" psdefines="CAINTENSITY=0.5" output="viewport">
+        <texture unit="diffuse" name="viewport" />
+    </command>
+</renderpath>
