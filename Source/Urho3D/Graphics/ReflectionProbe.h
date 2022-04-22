@@ -178,6 +178,7 @@ public:
     ~ReflectionProbe() override;
     static void RegisterObject(Context* context);
 
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest, bool compact);
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
     /// Queue ReflectionProbe to be re-rendered as soon as possible.
