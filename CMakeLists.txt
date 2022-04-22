@@ -58,10 +58,6 @@ if (URHO3D_TESTING)
 endif ()
 
 # Enable common build options
-if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set (CMAKE_CXX_STANDARD 17)
-endif ()
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set (CLANG ON)
     set (GNU ON)
