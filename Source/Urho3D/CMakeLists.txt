@@ -176,7 +176,7 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
-# Link dependencies
+# Public dependencies (users may use them in their projects)
 set (THIRD_PARTY_DEPENDENCIES
     FreeType
     LZ4
@@ -204,18 +204,21 @@ set (THIRD_PARTY_DEPENDENCIES
     fmt
     spdlog
     EASTL
-    entt
     ETCPACK
     xatlas
     embree
     RmlUi
     glslang
+    tinygltf
     SPIRV
     spirv-cross-core
     spirv-cross-glsl
     spirv-cross-msl
     spirv-cross-hlsl
-    tinygltf
+    Diligent-GraphicsEngineD3D11-static
+    Diligent-GraphicsEngineD3D12-static
+    Diligent-GraphicsEngineOpenGL-static
+    Diligent-GraphicsEngineVk-static
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
@@ -239,7 +242,8 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
             if (BUILD_SHARED_LIBS)
                 if (MSVC)
-                    set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
+                    # TODO: translate target name to file name or remove debug suffixes from glslangd at least
+                    #set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
                 elseif (APPLE)
                     set_property(TARGET Urho3D APPEND PROPERTY LINK_LIBRARIES -force_load ${dep})
                 endif ()
@@ -385,7 +389,7 @@ if (BUILD_SHARED_LIBS)
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
             -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
             -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DTRACY_EXPORTS=1 -DRmlCore_EXPORTS=1
-            -DRmlDebugger_EXPORTS=1
+            -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1
     )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)

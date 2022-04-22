@@ -1,0 +1,169 @@
+name: Windows
+
+on: [push, pull_request]
+
+jobs:
+  build-win10:
+    strategy:
+      matrix:
+        toolset: [Win32, x64]
+        config: [Debug, Release]
+
+    runs-on: windows-2019
+    name: Win10 -> ${{ matrix.toolset }}, ${{ matrix.config }}
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        ./configure_cmake.sh "win" "${{runner.workspace}}" ${{ matrix.toolset }} ${{ matrix.config }} "-DDILIGENT_BUILD_TESTS=ON"
+
+    - name: Build
+      if: success()
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{ matrix.config }} --target install -j2
+
+    - name: DiligentCoreTest
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}\DiligentCore\Tests\DiligentCoreTest\assets"
+        "${{runner.workspace}}\build\Tests\DiligentCoreTest\${{ matrix.config }}\DiligentCoreTest.exe"
+
+    - name: DiligentCoreAPITest D3D11
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}\DiligentCore\Tests\DiligentCoreAPITest\assets"
+        "${{runner.workspace}}\build\Tests\DiligentCoreAPITest\${{ matrix.config }}\DiligentCoreAPITest.exe" --mode=d3d11_sw
+
+    - name: DiligentCoreAPITest D3D12
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}\DiligentCore\Tests\DiligentCoreAPITest\assets"
+        "${{runner.workspace}}\build\Tests\DiligentCoreAPITest\${{ matrix.config }}\DiligentCoreAPITest.exe" --mode=d3d12_sw
+
+    - name: DiligentCoreAPITest D3D12 DXC
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}\DiligentCore\Tests\DiligentCoreAPITest\assets"
+        "${{runner.workspace}}\build\Tests\DiligentCoreAPITest\${{ matrix.config }}\DiligentCoreAPITest.exe" --mode=d3d12_sw --shader_compiler=dxc
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: ${{ success() && matrix.config == 'Release' }}
+      with:
+        name: DiligentCore-Windows10-${{ matrix.toolset }}-VS2019-${{ matrix.config }}
+        path: |
+          ${{runner.workspace}}/build/install/
+          !${{runner.workspace}}/build/install/**/*.lib
+        retention-days: 90
+
+
+  build-win10-dev:
+    strategy:
+      matrix:
+        toolset: [x64]
+        config: [RelWithDebInfo]
+
+    runs-on: windows-2019
+    name: Win10 -> ${{ matrix.toolset }}, ${{ matrix.config }}, DEVELOPMENT
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        ./configure_cmake.sh "win" "${{runner.workspace}}" ${{ matrix.toolset }} ${{ matrix.config }} "-DDILIGENT_BUILD_TESTS=ON -DDILIGENT_DEVELOPMENT=ON -DDILIGENT_LOAD_PIX_EVENT_RUNTIME=ON"
+
+    - name: Build
+      if: success()
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{ matrix.config }} --target install -j2
+
+    - name: DiligentCoreTest
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}\DiligentCore\Tests\DiligentCoreTest\assets"
+        "${{runner.workspace}}\build\Tests\DiligentCoreTest\${{ matrix.config }}\DiligentCoreTest.exe"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: ${{ success() && matrix.config == 'Release' }}
+      with:
+        name: DiligentCore-Windows10-${{ matrix.toolset }}-VS2019-${{ matrix.config }}Dev
+        path: |
+          ${{runner.workspace}}/build/install/
+          !${{runner.workspace}}/build/install/**/*.lib
+        retention-days: 90
+
+
+  build-win8:
+    strategy:
+      matrix:
+        toolset: [x64]
+        config: [Release]
+
+    runs-on: windows-2019
+    name: Win10 -> Win8.1-${{ matrix.toolset }}, ${{ matrix.config }}
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        ./configure_cmake.sh "win" "${{runner.workspace}}" ${{ matrix.toolset }} ${{ matrix.config }} "-DDILIGENT_BUILD_TESTS=ON -DCMAKE_SYSTEM_VERSION=8.1 -DDILIGENT_LOAD_PIX_EVENT_RUNTIME=ON"
+
+    - name: Build
+      if: success()
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{ matrix.config }} --target install -j2
+
+    - name: DiligentCoreTest
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}\DiligentCore\Tests\DiligentCoreTest\assets"
+        "${{runner.workspace}}\build\Tests\DiligentCoreTest\${{ matrix.config }}\DiligentCoreTest.exe"
+
+    - name: DiligentCoreAPITest D3D11
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}\DiligentCore\Tests\DiligentCoreAPITest\assets"
+        "${{runner.workspace}}\build\Tests\DiligentCoreAPITest\${{ matrix.config }}\DiligentCoreAPITest.exe" --mode=d3d11_sw
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: ${{ success() && matrix.config == 'Release' }}
+      with:
+        name: DiligentCore-Windows8-${{ matrix.toolset }}-VS2019-${{ matrix.config }}
+        path: |
+          ${{runner.workspace}}/build/install/
+          !${{runner.workspace}}/build/install/**/*.lib
+        retention-days: 90

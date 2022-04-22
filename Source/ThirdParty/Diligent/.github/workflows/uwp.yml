@@ -1,0 +1,42 @@
+name: UWP
+
+on: [push, pull_request]
+
+jobs:
+  build-uwp:
+    strategy:
+      matrix:
+        toolset: [x64]
+        config: [Debug, Release]
+
+    runs-on: windows-2019
+    name: Win10 -> UWP-${{ matrix.toolset }}, ${{ matrix.config }} 
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        ./configure_cmake.sh "uwp" "${{runner.workspace}}" ${{ matrix.toolset }} ${{ matrix.config }} "-DDILIGENT_LOAD_PIX_EVENT_RUNTIME=ON"
+
+    - name: Build
+      if: success()
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{ matrix.config }} --target install -j2
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: ${{ success() && matrix.config == 'Release' }}
+      with:
+        name: DiligentCore-UWP-${{ matrix.toolset }}-VS2019-${{ matrix.config }}
+        path: |
+          ${{runner.workspace}}/build/install/
+          !${{runner.workspace}}/build/install/**/*.lib
+        retention-days: 90

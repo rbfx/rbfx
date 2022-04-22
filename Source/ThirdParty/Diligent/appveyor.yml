@@ -1,0 +1,56 @@
+version: '2.4.{build}'
+
+# branches to build
+branches:
+  # whitelist
+  only:
+    - master
+
+image:
+- Visual Studio 2019
+
+environment:
+  matrix:
+    # Win32/x64/Debug
+    - platform: x64
+      configuration: Debug
+      cmake_args: -D CMAKE_INSTALL_PREFIX=install
+      platform_name: Windows
+
+    # Win32/x64/Release
+    - platform: x64
+      configuration: Release
+      cmake_args: -D CMAKE_INSTALL_PREFIX=install
+      platform_name: Windows
+
+# clone directory
+clone_folder: c:\projects\DiligentCore
+
+install:
+  # clone submodules
+  - git submodule update --init --recursive
+  - BuildTools\Scripts\appveyor\install.bat
+
+before_build:
+  - 'cd %APPVEYOR_BUILD_FOLDER%\BuildTools\FormatValidation'
+  - validate_format_win.bat
+  - 'cd %APPVEYOR_BUILD_FOLDER%'
+  - echo %PLATFORM%
+  - echo.%cmake_args%
+  - cmake %cmake_args% -S . -B ./build -D DILIGENT_BUILD_TESTS=TRUE -D CMAKE_INSTALL_PREFIX=install -G "Visual Studio 16 2019" -A %PLATFORM%
+
+build:
+  project: '%APPVEYOR_BUILD_FOLDER%\build\INSTALL.vcxproj'
+  verbosity: minimal
+  parallel: true
+
+test_script:
+  - '%APPVEYOR_BUILD_FOLDER%\BuildTools\Scripts\appveyor\run_tests.bat %APPVEYOR_BUILD_FOLDER%\build %APPVEYOR_BUILD_FOLDER%\Tests\DiligentCoreTest\assets %APPVEYOR_BUILD_FOLDER%\Tests\DiligentCoreAPITest\assets'
+
+after_test:
+  - 'cd %APPVEYOR_BUILD_FOLDER%\install'
+  - 7z a DiligentCore-"%platform_name%"-"%PLATFORM%"-"%CONFIGURATION%".zip .\* -xr!lib
+
+artifacts:
+  - path: install\*.zip
+    name: artifacts-zip

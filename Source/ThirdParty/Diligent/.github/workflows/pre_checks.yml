@@ -1,0 +1,49 @@
+name: Pre-checks
+
+on: [push, pull_request]
+
+jobs:
+  run-win10:
+
+    runs-on: windows-latest
+    name: Win10 -> Pre-checks
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+
+    - name: Format validation
+      shell: cmd
+      run: |
+        cd BuildTools\FormatValidation
+        validate_format_win.bat
+
+  run-linux:
+
+    runs-on: ubuntu-latest
+    name: Linux -> Pre-checks
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+
+      - name: Format validation
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/BuildTools/FormatValidation
+          ./validate_format_linux.sh
+
+  run-macos:
+
+    runs-on: macos-latest
+    name: MacOS -> Pre-Checks
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+
+    - name: Format validation
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/FormatValidation
+        ./validate_format_mac.sh

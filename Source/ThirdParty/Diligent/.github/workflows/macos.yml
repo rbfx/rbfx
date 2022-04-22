@@ -1,0 +1,57 @@
+name: MacOS
+
+on: [push, pull_request]
+
+jobs:
+  build-macos-clang:
+    strategy:
+      matrix:
+        config: [Debug, Release]
+
+    runs-on: macos-latest
+    name: MacOS -> ${{ matrix.config }}
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Download Vulkan SDK
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        chmod +x vulkan_sdk.sh
+        ./vulkan_sdk.sh
+
+    - name: Configure CMake
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        chmod +x configure_cmake.sh
+        ./configure_cmake.sh "macos" "${{runner.workspace}}" ${{ matrix.config }} "-DDILIGENT_BUILD_TESTS=ON"
+
+    - name: Build
+      if: success()
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{ matrix.config }} --target install -j2
+
+    - name: DiligentCoreTest
+      if: success()
+      shell: bash
+      run: |
+        cd "${{runner.workspace}}/DiligentCore/Tests/DiligentCoreTest/assets"
+        ${{runner.workspace}}/build/Tests/DiligentCoreTest/DiligentCoreTest
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: ${{ success() && matrix.config == 'Release' }}
+      with:
+        name: DiligentCore-MacOS-x64-${{ matrix.config }}
+        path: |
+          ${{runner.workspace}}/build/install/
+          !${{runner.workspace}}/build/install/**/*.a
+        retention-days: 90

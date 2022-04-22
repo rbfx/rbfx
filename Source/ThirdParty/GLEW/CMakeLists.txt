@@ -22,6 +22,8 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.c)
 add_library (GLEW STATIC ${SOURCE_FILES})
+add_library (GLEW::glew ALIAS GLEW)
+
 target_compile_definitions(GLEW PUBLIC -DGLEW_NO_GLU)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(GLEW PRIVATE -DGLEW_BUILD)

@@ -1,0 +1,50 @@
+name: tvOS
+
+on: [push, pull_request]
+
+jobs:
+  build-tvos-clang:
+    strategy:
+      matrix:
+        config: [Release]
+
+    runs-on: macos-latest
+    name: MacOS -> tvOS, ${{ matrix.config }}
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Download Vulkan SDK
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        chmod +x vulkan_sdk.sh
+        ./vulkan_sdk.sh
+
+    - name: Configure CMake
+      if: success()
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/BuildTools/Scripts/github_actions
+        chmod +x configure_cmake.sh
+        ./configure_cmake.sh "tvos" "${{runner.workspace}}" ${{ matrix.config }}
+
+    - name: Build
+      if: success()
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{ matrix.config }} --target install -j2
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: ${{ success() && matrix.config == 'Release' }}
+      with:
+        name: DiligentCore-tvOS-arm64-${{ matrix.config }}
+        path: |
+          ${{runner.workspace}}/build/install/
+          !${{runner.workspace}}/build/install/**/*.a
+        retention-days: 90

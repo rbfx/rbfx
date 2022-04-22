@@ -1,0 +1,27 @@
+.vs
+build
+
+# VSCode
+.vscode
+*.code-workspace
+# Local History for Visual Studio Code
+.history/
+
+# Linux
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+# MacOS
+._*
+.DS_Store
+.AppleDouble
+.LSOverride
+xcuserdata/
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+# Folder config file
+[Dd]esktop.ini
