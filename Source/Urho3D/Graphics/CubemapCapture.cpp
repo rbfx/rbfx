@@ -22,6 +22,7 @@
 
 #include "../Graphics/Camera.h"
 #include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
 #include "../Graphics/CubemapCapture.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
@@ -30,6 +31,8 @@
 #include "../Graphics/RenderPath.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Renderer.h"
+#include "../Graphics/Octree.h"
+#include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
 #include "../Graphics/TextureCube.h"
@@ -45,10 +48,18 @@
 namespace Urho3D
 {
 
+extern const char* SCENE_CATEGORY;
+
 CubemapCapture::CubemapCapture(Context* context) :
     Component(context)
 {
-    SubscribeToEvent("SceneUpdate", [&](StringHash h, VariantMap& eventData) { Render(); });
+    SubscribeToEvent(E_RENDERSURFACEUPDATE, [&](StringHash eventType, VariantMap& eventData)
+    {
+        CheckAndQueueUpdate();
+    });
+
+    // TODO(compute): Revisit me
+    SubscribeToEvent(E_BEGINRENDERING, [&](StringHash h, VariantMap& eventData) { Render(); });
 }
 
 CubemapCapture::~CubemapCapture()
@@ -58,7 +69,7 @@ CubemapCapture::~CubemapCapture()
 
 void CubemapCapture::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CubemapCapture>();
+    context->RegisterFactory<CubemapCapture>(SCENE_CATEGORY);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Face Size", GetFaceSize, SetFaceSize, unsigned, 64, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Far Distance", GetFarDist, SetFarDist, float, 10000.0f, AM_DEFAULT);
@@ -113,7 +124,8 @@ void CubemapCapture::Render()
         if (renderPath_.Null())
             renderPath_ = GetSubsystem<Renderer>()->GetDefaultRenderPath();
 
-        CubemapCapture::Render(SharedPtr<Scene>(GetScene()), renderPath_, target_, GetNode()->GetWorldPosition(), farDist_);
+        CubemapCapture::Render(SharedPtr<Scene>(GetScene()), renderPath_, target_, GetNode(), farDist_);
+        Filter();
 
         auto& dataMap = GetEventDataMap();
         dataMap[CubemapCaptureUpdate::P_NODE] = GetNode();
@@ -178,9 +190,7 @@ void CubemapCapture::RenderAll(SharedPtr<Scene> scene, unsigned maxCt)
         if (cap->IsDirty())
         {
             CubemapCapture::Render(SharedPtr<Scene>(cap->GetScene()), cap->GetRenderPath(), cap->GetTarget(),
-                cap->GetNode()->GetWorldPosition(),
-                cap->GetFarDist(),
-                false);
+                cap->GetNode(), cap->GetFarDist(), false);
 
             // Send the event signaling this as having been updated, ie. so it can be queued for filtering.
             auto& dataMap = cap->GetEventDataMap();
@@ -197,11 +207,21 @@ void CubemapCapture::RenderAll(SharedPtr<Scene> scene, unsigned maxCt)
     graphics->EndFrame();
 }
 
-void CubemapCapture::Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> renderPath, SharedPtr<TextureCube> cubeTarget, Vector3 position, float farDist, bool needBeginEnd)
+void CubemapCapture::Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> renderPath, SharedPtr<TextureCube> cubeTarget,
+    Node* anchorNode, float farDist, bool needBeginEnd)
 {
+    needBeginEnd = false;
+
     auto context = scene->GetContext();
     auto renderer = scene->GetSubsystem<Renderer>();
     auto graphics = scene->GetSubsystem<Graphics>();
+
+    auto renderPipeline = anchorNode->GetDerivedComponent<RenderPipeline>();
+    if (!renderPipeline)
+    {
+        URHO3D_LOGERROR("CubemapCapture::Render, cannot find RenderPipeline");
+        return;
+    }
 
     if (needBeginEnd)
     {
@@ -213,7 +233,7 @@ void CubemapCapture::Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> render
     }
 
     Node cameraNode(context);
-    cameraNode.SetWorldPosition(position);
+    cameraNode.SetWorldPosition(anchorNode->GetWorldPosition());
 
     Camera* camera = cameraNode.CreateComponent<Camera>(LOCAL, 1);
     camera->SetFov(90);
@@ -221,15 +241,23 @@ void CubemapCapture::Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> render
     camera->SetFarClip(farDist);
     camera->SetAspectRatio(1.0f);
 
-    Viewport vpt(context, scene, camera, IntRect(0, 0, cubeTarget->GetWidth(), cubeTarget->GetHeight()), renderPath);
+    IntRect rect{0, 0, cubeTarget->GetWidth(), cubeTarget->GetHeight()};
+    Viewport vpt(context, scene, camera, rect, renderPipeline);
     vpt.AllocateView();
+    auto view = vpt.GetRenderPipelineView();
 
     for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
     {
-        vpt.GetView()->Define(cubeTarget->GetRenderSurface((CubeMapFace)i), &vpt);
+        auto renderTarget = cubeTarget->GetRenderSurface((CubeMapFace)i);
+
+        auto octree = scene->GetComponent<Octree>();
+        const FrameInfo frameInfo{1, 0.0f, rect.Size(), rect, &vpt, renderTarget, scene, camera, octree};
+        octree->Update(frameInfo);
+
+        view->Define(renderTarget, &vpt);
         cameraNode.SetWorldRotation(CubeFaceRotation((CubeMapFace)i));
-        vpt.GetView()->Update(FrameInfo { 0, 0.0f, { cubeTarget->GetWidth(), cubeTarget->GetHeight()}, camera });
-        vpt.GetView()->Render();
+        view->Update(frameInfo);
+        view->Render();
     }
 
     if (needBeginEnd)
@@ -261,6 +289,25 @@ Quaternion CubemapCapture::CubeFaceRotation(CubeMapFace face)
         break;
     }
     return result;
+}
+
+void CubemapCapture::CheckAndQueueUpdate()
+{
+    // TODO(compute): Revisit
+    /*if (!target_)
+        SetupTextures();
+
+    auto renderer = GetSubsystem<Renderer>();
+    for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
+    {
+        auto renderTarget = target_->GetRenderSurface((CubeMapFace)i);
+        if (!renderTarget->GetViewport(0))
+        {
+            auto viewport
+            renderTarget->SetViewport(0, );
+        }
+    }*/
+    //renderer->QueueRenderSurface();
 }
 
 void CubemapCapture::SetupZone()
@@ -340,7 +387,7 @@ void CubemapCapture::FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> 
         const unsigned w = destCubemaps[0]->GetLevelWidth(i);
         const unsigned rayCt = rayCounts[Clamp<unsigned>(i, 0, rayCounts.size() - 1)]; // clip it to the first or last value if needed
 
-        shaders.push_back(SharedPtr<ShaderVariation>(graphics->GetShader(CS, "CS_CubeFilter", Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
+        shaders.push_back(SharedPtr<ShaderVariation>(graphics->GetShader(CS, "v2/C_FilterCubemap", Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
             rayCt,
             w,
             1.0f / (float)w,
@@ -362,6 +409,8 @@ void CubemapCapture::FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> 
             computeDevice->Dispatch(destCube->GetLevelWidth(i), destCube->GetLevelHeight(i), 6);
         }
     }
+    computeDevice->SetWriteTexture(nullptr, 1, 0, 0);
+    computeDevice->ApplyBindings();
 #endif
 }
 

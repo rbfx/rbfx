@@ -133,7 +133,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     }
 
     // First try to find a UAV that's already been constructed for this resource.
-    auto& existingRecord = constructedUAVs_.find(WeakPtr<Object>(texture));
+    auto existingRecord = constructedUAVs_.find(WeakPtr<Object>(texture));
     if (existingRecord != constructedUAVs_.end())
     {
         for (auto& entry : existingRecord->second)

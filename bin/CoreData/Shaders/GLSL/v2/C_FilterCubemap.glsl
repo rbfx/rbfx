@@ -8,7 +8,7 @@ uniform samplerCube srcTex;
 layout(binding = 1, rgba8)
 uniform image2DArray outputTexture;
 
-vec2 Hammersley(uint seed, uint ct) 
+vec2 Hammersley(uint seed, uint ct)
 {
     uint bits = seed;
 	bits = (bits << 16u) | (bits >> 16u);
@@ -32,20 +32,20 @@ vec3 ImportanceSample(vec2 interval, float roughness)
 {
 	float roughFactor = roughness * roughness;
     roughFactor *= roughFactor;
-    
+
 	const float phi = PI * 2.0 * interval.x;
 	const float cosTheta = sqrt((1.0 - interval.y) / (1.0 + (roughFactor - 1.0) * interval.y));
 	const float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
-    
+
 	vec3 lobeVec;
 	lobeVec.x = sinTheta * cos(phi);
-	lobeVec.y = sinTheta * sin(phi); 
+	lobeVec.y = sinTheta * sin(phi);
 	lobeVec.z = cosTheta;
 	return lobeVec;
 }
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
-void CS()
+void main()
 {
     uvec3 dispatchThreadId = gl_GlobalInvocationID.xyz;
 
@@ -53,11 +53,11 @@ void CS()
     {
         // squash down to 0 - 1.0 range
         vec2 uvCoords = vec2(dispatchThreadId.x, dispatchThreadId.y) * FILTER_INV_RES;
-        
+
         // then scale to domain of -1 to 1 and flip Y for sample correctness
         uvCoords = uvCoords * 2.0 - 1.0;
         uvCoords.y *= -1.0;
-        
+
         vec3 sampleDir;
         switch (dispatchThreadId.z)
         {
@@ -80,22 +80,22 @@ void CS()
             sampleDir = vec3(-uvCoords.x, uvCoords.y, -1.0);
             break;
         }
-        
-        const mat3x3 tanFrame = CalcTangentSpace(sampleDir);        
-        
+
+        const mat3x3 tanFrame = CalcTangentSpace(sampleDir);
+
         vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
-        
+
         // gather samples on the dome, could instead use importance sampling
         for (uint i = 0; i < RAY_COUNT; ++i)
         {
             vec2 h = Hammersley(i, RAY_COUNT);
             vec3 hemisphere = ImportanceSample(h, ROUGHNESS);
 			vec3 finalDir = tanFrame * hemisphere;
-            
+
             color.rgb += textureLod(srcTex, finalDir, 0).rgb;
         }
         color.rgb /= RAY_COUNT;
-        
+
         imageStore(outputTexture, ivec3(dispatchThreadId), color);
     }
 }

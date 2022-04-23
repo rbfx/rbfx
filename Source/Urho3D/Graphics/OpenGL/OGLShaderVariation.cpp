@@ -25,11 +25,13 @@
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsImpl.h"
 #include "../../Graphics/Shader.h"
+#include "../../Graphics/ShaderConverter.h"
 #include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/ShaderVariation.h"
 #include "../../IO/Log.h"
 
 #include <cctype>
+#include <EASTL/optional.h>
 
 #include "../../DebugNew.h"
 
@@ -140,27 +142,14 @@ bool ShaderVariation::Create()
     ea::string shaderCode;
 
     // Check if the shader code contains a version define
-    unsigned verStart = originalShaderCode.find('#');
-    unsigned verEnd = 0;
-    if (verStart != ea::string::npos)
+    const auto versionTag = FindVersionTag(originalShaderCode);
+    if (versionTag)
     {
-        if (originalShaderCode.substr(verStart + 1, 7) == "version")
-        {
-            verEnd = verStart + 9;
-            while (verEnd < originalShaderCode.length())
-            {
-                if (IsDigit((unsigned)originalShaderCode[verEnd]))
-                    ++verEnd;
-                else
-                    break;
-            }
-            // If version define found, insert it first
-            ea::string versionDefine = originalShaderCode.substr(verStart, verEnd - verStart);
-            shaderCode += versionDefine + "\n";
-        }
+        // If version define found, insert it first
+        const ea::string versionDefine = originalShaderCode.substr(versionTag->first, versionTag->second - versionTag->first);
+        shaderCode += versionDefine + "\n";
     }
-    // Force GLSL version 150 if no version define and GL3 is being used
-    if (!verEnd && Graphics::GetGL3Support())
+    else if (Graphics::GetGL3Support())
     {
 #ifdef MOBILE_GRAPHICS
         shaderCode += "#version 300 es\n";
@@ -215,8 +204,12 @@ bool ShaderVariation::Create()
         shaderCode += "#define GL3\n";
 
     // When version define found, do not insert it a second time
-    if (verEnd > 0)
-        shaderCode += (originalShaderCode.c_str() + verEnd);
+    if (versionTag)
+    {
+        shaderCode += originalShaderCode.substr(0, versionTag->first);
+        shaderCode += "//";
+        shaderCode += originalShaderCode.substr(versionTag->first);
+    }
     else
         shaderCode += originalShaderCode;
 

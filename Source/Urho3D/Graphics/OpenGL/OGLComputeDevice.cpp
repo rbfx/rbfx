@@ -127,14 +127,7 @@ void ComputeDevice::ApplyBindings()
     }
 
     // VS shader param groups are reused for compute. Check if any need to be bound.
-    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-    {
-        if (constantBuffers_[i] && constantBuffers_[i] != graphics_->impl_->constantBuffers_[i])
-        {
-            glBindBufferBase(GL_UNIFORM_BUFFER, i, constantBuffers_[i]->GetGPUObjectName());
-            graphics_->impl_->constantBuffers_[i] = constantBuffers_[i];
-        }
-    }
+    graphics_->SetShaderConstantBuffers(constantBuffers_);
 
     // Read-only textures were already handled through graphics in `ComputeDevice::SetReadTexture(...)`
 
@@ -198,7 +191,9 @@ bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, unsigned unit)
         return false;
     }
 
-    constantBuffers_[unit] = buffer;
+    constantBuffers_[unit].constantBuffer_ = buffer;
+    constantBuffers_[unit].offset_ = 0;
+    constantBuffers_[unit].size_ = buffer ? buffer->GetSize() : 0;
     constantBuffersDirty_ = true;
     return true;
 }
@@ -324,7 +319,7 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
 
     // The real necessity of this barrier depends on usage.
     // Example: if compute is done before render (ie. BeginFrame) and shadowmap reuse disabled
-    //          then this barrier doesn't really contribute so long as a CS isn't writing to an 
+    //          then this barrier doesn't really contribute so long as a CS isn't writing to an
     //          alpha-texture that a shadow pass is using.
     // Not that this actually does anything.
     if (anyUavs)

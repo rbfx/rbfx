@@ -43,7 +43,7 @@ public:
     /// Construct.
     ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader);
     /// Construct, exclusive to compute shader.
-    explicit ShaderProgram(Graphics* graphics, ShaderVariation* computeShader);
+    ShaderProgram(Graphics* graphics, ShaderVariation* computeShader);
     /// Destruct.
     ~ShaderProgram() override;
 

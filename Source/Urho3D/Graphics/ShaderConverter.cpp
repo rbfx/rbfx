@@ -22,24 +22,37 @@
 
 #include "../Precompiled.h"
 
-#include "../Graphics/ShaderConverter.h"
-
-#ifdef URHO3D_SPIRV
-
-#include "../IO/Log.h"
-#include "../Graphics/ShaderVariation.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/ShaderConverter.h"
+#include "../Graphics/ShaderVariation.h"
+#include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 
+#ifdef URHO3D_SPIRV
 #include <glslang/Public/ShaderLang.h>
 #include <StandAlone/ResourceLimits.h>
 #include <SPIRV/GlslangToSpv.h>
 #include <spirv_hlsl.hpp>
+#endif
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
+
+ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode)
+{
+    const unsigned start = shaderCode.find("#version");
+    if (start == ea::string::npos)
+        return ea::nullopt;
+
+    const unsigned end = shaderCode.find('\n', start);
+    if (end == ea::string::npos)
+        return ea::make_pair(start, static_cast<unsigned>(shaderCode.size()));
+    return ea::make_pair(start, end);
+}
+
+#ifdef URHO3D_SPIRV
 
 namespace
 {
@@ -54,6 +67,20 @@ static const GlslangGuardian glslangGuardian;
 
 /// Vertex element semantics and index.
 using VertexElementSemanticIndex = ea::pair<VertexElementSemantic, unsigned>;
+
+EShLanguage ConvertShaderType(ShaderType shaderType)
+{
+    switch (shaderType)
+    {
+    default:
+    case VS: return EShLangVertex;
+    case PS: return EShLangFragment;
+    case GS: return EShLangGeometry;
+    case HS: return EShLangTessControl;
+    case DS: return EShLangTessEvaluation;
+    case CS: return EShLangCompute;
+    }
+}
 
 /// Return vertex element semantics.
 VertexElementSemanticIndex ParseVertexElement(ea::string_view name)
@@ -87,6 +114,21 @@ struct SpirVShader
     //ea::vector<VertexElementSemanticIndex> inputLayout_;
 };
 
+void AppendWithoutVersion(ea::string& dest, ea::string_view source)
+{
+    const auto versionTag = FindVersionTag(source);
+    if (!versionTag)
+    {
+        dest.append(source.begin(), source.end());
+        return;
+    }
+
+    const auto versionIter = ea::next(source.begin(), versionTag->first);
+    dest.append(source.begin(), versionIter);
+    dest.append("//");
+    dest.append(versionIter, source.end());
+}
+
 /// Compile SpirV shader.
 bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines,
     SpirVShader& outputShader, ea::string& errorMessage)
@@ -94,18 +136,19 @@ bool CompileSpirV(EShLanguage stage, ea::string_view sourceCode, const ShaderDef
     outputShader = {};
 
     // Prepare defines
-    static thread_local ea::string sourceHeader;
-    sourceHeader.clear();
-    sourceHeader += "#version 450\n";
+    static thread_local ea::string shaderCode;
+    shaderCode.clear();
+    shaderCode += "#version 450\n";
     for (const auto& define : shaderDefines)
-        sourceHeader += Format("#define {} {}\n", define.first, define.second);
+        shaderCode += Format("#define {} {}\n", define.first, define.second);
+    AppendWithoutVersion(shaderCode, sourceCode);
 
-    const char* inputStrings[] = { sourceHeader.data(), sourceCode.data() };
-    const int inputLengths[] = { static_cast<int>(sourceHeader.length()), static_cast<int>(sourceCode.length()) };
+    const char* inputStrings[] = { shaderCode.data() };
+    const int inputLengths[] = { static_cast<int>(shaderCode.length()) };
 
     // Setup glslang shader
     glslang::TShader shader(stage);
-    shader.setStringsWithLengths(inputStrings, inputLengths, static_cast<int>(std::size(inputStrings)));
+    shader.setStringsWithLengths(inputStrings, inputLengths, 1);
     shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, 100);
     shader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
     shader.setEnvTarget(glslang::EshTargetSpv, glslang::EShTargetSpv_1_0);
@@ -243,7 +286,7 @@ bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, c
     ea::string& outputShaderCode, ea::string& errorMessage)
 {
     SpirVShader shader;
-    if (!CompileSpirV(shaderType == VS ? EShLangVertex : EShLangFragment, sourceCode, shaderDefines, shader, errorMessage))
+    if (!CompileSpirV(ConvertShaderType(shaderType), sourceCode, shaderDefines, shader, errorMessage))
         return false;
 
     if (!ConvertToHLSL5(shader, outputShaderCode, errorMessage))
@@ -362,5 +405,6 @@ const TBuiltInResource DefaultTBuiltInResource = {
         /* .generalVariableIndexing = */ 1,
         /* .generalConstantMatrixVectorIndexing = */ 1,
     }};
-}
+
 #endif
+}

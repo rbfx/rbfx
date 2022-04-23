@@ -136,7 +136,6 @@ bool ComputeBuffer::GetData(void* writeInto, unsigned offset, unsigned readLengt
     if (FAILED(hr))
     {
         URHO3D_LOGD3DERROR("Failed to create staging buffer for ComputeBuffer read", hr);
-        URHO3D_SAFE_RELEASE(hr);
         return false;
     }
 
