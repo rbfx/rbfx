@@ -331,8 +331,11 @@ void ReflectionProbeManager::FillUpdateQueue()
 
 void ReflectionProbeManager::ConsumeUpdateQueue()
 {
-    // TODO(compute): Add filtering
-    filterCubemaps_ = false;
+#if !defined(URHO3D_COMPUTE)
+    const bool filterCubemapsEffective = false;
+#else
+    const bool filterCubemapsEffective = filterCubemaps_;
+#endif
 
     unsigned numStaticProbesRendered = 0;
     unsigned numRenderedFaces = 0;
@@ -361,7 +364,7 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
             params.settings_ = probe->GetCubemapRenderingSettings();
             params.position_ = position;
             params.slicedUpdate_ = probe->IsSlicedUpdate();
-            params.filterResult_ = filterCubemaps_;
+            params.filterResult_ = filterCubemapsEffective;
 
             const CubemapUpdateResult result = probeRenderer->Update(params);
 
@@ -381,7 +384,7 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
             CubemapUpdateParameters params;
             params.settings_ = probe->GetCubemapRenderingSettings();
             params.position_ = position;
-            params.filterResult_ = filterCubemaps_;
+            params.filterResult_ = filterCubemapsEffective;
             params.overrideFinalTexture_ = probeTexture;
 
             const CubemapUpdateResult result = cubemapRenderer_->Update(params);
@@ -393,7 +396,7 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
             CubemapUpdateParameters params;
             params.settings_ = probe->GetCubemapRenderingSettings();
             params.position_ = position;
-            params.filterResult_ = filterCubemaps_;
+            params.filterResult_ = filterCubemapsEffective;
 
             const CubemapUpdateResult result = cubemapRenderer_->Update(params);
             URHO3D_ASSERT(result.isComplete_);

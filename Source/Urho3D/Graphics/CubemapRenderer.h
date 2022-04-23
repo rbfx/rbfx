@@ -124,6 +124,9 @@ private:
     void ProcessFaceRendered();
     void ProcessCubemapRendered();
 
+    void FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture, ea::span<const unsigned> rayCounts);
+    void FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture);
+
     WeakPtr<Scene> scene_;
     ea::array<SharedPtr<Node>, MAX_CUBEMAP_FACES> renderCameras_;
     ea::array<SharedPtr<Viewport>, MAX_CUBEMAP_FACES> viewports_;
