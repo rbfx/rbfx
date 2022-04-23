@@ -24,6 +24,8 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
+// TODO(compute): Add filtering
+//#include "../Graphics/CubemapCapture.h"
 #include "../Graphics/CubemapRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
@@ -52,10 +54,11 @@ Quaternion faceRotations[MAX_CUBEMAP_FACES] = {
 CubemapRenderer::CubemapRenderer(Scene* scene)
     : Object(scene->GetContext())
     , scene_(scene)
+    , viewportTexture_(MakeShared<TextureCube>(context_))
+    , filteredTexture_(MakeShared<TextureCube>(context_))
 {
     InitializeRenderPipeline();
     InitializeCameras();
-    Define(CubemapRenderingParameters{});
 }
 
 CubemapRenderer::~CubemapRenderer()
@@ -86,19 +89,6 @@ void CubemapRenderer::InitializeCameras()
     }
 }
 
-void CubemapRenderer::InitializeTexture(const CubemapRenderingParameters& params)
-{
-    if (!scene_)
-        return;
-
-    if (renderTexture_ && renderTexture_->GetWidth() == params.textureSize_)
-        return;
-
-    renderTexture_ = MakeShared<TextureCube>(context_);
-    DefineTexture(renderTexture_, params);
-    ConnectViewportsToTexture(renderTexture_);
-}
-
 void CubemapRenderer::ConnectViewportsToTexture(TextureCube* texture)
 {
     for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
@@ -123,53 +113,94 @@ void CubemapRenderer::DisconnectViewportsFromTexture(TextureCube* texture) const
     }
 }
 
-void CubemapRenderer::DefineTexture(TextureCube* texture, const CubemapRenderingParameters& params)
+void CubemapRenderer::DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings)
 {
-    texture->SetSize(params.textureSize_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
-    texture->SetFilterMode(FILTER_BILINEAR);
+    texture->SetSize(settings.textureSize_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
+    texture->SetFilterMode(FILTER_TRILINEAR);
 }
 
-void CubemapRenderer::Define(const CubemapRenderingParameters& params)
+CubemapUpdateResult CubemapRenderer::Update(const CubemapUpdateParameters& params)
 {
-    InitializeTexture(params);
-    for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
+    if (!currentParams_.IsConsistentWith(params))
     {
-        auto camera = renderCameras_[face]->GetComponent<Camera>();
-        camera->SetNearClip(params.nearClip_);
-        camera->SetFarClip(params.farClip_);
-        camera->SetViewMask(params.viewMask_);
-    }
-}
+        currentParams_ = params;
 
-void CubemapRenderer::OverrideOutputTexture(TextureCube* texture)
-{
-    if (overrideTexture_ == texture)
-        return;
-
-    if (overrideTexture_)
-    {
-        DisconnectViewportsFromTexture(overrideTexture_);
-        ConnectViewportsToTexture(renderTexture_);
+        updateStage_ = CubemapUpdateStage::Idle;
+        numFacesToUpdate_ = 0;
+        numFacesToRender_ = 0;
     }
 
-    overrideTexture_ = texture;
+    URHO3D_ASSERT(updateStage_ != CubemapUpdateStage::Ready);
 
-    if (overrideTexture_)
+    if (params.overrideFinalTexture_ && !IsTextureMatching(params.overrideFinalTexture_, params.settings_))
     {
-        DisconnectViewportsFromTexture(renderTexture_);
-        ConnectViewportsToTexture(overrideTexture_);
+        URHO3D_ASSERTLOG(0, "Invalid texture is used as override for CubemapRenderer::Update");
+        return {MAX_CUBEMAP_FACES, true};
     }
-}
 
-CubemapUpdateResult CubemapRenderer::Update(const Vector3& position, bool slicedUpdate)
-{
-    for (Node* cameraNode : renderCameras_)
-        cameraNode->SetWorldPosition(position);
+    if (updateStage_ == CubemapUpdateStage::Idle)
+        PrepareForUpdate(params);
 
-    if (updateStage_ == CubemapUpdateStage::Idle && !slicedUpdate)
+    if (updateStage_ == CubemapUpdateStage::Idle && !params.slicedUpdate_)
         return UpdateFull();
 
     return UpdateSliced();
+}
+
+void CubemapRenderer::PrepareForUpdate(const CubemapUpdateParameters& params)
+{
+    // Assign current textures
+    if (params.filterResult_)
+    {
+        currentViewportTexture_ = viewportTexture_;
+        currentFilteredTexture_ = params.overrideFinalTexture_ ? params.overrideFinalTexture_ : filteredTexture_;
+    }
+    else
+    {
+        currentViewportTexture_ = params.overrideFinalTexture_ ? params.overrideFinalTexture_ : viewportTexture_;
+        currentFilteredTexture_ = nullptr;
+    }
+
+    // Initialize contents
+    if (currentViewportTexture_ == viewportTexture_ && !IsTextureMatching(viewportTexture_, params.settings_))
+    {
+        DefineTexture(viewportTexture_, params.settings_);
+        ConnectViewportsToTexture(viewportTexture_);
+        viewportsConnectedToSelf_ = true;
+    }
+    if (currentFilteredTexture_ == filteredTexture_ && !IsTextureMatching(filteredTexture_, params.settings_))
+        DefineTexture(filteredTexture_, params.settings_);
+
+    if (currentViewportTexture_ != viewportTexture_)
+    {
+        if (viewportsConnectedToSelf_)
+        {
+            DisconnectViewportsFromTexture(viewportTexture_);
+            viewportsConnectedToSelf_ = false;
+        }
+        ConnectViewportsToTexture(currentViewportTexture_);
+    }
+    else if (!viewportsConnectedToSelf_)
+    {
+        ConnectViewportsToTexture(viewportTexture_);
+        viewportsConnectedToSelf_ = true;
+    }
+
+    for (unsigned face = 0; face < MAX_CUBEMAP_FACES; ++face)
+    {
+        auto camera = renderCameras_[face]->GetComponent<Camera>();
+        camera->SetNearClip(params.settings_.nearClip_);
+        camera->SetFarClip(params.settings_.farClip_);
+        camera->SetViewMask(params.settings_.viewMask_);
+    }
+
+    for (Node* cameraNode : renderCameras_)
+        cameraNode->SetWorldPosition(params.position_);
+}
+
+bool CubemapRenderer::IsTextureMatching(TextureCube* textureCube, const CubemapRenderingSettings& settings) const
+{
+    return textureCube && textureCube->GetWidth() == settings.textureSize_;
 }
 
 CubemapUpdateResult CubemapRenderer::UpdateFull()
@@ -227,9 +258,18 @@ void CubemapRenderer::ProcessFaceRendered()
 
 void CubemapRenderer::ProcessCubemapRendered()
 {
-    // TODO(reflection): Filter cubemap here
-    TextureCube* destinationTexture = overrideTexture_ ? overrideTexture_ : renderTexture_;
-    OnCubemapRendered(this, destinationTexture);
+    if (currentViewportTexture_ != viewportTexture_)
+        DisconnectViewportsFromTexture(currentViewportTexture_);
+
+    // TODO(compute): Add filtering
+    if (currentFilteredTexture_)
+        ; //CubemapCapture::FilterCubemaps_128({SharedPtr<TextureCube>(currentViewportTexture_)}, {SharedPtr<TextureCube>(currentFilteredTexture_)});
+
+    TextureCube* finalTexture = currentFilteredTexture_ ? currentFilteredTexture_ : currentViewportTexture_;
+    OnCubemapRendered(this, finalTexture);
+
+    currentViewportTexture_ = nullptr;
+    currentFilteredTexture_ = nullptr;
 }
 
 void CubemapRenderer::QueueFaceUpdate(CubeMapFace face)
@@ -238,9 +278,7 @@ void CubemapRenderer::QueueFaceUpdate(CubeMapFace face)
     if (!renderer)
         return;
 
-    TextureCube* destinationTexture = overrideTexture_ ? overrideTexture_ : renderTexture_;
-
-    RenderSurface* surface = destinationTexture->GetRenderSurface(static_cast<CubeMapFace>(face));
+    RenderSurface* surface = currentViewportTexture_->GetRenderSurface(static_cast<CubeMapFace>(face));
     renderer->QueueRenderSurface(surface);
 }
 

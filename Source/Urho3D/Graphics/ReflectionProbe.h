@@ -153,6 +153,7 @@ private:
 
     float queryPadding_{DefaultQueryPadding};
     unsigned renderBudget_{DefaultRenderBudget};
+    bool filterCubemaps_{true};
 
     ea::unordered_set<WeakPtr<ReflectionProbe>> probesToUpdate_;
     ea::vector<QueuedReflectionProbe> updateQueue_;
@@ -215,15 +216,15 @@ public:
     void SetProjectionBox(const BoundingBox& box);
     const BoundingBox& GetProjectionBox() const { return projectionBox_; }
 
-    const CubemapRenderingParameters& GetCubemapRenderingParams() const { return cubemapRenderingParams_; }
+    const CubemapRenderingSettings& GetCubemapRenderingSettings() const { return cubemapRenderingSettings_; }
     void SetTextureSize(unsigned value);
-    unsigned GetTextureSize() const { return cubemapRenderingParams_.textureSize_; }
+    unsigned GetTextureSize() const { return cubemapRenderingSettings_.textureSize_; }
     void SetViewMask(unsigned value);
-    unsigned GetViewMask() const { return cubemapRenderingParams_.viewMask_; }
+    unsigned GetViewMask() const { return cubemapRenderingSettings_.viewMask_; }
     void SetNearClip(float value);
-    float GetNearClip() const { return cubemapRenderingParams_.nearClip_; }
+    float GetNearClip() const { return cubemapRenderingSettings_.nearClip_; }
     void SetFarClip(float value);
-    float GetFarClip() const { return cubemapRenderingParams_.farClip_; }
+    float GetFarClip() const { return cubemapRenderingSettings_.farClip_; }
     /// @}
 
     const ReflectionProbeData& GetProbeData() const { return data_; }
@@ -238,8 +239,10 @@ private:
     void MarkTransformDirty();
     void MarkRealtimeDirty();
 
+    void OnDynamicCubemapRendered(TextureCube* texture);
+
     void UpdateCubemapRenderer();
-    void UpdateProbeTextureData();
+    void UpdateProbeTextureData(TextureCube* texture);
     void UpdateProbeBoxData();
 
     bool movable_{};
@@ -255,7 +258,7 @@ private:
 
     SharedPtr<TextureCube> texture_;
 
-    CubemapRenderingParameters cubemapRenderingParams_;
+    CubemapRenderingSettings cubemapRenderingSettings_;
 
     ReflectionProbeData data_;
 
