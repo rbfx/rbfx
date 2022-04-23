@@ -166,7 +166,8 @@ void SceneReplication::Start(const ea::vector<ea::string>& args)
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 
     // Process command line
     if (args.size() >= 2)

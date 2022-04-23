@@ -71,9 +71,8 @@ void InverseKinematics::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
-
-    GetSubsystem<Input>()->SetMouseVisible(true);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(true);
 }
 
 void InverseKinematics::CreateScene()

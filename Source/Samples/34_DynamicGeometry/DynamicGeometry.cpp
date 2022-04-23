@@ -72,7 +72,8 @@ void DynamicGeometry::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void DynamicGeometry::CreateScene()

@@ -61,7 +61,8 @@ void Urho2DSpriterAnimation::Start()
     SetupViewport();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 
     // Hook up to the frame update events
     SubscribeToEvents();

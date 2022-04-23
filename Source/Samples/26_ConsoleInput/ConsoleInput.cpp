@@ -84,7 +84,8 @@ void ConsoleInput::Start()
     GetSubsystem<Input>()->SetMouseVisible(true);
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 
     // Open the operating system console window (for stdin / stdout) if not open yet
     OpenConsoleWindow();

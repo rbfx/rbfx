@@ -54,7 +54,8 @@ void UIDrag::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void UIDrag::CreateGUI()

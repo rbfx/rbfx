@@ -145,7 +145,21 @@
 #include "SamplesManager.h"
 
 // Expands to this example's entry-point
-URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::SamplesManager);
+int RunApplication()
+{
+    Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());
+    Urho3D::SharedPtr<Urho3D::SamplesManager> application(new Urho3D::SamplesManager(context));
+    return application->Run();
+}
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
+{
+    OpenConsoleWindow();
+
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    Urho3D::ParseArguments(GetCommandLineW());
+    return RunApplication();
+}
+
 
 namespace Urho3D
 {
@@ -176,6 +190,13 @@ void SamplesManager::Setup()
 #endif
 }
 
+SampleSelectionScreen::SampleSelectionScreen(Context* context)
+    : GameScreen(context)
+{
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
+}
+
 void SamplesManager::Start()
 {
     Input* input = context_->GetSubsystem<Input>();
@@ -187,11 +208,12 @@ void SamplesManager::Start()
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
     context_->AddFactoryReflection<Rotator>();
+    context_->AddFactoryReflection<SampleSelectionScreen>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
 
-    input->SetMouseMode(MM_FREE);
-    input->SetMouseVisible(true);
+    sampleSelectionScreen_ = context_->CreateObject<SampleSelectionScreen>();
+    SetGameScreen(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
@@ -376,9 +398,10 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    runningSample_.DynamicCast(context_->CreateObject(sampleType));
-    if (runningSample_)
-        runningSample_->Start(commandLineArgs_);
+    SharedPtr<GameScreen> screen;
+    screen.DynamicCast(context_->CreateObject(sampleType));
+    if (screen)
+        SetGameScreen(screen);
     else
         ErrorExit("Specified sample does not exist.");
 }
@@ -514,7 +537,7 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     }
 #endif
 
-    if (runningSample_)
+    if (GetGameScreen() != sampleSelectionScreen_)
         return;
 
     if (key == KEY_SPACE)
@@ -561,14 +584,12 @@ void SamplesManager::OnFrameStart()
     if (isClosing_)
     {
         isClosing_ = false;
-        if (runningSample_.NotNull())
+        if (GetGameScreen() != sampleSelectionScreen_)
         {
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
-            runningSample_->Stop();
-            runningSample_ = nullptr;
-            input->SetMouseMode(MM_FREE);
-            input->SetMouseVisible(true);
+
+            SetGameScreen(sampleSelectionScreen_);
             ui->SetCursor(nullptr);
             ui->GetRoot()->RemoveAllChildren();
             ui->GetRoot()->AddChild(listViewHolder_);

@@ -29,6 +29,7 @@
 #if URHO3D_SYSTEMUI
 #include <Urho3D/SystemUI/DebugHud.h>
 #endif
+#include <Urho3D/Engine/GameScreen.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -64,14 +65,20 @@ const float TOUCH_SENSITIVITY = 2.0f;
 ///    - Take screenshot with key 9
 ///    - Handle Esc key down to hide Console or exit application
 ///    - Init touch input on mobile platform using screen joysticks (patched for each individual sample)
-class Sample : public Object
+class Sample : public GameScreen
 {
     // Enable type information.
-    URHO3D_OBJECT(Sample, Object);
+    URHO3D_OBJECT(Sample, GameScreen);
 
 public:
     /// Construct.
     explicit Sample(Context* context);
+
+    /// Activate game screen. Executed by Application.
+    virtual void Activate(Application* application) override;
+
+    /// Deactivate game screen. Executed by Application.
+    virtual void Deactivate() override;
 
     /// Setup after engine initialization with optional command line parameters.
     virtual void Start(const ea::vector<ea::string>& args);
@@ -85,8 +92,6 @@ protected:
     virtual ea::string GetScreenJoystickPatchString() const { return EMPTY_STRING; }
     /// Initialize touch input on mobile platform.
     void InitTouchInput();
-    /// Initialize mouse mode on non-web platform.
-    void InitMouseMode(MouseMode mode);
     /// Control logo visibility.
     void SetLogoVisible(bool enable);
     ///
@@ -104,8 +109,6 @@ protected:
     float pitch_;
     /// Flag to indicate whether touch input has been enabled.
     bool touchEnabled_;
-    /// Mouse mode option to use in the sample.
-    MouseMode useMouseMode_;
 
 private:
     /// Create logo.
@@ -114,10 +117,6 @@ private:
     void SetWindowTitleAndIcon();
     /// Create console and debug HUD.
     void CreateConsoleAndDebugHud();
-    /// Handle request for mouse mode on web platform.
-    void HandleMouseModeRequest(StringHash eventType, VariantMap& eventData);
-    /// Handle request for mouse mode change on web platform.
-    void HandleMouseModeChange(StringHash eventType, VariantMap& eventData);
     /// Handle key down event to process key controls common to all samples.
     void HandleKeyDown(StringHash eventType, VariantMap& eventData);
     /// Handle key up event to process key controls common to all samples.

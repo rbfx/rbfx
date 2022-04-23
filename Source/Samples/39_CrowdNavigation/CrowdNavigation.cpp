@@ -73,7 +73,8 @@ void CrowdNavigation::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_ABSOLUTE);
+    SetMouseMode(MM_ABSOLUTE);
+    SetMouseVisible(false);
 }
 
 void CrowdNavigation::CreateScene()

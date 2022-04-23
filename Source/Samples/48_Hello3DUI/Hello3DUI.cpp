@@ -85,7 +85,8 @@ void Hello3DUI::Start()
     Init3DUI();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Hello3DUI::InitControls()

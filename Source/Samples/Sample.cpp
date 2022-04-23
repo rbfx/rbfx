@@ -25,17 +25,33 @@
 #endif
 
 #include "Sample.h"
+#include "SamplesManager.h"
 
 Sample::Sample(Context* context) :
-    Object(context),
+    GameScreen(context),
     yaw_(0.0f),
     pitch_(0.0f),
     touchEnabled_(false),
-    useMouseMode_(MM_ABSOLUTE),
     screenJoystickIndex_(M_MAX_UNSIGNED),
     screenJoystickSettingsIndex_(M_MAX_UNSIGNED),
     paused_(false)
 {
+    SetMouseMode(MM_ABSOLUTE);
+    SetMouseVisible(false);
+}
+
+/// Activate game screen. Executed by Application.
+void Sample::Activate(Application* application)
+{
+    GameScreen::Activate(application);
+    Start(((SamplesManager*)application)->GetArgs());
+}
+
+/// Deactivate game screen. Executed by Application.
+void Sample::Deactivate()
+{
+    Stop();
+    GameScreen::Deactivate();
 }
 
 void Sample::Start(const ea::vector<ea::string>& args)
@@ -91,35 +107,6 @@ void Sample::InitTouchInput()
     }
     screenJoystickIndex_ = (unsigned)input->AddScreenJoystick(layout, cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
     input->SetScreenJoystickVisible(screenJoystickSettingsIndex_, true);
-}
-
-void Sample::InitMouseMode(MouseMode mode)
-{
-    useMouseMode_ = mode;
-
-    Input* input = GetSubsystem<Input>();
-
-    if (GetPlatform() != "Web")
-    {
-        if (useMouseMode_ == MM_FREE)
-            input->SetMouseVisible(true);
-
-        if (useMouseMode_ != MM_ABSOLUTE)
-        {
-            input->SetMouseMode(useMouseMode_);
-#if URHO3D_SYSTEMUI
-            Console* console = GetSubsystem<Console>();
-            if (console && console->IsVisible())
-                input->SetMouseMode(MM_ABSOLUTE, true);
-#endif
-        }
-    }
-    else
-    {
-        input->SetMouseVisible(true);
-        SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(Sample, HandleMouseModeRequest));
-        SubscribeToEvent(E_MOUSEMODECHANGED, URHO3D_HANDLER(Sample, HandleMouseModeChange));
-    }
 }
 
 void Sample::SetLogoVisible(bool enable)
@@ -359,29 +346,6 @@ void Sample::HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData)
     // On some platforms like Windows the presence of touch input can only be detected dynamically
     InitTouchInput();
     UnsubscribeFromEvent("TouchBegin");
-}
-
-// If the user clicks the canvas, attempt to switch to relative mouse mode on web platform
-void Sample::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
-{
-#if URHO3D_SYSTEMUI
-    Console* console = GetSubsystem<Console>();
-    if (console && console->IsVisible())
-        return;
-#endif
-    Input* input = GetSubsystem<Input>();
-    if (useMouseMode_ == MM_ABSOLUTE)
-        input->SetMouseVisible(false);
-    else if (useMouseMode_ == MM_FREE)
-        input->SetMouseVisible(true);
-    input->SetMouseMode(useMouseMode_);
-}
-
-void Sample::HandleMouseModeChange(StringHash /*eventType*/, VariantMap& eventData)
-{
-    Input* input = GetSubsystem<Input>();
-    bool mouseLocked = eventData[MouseModeChanged::P_MOUSELOCKED].GetBool();
-    input->SetMouseVisible(!mouseLocked);
 }
 
 void Sample::CloseSample()

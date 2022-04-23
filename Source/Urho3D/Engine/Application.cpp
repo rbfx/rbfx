@@ -26,6 +26,7 @@
 #include "../Engine/Application.h"
 #include "../Engine/EngineDefs.h"
 #include "../Engine/EngineEvents.h"
+#include "../Engine/GameScreen.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 #if URHO3D_CSHARP
@@ -217,6 +218,23 @@ void Application::ErrorExit(const ea::string& message)
     else
         showError(message);
 }
+
+void Application::SetGameScreen(GameScreen* gameScreen)
+{
+    if (gameScreen_)
+    {
+        gameScreen_->Deactivate();
+    }
+
+    gameScreen_ = gameScreen;
+
+    if (gameScreen_)
+    {
+        gameScreen_->Activate(this);
+    }
+}
+
+GameScreen* Application::GetGameScreen() const { return gameScreen_; }
 
 void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 {

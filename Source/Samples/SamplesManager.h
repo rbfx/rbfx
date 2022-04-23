@@ -39,6 +39,17 @@ struct SampleInformation
     StringHash type_;
 };
 
+class SampleSelectionScreen
+    : public GameScreen
+{
+    // Enable type information.
+    URHO3D_OBJECT(SampleSelectionScreen, GameScreen);
+
+public:
+    /// Construct.
+    explicit SampleSelectionScreen(Context* context);
+};
+
 class SamplesManager : public Application
 {
     // Enable type information.
@@ -53,6 +64,9 @@ public:
     void Start() override;
     /// Cleanup after the main loop. Called by Application.
     void Stop() override;
+
+    /// Return command line arguments.
+    const ea::vector<ea::string>& GetArgs() const { return commandLineArgs_; }
 
 private:
     ///
@@ -73,7 +87,8 @@ private:
     void StartSample(StringHash sampleType);
 
     ///
-    SharedPtr<Sample> runningSample_;
+    //SharedPtr<Sample> runningSample_;
+    SharedPtr<SampleSelectionScreen> sampleSelectionScreen_;
     ///
     SharedPtr<UIElement> listViewHolder_;
     /// Logo sprite.

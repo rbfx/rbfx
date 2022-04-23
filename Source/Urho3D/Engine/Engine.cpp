@@ -37,6 +37,7 @@
 #endif
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
+#include "../Engine/GameScreen.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
@@ -150,6 +151,7 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
 #endif
+    GameScreen::RegisterObject(context);
     // Required in headless mode as well.
     RegisterGraphicsLibrary(context_);
     // Register object factories for libraries which are not automatically registered along with subsystem creation
