@@ -31,12 +31,12 @@
 #include "../Core/Main.h"
 #include "../Engine/Engine.h"
 #include "../Engine/PluginApplication.h"
+#include "../Engine/GameScreen.h"
 
 namespace Urho3D
 {
 
 class Engine;
-class GameScreen;
 
 /// Base class for creating applications which initialize the Urho3D engine and run a main loop until exited.
 class URHO3D_API Application : public Object
