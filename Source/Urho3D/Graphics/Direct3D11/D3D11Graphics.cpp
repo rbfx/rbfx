@@ -226,8 +226,7 @@ Graphics::Graphics(Context* context) :
     shaderPath_("Shaders/HLSL/"),
     shaderExtension_(".hlsl"),
     orientations_("LandscapeLeft LandscapeRight"),
-    apiName_("D3D11"),
-    computeDevice_(nullptr) // will be set when the subsystem is registered
+    apiName_("D3D11")
 {
     SetTextureUnitMappings();
     ResetCachedState();
@@ -282,9 +281,6 @@ Graphics::~Graphics()
         SDL_DestroyWindow(window_);
         window_ = nullptr;
     }
-
-    delete computeDevice_;
-    computeDevice_ = nullptr;
 
     delete impl_;
     impl_ = nullptr;
@@ -2280,6 +2276,10 @@ void Graphics::CheckFeatureSupport()
     caps.maxTextureSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     caps.maxRenderTargetSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     caps.maxNumRenderTargets_ = 8;
+	
+#ifdef URHO3D_COMPUTE
+    computeSupport_ = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+#endif	
 }
 
 void Graphics::ResetCachedState()

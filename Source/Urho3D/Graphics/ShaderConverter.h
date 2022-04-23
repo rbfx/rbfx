@@ -27,18 +27,19 @@
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/ShaderDefineArray.h"
 
-#ifdef URHO3D_SPIRV
-
-#include <EASTL/vector.h>
-#include <EASTL/utility.h>
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
+
+ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode);
+
+#ifdef URHO3D_SPIRV
 
 /// Convert GLSL shader to HLSL5.
 bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
     ea::string& outputShaderCode, ea::string& errorMessage);
 
-}
-
 #endif
+
+}

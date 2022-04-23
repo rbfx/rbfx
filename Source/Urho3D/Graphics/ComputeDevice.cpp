@@ -47,7 +47,6 @@ ComputeDevice::ComputeDevice(Context* context, Graphics* graphics) :
     programDirty_(false)
 {
     Init();
-    graphics->computeDevice_ = this;
 }
 
 ComputeDevice::~ComputeDevice()

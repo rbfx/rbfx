@@ -41,7 +41,6 @@ namespace Urho3D
 {
 
 class ComputeDevice;
-class ConstantBuffer;
 class ShaderProgramLayout;
 class File;
 class Image;
@@ -140,28 +139,6 @@ struct WindowModeParams
     int height_{};
     /// Screen mode parameters.
     ScreenModeParams screenParams_;
-};
-
-/// Range of constant buffer to bind.
-struct ConstantBufferRange
-{
-    /// Constant buffer.
-    ConstantBuffer* constantBuffer_{};
-    /// Offset in buffer. Shall be multiply of constant buffer offset alignment.
-    unsigned offset_{};
-    /// Size of region.
-    unsigned size_{};
-
-    /// Compare equal.
-    bool operator ==(const ConstantBufferRange& rhs) const
-    {
-        return constantBuffer_ == rhs.constantBuffer_
-            && offset_ == rhs.offset_
-            && size_ == rhs.size_;
-    }
-
-    /// Compare not equal.
-    bool operator !=(const ConstantBufferRange& rhs) const { return !(*this == rhs); }
 };
 
 /// Graphics capabilities aggregator.
@@ -395,9 +372,6 @@ public:
     /// Return whether shader validation is enabled.
     bool IsShaderValidationEnabled() const { return validateShaders_; }
 
-    /// Return the compute interface, may be null if unsupported on this machine.
-    ComputeDevice* GetComputeDevice() const { return computeDevice_; }
-
     /// Return OS-specific external window handle. Null if not in use.
     void* GetExternalWindow() const { return externalWindow_; }
 
@@ -537,6 +511,9 @@ public:
     /// Return whether sRGB conversion on rendertarget writing is supported.
     /// @property
     bool GetSRGBWriteSupport() const { return sRGBWriteSupport_; }
+
+    /// Return whether compute shaders are supported.
+    bool GetComputeSupport() const { return computeSupport_; }
 
     /// Return supported fullscreen resolutions (third component is refreshRate). Will be empty if listing the resolutions is not supported on the platform (e.g. Web).
     /// @property
@@ -837,8 +814,6 @@ private:
     Mutex gpuObjectMutex_;
     /// Implementation.
     GraphicsImpl* impl_;
-    /// Compute device interface.
-    ComputeDevice* computeDevice_;
     /// SDL window.
     SDL_Window* window_{};
     /// Window title.
@@ -890,6 +865,8 @@ private:
     bool sRGBSupport_{};
     /// sRGB conversion on write support flag.
     bool sRGBWriteSupport_{};
+    /// Compute shaders support.
+    bool computeSupport_{};
     /// Number of primitives this frame.
     unsigned numPrimitives_{};
     /// Number of batches this frame.

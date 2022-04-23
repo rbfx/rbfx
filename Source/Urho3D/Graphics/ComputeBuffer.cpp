@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/ComputeBuffer.h"
+#include "../Graphics/Graphics.h"
 #include "../Core/Context.h"
 
 #include "../DebugNew.h"

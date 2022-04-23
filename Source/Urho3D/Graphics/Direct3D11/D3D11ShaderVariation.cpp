@@ -107,7 +107,7 @@ bool ShaderVariation::Create()
     } \
     else \
         compilerOutput_ = "Could not create " PRINTNAME " , empty bytecode";
-    
+
 
     // Then create shader from the bytecode
     ID3D11Device* device = graphics_->GetImpl()->GetDevice();
@@ -261,7 +261,7 @@ bool ShaderVariation::Compile()
     else if (type_ == CS)
     {
         entryPoint = "CS";
-        defines.emplace_back("COMPILECS");
+        defines.Append("COMPILECS");
         profile = "cs_5_0";
     }
     else

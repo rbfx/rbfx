@@ -86,7 +86,7 @@ public:
     /// Utility to render all dirty CubemapCapture components in the given scene. Optionally limit how many to process.
     static void RenderAll(SharedPtr<Scene> scene, unsigned maxCt = UINT_MAX);
     /// Utility for performing the render with the provided objects, renders the component unrequired for bulk work. Use the shouldBeginEndFrame parameter when performing bulk work.
-    static void Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> renderPath, SharedPtr<TextureCube> cubeTarget, Vector3 position, float farDist, bool shouldBeginEndFrame = true);
+    static void Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> renderPath, SharedPtr<TextureCube> cubeTarget, Node* anchorNode, float farDist, bool shouldBeginEndFrame = true);
     /// Utility for determining the rotation required to face a cubemap axis for render-capture.
     static Quaternion CubeFaceRotation(CubeMapFace face);
 
@@ -100,6 +100,7 @@ public:
     static void FilterCubemaps_128(const eastl::vector< SharedPtr<TextureCube> >& cubemaps, const eastl::vector< SharedPtr<TextureCube> >& destCubes) { FilterCubemaps(cubemaps, destCubes, { 1, 8, 16, 16, 16, 16, 32, 32 }); }
 
 private:
+    void CheckAndQueueUpdate();
     /// Set zone to use our target cube.
     void SetupZone();
     /// Constructs the cubemaps if needed.

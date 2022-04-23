@@ -86,12 +86,13 @@ public:
     bool SetProgram(SharedPtr<ShaderVariation> computeShader);
     /// Dispatches the compute call, will queue a barrier as needed.
     void Dispatch(unsigned xDim, unsigned yDim, unsigned zDim);
+    /// Apply all dirty GPU object bindings.
+    /// TODO(compute): Handle it more nicely
+    void ApplyBindings();
 
 private:
     /// Setup necessary initial member state.
     void Init();
-    /// Apply all dirty GPU object bindings.
-    void ApplyBindings();
     /// Removes any constructed resources in response to a GPUObject::Release of a resource
     void HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData);
     /// Frees any locally created GPU objects.
@@ -119,7 +120,7 @@ private:
     /// List of SRV bindings (textures or buffers).
     ID3D11ShaderResourceView* shaderResourceViews_[MAX_TEXTURE_UNITS];
     /// Constant buffer bindings.
-    ID3D11Buffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    ID3D11Buffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// UAV targets for writing.
     ID3D11UnorderedAccessView* uavs_[MAX_COMPUTE_WRITE_TARGETS];
 #elif defined(URHO3D_OPENGL)
@@ -140,7 +141,7 @@ private:
     };
 
     /// Table of bound constant buffers, uses the lower range of the parameter groups.
-    SharedPtr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    ConstantBufferRange constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Table of write-texture targets.
     WriteTexBinding uavs_[MAX_COMPUTE_WRITE_TARGETS];
     /// Table of write-buffer targets (SSBO).
@@ -165,7 +166,7 @@ private:
     /// Tag for the availability of compute, determined at startup.
     bool isComputeSupported_;
 };
-    
+
 }
 
 #endif
