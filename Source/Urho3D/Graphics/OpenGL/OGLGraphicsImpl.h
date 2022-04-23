@@ -110,7 +110,7 @@ struct FrameBufferObject
 class URHO3D_API GraphicsImpl
 {
     friend class Graphics;
-
+    friend class ComputeDevice; // ComputeDevice needs to manipulate constant-buffers.
 public:
     /// Construct.
     GraphicsImpl() = default;

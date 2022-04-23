@@ -54,7 +54,7 @@ struct CubemapUpdateResult
     bool isComplete_{};
 };
 
-struct CubemapRenderingParameters
+struct CubemapRenderingSettings
 {
     static constexpr unsigned DefaultTextureSize = 256;
     static constexpr unsigned DefaultViewMask = 0xffffffff;
@@ -65,6 +65,32 @@ struct CubemapRenderingParameters
     unsigned viewMask_{DefaultViewMask};
     float nearClip_{DefaultNearClip};
     float farClip_{DefaultFarClip};
+
+    bool operator==(const CubemapRenderingSettings& rhs) const
+    {
+        return textureSize_ == rhs.textureSize_
+            && viewMask_ == rhs.viewMask_
+            && nearClip_ == rhs.nearClip_
+            && farClip_ == rhs.farClip_;
+    }
+    bool operator!=(const CubemapRenderingSettings& rhs) const { return !(*this == rhs); }
+};
+
+struct CubemapUpdateParameters
+{
+    CubemapRenderingSettings settings_;
+    Vector3 position_;
+    bool slicedUpdate_{};
+    bool filterResult_{};
+    WeakPtr<TextureCube> overrideFinalTexture_;
+
+    bool IsConsistentWith(const CubemapUpdateParameters& rhs) const
+    {
+        return settings_ == rhs.settings_
+            && slicedUpdate_ == rhs.slicedUpdate_
+            && filterResult_ == rhs.filterResult_
+            && overrideFinalTexture_ == rhs.overrideFinalTexture_;
+    }
 };
 
 /// Utility class that handles cubemap rendering from scene.
@@ -78,21 +104,19 @@ public:
     explicit CubemapRenderer(Scene* scene);
     ~CubemapRenderer() override;
 
-    static void DefineTexture(TextureCube* texture, const CubemapRenderingParameters& params);
+    static void DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings);
 
-    void Define(const CubemapRenderingParameters& params);
-    void OverrideOutputTexture(TextureCube* texture);
-    CubemapUpdateResult Update(const Vector3& position, bool slicedUpdate);
-
-    TextureCube* GetTexture() const { return renderTexture_; }
+    CubemapUpdateResult Update(const CubemapUpdateParameters& params);
 
 private:
     void InitializeRenderPipeline();
     void InitializeCameras();
-    void InitializeTexture(const CubemapRenderingParameters& params);
+
     void ConnectViewportsToTexture(TextureCube* texture);
     void DisconnectViewportsFromTexture(TextureCube* texture) const;
 
+    void PrepareForUpdate(const CubemapUpdateParameters& params);
+    bool IsTextureMatching(TextureCube* textureCube, const CubemapRenderingSettings& settings) const;
     CubemapUpdateResult UpdateFull();
     CubemapUpdateResult UpdateSliced();
     void QueueFaceUpdate(CubeMapFace face);
@@ -100,17 +124,23 @@ private:
     void ProcessFaceRendered();
     void ProcessCubemapRendered();
 
+    void FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture, ea::span<const unsigned> rayCounts);
+    void FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture);
+
     WeakPtr<Scene> scene_;
     ea::array<SharedPtr<Node>, MAX_CUBEMAP_FACES> renderCameras_;
     ea::array<SharedPtr<Viewport>, MAX_CUBEMAP_FACES> viewports_;
-
     SharedPtr<RenderPipeline> renderPipeline_;
-    SharedPtr<TextureCube> renderTexture_;
-    WeakPtr<TextureCube> overrideTexture_;
+    SharedPtr<TextureCube> viewportTexture_;
+    SharedPtr<TextureCube> filteredTexture_;
 
+    CubemapUpdateParameters currentParams_;
     CubemapUpdateStage updateStage_{};
     unsigned numFacesToUpdate_{};
     unsigned numFacesToRender_{};
+    WeakPtr<TextureCube> currentViewportTexture_;
+    WeakPtr<TextureCube> currentFilteredTexture_;
+    bool viewportsConnectedToSelf_{};
 };
 
 }

@@ -27,6 +27,7 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/ComputeBuffer.h"
 #include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
@@ -659,6 +660,9 @@ void RegisterGraphicsLibrary(Context* context)
     OcclusionBuffer::RegisterObject(context);
     ReflectionProbe::RegisterObject(context);
     ReflectionProbeManager::RegisterObject(context);
+#if defined(URHO3D_COMPUTE)
+    ComputeBuffer::RegisterObject(context);
+#endif
 }
 
 

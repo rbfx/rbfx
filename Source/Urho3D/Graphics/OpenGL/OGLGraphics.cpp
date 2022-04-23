@@ -2904,6 +2904,10 @@ void Graphics::CheckFeatureSupport()
     caps.maxTextureSize_ = GetIntParam(GL_MAX_TEXTURE_SIZE);
     const IntVector2 maxViewportDims = GetIntVectorParam(GL_MAX_VIEWPORT_DIMS);
     caps.maxRenderTargetSize_ = NextPowerOfTwo(ea::min(maxViewportDims.x_, maxViewportDims.y_) + 1) >> 1;
+	
+#ifdef URHO3D_COMPUTE
+    computeSupport_ = !!GLEW_VERSION_4_3;
+#endif	
 }
 
 void Graphics::PrepareDraw()

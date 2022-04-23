@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2017-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,38 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "../Precompiled.h"
 
+#include "../Graphics/ComputeBuffer.h"
+#include "../Graphics/Graphics.h"
 #include "../Core/Context.h"
-#include "../Core/Object.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/ShaderDefineArray.h"
 
-#include <EASTL/optional.h>
+#include "../DebugNew.h"
+
+#if defined(URHO3D_COMPUTE)
 
 namespace Urho3D
 {
 
-ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode);
-
-#ifdef URHO3D_SPIRV
-
-/// Convert GLSL shader to HLSL5.
-bool ConvertShaderToHLSL5(ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines,
-    ea::string& outputShaderCode, ea::string& errorMessage);
-
+ComputeBuffer::ComputeBuffer(Context* context) :
+    Object(context),
+    GPUObject(GetSubsystem<Graphics>())
+{
+#if defined(URHO3D_D3D11)
+    uav_ = nullptr;
 #endif
+}
+
+ComputeBuffer::~ComputeBuffer()
+{
+    Release();
+}
+
+void ComputeBuffer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<ComputeBuffer>();
+}
 
 }
+
+#endif

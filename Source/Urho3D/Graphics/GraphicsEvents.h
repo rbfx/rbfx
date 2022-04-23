@@ -149,4 +149,9 @@ URHO3D_EVENT(E_DEVICERESET, DeviceReset)
 {
 }
 
+URHO3D_EVENT(E_GPURESOURCERELEASED, GPUResourceReleased)
+{
+    URHO3D_PARAM(P_OBJECT, Object);                // Ptr
+}
+
 }

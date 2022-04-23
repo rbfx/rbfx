@@ -24,6 +24,7 @@
 
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsImpl.h"
+#include "../../Graphics/GraphicsEvents.h"
 #include "../../Graphics/VertexBuffer.h"
 #include "../../IO/Log.h"
 
@@ -48,6 +49,10 @@ void VertexBuffer::Release()
 
     if (graphics_)
     {
+        VariantMap& eventData = GetEventDataMap();
+        eventData[GPUResourceReleased::P_OBJECT] = this;
+        SendEvent(E_GPURESOURCERELEASED, eventData);
+
         for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
         {
             if (graphics_->GetVertexBuffer(i) == this)
@@ -237,7 +242,7 @@ bool VertexBuffer::Create()
 {
     Release();
 
-    if (!vertexCount_ || !elementMask_)
+    if (!vertexCount_ || (!elementMask_ && elements_.empty()))
         return true;
 
     if (graphics_)
@@ -245,6 +250,9 @@ bool VertexBuffer::Create()
         D3D11_BUFFER_DESC bufferDesc;
         memset(&bufferDesc, 0, sizeof bufferDesc);
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        if (!dynamic_ && graphics_->GetComputeSupport())
+            bufferDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+
         bufferDesc.CPUAccessFlags = dynamic_ ? D3D11_CPU_ACCESS_WRITE : 0;
         bufferDesc.Usage = dynamic_ ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
         bufferDesc.ByteWidth = (UINT)(vertexCount_ * vertexSize_);

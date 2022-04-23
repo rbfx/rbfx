@@ -389,4 +389,22 @@ unsigned Texture::GetDSVFormat(unsigned format)
     return 0;
 }
 
+bool Texture::IsComputeWriteable(unsigned format)
+{
+#ifdef URHO3D_COMPUTE
+    switch (format)
+    {
+    case GL_RGBA:
+    case GL_RGBA8:
+    case GL_RGBA16:
+    case GL_RGBA16F:
+    case GL_RGBA32F:
+    case GL_R32F:
+    case GL_R32UI:
+        return true;
+    }
+#endif
+    return false;
+}
+
 }
