@@ -83,7 +83,7 @@ public:
     bool SetWriteBuffer(ComputeBuffer* buffer, unsigned unit);
 
     /// Sets or clears the compute shader to use.
-    bool SetProgram(SharedPtr<ShaderVariation> computeShader);
+    bool SetProgram(ShaderVariation* computeShader);
     /// Dispatches the compute call, will queue a barrier as needed.
     void Dispatch(unsigned xDim, unsigned yDim, unsigned zDim);
     /// Apply all dirty GPU object bindings.

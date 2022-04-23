@@ -24,8 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
-// TODO(compute): Add filtering
-//#include "../Graphics/CubemapCapture.h"
+#include "../Graphics/ComputeDevice.h"
 #include "../Graphics/CubemapRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
@@ -33,6 +32,8 @@
 #include "../Graphics/TextureCube.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Scene/Node.h"
+
+#include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {
@@ -261,9 +262,8 @@ void CubemapRenderer::ProcessCubemapRendered()
     if (currentViewportTexture_ != viewportTexture_)
         DisconnectViewportsFromTexture(currentViewportTexture_);
 
-    // TODO(compute): Add filtering
     if (currentFilteredTexture_)
-        ; //CubemapCapture::FilterCubemaps_128({SharedPtr<TextureCube>(currentViewportTexture_)}, {SharedPtr<TextureCube>(currentFilteredTexture_)});
+        FilterCubemap(currentViewportTexture_, currentFilteredTexture_);
 
     TextureCube* finalTexture = currentFilteredTexture_ ? currentFilteredTexture_ : currentViewportTexture_;
     OnCubemapRendered(this, finalTexture);
@@ -280,6 +280,55 @@ void CubemapRenderer::QueueFaceUpdate(CubeMapFace face)
 
     RenderSurface* surface = currentViewportTexture_->GetRenderSurface(static_cast<CubeMapFace>(face));
     renderer->QueueRenderSurface(surface);
+}
+
+void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture, ea::span<const unsigned> rayCounts)
+{
+#if !defined(URHO3D_COMPUTE)
+    URHO3D_LOGERROR("CubemapRenderer::FilterCubemap cannot be executed without URHO3D_COMPUTE enabled");
+#else
+    auto graphics = GetSubsystem<Graphics>();
+    auto computeDevice = GetSubsystem<ComputeDevice>();
+
+    const unsigned numLevels = destTexture->GetLevels();
+    const float roughStep = 1.0f / (float)(numLevels - 1);
+
+    ea::fixed_vector<ShaderVariation*, 64> shaders;
+    for (unsigned i = 0; i < numLevels; ++i)
+    {
+        const unsigned levelWidth = destTexture->GetLevelWidth(i);
+        const unsigned rayCount = rayCounts[Clamp<unsigned>(i, 0, rayCounts.size() - 1)];
+
+        const ea::string shaderParams = Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
+            rayCount, levelWidth, 1.0f / levelWidth, roughStep * i);
+        shaders.push_back(graphics->GetShader(CS, "v2/C_FilterCubemap", shaderParams));
+    }
+
+    // go through them cubemap -> level
+    computeDevice->SetReadTexture(sourceTexture, 0);
+    for (unsigned i = 0; i < numLevels; ++i)
+    {
+        computeDevice->SetWriteTexture(destTexture, 1, UINT_MAX, i);
+        computeDevice->SetProgram(shaders[i]);
+        computeDevice->Dispatch(destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6);
+    }
+    computeDevice->SetWriteTexture(nullptr, 1, 0, 0);
+    computeDevice->ApplyBindings();
+#endif
+}
+
+void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture)
+{
+    const unsigned rayCounts[]{1, 8, 16};
+    const unsigned rayCounts128[]{1, 8, 16, 16, 16, 16, 32, 32};
+    const unsigned rayCounts256[]{1, 8, 16, 16, 16, 16, 16, 32, 32};
+
+    if (destTexture->GetWidth() == 128)
+        FilterCubemap(sourceTexture, destTexture, rayCounts128);
+    else if (destTexture->GetWidth() == 256)
+        FilterCubemap(sourceTexture, destTexture, rayCounts256);
+    else
+        FilterCubemap(sourceTexture, destTexture, rayCounts);
 }
 
 }

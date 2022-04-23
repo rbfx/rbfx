@@ -29,7 +29,6 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/ComputeBuffer.h"
 #include "../Graphics/ConstantBuffer.h"
-#include "../Graphics/CubemapCapture.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"

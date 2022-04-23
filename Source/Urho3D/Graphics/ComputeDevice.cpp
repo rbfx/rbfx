@@ -54,7 +54,7 @@ ComputeDevice::~ComputeDevice()
     ReleaseLocalState();
 }
 
-bool ComputeDevice::SetProgram(SharedPtr<ShaderVariation> shaderVariation)
+bool ComputeDevice::SetProgram(ShaderVariation* shaderVariation)
 {
     if (shaderVariation && shaderVariation->GetShaderType() != CS)
     {
