@@ -43,6 +43,8 @@
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Replica/BehaviorNetworkObject.h>
+#include <Urho3D/Replica/ClientReplica.h>
+#include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
@@ -57,8 +59,6 @@
 
 // UDP port we will use
 static const unsigned short SERVER_PORT = 2345;
-// Identifier for our custom remote event we use to tell the client which object they control
-static const StringHash E_CLIENTOBJECTID("ClientObjectID");
 // Identifier for the node ID parameter in the event data
 static const StringHash P_ID("ID");
 
@@ -328,10 +328,6 @@ void SceneReplication::SubscribeToEvents()
     SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(SceneReplication, HandleConnectionStatus));
     SubscribeToEvent(E_CLIENTCONNECTED, URHO3D_HANDLER(SceneReplication, HandleClientConnected));
     SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(SceneReplication, HandleClientDisconnected));
-    // This is a custom event, sent from the server to the client. It tells the node ID of the object the client should control
-    SubscribeToEvent(E_CLIENTOBJECTID, URHO3D_HANDLER(SceneReplication, HandleClientObjectID));
-    // Events sent between client & server (remote events) must be explicitly registered or else they are not allowed to be received
-    GetSubsystem<Network>()->RegisterRemoteEvent(E_CLIENTOBJECTID);
 }
 
 Button* SceneReplication::CreateButton(const ea::string& text, int width)
@@ -397,6 +393,19 @@ Node* SceneReplication::CreateControllableObject(Connection* owner)
     return playerNode;
 }
 
+Node* SceneReplication::GetPlayerObject()
+{
+    if (auto* replicationManager = scene_->GetComponent<ReplicationManager>())
+    {
+        if (ClientReplica* clientReplica = replicationManager->GetClientReplica())
+        {
+            if (NetworkObject* networkObject = clientReplica->GetOwnedNetworkObject())
+                return networkObject->GetNode();
+        }
+    }
+    return nullptr;
+}
+
 void SceneReplication::MoveCamera()
 {
     // Right mouse button controls mouse cursor visibility: hide when pressed
@@ -422,17 +431,13 @@ void SceneReplication::MoveCamera()
 
     // Only move the camera / show instructions if we have a controllable object
     bool showInstructions = false;
-    if (clientObjectID_)
+    if (Node* playerNode = GetPlayerObject())
     {
-        Node* ballNode = scene_->GetNode(clientObjectID_);
-        if (ballNode)
-        {
-            const float CAMERA_DISTANCE = 5.0f;
+        const float CAMERA_DISTANCE = 5.0f;
 
-            // Move camera some distance away from the ball
-            cameraNode_->SetPosition(ballNode->GetPosition() + cameraNode_->GetRotation() * Vector3::BACK * CAMERA_DISTANCE);
-            showInstructions = true;
-        }
+        // Move camera some distance away from the ball
+        cameraNode_->SetPosition(playerNode->GetPosition() + cameraNode_->GetRotation() * Vector3::BACK * CAMERA_DISTANCE);
+        showInstructions = true;
     }
 
     instructionsText_->SetVisible(showInstructions);
@@ -473,12 +478,11 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
     Connection* serverConnection = network->GetServerConnection();
 
     // Client: collect controls
-    if (serverConnection && clientObjectID_)
+    if (serverConnection)
     {
         auto* ui = GetSubsystem<UI>();
         auto* input = GetSubsystem<Input>();
-
-        if (Node* playerNode = scene_->GetNode(clientObjectID_))
+        if (Node* playerNode = GetPlayerObject())
         {
             PlayerControls controls;
 
@@ -545,7 +549,6 @@ void SceneReplication::HandleConnect(StringHash eventType, VariantMap& eventData
         address = "localhost"; // Use localhost to connect if nothing else specified
 
     // Connect to server, specify scene to use as a client for replication
-    clientObjectID_ = 0; // Reset own object ID from possible previous connection
     network->Connect(address, SERVER_PORT, scene_);
 
     UpdateButtons();
@@ -560,14 +563,11 @@ void SceneReplication::HandleDisconnect(StringHash eventType, VariantMap& eventD
     if (serverConnection)
     {
         serverConnection->Disconnect();
-        scene_->Clear(true, false);
-        clientObjectID_ = 0;
     }
     // Or if we were running a server, stop it
     else if (network->IsServerRunning())
     {
         network->StopServer();
-        scene_->Clear(true, false);
     }
 
     UpdateButtons();
@@ -597,11 +597,6 @@ void SceneReplication::HandleClientConnected(StringHash eventType, VariantMap& e
     // Then create a controllable object for that client
     Node* newObject = CreateControllableObject(newConnection);
     serverObjects_[newConnection] = newObject;
-
-    // Finally send the object's node ID using a remote event
-    VariantMap remoteEventData;
-    remoteEventData[P_ID] = newObject->GetID();
-    newConnection->SendRemoteEvent(E_CLIENTOBJECTID, true, remoteEventData);
 }
 
 void SceneReplication::HandleClientDisconnected(StringHash eventType, VariantMap& eventData)
@@ -615,9 +610,4 @@ void SceneReplication::HandleClientDisconnected(StringHash eventType, VariantMap
         object->Remove();
 
     serverObjects_.erase(connection);
-}
-
-void SceneReplication::HandleClientObjectID(StringHash eventType, VariantMap& eventData)
-{
-    clientObjectID_ = eventData[P_ID].GetUInt();
 }
