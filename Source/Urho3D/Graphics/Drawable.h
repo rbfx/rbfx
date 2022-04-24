@@ -26,6 +26,7 @@
 
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/PipelineStateTracker.h"
+#include "../Graphics/ReflectionProbeData.h"
 #include "../Math/BoundingBox.h"
 #include "../Scene/Component.h"
 
@@ -60,10 +61,13 @@ class OcclusionBuffer;
 class Octree;
 class Octant;
 class RayOctreeQuery;
+class ReflectionProbe;
+class ReflectionProbeManager;
 class RenderSurface;
 class Viewport;
 class Zone;
 struct RayQueryResult;
+struct ReflectionProbeData;
 struct WorkItem;
 
 /// Geometry update type.
@@ -80,6 +84,16 @@ enum class GlobalIlluminationType
     None,
     UseLightMap,
     BlendLightProbes,
+};
+
+/// Reflection mode.
+/// TODO: Need to update PipelineState hash if add blending modes
+enum class ReflectionMode
+{
+    Zone,
+    NearestProbe,
+    BlendProbes,
+    BlendProbesAndZone
 };
 
 /// Rendering frame update parameters.
@@ -99,12 +113,13 @@ struct FrameInfo
     /// Destination render surface.
     RenderSurface* renderTarget_{};
 
-    /// Scene being rendered.
+    /// Scene and pre-fetched Scene components.
+    /// @{
     Scene* scene_{};
-    /// Camera being used for drawable culling.
     Camera* camera_{};
-    /// Octree being used for queries.
     Octree* octree_{};
+    ReflectionProbeManager* reflectionProbeManager_{};
+    /// @}
 };
 
 /// Cached info about current zone.
@@ -116,6 +131,19 @@ struct CachedDrawableZone
     Vector3 cachePosition_;
     /// Cache invalidation distance (squared).
     float cacheInvalidationDistanceSquared_{ -1.0f };
+};
+
+/// Cached info about current static reflection probe.
+struct CachedDrawableReflection
+{
+    /// Most important reflection probes affecting Drawable.
+    ea::array<ReflectionProbeReference, 2> staticProbes_{};
+    ea::array<ReflectionProbeReference, 2> probes_{};
+
+    /// Information for cache invalidation.
+    unsigned cacheRevision_{};
+    Vector3 cachePosition_;
+    float cacheInvalidationDistanceSquared_{-1.0f};
 };
 
 /// Source data for a 3D geometry draw call.
@@ -195,6 +223,8 @@ public:
     virtual void Update(const FrameInfo& frame) { }
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     virtual void UpdateBatches(const FrameInfo& frame);
+    /// Batch update from main thread. Called on demand only if RequestUpdateBatchesDelayed() is called from UpdateBatches().
+    virtual void UpdateBatchesDelayed(const FrameInfo& frame) { }
     /// Prepare geometry for rendering.
     virtual void UpdateGeometry(const FrameInfo& frame) { }
 
@@ -247,6 +277,8 @@ public:
     void SetOccludee(bool enable);
     /// Set GI type.
     void SetGlobalIlluminationType(GlobalIlluminationType type);
+    /// Set reflection mode.
+    void SetReflectionMode(ReflectionMode mode);
     /// Mark for update and octree reinsertion. Update is automatically queued when the drawable's scene node moves or changes scale.
     void MarkForUpdate();
 
@@ -307,6 +339,9 @@ public:
 
     /// Return global illumination type.
     GlobalIlluminationType GetGlobalIlluminationType() const { return giType_; }
+
+    /// Return reflection mode.
+    ReflectionMode GetReflectionMode() const { return reflectionMode_; }
 
     /// Return whether is in view this frame from any viewport camera. Excludes shadow map cameras.
     /// @property
@@ -393,6 +428,9 @@ public:
     /// Return mutable cached zone data.
     CachedDrawableZone& GetMutableCachedZone() { return cachedZone_; }
 
+    /// Return mutable cached reflection data.
+    CachedDrawableReflection& GetMutableCachedReflection() { return cachedReflection_; }
+
     /// Return combined light masks of Drawable and its currently cached Zone.
     unsigned GetLightMaskInZone() const;
 
@@ -439,6 +477,8 @@ protected:
     void AddToOctree();
     /// Remove from octree.
     void RemoveFromOctree();
+    /// Request UpdateBatchesDelayed call from main thread.
+    void RequestUpdateBatchesDelayed(const FrameInfo& frame);
 
     /// Move into another octree octant.
     void SetOctant(Octant* octant) { octant_ = octant; }
@@ -455,6 +495,8 @@ protected:
     DrawableFlags drawableFlags_;
     /// Global illumination type.
     GlobalIlluminationType giType_{};
+    /// Reflection mode.
+    ReflectionMode reflectionMode_{ReflectionMode::BlendProbesAndZone};
     /// Bounding box dirty flag.
     bool worldBoundingBoxDirty_;
     /// Shadowcaster flag.
@@ -473,6 +515,8 @@ protected:
     unsigned drawableIndex_{ M_MAX_UNSIGNED };
     /// Current zone.
     CachedDrawableZone cachedZone_;
+    /// Current reflection.
+    CachedDrawableReflection cachedReflection_;
     /// View mask.
     unsigned viewMask_;
     /// Light mask.

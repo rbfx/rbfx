@@ -1598,11 +1598,11 @@ const Rect& Renderer::GetLightScissor(Light* light, Camera* camera)
 
 void Renderer::UpdateQueuedViewport(unsigned index)
 {
-    WeakPtr<RenderSurface>& renderTarget = queuedViewports_[index].first;
-    WeakPtr<Viewport>& viewport = queuedViewports_[index].second;
+    WeakPtr<RenderSurface> renderTarget = queuedViewports_[index].first;
+    Viewport* viewport = queuedViewports_[index].second;
 
     // Null pointer means backbuffer view. Differentiate between that and an expired rendersurface
-    if ((renderTarget && renderTarget.Expired()) || viewport.Expired())
+    if ((renderTarget && renderTarget.Expired()) || !viewport || !viewport->GetScene())
         return;
 
     // (Re)allocate the view structure if necessary

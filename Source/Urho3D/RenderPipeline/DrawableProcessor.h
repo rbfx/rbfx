@@ -203,6 +203,7 @@ protected:
     void ProcessVisibleDrawable(Drawable* drawable);
     void ProcessQueuedDrawable(Drawable* drawable);
     void UpdateDrawableZone(const BoundingBox& boundingBox, Drawable* drawable) const;
+    void UpdateDrawableReflection(const BoundingBox& boundingBox, Drawable* drawable) const;
     void QueueDrawableUpdate(Drawable* drawable);
     void QueueDrawableGeometryUpdate(unsigned threadIndex, Drawable* drawable);
     void CheckMaterialForAuxiliaryRenderSurfaces(Material* material);

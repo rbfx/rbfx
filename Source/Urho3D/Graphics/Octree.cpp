@@ -28,10 +28,10 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/Thread.h"
-#include "../Core/WorkQueue.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
@@ -393,7 +393,7 @@ void ZoneLookupIndex::Commit()
 CachedDrawableZone ZoneLookupIndex::QueryZone(const Vector3& position, unsigned zoneMask) const
 {
     float minDistanceToOtherZone = M_LARGE_VALUE;
-    float distanceToBestZone = M_LARGE_VALUE;
+    float distanceToBestZoneBorder = M_LARGE_VALUE;
     Zone* bestZone = nullptr;
 
     const unsigned numZones = zones_.size();
@@ -415,11 +415,11 @@ CachedDrawableZone ZoneLookupIndex::QueryZone(const Vector3& position, unsigned 
         {
             // Zone may affect point
             bestZone = zones_[i];
-            distanceToBestZone = -signedDistance;
+            distanceToBestZoneBorder = -signedDistance;
         }
     }
 
-    const float cacheInvalidationDistance = ea::min(minDistanceToOtherZone, distanceToBestZone);
+    const float cacheInvalidationDistance = ea::min(minDistanceToOtherZone, distanceToBestZoneBorder);
     return { bestZone ? bestZone : defaultZone_, position, cacheInvalidationDistance * cacheInvalidationDistance };
 }
 
@@ -498,10 +498,9 @@ void Octree::Update(const FrameInfo& frame)
         auto* queue = GetSubsystem<WorkQueue>();
         scene->BeginThreadedUpdate();
 
-        const unsigned numThreads = queue->GetNumThreads() + 1;
-        pendingNodeTransforms_.Clear(numThreads);
+        pendingNodeTransforms_.Clear();
 
-        int numWorkItems = numThreads; // Worker threads + main thread
+        int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
         int drawablesPerItem = Max((int)(drawableUpdates_.size() / numWorkItems), 1);
 
         auto start = drawableUpdates_.begin();
@@ -597,7 +596,16 @@ void Octree::Update(const FrameInfo& frame)
     }
 
     drawableUpdates_.clear();
+
+    // Update other singletons.
+    // TODO: Refactor it, maybe split Octree?
     zones_.Commit();
+
+    if (scene)
+    {
+        if (auto reflectionProbeManager = scene->GetComponent<ReflectionProbeManager>())
+            reflectionProbeManager->Update();
+    }
 }
 
 void Octree::AddManualDrawable(Drawable* drawable)
@@ -680,6 +688,9 @@ void Octree::RemoveDrawable(Drawable* drawable, Octant* octant)
     drawables_.pop_back();
     drawable->SetDrawableIndex(M_MAX_UNSIGNED);
     drawable->updateQueued_ = false;
+
+    drawable->GetMutableCachedZone() = {};
+    drawable->GetMutableCachedReflection() = {};
 }
 
 void Octree::MarkZoneDirty(Zone* zone)
@@ -781,7 +792,7 @@ void Octree::CancelUpdate(Drawable* drawable)
 
 void Octree::QueueNodeTransformUpdate(Node* node, const Transform& transform)
 {
-    pendingNodeTransforms_.EmplaceBack(WorkQueue::GetThreadIndex(), node, transform);
+    pendingNodeTransforms_.Emplace(node, transform);
 }
 
 void Octree::DrawDebugGeometry(bool depthTest)

@@ -180,6 +180,16 @@ void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQu
     }
 }
 
+unsigned BillboardSet::GetVertexBufferFormat() const
+{
+    if (faceCameraMode_ == FC_AXIS_ANGLE)
+        return MASK_POSITION | MASK_NORMAL | MASK_COLOR | MASK_TEXCOORD1 | MASK_TANGENT;
+    else if (faceCameraMode_ == FC_DIRECTION)
+        return MASK_POSITION | MASK_NORMAL | MASK_COLOR | MASK_TEXCOORD1 | MASK_TEXCOORD2;
+    else
+        return MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1 | MASK_TEXCOORD2;
+}
+
 void BillboardSet::UpdateBatches(const FrameInfo& frame)
 {
     // If beginning a new frame, assume no sorting first
@@ -227,6 +237,15 @@ void BillboardSet::UpdateBatches(const FrameInfo& frame)
     else
         billboardRotation = node_->GetWorldRotation();
     transforms_[1] = Matrix3x4(Vector3::ZERO, billboardRotation, Vector3::ONE);
+
+    // Update buffer size and format
+    if (bufferSizeDirty_ || indexBuffer_->IsDataLost())
+        RequestUpdateBatchesDelayed(frame);
+}
+
+void BillboardSet::UpdateBatchesDelayed(const FrameInfo& frame)
+{
+    UpdateBufferSize();
 }
 
 void BillboardSet::UpdateGeometry(const FrameInfo& frame)
@@ -241,9 +260,6 @@ void BillboardSet::UpdateGeometry(const FrameInfo& frame)
         transforms_[1] = Matrix3x4(Vector3::ZERO, frame.camera_->GetFaceCameraRotation(node_->GetWorldPosition(),
             node_->GetWorldRotation(), faceCameraMode_, minAngle_), Vector3::ONE);
     }
-
-    if (bufferSizeDirty_ || indexBuffer_->IsDataLost())
-        UpdateBufferSize();
 
     if (bufferDirty_ || sortThisFrame_ || vertexBuffer_->IsDataLost())
         UpdateVertexBuffer(frame);
@@ -521,21 +537,8 @@ void BillboardSet::UpdateBufferSize()
 
     if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_)
     {
-        if (faceCameraMode_ == FC_AXIS_ANGLE)
-        {
-            vertexBuffer_->SetSize(numBillboards * 4, MASK_POSITION | MASK_NORMAL | MASK_COLOR | MASK_TEXCOORD1 | MASK_TANGENT, true);
-            geometry_->SetVertexBuffer(0, vertexBuffer_);
-        }
-        else if (faceCameraMode_ == FC_DIRECTION)
-        {
-            vertexBuffer_->SetSize(numBillboards * 4, MASK_POSITION | MASK_NORMAL | MASK_COLOR | MASK_TEXCOORD1 | MASK_TEXCOORD2, true);
-            geometry_->SetVertexBuffer(0, vertexBuffer_);
-        }
-        else
-        {
-            vertexBuffer_->SetSize(numBillboards * 4, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1 | MASK_TEXCOORD2, true);
-            geometry_->SetVertexBuffer(0, vertexBuffer_);
-        }
+        vertexBuffer_->SetSize(numBillboards * 4, GetVertexBufferFormat(), true);
+        geometry_->SetVertexBuffer(0, vertexBuffer_);
         geometryTypeUpdate_ = false;
     }
 
@@ -734,7 +737,7 @@ void BillboardSet::BuildAxisAngleVertexBuffer(unsigned enabledBillboards, float*
         SinCos(billboard.rotation_, rotation_sin, rotation_cos);
 
         Matrix3 rot(billboard.rotation_, billboard.direction_);
-        
+
         *reinterpret_cast<Vector3*>(dest) = billboard.position_ + rot * Vector3(-size.x_, size.y_);
         dest += 3;
         *reinterpret_cast<Vector3*>(dest) = rot.Column(2);

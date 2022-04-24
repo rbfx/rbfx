@@ -21,23 +21,39 @@
     half3 CalculateAmbientLighting(const SurfaceData surfaceData)
     {
     #ifdef URHO3D_PHYSICAL_MATERIAL
-        half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;
-        #ifdef URHO3D_BLUR_REFLECTION
-            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor.rgb);
+
+        #ifdef URHO3D_BLEND_REFLECTIONS
+            half3 linearReflectionColor0 = GammaToLinearSpace(surfaceData.reflectionColor[0].rgb);
+            half3 linearReflectionColor1 = GammaToLinearSpace(surfaceData.reflectionColor[1].rgb);
+
+            half3 linearReflectionColor = mix(
+                linearReflectionColor0, linearReflectionColor1, cReflectionBlendFactor);
         #else
-            half3 linearReflectionColor = mix(GammaToLinearSpace(surfaceData.reflectionColor.rgb),
-                cReflectionAverageColor, surfaceData.roughness * surfaceData.roughness);
+            half3 linearReflectionColor = GammaToLinearSpace(surfaceData.reflectionColor[0].rgb);
         #endif
+
+        half NoV = abs(dot(surfaceData.normal, surfaceData.eyeVec)) + 1e-5;
         half3 diffuseAndSpecularColor = Indirect_PBR(
             surfaceData.ambientLighting, linearReflectionColor,
             surfaceData.albedo.rgb, surfaceData.specular,
             surfaceData.roughness, NoV);
+
     #elif defined(URHO3D_REFLECTION_MAPPING)
+
+        #ifdef URHO3D_BLEND_REFLECTIONS
+            half3 gammaReflectionColor = mix(
+                surfaceData.reflectionColor[0].rgb, surfaceData.reflectionColor[1].rgb, cReflectionBlendFactor);
+        #else
+            half3 gammaReflectionColor = surfaceData.reflectionColor[0].rgb;
+        #endif
+
         half3 diffuseAndSpecularColor = Indirect_SimpleReflection(
-            surfaceData.ambientLighting, surfaceData.reflectionColor.rgb, surfaceData.albedo.rgb, cMatEnvMapColor);
+            surfaceData.ambientLighting, gammaReflectionColor, surfaceData.albedo.rgb, cMatEnvMapColor);
+
     #else
-        half3 diffuseAndSpecularColor = Indirect_Simple(
-            surfaceData.ambientLighting, surfaceData.albedo.rgb, cMatEnvMapColor);
+
+        half3 diffuseAndSpecularColor = Indirect_Simple(surfaceData.ambientLighting, surfaceData.albedo.rgb);
+
     #endif
         return diffuseAndSpecularColor * surfaceData.occlusion + surfaceData.emission;
     }

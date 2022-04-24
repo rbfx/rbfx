@@ -25,6 +25,7 @@
 #include "../../Core/Context.h"
 #include "../../Core/ProcessUtils.h"
 #include "../../Core/Profiler.h"
+#include "../../Graphics/ComputeDevice.h"
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Geometry.h"
 #include "../../Graphics/Graphics.h"
@@ -2275,6 +2276,10 @@ void Graphics::CheckFeatureSupport()
     caps.maxTextureSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     caps.maxRenderTargetSize_ = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     caps.maxNumRenderTargets_ = 8;
+	
+#ifdef URHO3D_COMPUTE
+    computeSupport_ = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+#endif	
 }
 
 void Graphics::ResetCachedState()

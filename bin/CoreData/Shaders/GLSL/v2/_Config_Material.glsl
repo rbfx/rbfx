@@ -225,6 +225,14 @@
     #endif
 #endif
 
+// If box projection is used for cubemap reflections, pixel shader needs world position.
+#if defined(URHO3D_SURFACE_NEED_REFLECTION_COLOR) && !defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT) \
+    && defined(URHO3D_BOX_PROJECTION)
+    #ifndef URHO3D_PIXEL_NEED_WORLD_POSITION
+        #define URHO3D_PIXEL_NEED_WORLD_POSITION
+    #endif
+#endif
+
 /// If pixel shader needs normal, vertex shader needs normal.
 #ifdef URHO3D_PIXEL_NEED_NORMAL
     #ifndef URHO3D_VERTEX_NEED_NORMAL
@@ -254,9 +262,23 @@
     #endif
 #endif
 
+/// If planar reflection is used, disable reflection blending.
+#ifdef URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
+    #ifdef URHO3D_BLEND_REFLECTIONS
+        #undef URHO3D_BLEND_REFLECTIONS
+    #endif
+#endif
+
 /// If shadow normal offset is enabled, vertex shader needs normal.
 #ifdef URHO3D_SHADOW_NORMAL_OFFSET
     #ifndef URHO3D_VERTEX_NEED_NORMAL
         #define URHO3D_VERTEX_NEED_NORMAL
     #endif
+#endif
+
+/// Number of reflections handled by the code
+#ifdef URHO3D_BLEND_REFLECTIONS
+    #define URHO3D_NUM_REFLECTIONS 2
+#else
+    #define URHO3D_NUM_REFLECTIONS 1
 #endif

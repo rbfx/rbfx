@@ -125,9 +125,11 @@ void Renderer2D::UpdateBatches(const FrameInfo& frame)
         batches_[i].distance_ = 10.0f + (count - i) * 0.001f;
         batches_[i].worldTransform_ = &Matrix3x4::IDENTITY;
     }
+
+    RequestUpdateBatchesDelayed(frame);
 }
 
-void Renderer2D::UpdateGeometry(const FrameInfo& frame)
+void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
 {
     unsigned indexCount = 0;
     for (auto i = viewBatchInfos_.begin(); i !=
@@ -219,11 +221,6 @@ void Renderer2D::UpdateGeometry(const FrameInfo& frame)
 
         viewBatchInfo.vertexBufferUpdateFrameNumber_ = frame_.frameNumber_;
     }
-}
-
-UpdateGeometryType Renderer2D::GetUpdateGeometryType()
-{
-    return UPDATE_MAIN_THREAD;
 }
 
 void Renderer2D::AddDrawable(Drawable2D* drawable)

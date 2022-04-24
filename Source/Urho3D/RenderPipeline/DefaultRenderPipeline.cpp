@@ -79,17 +79,20 @@ void DefaultRenderPipelineView::SetSettings(const RenderPipelineSettings& settin
 
 void DefaultRenderPipelineView::SendViewEvent(StringHash eventType)
 {
+    Texture* parentTexture = frameInfo_.renderTarget_ ? frameInfo_.renderTarget_->GetParentTexture() : nullptr;
+
     using namespace BeginViewRender;
 
     VariantMap& eventData = GetEventDataMap();
 
     eventData[P_RENDERPIPELINEVIEW] = this;
     eventData[P_SURFACE] = frameInfo_.renderTarget_;
-    eventData[P_TEXTURE] = frameInfo_.renderTarget_ ? frameInfo_.renderTarget_->GetParentTexture() : nullptr;
+    eventData[P_TEXTURE] = parentTexture;
     eventData[P_SCENE] = sceneProcessor_->GetFrameInfo().scene_;
     eventData[P_CAMERA] = sceneProcessor_->GetFrameInfo().camera_;
 
-    renderer_->SendEvent(eventType, eventData);
+    Object* sender = parentTexture ? static_cast<Object*>(parentTexture) : renderer_;
+    sender->SendEvent(eventType, eventData);
 }
 
 void DefaultRenderPipelineView::ApplySettings()
@@ -199,6 +202,9 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
 {
     URHO3D_PROFILE("SetupRenderPipeline");
 
+    if (!viewport->GetScene())
+        return false;
+
     // Lazy initialize heavy objects
     if (!sceneProcessor_)
     {
@@ -289,6 +295,7 @@ void DefaultRenderPipelineView::Render()
     // HACK: Graphics may keep expired vertex buffers for some reason, reset it just in case
     graphics_->SetVertexBuffer(nullptr);
 
+    sceneProcessor_->PrepareDrawablesBeforeRendering();
     sceneProcessor_->PrepareInstancingBuffer();
     sceneProcessor_->RenderShadowMaps();
 
@@ -375,7 +382,7 @@ void DefaultRenderPipelineView::Render()
         postProcessPass->Execute();
 
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
-    if (debug && debug->IsEnabledEffective() && debug->HasContent())
+    if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
         renderBufferManager_->SetOutputRenderTargers();
         debug->SetView(sceneProcessor_->GetFrameInfo().camera_);

@@ -6,6 +6,10 @@
 /// @{
 VERTEX_OUTPUT_HIGHP(float vWorldDepth)
 
+#ifdef URHO3D_PIXEL_NEED_WORLD_POSITION
+    VERTEX_OUTPUT_HIGHP(vec3 vWorldPos)
+#endif
+
 #ifdef URHO3D_PIXEL_NEED_NORMAL
     VERTEX_OUTPUT(half3 vNormal)
 #endif

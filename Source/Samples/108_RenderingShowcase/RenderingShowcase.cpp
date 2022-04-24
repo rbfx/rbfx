@@ -49,6 +49,7 @@ RenderingShowcase::RenderingShowcase(Context* context) : Sample(context)
     // All these scenes correspond to Scenes/RenderingShowcase_*.xml resources
     sceneNames_.push_back({ "0" });
     sceneNames_.push_back({ "2_Dynamic", "2_BakedDirect", "2_BakedIndirect", "2_BakedDirectIndirect" });
+    sceneNames_.push_back({ "3_MixedBoxProbes", "3_MixedProbes" });
     // Keep 1 last because it may crash mobile browsers
     sceneNames_.push_back({ "1" });
 }
@@ -111,7 +112,9 @@ void RenderingShowcase::CreateScene()
     probeObject_ = probeObjectNode->CreateComponent<StaticModel>();
     probeObject_->SetModel(cache->GetResource<Model>("Models/TeaPot.mdl"));
     probeObject_->SetCastShadows(true);
+    probeObject_->SetViewMask(0x1);
     probeObject_->SetGlobalIlluminationType(GlobalIlluminationType::BlendLightProbes);
+    probeObject_->SetReflectionMode(ReflectionMode::BlendProbesAndZone);
 }
 
 void RenderingShowcase::SetupSelectedScene(bool resetCamera)
@@ -163,8 +166,9 @@ void RenderingShowcase::MoveCamera(float timeStep)
     // Right mouse button controls mouse cursor visibility: hide when pressed
     auto* input = GetSubsystem<Input>();
 
+    const bool slowMovement = input->GetKeyDown(KEY_CTRL);
     // Movement speed as world units per second
-    const float MOVE_SPEED = 10.0f;
+    const float moveSpeed = slowMovement ? 2.0f : 10.0f;
     // Mouse sensitivity as degrees per pixel
     const float MOUSE_SENSITIVITY = 0.1f;
 
@@ -179,18 +183,21 @@ void RenderingShowcase::MoveCamera(float timeStep)
 
     // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
     if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * MOVE_SPEED * timeStep);
+        cameraNode_->Translate(Vector3::FORWARD * moveSpeed * timeStep);
     if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * timeStep);
+        cameraNode_->Translate(Vector3::BACK * moveSpeed * timeStep);
     if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * MOVE_SPEED * timeStep);
+        cameraNode_->Translate(Vector3::LEFT * moveSpeed * timeStep);
     if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
+        cameraNode_->Translate(Vector3::RIGHT * moveSpeed * timeStep);
 }
 
 void RenderingShowcase::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     using namespace Update;
+
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* input = GetSubsystem<Input>();
 
     // Take the frame time step, which is stored as a float
     float timeStep = eventData[P_TIMESTEP].GetFloat();
@@ -202,7 +209,6 @@ void RenderingShowcase::HandleUpdate(StringHash eventType, VariantMap& eventData
     probeObject_->GetNode()->SetWorldRotation(Quaternion::IDENTITY);
 
     // Update scene
-    auto* input = GetSubsystem<Input>();
     if (sceneNames_.size() > 1 && input->GetKeyPress(KEY_TAB))
     {
         sceneIndex_ = (sceneIndex_ + 1) % sceneNames_.size();
@@ -218,13 +224,31 @@ void RenderingShowcase::HandleUpdate(StringHash eventType, VariantMap& eventData
     }
 
     // Update probe object
+    static const ea::string probeMaterials[] = {
+        "",
+        "Materials/Constant/GlossyWhiteDielectric.xml",
+        "Materials/Constant/GlossyWhiteMetal.xml",
+        "Materials/CheckboardProperties.xml",
+    };
     if (input->GetKeyPress(KEY_F))
     {
+        const unsigned numProbeMaterials = sizeof(probeMaterials) / sizeof(probeMaterials[0]);
+        probeMaterialIndex_ = (probeMaterialIndex_ + 1) % numProbeMaterials;
+        const ea::string& probeMaterialName = probeMaterials[probeMaterialIndex_];
+
         const bool isProbeObjectVisible = probeObject_->IsInOctree();
+        const bool shouldProbeObjectBeVisible = !probeMaterialName.empty();
+
         auto* octree = scene_->GetComponent<Octree>();
-        if (isProbeObjectVisible)
+        if (isProbeObjectVisible && !shouldProbeObjectBeVisible)
             octree->RemoveManualDrawable(probeObject_);
-        else
+        else if (!isProbeObjectVisible && shouldProbeObjectBeVisible)
             octree->AddManualDrawable(probeObject_);
+
+        if (shouldProbeObjectBeVisible)
+        {
+            auto probeModel = probeObject_->GetComponent<StaticModel>();
+            probeModel->SetMaterial(cache->GetResource<Material>(probeMaterialName));
+        }
     }
 }

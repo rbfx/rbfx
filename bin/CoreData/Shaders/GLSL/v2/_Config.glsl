@@ -33,6 +33,7 @@
 // #define URHO3D_PIXEL_NEED_NORMAL
 // #define URHO3D_PIXEL_NEED_TANGENT
 // #define URHO3D_PIXEL_NEED_VERTEX_COLOR
+// #define URHO3D_PIXEL_NEED_WORLD_POSITION
 
 /// Configures what data pixel shader needs to prepare for user shader:
 // #define URHO3D_SURFACE_NEED_AMBIENT

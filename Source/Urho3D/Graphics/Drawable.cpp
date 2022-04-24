@@ -26,6 +26,7 @@
 #include <EASTL/sort.h>
 
 #include "../Core/Context.h"
+#include "../Core/WorkQueue.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../IO/File.h"
@@ -52,7 +53,14 @@ const char* GEOMETRY_CATEGORY = "Geometry";
 static const ea::vector<ea::string> giTypeNames = {
     "None",
     "Use LightMap",
-    "Blend Light Probes"
+    "Blend Light Probes",
+};
+
+static const ea::vector<ea::string> reflectionModeNames = {
+    "Zone",
+    "Nearest Probe",
+    "Blend Probes",
+    "Blend Probes and Zone",
 };
 
 SourceBatch::SourceBatch() = default;
@@ -107,6 +115,7 @@ void Drawable::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Shadow Mask", int, shadowMask_, DEFAULT_SHADOWMASK, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Zone Mask", GetZoneMask, SetZoneMask, unsigned, DEFAULT_ZONEMASK, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Global Illumination", GetGlobalIlluminationType, SetGlobalIlluminationType, GlobalIlluminationType, giTypeNames, GlobalIlluminationType::None, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Reflection Mode", GetReflectionMode, SetReflectionMode, ReflectionMode, reflectionModeNames, ReflectionMode::BlendProbesAndZone, AM_DEFAULT);
 }
 
 void Drawable::OnSetEnabled()
@@ -262,6 +271,13 @@ void Drawable::SetGlobalIlluminationType(GlobalIlluminationType type)
     MarkNetworkUpdate();
 }
 
+void Drawable::SetReflectionMode(ReflectionMode mode)
+{
+    reflectionMode_ = mode;
+    MarkPipelineStateHashDirty();
+    MarkNetworkUpdate();
+}
+
 void Drawable::MarkForUpdate()
 {
     if (!updateQueued_ && octant_)
@@ -321,6 +337,7 @@ unsigned Drawable::RecalculatePipelineStateHash() const
     unsigned hash = 0;
     CombineHash(hash, GetLightMaskInZone() & PORTABLE_LIGHTMASK);
     CombineHash(hash, static_cast<unsigned>(giType_));
+    CombineHash(hash, reflectionMode_ >= ReflectionMode::BlendProbes);
     return hash;
 }
 
@@ -464,6 +481,15 @@ void Drawable::RemoveFromOctree()
 
         octree->RemoveDrawable(this, octant_);
     }
+}
+
+void Drawable::RequestUpdateBatchesDelayed(const FrameInfo& frame)
+{
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->CallFromMainThread([this, &frame](unsigned)
+    {
+        UpdateBatchesDelayed(frame);
+    });
 }
 
 bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)

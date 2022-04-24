@@ -389,6 +389,7 @@ enum class DrawableAmbientMode
 struct BatchRendererSettings
 {
     bool linearSpaceLighting_{};
+    bool cubemapBoxProjection_{};
     DrawableAmbientMode ambientMode_{ DrawableAmbientMode::Directional };
     Vector2 varianceShadowMapParams_{ 0.0000001f, 0.9f };
 
@@ -398,6 +399,7 @@ struct BatchRendererSettings
     {
         unsigned hash = 0;
         CombineHash(hash, linearSpaceLighting_);
+        CombineHash(hash, cubemapBoxProjection_);
         CombineHash(hash, MakeHash(ambientMode_));
         return hash;
     }
@@ -409,6 +411,7 @@ struct BatchRendererSettings
     bool operator==(const BatchRendererSettings& rhs) const
     {
         return linearSpaceLighting_ == rhs.linearSpaceLighting_
+            && cubemapBoxProjection_ == rhs.cubemapBoxProjection_
             && ambientMode_ == rhs.ambientMode_
             && varianceShadowMapParams_ == rhs.varianceShadowMapParams_;
     }
@@ -689,6 +692,11 @@ enum class PostProcessAntialiasing
 /// Settings of default render pipeline.
 struct RenderPipelineSettings : public ShaderProgramCompositorSettings
 {
+    /// Global pipeline settings
+    /// @{
+    bool drawDebugGeometry_{true};
+    /// @}
+
     /// Post-processing settings
     /// @{
     AutoExposurePassSettings autoExposure_;
@@ -718,6 +726,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     bool operator==(const RenderPipelineSettings& rhs) const
     {
         return ShaderProgramCompositorSettings::operator==(rhs)
+            && drawDebugGeometry_ == rhs.drawDebugGeometry_
             && autoExposure_ == rhs.autoExposure_
             && bloom_ == rhs.bloom_
             && toneMapping_ == rhs.toneMapping_

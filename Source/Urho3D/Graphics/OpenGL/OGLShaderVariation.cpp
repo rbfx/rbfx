@@ -25,11 +25,13 @@
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsImpl.h"
 #include "../../Graphics/Shader.h"
+#include "../../Graphics/ShaderConverter.h"
 #include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/ShaderVariation.h"
 #include "../../IO/Log.h"
 
 #include <cctype>
+#include <EASTL/optional.h>
 
 #include "../../DebugNew.h"
 
@@ -73,7 +75,7 @@ void ShaderVariation::Release()
                 if (graphics_->GetVertexShader() == this)
                     graphics_->SetShaders(nullptr, nullptr);
             }
-            else
+            else if (type_ == PS)
             {
                 if (graphics_->GetPixelShader() == this)
                     graphics_->SetShaders(nullptr, nullptr);
@@ -99,7 +101,37 @@ bool ShaderVariation::Create()
         return false;
     }
 
-    object_.name_ = glCreateShader(type_ == VS ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
+    GLenum shaderStage = 0;
+    switch (type_)
+    {
+    case VS:
+        shaderStage = GL_VERTEX_SHADER;
+        break;
+    case PS:
+        shaderStage = GL_FRAGMENT_SHADER;
+        break;
+#if 0
+    case GS:
+        shaderStage = GL_GEOMETRY_SHADER;
+        break;
+    case HS:
+        shaderStage = GL_TESS_CONTROL_SHADER;
+        break;
+    case DS:
+        shaderStage = GL_TESS_EVALUATION_SHADER;
+        break;
+#endif
+#ifdef URHO3D_COMPUTE
+    case CS:
+        shaderStage = GL_COMPUTE_SHADER;
+        break;
+#endif
+    default:
+        URHO3D_LOGERROR("ShaderVariation::Create, unsupported shader stage {}", GetShaderType());
+        return false;
+    }
+
+    object_.name_ = glCreateShader(shaderStage);
     if (!object_.name_)
     {
         compilerOutput_ = "Could not create shader object";
@@ -110,27 +142,14 @@ bool ShaderVariation::Create()
     ea::string shaderCode;
 
     // Check if the shader code contains a version define
-    unsigned verStart = originalShaderCode.find('#');
-    unsigned verEnd = 0;
-    if (verStart != ea::string::npos)
+    const auto versionTag = FindVersionTag(originalShaderCode);
+    if (versionTag)
     {
-        if (originalShaderCode.substr(verStart + 1, 7) == "version")
-        {
-            verEnd = verStart + 9;
-            while (verEnd < originalShaderCode.length())
-            {
-                if (IsDigit((unsigned)originalShaderCode[verEnd]))
-                    ++verEnd;
-                else
-                    break;
-            }
-            // If version define found, insert it first
-            ea::string versionDefine = originalShaderCode.substr(verStart, verEnd - verStart);
-            shaderCode += versionDefine + "\n";
-        }
+        // If version define found, insert it first
+        const ea::string versionDefine = originalShaderCode.substr(versionTag->first, versionTag->second - versionTag->first);
+        shaderCode += versionDefine + "\n";
     }
-    // Force GLSL version 150 if no version define and GL3 is being used
-    if (!verEnd && Graphics::GetGL3Support())
+    else if (Graphics::GetGL3Support())
     {
 #ifdef MOBILE_GRAPHICS
         shaderCode += "#version 300 es\n";
@@ -145,7 +164,15 @@ bool ShaderVariation::Create()
 #endif
 
     // Distinguish between VS and PS compile in case the shader code wants to include/omit different things
-    shaderCode += type_ == VS ? "#define COMPILEVS\n" : "#define COMPILEPS\n";
+    static const char* STAGE_DEFS[] = {
+        "#define COMPILEVS\n", // VS
+        "#define COMPILEPS\n", // PS
+        "#define COMPILEGS\n", // GS
+        "#define COMPILEHS\n", // HS
+        "#define COMPILEDS\n", // DS
+        "#define COMPILECS\n", // CS
+    };
+    shaderCode += STAGE_DEFS[type_];
 
     // Add define for the maximum number of supported bones
     shaderCode += "#define MAXBONES " + ea::to_string(Graphics::GetMaxBones()) + "\n";
@@ -177,8 +204,12 @@ bool ShaderVariation::Create()
         shaderCode += "#define GL3\n";
 
     // When version define found, do not insert it a second time
-    if (verEnd > 0)
-        shaderCode += (originalShaderCode.c_str() + verEnd);
+    if (versionTag)
+    {
+        shaderCode += originalShaderCode.substr(0, versionTag->first);
+        shaderCode += "//";
+        shaderCode += originalShaderCode.substr(versionTag->first);
+    }
     else
         shaderCode += originalShaderCode;
 

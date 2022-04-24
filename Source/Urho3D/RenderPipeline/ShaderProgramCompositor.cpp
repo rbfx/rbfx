@@ -137,6 +137,9 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
 
     if (!flags.Test(DrawableProcessorPassFlag::DepthOnlyPass))
     {
+        if (settings_.sceneProcessor_.cubemapBoxProjection_)
+            result.commonShaderDefines_ += "URHO3D_BOX_PROJECTION ";
+
         if (settings_.sceneProcessor_.linearSpaceLighting_)
             result.commonShaderDefines_ += "URHO3D_GAMMA_CORRECTION ";
 
@@ -281,6 +284,13 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
 
     if (drawable->GetGlobalIlluminationType() == GlobalIlluminationType::UseLightMap)
         result.commonShaderDefines_ += "URHO3D_HAS_LIGHTMAP ";
+
+#ifdef DESKTOP_GRAPHICS
+#ifndef GL_ES_VERSION_2_0
+    if (drawable->GetReflectionMode() >= ReflectionMode::BlendProbes)
+        result.commonShaderDefines_ += "URHO3D_BLEND_REFLECTIONS ";
+#endif
+#endif
 
     static const ea::string ambientModeDefines[] = {
         "URHO3D_AMBIENT_CONSTANT ",

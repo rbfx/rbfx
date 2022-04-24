@@ -27,6 +27,7 @@
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
@@ -322,10 +323,59 @@ void DrawableProcessor::UpdateDrawableZone(const BoundingBox& boundingBox, Drawa
 
     // Force update if bounding box is invalid
     const bool forcedUpdate = !std::isfinite(drawableCacheDistanceSquared);
+    // TODO: Do we want strict compare here too?
     if (forcedUpdate || drawableCacheDistanceSquared >= cachedZone.cacheInvalidationDistanceSquared_)
     {
         cachedZone = frameInfo_.octree_->QueryZone(drawableCenter, drawable->GetZoneMask());
         drawable->MarkPipelineStateHashDirty();
+    }
+}
+
+void DrawableProcessor::UpdateDrawableReflection(const BoundingBox& boundingBox, Drawable* drawable) const
+{
+    const ReflectionMode mode = drawable->GetReflectionMode();
+    if (mode == ReflectionMode::Zone)
+        return;
+
+    ReflectionProbeManager* manager = frameInfo_.reflectionProbeManager_;
+
+    const Vector3 drawableCenter = boundingBox.Center();
+    CachedDrawableReflection& cachedReflection = drawable->GetMutableCachedReflection();
+
+    if (!manager->HasStaticProbes())
+    {
+        for (ReflectionProbeReference& ref : cachedReflection.probes_)
+            ref.Reset();
+    }
+    else
+    {
+        const float drawableCacheDistanceSquared = (cachedReflection.cachePosition_ - drawableCenter).LengthSquared();
+
+        const bool forcedUpdate = !std::isfinite(drawableCacheDistanceSquared)
+            || cachedReflection.cacheRevision_ != manager->GetRevision();
+        if (forcedUpdate || drawableCacheDistanceSquared > cachedReflection.cacheInvalidationDistanceSquared_)
+        {
+            manager->QueryStaticProbes(boundingBox, cachedReflection.staticProbes_,
+                cachedReflection.cacheInvalidationDistanceSquared_);
+            cachedReflection.cacheRevision_ = manager->GetRevision();
+            cachedReflection.cachePosition_ = drawableCenter;
+        }
+
+        cachedReflection.probes_ = cachedReflection.staticProbes_;
+    }
+
+    if (manager->HasDynamicProbes())
+    {
+        manager->QueryDynamicProbes(boundingBox, cachedReflection.probes_);
+    }
+
+    // Estimate Zone weight and replace 2nd probe if it's less important
+    auto& probes = cachedReflection.probes_;
+    if (probes[1] && mode == ReflectionMode::BlendProbesAndZone)
+    {
+        const float zoneWeight = ea::max(0.0f, 1.0f - probes[0].volume_ - probes[1].volume_);
+        if (zoneWeight > probes[1].volume_)
+            probes[1].Reset();
     }
 }
 
@@ -399,6 +449,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
 
         // Update zone
         UpdateDrawableZone(boundingBox, drawable);
+        UpdateDrawableReflection(boundingBox, drawable);
 
         // Do not add "infinite" objects like skybox to prevent shadow map focusing behaving erroneously
         if (!zRange.IsValid())
@@ -448,6 +499,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
         if (needAmbient)
         {
             const GlobalIlluminationType giType = drawable->GetGlobalIlluminationType();
+            const ReflectionMode reflectionMode = drawable->GetReflectionMode();
 
             // Reset SH from GI if possible/needed, reset to zero otherwise
             if (gi_ && giType >= GlobalIlluminationType::BlendLightProbes)
@@ -466,7 +518,34 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
             else
                 lightAccumulator.sphericalHarmonics_ += cachedZone.zone_->GetAmbientLighting();
 
-            lightAccumulator.reflectionProbe_ = cachedZone.zone_->GetReflectionProbe();
+            lightAccumulator.reflectionProbes_[0] = cachedZone.zone_->GetReflectionProbe();
+            lightAccumulator.reflectionProbes_[1] = lightAccumulator.reflectionProbes_[0];
+            lightAccumulator.reflectionProbesBlendFactor_ = 0.0f;
+
+            // Apply reflection probe
+            if (reflectionMode != ReflectionMode::Zone)
+            {
+                const CachedDrawableReflection& reflection = drawable->GetMutableCachedReflection();
+                const ReflectionProbeReference& probe0 = reflection.probes_[0];
+                const ReflectionProbeReference& probe1 = reflection.probes_[1];
+
+                if (probe0.data_)
+                    lightAccumulator.reflectionProbes_[0] = probe0.data_;
+
+#ifdef DESKTOP_GRAPHICS
+                if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
+                {
+                    lightAccumulator.reflectionProbes_[1] = probe1.data_;
+                    lightAccumulator.reflectionProbesBlendFactor_ = probe0.priority_ != probe1.priority_
+                        ? 1.0f - probe0.volume_
+                        : probe1.volume_ / (probe0.volume_ + probe1.volume_);
+                }
+                if (reflectionMode == ReflectionMode::BlendProbesAndZone && !probe1.data_)
+                {
+                    lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
+                }
+#endif
+            }
         }
 
         // Store geometry

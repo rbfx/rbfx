@@ -60,9 +60,9 @@ void main()
 #ifdef URHO3D_AMBIENT_PASS
     half NoV = clamp(dot(surfaceData.normal, surfaceData.eyeVec), 0.0, 1.0);
     #ifdef URHO3D_PHYSICAL_MATERIAL
-        half4 reflectedColor = Indirect_PBRWater(surfaceData.reflectionColor.rgb, surfaceData.specular, NoV);
+        half4 reflectedColor = Indirect_PBRWater(surfaceData.reflectionColor[0].rgb, surfaceData.specular, NoV);
     #else
-        half4 reflectedColor = Indirect_SimpleWater(surfaceData.reflectionColor.rgb, cMatEnvMapColor, NoV);
+        half4 reflectedColor = Indirect_SimpleWater(surfaceData.reflectionColor[0].rgb, cMatEnvMapColor, NoV);
     #endif
 #else
     half4 reflectedColor = vec4(0.0);

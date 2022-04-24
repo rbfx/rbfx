@@ -58,10 +58,6 @@ if (URHO3D_TESTING)
 endif ()
 
 # Enable common build options
-if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set (CMAKE_CXX_STANDARD 17)
-endif ()
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set (CLANG ON)
     set (GNU ON)
@@ -444,6 +440,7 @@ message(STATUS "  Profiling       ${URHO3D_PROFILING}")
 message(STATUS "  Extras          ${URHO3D_EXTRAS}")
 message(STATUS "  Tools           ${URHO3D_TOOLS}")
 message(STATUS "  Docs            ${URHO3D_DOCS}")
+message(STATUS "  Compute         ${URHO3D_COMPUTE}")
 if (TARGET Profiler)
     message(STATUS "     Profiler GUI ${URHO3D_PROFILING}")
 endif ()

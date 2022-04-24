@@ -309,11 +309,14 @@ private:
 
     void CheckDirtyReflectionProbe(const LightAccumulator& lightAccumulator)
     {
-        dirty_.reflectionProbe_ = current_.reflectionProbe_ != lightAccumulator.reflectionProbe_;
+        dirty_.reflectionProbe_ = current_.reflectionProbes_ != lightAccumulator.reflectionProbes_
+            || current_.reflectionProbesBlendFactor_ != lightAccumulator.reflectionProbesBlendFactor_;
         if (dirty_.reflectionProbe_)
         {
-            current_.reflectionProbe_ = lightAccumulator.reflectionProbe_;
-            current_.reflectionProbeTexture_ = lightAccumulator.reflectionProbe_->reflectionMap_;
+            current_.reflectionProbes_ = lightAccumulator.reflectionProbes_;
+            current_.reflectionProbeTextures_[0] = lightAccumulator.reflectionProbes_[0]->reflectionMap_;
+            current_.reflectionProbeTextures_[1] = lightAccumulator.reflectionProbes_[1]->reflectionMap_;
+            current_.reflectionProbesBlendFactor_ = lightAccumulator.reflectionProbesBlendFactor_;
         }
     }
 
@@ -481,7 +484,12 @@ private:
             if (current_.pixelLightShadowMap_)
                 drawQueue_.AddShaderResource(TU_SHADOWMAP, current_.pixelLightShadowMap_);
             if (enabled_.ambientLighting_ && !materialHasEnvironmentMap)
-                drawQueue_.AddShaderResource(TU_ENVIRONMENT, current_.reflectionProbeTexture_);
+            {
+                drawQueue_.AddShaderResource(TU_ENVIRONMENT, current_.reflectionProbeTextures_[0]);
+#ifdef DESKTOP_GRAPHICS
+                drawQueue_.AddShaderResource(TU_ZONE, current_.reflectionProbeTextures_[1]);
+#endif
+            }
 
             drawQueue_.CommitShaderResources();
 
@@ -546,10 +554,35 @@ private:
         if (!enabled_.colorOutput_)
             return;
 
-        drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionAverageColor,
-            current_.reflectionProbe_->reflectionMapSH_.EvaluateAverage());
-        drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor,
-            current_.reflectionProbe_->roughnessToLODFactor_);
+        if (settings_.cubemapBoxProjection_)
+        {
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter0,
+                current_.reflectionProbes_[0]->cubemapCenter_);
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin0,
+                Vector4(current_.reflectionProbes_[0]->projectionBox_.min_, 0.0));
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax0,
+                Vector4(current_.reflectionProbes_[0]->projectionBox_.max_, 0.0));
+        }
+
+        drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
+            current_.reflectionProbes_[0]->roughnessToLODFactor_);
+
+#ifdef DESKTOP_GRAPHICS
+        if (settings_.cubemapBoxProjection_)
+        {
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter1,
+                current_.reflectionProbes_[1]->cubemapCenter_);
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMin1,
+                Vector4(current_.reflectionProbes_[1]->projectionBox_.min_, 0.0));
+            drawQueue_.AddShaderParameter(ShaderConsts::Zone_ProjectionBoxMax1,
+                Vector4(current_.reflectionProbes_[1]->projectionBox_.max_, 0.0));
+        }
+
+        drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor1,
+            current_.reflectionProbes_[1]->roughnessToLODFactor_);
+        drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionBlendFactor,
+            current_.reflectionProbesBlendFactor_);
+#endif
     }
 
     void AddVertexLightConstants()
@@ -768,8 +801,9 @@ private:
         PipelineState* pipelineState_{};
         float constantDepthBias_{};
 
-        const ReflectionProbeData* reflectionProbe_{};
-        TextureCube* reflectionProbeTexture_{};
+        ea::array<const ReflectionProbeData*, 2> reflectionProbes_{};
+        ea::array<TextureCube*, 2> reflectionProbeTextures_{};
+        float reflectionProbesBlendFactor_{};
 
         unsigned pixelLightIndex_{ M_MAX_UNSIGNED };
         bool pixelLightEnabled_{};

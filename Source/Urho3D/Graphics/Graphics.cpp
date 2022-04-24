@@ -27,6 +27,7 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/ComputeBuffer.h"
 #include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
@@ -44,6 +45,7 @@
 #include "../Graphics/Octree.h"
 #include "../Graphics/ParticleEffect.h"
 #include "../Graphics/ParticleEmitter.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/RibbonTrail.h"
 #include "../Graphics/Shader.h"
 #include "../Graphics/ShaderPrecache.h"
@@ -656,6 +658,11 @@ void RegisterGraphicsLibrary(Context* context)
     View::RegisterObject(context);
     Viewport::RegisterObject(context);
     OcclusionBuffer::RegisterObject(context);
+    ReflectionProbe::RegisterObject(context);
+    ReflectionProbeManager::RegisterObject(context);
+#if defined(URHO3D_COMPUTE)
+    ComputeBuffer::RegisterObject(context);
+#endif
 }
 
 

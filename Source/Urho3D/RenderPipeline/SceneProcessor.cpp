@@ -29,6 +29,7 @@
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/OctreeQuery.h"
+#include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Technique.h"
@@ -223,7 +224,11 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.camera_ = frameInfo_.viewport_->GetCullCamera()
         ? frameInfo_.viewport_->GetCullCamera()
         : frameInfo_.viewport_->GetCamera();
-    frameInfo_.octree_ = frameInfo_.scene_ ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
+
+    frameInfo_.octree_ = frameInfo_.scene_
+        ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
+    frameInfo_.reflectionProbeManager_ = frameInfo_.octree_
+        ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>(LOCAL) : nullptr;
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }
@@ -311,8 +316,6 @@ void SceneProcessor::Update()
     drawableProcessor_->ProcessLights(this);
     drawableProcessor_->ProcessForwardLighting();
 
-    drawableProcessor_->UpdateGeometries();
-
     batchCompositor_->ComposeSceneBatches();
     if (settings_.enableShadows_)
         batchCompositor_->ComposeShadowBatches();
@@ -341,6 +344,11 @@ void SceneProcessor::PrepareInstancingBuffer()
         pass->PrepareInstacingBuffer(batchRenderer_);
 
     instancingBuffer_->End();
+}
+
+void SceneProcessor::PrepareDrawablesBeforeRendering()
+{
+    drawableProcessor_->UpdateGeometries();
 }
 
 void SceneProcessor::RenderShadowMaps()

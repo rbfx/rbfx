@@ -86,7 +86,6 @@
 %csattribute(Urho3D::ParticleEmitter2D, %arg(Urho3D::ResourceRef), ParticleEffectAttr, GetParticleEffectAttr, SetParticleEffectAttr);
 %csattribute(Urho3D::ParticleEmitter2D, %arg(Urho3D::ResourceRef), SpriteAttr, GetSpriteAttr, SetSpriteAttr);
 %csattribute(Urho3D::ParticleEmitter2D, %arg(bool), IsEmitting, IsEmitting, SetEmitting);
-%csattribute(Urho3D::Renderer2D, %arg(Urho3D::UpdateGeometryType), UpdateGeometryType, GetUpdateGeometryType);
 %csattribute(Urho3D::Sprite2D, %arg(Urho3D::Texture2D *), Texture, GetTexture, SetTexture);
 %csattribute(Urho3D::Sprite2D, %arg(Urho3D::IntRect), Rectangle, GetRectangle, SetRectangle);
 %csattribute(Urho3D::Sprite2D, %arg(Urho3D::Vector2), HotSpot, GetHotSpot, SetHotSpot);

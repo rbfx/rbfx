@@ -1,0 +1,256 @@
+<?xml version="1.0"?>
+<scene id="1">
+	<attribute name="Name" value="" />
+	<attribute name="Time Scale" value="1.000000" />
+	<attribute name="Smoothing Constant" value="50.000000" />
+	<attribute name="Snap Threshold" value="5.000000" />
+	<attribute name="Elapsed Time" value="0.000000" />
+	<attribute name="Next Replicated Node ID" value="1682" />
+	<attribute name="Next Replicated Component ID" value="1655" />
+	<attribute name="Next Local Node ID" value="16777421" />
+	<attribute name="Next Local Component ID" value="16777511" />
+	<attribute name="Variables" />
+	<attribute name="Variable Names" value="" />
+	<attribute name="Lightmaps" value="Texture2D" />
+	<component type="Octree" id="1" />
+	<component type="EditorSceneSettings" id="16777216">
+		<attribute name="Camera Position" value="1 5.49999 -7" />
+		<attribute name="Camera Rotation" value="0.970674 0.240087 -0.0117838 0.00343316" />
+	</component>
+	<component type="RenderPipeline" id="315">
+		<attribute name="Cubemap Box Projection" value="true" />
+	</component>
+	<component type="ReflectionProbeManager" id="16777435" />
+	<node id="2">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Global" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<node id="5">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Zone" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="Zone" id="3">
+				<attribute name="Bounding Box Min" value="-1000 -1000 -1000" />
+				<attribute name="Bounding Box Max" value="1000 1000 1000" />
+				<attribute name="Ambient Color" value="0.17273 0.180021 0.264286 1" />
+				<attribute name="Ambient Brightness" value="0.000000" />
+				<attribute name="Background Brightness" value="0.500000" />
+				<attribute name="Zone Texture" value="TextureCube;Textures/Skybox.xml" />
+			</component>
+		</node>
+		<node id="1633">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Skybox" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="Skybox" id="1608">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Skybox.xml" />
+			</component>
+		</node>
+		<node id="1660">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Light" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="-0.6103 -0.239572 -0.727857 0.200878" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="Light" id="1633">
+				<attribute name="Light Type" value="Directional" />
+				<attribute name="Brightness Multiplier" value="0.300000" />
+				<attribute name="Cast Shadows" value="true" />
+			</component>
+		</node>
+	</node>
+	<node id="1397">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Sample" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2 3 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="1370">
+			<attribute name="Model" value="Model;Models/Sphere.mdl" />
+			<attribute name="Material" value="Material;Materials/Constant/MetallicR3.xml" />
+			<attribute name="Cast Shadows" value="true" />
+			<attribute name="View Mask" value="1" />
+			<attribute name="Reflection Mode" value="Blend Probes and Zone" />
+		</component>
+		<node id="1652">
+			<attribute name="Is Enabled" value="false" />
+			<attribute name="Name" value="Probe" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="ReflectionProbe" id="1625">
+				<attribute name="Priority" value="1" />
+			</component>
+		</node>
+	</node>
+	<node id="1634">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Reflection Probes" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<node id="1635">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Probe" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-2.51438 2.14301 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="ReflectionProbe" id="1610">
+				<attribute name="Probe Type" value="Mixed" />
+				<attribute name="Bounding Box Min" value="-2 -1.8 -2.3" />
+				<attribute name="Bounding Box Max" value="2.8 2.4 2.3" />
+				<attribute name="Use Box Projection" value="true" />
+				<attribute name="Projection Box Min" value="-1.4 -1.6 -1.6" />
+				<attribute name="Projection Box Max" value="20 20 1.6" />
+				<attribute name="Texture Size" value="128" />
+				<attribute name="View Mask" value="-2" />
+			</component>
+		</node>
+		<node id="1637">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Probe" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="2.44313 2.09286 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="ReflectionProbe" id="1611">
+				<attribute name="Probe Type" value="Mixed" />
+				<attribute name="Bounding Box Min" value="-2.7 -1.8 -2.4" />
+				<attribute name="Bounding Box Max" value="2.6 2.3 2.2" />
+				<attribute name="Use Box Projection" value="true" />
+				<attribute name="Projection Box Min" value="-3.3 -1.5 -20" />
+				<attribute name="Projection Box Max" value="5.9 20 20" />
+				<attribute name="Texture Size" value="128" />
+				<attribute name="View Mask" value="-2" />
+			</component>
+		</node>
+		<node id="1657">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Probe" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="2.44313 0.914074 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="ReflectionProbe" id="1630">
+				<attribute name="Probe Type" value="Mixed" />
+				<attribute name="Bounding Box Min" value="-1 -0.5 -1" />
+				<attribute name="Bounding Box Max" value="1 1.1 1" />
+				<attribute name="Priority" value="1" />
+				<attribute name="Use Box Projection" value="true" />
+				<attribute name="Projection Box Min" value="-20 -0.4 -20" />
+				<attribute name="Projection Box Max" value="20 20 20" />
+				<attribute name="Texture Size" value="128" />
+				<attribute name="View Mask" value="-2" />
+			</component>
+		</node>
+	</node>
+	<node id="1646">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Static Scene" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<node id="1647">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Box" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="11 1 7" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1620">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+				<attribute name="Cast Shadows" value="true" />
+				<attribute name="Reflection Mode" value="Zone" />
+			</component>
+		</node>
+		<node id="1649">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Box" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-2.70983 2.84175 2.12043" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="3 6 1" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1622">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+				<attribute name="Cast Shadows" value="true" />
+				<attribute name="Reflection Mode" value="Zone" />
+			</component>
+		</node>
+		<node id="1650">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Box" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-4.43875 2.3717 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 4 5" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1623">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+				<attribute name="Cast Shadows" value="true" />
+				<attribute name="Reflection Mode" value="Zone" />
+			</component>
+		</node>
+		<node id="1648">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Box" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="2.54767 0.217037 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1621">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/GlowingGreen.xml" />
+				<attribute name="Cast Shadows" value="true" />
+				<attribute name="Reflection Mode" value="Zone" />
+			</component>
+		</node>
+		<node id="1651">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Box" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-2.18446 2.57845 -2.11017" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="3 2 1" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="1624">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+				<attribute name="Cast Shadows" value="true" />
+				<attribute name="Reflection Mode" value="Zone" />
+			</component>
+		</node>
+	</node>
+</scene>

@@ -40,7 +40,7 @@ struct SDL_Window;
 namespace Urho3D
 {
 
-class ConstantBuffer;
+class ComputeDevice;
 class ShaderProgramLayout;
 class File;
 class Image;
@@ -141,28 +141,6 @@ struct WindowModeParams
     ScreenModeParams screenParams_;
 };
 
-/// Range of constant buffer to bind.
-struct ConstantBufferRange
-{
-    /// Constant buffer.
-    ConstantBuffer* constantBuffer_{};
-    /// Offset in buffer. Shall be multiply of constant buffer offset alignment.
-    unsigned offset_{};
-    /// Size of region.
-    unsigned size_{};
-
-    /// Compare equal.
-    bool operator ==(const ConstantBufferRange& rhs) const
-    {
-        return constantBuffer_ == rhs.constantBuffer_
-            && offset_ == rhs.offset_
-            && size_ == rhs.size_;
-    }
-
-    /// Compare not equal.
-    bool operator !=(const ConstantBufferRange& rhs) const { return !(*this == rhs); }
-};
-
 /// Graphics capabilities aggregator.
 /// TODO: Move all other things here
 struct GraphicsCaps
@@ -184,6 +162,7 @@ class URHO3D_API Graphics : public Object
 {
     URHO3D_OBJECT(Graphics, Object);
 
+    friend class ComputeDevice; // OpenGL needs this to mess with texture slots.
 public:
     /// Construct.
     explicit Graphics(Context* context);
@@ -532,6 +511,9 @@ public:
     /// Return whether sRGB conversion on rendertarget writing is supported.
     /// @property
     bool GetSRGBWriteSupport() const { return sRGBWriteSupport_; }
+
+    /// Return whether compute shaders are supported.
+    bool GetComputeSupport() const { return computeSupport_; }
 
     /// Return supported fullscreen resolutions (third component is refreshRate). Will be empty if listing the resolutions is not supported on the platform (e.g. Web).
     /// @property
@@ -883,6 +865,8 @@ private:
     bool sRGBSupport_{};
     /// sRGB conversion on write support flag.
     bool sRGBWriteSupport_{};
+    /// Compute shaders support.
+    bool computeSupport_{};
     /// Number of primitives this frame.
     unsigned numPrimitives_{};
     /// Number of batches this frame.
