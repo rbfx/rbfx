@@ -145,21 +145,7 @@
 #include "SamplesManager.h"
 
 // Expands to this example's entry-point
-int RunApplication()
-{
-    Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());
-    Urho3D::SharedPtr<Urho3D::SamplesManager> application(new Urho3D::SamplesManager(context));
-    return application->Run();
-}
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
-{
-    OpenConsoleWindow();
-
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    Urho3D::ParseArguments(GetCommandLineW());
-    return RunApplication();
-}
-
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::SamplesManager);
 
 namespace Urho3D
 {
