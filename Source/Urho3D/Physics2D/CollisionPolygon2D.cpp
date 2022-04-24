@@ -66,7 +66,6 @@ void CollisionPolygon2D::SetVertex(unsigned index, const Vector2& vertex)
 
     if (index == vertices_.size() - 1)
     {
-        MarkNetworkUpdate();
         RecreateFixture();
     }
 }
@@ -75,7 +74,6 @@ void CollisionPolygon2D::SetVertices(const ea::vector<Vector2>& vertices)
 {
     vertices_ = vertices;
 
-    MarkNetworkUpdate();
     RecreateFixture();
 }
 

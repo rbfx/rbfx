@@ -66,7 +66,6 @@ void CollisionBox2D::SetSize(const Vector2& size)
 
     size_ = size;
 
-    MarkNetworkUpdate();
     RecreateFixture();
 }
 
@@ -82,7 +81,6 @@ void CollisionBox2D::SetCenter(const Vector2& center)
 
     center_ = center;
 
-    MarkNetworkUpdate();
     RecreateFixture();
 }
 
@@ -98,7 +96,6 @@ void CollisionBox2D::SetAngle(float angle)
 
     angle_ = angle;
 
-    MarkNetworkUpdate();
     RecreateFixture();
 }
 

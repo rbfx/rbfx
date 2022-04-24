@@ -31,8 +31,6 @@ enum NetworkMessageId
 {
     /// Client->server: send VariantMap of identity and authentication data.
     MSG_IDENTITY = 0x87,
-    /// Client->server: send controls (buttons and mouse movement).
-    MSG_CONTROLS = 0x88,
     /// Client->server: scene has been loaded and client is ready to proceed.
     MSG_SCENELOADED = 0x89,
     /// Client->server: request a package file.
@@ -44,22 +42,6 @@ enum NetworkMessageId
     MSG_LOADSCENE = 0x8C,
     /// Server->client: wrong scene checksum, can not participate.
     MSG_SCENECHECKSUMERROR = 0x8D,
-    /// Server->client: create new node.
-    MSG_CREATENODE = 0x8E,
-    /// Server->client: node delta update.
-    MSG_NODEDELTAUPDATE = 0x8F,
-    /// Server->client: node latest data update.
-    MSG_NODELATESTDATA = 0x90,
-    /// Server->client: remove node.
-    MSG_REMOVENODE = 0x91,
-    /// Server->client: create new component.
-    MSG_CREATECOMPONENT = 0x92,
-    /// Server->client: component delta update.
-    MSG_COMPONENTDELTAUPDATE = 0x93,
-    /// Server->client: component latest data update.
-    MSG_COMPONENTLATESTDATA = 0x94,
-    /// Server->client: remove component.
-    MSG_REMOVECOMPONENT = 0x95,
 
     /// Client->server and server->client: remote event.
     MSG_REMOTEEVENT = 0x96,

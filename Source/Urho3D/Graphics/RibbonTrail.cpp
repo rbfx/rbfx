@@ -351,7 +351,6 @@ void RibbonTrail::SetEmitting(bool emitting)
     }
 
     Drawable::OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void RibbonTrail::SetTailColumn(unsigned tailColumn)
@@ -370,7 +369,6 @@ void RibbonTrail::SetTailColumn(unsigned tailColumn)
 
     Drawable::OnMarkedDirty(node_);
     bufferSizeDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void RibbonTrail::UpdateBatches(const FrameInfo& frame)
@@ -421,7 +419,6 @@ UpdateGeometryType RibbonTrail::GetUpdateGeometryType()
 void RibbonTrail::SetMaterial(Material* material)
 {
     batches_[0].material_ = material;
-    MarkNetworkUpdate();
 }
 
 void RibbonTrail::OnSceneSet(Scene* scene)
@@ -860,7 +857,6 @@ void RibbonTrail::SetTrailType(TrailType type)
     trailType_ = type;
     Drawable::OnMarkedDirty(node_);
     bufferSizeDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void RibbonTrail::SetBaseVelocity(const Vector3& baseVelocity)
@@ -884,19 +880,16 @@ void RibbonTrail::SetWidth(float width)
 void RibbonTrail::SetAnimationLodBias(float bias)
 {
     animationLodBias_ = Max(bias, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void RibbonTrail::SetUpdateInvisible(bool enable)
 {
     updateInvisible_ = enable;
-    MarkNetworkUpdate();
 }
 
 void RibbonTrail::Commit()
 {
     MarkPositionsDirty();
-    MarkNetworkUpdate();
 }
 
 void RibbonTrail::MarkPositionsDirty()

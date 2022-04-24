@@ -65,7 +65,6 @@ void ConstraintDistance2D::SetOwnerBodyAnchor(const Vector2& anchor)
     ownerBodyAnchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintDistance2D::SetOtherBodyAnchor(const Vector2& anchor)
@@ -76,7 +75,6 @@ void ConstraintDistance2D::SetOtherBodyAnchor(const Vector2& anchor)
     otherBodyAnchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintDistance2D::SetFrequencyHz(float frequencyHz)
@@ -90,8 +88,6 @@ void ConstraintDistance2D::SetFrequencyHz(float frequencyHz)
         static_cast<b2DistanceJoint*>(joint_)->SetFrequency(frequencyHz);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintDistance2D::SetDampingRatio(float dampingRatio)
@@ -105,8 +101,6 @@ void ConstraintDistance2D::SetDampingRatio(float dampingRatio)
         static_cast<b2DistanceJoint*>(joint_)->SetDampingRatio(dampingRatio);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintDistance2D::SetLength(float length)
@@ -120,8 +114,6 @@ void ConstraintDistance2D::SetLength(float length)
         static_cast<b2DistanceJoint*>(joint_)->SetLength(length);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintDistance2D::GetJointDef()

@@ -107,27 +107,23 @@ void Zone::SetBoundingBox(const BoundingBox& box)
 {
     boundingBox_ = box;
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Zone::SetAmbientColor(const Color& color)
 {
     ambientColor_ = color;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
 void Zone::SetAmbientBrightness(float brightness)
 {
     ambientBrightness_ = brightness;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
 void Zone::SetBackgroundBrightness(float brightness)
 {
     backgroundBrightness_ = brightness;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
@@ -139,7 +135,6 @@ void Zone::SetBackgroundStatic(bool isStatic)
 void Zone::SetFogColor(const Color& color)
 {
     fogColor_ = color;
-    MarkNetworkUpdate();
     MarkCachedAmbientDirty();
 }
 
@@ -149,7 +144,6 @@ void Zone::SetFogStart(float start)
         start = 0.0f;
 
     fogStart_ = start;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetFogEnd(float end)
@@ -158,25 +152,21 @@ void Zone::SetFogEnd(float end)
         end = 0.0f;
 
     fogEnd_ = end;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetFogHeight(float height)
 {
     fogHeight_ = height;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetFogHeightScale(float scale)
 {
     fogHeightScale_ = scale;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetPriority(int priority)
 {
     priority_ = priority;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetZoneTexture(Texture* texture)
@@ -184,25 +174,21 @@ void Zone::SetZoneTexture(Texture* texture)
     zoneTexture_ = texture;
     UpdateZoneTextureSubscription();
     MarkCachedTextureDirty();
-    MarkNetworkUpdate();
 }
 
 void Zone::SetHeightFog(bool enable)
 {
     heightFog_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetOverride(bool enable)
 {
     override_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Zone::SetAmbientGradient(bool enable)
 {
     ambientGradient_ = enable;
-    MarkNetworkUpdate();
 }
 
 const ReflectionProbeData* Zone::GetReflectionProbe() const

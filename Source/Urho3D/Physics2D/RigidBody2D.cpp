@@ -98,8 +98,6 @@ void RigidBody2D::OnSetEnabled()
 
     if (body_)
         body_->SetActive(enabled);
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetBodyType(BodyType2D type)
@@ -120,8 +118,6 @@ void RigidBody2D::SetBodyType(BodyType2D type)
 
         bodyDef_.type = bodyType;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetMass(float mass)
@@ -134,8 +130,6 @@ void RigidBody2D::SetMass(float mass)
 
     if (!useFixtureMass_ && body_)
         body_->SetMassData(&massData_);
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetInertia(float inertia)
@@ -148,8 +142,6 @@ void RigidBody2D::SetInertia(float inertia)
 
     if (!useFixtureMass_ && body_)
         body_->SetMassData(&massData_);
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetMassCenter(const Vector2& center)
@@ -162,8 +154,6 @@ void RigidBody2D::SetMassCenter(const Vector2& center)
 
     if (!useFixtureMass_ && body_)
         body_->SetMassData(&massData_);
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetUseFixtureMass(bool useFixtureMass)
@@ -180,8 +170,6 @@ void RigidBody2D::SetUseFixtureMass(bool useFixtureMass)
         else
             body_->SetMassData(&massData_);
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetLinearDamping(float linearDamping)
@@ -195,8 +183,6 @@ void RigidBody2D::SetLinearDamping(float linearDamping)
 
         bodyDef_.linearDamping = linearDamping;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetAngularDamping(float angularDamping)
@@ -210,8 +196,6 @@ void RigidBody2D::SetAngularDamping(float angularDamping)
 
         bodyDef_.angularDamping = angularDamping;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetAllowSleep(bool allowSleep)
@@ -225,8 +209,6 @@ void RigidBody2D::SetAllowSleep(bool allowSleep)
 
         bodyDef_.allowSleep = allowSleep;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetFixedRotation(bool fixedRotation)
@@ -246,8 +228,6 @@ void RigidBody2D::SetFixedRotation(bool fixedRotation)
 
         bodyDef_.fixedRotation = fixedRotation;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetBullet(bool bullet)
@@ -261,8 +241,6 @@ void RigidBody2D::SetBullet(bool bullet)
 
         bodyDef_.bullet = bullet;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetGravityScale(float gravityScale)
@@ -276,8 +254,6 @@ void RigidBody2D::SetGravityScale(float gravityScale)
 
         bodyDef_.gravityScale = gravityScale;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetAwake(bool awake)
@@ -291,8 +267,6 @@ void RigidBody2D::SetAwake(bool awake)
 
         bodyDef_.awake = awake;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetLinearVelocity(const Vector2& linearVelocity)
@@ -307,8 +281,6 @@ void RigidBody2D::SetLinearVelocity(const Vector2& linearVelocity)
 
         bodyDef_.linearVelocity = b2linearVelocity;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::SetAngularVelocity(float angularVelocity)
@@ -322,8 +294,6 @@ void RigidBody2D::SetAngularVelocity(float angularVelocity)
 
         bodyDef_.angularVelocity = angularVelocity;
     }
-
-    MarkNetworkUpdate();
 }
 
 void RigidBody2D::ApplyForce(const Vector2& force, const Vector2& point, bool wake)

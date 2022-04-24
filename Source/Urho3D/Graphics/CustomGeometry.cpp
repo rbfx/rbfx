@@ -232,8 +232,6 @@ void CustomGeometry::SetNumGeometries(unsigned num)
 void CustomGeometry::SetDynamic(bool enable)
 {
     dynamic_ = enable;
-
-    MarkNetworkUpdate();
 }
 
 void CustomGeometry::BeginGeometry(unsigned index, PrimitiveType type)
@@ -414,8 +412,6 @@ void CustomGeometry::SetMaterial(Material* material)
 {
     for (unsigned i = 0; i < batches_.size(); ++i)
         batches_[i].material_ = material;
-
-    MarkNetworkUpdate();
 }
 
 bool CustomGeometry::SetMaterial(unsigned index, Material* material)
@@ -427,7 +423,6 @@ bool CustomGeometry::SetMaterial(unsigned index, Material* material)
     }
 
     batches_[index].material_ = material;
-    MarkNetworkUpdate();
     return true;
 }
 

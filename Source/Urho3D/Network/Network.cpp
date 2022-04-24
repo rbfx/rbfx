@@ -34,7 +34,6 @@
 #include "../Network/HttpRequest.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
-#include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
 #include "../Replica/BehaviorNetworkObject.h"
 #include "../Replica/FilteredByDistance.h"
@@ -228,49 +227,6 @@ Network::Network(Context* context) :
 
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Network, HandleBeginFrame));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Network, HandleRenderUpdate));
-
-    // Blacklist remote events which are not to be allowed to be registered in any case
-    blacklistedRemoteEvents_.insert(E_CONSOLECOMMAND);
-    blacklistedRemoteEvents_.insert(E_LOGMESSAGE);
-    blacklistedRemoteEvents_.insert(E_BEGINFRAME);
-    blacklistedRemoteEvents_.insert(E_UPDATE);
-    blacklistedRemoteEvents_.insert(E_POSTUPDATE);
-    blacklistedRemoteEvents_.insert(E_RENDERUPDATE);
-    blacklistedRemoteEvents_.insert(E_ENDFRAME);
-    blacklistedRemoteEvents_.insert(E_MOUSEBUTTONDOWN);
-    blacklistedRemoteEvents_.insert(E_MOUSEBUTTONUP);
-    blacklistedRemoteEvents_.insert(E_MOUSEMOVE);
-    blacklistedRemoteEvents_.insert(E_MOUSEWHEEL);
-    blacklistedRemoteEvents_.insert(E_KEYDOWN);
-    blacklistedRemoteEvents_.insert(E_KEYUP);
-    blacklistedRemoteEvents_.insert(E_TEXTINPUT);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKCONNECTED);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKDISCONNECTED);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKBUTTONDOWN);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKBUTTONUP);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKAXISMOVE);
-    blacklistedRemoteEvents_.insert(E_JOYSTICKHATMOVE);
-    blacklistedRemoteEvents_.insert(E_TOUCHBEGIN);
-    blacklistedRemoteEvents_.insert(E_TOUCHEND);
-    blacklistedRemoteEvents_.insert(E_TOUCHMOVE);
-    blacklistedRemoteEvents_.insert(E_GESTURERECORDED);
-    blacklistedRemoteEvents_.insert(E_GESTUREINPUT);
-    blacklistedRemoteEvents_.insert(E_MULTIGESTURE);
-    blacklistedRemoteEvents_.insert(E_DROPFILE);
-    blacklistedRemoteEvents_.insert(E_INPUTFOCUS);
-    blacklistedRemoteEvents_.insert(E_MOUSEVISIBLECHANGED);
-    blacklistedRemoteEvents_.insert(E_EXITREQUESTED);
-    blacklistedRemoteEvents_.insert(E_SERVERCONNECTED);
-    blacklistedRemoteEvents_.insert(E_SERVERDISCONNECTED);
-    blacklistedRemoteEvents_.insert(E_CONNECTFAILED);
-    blacklistedRemoteEvents_.insert(E_CLIENTCONNECTED);
-    blacklistedRemoteEvents_.insert(E_CLIENTDISCONNECTED);
-    blacklistedRemoteEvents_.insert(E_CLIENTIDENTITY);
-    blacklistedRemoteEvents_.insert(E_CLIENTSCENELOADED);
-    blacklistedRemoteEvents_.insert(E_NETWORKMESSAGE);
-    blacklistedRemoteEvents_.insert(E_NETWORKUPDATE);
-    blacklistedRemoteEvents_.insert(E_NETWORKUPDATESENT);
-    blacklistedRemoteEvents_.insert(E_NETWORKSCENELOADFAILED);
 }
 
 Network::~Network()
@@ -637,12 +593,6 @@ void Network::SetSimulatedPacketLoss(float probability)
 
 void Network::RegisterRemoteEvent(StringHash eventType)
 {
-    if (blacklistedRemoteEvents_.find(eventType) != blacklistedRemoteEvents_.end())
-    {
-        URHO3D_LOGERROR("Attempted to register blacklisted remote event type " + eventType.ToString());
-        return;
-    }
-
     allowedRemoteEvents_.insert(eventType);
 }
 
@@ -1023,33 +973,14 @@ void Network::PostUpdate(float timeStep)
 
         if (IsServerRunning())
         {
-            // Collect and prepare all networked scenes
+            URHO3D_PROFILE("SendServerUpdate");
+
+            // Then send server updates for each client connection
+            for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
             {
-                URHO3D_PROFILE("PrepareServerUpdate");
-
-                networkScenes_.clear();
-                for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-                {
-                    Scene* scene = i->second->GetScene();
-                    if (scene)
-                        networkScenes_.insert(scene);
-                }
-
-                for (auto i = networkScenes_.begin(); i != networkScenes_.end(); ++i)
-                    (*i)->PrepareNetworkUpdate();
-            }
-
-            {
-                URHO3D_PROFILE("SendServerUpdate");
-
-                // Then send server updates for each client connection
-                for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-                {
-                    i->second->SendServerUpdate();
-                    i->second->SendRemoteEvents();
-                    i->second->SendPackages();
-                    i->second->SendAllBuffers();
-                }
+                i->second->SendRemoteEvents();
+                i->second->SendPackages();
+                i->second->SendAllBuffers();
             }
         }
 
@@ -1063,8 +994,6 @@ void Network::PostUpdate(float timeStep)
 
         if (serverConnection_)
         {
-            if (updateNow_)
-                serverConnection_->SendClientUpdate();
             serverConnection_->SendRemoteEvents();
             serverConnection_->SendAllBuffers();
         }
@@ -1164,7 +1093,6 @@ void RegisterNetworkLibrary(Context* context)
     PredictedKinematicController::RegisterObject(context);
 #endif
 
-    NetworkPriority::RegisterObject(context);
     Connection::RegisterObject(context);
 }
 

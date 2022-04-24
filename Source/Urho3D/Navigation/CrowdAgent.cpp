@@ -329,7 +329,6 @@ void CrowdAgent::SetTargetPosition(const Vector3& position)
     {
         targetPosition_ = position;
         requestedTargetType_ = CA_REQUESTEDTARGET_POSITION;
-        MarkNetworkUpdate();
 
         if (!IsInCrowd())
             AddAgentToCrowd();
@@ -348,7 +347,6 @@ void CrowdAgent::SetTargetVelocity(const Vector3& velocity)
     {
         targetVelocity_ = velocity;
         requestedTargetType_ = CA_REQUESTEDTARGET_VELOCITY;
-        MarkNetworkUpdate();
 
         if (IsInCrowd())
             crowdManager_->GetCrowd()->requestMoveVelocity(agentCrowdId_, velocity.Data());
@@ -360,7 +358,6 @@ void CrowdAgent::ResetTarget()
     if (CA_REQUESTEDTARGET_NONE != requestedTargetType_)
     {
         requestedTargetType_ = CA_REQUESTEDTARGET_NONE;
-        MarkNetworkUpdate();
 
         if (IsInCrowd())
             crowdManager_->GetCrowd()->resetMoveTarget(agentCrowdId_);
@@ -372,7 +369,6 @@ void CrowdAgent::SetUpdateNodePosition(bool unodepos)
     if (unodepos != updateNodePosition_)
     {
         updateNodePosition_ = unodepos;
-        MarkNetworkUpdate();
     }
 }
 
@@ -382,7 +378,6 @@ void CrowdAgent::SetMaxAccel(float maxAccel)
     {
         maxAccel_ = maxAccel;
         UpdateParameters(SCOPE_BASE_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 
@@ -392,7 +387,6 @@ void CrowdAgent::SetMaxSpeed(float maxSpeed)
     {
         maxSpeed_ = maxSpeed;
         UpdateParameters(SCOPE_BASE_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 
@@ -402,7 +396,6 @@ void CrowdAgent::SetRadius(float radius)
     {
         radius_ = radius;
         UpdateParameters(SCOPE_BASE_PARAMS | SCOPE_NAVIGATION_PUSHINESS_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 
@@ -412,7 +405,6 @@ void CrowdAgent::SetHeight(float height)
     {
         height_ = height;
         UpdateParameters(SCOPE_BASE_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 
@@ -429,7 +421,6 @@ void CrowdAgent::SetQueryFilterType(unsigned queryFilterType)
 
         queryFilterType_ = queryFilterType;
         UpdateParameters(SCOPE_BASE_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 
@@ -446,7 +437,6 @@ void CrowdAgent::SetObstacleAvoidanceType(unsigned obstacleAvoidanceType)
 
         obstacleAvoidanceType_ = obstacleAvoidanceType;
         UpdateParameters(SCOPE_BASE_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 
@@ -456,7 +446,6 @@ void CrowdAgent::SetNavigationQuality(NavigationQuality val)
     {
         navQuality_ = val;
         UpdateParameters(SCOPE_NAVIGATION_QUALITY_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 
@@ -466,7 +455,6 @@ void CrowdAgent::SetNavigationPushiness(NavigationPushiness val)
     {
         navPushiness_ = val;
         UpdateParameters(SCOPE_NAVIGATION_PUSHINESS_PARAMS);
-        MarkNetworkUpdate();
     }
 }
 

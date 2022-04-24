@@ -65,8 +65,6 @@ void ConstraintMouse2D::SetTarget(const Vector2& target)
         static_cast<b2MouseJoint*>(joint_)->SetTarget(ToB2Vec2(target));
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintMouse2D::SetMaxForce(float maxForce)
@@ -80,8 +78,6 @@ void ConstraintMouse2D::SetMaxForce(float maxForce)
         static_cast<b2MouseJoint*>(joint_)->SetMaxForce(maxForce);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintMouse2D::SetFrequencyHz(float frequencyHz)
@@ -95,8 +91,6 @@ void ConstraintMouse2D::SetFrequencyHz(float frequencyHz)
         static_cast<b2MouseJoint*>(joint_)->SetFrequency(frequencyHz);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintMouse2D::SetDampingRatio(float dampingRatio)
@@ -110,8 +104,6 @@ void ConstraintMouse2D::SetDampingRatio(float dampingRatio)
         static_cast<b2MouseJoint*>(joint_)->SetDampingRatio(dampingRatio);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintMouse2D::GetJointDef()

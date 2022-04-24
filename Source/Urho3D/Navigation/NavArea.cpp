@@ -62,7 +62,6 @@ void NavArea::SetAreaID(unsigned newID)
     if (newID > MAX_NAV_AREA_ID)
         URHO3D_LOGERRORF("NavArea Area ID %u exceeds maximum value of %u", newID, MAX_NAV_AREA_ID);
     areaID_ = (unsigned char)newID;
-    MarkNetworkUpdate();
 }
 
 BoundingBox NavArea::GetWorldBoundingBox() const

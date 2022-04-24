@@ -82,7 +82,6 @@ void Drawable2D::SetLayer(int layer)
     layer_ = layer;
 
     OnDrawOrderChanged();
-    MarkNetworkUpdate();
 }
 
 void Drawable2D::SetOrderInLayer(int orderInLayer)
@@ -93,7 +92,6 @@ void Drawable2D::SetOrderInLayer(int orderInLayer)
     orderInLayer_ = orderInLayer;
 
     OnDrawOrderChanged();
-    MarkNetworkUpdate();
 }
 
 const ea::vector<SourceBatch2D>& Drawable2D::GetSourceBatches()

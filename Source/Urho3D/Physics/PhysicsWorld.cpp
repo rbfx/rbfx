@@ -397,29 +397,22 @@ void PhysicsWorld::UpdateCollisions()
 void PhysicsWorld::SetFps(int fps)
 {
     fps_ = (unsigned)Clamp(fps, 1, 1000);
-
-    MarkNetworkUpdate();
 }
 
 void PhysicsWorld::SetGravity(const Vector3& gravity)
 {
     world_->setGravity(ToBtVector3(gravity));
-
-    MarkNetworkUpdate();
 }
 
 void PhysicsWorld::SetMaxSubSteps(int num)
 {
     maxSubSteps_ = num;
-    MarkNetworkUpdate();
 }
 
 void PhysicsWorld::SetNumIterations(int num)
 {
     num = Clamp(num, 1, MAX_SOLVER_ITERATIONS);
     world_->getSolverInfo().m_numIterations = num;
-
-    MarkNetworkUpdate();
 }
 
 void PhysicsWorld::SetUpdateEnabled(bool enable)
@@ -435,22 +428,16 @@ void PhysicsWorld::SetInterpolation(bool enable)
 void PhysicsWorld::SetInternalEdge(bool enable)
 {
     internalEdge_ = enable;
-
-    MarkNetworkUpdate();
 }
 
 void PhysicsWorld::SetSplitImpulse(bool enable)
 {
     world_->getSolverInfo().m_splitImpulse = enable;
-
-    MarkNetworkUpdate();
 }
 
 void PhysicsWorld::SetMaxNetworkAngularVelocity(float velocity)
 {
     maxNetworkAngularVelocity_ = Clamp(velocity, 1.0f, 32767.0f);
-
-    MarkNetworkUpdate();
 }
 
 void PhysicsWorld::Raycast(ea::vector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask)
