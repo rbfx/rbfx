@@ -941,25 +941,18 @@ void Node::RemoveChild(Node* node)
 
 void Node::RemoveAllChildren()
 {
-    RemoveChildren(true, true, true);
+    RemoveChildren(true);
 }
 
-void Node::RemoveChildren(bool removeReplicated, bool removeLocal, bool recursive)
+void Node::RemoveChildren(bool recursive)
 {
     for (unsigned i = children_.size() - 1; i < children_.size(); --i)
     {
-        bool remove = false;
         Node* childNode = children_[i];
 
         if (recursive)
-            childNode->RemoveChildren(removeReplicated, removeLocal, true);
-        if (childNode->IsReplicated() && removeReplicated)
-            remove = true;
-        else if (!childNode->IsReplicated() && removeLocal)
-            remove = true;
-
-        if (remove)
-            RemoveChild(children_.begin() + i);
+            childNode->RemoveChildren(true);
+        RemoveChild(children_.begin() + i);
     }
 }
 
@@ -1077,20 +1070,11 @@ void Node::RemoveComponent(StringHash type)
     }
 }
 
-void Node::RemoveComponents(bool removeReplicated, bool removeLocal)
+void Node::RemoveComponents()
 {
     for (unsigned i = components_.size() - 1; i < components_.size(); --i)
     {
-        bool remove = false;
-        Component* component = components_[i];
-
-        if (component->IsReplicated() && removeReplicated)
-            remove = true;
-        else if (!component->IsReplicated() && removeLocal)
-            remove = true;
-
-        if (remove)
-            RemoveComponent(components_.begin() + i);
+        RemoveComponent(components_.begin() + i);
     }
 }
 
@@ -1105,7 +1089,7 @@ void Node::RemoveComponents(StringHash type)
 
 void Node::RemoveAllComponents()
 {
-    RemoveComponents(true, true);
+    RemoveComponents();
 }
 
 void Node::ReorderChild(Node* child, unsigned index)

@@ -170,7 +170,7 @@ public:
     Node* InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED);
 
     /// Clear scene completely of either replicated, local or all nodes and components.
-    void Clear(bool clearReplicated = true, bool clearLocal = true);
+    void Clear();
     /// Enable or disable scene update.
     /// @property
     void SetUpdateEnabled(bool enable);
