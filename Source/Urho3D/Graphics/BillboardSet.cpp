@@ -131,8 +131,6 @@ void BillboardSet::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Billboards", GetBillboardsAttr, SetBillboardsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
         .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, billboardsStructureElementNames);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Billboards", GetNetBillboardsAttr, SetNetBillboardsAttr, ea::vector<unsigned char>,
-        Variant::emptyBuffer, AM_NET | AM_NOEDIT);
 }
 
 void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
@@ -278,7 +276,6 @@ UpdateGeometryType BillboardSet::GetUpdateGeometryType()
 void BillboardSet::SetMaterial(Material* material)
 {
     batches_[0].material_ = material;
-    MarkNetworkUpdate();
 }
 
 void BillboardSet::SetNumBillboards(unsigned num)
@@ -355,26 +352,22 @@ void BillboardSet::SetFaceCameraMode(FaceCameraMode mode)
     else
     {
         faceCameraMode_ = mode;
-        MarkNetworkUpdate();
     }
 }
 
 void BillboardSet::SetMinAngle(float angle)
 {
     minAngle_ = angle;
-    MarkNetworkUpdate();
 }
 
 void BillboardSet::SetAnimationLodBias(float bias)
 {
     animationLodBias_ = Max(bias, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void BillboardSet::Commit()
 {
     MarkPositionsDirty();
-    MarkNetworkUpdate();
 }
 
 Material* BillboardSet::GetMaterial() const
@@ -432,26 +425,6 @@ void BillboardSet::SetBillboardsAttr(const VariantVector& value)
     Commit();
 }
 
-void BillboardSet::SetNetBillboardsAttr(const ea::vector<unsigned char>& value)
-{
-    MemoryBuffer buf(value);
-    unsigned numBillboards = buf.ReadVLE();
-    SetNumBillboards(numBillboards);
-
-    for (auto i = billboards_.begin(); i != billboards_.end(); ++i)
-    {
-        i->position_ = buf.ReadVector3();
-        i->size_ = buf.ReadVector2();
-        i->uv_ = buf.ReadRect();
-        i->color_ = buf.ReadColor();
-        i->rotation_ = buf.ReadFloat();
-        i->direction_ = buf.ReadVector3();
-        i->enabled_ = buf.ReadBool();
-    }
-
-    Commit();
-}
-
 ResourceRef BillboardSet::GetMaterialAttr() const
 {
     return GetResourceRef(batches_[0].material_, Material::GetTypeStatic());
@@ -475,25 +448,6 @@ VariantVector BillboardSet::GetBillboardsAttr() const
     }
 
     return ret;
-}
-
-const ea::vector<unsigned char>& BillboardSet::GetNetBillboardsAttr() const
-{
-    attrBuffer_.Clear();
-    attrBuffer_.WriteVLE(billboards_.size());
-
-    for (auto i = billboards_.begin(); i != billboards_.end(); ++i)
-    {
-        attrBuffer_.WriteVector3(i->position_);
-        attrBuffer_.WriteVector2(i->size_);
-        attrBuffer_.WriteRect(i->uv_);
-        attrBuffer_.WriteColor(i->color_);
-        attrBuffer_.WriteFloat(i->rotation_);
-        attrBuffer_.WriteVector3(i->direction_);
-        attrBuffer_.WriteBool(i->enabled_);
-    }
-
-    return attrBuffer_.GetBuffer();
 }
 
 const char** BillboardSet::GetFaceCameraModeNames()

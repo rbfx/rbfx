@@ -108,7 +108,6 @@ void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
         SubscribeToEvent(effect_, E_RELOADFINISHED, URHO3D_HANDLER(ParticleGraphEmitter, HandleEffectReloadFinished));
 
     ApplyEffect();
-    MarkNetworkUpdate();
 }
 
 ParticleGraphEffect* ParticleGraphEmitter::GetEffect() const

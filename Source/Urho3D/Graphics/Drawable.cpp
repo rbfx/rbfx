@@ -191,38 +191,32 @@ void Drawable::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 void Drawable::SetDrawDistance(float distance)
 {
     drawDistance_ = distance;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetShadowDistance(float distance)
 {
     shadowDistance_ = distance;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetLodBias(float bias)
 {
     lodBias_ = Max(bias, M_EPSILON);
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetViewMask(unsigned mask)
 {
     viewMask_ = mask;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetLightMask(unsigned mask)
 {
     lightMask_ = mask;
     MarkPipelineStateHashDirty();
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetShadowMask(unsigned mask)
 {
     shadowMask_ = mask;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetZoneMask(unsigned mask)
@@ -231,25 +225,21 @@ void Drawable::SetZoneMask(unsigned mask)
     // Mark dirty to reset cached zone
     cachedZone_.cacheInvalidationDistanceSquared_ = -1.0f;
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetMaxLights(unsigned num)
 {
     maxLights_ = num;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetCastShadows(bool enable)
 {
     castShadows_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetOccluder(bool enable)
 {
     occluder_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetOccludee(bool enable)
@@ -260,7 +250,6 @@ void Drawable::SetOccludee(bool enable)
         // Reinsert to octree to make sure octant occlusion does not erroneously hide this drawable
         if (octant_ && !updateQueued_)
             octant_->GetOctree()->QueueUpdate(this);
-        MarkNetworkUpdate();
     }
 }
 
@@ -268,14 +257,12 @@ void Drawable::SetGlobalIlluminationType(GlobalIlluminationType type)
 {
     giType_ = type;
     MarkPipelineStateHashDirty();
-    MarkNetworkUpdate();
 }
 
 void Drawable::SetReflectionMode(ReflectionMode mode)
 {
     reflectionMode_ = mode;
     MarkPipelineStateHashDirty();
-    MarkNetworkUpdate();
 }
 
 void Drawable::MarkForUpdate()

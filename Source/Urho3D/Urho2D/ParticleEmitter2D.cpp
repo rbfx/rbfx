@@ -92,7 +92,6 @@ void ParticleEmitter2D::SetEffect(ParticleEffect2D* effect)
         return;
 
     effect_ = effect;
-    MarkNetworkUpdate();
 
     if (!effect_)
         return;
@@ -112,8 +111,6 @@ void ParticleEmitter2D::SetSprite(Sprite2D* sprite)
 
     sprite_ = sprite;
     UpdateMaterial();
-
-    MarkNetworkUpdate();
 }
 
 void ParticleEmitter2D::SetBlendMode(BlendMode blendMode)
@@ -123,8 +120,6 @@ void ParticleEmitter2D::SetBlendMode(BlendMode blendMode)
 
     blendMode_ = blendMode;
     UpdateMaterial();
-
-    MarkNetworkUpdate();
 }
 
 void ParticleEmitter2D::SetMaxParticles(unsigned maxParticles)
@@ -172,8 +167,6 @@ void ParticleEmitter2D::SetEmitting(bool enable)
 
     emitting_ = enable;
     emitParticleTime_ = 0.0f;
-
-    MarkNetworkUpdate();
 }
 
 ResourceRef ParticleEmitter2D::GetSpriteAttr() const

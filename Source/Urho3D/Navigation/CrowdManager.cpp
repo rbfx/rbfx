@@ -243,7 +243,6 @@ void CrowdManager::SetMaxAgents(unsigned maxAgents)
     {
         maxAgents_ = maxAgents;
         CreateCrowd();
-        MarkNetworkUpdate();
     }
 }
 
@@ -253,7 +252,6 @@ void CrowdManager::SetMaxAgentRadius(float maxAgentRadius)
     {
         maxAgentRadius_ = maxAgentRadius;
         CreateCrowd();
-        MarkNetworkUpdate();
     }
 }
 
@@ -277,7 +275,6 @@ void CrowdManager::SetNavigationMesh(NavigationMesh* navMesh)
         }
 
         CreateCrowd();
-        MarkNetworkUpdate();
     }
 }
 
@@ -320,7 +317,6 @@ void CrowdManager::SetIncludeFlags(unsigned queryFilterType, unsigned short flag
         filter->setIncludeFlags(flags);
         if (numQueryFilterTypes_ < queryFilterType + 1)
             numQueryFilterTypes_ = queryFilterType + 1;
-        MarkNetworkUpdate();
     }
 }
 
@@ -332,7 +328,6 @@ void CrowdManager::SetExcludeFlags(unsigned queryFilterType, unsigned short flag
         filter->setExcludeFlags(flags);
         if (numQueryFilterTypes_ < queryFilterType + 1)
             numQueryFilterTypes_ = queryFilterType + 1;
-        MarkNetworkUpdate();
     }
 }
 
@@ -346,7 +341,6 @@ void CrowdManager::SetAreaCost(unsigned queryFilterType, unsigned areaID, float 
             numQueryFilterTypes_ = queryFilterType + 1;
         if (numAreas_[queryFilterType] < areaID + 1)
             numAreas_[queryFilterType] = areaID + 1;
-        MarkNetworkUpdate();
     }
 }
 
@@ -387,7 +381,6 @@ void CrowdManager::SetObstacleAvoidanceParams(unsigned obstacleAvoidanceType, co
         crowd_->setObstacleAvoidanceParams(obstacleAvoidanceType, reinterpret_cast<const dtObstacleAvoidanceParams*>(&params));
         if (numObstacleAvoidanceTypes_ < obstacleAvoidanceType + 1)
             numObstacleAvoidanceTypes_ = obstacleAvoidanceType + 1;
-        MarkNetworkUpdate();
     }
 }
 

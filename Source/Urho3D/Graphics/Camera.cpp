@@ -116,7 +116,6 @@ void Camera::SetNearClip(float nearClip)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetFarClip(float farClip)
@@ -125,7 +124,6 @@ void Camera::SetFarClip(float farClip)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetFov(float fov)
@@ -134,7 +132,6 @@ void Camera::SetFov(float fov)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetOrthoSize(float orthoSize)
@@ -144,7 +141,6 @@ void Camera::SetOrthoSize(float orthoSize)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetOrthoSize(const Vector2& orthoSize)
@@ -155,7 +151,6 @@ void Camera::SetOrthoSize(const Vector2& orthoSize)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetAspectRatio(float aspectRatio)
@@ -170,37 +165,31 @@ void Camera::SetZoom(float zoom)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetLodBias(float bias)
 {
     lodBias_ = Max(bias, M_EPSILON);
-    MarkNetworkUpdate();
 }
 
 void Camera::SetViewMask(unsigned mask)
 {
     viewMask_ = mask;
-    MarkNetworkUpdate();
 }
 
 void Camera::SetZoneMask(unsigned mask)
 {
     zoneMask_ = mask;
-    MarkNetworkUpdate();
 }
 
 void Camera::SetViewOverrideFlags(ViewOverrideFlags flags)
 {
     viewOverrideFlags_ = flags;
-    MarkNetworkUpdate();
 }
 
 void Camera::SetFillMode(FillMode mode)
 {
     fillMode_ = mode;
-    MarkNetworkUpdate();
 }
 
 void Camera::SetOrthographic(bool enable)
@@ -209,13 +198,11 @@ void Camera::SetOrthographic(bool enable)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetAutoAspectRatio(bool enable)
 {
     autoAspectRatio_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Camera::SetProjectionOffset(const Vector2& offset)
@@ -223,7 +210,6 @@ void Camera::SetProjectionOffset(const Vector2& offset)
     projectionOffset_ = offset;
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetUseReflection(bool enable)
@@ -232,7 +218,6 @@ void Camera::SetUseReflection(bool enable)
     cachedView_.Invalidate();
     cachedViewProj_.Invalidate();
     cachedFrustum_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetReflectionPlane(const Plane& plane)
@@ -242,7 +227,6 @@ void Camera::SetReflectionPlane(const Plane& plane)
     cachedView_.Invalidate();
     cachedViewProj_.Invalidate();
     cachedFrustum_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetUseClipping(bool enable)
@@ -250,20 +234,17 @@ void Camera::SetUseClipping(bool enable)
     useClipping_ = enable;
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetClipPlane(const Plane& plane)
 {
     clipPlane_ = plane;
-    MarkNetworkUpdate();
 }
 
 void Camera::SetFlipVertical(bool enable)
 {
     flipVertical_ = enable;
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetProjection(const Matrix4& projection)
@@ -277,8 +258,6 @@ void Camera::SetProjection(const Matrix4& projection)
     autoAspectRatio_ = false;
     cachedViewProj_.Invalidate();
     cachedFrustum_.Invalidate();
-    // Called due to autoAspectRatio changing state, the projection itself is not serialized
-    MarkNetworkUpdate();
 }
 
 float Camera::GetNearClip() const
@@ -663,7 +642,6 @@ void Camera::SetAspectRatioInternal(float aspectRatio)
         cachedProjection_.Invalidate();
         cachedViewProj_.Invalidate();
     }
-    MarkNetworkUpdate();
 }
 
 void Camera::SetOrthoSizeAttr(float orthoSize)
@@ -672,7 +650,6 @@ void Camera::SetOrthoSizeAttr(float orthoSize)
     cachedFrustum_.Invalidate();
     cachedProjection_.Invalidate();
     cachedViewProj_.Invalidate();
-    MarkNetworkUpdate();
 }
 
 void Camera::SetReflectionPlaneAttr(const Vector4& value)

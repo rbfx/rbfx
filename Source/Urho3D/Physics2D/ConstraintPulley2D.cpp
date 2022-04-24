@@ -69,7 +69,6 @@ void ConstraintPulley2D::SetOwnerBodyGroundAnchor(const Vector2& groundAnchor)
     ownerBodyGroundAnchor_ = groundAnchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintPulley2D::SetOtherBodyGroundAnchor(const Vector2& groundAnchor)
@@ -80,7 +79,6 @@ void ConstraintPulley2D::SetOtherBodyGroundAnchor(const Vector2& groundAnchor)
     otherBodyGroundAnchor_ = groundAnchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintPulley2D::SetOwnerBodyAnchor(const Vector2& anchor)
@@ -91,7 +89,6 @@ void ConstraintPulley2D::SetOwnerBodyAnchor(const Vector2& anchor)
     ownerBodyAnchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintPulley2D::SetOtherBodyAnchor(const Vector2& anchor)
@@ -102,7 +99,6 @@ void ConstraintPulley2D::SetOtherBodyAnchor(const Vector2& anchor)
     otherBodyAnchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintPulley2D::SetRatio(float ratio)
@@ -113,7 +109,6 @@ void ConstraintPulley2D::SetRatio(float ratio)
     jointDef_.ratio = ratio;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintPulley2D::GetJointDef()

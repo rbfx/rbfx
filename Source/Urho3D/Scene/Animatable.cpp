@@ -370,10 +370,6 @@ void Animatable::SetAttributeAnimation(const ea::string& name, ValueAnimation* a
             return;
         }
 
-        // Add network attribute to set
-        if (attributeInfo->mode_ & AM_NET)
-            animatedNetworkAttributes_.insert(attributeInfo);
-
         attributeAnimationInfos_[name] = new AttributeAnimationInfo(this, *attributeInfo, attributeAnimation, wrapMode, speed);
 
         if (!info)
@@ -383,10 +379,6 @@ void Animatable::SetAttributeAnimation(const ea::string& name, ValueAnimation* a
     {
         if (!info)
             return;
-
-        // Remove network attribute from set
-        if (info->GetAttributeInfo().mode_ & AM_NET)
-            animatedNetworkAttributes_.erase(&info->GetAttributeInfo());
 
         attributeAnimationInfos_.erase(name);
         OnAttributeAnimationRemoved();
@@ -533,11 +525,6 @@ void Animatable::UpdateAttributeAnimations(float timeStep)
 
     for (unsigned i = 0; i < finishedNames.size(); ++i)
         SetAttributeAnimation(finishedNames[i], nullptr);
-}
-
-bool Animatable::IsAnimatedNetworkAttribute(const AttributeInfo& attrInfo) const
-{
-    return animatedNetworkAttributes_.contains(&attrInfo);
 }
 
 AttributeAnimationInfo* Animatable::GetAttributeAnimationInfo(const ea::string& name) const

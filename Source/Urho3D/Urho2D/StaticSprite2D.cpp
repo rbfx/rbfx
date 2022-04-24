@@ -90,7 +90,6 @@ void StaticSprite2D::SetSprite(Sprite2D* sprite)
     UpdateMaterial();
 
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 
     UpdateDrawRect();
 }
@@ -123,7 +122,6 @@ void StaticSprite2D::SetBlendMode(BlendMode blendMode)
     blendMode_ = blendMode;
 
     UpdateMaterial();
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetFlip(bool flipX, bool flipY, bool swapXY)
@@ -135,8 +133,6 @@ void StaticSprite2D::SetFlip(bool flipX, bool flipY, bool swapXY)
     flipY_ = flipY;
     swapXY_ = swapXY;
     sourceBatchesDirty_ = true;
-
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetFlipX(bool flipX)
@@ -161,7 +157,6 @@ void StaticSprite2D::SetColor(const Color& color)
 
     color_ = color;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetAlpha(float alpha)
@@ -171,7 +166,6 @@ void StaticSprite2D::SetAlpha(float alpha)
 
     color_.a_ = alpha;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetUseHotSpot(bool useHotSpot)
@@ -181,7 +175,6 @@ void StaticSprite2D::SetUseHotSpot(bool useHotSpot)
 
     useHotSpot_ = useHotSpot;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
     UpdateDrawRect();
 }
 
@@ -192,7 +185,6 @@ void StaticSprite2D::SetUseDrawRect(bool useDrawRect)
 
     useDrawRect_ = useDrawRect;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
     UpdateDrawRect();
 }
 
@@ -203,7 +195,6 @@ void StaticSprite2D::SetUseTextureRect(bool useTextureRect)
 
     useTextureRect_ = useTextureRect;
     sourceBatchesDirty_ = true;
-    MarkNetworkUpdate();
 }
 
 void StaticSprite2D::SetHotSpot(const Vector2& hotspot)
@@ -216,7 +207,6 @@ void StaticSprite2D::SetHotSpot(const Vector2& hotspot)
     if (useHotSpot_)
     {
         sourceBatchesDirty_ = true;
-        MarkNetworkUpdate();
     }
 
     UpdateDrawRect();
@@ -231,7 +221,6 @@ void StaticSprite2D::SetCustomMaterial(Material* customMaterial)
     sourceBatchesDirty_ = true;
 
     UpdateMaterial();
-    MarkNetworkUpdate();
 }
 
 Sprite2D* StaticSprite2D::GetSprite() const

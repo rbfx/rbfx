@@ -39,10 +39,8 @@ enum AttributeMode
     AM_EDIT = 0x0,
     /// Attribute used for file serialization.
     AM_FILE = 0x1,
-    /// Attribute used for network replication.
-    AM_NET = 0x2,
     /// Attribute used for both file serialization and network replication (default).
-    AM_DEFAULT = 0x3,
+    AM_DEFAULT = 0x1,
     /// Attribute should use latest data grouping instead of delta update in network replication.
     AM_LATESTDATA = 0x4,
     /// Attribute should not be shown in the editor.
@@ -207,16 +205,12 @@ public:
     {
         if (attributeInfo_)
             attributeInfo_->metadata_[key] = value;
-        if (networkAttributeInfo_)
-            networkAttributeInfo_->metadata_[key] = value;
         return *this;
     }
 
 private:
     /// Attribute info.
     AttributeInfo* attributeInfo_ = nullptr;
-    /// Network attribute info.
-    AttributeInfo* networkAttributeInfo_ = nullptr;
 };
 
 }

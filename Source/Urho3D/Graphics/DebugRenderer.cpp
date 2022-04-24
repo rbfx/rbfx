@@ -70,10 +70,7 @@ void DebugRenderer::RegisterObject(Context* context)
 void DebugRenderer::SetLineAntiAlias(bool enable)
 {
     if (enable != lineAntiAlias_)
-    {
         lineAntiAlias_ = enable;
-        MarkNetworkUpdate();
-    }
 }
 
 void DebugRenderer::SetView(Camera* camera)

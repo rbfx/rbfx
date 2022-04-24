@@ -65,7 +65,6 @@ void ConstraintRevolute2D::SetAnchor(const Vector2& anchor)
     anchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintRevolute2D::SetEnableLimit(bool enableLimit)
@@ -79,8 +78,6 @@ void ConstraintRevolute2D::SetEnableLimit(bool enableLimit)
         static_cast<b2RevoluteJoint*>(joint_)->EnableLimit(enableLimit);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintRevolute2D::SetLowerAngle(float lowerAngle)
@@ -94,8 +91,6 @@ void ConstraintRevolute2D::SetLowerAngle(float lowerAngle)
         static_cast<b2RevoluteJoint*>(joint_)->SetLimits(lowerAngle, jointDef_.upperAngle);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintRevolute2D::SetUpperAngle(float upperAngle)
@@ -109,8 +104,6 @@ void ConstraintRevolute2D::SetUpperAngle(float upperAngle)
         static_cast<b2RevoluteJoint*>(joint_)->SetLimits(jointDef_.lowerAngle, upperAngle);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintRevolute2D::SetEnableMotor(bool enableMotor)
@@ -124,8 +117,6 @@ void ConstraintRevolute2D::SetEnableMotor(bool enableMotor)
         static_cast<b2RevoluteJoint*>(joint_)->EnableMotor(enableMotor);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintRevolute2D::SetMotorSpeed(float motorSpeed)
@@ -139,8 +130,6 @@ void ConstraintRevolute2D::SetMotorSpeed(float motorSpeed)
         static_cast<b2RevoluteJoint*>(joint_)->SetMotorSpeed(motorSpeed);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintRevolute2D::SetMaxMotorTorque(float maxMotorTorque)
@@ -154,8 +143,6 @@ void ConstraintRevolute2D::SetMaxMotorTorque(float maxMotorTorque)
         static_cast<b2RevoluteJoint*>(joint_)->SetMaxMotorTorque(maxMotorTorque);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintRevolute2D::GetJointDef()

@@ -270,157 +270,132 @@ void Light::SetLightType(LightType type)
 {
     lightType_ = type;
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Light::SetLightImportance(LightImportance importance)
 {
     lightImportance_ = importance;
-    MarkNetworkUpdate();
 }
 
 void Light::SetLightMode(LightMode mode)
 {
     lightMode_ = mode;
-    MarkNetworkUpdate();
 }
 
 void Light::SetColor(const Color& color)
 {
     color_ = Color(color.r_, color.g_, color.b_, 1.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetTemperature(float temperature)
 {
     temperature_ = Clamp(temperature, 1000.0f, 10000.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetRadius(float radius)
 {
     lightRad_ = radius;
-    MarkNetworkUpdate();
 }
 
 void Light::SetLength(float length)
 {
     lightLength_ = length;
-    MarkNetworkUpdate();
 }
 
 void Light::SetUsePhysicalValues(bool enable)
 {
     usePhysicalValues_ = enable;
-    MarkNetworkUpdate();
 }
 
 void Light::SetSpecularIntensity(float intensity)
 {
     specularIntensity_ = Max(intensity, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetBrightness(float brightness)
 {
     brightness_ = brightness;
-    MarkNetworkUpdate();
 }
 
 void Light::SetIndirectBrightness(float indirectBrightness)
 {
     indirectBrightness_ = indirectBrightness;
-    MarkNetworkUpdate();
 }
 
 void Light::SetRange(float range)
 {
     range_ = Max(range, 0.0f);
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Light::SetFov(float fov)
 {
     fov_ = Clamp(fov, 0.0f, M_MAX_FOV);
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Light::SetAspectRatio(float aspectRatio)
 {
     aspectRatio_ = Max(aspectRatio, M_EPSILON);
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowNearFarRatio(float nearFarRatio)
 {
     shadowNearFarRatio_ = Clamp(nearFarRatio, 0.0f, 0.5f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowMaxExtrusion(float extrusion)
 {
     shadowMaxExtrusion_ = Max(extrusion, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetFadeDistance(float distance)
 {
     fadeDistance_ = Max(distance, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowBias(const BiasParameters& parameters)
 {
     shadowBias_ = parameters;
     shadowBias_.Validate();
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowCascade(const CascadeParameters& parameters)
 {
     shadowCascade_ = parameters;
     shadowCascade_.Validate();
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowFocus(const FocusParameters& parameters)
 {
     shadowFocus_ = parameters;
     shadowFocus_.Validate();
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowFadeDistance(float distance)
 {
     shadowFadeDistance_ = Max(distance, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowIntensity(float intensity)
 {
     shadowIntensity_ = Clamp(intensity, 0.0f, 1.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetShadowResolution(float resolution)
 {
     shadowResolution_ = Clamp(resolution, 0.125f, 1.0f);
-    MarkNetworkUpdate();
 }
 
 void Light::SetRampTexture(Texture* texture)
 {
     rampTexture_ = texture;
-    MarkNetworkUpdate();
 }
 
 void Light::SetShapeTexture(Texture* texture)
 {
     shapeTexture_ = texture;
-    MarkNetworkUpdate();
 }
 
 Color Light::GetColorFromTemperature() const

@@ -190,7 +190,6 @@ void AnimatedSprite2D::SetLoopMode(LoopMode2D loopMode)
 void AnimatedSprite2D::SetSpeed(float speed)
 {
     speed_ = speed;
-    MarkNetworkUpdate();
 }
 
 AnimationSet2D* AnimatedSprite2D::GetAnimationSet() const
@@ -287,7 +286,6 @@ void AnimatedSprite2D::SetSpineAnimation()
     spAnimationState_setAnimationByName(animationState_, 0, animationName_.c_str(), loopMode_ != LM_FORCE_CLAMPED ? true : false);
 
     UpdateAnimation(0.0f);
-    MarkNetworkUpdate();
 }
 
 void AnimatedSprite2D::UpdateSpineAnimation(float timeStep)
@@ -408,7 +406,6 @@ void AnimatedSprite2D::SetSpriterAnimation()
     }
 
     UpdateAnimation(0.0f);
-    MarkNetworkUpdate();
 }
 
 void AnimatedSprite2D::UpdateSpriterAnimation(float timeStep)

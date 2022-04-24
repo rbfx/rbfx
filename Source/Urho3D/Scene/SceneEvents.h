@@ -53,28 +53,11 @@ URHO3D_EVENT(E_SCENESUBSYSTEMUPDATE, SceneSubsystemUpdate)
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 }
 
-/// Scene transform smoothing update.
-URHO3D_EVENT(E_UPDATESMOOTHING, UpdateSmoothing)
-{
-    URHO3D_PARAM(P_CONSTANT, Constant);            // float
-    URHO3D_PARAM(P_SQUAREDSNAPTHRESHOLD, SquaredSnapThreshold);  // float
-}
-
 /// Scene drawable update finished. Custom animation (eg. IK) can be done at this point.
 URHO3D_EVENT(E_SCENEDRAWABLEUPDATEFINISHED, SceneDrawableUpdateFinished)
 {
     URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
-}
-
-/// SmoothedTransform target position changed.
-URHO3D_EVENT(E_TARGETPOSITION, TargetPositionChanged)
-{
-}
-
-/// SmoothedTransform target position changed.
-URHO3D_EVENT(E_TARGETROTATION, TargetRotationChanged)
-{
 }
 
 /// Scene attribute animation update.

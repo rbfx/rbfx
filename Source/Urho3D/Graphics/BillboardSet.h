@@ -172,14 +172,10 @@ public:
     void SetMaterialAttr(const ResourceRef& value);
     /// Set billboards attribute.
     void SetBillboardsAttr(const VariantVector& value);
-    /// Set billboards attribute for network replication.
-    void SetNetBillboardsAttr(const ea::vector<unsigned char>& value);
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
     /// Return billboards attribute.
     VariantVector GetBillboardsAttr() const;
-    /// Return billboards attribute for network replication.
-    const ea::vector<unsigned char>& GetNetBillboardsAttr() const;
     /// Return FaceCameraMode enum value names.
     static const char** GetFaceCameraModeNames();
 
@@ -250,8 +246,6 @@ private:
     Vector3 previousOffset_;
     /// Billboard pointers for sorting.
     ea::vector<Billboard*> sortedBillboards_;
-    /// Attribute buffer for network replication.
-    mutable VectorBuffer attrBuffer_;
 };
 
 }

@@ -28,10 +28,8 @@
 
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
-#include "../Input/Controls.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/AbstractConnection.h"
-#include "../Scene/ReplicationState.h"
 
 namespace SLNet
 {
@@ -102,14 +100,6 @@ struct PackageUpload
     unsigned totalFragments_;
 };
 
-/// Send modes for observer position/rotation. Activated by the client setting either position or rotation.
-enum ObserverPositionSendMode
-{
-    OPSM_NONE = 0,
-    OPSM_POSITION,
-    OPSM_POSITION_ROTATION
-};
-
 /// %Connection to a remote network host.
 class URHO3D_API Connection : public AbstractConnection
 {
@@ -151,14 +141,6 @@ public:
     void SetScene(Scene* newScene);
     /// Assign identity. Called by Network.
     void SetIdentity(const VariantMap& identity);
-    /// Set new controls.
-    void SetControls(const Controls& newControls);
-    /// Set the observer position for interest management, to be sent to the server.
-    /// @property
-    void SetPosition(const Vector3& position);
-    /// Set the observer rotation for interest management, to be sent to the server. Note: not used by the NetworkPriority component.
-    /// @property
-    void SetRotation(const Quaternion& rotation);
     /// Set the connection pending status. Called by Network.
     void SetConnectPending(bool connectPending);
     /// Set whether to log data in/out statistics.
@@ -166,10 +148,6 @@ public:
     void SetLogStatistics(bool enable);
     /// Disconnect. If wait time is non-zero, will block while waiting for disconnect to finish.
     void Disconnect(int waitMSec = 0);
-    /// Send scene update messages. Called by Network.
-    void SendServerUpdate();
-    /// Send latest controls from the client. Called by Network.
-    void SendClientUpdate();
     /// Send queued remote events. Called by Network.
     void SendRemoteEvents();
     /// Send package files to client. Called by network.
@@ -178,8 +156,6 @@ public:
     void SendBuffer(PacketType type);
     /// Send out all buffered messages
     void SendAllBuffers();
-    /// Process pending latest data for nodes and components.
-    void ProcessPendingLatestData();
     /// Process a message from the server or client. Called by Network.
     bool ProcessMessage(int msgID, MemoryBuffer& buffer);
     /// Ban this connections IP address.
@@ -194,20 +170,6 @@ public:
     /// Return the scene used by this connection.
     /// @property
     Scene* GetScene() const;
-
-    /// Return the client controls of this connection.
-    const Controls& GetControls() const { return controls_; }
-
-    /// Return the controls timestamp, sent from client to server along each control update.
-    unsigned char GetTimeStamp() const { return timeStamp_; }
-
-    /// Return the observer position sent by the client for interest management.
-    /// @property
-    const Vector3& GetPosition() const { return position_; }
-
-    /// Return the observer rotation sent by the client for interest management.
-    /// @property
-    const Quaternion& GetRotation() const { return rotation_; }
 
     /// Return whether is a client connection.
     /// @property
@@ -240,10 +202,6 @@ public:
     /// Return the connection's round trip time in milliseconds.
     /// @property
     float GetRoundTripTime() const;
-
-    /// Return the time since last received data from the remote host in milliseconds.
-    /// @property
-    unsigned GetLastHeardTime() const;
 
     /// Return bytes received per second.
     /// @property
@@ -278,10 +236,6 @@ public:
     /// Buffered packet size limit, when reached, packet is sent out immediately
     void SetPacketSizeLimit(int limit);
 
-    /// Current controls.
-    Controls controls_;
-    /// Controls timestamp. Incremented after each sent update.
-    unsigned char timeStamp_;
     /// Identity map.
     VariantMap identity_;
 
@@ -292,24 +246,14 @@ private:
     void ProcessLoadScene(int msgID, MemoryBuffer& msg);
     /// Process a SceneChecksumError message from the server. Called by Network.
     void ProcessSceneChecksumError(int msgID, MemoryBuffer& msg);
-    /// Process a scene update message from the server. Called by Network.
-    void ProcessSceneUpdate(int msgID, MemoryBuffer& msg);
     /// Process package download related messages. Called by Network.
     void ProcessPackageDownload(int msgID, MemoryBuffer& msg);
     /// Process an Identity message from the client. Called by Network.
     void ProcessIdentity(int msgID, MemoryBuffer& msg);
-    /// Process a Controls message from the client. Called by Network.
-    void ProcessControls(int msgID, MemoryBuffer& msg);
     /// Process a SceneLoaded message from the client. Called by Network.
     void ProcessSceneLoaded(int msgID, MemoryBuffer& msg);
     /// Process a remote event message from the client or server. Called by Network.
     void ProcessRemoteEvent(int msgID, MemoryBuffer& msg);
-    /// Process a node for sending a network update. Recurses to process depended on node(s) first.
-    void ProcessNode(unsigned nodeID);
-    /// Process a node that the client has not yet received.
-    void ProcessNewNode(Node* node);
-    /// Process a node that the client has already received.
-    void ProcessExistingNode(Node* node, NodeReplicationState& nodeState);
     /// Process a SyncPackagesInfo message from server.
     void ProcessPackageInfo(int msgID, MemoryBuffer& msg);
     /// Process unknown message. All unknown messages are forwarded as an events
@@ -334,18 +278,10 @@ private:
     /// Scene replication and synchronization manager.
     WeakPtr<ReplicationManager> replicationManager_;
 
-    /// Network replication state of the scene.
-    SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.
     ea::unordered_map<StringHash, PackageDownload> downloads_;
     /// Ongoing package send transfers.
     ea::unordered_map<StringHash, PackageUpload> uploads_;
-    /// Pending latest data for not yet received nodes.
-    ea::unordered_map<unsigned, ea::vector<unsigned char> > nodeLatestData_;
-    /// Pending latest data for not yet received components.
-    ea::unordered_map<unsigned, ea::vector<unsigned char> > componentLatestData_;
-    /// Node ID's to process during a replication update.
-    ea::hash_set<unsigned> nodesToProcess_;
     /// Queued remote events.
     ea::vector<RemoteEvent> remoteEvents_;
     /// Scene file to load once all packages (if any) have been downloaded.
@@ -354,12 +290,6 @@ private:
     Timer statsTimer_;
     /// Remote endpoint port.
     unsigned short port_;
-    /// Observer position for interest management.
-    Vector3 position_;
-    /// Observer rotation for interest management.
-    Quaternion rotation_;
-    /// Send mode for the observer position & rotation.
-    ObserverPositionSendMode sendMode_;
     /// Client connection flag.
     bool isClient_;
     /// Connection pending flag.
@@ -378,8 +308,6 @@ private:
     IntVector2 packetCounter_;
     /// Packet count timer which resets every 1s.
     Timer packetCounterTimer_;
-    /// Last heard timer, resets when new packet is incoming.
-    Timer lastHeardTimer_;
     /// Outgoing packet buffer which can contain multiple messages
     ea::unordered_map<int, VectorBuffer> outgoingBuffer_;
     /// Outgoing packet size limit
