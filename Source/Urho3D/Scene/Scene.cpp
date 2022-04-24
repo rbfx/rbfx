@@ -645,33 +645,23 @@ Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, cons
     return InstantiateJSON(json->GetRoot(), position, rotation, mode);
 }
 
-void Scene::Clear(bool clearReplicated, bool clearLocal)
+void Scene::Clear()
 {
     StopAsyncLoading();
 
-    RemoveChildren(clearReplicated, clearLocal, true);
-    RemoveComponents(clearReplicated, clearLocal);
+    RemoveChildren(true);
+    RemoveComponents();
 
-    // Only clear name etc. if clearing completely
-    if (clearReplicated && clearLocal)
-    {
-        UnregisterAllVars();
-        SetName(EMPTY_STRING);
-        fileName_.clear();
-        checksum_ = 0;
-    }
+    UnregisterAllVars();
+    SetName(EMPTY_STRING);
+    fileName_.clear();
+    checksum_ = 0;
 
     // Reset ID generators
-    if (clearReplicated)
-    {
-        replicatedNodeID_ = FIRST_REPLICATED_ID;
-        replicatedComponentID_ = FIRST_REPLICATED_ID;
-    }
-    if (clearLocal)
-    {
-        localNodeID_ = FIRST_LOCAL_ID;
-        localComponentID_ = FIRST_LOCAL_ID;
-    }
+    replicatedNodeID_ = FIRST_REPLICATED_ID;
+    replicatedComponentID_ = FIRST_REPLICATED_ID;
+    localNodeID_ = FIRST_LOCAL_ID;
+    localComponentID_ = FIRST_LOCAL_ID;
 }
 
 void Scene::SetUpdateEnabled(bool enable)

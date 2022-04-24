@@ -310,7 +310,7 @@ public:
     /// Remove all child scene nodes.
     void RemoveAllChildren();
     /// Remove child scene nodes that match criteria.
-    void RemoveChildren(bool removeReplicated, bool removeLocal, bool recursive);
+    void RemoveChildren(bool recursive);
     /// Create a component to this node (with specified ID if provided).
     Component* CreateComponent(StringHash type, CreateMode mode = REPLICATED, unsigned id = 0);
     /// Create a component to this node if it does not exist already.
@@ -324,7 +324,7 @@ public:
     /// Remove the first component of specific type from this node.
     void RemoveComponent(StringHash type);
     /// Remove components that match criteria.
-    void RemoveComponents(bool removeReplicated, bool removeLocal);
+    void RemoveComponents();
     /// Remove all components of specific type.
     void RemoveComponents(StringHash type);
     /// Remove all components from this node.
