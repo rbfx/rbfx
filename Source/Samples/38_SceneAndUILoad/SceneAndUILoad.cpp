@@ -89,7 +89,7 @@ void SceneAndUILoad::CreateUI()
 
     // Set up global UI style into the root UI element
     auto* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
-    ui->GetRoot()->SetDefaultStyle(style);
+    GetRoot()->SetDefaultStyle(style);
 
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it will interact with the UI
@@ -102,7 +102,7 @@ void SceneAndUILoad::CreateUI()
 
     // Load UI content prepared in the editor and add to the UI hierarchy
     SharedPtr<UIElement> layoutRoot = ui->LoadLayout(cache->GetResource<XMLFile>("UI/UILoadExample.xml"));
-    ui->GetRoot()->AddChild(layoutRoot);
+    GetRoot()->AddChild(layoutRoot);
 
     // Subscribe to button actions (toggle scene lights when pressed then released)
     auto* button = layoutRoot->GetChildStaticCast<Button>("ToggleLight1", true);

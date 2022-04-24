@@ -166,7 +166,7 @@ void Decals::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to move\n"
         "LMB to paint decals, RMB to rotate view\n"
@@ -180,7 +180,7 @@ void Decals::CreateUI()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetRoot()->GetHeight() / 4);
 }
 
 void Decals::SetupViewport()

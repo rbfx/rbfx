@@ -75,7 +75,7 @@ void NATPunchtrough::CreateUI()
 {
     SetLogoVisible(true); // We need the full rendering window
 
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it
@@ -139,7 +139,7 @@ Button* NATPunchtrough::CreateButton(const ea::string& text, int width, IntVecto
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
 
-    auto* button = GetSubsystem<UI>()->GetRoot()->CreateChild<Button>();
+    auto* button = GetRoot()->CreateChild<Button>();
     button->SetStyleAuto();
     button->SetFixedWidth(width);
     button->SetFixedHeight(30);
@@ -155,7 +155,7 @@ Button* NATPunchtrough::CreateButton(const ea::string& text, int width, IntVecto
 
 LineEdit* NATPunchtrough::CreateLineEdit(const ea::string& placeholder, int width, IntVector2 pos)
 {
-    auto* textEdit = GetSubsystem<UI>()->GetRoot()->CreateChild<LineEdit>("");
+    auto* textEdit = GetRoot()->CreateChild<LineEdit>("");
     textEdit->SetStyleAuto();
     textEdit->SetFixedWidth(width);
     textEdit->SetFixedHeight(30);
@@ -169,7 +169,7 @@ void NATPunchtrough::CreateLabel(const ea::string& text, IntVector2 pos)
     auto* cache = GetSubsystem<ResourceCache>();
     // Create log element to view latest logs from the system
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
-    auto* label = GetSubsystem<UI>()->GetRoot()->CreateChild<Text>();
+    auto* label = GetRoot()->CreateChild<Text>();
     label->SetFont(font, 12);
     label->SetColor(Color(0.0f, 1.0f, 0.0f));
     label->SetPosition(pos);

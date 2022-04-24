@@ -34,6 +34,9 @@
 HelloWorld::HelloWorld(Context* context) :
     Sample(context)
 {
+    // Set the mouse mode to use in the sample
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void HelloWorld::Start()
@@ -49,9 +52,6 @@ void HelloWorld::Start()
     // could subscribe in the constructor instead.
     SubscribeToEvents();
 
-    // Set the mouse mode to use in the sample
-    SetMouseMode(MM_FREE);
-    SetMouseVisible(true);
 }
 
 void HelloWorld::CreateText()
@@ -73,7 +73,7 @@ void HelloWorld::CreateText()
     helloText->SetVerticalAlignment(VA_CENTER);
 
     // Add Text instance to the UI root element
-    GetSubsystem<UI>()->GetRoot()->AddChild(helloText);
+    GetRoot()->AddChild(helloText);
 }
 
 void HelloWorld::SubscribeToEvents()

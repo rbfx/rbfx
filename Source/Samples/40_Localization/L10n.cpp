@@ -88,7 +88,7 @@ void L10n::CreateGUI()
     auto* l10n = GetSubsystem<Localization>();
 
     auto* cache = GetSubsystem<ResourceCache>();
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetRoot();
     root->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
     auto* window = new Window(context_);
@@ -228,7 +228,7 @@ void L10n::HandleQuitButtonPressed(StringHash eventType, VariantMap& eventData)
 void L10n::HandleChangeLanguage(StringHash eventType, VariantMap& eventData)
 {
     auto* l10n = GetSubsystem<Localization>();
-    UIElement* uiRoot = GetSubsystem<UI>()->GetRoot();
+    UIElement* uiRoot = GetRoot();
 
     auto* windowTitle = uiRoot->GetChildStaticCast<Text>("WindowTitle", true);
     windowTitle->SetText(l10n->Get("title") + " (" + ea::to_string(l10n->GetLanguageIndex()) + " " + l10n->GetLanguage() + ")");

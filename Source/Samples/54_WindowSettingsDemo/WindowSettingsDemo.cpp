@@ -48,7 +48,7 @@
 
 WindowSettingsDemo::WindowSettingsDemo(Context* context)
     : Sample(context)
-    , uiRoot_(GetSubsystem<UI>()->GetRoot())
+    , uiRoot_(GetRoot())
 {
 }
 

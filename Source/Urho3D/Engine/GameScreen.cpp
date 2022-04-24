@@ -22,8 +22,9 @@
 
 #include "../Engine/Application.h"
 #include "../Engine/GameScreen.h"
+#include "../UI/UI.h"
 #if URHO3D_SYSTEMUI
-#include "../SystemUI/Console.h"
+    #include "../SystemUI/Console.h"
 #endif
 
 namespace Urho3D
@@ -31,6 +32,7 @@ namespace Urho3D
 
 GameScreen::GameScreen(Context* context)
     : Object(context)
+    , rootElement_(context->CreateObject<UIElement>())
 {
 }
 
@@ -51,14 +53,17 @@ void GameScreen::Activate(Application* application)
 
     appication_ = application;
 
-    auto* input = GetSubsystem<Input>();
-
-    InitMouseMode();
-    input->SetMouseVisible(mouseVisible_);
-    input->SetMouseGrabbed(mouseGrabbed_);
-
-    //// Subscribe to keyboard messages.
-    //SubscribeToEvent(E_LOGMESSAGE, URHO3D_HANDLER(GameScreen, HandleLogMessage));
+    {
+        auto* input = GetSubsystem<Input>();
+        InitMouseMode();
+        input->SetMouseVisible(mouseVisible_);
+        input->SetMouseGrabbed(mouseGrabbed_);
+    }
+    {
+        auto* ui = GetSubsystem<UI>();
+        prevRootElement_ = ui->GetRoot();
+        ui->SetRoot(rootElement_);
+    }
 }
 
 /// Deactivate game screen. Executed by Application.
@@ -70,6 +75,10 @@ void GameScreen::Deactivate()
     }
     isActive = false;
     appication_ = nullptr;
+    {
+        auto* ui = GetSubsystem<UI>();
+        ui->SetRoot(prevRootElement_);
+    }
 }
 
 /// Set whether the operating system mouse cursor is visible.

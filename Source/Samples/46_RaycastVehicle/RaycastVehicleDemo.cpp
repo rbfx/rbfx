@@ -162,7 +162,7 @@ void RaycastVehicleDemo::CreateInstructions()
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to drive, F to brake, mouse/touch to rotate camera\n"
         "F5 to save scene, F7 to load");
@@ -172,7 +172,7 @@ void RaycastVehicleDemo::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetRoot()->GetHeight() / 4);
 }
 
 void RaycastVehicleDemo::SubscribeToEvents()

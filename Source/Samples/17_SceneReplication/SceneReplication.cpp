@@ -243,7 +243,7 @@ void SceneReplication::CreateUI()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
-    UIElement* root = ui->GetRoot();
+    UIElement* root = GetRoot();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it
     root->SetDefaultStyle(uiStyle);
@@ -258,7 +258,7 @@ void SceneReplication::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct the instructions text element
-    instructionsText_ = ui->GetRoot()->CreateChild<Text>();
+    instructionsText_ = GetRoot()->CreateChild<Text>();
     instructionsText_->SetText(
         "Use WASD keys to move and RMB to rotate view"
     );
@@ -270,14 +270,14 @@ void SceneReplication::CreateUI()
     // Hide until connected
     instructionsText_->SetVisible(false);
 
-    packetsIn_ = ui->GetRoot()->CreateChild<Text>();
+    packetsIn_ = GetRoot()->CreateChild<Text>();
     packetsIn_->SetText("Packets in : 0");
     packetsIn_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     packetsIn_->SetHorizontalAlignment(HA_LEFT);
     packetsIn_->SetVerticalAlignment(VA_CENTER);
     packetsIn_->SetPosition(10, -10);
 
-    packetsOut_ = ui->GetRoot()->CreateChild<Text>();
+    packetsOut_ = GetRoot()->CreateChild<Text>();
     packetsOut_->SetText("Packets out: 0");
     packetsOut_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     packetsOut_->SetHorizontalAlignment(HA_LEFT);

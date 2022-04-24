@@ -67,6 +67,10 @@ public:
     /// @property
     MouseMode GetMouseMode() const { return mouseMode_; }
 
+    /// Return root UI element.
+    /// @property
+    UIElement* GetRoot() const { return rootElement_; }
+
 private:
     /// Initialize mouse mode on non-web platform.
     void InitMouseMode();
@@ -80,6 +84,8 @@ private:
 private:
     bool isActive{false};
     WeakPtr<Application> appication_{};
+    SharedPtr<UIElement> rootElement_{};
+    SharedPtr<UIElement> prevRootElement_{};
     bool mouseVisible_{true};
     bool mouseGrabbed_{false};
     MouseMode mouseMode_{MM_FREE};

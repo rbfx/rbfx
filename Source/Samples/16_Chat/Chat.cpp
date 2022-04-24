@@ -86,7 +86,7 @@ void Chat::CreateUI()
     SetLogoVisible(false); // We need the full rendering window
 
     auto* graphics = GetSubsystem<Graphics>();
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it

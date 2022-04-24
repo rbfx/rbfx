@@ -221,7 +221,7 @@ void AdvancedNetworking::CreateUI()
 
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
-    UIElement* root = ui->GetRoot();
+    UIElement* root = GetRoot();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it
     root->SetDefaultStyle(uiStyle);
@@ -236,7 +236,7 @@ void AdvancedNetworking::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct the instructions text element
-    instructionsText_ = ui->GetRoot()->CreateChild<Text>();
+    instructionsText_ = GetRoot()->CreateChild<Text>();
     instructionsText_->SetText(
         "Use WASD and Space to move and RMB to rotate view"
     );
@@ -248,7 +248,7 @@ void AdvancedNetworking::CreateUI()
     // Hide until connected
     instructionsText_->SetVisible(false);
 
-    statsText_ = ui->GetRoot()->CreateChild<Text>();
+    statsText_ = GetRoot()->CreateChild<Text>();
     statsText_->SetText("No network stats");
     statsText_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     statsText_->SetHorizontalAlignment(HA_LEFT);

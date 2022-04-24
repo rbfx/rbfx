@@ -219,9 +219,10 @@ void SamplesManager::Start()
     rmlUi->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
 #endif
 
-    ui->GetRoot()->SetDefaultStyle(context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    sampleSelectionScreen_->GetRoot()->SetDefaultStyle(
+        context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
-    auto* layout = ui->GetRoot()->CreateChild<UIElement>();
+    auto* layout = sampleSelectionScreen_->GetRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
     layout->SetLayoutMode(LM_VERTICAL);
     layout->SetAlignment(HA_CENTER, VA_CENTER);
@@ -241,7 +242,7 @@ void SamplesManager::Start()
     if (!logoTexture)
         return;
 
-    logoSprite_ = ui->GetRoot()->CreateChild<Sprite>();
+    logoSprite_ = sampleSelectionScreen_->GetRoot()->CreateChild<Sprite>();
     logoSprite_->SetTexture(logoTexture);
 
     int textureWidth = logoTexture->GetWidth();
@@ -375,7 +376,6 @@ void SamplesManager::OnClickSample(VariantMap& args)
 void SamplesManager::StartSample(StringHash sampleType)
 {
     UI* ui = context_->GetSubsystem<UI>();
-    ui->GetRoot()->RemoveAllChildren();
     ui->SetFocusElement(nullptr);
 
 #if MOBILE
@@ -577,9 +577,6 @@ void SamplesManager::OnFrameStart()
 
             SetGameScreen(sampleSelectionScreen_);
             ui->SetCursor(nullptr);
-            ui->GetRoot()->RemoveAllChildren();
-            ui->GetRoot()->AddChild(listViewHolder_);
-            ui->GetRoot()->AddChild(logoSprite_);
 #if MOBILE
             Graphics* graphics = context_->GetSubsystem<Graphics>();
             graphics->SetOrientations("Portrait");
@@ -627,7 +624,7 @@ void SamplesManager::RegisterSample()
     title->SetFont(context_->GetSubsystem<ResourceCache>()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
     title->SetStyleAuto();
 
-    context_->GetSubsystem<UI>()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
+    sampleSelectionScreen_->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
 }
 
 }

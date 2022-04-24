@@ -93,7 +93,7 @@ void SoundEffects::Start()
 
 void SoundEffects::CreateUI()
 {
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it
@@ -163,7 +163,7 @@ void SoundEffects::CreateUI()
 
 Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const ea::string& text)
 {
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
 
@@ -183,7 +183,7 @@ Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const ea:
 
 CheckBox* SoundEffects::CreateCheckbox(int x, int y, const ea::string& text)
 {
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root =  GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
 
@@ -203,7 +203,7 @@ CheckBox* SoundEffects::CreateCheckbox(int x, int y, const ea::string& text)
 
 Slider* SoundEffects::CreateSlider(int x, int y, int xSize, int ySize, const ea::string& text)
 {
-    UIElement* root = GetSubsystem<UI>()->GetRoot();
+    UIElement* root = GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
 
@@ -307,7 +307,7 @@ void SoundEffects::HandleStartMicRecord(StringHash eventType, VariantMap& eventD
     if (activeMic_)
         return;
 
-    auto micPicker = (DropDownList*)GetSubsystem<UI>()->GetRoot()->GetChild("MIC_PICKER", true);
+    auto micPicker = (DropDownList*)GetRoot()->GetChild("MIC_PICKER", true);
     if (micPicker->GetNumItems() && micPicker->GetSelectedItem())
     {
         auto micName = ((Text*)micPicker->GetSelectedItem())->GetText();
