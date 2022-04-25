@@ -45,9 +45,10 @@
 #include <Urho3D/DebugNew.h>
 
 
-MultipleViewports::MultipleViewports(Context* context) :
-    Sample(context),
-    drawDebug_(false)
+MultipleViewports::MultipleViewports(Context* context)
+    : Sample(context)
+    , drawDebug_(false)
+    , cameraController_(context)
 {
 }
 
@@ -228,30 +229,6 @@ void MultipleViewports::MoveCamera(float timeStep)
         return;
 
     auto* input = GetSubsystem<Input>();
-
-    // Movement speed as world units per second
-    const float MOVE_SPEED = 20.0f;
-    // Mouse sensitivity as degrees per pixel
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    IntVector2 mouseMove = input->GetMouseMove();
-    yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
-    pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
-    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * MOVE_SPEED * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
 
     // Toggle post processing effects on the front viewport. Note that the rear viewport is unaffected
     RenderPath* effectRenderPath = GetSubsystem<Renderer>()->GetViewport(0)->GetRenderPath();

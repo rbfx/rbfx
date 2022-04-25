@@ -44,8 +44,11 @@
 #include <Urho3D/DebugNew.h>
 
 
-RenderingShowcase::RenderingShowcase(Context* context) : Sample(context)
+RenderingShowcase::RenderingShowcase(Context* context)
+    : Sample(context)
+    , cameraController_(context)
 {
+    cameraController_.SetAcceleratedSpeed(2.0f);
     // All these scenes correspond to Scenes/RenderingShowcase_*.xml resources
     sceneNames_.push_back({ "0" });
     sceneNames_.push_back({ "2_Dynamic", "2_BakedDirect", "2_BakedIndirect", "2_BakedDirectIndirect" });
@@ -68,9 +71,6 @@ void RenderingShowcase::Start()
 
     // Setup the viewport for displaying the scene
     SetupViewport();
-
-    // Subscribe to global events for camera movement
-    SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
     SetMouseMode(MM_RELATIVE);
@@ -156,48 +156,10 @@ void RenderingShowcase::SetupViewport()
     SetViewport(0, viewport);
 }
 
-void RenderingShowcase::SubscribeToEvents()
-{
-}
-
-void RenderingShowcase::MoveCamera(float timeStep)
-{
-    // Right mouse button controls mouse cursor visibility: hide when pressed
-    auto* input = GetSubsystem<Input>();
-
-    const bool slowMovement = input->GetKeyDown(KEY_CTRL);
-    // Movement speed as world units per second
-    const float moveSpeed = slowMovement ? 2.0f : 10.0f;
-    // Mouse sensitivity as degrees per pixel
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    IntVector2 mouseMove = input->GetMouseMove();
-    yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
-    pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
-    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * moveSpeed * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * moveSpeed * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * moveSpeed * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * moveSpeed * timeStep);
-}
-
 void RenderingShowcase::Update(float timeStep)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* input = GetSubsystem<Input>();
-
-    // Move the camera, scale movement with time step
-    MoveCamera(timeStep);
 
     // Keep probe object orientation
     probeObject_->GetNode()->SetWorldRotation(Quaternion::IDENTITY);

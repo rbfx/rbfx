@@ -23,7 +23,7 @@
 #pragma once
 
 #include <Urho3D/Math/Plane.h>
-
+#include <Urho3D/Input/CameraController.h>
 #include "Sample.h"
 
 namespace Urho3D
@@ -56,8 +56,6 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Subscribe to the logic update event.
-    void SubscribeToEvents();
     /// Read input and moves the camera.
     void MoveCamera(float timeStep);
     /// Handle the logic update event.
@@ -73,4 +71,6 @@ private:
     Plane waterPlane_;
     /// Clipping plane for reflection rendering. Slightly biased downward from the reflection plane to avoid artifacts.
     Plane waterClipPlane_;
+    /// Camera controller.
+    CameraController cameraController_;
 };

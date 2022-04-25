@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -73,7 +74,7 @@ private:
     /// Subscribe to application-wide logic update and post-render update events.
     void SubscribeToEvents();
     /// Read input and moves the camera.
-    void MoveCamera(float timeStep);
+    void HandleInput(float timeStep);
     /// Animate the scene.
     void AnimateScene(float timeStep);
     /// Handle the logic update event.
@@ -83,4 +84,6 @@ private:
 
     /// Flag for drawing debug geometry.
     bool drawDebug_;
+    /// Camera controller.
+    CameraController cameraController_;
 };

@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -54,10 +55,6 @@ private:
     void SetupSelectedScene(bool resetCamera = true);
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Subscribe to application-wide logic update event.
-    void SubscribeToEvents();
-    /// Reads input and moves the camera.
-    void MoveCamera(float timeStep);
     /// Handle the logic update event.
     void Update(float timeStep);
     /// Construct an instruction text to the UI.
@@ -104,4 +101,6 @@ private:
     unsigned probeMaterialIndex_{};
     /// List of all available scenes.
     ea::vector<ea::vector<ea::string>> sceneNames_;
+    /// Camera controller.
+    CameraController cameraController_;
 };

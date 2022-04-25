@@ -42,8 +42,9 @@
 
 // Expands to this example's entry-point
 
-HelloSystemUi::HelloSystemUi(Context* context) :
-    Sample(context)
+HelloSystemUi::HelloSystemUi(Context* context)
+    : Sample(context)
+    , cameraController_(context)
 {
 }
 

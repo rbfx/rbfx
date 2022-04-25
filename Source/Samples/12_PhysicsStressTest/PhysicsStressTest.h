@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -91,4 +92,6 @@ private:
 
     /// Flag for drawing debug geometry.
     bool drawDebug_;
+    /// Camera controller.
+    CameraController cameraController_;
 };

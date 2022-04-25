@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -54,15 +55,11 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Subscribe to application-wide logic update events.
-    void SubscribeToEvents();
-    /// Read input and moves the camera.
-    void MoveCamera(float timeStep);
-    /// Handle the logic update event.
-    void Update(float timeStep);
 
     /// Scene that is rendered to a texture.
     SharedPtr<Scene> rttScene_;
     /// Camera scene node in the render-to-texture scene.
     SharedPtr<Node> rttCameraNode_;
+    /// Camera controller.
+    CameraController cameraController_;
 };

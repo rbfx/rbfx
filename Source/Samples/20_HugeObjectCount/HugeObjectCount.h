@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -80,10 +81,6 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Subscribe to application-wide logic update events.
-    void SubscribeToEvents();
-    /// Read input and move the camera.
-    void MoveCamera(float timeStep);
     /// Animate the scene.
     void AnimateObjects(float timeStep);
     /// Handle the logic update event.
@@ -95,4 +92,6 @@ private:
     bool animate_;
     /// Group optimization flag.
     bool useGroups_;
+    /// Camera controller.
+    CameraController cameraController_;
 };
