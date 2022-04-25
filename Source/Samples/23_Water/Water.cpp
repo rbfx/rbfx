@@ -195,7 +195,7 @@ void Water::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 
     // Create a mathematical plane to represent the water in calculations
     waterPlane_ = Plane(waterNode_->GetWorldRotation() * Vector3(0.0f, 1.0f, 0.0f), waterNode_->GetWorldPosition());
@@ -238,8 +238,6 @@ void Water::SetupViewport()
 
 void Water::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Water, HandleUpdate));
 }
 
 void Water::MoveCamera(float timeStep)
@@ -288,13 +286,8 @@ void Water::MoveCamera(float timeStep)
     reflectionCamera->SetAspectRatio((float)graphics->GetWidth() / (float)graphics->GetHeight());
 }
 
-void Water::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Water::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

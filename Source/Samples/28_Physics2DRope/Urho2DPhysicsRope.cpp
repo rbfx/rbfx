@@ -172,7 +172,7 @@ void Urho2DPhysicsRope::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void Urho2DPhysicsRope::MoveCamera(float timeStep)
@@ -211,20 +211,12 @@ void Urho2DPhysicsRope::MoveCamera(float timeStep)
 
 void Urho2DPhysicsRope::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Urho2DPhysicsRope, HandleUpdate));
-
     // Unsubscribe the SceneUpdate event from base class to prevent camera pitch and yaw in 2D sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void Urho2DPhysicsRope::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Urho2DPhysicsRope::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 

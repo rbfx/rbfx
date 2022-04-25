@@ -76,11 +76,9 @@ void HttpRequestDemo::CreateUI()
 
 void HttpRequestDemo::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing HTTP request
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HttpRequestDemo, HandleUpdate));
 }
 
-void HttpRequestDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void HttpRequestDemo::Update(float timeStep)
 {
     auto* network = GetSubsystem<Network>();
 

@@ -64,7 +64,7 @@ private:
     void SubscribeToEvents();
 
     /// Handle application update. Set controls to vehicle.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
 
     /// Handle application post-update. Update camera position after vehicle has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);

@@ -214,7 +214,7 @@ void HelloRmlUI::InitScene()
     // Set up a viewport so 3D scene can be visible.
     auto* renderer = GetSubsystem<Renderer>();
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void HelloRmlUI::OnUpdate(StringHash, VariantMap& eventData)

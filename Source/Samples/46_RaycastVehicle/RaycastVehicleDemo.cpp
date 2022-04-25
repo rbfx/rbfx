@@ -90,7 +90,7 @@ void RaycastVehicleDemo::CreateScene()
     cameraNode_ = new Node(context_);
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(500.0f);
-    GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
+    SetViewport(0, new Viewport(context_, scene_, camera));
     // Create static scene content. First create a zone for ambient lighting and fog control
     Node* zoneNode = scene_->CreateChild("Zone");
     auto* zone = zoneNode->CreateComponent<Zone>();
@@ -177,9 +177,6 @@ void RaycastVehicleDemo::CreateInstructions()
 
 void RaycastVehicleDemo::SubscribeToEvents()
 {
-    // Subscribe to Update event for setting the vehicle controls before physics simulation
-    SubscribeToEvent(E_UPDATE,
-                     URHO3D_HANDLER(RaycastVehicleDemo, HandleUpdate));
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
     SubscribeToEvent(E_POSTUPDATE,
                      URHO3D_HANDLER(RaycastVehicleDemo,
@@ -188,8 +185,7 @@ void RaycastVehicleDemo::SubscribeToEvents()
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void RaycastVehicleDemo::HandleUpdate(StringHash eventType,
-                                 VariantMap& eventData)
+void RaycastVehicleDemo::Update(float timeStep)
 {
     using namespace Update;
     auto* input = GetSubsystem<Input>();

@@ -190,15 +190,11 @@ void L10n::CreateScene()
 
     auto* renderer = GetSubsystem<Renderer>();
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
-
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(L10n, HandleUpdate));
+    SetViewport(0, viewport);
 }
 
-void L10n::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void L10n::Update(float timeStep)
 {
-    using namespace Update;
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
     auto* input = GetSubsystem<Input>();
     const float MOUSE_SENSITIVITY = 0.1f;
     IntVector2 mouseMove = input->GetMouseMove();

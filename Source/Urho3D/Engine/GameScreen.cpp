@@ -22,7 +22,9 @@
 
 #include "../Engine/Application.h"
 #include "../Engine/GameScreen.h"
+#include "../Graphics/Renderer.h"
 #include "../UI/UI.h"
+#include "../Core/CoreEvents.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/Console.h"
 #endif
@@ -44,14 +46,17 @@ void GameScreen::RegisterObject(Context* context)
 /// Activate game screen. Executed by Application.
 void GameScreen::Activate(Application* application)
 {
-    if (isActive)
+    if (active_)
     {
         return;
     }
 
-    isActive = true;
+    active_ = true;
 
     appication_ = application;
+
+    // Subscribe HandleUpdate() method for processing update events
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(GameScreen, HandleUpdate));
 
     {
         auto* input = GetSubsystem<Input>();
@@ -64,20 +69,45 @@ void GameScreen::Activate(Application* application)
         prevRootElement_ = ui->GetRoot();
         ui->SetRoot(rootElement_);
     }
+    {
+        auto* renderer = GetSubsystem<Renderer>();
+        if (renderer && !viewports_.empty())
+        {
+            renderer->SetNumViewports(viewports_.size());
+            for (unsigned i = 0; i < viewports_.size();++i)
+            {
+                renderer->SetViewport(i, viewports_[i]);
+            }
+        }
+    }
+}
+void GameScreen::Update(float timeStep)
+{
 }
 
 /// Deactivate game screen. Executed by Application.
 void GameScreen::Deactivate()
 {
-    if (!isActive)
+    if (!active_)
     {
         return;
     }
-    isActive = false;
+    active_ = false;
     appication_ = nullptr;
+
+    // Subscribe HandleUpdate() method for processing update events
+    UnsubscribeFromEvent(E_UPDATE);
+
     {
         auto* ui = GetSubsystem<UI>();
         ui->SetRoot(prevRootElement_);
+    }
+    {
+        auto* renderer = GetSubsystem<Renderer>();
+        if (renderer && !viewports_.empty())
+        {
+            renderer->SetNumViewports(0);
+        }
     }
 }
 
@@ -108,6 +138,56 @@ void GameScreen::SetMouseMode(MouseMode mode) {
     {
         InitMouseMode();
     }
+}
+
+void GameScreen::SetNumViewports(unsigned num)
+{
+    viewports_.resize(num);
+    if (active_)
+    {
+        auto* renderer = GetSubsystem<Renderer>();
+        if (renderer)
+        {
+            renderer->SetNumViewports(num);
+        }
+    }
+}
+
+void GameScreen::SetViewport(unsigned index, Viewport* viewport)
+{
+    if (index >= viewports_.size())
+        viewports_.resize(index + 1);
+
+    viewports_[index] = viewport;
+    if (active_)
+    {
+        auto* renderer = GetSubsystem<Renderer>();
+        if (renderer)
+        {
+            renderer->SetViewport(index, viewport);
+        }
+    }
+}
+
+Viewport* GameScreen::GetViewport(unsigned index) const
+{
+    return index < viewports_.size() ? viewports_[index] : nullptr;
+}
+
+Viewport* GameScreen::GetViewportForScene(Scene* scene, unsigned index) const
+{
+    for (unsigned i = 0; i < viewports_.size(); ++i)
+    {
+        Viewport* viewport = viewports_[i];
+        if (viewport && viewport->GetScene() == scene)
+        {
+            if (index == 0)
+                return viewport;
+            else
+                --index;
+        }
+    }
+    return nullptr;
 }
 
 void GameScreen::InitMouseMode()
@@ -159,4 +239,15 @@ void GameScreen::HandleMouseModeChange(StringHash /*eventType*/, VariantMap& eve
     input->SetMouseVisible(!mouseLocked);
 }
 
+void GameScreen::HandleUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace Update;
+
+    // Take the frame time step, which is stored as a float
+    float timeStep = eventData[P_TIMESTEP].GetFloat();
+
+    // Move the camera, scale movement with time step
+    Update(timeStep);
 }
+
+} // namespace Urho3D

@@ -117,7 +117,7 @@ void Urho2DPlatformer::CreateScene()
     // Setup the viewport for displaying the scene
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, camera));
     auto* renderer = GetSubsystem<Renderer>();
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 
     // Set background color for the scene
     Zone* zone = renderer->GetDefaultZone();
@@ -170,9 +170,6 @@ void Urho2DPlatformer::HandleSceneRendered(StringHash eventType, VariantMap& eve
 
 void Urho2DPlatformer::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Urho2DPlatformer, HandleUpdate));
-
     // Subscribe HandlePostUpdate() function for processing post update events
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(Urho2DPlatformer, HandlePostUpdate));
 
@@ -334,7 +331,7 @@ void Urho2DPlatformer::HandleCollisionEnd(StringHash eventType, VariantMap& even
     }
 }
 
-void Urho2DPlatformer::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Urho2DPlatformer::Update(float timeStep)
 {
     using namespace Update;
 

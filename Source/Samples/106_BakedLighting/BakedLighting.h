@@ -55,7 +55,7 @@ private:
     /// Subscribe to necessary events.
     void SubscribeToEvents();
     /// Handle application update. Set controls to character.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
 
     /// Crowd agent.
     CrowdAgent* agent_{};

@@ -61,7 +61,7 @@ private:
     /// Reads input and moves the camera.
     void MoveCamera(float timeStep);
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle toggle button 1 being pressed.
     void ToggleLight1(StringHash eventType, VariantMap& eventData);
     /// Handle toggle button 2 being pressed.

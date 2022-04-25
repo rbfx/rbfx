@@ -134,14 +134,11 @@ void BakedLighting::CreateInstructions()
 
 void BakedLighting::SubscribeToEvents()
 {
-    // Subscribe to Update event for setting the character controls before physics simulation
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(BakedLighting, HandleUpdate));
-
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void BakedLighting::Update(float timeStep)
 {
     using namespace Update;
 

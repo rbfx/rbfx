@@ -185,7 +185,7 @@ void InverseKinematics::SetupViewport()
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void InverseKinematics::UpdateCameraAndFloor(float /*timeStep*/)
@@ -238,19 +238,12 @@ void InverseKinematics::UpdateCameraAndFloor(float /*timeStep*/)
 
 void InverseKinematics::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(InverseKinematics, HandleUpdate));
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(InverseKinematics, HandlePostRenderUpdate));
     SubscribeToEvent(E_SCENEDRAWABLEUPDATEFINISHED, URHO3D_HANDLER(InverseKinematics, HandleSceneDrawableUpdateFinished));
 }
 
-void InverseKinematics::HandleUpdate(StringHash /*eventType*/, VariantMap& eventData)
+void InverseKinematics::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     UpdateCameraAndFloor(timeStep);
 }

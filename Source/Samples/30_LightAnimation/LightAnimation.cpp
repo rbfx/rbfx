@@ -186,7 +186,7 @@ void LightAnimation::SetupViewport()
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void LightAnimation::MoveCamera(float timeStep)
@@ -225,17 +225,10 @@ void LightAnimation::MoveCamera(float timeStep)
 
 void LightAnimation::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(LightAnimation, HandleUpdate));
 }
 
-void LightAnimation::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void LightAnimation::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

@@ -78,11 +78,9 @@ void HelloWorld::CreateText()
 
 void HelloWorld::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloWorld, HandleUpdate));
 }
 
-void HelloWorld::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void HelloWorld::Update(float timeStep)
 {
     // Do nothing for now, could be extended to eg. animate the display
 }

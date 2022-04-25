@@ -183,14 +183,11 @@ void SkeletalAnimation::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void SkeletalAnimation::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(SkeletalAnimation, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, sent after Renderer subsystem is
     // done with defining the draw calls for the viewports (but before actually executing them.) We will request debug geometry
     // rendering during that event
@@ -234,13 +231,8 @@ void SkeletalAnimation::MoveCamera(float timeStep)
         drawDebug_ = !drawDebug_;
 }
 
-void SkeletalAnimation::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void SkeletalAnimation::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

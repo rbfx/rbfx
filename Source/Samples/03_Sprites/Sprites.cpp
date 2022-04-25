@@ -135,17 +135,10 @@ void Sprites::MoveSprites(float timeStep)
 
 void Sprites::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Sprites, HandleUpdate));
 }
 
-void Sprites::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Sprites::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move sprites, scale movement with time step
     MoveSprites(timeStep);
 }

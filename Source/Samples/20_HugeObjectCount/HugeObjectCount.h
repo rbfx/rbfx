@@ -87,7 +87,7 @@ private:
     /// Animate the scene.
     void AnimateObjects(float timeStep);
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
 
     /// Box scene nodes.
     ea::vector<SharedPtr<Node> > boxNodes_;

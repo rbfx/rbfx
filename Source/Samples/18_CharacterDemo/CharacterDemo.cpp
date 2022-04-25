@@ -100,7 +100,7 @@ void CharacterDemo::CreateScene()
     cameraNode_ = new Node(context_);
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
-    GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
+    SetViewport(0, new Viewport(context_, scene_, camera));
 
     // Create static scene content. First create a zone for ambient lighting and fog control
     Node* zoneNode = scene_->CreateChild("Zone");
@@ -246,9 +246,6 @@ void CharacterDemo::CreateInstructions()
 
 void CharacterDemo::SubscribeToEvents()
 {
-    // Subscribe to Update event for setting the character controls before physics simulation
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(CharacterDemo, HandleUpdate));
-
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(CharacterDemo, HandlePostUpdate));
 
@@ -256,7 +253,7 @@ void CharacterDemo::SubscribeToEvents()
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void CharacterDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void CharacterDemo::Update(float timeStep)
 {
     using namespace Update;
 

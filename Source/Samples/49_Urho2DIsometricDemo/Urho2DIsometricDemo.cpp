@@ -115,7 +115,7 @@ void Urho2DIsometricDemo::CreateScene()
     // Setup the viewport for displaying the scene
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, camera));
     auto* renderer = GetSubsystem<Renderer>();
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -223,9 +223,6 @@ void Urho2DIsometricDemo::HandleSceneRendered(StringHash eventType, VariantMap& 
 
 void Urho2DIsometricDemo::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Urho2DIsometricDemo, HandleUpdate));
-
     // Subscribe HandlePostUpdate() function for processing post update events
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(Urho2DIsometricDemo, HandlePostUpdate));
 
@@ -239,7 +236,7 @@ void Urho2DIsometricDemo::SubscribeToEvents()
     SubscribeToEvent(E_PHYSICSBEGINCONTACT2D, URHO3D_HANDLER(Urho2DIsometricDemo, HandleCollisionBegin));
 }
 
-void Urho2DIsometricDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Urho2DIsometricDemo::Update(float timeStep)
 {
     using namespace Update;
 

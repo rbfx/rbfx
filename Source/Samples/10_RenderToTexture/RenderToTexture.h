@@ -59,7 +59,7 @@ private:
     /// Read input and moves the camera.
     void MoveCamera(float timeStep);
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
 
     /// Scene that is rendered to a texture.
     SharedPtr<Scene> rttScene_;

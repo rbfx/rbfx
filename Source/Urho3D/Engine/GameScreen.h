@@ -23,6 +23,7 @@
 
 #include "../Core/Context.h"
 #include "../Input/Input.h"
+#include "../Graphics/Viewport.h"
 
 namespace Urho3D
 {
@@ -45,8 +46,11 @@ public:
     /// Deactivate game screen. Executed by Application.
     virtual void Deactivate();
 
+    /// Handle the logic update event.
+    virtual void Update(float timeStep);
+
     /// Get activation flag. Returns true if game screen is active.
-    bool GetIsActive() const { return isActive; }
+    bool GetIsActive() const { return active_; }
     /// Get current application.
     Application* GetApplication() const { return appication_; }
 
@@ -71,6 +75,18 @@ public:
     /// @property
     UIElement* GetRoot() const { return rootElement_; }
 
+    /// Set number of backbuffer viewports to render.
+    /// @property
+    void SetNumViewports(unsigned num);
+    /// Set a backbuffer viewport.
+    /// @property{set_viewports}
+    void SetViewport(unsigned index, Viewport* viewport);
+    /// Return backbuffer viewport by index.
+    /// @property{get_viewports}
+    Viewport* GetViewport(unsigned index) const;
+    /// Return nth backbuffer viewport associated to a scene. Index 0 returns the first.
+    Viewport* GetViewportForScene(Scene* scene, unsigned index) const;
+
 private:
     /// Initialize mouse mode on non-web platform.
     void InitMouseMode();
@@ -79,15 +95,26 @@ private:
     void HandleMouseModeRequest(StringHash eventType, VariantMap& eventData);
     /// Handle request for mouse mode change on web platform.
     void HandleMouseModeChange(StringHash eventType, VariantMap& eventData);
-
+    /// Handle the logic update event.
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
 private:
-    bool isActive{false};
+    /// Is the game screen active.
+    bool active_{false};
+    /// Application activated the game screen.
     WeakPtr<Application> appication_{};
+    /// UI root element.
     SharedPtr<UIElement> rootElement_{};
+    /// UI root element saved upon acivation to be restored at deactivation.
     SharedPtr<UIElement> prevRootElement_{};
+    /// Backbuffer viewports.
+    ea::vector<SharedPtr<Viewport>> viewports_;
+    /// Operating system mouse cursor visible flag.
     bool mouseVisible_{true};
+    /// Flag to indicate the mouse is being grabbed by an operation. Subsystems like UI that uses mouse should
+    /// temporarily ignore the mouse hover or click events.
     bool mouseGrabbed_{false};
+    /// Determines the mode of mouse behaviour.
     MouseMode mouseMode_{MM_FREE};
 };
 

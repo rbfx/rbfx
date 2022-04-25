@@ -119,13 +119,11 @@ void SceneAndUILoad::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void SceneAndUILoad::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for camera motion
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(SceneAndUILoad, HandleUpdate));
 }
 
 void SceneAndUILoad::MoveCamera(float timeStep)
@@ -168,13 +166,8 @@ void SceneAndUILoad::MoveCamera(float timeStep)
         cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
 }
 
-void SceneAndUILoad::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void SceneAndUILoad::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

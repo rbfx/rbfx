@@ -86,7 +86,7 @@ void WindowSettingsDemo::Start()
     // Setup viewport
     auto* renderer = GetSubsystem<Renderer>();
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void WindowSettingsDemo::CreateScene()

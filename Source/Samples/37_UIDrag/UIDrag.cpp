@@ -127,7 +127,6 @@ void UIDrag::CreateInstructions()
 
 void UIDrag::SubscribeToEvents()
 {
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(UIDrag, HandleUpdate));
 }
 
 void UIDrag::HandleClick(StringHash eventType, VariantMap& eventData)
@@ -184,7 +183,7 @@ void UIDrag::HandleDragCancel(StringHash eventType, VariantMap& eventData)
     element->SetPosition(P);
 }
 
-void UIDrag::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void UIDrag::Update(float timeStep)
 {
     auto* ui = GetSubsystem<UI>();
     UIElement* root = GetRoot();

@@ -65,7 +65,6 @@ void ConsoleInput::Start()
 
     // Subscribe to console commands and the frame update
     SubscribeToEvent(E_CONSOLECOMMAND, URHO3D_HANDLER(ConsoleInput, HandleConsoleCommand));
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ConsoleInput, HandleUpdate));
 
     // Subscribe key down event
     SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(ConsoleInput, HandleEscKeyDown));
@@ -104,7 +103,7 @@ void ConsoleInput::HandleConsoleCommand(StringHash eventType, VariantMap& eventD
         HandleInput(eventData[P_COMMAND].GetString());
 }
 
-void ConsoleInput::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void ConsoleInput::Update(float timeStep)
 {
     // Check if there is input from stdin
     ea::string input = GetConsoleInput();

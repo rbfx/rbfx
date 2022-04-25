@@ -130,17 +130,10 @@ void SoundSynthesis::CreateInstructions()
 
 void SoundSynthesis::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(SoundSynthesis, HandleUpdate));
 }
 
-void SoundSynthesis::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void SoundSynthesis::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Use keys to control the filter constant
     auto* input = GetSubsystem<Input>();
     if (input->GetKeyDown(KEY_UP))
