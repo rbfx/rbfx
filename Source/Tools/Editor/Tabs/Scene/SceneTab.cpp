@@ -240,7 +240,7 @@ bool SceneTab::RenderWindowContent()
     RenderToolbarButtons();
     viewportSplitter_.SetCurrentChannel(window->DrawList, 1);
     gizmo_.SetWindow(window);
-    gizmo_.Manipulate(GetCamera(), selectedNodes_);
+    gizmo_.Manipulate(GetCamera(), selectedNodes_, nullptr);
     viewportSplitter_.SetCurrentChannel(window->DrawList, 0);
     ui::SetCursorPos({0, 0});
     ui::ImageItem(texture_, rect.GetSize());
