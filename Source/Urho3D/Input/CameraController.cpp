@@ -28,6 +28,18 @@
 
 namespace Urho3D
 {
+namespace
+{
+
+float ApplyDeadZone(float value, float deadZone)
+{
+    if (value >= -deadZone && value <= deadZone)
+        return 0.0f;
+    return (value - Sign(value) * deadZone) / (1.0f - deadZone);
+}
+
+}
+
 CameraController::CameraController(Context* context)
     : Object(context)
 {
@@ -87,22 +99,63 @@ void CameraController::MoveCamera(float timeStep, Camera* camera)
     IntVector2 mouseMove = input->GetMouseMove();
     eulerAngles.y_ += mouseSensitivity_ * mouseMove.x_;
     eulerAngles.x_ += mouseSensitivity_ * mouseMove.y_;
+
+    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
+    // Use the Translate() function (default local space) to move relative to the node's orientation.
+    {
+        float speed = input->GetKeyDown(KEY_SHIFT) ? acceleratedSpeed_ : speed_;
+        if (input->GetKeyDown(KEY_W))
+            cameraNode->Translate(Vector3::FORWARD * speed * timeStep);
+        if (input->GetKeyDown(KEY_S))
+            cameraNode->Translate(Vector3::BACK * speed * timeStep);
+        if (input->GetKeyDown(KEY_A))
+            cameraNode->Translate(Vector3::LEFT * speed * timeStep);
+        if (input->GetKeyDown(KEY_D))
+            cameraNode->Translate(Vector3::RIGHT * speed * timeStep);
+    }
+
+    if (input->GetNumJoysticks() > 0)
+    {
+        auto state = input->GetJoystickByIndex(0);
+        if (state)
+        {
+            unsigned numAxes = state->GetNumAxes();
+
+            float speed = speed_;
+            // Apply acceleration
+            if (numAxes > 4)
+            {
+                float value = ApplyDeadZone(state->GetAxisPosition(4), axisDeadZone_);
+                speed = Lerp(speed_, acceleratedSpeed_, value);
+            }
+
+            if (numAxes > 0)
+            {
+                float value = ApplyDeadZone(state->GetAxisPosition(0), axisDeadZone_);
+                cameraNode->Translate(Vector3::RIGHT * speed * timeStep * value);
+            }
+            if (numAxes > 1)
+            {
+                float value =  ApplyDeadZone(-state->GetAxisPosition(1), axisDeadZone_);
+                cameraNode->Translate(Vector3::FORWARD * speed * timeStep * value);
+            }
+            if (numAxes > 2)
+            {
+                float value = ApplyDeadZone(state->GetAxisPosition(2), axisDeadZone_);
+                eulerAngles.y_ += value * timeStep * axisSensitivity_;
+            }
+            if (numAxes > 3)
+            {
+                float value = ApplyDeadZone(state->GetAxisPosition(3), axisDeadZone_);
+                eulerAngles.x_ += value * timeStep * axisSensitivity_;
+            }
+        }
+    }
+
     eulerAngles.x_ = Clamp(eulerAngles.x_, -89.999f, 89.999f);
 
     // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
     cameraNode->SetRotation(Quaternion(eulerAngles));
-
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    // Use the Translate() function (default local space) to move relative to the node's orientation.
-    float speed = input->GetKeyDown(KEY_SHIFT) ? acceleratedSpeed_ : speed_;
-    if (input->GetKeyDown(KEY_W))
-        cameraNode->Translate(Vector3::FORWARD * speed * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        cameraNode->Translate(Vector3::BACK * speed * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        cameraNode->Translate(Vector3::LEFT * speed * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        cameraNode->Translate(Vector3::RIGHT * speed * timeStep);
 }
 
 void CameraController::HandleUpdate(StringHash eventType, VariantMap& eventData)

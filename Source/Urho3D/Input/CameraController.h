@@ -76,6 +76,10 @@ private:
     float acceleratedSpeed_{100.0f};
     /// Mouse sensitivity
     float mouseSensitivity_{0.1f};
+    /// Axis sensitivity
+    float axisSensitivity_{100.0f};
+    /// Gamepad axis dead zone
+    float axisDeadZone_{0.1f};
 };
 
 }
