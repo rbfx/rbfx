@@ -29,7 +29,7 @@
 #if URHO3D_SYSTEMUI
 #include <Urho3D/SystemUI/DebugHud.h>
 #endif
-#include <Urho3D/Engine/GameScreen.h>
+#include <Urho3D/Core/GameScreen.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -73,9 +73,6 @@ class Sample : public GameScreen
 public:
     /// Construct.
     explicit Sample(Context* context);
-
-    /// Activate game screen. Executed by Application.
-    virtual void Activate(Application* application) override;
 
     /// Deactivate game screen. Executed by Application.
     virtual void Deactivate() override;

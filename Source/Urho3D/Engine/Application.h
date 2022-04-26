@@ -27,11 +27,9 @@
 
 #include "../Container/Ptr.h"
 #include "../Core/Context.h"
-#include "../Core/Macros.h"
 #include "../Core/Main.h"
 #include "../Engine/Engine.h"
 #include "../Engine/PluginApplication.h"
-#include "../Engine/GameScreen.h"
 
 namespace Urho3D
 {
@@ -61,12 +59,6 @@ public:
     /// Show an error message (last log message if empty), terminate the main loop, and set failure exit code.
     void ErrorExit(const ea::string& message = EMPTY_STRING);
 
-    /// Set current game screen.
-    void SetGameScreen(GameScreen* gameScreen);
-
-    /// Get current game screen.
-    GameScreen* GetGameScreen() const;
-
 protected:
     /// Handle log message.
     void HandleLogMessage(StringHash eventType, VariantMap& eventData);
@@ -84,10 +76,6 @@ protected:
     int exitCode_;
     /// A plugin responsible for automatically loading scripts from resource path.
     SharedPtr<PluginApplication> scriptsPlugin_;
-
-private:
-    /// Curent active game screen.
-    SharedPtr<GameScreen> gameScreen_;
 };
 
 // Macro for defining a main function which creates a Context and the application, then runs it

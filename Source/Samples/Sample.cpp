@@ -40,13 +40,6 @@ Sample::Sample(Context* context) :
     SetMouseVisible(false);
 }
 
-/// Activate game screen. Executed by Application.
-void Sample::Activate(Application* application)
-{
-    GameScreen::Activate(application);
-    Start(((SamplesManager*)application)->GetArgs());
-}
-
 /// Deactivate game screen. Executed by Application.
 void Sample::Deactivate()
 {

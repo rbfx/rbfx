@@ -105,6 +105,7 @@ private:
     bool oldMouseVisible_{};
     MouseMode oldMouseMode_{};
     /// @}
+    GameScreenContainer gameScreenContainer_;
 };
 
 }

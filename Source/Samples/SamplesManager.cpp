@@ -199,7 +199,7 @@ void SamplesManager::Start()
     inspectorNode_ = MakeShared<Scene>(context_);
 
     sampleSelectionScreen_ = context_->CreateObject<SampleSelectionScreen>();
-    SetGameScreen(sampleSelectionScreen_);
+    gameScreenContainer_.SetGameScreen(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
@@ -384,10 +384,13 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    SharedPtr<GameScreen> screen;
+    SharedPtr<Sample> screen;
     screen.DynamicCast(context_->CreateObject(sampleType));
     if (screen)
-        SetGameScreen(screen);
+    {
+        gameScreenContainer_.SetGameScreen(screen);
+        screen->Start(GetArgs());
+    }
     else
         ErrorExit("Specified sample does not exist.");
 }
@@ -523,7 +526,7 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     }
 #endif
 
-    if (GetGameScreen() != sampleSelectionScreen_)
+    if (gameScreenContainer_.GetGameScreen() != sampleSelectionScreen_)
         return;
 
     if (key == KEY_SPACE)
@@ -570,12 +573,12 @@ void SamplesManager::OnFrameStart()
     if (isClosing_)
     {
         isClosing_ = false;
-        if (GetGameScreen() != sampleSelectionScreen_)
+        if (gameScreenContainer_.GetGameScreen() != sampleSelectionScreen_)
         {
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
 
-            SetGameScreen(sampleSelectionScreen_);
+            gameScreenContainer_.SetGameScreen(sampleSelectionScreen_);
             ui->SetCursor(nullptr);
 #if MOBILE
             Graphics* graphics = context_->GetSubsystem<Graphics>();

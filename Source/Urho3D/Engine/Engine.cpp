@@ -37,7 +37,7 @@
 #endif
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
-#include "../Engine/GameScreen.h"
+#include "../Core/GameScreen.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"

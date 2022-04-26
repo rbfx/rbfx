@@ -149,7 +149,26 @@ void CameraController::MoveCamera(float timeStep, Camera* camera)
                 float value = ApplyDeadZone(state->GetAxisPosition(3), axisDeadZone_);
                 eulerAngles.x_ += value * timeStep * axisSensitivity_;
             }
+
+            unsigned numHats = state->GetNumHats();
+            if (numHats > 0)
+            {
+                int value = state->GetHatPosition(0);
+                if (0 != (value & HAT_UP))
+                    cameraNode->Translate(Vector3::FORWARD * speed * timeStep);
+                if (0 != (value & HAT_DOWN))
+                    cameraNode->Translate(Vector3::BACK * speed * timeStep);
+                if (0 != (value & HAT_LEFT))
+                    cameraNode->Translate(Vector3::LEFT * speed * timeStep);
+                if (0 != (value & HAT_RIGHT))
+                    cameraNode->Translate(Vector3::RIGHT * speed * timeStep);
+            }
         }
+    }
+
+    {
+        unsigned numTouches = input->GetNumTouches();
+        //TouchState* touch0 = input->GetTouch(0);
     }
 
     eulerAngles.x_ = Clamp(eulerAngles.x_, -89.999f, 89.999f);

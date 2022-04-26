@@ -21,7 +21,7 @@
 //
 
 #include "../Engine/Application.h"
-#include "../Engine/GameScreen.h"
+#include "../Core/GameScreen.h"
 #include "../Graphics/Renderer.h"
 #include "../UI/UI.h"
 #include "../Core/CoreEvents.h"
@@ -44,7 +44,7 @@ void GameScreen::RegisterObject(Context* context)
 }
 
 /// Activate game screen. Executed by Application.
-void GameScreen::Activate(Application* application)
+void GameScreen::Activate()
 {
     if (active_)
     {
@@ -52,8 +52,6 @@ void GameScreen::Activate(Application* application)
     }
 
     active_ = true;
-
-    appication_ = application;
 
     // Subscribe HandleUpdate() method for processing update events
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(GameScreen, HandleUpdate));
@@ -93,7 +91,6 @@ void GameScreen::Deactivate()
         return;
     }
     active_ = false;
-    appication_ = nullptr;
 
     // Subscribe HandleUpdate() method for processing update events
     UnsubscribeFromEvent(E_UPDATE);
@@ -249,5 +246,24 @@ void GameScreen::HandleUpdate(StringHash eventType, VariantMap& eventData)
     // Move the camera, scale movement with time step
     Update(timeStep);
 }
+
+
+void GameScreenContainer::SetGameScreen(GameScreen* gameScreen)
+{
+    if (gameScreen_)
+    {
+        gameScreen_->Deactivate();
+    }
+
+    gameScreen_ = gameScreen;
+
+    if (gameScreen_)
+    {
+        gameScreen_->Activate();
+    }
+}
+
+GameScreen* GameScreenContainer::GetGameScreen() const { return gameScreen_; }
+
 
 } // namespace Urho3D

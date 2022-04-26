@@ -29,7 +29,7 @@ namespace Urho3D
 {
 class Application;
 
-    /// Base class for game "screen" - a unit of game state. Tipical samples of a game screen would be loading screen, menu or a game screen.
+/// Base class for game "screen" - a unit of game state. Tipical samples of a game screen would be loading screen, menu or a game screen.
 class URHO3D_API GameScreen : public Object
 {
     URHO3D_OBJECT(GameScreen, Object);
@@ -41,7 +41,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Activate game screen. Executed by Application.
-    virtual void Activate(Application* application);
+    virtual void Activate();
 
     /// Deactivate game screen. Executed by Application.
     virtual void Deactivate();
@@ -51,8 +51,6 @@ public:
 
     /// Get activation flag. Returns true if game screen is active.
     bool GetIsActive() const { return active_; }
-    /// Get current application.
-    Application* GetApplication() const { return appication_; }
 
     /// Set whether the operating system mouse cursor is visible.
     void SetMouseVisible(bool enable);
@@ -101,8 +99,6 @@ private:
 private:
     /// Is the game screen active.
     bool active_{false};
-    /// Application activated the game screen.
-    WeakPtr<Application> appication_{};
     /// UI root element.
     SharedPtr<UIElement> rootElement_{};
     /// UI root element saved upon acivation to be restored at deactivation.
@@ -116,6 +112,20 @@ private:
     bool mouseGrabbed_{false};
     /// Determines the mode of mouse behaviour.
     MouseMode mouseMode_{MM_FREE};
+};
+
+class URHO3D_API GameScreenContainer
+{
+public:
+    /// Set current game screen.
+    void SetGameScreen(GameScreen* gameScreen);
+
+    /// Get current game screen.
+    GameScreen* GetGameScreen() const;
+
+private:
+    /// Current active game screen.
+    SharedPtr<GameScreen> gameScreen_;
 };
 
 }
