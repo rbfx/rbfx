@@ -28,7 +28,7 @@
 #include "../Math/BoundingBox.h"
 #include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
-#include "../Replica/NetworkTime.h"
+#include "../Replica/NetworkId.h"
 #include "../Scene/Component.h"
 
 #include <Bullet/LinearMath/btIDebugDraw.h>
