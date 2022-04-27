@@ -75,6 +75,13 @@ void Gizmo::RenderUI()
     ui::SameLine();
     if (ui::RadioButton("Local", GetTransformSpace() == TS_LOCAL))
         SetTransformSpace(TS_LOCAL);
+    bool snap = translationSnap_ > 0.0f;
+    if (ui::Checkbox("Snap", &snap))
+    {
+        translationSnap_ = snap ? 0.1f : 0.0f;
+        rotationSnap_ = snap ? 5.0f : 0.0f;
+        scaleSnap_ = snap ? 0.1f : 0.0f;
+    }
 }
 
 int Gizmo::GetSelectionCenter(Vector3& outCenter, Node** begin, Node** end)
@@ -103,6 +110,7 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
     ImGuizmo::SetOrthographic(camera->IsOrthographic());
 
     Matrix4 currentOrigin;
+    float* snap = nullptr;
     if (begin + 1 != end)   // nodes.size() > 1
     {
         // Find center point of all nodes
@@ -124,6 +132,7 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
     if (transformSpace_ == TS_LOCAL)
         mode = ImGuizmo::LOCAL;
     else if (transformSpace_ == TS_WORLD)
+
         mode = ImGuizmo::WORLD;
 
     // Scaling is always done in local space even for multiselections.
@@ -132,6 +141,16 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
     // Any other operations on multiselections are done in world space.
     if (begin + 1 != end)   // nodes.size() > 1
         mode = ImGuizmo::WORLD;
+
+    switch (GetOperation())
+    {
+    case GIZMOOP_TRANSLATE: snap = &translationSnap_; break;
+    case GIZMOOP_ROTATE: snap = &rotationSnap_; break;
+    case GIZMOOP_SCALE: snap = &scaleSnap_; break;
+    }
+
+    if (snap && *snap <= 0.0f)
+        snap = nullptr;
 
     Matrix4 view = camera->GetView().ToMatrix4().Transpose();
     Matrix4 proj = camera->GetProjection().Transpose();
@@ -157,7 +176,8 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
         ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
         ImGuizmo::SetDrawlist(ui::GetBackgroundDrawList());
     }
-    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
+
+    bool manipulated = ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, snap);
 
     if (IsActive())
     {
@@ -169,32 +189,37 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
         }
 
         wasActive_ = true;
-        tran = tran.Transpose();
-        delta = delta.Transpose();
 
-        currentOrigin = Matrix4(tran);
-
-        for (auto it = begin; it != end; it++)
+        if (manipulated)
         {
-            Node* node = *it;
-            if (node == nullptr)
-            {
-                URHO3D_LOGERROR("Gizmo received null pointer of node.");
-                continue;
-            }
+            tran = tran.Transpose();
+            delta = delta.Transpose();
 
-            if (operation_ == GIZMOOP_SCALE)
+            auto newOrigin = Matrix4(tran);
+
+            for (auto it = begin; it != end; it++)
             {
-                // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
-                if (!nodeScaleStart_.contains(node))
-                    nodeScaleStart_[node] = node->GetScale();
-                node->SetScale(nodeScaleStart_[node] * delta.Scale());
+                Node* node = *it;
+                if (node == nullptr)
+                {
+                    URHO3D_LOGERROR("Gizmo received null pointer of node.");
+                    continue;
+                }
+
+                if (operation_ == GIZMOOP_SCALE)
+                {
+                    // A workaround for ImGuizmo bug where delta matrix returns absolute scale value and flickers.
+                    auto scaleDelta = (newOrigin * currentOrigin.Inverse()).Scale();
+                    if (!nodeScaleStart_.contains(node))
+                        nodeScaleStart_[node] = node->GetScale();
+                    node->SetScale(nodeScaleStart_[node] * scaleDelta);
+                }
+                // Delta matrix is always in world-space.
+                else if (operation_ == GIZMOOP_ROTATE)
+                    node->RotateAround(newOrigin.Translation(), -delta.Rotation(), TS_WORLD);
+                else
+                    node->Translate(delta.Translation(), TS_WORLD);
             }
-            // Delta matrix is always in world-space.
-            else if (operation_ == GIZMOOP_ROTATE)
-                node->RotateAround(currentOrigin.Translation(), -delta.Rotation(), TS_WORLD);
-            else
-                node->Translate(delta.Translation(), TS_WORLD);
         }
 
         return true;

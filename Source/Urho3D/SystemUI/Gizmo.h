@@ -75,6 +75,18 @@ public:
         }
         return Manipulate(camera, manipulatedNodes_.begin(), manipulatedNodes_.end());
     }
+    /// Set translation snap step.
+    void SetTranslationSnap(float snap) { translationSnap_ = snap; }
+    /// Get current translation snap step.
+    float GetTranslationSnap() const { return translationSnap_; }
+    /// Set rotation snap step in degrees.
+    void SetRotationSnap(float snap) { rotationSnap_ = snap; }
+    /// Get current rotation snap step in degrees.
+    float GetRotationSnap() const { return rotationSnap_; }
+    /// Set scale snap step.
+    void SetScaleSnap(float snap) { scaleSnap_ = snap; }
+    /// Get current scale snap step.
+    float GetScaleSnap() const { return scaleSnap_; }
     /// Set operation mode. Possible modes: rotation, translation and scaling.
     void SetOperation(GizmoOperation operation) { operation_ = operation; }
     /// Get current manipulation mode.
@@ -124,6 +136,10 @@ protected:
     ea::vector<Node*> manipulatedNodes_;
     /// Window pointer the gizmo should be rendered at.
     ImGuiWindow* window_{};
+    /// Snap step.
+    float translationSnap_{0.0f};
+    float rotationSnap_{0.0f};
+    float scaleSnap_{0.0f};
 };
 
 }
