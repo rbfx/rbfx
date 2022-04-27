@@ -143,13 +143,6 @@ public:
         return reflection ? &reflection->GetAttributes() : nullptr;
     }
 
-    /// Return network replication attribute descriptions for an object type, or null if none defined.
-    const ea::vector<AttributeInfo>* GetNetworkAttributes(StringHash type) const
-    {
-        auto reflection = GetReflection(type);
-        return reflection ? &reflection->GetNetworkAttributes() : nullptr;
-    }
-
     /// Return event receivers for a sender and event type, or null if they do not exist.
     EventReceiverGroup* GetEventReceivers(Object* sender, StringHash eventType)
     {

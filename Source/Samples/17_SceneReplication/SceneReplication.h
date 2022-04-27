@@ -77,6 +77,8 @@ private:
     void UpdateButtons();
     /// Create a controllable ball object and return its scene node.
     Node* CreateControllableObject(Connection* owner);
+    /// Find player object on client side.
+    Node* GetPlayerObject();
     /// Read input and move the camera.
     void MoveCamera();
     /// Handle the physics world pre-step event.
@@ -112,8 +114,6 @@ private:
     SharedPtr<Button> startServerButton_;
     /// Instructions text.
     SharedPtr<Text> instructionsText_;
-    /// ID of own controllable object (client only.)
-    unsigned clientObjectID_{};
     /// Packets in per second
     SharedPtr<Text> packetsIn_;
     /// Packets out per second

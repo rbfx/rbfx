@@ -251,7 +251,6 @@ UpdateGeometryType DecalSet::GetUpdateGeometryType()
 void DecalSet::SetMaterial(Material* material)
 {
     batches_[0].material_ = material;
-    MarkNetworkUpdate();
 }
 
 void DecalSet::SetMaxVertices(unsigned num)
@@ -267,8 +266,6 @@ void DecalSet::SetMaxVertices(unsigned num)
 
         while (decals_.size() && numVertices_ > maxVertices_)
             RemoveDecals(1);
-
-        MarkNetworkUpdate();
     }
 }
 
@@ -285,8 +282,6 @@ void DecalSet::SetMaxIndices(unsigned num)
 
         while (decals_.size() && numIndices_ > maxIndices_)
             RemoveDecals(1);
-
-        MarkNetworkUpdate();
     }
 }
 
@@ -296,8 +291,6 @@ void DecalSet::SetOptimizeBufferSize(bool enable)
     {
         optimizeBufferSize_ = enable;
         bufferDirty_ = true;
-
-        MarkNetworkUpdate();
     }
 }
 

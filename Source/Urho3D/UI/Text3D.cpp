@@ -371,7 +371,6 @@ void Text3D::SetFixedScreenSize(bool enable)
 
         // Bounding box must be recalculated
         OnMarkedDirty(node_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -383,7 +382,6 @@ void Text3D::SetSnapToPixels(bool enable)
 
         // Bounding box must be recalculated
         OnMarkedDirty(node_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -395,7 +393,6 @@ void Text3D::SetFaceCameraMode(FaceCameraMode mode)
 
         // Bounding box must be recalculated
         OnMarkedDirty(node_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -552,7 +549,6 @@ void Text3D::MarkTextDirty()
     textDirty_ = true;
 
     OnMarkedDirty(node_);
-    MarkNetworkUpdate();
 }
 
 void Text3D::SetMaterialAttr(const ResourceRef& value)

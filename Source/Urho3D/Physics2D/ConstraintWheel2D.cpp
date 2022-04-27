@@ -66,7 +66,6 @@ void ConstraintWheel2D::SetAnchor(const Vector2& anchor)
     anchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintWheel2D::SetAxis(const Vector2& axis)
@@ -77,7 +76,6 @@ void ConstraintWheel2D::SetAxis(const Vector2& axis)
     axis_ = axis;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 
@@ -92,8 +90,6 @@ void ConstraintWheel2D::SetEnableMotor(bool enableMotor)
         static_cast<b2WheelJoint*>(joint_)->EnableMotor(enableMotor);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintWheel2D::SetMaxMotorTorque(float maxMotorTorque)
@@ -107,8 +103,6 @@ void ConstraintWheel2D::SetMaxMotorTorque(float maxMotorTorque)
         static_cast<b2WheelJoint*>(joint_)->SetMaxMotorTorque(maxMotorTorque);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintWheel2D::SetMotorSpeed(float motorSpeed)
@@ -122,8 +116,6 @@ void ConstraintWheel2D::SetMotorSpeed(float motorSpeed)
         static_cast<b2WheelJoint*>(joint_)->SetMotorSpeed(motorSpeed);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintWheel2D::SetFrequencyHz(float frequencyHz)
@@ -137,8 +129,6 @@ void ConstraintWheel2D::SetFrequencyHz(float frequencyHz)
         static_cast<b2WheelJoint*>(joint_)->SetSpringFrequencyHz(frequencyHz);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintWheel2D::SetDampingRatio(float dampingRatio)
@@ -152,8 +142,6 @@ void ConstraintWheel2D::SetDampingRatio(float dampingRatio)
         static_cast<b2WheelJoint*>(joint_)->SetSpringDampingRatio(dampingRatio);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintWheel2D::GetJointDef()

@@ -38,11 +38,9 @@
 #include "../Scene/CameraViewport.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
-#include "../Scene/ReplicationState.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/SceneManager.h"
-#include "../Scene/SmoothedTransform.h"
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
@@ -56,9 +54,6 @@ const char* SCENE_CATEGORY = "Scene";
 const char* LOGIC_CATEGORY = "Logic";
 const char* SUBSYSTEM_CATEGORY = "Subsystem";
 
-static const float DEFAULT_SMOOTHING_CONSTANT = 50.0f;
-static const float DEFAULT_SNAP_THRESHOLD = 5.0f;
-
 Scene::Scene(Context* context) :
     Node(context),
     replicatedNodeID_(FIRST_REPLICATED_ID),
@@ -69,8 +64,6 @@ Scene::Scene(Context* context) :
     asyncLoadingMs_(5),
     timeScale_(1.0f),
     elapsedTime_(0),
-    smoothingConstant_(DEFAULT_SMOOTHING_CONSTANT),
-    snapThreshold_(DEFAULT_SNAP_THRESHOLD),
     updateEnabled_(true),
     asyncLoading_(false),
     threadedUpdate_(false),
@@ -104,9 +97,6 @@ void Scene::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Smoothing Constant", GetSmoothingConstant, SetSmoothingConstant, float, DEFAULT_SMOOTHING_CONSTANT,
-        AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Snap Threshold", GetSnapThreshold, SetSnapThreshold, float, DEFAULT_SNAP_THRESHOLD, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Elapsed Time", GetElapsedTime, SetElapsedTime, float, 0.0f, AM_FILE);
     URHO3D_ATTRIBUTE("Next Replicated Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Next Replicated Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_FILE | AM_NOEDIT);
@@ -229,25 +219,6 @@ bool Scene::LoadJSON(const JSONValue& source)
     }
     else
         return false;
-}
-
-void Scene::MarkNetworkUpdate()
-{
-    if (!networkUpdate_)
-    {
-        MarkNetworkUpdate(this);
-        networkUpdate_ = true;
-    }
-}
-
-void Scene::AddReplicationState(NodeReplicationState* state)
-{
-    Node::AddReplicationState(state);
-
-    // This is the first update for a new connection. Mark all replicated nodes dirty
-    for (auto i = replicatedNodes_.begin(); i !=
-        replicatedNodes_.end(); ++i)
-        state->sceneState_->dirtyNodes_.insert(i->first);
 }
 
 void Scene::ResetLightmaps()
@@ -674,33 +645,23 @@ Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, cons
     return InstantiateJSON(json->GetRoot(), position, rotation, mode);
 }
 
-void Scene::Clear(bool clearReplicated, bool clearLocal)
+void Scene::Clear()
 {
     StopAsyncLoading();
 
-    RemoveChildren(clearReplicated, clearLocal, true);
-    RemoveComponents(clearReplicated, clearLocal);
+    RemoveChildren(true);
+    RemoveComponents();
 
-    // Only clear name etc. if clearing completely
-    if (clearReplicated && clearLocal)
-    {
-        UnregisterAllVars();
-        SetName(EMPTY_STRING);
-        fileName_.clear();
-        checksum_ = 0;
-    }
+    UnregisterAllVars();
+    SetName(EMPTY_STRING);
+    fileName_.clear();
+    checksum_ = 0;
 
     // Reset ID generators
-    if (clearReplicated)
-    {
-        replicatedNodeID_ = FIRST_REPLICATED_ID;
-        replicatedComponentID_ = FIRST_REPLICATED_ID;
-    }
-    if (clearLocal)
-    {
-        localNodeID_ = FIRST_LOCAL_ID;
-        localComponentID_ = FIRST_LOCAL_ID;
-    }
+    replicatedNodeID_ = FIRST_REPLICATED_ID;
+    replicatedComponentID_ = FIRST_REPLICATED_ID;
+    localNodeID_ = FIRST_LOCAL_ID;
+    localComponentID_ = FIRST_LOCAL_ID;
 }
 
 void Scene::SetUpdateEnabled(bool enable)
@@ -711,19 +672,6 @@ void Scene::SetUpdateEnabled(bool enable)
 void Scene::SetTimeScale(float scale)
 {
     timeScale_ = Max(scale, M_EPSILON);
-    Node::MarkNetworkUpdate();
-}
-
-void Scene::SetSmoothingConstant(float constant)
-{
-    smoothingConstant_ = Max(constant, M_EPSILON);
-    Node::MarkNetworkUpdate();
-}
-
-void Scene::SetSnapThreshold(float threshold)
-{
-    snapThreshold_ = Max(threshold, 0.0f);
-    Node::MarkNetworkUpdate();
 }
 
 void Scene::SetAsyncLoadingMs(int ms)
@@ -854,20 +802,6 @@ void Scene::Update(float timeStep)
 
     // Update scene subsystems. If a physics world is present, it will be updated, triggering fixed timestep logic updates
     SendEvent(E_SCENESUBSYSTEMUPDATE, eventData);
-
-    // Update transform smoothing
-    {
-        URHO3D_PROFILE("UpdateSmoothing");
-
-        float constant = 1.0f - Clamp(powf(2.0f, -timeStep * smoothingConstant_), 0.0f, 1.0f);
-        float squaredSnapThreshold = snapThreshold_ * snapThreshold_;
-
-        using namespace UpdateSmoothing;
-
-        smoothingData_[P_CONSTANT] = constant;
-        smoothingData_[P_SQUAREDSNAPTHRESHOLD] = squaredSnapThreshold;
-        SendEvent(E_UPDATESMOOTHING, smoothingData_);
-    }
 
     // Post-update variable timestep logic
     SendEvent(E_SCENEPOSTUPDATE, eventData);
@@ -1004,9 +938,6 @@ void Scene::NodeAdded(Node* node)
         }
 
         replicatedNodes_[id] = node;
-
-        MarkNetworkUpdate(node);
-        MarkReplicationDirty(node);
     }
     else
     {
@@ -1053,10 +984,7 @@ void Scene::NodeRemoved(Node* node)
 
     unsigned id = node->GetID();
     if (Scene::IsReplicatedID(id))
-    {
         replicatedNodes_.erase(id);
-        MarkReplicationDirty(node);
-    }
     else
         localNodes_.erase(id);
 
@@ -1162,79 +1090,6 @@ ea::string Scene::GetVarNamesAttr() const
     }
 
     return ret;
-}
-
-void Scene::PrepareNetworkUpdate()
-{
-    for (auto i = networkUpdateNodes_.begin(); i != networkUpdateNodes_.end(); ++i)
-    {
-        Node* node = GetNode(*i);
-        if (node)
-            node->PrepareNetworkUpdate();
-    }
-
-    for (auto i = networkUpdateComponents_.begin(); i != networkUpdateComponents_.end(); ++i)
-    {
-        Component* component = GetComponent(*i);
-        if (component)
-            component->PrepareNetworkUpdate();
-    }
-
-    networkUpdateNodes_.clear();
-    networkUpdateComponents_.clear();
-}
-
-void Scene::CleanupConnection(Connection* connection)
-{
-    Node::CleanupConnection(connection);
-
-    for (auto i = replicatedNodes_.begin(); i != replicatedNodes_.end(); ++i)
-        i->second->CleanupConnection(connection);
-
-    for (auto i = replicatedComponents_.begin(); i !=
-        replicatedComponents_.end(); ++i)
-        i->second->CleanupConnection(connection);
-}
-
-void Scene::MarkNetworkUpdate(Node* node)
-{
-    if (node)
-    {
-        if (!threadedUpdate_)
-            networkUpdateNodes_.insert(node->GetID());
-        else
-        {
-            MutexLock lock(sceneMutex_);
-            networkUpdateNodes_.insert(node->GetID());
-        }
-    }
-}
-
-void Scene::MarkNetworkUpdate(Component* component)
-{
-    if (component)
-    {
-        if (!threadedUpdate_)
-            networkUpdateComponents_.insert(component->GetID());
-        else
-        {
-            MutexLock lock(sceneMutex_);
-            networkUpdateComponents_.insert(component->GetID());
-        }
-    }
-}
-
-void Scene::MarkReplicationDirty(Node* node)
-{
-    if (networkState_ && node->IsReplicated())
-    {
-        unsigned id = node->GetID();
-        for (auto i = networkState_->replicationStates_.begin(); i != networkState_->replicationStates_.end(); ++i)
-        {
-            auto* nodeState = static_cast<NodeReplicationState*>(*i);
-            nodeState->sceneState_->dirtyNodes_.insert(id);
-        }
-    }
 }
 
 void Scene::HandleUpdate(StringHash eventType, VariantMap& eventData)
@@ -1623,7 +1478,6 @@ void RegisterSceneLibrary(Context* context)
     ObjectAnimation::RegisterObject(context);
     Node::RegisterObject(context);
     Scene::RegisterObject(context);
-    SmoothedTransform::RegisterObject(context);
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
     SceneManager::RegisterObject(context);

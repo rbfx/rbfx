@@ -14,7 +14,6 @@
 %csattribute(Urho3D::Connection, %arg(ea::string), Address, GetAddress);
 %csattribute(Urho3D::Connection, %arg(unsigned short), Port, GetPort);
 %csattribute(Urho3D::Connection, %arg(float), RoundTripTime, GetRoundTripTime);
-%csattribute(Urho3D::Connection, %arg(unsigned int), LastHeardTime, GetLastHeardTime);
 %csattribute(Urho3D::Connection, %arg(float), BytesInPerSec, GetBytesInPerSec);
 %csattribute(Urho3D::Connection, %arg(float), BytesOutPerSec, GetBytesOutPerSec);
 %csattribute(Urho3D::Connection, %arg(int), PacketsInPerSec, GetPacketsInPerSec);
@@ -36,10 +35,6 @@
 %csattribute(Urho3D::Network, %arg(ea::vector<SharedPtr<Connection>>), ClientConnections, GetClientConnections);
 %csattribute(Urho3D::Network, %arg(bool), IsServerRunning, IsServerRunning);
 %csattribute(Urho3D::Network, %arg(ea::string), PackageCacheDir, GetPackageCacheDir, SetPackageCacheDir);
-%csattribute(Urho3D::NetworkPriority, %arg(float), BasePriority, GetBasePriority, SetBasePriority);
-%csattribute(Urho3D::NetworkPriority, %arg(float), DistanceFactor, GetDistanceFactor, SetDistanceFactor);
-%csattribute(Urho3D::NetworkPriority, %arg(float), MinPriority, GetMinPriority, SetMinPriority);
-%csattribute(Urho3D::NetworkPriority, %arg(bool), AlwaysUpdateOwner, GetAlwaysUpdateOwner, SetAlwaysUpdateOwner);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

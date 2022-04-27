@@ -75,7 +75,6 @@ void Obstacle::SetHeight(float newHeight)
     height_ = newHeight;
     if (ownerMesh_)
         ownerMesh_->ObstacleChanged(this);
-    MarkNetworkUpdate();
 }
 
 void Obstacle::SetRadius(float newRadius)
@@ -83,7 +82,6 @@ void Obstacle::SetRadius(float newRadius)
     radius_ = newRadius;
     if (ownerMesh_)
         ownerMesh_->ObstacleChanged(this);
-    MarkNetworkUpdate();
 }
 
 void Obstacle::OnNodeSet(Node* node)

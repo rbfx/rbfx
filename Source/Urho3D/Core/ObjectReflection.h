@@ -84,7 +84,6 @@ public:
     const AttributeInfo* GetAttribute(StringHash nameHash) const;
     const AttributeInfo& GetAttributeByIndex(unsigned index) const { return attributes_[index]; }
     const ea::vector<AttributeInfo>& GetAttributes() const { return attributes_; }
-    const ea::vector<AttributeInfo>& GetNetworkAttributes() const { return networkAttributes_; }
     unsigned GetNumAttributes() const { return attributes_.size(); }
     /// @}
 
@@ -101,9 +100,6 @@ private:
     /// Attributes of the Serializable.
     ea::vector<AttributeInfo> attributes_;
     ea::vector<StringHash> attributeNames_;
-
-    /// Attributes replicated by legacy scene replication.
-    ea::vector<AttributeInfo> networkAttributes_;
 };
 
 /// Registry of Object reflections.

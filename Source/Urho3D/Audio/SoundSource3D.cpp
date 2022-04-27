@@ -106,44 +106,37 @@ void SoundSource3D::SetDistanceAttenuation(float nearDistance, float farDistance
     nearDistance_ = Max(nearDistance, 0.0f);
     farDistance_ = Max(farDistance, 0.0f);
     rolloffFactor_ = Max(rolloffFactor, MIN_ROLLOFF);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetAngleAttenuation(float innerAngle, float outerAngle)
 {
     innerAngle_ = Clamp(innerAngle, 0.0f, DEFAULT_ANGLE);
     outerAngle_ = Clamp(outerAngle, 0.0f, DEFAULT_ANGLE);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetFarDistance(float distance)
 {
     farDistance_ = Max(distance, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetNearDistance(float distance)
 {
     nearDistance_ = Max(distance, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetInnerAngle(float angle)
 {
     innerAngle_ = Clamp(angle, 0.0f, DEFAULT_ANGLE);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetOuterAngle(float angle)
 {
     outerAngle_ = Clamp(angle, 0.0f, DEFAULT_ANGLE);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::SetRolloffFactor(float factor)
 {
     rolloffFactor_ = Max(factor, MIN_ROLLOFF);
-    MarkNetworkUpdate();
 }
 
 void SoundSource3D::CalculateAttenuation()

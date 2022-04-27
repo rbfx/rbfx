@@ -33,13 +33,11 @@
 #include "../Network/Connection.h"
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
-#include "../Network/NetworkPriority.h"
 #include "../Network/Protocol.h"
 #include "../Replica/ReplicationManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "../Scene/SmoothedTransform.h"
 
 #include <slikenet/MessageIdentifiers.h>
 #include <slikenet/peerinterface.h>
@@ -75,9 +73,7 @@ PackageUpload::PackageUpload() :
 
 Connection::Connection(Context* context) :
     AbstractConnection(context),
-    timeStamp_(0),
     peer_(nullptr),
-    sendMode_(OPSM_NONE),
     isClient_(false),
     connectPending_(false),
     sceneLoaded_(false),
@@ -101,7 +97,6 @@ void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, 
     assert(peer_ == nullptr);
     peer_ = peer;
     isClient_ = isClient;
-    sceneState_.connection_ = this;
     port_ = address.systemAddress.GetPort();
     SetAddressOrGUID(address);
 
@@ -195,7 +190,6 @@ void Connection::SetScene(Scene* newScene)
     if (scene_)
     {
         // Remove replication states and owner references from the previous scene
-        scene_->CleanupConnection(this);
         if (replicationManager_)
             replicationManager_->DropConnection(this);
         replicationManager_ = nullptr;
@@ -213,8 +207,6 @@ void Connection::SetScene(Scene* newScene)
         replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
         if (!replicationManager_->IsServer())
             replicationManager_->StartServer();
-
-        sceneState_.Clear();
 
         // When scene is assigned on the server, instruct the client to load it. This may require downloading packages
         const ea::vector<SharedPtr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
@@ -244,25 +236,6 @@ void Connection::SetIdentity(const VariantMap& identity)
     identity_ = identity;
 }
 
-void Connection::SetControls(const Controls& newControls)
-{
-    controls_ = newControls;
-}
-
-void Connection::SetPosition(const Vector3& position)
-{
-    position_ = position;
-    if (sendMode_ == OPSM_NONE)
-        sendMode_ = OPSM_POSITION;
-}
-
-void Connection::SetRotation(const Quaternion& rotation)
-{
-    rotation_ = rotation;
-    if (sendMode_ != OPSM_POSITION_ROTATION)
-        sendMode_ = OPSM_POSITION_ROTATION;
-}
-
 void Connection::SetConnectPending(bool connectPending)
 {
     connectPending_ = connectPending;
@@ -278,48 +251,6 @@ void Connection::Disconnect(int waitMSec)
     peer_->CloseConnection(*address_, true);
 }
 
-void Connection::SendServerUpdate()
-{
-    if (!scene_ || !sceneLoaded_)
-        return;
-
-    // Always check the root node (scene) first so that the scene-wide components get sent first,
-    // and all other replicated nodes get added to the dirty set for sending the initial state
-    unsigned sceneID = scene_->GetID();
-    nodesToProcess_.insert(sceneID);
-    ProcessNode(sceneID);
-
-    // Then go through all dirtied nodes
-    nodesToProcess_.insert(sceneState_.dirtyNodes_.begin(), sceneState_.dirtyNodes_.end());
-    nodesToProcess_.erase(sceneID); // Do not process the root node twice
-
-    while (nodesToProcess_.size())
-    {
-        unsigned nodeID = *nodesToProcess_.begin();
-        ProcessNode(nodeID);
-    }
-}
-
-void Connection::SendClientUpdate()
-{
-    if (!scene_ || !sceneLoaded_)
-        return;
-
-    msg_.Clear();
-    msg_.WriteUInt(controls_.buttons_);
-    msg_.WriteFloat(controls_.yaw_);
-    msg_.WriteFloat(controls_.pitch_);
-    msg_.WriteVariantMap(controls_.extraData_);
-    msg_.WriteUByte(timeStamp_);
-    if (sendMode_ >= OPSM_POSITION)
-        msg_.WriteVector3(position_);
-    if (sendMode_ >= OPSM_POSITION_ROTATION)
-        msg_.WritePackedQuaternion(rotation_);
-    SendMessage(MSG_CONTROLS, false, false, msg_);
-
-    ++timeStamp_;
-}
-
 void Connection::SendRemoteEvents()
 {
 #ifdef URHO3D_LOGGING
@@ -327,12 +258,11 @@ void Connection::SendRemoteEvents()
     {
         statsTimer_.Reset();
         char statsBuffer[256];
-        sprintf(statsBuffer, "RTT %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s, Last heard %u", GetRoundTripTime(),
+        sprintf(statsBuffer, "RTT %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s", GetRoundTripTime(),
             GetPacketsInPerSec(),
             GetPacketsOutPerSec(),
             (float)GetBytesInPerSec(),
-            (float)GetBytesOutPerSec(),
-            GetLastHeardTime());
+            (float)GetBytesOutPerSec());
         URHO3D_LOGINFO(statsBuffer);
     }
 #endif
@@ -445,43 +375,6 @@ void Connection::SendAllBuffers()
     SendBuffer(PT_UNRELIABLE_UNORDERED);
 }
 
-void Connection::ProcessPendingLatestData()
-{
-    if (!scene_ || !sceneLoaded_)
-        return;
-
-    // Iterate through pending node data and see if we can find the nodes now
-    for (auto i = nodeLatestData_.begin(); i != nodeLatestData_.end();)
-    {
-        auto current = i++;
-        Node* node = scene_->GetNode(current->first);
-        if (node)
-        {
-            MemoryBuffer msg(current->second);
-            msg.ReadNetID(); // Skip the node ID
-            node->ReadLatestDataUpdate(msg);
-            // ApplyAttributes() is deliberately skipped, as Node has no attributes that require late applying.
-            // Furthermore it would propagate to components and child nodes, which is not desired in this case
-            nodeLatestData_.erase(current);
-        }
-    }
-
-    // Iterate through pending component data and see if we can find the components now
-    for (auto i = componentLatestData_.begin(); i != componentLatestData_.end();)
-    {
-        auto current = i++;
-        Component* component = scene_->GetComponent(current->first);
-        if (component)
-        {
-            MemoryBuffer msg(current->second);
-            msg.ReadNetID(); // Skip the component ID
-            if (component->ReadLatestDataUpdate(msg))
-                component->ApplyAttributes();
-            componentLatestData_.erase(current);
-        }
-    }
-}
-
 bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
 {
     tempPacketCounter_.x_++;
@@ -506,10 +399,6 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
                 ProcessIdentity(msgID, msg);
                 break;
 
-            case MSG_CONTROLS:
-                ProcessControls(msgID, msg);
-                break;
-
             case MSG_SCENELOADED:
                 ProcessSceneLoaded(msgID, msg);
                 break;
@@ -525,17 +414,6 @@ bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
 
             case MSG_SCENECHECKSUMERROR:
                 ProcessSceneChecksumError(msgID, msg);
-                break;
-
-            case MSG_CREATENODE:
-            case MSG_NODEDELTAUPDATE:
-            case MSG_NODELATESTDATA:
-            case MSG_REMOVENODE:
-            case MSG_CREATECOMPONENT:
-            case MSG_COMPONENTDELTAUPDATE:
-            case MSG_COMPONENTLATESTDATA:
-            case MSG_REMOVECOMPONENT:
-                ProcessSceneUpdate(msgID, msg);
                 break;
 
             case MSG_REMOTEEVENT:
@@ -593,8 +471,6 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     sceneFileName_ = msg.ReadString();
 
     // Clear previous pending latest data and package downloads if any
-    nodeLatestData_.clear();
-    componentLatestData_.clear();
     downloads_.clear();
 
     // In case we have joined other scenes in this session, remove first all downloaded package files from the resource system
@@ -633,214 +509,6 @@ void Connection::ProcessSceneChecksumError(int msgID, MemoryBuffer& msg)
 
     URHO3D_LOGERROR("Scene checksum error");
     OnSceneLoadFailed();
-}
-
-void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
-{
-    /// \todo On mobile devices processing this message may potentially cause a crash if it attempts to load new GPU resources
-    /// while the application is minimized
-    if (IsClient())
-    {
-        URHO3D_LOGWARNING("Received unexpected SceneUpdate message from client " + ToString());
-        return;
-    }
-
-    if (!scene_)
-        return;
-
-    switch (msgID)
-    {
-    case MSG_CREATENODE:
-        {
-            unsigned nodeID = msg.ReadNetID();
-            // In case of the root node (scene), it should already exist. Do not create in that case
-            Node* node = scene_->GetNode(nodeID);
-            if (!node)
-            {
-                // Add initially to the root level. May be moved as we receive the parent attribute
-                node = scene_->CreateChild(nodeID, REPLICATED);
-                // Create smoothed transform component
-                node->CreateComponent<SmoothedTransform>(LOCAL);
-            }
-
-            // Read initial attributes, then snap the motion smoothing immediately to the end
-            node->ReadDeltaUpdate(msg);
-            auto* transform = node->GetComponent<SmoothedTransform>();
-            if (transform)
-                transform->Update(1.0f, 0.0f);
-
-            // Read initial user variables
-            unsigned numVars = msg.ReadVLE();
-            while (numVars)
-            {
-                StringHash key = msg.ReadStringHash();
-                node->SetVar(key, msg.ReadVariant());
-                --numVars;
-            }
-
-            // Read components
-            unsigned numComponents = msg.ReadVLE();
-            while (numComponents)
-            {
-                --numComponents;
-
-                StringHash type = msg.ReadStringHash();
-                unsigned componentID = msg.ReadNetID();
-
-                // Check if the component by this ID and type already exists in this node
-                Component* component = scene_->GetComponent(componentID);
-                if (!component || component->GetType() != type || component->GetNode() != node)
-                {
-                    if (component)
-                        component->Remove();
-                    component = node->CreateComponent(type, REPLICATED, componentID);
-                }
-
-                // If was unable to create the component, would desync the message and therefore have to abort
-                if (!component)
-                {
-                    URHO3D_LOGERROR("CreateNode message parsing aborted due to unknown component");
-                    return;
-                }
-
-                // Read initial attributes and apply
-                component->ReadDeltaUpdate(msg);
-                component->ApplyAttributes();
-            }
-        }
-        break;
-
-    case MSG_NODEDELTAUPDATE:
-        {
-            unsigned nodeID = msg.ReadNetID();
-            Node* node = scene_->GetNode(nodeID);
-            if (node)
-            {
-                node->ReadDeltaUpdate(msg);
-                // ApplyAttributes() is deliberately skipped, as Node has no attributes that require late applying.
-                // Furthermore it would propagate to components and child nodes, which is not desired in this case
-                unsigned changedVars = msg.ReadVLE();
-                while (changedVars)
-                {
-                    StringHash key = msg.ReadStringHash();
-                    node->SetVar(key, msg.ReadVariant());
-                    --changedVars;
-                }
-            }
-            else
-                URHO3D_LOGWARNING("NodeDeltaUpdate message received for missing node " + ea::to_string(nodeID));
-        }
-        break;
-
-    case MSG_NODELATESTDATA:
-        {
-            unsigned nodeID = msg.ReadNetID();
-            Node* node = scene_->GetNode(nodeID);
-            if (node)
-            {
-                node->ReadLatestDataUpdate(msg);
-                // ApplyAttributes() is deliberately skipped, as Node has no attributes that require late applying.
-                // Furthermore it would propagate to components and child nodes, which is not desired in this case
-            }
-            else
-            {
-                // Latest data messages may be received out-of-order relative to node creation, so cache if necessary
-                ea::vector<unsigned char>& data = nodeLatestData_[nodeID];
-                data.resize(msg.GetSize());
-                memcpy(&data[0], msg.GetData(), msg.GetSize());
-            }
-        }
-        break;
-
-    case MSG_REMOVENODE:
-        {
-            unsigned nodeID = msg.ReadNetID();
-            Node* node = scene_->GetNode(nodeID);
-            if (node)
-                node->Remove();
-            nodeLatestData_.erase(nodeID);
-        }
-        break;
-
-    case MSG_CREATECOMPONENT:
-        {
-            unsigned nodeID = msg.ReadNetID();
-            Node* node = scene_->GetNode(nodeID);
-            if (node)
-            {
-                StringHash type = msg.ReadStringHash();
-                unsigned componentID = msg.ReadNetID();
-
-                // Check if the component by this ID and type already exists in this node
-                Component* component = scene_->GetComponent(componentID);
-                if (!component || component->GetType() != type || component->GetNode() != node)
-                {
-                    if (component)
-                        component->Remove();
-                    component = node->CreateComponent(type, REPLICATED, componentID);
-                }
-
-                // If was unable to create the component, would desync the message and therefore have to abort
-                if (!component)
-                {
-                    URHO3D_LOGERROR("CreateComponent message parsing aborted due to unknown component");
-                    return;
-                }
-
-                // Read initial attributes and apply
-                component->ReadDeltaUpdate(msg);
-                component->ApplyAttributes();
-            }
-            else
-                URHO3D_LOGWARNING("CreateComponent message received for missing node " + ea::to_string(nodeID));
-        }
-        break;
-
-    case MSG_COMPONENTDELTAUPDATE:
-        {
-            unsigned componentID = msg.ReadNetID();
-            Component* component = scene_->GetComponent(componentID);
-            if (component)
-            {
-                component->ReadDeltaUpdate(msg);
-                component->ApplyAttributes();
-            }
-            else
-                URHO3D_LOGWARNING("ComponentDeltaUpdate message received for missing component " + ea::to_string(componentID));
-        }
-        break;
-
-    case MSG_COMPONENTLATESTDATA:
-        {
-            unsigned componentID = msg.ReadNetID();
-            Component* component = scene_->GetComponent(componentID);
-            if (component)
-            {
-                if (component->ReadLatestDataUpdate(msg))
-                    component->ApplyAttributes();
-            }
-            else
-            {
-                // Latest data messages may be received out-of-order relative to component creation, so cache if necessary
-                ea::vector<unsigned char>& data = componentLatestData_[componentID];
-                data.resize(msg.GetSize());
-                memcpy(&data[0], msg.GetData(), msg.GetSize());
-            }
-        }
-        break;
-
-    case MSG_REMOVECOMPONENT:
-        {
-            unsigned componentID = msg.ReadNetID();
-            Component* component = scene_->GetComponent(componentID);
-            if (component)
-                component->Remove();
-            componentLatestData_.erase(componentID);
-        }
-        break;
-
-    default: break;
-    }
 }
 
 void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
@@ -1006,30 +674,6 @@ void Connection::ProcessIdentity(int msgID, MemoryBuffer& msg)
         Disconnect();
 }
 
-void Connection::ProcessControls(int msgID, MemoryBuffer& msg)
-{
-    if (!IsClient())
-    {
-        URHO3D_LOGWARNING("Received unexpected Controls message from server");
-        return;
-    }
-
-    Controls newControls;
-    newControls.buttons_ = msg.ReadUInt();
-    newControls.yaw_ = msg.ReadFloat();
-    newControls.pitch_ = msg.ReadFloat();
-    newControls.extraData_ = msg.ReadVariantMap();
-
-    SetControls(newControls);
-    timeStamp_ = msg.ReadUByte();
-
-    // Client may or may not send observer position & rotation for interest management
-    if (!msg.IsEof())
-        position_ = msg.ReadVector3();
-    if (!msg.IsEof())
-        rotation_ = msg.ReadPackedQuaternion();
-}
-
 void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
 {
     if (!IsClient())
@@ -1130,11 +774,6 @@ float Connection::GetRoundTripTime() const
             return (float)peer_->GetAveragePing(*address_);
     }
     return 0.0f;
-}
-
-unsigned Connection::GetLastHeardTime() const
-{
-    return const_cast<Timer&>(lastHeardTimer_).GetMSec(false);
 }
 
 unsigned long long Connection::GetBytesInPerSec() const
@@ -1273,288 +912,9 @@ void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& event
     replicationManager_->StartClient(this);
     sceneLoaded_ = true;
 
-    // Clear all replicated nodes
-    scene_->Clear(true, false);
-
     msg_.Clear();
     msg_.WriteUInt(scene_->GetChecksum());
     SendMessage(MSG_SCENELOADED, true, true, msg_);
-}
-
-void Connection::ProcessNode(unsigned nodeID)
-{
-    // Check that we have not already processed this due to dependency recursion
-    if (!nodesToProcess_.erase(nodeID))
-        return;
-
-    // Find replication state for the node
-    auto i = sceneState_.nodeStates_.find(nodeID);
-    if (i != sceneState_.nodeStates_.end())
-    {
-        // Replication state found: the node is either be existing or removed
-        Node* node = i->second.node_;
-        if (!node)
-        {
-            msg_.Clear();
-            msg_.WriteNetID(nodeID);
-
-            // Note: we will send MSG_REMOVENODE redundantly for each node in the hierarchy, even if removing the root node
-            // would be enough. However, this may be better due to the client not possibly having updated parenting
-            // information at the time of receiving this message
-            SendMessage(MSG_REMOVENODE, true, true, msg_);
-            sceneState_.nodeStates_.erase(nodeID);
-        }
-        else
-            ProcessExistingNode(node, i->second);
-    }
-    else
-    {
-        // Replication state not found: this is a new node
-        Node* node = scene_->GetNode(nodeID);
-        if (node)
-            ProcessNewNode(node);
-        else
-        {
-            // Did not find the new node (may have been created, then removed immediately): erase from dirty set.
-            sceneState_.dirtyNodes_.erase(nodeID);
-        }
-    }
-}
-
-void Connection::ProcessNewNode(Node* node)
-{
-    // Process depended upon nodes first, if they are dirty
-    const ea::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
-    for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
-    {
-        unsigned nodeID = (*i)->GetID();
-        if (sceneState_.dirtyNodes_.contains(nodeID))
-            ProcessNode(nodeID);
-    }
-
-    msg_.Clear();
-    msg_.WriteNetID(node->GetID());
-
-    NodeReplicationState& nodeState = sceneState_.nodeStates_[node->GetID()];
-    nodeState.connection_ = this;
-    nodeState.sceneState_ = &sceneState_;
-    nodeState.node_ = node;
-    node->AddReplicationState(&nodeState);
-
-    // Write node's attributes
-    node->WriteInitialDeltaUpdate(msg_, timeStamp_);
-
-    // Write node's user variables
-    const VariantMap& vars = node->GetVars();
-    msg_.WriteVLE(vars.size());
-    for (auto i = vars.begin(); i != vars.end(); ++i)
-    {
-        msg_.WriteStringHash(i->first);
-        msg_.WriteVariant(i->second);
-    }
-
-    // Write node's components
-    msg_.WriteVLE(node->GetNumNetworkComponents());
-    const ea::vector<SharedPtr<Component> >& components = node->GetComponents();
-    for (unsigned i = 0; i < components.size(); ++i)
-    {
-        Component* component = components[i];
-        // Check if component is not to be replicated
-        if (!component->IsReplicated())
-            continue;
-
-        ComponentReplicationState& componentState = nodeState.componentStates_[component->GetID()];
-        componentState.connection_ = this;
-        componentState.nodeState_ = &nodeState;
-        componentState.component_ = component;
-        component->AddReplicationState(&componentState);
-
-        msg_.WriteStringHash(component->GetType());
-        msg_.WriteNetID(component->GetID());
-        component->WriteInitialDeltaUpdate(msg_, timeStamp_);
-    }
-
-    SendMessage(MSG_CREATENODE, true, true, msg_);
-
-    nodeState.markedDirty_ = false;
-    sceneState_.dirtyNodes_.erase(node->GetID());
-}
-
-void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState)
-{
-    // Process depended upon nodes first, if they are dirty
-    const ea::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
-    for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
-    {
-        unsigned nodeID = (*i)->GetID();
-        if (sceneState_.dirtyNodes_.contains(nodeID))
-            ProcessNode(nodeID);
-    }
-
-    // Check from the interest management component, if exists, whether should update
-    /// \todo Searching for the component is a potential CPU hotspot. It should be cached
-    auto* priority = node->GetComponent<NetworkPriority>();
-    if (priority && (!priority->GetAlwaysUpdateOwner() || node->GetOwner() != this))
-    {
-        float distance = (node->GetWorldPosition() - position_).Length();
-        if (!priority->CheckUpdate(distance, nodeState.priorityAcc_))
-            return;
-    }
-
-    // Check if attributes have changed
-    if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.size())
-    {
-        const ea::vector<AttributeInfo>* attributes = node->GetNetworkAttributes();
-        unsigned numAttributes = attributes->size();
-        bool hasLatestData = false;
-
-        for (unsigned i = 0; i < numAttributes; ++i)
-        {
-            if (nodeState.dirtyAttributes_.IsSet(i) && (attributes->at(i).mode_ & AM_LATESTDATA))
-            {
-                hasLatestData = true;
-                nodeState.dirtyAttributes_.Clear(i);
-            }
-        }
-
-        // Send latestdata message if necessary
-        if (hasLatestData)
-        {
-            msg_.Clear();
-            msg_.WriteNetID(node->GetID());
-            node->WriteLatestDataUpdate(msg_, timeStamp_);
-
-            SendMessage(MSG_NODELATESTDATA, true, false, msg_);
-        }
-
-        // Send deltaupdate if remaining dirty bits, or vars have changed
-        if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.size())
-        {
-            msg_.Clear();
-            msg_.WriteNetID(node->GetID());
-            node->WriteDeltaUpdate(msg_, nodeState.dirtyAttributes_, timeStamp_);
-
-            // Write changed variables
-            msg_.WriteVLE(nodeState.dirtyVars_.size());
-            const VariantMap& vars = node->GetVars();
-            for (auto i = nodeState.dirtyVars_.begin(); i != nodeState.dirtyVars_.end(); ++i)
-            {
-                auto j = vars.find(*i);
-                if (j != vars.end())
-                {
-                    msg_.WriteStringHash(j->first);
-                    msg_.WriteVariant(j->second);
-                }
-                else
-                {
-                    // Variable has been marked dirty, but is removed (which is unsupported): send a dummy variable in place
-                    URHO3D_LOGWARNING("Sending dummy user variable as original value was removed");
-                    msg_.WriteStringHash(StringHash());
-                    msg_.WriteVariant(Variant::EMPTY);
-                }
-            }
-
-            SendMessage(MSG_NODEDELTAUPDATE, true, true, msg_);
-
-            nodeState.dirtyAttributes_.ClearAll();
-            nodeState.dirtyVars_.clear();
-        }
-    }
-
-    // Check for removed or changed components
-    for (auto i = nodeState.componentStates_.begin();
-         i != nodeState.componentStates_.end();)
-    {
-        auto current = i++;
-        ComponentReplicationState& componentState = current->second;
-        Component* component = componentState.component_;
-        if (!component)
-        {
-            // Removed component
-            msg_.Clear();
-            msg_.WriteNetID(current->first);
-
-            SendMessage(MSG_REMOVECOMPONENT, true, true, msg_);
-            nodeState.componentStates_.erase(current);
-        }
-        else
-        {
-            // Existing component. Check if attributes have changed
-            if (componentState.dirtyAttributes_.Count())
-            {
-                const ea::vector<AttributeInfo>* attributes = component->GetNetworkAttributes();
-                unsigned numAttributes = attributes->size();
-                bool hasLatestData = false;
-
-                for (unsigned i = 0; i < numAttributes; ++i)
-                {
-                    if (componentState.dirtyAttributes_.IsSet(i) && (attributes->at(i).mode_ & AM_LATESTDATA))
-                    {
-                        hasLatestData = true;
-                        componentState.dirtyAttributes_.Clear(i);
-                    }
-                }
-
-                // Send latestdata message if necessary
-                if (hasLatestData)
-                {
-                    msg_.Clear();
-                    msg_.WriteNetID(component->GetID());
-                    component->WriteLatestDataUpdate(msg_, timeStamp_);
-
-                    SendMessage(MSG_COMPONENTLATESTDATA, true, false, msg_);
-                }
-
-                // Send deltaupdate if remaining dirty bits
-                if (componentState.dirtyAttributes_.Count())
-                {
-                    msg_.Clear();
-                    msg_.WriteNetID(component->GetID());
-                    component->WriteDeltaUpdate(msg_, componentState.dirtyAttributes_, timeStamp_);
-
-                    SendMessage(MSG_COMPONENTDELTAUPDATE, true, true, msg_);
-
-                    componentState.dirtyAttributes_.ClearAll();
-                }
-            }
-        }
-    }
-
-    // Check for new components
-    if (nodeState.componentStates_.size() != node->GetNumNetworkComponents())
-    {
-        const ea::vector<SharedPtr<Component> >& components = node->GetComponents();
-        for (unsigned i = 0; i < components.size(); ++i)
-        {
-            Component* component = components[i];
-            // Check if component is not to be replicated
-            if (!component->IsReplicated())
-                continue;
-
-            auto j = nodeState.componentStates_.find(
-                component->GetID());
-            if (j == nodeState.componentStates_.end())
-            {
-                // New component
-                ComponentReplicationState& componentState = nodeState.componentStates_[component->GetID()];
-                componentState.connection_ = this;
-                componentState.nodeState_ = &nodeState;
-                componentState.component_ = component;
-                component->AddReplicationState(&componentState);
-
-                msg_.Clear();
-                msg_.WriteNetID(node->GetID());
-                msg_.WriteStringHash(component->GetType());
-                msg_.WriteNetID(component->GetID());
-                component->WriteInitialDeltaUpdate(msg_, timeStamp_);
-
-                SendMessage(MSG_CREATECOMPONENT, true, true, msg_);
-            }
-        }
-    }
-
-    nodeState.markedDirty_ = false;
-    sceneState_.dirtyNodes_.erase(node->GetID());
 }
 
 bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
@@ -1688,9 +1048,6 @@ void Connection::OnPackagesReady()
 
     if (sceneFileName_.empty())
     {
-        // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
-        scene_->Clear(true, false);
-
         replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>(LOCAL);
         replicationManager_->StartClient(this);
         sceneLoaded_ = true;

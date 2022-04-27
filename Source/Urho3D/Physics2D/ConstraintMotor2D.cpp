@@ -67,8 +67,6 @@ void ConstraintMotor2D::SetLinearOffset(const Vector2& linearOffset)
         static_cast<b2MotorJoint*>(joint_)->SetLinearOffset(ToB2Vec2(linearOffset));
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintMotor2D::SetAngularOffset(float angularOffset)
@@ -82,8 +80,6 @@ void ConstraintMotor2D::SetAngularOffset(float angularOffset)
         static_cast<b2MotorJoint*>(joint_)->SetAngularOffset(angularOffset);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintMotor2D::SetMaxForce(float maxForce)
@@ -97,8 +93,6 @@ void ConstraintMotor2D::SetMaxForce(float maxForce)
         static_cast<b2MotorJoint*>(joint_)->SetMaxForce(maxForce);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintMotor2D::SetMaxTorque(float maxTorque)
@@ -112,8 +106,6 @@ void ConstraintMotor2D::SetMaxTorque(float maxTorque)
         static_cast<b2MotorJoint*>(joint_)->SetMaxTorque(maxTorque);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintMotor2D::SetCorrectionFactor(float correctionFactor)
@@ -127,8 +119,6 @@ void ConstraintMotor2D::SetCorrectionFactor(float correctionFactor)
         static_cast<b2MotorJoint*>(joint_)->SetCorrectionFactor(correctionFactor);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintMotor2D::GetJointDef()

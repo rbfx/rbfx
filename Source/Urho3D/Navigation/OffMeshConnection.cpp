@@ -89,32 +89,27 @@ void OffMeshConnection::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 void OffMeshConnection::SetRadius(float radius)
 {
     radius_ = radius;
-    MarkNetworkUpdate();
 }
 
 void OffMeshConnection::SetBidirectional(bool enabled)
 {
     bidirectional_ = enabled;
-    MarkNetworkUpdate();
 }
 
 void OffMeshConnection::SetMask(unsigned newMask)
 {
     mask_ = newMask;
-    MarkNetworkUpdate();
 }
 
 void OffMeshConnection::SetAreaID(unsigned newAreaID)
 {
     areaId_ = newAreaID;
-    MarkNetworkUpdate();
 }
 
 void OffMeshConnection::SetEndPoint(Node* node)
 {
     endPoint_ = node;
     endPointID_ = node ? node->GetID() : 0;
-    MarkNetworkUpdate();
 }
 
 Node* OffMeshConnection::GetEndPoint() const

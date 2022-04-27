@@ -61,7 +61,6 @@ void CollisionChain2D::SetLoop(bool loop)
 
     loop_ = loop;
 
-    MarkNetworkUpdate();
     RecreateFixture();
 }
 
@@ -79,7 +78,6 @@ void CollisionChain2D::SetVertex(unsigned index, const Vector2& vertex)
 
     if (index == vertices_.size() - 1)
     {
-        MarkNetworkUpdate();
         RecreateFixture();
     }
 }
@@ -88,7 +86,6 @@ void CollisionChain2D::SetVertices(const ea::vector<Vector2>& vertices)
 {
     vertices_ = vertices;
 
-    MarkNetworkUpdate();
     RecreateFixture();
 }
 

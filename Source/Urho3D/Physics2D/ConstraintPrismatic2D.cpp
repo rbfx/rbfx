@@ -67,7 +67,6 @@ void ConstraintPrismatic2D::SetAnchor(const Vector2& anchor)
     anchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintPrismatic2D::SetAxis(const Vector2& axis)
@@ -78,7 +77,6 @@ void ConstraintPrismatic2D::SetAxis(const Vector2& axis)
     axis_ = axis;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintPrismatic2D::SetEnableLimit(bool enableLimit)
@@ -92,8 +90,6 @@ void ConstraintPrismatic2D::SetEnableLimit(bool enableLimit)
         static_cast<b2PrismaticJoint*>(joint_)->EnableLimit(enableLimit);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintPrismatic2D::SetLowerTranslation(float lowerTranslation)
@@ -107,8 +103,6 @@ void ConstraintPrismatic2D::SetLowerTranslation(float lowerTranslation)
         static_cast<b2PrismaticJoint*>(joint_)->SetLimits(lowerTranslation, jointDef_.upperTranslation);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintPrismatic2D::SetUpperTranslation(float upperTranslation)
@@ -122,8 +116,6 @@ void ConstraintPrismatic2D::SetUpperTranslation(float upperTranslation)
         static_cast<b2PrismaticJoint*>(joint_)->SetLimits(jointDef_.lowerTranslation, upperTranslation);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintPrismatic2D::SetEnableMotor(bool enableMotor)
@@ -137,8 +129,6 @@ void ConstraintPrismatic2D::SetEnableMotor(bool enableMotor)
         static_cast<b2PrismaticJoint*>(joint_)->EnableMotor(enableMotor);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintPrismatic2D::SetMaxMotorForce(float maxMotorForce)
@@ -152,8 +142,6 @@ void ConstraintPrismatic2D::SetMaxMotorForce(float maxMotorForce)
         static_cast<b2PrismaticJoint*>(joint_)->SetMaxMotorForce(maxMotorForce);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintPrismatic2D::SetMotorSpeed(float motorSpeed)
@@ -167,8 +155,6 @@ void ConstraintPrismatic2D::SetMotorSpeed(float motorSpeed)
         static_cast<b2PrismaticJoint*>(joint_)->SetMotorSpeed(motorSpeed);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintPrismatic2D::GetJointDef()

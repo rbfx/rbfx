@@ -61,7 +61,6 @@ void ConstraintWeld2D::SetAnchor(const Vector2& anchor)
     anchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintWeld2D::SetFrequencyHz(float frequencyHz)
@@ -75,8 +74,6 @@ void ConstraintWeld2D::SetFrequencyHz(float frequencyHz)
         static_cast<b2WeldJoint*>(joint_)->SetFrequency(frequencyHz);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 void ConstraintWeld2D::SetDampingRatio(float dampingRatio)
@@ -90,8 +87,6 @@ void ConstraintWeld2D::SetDampingRatio(float dampingRatio)
         static_cast<b2WeldJoint*>(joint_)->SetDampingRatio(dampingRatio);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintWeld2D::GetJointDef()

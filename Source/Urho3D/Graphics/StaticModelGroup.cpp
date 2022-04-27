@@ -397,7 +397,6 @@ void StaticModelGroup::UpdateNumTransforms()
     nodeIDsDirty_ = true;
 
     OnMarkedDirty(GetNode());
-    MarkNetworkUpdate();
 }
 
 void StaticModelGroup::UpdateNodeIDs() const

@@ -76,7 +76,6 @@ void CollisionEdge2D::SetVertices(const Vector2& vertex1, const Vector2& vertex2
     vertex1_ = vertex1;
     vertex2_ = vertex2;
 
-    MarkNetworkUpdate();
     RecreateFixture();
 }
 

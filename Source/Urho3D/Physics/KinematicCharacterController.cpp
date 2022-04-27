@@ -322,7 +322,6 @@ void KinematicCharacterController::SetLinearDamping(float linearDamping)
     {
         linearDamping_ = linearDamping;
         kinematicController_->setLinearDamping(linearDamping_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -332,7 +331,6 @@ void KinematicCharacterController::SetAngularDamping(float angularDamping)
     {
         angularDamping_ = angularDamping;
         kinematicController_->setAngularDamping(angularDamping_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -342,7 +340,6 @@ void KinematicCharacterController::SetGravity(const Vector3 &gravity)
     {
         gravity_ = gravity;
         kinematicController_->setGravity(ToBtVector3(gravity_));
-        MarkNetworkUpdate();
     }
 }
 
@@ -352,7 +349,6 @@ void KinematicCharacterController::SetHeight(float height)
     {
         height_ = height;
         ResetShape();
-        MarkNetworkUpdate();
     }
 }
 
@@ -362,7 +358,6 @@ void KinematicCharacterController::SetDiameter(float diameter)
     {
         diameter_ = diameter;
         ResetShape();
-        MarkNetworkUpdate();
     }
 }
 
@@ -378,7 +373,6 @@ void KinematicCharacterController::SetOffset(const Vector3& offset)
             transform.setOrigin(transform.getOrigin() + ToBtVector3(diff));
             pairCachingGhostObject_->setWorldTransform(transform);
         }
-        MarkNetworkUpdate();
     }
 }
 
@@ -388,7 +382,6 @@ void KinematicCharacterController::SetStepHeight(float stepHeight)
     {
         stepHeight_ = stepHeight;
         kinematicController_->setStepHeight(stepHeight_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -398,7 +391,6 @@ void KinematicCharacterController::SetMaxJumpHeight(float maxJumpHeight)
     {
         maxJumpHeight_ =  maxJumpHeight;
         kinematicController_->setMaxJumpHeight(maxJumpHeight_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -408,7 +400,6 @@ void KinematicCharacterController::SetFallSpeed(float fallSpeed)
     {
         fallSpeed_ = fallSpeed;
         kinematicController_->setFallSpeed(fallSpeed_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -418,7 +409,6 @@ void KinematicCharacterController::SetJumpSpeed(float jumpSpeed)
     {
         jumpSpeed_ = jumpSpeed;
         kinematicController_->setJumpSpeed(jumpSpeed_);
-        MarkNetworkUpdate();
     }
 }
 
@@ -428,7 +418,6 @@ void KinematicCharacterController::SetMaxSlope(float maxSlope)
     {
         maxSlope_ = maxSlope;
         kinematicController_->setMaxSlope(M_DEGTORAD * maxSlope_);
-        MarkNetworkUpdate();
     }
 }
 

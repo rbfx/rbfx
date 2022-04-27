@@ -36,25 +36,22 @@ namespace Urho3D
 enum AttributeMode
 {
     /// Attribute shown only in the editor, but not serialized.
-    AM_EDIT = 0x0,
+    AM_EDIT = 0,
     /// Attribute used for file serialization.
-    AM_FILE = 0x1,
-    /// Attribute used for network replication.
-    AM_NET = 0x2,
-    /// Attribute used for both file serialization and network replication (default).
-    AM_DEFAULT = 0x3,
-    /// Attribute should use latest data grouping instead of delta update in network replication.
-    AM_LATESTDATA = 0x4,
+    AM_FILE = 1 << 0,
     /// Attribute should not be shown in the editor.
-    AM_NOEDIT = 0x8,
+    AM_NOEDIT = 1 << 1,
     /// Attribute is a node ID and may need rewriting.
-    AM_NODEID = 0x10,
+    AM_NODEID = 1 << 2,
     /// Attribute is a component ID and may need rewriting.
-    AM_COMPONENTID = 0x20,
+    AM_COMPONENTID = 1 << 3,
     /// Attribute is a node ID vector where first element is the amount of nodes.
-    AM_NODEIDVECTOR = 0x40,
+    AM_NODEIDVECTOR = 1 << 4,
     /// Attribute is readonly. Can't be used with binary serialized objects.
-    AM_READONLY = 0x80,
+    AM_READONLY = 1 << 5,
+
+    /// Default mode, same as AM_FILE.
+    AM_DEFAULT = 1 << 0,
 };
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
@@ -207,16 +204,12 @@ public:
     {
         if (attributeInfo_)
             attributeInfo_->metadata_[key] = value;
-        if (networkAttributeInfo_)
-            networkAttributeInfo_->metadata_[key] = value;
         return *this;
     }
 
 private:
     /// Attribute info.
     AttributeInfo* attributeInfo_ = nullptr;
-    /// Network attribute info.
-    AttributeInfo* networkAttributeInfo_ = nullptr;
 };
 
 }
