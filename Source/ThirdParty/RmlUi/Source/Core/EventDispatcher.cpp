@@ -171,7 +171,8 @@ bool EventDispatcher::DispatchEvent(Element* target_element, const EventId id, c
 		return true;
 
 	// Use stable_sort so that the order of the listeners in a given element is maintained.
-	std::stable_sort(listeners.begin(), listeners.end());
+    if (!listeners.empty())
+	    std::stable_sort(listeners.begin(), listeners.end());
 
 	// Instance event
 	EventPtr event = Factory::InstanceEvent(target_element, id, type, parameters, interruptible);

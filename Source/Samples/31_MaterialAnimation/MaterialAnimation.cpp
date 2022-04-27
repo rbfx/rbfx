@@ -36,6 +36,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "MaterialAnimation.h"
 
@@ -43,7 +44,6 @@
 
 MaterialAnimation::MaterialAnimation(Context* context)
     : Sample(context)
-    , cameraController_(context)
 {
 }
 
@@ -127,6 +127,7 @@ void MaterialAnimation::CreateScene()
     // Create a scene node for the camera, which we will move around
     // The camera will use default settings (1000 far clip distance, 45 degrees FOV, set aspect ratio automatically)
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     cameraNode_->CreateComponent<Camera>();
 
     // Set an initial position for the camera scene node above the plane

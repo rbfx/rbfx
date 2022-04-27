@@ -28,7 +28,7 @@
 #include "SamplesManager.h"
 
 Sample::Sample(Context* context) :
-    GameScreen(context),
+    ApplicationState(context),
     yaw_(0.0f),
     pitch_(0.0f),
     touchEnabled_(false),
@@ -44,7 +44,7 @@ Sample::Sample(Context* context) :
 void Sample::Deactivate()
 {
     Stop();
-    GameScreen::Deactivate();
+    ApplicationState::Deactivate();
 }
 
 void Sample::Start(const ea::vector<ea::string>& args)

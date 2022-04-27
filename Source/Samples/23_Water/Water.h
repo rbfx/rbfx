@@ -23,7 +23,6 @@
 #pragma once
 
 #include <Urho3D/Math/Plane.h>
-#include <Urho3D/Input/CameraController.h>
 #include "Sample.h"
 
 namespace Urho3D
@@ -71,6 +70,4 @@ private:
     Plane waterPlane_;
     /// Clipping plane for reflection rendering. Slightly biased downward from the reflection plane to avoid artifacts.
     Plane waterClipPlane_;
-    /// Camera controller.
-    CameraController cameraController_;
 };

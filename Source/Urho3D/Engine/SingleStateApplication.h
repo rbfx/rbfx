@@ -21,6 +21,7 @@
 //
 #pragma once
 
+#include "../Engine/Application.h"
 #include "../Core/Context.h"
 #include "../Input/Input.h"
 #include "../Graphics/Viewport.h"
@@ -29,14 +30,14 @@ namespace Urho3D
 {
 class Application;
 
-/// Base class for game "screen" - a unit of game state. Tipical samples of a game screen would be loading screen, menu or a game screen.
-class URHO3D_API GameScreen : public Object
+/// Base class for an application state. Tipical samples of a state would be loading screen, menu or a game screen.
+class URHO3D_API ApplicationState : public Object
 {
-    URHO3D_OBJECT(GameScreen, Object);
+    URHO3D_OBJECT(ApplicationState, Object);
 
 public:
     /// Construct.
-    explicit GameScreen(Context* context);
+    explicit ApplicationState(Context* context);
     /// Register object factory.
     static void RegisterObject(Context* context);
 
@@ -114,18 +115,22 @@ private:
     MouseMode mouseMode_{MM_FREE};
 };
 
-class URHO3D_API GameScreenContainer
+class URHO3D_API SingleStateApplication: public Application
 {
 public:
+    /// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
+    /// state.
+    explicit SingleStateApplication(Context* context);
+
     /// Set current game screen.
-    void SetGameScreen(GameScreen* gameScreen);
+    void SetState(ApplicationState* gameScreen);
 
     /// Get current game screen.
-    GameScreen* GetGameScreen() const;
+    ApplicationState* GetState() const;
 
 private:
     /// Current active game screen.
-    SharedPtr<GameScreen> gameScreen_;
+    SharedPtr<ApplicationState> gameScreen_;
 };
 
 }

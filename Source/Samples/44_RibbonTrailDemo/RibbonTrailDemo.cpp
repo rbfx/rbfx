@@ -37,6 +37,7 @@
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/Text3D.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "RibbonTrailDemo.h"
 
@@ -48,7 +49,6 @@ RibbonTrailDemo::RibbonTrailDemo(Context* context)
     , swordTrailStartTime_(0.2f)
     , swordTrailEndTime_(0.46f)
     , timeStepSum_(0.0f)
-    , cameraController_(context)
 {
 }
 
@@ -170,6 +170,7 @@ void RibbonTrailDemo::CreateScene()
 
     // Create the camera.
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     cameraNode_->CreateComponent<Camera>();
 
     // Set an initial position for the camera scene node above the plane

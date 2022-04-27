@@ -20,8 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Engine/Application.h"
-#include "../Core/GameScreen.h"
+#include "../Engine/SingleStateApplication.h"
 #include "../Graphics/Renderer.h"
 #include "../UI/UI.h"
 #include "../Core/CoreEvents.h"
@@ -32,19 +31,19 @@
 namespace Urho3D
 {
 
-GameScreen::GameScreen(Context* context)
+ApplicationState::ApplicationState(Context* context)
     : Object(context)
     , rootElement_(context->CreateObject<UIElement>())
 {
 }
 
-void GameScreen::RegisterObject(Context* context)
+void ApplicationState::RegisterObject(Context* context)
 {
-    context->AddFactoryReflection<GameScreen>();
+    context->AddFactoryReflection<ApplicationState>();
 }
 
 /// Activate game screen. Executed by Application.
-void GameScreen::Activate()
+void ApplicationState::Activate()
 {
     if (active_)
     {
@@ -54,7 +53,7 @@ void GameScreen::Activate()
     active_ = true;
 
     // Subscribe HandleUpdate() method for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(GameScreen, HandleUpdate));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ApplicationState, HandleUpdate));
 
     {
         auto* input = GetSubsystem<Input>();
@@ -79,12 +78,12 @@ void GameScreen::Activate()
         }
     }
 }
-void GameScreen::Update(float timeStep)
+void ApplicationState::Update(float timeStep)
 {
 }
 
 /// Deactivate game screen. Executed by Application.
-void GameScreen::Deactivate()
+void ApplicationState::Deactivate()
 {
     if (!active_)
     {
@@ -109,7 +108,7 @@ void GameScreen::Deactivate()
 }
 
 /// Set whether the operating system mouse cursor is visible.
-void GameScreen::SetMouseVisible(bool enable) {
+void ApplicationState::SetMouseVisible(bool enable) {
     mouseVisible_ = enable;
     if (GetIsActive())
     {
@@ -119,7 +118,7 @@ void GameScreen::SetMouseVisible(bool enable) {
 }
 
 /// Set whether the mouse is currently being grabbed by an operation.
-void GameScreen::SetMouseGrabbed(bool grab) {
+void ApplicationState::SetMouseGrabbed(bool grab) {
     mouseGrabbed_ = grab;
     if (GetIsActive())
     {
@@ -129,7 +128,7 @@ void GameScreen::SetMouseGrabbed(bool grab) {
 }
 
 /// Set the mouse mode.
-void GameScreen::SetMouseMode(MouseMode mode) {
+void ApplicationState::SetMouseMode(MouseMode mode) {
     mouseMode_ = mode;
     if (GetIsActive())
     {
@@ -137,7 +136,7 @@ void GameScreen::SetMouseMode(MouseMode mode) {
     }
 }
 
-void GameScreen::SetNumViewports(unsigned num)
+void ApplicationState::SetNumViewports(unsigned num)
 {
     viewports_.resize(num);
     if (active_)
@@ -150,7 +149,7 @@ void GameScreen::SetNumViewports(unsigned num)
     }
 }
 
-void GameScreen::SetViewport(unsigned index, Viewport* viewport)
+void ApplicationState::SetViewport(unsigned index, Viewport* viewport)
 {
     if (index >= viewports_.size())
         viewports_.resize(index + 1);
@@ -166,12 +165,12 @@ void GameScreen::SetViewport(unsigned index, Viewport* viewport)
     }
 }
 
-Viewport* GameScreen::GetViewport(unsigned index) const
+Viewport* ApplicationState::GetViewport(unsigned index) const
 {
     return index < viewports_.size() ? viewports_[index] : nullptr;
 }
 
-Viewport* GameScreen::GetViewportForScene(Scene* scene, unsigned index) const
+Viewport* ApplicationState::GetViewportForScene(Scene* scene, unsigned index) const
 {
     for (unsigned i = 0; i < viewports_.size(); ++i)
     {
@@ -187,7 +186,7 @@ Viewport* GameScreen::GetViewportForScene(Scene* scene, unsigned index) const
     return nullptr;
 }
 
-void GameScreen::InitMouseMode()
+void ApplicationState::InitMouseMode()
 {
     Input* input = GetSubsystem<Input>();
 
@@ -207,14 +206,14 @@ void GameScreen::InitMouseMode()
     else
     {
         input->SetMouseVisible(true);
-        SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(GameScreen, HandleMouseModeRequest));
-        SubscribeToEvent(E_MOUSEMODECHANGED, URHO3D_HANDLER(GameScreen, HandleMouseModeChange));
+        SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(ApplicationState, HandleMouseModeRequest));
+        SubscribeToEvent(E_MOUSEMODECHANGED, URHO3D_HANDLER(ApplicationState, HandleMouseModeChange));
     }
 }
 
 
 // If the user clicks the canvas, attempt to switch to relative mouse mode on web platform
-void GameScreen::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
+void ApplicationState::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
 {
 #if URHO3D_SYSTEMUI
     Console* console = GetSubsystem<Console>();
@@ -229,14 +228,14 @@ void GameScreen::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& ev
     input->SetMouseMode(mouseMode_);
 }
 
-void GameScreen::HandleMouseModeChange(StringHash /*eventType*/, VariantMap& eventData)
+void ApplicationState::HandleMouseModeChange(StringHash /*eventType*/, VariantMap& eventData)
 {
     Input* input = GetSubsystem<Input>();
     bool mouseLocked = eventData[MouseModeChanged::P_MOUSELOCKED].GetBool();
     input->SetMouseVisible(!mouseLocked);
 }
 
-void GameScreen::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     using namespace Update;
 
@@ -247,8 +246,13 @@ void GameScreen::HandleUpdate(StringHash eventType, VariantMap& eventData)
     Update(timeStep);
 }
 
+    /// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
+/// state.
+SingleStateApplication::SingleStateApplication(Context* context) : Application(context)
+{
+}
 
-void GameScreenContainer::SetGameScreen(GameScreen* gameScreen)
+void SingleStateApplication::SetState(ApplicationState* gameScreen)
 {
     if (gameScreen_)
     {
@@ -263,7 +267,7 @@ void GameScreenContainer::SetGameScreen(GameScreen* gameScreen)
     }
 }
 
-GameScreen* GameScreenContainer::GetGameScreen() const { return gameScreen_; }
+ApplicationState* SingleStateApplication::GetState() const { return gameScreen_; }
 
 
 } // namespace Urho3D

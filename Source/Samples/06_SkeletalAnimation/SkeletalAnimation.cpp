@@ -25,7 +25,6 @@
 #include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationController.h>
-#include <Urho3D/Graphics/AnimationState.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -40,6 +39,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "Mover.h"
 #include "SkeletalAnimation.h"
@@ -50,7 +50,6 @@
 SkeletalAnimation::SkeletalAnimation(Context* context)
     : Sample(context)
     , drawDebug_(false)
-    , cameraController_(context)
 {
     // Register an object factory for our custom Mover3D component so that we can create them to scene nodes
     if (!context->IsReflected<Mover3D>())
@@ -150,6 +149,7 @@ void SkeletalAnimation::CreateScene()
 
     // Create the camera. Limit far clip distance to match the fog
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 

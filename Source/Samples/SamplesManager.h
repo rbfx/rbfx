@@ -21,7 +21,7 @@
 //
 #pragma once
 
-#include <Urho3D/Engine/Application.h>
+#include <Urho3D/Engine/SingleStateApplication.h>
 
 #include "Sample.h"
 
@@ -40,20 +40,21 @@ struct SampleInformation
 };
 
 class SampleSelectionScreen
-    : public GameScreen
+    : public ApplicationState
 {
     // Enable type information.
-    URHO3D_OBJECT(SampleSelectionScreen, GameScreen);
+    URHO3D_OBJECT(SampleSelectionScreen, ApplicationState);
 
 public:
     /// Construct.
     explicit SampleSelectionScreen(Context* context);
 };
 
-class SamplesManager : public Application
+class SamplesManager : public SingleStateApplication
 {
     // Enable type information.
-    URHO3D_OBJECT(SamplesManager, Application);
+    URHO3D_OBJECT(SamplesManager, SingleStateApplication);
+
 public:
     /// Construct.
     explicit SamplesManager(Context* context);
@@ -105,7 +106,6 @@ private:
     bool oldMouseVisible_{};
     MouseMode oldMouseMode_{};
     /// @}
-    GameScreenContainer gameScreenContainer_;
 };
 
 }

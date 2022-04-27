@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -36,6 +35,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "AnimatingScene.h"
 #include "Rotator.h"
@@ -44,7 +44,6 @@
 
 
 AnimatingScene::AnimatingScene(Context* context) : Sample(context)
-    , cameraController_(context)
 {
 }
 
@@ -116,6 +115,7 @@ void AnimatingScene::CreateScene()
     // Create the camera. Let the starting position be at the world origin. As the fog limits maximum visible distance, we can
     // bring the far clip plane closer for more effective culling of distant objects
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(100.0f);
 

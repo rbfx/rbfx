@@ -48,7 +48,6 @@
 MultipleViewports::MultipleViewports(Context* context)
     : Sample(context)
     , drawDebug_(false)
-    , cameraController_(context)
 {
 }
 
@@ -143,6 +142,7 @@ void MultipleViewports::CreateScene()
 
     // Create the cameras. Limit far clip distance to match the fog
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 

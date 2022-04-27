@@ -37,10 +37,11 @@
 #endif
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
-#include "../Core/GameScreen.h"
+#include "../Engine/SingleStateApplication.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
+#include "../Input/FreeFlyController.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
@@ -89,7 +90,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include <Urho3D/Core/CommandLine.h>
+#include "../Core/CommandLine.h"
 
 #include "../DebugNew.h"
 
@@ -154,7 +155,7 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
 #endif
-    GameScreen::RegisterObject(context);
+    context_->AddReflection<SingleStateApplication>();
     // Required in headless mode as well.
     RegisterGraphicsLibrary(context_);
     // Register object factories for libraries which are not automatically registered along with subsystem creation
@@ -227,6 +228,8 @@ bool Engine::Initialize(const VariantMap& parameters)
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
+    context_->RegisterFactory<FreeFlyController>();
+
     context_->RegisterSubsystem(new Audio(context_));
     if (!headless_)
     {

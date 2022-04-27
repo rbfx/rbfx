@@ -23,7 +23,6 @@
 #pragma once
 
 #include "Sample.h"
-#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -54,7 +53,4 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-
-    /// Camera controller.
-    CameraController cameraController_;
 };

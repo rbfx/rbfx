@@ -23,7 +23,6 @@
 #pragma once
 
 #include "Sample.h"
-#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -86,6 +85,4 @@ private:
     bool animate_;
     /// Animation's elapsed time.
     float time_;
-    /// Camera controller.
-    CameraController cameraController_;
 };

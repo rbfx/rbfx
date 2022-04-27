@@ -151,7 +151,7 @@ namespace Urho3D
 {
 
 SamplesManager::SamplesManager(Context* context) :
-    Application(context)
+    SingleStateApplication(context)
 {
 }
 
@@ -177,7 +177,7 @@ void SamplesManager::Setup()
 }
 
 SampleSelectionScreen::SampleSelectionScreen(Context* context)
-    : GameScreen(context)
+    : ApplicationState(context)
 {
     SetMouseMode(MM_FREE);
     SetMouseVisible(true);
@@ -199,7 +199,7 @@ void SamplesManager::Start()
     inspectorNode_ = MakeShared<Scene>(context_);
 
     sampleSelectionScreen_ = context_->CreateObject<SampleSelectionScreen>();
-    gameScreenContainer_.SetGameScreen(sampleSelectionScreen_);
+    SetState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
@@ -388,7 +388,7 @@ void SamplesManager::StartSample(StringHash sampleType)
     screen.DynamicCast(context_->CreateObject(sampleType));
     if (screen)
     {
-        gameScreenContainer_.SetGameScreen(screen);
+        SetState(screen);
         screen->Start(GetArgs());
     }
     else
@@ -526,7 +526,7 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     }
 #endif
 
-    if (gameScreenContainer_.GetGameScreen() != sampleSelectionScreen_)
+    if (GetState() != sampleSelectionScreen_)
         return;
 
     if (key == KEY_SPACE)
@@ -573,12 +573,12 @@ void SamplesManager::OnFrameStart()
     if (isClosing_)
     {
         isClosing_ = false;
-        if (gameScreenContainer_.GetGameScreen() != sampleSelectionScreen_)
+        if (GetState() != sampleSelectionScreen_)
         {
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
 
-            gameScreenContainer_.SetGameScreen(sampleSelectionScreen_);
+            SetState(sampleSelectionScreen_);
             ui->SetCursor(nullptr);
 #if MOBILE
             Graphics* graphics = context_->GetSubsystem<Graphics>();

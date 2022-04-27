@@ -117,7 +117,7 @@ void ConsoleInput::HandleEscKeyDown(StringHash eventType, VariantMap& eventData)
     if (eventData[KeyDown::P_KEY].GetInt() == KEY_ESCAPE)
     {
         GetSubsystem<Console>()->SetVisible(false);
-        CloseSample();
+        //CloseSample();
     }
 }
 

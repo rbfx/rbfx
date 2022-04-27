@@ -39,6 +39,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "Billboards.h"
 
@@ -48,7 +49,6 @@
 Billboards::Billboards(Context* context)
     : Sample(context)
     , drawDebug_(false)
-    , cameraController_(context)
 {
 }
 
@@ -203,6 +203,7 @@ void Billboards::CreateScene()
 
     // Create the camera. Limit far clip distance to match the fog
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 

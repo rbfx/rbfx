@@ -34,8 +34,10 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Console.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "HelloSystemUI.h"
+
 
 
 #include <Urho3D/DebugNew.h>
@@ -44,7 +46,6 @@
 
 HelloSystemUi::HelloSystemUi(Context* context)
     : Sample(context)
-    , cameraController_(context)
 {
 }
 
@@ -143,6 +144,8 @@ void HelloSystemUi::CreateScene()
     zone->SetFogEnd(300.0f);
 
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
+
     auto camera = cameraNode_->CreateComponent<Camera>();
     GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
 

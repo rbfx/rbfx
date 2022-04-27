@@ -29,7 +29,7 @@
 #if URHO3D_SYSTEMUI
 #include <Urho3D/SystemUI/DebugHud.h>
 #endif
-#include <Urho3D/Core/GameScreen.h>
+#include <Urho3D/Engine/SingleStateApplication.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -65,10 +65,10 @@ const float TOUCH_SENSITIVITY = 2.0f;
 ///    - Take screenshot with key 9
 ///    - Handle Esc key down to hide Console or exit application
 ///    - Init touch input on mobile platform using screen joysticks (patched for each individual sample)
-class Sample : public GameScreen
+class Sample : public ApplicationState
 {
     // Enable type information.
-    URHO3D_OBJECT(Sample, GameScreen);
+    URHO3D_OBJECT(Sample, ApplicationState);
 
 public:
     /// Construct.

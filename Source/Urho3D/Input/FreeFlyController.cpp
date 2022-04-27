@@ -20,11 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "CameraController.h"
+#include "FreeFlyController.h"
+
 #include "../Core/CoreEvents.h"
 #include "../UI/UI.h"
 #include "../Input/Input.h"
 #include "../Graphics/Renderer.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {
@@ -40,62 +42,70 @@ float ApplyDeadZone(float value, float deadZone)
 
 }
 
-CameraController::CameraController(Context* context)
-    : Object(context)
+FreeFlyController::FreeFlyController(Context* context)
+    : Component(context)
 {
-    SetEnabled(true);
 }
 
-CameraController::~CameraController()
+void FreeFlyController::OnSetEnabled() { UpdateEventSubscription(); }
+
+
+void FreeFlyController::OnNodeSet(Node* node)
 {
-    SetEnabled(false);
+    UpdateEventSubscription();
 }
 
-void CameraController::SetEnabled(bool enable)
+void FreeFlyController::UpdateEventSubscription()
 {
-    if (enable != enabled_)
+    bool enabled = IsEnabledEffective();
+
+    if (enabled && !subscribed_)
     {
-        enabled_ = enable;
-        if (enabled_)
-        {
-            // Subscribe HandleUpdate() method for processing update events
-            SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(CameraController, HandleUpdate));
-        }
-        else
-        {
-            // Unsubscribe HandleUpdate() method from processing update events
-            UnsubscribeFromEvent(E_UPDATE);
-        }
+        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(FreeFlyController, HandleUpdate));
+        subscribed_ = true;
+    }
+    else if (subscribed_)
+    {
+        UnsubscribeFromEvent(E_UPDATE);
+        subscribed_ = false;
     }
 }
-void CameraController::SetSpeed(float speed)
+
+void FreeFlyController::HandleUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace Update;
+
+    // Then execute user-defined update function
+    Update(eventData[P_TIMESTEP].GetFloat());
+}
+
+
+FreeFlyController::~FreeFlyController() = default;
+
+void FreeFlyController::RegisterObject(Context* context)
+{
+    context->AddFactoryReflection<FreeFlyController>();
+
+    URHO3D_ATTRIBUTE("Speed", float, speed_, 20.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("AcceleratedSpeed", float, acceleratedSpeed_, 100.0f, AM_DEFAULT);
+}
+
+void FreeFlyController::SetSpeed(float speed)
 {
     speed_ = speed;
 }
 
-void CameraController::SetAcceleratedSpeed(float speed)
+void FreeFlyController::SetAcceleratedSpeed(float speed)
 {
     acceleratedSpeed_ = speed;
 }
 
-Camera* CameraController::GetCamera() const
+void FreeFlyController::Move(float timeStep)
 {
-    return camera_;
-}
-
-void CameraController::MoveCamera(float timeStep, Camera* camera)
-{
-    if (!camera)
-        return;
-
-    auto cameraNode = camera->GetNode();
-    if (!cameraNode)
-        return;
-
     auto* input = GetSubsystem<Input>();
 
     // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    Vector3 eulerAngles = cameraNode->GetRotation().EulerAngles();
+    Vector3 eulerAngles = node_->GetRotation().EulerAngles();
     IntVector2 mouseMove = input->GetMouseMove();
     eulerAngles.y_ += mouseSensitivity_ * mouseMove.x_;
     eulerAngles.x_ += mouseSensitivity_ * mouseMove.y_;
@@ -105,13 +115,13 @@ void CameraController::MoveCamera(float timeStep, Camera* camera)
     {
         float speed = input->GetKeyDown(KEY_SHIFT) ? acceleratedSpeed_ : speed_;
         if (input->GetKeyDown(KEY_W))
-            cameraNode->Translate(Vector3::FORWARD * speed * timeStep);
+            node_->Translate(Vector3::FORWARD * speed * timeStep);
         if (input->GetKeyDown(KEY_S))
-            cameraNode->Translate(Vector3::BACK * speed * timeStep);
+            node_->Translate(Vector3::BACK * speed * timeStep);
         if (input->GetKeyDown(KEY_A))
-            cameraNode->Translate(Vector3::LEFT * speed * timeStep);
+            node_->Translate(Vector3::LEFT * speed * timeStep);
         if (input->GetKeyDown(KEY_D))
-            cameraNode->Translate(Vector3::RIGHT * speed * timeStep);
+            node_->Translate(Vector3::RIGHT * speed * timeStep);
     }
 
     if (input->GetNumJoysticks() > 0)
@@ -132,12 +142,12 @@ void CameraController::MoveCamera(float timeStep, Camera* camera)
             if (numAxes > 0)
             {
                 float value = ApplyDeadZone(state->GetAxisPosition(0), axisDeadZone_);
-                cameraNode->Translate(Vector3::RIGHT * speed * timeStep * value);
+                node_->Translate(Vector3::RIGHT * speed * timeStep * value);
             }
             if (numAxes > 1)
             {
                 float value =  ApplyDeadZone(-state->GetAxisPosition(1), axisDeadZone_);
-                cameraNode->Translate(Vector3::FORWARD * speed * timeStep * value);
+                node_->Translate(Vector3::FORWARD * speed * timeStep * value);
             }
             if (numAxes > 2)
             {
@@ -155,13 +165,13 @@ void CameraController::MoveCamera(float timeStep, Camera* camera)
             {
                 int value = state->GetHatPosition(0);
                 if (0 != (value & HAT_UP))
-                    cameraNode->Translate(Vector3::FORWARD * speed * timeStep);
+                    node_->Translate(Vector3::FORWARD * speed * timeStep);
                 if (0 != (value & HAT_DOWN))
-                    cameraNode->Translate(Vector3::BACK * speed * timeStep);
+                    node_->Translate(Vector3::BACK * speed * timeStep);
                 if (0 != (value & HAT_LEFT))
-                    cameraNode->Translate(Vector3::LEFT * speed * timeStep);
+                    node_->Translate(Vector3::LEFT * speed * timeStep);
                 if (0 != (value & HAT_RIGHT))
-                    cameraNode->Translate(Vector3::RIGHT * speed * timeStep);
+                    node_->Translate(Vector3::RIGHT * speed * timeStep);
             }
         }
     }
@@ -174,35 +184,11 @@ void CameraController::MoveCamera(float timeStep, Camera* camera)
     eulerAngles.x_ = Clamp(eulerAngles.x_, -89.999f, 89.999f);
 
     // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode->SetRotation(Quaternion(eulerAngles));
+    node_->SetRotation(Quaternion(eulerAngles));
 }
 
-void CameraController::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void FreeFlyController::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
-    // Get active camera
-    Camera* camera = camera_;
-    if (!camera)
-    {
-        Renderer* renderer = GetSubsystem<Renderer>();
-        if (renderer)
-        {
-            auto* viewport = renderer->GetViewport(0);
-            if (viewport)
-            {
-                camera = viewport->GetCamera();
-                if (!camera)
-                {
-                    return;
-                }
-            }
-        }
-    }
-
     // Do not move if the UI has a focused element (the console)
     if (GetSubsystem<UI>()->GetFocusElement())
         return;
@@ -212,12 +198,12 @@ void CameraController::HandleUpdate(StringHash eventType, VariantMap& eventData)
     {
         if (input->GetMouseButtonDown(MOUSEB_RIGHT))
         {
-            MoveCamera(timeStep, camera);
+            Move(timeStep);
         }
     }
     else
     {
-        MoveCamera(timeStep, camera);
+        Move(timeStep);
     }
 }
 

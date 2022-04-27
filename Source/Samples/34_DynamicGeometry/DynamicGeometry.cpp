@@ -41,6 +41,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "DynamicGeometry.h"
 
@@ -50,7 +51,6 @@ DynamicGeometry::DynamicGeometry(Context* context)
     : Sample(context)
     , animate_(true)
     , time_(0.0f)
-    , cameraController_(context)
 {
 }
 
@@ -262,6 +262,7 @@ void DynamicGeometry::CreateScene()
 
     // Create the camera
     cameraNode_ = new Node(context_);
+    cameraNode_->CreateComponent<FreeFlyController>();
     cameraNode_->SetPosition(Vector3(0.0f, 2.0f, -20.0f));
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);

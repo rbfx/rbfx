@@ -21,55 +21,56 @@
 //
 #pragma once
 
-#include "../Scene/Scene.h"
-#include "../Scene/Node.h"
-#include "../Graphics/Camera.h"
+#include "../Scene/LogicComponent.h"
 
 namespace Urho3D
 {
 
-class URHO3D_API CameraController: public Object
+class URHO3D_API FreeFlyController : public Component
 {
-    URHO3D_OBJECT(CameraController, Object);
+    URHO3D_OBJECT(FreeFlyController, Component)
 
 public:
     /// Construct.
-    explicit CameraController(Context* context);
+    explicit FreeFlyController(Context* context);
     /// Destruct.
-    ~CameraController();
+    ~FreeFlyController() override;
 
-    /// Set viewport camera.
-    /// @property
-    void SetCamera(Camera* camera);
-    /// Set whether reacts to input.
-    /// @property
-    void SetEnabled(bool enable);
+    /// Register object factory and attributes.
+    static void RegisterObject(Context* context);
+
+    /// Handle enabled/disabled state change. Changes update event subscription.
+    void OnSetEnabled() override;
+
     /// Set normal camera speed.
     /// @property
     void SetSpeed(float speed);
-    /// Set acceleated camera speed.
+    /// Set accelerated camera speed.
     /// @property
     void SetAcceleratedSpeed(float speed);
 
-    /// Return viewport camera.
+    /// Get normal camera speed.
     /// @property
-    Camera* GetCamera() const;
-    /// Return whether reacts to input.
+    float GetSpeed() const { return speed_; }
+    /// Get accelerated camera speed.
     /// @property
-    bool IsEnabled() const { return enabled_; }
+    float GetAcceleratedSpeed() const { return speed_; }
 
 private:
-    /// Handle the logic update event.
+    /// Handle scene node being assigned at creation.
+    void OnNodeSet(Node* node) override;
+
+    /// Subscribe/unsubscribe to update events based on current enabled state and update event mask.
+    void UpdateEventSubscription();
+    /// Handle scene update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
-    /// Move camera node.
-    void MoveCamera(float timeStep, Camera* camera);
+    /// Handle scene update. Called by LogicComponent base class.
+    void Update(float timeStep);
+
+    void Move(float timeStep);
 
 private:
-    /// Enabled flag.
-    bool enabled_{false};
-    /// Camera pointer.
-    WeakPtr<Camera> camera_;
     /// Camera speed.
     float speed_{20.0f};
     /// Camera accelerated speed.
@@ -80,6 +81,8 @@ private:
     float axisSensitivity_{100.0f};
     /// Gamepad axis dead zone
     float axisDeadZone_{0.1f};
+    /// Is subscribed to update
+    bool subscribed_{false};
 };
 
 }

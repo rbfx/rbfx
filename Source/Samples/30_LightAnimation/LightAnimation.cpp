@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -38,6 +36,7 @@
 #include <Urho3D/UI/Sprite.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "LightAnimation.h"
 
@@ -45,7 +44,6 @@
 
 LightAnimation::LightAnimation(Context* context)
     : Sample(context)
-    , cameraController_(context)
 {
 }
 
@@ -140,6 +138,7 @@ void LightAnimation::CreateScene()
     // Create a scene node for the camera, which we will move around
     // The camera will use default settings (1000 far clip distance, 45 degrees FOV, set aspect ratio automatically)
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     cameraNode_->CreateComponent<Camera>();
 
     // Set an initial position for the camera scene node above the plane

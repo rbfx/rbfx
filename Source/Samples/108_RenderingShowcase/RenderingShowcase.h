@@ -23,7 +23,6 @@
 #pragma once
 
 #include "Sample.h"
-#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -101,6 +100,4 @@ private:
     unsigned probeMaterialIndex_{};
     /// List of all available scenes.
     ea::vector<ea::vector<ea::string>> sceneNames_;
-    /// Camera controller.
-    CameraController cameraController_;
 };

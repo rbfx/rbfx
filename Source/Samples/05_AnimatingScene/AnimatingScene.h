@@ -23,7 +23,6 @@
 #pragma once
 
 #include "Sample.h"
-#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -58,8 +57,4 @@ private:
     void SetupViewport();
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
-
-private:
-    /// Camera controller.
-    CameraController cameraController_;
 };

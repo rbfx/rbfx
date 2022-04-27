@@ -42,6 +42,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "CreateRagdoll.h"
 #include "Ragdolls.h"
@@ -51,7 +52,6 @@
 Ragdolls::Ragdolls(Context* context)
     : Sample(context)
     , drawDebug_(false)
-    , cameraController_(context)
 {
     // Register an object factory for our custom CreateRagdoll component so that we can create them to scene nodes
     if (!context->IsReflected<CreateRagdoll>())
@@ -168,6 +168,7 @@ void Ragdolls::CreateScene()
     // Create the camera. Limit far clip distance to match the fog. Note: now we actually create the camera node outside
     // the scene, because we want it to be unaffected by scene load / save
     cameraNode_ = new Node(context_);
+    cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 

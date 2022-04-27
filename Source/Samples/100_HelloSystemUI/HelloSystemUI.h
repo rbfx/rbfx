@@ -26,7 +26,6 @@
 
 #include <Urho3D/SystemUI/Gizmo.h>
 #include <Urho3D/SystemUI/SystemMessageBox.h>
-#include <Urho3D/Input/CameraController.h>
 
 /// This example demonstrates creation and use of debug UIs using ImGui. Also it demonstrates Console and system message
 /// box usage.
@@ -69,6 +68,4 @@ private:
     SharedPtr<Gizmo> gizmo_;
     /// Flag controlling display of imgui demo window.
     bool metricsOpen_ = false;
-    /// Camera controller.
-    CameraController cameraController_;
 };

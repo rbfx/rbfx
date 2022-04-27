@@ -23,7 +23,6 @@
 #pragma once
 
 #include "Sample.h"
-#include <Urho3D/Input/CameraController.h>
 
 namespace Urho3D
 {
@@ -63,9 +62,6 @@ protected:
     SharedPtr<Node> boxNode2_;
     /// Sum of timestep.
     float timeStepSum_;
-    /// Camera controller.
-    CameraController cameraController_;
-
 
 private:
     /// Construct the scene content.

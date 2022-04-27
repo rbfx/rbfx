@@ -20,24 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
-#include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
-#include <Urho3D/UI/Slider.h>
 #include <Urho3D/UI/UI.h>
-#include <Urho3D/UI/UIEvents.h>
 #include <Urho3D/UI/Text.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "RenderingShowcase.h"
 
@@ -46,9 +40,7 @@
 
 RenderingShowcase::RenderingShowcase(Context* context)
     : Sample(context)
-    , cameraController_(context)
 {
-    cameraController_.SetAcceleratedSpeed(2.0f);
     // All these scenes correspond to Scenes/RenderingShowcase_*.xml resources
     sceneNames_.push_back({ "0" });
     sceneNames_.push_back({ "2_Dynamic", "2_BakedDirect", "2_BakedIndirect", "2_BakedDirectIndirect" });
@@ -105,6 +97,7 @@ void RenderingShowcase::CreateScene()
     // Create the camera (not included in the scene file)
     cameraNode_ = cameraScene_->CreateChild("Camera");
     cameraNode_->CreateComponent<Camera>();
+    cameraNode_->CreateComponent<FreeFlyController>()->SetAcceleratedSpeed(2.0f);
 
     Node* probeObjectNode = cameraNode_->CreateChild();
     probeObjectNode->SetPosition({ 0.0f, 0.0f, 1.0f });
