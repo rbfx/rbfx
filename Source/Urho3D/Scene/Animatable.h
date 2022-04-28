@@ -143,8 +143,6 @@ protected:
     void OnObjectAnimationRemoved(ObjectAnimation* objectAnimation);
     /// Update attribute animations.
     void UpdateAttributeAnimations(float timeStep);
-    /// Is animated network attribute.
-    bool IsAnimatedNetworkAttribute(const AttributeInfo& attrInfo) const;
     /// Return attribute animation info.
     AttributeAnimationInfo* GetAttributeAnimationInfo(const ea::string& name) const;
     /// Handle attribute animation added.
@@ -156,8 +154,6 @@ protected:
     bool animationEnabled_;
     /// Animation.
     SharedPtr<ObjectAnimation> objectAnimation_;
-    /// Animated network attribute set.
-    ea::hash_set<const AttributeInfo*> animatedNetworkAttributes_;
     /// Attribute animation infos.
     ea::unordered_map<ea::string, SharedPtr<AttributeAnimationInfo> > attributeAnimationInfos_;
 };

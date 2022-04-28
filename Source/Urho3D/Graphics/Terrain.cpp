@@ -195,7 +195,6 @@ void Terrain::SetPatchSize(int size)
         patchSize_ = size;
 
         CreateGeometry();
-        MarkNetworkUpdate();
     }
 }
 
@@ -206,7 +205,6 @@ void Terrain::SetSpacing(const Vector3& spacing)
         spacing_ = spacing;
 
         CreateGeometry();
-        MarkNetworkUpdate();
     }
 }
 
@@ -219,7 +217,6 @@ void Terrain::SetMaxLodLevels(unsigned levels)
         lastPatchSize_ = 0; // Force full recreate
 
         CreateGeometry();
-        MarkNetworkUpdate();
     }
 }
 
@@ -231,7 +228,6 @@ void Terrain::SetOcclusionLodLevel(unsigned level)
         lastPatchSize_ = 0; // Force full recreate
 
         CreateGeometry();
-        MarkNetworkUpdate();
     }
 }
 
@@ -242,7 +238,6 @@ void Terrain::SetSmoothing(bool enable)
         smoothing_ = enable;
 
         CreateGeometry();
-        MarkNetworkUpdate();
     }
 }
 
@@ -250,7 +245,6 @@ bool Terrain::SetHeightMap(Image* image)
 {
     bool success = SetHeightMapInternal(image, true);
 
-    MarkNetworkUpdate();
     return success;
 }
 
@@ -262,8 +256,6 @@ void Terrain::SetMaterial(Material* material)
         if (patches_[i])
             patches_[i]->SetMaterial(material);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetNorthNeighbor(Terrain* north)
@@ -282,7 +274,6 @@ void Terrain::SetNorthNeighbor(Terrain* north)
     }
 
     UpdateEdgePatchNeighbors();
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetSouthNeighbor(Terrain* south)
@@ -301,7 +292,6 @@ void Terrain::SetSouthNeighbor(Terrain* south)
     }
 
     UpdateEdgePatchNeighbors();
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetWestNeighbor(Terrain* west)
@@ -320,7 +310,6 @@ void Terrain::SetWestNeighbor(Terrain* west)
     }
 
     UpdateEdgePatchNeighbors();
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetEastNeighbor(Terrain* east)
@@ -339,7 +328,6 @@ void Terrain::SetEastNeighbor(Terrain* east)
     }
 
     UpdateEdgePatchNeighbors();
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetNeighbors(Terrain* north, Terrain* south, Terrain* west, Terrain* east)
@@ -379,7 +367,6 @@ void Terrain::SetNeighbors(Terrain* north, Terrain* south, Terrain* west, Terrai
     }
 
     UpdateEdgePatchNeighbors();
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetDrawDistance(float distance)
@@ -390,8 +377,6 @@ void Terrain::SetDrawDistance(float distance)
         if (patches_[i])
             patches_[i]->SetDrawDistance(distance);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetShadowDistance(float distance)
@@ -402,8 +387,6 @@ void Terrain::SetShadowDistance(float distance)
         if (patches_[i])
             patches_[i]->SetShadowDistance(distance);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetLodBias(float bias)
@@ -414,8 +397,6 @@ void Terrain::SetLodBias(float bias)
         if (patches_[i])
             patches_[i]->SetLodBias(bias);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetViewMask(unsigned mask)
@@ -426,8 +407,6 @@ void Terrain::SetViewMask(unsigned mask)
         if (patches_[i])
             patches_[i]->SetViewMask(mask);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetLightMask(unsigned mask)
@@ -438,8 +417,6 @@ void Terrain::SetLightMask(unsigned mask)
         if (patches_[i])
             patches_[i]->SetLightMask(mask);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetShadowMask(unsigned mask)
@@ -450,8 +427,6 @@ void Terrain::SetShadowMask(unsigned mask)
         if (patches_[i])
             patches_[i]->SetShadowMask(mask);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetZoneMask(unsigned mask)
@@ -462,8 +437,6 @@ void Terrain::SetZoneMask(unsigned mask)
         if (patches_[i])
             patches_[i]->SetZoneMask(mask);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetMaxLights(unsigned num)
@@ -474,8 +447,6 @@ void Terrain::SetMaxLights(unsigned num)
         if (patches_[i])
             patches_[i]->SetMaxLights(num);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetCastShadows(bool enable)
@@ -486,8 +457,6 @@ void Terrain::SetCastShadows(bool enable)
         if (patches_[i])
             patches_[i]->SetCastShadows(enable);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetOccluder(bool enable)
@@ -498,8 +467,6 @@ void Terrain::SetOccluder(bool enable)
         if (patches_[i])
             patches_[i]->SetOccluder(enable);
     }
-
-    MarkNetworkUpdate();
 }
 
 void Terrain::SetOccludee(bool enable)
@@ -510,9 +477,8 @@ void Terrain::SetOccludee(bool enable)
         if (patches_[i])
             patches_[i]->SetOccludee(enable);
     }
-
-    MarkNetworkUpdate();
 }
+
 void Terrain::SetEnableDebug(bool enable)
 {
     debugGeometry_ = enable;

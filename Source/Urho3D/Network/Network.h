@@ -216,10 +216,6 @@ private:
     ea::unordered_map<unsigned long, SharedPtr<Connection> > clientConnections_;
     /// Allowed remote events.
     ea::hash_set<StringHash> allowedRemoteEvents_;
-    /// Remote event fixed blacklist.
-    ea::hash_set<StringHash> blacklistedRemoteEvents_;
-    /// Networked scenes.
-    ea::hash_set<Scene*> networkScenes_;
     /// Simulated latency (send delay) in milliseconds.
     int simulatedLatency_;
     /// Simulated packet loss probability between 0.0 - 1.0.

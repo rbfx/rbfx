@@ -87,8 +87,6 @@ void CollisionShape2D::SetTrigger(bool trigger)
 
     if (fixture_)
         fixture_->SetSensor(trigger);
-
-    MarkNetworkUpdate();
 }
 
 void CollisionShape2D::SetCategoryBits(int categoryBits)
@@ -100,8 +98,6 @@ void CollisionShape2D::SetCategoryBits(int categoryBits)
 
     if (fixture_)
         fixture_->SetFilterData(fixtureDef_.filter);
-
-    MarkNetworkUpdate();
 }
 
 void CollisionShape2D::SetMaskBits(int maskBits)
@@ -113,8 +109,6 @@ void CollisionShape2D::SetMaskBits(int maskBits)
 
     if (fixture_)
         fixture_->SetFilterData(fixtureDef_.filter);
-
-    MarkNetworkUpdate();
 }
 
 void CollisionShape2D::SetGroupIndex(int groupIndex)
@@ -126,8 +120,6 @@ void CollisionShape2D::SetGroupIndex(int groupIndex)
 
     if (fixture_)
         fixture_->SetFilterData(fixtureDef_.filter);
-
-    MarkNetworkUpdate();
 }
 
 void CollisionShape2D::SetDensity(float density)
@@ -145,8 +137,6 @@ void CollisionShape2D::SetDensity(float density)
         if (rigidBody_->GetUseFixtureMass())
             rigidBody_->GetBody()->ResetMassData();
     }
-
-    MarkNetworkUpdate();
 }
 
 void CollisionShape2D::SetFriction(float friction)
@@ -171,8 +161,6 @@ void CollisionShape2D::SetFriction(float friction)
             contractEdge = contractEdge->next;
         }
     }
-
-    MarkNetworkUpdate();
 }
 
 void CollisionShape2D::SetRestitution(float restitution)
@@ -197,8 +185,6 @@ void CollisionShape2D::SetRestitution(float restitution)
             contractEdge = contractEdge->next;
         }
     }
-
-    MarkNetworkUpdate();
 }
 
 void CollisionShape2D::CreateFixture()

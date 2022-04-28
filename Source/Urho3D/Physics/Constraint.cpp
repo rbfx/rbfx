@@ -152,7 +152,6 @@ void Constraint::SetConstraintType(ConstraintType type)
     {
         constraintType_ = type;
         CreateConstraint();
-        MarkNetworkUpdate();
     }
 }
 
@@ -170,7 +169,6 @@ void Constraint::SetOtherBody(RigidBody* body)
         otherBodyNodeID_ = otherNode ? otherNode->GetID() : 0;
 
         CreateConstraint();
-        MarkNetworkUpdate();
     }
 }
 
@@ -180,7 +178,6 @@ void Constraint::SetPosition(const Vector3& position)
     {
         position_ = position;
         ApplyFrames();
-        MarkNetworkUpdate();
     }
 }
 
@@ -190,7 +187,6 @@ void Constraint::SetRotation(const Quaternion& rotation)
     {
         rotation_ = rotation;
         ApplyFrames();
-        MarkNetworkUpdate();
     }
 }
 
@@ -213,7 +209,6 @@ void Constraint::SetAxis(const Vector3& axis)
     }
 
     ApplyFrames();
-    MarkNetworkUpdate();
 }
 
 void Constraint::SetOtherPosition(const Vector3& position)
@@ -222,7 +217,6 @@ void Constraint::SetOtherPosition(const Vector3& position)
     {
         otherPosition_ = position;
         ApplyFrames();
-        MarkNetworkUpdate();
     }
 }
 
@@ -232,7 +226,6 @@ void Constraint::SetOtherRotation(const Quaternion& rotation)
     {
         otherRotation_ = rotation;
         ApplyFrames();
-        MarkNetworkUpdate();
     }
 }
 
@@ -255,7 +248,6 @@ void Constraint::SetOtherAxis(const Vector3& axis)
     }
 
     ApplyFrames();
-    MarkNetworkUpdate();
 }
 
 void Constraint::SetWorldPosition(const Vector3& position)
@@ -273,7 +265,6 @@ void Constraint::SetWorldPosition(const Vector3& position)
             otherPosition_ /= otherBody_->GetNode()->GetWorldScale();
         }
         ApplyFrames();
-        MarkNetworkUpdate();
     }
     else
         URHO3D_LOGWARNING("Constraint not created, world position could not be stored");
@@ -285,7 +276,6 @@ void Constraint::SetHighLimit(const Vector2& limit)
     {
         highLimit_ = limit;
         ApplyLimits();
-        MarkNetworkUpdate();
     }
 }
 
@@ -295,7 +285,6 @@ void Constraint::SetLowLimit(const Vector2& limit)
     {
         lowLimit_ = limit;
         ApplyLimits();
-        MarkNetworkUpdate();
     }
 }
 
@@ -307,7 +296,6 @@ void Constraint::SetERP(float erp)
     {
         erp_ = erp;
         ApplyLimits();
-        MarkNetworkUpdate();
     }
 }
 
@@ -319,7 +307,6 @@ void Constraint::SetCFM(float cfm)
     {
         cfm_ = cfm;
         ApplyLimits();
-        MarkNetworkUpdate();
     }
 }
 
@@ -329,7 +316,6 @@ void Constraint::SetDisableCollision(bool disable)
     {
         disableCollision_ = disable;
         CreateConstraint();
-        MarkNetworkUpdate();
     }
 }
 

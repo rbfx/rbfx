@@ -63,7 +63,6 @@ void CollisionCircle2D::SetRadius(float radius)
     radius_ = radius;
 
     RecreateFixture();
-    MarkNetworkUpdate();
 }
 
 void CollisionCircle2D::SetCenter(const Vector2& center)
@@ -74,7 +73,6 @@ void CollisionCircle2D::SetCenter(const Vector2& center)
     center_ = center;
 
     RecreateFixture();
-    MarkNetworkUpdate();
 }
 
 void CollisionCircle2D::SetCenter(float x, float y)

@@ -63,7 +63,6 @@ void ConstraintRope2D::SetOwnerBodyAnchor(const Vector2& anchor)
     ownerBodyAnchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintRope2D::SetOtherBodyAnchor(const Vector2& anchor)
@@ -74,7 +73,6 @@ void ConstraintRope2D::SetOtherBodyAnchor(const Vector2& anchor)
     otherBodyAnchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintRope2D::SetMaxLength(float maxLength)
@@ -89,8 +87,6 @@ void ConstraintRope2D::SetMaxLength(float maxLength)
         static_cast<b2RopeJoint*>(joint_)->SetMaxLength(maxLength);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintRope2D::GetJointDef()

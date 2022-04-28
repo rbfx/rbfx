@@ -124,7 +124,6 @@ void Constraint2D::SetOtherBody(RigidBody2D* body)
     otherBodyNodeID_ = otherNode ? otherNode->GetID() : 0;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void Constraint2D::SetCollideConnected(bool collideConnected)
@@ -135,7 +134,6 @@ void Constraint2D::SetCollideConnected(bool collideConnected)
     collideConnected_ = collideConnected;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void Constraint2D::SetAttachedConstraint(Constraint2D* constraint)

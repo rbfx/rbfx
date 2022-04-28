@@ -64,7 +64,6 @@ void ConstraintGear2D::SetOwnerConstraint(Constraint2D* constraint)
         ownerConstraint_->SetAttachedConstraint(this);
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintGear2D::SetOtherConstraint(Constraint2D* constraint)
@@ -82,7 +81,6 @@ void ConstraintGear2D::SetOtherConstraint(Constraint2D* constraint)
         otherConstraint_->SetAttachedConstraint(this);
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintGear2D::SetRatio(float ratio)
@@ -96,8 +94,6 @@ void ConstraintGear2D::SetRatio(float ratio)
         static_cast<b2GearJoint*>(joint_)->SetRatio(ratio);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintGear2D::GetJointDef()

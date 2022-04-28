@@ -130,10 +130,6 @@ public:
     bool LoadXML(const XMLElement& source) override;
     /// Load from JSON data. Removes all existing child nodes and components first. Return true if successful.
     bool LoadJSON(const JSONValue& source) override;
-    /// Mark for attribute check on the next network update.
-    void MarkNetworkUpdate() override;
-    /// Add a replication state that is tracking this scene.
-    void AddReplicationState(NodeReplicationState* state) override;
 
     /// Return number of lightmaps.
     unsigned GetNumLightmaps() const { return lightmaps_.names_.size(); }
@@ -174,7 +170,7 @@ public:
     Node* InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED);
 
     /// Clear scene completely of either replicated, local or all nodes and components.
-    void Clear(bool clearReplicated = true, bool clearLocal = true);
+    void Clear();
     /// Enable or disable scene update.
     /// @property
     void SetUpdateEnabled(bool enable);
@@ -184,12 +180,6 @@ public:
     /// Set elapsed time in seconds. This can be used to prevent inaccuracy in the timer if the scene runs for a long time.
     /// @property
     void SetElapsedTime(float time);
-    /// Set network client motion smoothing constant.
-    /// @property
-    void SetSmoothingConstant(float constant);
-    /// Set network client motion smoothing snap threshold.
-    /// @property
-    void SetSnapThreshold(float threshold);
     /// Set maximum milliseconds per frame to spend on async scene loading.
     /// @property
     void SetAsyncLoadingMs(int ms);
@@ -248,14 +238,6 @@ public:
     /// @property
     float GetElapsedTime() const { return elapsedTime_; }
 
-    /// Return motion smoothing constant.
-    /// @property
-    float GetSmoothingConstant() const { return smoothingConstant_; }
-
-    /// Return motion smoothing snap threshold.
-    /// @property
-    float GetSnapThreshold() const { return snapThreshold_; }
-
     /// Return maximum milliseconds per frame to spend on async loading.
     /// @property
     int GetAsyncLoadingMs() const { return asyncLoadingMs_; }
@@ -303,17 +285,6 @@ public:
     void SetVarNamesAttr(const ea::string& value);
     /// Return node user variable reverse mappings.
     ea::string GetVarNamesAttr() const;
-    /// Prepare network update by comparing attributes and marking replication states dirty as necessary.
-    void PrepareNetworkUpdate();
-    /// Clean up all references to a network connection that is about to be removed.
-    /// @manualbind
-    void CleanupConnection(Connection* connection);
-    /// Mark a node for attribute check on the next network update.
-    void MarkNetworkUpdate(Node* node);
-    /// Mark a component for attribute check on the next network update.
-    void MarkNetworkUpdate(Component* component);
-    /// Mark a node dirty in scene replication states. The node does not need to have own replication state yet.
-    void MarkReplicationDirty(Node* node);
 
 private:
     /// Handle the logic update event to update the scene, if active.
@@ -364,16 +335,10 @@ private:
     ea::vector<SharedPtr<PackageFile> > requiredPackageFiles_;
     /// Registered node user variable reverse mappings.
     ea::unordered_map<StringHash, ea::string> varNames_;
-    /// Nodes to check for attribute changes on the next network update.
-    ea::hash_set<unsigned> networkUpdateNodes_;
-    /// Components to check for attribute changes on the next network update.
-    ea::hash_set<unsigned> networkUpdateComponents_;
     /// Delayed dirty notification queue for components.
     ea::vector<Component*> delayedDirtyComponents_;
     /// Mutex for the delayed dirty notification queue.
     Mutex sceneMutex_;
-    /// Preallocated event data map for smoothing update events.
-    VariantMap smoothingData_;
     /// Next free non-local node ID.
     unsigned replicatedNodeID_;
     /// Next free non-local component ID.
@@ -390,10 +355,6 @@ private:
     float timeScale_;
     /// Elapsed time accumulator.
     float elapsedTime_;
-    /// Motion smoothing constant.
-    float smoothingConstant_;
-    /// Motion smoothing snap threshold.
-    float snapThreshold_;
     /// Update enabled flag.
     bool updateEnabled_;
     /// Asynchronous loading flag.

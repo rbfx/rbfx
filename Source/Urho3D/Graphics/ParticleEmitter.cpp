@@ -277,7 +277,6 @@ void ParticleEmitter::SetEffect(ParticleEffect* effect)
         SubscribeToEvent(effect_, E_RELOADFINISHED, URHO3D_HANDLER(ParticleEmitter, HandleEffectReloadFinished));
 
     ApplyEffect();
-    MarkNetworkUpdate();
 }
 
 void ParticleEmitter::SetNumParticles(unsigned num)
@@ -312,7 +311,6 @@ void ParticleEmitter::SetSerializeParticles(bool enable)
 void ParticleEmitter::SetAutoRemoveMode(AutoRemoveMode mode)
 {
     autoRemove_ = mode;
-    MarkNetworkUpdate();
 }
 
 void ParticleEmitter::ResetEmissionTimer()

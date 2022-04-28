@@ -278,16 +278,12 @@ void StaticModel::SetModel(Model* model)
         SetNumGeometries(0);
         SetBoundingBox(BoundingBox());
     }
-
-    MarkNetworkUpdate();
 }
 
 void StaticModel::SetMaterial(Material* material)
 {
     for (unsigned i = 0; i < batches_.size(); ++i)
         batches_[i].material_ = material;
-
-    MarkNetworkUpdate();
 }
 
 bool StaticModel::SetMaterial(unsigned index, Material* material)
@@ -299,14 +295,12 @@ bool StaticModel::SetMaterial(unsigned index, Material* material)
     }
 
     batches_[index].material_ = material;
-    MarkNetworkUpdate();
     return true;
 }
 
 void StaticModel::SetOcclusionLodLevel(unsigned level)
 {
     occlusionLodLevel_ = level;
-    MarkNetworkUpdate();
 }
 
 void StaticModel::ApplyMaterialList(const ea::string& fileName)

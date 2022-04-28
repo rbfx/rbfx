@@ -62,7 +62,6 @@ void ConstraintFriction2D::SetAnchor(const Vector2& anchor)
     anchor_ = anchor;
 
     RecreateJoint();
-    MarkNetworkUpdate();
 }
 
 void ConstraintFriction2D::SetMaxForce(float maxForce)
@@ -76,8 +75,6 @@ void ConstraintFriction2D::SetMaxForce(float maxForce)
         static_cast<b2FrictionJoint*>(joint_)->SetMaxForce(maxForce);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 
@@ -92,8 +89,6 @@ void ConstraintFriction2D::SetMaxTorque(float maxTorque)
         static_cast<b2FrictionJoint*>(joint_)->SetMaxTorque(maxTorque);
     else
         RecreateJoint();
-
-    MarkNetworkUpdate();
 }
 
 b2JointDef* ConstraintFriction2D::GetJointDef()

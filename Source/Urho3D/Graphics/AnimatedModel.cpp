@@ -524,20 +524,16 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         SetBoundingBox(BoundingBox());
         SetSkeleton(Skeleton(), false);
     }
-
-    MarkNetworkUpdate();
 }
 
 void AnimatedModel::SetAnimationLodBias(float bias)
 {
     animationLodBias_ = Max(bias, 0.0f);
-    MarkNetworkUpdate();
 }
 
 void AnimatedModel::SetUpdateInvisible(bool enable)
 {
     updateInvisible_ = enable;
-    MarkNetworkUpdate();
 }
 
 
@@ -569,7 +565,6 @@ void AnimatedModel::SetMorphWeight(unsigned index, float weight)
         }
 
         MarkMorphsDirty();
-        MarkNetworkUpdate();
     }
 }
 
@@ -616,7 +611,6 @@ void AnimatedModel::ResetMorphWeights()
     }
 
     MarkMorphsDirty();
-    MarkNetworkUpdate();
 }
 
 const ea::vector<SharedPtr<VertexBuffer> >& AnimatedModel::GetMorphVertexBuffers() const

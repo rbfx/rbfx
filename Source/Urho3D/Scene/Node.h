@@ -39,8 +39,6 @@ class Node;
 class Scene;
 class SceneResolver;
 
-struct NodeReplicationState;
-
 /// Component and child node creation mode for networking.
 enum CreateMode
 {
@@ -61,8 +59,6 @@ struct URHO3D_API NodeImpl
 {
     /// Nodes this node depends on for network updates.
     ea::vector<Node*> dependencyNodes_;
-    /// Network owner connection.
-    Connection* owner_;
     /// Name.
     ea::string name_;
     /// Tag strings.
@@ -112,11 +108,6 @@ public:
 
     /// Return whether should save default-valued attributes into XML. Always save node transforms for readability, even if identity.
     bool SaveDefaultAttributes(const AttributeInfo& attr) const override { return true; }
-
-    /// Mark for attribute check on the next network update.
-    void MarkNetworkUpdate() override;
-    /// Add a replication state that is tracking this node.
-    virtual void AddReplicationState(NodeReplicationState* state);
 
     /// Save to an XML file. Return true if successful.
     bool SaveXML(Serializer& dest, const ea::string& indentation = "\t") const;
@@ -306,9 +297,6 @@ public:
     void ResetDeepEnabled();
     /// Set enabled state on self and child nodes. Unlike SetDeepEnabled this does not remember the nodes' own enabled state, but overwrites it.
     void SetEnabledRecursive(bool enable);
-    /// Set owner connection for networking.
-    /// @manualbind
-    void SetOwner(Connection* owner);
     /// Mark node and child nodes to need world transform recalculation. Notify listener components.
     void MarkDirty();
     /// Create a child scene node (with specified ID if provided).
@@ -322,7 +310,7 @@ public:
     /// Remove all child scene nodes.
     void RemoveAllChildren();
     /// Remove child scene nodes that match criteria.
-    void RemoveChildren(bool removeReplicated, bool removeLocal, bool recursive);
+    void RemoveChildren(bool recursive);
     /// Create a component to this node (with specified ID if provided).
     Component* CreateComponent(StringHash type, CreateMode mode = REPLICATED, unsigned id = 0);
     /// Create a component to this node if it does not exist already.
@@ -336,7 +324,7 @@ public:
     /// Remove the first component of specific type from this node.
     void RemoveComponent(StringHash type);
     /// Remove components that match criteria.
-    void RemoveComponents(bool removeReplicated, bool removeLocal);
+    void RemoveComponents();
     /// Remove all components of specific type.
     void RemoveComponents(StringHash type);
     /// Remove all components from this node.
@@ -415,10 +403,6 @@ public:
     /// Return the node's last own enabled state. May be different than the value returned by IsEnabled when SetDeepEnabled has been used.
     /// @property
     bool IsEnabledSelf() const { return enabledPrev_; }
-
-    /// Return owner connection in networking.
-    /// @manualbind
-    Connection* GetOwner() const { return impl_->owner_; }
 
     /// Return position in parent space.
     /// @property
@@ -664,18 +648,6 @@ public:
     void SetScene(Scene* scene);
     /// Reset scene, ID and owner. Called by Scene.
     void ResetScene();
-    /// Set network position attribute.
-    void SetNetPositionAttr(const Vector3& value);
-    /// Set network rotation attribute.
-    void SetNetRotationAttr(const ea::vector<unsigned char>& value);
-    /// Set network parent attribute.
-    void SetNetParentAttr(const ea::vector<unsigned char>& value);
-    /// Return network position attribute.
-    const Vector3& GetNetPositionAttr() const;
-    /// Return network rotation attribute.
-    const ea::vector<unsigned char>& GetNetRotationAttr() const;
-    /// Return network parent attribute.
-    const ea::vector<unsigned char>& GetNetParentAttr() const;
     /// Load components and optionally load child nodes.
     bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
         CreateMode mode = REPLICATED);
@@ -688,13 +660,6 @@ public:
     /// Return the depended on nodes to order network updates.
     const ea::vector<Node*>& GetDependencyNodes() const { return impl_->dependencyNodes_; }
 
-    /// Prepare network update by comparing attributes and marking replication states dirty as necessary.
-    void PrepareNetworkUpdate();
-    /// Clean up all references to a network connection that is about to be removed.
-    /// @manualbind
-    void CleanupConnection(Connection* connection);
-    /// Mark node dirty in scene replication states.
-    void MarkReplicationDirty();
     /// Create a child node with specific ID.
     Node* CreateChild(unsigned id, CreateMode mode, bool temporary = false);
     /// Add a pre-created component. Using this function from application code is discouraged, as component operation without an owner node may not be well-defined in all cases. Prefer CreateComponent() instead.
@@ -764,10 +729,6 @@ private:
     bool enabled_;
     /// Last SetEnabled flag before any SetDeepEnabled.
     bool enabledPrev_;
-
-protected:
-    /// Network update queued flag.
-    bool networkUpdate_;
 
 private:
     /// Parent scene node.

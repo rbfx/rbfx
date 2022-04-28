@@ -34,7 +34,6 @@
 #include "../Resource/JSONFile.h"
 #include "../Resource/JSONValue.h"
 #include "../Resource/ResourceCache.h"
-#include "../Scene/ReplicationState.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/Serializable.h"
 
@@ -179,10 +178,6 @@ void Serializable::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
         URHO3D_LOGERROR("Unsupported attribute type for OnSetAttribute()");
         return;
     }
-
-    // If it is a network attribute then mark it for next network update
-    if (attr.mode_ & AM_NET)
-        MarkNetworkUpdate();
 }
 
 void Serializable::OnGetAttribute(const AttributeInfo& attr, Variant& dest) const
@@ -298,11 +293,6 @@ ObjectReflection* Serializable::GetReflection() const
 const ea::vector<AttributeInfo>* Serializable::GetAttributes() const
 {
     return context_->GetAttributes(GetType());
-}
-
-const ea::vector<AttributeInfo>* Serializable::GetNetworkAttributes() const
-{
-    return networkState_ ? networkState_->attributes_ : context_->GetNetworkAttributes(GetType());
 }
 
 bool Serializable::Load(Deserializer& source)
@@ -839,218 +829,6 @@ void Serializable::SetTemporary(bool enable)
     }
 }
 
-void Serializable::SetInterceptNetworkUpdate(const ea::string& attributeName, bool enable)
-{
-    AllocateNetworkState();
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    for (unsigned i = 0; i < attributes->size(); ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (!attr.name_.compare(attributeName))
-        {
-            if (enable)
-                networkState_->interceptMask_ |= 1ULL << i;
-            else
-                networkState_->interceptMask_ &= ~(1ULL << i);
-            break;
-        }
-    }
-}
-
-void Serializable::AllocateNetworkState()
-{
-    if (networkState_)
-        return;
-
-    const ea::vector<AttributeInfo>* networkAttributes = GetNetworkAttributes();
-    networkState_ = ea::make_unique<NetworkState>();
-    networkState_->attributes_ = networkAttributes;
-
-    if (!networkAttributes)
-        return;
-
-    unsigned numAttributes = networkAttributes->size();
-
-    if (networkState_->currentValues_.size() != numAttributes)
-    {
-        networkState_->currentValues_.resize(numAttributes);
-        networkState_->previousValues_.resize(numAttributes);
-
-        // Copy the default attribute values to the previous state as a starting point
-        for (unsigned i = 0; i < numAttributes; ++i)
-            networkState_->previousValues_[i] = networkAttributes->at(i).defaultValue_;
-    }
-}
-
-void Serializable::WriteInitialDeltaUpdate(Serializer& dest, unsigned char timeStamp)
-{
-    if (!networkState_)
-    {
-        URHO3D_LOGERROR("WriteInitialDeltaUpdate called without allocated NetworkState");
-        return;
-    }
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    unsigned numAttributes = attributes->size();
-    DirtyBits attributeBits;
-
-    // Compare against defaults
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (networkState_->currentValues_[i] != attr.defaultValue_)
-            attributeBits.Set(i);
-    }
-
-    // First write the change bitfield, then attribute data for non-default attributes
-    dest.WriteUByte(timeStamp);
-    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3u);
-
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        if (attributeBits.IsSet(i))
-            dest.WriteVariantData(networkState_->currentValues_[i]);
-    }
-}
-
-void Serializable::WriteDeltaUpdate(Serializer& dest, const DirtyBits& attributeBits, unsigned char timeStamp)
-{
-    if (!networkState_)
-    {
-        URHO3D_LOGERROR("WriteDeltaUpdate called without allocated NetworkState");
-        return;
-    }
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    unsigned numAttributes = attributes->size();
-
-    // First write the change bitfield, then attribute data for changed attributes
-    // Note: the attribute bits should not contain LATESTDATA attributes
-    dest.WriteUByte(timeStamp);
-    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3u);
-
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        if (attributeBits.IsSet(i))
-            dest.WriteVariantData(networkState_->currentValues_[i]);
-    }
-}
-
-void Serializable::WriteLatestDataUpdate(Serializer& dest, unsigned char timeStamp)
-{
-    if (!networkState_)
-    {
-        URHO3D_LOGERROR("WriteLatestDataUpdate called without allocated NetworkState");
-        return;
-    }
-
-    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
-    if (!attributes)
-        return;
-
-    unsigned numAttributes = attributes->size();
-
-    dest.WriteUByte(timeStamp);
-
-    for (unsigned i = 0; i < numAttributes; ++i)
-    {
-        if (attributes->at(i).mode_ & AM_LATESTDATA)
-            dest.WriteVariantData(networkState_->currentValues_[i]);
-    }
-}
-
-bool Serializable::ReadDeltaUpdate(Deserializer& source)
-{
-    const ea::vector<AttributeInfo>* attributes = GetNetworkAttributes();
-    if (!attributes)
-        return false;
-
-    unsigned numAttributes = attributes->size();
-    DirtyBits attributeBits;
-    bool changed = false;
-
-    unsigned long long interceptMask = networkState_ ? networkState_->interceptMask_ : 0;
-    unsigned char timeStamp = source.ReadUByte();
-    source.Read(attributeBits.data_, (numAttributes + 7) >> 3u);
-
-    for (unsigned i = 0; i < numAttributes && !source.IsEof(); ++i)
-    {
-        if (attributeBits.IsSet(i))
-        {
-            const AttributeInfo& attr = attributes->at(i);
-            if (!(interceptMask & (1ULL << i)))
-            {
-                OnSetAttribute(attr, source.ReadVariant(attr.type_));
-                changed = true;
-            }
-            else
-            {
-                using namespace InterceptNetworkUpdate;
-
-                VariantMap& eventData = GetEventDataMap();
-                eventData[P_SERIALIZABLE] = this;
-                eventData[P_TIMESTAMP] = (unsigned)timeStamp;
-                eventData[P_INDEX] = RemapAttributeIndex(GetAttributes(), attr, i);
-                eventData[P_NAME] = attr.name_;
-                eventData[P_VALUE] = source.ReadVariant(attr.type_);
-                SendEvent(E_INTERCEPTNETWORKUPDATE, eventData);
-            }
-        }
-    }
-
-    return changed;
-}
-
-bool Serializable::ReadLatestDataUpdate(Deserializer& source)
-{
-    const ea::vector<AttributeInfo>* attributes = GetNetworkAttributes();
-    if (!attributes)
-        return false;
-
-    unsigned numAttributes = attributes->size();
-    bool changed = false;
-
-    unsigned long long interceptMask = networkState_ ? networkState_->interceptMask_ : 0;
-    unsigned char timeStamp = source.ReadUByte();
-
-    for (unsigned i = 0; i < numAttributes && !source.IsEof(); ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (attr.mode_ & AM_LATESTDATA)
-        {
-            if (!(interceptMask & (1ULL << i)))
-            {
-                OnSetAttribute(attr, source.ReadVariant(attr.type_));
-                changed = true;
-            }
-            else
-            {
-                using namespace InterceptNetworkUpdate;
-
-                VariantMap& eventData = GetEventDataMap();
-                eventData[P_SERIALIZABLE] = this;
-                eventData[P_TIMESTAMP] = (unsigned)timeStamp;
-                eventData[P_INDEX] = RemapAttributeIndex(GetAttributes(), attr, i);
-                eventData[P_NAME] = attr.name_;
-                eventData[P_VALUE] = source.ReadVariant(attr.type_);
-                SendEvent(E_INTERCEPTNETWORKUPDATE, eventData);
-            }
-        }
-    }
-
-    return changed;
-}
-
 Variant Serializable::GetAttribute(unsigned index) const
 {
     Variant ret;
@@ -1141,31 +919,6 @@ unsigned Serializable::GetNumAttributes() const
 {
     const ea::vector<AttributeInfo>* attributes = GetAttributes();
     return attributes ? attributes->size() : 0;
-}
-
-unsigned Serializable::GetNumNetworkAttributes() const
-{
-    const ea::vector<AttributeInfo>* attributes = networkState_ ? networkState_->attributes_ :
-        context_->GetNetworkAttributes(GetType());
-    return attributes ? attributes->size() : 0;
-}
-
-bool Serializable::GetInterceptNetworkUpdate(const ea::string& attributeName) const
-{
-    const ea::vector<AttributeInfo>* attributes = GetNetworkAttributes();
-    if (!attributes)
-        return false;
-
-    unsigned long long interceptMask = networkState_ ? networkState_->interceptMask_ : 0;
-
-    for (unsigned i = 0; i < attributes->size(); ++i)
-    {
-        const AttributeInfo& attr = attributes->at(i);
-        if (!attr.name_.compare(attributeName))
-            return interceptMask & (1ULL << i) ? true : false;
-    }
-
-    return false;
 }
 
 void Serializable::SetInstanceDefault(const ea::string& name, const Variant& defaultValue)

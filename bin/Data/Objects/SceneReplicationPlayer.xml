@@ -12,6 +12,8 @@
 	<component type="Light" id="2">
 		<attribute name="Range" value="3" />
 	</component>
-	<component type="ReplicatedTransform" id="4"/>
+	<component type="ReplicatedTransform" id="4">
+		<attribute name="Replicate Owner" value="true" />
+	</component>
 	<component type="SceneReplicationPlayer" id="5"/>
 </node>
