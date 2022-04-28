@@ -465,6 +465,11 @@ void BoneView::RecalculateOffsetMatrix()
     offsetMatrix_ = Matrix3x4(position_, rotation_, scale_).Inverse();
 }
 
+void BoneView::ResetBoundingVolume()
+{
+    shapeFlags_ = BONECOLLISION_NONE;
+}
+
 void BoneView::SetLocalBoundingBox(const BoundingBox& boundingBox)
 {
     shapeFlags_ = BONECOLLISION_BOX;
@@ -1448,6 +1453,13 @@ void ModelView::RecalculateBoneBoundingBoxes()
             }
         }
     }
+
+    for (BoneView& bone : bones_)
+    {
+        if (!bone.localBoundingBox_.Defined())
+            bone.ResetBoundingVolume();
+    }
+
 }
 
 void ModelView::SetMorph(unsigned index, const ModelMorphView& morph)
