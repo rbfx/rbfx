@@ -41,7 +41,7 @@
 
 HelloGUI::HelloGUI(Context* context) :
     Sample(context),
-    uiRoot_(GetRoot()),
+    uiRoot_(GetUIRoot()),
     dragBeginPosition_(IntVector2::ZERO)
 {
 }

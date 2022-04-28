@@ -63,7 +63,7 @@ void Typography::Start()
 
     // Set the loaded style as default style
     auto* ui = GetSubsystem<UI>();
-    UIElement* root = GetRoot();
+    UIElement* root = GetUIRoot();
     root->SetDefaultStyle(style);
 
     // Create a UIElement to hold all our content

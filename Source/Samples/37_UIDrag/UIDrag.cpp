@@ -63,7 +63,7 @@ void UIDrag::CreateGUI()
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
 
-    UIElement* root = GetRoot();
+    UIElement* root = GetUIRoot();
     // Load the style sheet from xml
     root->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
@@ -112,7 +112,7 @@ void UIDrag::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Drag on the buttons to move them around.\n"
                              "Touch input allows also multi-drag.\n"
                              "Press SPACE to show/hide tagged UI elements.");
@@ -122,7 +122,7 @@ void UIDrag::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void UIDrag::SubscribeToEvents()
@@ -186,7 +186,7 @@ void UIDrag::HandleDragCancel(StringHash eventType, VariantMap& eventData)
 void UIDrag::Update(float timeStep)
 {
     auto* ui = GetSubsystem<UI>();
-    UIElement* root = GetRoot();
+    UIElement* root = GetUIRoot();
 
     auto* input = GetSubsystem<Input>();
 

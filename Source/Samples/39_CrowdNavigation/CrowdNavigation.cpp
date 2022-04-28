@@ -206,7 +206,7 @@ void CrowdNavigation::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct new Text object, set string to display and font to use
-    instructionText_ = GetRoot()->CreateChild<Text>();
+    instructionText_ = GetUIRoot()->CreateChild<Text>();
     instructionText_->SetText(
         "Use WASD keys to move, RMB to rotate view\n"
         "LMB to set destination, SHIFT+LMB to spawn a Jack\n"
@@ -223,7 +223,7 @@ void CrowdNavigation::CreateUI()
     // Position the text relative to the screen center
     instructionText_->SetHorizontalAlignment(HA_CENTER);
     instructionText_->SetVerticalAlignment(VA_CENTER);
-    instructionText_->SetPosition(0, GetRoot()->GetHeight() / 4);
+    instructionText_->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void CrowdNavigation::SetupViewport()

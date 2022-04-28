@@ -20,25 +20,20 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/CheckBox.h>
 #include <Urho3D/UI/DropDownList.h>
-#include <Urho3D/UI/LineEdit.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/ToolTip.h>
-#include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/UIEvents.h>
 #include <Urho3D/UI/Window.h>
 
@@ -48,7 +43,7 @@
 
 WindowSettingsDemo::WindowSettingsDemo(Context* context)
     : Sample(context)
-    , uiRoot_(GetRoot())
+    , uiRoot_(GetUIRoot())
 {
 }
 

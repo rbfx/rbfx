@@ -49,7 +49,7 @@
 
 Hello3DUI::Hello3DUI(Context* context) :
     Sample(context),
-    uiRoot_(GetRoot()),
+    uiRoot_(GetUIRoot()),
     dragBeginPosition_(IntVector2::ZERO),
     animateCube_(true),
     renderOnCube_(false),

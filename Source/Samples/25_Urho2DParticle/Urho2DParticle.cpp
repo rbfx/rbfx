@@ -112,14 +112,14 @@ void Urho2DParticle::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use mouse/touch to move the particle.");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Urho2DParticle::SetupViewport()

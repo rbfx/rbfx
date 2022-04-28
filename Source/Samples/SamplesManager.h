@@ -88,7 +88,6 @@ private:
     void StartSample(StringHash sampleType);
 
     ///
-    //SharedPtr<Sample> runningSample_;
     SharedPtr<SampleSelectionScreen> sampleSelectionScreen_;
     ///
     SharedPtr<UIElement> listViewHolder_;

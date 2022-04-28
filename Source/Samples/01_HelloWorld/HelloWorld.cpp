@@ -73,7 +73,7 @@ void HelloWorld::CreateText()
     helloText->SetVerticalAlignment(VA_CENTER);
 
     // Add Text instance to the UI root element
-    GetRoot()->AddChild(helloText);
+    GetUIRoot()->AddChild(helloText);
 }
 
 void HelloWorld::SubscribeToEvents()

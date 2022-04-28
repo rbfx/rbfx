@@ -102,7 +102,7 @@ void Urho2DSpriterAnimation::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Mouse click to play next animation, \nUse WASD keys to move, use PageUp PageDown keys to zoom.");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     instructionText->SetTextAlignment(HA_CENTER); // Center rows in relation to each other
@@ -110,7 +110,7 @@ void Urho2DSpriterAnimation::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Urho2DSpriterAnimation::SetupViewport()

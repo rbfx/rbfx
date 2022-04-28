@@ -56,5 +56,5 @@ private:
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
     /// Handle the logic update event.
-    virtual void Update(float timestep) override;
+    void Update(float timestep) override;
 };

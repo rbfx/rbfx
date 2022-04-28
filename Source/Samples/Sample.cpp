@@ -118,7 +118,7 @@ void Sample::CreateLogo()
 
     // Create logo sprite and add to the UI layout
     UI* ui = GetSubsystem<UI>();
-    logoSprite_ = GetRoot()->CreateChild<Sprite>();
+    logoSprite_ = GetUIRoot()->CreateChild<Sprite>();
 
     // Set logo sprite texture
     logoSprite_->SetTexture(logoTexture);

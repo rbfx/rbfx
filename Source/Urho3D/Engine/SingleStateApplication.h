@@ -72,7 +72,7 @@ public:
 
     /// Return root UI element.
     /// @property
-    UIElement* GetRoot() const { return rootElement_; }
+    UIElement* GetUIRoot() const { return rootElement_; }
 
     /// Set number of backbuffer viewports to render.
     /// @property

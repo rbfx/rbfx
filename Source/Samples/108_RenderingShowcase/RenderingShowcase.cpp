@@ -75,7 +75,7 @@ void RenderingShowcase::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Press Tab to switch scene. Press Q to switch scene mode. \n"
         "Press F to toggle probe object. Use WASD keys and mouse to move.");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
@@ -84,7 +84,7 @@ void RenderingShowcase::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void RenderingShowcase::CreateScene()

@@ -157,9 +157,9 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
         ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
         ImGuizmo::SetDrawlist(ui::GetBackgroundDrawList());
     }
-    bool manipulated = ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
+    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
 
-    if (manipulated && IsActive())
+    if (IsActive())
     {
         if (!wasActive_)
         {
@@ -188,9 +188,7 @@ bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
                 // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
                 if (!nodeScaleStart_.contains(node))
                     nodeScaleStart_[node] = node->GetScale();
-                node->SetScale(currentOrigin.Scale());
-                //node->SetScale(nodeScaleStart_[node] * delta.Scale());
-                //URHO3D_LOGDEBUG("delta.Scale() = " + ea::to_string(delta.Scale().x_));
+                node->SetScale(nodeScaleStart_[node] * delta.Scale());
             }
             // Delta matrix is always in world-space.
             else if (operation_ == GIZMOOP_ROTATE)

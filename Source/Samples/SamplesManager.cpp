@@ -146,6 +146,20 @@
 
 // Expands to this example's entry-point
 URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::SamplesManager);
+//int RunApplication()
+//{
+//    Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());
+//    Urho3D::SharedPtr<Urho3D::SamplesManager> application(new Urho3D::SamplesManager(context));
+//    return application->Run();
+//}
+//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
+//{
+//    OpenConsoleWindow();
+//
+//    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+//    Urho3D::ParseArguments(GetCommandLineW());
+//    return RunApplication();
+//}
 
 namespace Urho3D
 {
@@ -185,9 +199,6 @@ SampleSelectionScreen::SampleSelectionScreen(Context* context)
 
 void SamplesManager::Start()
 {
-    Input* input = context_->GetSubsystem<Input>();
-    UI* ui = context_->GetSubsystem<UI>();
-
     // Parse command line arguments
     ea::transform(commandLineArgsTemp_.begin(), commandLineArgsTemp_.end(), ea::back_inserter(commandLineArgs_),
         [](const std::string& str) { return ea::string(str.c_str()); });
@@ -198,7 +209,7 @@ void SamplesManager::Start()
 
     inspectorNode_ = MakeShared<Scene>(context_);
 
-    sampleSelectionScreen_ = context_->CreateObject<SampleSelectionScreen>();
+    sampleSelectionScreen_ = new SampleSelectionScreen(context_);
     SetState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
@@ -219,10 +230,10 @@ void SamplesManager::Start()
     rmlUi->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
 #endif
 
-    sampleSelectionScreen_->GetRoot()->SetDefaultStyle(
+    sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(
         context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
-    auto* layout = sampleSelectionScreen_->GetRoot()->CreateChild<UIElement>();
+    auto* layout = sampleSelectionScreen_->GetUIRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
     layout->SetLayoutMode(LM_VERTICAL);
     layout->SetAlignment(HA_CENTER, VA_CENTER);
@@ -242,7 +253,7 @@ void SamplesManager::Start()
     if (!logoTexture)
         return;
 
-    logoSprite_ = sampleSelectionScreen_->GetRoot()->CreateChild<Sprite>();
+    logoSprite_ = sampleSelectionScreen_->GetUIRoot()->CreateChild<Sprite>();
     logoSprite_->SetTexture(logoTexture);
 
     int textureWidth = logoTexture->GetWidth();
@@ -384,12 +395,12 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    SharedPtr<Sample> screen;
-    screen.DynamicCast(context_->CreateObject(sampleType));
-    if (screen)
+    SharedPtr<Sample> sample;
+    sample.DynamicCast(context_->CreateObject(sampleType));
+    if (sample)
     {
-        SetState(screen);
-        screen->Start(GetArgs());
+        SetState(sample);
+        sample->Start(GetArgs());
     }
     else
         ErrorExit("Specified sample does not exist.");
@@ -627,7 +638,7 @@ void SamplesManager::RegisterSample()
     title->SetFont(context_->GetSubsystem<ResourceCache>()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
     title->SetStyleAuto();
 
-    sampleSelectionScreen_->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
+    sampleSelectionScreen_->GetUIRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
 }
 
 }
