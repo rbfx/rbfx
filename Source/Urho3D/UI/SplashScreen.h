@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,44 +22,43 @@
 
 #pragma once
 
-#include "Sample.h"
+#include "../Engine/SingleStateApplication.h"
+#include "Sprite.h"
 
 namespace Urho3D
 {
 
-class Node;
-class Scene;
-
-}
-
-/// Signed distance field text example.
-/// This sample demonstrates:
-///     - Creating a 3D scene with static content
-///     - Creating a 3D text use SDF Font
-///     - Displaying the scene using the Renderer subsystem
-///     - Handling keyboard and mouse input to move a freelook camera
-class SignedDistanceFieldText : public Sample
+/// Splash screen application state.
+class URHO3D_API SplashScreen : public ApplicationState
 {
-    URHO3D_OBJECT(SignedDistanceFieldText, Sample);
+    URHO3D_OBJECT(SplashScreen, ApplicationState)
 
 public:
     /// Construct.
-    explicit SignedDistanceFieldText(Context* context);
+    explicit SplashScreen(Context* context);
 
-    /// Setup after engine initialization and before running the main loop.
-    void Start() override;
+    /// Activate game screen. Executed by Application.
+    void Activate(SingleStateApplication* application) override;
+
+    /// Handle the logic update event.
+    void Update(float timeStep) override;
+
+    bool FetchSceneResourcesAsync(const ea::string& fileName);
+
+    void SetBackgroundImage(Texture* image);
+    void SetForegroundImage(Texture* image);
+    void SetProgressImage(Texture* image);
+    void SetNextState(ApplicationState* state);
 
 private:
-    /// Construct the scene content.
-    void CreateScene();
-    /// Construct an instruction text to the UI.
-    void CreateInstructions();
-    /// Set up a viewport for displaying the scene.
-    void SetupViewport();
-    /// Read input and moves the camera.
-    void MoveCamera(float timeStep);
-    /// Subscribe to application-wide logic update events.
-    void SubscribeToEvents();
-    /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    unsigned maxResourceCounter_ = 0;
+
+    SharedPtr<Scene> scene_;
+
+    SharedPtr<ApplicationState> nextState_;
+    SharedPtr<Sprite> background_;
+    SharedPtr<Sprite> foreground_;
+    SharedPtr<Sprite> progressBar_;
 };
+
+} // namespace Urho3D

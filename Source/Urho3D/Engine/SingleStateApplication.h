@@ -28,7 +28,7 @@
 
 namespace Urho3D
 {
-class Application;
+class SingleStateApplication;
 
 /// Base class for an application state. Tipical samples of a state would be loading screen, menu or a game screen.
 class URHO3D_API ApplicationState : public Object
@@ -41,10 +41,10 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Activate game screen. Executed by Application.
-    virtual void Activate();
+    /// Activate game state. Executed by SingleStateApplication.
+    virtual void Activate(SingleStateApplication* application);
 
-    /// Deactivate game screen. Executed by Application.
+    /// Deactivate game state. Executed by SingleStateApplication.
     virtual void Deactivate();
 
     /// Handle the logic update event.
@@ -86,6 +86,10 @@ public:
     /// Return nth backbuffer viewport associated to a scene. Index 0 returns the first.
     Viewport* GetViewportForScene(Scene* scene, unsigned index) const;
 
+    /// Return application activated the state instance.
+    /// @property{get_viewports}
+    SingleStateApplication* GetApplication() const { return application_; }
+
 private:
     /// Initialize mouse mode on non-web platform.
     void InitMouseMode();
@@ -100,9 +104,11 @@ private:
 private:
     /// Is the game screen active.
     bool active_{false};
+    /// Application activated the state instance.
+    SingleStateApplication* application_;
     /// UI root element.
     SharedPtr<UIElement> rootElement_{};
-    /// UI root element saved upon acivation to be restored at deactivation.
+    /// UI root element saved upon activation to be restored at deactivation.
     SharedPtr<UIElement> prevRootElement_{};
     /// Backbuffer viewports.
     ea::vector<SharedPtr<Viewport>> viewports_;

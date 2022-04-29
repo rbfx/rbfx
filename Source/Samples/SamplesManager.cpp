@@ -208,9 +208,14 @@ void SamplesManager::Start()
     context_->AddFactoryReflection<SampleSelectionScreen>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
-
-    sampleSelectionScreen_ = new SampleSelectionScreen(context_);
-    SetState(sampleSelectionScreen_);
+    splashScreen_ = MakeShared<SplashScreen>(context_);
+    sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
+    splashScreen_->SetNextState(sampleSelectionScreen_);
+    splashScreen_->FetchSceneResourcesAsync("Scenes/RenderingShowcase_0.xml");
+    splashScreen_->SetBackgroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/StoneDiffuse.dds"));
+    splashScreen_->SetForegroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/LogoLarge.png"));
+    splashScreen_->SetProgressImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/TerrainDetail2.dds"));
+    SetState(splashScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())

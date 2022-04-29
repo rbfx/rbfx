@@ -73,7 +73,7 @@ private:
     /// Subscribe to application-wide logic update and post-render update events.
     void SubscribeToEvents();
     /// Read input and moves the camera.
-    void HandleInput(float timeStep);
+    void MoveCamera(float timeStep);
     /// Animate the scene.
     void AnimateScene(float timeStep);
     /// Handle the logic update event.

@@ -70,6 +70,8 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
+    /// Move camera.
+    void MoveCamera(float timeStep);
     /// Handle the logic update event.
     void Update(float timeStep);
 };

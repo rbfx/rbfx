@@ -43,7 +43,7 @@ void ApplicationState::RegisterObject(Context* context)
 }
 
 /// Activate game screen. Executed by Application.
-void ApplicationState::Activate()
+void ApplicationState::Activate(SingleStateApplication* application)
 {
     if (active_)
     {
@@ -51,6 +51,7 @@ void ApplicationState::Activate()
     }
 
     active_ = true;
+    application_ = application;
 
     // Subscribe HandleUpdate() method for processing update events
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ApplicationState, HandleUpdate));
@@ -78,6 +79,7 @@ void ApplicationState::Activate()
         }
     }
 }
+/// Handle the logic update event.
 void ApplicationState::Update(float timeStep)
 {
 }
@@ -263,7 +265,7 @@ void SingleStateApplication::SetState(ApplicationState* gameScreen)
 
     if (gameScreen_)
     {
-        gameScreen_->Activate();
+        gameScreen_->Activate(this);
     }
 }
 

@@ -28,7 +28,6 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Technique.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>

@@ -23,7 +23,6 @@
 #pragma once
 
 #include "Sample.h"
-#include <Urho3D/Input/FreeFlyController.h>
 
 namespace Urho3D
 {

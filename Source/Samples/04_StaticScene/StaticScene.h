@@ -55,4 +55,6 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
+    /// Read input and moves the camera.
+    void Update(float timeStep) override;
 };

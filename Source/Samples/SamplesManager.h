@@ -22,6 +22,7 @@
 #pragma once
 
 #include <Urho3D/Engine/SingleStateApplication.h>
+#include <Urho3D/UI/SplashScreen.h>
 
 #include "Sample.h"
 
@@ -89,6 +90,8 @@ private:
 
     ///
     SharedPtr<SampleSelectionScreen> sampleSelectionScreen_;
+    ///
+    SharedPtr<SplashScreen> splashScreen_;
     ///
     SharedPtr<UIElement> listViewHolder_;
     /// Logo sprite.

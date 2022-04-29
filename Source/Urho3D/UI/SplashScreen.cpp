@@ -1,0 +1,165 @@
+//
+// Copyright (c) 2022-2022 the rbfx project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
+#pragma once
+
+#include "SplashScreen.h"
+
+#include "Sprite.h"
+#include "../Resource/ResourceCache.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/Scene/Scene.h"
+
+namespace Urho3D
+{
+
+namespace 
+{
+void UpdateSizeAndPosition(IntVector2 screenSize, Sprite* sprite, bool stretch)
+{
+    Texture* texture = sprite->GetTexture();
+    if (!texture)
+        return;
+    auto imageSize = texture->GetSize();
+    auto horisontalScale = screenSize.x_ / static_cast<float>(imageSize.x_);
+    auto verticalScale = screenSize.y_ / static_cast<float>(imageSize.y_);
+    float scale = 1.0f;
+    if (stretch)
+    {
+        scale = Max(horisontalScale, verticalScale);
+    }
+    else
+    {
+        scale = Min(Min(horisontalScale, verticalScale), 1.0f);
+    }
+    sprite->SetSize(static_cast<int>(scale * imageSize.x_), static_cast<int>(scale * imageSize.y_));
+    sprite->SetPosition((screenSize.x_ - sprite->GetWidth()) / 2.0f, (screenSize.y_ - sprite->GetHeight()) / 2.0f);
+}
+
+}
+
+SplashScreen::SplashScreen(Context* context)
+    : ApplicationState(context)
+{
+    SetMouseGrabbed(false);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
+
+    background_ = GetUIRoot()->CreateChild<Sprite>();
+    foreground_ = background_->CreateChild<Sprite>();
+    progressBar_ = foreground_->CreateChild<Sprite>();
+}
+
+void SplashScreen::Activate(SingleStateApplication* application)
+{
+    ApplicationState::Activate(application);
+
+    auto* cache = GetSubsystem<ResourceCache>();
+
+    maxResourceCounter_ = Max(cache->GetNumBackgroundLoadResources(), 1);
+}
+
+/// Handle the logic update event.
+void SplashScreen::Update(float timeStep)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+
+    unsigned resourceCounter = cache->GetNumBackgroundLoadResources();
+    if (resourceCounter > maxResourceCounter_)
+    {
+        maxResourceCounter_ = resourceCounter;
+    }
+    auto root = GetUIRoot();
+    auto screenSize = root->GetSize();
+
+    UpdateSizeAndPosition(screenSize, background_, true);
+    UpdateSizeAndPosition(screenSize, foreground_, false);
+    auto foregroundAbsPos = foreground_->GetPosition();
+    foreground_->SetPosition(foreground_->GetPosition() - background_->GetPosition());
+
+    auto processRate = static_cast<float>(maxResourceCounter_ - resourceCounter) / maxResourceCounter_;
+    IntVector2 progressBarAreaSize = IntVector2(screenSize.x_, screenSize.y_ / 10);
+    Texture* barTexture = progressBar_->GetTexture();
+    if (barTexture)
+    {
+        UpdateSizeAndPosition(progressBarAreaSize, progressBar_, false);
+        progressBarAreaSize = progressBar_->GetSize();
+        progressBar_->SetImageRect(IntRect(0, 0, barTexture->GetWidth() * processRate, barTexture->GetHeight()));
+    }
+    progressBar_->SetPosition(
+        Vector2((screenSize.x_ - progressBarAreaSize.x_)*0.5, screenSize.y_ - progressBarAreaSize.y_) - foregroundAbsPos);
+    progressBar_->SetSize(progressBarAreaSize.x_ * processRate, progressBarAreaSize.y_);
+
+    if (resourceCounter == 0)
+    {
+        GetApplication()->SetState(nextState_);
+    }
+};
+
+void UpdateBackgroundSizeAndPosition(IntVector2 screenSize)
+{
+    
+}
+void UpdateForegroundSizeAndPosition(IntVector2 screenSize);
+void UpdateProgressSizeAndPosition(IntVector2 screenSize);
+
+
+void SplashScreen::SetNextState(ApplicationState* state)
+{
+    nextState_ = state;
+}
+
+void SplashScreen::SetBackgroundImage(Texture* image)
+{
+    background_->SetTexture(image);
+}
+
+void SplashScreen::SetForegroundImage(Texture* image)
+{
+    foreground_->SetTexture(image);
+}
+
+void SplashScreen::SetProgressImage(Texture* image)
+{
+    progressBar_->SetTexture(image);
+}
+
+bool SplashScreen::FetchSceneResourcesAsync(const ea::string& fileName)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+
+    scene_ = MakeShared<Scene>(context_);
+    SharedPtr<File> file = cache->GetFile(fileName);
+    if (file)
+    {
+        ea::string extension = GetExtension(fileName);
+        if (extension == ".xml")
+            return scene_->LoadAsyncXML(file, LOAD_RESOURCES_ONLY);
+        else if (extension == ".json")
+            return scene_->LoadAsyncJSON(file, LOAD_RESOURCES_ONLY);
+        else
+            return scene_->LoadAsync(file, LOAD_RESOURCES_ONLY);
+    }
+    return false;
+}
+
+} // namespace Urho3D
