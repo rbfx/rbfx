@@ -40,6 +40,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
+#include "../Input/FreeFlyController.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
@@ -88,7 +89,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include <Urho3D/Core/CommandLine.h>
+#include "../Core/CommandLine.h"
 
 #include "../DebugNew.h"
 
@@ -225,6 +226,8 @@ bool Engine::Initialize(const VariantMap& parameters)
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
+    context_->RegisterFactory<FreeFlyController>();
+
     context_->RegisterSubsystem(new Audio(context_));
     if (!headless_)
     {

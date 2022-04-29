@@ -82,8 +82,6 @@ private:
     void SetupViewport();
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
-    /// Read input and move the camera.
-    void MoveCamera(float timeStep);
     /// Animate the scene.
     void AnimateObjects(float timeStep);
     /// Handle the logic update event.
