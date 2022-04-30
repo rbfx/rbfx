@@ -50,6 +50,11 @@ public:
     void SetProgressImage(Texture* image);
     void SetNextState(ApplicationState* state);
 
+    Texture* GetBackgroundImage() const;
+    Texture* GetForegroundImage() const;
+    Texture* GetProgressImage() const;
+    ApplicationState* GetNextState() const;
+
 private:
     unsigned maxResourceCounter_ = 0;
 

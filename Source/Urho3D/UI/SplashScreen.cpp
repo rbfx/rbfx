@@ -52,7 +52,9 @@ void UpdateSizeAndPosition(IntVector2 screenSize, Sprite* sprite, bool stretch)
         scale = Min(Min(horisontalScale, verticalScale), 1.0f);
     }
     sprite->SetSize(static_cast<int>(scale * imageSize.x_), static_cast<int>(scale * imageSize.y_));
-    sprite->SetPosition((screenSize.x_ - sprite->GetWidth()) / 2.0f, (screenSize.y_ - sprite->GetHeight()) / 2.0f);
+    Vector2 pos = Vector2((screenSize.x_ - sprite->GetWidth()) / 2.0f, (screenSize.y_ - sprite->GetHeight()) / 2.0f);
+    UIElement* parent = sprite->GetParent();
+    sprite->SetPosition(pos - Vector2(parent->GetScreenPosition()));
 }
 
 }
@@ -88,17 +90,15 @@ void SplashScreen::Update(float timeStep)
     {
         maxResourceCounter_ = resourceCounter;
     }
-    auto root = GetUIRoot();
-    auto screenSize = root->GetSize();
+    const UIElement* root = GetUIRoot();
+    const IntVector2 screenSize = root->GetSize();
 
     UpdateSizeAndPosition(screenSize, background_, true);
     UpdateSizeAndPosition(screenSize, foreground_, false);
-    auto foregroundAbsPos = foreground_->GetPosition();
-    foreground_->SetPosition(foreground_->GetPosition() - background_->GetPosition());
 
-    auto processRate = static_cast<float>(maxResourceCounter_ - resourceCounter) / maxResourceCounter_;
+    const float processRate = static_cast<float>(maxResourceCounter_ - resourceCounter) / maxResourceCounter_;
     IntVector2 progressBarAreaSize = IntVector2(screenSize.x_, screenSize.y_ / 10);
-    Texture* barTexture = progressBar_->GetTexture();
+    const Texture* barTexture = progressBar_->GetTexture();
     if (barTexture)
     {
         UpdateSizeAndPosition(progressBarAreaSize, progressBar_, false);
@@ -106,7 +106,8 @@ void SplashScreen::Update(float timeStep)
         progressBar_->SetImageRect(IntRect(0, 0, barTexture->GetWidth() * processRate, barTexture->GetHeight()));
     }
     progressBar_->SetPosition(
-        Vector2((screenSize.x_ - progressBarAreaSize.x_)*0.5, screenSize.y_ - progressBarAreaSize.y_) - foregroundAbsPos);
+        Vector2((screenSize.x_ - progressBarAreaSize.x_) * 0.5, screenSize.y_ - progressBarAreaSize.y_)
+        - Vector2(foreground_->GetScreenPosition()));
     progressBar_->SetSize(progressBarAreaSize.x_ * processRate, progressBarAreaSize.y_);
 
     if (resourceCounter == 0)
@@ -114,14 +115,6 @@ void SplashScreen::Update(float timeStep)
         GetApplication()->SetState(nextState_);
     }
 };
-
-void UpdateBackgroundSizeAndPosition(IntVector2 screenSize)
-{
-    
-}
-void UpdateForegroundSizeAndPosition(IntVector2 screenSize);
-void UpdateProgressSizeAndPosition(IntVector2 screenSize);
-
 
 void SplashScreen::SetNextState(ApplicationState* state)
 {
@@ -141,6 +134,26 @@ void SplashScreen::SetForegroundImage(Texture* image)
 void SplashScreen::SetProgressImage(Texture* image)
 {
     progressBar_->SetTexture(image);
+}
+
+Texture* SplashScreen::GetBackgroundImage() const
+{
+    return background_->GetTexture();
+}
+
+Texture* SplashScreen::GetForegroundImage() const
+{
+    return foreground_->GetTexture();
+}
+
+Texture* SplashScreen::GetProgressImage() const
+{
+    return progressBar_->GetTexture();
+}
+
+ApplicationState* SplashScreen::GetNextState() const
+{
+    return nextState_;
 }
 
 bool SplashScreen::FetchSceneResourcesAsync(const ea::string& fileName)
