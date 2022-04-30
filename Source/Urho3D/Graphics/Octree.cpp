@@ -546,6 +546,13 @@ void Octree::Update(const FrameInfo& frame)
         threadedDrawableUpdates_.clear();
     }
 
+    // Commit delayed Node transforms
+    if (!drawableUpdates_.empty())
+    {
+        for (const auto& [node, transform] : pendingNodeTransforms_)
+            node->SetTransform(transform.position_, transform.rotation_, transform.scale_);
+    }
+
     // Notify drawable update being finished. Custom animation (eg. IK) can be done at this point
     Scene* scene = GetScene();
     if (scene)
@@ -563,9 +570,6 @@ void Octree::Update(const FrameInfo& frame)
     if (!drawableUpdates_.empty())
     {
         URHO3D_PROFILE("ReinsertToOctree");
-
-        for (const auto& [node, transform] : pendingNodeTransforms_)
-            node->SetTransform(transform.position_, transform.rotation_, transform.scale_);
 
         for (auto i = drawableUpdates_.begin(); i != drawableUpdates_.end(); ++i)
         {

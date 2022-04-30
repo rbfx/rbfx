@@ -185,9 +185,11 @@ void PreviewTab::OnEndRenderingSystemUI(StringHash type, VariantMap& args)
 
 bool PreviewTab::RenderWindowContent()
 {
-    if (GetSubsystem<SceneManager>()->GetActiveScene() == nullptr || texture_.Null())
+    Scene* scene = GetSubsystem<SceneManager>()->GetActiveScene();
+    if (scene == nullptr || texture_.Null())
         return true;
 
+    ImGuiIO& io = ui::GetIO();
     ImGuiWindow* window = ui::GetCurrentWindow();
     ImGuiViewport* viewport = window->Viewport;
 
@@ -225,6 +227,23 @@ bool PreviewTab::RenderWindowContent()
     {
         viewportRect_.min_ -= static_cast<Vector2>(viewport->Pos);
         viewportRect_.max_ -= static_cast<Vector2>(viewport->Pos);
+    }
+
+    const Vector2 viewportSizeMinusOne = viewportRect_.Size() - Vector2::ONE;
+    for (Component* const component : scene->GetComponentIndex<CameraViewport>())
+    {
+        auto* const cameraViewport = static_cast<CameraViewport* const>(component);
+        if (Camera* camera = cameraViewport->GetViewport()->GetCamera())
+        {
+            if (io.MousePos == ImVec2{-FLT_MAX, -FLT_MAX})
+                camera->SetMousePosition(Vector2{-M_LARGE_VALUE, -M_LARGE_VALUE});
+            else
+            {
+                const float x = (io.MousePos.x - viewportRect_.min_.x_) / viewportSizeMinusOne.x_;
+                const float y = (io.MousePos.y - viewportRect_.min_.y_) / viewportSizeMinusOne.y_;
+                camera->SetMousePosition(Vector2{x, y});
+            }
+        }
     }
 
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)

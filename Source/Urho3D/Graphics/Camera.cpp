@@ -409,6 +409,14 @@ Ray Camera::GetScreenRay(float x, float y) const
     return ret;
 }
 
+Ray Camera::GetScreenRayFromMouse() const
+{
+    if (!HasMousePosition())
+        return Ray{};
+
+    return GetScreenRay(mousePosition_.x_, mousePosition_.y_);
+}
+
 Vector2 Camera::WorldToScreenPoint(const Vector3& worldPos) const
 {
     Vector3 eyeSpacePos = GetView() * worldPos;
