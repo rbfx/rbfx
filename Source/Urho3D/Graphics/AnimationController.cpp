@@ -172,6 +172,12 @@ AnimationParameters& AnimationParameters::KeepOnCompletion()
     return *this;
 }
 
+AnimationParameters& AnimationParameters::KeepOnZeroWeight()
+{
+    removeOnZeroWeight_ = false;
+    return *this;
+}
+
 AnimationParameters AnimationParameters::FromVariantSpan(Context* context, ea::span<const Variant> variants)
 {
     AnimationParameters result;

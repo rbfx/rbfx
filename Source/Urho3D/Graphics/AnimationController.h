@@ -60,6 +60,7 @@ struct URHO3D_API AnimationParameters
     AnimationParameters& Speed(float speed);
     AnimationParameters& AutoFadeOut(float fadeOut);
     AnimationParameters& KeepOnCompletion();
+    AnimationParameters& KeepOnZeroWeight();
     /// @}
 
     /// Animation to be played.
