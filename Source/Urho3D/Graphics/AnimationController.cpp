@@ -172,6 +172,12 @@ AnimationParameters& AnimationParameters::KeepOnCompletion()
     return *this;
 }
 
+AnimationParameters& AnimationParameters::KeepOnZeroWeight()
+{
+    removeOnZeroWeight_ = false;
+    return *this;
+}
+
 AnimationParameters AnimationParameters::FromVariantSpan(Context* context, ea::span<const Variant> variants)
 {
     AnimationParameters result;
@@ -1158,24 +1164,16 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
     if (!startNode)
         startNode = node_;
 
-    Node* startBone = startNode == node_ && model ? model->GetSkeleton().GetRootBone()->node_ : startNode;
-    if (!startBone)
-    {
-        URHO3D_LOGWARNING("AnimatedModel skeleton is not initialized");
-        return;
-    }
-
     // Setup model and node tracks
     const auto& tracks = animation->GetTracks();
     for (const auto& item : tracks)
     {
         const AnimationTrack& track = item.second;
-        Node* trackNode = GetTrackNodeByNameHash(track.nameHash_, startBone);
-        const unsigned trackBoneIndex = trackNode && model ? model->GetSkeleton().GetBoneIndex(track.nameHash_) : M_MAX_UNSIGNED;
-        Bone* trackBone = trackBoneIndex != M_MAX_UNSIGNED ? model->GetSkeleton().GetBone(trackBoneIndex) : nullptr;
 
-        // Add model track
-        if (trackBone && trackBone->node_)
+        // Try to find bone first, filter by start bone node
+        const unsigned trackBoneIndex = model ? model->GetSkeleton().GetBoneIndex(track.nameHash_) : M_MAX_UNSIGNED;
+        Bone* trackBone = trackBoneIndex != M_MAX_UNSIGNED ? model->GetSkeleton().GetBone(trackBoneIndex) : nullptr;
+        if (trackBone && trackBone->node_ && (startNode == node_ || trackBone->node_->IsChildOf(startNode)))
         {
             ModelAnimationStateTrack stateTrack;
             stateTrack.track_ = &track;
@@ -1183,8 +1181,12 @@ void AnimationController::UpdateAnimationStateTracks(AnimationState* state)
             stateTrack.node_ = trackBone->node_;
             stateTrack.bone_ = trackBone;
             state->AddModelTrack(stateTrack);
+            continue;
         }
-        else if (trackNode)
+
+        // Find stray node otherwise
+        Node* trackNode = GetTrackNodeByNameHash(track.nameHash_, startNode);
+        if (trackNode)
         {
             NodeAnimationStateTrack stateTrack;
             stateTrack.track_ = &track;

@@ -169,7 +169,9 @@ public:
 
     /// Return cursor position.
     /// @property
-    IntVector2 GetCursorPosition() const;
+    IntVector2 GetUICursorPosition() const;
+    IntVector2 GetSystemCursorPosition() const;
+    /// Return mouse position.
     /// Return UI element at global screen coordinates. By default returns only input-enabled elements.
     UIElement* GetElementAt(const IntVector2& position, bool enabledOnly = true);
     /// Return UI element at global screen coordinates. By default returns only input-enabled elements.

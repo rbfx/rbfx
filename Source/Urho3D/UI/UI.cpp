@@ -698,12 +698,20 @@ void UI::SetCustomSize(int width, int height)
     ResizeRootElement();
 }
 
-IntVector2 UI::GetCursorPosition() const
+IntVector2 UI::GetUICursorPosition() const
 {
     if (cursor_)
         return cursor_->GetPosition();
 
     return ConvertSystemToUI(GetSubsystem<Input>()->GetMousePosition());
+}
+
+IntVector2 UI::GetSystemCursorPosition() const
+{
+    if (cursor_)
+        return ConvertUIToSystem(cursor_->GetPosition());
+
+    return GetSubsystem<Input>()->GetMousePosition();
 }
 
 UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly)

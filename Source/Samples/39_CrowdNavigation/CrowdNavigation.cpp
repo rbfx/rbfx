@@ -379,16 +379,15 @@ bool CrowdNavigation::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hit
     hitDrawable = nullptr;
 
     auto* ui = GetSubsystem<UI>();
-    IntVector2 pos = ui->GetCursorPosition();
+    IntVector2 pos = ui->GetUICursorPosition();
     // Check the cursor is visible and there is no UI element in front of the cursor
     if (!ui->GetCursor()->IsVisible() || ui->GetElementAt(pos, true))
         return false;
 
     pos = ui->ConvertUIToSystem(pos);
 
-    auto* graphics = GetSubsystem<Graphics>();
     auto* camera = cameraNode_->GetComponent<Camera>();
-    Ray cameraRay = camera->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
+    Ray cameraRay = camera->GetScreenRayFromMouse();
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
     ea::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
