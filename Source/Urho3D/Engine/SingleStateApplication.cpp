@@ -1,3 +1,4 @@
+
 //
 // Copyright (c) 2022-2022 the rbfx project.
 //
@@ -248,10 +249,34 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
     Update(timeStep);
 }
 
-    /// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
+/// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
 /// state.
+
 SingleStateApplication::SingleStateApplication(Context* context) : Application(context)
 {
+}
+
+/// Setup before engine initialization. This is a chance to eg. modify the engine parameters. Call ErrorExit() to
+/// terminate without initializing the engine. Called by Application.
+void SingleStateApplication::Setup()
+{
+    // SWIG bug workaround.
+    Application::Setup();
+}
+
+/// Setup after engine initialization and before running the main loop. Call ErrorExit() to terminate without
+/// running the main loop. Called by Application.
+void SingleStateApplication::Start()
+{
+    // SWIG bug workaround.
+    Application::Start();
+}
+
+/// Cleanup after the main loop. Called by Application.
+void SingleStateApplication::Stop()
+{
+    // SWIG bug workaround.
+    Application::Stop();
 }
 
 void SingleStateApplication::SetState(ApplicationState* gameScreen)

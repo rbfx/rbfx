@@ -128,6 +128,17 @@ public:
     /// state.
     explicit SingleStateApplication(Context* context);
 
+    /// Setup before engine initialization. This is a chance to eg. modify the engine parameters. Call ErrorExit() to
+    /// terminate without initializing the engine. Called by Application.
+    void Setup() override;
+
+    /// Setup after engine initialization and before running the main loop. Call ErrorExit() to terminate without
+    /// running the main loop. Called by Application.
+    void Start() override;
+
+    /// Cleanup after the main loop. Called by Application.
+    void Stop() override;
+
     /// Set current game screen.
     void SetState(ApplicationState* gameScreen);
 
