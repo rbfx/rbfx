@@ -25,6 +25,7 @@
 #include "../Core/CoreEvents.h"
 #include "../UI/UI.h"
 #include "../Input/Input.h"
+#include "../Input/InputEvents.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Camera.h"
 #include "../Scene/Node.h"

@@ -26,19 +26,6 @@
 namespace Urho3D
 {
 
-/// Multitouch event.
-URHO3D_EVENT(E_MULTITOUCH, Multitouch)
-{
-    URHO3D_PARAM(P_NUMFINGERS, NumFingers); // int
-    URHO3D_PARAM(P_EVENTTYPE, EventType);   // int
-    URHO3D_PARAM(P_X, X);                   // int
-    URHO3D_PARAM(P_Y, Y);                   // int
-    URHO3D_PARAM(P_DX, DX);                 // int
-    URHO3D_PARAM(P_DY, DY);                 // int
-    URHO3D_PARAM(P_SIZE, Size);             // IntVector2
-    URHO3D_PARAM(P_DSIZE, DSize);           // IntVector2
-}
-
 enum MultitouchEventType
 {
     MULTITOUCH_BEGIN,

@@ -22,6 +22,7 @@
 
 #include "MultitouchAdapter.h"
 #include "../Input/Input.h"
+#include "../Input/InputEvents.h"
 
 namespace Urho3D
 {
