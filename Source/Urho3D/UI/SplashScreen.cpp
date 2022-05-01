@@ -26,8 +26,10 @@
 
 #include "Sprite.h"
 #include "../Resource/ResourceCache.h"
-#include "Urho3D/IO/FileSystem.h"
-#include "Urho3D/Scene/Scene.h"
+#include "../Audio/SoundSource.h"
+#include "../IO/FileSystem.h"
+#include "../Scene/Scene.h"
+#include "Urho3D/Graphics/Renderer.h"
 
 namespace Urho3D
 {
@@ -69,15 +71,97 @@ SplashScreen::SplashScreen(Context* context)
     background_ = GetUIRoot()->CreateChild<Sprite>();
     foreground_ = background_->CreateChild<Sprite>();
     progressBar_ = foreground_->CreateChild<Sprite>();
+    scene_ = MakeShared<Scene>(context);
 }
 
 void SplashScreen::Activate(SingleStateApplication* application)
 {
     ApplicationState::Activate(application);
 
+    state_ = SplashScreenState::FadeIn;
+    timeLeft_ = fadeInDuration_;
+    stateDuration_ = fadeInDuration_;
+
     auto* cache = GetSubsystem<ResourceCache>();
 
     maxResourceCounter_ = Max(cache->GetNumBackgroundLoadResources(), 1);
+
+    soundSource_ = scene_->CreateComponent<SoundSource>();
+    SetViewport(0, MakeShared<Viewport>(context_, scene_, nullptr, nullptr));
+    if (sound_)
+        soundSource_->Play(sound_);
+
+    Update(0);
+}
+
+void SplashScreen::UpdateLayout(float ratio)
+{
+    const UIElement* root = GetUIRoot();
+    const IntVector2 screenSize = root->GetSize();
+
+    if (ratio >= 1.0f)
+        ratio = 0.0f;
+
+    UpdateSizeAndPosition(screenSize, background_, true);
+    UpdateSizeAndPosition(screenSize, foreground_, false);
+    
+    IntVector2 progressBarAreaSize = IntVector2(screenSize.x_, screenSize.y_ / 10);
+    const Texture* barTexture = progressBar_->GetTexture();
+    if (barTexture)
+    {
+        UpdateSizeAndPosition(progressBarAreaSize, progressBar_, false);
+        progressBarAreaSize = progressBar_->GetSize();
+        progressBar_->SetImageRect(IntRect(0, 0, barTexture->GetWidth() * ratio, barTexture->GetHeight()));
+    }
+    progressBar_->SetPosition(
+        Vector2((screenSize.x_ - progressBarAreaSize.x_) * 0.5, screenSize.y_ - progressBarAreaSize.y_)
+        - Vector2(foreground_->GetScreenPosition()));
+    progressBar_->SetSize(progressBarAreaSize.x_ * ratio, progressBarAreaSize.y_);
+}
+
+void SplashScreen::UpdateState(float timeStep, unsigned resourceCounter)
+{
+    timeLeft_ -= timeStep;
+    switch (state_)
+    {
+    case SplashScreenState::FadeIn:
+        if (timeLeft_ <= 0)
+        {
+            timeLeft_ += duration_;
+            state_ = SplashScreenState::Sustain;
+            foreground_->SetColor(Color::WHITE);
+            background_->SetColor(Color::WHITE);
+            UpdateState(0.0f, resourceCounter);
+            return;
+        }
+        foreground_->SetColor(Lerp(Color::WHITE, Color::BLACK, timeLeft_ / stateDuration_));
+        background_->SetColor(Lerp(Color::WHITE, Color::BLACK, timeLeft_ / stateDuration_));
+        return;
+    case SplashScreenState::FadeOut:
+        if (timeLeft_ <= 0)
+        {
+            state_ = SplashScreenState::Complete;
+            GetApplication()->SetState(nextState_);
+            return;
+        }
+        foreground_->SetColor(Lerp(Color::BLACK, Color::WHITE, timeLeft_ / stateDuration_));
+        background_->SetColor(Lerp(Color::BLACK, Color::WHITE, timeLeft_ / stateDuration_));
+        return;
+    case SplashScreenState::Sustain:
+        if (timeLeft_ <= 0)
+        {
+            if (resourceCounter == 0 && !soundSource_->IsPlaying())
+            {
+                state_ = SplashScreenState::FadeOut;
+                timeLeft_ += fadeOutDuration_;
+                UpdateState(0.0f, resourceCounter);
+                return;
+            }
+            timeLeft_ = 0.0f;
+            return;
+        }
+        return;
+    }
 }
 
 /// Handle the logic update event.
@@ -85,40 +169,41 @@ void SplashScreen::Update(float timeStep)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
-    unsigned resourceCounter = cache->GetNumBackgroundLoadResources();
+    const unsigned resourceCounter = cache->GetNumBackgroundLoadResources();
     if (resourceCounter > maxResourceCounter_)
     {
         maxResourceCounter_ = resourceCounter;
     }
-    const UIElement* root = GetUIRoot();
-    const IntVector2 screenSize = root->GetSize();
-
-    UpdateSizeAndPosition(screenSize, background_, true);
-    UpdateSizeAndPosition(screenSize, foreground_, false);
-
-    const float processRate = static_cast<float>(maxResourceCounter_ - resourceCounter) / maxResourceCounter_;
-    IntVector2 progressBarAreaSize = IntVector2(screenSize.x_, screenSize.y_ / 10);
-    const Texture* barTexture = progressBar_->GetTexture();
-    if (barTexture)
-    {
-        UpdateSizeAndPosition(progressBarAreaSize, progressBar_, false);
-        progressBarAreaSize = progressBar_->GetSize();
-        progressBar_->SetImageRect(IntRect(0, 0, barTexture->GetWidth() * processRate, barTexture->GetHeight()));
-    }
-    progressBar_->SetPosition(
-        Vector2((screenSize.x_ - progressBarAreaSize.x_) * 0.5, screenSize.y_ - progressBarAreaSize.y_)
-        - Vector2(foreground_->GetScreenPosition()));
-    progressBar_->SetSize(progressBarAreaSize.x_ * processRate, progressBarAreaSize.y_);
-
-    if (resourceCounter == 0)
-    {
-        GetApplication()->SetState(nextState_);
-    }
+    UpdateLayout(static_cast<float>(maxResourceCounter_ - resourceCounter) / maxResourceCounter_);
+    UpdateState(timeStep, resourceCounter);
 };
 
 void SplashScreen::SetNextState(ApplicationState* state)
 {
     nextState_ = state;
+}
+
+void SplashScreen::SetFadeInDuration(float durationInSeconds)
+{
+    fadeInDuration_ = durationInSeconds;
+}
+
+void SplashScreen::SetFadeOutDuration(float durationInSeconds)
+{
+    fadeOutDuration_ = durationInSeconds;
+}
+
+void SplashScreen::SetDuration(float durationInSeconds)
+{
+    duration_ = durationInSeconds;
+}
+
+void SplashScreen::SetSound(Sound* sound, float gain)
+{
+    sound_ = sound;
+    soundSource_->SetGain(gain);
+    if (IsActive())
+        soundSource_->Play(sound_);
 }
 
 void SplashScreen::SetBackgroundImage(Texture* image)
@@ -134,6 +219,11 @@ void SplashScreen::SetForegroundImage(Texture* image)
 void SplashScreen::SetProgressImage(Texture* image)
 {
     progressBar_->SetTexture(image);
+}
+
+void SplashScreen::SetProgressColor(const Color& color)
+{
+    progressBar_->SetColor(color);
 }
 
 Texture* SplashScreen::GetBackgroundImage() const

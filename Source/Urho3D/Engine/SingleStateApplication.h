@@ -38,6 +38,8 @@ class URHO3D_API ApplicationState : public Object
 public:
     /// Construct.
     explicit ApplicationState(Context* context);
+    /// Destruct.
+    virtual ~ApplicationState() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
@@ -51,7 +53,7 @@ public:
     virtual void Update(float timeStep);
 
     /// Get activation flag. Returns true if game screen is active.
-    bool GetIsActive() const { return active_; }
+    bool IsActive() const { return active_; }
 
     /// Set whether the operating system mouse cursor is visible.
     void SetMouseVisible(bool enable);
@@ -80,11 +82,16 @@ public:
     /// Set a backbuffer viewport.
     /// @property{set_viewports}
     void SetViewport(unsigned index, Viewport* viewport);
+    /// Set default zone fog color.
+    void SetDefaultFogColor(const Color& color);
+
     /// Return backbuffer viewport by index.
     /// @property{get_viewports}
     Viewport* GetViewport(unsigned index) const;
     /// Return nth backbuffer viewport associated to a scene. Index 0 returns the first.
     Viewport* GetViewportForScene(Scene* scene, unsigned index) const;
+    /// Get default zone fog color.
+    const Color& GetDefaultFogColor() const { return fogColor_; }
 
     /// Return application activated the state instance.
     /// @property{get_viewports}
@@ -109,7 +116,7 @@ private:
     /// UI root element.
     SharedPtr<UIElement> rootElement_{};
     /// UI root element saved upon activation to be restored at deactivation.
-    SharedPtr<UIElement> prevRootElement_{};
+    SharedPtr<UIElement> savedRootElement_{};
     /// Backbuffer viewports.
     ea::vector<SharedPtr<Viewport>> viewports_;
     /// Operating system mouse cursor visible flag.
@@ -119,6 +126,10 @@ private:
     bool mouseGrabbed_{false};
     /// Determines the mode of mouse behaviour.
     MouseMode mouseMode_{MM_FREE};
+    /// Fog color.
+    Color fogColor_{0.0f, 0.0f, 0.0f};
+    /// Saved fog color to be restored at deactivation.
+    Color savedFogColor_{};
 };
 
 class URHO3D_API SingleStateApplication: public Application
@@ -128,16 +139,7 @@ public:
     /// state.
     explicit SingleStateApplication(Context* context);
 
-    /// Setup before engine initialization. This is a chance to eg. modify the engine parameters. Call ErrorExit() to
-    /// terminate without initializing the engine. Called by Application.
-    void Setup() override;
-
-    /// Setup after engine initialization and before running the main loop. Call ErrorExit() to terminate without
-    /// running the main loop. Called by Application.
-    void Start() override;
-
-    /// Cleanup after the main loop. Called by Application.
-    void Stop() override;
+    virtual ~SingleStateApplication() override;
 
     /// Set current game screen.
     void SetState(ApplicationState* gameScreen);

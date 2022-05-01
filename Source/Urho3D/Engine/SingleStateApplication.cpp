@@ -25,6 +25,7 @@
 #include "../Graphics/Renderer.h"
 #include "../UI/UI.h"
 #include "../Core/CoreEvents.h"
+#include "../Graphics/Zone.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/Console.h"
 #endif
@@ -37,6 +38,8 @@ ApplicationState::ApplicationState(Context* context)
     , rootElement_(context->CreateObject<UIElement>())
 {
 }
+
+ApplicationState::~ApplicationState() = default;
 
 void ApplicationState::RegisterObject(Context* context)
 {
@@ -65,17 +68,23 @@ void ApplicationState::Activate(SingleStateApplication* application)
     }
     {
         auto* ui = GetSubsystem<UI>();
-        prevRootElement_ = ui->GetRoot();
+        savedRootElement_ = ui->GetRoot();
         ui->SetRoot(rootElement_);
     }
     {
         auto* renderer = GetSubsystem<Renderer>();
-        if (renderer && !viewports_.empty())
+        if (renderer)
         {
-            renderer->SetNumViewports(viewports_.size());
-            for (unsigned i = 0; i < viewports_.size();++i)
+            savedFogColor_ = renderer->GetDefaultZone()->GetFogColor();
+            renderer->GetDefaultZone()->SetFogColor(fogColor_);
+
+            if (!viewports_.empty())
             {
-                renderer->SetViewport(i, viewports_[i]);
+                renderer->SetNumViewports(viewports_.size());
+                for (unsigned i = 0; i < viewports_.size(); ++i)
+                {
+                    renderer->SetViewport(i, viewports_[i]);
+                }
             }
         }
     }
@@ -99,13 +108,19 @@ void ApplicationState::Deactivate()
 
     {
         auto* ui = GetSubsystem<UI>();
-        ui->SetRoot(prevRootElement_);
+        ui->SetRoot(savedRootElement_);
     }
     {
         auto* renderer = GetSubsystem<Renderer>();
-        if (renderer && !viewports_.empty())
+        if (renderer)
         {
-            renderer->SetNumViewports(0);
+            fogColor_ = renderer->GetDefaultZone()->GetFogColor();
+            renderer->GetDefaultZone()->SetFogColor(savedFogColor_);
+
+            if (!viewports_.empty())
+            {
+                renderer->SetNumViewports(0);
+            }
         }
     }
 }
@@ -113,7 +128,7 @@ void ApplicationState::Deactivate()
 /// Set whether the operating system mouse cursor is visible.
 void ApplicationState::SetMouseVisible(bool enable) {
     mouseVisible_ = enable;
-    if (GetIsActive())
+    if (IsActive())
     {
         auto* input = GetSubsystem<Input>();
         input->SetMouseVisible(enable);
@@ -123,7 +138,7 @@ void ApplicationState::SetMouseVisible(bool enable) {
 /// Set whether the mouse is currently being grabbed by an operation.
 void ApplicationState::SetMouseGrabbed(bool grab) {
     mouseGrabbed_ = grab;
-    if (GetIsActive())
+    if (IsActive())
     {
         auto* input = GetSubsystem<Input>();
         input->SetMouseGrabbed(mouseGrabbed_);
@@ -133,7 +148,7 @@ void ApplicationState::SetMouseGrabbed(bool grab) {
 /// Set the mouse mode.
 void ApplicationState::SetMouseMode(MouseMode mode) {
     mouseMode_ = mode;
-    if (GetIsActive())
+    if (IsActive())
     {
         InitMouseMode();
     }
@@ -164,6 +179,19 @@ void ApplicationState::SetViewport(unsigned index, Viewport* viewport)
         if (renderer)
         {
             renderer->SetViewport(index, viewport);
+        }
+    }
+}
+
+void ApplicationState::SetDefaultFogColor(const Color& color)
+{
+    fogColor_ = color;
+    if (active_)
+    {
+        const auto* renderer = GetSubsystem<Renderer>();
+        if (renderer)
+        {
+            renderer->GetDefaultZone()->SetFogColor(color);
         }
     }
 }
@@ -256,28 +284,7 @@ SingleStateApplication::SingleStateApplication(Context* context) : Application(c
 {
 }
 
-/// Setup before engine initialization. This is a chance to eg. modify the engine parameters. Call ErrorExit() to
-/// terminate without initializing the engine. Called by Application.
-void SingleStateApplication::Setup()
-{
-    // SWIG bug workaround.
-    Application::Setup();
-}
-
-/// Setup after engine initialization and before running the main loop. Call ErrorExit() to terminate without
-/// running the main loop. Called by Application.
-void SingleStateApplication::Start()
-{
-    // SWIG bug workaround.
-    Application::Start();
-}
-
-/// Cleanup after the main loop. Called by Application.
-void SingleStateApplication::Stop()
-{
-    // SWIG bug workaround.
-    Application::Stop();
-}
+SingleStateApplication::~SingleStateApplication() = default;
 
 void SingleStateApplication::SetState(ApplicationState* gameScreen)
 {

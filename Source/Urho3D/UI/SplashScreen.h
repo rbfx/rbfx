@@ -23,7 +23,9 @@
 #pragma once
 
 #include "../Engine/SingleStateApplication.h"
-#include "Sprite.h"
+#include "../Audio/SoundSource.h"
+#include "../Audio/Sound.h"
+#include "../UI/Sprite.h"
 
 namespace Urho3D
 {
@@ -33,6 +35,13 @@ class URHO3D_API SplashScreen : public ApplicationState
 {
     URHO3D_OBJECT(SplashScreen, ApplicationState)
 
+    enum class SplashScreenState
+    {
+        FadeIn,
+        Sustain,
+        FadeOut,
+        Complete
+    };
 public:
     /// Construct.
     explicit SplashScreen(Context* context);
@@ -48,22 +57,50 @@ public:
     void SetBackgroundImage(Texture* image);
     void SetForegroundImage(Texture* image);
     void SetProgressImage(Texture* image);
+    void SetProgressColor(const Color& color);
+    void SetSound(Sound* sound, float gain);
     void SetNextState(ApplicationState* state);
+    void SetFadeInDuration(float durationInSeconds);
+    void SetFadeOutDuration(float durationInSeconds);
+    void SetDuration(float durationInSeconds);
 
     Texture* GetBackgroundImage() const;
     Texture* GetForegroundImage() const;
     Texture* GetProgressImage() const;
+    const Color& GetProgressColor() const { return progressBar_->GetColor(C_TOPLEFT); }
     ApplicationState* GetNextState() const;
+    float GetFadeInDuration() const { return fadeInDuration_; }
+    float GetFadeOutDuration() const { return fadeOutDuration_; }
+    float GetDuration() const { return duration_; }
 
 private:
-    unsigned maxResourceCounter_ = 0;
+    void UpdateLayout(float ratio);
+    void UpdateState(float timeStep, unsigned resourceCounter);
+
+    // Splash screen state
+    SplashScreenState state_{SplashScreenState ::Complete};
+    // Max visited resource counter
+    unsigned maxResourceCounter_{0};
+    // Current state time left
+    float timeLeft_ {0.0f};
+    // Current state duration
+    float stateDuration_{0.0f};
+
+    // Fade in duration
+    float fadeInDuration_{0.0f};
+    // Fade out duration
+    float fadeOutDuration_{0.0f};
+    // Minimum screen time duration
+    float duration_{0.0f};
 
     SharedPtr<Scene> scene_;
-
+    SharedPtr<SoundSource> soundSource_;
+    
     SharedPtr<ApplicationState> nextState_;
     SharedPtr<Sprite> background_;
     SharedPtr<Sprite> foreground_;
     SharedPtr<Sprite> progressBar_;
+    SharedPtr<Sound> sound_;
 };
 
 } // namespace Urho3D
