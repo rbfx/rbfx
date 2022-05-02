@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,40 +19,60 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
-#include "Sample.h"
+#include "../Core/Object.h"
 
 namespace Urho3D
 {
 
-class Node;
-class Scene;
-
-}
-
-/// Animating 3D scene example.
-/// This sample demonstrates:
-///     - Creating a 3D scene and using a custom component to animate the objects
-///     - Controlling scene ambience with the Zone component
-///     - Attaching a light to an object (the camera)
-class AnimatingScene : public Sample
+enum MultitouchEventType
 {
-    URHO3D_OBJECT(AnimatingScene, Sample);
+    MULTITOUCH_BEGIN,
+    MULTITOUCH_END,
+    MULTITOUCH_MOVE,
+    MULTITOUCH_CANCEL,
+};
+
+class URHO3D_API MultitouchAdapter : public Object
+{
+
+    URHO3D_OBJECT(MultitouchAdapter, Object)
+
+    struct ActiveTouch
+    {
+        int touchID_;
+        IntVector2 pos_;
+    };
 
 public:
     /// Construct.
-    explicit AnimatingScene(Context* context);
+    explicit MultitouchAdapter(Context* context);
 
-    /// Setup after engine initialization and before running the main loop.
-    void Start() override;
+    void SetEnabled(bool enabled);
+
+    bool IsEnabled() const { return enabled_; }
 
 private:
-    /// Construct the scene content.
-    void CreateScene();
-    /// Construct an instruction text to the UI.
-    void CreateInstructions();
-    /// Set up a viewport for displaying the scene.
-    void SetupViewport();
+    void SubscribeToEvents();
+
+    void UnsubscribeFromEvents();
+
+    void HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData);
+
+    void HandleTouchEnd(StringHash /*eventType*/, VariantMap& eventData);
+
+    void HandleTouchMove(StringHash /*eventType*/, VariantMap& eventData);
+
+    void SendEvent(MultitouchEventType event);
+
+    bool enabled_{false};
+
+    bool acceptTouches_{true};
+    IntVector2 lastKnownPosition_{0,0};
+    IntVector2 lastKnownSize_{0,0};
+
+    ea::vector<ActiveTouch> touches_;
 };
+
+} // namespace Urho3D

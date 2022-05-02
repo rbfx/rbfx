@@ -384,6 +384,8 @@ namespace SDL
 %include "Urho3D/Input/InputConstants.h"
 %include "Urho3D/Input/Controls.h"
 %include "Urho3D/Input/Input.h"
+%include "Urho3D/Input/MultitouchAdapter.h"
+%include "Urho3D/Input/FreeFlyController.h"
 
 // --------------------------------------- IO ---------------------------------------
 %ignore Urho3D::GetWideNativePath;

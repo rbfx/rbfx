@@ -31,6 +31,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/Text.h>
+#include <Urho3D/Input/FreeFlyController.h>
 
 #include "RenderingShowcase.h"
 
@@ -62,7 +63,6 @@ void RenderingShowcase::Start()
 
     // Setup the viewport for displaying the scene
     SetupViewport();
-
     // Set the mouse mode to use in the sample
     SetMouseMode(MM_RELATIVE);
     SetMouseVisible(false);
@@ -96,6 +96,7 @@ void RenderingShowcase::CreateScene()
     // Create the camera (not included in the scene file)
     cameraNode_ = cameraScene_->CreateChild("Camera");
     cameraNode_->CreateComponent<Camera>();
+    cameraNode_->CreateComponent<FreeFlyController>()->SetAcceleratedSpeed(2.0f);
 
     Node* probeObjectNode = cameraNode_->CreateChild();
     probeObjectNode->SetPosition({ 0.0f, 0.0f, 1.0f });
@@ -149,34 +150,7 @@ void RenderingShowcase::SetupViewport()
 
 void RenderingShowcase::Update(float timeStep)
 {
-    // Right mouse button controls mouse cursor visibility: hide when pressed
     auto* input = GetSubsystem<Input>();
-
-    const bool slowMovement = input->GetKeyDown(KEY_CTRL);
-    // Movement speed as world units per second
-    const float moveSpeed = slowMovement ? 2.0f : 10.0f;
-    // Mouse sensitivity as degrees per pixel
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    IntVector2 mouseMove = input->GetMouseMove();
-    yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
-    pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
-    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * moveSpeed * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * moveSpeed * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * moveSpeed * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * moveSpeed * timeStep);
-
     auto* cache = GetSubsystem<ResourceCache>();
 
     // Keep probe object orientation
