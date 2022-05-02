@@ -72,7 +72,8 @@ void BakedLighting::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void BakedLighting::CreateScene()
@@ -116,7 +117,7 @@ void BakedLighting::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "Shift to sprint, Tab to toggle character textures"
@@ -128,19 +129,16 @@ void BakedLighting::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void BakedLighting::SubscribeToEvents()
 {
-    // Subscribe to Update event for setting the character controls before physics simulation
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(BakedLighting, HandleUpdate));
-
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void BakedLighting::Update(float timeStep)
 {
     using namespace Update;
 

@@ -43,10 +43,10 @@
 #include <Urho3D/DebugNew.h>
 
 
-HugeObjectCount::HugeObjectCount(Context* context) :
-    Sample(context),
-    animate_(false),
-    useGroups_(false)
+HugeObjectCount::HugeObjectCount(Context* context)
+    : Sample(context)
+    , animate_(false)
+    , useGroups_(false)
 {
 }
 
@@ -64,11 +64,9 @@ void HugeObjectCount::Start()
     // Setup the viewport for displaying the scene
     SetupViewport();
 
-    // Hook up to the frame update events
-    SubscribeToEvents();
-
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void HugeObjectCount::CreateScene()
@@ -166,7 +164,7 @@ void HugeObjectCount::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "Space to toggle animation\n"
@@ -179,7 +177,7 @@ void HugeObjectCount::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void HugeObjectCount::SetupViewport()
@@ -188,13 +186,7 @@ void HugeObjectCount::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
-}
-
-void HugeObjectCount::SubscribeToEvents()
-{
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HugeObjectCount, HandleUpdate));
+    SetViewport(0, viewport);
 }
 
 void HugeObjectCount::MoveCamera(float timeStep)
@@ -242,12 +234,9 @@ void HugeObjectCount::AnimateObjects(float timeStep)
         boxNodes_[i]->Rotate(rotateQuat);
 }
 
-void HugeObjectCount::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void HugeObjectCount::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
+    MoveCamera(timeStep);
 
     // Toggle animation with space
     auto* input = GetSubsystem<Input>();
@@ -260,9 +249,6 @@ void HugeObjectCount::HandleUpdate(StringHash eventType, VariantMap& eventData)
         useGroups_ = !useGroups_;
         CreateScene();
     }
-
-    // Move the camera, scale movement with time step
-    MoveCamera(timeStep);
 
     // Animate scene if enabled
     if (animate_)

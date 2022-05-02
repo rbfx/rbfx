@@ -46,11 +46,10 @@
 
 #include <Urho3D/DebugNew.h>
 
-
-DynamicGeometry::DynamicGeometry(Context* context) :
-    Sample(context),
-    animate_(true),
-    time_(0.0f)
+DynamicGeometry::DynamicGeometry(Context* context)
+    : Sample(context)
+    , animate_(true)
+    , time_(0.0f)
 {
 }
 
@@ -68,11 +67,9 @@ void DynamicGeometry::Start()
     // Setup the viewport for displaying the scene
     SetupViewport();
 
-    // Hook up to the frame update events
-    SubscribeToEvents();
-
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void DynamicGeometry::CreateScene()
@@ -275,7 +272,7 @@ void DynamicGeometry::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "Space to toggle animation"
@@ -287,7 +284,7 @@ void DynamicGeometry::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void DynamicGeometry::SetupViewport()
@@ -296,13 +293,7 @@ void DynamicGeometry::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
-}
-
-void DynamicGeometry::SubscribeToEvents()
-{
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(DynamicGeometry, HandleUpdate));
+    SetViewport(0, viewport);
 }
 
 void DynamicGeometry::MoveCamera(float timeStep)
@@ -373,20 +364,15 @@ void DynamicGeometry::AnimateObjects(float timeStep)
     }
 }
 
-void DynamicGeometry::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void DynamicGeometry::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Toggle animation with space
     auto* input = GetSubsystem<Input>();
+
+    MoveCamera(timeStep);
+
     if (input->GetKeyPress(KEY_SPACE))
         animate_ = !animate_;
-
-    // Move the camera, scale movement with time step
-    MoveCamera(timeStep);
 
     // Animate objects' vertex data if enabled
     if (animate_)

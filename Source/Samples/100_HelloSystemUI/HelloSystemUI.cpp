@@ -38,12 +38,13 @@
 #include "HelloSystemUI.h"
 
 
+
 #include <Urho3D/DebugNew.h>
 
 // Expands to this example's entry-point
 
-HelloSystemUi::HelloSystemUi(Context* context) :
-    Sample(context)
+HelloSystemUi::HelloSystemUi(Context* context)
+    : Sample(context)
 {
 }
 
@@ -61,7 +62,8 @@ void HelloSystemUi::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 
     // Pass console commands to file system.
     GetSubsystem<FileSystem>()->SetExecuteConsoleCommands(true);
@@ -141,6 +143,7 @@ void HelloSystemUi::CreateScene()
     zone->SetFogEnd(300.0f);
 
     cameraNode_ = scene_->CreateChild("Camera");
+
     auto camera = cameraNode_->CreateComponent<Camera>();
     GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
 

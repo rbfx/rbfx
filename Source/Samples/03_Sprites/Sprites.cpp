@@ -55,7 +55,8 @@ void Sprites::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Sprites::CreateSprites()
@@ -93,7 +94,7 @@ void Sprites::CreateSprites()
         sprite->SetBlendMode(BLEND_ADD);
 
         // Add as a child of the root UI element
-        ui->GetRoot()->AddChild(sprite);
+        GetUIRoot()->AddChild(sprite);
 
         // Store sprite's velocity as a custom variable
         sprite->SetVar(VAR_VELOCITY, Vector2(Random(200.0f) - 100.0f, Random(200.0f) - 100.0f));
@@ -134,17 +135,10 @@ void Sprites::MoveSprites(float timeStep)
 
 void Sprites::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Sprites, HandleUpdate));
 }
 
-void Sprites::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Sprites::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move sprites, scale movement with time step
     MoveSprites(timeStep);
 }

@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Light.h>
@@ -35,8 +33,6 @@
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
-#include <Urho3D/IO/File.h>
-#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
@@ -48,8 +44,8 @@
 #include <Urho3D/DebugNew.h>
 
 
-Water::Water(Context* context) :
-    Sample(context)
+Water::Water(Context* context)
+    : Sample(context)
 {
 }
 
@@ -67,11 +63,9 @@ void Water::Start()
     // Setup the viewport for displaying the scene
     SetupViewport();
 
-    // Hook up to the frame update event
-    SubscribeToEvents();
-
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void Water::CreateScene()
@@ -175,7 +169,7 @@ void Water::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use WASD keys and mouse/touch to move");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     instructionText->SetTextAlignment(HA_CENTER);
@@ -183,7 +177,7 @@ void Water::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Water::SetupViewport()
@@ -194,7 +188,7 @@ void Water::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 
     // Create a mathematical plane to represent the water in calculations
     waterPlane_ = Plane(waterNode_->GetWorldRotation() * Vector3(0.0f, 1.0f, 0.0f), waterNode_->GetWorldPosition());
@@ -233,12 +227,6 @@ void Water::SetupViewport()
 #else
     waterMaterial_->SetTexture(TU_DIFFUSE, renderTexture);
 #endif
-}
-
-void Water::SubscribeToEvents()
-{
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Water, HandleUpdate));
 }
 
 void Water::MoveCamera(float timeStep)
@@ -287,13 +275,8 @@ void Water::MoveCamera(float timeStep)
     reflectionCamera->SetAspectRatio((float)graphics->GetWidth() / (float)graphics->GetHeight());
 }
 
-void Water::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Water::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

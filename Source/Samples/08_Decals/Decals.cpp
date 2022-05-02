@@ -69,7 +69,8 @@ void Decals::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void Decals::CreateScene()
@@ -165,7 +166,7 @@ void Decals::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to move\n"
         "LMB to paint decals, RMB to rotate view\n"
@@ -179,7 +180,7 @@ void Decals::CreateUI()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Decals::SetupViewport()
@@ -188,14 +189,11 @@ void Decals::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void Decals::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Decals, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Decals, HandlePostRenderUpdate));
@@ -280,14 +278,13 @@ bool Decals::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawable)
     hitDrawable = nullptr;
 
     auto* ui = GetSubsystem<UI>();
-    IntVector2 pos = ui->GetCursorPosition();
+    IntVector2 pos = ui->GetUICursorPosition();
     // Check the cursor is visible and there is no UI element in front of the cursor
     if (!ui->GetCursor()->IsVisible() || ui->GetElementAt(pos, true))
         return false;
 
-    auto* graphics = GetSubsystem<Graphics>();
     auto* camera = cameraNode_->GetComponent<Camera>();
-    Ray cameraRay = camera->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
+    Ray cameraRay = camera->GetScreenRayFromMouse();
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
     ea::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
@@ -303,13 +300,8 @@ bool Decals::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawable)
     return false;
 }
 
-void Decals::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Decals::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

@@ -60,6 +60,7 @@ struct URHO3D_API AnimationParameters
     AnimationParameters& Speed(float speed);
     AnimationParameters& AutoFadeOut(float fadeOut);
     AnimationParameters& KeepOnCompletion();
+    AnimationParameters& KeepOnZeroWeight();
     /// @}
 
     /// Animation to be played.
@@ -165,7 +166,7 @@ public:
     void StopAll(float fadeTime = 0.0f);
 
     bool UpdateAnimationTime(Animation* animation, float time);
-    bool UpdateAnimationWeight(Animation* animation, float weight);
+    bool UpdateAnimationWeight(Animation* animation, float weight, float fadeTime = 0.0f);
     bool UpdateAnimationSpeed(Animation* animation, float speed);
     /// @}
 

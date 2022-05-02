@@ -54,12 +54,8 @@ private:
     void SetupSelectedScene(bool resetCamera = true);
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Subscribe to application-wide logic update event.
-    void SubscribeToEvents();
-    /// Reads input and moves the camera.
-    void MoveCamera(float timeStep);
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Construct an instruction text to the UI.
     void CreateInstructions();
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.

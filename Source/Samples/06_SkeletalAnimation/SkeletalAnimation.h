@@ -74,10 +74,8 @@ private:
     void SetupViewport();
     /// Subscribe to application-wide logic update and post-render update events.
     void SubscribeToEvents();
-    /// Read input and moves the camera.
-    void MoveCamera(float timeStep);
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 

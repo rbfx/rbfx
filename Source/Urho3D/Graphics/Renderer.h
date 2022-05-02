@@ -592,6 +592,7 @@ private:
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Blur the shadow map.
     void BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale);
+    void UpdateMousePositionsForMainViewports();
 
     /// Graphics subsystem.
     WeakPtr<Graphics> graphics_;

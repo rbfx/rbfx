@@ -63,7 +63,7 @@ void Typography::Start()
 
     // Set the loaded style as default style
     auto* ui = GetSubsystem<UI>();
-    UIElement* root = ui->GetRoot();
+    UIElement* root = GetUIRoot();
     root->SetDefaultStyle(style);
 
     // Create a UIElement to hold all our content
@@ -132,7 +132,8 @@ void Typography::Start()
         ->SetSelection(ui->GetFontOversampling() - 1);
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Typography::CreateText()

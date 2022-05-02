@@ -113,7 +113,7 @@ private:
     /// Subscribe to necessary events.
     void SubscribeToEvents();
     /// Handle application update. Set controls to character.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle application post-update. Update camera position after character has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 

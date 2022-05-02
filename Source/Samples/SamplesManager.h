@@ -21,7 +21,8 @@
 //
 #pragma once
 
-#include <Urho3D/Engine/Application.h>
+#include <Urho3D/Engine/SingleStateApplication.h>
+#include <Urho3D/UI/SplashScreen.h>
 
 #include "Sample.h"
 
@@ -39,10 +40,22 @@ struct SampleInformation
     StringHash type_;
 };
 
-class SamplesManager : public Application
+class SampleSelectionScreen
+    : public ApplicationState
 {
     // Enable type information.
-    URHO3D_OBJECT(SamplesManager, Application);
+    URHO3D_OBJECT(SampleSelectionScreen, ApplicationState);
+
+public:
+    /// Construct.
+    explicit SampleSelectionScreen(Context* context);
+};
+
+class SamplesManager : public SingleStateApplication
+{
+    // Enable type information.
+    URHO3D_OBJECT(SamplesManager, SingleStateApplication);
+
 public:
     /// Construct.
     explicit SamplesManager(Context* context);
@@ -53,6 +66,9 @@ public:
     void Start() override;
     /// Cleanup after the main loop. Called by Application.
     void Stop() override;
+
+    /// Return command line arguments.
+    const ea::vector<ea::string>& GetArgs() const { return commandLineArgs_; }
 
 private:
     ///
@@ -73,7 +89,9 @@ private:
     void StartSample(StringHash sampleType);
 
     ///
-    SharedPtr<Sample> runningSample_;
+    SharedPtr<SampleSelectionScreen> sampleSelectionScreen_;
+    ///
+    SharedPtr<SplashScreen> splashScreen_;
     ///
     SharedPtr<UIElement> listViewHolder_;
     /// Logo sprite.

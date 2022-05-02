@@ -98,7 +98,8 @@ void AdvancedNetworking::Start(const ea::vector<ea::string>& args)
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_ABSOLUTE);
+    SetMouseMode(MM_ABSOLUTE);
+    SetMouseVisible(false);
 
     // Process command line
     if (args.size() >= 2)
@@ -220,7 +221,7 @@ void AdvancedNetworking::CreateUI()
 
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
-    UIElement* root = ui->GetRoot();
+    UIElement* root = GetUIRoot();
     auto* uiStyle = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     // Set style to the UI root so that elements will inherit it
     root->SetDefaultStyle(uiStyle);
@@ -235,7 +236,7 @@ void AdvancedNetworking::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct the instructions text element
-    instructionsText_ = ui->GetRoot()->CreateChild<Text>();
+    instructionsText_ = GetUIRoot()->CreateChild<Text>();
     instructionsText_->SetText(
         "Use WASD and Space to move and RMB to rotate view"
     );
@@ -247,7 +248,7 @@ void AdvancedNetworking::CreateUI()
     // Hide until connected
     instructionsText_->SetVisible(false);
 
-    statsText_ = ui->GetRoot()->CreateChild<Text>();
+    statsText_ = GetUIRoot()->CreateChild<Text>();
     statsText_->SetText("No network stats");
     statsText_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     statsText_->SetHorizontalAlignment(HA_LEFT);
@@ -264,7 +265,7 @@ void AdvancedNetworking::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void AdvancedNetworking::SubscribeToEvents()
