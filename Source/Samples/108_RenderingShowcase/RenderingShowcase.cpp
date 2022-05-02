@@ -20,23 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
-#include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
-#include <Urho3D/UI/Slider.h>
 #include <Urho3D/UI/UI.h>
-#include <Urho3D/UI/UIEvents.h>
 #include <Urho3D/UI/Text.h>
 
 #include "RenderingShowcase.h"
@@ -44,7 +37,8 @@
 #include <Urho3D/DebugNew.h>
 
 
-RenderingShowcase::RenderingShowcase(Context* context) : Sample(context)
+RenderingShowcase::RenderingShowcase(Context* context)
+    : Sample(context)
 {
     // All these scenes correspond to Scenes/RenderingShowcase_*.xml resources
     sceneNames_.push_back({ "0" });
@@ -69,11 +63,9 @@ void RenderingShowcase::Start()
     // Setup the viewport for displaying the scene
     SetupViewport();
 
-    // Subscribe to global events for camera movement
-    SubscribeToEvents();
-
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void RenderingShowcase::CreateInstructions()
@@ -82,7 +74,7 @@ void RenderingShowcase::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Press Tab to switch scene. Press Q to switch scene mode. \n"
         "Press F to toggle probe object. Use WASD keys and mouse to move.");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
@@ -91,7 +83,7 @@ void RenderingShowcase::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void RenderingShowcase::CreateScene()
@@ -152,16 +144,10 @@ void RenderingShowcase::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
-void RenderingShowcase::SubscribeToEvents()
-{
-    // Subscribe HandleUpdate() function for camera motion
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(RenderingShowcase, HandleUpdate));
-}
-
-void RenderingShowcase::MoveCamera(float timeStep)
+void RenderingShowcase::Update(float timeStep)
 {
     // Right mouse button controls mouse cursor visibility: hide when pressed
     auto* input = GetSubsystem<Input>();
@@ -190,20 +176,8 @@ void RenderingShowcase::MoveCamera(float timeStep)
         cameraNode_->Translate(Vector3::LEFT * moveSpeed * timeStep);
     if (input->GetKeyDown(KEY_D))
         cameraNode_->Translate(Vector3::RIGHT * moveSpeed * timeStep);
-}
-
-void RenderingShowcase::HandleUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace Update;
 
     auto* cache = GetSubsystem<ResourceCache>();
-    auto* input = GetSubsystem<Input>();
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
-    // Move the camera, scale movement with time step
-    MoveCamera(timeStep);
 
     // Keep probe object orientation
     probeObject_->GetNode()->SetWorldRotation(Quaternion::IDENTITY);

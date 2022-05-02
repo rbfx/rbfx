@@ -27,7 +27,6 @@
 
 #include "../Container/Ptr.h"
 #include "../Core/Context.h"
-#include "../Core/Macros.h"
 #include "../Core/Main.h"
 #include "../Engine/Engine.h"
 #include "../Engine/PluginApplication.h"

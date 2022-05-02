@@ -358,6 +358,7 @@ namespace SDL
 %include "Urho3D/Engine/EngineDefs.h"
 %include "Urho3D/Engine/Engine.h"
 %include "Urho3D/Engine/Application.h"
+%include "Urho3D/Engine/SingleStateApplication.h"
 %include "Urho3D/Engine/PluginApplication.h"
 %include "generated/Urho3D/_pre_script.i"
 #if URHO3D_CSHARP
@@ -859,6 +860,7 @@ using ImGuiConfigFlags = unsigned;
 %include "Urho3D/UI/MessageBox.h"
 %include "Urho3D/UI/ScrollBar.h"
 %include "Urho3D/UI/Slider.h"
+%include "Urho3D/UI/SplashScreen.h"
 %include "Urho3D/UI/Text3D.h"
 %include "Urho3D/UI/ToolTip.h"
 %include "Urho3D/UI/UIComponent.h"

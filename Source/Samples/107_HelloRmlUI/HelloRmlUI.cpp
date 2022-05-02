@@ -28,7 +28,6 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Technique.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
@@ -131,7 +130,8 @@ void HelloRmlUI::Start()
     InitWindow();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void HelloRmlUI::InitWindow()
@@ -213,7 +213,7 @@ void HelloRmlUI::InitScene()
     // Set up a viewport so 3D scene can be visible.
     auto* renderer = GetSubsystem<Renderer>();
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void HelloRmlUI::OnUpdate(StringHash, VariantMap& eventData)

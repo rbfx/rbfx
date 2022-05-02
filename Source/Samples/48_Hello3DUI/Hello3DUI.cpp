@@ -49,7 +49,7 @@
 
 Hello3DUI::Hello3DUI(Context* context) :
     Sample(context),
-    uiRoot_(GetSubsystem<UI>()->GetRoot()),
+    uiRoot_(GetUIRoot()),
     dragBeginPosition_(IntVector2::ZERO),
     animateCube_(true),
     renderOnCube_(false),
@@ -85,7 +85,8 @@ void Hello3DUI::Start()
     Init3DUI();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Hello3DUI::InitControls()
@@ -215,10 +216,7 @@ void Hello3DUI::InitScene()
     // Set up a viewport so 3D scene can be visible.
     auto* renderer = GetSubsystem<Renderer>();
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
-
-    // Subscribe to update event and animate cube and handle input.
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Hello3DUI, HandleUpdate));
+    SetViewport(0, viewport);
 }
 
 void Hello3DUI::CreateDraggableFish()
@@ -311,10 +309,8 @@ void Hello3DUI::Init3DUI()
     textureRoot_->SetSize(512, 512);
 }
 
-void Hello3DUI::HandleUpdate(StringHash, VariantMap& eventData)
+void Hello3DUI::Update(float timeStep)
 {
-    using namespace Update;
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
     auto* input = GetSubsystem<Input>();
     Node* node = scene_->GetChild("Box");
 

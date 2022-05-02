@@ -86,7 +86,7 @@ private:
     /// Spawn a physics object from the camera position.
     void SpawnObject();
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 

@@ -41,9 +41,8 @@
 
 #include <Urho3D/DebugNew.h>
 
-
-SignedDistanceFieldText::SignedDistanceFieldText(Context* context) :
-    Sample(context)
+SignedDistanceFieldText::SignedDistanceFieldText(Context* context)
+    : Sample(context)
 {
 }
 
@@ -65,7 +64,8 @@ void SignedDistanceFieldText::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void SignedDistanceFieldText::CreateScene()
@@ -152,14 +152,14 @@ void SignedDistanceFieldText::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use WASD keys and mouse/touch to move");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void SignedDistanceFieldText::SetupViewport()
@@ -170,7 +170,7 @@ void SignedDistanceFieldText::SetupViewport()
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void SignedDistanceFieldText::MoveCamera(float timeStep)

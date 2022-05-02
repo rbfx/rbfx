@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -43,9 +41,8 @@
 
 #include <Urho3D/DebugNew.h>
 
-
-LightAnimation::LightAnimation(Context* context) :
-    Sample(context)
+LightAnimation::LightAnimation(Context* context)
+    : Sample(context)
 {
 }
 
@@ -63,11 +60,9 @@ void LightAnimation::Start()
     // Setup the viewport for displaying the scene
     SetupViewport();
 
-    // Hook up to the frame update events
-    SubscribeToEvents();
-
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void LightAnimation::CreateScene()
@@ -108,7 +103,7 @@ void LightAnimation::CreateScene()
     textAnimation->SetKeyFrame(2.0f, "YELLOW");
     textAnimation->SetKeyFrame(3.0f, "GREEN");
     textAnimation->SetKeyFrame(4.0f, "WHITE");
-    GetSubsystem<UI>()->GetRoot()->GetChild(ea::string("animatingText"))->SetAttributeAnimation("Text", textAnimation);
+    GetUIRoot()->GetChild(ea::string("animatingText"))->SetAttributeAnimation("Text", textAnimation);
 
     // Create UI element animation
     // (note: a spritesheet and "Image Rect" attribute should be used in real use cases for better performance)
@@ -119,7 +114,7 @@ void LightAnimation::CreateScene()
     spriteAnimation->SetKeyFrame(0.3f, ResourceRef("Texture2D", "Urho2D/GoldIcon/4.png"));
     spriteAnimation->SetKeyFrame(0.4f, ResourceRef("Texture2D", "Urho2D/GoldIcon/5.png"));
     spriteAnimation->SetKeyFrame(0.5f, ResourceRef("Texture2D", "Urho2D/GoldIcon/1.png"));
-    GetSubsystem<UI>()->GetRoot()->GetChild(ea::string("animatingSprite"))->SetAttributeAnimation("Texture", spriteAnimation);
+    GetUIRoot()->GetChild(ea::string("animatingSprite"))->SetAttributeAnimation("Texture", spriteAnimation);
 
     // Create more StaticModel objects to the scene, randomly positioned, rotated and scaled. For rotation, we construct a
     // quaternion from Euler angles where the Y angle (rotation about the Y axis) is randomized. The mushroom model contains
@@ -154,7 +149,7 @@ void LightAnimation::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use WASD keys and mouse/touch to move");
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
     instructionText->SetFont(font, 15);
@@ -162,17 +157,17 @@ void LightAnimation::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 
     // Animating text
-    auto* text = ui->GetRoot()->CreateChild<Text>("animatingText");
+    auto* text = GetUIRoot()->CreateChild<Text>("animatingText");
     text->SetFont(font, 15);
     text->SetHorizontalAlignment(HA_CENTER);
     text->SetVerticalAlignment(VA_CENTER);
-    text->SetPosition(0, ui->GetRoot()->GetHeight() / 4 + 20);
+    text->SetPosition(0, GetUIRoot()->GetHeight() / 4 + 20);
 
     // Animating sprite in the top left corner
-    auto* sprite = ui->GetRoot()->CreateChild<Sprite>("animatingSprite");
+    auto* sprite = GetUIRoot()->CreateChild<Sprite>("animatingSprite");
     sprite->SetPosition(8, 8);
     sprite->SetSize(64, 64);
 }
@@ -185,7 +180,7 @@ void LightAnimation::SetupViewport()
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void LightAnimation::MoveCamera(float timeStep)
@@ -222,19 +217,8 @@ void LightAnimation::MoveCamera(float timeStep)
         cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
 }
 
-void LightAnimation::SubscribeToEvents()
+void LightAnimation::Update(float timeStep)
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(LightAnimation, HandleUpdate));
-}
-
-void LightAnimation::HandleUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

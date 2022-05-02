@@ -23,7 +23,6 @@
 #pragma once
 
 #include <Urho3D/Math/Plane.h>
-
 #include "Sample.h"
 
 namespace Urho3D
@@ -56,12 +55,10 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Subscribe to the logic update event.
-    void SubscribeToEvents();
     /// Read input and moves the camera.
     void MoveCamera(float timeStep);
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
 
     /// Reflection camera scene node.
     SharedPtr<Node> reflectionCameraNode_;

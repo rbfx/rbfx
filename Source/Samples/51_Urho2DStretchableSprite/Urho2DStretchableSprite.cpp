@@ -63,7 +63,8 @@ void Urho2DStretchableSprite::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Urho2DStretchableSprite::CreateScene()
@@ -106,7 +107,7 @@ void Urho2DStretchableSprite::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to transform, Tab key to cycle through\n"
         "Scale, Rotate, and Translate transform modes. In Rotate\n"
@@ -117,7 +118,7 @@ void Urho2DStretchableSprite::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Urho2DStretchableSprite::SetupViewport()
@@ -126,27 +127,19 @@ void Urho2DStretchableSprite::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void Urho2DStretchableSprite::SubscribeToEvents()
 {
     SubscribeToEvent(E_KEYUP, URHO3D_HANDLER(Urho2DStretchableSprite, OnKeyUp));
 
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Urho2DStretchableSprite, HandleUpdate));
-
     // Unsubscribe the SceneUpdate event from base class to prevent camera pitch and yaw in 2D sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void Urho2DStretchableSprite::HandleUpdate(StringHash /*eventType*/, VariantMap& eventData)
+void Urho2DStretchableSprite::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     switch (selectTransform_)
     {
     case 0: ScaleSprites(timeStep);

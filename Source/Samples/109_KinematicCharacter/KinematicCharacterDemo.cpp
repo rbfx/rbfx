@@ -83,7 +83,8 @@ void KinematicCharacterDemo::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void KinematicCharacterDemo::CreateScene()
@@ -101,7 +102,7 @@ void KinematicCharacterDemo::CreateScene()
     cameraNode_ = new Node(context_);
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
-    GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
+    SetViewport(0, new Viewport(context_, scene_, camera));
 
     // Create static scene content. First create a zone for ambient lighting and fog control
     Node* zoneNode = scene_->CreateChild("Zone");
@@ -230,7 +231,7 @@ void KinematicCharacterDemo::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "Space to jump, F to toggle 1st/3rd person\n"
@@ -243,14 +244,11 @@ void KinematicCharacterDemo::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void KinematicCharacterDemo::SubscribeToEvents()
 {
-    // Subscribe to Update event for setting the character controls before physics simulation
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(KinematicCharacterDemo, HandleUpdate));
-
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(KinematicCharacterDemo, HandlePostUpdate));
 
@@ -263,7 +261,7 @@ void KinematicCharacterDemo::SubscribeToEvents()
 
 }
 
-void KinematicCharacterDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void KinematicCharacterDemo::Update(float timeStep)
 {
     using namespace Update;
 

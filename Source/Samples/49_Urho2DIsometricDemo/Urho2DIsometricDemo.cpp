@@ -85,7 +85,7 @@ void Urho2DIsometricDemo::Start()
     // Create the UI content
     sample2D_->CreateUIContent("ISOMETRIC 2.5D DEMO", character2D_->remainingLifes_, character2D_->remainingCoins_);
     auto* ui = GetSubsystem<UI>();
-    Button* playButton = static_cast<Button*>(ui->GetRoot()->GetChild("PlayButton", true));
+    Button* playButton = static_cast<Button*>(GetUIRoot()->GetChild("PlayButton", true));
     SubscribeToEvent(playButton, E_RELEASED, URHO3D_HANDLER(Urho2DIsometricDemo, HandlePlayButton));
 
     // Hook up to the frame update events
@@ -115,7 +115,7 @@ void Urho2DIsometricDemo::CreateScene()
     // Setup the viewport for displaying the scene
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, camera));
     auto* renderer = GetSubsystem<Renderer>();
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -169,10 +169,10 @@ void Urho2DIsometricDemo::HandleCollisionBegin(StringHash eventType, VariantMap&
         auto* ui = GetSubsystem<UI>();
         if (character2D_->remainingCoins_ == 0)
         {
-            Text* instructions = static_cast<Text*>(ui->GetRoot()->GetChild("Instructions", true));
+            Text* instructions = static_cast<Text*>(GetUIRoot()->GetChild("Instructions", true));
             instructions->SetText("!!! You have all the coins !!!");
         }
-        Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
+        Text* coinsText = static_cast<Text*>(GetUIRoot()->GetChild("CoinsText", true));
         coinsText->SetText(ea::to_string(character2D_->remainingCoins_)); // Update coins UI counter
         sample2D_->PlaySoundEffect("Powerup.wav");
     }
@@ -223,9 +223,6 @@ void Urho2DIsometricDemo::HandleSceneRendered(StringHash eventType, VariantMap& 
 
 void Urho2DIsometricDemo::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Urho2DIsometricDemo, HandleUpdate));
-
     // Subscribe HandlePostUpdate() function for processing post update events
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(Urho2DIsometricDemo, HandlePostUpdate));
 
@@ -239,7 +236,7 @@ void Urho2DIsometricDemo::SubscribeToEvents()
     SubscribeToEvent(E_PHYSICSBEGINCONTACT2D, URHO3D_HANDLER(Urho2DIsometricDemo, HandleCollisionBegin));
 }
 
-void Urho2DIsometricDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Urho2DIsometricDemo::Update(float timeStep)
 {
     using namespace Update;
 
@@ -308,11 +305,11 @@ void Urho2DIsometricDemo::ReloadScene(bool reInit)
 
     // Update lifes UI
     auto* ui = GetSubsystem<UI>();
-    Text* lifeText = static_cast<Text*>(ui->GetRoot()->GetChild("LifeText", true));
+    Text* lifeText = static_cast<Text*>(GetUIRoot()->GetChild("LifeText", true));
     lifeText->SetText(ea::to_string(lifes));
 
     // Update coins UI
-    Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
+    Text* coinsText = static_cast<Text*>(GetUIRoot()->GetChild("CoinsText", true));
     coinsText->SetText(ea::to_string(coins));
 }
 
@@ -320,9 +317,9 @@ void Urho2DIsometricDemo::HandlePlayButton(StringHash eventType, VariantMap& eve
 {
     // Remove fullscreen UI and unfreeze the scene
     auto* ui = GetSubsystem<UI>();
-    if (static_cast<Text*>(ui->GetRoot()->GetChild("FullUI", true)))
+    if (static_cast<Text*>(GetUIRoot()->GetChild("FullUI", true)))
     {
-        ui->GetRoot()->GetChild("FullUI", true)->Remove();
+        GetUIRoot()->GetChild("FullUI", true)->Remove();
         scene_->SetUpdateEnabled(true);
     }
     else
@@ -330,11 +327,11 @@ void Urho2DIsometricDemo::HandlePlayButton(StringHash eventType, VariantMap& eve
         ReloadScene(true);
 
     // Hide Instructions and Play/Exit buttons
-    Text* instructionText = static_cast<Text*>(ui->GetRoot()->GetChild("Instructions", true));
+    Text* instructionText = static_cast<Text*>(GetUIRoot()->GetChild("Instructions", true));
     instructionText->SetText("");
-    Button* exitButton = static_cast<Button*>(ui->GetRoot()->GetChild("ExitButton", true));
+    Button* exitButton = static_cast<Button*>(GetUIRoot()->GetChild("ExitButton", true));
     exitButton->SetVisible(false);
-    Button* playButton = static_cast<Button*>(ui->GetRoot()->GetChild("PlayButton", true));
+    Button* playButton = static_cast<Button*>(GetUIRoot()->GetChild("PlayButton", true));
     playButton->SetVisible(false);
 
     // Hide mouse cursor

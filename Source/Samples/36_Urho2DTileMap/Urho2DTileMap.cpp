@@ -67,7 +67,8 @@ void Urho2DTileMap::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Urho2DTileMap::CreateScene()
@@ -113,14 +114,14 @@ void Urho2DTileMap::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use WASD keys to move, use PageUp PageDown keys to zoom.\n LMB to remove a tile, RMB to swap grass and water.");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Urho2DTileMap::SetupViewport()
@@ -129,7 +130,7 @@ void Urho2DTileMap::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void Urho2DTileMap::MoveCamera(float timeStep)
@@ -168,9 +169,6 @@ void Urho2DTileMap::MoveCamera(float timeStep)
 
 void Urho2DTileMap::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Urho2DTileMap, HandleUpdate));
-
     // Listen to mouse clicks
     SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(Urho2DTileMap, HandleMouseButtonDown));
 
@@ -178,13 +176,8 @@ void Urho2DTileMap::SubscribeToEvents()
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
 
-void Urho2DTileMap::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Urho2DTileMap::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

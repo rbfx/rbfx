@@ -73,7 +73,8 @@ void CrowdNavigation::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_ABSOLUTE);
+    SetMouseMode(MM_ABSOLUTE);
+    SetMouseVisible(false);
 }
 
 void CrowdNavigation::CreateScene()
@@ -205,7 +206,7 @@ void CrowdNavigation::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Construct new Text object, set string to display and font to use
-    instructionText_ = ui->GetRoot()->CreateChild<Text>();
+    instructionText_ = GetUIRoot()->CreateChild<Text>();
     instructionText_->SetText(
         "Use WASD keys to move, RMB to rotate view\n"
         "LMB to set destination, SHIFT+LMB to spawn a Jack\n"
@@ -222,7 +223,7 @@ void CrowdNavigation::CreateUI()
     // Position the text relative to the screen center
     instructionText_->SetHorizontalAlignment(HA_CENTER);
     instructionText_->SetVerticalAlignment(VA_CENTER);
-    instructionText_->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText_->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void CrowdNavigation::SetupViewport()
@@ -231,14 +232,11 @@ void CrowdNavigation::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void CrowdNavigation::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(CrowdNavigation, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request debug geometry
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(CrowdNavigation, HandlePostRenderUpdate));
 
@@ -546,13 +544,8 @@ void CrowdNavigation::SaveNavigationData()
         }
 }
 
-void CrowdNavigation::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void CrowdNavigation::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 
