@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -61,6 +61,7 @@ namespace DemoApplication
 
         public override void Start()
         {
+            Context.Input.SetMouseMode(MouseMode.MmFree);
             Context.Input.SetMouseVisible(true);
 
             // Viewport
@@ -68,6 +69,7 @@ namespace DemoApplication
             _scene.CreateComponent<Octree>();
 
             _camera = _scene.CreateChild("Camera");
+            _camera.CreateComponent<FreeFlyController>();
             _viewport = new Viewport(Context);
             _viewport.Scene = _scene;
             _viewport.Camera = _camera.CreateComponent<Camera>();
