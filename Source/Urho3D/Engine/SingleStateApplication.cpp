@@ -22,10 +22,10 @@
 //
 
 #include "../Engine/SingleStateApplication.h"
-#include "../Graphics/Renderer.h"
-#include "../UI/UI.h"
 #include "../Core/CoreEvents.h"
+#include "../Graphics/Renderer.h"
 #include "../Graphics/Zone.h"
+#include "../UI/UI.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/Console.h"
 #endif
@@ -41,10 +41,7 @@ ApplicationState::ApplicationState(Context* context)
 
 ApplicationState::~ApplicationState() = default;
 
-void ApplicationState::RegisterObject(Context* context)
-{
-    context->AddFactoryReflection<ApplicationState>();
-}
+void ApplicationState::RegisterObject(Context* context) { context->AddFactoryReflection<ApplicationState>(); }
 
 /// Activate game screen. Executed by Application.
 void ApplicationState::Activate(SingleStateApplication* application)
@@ -69,7 +66,9 @@ void ApplicationState::Activate(SingleStateApplication* application)
     {
         auto* ui = GetSubsystem<UI>();
         savedRootElement_ = ui->GetRoot();
+        savedRootCustomSize_ = ui->GetCustomSize();
         ui->SetRoot(rootElement_);
+        ui->SetCustomSize(rootCustomSize_);
     }
     {
         auto* renderer = GetSubsystem<Renderer>();
@@ -90,9 +89,7 @@ void ApplicationState::Activate(SingleStateApplication* application)
     }
 }
 /// Handle the logic update event.
-void ApplicationState::Update(float timeStep)
-{
-}
+void ApplicationState::Update(float timeStep) {}
 
 /// Deactivate game screen. Executed by Application.
 void ApplicationState::Deactivate()
@@ -108,7 +105,9 @@ void ApplicationState::Deactivate()
 
     {
         auto* ui = GetSubsystem<UI>();
+        rootCustomSize_ = ui->GetCustomSize();
         ui->SetRoot(savedRootElement_);
+        ui->SetCustomSize(savedRootCustomSize_);
     }
     {
         auto* renderer = GetSubsystem<Renderer>();
@@ -126,7 +125,8 @@ void ApplicationState::Deactivate()
 }
 
 /// Set whether the operating system mouse cursor is visible.
-void ApplicationState::SetMouseVisible(bool enable) {
+void ApplicationState::SetMouseVisible(bool enable)
+{
     mouseVisible_ = enable;
     if (IsActive())
     {
@@ -136,7 +136,8 @@ void ApplicationState::SetMouseVisible(bool enable) {
 }
 
 /// Set whether the mouse is currently being grabbed by an operation.
-void ApplicationState::SetMouseGrabbed(bool grab) {
+void ApplicationState::SetMouseGrabbed(bool grab)
+{
     mouseGrabbed_ = grab;
     if (IsActive())
     {
@@ -146,13 +147,26 @@ void ApplicationState::SetMouseGrabbed(bool grab) {
 }
 
 /// Set the mouse mode.
-void ApplicationState::SetMouseMode(MouseMode mode) {
+void ApplicationState::SetMouseMode(MouseMode mode)
+{
     mouseMode_ = mode;
     if (IsActive())
     {
         InitMouseMode();
     }
 }
+
+void ApplicationState::SetUICustomSize(const IntVector2& size)
+{
+    rootCustomSize_ = size;
+    if (IsActive())
+    {
+        auto* ui = GetSubsystem<UI>();
+        ui->SetCustomSize(size);
+    }
+}
+
+void ApplicationState::SetUICustomSize(int width, int height) { SetUICustomSize(IntVector2(width, height)); }
 
 void ApplicationState::SetNumViewports(unsigned num)
 {
@@ -242,7 +256,6 @@ void ApplicationState::InitMouseMode()
     }
 }
 
-
 // If the user clicks the canvas, attempt to switch to relative mouse mode on web platform
 void ApplicationState::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
 {
@@ -280,7 +293,8 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
 /// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
 /// state.
 
-SingleStateApplication::SingleStateApplication(Context* context) : Application(context)
+SingleStateApplication::SingleStateApplication(Context* context)
+    : Application(context)
 {
 }
 
@@ -302,6 +316,5 @@ void SingleStateApplication::SetState(ApplicationState* gameScreen)
 }
 
 ApplicationState* SingleStateApplication::GetState() const { return gameScreen_; }
-
 
 } // namespace Urho3D

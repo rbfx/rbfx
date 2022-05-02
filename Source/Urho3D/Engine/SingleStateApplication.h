@@ -75,6 +75,16 @@ public:
     /// Return root UI element.
     /// @property
     UIElement* GetUIRoot() const { return rootElement_; }
+    /// Set custom size of the root element. This disables automatic resizing of the root element according to window
+    /// size. Set custom size 0,0 to return to automatic resizing.
+    /// @property
+    void SetUICustomSize(const IntVector2& size);
+    /// Set custom size of the root element.
+    void SetUICustomSize(int width, int height);
+    /// Return root element custom size. Returns 0,0 when custom size is not being used and automatic resizing according
+    /// to window size is in use instead (default).
+    /// @property
+    const IntVector2& GetUICustomSize() const { return rootCustomSize_; }
 
     /// Set number of backbuffer viewports to render.
     /// @property
@@ -117,6 +127,10 @@ private:
     SharedPtr<UIElement> rootElement_{};
     /// UI root element saved upon activation to be restored at deactivation.
     SharedPtr<UIElement> savedRootElement_{};
+    /// UI root element custom size.
+    IntVector2 rootCustomSize_{};
+    /// UI root element custom size saved upon activation to be restored at deactivation.
+    IntVector2 savedRootCustomSize_{};
     /// Backbuffer viewports.
     ea::vector<SharedPtr<Viewport>> viewports_;
     /// Operating system mouse cursor visible flag.
