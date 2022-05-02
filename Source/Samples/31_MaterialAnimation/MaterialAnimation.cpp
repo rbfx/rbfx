@@ -42,9 +42,8 @@
 
 #include <Urho3D/DebugNew.h>
 
-
-MaterialAnimation::MaterialAnimation(Context* context) :
-    Sample(context)
+MaterialAnimation::MaterialAnimation(Context* context)
+    : Sample(context)
 {
 }
 
@@ -63,7 +62,8 @@ void MaterialAnimation::Start()
     SetupViewport();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void MaterialAnimation::CreateScene()
@@ -127,6 +127,7 @@ void MaterialAnimation::CreateScene()
     // Create a scene node for the camera, which we will move around
     // The camera will use default settings (1000 far clip distance, 45 degrees FOV, set aspect ratio automatically)
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->CreateComponent<FreeFlyController>();
     cameraNode_->CreateComponent<Camera>();
 
     // Set an initial position for the camera scene node above the plane
@@ -139,14 +140,14 @@ void MaterialAnimation::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use WASD keys and mouse/touch to move");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void MaterialAnimation::SetupViewport()
@@ -157,5 +158,5 @@ void MaterialAnimation::SetupViewport()
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }

@@ -42,8 +42,7 @@
 #include <Urho3D/DebugNew.h>
 
 
-AnimatingScene::AnimatingScene(Context* context) :
-    Sample(context)
+AnimatingScene::AnimatingScene(Context* context) : Sample(context)
 {
 }
 
@@ -60,9 +59,9 @@ void AnimatingScene::Start()
 
     // Setup the viewport for displaying the scene
     SetupViewport();
-
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void AnimatingScene::CreateScene()
@@ -127,14 +126,14 @@ void AnimatingScene::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use WASD keys and mouse/touch to move");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void AnimatingScene::SetupViewport()
@@ -143,5 +142,5 @@ void AnimatingScene::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }

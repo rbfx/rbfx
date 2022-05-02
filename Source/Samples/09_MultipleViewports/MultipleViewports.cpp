@@ -46,9 +46,9 @@
 #include <Urho3D/DebugNew.h>
 
 
-MultipleViewports::MultipleViewports(Context* context) :
-    Sample(context),
-    drawDebug_(false)
+MultipleViewports::MultipleViewports(Context* context)
+    : Sample(context)
+    , drawDebug_(false)
 {
 }
 
@@ -70,7 +70,8 @@ void MultipleViewports::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void MultipleViewports::CreateScene()
@@ -167,7 +168,7 @@ void MultipleViewports::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "B to toggle bloom, F to toggle FXAA\n"
@@ -180,7 +181,7 @@ void MultipleViewports::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void MultipleViewports::SetupViewports()
@@ -188,11 +189,11 @@ void MultipleViewports::SetupViewports()
     auto* graphics = GetSubsystem<Graphics>();
     auto* renderer = GetSubsystem<Renderer>();
 
-    renderer->SetNumViewports(2);
+    SetNumViewports(2);
 
     // Set up the front camera viewport
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 
     // Clone the default render path so that we do not interfere with the other viewport, then add
     // bloom and FXAA post process effects to the front viewport. Render path commands can be tagged
@@ -212,14 +213,11 @@ void MultipleViewports::SetupViewports()
     // The viewport index must be greater in that case, otherwise the view would be left behind
     SharedPtr<Viewport> rearViewport(new Viewport(context_, scene_, rearCameraNode_->GetComponent<Camera>(),
         IntRect(graphics->GetWidth() * 2 / 3, 32, graphics->GetWidth() - 32, graphics->GetHeight() / 3)));
-    renderer->SetViewport(1, rearViewport);
+    SetViewport(1, rearViewport);
 }
 
 void MultipleViewports::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() method for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(MultipleViewports, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() method for processing the post-render update event, during which we request
     // debug geometry
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(MultipleViewports, HandlePostRenderUpdate));
@@ -245,13 +243,8 @@ void MultipleViewports::MoveCamera(float timeStep)
         drawDebug_ = !drawDebug_;
 }
 
-void MultipleViewports::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void MultipleViewports::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

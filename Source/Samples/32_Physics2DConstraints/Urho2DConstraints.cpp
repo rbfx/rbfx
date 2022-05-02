@@ -88,7 +88,8 @@ void Urho2DConstraints::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void Urho2DConstraints::CreateScene()
@@ -115,7 +116,7 @@ void Urho2DConstraints::CreateScene()
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, camera_));
     auto* renderer = GetSubsystem<Renderer>();
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 
     Zone* zone = renderer->GetDefaultZone();
     zone->SetFogColor(Color(0.1f, 0.1f, 0.1f)); // Set background color for the scene
@@ -417,7 +418,7 @@ void Urho2DConstraints::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText("Use WASD keys and mouse to move, Use PageUp PageDown to zoom.\n Space to toggle debug geometry and joints - F5 to save the scene.");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     instructionText->SetTextAlignment(HA_CENTER); // Center rows in relation to each other
@@ -425,7 +426,7 @@ void Urho2DConstraints::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Urho2DConstraints::MoveCamera(float timeStep)
@@ -458,9 +459,6 @@ void Urho2DConstraints::MoveCamera(float timeStep)
 
 void Urho2DConstraints::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Urho2DConstraints, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request debug geometry
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Urho2DConstraints, HandlePostRenderUpdate));
 
@@ -474,13 +472,8 @@ void Urho2DConstraints::SubscribeToEvents()
         SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(Urho2DConstraints, HandleTouchBegin3));
 }
 
-void Urho2DConstraints::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Urho2DConstraints::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 

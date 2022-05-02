@@ -759,15 +759,16 @@ bool AnimationController::UpdateAnimationTime(Animation* animation, float time)
     return false;
 }
 
-bool AnimationController::UpdateAnimationWeight(Animation* animation, float weight)
+bool AnimationController::UpdateAnimationWeight(Animation* animation, float weight, float fadeTime)
 {
     const unsigned index = FindLastAnimation(animation);
     if (index != M_MAX_UNSIGNED)
     {
         AnimationParameters params = GetAnimationParameters(index);
-        params.weight_ = weight;
+        if (fadeTime == 0.0f)
+            params.weight_ = weight;
         params.targetWeight_ = weight;
-        params.targetWeightDelay_ = 0.0f;
+        params.targetWeightDelay_ = fadeTime;
         UpdateAnimation(index, params);
         return true;
     }

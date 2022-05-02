@@ -151,7 +151,7 @@ namespace Urho3D
 {
 
 SamplesManager::SamplesManager(Context* context) :
-    Application(context)
+    SingleStateApplication(context)
 {
 }
 
@@ -176,10 +176,23 @@ void SamplesManager::Setup()
 #endif
 }
 
+SampleSelectionScreen::SampleSelectionScreen(Context* context)
+    : ApplicationState(context)
+{
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
+}
+
 void SamplesManager::Start()
 {
-    Input* input = context_->GetSubsystem<Input>();
     UI* ui = context_->GetSubsystem<UI>();
+
+#if MOBILE
+    // Scale UI for high DPI mobile screens
+    auto dpi = GetSubsystem<Graphics>()->GetDisplayDPI();
+    if (dpi.z_ >= 200)
+        ui->SetScale(2.0f);
+#endif
 
     // Parse command line arguments
     ea::transform(commandLineArgsTemp_.begin(), commandLineArgsTemp_.end(), ea::back_inserter(commandLineArgs_),
@@ -187,11 +200,17 @@ void SamplesManager::Start()
 
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
     context_->AddFactoryReflection<Rotator>();
+    context_->AddFactoryReflection<SampleSelectionScreen>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
-
-    input->SetMouseMode(MM_FREE);
-    input->SetMouseVisible(true);
+    splashScreen_ = MakeShared<SplashScreen>(context_);
+    sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
+    splashScreen_->SetNextState(sampleSelectionScreen_);
+    splashScreen_->FetchSceneResourcesAsync("Scenes/RenderingShowcase_0.xml");
+    splashScreen_->SetBackgroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/StoneDiffuse.dds"));
+    splashScreen_->SetForegroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/LogoLarge.png"));
+    splashScreen_->SetProgressImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/TerrainDetail2.dds"));
+    SetState(splashScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
@@ -211,17 +230,19 @@ void SamplesManager::Start()
     rmlUi->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
 #endif
 
-    ui->GetRoot()->SetDefaultStyle(context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(
+        context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
-    auto* layout = ui->GetRoot()->CreateChild<UIElement>();
+    IntVector2 listSize = VectorMin(IntVector2(300, 600), ui->GetRoot()->GetSize());
+    auto* layout = sampleSelectionScreen_->GetUIRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
     layout->SetLayoutMode(LM_VERTICAL);
     layout->SetAlignment(HA_CENTER, VA_CENTER);
-    layout->SetSize(300, 600);
+    layout->SetSize(listSize);
     layout->SetStyleAuto();
 
     auto* list = layout->CreateChild<ListView>();
-    list->SetMinSize(300, 600);
+    list->SetMinSize(listSize);
     list->SetSelectOnClickEnd(true);
     list->SetHighlightMode(HM_ALWAYS);
     list->SetStyleAuto();
@@ -233,7 +254,7 @@ void SamplesManager::Start()
     if (!logoTexture)
         return;
 
-    logoSprite_ = ui->GetRoot()->CreateChild<Sprite>();
+    logoSprite_ = sampleSelectionScreen_->GetUIRoot()->CreateChild<Sprite>();
     logoSprite_->SetTexture(logoTexture);
 
     int textureWidth = logoTexture->GetWidth();
@@ -367,7 +388,6 @@ void SamplesManager::OnClickSample(VariantMap& args)
 void SamplesManager::StartSample(StringHash sampleType)
 {
     UI* ui = context_->GetSubsystem<UI>();
-    ui->GetRoot()->RemoveAllChildren();
     ui->SetFocusElement(nullptr);
 
 #if MOBILE
@@ -376,9 +396,13 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    runningSample_.DynamicCast(context_->CreateObject(sampleType));
-    if (runningSample_)
-        runningSample_->Start(commandLineArgs_);
+    SharedPtr<Sample> sample;
+    sample.DynamicCast(context_->CreateObject(sampleType));
+    if (sample)
+    {
+        SetState(sample);
+        sample->Start(GetArgs());
+    }
     else
         ErrorExit("Specified sample does not exist.");
 }
@@ -514,7 +538,7 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     }
 #endif
 
-    if (runningSample_)
+    if (GetState() != sampleSelectionScreen_)
         return;
 
     if (key == KEY_SPACE)
@@ -561,18 +585,13 @@ void SamplesManager::OnFrameStart()
     if (isClosing_)
     {
         isClosing_ = false;
-        if (runningSample_.NotNull())
+        if (GetState() != sampleSelectionScreen_)
         {
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
-            runningSample_->Stop();
-            runningSample_ = nullptr;
-            input->SetMouseMode(MM_FREE);
-            input->SetMouseVisible(true);
+
+            SetState(sampleSelectionScreen_);
             ui->SetCursor(nullptr);
-            ui->GetRoot()->RemoveAllChildren();
-            ui->GetRoot()->AddChild(listViewHolder_);
-            ui->GetRoot()->AddChild(logoSprite_);
 #if MOBILE
             Graphics* graphics = context_->GetSubsystem<Graphics>();
             graphics->SetOrientations("Portrait");
@@ -620,7 +639,7 @@ void SamplesManager::RegisterSample()
     title->SetFont(context_->GetSubsystem<ResourceCache>()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
     title->SetStyleAuto();
 
-    context_->GetSubsystem<UI>()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
+    sampleSelectionScreen_->GetUIRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
 }
 
 }

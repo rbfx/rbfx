@@ -70,13 +70,11 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Subscribe to application-wide logic update events.
-    void SubscribeToEvents();
 
     /// Animate the vertex data of the objects.
     void AnimateObjects(float timeStep);
     /// Handle the logic update event.
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep) override;
 
     /// Cloned models' vertex buffers that we will animate.
     ea::vector<SharedPtr<VertexBuffer> > animatingBuffers_;

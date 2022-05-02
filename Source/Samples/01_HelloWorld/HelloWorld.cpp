@@ -34,6 +34,9 @@
 HelloWorld::HelloWorld(Context* context) :
     Sample(context)
 {
+    // Set the mouse mode to use in the sample
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void HelloWorld::Start()
@@ -49,8 +52,6 @@ void HelloWorld::Start()
     // could subscribe in the constructor instead.
     SubscribeToEvents();
 
-    // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
 }
 
 void HelloWorld::CreateText()
@@ -72,16 +73,14 @@ void HelloWorld::CreateText()
     helloText->SetVerticalAlignment(VA_CENTER);
 
     // Add Text instance to the UI root element
-    GetSubsystem<UI>()->GetRoot()->AddChild(helloText);
+    GetUIRoot()->AddChild(helloText);
 }
 
 void HelloWorld::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloWorld, HandleUpdate));
 }
 
-void HelloWorld::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void HelloWorld::Update(float timeStep)
 {
     // Do nothing for now, could be extended to eg. animate the display
 }

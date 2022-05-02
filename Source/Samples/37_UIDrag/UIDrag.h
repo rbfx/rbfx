@@ -65,7 +65,7 @@ private:
     /// Subscribe to application-wide logic update events.
     void SubscribeToEvents();
 
-    void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    void Update(float timeStep);
     void HandleClick(StringHash eventType, VariantMap& eventData);
     void HandleDragBegin(StringHash eventType, VariantMap& eventData);
     void HandleDragMove(StringHash eventType, VariantMap& eventData);

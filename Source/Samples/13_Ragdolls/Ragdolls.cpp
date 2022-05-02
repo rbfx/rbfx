@@ -49,10 +49,9 @@
 
 #include <Urho3D/DebugNew.h>
 
-
-Ragdolls::Ragdolls(Context* context) :
-    Sample(context),
-    drawDebug_(false)
+Ragdolls::Ragdolls(Context* context)
+    : Sample(context)
+    , drawDebug_(false)
 {
     // Register an object factory for our custom CreateRagdoll component so that we can create them to scene nodes
     if (!context->IsReflected<CreateRagdoll>())
@@ -77,7 +76,8 @@ void Ragdolls::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    SetMouseMode(MM_RELATIVE);
+    SetMouseVisible(false);
 }
 
 void Ragdolls::CreateScene()
@@ -182,7 +182,7 @@ void Ragdolls::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = ui->GetRoot()->CreateChild<Text>();
+    auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "LMB to spawn physics objects\n"
@@ -196,7 +196,7 @@ void Ragdolls::CreateInstructions()
     // Position the text relative to the screen center
     instructionText->SetHorizontalAlignment(HA_CENTER);
     instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
+    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void Ragdolls::SetupViewport()
@@ -205,7 +205,7 @@ void Ragdolls::SetupViewport()
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
-    renderer->SetViewport(0, viewport);
+    SetViewport(0, viewport);
 }
 
 void Ragdolls::MoveCamera(float timeStep)
@@ -265,21 +265,13 @@ void Ragdolls::SpawnObject()
 
 void Ragdolls::SubscribeToEvents()
 {
-    // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Ragdolls, HandleUpdate));
-
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Ragdolls, HandlePostRenderUpdate));
 }
 
-void Ragdolls::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void Ragdolls::Update(float timeStep)
 {
-    using namespace Update;
-
-    // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
-
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);
 }

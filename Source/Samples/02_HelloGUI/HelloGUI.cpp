@@ -41,7 +41,7 @@
 
 HelloGUI::HelloGUI(Context* context) :
     Sample(context),
-    uiRoot_(GetSubsystem<UI>()->GetRoot()),
+    uiRoot_(GetUIRoot()),
     dragBeginPosition_(IntVector2::ZERO)
 {
 }
@@ -71,7 +71,8 @@ void HelloGUI::Start()
     CreateDraggableFish();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    SetMouseMode(MM_FREE);
+    SetMouseVisible(true);
 }
 
 void HelloGUI::InitControls()

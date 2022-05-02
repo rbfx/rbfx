@@ -149,7 +149,7 @@ void CharacterIsometric::HandleWoundedState(float timeStep)
         // Update lifes UI and counter
         remainingLifes_ -= 1;
         auto* ui = GetSubsystem<UI>();
-        Text* lifeText = static_cast<Text*>(ui->GetRoot()->GetChild("LifeText", true));
+        Text* lifeText = static_cast<Text*>(GetSubsystem<UI>()->GetRoot()->GetChild("LifeText", true));
         lifeText->SetText(ea::to_string(remainingLifes_)); // Update lifes UI counter
 
         // Reset wounded state
