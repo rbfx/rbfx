@@ -72,6 +72,7 @@ SplashScreen::SplashScreen(Context* context)
     foreground_ = background_->CreateChild<Sprite>();
     progressBar_ = foreground_->CreateChild<Sprite>();
     scene_ = MakeShared<Scene>(context);
+    soundSource_ = scene_->CreateComponent<SoundSource>();
 }
 
 void SplashScreen::Activate(SingleStateApplication* application)
@@ -86,7 +87,6 @@ void SplashScreen::Activate(SingleStateApplication* application)
 
     maxResourceCounter_ = Max(cache->GetNumBackgroundLoadResources(), 1);
 
-    soundSource_ = scene_->CreateComponent<SoundSource>();
     SetViewport(0, MakeShared<Viewport>(context_, scene_, nullptr, nullptr));
     if (sound_)
         soundSource_->Play(sound_);
