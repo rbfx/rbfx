@@ -185,6 +185,15 @@ SampleSelectionScreen::SampleSelectionScreen(Context* context)
 
 void SamplesManager::Start()
 {
+    UI* ui = context_->GetSubsystem<UI>();
+
+#if MOBILE
+    // Scale UI for high DPI mobile screens
+    auto dpi = GetSubsystem<Graphics>()->GetDisplayDPI();
+    if (dpi.z_ >= 200)
+        ui->SetScale(2.0f);
+#endif
+
     // Parse command line arguments
     ea::transform(commandLineArgsTemp_.begin(), commandLineArgsTemp_.end(), ea::back_inserter(commandLineArgs_),
         [](const std::string& str) { return ea::string(str.c_str()); });
@@ -224,15 +233,16 @@ void SamplesManager::Start()
     sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(
         context_->GetSubsystem<ResourceCache>()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
+    IntVector2 listSize = VectorMin(IntVector2(300, 600), ui->GetRoot()->GetSize());
     auto* layout = sampleSelectionScreen_->GetUIRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
     layout->SetLayoutMode(LM_VERTICAL);
     layout->SetAlignment(HA_CENTER, VA_CENTER);
-    layout->SetSize(300, 600);
+    layout->SetSize(listSize);
     layout->SetStyleAuto();
 
     auto* list = layout->CreateChild<ListView>();
-    list->SetMinSize(300, 600);
+    list->SetMinSize(listSize);
     list->SetSelectOnClickEnd(true);
     list->SetHighlightMode(HM_ALWAYS);
     list->SetStyleAuto();
