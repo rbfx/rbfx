@@ -77,9 +77,14 @@ void SplashScreen::Activate(SingleStateApplication* application)
 {
     ApplicationState::Activate(application);
 
+    SubscribeToEvent(E_KEYUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
+    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
+    SubscribeToEvent(E_JOYSTICKBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
+
     state_ = SplashScreenState::FadeIn;
     timeLeft_ = fadeInDuration_;
     stateDuration_ = fadeInDuration_;
+    exitRequested_ = false;
 
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -90,6 +95,40 @@ void SplashScreen::Activate(SingleStateApplication* application)
         soundSource_->Play(sound_);
 
     Update(0);
+}
+
+void SplashScreen::Deactivate()
+{
+    ApplicationState::Deactivate();
+
+    UnsubscribeFromEvent(E_KEYUP);
+    UnsubscribeFromEvent(E_MOUSEBUTTONUP);
+    UnsubscribeFromEvent(E_JOYSTICKBUTTONUP);
+}
+
+void SplashScreen::HandleKeyUp(StringHash eventType, VariantMap& args)
+{
+    if (eventType == E_KEYUP)
+    {
+        using namespace KeyUp;
+        switch (args[P_KEY].GetInt())
+        {
+        case KEY_SPACE:
+        case KEY_ESCAPE:
+        case KEY_BACKSPACE: exitRequested_ = true; break;
+        }
+        return;
+    }
+    if (eventType == E_MOUSEBUTTONUP)
+    {
+        exitRequested_ = true;
+        return;
+    }
+    if (eventType == E_JOYSTICKBUTTONUP)
+    {
+        exitRequested_ = true;
+        return;
+    }
 }
 
 void SplashScreen::UpdateLayout(float ratio)
@@ -119,6 +158,11 @@ void SplashScreen::UpdateLayout(float ratio)
 
 void SplashScreen::UpdateState(float timeStep, unsigned resourceCounter)
 {
+    if (exitRequested_)
+    {
+        GetApplication()->SetState(nextState_);
+        return;
+    }
     timeLeft_ -= timeStep;
     switch (state_)
     {
@@ -196,6 +240,11 @@ void SplashScreen::SetDuration(float durationInSeconds)
     duration_ = durationInSeconds;
 }
 
+void SplashScreen::SetSkippable(bool skippable)
+{
+    skippable_ = skippable;
+}
+
 void SplashScreen::SetSound(Sound* sound, float gain)
 {
     sound_ = sound;
@@ -244,10 +293,17 @@ ApplicationState* SplashScreen::GetNextState() const
     return nextState_;
 }
 
-bool SplashScreen::FetchSceneResourcesAsync(const ea::string& fileName)
+/// Background load a resource. Return true if successfully stored to the load
+/// queue, false if eg. already exists. Can be called from outside the main thread.
+bool SplashScreen::QueueResource(StringHash type, const ea::string& name, bool sendEventOnFailure)
 {
     auto* cache = GetSubsystem<ResourceCache>();
+    return cache->BackgroundLoadResource(type, name, sendEventOnFailure);
+}
 
+bool SplashScreen::QueueSceneResourcesAsync(const ea::string& fileName)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
     scene_ = MakeShared<Scene>(context_);
     SharedPtr<File> file = cache->GetFile(fileName);
     if (file)

@@ -49,10 +49,19 @@ public:
     /// Activate game screen. Executed by Application.
     void Activate(SingleStateApplication* application) override;
 
+    /// Deactivate game screen. Executed by Application.
+    void Deactivate() override;
+
     /// Handle the logic update event.
     void Update(float timeStep) override;
 
-    bool FetchSceneResourcesAsync(const ea::string& fileName);
+    /// Background load all resources referenced by a scene.
+    bool QueueSceneResourcesAsync(const ea::string& fileName);
+    /// Template version of queueing a resource background load.
+    template <class T> bool QueueResource(const ea::string& name, bool sendEventOnFailure = true);
+    /// Background load a resource. Return true if successfully stored to the load
+    /// queue, false if eg. already exists. Can be called from outside the main thread.
+    bool QueueResource(StringHash type, const ea::string& name, bool sendEventOnFailure = true);
 
     void SetBackgroundImage(Texture* image);
     void SetForegroundImage(Texture* image);
@@ -63,6 +72,7 @@ public:
     void SetFadeInDuration(float durationInSeconds);
     void SetFadeOutDuration(float durationInSeconds);
     void SetDuration(float durationInSeconds);
+    void SetSkippable(bool skippable);
 
     Texture* GetBackgroundImage() const;
     Texture* GetForegroundImage() const;
@@ -72,10 +82,18 @@ public:
     float GetFadeInDuration() const { return fadeInDuration_; }
     float GetFadeOutDuration() const { return fadeOutDuration_; }
     float GetDuration() const { return duration_; }
+    bool IsSkippable() const { return skippable_; }
 
 private:
+    void HandleKeyUp(StringHash eventType, VariantMap& args);
+
     void UpdateLayout(float ratio);
     void UpdateState(float timeStep, unsigned resourceCounter);
+
+    // Is splash screen skippable.
+    bool skippable_{true};
+    // Is exit requested by user.
+    bool exitRequested_{};
 
     // Splash screen state
     SplashScreenState state_{SplashScreenState ::Complete};
@@ -102,5 +120,12 @@ private:
     SharedPtr<Sprite> progressBar_;
     SharedPtr<Sound> sound_;
 };
+
+template <class T> bool SplashScreen::QueueResource(const ea::string& name, bool sendEventOnFailure)
+{
+    StringHash type = T::GetTypeStatic();
+    return QueueResource(type, name, sendEventOnFailure, caller);
+}
+
 
 } // namespace Urho3D

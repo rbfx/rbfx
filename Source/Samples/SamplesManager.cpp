@@ -140,6 +140,7 @@
 #endif
 #endif
 #endif
+#include "111_SplashScreen/SplashScreenDemo.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -178,9 +179,22 @@ void SamplesManager::Setup()
 
 SampleSelectionScreen::SampleSelectionScreen(Context* context)
     : ApplicationState(context)
+    , dpadAdapter_(context)
 {
     SetMouseMode(MM_FREE);
     SetMouseVisible(true);
+}
+
+void SampleSelectionScreen::Activate(SingleStateApplication* application)
+{
+    ApplicationState::Activate(application);
+    dpadAdapter_.SetEnabled(true);
+}
+
+void SampleSelectionScreen::Deactivate()
+{
+    ApplicationState::Deactivate();
+    dpadAdapter_.SetEnabled(false);
 }
 
 void SamplesManager::Start()
@@ -203,14 +217,8 @@ void SamplesManager::Start()
     context_->AddFactoryReflection<SampleSelectionScreen>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
-    splashScreen_ = MakeShared<SplashScreen>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
-    splashScreen_->SetNextState(sampleSelectionScreen_);
-    splashScreen_->FetchSceneResourcesAsync("Scenes/RenderingShowcase_0.xml");
-    splashScreen_->SetBackgroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/StoneDiffuse.dds"));
-    splashScreen_->SetForegroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/LogoLarge.png"));
-    splashScreen_->SetProgressImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/TerrainDetail2.dds"));
-    SetState(splashScreen_);
+    SetState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
@@ -218,7 +226,7 @@ void SamplesManager::Start()
 #endif
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
@@ -365,6 +373,7 @@ void SamplesManager::Start()
 #endif
 #endif
 #endif
+    RegisterSample<SplashScreenDemo>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
@@ -566,7 +575,6 @@ void SamplesManager::OnKeyPress(VariantMap& args)
         if (nextSelection)
             nextSelection->SetSelected(true);
     }
-
 
     if (key == KEY_UP)
     {

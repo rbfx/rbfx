@@ -122,7 +122,7 @@ private:
     /// Is the game screen active.
     bool active_{false};
     /// Application activated the state instance.
-    SingleStateApplication* application_;
+    SingleStateApplication* application_{};
     /// UI root element.
     SharedPtr<UIElement> rootElement_{};
     /// UI root element saved upon activation to be restored at deactivation.
