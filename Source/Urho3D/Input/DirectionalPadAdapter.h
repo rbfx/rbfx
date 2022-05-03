@@ -95,6 +95,7 @@ private:
     ea::fixed_vector<AxisState, 4> verticalAxis_;
     ea::fixed_vector<AxisState, 4> horizontalAxis_;
     float axisDeadZone_{0.1f};
+    int ignoreJoystickId_{-10};
 };
 
 } // namespace Urho3D

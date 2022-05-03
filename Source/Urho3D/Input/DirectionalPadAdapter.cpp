@@ -32,6 +32,15 @@ DirectionalPadAdapter::DirectionalPadAdapter(Context* context)
     : Object(context)
     , input_(context->GetSubsystem<Input>())
 {
+    unsigned numJoysticks = input_->GetNumJoysticks();
+    for (unsigned i = 0; i < numJoysticks; ++i)
+    {
+        auto* joystick = input_->GetJoystickByIndex(i);
+        if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
+        {
+            ignoreJoystickId_ = joystick->joystickID_;
+        }
+    }
 }
 
 /// Set enabled flag. The object subscribes for events when enabled.
@@ -121,10 +130,18 @@ Vector2 DirectionalPadAdapter::GetDirection() const
 {
     Vector2 res = Vector2::ZERO;
 
-    for (const AxisState& activeState : horizontalAxis_)
-        res.x_ += activeState.value_;
-    for (const AxisState& activeState : verticalAxis_)
-        res.y_ += activeState.value_;
+    if (!horizontalAxis_.empty())
+    {
+        for (const AxisState& activeState : horizontalAxis_)
+            res.x_ += activeState.value_;
+        res.x_ *= 1.0f / horizontalAxis_.size();
+    }
+    if (!verticalAxis_.empty())
+    {
+        for (const AxisState& activeState : verticalAxis_)
+            res.y_ += activeState.value_;
+        res.x_ *= 1.0f / verticalAxis_.size();
+    }
 
     return res;
 }
@@ -189,7 +206,11 @@ void DirectionalPadAdapter::HandleJoystickAxisMove(StringHash eventType, Variant
 {
     using namespace JoystickAxisMove;
 
-    auto joystickId = args[P_JOYSTICKID].GetUInt();
+
+    auto joystickId = args[P_JOYSTICKID].GetInt();
+    if (joystickId == ignoreJoystickId_)
+        return;
+    
     auto eventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickAxis) + joystickId);
 
     auto axisIndex = args[P_AXIS].GetUInt();
