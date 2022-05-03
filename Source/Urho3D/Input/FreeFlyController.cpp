@@ -160,13 +160,13 @@ void FreeFlyController::HandleKeyboardAndMouse(float timeStep)
     // Use the Translate() function (default local space) to move relative to the node's orientation.
     {
         float speed = input->GetKeyDown(KEY_SHIFT) ? acceleratedSpeed_ : speed_;
-        if (input->GetKeyDown(KEY_W))
+        if (input->GetScancodeDown(SCANCODE_W))
             node_->Translate(Vector3::FORWARD * speed * timeStep);
-        if (input->GetKeyDown(KEY_S))
+        if (input->GetScancodeDown(SCANCODE_S))
             node_->Translate(Vector3::BACK * speed * timeStep);
-        if (input->GetKeyDown(KEY_A))
+        if (input->GetScancodeDown(SCANCODE_A))
             node_->Translate(Vector3::LEFT * speed * timeStep);
-        if (input->GetKeyDown(KEY_D))
+        if (input->GetScancodeDown(SCANCODE_D))
             node_->Translate(Vector3::RIGHT * speed * timeStep);
     }
 
