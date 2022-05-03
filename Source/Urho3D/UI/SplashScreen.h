@@ -124,7 +124,7 @@ private:
 template <class T> bool SplashScreen::QueueResource(const ea::string& name, bool sendEventOnFailure)
 {
     StringHash type = T::GetTypeStatic();
-    return QueueResource(type, name, sendEventOnFailure, caller);
+    return QueueResource(type, name, sendEventOnFailure);
 }
 
 
