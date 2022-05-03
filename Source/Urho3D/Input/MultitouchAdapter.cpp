@@ -176,7 +176,7 @@ void MultitouchAdapter::SendEvent(MultitouchEventType event)
     lastKnownPosition_ = center;
     lastKnownSize_ = size;
 
-    Object::SendEvent(E_MULTITOUCH, evt);
+    Object::SendEvent(E_MULTITOUCH, evt, false);
 }
 
 } // namespace Urho3D

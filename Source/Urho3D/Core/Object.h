@@ -154,7 +154,10 @@ public:
     void SendEvent(StringHash eventType);
     /// Send event with parameters to all subscribers.
     void SendEvent(StringHash eventType, VariantMap& eventData);
-    /// Return a preallocated map for event data. Used for optimization to avoid constant re-allocation of event data maps.
+    /// Send event with parameters to subscribers. If broadcast is true the event is sent to all subscribers, otherwise only to specific subscribers.
+    void SendEvent(StringHash eventType, VariantMap& eventData, bool broadcast);
+    /// Return a preallocated map for event data. Used for optimization to avoid constant re-allocation of event data
+    /// maps.
     VariantMap& GetEventDataMap() const;
     /// Send event with variadic parameter pairs to all subscribers. The parameter pairs is a list of paramID and paramValue separated by comma, one pair after another.
     template <typename... Args> void SendEvent(StringHash eventType, Args... args)

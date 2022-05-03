@@ -23,6 +23,7 @@
 
 #include "../Core/Object.h"
 #include "InputConstants.h"
+#include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {
@@ -41,6 +42,13 @@ private:
         JoystickDPad = 200,
     };
 
+    struct AxisState
+    {
+        InputType input_;
+        float value_;
+    };
+    typedef ea::fixed_vector<InputType, 4> InputVector;
+
 public:
     /// Construct.
     explicit DirectionalPadAdapter(Context* context);
@@ -50,6 +58,12 @@ public:
     void SetEnabled(bool enabled);
 
     bool IsEnabled() const { return enabled_; }
+
+    /// Check if a key is held down by scancode. Only Up, Down, Left and Right scancodes are supported.
+    bool GetScancodeDown(Scancode scancode) const;
+
+    /// Get aggregated direction vector with X pointing right and Y pointing down (similar to gamepad axis).
+    Vector2 GetDirection() const;
 
 private:
     void SubscribeToEvents();
@@ -62,18 +76,25 @@ private:
     void HandleJoystickHatMove(StringHash eventType, VariantMap& args);
     void HandleJoystickDisconnected(StringHash eventType, VariantMap& args);
 
-    bool Append(ea::vector<InputType>& activeInput, InputType input);
-    bool Remove(ea::vector<InputType>& activeInput, InputType input);
+    void UpdateAxis(ea::fixed_vector<AxisState, 4>& activeStates, AxisState state);
 
-    void SendKeyUp(bool send, Scancode key);
-    void SendKeyDown(bool send, Scancode key);
+    // Append input to set.
+    void Append(InputVector& activeInput, InputType input, Scancode scancode);
+    // Remove input from set.
+    void Remove(InputVector& activeInput, InputType input, Scancode scancode);
+
+    void SendKeyUp(Scancode key);
+    void SendKeyDown(Scancode key);
 
     bool enabled_{false};
     Input* input_{};
-    ea::vector<InputType> forward_;
-    ea::vector<InputType> backward_;
-    ea::vector<InputType> left_;
-    ea::vector<InputType> right_;
+    InputVector up_;
+    InputVector down_;
+    InputVector left_;
+    InputVector right_;
+    ea::fixed_vector<AxisState, 4> verticalAxis_;
+    ea::fixed_vector<AxisState, 4> horizontalAxis_;
+    float axisDeadZone_{0.1f};
 };
 
 } // namespace Urho3D

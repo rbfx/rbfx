@@ -312,7 +312,9 @@ void Object::SendEvent(StringHash eventType)
     SendEvent(eventType, noEventData);
 }
 
-void Object::SendEvent(StringHash eventType, VariantMap& eventData)
+void Object::SendEvent(StringHash eventType, VariantMap& eventData) { SendEvent(eventType, eventData, true); }
+
+void Object::SendEvent(StringHash eventType, VariantMap& eventData, bool broadcast)
 {
     if (!Thread::IsMainThread())
     {
@@ -365,32 +367,34 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
     }
 
     // Then the non-specific receivers
-    SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
-    if (groupNonSpec)
+    if (broadcast)
     {
-        groupNonSpec->BeginSendEvent();
-
-        const unsigned numReceivers = groupNonSpec->receivers_.size();
-        for (unsigned i = 0; i < numReceivers; ++i)
+        SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
+        if (groupNonSpec)
         {
-            Object* receiver = groupNonSpec->receivers_[i];
-            // If there were specific receivers, check that the event is not sent doubly to them
-            if (!receiver || (group && group->receivers_.contains(receiver)))
-                continue;
+            groupNonSpec->BeginSendEvent();
 
-            receiver->OnEvent(this, eventType, eventData);
-
-            if (self.Expired())
+            const unsigned numReceivers = groupNonSpec->receivers_.size();
+            for (unsigned i = 0; i < numReceivers; ++i)
             {
-                groupNonSpec->EndSendEvent();
-                context->EndSendEvent();
-                return;
+                Object* receiver = groupNonSpec->receivers_[i];
+                // If there were specific receivers, check that the event is not sent doubly to them
+                if (!receiver || (group && group->receivers_.contains(receiver)))
+                    continue;
+
+                receiver->OnEvent(this, eventType, eventData);
+
+                if (self.Expired())
+                {
+                    groupNonSpec->EndSendEvent();
+                    context->EndSendEvent();
+                    return;
+                }
             }
+
+            groupNonSpec->EndSendEvent();
         }
-
-        groupNonSpec->EndSendEvent();
     }
-
     context->EndSendEvent();
 }
 
