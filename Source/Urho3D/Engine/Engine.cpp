@@ -387,10 +387,8 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     // Remove all resource paths and packages
     if (removeOld)
     {
-        ea::vector<ea::string> resourceDirs = cache->GetResourceDirs();
+        cache->RemoveAllResourceDirs();
         ea::vector<SharedPtr<PackageFile> > packageFiles = cache->GetPackageFiles();
-        for (unsigned i = 0; i < resourceDirs.size(); ++i)
-            cache->RemoveResourceDir(resourceDirs[i]);
         for (unsigned i = 0; i < packageFiles.size(); ++i)
             cache->RemovePackageFile(packageFiles[i].Get());
     }
