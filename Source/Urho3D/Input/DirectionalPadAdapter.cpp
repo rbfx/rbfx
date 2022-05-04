@@ -61,6 +61,11 @@ void DirectionalPadAdapter::SetEnabled(bool enabled)
     }
 }
 
+bool DirectionalPadAdapter::GetKeyDown(Key key) const
+{
+    return GetScancodeDown(input_->GetScancodeFromKey(key));
+}
+
 bool DirectionalPadAdapter::GetScancodeDown(Scancode scancode) const
 {
     switch (scancode)
@@ -125,27 +130,6 @@ void DirectionalPadAdapter::SendKeyUp(Scancode key)
     SendEvent(E_KEYUP, args, false);
 }
 
-/// Get aggregated direction vector.
-Vector2 DirectionalPadAdapter::GetDirection() const
-{
-    Vector2 res = Vector2::ZERO;
-
-    if (!horizontalAxis_.empty())
-    {
-        for (const AxisState& activeState : horizontalAxis_)
-            res.x_ += activeState.value_;
-        res.x_ *= 1.0f / horizontalAxis_.size();
-    }
-    if (!verticalAxis_.empty())
-    {
-        for (const AxisState& activeState : verticalAxis_)
-            res.y_ += activeState.value_;
-        res.x_ *= 1.0f / verticalAxis_.size();
-    }
-
-    return res;
-}
-
 void DirectionalPadAdapter::HandleKeyDown(StringHash eventType, VariantMap& args)
 {
     using namespace KeyDown;
@@ -154,22 +138,18 @@ void DirectionalPadAdapter::HandleKeyDown(StringHash eventType, VariantMap& args
     case SCANCODE_W:
     case SCANCODE_UP:
         Append(up_, InputType::Keyboard, SCANCODE_UP);
-        UpdateAxis(verticalAxis_, {InputType::Keyboard, -1});
         break;
     case SCANCODE_S:
     case SCANCODE_DOWN:
         Append(down_, InputType::Keyboard, SCANCODE_DOWN);
-        UpdateAxis(verticalAxis_, {InputType::Keyboard, 1});
         break;
     case SCANCODE_A:
     case SCANCODE_LEFT:
         Append(left_, InputType::Keyboard, SCANCODE_LEFT);
-        UpdateAxis(horizontalAxis_, {InputType::Keyboard, -1});
         break;
     case SCANCODE_D:
     case SCANCODE_RIGHT:
         Append(right_, InputType::Keyboard, SCANCODE_RIGHT);
-        UpdateAxis(horizontalAxis_, {InputType::Keyboard, 1});
         break;
     }
 }
@@ -182,22 +162,18 @@ void DirectionalPadAdapter::HandleKeyUp(StringHash eventType, VariantMap& args)
     case SCANCODE_W:
     case SCANCODE_UP:
         Remove(up_, InputType::Keyboard, SCANCODE_UP);
-        UpdateAxis(verticalAxis_, {InputType::Keyboard, 0.0f});
         break;
     case SCANCODE_S:
     case SCANCODE_DOWN:
         Remove(down_, InputType::Keyboard, SCANCODE_DOWN);
-        UpdateAxis(verticalAxis_, {InputType::Keyboard, 0.0f});
         break;
     case SCANCODE_A:
     case SCANCODE_LEFT:
         Remove(left_, InputType::Keyboard, SCANCODE_LEFT);
-        UpdateAxis(horizontalAxis_, {InputType::Keyboard, 0.0f});
         break;
     case SCANCODE_D:
     case SCANCODE_RIGHT:
         Remove(right_, InputType::Keyboard, SCANCODE_RIGHT);
-        UpdateAxis(horizontalAxis_, {InputType::Keyboard, 0.0f});
         break;
     }
 }
@@ -219,7 +195,6 @@ void DirectionalPadAdapter::HandleJoystickAxisMove(StringHash eventType, Variant
     // Up-Down
     if (axisIndex == 1)
     {
-        UpdateAxis(verticalAxis_, {eventId, value});
         if (value > 0.6f)
         {
             Append(down_, eventId, SCANCODE_DOWN);
@@ -239,7 +214,6 @@ void DirectionalPadAdapter::HandleJoystickAxisMove(StringHash eventType, Variant
     // Left-Right
     if (axisIndex == 0)
     {
-        UpdateAxis(horizontalAxis_, {eventId, value});
         if (value > 0.6f)
         {
             Append(right_, eventId, SCANCODE_RIGHT);
@@ -291,9 +265,7 @@ void DirectionalPadAdapter::HandleJoystickHatMove(StringHash eventType, VariantM
         Remove(right_, eventId, SCANCODE_RIGHT);
 
     const float horizontalValue = ((position & HAT_RIGHT) ? 1.0f : 0.0f) + ((position & HAT_LEFT) ? -1.0f : 0.0f);
-    UpdateAxis(horizontalAxis_, {eventId, horizontalValue});
     const float verticalValue = ((position & HAT_DOWN) ? 1.0f : 0.0f) + ((position & HAT_UP) ? -1.0f : 0.0f);
-    UpdateAxis(verticalAxis_, {eventId, verticalValue});
 }
 
 void DirectionalPadAdapter::HandleJoystickDisconnected(StringHash eventType, VariantMap& args)
@@ -307,8 +279,6 @@ void DirectionalPadAdapter::HandleJoystickDisconnected(StringHash eventType, Var
     Remove(down_, joyEventId, SCANCODE_DOWN);
     Remove(left_, joyEventId, SCANCODE_LEFT);
     Remove(right_, joyEventId, SCANCODE_RIGHT);
-    UpdateAxis(verticalAxis_, {joyEventId, 0.0f});
-    UpdateAxis(horizontalAxis_, {joyEventId, 0.0f});
 
     // Cancel DPad states.
     const auto dpadEventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickDPad) + joystickId);
@@ -316,24 +286,6 @@ void DirectionalPadAdapter::HandleJoystickDisconnected(StringHash eventType, Var
     Remove(down_, dpadEventId, SCANCODE_DOWN);
     Remove(left_, dpadEventId, SCANCODE_LEFT);
     Remove(right_, dpadEventId, SCANCODE_RIGHT);
-    UpdateAxis(verticalAxis_, {dpadEventId, 0.0f});
-    UpdateAxis(horizontalAxis_, {dpadEventId, 0.0f});
-}
-
-void DirectionalPadAdapter::UpdateAxis(ea::fixed_vector<AxisState, 4>& activeStates, AxisState state)
-{
-    for (AxisState& activeState : activeStates)
-    {
-        if (activeState.input_ == state.input_)
-        {
-            if (Abs(state.value_) < axisDeadZone_)
-                activeStates.erase_unsorted(&activeState);
-            else
-                activeState.value_ = state.value_;
-            return;
-        }
-    }
-    activeStates.push_back(state);
 }
 
 void DirectionalPadAdapter::Append(InputVector& activeInput, InputType input, Scancode scancode)

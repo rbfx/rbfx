@@ -28,10 +28,10 @@
 namespace Urho3D
 {
 
-/// Adapter to translate gamepad axis and dpad messages along with keyboard (WASD and arrows) and externally provided directions into keyboard arrow messages.
-class URHO3D_API DirectionalPadAdapter : public Object
+/// Class to aggregate all movement inputs into a signle direction vector.
+class URHO3D_API DirectionAggregator : public Object
 {
-    URHO3D_OBJECT(DirectionalPadAdapter, Object)
+    URHO3D_OBJECT(DirectionAggregator, Object)
 
 private:
     enum class InputType
@@ -42,11 +42,16 @@ private:
         JoystickDPad = 200,
     };
 
-    typedef ea::fixed_vector<InputType, 4> InputVector;
+    struct AxisState
+    {
+        InputType input_;
+        float value_;
+    };
+    typedef ea::fixed_vector<AxisState, 4> InputVector;
 
 public:
     /// Construct.
-    explicit DirectionalPadAdapter(Context* context);
+    explicit DirectionAggregator(Context* context);
 
     /// Set enabled flag. The object subscribes for events when enabled.
     /// Input messages could be passed to the object manually when disabled.
@@ -54,11 +59,8 @@ public:
 
     bool IsEnabled() const { return enabled_; }
 
-    /// Check if a key is held down by Key code. Only Up, Down, Left and Right keys are supported.
-    bool GetKeyDown(Key key) const;
-
-    /// Check if a key is held down by scancode. Only Up, Down, Left and Right scancodes are supported.
-    bool GetScancodeDown(Scancode scancode) const;
+    /// Get aggregated direction vector with X pointing right and Y pointing down (similar to gamepad axis).
+    Vector2 GetDirection() const;
 
 private:
     void SubscribeToEvents();
@@ -71,21 +73,13 @@ private:
     void HandleJoystickHatMove(StringHash eventType, VariantMap& args);
     void HandleJoystickDisconnected(StringHash eventType, VariantMap& args);
 
-
-    // Append input to set.
-    void Append(InputVector& activeInput, InputType input, Scancode scancode);
-    // Remove input from set.
-    void Remove(InputVector& activeInput, InputType input, Scancode scancode);
-
-    void SendKeyUp(Scancode key);
-    void SendKeyDown(Scancode key);
+    void UpdateAxis(ea::fixed_vector<AxisState, 4>& activeStates, AxisState state);
 
     bool enabled_{false};
     Input* input_{};
-    InputVector up_;
-    InputVector down_;
-    InputVector left_;
-    InputVector right_;
+    InputVector verticalAxis_;
+    InputVector horizontalAxis_;
+    float axisDeadZone_{0.1f};
     int ignoreJoystickId_{-10};
 };
 

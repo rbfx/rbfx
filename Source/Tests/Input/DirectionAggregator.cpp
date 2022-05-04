@@ -23,71 +23,64 @@
 #include "../CommonUtils.h"
 #include <Urho3D/Input/Input.h>
 
-#include <Urho3D/Input/DirectionalPadAdapter.h>
+#include <Urho3D/Input/DirectionAggregator.h>
 
 using namespace Tests;
 
-TEST_CASE("DirectionalPadAdapter tests")
+TEST_CASE("DirectionAggregator tests")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto* input = context->GetSubsystem<Input>();
 
-    DirectionalPadAdapter adapter(context);
+    DirectionAggregator adapter(context);
     adapter.SetEnabled(true);
 
     SECTION("Press S and Down at the same time")
     {
-        CHECK(!adapter.GetScancodeDown(SCANCODE_DOWN));
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_DOWN, KEY_DOWN);
-        CHECK(adapter.GetScancodeDown(SCANCODE_DOWN));
+        CHECK(Vector2(0.0f, 1.0f).Equals(adapter.GetDirection()));
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_S, KEY_S);
-        CHECK(adapter.GetScancodeDown(SCANCODE_DOWN));
+        CHECK(Vector2(0.0f, 1.0f).Equals(adapter.GetDirection()));
         // Release Down. It releases keyboard "down" state.
         SendKeyEvent(input, E_KEYUP, SCANCODE_DOWN, KEY_DOWN);
-        CHECK(!adapter.GetScancodeDown(SCANCODE_DOWN));
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
         SendKeyEvent(input, E_KEYUP, SCANCODE_S, KEY_S);
-        CHECK(!adapter.GetScancodeDown(SCANCODE_DOWN));
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
     SECTION("Press Left and Right at the same time")
     {
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_LEFT, KEY_LEFT);
-        CHECK(adapter.GetScancodeDown(SCANCODE_LEFT));
-        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2(-1.0f, 0.0f).Equals(adapter.GetDirection()));
         // Press Right. It overrides horizontal axis
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_RIGHT, KEY_RIGHT);
-        CHECK(adapter.GetScancodeDown(SCANCODE_LEFT));
-        CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2(1.0f, 0.0f).Equals(adapter.GetDirection()));
         // Release left. It overrides horizontal axis
         SendKeyEvent(input, E_KEYUP, SCANCODE_LEFT, KEY_LEFT);
-        CHECK(!adapter.GetScancodeDown(SCANCODE_LEFT));
-        CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2(0.0f, 0.0f).Equals(adapter.GetDirection()));
         SendKeyEvent(input, E_KEYUP, SCANCODE_RIGHT, KEY_RIGHT);
-        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
     SECTION("Press Left on keyboard and Right on DPad at the same time")
     {
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_LEFT, KEY_LEFT);
-        CHECK(adapter.GetScancodeDown(SCANCODE_LEFT));
-        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2(-1.0f, 0.0f).Equals(adapter.GetDirection()));
         // Press Right.
         SendDPadEvent(input, HAT_RIGHT);
-        CHECK(adapter.GetScancodeDown(SCANCODE_LEFT));
-        CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2(0.0f, 0.0f).Equals(adapter.GetDirection()));
         // Release left.
         SendKeyEvent(input, E_KEYUP, SCANCODE_LEFT, KEY_LEFT);
-        CHECK(!adapter.GetScancodeDown(SCANCODE_LEFT));
-        CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2(1.0f, 0.0f).Equals(adapter.GetDirection()));
         SendDPadEvent(input, HAT_CENTER);
-        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
-    SECTION("Axis to dpad translation")
+    SECTION("Axis input")
     {
         SendAxisEvent(input, 0, 0.8f);
-        CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
+        CHECK(Vector2(0.8f, 0.0f).Equals(adapter.GetDirection()));
         SendAxisEvent(input, 1, 0.9f);
-        CHECK(adapter.GetScancodeDown(SCANCODE_DOWN));
+        CHECK(Vector2(0.8f, 0.9f).Equals(adapter.GetDirection()));
         SendJoystickDisconnected(input, 0);
-        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
-        CHECK(!adapter.GetScancodeDown(SCANCODE_DOWN));
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
 }
