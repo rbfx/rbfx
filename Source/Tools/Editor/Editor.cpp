@@ -77,6 +77,8 @@
 #include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
+#include "ResourceBrowser/ResourceBrowserPlugin.h"
+
 namespace Urho3D
 {
 
@@ -97,12 +99,15 @@ const auto&& DEFAULT_TAB_TYPES = {
 
 Editor::Editor(Context* context)
     : Application(context)
+    , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
+    editorPluginManager_->AddPlugin(GetResourceBrowserPlugin(context_));
 }
 
 void Editor::Setup()
 {
     context_->RegisterSubsystem(this, Editor::GetTypeStatic());
+    context_->RegisterSubsystem(editorPluginManager_, EditorPluginManager::GetTypeStatic());
 
 #ifdef _WIN32
     // Required until SDL supports hdpi on windows
@@ -331,6 +336,7 @@ void Editor::Stop()
     CloseProject();
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
     context_->RemoveSubsystem<Editor>();
+    context_->RemoveSubsystem<EditorPluginManager>();
 }
 
 void Editor::OnUpdate(VariantMap& args)
@@ -352,7 +358,11 @@ void Editor::OnUpdate(VariantMap& args)
     RenderSettingsWindow();
 
     bool hasModified = false;
-    if (project_.NotNull())
+    if (projectEditor_)
+    {
+        projectEditor_->RenderUI();
+    }
+    else if (project_.NotNull())
     {
         dockspaceId_ = ui::GetID("Root");
         ui::DockSpace(dockspaceId_);
@@ -575,6 +585,9 @@ void Editor::OnEndFrame()
         context_->RegisterSubsystem(new SystemUI(context_, flags));
         SetupSystemUI();
 
+        projectEditor_ = MakeShared<ProjectEditor>(context_, pendingOpenProject_);
+
+#if 0
         project_ = new Project(context_);
         context_->RegisterSubsystem(project_);
         bool loaded = project_->LoadProject(pendingOpenProject_);
@@ -604,6 +617,7 @@ void Editor::OnEndFrame()
             CloseProject();
             URHO3D_LOGERROR("Loading project failed.");
         }
+#endif
         pendingOpenProject_.clear();
     }
 }
@@ -686,6 +700,9 @@ void Editor::CloseProject()
         context_->RemoveSubsystem(type);
     tabs_.clear();
     project_.Reset();
+
+    projectEditor_ = nullptr;
+    context_->RemoveSubsystem<ProjectEditor>();
 }
 
 Tab* Editor::GetTabByName(const ea::string& uniqueName)
@@ -809,8 +826,13 @@ void Editor::SetupSystemUI()
     handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
     {
         auto* systemUI = ui::GetSystemUI();
-        auto* editor = systemUI->GetSubsystem<Editor>();
         const char* name = static_cast<const char*>(entry);
+        if (auto* editor = systemUI->GetSubsystem<Editor>())
+        {
+            if (auto* projectEditor = editor->GetProjectEditor())
+                projectEditor->ReadIniSettings(name, line);
+        }
+#if 0
         if (strcmp(name, "Window") == 0)
             editor->CreateDefaultTabs();
         else
@@ -823,15 +845,24 @@ void Editor::SetupSystemUI()
             }
             tab->OnLoadUISettings(name, line);
         }
+#endif
     };
     handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
     {
+        buf->appendf("[Project][Window]\n");
+
         auto* systemUI = ui::GetSystemUI();
         auto* editor = systemUI->GetSubsystem<Editor>();
-        buf->appendf("[Project][Window]\n");
+        if (auto* editor = systemUI->GetSubsystem<Editor>())
+        {
+            if (auto* projectEditor = editor->GetProjectEditor())
+                projectEditor->WriteIniSettings(buf);
+        }
+#if 0
         // Save tabs
         for (auto& tab : editor->GetContentTabs())
             tab->OnSaveUISettings(buf);
+#endif
     };
     ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
 }
