@@ -28,6 +28,8 @@
 #include "KeyBindings.h"
 #include "Project.h"
 #include "Pipeline/Commands/SubCommand.h"
+#include "Project/ProjectEditor.h"
+#include "Core/EditorPluginManager.h"
 
 using namespace std::placeholders;
 
@@ -102,6 +104,7 @@ public:
     void UpdateWindowTitle(const ea::string& resourcePath=EMPTY_STRING);
     ///
     VariantMap& GetEngineParameters() { return engineParameters_; }
+    ProjectEditor* GetProjectEditor() const { return projectEditor_; }
 #if URHO3D_STATIC && URHO3D_PLUGINS
     /// Register static plugin.
     bool RegisterPlugin(PluginApplication* plugin);
@@ -152,6 +155,8 @@ protected:
     ea::string coreResourcePrefixPath_;
     /// Currently loaded project.
     SharedPtr<Project> project_;
+    SharedPtr<EditorPluginManager> editorPluginManager_;
+    SharedPtr<ProjectEditor> projectEditor_;
     /// ID of dockspace root.
     ImGuiID dockspaceId_;
     /// Path to a project that editor should open on the end of the frame.

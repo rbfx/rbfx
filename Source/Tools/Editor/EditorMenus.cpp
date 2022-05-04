@@ -42,7 +42,7 @@ void Editor::RenderMenuBar()
 {
     if (ui::BeginMainMenuBar())
     {
-        if (ui::BeginMenu("File"))
+        if (ui::BeginMenu("Project"))
         {
             if (project_)
             {
@@ -52,6 +52,12 @@ void Editor::RenderMenuBar()
                         tab->SaveResource();
                     project_->SaveProject();
                 }
+            }
+
+            if (projectEditor_)
+            {
+                if (ui::MenuItem("Save Project", keyBindings_.GetKeyCombination(ActionType::SaveProject)))
+                    projectEditor_->Save();
             }
 
             if (ui::MenuItem("Open/Create Project", keyBindings_.GetKeyCombination(ActionType::OpenProject)))
