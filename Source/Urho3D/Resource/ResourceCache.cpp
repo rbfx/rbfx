@@ -221,6 +221,13 @@ void ResourceCache::RemoveResourceDir(const ea::string& pathName)
     }
 }
 
+void ResourceCache::RemoveAllResourceDirs()
+{
+    const auto resourceDirsCopy = resourceDirs_;
+    for (const ea::string& dir : resourceDirsCopy)
+        RemoveResourceDir(dir);
+}
+
 void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResources, bool forceRelease)
 {
     MutexLock lock(resourceMutex_);

@@ -103,6 +103,8 @@ public:
     bool AddManualResource(Resource* resource);
     /// Remove a resource load directory.
     void RemoveResourceDir(const ea::string& pathName);
+    /// Remove all resource directories. At least one directory should be added before cache is used again!
+    void RemoveAllResourceDirs();
     /// Remove a package file. Optionally release the resources loaded from it.
     void RemovePackageFile(PackageFile* package, bool releaseResources = true, bool forceRelease = false);
     /// Remove a package file by name. Optionally release the resources loaded from it.

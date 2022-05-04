@@ -300,8 +300,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
 
 void Sample::HandleSceneUpdate(StringHash /*eventType*/, VariantMap& eventData)
 {
-    // Move the camera by touch, if the camera node is initialized by descendant sample class
-    if (touchEnabled_ && cameraNode_)
+    if (touchEnabled_)
     {
         Input* input = GetSubsystem<Input>();
         for (unsigned i = 0; i < input->GetNumTouches(); ++i)
@@ -309,26 +308,10 @@ void Sample::HandleSceneUpdate(StringHash /*eventType*/, VariantMap& eventData)
             TouchState* state = input->GetTouch(i);
             if (!state->touchedElement_)    // Touch on empty space
             {
-                if (state->delta_.x_ ||state->delta_.y_)
-                {
-                    Camera* camera = cameraNode_->GetComponent<Camera>();
-                    if (!camera)
-                        return;
-
-                    Graphics* graphics = GetSubsystem<Graphics>();
-                    yaw_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
-                    pitch_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
-
-                    // Construct new orientation for the camera scene node from yaw and pitch; roll is fixed to zero
-                    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-                }
-                else
-                {
-                    // Move the cursor to the touch position
-                    Cursor* cursor = GetSubsystem<UI>()->GetCursor();
-                    if (cursor && cursor->IsVisible())
-                        cursor->SetPosition(state->position_);
-                }
+                // Move the cursor to the touch position
+                Cursor* cursor = GetSubsystem<UI>()->GetCursor();
+                if (cursor && cursor->IsVisible())
+                    cursor->SetPosition(state->position_);
             }
         }
     }

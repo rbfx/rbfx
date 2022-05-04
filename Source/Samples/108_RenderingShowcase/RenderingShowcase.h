@@ -55,7 +55,7 @@ private:
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
     /// Construct an instruction text to the UI.
     void CreateInstructions();
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.

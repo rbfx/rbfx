@@ -41,6 +41,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
+#include "../Input/FreeFlyController.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
@@ -227,6 +228,7 @@ bool Engine::Initialize(const VariantMap& parameters)
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
+    context_->RegisterFactory<FreeFlyController>();
 
     context_->RegisterSubsystem(new Audio(context_));
     if (!headless_)
@@ -385,10 +387,8 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     // Remove all resource paths and packages
     if (removeOld)
     {
-        ea::vector<ea::string> resourceDirs = cache->GetResourceDirs();
+        cache->RemoveAllResourceDirs();
         ea::vector<SharedPtr<PackageFile> > packageFiles = cache->GetPackageFiles();
-        for (unsigned i = 0; i < resourceDirs.size(); ++i)
-            cache->RemoveResourceDir(resourceDirs[i]);
         for (unsigned i = 0; i < packageFiles.size(); ++i)
             cache->RemovePackageFile(packageFiles[i].Get());
     }

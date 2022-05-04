@@ -70,12 +70,11 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
-    /// Read input and move the camera.
-    void MoveCamera(float timeStep);
+
     /// Animate the vertex data of the objects.
     void AnimateObjects(float timeStep);
     /// Handle the logic update event.
-    void Update(float timeStep);
+    void Update(float timeStep) override;
 
     /// Cloned models' vertex buffers that we will animate.
     ea::vector<SharedPtr<VertexBuffer> > animatingBuffers_;
