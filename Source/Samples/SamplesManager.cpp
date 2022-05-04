@@ -226,7 +226,8 @@ void SamplesManager::Start()
 #endif
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
+    SubscribeToEvent( E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
@@ -452,6 +453,8 @@ int SamplesManager::GetSelectedIndex() const
 
 void SamplesManager::OnButtonPress(VariantMap& args)
 {
+    if (!sampleSelectionScreen_->IsActive())
+        return;
     using namespace JoystickButtonDown;
     int key = args[P_BUTTON].GetInt();
     int joystick = args[P_JOYSTICKID].GetInt();
@@ -462,28 +465,6 @@ void SamplesManager::OnButtonPress(VariantMap& args)
     {
         switch (key)
         {
-            case CONTROLLER_BUTTON_DPAD_UP:
-            {
-                int currentIndex = GetSelectedIndex();
-                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
-                if (currentSelection)
-                    currentSelection->SetSelected(false);
-                UIElement* nextSelection = GetSampleButtonAt(currentIndex - 1);
-                if (nextSelection)
-                    nextSelection->SetSelected(true);
-                break;
-            }
-            case CONTROLLER_BUTTON_DPAD_DOWN:
-            {
-                int currentIndex = GetSelectedIndex();
-                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
-                if (currentSelection)
-                    currentSelection->SetSelected(false);
-                UIElement* nextSelection = GetSampleButtonAt(currentIndex + 1);
-                if (nextSelection)
-                    nextSelection->SetSelected(true);
-                break;
-            }
             case CONTROLLER_BUTTON_A:
             {
                 UIElement* button = GetSampleButtonAt(GetSelectedIndex());
@@ -499,12 +480,6 @@ void SamplesManager::OnButtonPress(VariantMap& args)
                 }
                 break;
             }
-            // CONTROLLER_BUTTON_B converted by SDL into Escape key code.
-            //case CONTROLLER_BUTTON_B:
-            //{
-            //    isClosing_ = true;
-            //    break;
-            //}
         }
     }
 }
@@ -547,7 +522,7 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     }
 #endif
 
-    if (GetState() != sampleSelectionScreen_)
+    if (!sampleSelectionScreen_->IsActive())
         return;
 
     if (key == KEY_SPACE)
@@ -564,6 +539,13 @@ void SamplesManager::OnKeyPress(VariantMap& args)
             StartSample(sampleType);
         }
     }
+}
+
+void SamplesManager::OnArrowKeyPress(VariantMap& args)
+{
+    using namespace KeyUp;
+
+    int key = args[P_KEY].GetInt();
 
     if (key == KEY_DOWN)
     {

@@ -89,6 +89,8 @@ public:
     ///
     void OnKeyPress(VariantMap& args);
     ///
+    void OnArrowKeyPress(VariantMap& args);
+    ///
     void OnButtonPress(VariantMap& args);
     ///
     void OnFrameStart();
