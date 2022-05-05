@@ -22,13 +22,12 @@
 
 #pragma once
 
-#include "../Core/EditorPlugin.h"
-
-#include <Urho3D/Utility/FileSystemReflection.h>
-
 namespace Urho3D
 {
 
-SharedPtr<EditorPlugin> GetResourceBrowserPlugin(Context* context);
+class Context;
+class ProjectEditor;
+
+void Plugin_ResourceBrowser(Context* context, ProjectEditor* target);
 
 }

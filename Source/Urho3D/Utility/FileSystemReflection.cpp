@@ -26,11 +26,25 @@
 #include "../Utility/FileSystemReflection.h"
 
 #include <EASTL/sort.h>
+#include <EASTL/tuple.h>
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
+
+bool FileSystemEntry::operator<(const FileSystemEntry& rhs) const
+{
+    //return ea::tie(depth_, resourceName_) < ea::tie(rhs.depth_, rhs.resourceName_);
+    //return resourceName_ < rhs.resourceName_;
+
+    const auto compare = [](char lhs, char rhs)
+    {
+        return ea::make_tuple(lhs != '/', lhs) < ea::make_tuple(rhs != '/', rhs);
+    };
+    return ea::lexicographical_compare(resourceName_.begin(), resourceName_.end(),
+        rhs.resourceName_.begin(), rhs.resourceName_.end(), compare);
+}
 
 FileSystemReflection::FileSystemReflection(Context* context, const StringVector& directories)
     : Object(context)
@@ -111,6 +125,7 @@ void FileSystemReflection::ScanRootDirectory(const ea::string& resourceDir, ea::
         FileSystemEntry entry;
         entry.absolutePath_ = resourceDir + resourceName;
         entry.resourceName_ = resourceName;
+        entry.depth_ = ea::count(resourceName.begin(), resourceName.end(), '/');
         entry.isFile_ = fs->FileExists(entry.absolutePath_);
         entry.isDirectory_ = fs->DirExists(entry.absolutePath_);
 

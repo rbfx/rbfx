@@ -41,8 +41,35 @@ protected:
     void RenderContentUI() override;
 
 private:
-    SharedPtr<FileSystemReflection> coreDataReflection_;
-    SharedPtr<FileSystemReflection> dataReflection_;
+    struct ResourceRoot
+    {
+        ea::string name_;
+        bool openByDefault_{};
+        StringVector watchedDirectories_;
+        ea::string activeDirectory_;
+
+        SharedPtr<FileSystemReflection> reflection_;
+    };
+
+    void RenderDirectoryTree(const FileSystemEntry& entry,
+        const ea::string& displayedName, unsigned rootIndex);
+    void RenderDirectoryContextMenu(const FileSystemEntry& entry, const ResourceRoot& root);
+    void RenderDirectoryContent();
+    void RenderDirectoryContentEntry(const FileSystemEntry& entry);
+
+    ea::string GetEntryIcon(const FileSystemEntry& entry) const;
+
+    void BrowseInExplorer(const ea::string& path);
+
+    ea::vector<ResourceRoot> roots_;
+
+    /// UI state
+    /// @{
+    unsigned selectedRoot_{1};
+    ea::string selectedPath_;
+    bool scrollDirectoryTreeToSelection_{};
+    ea::string selectedDirectoryContent_;
+    /// @}
 };
 
 }
