@@ -20,51 +20,31 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "../Core/DragDropPayload.h"
 
-#include <Urho3D/Core/Object.h>
-
-#include <EASTL/functional.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 
 namespace Urho3D
 {
 
-/// Base class for any Editor plugin.
-class EditorPlugin : public Object
+void DragDropPayload::Set(const SharedPtr<DragDropPayload>& payload)
 {
-    URHO3D_OBJECT(EditorPlugin, Object);
+    auto context = Context::GetInstance();
+    context->SetGlobalVar(DragDropPayloadVariable, MakeCustomValue(payload));
+}
 
-public:
-    using Object::Object;
-
-    virtual bool Apply(Object* target) = 0;
-};
-
-template <class T>
-using EditorPluginFunction = void(*)(Context* context, T* target);
-
-template <class T>
-class EditorPluginT : public EditorPlugin
+DragDropPayload* DragDropPayload::Get()
 {
-public:
-    EditorPluginT(Context* context, EditorPluginFunction<T> function)
-        : EditorPlugin(context)
-        , function_(function)
+    if (const ImGuiPayload* payload = ui::GetDragDropPayload())
     {
-    }
-
-    bool Apply(Object* target) final
-    {
-        if (auto derivedTarget = dynamic_cast<T*>(target))
+        if (payload->DataType == DragDropPayloadType)
         {
-            function_(context_, derivedTarget);
-            return true;
+            auto context = Context::GetInstance();
+            const Variant variant = context->GetGlobalVar(DragDropPayloadVariable);
+            return dynamic_cast<DragDropPayload*>(variant.GetCustom<SharedPtr<DragDropPayload>>().Get());
         }
-        return false;
     }
-
-private:
-    EditorPluginFunction<T> function_;
-};
+    return nullptr;
+}
 
 }

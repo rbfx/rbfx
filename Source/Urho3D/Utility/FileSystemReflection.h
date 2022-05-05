@@ -40,13 +40,14 @@ struct FileSystemEntry
     ea::string absolutePath_;
     bool isDirectory_{};
     bool isFile_{};
+    unsigned depth_{};
 
     ea::string localName_;
     bool isFileAmbiguous_{};
 
     ea::vector<FileSystemEntry> children_;
 
-    bool operator<(const FileSystemEntry& rhs) const { return resourceName_ < rhs.resourceName_; }
+    bool operator<(const FileSystemEntry& rhs) const;
 
     template <class T>
     void ForEach(const T& callback) const

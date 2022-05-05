@@ -254,7 +254,8 @@ void FileWatcher::ThreadFunction()
             BUFFERSIZE,
             watchSubDirs_,
             FILE_NOTIFY_CHANGE_FILE_NAME |
-            FILE_NOTIFY_CHANGE_LAST_WRITE,
+            FILE_NOTIFY_CHANGE_LAST_WRITE |
+            FILE_NOTIFY_CHANGE_DIR_NAME,
             &bytesFilled,
             nullptr,
             nullptr))

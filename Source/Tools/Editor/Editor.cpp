@@ -101,7 +101,7 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
-    editorPluginManager_->AddPlugin(GetResourceBrowserPlugin(context_));
+    editorPluginManager_->AddPlugin(&Plugin_ResourceBrowser);
 }
 
 void Editor::Setup()

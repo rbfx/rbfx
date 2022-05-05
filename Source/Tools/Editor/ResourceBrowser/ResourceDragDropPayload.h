@@ -22,49 +22,19 @@
 
 #pragma once
 
-#include <Urho3D/Core/Object.h>
-
-#include <EASTL/functional.h>
+#include "../Core/DragDropPayload.h"
 
 namespace Urho3D
 {
 
-/// Base class for any Editor plugin.
-class EditorPlugin : public Object
-{
-    URHO3D_OBJECT(EditorPlugin, Object);
-
-public:
-    using Object::Object;
-
-    virtual bool Apply(Object* target) = 0;
-};
-
-template <class T>
-using EditorPluginFunction = void(*)(Context* context, T* target);
-
-template <class T>
-class EditorPluginT : public EditorPlugin
+/// Drag&drop payload containing reference to a resource or directory.
+class ResourceDragDropPayload : public DragDropPayload
 {
 public:
-    EditorPluginT(Context* context, EditorPluginFunction<T> function)
-        : EditorPlugin(context)
-        , function_(function)
-    {
-    }
-
-    bool Apply(Object* target) final
-    {
-        if (auto derivedTarget = dynamic_cast<T*>(target))
-        {
-            function_(context_, derivedTarget);
-            return true;
-        }
-        return false;
-    }
-
-private:
-    EditorPluginFunction<T> function_;
+    ea::string localName_;
+    ea::string resourceName_;
+    ea::string fileName_;
+    unsigned rootIndex_{};
 };
 
 }

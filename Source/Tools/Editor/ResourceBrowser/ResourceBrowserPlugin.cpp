@@ -27,14 +27,16 @@
 namespace Urho3D
 {
 
-SharedPtr<EditorPlugin> GetResourceBrowserPlugin(Context* context)
+void Plugin_ResourceBrowser(Context* context, ProjectEditor* projectEditor)
 {
-    return CreatePluginFromFunction(context, +[](Context* context, ProjectEditor* projectEditor)
-    {
-        projectEditor->AddTab(MakeShared<ResourceBrowserTab>(context));
-        // TODO(editor): Remove this
-        projectEditor->AddTab(MakeShared<EditorTab>(context, "Scene", "1", EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter));
-    });
-}
+    projectEditor->AddTab(MakeShared<ResourceBrowserTab>(context));
+    // TODO(editor): Remove this
+    projectEditor->AddTab(MakeShared<EditorTab>(context, "Scene", "1",
+        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter));
+    projectEditor->AddTab(MakeShared<EditorTab>(context, "Hierarchy", "2",
+        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft));
+    projectEditor->AddTab(MakeShared<EditorTab>(context, "Inspector", "3",
+        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight));
+};
 
 }
