@@ -247,7 +247,7 @@ namespace Urho3DNet
         /// Returns the angle between this vector and another vector in degrees.
         public float Angle(in Vector3 rhs)
         {
-            return (float) Math.Acos(DotProduct(rhs) / (Length * rhs.Length));
+            return MathDefs.Acos(DotProduct(rhs) / (Length * rhs.Length));
         }
 
         /// Return whether is NaN.
