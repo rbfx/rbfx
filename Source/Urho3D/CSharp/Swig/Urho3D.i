@@ -749,6 +749,13 @@ public:
 %csconstvalue("long.MinValue") Urho3D::NetworkFrame::Min;
 %csconstvalue("long.MaxValue") Urho3D::NetworkFrame::Max;
 
+%template(TrackedNetworkObjectRegistry) Urho3D::TrackedComponent<Urho3D::ReferencedComponentBase, Urho3D::NetworkObjectRegistry>;
+%interface_custom("%s", "I%s", Urho3D::ClientNetworkCallback);
+%interface_custom("%s", "I%s", Urho3D::ServerNetworkCallback);
+%interface_custom("%s", "I%s", Urho3D::NetworkCallback);
+
+%include "Urho3D/Replica/NetworkCallbacks.h"
+%include "Urho3D/Replica/ReplicationManager.h"
 %include "Urho3D/Replica/NetworkObject.h"
 %include "Urho3D/Replica/StaticNetworkObject.h"
 %include "Urho3D/Replica/BehaviorNetworkObject.h"
@@ -760,7 +767,6 @@ public:
 %include "Urho3D/Replica/PredictedKinematicController.h"
 %include "Urho3D/Replica/ReplicatedAnimation.h"
 %include "Urho3D/Replica/ReplicatedTransform.h"
-%include "Urho3D/Replica/ReplicationManager.h"
 %include "Urho3D/Replica/ServerReplicator.h"
 %include "Urho3D/Replica/TickSynchronizer.h"
 %include "Urho3D/Replica/TrackedAnimatedModel.h"
