@@ -193,12 +193,12 @@ void ResourceBrowserTab::RenderDirectoryContextMenu(const FileSystemEntry& entry
 {
     const ResourceRoot& root = GetRoot(entry);
 
-    if (ui::MenuItem("Browse in Explorer"))
+    if (ui::MenuItem("Reveal in Explorer"))
     {
         if (entry.resourceName_.empty())
-            BrowseInExplorer(root.activeDirectory_);
+            RevealInExplorer(root.activeDirectory_);
         else
-            BrowseInExplorer(entry.absolutePath_);
+            RevealInExplorer(entry.absolutePath_);
     }
 
     // TODO(editor): Implement
@@ -380,6 +380,7 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreateDragDropPayload(con
     payload->resourceName_ = entry.resourceName_;
     payload->fileName_ = entry.absolutePath_;
     payload->isMovable_ = !IsEntryFromCache(entry);
+    payload->isSelectable_ = !entry.isFile_;
     return payload;
 }
 
@@ -410,12 +411,17 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
     {
         if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str()))
         {
-            const ea::string destination = Format("{}{}/{}",
-                root.activeDirectory_, entry.resourceName_, payload->localName_);
+            const char* separator = entry.resourceName_.empty() ? "" : "/";
+            const ea::string destination = Format("{}{}{}{}",
+                root.activeDirectory_, entry.resourceName_, separator, payload->localName_);
             const ea::string source = payload->fileName_;
             const bool isFile = fs->FileExists(source);
 
             const bool moved = fs->Rename(source, destination);
+
+            // Keep selection on dragged element
+            if (moved && payload->isSelectable_)
+                selectedPath_ = Format("{}{}{}", entry.resourceName_, separator, payload->localName_);
 
             // If file is moved and there's directory in cache with the same name, remove it
             if (moved && isFile)
@@ -456,7 +462,7 @@ bool ResourceBrowserTab::IsEntryFromCache(const FileSystemEntry& entry) const
     return entry.directoryIndex_ > 0;
 }
 
-void ResourceBrowserTab::BrowseInExplorer(const ea::string& path)
+void ResourceBrowserTab::RevealInExplorer(const ea::string& path)
 {
     auto fs = GetSubsystem<FileSystem>();
 #ifdef _WIN32

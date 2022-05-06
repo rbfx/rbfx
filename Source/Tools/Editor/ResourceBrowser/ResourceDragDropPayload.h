@@ -35,6 +35,7 @@ public:
     ea::string resourceName_;
     ea::string fileName_;
     bool isMovable_{};
+    bool isSelectable_{};
 };
 
 }
