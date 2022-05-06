@@ -45,6 +45,7 @@ private:
     {
         ea::string name_;
         bool openByDefault_{};
+        bool supportCompositeFiles_{};
         StringVector watchedDirectories_;
         ea::string activeDirectory_;
 
@@ -54,8 +55,13 @@ private:
     void RenderDirectoryTree(const FileSystemEntry& entry,
         const ea::string& displayedName, unsigned rootIndex);
     void RenderDirectoryContextMenu(const FileSystemEntry& entry, const ResourceRoot& root);
+
     void RenderDirectoryContent();
-    void RenderDirectoryContentEntry(const FileSystemEntry& entry);
+    void RenderDirectoryUp(const FileSystemEntry& entry);
+    void RenderDirectoryContentEntry(const FileSystemEntry& entry, const ResourceRoot& root);
+    void RenderCompositeFile(const FileSystemEntry& entry, const ResourceRoot& root);
+    void RenderCompositeFileEntry(const FileSystemEntry& entry,
+        const FileSystemEntry& ownerEntry, const ResourceRoot& root);
 
     ea::string GetEntryIcon(const FileSystemEntry& entry) const;
 
@@ -67,9 +73,13 @@ private:
     /// @{
     unsigned selectedRoot_{1};
     ea::string selectedPath_;
-    bool scrollDirectoryTreeToSelection_{};
+
     ea::string selectedDirectoryContent_;
+
+    bool scrollDirectoryTreeToSelection_{};
     /// @}
+
+    ea::vector<const FileSystemEntry*> tempEntryList_;
 };
 
 }
