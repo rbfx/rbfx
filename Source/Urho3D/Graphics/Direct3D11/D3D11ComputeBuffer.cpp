@@ -67,7 +67,7 @@ bool ComputeBuffer::SetSize(unsigned bytes, unsigned structureSize)
         bufferDesc.Usage = D3D11_USAGE_DEFAULT;
         bufferDesc.StructureByteStride = structureSize_;
         bufferDesc.ByteWidth = size_;
-        bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+        bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 
         HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateBuffer(&bufferDesc, nullptr, (ID3D11Buffer**)&object_.ptr_);
         if (FAILED(hr))
