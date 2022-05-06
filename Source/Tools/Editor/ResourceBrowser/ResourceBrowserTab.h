@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Project/EditorTab.h"
+#include "../ResourceBrowser/ResourceDragDropPayload.h"
 
 #include <Urho3D/Utility/FileSystemReflection.h>
 
@@ -52,18 +53,23 @@ private:
         SharedPtr<FileSystemReflection> reflection_;
     };
 
-    void RenderDirectoryTree(const FileSystemEntry& entry,
-        const ea::string& displayedName, unsigned rootIndex);
-    void RenderDirectoryContextMenu(const FileSystemEntry& entry, const ResourceRoot& root);
+    void RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName);
+    void RenderDirectoryContextMenu(const FileSystemEntry& entry);
 
     void RenderDirectoryContent();
     void RenderDirectoryUp(const FileSystemEntry& entry);
-    void RenderDirectoryContentEntry(const FileSystemEntry& entry, const ResourceRoot& root);
-    void RenderCompositeFile(const FileSystemEntry& entry, const ResourceRoot& root);
-    void RenderCompositeFileEntry(const FileSystemEntry& entry,
-        const FileSystemEntry& ownerEntry, const ResourceRoot& root);
+    void RenderDirectoryContentEntry(const FileSystemEntry& entry);
+    void RenderCompositeFile(const FileSystemEntry& entry);
+    void RenderCompositeFileEntry(const FileSystemEntry& entry, const FileSystemEntry& ownerEntry);
+
+    SharedPtr<ResourceDragDropPayload> CreateDragDropPayload(const FileSystemEntry& entry) const;
+    void BeginEntryDrag(const FileSystemEntry& entry);
+    void DropPayloadToFolder(const FileSystemEntry& entry);
 
     ea::string GetEntryIcon(const FileSystemEntry& entry) const;
+    unsigned GetRootIndex(const FileSystemEntry& entry) const;
+    const ResourceRoot& GetRoot(const FileSystemEntry& entry) const;
+    bool IsEntryFromCache(const FileSystemEntry& entry) const;
 
     void BrowseInExplorer(const ea::string& path);
 
