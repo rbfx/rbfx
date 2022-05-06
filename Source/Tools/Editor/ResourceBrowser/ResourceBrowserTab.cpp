@@ -67,6 +67,7 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
         root.watchedDirectories_ = {project->GetDataPath(), project->GetCachePath()};
         root.activeDirectory_ = project->GetDataPath();
         root.openByDefault_ = true;
+        root.supportCompositeFiles_ = true;
     }
 
     for (ResourceRoot& root : roots_)
@@ -236,33 +237,60 @@ void ResourceBrowserTab::RenderDirectoryContent()
     if (!entry)
         return;
 
+    if (!entry->resourceName_.empty())
+        RenderDirectoryUp(*entry);
+
     for (const FileSystemEntry& childEntry : entry->children_)
     {
         if (!childEntry.isFile_)
-            RenderDirectoryContentEntry(childEntry);
+            RenderDirectoryContentEntry(childEntry, root);
     }
 
     for (const FileSystemEntry& childEntry : entry->children_)
     {
         if (childEntry.isFile_)
-            RenderDirectoryContentEntry(childEntry);
+            RenderDirectoryContentEntry(childEntry, root);
     }
 }
 
-void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entry)
+void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
+{
+    ui::PushID("..");
+
+    const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick
+        | ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_Leaf;
+
+    const ea::string name = Format("{} {}", ICON_FA_FOLDER_OPEN, "[..]");
+    const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+
+    if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+    {
+        auto parts = selectedPath_.split('/');
+        if (!parts.empty())
+            parts.pop_back();
+
+        selectedPath_ = ea::string::joined(parts, "/");
+        scrollDirectoryTreeToSelection_ = true;
+    }
+
+    if (isOpen)
+        ui::TreePop();
+
+    ui::PopID();
+}
+
+void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entry, const ResourceRoot& root)
 {
     const bool canBeOpenedInTree = !entry.isFile_;
+    const bool isCompositeFile = root.supportCompositeFiles_ && entry.isFile_ && entry.isDirectory_;
 
     ui::PushID(entry.localName_.c_str());
 
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
-    if (!entry.isFile_ || !entry.isDirectory_)
-        flags |= ImGuiTreeNodeFlags_Leaf;
-    else
-        flags |= ImGuiTreeNodeFlags_DefaultOpen;
     if (entry.localName_ == selectedDirectoryContent_)
         flags |= ImGuiTreeNodeFlags_Selected;
+    flags |= isCompositeFile ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Leaf;
 
     const ea::string name = Format("{} {}", GetEntryIcon(entry), entry.localName_);
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
@@ -279,8 +307,41 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
 
     if (isOpen)
     {
+        if (isCompositeFile)
+            RenderCompositeFile(entry, root);
         ui::TreePop();
     }
+
+    ui::PopID();
+}
+
+void ResourceBrowserTab::RenderCompositeFile(const FileSystemEntry& entry, const ResourceRoot& root)
+{
+    tempEntryList_.clear();
+    entry.ForEach([&](const FileSystemEntry& childEntry)
+    {
+        if (&childEntry != &entry && childEntry.isFile_)
+            tempEntryList_.push_back(&childEntry);
+    });
+
+    for (const FileSystemEntry* childEntry : tempEntryList_)
+        RenderCompositeFileEntry(*childEntry, entry, root);
+}
+
+void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry,
+    const FileSystemEntry& ownerEntry, const ResourceRoot& root)
+{
+    ui::PushID(entry.resourceName_.c_str());
+
+    const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick
+        | ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_Leaf;
+
+    const ea::string localResourceName = entry.resourceName_.substr(ownerEntry.resourceName_.size() + 1);
+    const ea::string name = Format("{} {}", GetEntryIcon(entry), localResourceName);
+
+    const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+    if (isOpen)
+        ui::TreePop();
 
     ui::PopID();
 }
