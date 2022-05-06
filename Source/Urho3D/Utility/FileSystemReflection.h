@@ -33,21 +33,27 @@
 namespace Urho3D
 {
 
+class FileSystemReflection;
+
 /// Description of ResourceCache entry (file or directory).
-struct FileSystemEntry
+struct URHO3D_API FileSystemEntry
 {
+    FileSystemReflection* owner_{};
+    FileSystemEntry* parent_{};
+
     ea::string resourceName_;
     ea::string absolutePath_;
     bool isDirectory_{};
     bool isFile_{};
-    unsigned depth_{};
+    unsigned directoryIndex_{};
 
     ea::string localName_;
     bool isFileAmbiguous_{};
 
     ea::vector<FileSystemEntry> children_;
 
-    bool operator<(const FileSystemEntry& rhs) const;
+    static bool CompareFilesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs);
+    static bool CompareDirectoriesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs);
 
     template <class T>
     void ForEach(const T& callback) const
@@ -55,6 +61,15 @@ struct FileSystemEntry
         callback(*this);
         for (const FileSystemEntry& child : children_)
             child.ForEach(callback);
+    }
+
+    void FillParents()
+    {
+        for (FileSystemEntry& child : children_)
+        {
+            child.parent_ = this;
+            child.FillParents();
+        }
     }
 };
 
@@ -78,7 +93,7 @@ public:
 
 private:
     void UpdateEntryTree();
-    void ScanRootDirectory(const ea::string& resourceDir, ea::vector<FileSystemEntry>& entries) const;
+    void ScanRootDirectory(const ea::string& resourceDir, ea::vector<FileSystemEntry>& entries, unsigned index);
     void CollectAddedFiles(const FileSystemEntry& oldRoot, const ea::vector<FileSystemEntry>& entries);
     ea::vector<FileSystemEntry> MergeEntries(ea::vector<FileSystemEntry>& entries) const;
     void AppendEntry(FileSystemEntry& root, const FileSystemEntry& entry);

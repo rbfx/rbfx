@@ -33,17 +33,30 @@
 namespace Urho3D
 {
 
-bool FileSystemEntry::operator<(const FileSystemEntry& rhs) const
+namespace
 {
-    //return ea::tie(depth_, resourceName_) < ea::tie(rhs.depth_, rhs.resourceName_);
-    //return resourceName_ < rhs.resourceName_;
 
-    const auto compare = [](char lhs, char rhs)
+bool CompareEntries(const FileSystemEntry& lhs, const FileSystemEntry& rhs, bool filesFirst)
+{
+    const auto compare = [filesFirst](char lhs, char rhs)
     {
-        return ea::make_tuple(lhs != '/', lhs) < ea::make_tuple(rhs != '/', rhs);
+        return ea::make_tuple((lhs != '/') != filesFirst, lhs)
+            < ea::make_tuple((rhs != '/') != filesFirst, rhs);
     };
-    return ea::lexicographical_compare(resourceName_.begin(), resourceName_.end(),
+    return ea::lexicographical_compare(lhs.resourceName_.begin(), lhs.resourceName_.end(),
         rhs.resourceName_.begin(), rhs.resourceName_.end(), compare);
+}
+
+}
+
+bool FileSystemEntry::CompareFilesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs)
+{
+    return CompareEntries(lhs, rhs, true);
+}
+
+bool FileSystemEntry::CompareDirectoriesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs)
+{
+    return CompareEntries(lhs, rhs, false);
 }
 
 FileSystemReflection::FileSystemReflection(Context* context, const StringVector& directories)
@@ -89,19 +102,22 @@ const FileSystemEntry* FileSystemReflection::FindEntry(const ea::string& name) c
 void FileSystemReflection::UpdateEntryTree()
 {
     ea::vector<FileSystemEntry> entries;
+    unsigned index = 0;
     for (const ea::string& resourceDir : directories_)
-        ScanRootDirectory(resourceDir, entries);
+        ScanRootDirectory(resourceDir, entries, index++);
 
     CollectAddedFiles(root_, entries);
 
-    ea::sort(entries.begin(), entries.end());
+    ea::sort(entries.begin(), entries.end(), FileSystemEntry::CompareDirectoriesFirst);
     const ea::vector<FileSystemEntry> mergedEntries = MergeEntries(entries);
 
     FileSystemEntry root;
+    root.owner_ = this;
     for (const FileSystemEntry& entry : mergedEntries)
         AppendEntry(root, entry);
 
     root_ = ea::move(root);
+    root_.FillParents();
     treeDirty_ = false;
 
     index_.clear();
@@ -111,7 +127,8 @@ void FileSystemReflection::UpdateEntryTree()
     });
 }
 
-void FileSystemReflection::ScanRootDirectory(const ea::string& resourceDir, ea::vector<FileSystemEntry>& entries) const
+void FileSystemReflection::ScanRootDirectory(const ea::string& resourceDir,
+    ea::vector<FileSystemEntry>& entries, unsigned index)
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -123,11 +140,12 @@ void FileSystemReflection::ScanRootDirectory(const ea::string& resourceDir, ea::
             continue;
 
         FileSystemEntry entry;
+        entry.owner_ = this;
         entry.absolutePath_ = resourceDir + resourceName;
         entry.resourceName_ = resourceName;
-        entry.depth_ = ea::count(resourceName.begin(), resourceName.end(), '/');
         entry.isFile_ = fs->FileExists(entry.absolutePath_);
         entry.isDirectory_ = fs->DirExists(entry.absolutePath_);
+        entry.directoryIndex_ = index;
 
         if (entry.isFile_ || entry.isDirectory_)
             entries.push_back(entry);
@@ -164,6 +182,11 @@ ea::vector<FileSystemEntry> FileSystemReflection::MergeEntries(ea::vector<FileSy
                 exitsingEntry.isFile_ = true;
             if (entry.isDirectory_)
                 exitsingEntry.isDirectory_ = true;
+            if (exitsingEntry.directoryIndex_ > entry.directoryIndex_)
+            {
+                exitsingEntry.directoryIndex_ = entry.directoryIndex_;
+                exitsingEntry.absolutePath_ = entry.absolutePath_;
+            }
         }
         else
             mergedEntries.push_back(entry);

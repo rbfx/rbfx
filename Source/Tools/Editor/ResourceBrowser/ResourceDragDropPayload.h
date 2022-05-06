@@ -34,7 +34,7 @@ public:
     ea::string localName_;
     ea::string resourceName_;
     ea::string fileName_;
-    unsigned rootIndex_{};
+    bool isMovable_{};
 };
 
 }
