@@ -381,6 +381,14 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
         // Render mixed probe
         if (TextureCube* probeTexture = probe->GetMixedProbeTexture())
         {
+            // TODO: Create correct texture from the start
+            if (probeTexture->GetUnorderedAccess() != filterCubemapsEffective)
+            {
+                probeTexture->SetUnorderedAccess(filterCubemapsEffective);
+                probeTexture->SetSize(probeTexture->GetWidth(), probeTexture->GetFormat(),
+                    probeTexture->GetUsage());
+            }
+
             CubemapUpdateParameters params;
             params.settings_ = probe->GetCubemapRenderingSettings();
             params.position_ = position;

@@ -170,7 +170,10 @@ void CubemapRenderer::PrepareForUpdate(const CubemapUpdateParameters& params)
         viewportsConnectedToSelf_ = true;
     }
     if (currentFilteredTexture_ == filteredTexture_ && !IsTextureMatching(filteredTexture_, params.settings_))
+    {
+        filteredTexture_->SetUnorderedAccess(true);
         DefineTexture(filteredTexture_, params.settings_);
+    }
 
     if (currentViewportTexture_ != viewportTexture_)
     {
