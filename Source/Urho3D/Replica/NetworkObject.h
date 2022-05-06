@@ -61,7 +61,11 @@ enum class NetworkObjectMode
 ///
 /// Hierarchy is updated after NetworkObject node is dirtied.
 class URHO3D_API NetworkObject
+#ifdef SWIG
+    : public NetworkObjectRegistry  // Help SWIG understand actual base class
+#else
     : public TrackedComponent<NetworkObjectRegistry>
+#endif
     , public NetworkCallback
 {
     URHO3D_OBJECT(NetworkObject, ReferencedComponentBase);

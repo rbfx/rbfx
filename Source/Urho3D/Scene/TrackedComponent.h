@@ -153,10 +153,16 @@ template <class T>
 using BaseComponentTypeForRegistry = ea::conditional_t<ea::is_base_of_v<ReferencedComponentRegistryBase, T>, ReferencedComponentBase, TrackedComponentBase>;
 
 /// Template base of any TrackedComponent that automatically registers itself in registry.
+#ifndef SWIG
 template <class RegistryComponentType, class ... Tags>
+#else
+template <class RegistryComponentType>  // SWIG is having trouble with ignoring empty variadic template parameters.
+#endif
 class TrackedComponent
     : public BaseComponentTypeForRegistry<RegistryComponentType>
+#ifndef SWIG
     , public Tags...
+#endif
 {
 public:
     explicit TrackedComponent(Context* context) : BaseComponentTypeForRegistry<RegistryComponentType>(context) {}
