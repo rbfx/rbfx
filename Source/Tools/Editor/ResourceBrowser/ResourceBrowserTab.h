@@ -71,7 +71,7 @@ private:
     const ResourceRoot& GetRoot(const FileSystemEntry& entry) const;
     bool IsEntryFromCache(const FileSystemEntry& entry) const;
 
-    void BrowseInExplorer(const ea::string& path);
+    void RevealInExplorer(const ea::string& path);
 
     ea::vector<ResourceRoot> roots_;
 
