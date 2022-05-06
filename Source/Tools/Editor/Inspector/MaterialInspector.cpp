@@ -36,7 +36,7 @@
 #include <EASTL/sort.h>
 #include <EASTL/functional.h>
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <ImGui/imgui_stdlib.h>
 #include <Toolbox/Common/UndoStack.h>
 #include <Toolbox/SystemUI/Widgets.h>

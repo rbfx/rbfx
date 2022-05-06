@@ -25,7 +25,7 @@
 #include <Urho3D/Audio/SoundSource.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 #include "Editor.h"
 #include "Inspector/SoundInspector.h"

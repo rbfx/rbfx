@@ -38,7 +38,7 @@
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/UI/Font.h>
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include "ContentUtilities.h"
 
 
@@ -80,7 +80,7 @@ ea::string GetFileIcon(const ea::string& fileName)
     switch (GetFileType(fileName))
     {
     case FTYPE_ARCHIVE:
-        return ICON_FA_FILE_ARCHIVE;
+        return ICON_FA_FILE_ZIPPER;
     case FTYPE_WORD:
         return ICON_FA_FILE_WORD;
     case FTYPE_CODE:
@@ -94,7 +94,7 @@ ea::string GetFileIcon(const ea::string& fileName)
     case FTYPE_POWERPOINT:
         return ICON_FA_FILE_POWERPOINT;
     case FTYPE_TEXT:
-        return ICON_FA_FILE_ALT;
+        return ICON_FA_FILE_LINES;
     case FTYPE_FILM:
         return ICON_FA_FILE_VIDEO;
     case FTYPE_AUDIO:

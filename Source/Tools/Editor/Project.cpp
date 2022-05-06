@@ -37,7 +37,7 @@
 #include <regex>
 #include <EASTL/sort.h>
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <Toolbox/SystemUI/Widgets.h>
 
 #include "Editor.h"
@@ -495,7 +495,7 @@ void Project::RenderSettingsUI()
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
                 ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
             }
-            bool deleted = ui::Button(ICON_FA_TRASH_ALT);
+            bool deleted = ui::Button(ICON_FA_TRASH_CAN);
             if (i == 0)
             {
                 ui::PopItemFlag();

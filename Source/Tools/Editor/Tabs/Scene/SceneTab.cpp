@@ -44,7 +44,7 @@
 #include <Urho3D/Scene/ValueAnimation.h>
 #include <Urho3D/SystemUI/DebugHud.h>
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <Toolbox/Scene/DebugCameraController.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <ImGui/imgui_internal.h>
@@ -484,26 +484,26 @@ void SceneTab::RenderToolbarButtons()
 {
     ui::SetCursorPos({4, 4});
 
-    if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
+    if (ui::EditorToolbarButton(ICON_FA_FLOPPY_DISK, "Save"))
         SaveResource();
 
     ui::SameLine(0, 3.f);
 
     ui::BeginButtonGroup();
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###Translate", "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
+    if (ui::EditorToolbarButton(ICON_FA_UP_DOWN_LEFT_RIGHT "###Translate", "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
         gizmo_.SetOperation(GIZMOOP_TRANSLATE);
-    if (ui::EditorToolbarButton(ICON_FA_SYNC "###Rotate", "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ROTATE "###Rotate", "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
         gizmo_.SetOperation(GIZMOOP_ROTATE);
-    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Scale", "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
+    if (ui::EditorToolbarButton(ICON_FA_MAXIMIZE "###Scale", "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
         gizmo_.SetOperation(GIZMOOP_SCALE);
     ui::EndButtonGroup();
 
     ui::SameLine(0, 3.f);
 
     ui::BeginButtonGroup();
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###World", "World", gizmo_.GetTransformSpace() == TS_WORLD))
+    if (ui::EditorToolbarButton(ICON_FA_UP_DOWN_LEFT_RIGHT "###World", "World", gizmo_.GetTransformSpace() == TS_WORLD))
         gizmo_.SetTransformSpace(TS_WORLD);
-    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Local", "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
+    if (ui::EditorToolbarButton(ICON_FA_MAXIMIZE "###Local", "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
         gizmo_.SetTransformSpace(TS_LOCAL);
     ui::EndButtonGroup();
 
@@ -729,12 +729,12 @@ void SceneTab::RenderNodeTree(Node* node)
 
     // Node reordering.
     Node* parent = node->GetParent();
-    float utility_buttons_width = ui::CalcTextSize(ICON_FA_ARROWS_ALT_V).x;
+    float utility_buttons_width = ui::CalcTextSize(ICON_FA_UP_DOWN).x;
     if (parent != nullptr && (ui::IsItemHovered() || reorderingId_ == node->GetID()))
     {
         ui::SameLine();
         ui::SetCursorPosX(ui::GetContentRegionMax().x - utility_buttons_width - style.ItemInnerSpacing.x);
-        ui::SmallButton(ICON_FA_ARROWS_ALT_V);
+        ui::SmallButton(ICON_FA_UP_DOWN);
         if (ui::IsItemActive())
         {
             if (ui::IsItemActivated())
@@ -800,7 +800,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 {
                     ui::SameLine();
                     ui::SetCursorPosX(ui::GetContentRegionMax().x - utility_buttons_width - style.ItemInnerSpacing.x);
-                    ui::SmallButton(ICON_FA_ARROWS_ALT_V);
+                    ui::SmallButton(ICON_FA_UP_DOWN);
                     if (ui::IsItemActive())
                     {
                         if (ui::IsItemActivated())
