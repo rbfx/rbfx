@@ -39,7 +39,7 @@ public:
 
     /// Add new editor plugin. Should be called before any plugin user is initialized.
     void AddPlugin(SharedPtr<EditorPlugin> plugin);
-    template <class T> void AddPlugin(EditorPluginFunction<T> function);
+    template <class T> void AddPlugin(const ea::string& name, EditorPluginFunction<T> function);
     /// Apply all plugins to the target.
     void Apply(Object* target);
 
@@ -50,9 +50,9 @@ private:
     ea::vector<SharedPtr<EditorPlugin>> plugins_;
 };
 
-template <class T> void EditorPluginManager::AddPlugin(EditorPluginFunction<T> function)
+template <class T> void EditorPluginManager::AddPlugin(const ea::string& name, EditorPluginFunction<T> function)
 {
-    AddPlugin(MakeShared<EditorPluginT<T>>(context_, function));
+    AddPlugin(MakeShared<EditorPluginT<T>>(context_, name, function));
 }
 
 }

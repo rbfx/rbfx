@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include "../Core/ResourceDragDropPayload.h"
 #include "../Project/EditorTab.h"
-#include "../ResourceBrowser/ResourceDragDropPayload.h"
+#include "../Project/ProjectEditor.h"
 
 #include <Urho3D/Utility/FileSystemReflection.h>
 
@@ -32,6 +33,8 @@
 
 namespace Urho3D
 {
+
+void Foundation_ResourceBrowserTab(Context* context, ProjectEditor* projectEditor);
 
 class ResourceBrowserFactory : public Object
 {

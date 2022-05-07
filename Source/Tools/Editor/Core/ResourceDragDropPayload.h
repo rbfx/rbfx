@@ -20,23 +20,21 @@
 // THE SOFTWARE.
 //
 
-#include "../ResourceBrowser/ResourceBrowserPlugin.h"
-#include "../ResourceBrowser/ResourceBrowserTab.h"
-#include "../Project/ProjectEditor.h"
+#pragma once
+
+#include "../Core/DragDropPayload.h"
 
 namespace Urho3D
 {
 
-void Plugin_ResourceBrowser(Context* context, ProjectEditor* projectEditor)
+/// Drag&drop payload containing reference to a resource or directory.
+class ResourceDragDropPayload : public DragDropPayload
 {
-    projectEditor->AddTab(MakeShared<ResourceBrowserTab>(context));
-    // TODO(editor): Remove this
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Scene", "1",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter));
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Hierarchy", "2",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft));
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Inspector", "3",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight));
+public:
+    ea::string localName_;
+    ea::string resourceName_;
+    ea::string fileName_;
+    bool isMovable_{};
 };
 
 }

@@ -25,6 +25,7 @@
 #include <Urho3D/Core/Object.h>
 
 #include <EASTL/functional.h>
+#include <EASTL/string.h>
 
 namespace Urho3D
 {
@@ -37,6 +38,7 @@ class EditorPlugin : public Object
 public:
     using Object::Object;
 
+    virtual const ea::string& GetName() = 0;
     virtual bool Apply(Object* target) = 0;
 };
 
@@ -47,11 +49,14 @@ template <class T>
 class EditorPluginT : public EditorPlugin
 {
 public:
-    EditorPluginT(Context* context, EditorPluginFunction<T> function)
+    EditorPluginT(Context* context, const ea::string& name, EditorPluginFunction<T> function)
         : EditorPlugin(context)
+        , name_(name)
         , function_(function)
     {
     }
+
+    const ea::string& GetName() final { return name_; }
 
     bool Apply(Object* target) final
     {
@@ -64,6 +69,7 @@ public:
     }
 
 private:
+    ea::string name_;
     EditorPluginFunction<T> function_;
 };
 
