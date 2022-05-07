@@ -20,9 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../ResourceBrowser/ResourceBrowserTab.h"
-#include "../ResourceBrowser/ResourceDragDropPayload.h"
-#include "../Project/ProjectEditor.h"
+#include "../Foundation/ResourceBrowserTab.h"
 
 #include <Urho3D/IO/FileSystem.h>
 
@@ -49,6 +47,18 @@ bool IsLeafDirectory(const FileSystemEntry& entry)
     return true;
 }
 
+}
+
+void Foundation_ResourceBrowserTab(Context* context, ProjectEditor* projectEditor)
+{
+    projectEditor->AddTab(MakeShared<ResourceBrowserTab>(context));
+    // TODO(editor): Remove this
+    projectEditor->AddTab(MakeShared<EditorTab>(context, "Scene", "1",
+        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter));
+    projectEditor->AddTab(MakeShared<EditorTab>(context, "Hierarchy", "2",
+        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft));
+    projectEditor->AddTab(MakeShared<EditorTab>(context, "Inspector", "3",
+        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight));
 }
 
 ResourceBrowserFactory::ResourceBrowserFactory(Context* context,
@@ -630,7 +640,6 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreateDragDropPayload(con
     payload->resourceName_ = entry.resourceName_;
     payload->fileName_ = entry.absolutePath_;
     payload->isMovable_ = !IsEntryFromCache(entry);
-    payload->isSelectable_ = !entry.isFile_;
     return payload;
 }
 

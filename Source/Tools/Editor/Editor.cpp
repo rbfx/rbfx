@@ -77,7 +77,7 @@
 #include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
-#include "ResourceBrowser/ResourceBrowserPlugin.h"
+#include "Foundation/ResourceBrowserTab.h"
 
 namespace Urho3D
 {
@@ -101,7 +101,7 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
-    editorPluginManager_->AddPlugin(&Plugin_ResourceBrowser);
+    editorPluginManager_->AddPlugin("Foundation.ResourceBrowserTab", &Foundation_ResourceBrowserTab);
 }
 
 void Editor::Setup()
