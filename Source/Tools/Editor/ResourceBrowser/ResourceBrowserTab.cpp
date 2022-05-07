@@ -36,8 +36,7 @@ namespace Urho3D
 namespace
 {
 
-const ea::string popupDirectoryId = "ResourceBrowserTab_PopupDirectory";
-const ea::string popupRenameId = "Rename...";
+const ea::string contextMenuId = "ResourceBrowserTab_PopupDirectory";
 
 bool IsLeafDirectory(const FileSystemEntry& entry)
 {
@@ -187,20 +186,22 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     }
 
     if (isContextMenuOpen)
-        ui::OpenPopup(popupDirectoryId.c_str());
+        ui::OpenPopup(contextMenuId.c_str());
 
     // Render context menu and popups
-    RenderDirectoryContextMenu(entry);
+    RenderEntryContextMenu(entry);
     RenderRenameDialog(entry);
+    RenderDeleteDialog(entry);
 
     ui::PopID();
 }
 
-void ResourceBrowserTab::RenderDirectoryContextMenu(const FileSystemEntry& entry)
+void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
 {
     bool renamePending = false;
+    bool deletePending = false;
 
-    if (ui::BeginPopup(popupDirectoryId.c_str()))
+    if (ui::BeginPopup(contextMenuId.c_str()))
     {
         const ResourceRoot& root = GetRoot(entry);
 
@@ -212,16 +213,13 @@ void ResourceBrowserTab::RenderDirectoryContextMenu(const FileSystemEntry& entry
                 RevealInExplorer(entry.absolutePath_);
         }
 
-        // TODO(editor): Implement
-        if (!entry.resourceName_.empty())
+        if (!entry.resourceName_.empty() && !IsEntryFromCache(entry))
         {
             if (ui::MenuItem("Rename"))
                 renamePending = true;
 
             if (ui::MenuItem("Delete"))
-            {
-
-            }
+                deletePending = true;
         }
 
         ui::EndPopup();
@@ -229,8 +227,15 @@ void ResourceBrowserTab::RenderDirectoryContextMenu(const FileSystemEntry& entry
 
     if (renamePending)
     {
-        ui::OpenPopup(popupRenameId.c_str());
         renameBuffer_ = entry.localName_;
+        renamePopupTitle_ = Format("Rename '{}'?", entry.localName_);
+        ui::OpenPopup(renamePopupTitle_.c_str());
+    }
+
+    if (deletePending)
+    {
+        deletePopupTitle_ = Format("Delete '{}'?", entry.localName_);
+        ui::OpenPopup(deletePopupTitle_.c_str());
     }
 }
 
@@ -316,6 +321,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
 
     const ea::string name = Format("{} {}", GetEntryIcon(entry), entry.localName_);
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+    const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
 
     if (ui::IsItemClicked(MOUSEB_LEFT))
     {
@@ -351,6 +357,14 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
             RenderCompositeFile(entry);
         ui::TreePop();
     }
+
+    if (isContextMenuOpen)
+        ui::OpenPopup(contextMenuId.c_str());
+
+    // Render context menu and popups
+    RenderEntryContextMenu(entry);
+    RenderRenameDialog(entry);
+    RenderDeleteDialog(entry);
 
     ui::PopID();
 }
@@ -388,6 +402,7 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     const ea::string name = Format("{} {}", GetEntryIcon(entry), localResourceName);
 
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+    const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
 
     if (ui::IsItemClicked(MOUSEB_LEFT))
         SelectRightPanel(entry.resourceName_);
@@ -402,12 +417,19 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     if (isOpen)
         ui::TreePop();
 
+    if (isContextMenuOpen)
+        ui::OpenPopup(contextMenuId.c_str());
+
+    // Render context menu and popups
+    RenderEntryContextMenu(entry);
+    RenderRenameDialog(entry);
+    RenderDeleteDialog(entry);
     ui::PopID();
 }
 
 void ResourceBrowserTab::RenderRenameDialog(const FileSystemEntry& entry)
 {
-    if (ui::BeginPopupModal(popupRenameId.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ui::BeginPopupModal(renamePopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ui::Text("Would you like to rename '%s'?", entry.absolutePath_.c_str());
         ui::NewLine();
@@ -425,6 +447,30 @@ void ResourceBrowserTab::RenderRenameDialog(const FileSystemEntry& entry)
             ui::CloseCurrentPopup();
         }
         ui::EndDisabled();
+
+        ui::SameLine();
+
+        if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+            ui::CloseCurrentPopup();
+
+        ui::EndPopup();
+    }
+}
+
+void ResourceBrowserTab::RenderDeleteDialog(const FileSystemEntry& entry)
+{
+    if (ui::BeginPopupModal(deletePopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        const char* formatString = "Would you like to PERMANENTLY delete '%s'?\n"
+            ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!";
+        ui::Text(formatString, entry.absolutePath_.c_str());
+        ui::NewLine();
+
+        if (ui::Button(ICON_FA_CHECK " Delete") || ui::IsKeyPressed(KEY_RETURN))
+        {
+            DeleteEntry(entry);
+            ui::CloseCurrentPopup();
+        }
 
         ui::SameLine();
 
@@ -583,11 +629,33 @@ void ResourceBrowserTab::RenameOrMoveEntry(const ea::string& oldFileName, const 
 
     // If file is moved and there's directory in cache with the same name, remove it
     if (renamed && isFile)
-    {
-        const ea::string matchingDirectoryInCache = project->GetCachePath() + oldResourceName;
-        if (fs->DirExists(matchingDirectoryInCache))
-            fs->RemoveDir(matchingDirectoryInCache, true);
-    }
+        CleanupResourceCache(oldResourceName);
+}
+
+void ResourceBrowserTab::DeleteEntry(const FileSystemEntry& entry)
+{
+    auto fs = GetSubsystem<FileSystem>();
+    auto project = GetProject();
+
+    const bool isFile = fs->FileExists(entry.absolutePath_);
+
+    const bool deleted = isFile
+        ? fs->Delete(entry.absolutePath_)
+        : fs->RemoveDir(entry.absolutePath_, true);
+
+    if (deleted && isFile)
+        CleanupResourceCache(entry.resourceName_);
+}
+
+void ResourceBrowserTab::CleanupResourceCache(const ea::string& resourceName)
+{
+    auto fs = GetSubsystem<FileSystem>();
+    auto project = GetProject();
+
+    const ea::string matchingDirectoryInCache = project->GetCachePath() + resourceName;
+    if (fs->DirExists(matchingDirectoryInCache))
+        fs->RemoveDir(matchingDirectoryInCache, true);
+
 }
 
 }

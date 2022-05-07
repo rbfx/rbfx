@@ -63,7 +63,6 @@ private:
     /// Render left panel
     /// @{
     void RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName);
-    void RenderDirectoryContextMenu(const FileSystemEntry& entry);
     /// @}
 
     /// Render right panel
@@ -77,7 +76,9 @@ private:
 
     /// Common rendering
     /// @{
+    void RenderEntryContextMenu(const FileSystemEntry& entry);
     void RenderRenameDialog(const FileSystemEntry& entry);
+    void RenderDeleteDialog(const FileSystemEntry& entry);
     /// @}
 
     /// Drag&drop handling
@@ -104,6 +105,8 @@ private:
     void RenameEntry(const FileSystemEntry& entry, const ea::string& newName);
     void RenameOrMoveEntry(const ea::string& oldFileName, const ea::string& newFileName,
         const ea::string& oldResourceName, const ea::string& newResourceName, bool adjustSelection);
+    void DeleteEntry(const FileSystemEntry& entry);
+    void CleanupResourceCache(const ea::string& resourceName);
 
     ea::vector<ResourceRoot> roots_;
 
@@ -126,6 +129,8 @@ private:
 
     ea::string renameBuffer_;
     bool waitingForUpdate_{};
+    ea::string renamePopupTitle_;
+    ea::string deletePopupTitle_;
     /// @}
 
     ea::vector<const FileSystemEntry*> tempEntryList_;
