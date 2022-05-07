@@ -27,6 +27,8 @@
 
 #include <Urho3D/Utility/FileSystemReflection.h>
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -93,20 +95,37 @@ private:
     bool IsEntryFromCache(const FileSystemEntry& entry) const;
     /// @}
 
+    void SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex = ea::nullopt);
+    void SelectRightPanel(const ea::string& path);
+    void AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName);
+
+    void RefreshContents();
     void RevealInExplorer(const ea::string& path);
     void RenameEntry(const FileSystemEntry& entry, const ea::string& newName);
+    void RenameOrMoveEntry(const ea::string& oldFileName, const ea::string& newFileName,
+        const ea::string& oldResourceName, const ea::string& newResourceName, bool adjustSelection);
 
     ea::vector<ResourceRoot> roots_;
 
     /// UI state
     /// @{
-    unsigned selectedRoot_{1};
-    ea::string selectedPath_;
+    struct LeftPanel
+    {
+        unsigned selectedRoot_{1};
+        ea::string selectedPath_;
 
-    ea::string selectedDirectoryContent_;
+        bool scrollToSelection_{};
+    } left_;
 
-    bool scrollDirectoryTreeToSelection_{};
+    struct RightPanel
+    {
+        ea::string selectedPath_;
+
+        bool scrollToSelection_{};
+    } right_;
+
     ea::string renameBuffer_;
+    bool waitingForUpdate_{};
     /// @}
 
     ea::vector<const FileSystemEntry*> tempEntryList_;
