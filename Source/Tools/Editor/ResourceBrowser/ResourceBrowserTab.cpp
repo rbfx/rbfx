@@ -76,7 +76,7 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
     for (ResourceRoot& root : roots_)
     {
         root.reflection_ = MakeShared<FileSystemReflection>(context_, root.watchedDirectories_);
-        root.reflection_->OnListUpdated.Subscribe(this, &ResourceBrowserTab::ScrollToSelection);
+        root.reflection_->OnListUpdated.Subscribe(this, &ResourceBrowserTab::RefreshContents);
     }
 }
 
@@ -86,13 +86,17 @@ ResourceBrowserTab::~ResourceBrowserTab()
 
 void ResourceBrowserTab::ScrollToSelection()
 {
-    scrollDirectoryTreeToSelection_ = true;
+    left_.scrollToSelection_ = true;
+    right_.scrollToSelection_ = true;
 }
 
 void ResourceBrowserTab::RenderContentUI()
 {
     for (ResourceRoot& root : roots_)
         root.reflection_->Update();
+
+    if (waitingForUpdate_ && ui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+        ui::SetTooltip("%s", "Waiting for update...");
 
     if (ui::BeginTable("##ResourceBrowserTab", 2, ImGuiTableFlags_Resizable))
     {
@@ -106,15 +110,16 @@ void ResourceBrowserTab::RenderContentUI()
         {
             for (ResourceRoot& root : roots_)
                 RenderDirectoryTree(root.reflection_->GetRoot(), root.name_);
+            left_.scrollToSelection_ = false;
         }
         ui::EndChild();
 
-        // Reset it mid-frame because scrolling may be triggered from RenderDirectoryContent
-        scrollDirectoryTreeToSelection_ = false;
-
         ui::TableSetColumnIndex(1);
         if (ui::BeginChild("##DirectoryContent", ui::GetContentRegionAvail()))
+        {
             RenderDirectoryContent();
+            right_.scrollToSelection_ = false;
+        }
         ui::EndChild();
 
         ui::EndTable();
@@ -130,10 +135,10 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     ImGuiContext& g = *GImGui;
 
     // Open tree node if child is selected
-    if (scrollDirectoryTreeToSelection_ && rootIndex == selectedRoot_
-        && selectedPath_.starts_with(entry.resourceName_))
+    if (left_.scrollToSelection_ && rootIndex == left_.selectedRoot_
+        && left_.selectedPath_.starts_with(entry.resourceName_))
     {
-        if (selectedPath_ != entry.resourceName_)
+        if (left_.selectedPath_ != entry.resourceName_)
             ui::SetNextItemOpen(true);
         ui::SetScrollHereY();
     }
@@ -144,7 +149,7 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
 
     if (IsLeafDirectory(entry))
         flags |= ImGuiTreeNodeFlags_Leaf;
-    if (entry.resourceName_ == selectedPath_ && rootIndex == selectedRoot_)
+    if (entry.resourceName_ == left_.selectedPath_ && rootIndex == left_.selectedRoot_)
         flags |= ImGuiTreeNodeFlags_Selected;
     if (entry.resourceName_.empty() && root.openByDefault_)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
@@ -154,11 +159,7 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     // Process clicking
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     if (ui::IsItemClicked(MOUSEB_LEFT))
-    {
-        selectedRoot_ = rootIndex;
-        selectedPath_ = entry.resourceName_;
-        selectedDirectoryContent_ = "";
-    }
+        SelectLeftPanel(entry.resourceName_, rootIndex);
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
@@ -235,8 +236,8 @@ void ResourceBrowserTab::RenderDirectoryContextMenu(const FileSystemEntry& entry
 
 void ResourceBrowserTab::RenderDirectoryContent()
 {
-    const ResourceRoot& root = roots_[selectedRoot_];
-    const FileSystemEntry* entry = root.reflection_->FindEntry(selectedPath_);
+    const ResourceRoot& root = roots_[left_.selectedRoot_];
+    const FileSystemEntry* entry = root.reflection_->FindEntry(left_.selectedPath_);
     if (!entry)
         return;
 
@@ -269,12 +270,13 @@ void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
 
     if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
-        auto parts = selectedPath_.split('/');
+        auto parts = left_.selectedPath_.split('/');
         if (!parts.empty())
             parts.pop_back();
 
-        selectedPath_ = ea::string::joined(parts, "/");
-        scrollDirectoryTreeToSelection_ = true;
+        const ea::string newSelection = ea::string::joined(parts, "/");
+        SelectLeftPanel(newSelection);
+        ScrollToSelection();
     }
 
     if (isOpen)
@@ -299,11 +301,16 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     const ResourceRoot& root = GetRoot(entry);
     const bool isNormalDirectory = !entry.isFile_;
     const bool isCompositeFile = root.supportCompositeFiles_ && entry.isFile_ && entry.isDirectory_;
+    const bool isSelected = entry.resourceName_ == right_.selectedPath_;
+
+    // Scroll to selection if requested
+    if (right_.scrollToSelection_ && isSelected)
+        ui::SetScrollHereY();
 
     // Render the element itself
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
-    if (entry.localName_ == selectedDirectoryContent_)
+    if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
     flags |= isCompositeFile ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Leaf;
 
@@ -312,11 +319,14 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
 
     if (ui::IsItemClicked(MOUSEB_LEFT))
     {
-        selectedDirectoryContent_ = entry.localName_;
         if (isNormalDirectory && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
         {
-            selectedPath_ = entry.resourceName_;
-            scrollDirectoryTreeToSelection_ = true;
+            SelectLeftPanel(entry.resourceName_);
+            ScrollToSelection();
+        }
+        else
+        {
+            SelectRightPanel(entry.resourceName_);
         }
     }
 
@@ -369,13 +379,18 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     ui::PushID(entry.resourceName_.c_str());
 
     // Render the element itself
-    const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick
         | ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_Leaf;
+    if (entry.resourceName_ == right_.selectedPath_)
+        flags |= ImGuiTreeNodeFlags_Selected;
 
     const ea::string localResourceName = entry.resourceName_.substr(ownerEntry.resourceName_.size() + 1);
     const ea::string name = Format("{} {}", GetEntryIcon(entry), localResourceName);
 
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+
+    if (ui::IsItemClicked(MOUSEB_LEFT))
+        SelectRightPanel(entry.resourceName_);
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
@@ -459,24 +474,9 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
         if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str()))
         {
             const char* separator = entry.resourceName_.empty() ? "" : "/";
-            const ea::string destination = Format("{}{}{}{}",
-                root.activeDirectory_, entry.resourceName_, separator, payload->localName_);
-            const ea::string source = payload->fileName_;
-            const bool isFile = fs->FileExists(source);
-
-            const bool moved = fs->Rename(source, destination);
-
-            // Keep selection on dragged element
-            if (moved && payload->isSelectable_)
-                selectedPath_ = Format("{}{}{}", entry.resourceName_, separator, payload->localName_);
-
-            // If file is moved and there's directory in cache with the same name, remove it
-            if (moved && isFile)
-            {
-                const ea::string matchingDirectoryInCache = project->GetCachePath() + payload->resourceName_;
-                if (fs->DirExists(matchingDirectoryInCache))
-                    fs->RemoveDir(matchingDirectoryInCache, true);
-            }
+            const ea::string newResourceName = Format("{}{}{}", entry.resourceName_, separator, payload->localName_);
+            const ea::string newFileName = Format("{}{}", root.activeDirectory_, newResourceName);
+            RenameOrMoveEntry(payload->fileName_, newFileName, payload->resourceName_, newResourceName, true);
         }
     }
 }
@@ -509,6 +509,44 @@ bool ResourceBrowserTab::IsEntryFromCache(const FileSystemEntry& entry) const
     return entry.directoryIndex_ > 0;
 }
 
+void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex)
+{
+    left_.selectedPath_ = path;
+    left_.selectedRoot_ = rootIndex.value_or(left_.selectedRoot_);
+    right_.selectedPath_ = "";
+}
+
+void ResourceBrowserTab::SelectRightPanel(const ea::string& path)
+{
+    right_.selectedPath_ = path;
+}
+
+void ResourceBrowserTab::AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName)
+{
+    const ea::string oldSelectedRightPath = right_.selectedPath_;
+    if (left_.selectedPath_.starts_with(oldResourceName))
+    {
+        const ea::string pathSuffix = left_.selectedPath_.substr(oldResourceName.size());
+        if (pathSuffix.empty() || pathSuffix.front() == '/')
+            SelectLeftPanel(newResourceName + pathSuffix);
+    }
+
+    if (oldSelectedRightPath.starts_with(oldResourceName))
+    {
+        const ea::string pathSuffix = oldSelectedRightPath.substr(oldResourceName.size());
+        if (pathSuffix.empty() || pathSuffix.front() == '/')
+            SelectRightPanel(newResourceName + pathSuffix);
+    }
+
+    ScrollToSelection();
+}
+
+void ResourceBrowserTab::RefreshContents()
+{
+    ScrollToSelection();
+    waitingForUpdate_ = false;
+}
+
 void ResourceBrowserTab::RevealInExplorer(const ea::string& path)
 {
     auto fs = GetSubsystem<FileSystem>();
@@ -519,29 +557,34 @@ void ResourceBrowserTab::RevealInExplorer(const ea::string& path)
 
 void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::string& newName)
 {
+    const ea::string newFileName = GetPath(entry.absolutePath_) + newName;
+    const ea::string newResourceName = GetPath(entry.resourceName_) + newName;
+    const bool thisRootSelected = GetRootIndex(entry) == left_.selectedRoot_;
+    RenameOrMoveEntry(entry.absolutePath_, newFileName, entry.resourceName_, newResourceName, thisRootSelected);
+}
+
+void ResourceBrowserTab::RenameOrMoveEntry(const ea::string& oldFileName, const ea::string& newFileName,
+    const ea::string& oldResourceName, const ea::string& newResourceName, bool adjustSelection)
+{
     auto fs = GetSubsystem<FileSystem>();
     auto project = GetProject();
-    const unsigned rootIndex = GetRootIndex(entry);
 
-    const ea::string source = entry.absolutePath_;
-    const ea::string destination = GetPath(entry.absolutePath_) + newName;
-    const bool isFile = fs->FileExists(source);
-    const bool selectAfterRename = !entry.isFile_ && selectedPath_.starts_with(entry.resourceName_) && rootIndex == selectedRoot_;
+    const bool isFile = fs->FileExists(oldFileName);
 
-    const bool renamed = fs->Rename(source, destination);
+    const bool renamed = fs->Rename(oldFileName, newFileName);
+
+    // Show tooltip if waiting for refresh
+    if (renamed)
+        waitingForUpdate_ = true;
 
     // Keep selection on dragged element
-    if (renamed && selectAfterRename)
-    {
-        const ea::string pathSuffix = selectedPath_.substr(entry.resourceName_.size());
-        selectedPath_ = GetPath(entry.resourceName_) + newName + pathSuffix;
-        scrollDirectoryTreeToSelection_ = true;
-    }
+    if (renamed && adjustSelection)
+        AdjustSelectionOnRename(oldResourceName, newResourceName);
 
     // If file is moved and there's directory in cache with the same name, remove it
     if (renamed && isFile)
     {
-        const ea::string matchingDirectoryInCache = project->GetCachePath() + entry.resourceName_;
+        const ea::string matchingDirectoryInCache = project->GetCachePath() + oldResourceName;
         if (fs->DirExists(matchingDirectoryInCache))
             fs->RemoveDir(matchingDirectoryInCache, true);
     }
