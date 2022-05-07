@@ -82,6 +82,7 @@ public:
     /// Called whenever resource file is modified or new resource is added.
     /// Can be used to invalidate whatever per-resource caches there are.
     Signal<void(const FileSystemEntry& entry)> OnResourceUpdated;
+    Signal<void()> OnListUpdated;
 
     FileSystemReflection(Context* context, const StringVector& directories);
     ~FileSystemReflection() override;

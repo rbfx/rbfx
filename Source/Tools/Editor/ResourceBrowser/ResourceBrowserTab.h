@@ -38,6 +38,11 @@ public:
     explicit ResourceBrowserTab(Context* context);
     ~ResourceBrowserTab() override;
 
+    /// Actions with current state
+    /// @{
+    void ScrollToSelection();
+    /// @}
+
 protected:
     void RenderContentUI() override;
 
@@ -53,25 +58,43 @@ private:
         SharedPtr<FileSystemReflection> reflection_;
     };
 
+    /// Render left panel
+    /// @{
     void RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName);
     void RenderDirectoryContextMenu(const FileSystemEntry& entry);
+    /// @}
 
+    /// Render right panel
+    /// @{
     void RenderDirectoryContent();
     void RenderDirectoryUp(const FileSystemEntry& entry);
     void RenderDirectoryContentEntry(const FileSystemEntry& entry);
     void RenderCompositeFile(const FileSystemEntry& entry);
     void RenderCompositeFileEntry(const FileSystemEntry& entry, const FileSystemEntry& ownerEntry);
+    /// @}
 
+    /// Common rendering
+    /// @{
+    void RenderRenameDialog(const FileSystemEntry& entry);
+    /// @}
+
+    /// Drag&drop handling
+    /// @{
     SharedPtr<ResourceDragDropPayload> CreateDragDropPayload(const FileSystemEntry& entry) const;
     void BeginEntryDrag(const FileSystemEntry& entry);
     void DropPayloadToFolder(const FileSystemEntry& entry);
+    /// @}
 
+    /// Utility functions
+    /// @{
     ea::string GetEntryIcon(const FileSystemEntry& entry) const;
     unsigned GetRootIndex(const FileSystemEntry& entry) const;
     const ResourceRoot& GetRoot(const FileSystemEntry& entry) const;
     bool IsEntryFromCache(const FileSystemEntry& entry) const;
+    /// @}
 
     void RevealInExplorer(const ea::string& path);
+    void RenameEntry(const FileSystemEntry& entry, const ea::string& newName);
 
     ea::vector<ResourceRoot> roots_;
 
@@ -83,6 +106,7 @@ private:
     ea::string selectedDirectoryContent_;
 
     bool scrollDirectoryTreeToSelection_{};
+    ea::string renameBuffer_;
     /// @}
 
     ea::vector<const FileSystemEntry*> tempEntryList_;

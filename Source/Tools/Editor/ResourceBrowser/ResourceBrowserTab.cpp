@@ -37,6 +37,7 @@ namespace
 {
 
 const ea::string popupDirectoryId = "ResourceBrowserTab_PopupDirectory";
+const ea::string popupRenameId = "Rename...";
 
 bool IsLeafDirectory(const FileSystemEntry& entry)
 {
@@ -73,11 +74,19 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
     }
 
     for (ResourceRoot& root : roots_)
+    {
         root.reflection_ = MakeShared<FileSystemReflection>(context_, root.watchedDirectories_);
+        root.reflection_->OnListUpdated.Subscribe(this, &ResourceBrowserTab::ScrollToSelection);
+    }
 }
 
 ResourceBrowserTab::~ResourceBrowserTab()
 {
+}
+
+void ResourceBrowserTab::ScrollToSelection()
+{
+    scrollDirectoryTreeToSelection_ = true;
 }
 
 void ResourceBrowserTab::RenderContentUI()
@@ -179,40 +188,48 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     if (isContextMenuOpen)
         ui::OpenPopup(popupDirectoryId.c_str());
 
-    // Render context menu
-    if (ui::BeginPopup(popupDirectoryId.c_str()))
-    {
-        RenderDirectoryContextMenu(entry);
-        ui::EndPopup();
-    }
+    // Render context menu and popups
+    RenderDirectoryContextMenu(entry);
+    RenderRenameDialog(entry);
 
     ui::PopID();
 }
 
 void ResourceBrowserTab::RenderDirectoryContextMenu(const FileSystemEntry& entry)
 {
-    const ResourceRoot& root = GetRoot(entry);
+    bool renamePending = false;
 
-    if (ui::MenuItem("Reveal in Explorer"))
+    if (ui::BeginPopup(popupDirectoryId.c_str()))
     {
-        if (entry.resourceName_.empty())
-            RevealInExplorer(root.activeDirectory_);
-        else
-            RevealInExplorer(entry.absolutePath_);
+        const ResourceRoot& root = GetRoot(entry);
+
+        if (ui::MenuItem("Reveal in Explorer"))
+        {
+            if (entry.resourceName_.empty())
+                RevealInExplorer(root.activeDirectory_);
+            else
+                RevealInExplorer(entry.absolutePath_);
+        }
+
+        // TODO(editor): Implement
+        if (!entry.resourceName_.empty())
+        {
+            if (ui::MenuItem("Rename"))
+                renamePending = true;
+
+            if (ui::MenuItem("Delete"))
+            {
+
+            }
+        }
+
+        ui::EndPopup();
     }
 
-    // TODO(editor): Implement
-    if (!entry.resourceName_.empty())
+    if (renamePending)
     {
-        if (ui::MenuItem("Rename"))
-        {
-
-        }
-
-        if (ui::MenuItem("Delete"))
-        {
-
-        }
+        ui::OpenPopup(popupRenameId.c_str());
+        renameBuffer_ = entry.localName_;
     }
 }
 
@@ -373,6 +390,36 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     ui::PopID();
 }
 
+void ResourceBrowserTab::RenderRenameDialog(const FileSystemEntry& entry)
+{
+    if (ui::BeginPopupModal(popupRenameId.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ui::Text("Would you like to rename '%s'?", entry.absolutePath_.c_str());
+        ui::NewLine();
+
+        ui::SetKeyboardFocusHere();
+        ui::InputText("##Rename", &renameBuffer_, ImGuiInputTextFlags_AutoSelectAll);
+        const bool isValidName = GetSanitizedName(renameBuffer_) == renameBuffer_;
+
+        ui::NewLine();
+
+        ui::BeginDisabled(!isValidName);
+        if (ui::Button(ICON_FA_CHECK " Rename") || (ui::IsKeyPressed(KEY_RETURN) && isValidName))
+        {
+            RenameEntry(entry, renameBuffer_);
+            ui::CloseCurrentPopup();
+        }
+        ui::EndDisabled();
+
+        ui::SameLine();
+
+        if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+            ui::CloseCurrentPopup();
+
+        ui::EndPopup();
+    }
+}
+
 SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreateDragDropPayload(const FileSystemEntry& entry) const
 {
     auto payload = MakeShared<ResourceDragDropPayload>();
@@ -470,5 +517,34 @@ void ResourceBrowserTab::RevealInExplorer(const ea::string& path)
 #endif
 }
 
+void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::string& newName)
+{
+    auto fs = GetSubsystem<FileSystem>();
+    auto project = GetProject();
+    const unsigned rootIndex = GetRootIndex(entry);
+
+    const ea::string source = entry.absolutePath_;
+    const ea::string destination = GetPath(entry.absolutePath_) + newName;
+    const bool isFile = fs->FileExists(source);
+    const bool selectAfterRename = !entry.isFile_ && selectedPath_.starts_with(entry.resourceName_) && rootIndex == selectedRoot_;
+
+    const bool renamed = fs->Rename(source, destination);
+
+    // Keep selection on dragged element
+    if (renamed && selectAfterRename)
+    {
+        const ea::string pathSuffix = selectedPath_.substr(entry.resourceName_.size());
+        selectedPath_ = GetPath(entry.resourceName_) + newName + pathSuffix;
+        scrollDirectoryTreeToSelection_ = true;
+    }
+
+    // If file is moved and there's directory in cache with the same name, remove it
+    if (renamed && isFile)
+    {
+        const ea::string matchingDirectoryInCache = project->GetCachePath() + entry.resourceName_;
+        if (fs->DirExists(matchingDirectoryInCache))
+            fs->RemoveDir(matchingDirectoryInCache, true);
+    }
+}
 
 }
