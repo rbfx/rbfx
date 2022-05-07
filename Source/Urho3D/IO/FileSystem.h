@@ -193,6 +193,8 @@ URHO3D_API bool IsAbsolutePath(const ea::string& pathName);
 URHO3D_API bool IsAbsoluteParentPath(const ea::string& absParentPath, const ea::string& fullPath);
 ///
 URHO3D_API ea::string GetSanitizedPath(const ea::string& path);
+/// Convert file name to valid Windows filename.
+URHO3D_API ea::string GetSanitizedName(const ea::string& name);
 /// Given two absolute directory paths, get the relative path from one to the other
 /// Returns false if either path isn't absolute, or if they are unrelated
 URHO3D_API bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::string& output);

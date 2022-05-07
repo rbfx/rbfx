@@ -120,7 +120,7 @@ public:
     ea::string CreateLocalResourceName(const ea::string& nameHint,
         const ea::string& prefix, const ea::string& defaultName, const ea::string& suffix)
     {
-        const ea::string body = !nameHint.empty() ? SanitizeName(nameHint) : defaultName;
+        const ea::string body = !nameHint.empty() ? GetSanitizedName(nameHint) : defaultName;
         for (unsigned i = 0; i < MaxNameAssignTries; ++i)
         {
             const ea::string_view nameFormat = i != 0 ? "{0}{1}_{2}{3}" : "{0}{1}{3}";
@@ -195,18 +195,6 @@ public:
     void CheckTexture(int index) const { CheckT(index, model_.textures, "Invalid texture #{} referenced"); }
 
 private:
-    static ea::string SanitizeName(const ea::string& name)
-    {
-        static const ea::string32 forbiddenSymbols = U"<>:\"/\\|?*";
-
-        ea::string32 unicodeString{ ea::string32::CtorConvert{}, name };
-        for (char32_t ch = 0; ch < 31; ++ch)
-            unicodeString.replace(ch, ' ');
-        for (char32_t ch : forbiddenSymbols)
-            unicodeString.replace(ch, '_');
-        return { ea::string::CtorConvert{}, unicodeString };
-    }
-
     template <class T>
     void CheckT(int index, const T& container, const char* message) const
     {

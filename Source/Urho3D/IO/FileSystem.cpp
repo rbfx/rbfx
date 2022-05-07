@@ -1438,6 +1438,18 @@ ea::string GetSanitizedPath(const ea::string& path)
 
 }
 
+ea::string GetSanitizedName(const ea::string& name)
+{
+    static const ea::string32 forbiddenSymbols = U"<>:\"/\\|?*";
+
+    ea::string32 unicodeString{ea::string32::CtorConvert{}, name};
+    for (char32_t ch = 0; ch < 31; ++ch)
+        unicodeString.replace(ch, ' ');
+    for (char32_t ch : forbiddenSymbols)
+        unicodeString.replace(ch, '_');
+    return { ea::string::CtorConvert{}, unicodeString };
+}
+
 bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::string& output)
 {
     output = EMPTY_STRING;

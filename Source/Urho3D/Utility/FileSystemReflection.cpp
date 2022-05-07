@@ -125,6 +125,8 @@ void FileSystemReflection::UpdateEntryTree()
     {
         index_[entry.resourceName_] = &entry;
     });
+
+    OnListUpdated(this);
 }
 
 void FileSystemReflection::ScanRootDirectory(const ea::string& resourceDir,
