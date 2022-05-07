@@ -327,6 +327,10 @@ namespace SDL
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
 %ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
+%ignore Urho3D::PatternCollection::EventPrototype;
+%ignore Urho3D::PatternCollection::Element;
+%ignore Urho3D::PatternCollection::Record;
+%ignore Urho3D::PatternQuery::Element;
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
@@ -342,6 +346,7 @@ namespace SDL
 %include "Urho3D/Core/Timer.h"
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
+%include "Urho3D/Core/PatternMatching.h"
 
 // --------------------------------------- Container ------------------------------------
 %include "Urho3D/Container/ByteVector.h"
