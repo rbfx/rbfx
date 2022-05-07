@@ -27,10 +27,45 @@
 
 #include <Urho3D/Utility/FileSystemReflection.h>
 
+#include <EASTL/functional.h>
 #include <EASTL/optional.h>
 
 namespace Urho3D
 {
+
+class ResourceBrowserFactory : public Object
+{
+    URHO3D_OBJECT(ResourceBrowserFactory, Object);
+
+public:
+    using Callback = ea::function<void(const ea::string& fileName)>;
+
+    ResourceBrowserFactory(Context* context,
+        int group, const ea::string& title, const ea::string& fileName);
+    ResourceBrowserFactory(Context* context,
+        int group, const ea::string& title, const ea::string& fileName, const Callback& callback);
+
+    /// Overridable interface
+    /// @{
+    virtual bool IsEnabled(const FileSystemEntry& parentEntry) const { return true; }
+    virtual void BeginCreate() {}
+    virtual void RenderUI() {}
+    virtual void EndCreate(const ea::string& fileName);
+    /// @}
+
+    int GetGroup() const { return group_; }
+    const ea::string& GetTitle() const { return title_; }
+    const ea::string& GetFileName() const { return fileName_; }
+
+    static bool Compare(const SharedPtr<ResourceBrowserFactory>& lhs, const SharedPtr<ResourceBrowserFactory>& rhs);
+
+private:
+    const int group_{};
+    const ea::string title_;
+    const ea::string fileName_;
+
+    Callback callback_;
+};
 
 class ResourceBrowserTab : public EditorTab
 {
@@ -39,6 +74,8 @@ class ResourceBrowserTab : public EditorTab
 public:
     explicit ResourceBrowserTab(Context* context);
     ~ResourceBrowserTab() override;
+
+    void AddFactory(SharedPtr<ResourceBrowserFactory> factory);
 
     /// Actions with current state
     /// @{
@@ -77,8 +114,11 @@ private:
     /// Common rendering
     /// @{
     void RenderEntryContextMenu(const FileSystemEntry& entry);
+    ea::optional<unsigned> RenderEntryCreateContextMenu(const FileSystemEntry& entry);
+
     void RenderRenameDialog(const FileSystemEntry& entry);
     void RenderDeleteDialog(const FileSystemEntry& entry);
+    void RenderCreateDialog(const FileSystemEntry& parentEntry);
     /// @}
 
     /// Drag&drop handling
@@ -100,6 +140,8 @@ private:
     void SelectRightPanel(const ea::string& path);
     void AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName);
 
+    ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
+        const ea::string& oldName, const ea::string& newName) const;
     void RefreshContents();
     void RevealInExplorer(const ea::string& path);
     void RenameEntry(const FileSystemEntry& entry, const ea::string& newName);
@@ -109,6 +151,9 @@ private:
     void CleanupResourceCache(const ea::string& resourceName);
 
     ea::vector<ResourceRoot> roots_;
+
+    ea::vector<SharedPtr<ResourceBrowserFactory>> factories_;
+    bool sortFactories_{true};
 
     /// UI state
     /// @{
@@ -127,10 +172,16 @@ private:
         bool scrollToSelection_{};
     } right_;
 
-    ea::string renameBuffer_;
     bool waitingForUpdate_{};
+
     ea::string renamePopupTitle_;
+    ea::string renameBuffer_;
+
     ea::string deletePopupTitle_;
+
+    ea::string createPopupTitle_;
+    ResourceBrowserFactory* createFactory_{};
+    ea::string createNameBuffer_;
     /// @}
 
     ea::vector<const FileSystemEntry*> tempEntryList_;

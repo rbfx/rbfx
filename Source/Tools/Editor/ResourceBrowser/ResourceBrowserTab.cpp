@@ -27,6 +27,7 @@
 #include <Urho3D/IO/FileSystem.h>
 
 #include <EASTL/sort.h>
+#include <EASTL/tuple.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -48,6 +49,34 @@ bool IsLeafDirectory(const FileSystemEntry& entry)
     return true;
 }
 
+}
+
+ResourceBrowserFactory::ResourceBrowserFactory(Context* context,
+    int group, const ea::string& title, const ea::string& fileName)
+    : Object(context)
+    , group_(group)
+    , title_(title)
+    , fileName_(fileName)
+{
+}
+
+ResourceBrowserFactory::ResourceBrowserFactory(Context* context,
+    int group, const ea::string& title, const ea::string& fileName, const Callback& callback)
+    : ResourceBrowserFactory(context, group, title, fileName)
+{
+    callback_ = callback;
+}
+
+void ResourceBrowserFactory::EndCreate(const ea::string& fileName)
+{
+    if (callback_)
+        callback_(fileName);
+}
+
+bool ResourceBrowserFactory::Compare(
+    const SharedPtr<ResourceBrowserFactory>& lhs, const SharedPtr<ResourceBrowserFactory>& rhs)
+{
+    return ea::tie(lhs->group_, lhs->title_) < ea::tie(rhs->group_, rhs->title_);
 }
 
 ResourceBrowserTab::ResourceBrowserTab(Context* context)
@@ -72,6 +101,16 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
         root.supportCompositeFiles_ = true;
     }
 
+    {
+        AddFactory(MakeShared<ResourceBrowserFactory>(
+            context_, M_MIN_INT, ICON_FA_FOLDER " Folder", "New Folder",
+            [this](const ea::string& fileName)
+        {
+            auto fs = GetSubsystem<FileSystem>();
+            fs->CreateDirsRecursive(fileName);
+        }));
+    }
+
     for (ResourceRoot& root : roots_)
     {
         root.reflection_ = MakeShared<FileSystemReflection>(context_, root.watchedDirectories_);
@@ -81,6 +120,12 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
 
 ResourceBrowserTab::~ResourceBrowserTab()
 {
+}
+
+void ResourceBrowserTab::AddFactory(SharedPtr<ResourceBrowserFactory> factory)
+{
+    factories_.push_back(factory);
+    sortFactories_ = true;
 }
 
 void ResourceBrowserTab::ScrollToSelection()
@@ -192,6 +237,7 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     RenderEntryContextMenu(entry);
     RenderRenameDialog(entry);
     RenderDeleteDialog(entry);
+    RenderCreateDialog(entry);
 
     ui::PopID();
 }
@@ -200,10 +246,27 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
 {
     bool renamePending = false;
     bool deletePending = false;
+    ea::optional<unsigned> createPending;
 
     if (ui::BeginPopup(contextMenuId.c_str()))
     {
+        bool needSeparator = false;
+
         const ResourceRoot& root = GetRoot(entry);
+
+        if (!entry.isFile_ && !IsEntryFromCache(entry))
+        {
+            needSeparator = true;
+            if (ui::BeginMenu("Create"))
+            {
+                createPending = RenderEntryCreateContextMenu(entry);
+                ui::EndMenu();
+            }
+        }
+
+        if (needSeparator)
+            ui::Separator();
+        needSeparator = false;
 
         if (ui::MenuItem("Reveal in Explorer"))
         {
@@ -227,8 +290,8 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
 
     if (renamePending)
     {
-        renameBuffer_ = entry.localName_;
         renamePopupTitle_ = Format("Rename '{}'?", entry.localName_);
+        renameBuffer_ = entry.localName_;
         ui::OpenPopup(renamePopupTitle_.c_str());
     }
 
@@ -237,6 +300,49 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
         deletePopupTitle_ = Format("Delete '{}'?", entry.localName_);
         ui::OpenPopup(deletePopupTitle_.c_str());
     }
+
+    if (createPending && *createPending < factories_.size())
+    {
+        ResourceBrowserFactory* factory = factories_[*createPending];
+        createPopupTitle_ = Format("Create {}...", factory->GetTitle());
+        createFactory_ = factory;
+        createNameBuffer_ = factory->GetFileName();
+        factory->BeginCreate();
+        ui::OpenPopup(createPopupTitle_.c_str());
+    }
+}
+
+ea::optional<unsigned> ResourceBrowserTab::RenderEntryCreateContextMenu(const FileSystemEntry& entry)
+{
+    ea::optional<unsigned> result;
+
+    if (sortFactories_)
+    {
+        ea::sort(factories_.begin(), factories_.end(), ResourceBrowserFactory::Compare);
+        sortFactories_ = false;
+    }
+
+    ea::optional<int> previousGroup;
+    unsigned index = 0;
+    for (const ResourceBrowserFactory* factory : factories_)
+    {
+        ui::PushID(index);
+
+        if (previousGroup && *previousGroup != factory->GetGroup())
+            ui::Separator();
+        previousGroup = factory->GetGroup();
+
+        const bool isEnabled = factory->IsEnabled(entry);
+        ui::BeginDisabled(!isEnabled);
+        if (ui::MenuItem(factory->GetTitle().c_str()))
+            result = index;
+        ui::EndDisabled();
+
+        ui::PopID();
+        ++index;
+    }
+
+    return result;
 }
 
 void ResourceBrowserTab::RenderDirectoryContent()
@@ -365,6 +471,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     RenderEntryContextMenu(entry);
     RenderRenameDialog(entry);
     RenderDeleteDialog(entry);
+    RenderCreateDialog(entry);
 
     ui::PopID();
 }
@@ -424,6 +531,7 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     RenderEntryContextMenu(entry);
     RenderRenameDialog(entry);
     RenderDeleteDialog(entry);
+    RenderCreateDialog(entry);
     ui::PopID();
 }
 
@@ -431,19 +539,18 @@ void ResourceBrowserTab::RenderRenameDialog(const FileSystemEntry& entry)
 {
     if (ui::BeginPopupModal(renamePopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ui::Text("Would you like to rename '%s'?", entry.absolutePath_.c_str());
-        ui::NewLine();
+        const auto [isEnabled, extraLine] = CheckFileNameInput(*entry.parent_, entry.localName_, renameBuffer_);
+        ui::Text("Would you like to rename '%s'?\n%s", entry.absolutePath_.c_str(), extraLine.c_str());
 
         ui::SetKeyboardFocusHere();
-        ui::InputText("##Rename", &renameBuffer_, ImGuiInputTextFlags_AutoSelectAll);
-        const bool isValidName = GetSanitizedName(renameBuffer_) == renameBuffer_;
+        const bool done = ui::InputText("##Rename", &renameBuffer_,
+            ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 
-        ui::NewLine();
-
-        ui::BeginDisabled(!isValidName);
-        if (ui::Button(ICON_FA_CHECK " Rename") || (ui::IsKeyPressed(KEY_RETURN) && isValidName))
+        ui::BeginDisabled(!isEnabled);
+        if (ui::Button(ICON_FA_CHECK " Rename") || (isEnabled && done))
         {
-            RenameEntry(entry, renameBuffer_);
+            if (renameBuffer_ != entry.localName_)
+                RenameEntry(entry, renameBuffer_);
             ui::CloseCurrentPopup();
         }
         ui::EndDisabled();
@@ -464,7 +571,6 @@ void ResourceBrowserTab::RenderDeleteDialog(const FileSystemEntry& entry)
         const char* formatString = "Would you like to PERMANENTLY delete '%s'?\n"
             ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!";
         ui::Text(formatString, entry.absolutePath_.c_str());
-        ui::NewLine();
 
         if (ui::Button(ICON_FA_CHECK " Delete") || ui::IsKeyPressed(KEY_RETURN))
         {
@@ -479,6 +585,42 @@ void ResourceBrowserTab::RenderDeleteDialog(const FileSystemEntry& entry)
 
         ui::EndPopup();
     }
+}
+
+void ResourceBrowserTab::RenderCreateDialog(const FileSystemEntry& parentEntry)
+{
+    if (ui::BeginPopupModal(createPopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        const ea::string basePath = parentEntry.absolutePath_.empty()
+            ? GetRoot(parentEntry).activeDirectory_
+            : parentEntry.absolutePath_ + "/";
+
+        const auto [isEnabled, extraLine] = CheckFileNameInput(parentEntry, "", createNameBuffer_);
+        const ea::string fileName = basePath + createNameBuffer_;
+        ui::Text("Would you like to create '%s'?\n%s", fileName.c_str(), extraLine.c_str());
+
+        ui::SetKeyboardFocusHere();
+        const bool done = ui::InputText("##Create", &createNameBuffer_,
+            ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+
+        createFactory_->RenderUI();
+
+        ui::BeginDisabled(!isEnabled);
+        if (ui::Button(ICON_FA_CHECK " Create") || (isEnabled && done))
+        {
+            createFactory_->EndCreate(fileName);
+            ui::CloseCurrentPopup();
+        }
+        ui::EndDisabled();
+
+        ui::SameLine();
+
+        if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+            ui::CloseCurrentPopup();
+
+        ui::EndPopup();
+    }
+
 }
 
 SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreateDragDropPayload(const FileSystemEntry& entry) const
@@ -585,6 +727,26 @@ void ResourceBrowserTab::AdjustSelectionOnRename(const ea::string& oldResourceNa
     }
 
     ScrollToSelection();
+}
+
+ea::pair<bool, ea::string> ResourceBrowserTab::CheckFileNameInput(
+    const FileSystemEntry& parentEntry, const ea::string& oldName, const ea::string& newName) const
+{
+    const bool isEmptyName = newName.empty();
+    const bool isInvalidName = GetSanitizedName(newName) != newName;
+    const bool isUsedName = newName != oldName && parentEntry.FindChild(newName);
+    const bool isDisabled = isEmptyName || isInvalidName || isUsedName;
+
+    ea::string extraLine;
+    if (isInvalidName)
+        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " Name contains forbidden characters";
+    else if (isUsedName)
+        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " File or directory with this name already exists";
+    else if (isEmptyName)
+        extraLine = ICON_FA_TRIANGLE_EXCLAMATION " Name must not be empty";
+    else
+        extraLine = ICON_FA_CIRCLE_CHECK " Name is OK";
+    return {!isDisabled, extraLine};
 }
 
 void ResourceBrowserTab::RefreshContents()

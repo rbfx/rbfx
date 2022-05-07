@@ -35,7 +35,7 @@ namespace Urho3D
 
 class FileSystemReflection;
 
-/// Description of ResourceCache entry (file or directory).
+/// Description of file system entry (file or directory) with hierarchy information.
 struct URHO3D_API FileSystemEntry
 {
     FileSystemReflection* owner_{};
@@ -70,6 +70,16 @@ struct URHO3D_API FileSystemEntry
             child.parent_ = this;
             child.FillParents();
         }
+    }
+
+    const FileSystemEntry* FindChild(const ea::string& name) const
+    {
+        for (const FileSystemEntry& child : children_)
+        {
+            if (child.localName_ == name)
+                return &child;
+        }
+        return nullptr;
     }
 };
 
