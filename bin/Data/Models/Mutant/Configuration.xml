@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<character
+		model="Model;Models/Mutant/Mutant.mdl"
+		materials="Material;Models/Mutant/Materials/mutant_M.xml">
+	<bodyParts />
+	<states>
+		<patterns />
+	</states>
+</character>

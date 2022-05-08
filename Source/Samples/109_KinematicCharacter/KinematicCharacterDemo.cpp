@@ -188,10 +188,12 @@ void KinematicCharacterDemo::CreateCharacter()
     Node* objectNode = scene_->CreateChild("Jack");
     objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
 
+    CharacterConfigurator* configurator = objectNode->CreateComponent<CharacterConfigurator>();
+
     // spin node
     Node* adjustNode = objectNode->CreateChild("AdjNode");
     adjustNode->SetRotation( Quaternion(180, Vector3(0,1,0) ) );
-
+    
     // Create the rendering component + animation controller
     auto* object = adjustNode->CreateComponent<AnimatedModel>();
     object->SetModel(cache->GetResource<Model>("Models/Mutant/Mutant.mdl"));

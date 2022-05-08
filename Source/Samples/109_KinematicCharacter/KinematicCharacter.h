@@ -24,6 +24,7 @@
 
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Scene/LogicComponent.h>
+#include <Urho3D/Graphics/CharacterConfigurator.h>
 
 namespace Urho3D
 {
@@ -121,6 +122,7 @@ protected:
     bool jumpStarted_;
 
     WeakPtr<CollisionShape> collisionShape_;
+    WeakPtr<CharacterConfigurator> characterConfigurator_;
     WeakPtr<AnimationController> animController_;
     WeakPtr<KinematicCharacterController> kinematicController_;
 

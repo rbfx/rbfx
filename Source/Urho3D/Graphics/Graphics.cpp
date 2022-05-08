@@ -29,6 +29,7 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/ComputeBuffer.h"
 #include "../Graphics/ConstantBuffer.h"
+#include "../Graphics/CharacterConfigurator.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
@@ -660,6 +661,8 @@ void RegisterGraphicsLibrary(Context* context)
     OcclusionBuffer::RegisterObject(context);
     ReflectionProbe::RegisterObject(context);
     ReflectionProbeManager::RegisterObject(context);
+    CharacterConfigurator::RegisterObject(context);
+    CharacterConfiguration::RegisterObject(context);
 #if defined(URHO3D_COMPUTE)
     ComputeBuffer::RegisterObject(context);
 #endif

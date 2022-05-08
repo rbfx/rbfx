@@ -684,6 +684,8 @@ public:
 %include "Urho3D/Graphics/DebugRenderer.h"
 %include "Urho3D/Graphics/Zone.h"
 %include "Urho3D/Graphics/Renderer.h"
+%include "Urho3D/Graphics/CharacterConfiguration.h"
+%include "Urho3D/Graphics/CharacterConfigurator.h"
 %include "Urho3D/Graphics/Graphics.h"
 
 // ------------------------------------- RenderPipeline -------------------------------------
