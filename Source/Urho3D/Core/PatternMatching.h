@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "Object.h"
 #include "../Core/Variant.h"
 
 #include <EASTL/fixed_vector.h>
@@ -66,38 +67,66 @@ private:
 class URHO3D_API PatternCollection
 {
 private:
-    struct EventPrototype
+    inline static const float DefaultMin = std::numeric_limits<float>::lowest();
+    inline static const float DefaultMax = std::numeric_limits<float>::max();
+
+    struct SerializableElement
+    {
+        // Serialize content from/to archive. May throw ArchiveException.
+        void SerializeInBlock(Archive& archive);
+        // Element key.
+        ea::string key_;
+        // Minimum matching value.
+        float min_{DefaultMin};
+        // Maximum matching value.
+        float max_{DefaultMax};
+    };
+    struct SerializableEventPrototype
     {
         // Serialize content from/to archive. May throw ArchiveException.
         void SerializeInBlock(Archive& archive);
 
+        void Commit();
+
+        // Serializabe event identifier.
+        ea::string serializabeEventId_;
+        // Serializabe event arguments.
+        StringVariantMap serializabeArguments_;
+
         // Event identifier.
         StringHash eventId_;
         // Event arguments.
-        StringVariantMap arguments_;
+        VariantMap arguments_;
+
+    };
+    struct SerializableRecord
+    {
+        // Serialize content from/to archive. May throw ArchiveException.
+        void SerializeInBlock(Archive& archive);
+
+        // One or more event prototypes.
+        ea::vector<SerializableElement> keys_;
+        // One or more event prototypes.
+        ea::fixed_vector<SerializableEventPrototype, 1> events_;
+    };
+
+
+    struct Element
+    {
+        // Element key.
+        StringHash key_;
+        // Minimum matching value.
+        float min_{DefaultMin};
+        // Maximum matching value.
+        float max_{DefaultMax};
     };
 
     struct Record
     {
         int startIndex_{};
         int length_{};
-        // One or more event prototypes.
-        ea::fixed_vector<EventPrototype, 1> events_;
+        int recordId_{};
     };
-
-    struct Element
-    {
-        // Serialize content from/to archive. May throw ArchiveException.
-        void SerializeInBlock(Archive& archive);
-
-        // Element key.
-        StringHash key_;
-        // Minimum matching value.
-        float min_{std::numeric_limits<float>::lowest()};
-        // Maximum matching value.
-        float max_{std::numeric_limits<float>::max()};
-    };
-
 public:
     void Clear();
     /// Start new pattern creation.
@@ -120,8 +149,10 @@ public:
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive);
 
+    void SendEvent(int patternIndex, Object* object, bool broadcast);
+
 private:
-    ea::unordered_map<StringHash, ea::string> strings_;
+    ea::vector<SerializableRecord> serializableRecords_;
     ea::vector<Record> records_;
     ea::vector<Element> elements_;
     bool dirtyPattern_{};

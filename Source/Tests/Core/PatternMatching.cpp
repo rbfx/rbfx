@@ -114,34 +114,35 @@ TEST_CASE("PatternMatching deserilization")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto xml = R"(
+<?xml version="1.0"?>
 <root>
-<patterns>
-	<pattern>
-		<elements>
-			<element key="MinMax" min="-2.000000" max="2.000000" />
-			<element key="TestKey" />
-		</elements>
-		<events>
-			<event name="MyEvent">
-				<args>
-					<element key="PatternA" type="ResourceRef" value="Material;Materials/DefaultMaterial.xml" />
-				</args>
-			</event>
-		</events>
-	</pattern>
-	<pattern>
-		<elements>
-			<element key="TestKey" />
-		</elements>
-		<events>
-			<event name="MyEvent">
-				<args>
-					<element key="PatternB" type="Int" value="10" />
-				</args>
-			</event>
-		</events>
-	</pattern>
-</patterns>
+	<patterns>
+		<pattern>
+			<keys>
+				<key key="TestKey" />
+				<key key="MinMax" min="-2.000000" max="2.000000" />
+			</keys>
+			<events>
+				<event name="MyEvent">
+					<args>
+						<element key="PatternA" type="ResourceRef" value="Material;Materials/DefaultMaterial.xml" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern>
+			<keys>
+				<key key="TestKey" />
+			</keys>
+			<events>
+				<event name="MyEvent">
+					<args>
+						<element key="PatternB" type="Int" value="10" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+	</patterns>
 </root>
 )";
     PatternCollection patternCollection;

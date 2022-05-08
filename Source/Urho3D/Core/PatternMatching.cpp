@@ -22,14 +22,31 @@
 
 #include "PatternMatching.h"
 
+#include "Urho3D/IO/ArchiveSerializationContainer.h"
 #include "Urho3D/IO/ArchiveSerializationVariant.h"
 
 namespace Urho3D
 {
-void PatternCollection::EventPrototype::SerializeInBlock(Archive& archive)
+void PatternCollection::SerializableEventPrototype::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "name", eventId_);
-    SerializeValue(archive, "args", arguments_);
+    SerializeValue(archive, "name", serializabeEventId_);
+    SerializeValue(archive, "args", serializabeArguments_);
+}
+void PatternCollection::SerializableEventPrototype::Commit()
+{
+    eventId_ = serializabeEventId_;
+    arguments_.insert(serializabeArguments_.begin(), serializabeArguments_.end());
+}
+void PatternCollection::SerializableElement::SerializeInBlock(Archive& archive)
+{
+    SerializeValue(archive, "key", key_);
+    SerializeOptionalValue(archive, "min", min_, DefaultMin);
+    SerializeOptionalValue(archive, "max", max_, DefaultMax);
+}
+void PatternCollection::SerializableRecord::SerializeInBlock(Archive& archive)
+{
+    SerializeVector(archive, "keys", keys_, "key");
+    SerializeVector(archive, "events", events_, "event");
 }
 /// Remove all keys from the query.
 void PatternQuery::Clear()
@@ -92,8 +109,8 @@ void PatternQuery::Commit()
 
 void PatternCollection::Clear()
 {
+    serializableRecords_.clear();
     elements_.clear();
-    strings_.clear();
     records_.clear();
     dirty_ = false;
     dirtyPattern_ = false;
@@ -106,10 +123,8 @@ int PatternCollection::BeginPattern()
         URHO3D_LOGERROR("Starting new pattern without commiting last one.");
         CommitPattern();
     }
-    const int result = records_.size();
-    auto& rec = records_.emplace_back();
-    rec.startIndex_ = elements_.size();
-    rec.length_ = 0;
+    const int result = serializableRecords_.size();
+    serializableRecords_.emplace_back();
     dirtyPattern_ = true;
     dirty_ = true;
 
@@ -119,47 +134,79 @@ int PatternCollection::BeginPattern()
 /// Add key requirement to the current pattern.
 void PatternCollection::AddKey(const ea::string& key)
 {
-    StringHash hash = key;
-    strings_[hash] = key;
-    auto& element = elements_.emplace_back();
+    if (!dirtyPattern_)
+    {
+        URHO3D_LOGERROR("BeginPattern should be called before AddKey");
+        BeginPattern();
+    }
+    auto& element = serializableRecords_.back().keys_.emplace_back();
     element.key_ = key;
-    ++records_.back().length_;
 }
 
 /// Add key with range requirement to the current pattern.
 void PatternCollection::AddKey(const ea::string& key, float min, float max)
 {
-    StringHash hash = key;
-    strings_[hash] = key;
-    auto& element = elements_.emplace_back();
+    if (!dirtyPattern_)
+    {
+        URHO3D_LOGERROR("BeginPattern should be called before AddKey");
+        BeginPattern();
+    }
+    auto& element = serializableRecords_.back().keys_.emplace_back();
     element.key_ = key;
     element.min_ = min;
     element.max_ = max;
-    ++records_.back().length_;
 }
 
 /// Add event to the current pattern.
 void PatternCollection::AddEvent(const ea::string& eventId, const StringVariantMap& variantMap)
 {
-    StringHash hash = eventId;
-    strings_[hash] = eventId;
-    auto& event = records_.back().events_.emplace_back();
-    event.eventId_ = hash;
-    event.arguments_ = variantMap;
+    if (!dirtyPattern_)
+    {
+        URHO3D_LOGERROR("BeginPattern should be called before AddEvent");
+        BeginPattern();
+    }
+    auto& event = serializableRecords_.back().events_.emplace_back();
+    event.serializabeEventId_ = eventId;
+    event.serializabeArguments_ = variantMap;
 }
 
 /// Commit changes and recalculate derived members.
 void PatternCollection::CommitPattern()
 {
-    auto& pattern = records_.back();
-    std::sort(elements_.begin() + pattern.startIndex_, elements_.end(),
-        [](Element& a, Element& b) { return a.key_ < b.key_; });
+    if (!dirtyPattern_)
+    {
+        URHO3D_LOGERROR("BeginPattern should be called before CommitPattern");
+        BeginPattern();
+    }
     dirtyPattern_ = false;
 }
 
 void PatternCollection::Commit()
 {
     dirty_ = false;
+    int index = 0;
+    for (auto& rec: serializableRecords_)
+    {
+        auto& record = records_.emplace_back();
+        record.startIndex_ = elements_.size();
+        record.recordId_ = index;
+        ++index;
+        for (auto& key: rec.keys_)
+        {
+            auto& element = elements_.emplace_back();
+            element.key_ = key.key_;
+            element.min_ = key.min_;
+            element.max_ = key.max_;
+            ++record.length_;
+        }
+        for (auto& event : rec.events_)
+        {
+            event.Commit();
+        }
+        std::sort(elements_.begin() + record.startIndex_, elements_.end(),
+            [](Element& a, Element& b) { return a.key_ < b.key_; });
+
+    }
     //TODO: Sort collection for optimal search
 }
 
@@ -207,7 +254,7 @@ int PatternCollection::Query(const PatternQuery& query) const
 
         if (recordIndex == recordLastIndex)
         {
-            bestMatchIndex = index;
+            bestMatchIndex = record.recordId_;
             bestMatchLength = record.length_;
         }
     }
@@ -216,7 +263,12 @@ int PatternCollection::Query(const PatternQuery& query) const
 
 void PatternCollection::SerializeInBlock(Archive& archive)
 {
-    auto block = archive.OpenArrayBlock("patterns", records_.size());
+    SerializeVector(archive, "patterns", serializableRecords_, "pattern");
+    if (archive.IsInput())
+    {
+        Commit();
+    }
+    /*auto block = archive.OpenArrayBlock("patterns", records_.size());
     if (archive.IsInput())
     {
         Clear();
@@ -292,6 +344,16 @@ void PatternCollection::SerializeInBlock(Archive& archive)
                 }
             }
         }
+    }*/
+}
+
+void PatternCollection::SendEvent(int patternIndex, Object* object, bool broadcast)
+{
+    if (patternIndex < 0)
+        return;
+    for (auto& event : serializableRecords_[patternIndex].events_)
+    {
+        object->SendEvent(event.eventId_, event.arguments_);
     }
 }
 
