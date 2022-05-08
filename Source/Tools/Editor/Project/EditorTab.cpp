@@ -20,18 +20,12 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/EditorPluginManager.h"
+#include "../Core/IniHelpers.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 
 #include <Urho3D/Input/Input.h>
-
-#if 0
-#include <Urho3D/Core/ProcessUtils.h>
-#include "EditorEvents.h"
-#include "Editor.h"
-#include "Tab.h"
-#include "PreviewTab.h"
-#endif
 
 namespace Urho3D
 {
@@ -51,20 +45,26 @@ EditorTab::~EditorTab()
 {
 }
 
+void EditorTab::ApplyPlugins()
+{
+    auto editorPluginManager = GetSubsystem<EditorPluginManager>();
+    editorPluginManager->Apply(this);
+}
+
 void EditorTab::WriteIniSettings(ImGuiTextBuffer* output)
 {
     output->appendf("\n[Project][%s]\n", GetUniqueId().c_str());
-    output->appendf("IsOpen=%d\n", open_ ? 1 : 0);
+
+    WriteIntToIni(output, "IsOpen", open_ ? 1 : 0);
 }
 
 void EditorTab::ReadIniSettings(const char* line)
 {
-    int isOpen{};
-    if (sscanf(line, "IsOpen=%d\n", &isOpen) == 1)
-        open_ = isOpen != 0;
+    if (const auto isOpen = ReadIntFromIni(line, "IsOpen"))
+        open_ = *isOpen != 0;
 }
 
-void EditorTab::RenderUI()
+void EditorTab::UpdateAndRender()
 {
     wasOpen_ = open_;
 
@@ -72,13 +72,13 @@ void EditorTab::RenderUI()
         open_ = true;
 
     if (open_)
-        RenderWindowUI();
+        UpdateAndRenderWindow();
 
     focusPending_ = false;
     openPending_ = false;
 }
 
-void EditorTab::RenderWindowUI()
+void EditorTab::UpdateAndRenderWindow()
 {
     // TODO(editor): Hide this dependency
     Input* input = GetSubsystem<Input>();
@@ -101,13 +101,10 @@ void EditorTab::RenderWindowUI()
     if (noContentPadding)
         ui::PopStyleVar();
 
-    if (OnRenderContextMenu.HasSubscriptions())
+    if (ui::BeginPopupContextItem("EditorTab_ContextMenu"))
     {
-        if (ui::BeginPopupContextItem("Tab context menu"))
-        {
-            OnRenderContextMenu(this);
-            ui::EndPopup();
-        }
+        UpdateAndRenderContextMenu();
+        ui::EndPopup();
     }
 
     if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
@@ -121,7 +118,7 @@ void EditorTab::RenderWindowUI()
         }
     }
 
-    RenderContentUI();
+    UpdateAndRenderContent();
 
     if (noContentPadding)
         ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
@@ -130,6 +127,26 @@ void EditorTab::RenderWindowUI()
 
     if (noContentPadding)
         ui::PopStyleVar();
+}
+
+void EditorTab::UpdateAndRenderContextMenu()
+{
+    {
+        const int oldY = ui::GetCursorPosY();
+        UpdateAndRenderContextMenuItems();
+        if (oldY != ui::GetCursorPosY())
+            ui::Separator();
+    }
+
+    {
+        const int oldY = ui::GetCursorPosY();
+        OnRenderContextMenu(this);
+        if (oldY != ui::GetCursorPosY())
+            ui::Separator();
+    }
+
+    if (ui::MenuItem("Close"))
+        Close();
 }
 
 ProjectEditor* EditorTab::GetProject() const

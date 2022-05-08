@@ -77,7 +77,10 @@
 #include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
+#include "Foundation/HierarchyBrowserTab.h"
+#include "Foundation/InspectorTab.h"
 #include "Foundation/ResourceBrowserTab.h"
+#include "Foundation/SceneViewTab.h"
 
 namespace Urho3D
 {
@@ -101,7 +104,10 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
+    editorPluginManager_->AddPlugin("Foundation.SceneViewTab", &Foundation_SceneViewTab);
+    editorPluginManager_->AddPlugin("Foundation.InspectorTab", &Foundation_InspectorTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowserTab", &Foundation_ResourceBrowserTab);
+    editorPluginManager_->AddPlugin("Foundation.HierarchyBrowserTab", &Foundation_HierarchyBrowserTab);
 }
 
 void Editor::Setup()
@@ -360,7 +366,7 @@ void Editor::OnUpdate(VariantMap& args)
     bool hasModified = false;
     if (projectEditor_)
     {
-        projectEditor_->RenderUI();
+        projectEditor_->UpdateAndRender();
     }
     else if (project_.NotNull())
     {

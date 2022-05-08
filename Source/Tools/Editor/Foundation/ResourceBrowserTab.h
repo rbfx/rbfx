@@ -26,6 +26,7 @@
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 
+#include <Urho3D/Core/Signal.h>
 #include <Urho3D/Utility/FileSystemReflection.h>
 
 #include <EASTL/functional.h>
@@ -41,7 +42,7 @@ class ResourceBrowserFactory : public Object
     URHO3D_OBJECT(ResourceBrowserFactory, Object);
 
 public:
-    using Callback = ea::function<void(const ea::string& fileName)>;
+    using Callback = ea::function<void(const ea::string& fileName, const ea::string& resourceName)>;
 
     ResourceBrowserFactory(Context* context,
         int group, const ea::string& title, const ea::string& fileName);
@@ -52,8 +53,8 @@ public:
     /// @{
     virtual bool IsEnabled(const FileSystemEntry& parentEntry) const { return true; }
     virtual void BeginCreate() {}
-    virtual void RenderUI() {}
-    virtual void EndCreate(const ea::string& fileName);
+    virtual void UpdateAndRender() {}
+    virtual void EndCreate(const ea::string& fileName, const ea::string& resourceName);
     /// @}
 
     int GetGroup() const { return group_; }
@@ -80,13 +81,11 @@ public:
 
     void AddFactory(SharedPtr<ResourceBrowserFactory> factory);
 
-    /// Actions with current state
-    /// @{
-    void ScrollToSelection();
-    /// @}
+    void WriteIniSettings(ImGuiTextBuffer* output) override;
+    void ReadIniSettings(const char* line) override;
 
 protected:
-    void RenderContentUI() override;
+    void UpdateAndRenderContent() override;
 
 private:
     struct ResourceRoot
@@ -142,6 +141,7 @@ private:
     void SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex = ea::nullopt);
     void SelectRightPanel(const ea::string& path);
     void AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName);
+    void ScrollToSelection();
 
     ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
         const ea::string& oldName, const ea::string& newName) const;
@@ -152,6 +152,7 @@ private:
         const ea::string& oldResourceName, const ea::string& newResourceName, bool adjustSelection);
     void DeleteEntry(const FileSystemEntry& entry);
     void CleanupResourceCache(const ea::string& resourceName);
+    void OpenEntryInEditor(const FileSystemEntry& entry);
 
     ea::vector<ResourceRoot> roots_;
 

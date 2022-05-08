@@ -25,9 +25,28 @@
 #include "../Project/EditorTab.h"
 
 #include <Urho3D/Core/Object.h>
+#include <Urho3D/IO/File.h>
+#include <Urho3D/Resource/JSONFile.h>
+#include <Urho3D/Resource/XMLFile.h>
 
 namespace Urho3D
 {
+
+/// Request to open resource in Editor.
+struct OpenResourceRequest
+{
+    ea::string fileName_;
+    ea::string resourceName_;
+
+    SharedPtr<File> file_;
+    SharedPtr<XMLFile> xmlFile_;
+    SharedPtr<JSONFile> jsonFile_;
+
+    bool IsValid() const { return !fileName_.empty(); }
+    explicit operator bool() const { return IsValid(); }
+
+    static OpenResourceRequest FromResourceName(Context* context, const ea::string& resourceName);
+};
 
 /// Helper class to keep and restore state of ResourceCache.
 class ResourceCacheGuard
@@ -52,15 +71,19 @@ class ProjectEditor : public Object
     URHO3D_OBJECT(ProjectEditor, Object);
 
 public:
+    Signal<void()> OnInitialized;
+
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;
 
     /// Plugin API
     /// @{
     void AddTab(SharedPtr<EditorTab> tab);
+    template <class T> T* FindTab() const;
+    void OpenResource(const OpenResourceRequest& request);
     /// @}
 
-    void RenderUI();
+    void UpdateAndRender();
     void Save();
 
     void ReadIniSettings(const char* entry, const char* line);
@@ -77,6 +100,7 @@ private:
     void EnsureDirectoryInitialized();
     void InitializeResourceCache();
     void ResetLayout();
+    void ApplyPlugins();
 
     /// Project properties
     /// @{
@@ -91,6 +115,7 @@ private:
     const ResourceCacheGuard oldCacheState_;
     /// @}
 
+    bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
 
     /// UI state
@@ -100,5 +125,15 @@ private:
     /// @}
 };
 
+template <class T>
+T* ProjectEditor::FindTab() const
+{
+    for (EditorTab* tab : tabs_)
+    {
+        if (auto derivedTab = dynamic_cast<T*>(tab))
+            return derivedTab;
+    }
+    return nullptr;
+}
 
 }

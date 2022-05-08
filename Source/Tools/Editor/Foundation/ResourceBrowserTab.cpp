@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/IniHelpers.h"
 #include "../Foundation/ResourceBrowserTab.h"
 
 #include <Urho3D/IO/FileSystem.h>
@@ -52,13 +53,6 @@ bool IsLeafDirectory(const FileSystemEntry& entry)
 void Foundation_ResourceBrowserTab(Context* context, ProjectEditor* projectEditor)
 {
     projectEditor->AddTab(MakeShared<ResourceBrowserTab>(context));
-    // TODO(editor): Remove this
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Scene", "1",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter));
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Hierarchy", "2",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft));
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Inspector", "3",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight));
 }
 
 ResourceBrowserFactory::ResourceBrowserFactory(Context* context,
@@ -77,10 +71,10 @@ ResourceBrowserFactory::ResourceBrowserFactory(Context* context,
     callback_ = callback;
 }
 
-void ResourceBrowserFactory::EndCreate(const ea::string& fileName)
+void ResourceBrowserFactory::EndCreate(const ea::string& fileName, const ea::string& resourceName)
 {
     if (callback_)
-        callback_(fileName);
+        callback_(fileName, resourceName);
 }
 
 bool ResourceBrowserFactory::Compare(
@@ -114,7 +108,7 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
     {
         AddFactory(MakeShared<ResourceBrowserFactory>(
             context_, M_MIN_INT, ICON_FA_FOLDER " Folder", "New Folder",
-            [this](const ea::string& fileName)
+            [this](const ea::string& fileName, const ea::string& resourceName)
         {
             auto fs = GetSubsystem<FileSystem>();
             fs->CreateDirsRecursive(fileName);
@@ -126,6 +120,8 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
         root.reflection_ = MakeShared<FileSystemReflection>(context_, root.watchedDirectories_);
         root.reflection_->OnListUpdated.Subscribe(this, &ResourceBrowserTab::RefreshContents);
     }
+
+    project->OnInitialized.Subscribe(this, &ResourceBrowserTab::RefreshContents);
 }
 
 ResourceBrowserTab::~ResourceBrowserTab()
@@ -138,13 +134,34 @@ void ResourceBrowserTab::AddFactory(SharedPtr<ResourceBrowserFactory> factory)
     sortFactories_ = true;
 }
 
+void ResourceBrowserTab::WriteIniSettings(ImGuiTextBuffer* output)
+{
+    BaseClassName::WriteIniSettings(output);
+
+    WriteIntToIni(output, "SelectedRoot", left_.selectedRoot_);
+    WriteStringToIni(output, "SelectedLeftPath", left_.selectedPath_);
+    WriteStringToIni(output, "SelectedRightPath", right_.selectedPath_);
+}
+
+void ResourceBrowserTab::ReadIniSettings(const char* line)
+{
+    BaseClassName::ReadIniSettings(line);
+
+    if (const auto value = ReadIntFromIni(line, "SelectedRoot"))
+        left_.selectedRoot_ = *value;
+    if (const auto value = ReadStringFromIni(line, "SelectedLeftPath"))
+        left_.selectedPath_ = *value;
+    if (const auto value = ReadStringFromIni(line, "SelectedRightPath"))
+        right_.selectedPath_ = *value;
+}
+
 void ResourceBrowserTab::ScrollToSelection()
 {
     left_.scrollToSelection_ = true;
     right_.scrollToSelection_ = true;
 }
 
-void ResourceBrowserTab::RenderContentUI()
+void ResourceBrowserTab::UpdateAndRenderContent()
 {
     for (ResourceRoot& root : roots_)
         root.reflection_->Update();
@@ -421,6 +438,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     ImGuiContext& g = *GImGui;
     const ResourceRoot& root = GetRoot(entry);
     const bool isNormalDirectory = !entry.isFile_;
+    const bool isNormalFile = !entry.isDirectory_;
     const bool isCompositeFile = root.supportCompositeFiles_ && entry.isFile_ && entry.isDirectory_;
     const bool isSelected = entry.resourceName_ == right_.selectedPath_;
 
@@ -445,6 +463,11 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
         {
             SelectLeftPanel(entry.resourceName_);
             ScrollToSelection();
+        }
+        else if (isNormalFile && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+        {
+            SelectRightPanel(entry.resourceName_);
+            OpenEntryInEditor(entry);
         }
         else
         {
@@ -601,24 +624,28 @@ void ResourceBrowserTab::RenderCreateDialog(const FileSystemEntry& parentEntry)
 {
     if (ui::BeginPopupModal(createPopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        const ea::string basePath = parentEntry.absolutePath_.empty()
+        const ea::string baseFilePath = parentEntry.absolutePath_.empty()
             ? GetRoot(parentEntry).activeDirectory_
             : parentEntry.absolutePath_ + "/";
+        const ea::string baseResourcePath = parentEntry.resourceName_.empty()
+            ? ""
+            : parentEntry.resourceName_ + "/";
 
         const auto [isEnabled, extraLine] = CheckFileNameInput(parentEntry, "", createNameBuffer_);
-        const ea::string fileName = basePath + createNameBuffer_;
-        ui::Text("Would you like to create '%s'?\n%s", fileName.c_str(), extraLine.c_str());
+        const ea::string fileName = baseFilePath + createNameBuffer_;
+        const ea::string resourceName = baseResourcePath + createNameBuffer_;
+        ui::Text("Would you like to create '%s'?\n%s", resourceName.c_str(), extraLine.c_str());
 
         ui::SetKeyboardFocusHere();
         const bool done = ui::InputText("##Create", &createNameBuffer_,
             ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 
-        createFactory_->RenderUI();
+        createFactory_->UpdateAndRender();
 
         ui::BeginDisabled(!isEnabled);
         if (ui::Button(ICON_FA_CHECK " Create") || (isEnabled && done))
         {
-            createFactory_->EndCreate(fileName);
+            createFactory_->EndCreate(fileName, resourceName);
             ui::CloseCurrentPopup();
         }
         ui::EndDisabled();
@@ -639,7 +666,7 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreateDragDropPayload(con
     payload->localName_ = entry.localName_;
     payload->resourceName_ = entry.resourceName_;
     payload->fileName_ = entry.absolutePath_;
-    payload->isMovable_ = !IsEntryFromCache(entry);
+    payload->isMovable_ = !IsEntryFromCache(entry) && !entry.resourceName_.empty();
     return payload;
 }
 
@@ -826,7 +853,14 @@ void ResourceBrowserTab::CleanupResourceCache(const ea::string& resourceName)
     const ea::string matchingDirectoryInCache = project->GetCachePath() + resourceName;
     if (fs->DirExists(matchingDirectoryInCache))
         fs->RemoveDir(matchingDirectoryInCache, true);
+}
 
+void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
+{
+    auto project = GetSubsystem<ProjectEditor>();
+
+    if (const OpenResourceRequest request = OpenResourceRequest::FromResourceName(context_, entry.resourceName_))
+        project->OpenResource(request);
 }
 
 }
