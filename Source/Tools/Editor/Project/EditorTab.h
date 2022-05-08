@@ -61,17 +61,23 @@ public:
     ~EditorTab() override;
 
     /// Render contents of the tab. Returns false if closed.
-    void RenderUI();
+    void UpdateAndRender();
     /// Open tab without focusing.
     void Open() { openPending_ = true; }
     /// Open tab if it's closed and focus on it.
     void Focus() { focusPending_ = true; }
+    /// Close tab.
+    void Close() { open_ = false; }
 
-    /// Serialize UI settings.
-    /// @{
+    /// Called when all tabs are created and multi-tab plugins can be safely applied.
+    virtual void ApplyPlugins();
+    /// Called when project is fully loaded.
+    virtual void OnProjectLoaded() {}
+
+    /// Write all UI settings to text INI file.
     virtual void WriteIniSettings(ImGuiTextBuffer* output);
+    /// Read one line of text INI file. May be called several times.
     virtual void ReadIniSettings(const char* line);
-    /// @}
 
     /// Return properties of the tab.
     /// @{
@@ -84,7 +90,9 @@ public:
 
 protected:
     /// Render contents of the tab.
-    virtual void RenderContentUI() {}
+    virtual void UpdateAndRenderContent() {}
+    /// Render context menu of the tab.
+    virtual void UpdateAndRenderContextMenuItems() {}
     /// Return whether the document is modified and prompt to save should be shown.
     virtual bool IsModified() { return false; }
     /// Update tab in focus.
@@ -94,7 +102,8 @@ protected:
     ProjectEditor* GetProject() const;
 
 private:
-    void RenderWindowUI();
+    void UpdateAndRenderWindow();
+    void UpdateAndRenderContextMenu();
 
     const ea::string title_;
     const ea::string guid_;

@@ -22,6 +22,7 @@
 
 #include "../Core/EditorPluginManager.h"
 #include "../Project/ProjectEditor.h"
+#include "../Project/ResourceEditorTab.h"
 
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
@@ -32,6 +33,35 @@ namespace Urho3D
 {
 
 static unsigned numActiveProjects = 0;
+
+OpenResourceRequest OpenResourceRequest::FromResourceName(Context* context, const ea::string& resourceName)
+{
+    auto cache = context->GetSubsystem<ResourceCache>();
+
+    const auto file = cache->GetFile(resourceName);
+    if (!file)
+        return {};
+
+    OpenResourceRequest request;
+    request.fileName_ = file->GetAbsoluteName();
+    request.resourceName_ = resourceName;
+    request.file_ = file;
+
+    if (request.resourceName_.ends_with(".xml"))
+    {
+        request.xmlFile_ = MakeShared<XMLFile>(context);
+        request.xmlFile_->Load(*file);
+        file->Seek(0);
+    }
+
+    if (request.resourceName_.ends_with(".json"))
+    {
+        request.jsonFile_ = MakeShared<JSONFile>(context);
+        request.jsonFile_->Load(*file);
+    }
+
+    return request;
+}
 
 ResourceCacheGuard::ResourceCacheGuard(Context* context)
     : context_(context)
@@ -74,8 +104,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     EnsureDirectoryInitialized();
     InitializeResourceCache();
 
-    auto editorPluginManager = GetSubsystem<EditorPluginManager>();
-    editorPluginManager->Apply(this);
+    ApplyPlugins();
 }
 
 ProjectEditor::~ProjectEditor()
@@ -89,6 +118,22 @@ ProjectEditor::~ProjectEditor()
 void ProjectEditor::AddTab(SharedPtr<EditorTab> tab)
 {
     tabs_.push_back(tab);
+}
+
+void ProjectEditor::OpenResource(const OpenResourceRequest& request)
+{
+    for (EditorTab* tab : tabs_)
+    {
+        if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
+        {
+            if (resourceTab->CanOpenResource(request))
+            {
+                resourceTab->OpenResource(request.resourceName_);
+                resourceTab->Focus();
+                break;
+            }
+        }
+    }
 }
 
 void ProjectEditor::EnsureDirectoryInitialized()
@@ -187,7 +232,16 @@ void ProjectEditor::ResetLayout()
     }
 }
 
-void ProjectEditor::RenderUI()
+void ProjectEditor::ApplyPlugins()
+{
+    auto editorPluginManager = GetSubsystem<EditorPluginManager>();
+    editorPluginManager->Apply(this);
+
+    for (EditorTab* tab : tabs_)
+        tab->ApplyPlugins();
+}
+
+void ProjectEditor::UpdateAndRender()
 {
     dockspaceId_ = ui::GetID("Root");
     ui::DockSpace(dockspaceId_);
@@ -195,8 +249,15 @@ void ProjectEditor::RenderUI()
     if (pendingResetLayout_)
         ResetLayout();
 
+    // TODO(editor): Postpone this call until assets are imported
+    if (!initialized_)
+    {
+        initialized_ = true;
+        OnInitialized(this);
+    }
+
     for (EditorTab* tab : tabs_)
-        tab->RenderUI();
+        tab->UpdateAndRender();
 }
 
 void ProjectEditor::Save()
