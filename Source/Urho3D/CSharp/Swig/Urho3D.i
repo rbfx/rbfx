@@ -327,10 +327,6 @@ namespace SDL
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
 %ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
-%ignore Urho3D::PatternCollection::EventPrototype;
-%ignore Urho3D::PatternCollection::Element;
-%ignore Urho3D::PatternCollection::Record;
-%ignore Urho3D::PatternQuery::Element;
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
