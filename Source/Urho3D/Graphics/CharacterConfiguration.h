@@ -29,6 +29,7 @@ namespace Urho3D
 {
 class Model;
 class Material;
+class PatternCollection;
 
 /// Character configuration resource.
 class URHO3D_API CharacterConfiguration : public Resource
@@ -76,6 +77,11 @@ public:
     void SetMaterialAttr(const ResourceRefList& materials);
     const ResourceRefList& GetMaterialAttr() const { return material_; }
 
+    void SetStatesAttr(ResourceRef states);
+    ResourceRef GetStatesAttr() const { return states_; }
+    void SetStates(PatternDatabase* states);
+    PatternCollection* GetStates() const;
+
     /// Set shadowcaster flag.
     /// @property
     void SetCastShadows(bool enable);
@@ -105,7 +111,6 @@ public:
     /// @property
     const Vector3& GetScale() const { return scale_; }
 
-    PatternCollection* GetStates() { return &stateMachine_; }
 
     const Matrix3x4& LocalToWorld() { return localToWorld_; }
     const Matrix3x4& WorldToLocal() { return worldToLocal_; }
@@ -120,6 +125,9 @@ private:
     ResourceRef model_;
     /// Skeleton model materials
     ResourceRefList material_;
+    /// Character states
+    ResourceRef states_;
+    
     Vector3 position_ {Vector3::ZERO};
     Quaternion rotation_{Quaternion::IDENTITY};
     Vector3 scale_{Vector3::ONE};
@@ -130,8 +138,8 @@ private:
     /// Character body parts.
     std::vector<BodyPart> bodyParts_;
 
-    /// State machine via fuzzy pattern matching.
-    PatternCollection stateMachine_;
+    /// Cached state machine via fuzzy pattern matching.
+    mutable SharedPtr<PatternDatabase> cachedStates_;
 };
 
 }

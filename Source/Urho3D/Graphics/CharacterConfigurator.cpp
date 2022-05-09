@@ -116,19 +116,23 @@ void CharacterConfigurator::Update(const PatternQuery& query)
         savedState_[query.GetKeyHash(i)] = query.GetValue(i);
     }
 
-    const auto stateMatch = configuration_->GetStates()->Query(query);
-    if (stateIndex_ != stateMatch)
+    const auto* states = configuration_->GetStates();
+    if (states)
     {
-        stateIndex_ = stateMatch;
-        if (stateIndex_ >= 0)
+        const auto stateMatch = states->Query(query);
+        if (stateIndex_ != stateMatch)
         {
-            const auto numEvents = configuration_->GetStates()->GetNumEvents(stateIndex_);
-            for (unsigned i = 0; i < numEvents; ++i)
+            stateIndex_ = stateMatch;
+            if (stateIndex_ >= 0)
             {
-                auto eventId = configuration_->GetStates()->GetEventId(stateIndex_, i);
-                if (eventId == "PlayAnimation")
+                const auto numEvents = configuration_->GetStates()->GetNumEvents(stateIndex_);
+                for (unsigned i = 0; i < numEvents; ++i)
                 {
-                    PlayAnimation(eventId, configuration_->GetStates()->GetEventArgs(stateIndex_, i));
+                    auto eventId = configuration_->GetStates()->GetEventId(stateIndex_, i);
+                    if (eventId == "PlayAnimation")
+                    {
+                        PlayAnimation(eventId, configuration_->GetStates()->GetEventArgs(stateIndex_, i));
+                    }
                 }
             }
         }
@@ -137,10 +141,20 @@ void CharacterConfigurator::Update(const PatternQuery& query)
 
 void CharacterConfigurator::PlayAnimation(StringHash eventType, const VariantMap& eventData)
 {
-    const ResourceRef animationRef = GetOptional<ResourceRef>("animation", eventData, {});
-    if (animationRef.name_.empty())
+    auto animationIt = eventData.find("animation");
+    if (animationIt == eventData.end())
         return;
-    Animation* animation = context_->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationRef.name_);
+    Animation* animation{};
+    if (animationIt->second.GetType() == VAR_RESOURCEREF)
+    {
+        animation = context_->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationIt->second.GetResourceRef().name_);
+    }
+    else if (animationIt->second.GetType() == VAR_RESOURCEREFLIST)
+    {
+        auto& names = animationIt->second.GetResourceRefList().names_;
+        if (names.empty())
+            animation = context_->GetSubsystem<ResourceCache>()->GetResource<Animation>(names[Random(0, names.size())]);
+    }
     if (!animation)
         return;
     AnimationParameters params(animation);

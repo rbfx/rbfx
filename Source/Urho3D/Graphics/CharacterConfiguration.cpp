@@ -30,6 +30,7 @@
 #include "../Scene/Serializable.h"
 #include "Material.h"
 #include "Model.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
 namespace Urho3D
 {
@@ -82,8 +83,8 @@ void CharacterConfiguration::ResetToDefaults()
 
     model_ = ResourceRef{};
     material_ = ResourceRefList{};
+    states_ = ResourceRef{};
     bodyParts_.clear();
-    stateMachine_.Clear();
 }
 
 void CharacterConfiguration::UpdateMatrices()
@@ -103,18 +104,15 @@ bool CharacterConfiguration::Save(Serializer& dest) const
 
 void CharacterConfiguration::SerializeInBlock(Archive& archive)
 {
+    SerializeOptionalValue(archive, "bodyParts", bodyParts_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "part"); });
     SerializeOptionalValue(archive, "model", model_);
     SerializeOptionalValue(archive, "material", material_);
     SerializeOptionalValue(archive, "position", position_, Vector3::ZERO);
     SerializeOptionalValue(archive, "rotation", rotation_, Quaternion::IDENTITY);
     SerializeOptionalValue(archive, "scale", scale_, Vector3::ONE);
     SerializeOptionalValue(archive, "castShadows", castShadows_, true);
-
-    SerializeOptionalValue(archive, "bodyParts", bodyParts_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "part");
-    });
-    stateMachine_.SerializeInBlock(archive);
-    //SerializeValue(archive, "states", stateMachine_);
+    SerializeOptionalValue(archive, "states", states_);
 }
 
 /// Resize body parts vector.
@@ -133,6 +131,7 @@ void CharacterConfiguration::SetModel(Model* model)
 void CharacterConfiguration::SetModelAttr(ResourceRef model) { model_ = model; }
 
 void CharacterConfiguration::SetMaterialAttr(const ResourceRefList& materials) { material_ = materials; }
+
 void CharacterConfiguration::SetMaterial(Material* material)
 {
     if (material)
@@ -140,6 +139,37 @@ void CharacterConfiguration::SetMaterial(Material* material)
     else
         SetMaterialAttr(ResourceRefList{});
 }
+
+void CharacterConfiguration::SetStatesAttr(ResourceRef state)
+{
+    if (states_ != state)
+    {
+        states_ = state;
+        cachedStates_.Reset();
+    }
+}
+
+void CharacterConfiguration::SetStates(PatternDatabase* states)
+{
+    if (cachedStates_)
+        SetStatesAttr(ResourceRef{cachedStates_->GetType(), {cachedStates_->GetName()}});
+    else
+        SetStatesAttr(ResourceRef{});
+    cachedStates_ = states;
+}
+
+PatternCollection* CharacterConfiguration::GetStates() const
+{
+    if (cachedStates_)
+        return cachedStates_->GetPatterns();
+    if (states_.name_.empty())
+        return nullptr;
+    cachedStates_ = context_->GetSubsystem<ResourceCache>()->GetResource<PatternDatabase>(states_.name_);
+    if (cachedStates_)
+        return cachedStates_->GetPatterns();
+    return nullptr;
+}
+
 void CharacterConfiguration::SetCastShadows(bool enable) { castShadows_ = enable; }
 
 void CharacterConfiguration::SetPosition(const Vector3& position)

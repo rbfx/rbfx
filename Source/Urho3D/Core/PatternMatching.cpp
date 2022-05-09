@@ -22,8 +22,12 @@
 
 #include "PatternMatching.h"
 
-#include "Urho3D/IO/ArchiveSerializationContainer.h"
-#include "Urho3D/IO/ArchiveSerializationVariant.h"
+#include "../IO/ArchiveSerializationContainer.h"
+#include "../IO/ArchiveSerializationVariant.h"
+#include "../IO/FileSystem.h"
+#include "../Resource/XMLFile.h"
+#include "../IO/Deserializer.h"
+#include "Urho3D/Resource/XMLArchive.h"
 
 namespace Urho3D
 {
@@ -305,6 +309,47 @@ const VariantMap& PatternCollection::GetEventArgs(int patternIndex, unsigned eve
     if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
         return empty;
     return serializableRecords_[patternIndex].events_[eventIndex].arguments_;
+}
+
+PatternDatabase::PatternDatabase(Context* context): Resource(context)
+{
+}
+
+PatternDatabase::~PatternDatabase() = default;
+
+void PatternDatabase::RegisterObject(Context* context)
+{
+    context->RegisterFactory<PatternDatabase>();
+}
+
+bool PatternDatabase::BeginLoad(Deserializer& source)
+{
+    ea::string extension = GetExtension(source.GetName());
+
+    patterns_.Clear();
+
+    const auto xmlFile = MakeShared<XMLFile>(context_);
+    if (!xmlFile->Load(source))
+        return false;
+
+    XMLInputArchive archive{xmlFile};
+    SerializeInBlock(archive);
+    return true;
+}
+
+/// Save resource. Return true if successful.
+bool PatternDatabase::Save(Serializer& dest) const
+{
+    const auto xmlFile = MakeShared<XMLFile>(context_);
+    XMLOutputArchive archive{xmlFile};
+    const_cast<PatternDatabase*>(this)->SerializeInBlock(archive);
+    xmlFile->Save(dest);
+    return true;
+}
+
+void PatternDatabase::SerializeInBlock(Archive& archive)
+{
+    patterns_.SerializeInBlock(archive);
 }
 
 }

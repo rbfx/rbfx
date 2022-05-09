@@ -24,6 +24,7 @@
 
 #include "Object.h"
 #include "../Core/Variant.h"
+#include "Urho3D/Resource/Resource.h"
 
 #include <EASTL/fixed_vector.h>
 
@@ -181,6 +182,34 @@ private:
     ea::vector<Element> elements_;
     bool dirtyPattern_{};
     bool dirty_{};
+};
+
+/// Collection of patterns as resource
+class URHO3D_API PatternDatabase : public Resource
+{
+    URHO3D_OBJECT(PatternDatabase, Resource)
+public:
+    /// Construct.
+    explicit PatternDatabase(Context* context);
+    /// Destruct.
+    ~PatternDatabase() override;
+    /// Register object factory.
+    /// @nobind
+    static void RegisterObject(Context* context);
+
+    /// Load resource from stream. May be called from a worker thread. Return true if successful.
+    bool BeginLoad(Deserializer& source) override;
+
+    /// Save resource. Return true if successful.
+    bool Save(Serializer& dest) const override;
+    /// Serialize from/to archive. Return true if successful.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Get patterns. Returns pointer for SWIG compatibility.
+    PatternCollection* GetPatterns() { return &patterns_; }
+
+private:
+    PatternCollection patterns_;
 };
 
 }

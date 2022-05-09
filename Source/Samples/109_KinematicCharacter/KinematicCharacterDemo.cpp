@@ -187,49 +187,56 @@ void KinematicCharacterDemo::CreateCharacter()
     Node* objectNode = scene_->CreateChild("Jack");
     objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
 
-    auto conf = MakeShared<CharacterConfiguration>(context_);
-    conf->SetModel(cache->GetResource<Model>("Models/Mutant/Mutant.mdl"));
-    conf->SetMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutant_M.xml"));
-    conf->SetRotation(Quaternion(180, Vector3(0, 1, 0)));
-    auto* states = conf->GetStates();
-    {
-        states->BeginPattern();
-        StringVariantMap idleArgs;
-        idleArgs["existing"] = true;
-        idleArgs["exclusive"] = true;
-        idleArgs["looped"] = true;
-        idleArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Idle0.ani");
-        idleArgs["fadeInTime"] = 0.2f;
-        states->AddEvent("PlayAnimation", idleArgs);
-        states->CommitPattern();
-    }
-    {
-        states->BeginPattern();
-        states->AddKey("Run");
-        states->AddKeyGreaterOrEqual("OnGround", 0.5f);
-        StringVariantMap runArgs;
-        runArgs["existing"] = true;
-        runArgs["exclusive"] = true;
-        runArgs["looped"] = true;
-        runArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Run.ani");
-        runArgs["fadeInTime"] = 0.2f;
-        states->AddEvent("PlayAnimation", runArgs);
-        states->CommitPattern();
-    }
-    {
-        states->BeginPattern();
-        states->AddKeyLessOrEqual("OnGround", 0.5f);
-        StringVariantMap jumpArgs;
-        jumpArgs["existing"] = false;
-        jumpArgs["exclusive"] = true;
-        jumpArgs["removeOnCompletion"] = false;
-        jumpArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Jump1.ani");
-        jumpArgs["fadeInTime"] = 0.2f;
-        states->AddEvent("PlayAnimation", jumpArgs);
-        states->CommitPattern();
-    }
-    states->Commit();
-    conf->SaveFile("Char.xml");
+    auto conf = cache->GetResource<CharacterConfiguration>("Models/Mutant/Character.xml");
+
+    //auto conf = MakeShared<CharacterConfiguration>(context_);
+    //conf->SetModel(cache->GetResource<Model>("Models/Mutant/Mutant.mdl"));
+    //conf->SetMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutant_M.xml"));
+    //conf->SetRotation(Quaternion(180, Vector3(0, 1, 0)));
+    //auto statesDatabase = MakeShared<PatternDatabase>(context_);
+    //statesDatabase->SetName("Anim");
+    //auto* states = statesDatabase->GetPatterns();
+    //{
+    //    states->BeginPattern();
+    //    StringVariantMap idleArgs;
+    //    idleArgs["existing"] = true;
+    //    idleArgs["exclusive"] = true;
+    //    idleArgs["looped"] = true;
+    //    idleArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Idle0.ani");
+    //    idleArgs["fadeInTime"] = 0.2f;
+    //    states->AddEvent("PlayAnimation", idleArgs);
+    //    states->CommitPattern();
+    //}
+    //{
+    //    states->BeginPattern();
+    //    states->AddKey("Run");
+    //    states->AddKeyGreaterOrEqual("OnGround", 0.5f);
+    //    StringVariantMap runArgs;
+    //    runArgs["existing"] = true;
+    //    runArgs["exclusive"] = true;
+    //    runArgs["looped"] = true;
+    //    runArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Run.ani");
+    //    runArgs["fadeInTime"] = 0.2f;
+    //    states->AddEvent("PlayAnimation", runArgs);
+    //    states->CommitPattern();
+    //}
+    //{
+    //    states->BeginPattern();
+    //    states->AddKeyLessOrEqual("OnGround", 0.5f);
+    //    StringVariantMap jumpArgs;
+    //    jumpArgs["existing"] = false;
+    //    jumpArgs["exclusive"] = true;
+    //    jumpArgs["removeOnCompletion"] = false;
+    //    jumpArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Jump1.ani");
+    //    jumpArgs["fadeInTime"] = 0.2f;
+    //    states->AddEvent("PlayAnimation", jumpArgs);
+    //    states->CommitPattern();
+    //}
+    //states->Commit();
+    //conf->SetStates(statesDatabase);
+    //statesDatabase->SaveFile("Anim.xml");
+
+    //conf->SaveFile("Char.xml");
 
     CharacterConfigurator* configurator = objectNode->CreateComponent<CharacterConfigurator>();
     configurator->SetConfiguration(conf);

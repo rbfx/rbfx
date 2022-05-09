@@ -663,6 +663,7 @@ void RegisterGraphicsLibrary(Context* context)
     ReflectionProbeManager::RegisterObject(context);
     CharacterConfigurator::RegisterObject(context);
     CharacterConfiguration::RegisterObject(context);
+    PatternDatabase::RegisterObject(context);
 #if defined(URHO3D_COMPUTE)
     ComputeBuffer::RegisterObject(context);
 #endif
