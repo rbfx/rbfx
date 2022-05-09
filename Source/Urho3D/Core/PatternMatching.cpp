@@ -30,7 +30,7 @@ namespace Urho3D
 void PatternCollection::SerializableEventPrototype::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "name", serializabeEventId_);
-    SerializeValue(archive, "args", serializabeArguments_);
+    SerializeOptionalValue(archive, "args", serializabeArguments_, EmptyObject{});
 }
 void PatternCollection::SerializableEventPrototype::Commit()
 {
@@ -39,14 +39,16 @@ void PatternCollection::SerializableEventPrototype::Commit()
 }
 void PatternCollection::SerializableElement::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "key", key_);
+    SerializeValue(archive, "word", word_);
     SerializeOptionalValue(archive, "min", min_, DefaultMin);
     SerializeOptionalValue(archive, "max", max_, DefaultMax);
 }
 void PatternCollection::SerializableRecord::SerializeInBlock(Archive& archive)
 {
-    SerializeVector(archive, "keys", keys_, "key");
-    SerializeVector(archive, "events", events_, "event");
+    SerializeOptionalValue(archive, "predicate", predicate_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "key"); });
+    SerializeOptionalValue(archive, "events", events_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "event"); });
 }
 /// Remove all keys from the query.
 void PatternQuery::Clear()
@@ -139,8 +141,8 @@ void PatternCollection::AddKey(const ea::string& key)
         URHO3D_LOGERROR("BeginPattern should be called before AddKey");
         BeginPattern();
     }
-    auto& element = serializableRecords_.back().keys_.emplace_back();
-    element.key_ = key;
+    auto& element = serializableRecords_.back().predicate_.emplace_back();
+    element.word_ = key;
 }
 
 /// Add key with range requirement to the current pattern.
@@ -151,11 +153,16 @@ void PatternCollection::AddKey(const ea::string& key, float min, float max)
         URHO3D_LOGERROR("BeginPattern should be called before AddKey");
         BeginPattern();
     }
-    auto& element = serializableRecords_.back().keys_.emplace_back();
-    element.key_ = key;
+    auto& element = serializableRecords_.back().predicate_.emplace_back();
+    element.word_ = key;
     element.min_ = min;
     element.max_ = max;
 }
+/// Add key with range requirement to the current pattern.
+void PatternCollection::AddKeyGreaterOrEqual(const ea::string& key, float min) { AddKey(key, min, DefaultMax); }
+
+/// Add key with range requirement to the current pattern.
+void PatternCollection::AddKeyLessOrEqual(const ea::string& key, float max) { AddKey(key, DefaultMin, max); }
 
 /// Add event to the current pattern.
 void PatternCollection::AddEvent(const ea::string& eventId, const StringVariantMap& variantMap)
@@ -191,10 +198,10 @@ void PatternCollection::Commit()
         record.startIndex_ = elements_.size();
         record.recordId_ = index;
         ++index;
-        for (auto& key: rec.keys_)
+        for (auto& key: rec.predicate_)
         {
             auto& element = elements_.emplace_back();
-            element.key_ = key.key_;
+            element.key_ = key.word_;
             element.min_ = key.min_;
             element.max_ = key.max_;
             ++record.length_;
@@ -268,93 +275,36 @@ void PatternCollection::SerializeInBlock(Archive& archive)
     {
         Commit();
     }
-    /*auto block = archive.OpenArrayBlock("patterns", records_.size());
-    if (archive.IsInput())
-    {
-        Clear();
-        const auto numPatterns = block.GetSizeHint();
-        for (int i=0; i<numPatterns; ++i)
-        {
-            ArchiveBlock patternBlock = archive.OpenUnorderedBlock("pattern");
-            {
-                BeginPattern();
-                {
-                    auto elementsArray = archive.OpenArrayBlock("elements");
-                    const auto numElements = elementsArray.GetSizeHint();
-                    for (int index = 0; index < numElements; ++index)
-                    {
-                        ArchiveBlock elementBlock = archive.OpenUnorderedBlock("element");
-                        ea::string keyStr;
-                        float min, max;
-                        SerializeValue(archive, "key", keyStr);
-                        SerializeOptionalValue(archive, "min", min, std::numeric_limits<float>::lowest());
-                        SerializeOptionalValue(archive, "max", max, std::numeric_limits<float>::max());
-                        AddKey(keyStr, min, max);
-                    }
-                }
-                {
-                    auto eventsArray = archive.OpenArrayBlock("events");
-                    const auto numEvents = eventsArray.GetSizeHint();
-                    for (int index = 0; index < numEvents; ++index)
-                    {
-                        ArchiveBlock eventBlock = archive.OpenUnorderedBlock("event");
-                        ea::string keyStr;
-                        StringVariantMap args;
-                        SerializeValue(archive, "name", keyStr);
-                        SerializeValue(archive, "args", args);
-                        AddEvent(keyStr, args);
-                    }
-                }
-                CommitPattern();
-            }
-        }
-        Commit();
-    }
-    else
-    {
-        for (auto& record : records_)
-        {
-            ArchiveBlock block = archive.OpenUnorderedBlock("pattern");
-            {
-                auto elementsArray = archive.OpenArrayBlock("elements", record.length_);
-                for (int index = record.startIndex_; index < record.startIndex_ + record.length_; ++index)
-                {
-                    auto& element = elements_[index];
-                    ArchiveBlock elementBlock = archive.OpenUnorderedBlock("element");
-                    auto& keyStr = strings_[element.key_];
-                    SerializeValue(archive, "key", keyStr);
-                    if (element.min_ > std::numeric_limits<float>::lowest())
-                    {
-                        SerializeValue(archive, "min", element.min_);
-                    }
-                    if (element.max_ < std::numeric_limits<float>::max())
-                    {
-                        SerializeValue(archive, "max", element.max_);
-                    }
-                }
-            }
-            {
-                auto eventsArray = archive.OpenArrayBlock("events", record.events_.size());
-                for (auto& event : record.events_)
-                {
-                    ArchiveBlock eventBlock = archive.OpenUnorderedBlock("event");
-                    auto& eventName = strings_[event.eventId_];
-                    SerializeValue(archive, "name", eventName);
-                    SerializeValue(archive, "args", event.arguments_);
-                }
-            }
-        }
-    }*/
 }
 
-void PatternCollection::SendEvent(int patternIndex, Object* object, bool broadcast)
+void PatternCollection::SendEvent(int patternIndex, Object* object, bool broadcast) const
 {
-    if (patternIndex < 0)
+    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
         return;
     for (auto& event : serializableRecords_[patternIndex].events_)
     {
         object->SendEvent(event.eventId_, event.arguments_);
     }
+}
+unsigned PatternCollection::GetNumEvents(int patternIndex) const
+{
+    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
+        return 0;
+    return serializableRecords_[patternIndex].events_.size();
+}
+StringHash PatternCollection::GetEventId(int patternIndex, unsigned eventIndex) const
+{
+    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
+        return StringHash{};
+    return serializableRecords_[patternIndex].events_[eventIndex].eventId_;
+}
+
+const VariantMap& PatternCollection::GetEventArgs(int patternIndex, unsigned eventIndex) const
+{
+    static VariantMap empty;
+    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
+        return empty;
+    return serializableRecords_[patternIndex].events_[eventIndex].arguments_;
 }
 
 }

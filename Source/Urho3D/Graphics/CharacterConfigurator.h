@@ -24,6 +24,7 @@
 #include "CharacterConfiguration.h"
 #include "../Scene/Component.h"
 #include "AnimatedModel.h"
+#include "AnimationController.h"
 
 namespace Urho3D
 {
@@ -41,12 +42,14 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    void Update(const PatternQuery& query);
+
     /// Handle enabled/disabled state change.
     //void OnSetEnabled() override;
 
     /// Set configuration.
     /// @manualbind
-    virtual void SetConfiguration(CharacterConfiguration* model);
+    virtual void SetConfiguration(CharacterConfiguration* configuration);
     /// Return model.
     /// @property
     CharacterConfiguration* GetConfiguration() const { return configuration_; }
@@ -55,16 +58,31 @@ public:
     void SetConfigurationAttr(const ResourceRef& value);
     /// Return configuration attribute.
     ResourceRef GetConfigurationAttr() const;
+
+    /// Get linear velocity from current animation metadata.
+    const Vector3& GetLinearVelocity() const { return velocity_; }
+
 private:
     /// Handle configuration reload finished.
     void HandleConfigurationReloadFinished(StringHash eventType, VariantMap& eventData);
 
     void RecreateBodyStructure();
 
+    void PlayAnimation(StringHash eventType, const VariantMap& eventData);
+
     /// Configuration.
     SharedPtr<CharacterConfiguration> configuration_;
 
-    SharedPtr<AnimatedModel> skeleton_;
+    SharedPtr<Node> characterNode_;
+    SharedPtr<AnimatedModel> masterModel;
+    SharedPtr<AnimationController> animationController_;
+    /// Velocity in master model local space.
+    Vector3 velocity_ {Vector3::ZERO};
+
+    /// Last query applied to restore state from scene xml file.
+    VariantMap savedState_;
+
+    int stateIndex_{-1};
 };
 
 }

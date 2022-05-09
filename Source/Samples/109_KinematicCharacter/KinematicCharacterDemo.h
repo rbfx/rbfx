@@ -129,4 +129,6 @@ private:
     bool firstPerson_;
 
     bool drawDebug_;
+
+    PatternQuery characterPattern_;
 };

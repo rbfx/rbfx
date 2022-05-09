@@ -2,11 +2,22 @@
 #include "CharacterConfiguration.h"
 #include "Material.h"
 #include "AnimatedModel.h"
+#include "Animation.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 
 namespace Urho3D
 {
+namespace 
+{
+template <typename  T> T GetOptional(StringHash key, const VariantMap& map, const T& defaultValue)
+{
+    auto it = map.find(key);
+    if (it == map.end())
+        return defaultValue;
+    return it->second.Get<T>();
+}
+}
 extern const char* GEOMETRY_CATEGORY;
 
 CharacterConfigurator::CharacterConfigurator(Context* context)
@@ -53,14 +64,123 @@ void CharacterConfigurator::SetConfiguration(CharacterConfiguration* configurati
 
 void CharacterConfigurator::RecreateBodyStructure()
 {
-    auto* cache = context_->GetSubsystem<ResourceCache>();
-    if (!skeleton_)
-        skeleton_ = node_->CreateComponent<AnimatedModel>();
-    skeleton_->SetModel(cache->GetResource<Model>(configuration_->GetModelAttr().name_));
-    unsigned materialIndex = 0;
-    for (auto& material : configuration_->GetMaterialsAttr().names_)
+    if (!configuration_)
     {
-        skeleton_->SetMaterial(materialIndex, cache->GetResource<Material>(material));
+        characterNode_->Remove();
+        masterModel.Reset();
+        characterNode_.Reset();
+        return;
+    }
+
+    auto* cache = context_->GetSubsystem<ResourceCache>();
+
+    if (!characterNode_)
+    {
+        characterNode_ = node_->CreateChild("CharacterRoot", LOCAL, 0, true);
+        characterNode_->SetPosition(configuration_->GetPosition());
+        characterNode_->SetRotation(configuration_->GetRotation());
+        characterNode_->SetScale(configuration_->GetScale());
+    }
+
+    // Create and setup master animated model
+    if (!masterModel)
+        masterModel = characterNode_->GetOrCreateComponent<AnimatedModel>(LOCAL);
+
+    const auto rootModel = configuration_->GetModelAttr();
+    if (!rootModel.name_.empty())
+    {
+        masterModel->SetModel(cache->GetResource<Model>(configuration_->GetModelAttr().name_));
+        unsigned materialIndex = 0;
+        for (auto& material : configuration_->GetMaterialAttr().names_)
+        {
+            masterModel->SetMaterial(materialIndex, cache->GetResource<Material>(material));
+            ++materialIndex;
+        }
+        masterModel->SetCastShadows(configuration_->GetCastShadows());
+    }
+    else
+    {
+        masterModel->SetModel(nullptr);
+    }
+
+    animationController_ = characterNode_->GetOrCreateComponent<AnimationController>(LOCAL);
+}
+
+void CharacterConfigurator::Update(const PatternQuery& query)
+{
+    RecreateBodyStructure();
+
+    savedState_.clear();
+    for (unsigned i = 0; i < query.GetNumKeys(); ++i)
+    {
+        savedState_[query.GetKeyHash(i)] = query.GetValue(i);
+    }
+
+    const auto stateMatch = configuration_->GetStates()->Query(query);
+    if (stateIndex_ != stateMatch)
+    {
+        stateIndex_ = stateMatch;
+        if (stateIndex_ >= 0)
+        {
+            const auto numEvents = configuration_->GetStates()->GetNumEvents(stateIndex_);
+            for (unsigned i = 0; i < numEvents; ++i)
+            {
+                auto eventId = configuration_->GetStates()->GetEventId(stateIndex_, i);
+                if (eventId == "PlayAnimation")
+                {
+                    PlayAnimation(eventId, configuration_->GetStates()->GetEventArgs(stateIndex_, i));
+                }
+            }
+        }
+    }
+}
+
+void CharacterConfigurator::PlayAnimation(StringHash eventType, const VariantMap& eventData)
+{
+    const ResourceRef animationRef = GetOptional<ResourceRef>("animation", eventData, {});
+    if (animationRef.name_.empty())
+        return;
+    Animation* animation = context_->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationRef.name_);
+    if (!animation)
+        return;
+    AnimationParameters params(animation);
+
+    const bool exclusive = GetOptional("exclusive", eventData, false);
+    const bool existing = GetOptional("existing", eventData, false);
+    const float fadeInTime = GetOptional("fadeInTime", eventData, 0.0f);
+    params.looped_ = GetOptional<bool>("looped", eventData, params.looped_);
+    params.layer_ = GetOptional<unsigned>("layer", eventData, params.layer_);
+    params.removeOnZeroWeight_ = GetOptional<bool>("removeOnZeroWeight", eventData, params.removeOnZeroWeight_);
+    params.blendMode_ = static_cast<AnimationBlendMode>(GetOptional<int>("blendMode", eventData, params.blendMode_));
+    params.autoFadeOutTime_ = GetOptional<float>("autoFadeOutTime", eventData, params.autoFadeOutTime_);
+    params.removeOnCompletion_ = GetOptional<bool>("removeOnCompletion", eventData, params.removeOnCompletion_);
+    params.speed_ = GetOptional<float>("speed", eventData, params.speed_);
+    params.weight_ = GetOptional<float>("weight", eventData, params.weight_);
+    params.removeOnZeroWeight_ = GetOptional<bool>("removeOnZeroWeight", eventData, params.removeOnZeroWeight_);
+
+    velocity_ = configuration_->LocalToWorld() * (animation->GetMetadata("LinearVelocity").GetVector3() * params.speed_);
+
+    if (exclusive)
+    {
+        if (existing)
+        {
+            animationController_->PlayExistingExclusive(params, fadeInTime);
+        }
+        else
+        {
+            animationController_->PlayNewExclusive(params, fadeInTime);
+        }
+    }
+    else
+    {
+        if (existing)
+        {
+            animationController_->PlayExisting(params, fadeInTime);
+        }
+        else
+        {
+            animationController_->PlayNew(params, fadeInTime);
+        }
     }
 }
 

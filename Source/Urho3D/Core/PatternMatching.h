@@ -56,6 +56,10 @@ public:
     /// Commit changes and recalculate derived members.
     void Commit();
 
+    unsigned GetNumKeys() const { return elements_.size(); }
+    StringHash GetKeyHash(unsigned index) const { return elements_[index].key_; }
+    float GetValue(unsigned index) const { return elements_[index].value_; }
+
 private:
     ea::fixed_vector<Element, 4> elements_;
     bool dirty_{};
@@ -74,8 +78,21 @@ private:
     {
         // Serialize content from/to archive. May throw ArchiveException.
         void SerializeInBlock(Archive& archive);
+
+        friend bool operator==(const SerializableElement& lhs, const SerializableElement& rhs)
+        {
+            return lhs.word_ == rhs.word_
+                && lhs.min_ == rhs.min_
+                && lhs.max_ == rhs.max_;
+        }
+
+        friend bool operator!=(const SerializableElement& lhs, const SerializableElement& rhs)
+        {
+            return !(lhs == rhs);
+        }
+
         // Element key.
-        ea::string key_;
+        ea::string word_;
         // Minimum matching value.
         float min_{DefaultMin};
         // Maximum matching value.
@@ -105,7 +122,7 @@ private:
         void SerializeInBlock(Archive& archive);
 
         // One or more event prototypes.
-        ea::vector<SerializableElement> keys_;
+        ea::vector<SerializableElement> predicate_;
         // One or more event prototypes.
         ea::fixed_vector<SerializableEventPrototype, 1> events_;
     };
@@ -135,6 +152,10 @@ public:
     void AddKey(const ea::string& key);
     /// Add key with range requirement to the current pattern.
     void AddKey(const ea::string& key, float min, float max);
+    /// Add key with range requirement to the current pattern.
+    void AddKeyGreaterOrEqual(const ea::string& key, float min);
+    /// Add key with range requirement to the current pattern.
+    void AddKeyLessOrEqual(const ea::string& key, float max);
     /// Add event to the current pattern.
     void AddEvent(const ea::string& eventId, const StringVariantMap& variantMap);
     /// Commit changes and recalculate derived members.
@@ -149,7 +170,10 @@ public:
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive);
 
-    void SendEvent(int patternIndex, Object* object, bool broadcast);
+    void SendEvent(int patternIndex, Object* object, bool broadcast) const;
+    unsigned GetNumEvents(int patternIndex) const;
+    StringHash GetEventId (int patternIndex, unsigned eventIndex) const;
+    const VariantMap& GetEventArgs (int patternIndex, unsigned eventIndex) const;
 
 private:
     ea::vector<SerializableRecord> serializableRecords_;

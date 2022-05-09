@@ -23,10 +23,13 @@
 #include "CharacterConfiguration.h"
 
 #include "../Core/Thread.h"
+#include "../IO/Deserializer.h"
+#include "../IO/FileSystem.h"
 #include "../Particles/ParticleGraphEffect.h"
 #include "../Resource/XMLFile.h"
-#include "Urho3D/IO/Deserializer.h"
-#include "Urho3D/IO/FileSystem.h"
+#include "../Scene/Serializable.h"
+#include "Material.h"
+#include "Model.h"
 
 namespace Urho3D
 {
@@ -48,8 +51,15 @@ CharacterConfiguration::~CharacterConfiguration() = default;
 void CharacterConfiguration::RegisterObject(Context* context)
 {
     context->RegisterFactory<CharacterConfiguration>();
-}
 
+    //URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
+    //    "Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    //URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRefList,
+    //    ResourceRefList(Material::GetTypeStatic()), AM_DEFAULT);
+    //URHO3D_ATTRIBUTE("Position", Vector3, position_, Vector3::ZERO, AM_DEFAULT);
+    //URHO3D_ATTRIBUTE("Rotatoion", Quaternion, rotation_, Quaternion::IDENTITY, AM_DEFAULT);
+    //URHO3D_ATTRIBUTE("Scale", Vector3, scale_, Vector3::ONE, AM_DEFAULT);
+}
 
 bool CharacterConfiguration::BeginLoad(Deserializer& source)
 {
@@ -70,11 +80,18 @@ void CharacterConfiguration::ResetToDefaults()
     if (!Thread::IsMainThread())
         return;
 
-    skeletonModel_ = ResourceRef{};
-    skeletonMaterials_ = ResourceRefList{};
+    model_ = ResourceRef{};
+    material_ = ResourceRefList{};
     bodyParts_.clear();
     stateMachine_.Clear();
 }
+
+void CharacterConfiguration::UpdateMatrices()
+{
+    localToWorld_ = Matrix3x4(position_, rotation_, scale_);
+    worldToLocal_ = localToWorld_.Inverse();
+}
+
 
 bool CharacterConfiguration::Save(Serializer& dest) const
 {
@@ -86,22 +103,64 @@ bool CharacterConfiguration::Save(Serializer& dest) const
 
 void CharacterConfiguration::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "model", skeletonModel_);
-    SerializeOptionalValue(archive, "materials", skeletonMaterials_);
-    SerializeVector(archive, "bodyParts", bodyParts_, "part");
-    SerializeValue(archive, "states", stateMachine_);
+    SerializeOptionalValue(archive, "model", model_);
+    SerializeOptionalValue(archive, "material", material_);
+    SerializeOptionalValue(archive, "position", position_, Vector3::ZERO);
+    SerializeOptionalValue(archive, "rotation", rotation_, Quaternion::IDENTITY);
+    SerializeOptionalValue(archive, "scale", scale_, Vector3::ONE);
+    SerializeOptionalValue(archive, "castShadows", castShadows_, true);
+
+    SerializeOptionalValue(archive, "bodyParts", bodyParts_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "part");
+    });
+    stateMachine_.SerializeInBlock(archive);
+    //SerializeValue(archive, "states", stateMachine_);
 }
 
 /// Resize body parts vector.
-void CharacterConfiguration::SetNumBodyParts(unsigned num)
-{
-    bodyParts_.resize(num);
-}
+void CharacterConfiguration::SetNumBodyParts(unsigned num) { bodyParts_.resize(num); }
 /// Get number of body parts.
 unsigned CharacterConfiguration::GetNumBodyParts() const { return bodyParts_.size(); }
 
-void CharacterConfiguration::SetModelAttr(ResourceRef model) { skeletonModel_ = model; }
-
-void CharacterConfiguration::SetMaterialsAttr(const ResourceRefList& materials) { skeletonMaterials_ = materials; }
-
+void CharacterConfiguration::SetModel(Model* model)
+{
+    if (model)
+        SetModelAttr(ResourceRef(model->GetType(), model->GetName()));
+    else
+        SetModelAttr(ResourceRef{});
 }
+
+void CharacterConfiguration::SetModelAttr(ResourceRef model) { model_ = model; }
+
+void CharacterConfiguration::SetMaterialAttr(const ResourceRefList& materials) { material_ = materials; }
+void CharacterConfiguration::SetMaterial(Material* material)
+{
+    if (material)
+        SetMaterialAttr(ResourceRefList{material->GetType(), {material->GetName()}});
+    else
+        SetMaterialAttr(ResourceRefList{});
+}
+void CharacterConfiguration::SetCastShadows(bool enable) { castShadows_ = enable; }
+
+void CharacterConfiguration::SetPosition(const Vector3& position)
+{
+    position_ = position;
+    UpdateMatrices();
+}
+void CharacterConfiguration::SetRotation(const Quaternion& rotation)
+{
+    rotation_ = rotation;
+    UpdateMatrices();
+}
+void CharacterConfiguration::SetScale(float scale)
+{
+    scale_ = Vector3(scale, scale, scale);
+    UpdateMatrices();
+}
+void CharacterConfiguration::SetScale(const Vector3& scale)
+{
+    scale_ = scale;
+    UpdateMatrices();
+}
+
+} // namespace Urho3D

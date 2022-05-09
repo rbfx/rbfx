@@ -21,7 +21,6 @@
 //
 
 #include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/AnimationController.h>
@@ -29,7 +28,6 @@
 #include <Urho3D/Graphics/Light.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/Input.h>
@@ -44,6 +42,7 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Graphics/Animation.h>
 
 #include "KinematicCharacter.h"
 #include "KinematicCharacterDemo.h"
@@ -188,18 +187,56 @@ void KinematicCharacterDemo::CreateCharacter()
     Node* objectNode = scene_->CreateChild("Jack");
     objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
 
-    CharacterConfigurator* configurator = objectNode->CreateComponent<CharacterConfigurator>();
+    auto conf = MakeShared<CharacterConfiguration>(context_);
+    conf->SetModel(cache->GetResource<Model>("Models/Mutant/Mutant.mdl"));
+    conf->SetMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutant_M.xml"));
+    conf->SetRotation(Quaternion(180, Vector3(0, 1, 0)));
+    auto* states = conf->GetStates();
+    {
+        states->BeginPattern();
+        StringVariantMap idleArgs;
+        idleArgs["existing"] = true;
+        idleArgs["exclusive"] = true;
+        idleArgs["looped"] = true;
+        idleArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Idle0.ani");
+        idleArgs["fadeInTime"] = 0.2f;
+        states->AddEvent("PlayAnimation", idleArgs);
+        states->CommitPattern();
+    }
+    {
+        states->BeginPattern();
+        states->AddKey("Run");
+        states->AddKeyGreaterOrEqual("OnGround", 0.5f);
+        StringVariantMap runArgs;
+        runArgs["existing"] = true;
+        runArgs["exclusive"] = true;
+        runArgs["looped"] = true;
+        runArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Run.ani");
+        runArgs["fadeInTime"] = 0.2f;
+        states->AddEvent("PlayAnimation", runArgs);
+        states->CommitPattern();
+    }
+    {
+        states->BeginPattern();
+        states->AddKeyLessOrEqual("OnGround", 0.5f);
+        StringVariantMap jumpArgs;
+        jumpArgs["existing"] = false;
+        jumpArgs["exclusive"] = true;
+        jumpArgs["removeOnCompletion"] = false;
+        jumpArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Jump1.ani");
+        jumpArgs["fadeInTime"] = 0.2f;
+        states->AddEvent("PlayAnimation", jumpArgs);
+        states->CommitPattern();
+    }
+    states->Commit();
+    conf->SaveFile("Char.xml");
 
-    // spin node
-    Node* adjustNode = objectNode->CreateChild("AdjNode");
-    adjustNode->SetRotation( Quaternion(180, Vector3(0,1,0) ) );
-    
+    CharacterConfigurator* configurator = objectNode->CreateComponent<CharacterConfigurator>();
+    configurator->SetConfiguration(conf);
+    configurator->Update(characterPattern_);
+
     // Create the rendering component + animation controller
-    auto* object = adjustNode->CreateComponent<AnimatedModel>();
-    object->SetModel(cache->GetResource<Model>("Models/Mutant/Mutant.mdl"));
-    object->SetMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutant_M.xml"));
-    object->SetCastShadows(true);
-    adjustNode->CreateComponent<AnimationController>();
+    auto* object = objectNode->GetComponent<AnimatedModel>(true);
 
     // Set the head bone for manual control
     object->GetSkeleton().GetBone("Mutant:Head")->animated_ = false;

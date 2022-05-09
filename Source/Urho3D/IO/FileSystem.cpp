@@ -1270,6 +1270,9 @@ bool FileSystem::CreateDirs(const ea::string& root, const ea::string& subdirecto
 
 bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
 {
+    if (directoryIn.empty())
+        return true;
+
     ea::string directory = AddTrailingSlash(GetInternalPath(directoryIn));
 
     if (DirExists(directory))
