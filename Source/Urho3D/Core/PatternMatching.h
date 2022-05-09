@@ -121,7 +121,8 @@ private:
     {
         // Serialize content from/to archive. May throw ArchiveException.
         void SerializeInBlock(Archive& archive);
-
+        // Human readable name of the pattern
+        ea::string name_;
         // One or more event prototypes.
         ea::vector<SerializableElement> predicate_;
         // One or more event prototypes.
@@ -175,6 +176,8 @@ public:
     unsigned GetNumEvents(int patternIndex) const;
     StringHash GetEventId (int patternIndex, unsigned eventIndex) const;
     const VariantMap& GetEventArgs (int patternIndex, unsigned eventIndex) const;
+
+    bool empty() const { return serializableRecords_.empty(); }
 
 private:
     ea::vector<SerializableRecord> serializableRecords_;

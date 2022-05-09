@@ -26,20 +26,56 @@
 #include "../IO/Deserializer.h"
 #include "../IO/FileSystem.h"
 #include "../Particles/ParticleGraphEffect.h"
+#include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
-#include "../Scene/Serializable.h"
 #include "Material.h"
 #include "Model.h"
-#include "Urho3D/Resource/ResourceCache.h"
+#include "StaticModel.h"
+#include "AnimatedModel.h"
 
 namespace Urho3D
 {
+namespace
+{
+template <typename T> T GetOptional(StringHash key, const VariantMap& map, const T& defaultValue)
+{
+    auto it = map.find(key);
+    if (it == map.end())
+        return defaultValue;
+    return it->second.Get<T>();
+}
+} // namespace
+
 
 /// Serialize from/to archive. Return true if successful.
 void CharacterConfiguration::BodyPart::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "bone", attachmentBone_);
-    SerializeValue(archive, "model", modelSelector_);
+    SerializeOptionalValue(archive, "name", name_, {});
+    SerializeOptionalValue(archive, "static", static_, {});
+    SerializeOptionalValue(archive, "bone", attachmentBone_, {});
+    SerializeOptionalValue(archive, "variants", variants_, EmptyObject{});
+    if (archive.IsInput())
+    {
+        ResourceRef model;
+        SerializeOptionalValue(archive, "model", model, {});
+        if (!model.name_.empty())
+        {
+            ResourceRefList material;
+            SerializeOptionalValue(archive, "material", material, {});
+            bool castShadows = true;
+            SerializeOptionalValue(archive, "castShadows", castShadows, castShadows);
+
+            variants_.BeginPattern();
+            StringVariantMap args;
+            args["model"] = model;
+            args["material"] = material;
+            args["castShadows"] = castShadows;
+            
+            variants_.AddEvent("SetModel", args);
+            variants_.CommitPattern();
+            variants_.Commit();
+        }
+    }
 }
 
 CharacterConfiguration::CharacterConfiguration(Context* context)
@@ -104,8 +140,6 @@ bool CharacterConfiguration::Save(Serializer& dest) const
 
 void CharacterConfiguration::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "bodyParts", bodyParts_, EmptyObject{},
-        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "part"); });
     SerializeOptionalValue(archive, "model", model_);
     SerializeOptionalValue(archive, "material", material_);
     SerializeOptionalValue(archive, "position", position_, Vector3::ZERO);
@@ -113,6 +147,8 @@ void CharacterConfiguration::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "scale", scale_, Vector3::ONE);
     SerializeOptionalValue(archive, "castShadows", castShadows_, true);
     SerializeOptionalValue(archive, "states", states_);
+    SerializeOptionalValue(archive, "bodyParts", bodyParts_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "part"); });
 }
 
 /// Resize body parts vector.
@@ -191,6 +227,56 @@ void CharacterConfiguration::SetScale(const Vector3& scale)
 {
     scale_ = scale;
     UpdateMatrices();
+}
+
+StaticModel* CharacterConfiguration::CreateBodyPartModelComponent(unsigned bodyPartIndex, Node* root) const
+{
+    if (!root)
+        return nullptr;
+
+    if (bodyPartIndex >= bodyParts_.size())
+        return nullptr;
+
+    auto& bodyPart = bodyParts_[bodyPartIndex];
+
+    Node* attachmentBone = root;
+    if (!bodyPart.name_.empty())
+    {
+        attachmentBone = root->GetChild(bodyPart.name_, true);
+        if (!attachmentBone)
+            attachmentBone = root;
+    }
+
+    auto bodyPartNode =  attachmentBone->CreateChild(bodyPart.name_, LOCAL, true);
+    if (bodyPart.static_)
+        return bodyPartNode->CreateComponent<StaticModel>();
+    return bodyPartNode->CreateComponent<AnimatedModel>();
+}
+
+int CharacterConfiguration::UpdateBodyPart(
+    unsigned bodyPartIndex, StaticModel* modelComponent, const PatternQuery& query, int lastQueryResult) const
+{
+    if (!modelComponent || bodyPartIndex >= bodyParts_.size())
+        return -1;
+
+    auto& bodyPart = bodyParts_[bodyPartIndex];
+    auto res = bodyPart.variants_.Query(query);
+    if (res != lastQueryResult)
+    {
+        const auto numEvents = bodyPart.variants_.GetNumEvents(res);
+        for (unsigned i = 0; i < numEvents; ++i)
+        {
+            auto eventId = bodyPart.variants_.GetEventId(res, i);
+            if (eventId == "SetModel")
+            {
+                auto& eventArgs = bodyPart.variants_.GetEventArgs(res, i);
+                modelComponent->SetModelAttr(GetOptional<ResourceRef>("model", eventArgs, {}));
+                modelComponent->SetMaterialsAttr(GetOptional<ResourceRefList>("material", eventArgs, {}));
+                modelComponent->SetCastShadows(GetOptional<bool>("castShadows", eventArgs, true));
+            }
+        }
+    }
+    return res;
 }
 
 } // namespace Urho3D

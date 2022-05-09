@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "StaticModel.h"
 #include "../Resource/Resource.h"
 #include "../Core/PatternMatching.h"
 
@@ -41,10 +42,15 @@ private:
         /// Serialize from/to archive. Return true if successful.
         void SerializeInBlock(Archive& archive);
 
-        /// State machine via fuzzy pattern matching.
+        /// Name of the body part.
+        ea::string name_;
+        /// Is model static or animated.
+        bool static_{};
+
+        /// Bone name to attach to.
         ea::string attachmentBone_;
         /// Model selector via fuzzy pattern matching.
-        PatternCollection modelSelector_;
+        PatternCollection variants_;
     };
 
 public:
@@ -111,9 +117,11 @@ public:
     /// @property
     const Vector3& GetScale() const { return scale_; }
 
-
     const Matrix3x4& LocalToWorld() { return localToWorld_; }
     const Matrix3x4& WorldToLocal() { return worldToLocal_; }
+
+    StaticModel* CreateBodyPartModelComponent(unsigned bodyPartIndex, Node* root) const;
+    int UpdateBodyPart(unsigned bodyPartIndex, StaticModel* modelComponent, const PatternQuery& query, int lastQueryResult = -1) const;
 
 private:
     /// Reset to defaults.
@@ -127,10 +135,13 @@ private:
     ResourceRefList material_;
     /// Character states
     ResourceRef states_;
-    
-    Vector3 position_ {Vector3::ZERO};
+    /// Model offset
+    Vector3 position_{Vector3::ZERO};
+    /// Model rotation
     Quaternion rotation_{Quaternion::IDENTITY};
+    /// Model scale
     Vector3 scale_{Vector3::ONE};
+    /// Model cast shadow property
     bool castShadows_{true};
     Matrix3x4 localToWorld_{Matrix3x4::IDENTITY};
     Matrix3x4 worldToLocal_{Matrix3x4::IDENTITY};

@@ -18,6 +18,7 @@ template <typename  T> T GetOptional(StringHash key, const VariantMap& map, cons
     return it->second.Get<T>();
 }
 }
+
 extern const char* GEOMETRY_CATEGORY;
 
 CharacterConfigurator::CharacterConfigurator(Context* context)
@@ -102,6 +103,23 @@ void CharacterConfigurator::RecreateBodyStructure()
     {
         masterModel->SetModel(nullptr);
     }
+    // Create and setup body parts
+    const unsigned numBodyParts = configuration_->GetNumBodyParts();
+    bodyPartNodes_.resize(numBodyParts);
+    PatternQuery q;
+    for (auto& savedKey: savedState_)
+    {
+        q.SetKey(savedKey.first, savedKey.second.GetFloat());
+    }
+    for (unsigned bodyPartIndex = 0; bodyPartIndex < numBodyParts; ++bodyPartIndex)
+    {
+        auto& bodyPart = bodyPartNodes_[bodyPartIndex];
+        if (!bodyPart.modelComponent_)
+        {
+            bodyPart.modelComponent_ = configuration_->CreateBodyPartModelComponent(bodyPartIndex, characterNode_);
+            bodyPart.lastMatch_ = configuration_->UpdateBodyPart(bodyPartIndex, bodyPart.modelComponent_, q, -1);
+        }
+    }
 
     animationController_ = characterNode_->GetOrCreateComponent<AnimationController>(LOCAL);
 }
@@ -114,6 +132,19 @@ void CharacterConfigurator::Update(const PatternQuery& query)
     for (unsigned i = 0; i < query.GetNumKeys(); ++i)
     {
         savedState_[query.GetKeyHash(i)] = query.GetValue(i);
+    }
+
+    const unsigned numBodyParts = configuration_->GetNumBodyParts();
+    bodyPartNodes_.resize(numBodyParts);
+
+    for (unsigned bodyPartIndex = 0; bodyPartIndex < numBodyParts; ++bodyPartIndex)
+    {
+        auto& bodyPart = bodyPartNodes_[bodyPartIndex];
+        if (bodyPart.modelComponent_)
+        {
+            bodyPart.lastMatch_ = configuration_->UpdateBodyPart(
+                bodyPartIndex, bodyPart.modelComponent_, query, bodyPart.lastMatch_);
+        }
     }
 
     const auto* states = configuration_->GetStates();

@@ -49,6 +49,7 @@ void PatternCollection::SerializableElement::SerializeInBlock(Archive& archive)
 }
 void PatternCollection::SerializableRecord::SerializeInBlock(Archive& archive)
 {
+    SerializeOptionalValue(archive, "name", name_, {});
     SerializeOptionalValue(archive, "predicate", predicate_, EmptyObject{},
         [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "key"); });
     SerializeOptionalValue(archive, "events", events_, EmptyObject{},

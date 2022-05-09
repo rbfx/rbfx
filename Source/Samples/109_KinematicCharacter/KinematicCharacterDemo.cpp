@@ -415,11 +415,14 @@ void KinematicCharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& 
 
     // Turn head to camera pitch, but limit to avoid unnatural animation
     Node* headNode = characterNode->GetChild("Mutant:Head", true);
-    float limitPitch = Clamp(character_->controls_.pitch_, -45.0f, 45.0f);
-    Quaternion headDir = rot * Quaternion(limitPitch, Vector3(1.0f, 0.0f, 0.0f));
-    // This could be expanded to look at an arbitrary target, now just look at a point in front
-    Vector3 headWorldTarget = headNode->GetWorldPosition() + headDir * Vector3(0.0f, 0.0f, -1.0f);
-    headNode->LookAt(headWorldTarget, Vector3(0.0f, 1.0f, 0.0f));
+    if (headNode)
+    {
+        float limitPitch = Clamp(character_->controls_.pitch_, -45.0f, 45.0f);
+        Quaternion headDir = rot * Quaternion(limitPitch, Vector3(1.0f, 0.0f, 0.0f));
+        // This could be expanded to look at an arbitrary target, now just look at a point in front
+        Vector3 headWorldTarget = headNode->GetWorldPosition() + headDir * Vector3(0.0f, 0.0f, -1.0f);
+        headNode->LookAt(headWorldTarget, Vector3(0.0f, 1.0f, 0.0f));
+    }
 
     if (firstPerson_)
     {

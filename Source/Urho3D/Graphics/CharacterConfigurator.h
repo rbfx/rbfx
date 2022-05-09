@@ -33,6 +33,12 @@ namespace Urho3D
 class URHO3D_API CharacterConfigurator: public Component
 {
     URHO3D_OBJECT(CharacterConfigurator, Component)
+private:
+    struct BodyPart
+    {
+        int lastMatch_{-1};
+        SharedPtr<StaticModel> modelComponent_;
+    };
 public:
     /// Construct.
     CharacterConfigurator(Context* context);
@@ -74,6 +80,7 @@ private:
     SharedPtr<CharacterConfiguration> configuration_;
 
     SharedPtr<Node> characterNode_;
+    ea::vector<BodyPart> bodyPartNodes_;
     SharedPtr<AnimatedModel> masterModel;
     SharedPtr<AnimationController> animationController_;
     /// Velocity in master model local space.
