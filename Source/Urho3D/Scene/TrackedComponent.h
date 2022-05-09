@@ -62,6 +62,8 @@ class URHO3D_API TrackedComponentRegistryBase : public Component
     URHO3D_OBJECT(TrackedComponentRegistryBase, Component);
 
 public:
+    static constexpr bool IsOnlyEnabledTracked = false;
+
     TrackedComponentRegistryBase(Context* context, StringHash componentType);
 
     TrackedComponentBase* GetTrackedComponentByIndex(unsigned index) const;
@@ -145,14 +147,9 @@ private:
     ea::vector<RegistryEntry> referenceIndexToEntry_;
 };
 
-/// Indicates that object should remove self from registry if disabled.
-struct EnabledOnlyTag {};
-
 /// Template base of any TrackedComponent that automatically registers itself in registry.
-template <class ComponentType, class RegistryComponentType, class ... Tags>
-class TrackedComponent
-    : public ComponentType
-    , public Tags...
+template <class ComponentType, class RegistryComponentType>
+class TrackedComponent : public ComponentType
 {
 public:
     static_assert(ea::is_base_of_v<ReferencedComponentRegistryBase, RegistryComponentType>
@@ -166,7 +163,7 @@ public:
 
     bool ShouldBeTrackedInRegistry() const override
     {
-        if constexpr (IsOnlyEnabledTracked)
+        if constexpr (RegistryComponentType::IsOnlyEnabledTracked)
             return this->IsEnabledEffective();
         else
             return true;
@@ -180,7 +177,7 @@ public:
 
     void OnSetEnabled() override
     {
-        if constexpr (IsOnlyEnabledTracked)
+        if constexpr (RegistryComponentType::IsOnlyEnabledTracked)
         {
             const bool wasEnabled = this->IsTrackedInRegistry();
             const bool isEnabled = this->ShouldBeTrackedInRegistry();
@@ -211,8 +208,6 @@ protected:
     }
 
 private:
-    static constexpr bool IsOnlyEnabledTracked = TupleHasTypeV<EnabledOnlyTag, ea::tuple<Tags...>>;
-
     WeakPtr<RegistryComponentType> registry_;
 };
 
