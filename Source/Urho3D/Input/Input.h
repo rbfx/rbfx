@@ -255,17 +255,18 @@ public:
     void CenterMousePosition();
 
     /// Return keycode from key name.
-    Key GetKeyFromName(const ea::string& name) const;
+    static Key GetKeyFromName(const ea::string& name);
     /// Return keycode from scancode.
-    Key GetKeyFromScancode(Scancode scancode) const;
+    static Key GetKeyFromScancode(Scancode scancode);
     /// Return name of key from keycode.
-    ea::string GetKeyName(Key key) const;
+    static ea::string GetKeyName(Key key);
     /// Return scancode from keycode.
-    Scancode GetScancodeFromKey(Key key) const;
+    static Scancode GetScancodeFromKey(Key key);
     /// Return scancode from key name.
-    Scancode GetScancodeFromName(const ea::string& name) const;
+    static Scancode GetScancodeFromName(const ea::string& name);
     /// Return name of key from scancode.
-    ea::string GetScancodeName(Scancode scancode) const;
+    static ea::string GetScancodeName(Scancode scancode);
+
     /// Check if a key is held down.
     /// @property
     bool GetKeyDown(Key key) const;

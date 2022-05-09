@@ -81,7 +81,8 @@ void EditorTab::UpdateAndRender()
 void EditorTab::UpdateAndRenderWindow()
 {
     // TODO(editor): Hide this dependency
-    Input* input = GetSubsystem<Input>();
+    auto input = GetSubsystem<Input>();
+    auto project = GetProject();
 
     const bool noContentPadding = flags_.Test(EditorTabFlag::NoContentPadding);
 
@@ -108,7 +109,10 @@ void EditorTab::UpdateAndRenderWindow()
     }
 
     if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+    {
+        ApplyHotkeys(project->GetHotkeyManager());
         UpdateFocused();
+    }
     else
     {
         if (input->IsMouseVisible() && ui::IsAnyMouseDown())
@@ -154,9 +158,14 @@ void EditorTab::SetSeparator()
     }
 }
 
-void EditorTab:: ResetSeparator()
+void EditorTab::ResetSeparator()
 {
     hasSeparatorAlready_ = false;
+}
+
+void EditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+
 }
 
 ProjectEditor* EditorTab::GetProject() const

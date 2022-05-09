@@ -36,6 +36,14 @@ namespace Urho3D
 namespace
 {
 
+URHO3D_EDITOR_SCOPE(Scope_ResourceBrowserTab, "ResourceBrowserTab");
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Delete,
+    "ResourceBrowserTab.Delete", Scope_ResourceBrowserTab, QUAL_NONE, KEY_DELETE);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Rename,
+    "ResourceBrowserTab.Rename", Scope_ResourceBrowserTab, QUAL_NONE, KEY_F2);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_RevealInExplorer,
+    "ResourceBrowserTab.RevealInExplorer", Scope_ResourceBrowserTab, QUAL_ALT | QUAL_SHIFT, KEY_R);
+
 const ea::string contextMenuId = "ResourceBrowserTab_PopupDirectory";
 
 bool IsLeafDirectory(const FileSystemEntry& entry)
@@ -87,6 +95,16 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
     : EditorTab(context, "Resource Browser", "96c69b8e-ee83-43de-885c-8a51cef65d59",
         EditorTabFlag::OpenByDefault, EditorTabPlacement::DockBottom)
 {
+    InitializeRoots();
+    InitializeDefaultFactories();
+    InitializeHotkeys();
+
+    auto project = GetProject();
+    project->OnInitialized.Subscribe(this, &ResourceBrowserTab::RefreshContents);
+}
+
+void ResourceBrowserTab::InitializeRoots()
+{
     auto project = GetProject();
 
     {
@@ -105,23 +123,32 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
         root.supportCompositeFiles_ = true;
     }
 
-    {
-        AddFactory(MakeShared<ResourceBrowserFactory>(
-            context_, M_MIN_INT, ICON_FA_FOLDER " Folder", "New Folder",
-            [this](const ea::string& fileName, const ea::string& resourceName)
-        {
-            auto fs = GetSubsystem<FileSystem>();
-            fs->CreateDirsRecursive(fileName);
-        }));
-    }
-
     for (ResourceRoot& root : roots_)
     {
         root.reflection_ = MakeShared<FileSystemReflection>(context_, root.watchedDirectories_);
         root.reflection_->OnListUpdated.Subscribe(this, &ResourceBrowserTab::RefreshContents);
     }
+}
 
-    project->OnInitialized.Subscribe(this, &ResourceBrowserTab::RefreshContents);
+void ResourceBrowserTab::InitializeDefaultFactories()
+{
+    AddFactory(MakeShared<ResourceBrowserFactory>(
+        context_, M_MIN_INT, ICON_FA_FOLDER " Folder", "New Folder",
+        [this](const ea::string& fileName, const ea::string& resourceName)
+    {
+        auto fs = GetSubsystem<FileSystem>();
+        fs->CreateDirsRecursive(fileName);
+    }));
+}
+
+void ResourceBrowserTab::InitializeHotkeys()
+{
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    hotkeyManager->BindHotkey(this, Hotkey_Delete, &ResourceBrowserTab::DeleteSelected);
+    hotkeyManager->BindHotkey(this, Hotkey_Rename, &ResourceBrowserTab::RenameSelected);
+    hotkeyManager->BindHotkey(this, Hotkey_RevealInExplorer, &ResourceBrowserTab::RevealInExplorerSelected);
 }
 
 ResourceBrowserTab::~ResourceBrowserTab()
@@ -132,6 +159,24 @@ void ResourceBrowserTab::AddFactory(SharedPtr<ResourceBrowserFactory> factory)
 {
     factories_.push_back(factory);
     sortFactories_ = true;
+}
+
+void ResourceBrowserTab::DeleteSelected()
+{
+    if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
+        BeginEntryDelete(*entry);
+}
+
+void ResourceBrowserTab::RenameSelected()
+{
+    if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
+        BeginEntryRename(*entry);
+}
+
+void ResourceBrowserTab::RevealInExplorerSelected()
+{
+    if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
+        RevealInExplorer(entry->absolutePath_);
 }
 
 void ResourceBrowserTab::WriteIniSettings(ImGuiTextBuffer* output)
@@ -149,10 +194,19 @@ void ResourceBrowserTab::ReadIniSettings(const char* line)
 
     if (const auto value = ReadIntFromIni(line, "SelectedRoot"))
         left_.selectedRoot_ = *value;
+
     if (const auto value = ReadStringFromIni(line, "SelectedLeftPath"))
+    {
         left_.selectedPath_ = *value;
+        cursor_.selectedPath_ = left_.selectedPath_;
+    }
+
     if (const auto value = ReadStringFromIni(line, "SelectedRightPath"))
+    {
         right_.selectedPath_ = *value;
+        if (!right_.selectedPath_.empty())
+            cursor_.selectedPath_ = right_.selectedPath_;
+    }
 }
 
 void ResourceBrowserTab::ScrollToSelection()
@@ -195,6 +249,40 @@ void ResourceBrowserTab::UpdateAndRenderContent()
 
         ui::EndTable();
     }
+
+    UpdateAndRenderDialogs();
+}
+
+void ResourceBrowserTab::UpdateAndRenderDialogs()
+{
+    if (delete_.openPending_)
+    {
+        delete_.openPending_ = false;
+        ui::OpenPopup(delete_.popupTitle_.c_str());
+    }
+
+    if (rename_.openPending_)
+    {
+        rename_.openPending_ = false;
+        ui::OpenPopup(rename_.popupTitle_.c_str());
+    }
+
+    if (create_.openPending_)
+    {
+        create_.openPending_ = false;
+        create_.factory_->BeginCreate();
+        ui::OpenPopup(create_.popupTitle_.c_str());
+    }
+
+    RenderRenameDialog();
+    RenderDeleteDialog();
+    RenderCreateDialog();
+}
+
+void ResourceBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    BaseClassName::ApplyHotkeys(hotkeyManager);
+    hotkeyManager->InvokeScopedHotkeys(Scope_ResourceBrowserTab);
 }
 
 void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName)
@@ -262,15 +350,15 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
 
     // Render context menu and popups
     RenderEntryContextMenu(entry);
-    RenderRenameDialog(entry);
-    RenderDeleteDialog(entry);
-    RenderCreateDialog(entry);
 
     ui::PopID();
 }
 
 void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
 {
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
     bool renamePending = false;
     bool deletePending = false;
     ea::optional<unsigned> createPending;
@@ -295,7 +383,7 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
             ui::Separator();
         needSeparator = false;
 
-        if (ui::MenuItem("Reveal in Explorer"))
+        if (ui::MenuItem("Reveal in Explorer", hotkeyManager->GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
         {
             if (entry.resourceName_.empty())
                 RevealInExplorer(root.activeDirectory_);
@@ -305,10 +393,10 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
 
         const bool isEditable = !entry.resourceName_.empty() && !IsEntryFromCache(entry);
         ui::BeginDisabled(!isEditable);
-        if (ui::MenuItem("Rename"))
+        if (ui::MenuItem("Rename", hotkeyManager->GetHotkeyLabel(Hotkey_Rename).c_str()))
             renamePending = true;
 
-        if (ui::MenuItem("Delete"))
+        if (ui::MenuItem("Delete", hotkeyManager->GetHotkeyLabel(Hotkey_Delete).c_str()))
             deletePending = true;
         ui::EndDisabled();
 
@@ -316,27 +404,13 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
     }
 
     if (renamePending)
-    {
-        renamePopupTitle_ = Format("Rename '{}'?", entry.localName_);
-        renameBuffer_ = entry.localName_;
-        ui::OpenPopup(renamePopupTitle_.c_str());
-    }
+        BeginEntryRename(entry);
 
     if (deletePending)
-    {
-        deletePopupTitle_ = Format("Delete '{}'?", entry.localName_);
-        ui::OpenPopup(deletePopupTitle_.c_str());
-    }
+        BeginEntryDelete(entry);
 
     if (createPending && *createPending < factories_.size())
-    {
-        ResourceBrowserFactory* factory = factories_[*createPending];
-        createPopupTitle_ = Format("Create {}...", factory->GetTitle());
-        createFactory_ = factory;
-        createNameBuffer_ = factory->GetFileName();
-        factory->BeginCreate();
-        ui::OpenPopup(createPopupTitle_.c_str());
-    }
+        BeginEntryCreate(entry, factories_[*createPending]);
 }
 
 ea::optional<unsigned> ResourceBrowserTab::RenderEntryCreateContextMenu(const FileSystemEntry& entry)
@@ -502,9 +576,6 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
 
     // Render context menu and popups
     RenderEntryContextMenu(entry);
-    RenderRenameDialog(entry);
-    RenderDeleteDialog(entry);
-    RenderCreateDialog(entry);
 
     ui::PopID();
 }
@@ -562,102 +633,111 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
 
     // Render context menu and popups
     RenderEntryContextMenu(entry);
-    RenderRenameDialog(entry);
-    RenderDeleteDialog(entry);
-    RenderCreateDialog(entry);
     ui::PopID();
 }
 
-void ResourceBrowserTab::RenderRenameDialog(const FileSystemEntry& entry)
+void ResourceBrowserTab::RenderRenameDialog()
 {
-    if (ui::BeginPopupModal(renamePopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    const FileSystemEntry* entry = GetEntry(rename_.entryRef_);
+    if (!entry || !entry->parent_)
+        return;
+
+    if (!ui::BeginPopupModal(rename_.popupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    const auto [isEnabled, extraLine] = CheckFileNameInput(
+        *entry->parent_, entry->localName_, rename_.inputBuffer_);
+    ui::Text("Would you like to rename '%s'?\n%s", entry->absolutePath_.c_str(), extraLine.c_str());
+
+    ui::SetKeyboardFocusHere();
+    const bool done = ui::InputText("##Rename", &rename_.inputBuffer_,
+        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+
+    ui::BeginDisabled(!isEnabled);
+    if (ui::Button(ICON_FA_CHECK " Rename") || (isEnabled && done))
     {
-        const auto [isEnabled, extraLine] = CheckFileNameInput(*entry.parent_, entry.localName_, renameBuffer_);
-        ui::Text("Would you like to rename '%s'?\n%s", entry.absolutePath_.c_str(), extraLine.c_str());
-
-        ui::SetKeyboardFocusHere();
-        const bool done = ui::InputText("##Rename", &renameBuffer_,
-            ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-
-        ui::BeginDisabled(!isEnabled);
-        if (ui::Button(ICON_FA_CHECK " Rename") || (isEnabled && done))
-        {
-            if (renameBuffer_ != entry.localName_)
-                RenameEntry(entry, renameBuffer_);
-            ui::CloseCurrentPopup();
-        }
-        ui::EndDisabled();
-
-        ui::SameLine();
-
-        if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
-            ui::CloseCurrentPopup();
-
-        ui::EndPopup();
+        if (rename_.inputBuffer_ != entry->localName_)
+            RenameEntry(*entry, rename_.inputBuffer_);
+        ui::CloseCurrentPopup();
     }
+    ui::EndDisabled();
+
+    ui::SameLine();
+
+    if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+        ui::CloseCurrentPopup();
+
+    ui::EndPopup();
 }
 
-void ResourceBrowserTab::RenderDeleteDialog(const FileSystemEntry& entry)
+void ResourceBrowserTab::RenderDeleteDialog()
 {
-    if (ui::BeginPopupModal(deletePopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    const FileSystemEntry* entry = GetEntry(delete_.entryRef_);
+    if (!entry || !entry->parent_)
+        return;
+
+    if (!ui::BeginPopupModal(delete_.popupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    const char* formatString = "Would you like to PERMANENTLY delete '%s'?\n"
+        ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!";
+    ui::Text(formatString, entry->absolutePath_.c_str());
+
+    if (ui::Button(ICON_FA_CHECK " Delete") || ui::IsKeyPressed(KEY_RETURN))
     {
-        const char* formatString = "Would you like to PERMANENTLY delete '%s'?\n"
-            ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!";
-        ui::Text(formatString, entry.absolutePath_.c_str());
-
-        if (ui::Button(ICON_FA_CHECK " Delete") || ui::IsKeyPressed(KEY_RETURN))
-        {
-            DeleteEntry(entry);
-            ui::CloseCurrentPopup();
-        }
-
-        ui::SameLine();
-
-        if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
-            ui::CloseCurrentPopup();
-
-        ui::EndPopup();
+        DeleteEntry(*entry);
+        ui::CloseCurrentPopup();
     }
+
+    ui::SameLine();
+
+    if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+        ui::CloseCurrentPopup();
+
+    ui::EndPopup();
 }
 
-void ResourceBrowserTab::RenderCreateDialog(const FileSystemEntry& parentEntry)
+void ResourceBrowserTab::RenderCreateDialog()
 {
-    if (ui::BeginPopupModal(createPopupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    const FileSystemEntry* parentEntry = GetEntry(create_.parentEntryRef_);
+    if (!parentEntry)
+        return;
+
+    if (!ui::BeginPopupModal(create_.popupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    const ea::string baseFilePath = parentEntry->absolutePath_.empty()
+        ? GetRoot(*parentEntry).activeDirectory_
+        : parentEntry->absolutePath_ + "/";
+    const ea::string baseResourcePath = parentEntry->resourceName_.empty()
+        ? ""
+        : parentEntry->resourceName_ + "/";
+
+    const auto [isEnabled, extraLine] = CheckFileNameInput(*parentEntry, "", create_.inputBuffer_);
+    const ea::string fileName = baseFilePath + create_.inputBuffer_;
+    const ea::string resourceName = baseResourcePath + create_.inputBuffer_;
+    ui::Text("Would you like to create '%s'?\n%s", resourceName.c_str(), extraLine.c_str());
+
+    ui::SetKeyboardFocusHere();
+    const bool done = ui::InputText("##Create", &create_.inputBuffer_,
+        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+
+    create_.factory_->UpdateAndRender();
+
+    ui::BeginDisabled(!isEnabled);
+    if (ui::Button(ICON_FA_CHECK " Create") || (isEnabled && done))
     {
-        const ea::string baseFilePath = parentEntry.absolutePath_.empty()
-            ? GetRoot(parentEntry).activeDirectory_
-            : parentEntry.absolutePath_ + "/";
-        const ea::string baseResourcePath = parentEntry.resourceName_.empty()
-            ? ""
-            : parentEntry.resourceName_ + "/";
-
-        const auto [isEnabled, extraLine] = CheckFileNameInput(parentEntry, "", createNameBuffer_);
-        const ea::string fileName = baseFilePath + createNameBuffer_;
-        const ea::string resourceName = baseResourcePath + createNameBuffer_;
-        ui::Text("Would you like to create '%s'?\n%s", resourceName.c_str(), extraLine.c_str());
-
-        ui::SetKeyboardFocusHere();
-        const bool done = ui::InputText("##Create", &createNameBuffer_,
-            ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-
-        createFactory_->UpdateAndRender();
-
-        ui::BeginDisabled(!isEnabled);
-        if (ui::Button(ICON_FA_CHECK " Create") || (isEnabled && done))
-        {
-            createFactory_->EndCreate(fileName, resourceName);
-            ui::CloseCurrentPopup();
-        }
-        ui::EndDisabled();
-
-        ui::SameLine();
-
-        if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
-            ui::CloseCurrentPopup();
-
-        ui::EndPopup();
+        create_.factory_->EndCreate(fileName, resourceName);
+        ui::CloseCurrentPopup();
     }
+    ui::EndDisabled();
 
+    ui::SameLine();
+
+    if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+        ui::CloseCurrentPopup();
+
+    ui::EndPopup();
 }
 
 SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreateDragDropPayload(const FileSystemEntry& entry) const
@@ -733,16 +813,38 @@ bool ResourceBrowserTab::IsEntryFromCache(const FileSystemEntry& entry) const
     return entry.directoryIndex_ > 0;
 }
 
+ResourceBrowserTab::EntryReference ResourceBrowserTab::GetReference(const FileSystemEntry& entry) const
+{
+    return {GetRootIndex(entry), entry.resourceName_};
+}
+
+const FileSystemEntry* ResourceBrowserTab::GetEntry(const EntryReference& ref) const
+{
+    if (ref.rootIndex_ < roots_.size())
+    {
+        FileSystemReflection* reflection = roots_[ref.rootIndex_].reflection_;
+        return reflection->FindEntry(ref.resourcePath_);
+    }
+    return nullptr;
+}
+
+const FileSystemEntry* ResourceBrowserTab::GetSelectedEntryForCursor() const
+{
+    return GetEntry(EntryReference{left_.selectedRoot_, cursor_.selectedPath_});
+}
+
 void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex)
 {
     left_.selectedPath_ = path;
     left_.selectedRoot_ = rootIndex.value_or(left_.selectedRoot_);
     right_.selectedPath_ = "";
+    cursor_.selectedPath_ = path;
 }
 
 void ResourceBrowserTab::SelectRightPanel(const ea::string& path)
 {
     right_.selectedPath_ = path;
+    cursor_.selectedPath_ = path;
 }
 
 void ResourceBrowserTab::AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName)
@@ -783,6 +885,30 @@ ea::pair<bool, ea::string> ResourceBrowserTab::CheckFileNameInput(
     else
         extraLine = ICON_FA_CIRCLE_CHECK " Name is OK";
     return {!isDisabled, extraLine};
+}
+
+void ResourceBrowserTab::BeginEntryDelete(const FileSystemEntry& entry)
+{
+    delete_.entryRef_ = GetReference(entry);
+    delete_.popupTitle_ = Format("Delete '{}'?", entry.localName_);
+    delete_.openPending_ = true;
+}
+
+void ResourceBrowserTab::BeginEntryRename(const FileSystemEntry& entry)
+{
+    rename_.entryRef_ = GetReference(entry);
+    rename_.popupTitle_ = Format("Rename '{}'?", entry.localName_);
+    rename_.inputBuffer_ = entry.localName_;
+    rename_.openPending_ = true;
+}
+
+void ResourceBrowserTab::BeginEntryCreate(const FileSystemEntry& entry, ResourceBrowserFactory* factory)
+{
+    create_.parentEntryRef_ = GetReference(entry);
+    create_.popupTitle_ = Format("Create {}...", factory->GetTitle());
+    create_.factory_ = factory;
+    create_.inputBuffer_ = factory->GetFileName();
+    create_.openPending_ = true;
 }
 
 void ResourceBrowserTab::RefreshContents()
@@ -857,7 +983,7 @@ void ResourceBrowserTab::CleanupResourceCache(const ea::string& resourceName)
 
 void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
 {
-    auto project = GetSubsystem<ProjectEditor>();
+    auto project = GetProject();
 
     if (const OpenResourceRequest request = OpenResourceRequest::FromResourceName(context_, entry.resourceName_))
         project->OpenResource(request);

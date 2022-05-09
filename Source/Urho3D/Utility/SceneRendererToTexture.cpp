@@ -29,6 +29,10 @@
 #include "../Scene/Scene.h"
 #include "../Utility/SceneRendererToTexture.h"
 
+#ifdef URHO3D_D3D11
+#include <dxgi1_2.h>
+#endif
+
 #include "../DebugNew.h"
 
 namespace Urho3D
