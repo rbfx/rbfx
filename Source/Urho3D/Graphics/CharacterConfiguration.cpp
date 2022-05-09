@@ -240,14 +240,19 @@ StaticModel* CharacterConfiguration::CreateBodyPartModelComponent(unsigned bodyP
     auto& bodyPart = bodyParts_[bodyPartIndex];
 
     Node* attachmentBone = root;
-    if (!bodyPart.name_.empty())
+    Node* bodyPartNode{};
+    if (!bodyPart.attachmentBone_.empty())
     {
         attachmentBone = root->GetChild(bodyPart.name_, true);
         if (!attachmentBone)
             attachmentBone = root;
+        bodyPartNode = attachmentBone->CreateChild(bodyPart.name_, LOCAL, true);
+    }
+    else
+    {
+        bodyPartNode = root;
     }
 
-    auto bodyPartNode =  attachmentBone->CreateChild(bodyPart.name_, LOCAL, true);
     if (bodyPart.static_)
         return bodyPartNode->CreateComponent<StaticModel>();
     return bodyPartNode->CreateComponent<AnimatedModel>();
