@@ -531,7 +531,7 @@ void ReflectionProbeManager::QueryStaticProbes(const BoundingBox& worldBoundingB
 }
 
 ReflectionProbe::ReflectionProbe(Context* context)
-    : TrackedComponent<ReflectionProbeManager, EnabledOnlyTag>(context)
+    : TrackedComponent<TrackedComponentBase, ReflectionProbeManager, EnabledOnlyTag>(context)
 {
 }
 

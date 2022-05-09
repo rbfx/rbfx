@@ -148,18 +148,19 @@ private:
 /// Indicates that object should remove self from registry if disabled.
 struct EnabledOnlyTag {};
 
-/// Return base component type for given registry type.
-template <class T>
-using BaseComponentTypeForRegistry = ea::conditional_t<ea::is_base_of_v<ReferencedComponentRegistryBase, T>, ReferencedComponentBase, TrackedComponentBase>;
-
 /// Template base of any TrackedComponent that automatically registers itself in registry.
-template <class RegistryComponentType, class ... Tags>
+template <class ComponentType, class RegistryComponentType, class ... Tags>
 class TrackedComponent
-    : public BaseComponentTypeForRegistry<RegistryComponentType>
+    : public ComponentType
     , public Tags...
 {
 public:
-    explicit TrackedComponent(Context* context) : BaseComponentTypeForRegistry<RegistryComponentType>(context) {}
+    static_assert(ea::is_base_of_v<ReferencedComponentRegistryBase, RegistryComponentType>
+        == ea::is_base_of_v<ReferencedComponentBase, ComponentType>,
+        "Component inherited from ReferencedComponentBase should use registry inherited from ReferencedComponentRegistryBase, "
+        "Component inherited from TrackedComponentBase should use registry inherited from TrackedComponentRegistryBase");
+
+    explicit TrackedComponent(Context* context) : ComponentType(context) {}
 
     RegistryComponentType* GetRegistry() const { return registry_; }
 

@@ -170,7 +170,7 @@ enum class ReflectionProbeType
 };
 
 /// Reflection probe component that specifies reflection applied within a region.
-class URHO3D_API ReflectionProbe : public TrackedComponent<ReflectionProbeManager, EnabledOnlyTag>
+class URHO3D_API ReflectionProbe : public TrackedComponent<TrackedComponentBase, ReflectionProbeManager, EnabledOnlyTag>
 {
     URHO3D_OBJECT(ReflectionProbe, TrackedComponentBase);
 

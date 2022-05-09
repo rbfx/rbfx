@@ -33,12 +33,12 @@ public:
     explicit TestComponentRegistry(Context* context);
 };
 
-class TestTrackedComponent : public TrackedComponent<TestComponentRegistry, EnabledOnlyTag>
+class TestTrackedComponent : public TrackedComponent<ReferencedComponentBase, TestComponentRegistry, EnabledOnlyTag>
 {
     URHO3D_OBJECT(TestTrackedComponent, ReferencedComponentBase);
 
 public:
-    using TrackedComponent<TestComponentRegistry, EnabledOnlyTag>::TrackedComponent;
+    using TrackedComponent<ReferencedComponentBase, TestComponentRegistry, EnabledOnlyTag>::TrackedComponent;
 };
 
 TestComponentRegistry::TestComponentRegistry(Context* context)
