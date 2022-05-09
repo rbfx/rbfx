@@ -30,6 +30,7 @@
 namespace Urho3D
 {
 
+class HotkeyManager;
 class ProjectEditor;
 
 enum class EditorTabFlag
@@ -97,6 +98,8 @@ protected:
     virtual bool IsModified() { return false; }
     /// Update tab in focus.
     virtual void UpdateFocused() {};
+    /// Apply scoped hotkeys for this tab.
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
 
     /// Return current project.
     ProjectEditor* GetProject() const;

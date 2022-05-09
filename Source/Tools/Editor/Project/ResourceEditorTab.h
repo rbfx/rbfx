@@ -67,6 +67,7 @@ protected:
     /// EditorTab implementation
     /// @{
     void UpdateAndRenderContextMenuItems() override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 
     /// Called when resource should be loaded.

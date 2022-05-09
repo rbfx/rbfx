@@ -1324,32 +1324,32 @@ SDL_JoystickID Input::OpenJoystick(unsigned index)
     return joystickID;
 }
 
-Key Input::GetKeyFromName(const ea::string& name) const
+Key Input::GetKeyFromName(const ea::string& name)
 {
     return (Key)SDL_GetKeyFromName(name.c_str());
 }
 
-Key Input::GetKeyFromScancode(Scancode scancode) const
+Key Input::GetKeyFromScancode(Scancode scancode)
 {
     return (Key)SDL_GetKeyFromScancode((SDL_Scancode)scancode);
 }
 
-ea::string Input::GetKeyName(Key key) const
+ea::string Input::GetKeyName(Key key)
 {
     return ea::string(SDL_GetKeyName(key));
 }
 
-Scancode Input::GetScancodeFromKey(Key key) const
+Scancode Input::GetScancodeFromKey(Key key)
 {
     return (Scancode)SDL_GetScancodeFromKey(key);
 }
 
-Scancode Input::GetScancodeFromName(const ea::string& name) const
+Scancode Input::GetScancodeFromName(const ea::string& name)
 {
     return (Scancode)SDL_GetScancodeFromName(name.c_str());
 }
 
-ea::string Input::GetScancodeName(Scancode scancode) const
+ea::string Input::GetScancodeName(Scancode scancode)
 {
     return SDL_GetScancodeName((SDL_Scancode)scancode);
 }

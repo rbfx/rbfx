@@ -32,7 +32,14 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+URHO3D_EDITOR_HOTKEY(Hotkey_SaveProject, "Global.SaveProject", QUAL_CTRL, KEY_S);
+
 static unsigned numActiveProjects = 0;
+
+}
 
 OpenResourceRequest OpenResourceRequest::FromResourceName(Context* context, const ea::string& resourceName)
 {
@@ -94,6 +101,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , uiIniPath_(projectPath_ + ".ui.ini")
     , dataPath_(projectPath_ + "Data/")
     , oldCacheState_(context)
+    , hotkeyManager_(MakeShared<HotkeyManager>(context_))
 {
     URHO3D_ASSERT(numActiveProjects == 0);
     context_->RegisterSubsystem(this, ProjectEditor::GetTypeStatic());
@@ -101,6 +109,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
 
     ui::GetIO().IniFilename = uiIniPath_.c_str();
 
+    InitializeHotkeys();
     EnsureDirectoryInitialized();
     InitializeResourceCache();
 
@@ -134,6 +143,11 @@ void ProjectEditor::OpenResource(const OpenResourceRequest& request)
             }
         }
     }
+}
+
+void ProjectEditor::InitializeHotkeys()
+{
+    hotkeyManager_->BindHotkey(this, Hotkey_SaveProject, &ProjectEditor::Save);
 }
 
 void ProjectEditor::EnsureDirectoryInitialized()
@@ -243,6 +257,9 @@ void ProjectEditor::ApplyPlugins()
 
 void ProjectEditor::UpdateAndRender()
 {
+    hotkeyManager_->Update();
+    hotkeyManager_->InvokeGlobalHotkeys();
+
     dockspaceId_ = ui::GetID("Root");
     ui::DockSpace(dockspaceId_);
 

@@ -81,13 +81,34 @@ public:
 
     void AddFactory(SharedPtr<ResourceBrowserFactory> factory);
 
+    /// Commands
+    /// @{
+    void DeleteSelected();
+    void RenameSelected();
+    void RevealInExplorerSelected();
+    /// @}
+
+    /// Implement EditorTab
+    /// @{
     void WriteIniSettings(ImGuiTextBuffer* output) override;
     void ReadIniSettings(const char* line) override;
+    /// @}
 
 protected:
+    /// Implement EditorTab
+    /// @{
     void UpdateAndRenderContent() override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+    /// @}
 
 private:
+    /// Root index and resource name used to safely reference an entry.
+    struct EntryReference
+    {
+        unsigned rootIndex_{};
+        ea::string resourcePath_;
+    };
+
     struct ResourceRoot
     {
         ea::string name_;
@@ -98,6 +119,10 @@ private:
 
         SharedPtr<FileSystemReflection> reflection_;
     };
+
+    void InitializeRoots();
+    void InitializeDefaultFactories();
+    void InitializeHotkeys();
 
     /// Render left panel
     /// @{
@@ -115,12 +140,14 @@ private:
 
     /// Common rendering
     /// @{
+    void UpdateAndRenderDialogs();
+
     void RenderEntryContextMenu(const FileSystemEntry& entry);
     ea::optional<unsigned> RenderEntryCreateContextMenu(const FileSystemEntry& entry);
 
-    void RenderRenameDialog(const FileSystemEntry& entry);
-    void RenderDeleteDialog(const FileSystemEntry& entry);
-    void RenderCreateDialog(const FileSystemEntry& parentEntry);
+    void RenderRenameDialog();
+    void RenderDeleteDialog();
+    void RenderCreateDialog();
     /// @}
 
     /// Drag&drop handling
@@ -136,15 +163,27 @@ private:
     unsigned GetRootIndex(const FileSystemEntry& entry) const;
     const ResourceRoot& GetRoot(const FileSystemEntry& entry) const;
     bool IsEntryFromCache(const FileSystemEntry& entry) const;
+    EntryReference GetReference(const FileSystemEntry& entry) const;
+    const FileSystemEntry* GetEntry(const EntryReference& ref) const;
+    const FileSystemEntry* GetSelectedEntryForCursor() const;
+    ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
+        const ea::string& oldName, const ea::string& newName) const;
     /// @}
 
+    /// Manage selection
+    /// @{
     void SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex = ea::nullopt);
     void SelectRightPanel(const ea::string& path);
     void AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName);
     void ScrollToSelection();
+    /// @}
 
-    ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
-        const ea::string& oldName, const ea::string& newName) const;
+    /// Manipulation utilities and helpers
+    /// @{
+    void BeginEntryDelete(const FileSystemEntry& entry);
+    void BeginEntryRename(const FileSystemEntry& entry);
+    void BeginEntryCreate(const FileSystemEntry& entry, ResourceBrowserFactory* factory);
+
     void RefreshContents();
     void RevealInExplorer(const ea::string& path);
     void RenameEntry(const FileSystemEntry& entry, const ea::string& newName);
@@ -153,8 +192,10 @@ private:
     void DeleteEntry(const FileSystemEntry& entry);
     void CleanupResourceCache(const ea::string& resourceName);
     void OpenEntryInEditor(const FileSystemEntry& entry);
+    /// @}
 
     ea::vector<ResourceRoot> roots_;
+    bool waitingForUpdate_{};
 
     ea::vector<SharedPtr<ResourceBrowserFactory>> factories_;
     bool sortFactories_{true};
@@ -176,16 +217,34 @@ private:
         bool scrollToSelection_{};
     } right_;
 
-    bool waitingForUpdate_{};
+    struct CursorForHotkeys
+    {
+        ea::string selectedPath_{};
+    } cursor_;
 
-    ea::string renamePopupTitle_;
-    ea::string renameBuffer_;
+    struct RenameDialog
+    {
+        EntryReference entryRef_;
+        ea::string popupTitle_;
+        ea::string inputBuffer_;
+        bool openPending_{};
+    } rename_;
 
-    ea::string deletePopupTitle_;
+    struct DeleteDialog
+    {
+        EntryReference entryRef_;
+        ea::string popupTitle_;
+        bool openPending_{};
+    } delete_;
 
-    ea::string createPopupTitle_;
-    ResourceBrowserFactory* createFactory_{};
-    ea::string createNameBuffer_;
+    struct CreateDialog
+    {
+        EntryReference parentEntryRef_;
+        ea::string popupTitle_;
+        ResourceBrowserFactory* factory_{};
+        ea::string inputBuffer_;
+        bool openPending_{};
+    } create_;
     /// @}
 
     ea::vector<const FileSystemEntry*> tempEntryList_;

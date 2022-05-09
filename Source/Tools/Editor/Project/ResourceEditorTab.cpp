@@ -160,4 +160,9 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
     SetSeparator();
 }
 
+void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    BaseClassName::ApplyHotkeys(hotkeyManager);
+}
+
 }

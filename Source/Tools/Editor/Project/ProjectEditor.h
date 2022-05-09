@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/HotkeyManager.h"
 #include "../Project/EditorTab.h"
 
 #include <Urho3D/Core/Object.h>
@@ -96,7 +97,13 @@ public:
     const ea::string& GetCachePath() const { return cachePath_; }
     /// @}
 
+    /// Return singletons
+    /// @{
+    HotkeyManager* GetHotkeyManager() const { return hotkeyManager_; }
+    /// @}
+
 private:
+    void InitializeHotkeys();
     void EnsureDirectoryInitialized();
     void InitializeResourceCache();
     void ResetLayout();
@@ -115,6 +122,7 @@ private:
     const ResourceCacheGuard oldCacheState_;
     /// @}
 
+    SharedPtr<HotkeyManager> hotkeyManager_;
     bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
 
