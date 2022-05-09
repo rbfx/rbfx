@@ -20,54 +20,55 @@
 // THE SOFTWARE.
 //
 
+/// \file
+
 #pragma once
 
-#include "../Core/ResourceDragDropPayload.h"
-#include "../Project/ProjectEditor.h"
-#include "../Project/ResourceEditorTab.h"
+#include "../Core/Object.h"
+#include "../Core/Signal.h"
 
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Utility/SceneRendererToTexture.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
 
-void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor);
+class Camera;
+class Node;
+class Scene;
+class Texture2D;
+class Viewport;
 
-class SceneViewTab : public ResourceEditorTab
+/// Utility class that watches all files in ResourceCache.
+class URHO3D_API SceneRendererToTexture : public Object
 {
-    URHO3D_OBJECT(SceneViewTab, ResourceEditorTab);
+    URHO3D_OBJECT(SceneRendererToTexture, Object);
 
 public:
-    explicit SceneViewTab(Context* context);
-    ~SceneViewTab() override;
+    explicit SceneRendererToTexture(Scene* scene);
+    ~SceneRendererToTexture() override;
 
-    /// ResourceEditorTab implementation
+    /// Resize output texture.
+    void SetTextureSize(const IntVector2& size);
+    /// Set whether to render scene.
+    void SetActive(bool active);
+    /// Periodical update.
+    void Update();
+
+    /// Return aspects of the renderer
     /// @{
-    bool SupportMultipleResources() { return true; }
-    bool CanOpenResource(const OpenResourceRequest& request) override;
-    /// @}
-
-protected:
-    /// ResourceEditorTab implementation
-    /// @{
-    void OnResourceLoaded(const ea::string& resourceName) override;
-    void OnResourceUnloaded(const ea::string& resourceName) override;
-    void OnActiveResourceChanged(const ea::string& resourceName) override;
-
-    void UpdateAndRenderContent() override;
+    Texture2D* GetTexture() const { return texture_; }
     /// @}
 
 private:
-    IntVector2 GetContentSize() const;
+    SharedPtr<Scene> scene_;
+    SharedPtr<Node> cameraNode_;
+    Camera* camera_{};
 
-    struct SceneData
-    {
-        SharedPtr<Scene> scene_;
-        SharedPtr<SceneRendererToTexture> renderer_;
-    };
-
-    ea::unordered_map<ea::string, SceneData> scenes_;
+    bool textureDirty_{true};
+    bool isActive_{};
+    IntVector2 textureSize_;
+    SharedPtr<Texture2D> texture_;
+    SharedPtr<Viewport> viewport_;
 };
 
 }

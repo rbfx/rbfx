@@ -132,4 +132,32 @@ void ResourceEditorTab::CloseAllResources()
     resourceNames_.clear();
 }
 
+void ResourceEditorTab::UpdateAndRenderContextMenuItems()
+{
+    ResetSeparator();
+    if (resourceNames_.empty())
+    {
+        ui::MenuItem("(No Resources)", nullptr, false, false);
+        SetSeparator();
+    }
+    else
+    {
+        ui::PushID("ActiveResources");
+        for (const ea::string& resourceName : resourceNames_)
+        {
+            bool selected = resourceName == activeResourceName_;
+            if (ui::MenuItem(resourceName.c_str(), nullptr, &selected))
+                SetActiveResource(resourceName);
+        }
+        ui::PopID();
+        SetSeparator();
+    }
+
+    ResetSeparator();
+    if (ui::MenuItem("Close Resource", nullptr, false, !resourceNames_.empty()))
+        CloseResource(activeResourceName_);
+
+    SetSeparator();
+}
+
 }

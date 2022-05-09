@@ -22,6 +22,10 @@
 
 #include "../Foundation/SceneViewTab.h"
 
+#include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
+
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 namespace Urho3D
@@ -49,28 +53,55 @@ bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)
 
 void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
+    auto cache = GetSubsystem<ResourceCache>();
+    auto xmlFile = cache->GetResource<XMLFile>(resourceName);
 
+    if (!xmlFile)
+    {
+        URHO3D_LOGERROR("Cannot load scene file '%s'", resourceName);
+        return;
+    }
+
+    auto scene = MakeShared<Scene>(context_);
+    scene->LoadXML(xmlFile->GetRoot());
+
+    SceneData& data = scenes_[resourceName];
+    data.scene_ = scene;
+    data.renderer_ = MakeShared<SceneRendererToTexture>(scene);
 }
 
 void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
 {
-
+    scenes_.erase(resourceName);
 }
 
 void SceneViewTab::OnActiveResourceChanged(const ea::string& resourceName)
 {
-
+    for (const auto& [name, data] : scenes_)
+        data.renderer_->SetActive(name == resourceName);
 }
 
 void SceneViewTab::UpdateAndRenderContent()
 {
-    if (GetResourceNames().empty())
-        ui::Text("No Scene");
-    for (const ea::string& resourceName : GetResourceNames())
-    {
-        const char* mark = GetActiveResourceName() == resourceName ? "> " : "";
-        ui::Text("%s%s", mark, resourceName.c_str());
-    }
+    const auto iter = scenes_.find(GetActiveResourceName());
+    if (iter == scenes_.end())
+        return;
+
+    SceneData& currentScene = iter->second;
+    currentScene.renderer_->SetTextureSize(GetContentSize());
+    currentScene.renderer_->Update();
+
+    Texture2D* sceneTexture = currentScene.renderer_->GetTexture();
+    ui::SetCursorPos({0, 0});
+    ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+}
+
+IntVector2 SceneViewTab::GetContentSize() const
+{
+    const ImGuiContext& g = *GImGui;
+    const ImGuiWindow* window = g.CurrentWindow;
+    const ImRect rect = ImRound(window->ContentRegionRect);
+    return {RoundToInt(rect.GetWidth()), RoundToInt(rect.GetHeight())};
 }
 
 }

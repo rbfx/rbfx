@@ -131,22 +131,32 @@ void EditorTab::UpdateAndRenderWindow()
 
 void EditorTab::UpdateAndRenderContextMenu()
 {
-    {
-        const int oldY = ui::GetCursorPosY();
-        UpdateAndRenderContextMenuItems();
-        if (oldY != ui::GetCursorPosY())
-            ui::Separator();
-    }
+    ResetSeparator();
+    UpdateAndRenderContextMenuItems();
+    SetSeparator();
 
-    {
-        const int oldY = ui::GetCursorPosY();
-        OnRenderContextMenu(this);
-        if (oldY != ui::GetCursorPosY())
-            ui::Separator();
-    }
+    ResetSeparator();
+    const int oldY = ui::GetCursorPosY();
+    OnRenderContextMenu(this);
+    if (oldY != ui::GetCursorPosY())
+        SetSeparator();
 
-    if (ui::MenuItem("Close"))
+    if (ui::MenuItem("Close Tab"))
         Close();
+}
+
+void EditorTab::SetSeparator()
+{
+    if (!hasSeparatorAlready_)
+    {
+        hasSeparatorAlready_ = true;
+        ui::Separator();
+    }
+}
+
+void EditorTab:: ResetSeparator()
+{
+    hasSeparatorAlready_ = false;
 }
 
 ProjectEditor* EditorTab::GetProject() const

@@ -64,6 +64,11 @@ public:
     /// @}
 
 protected:
+    /// EditorTab implementation
+    /// @{
+    void UpdateAndRenderContextMenuItems() override;
+    /// @}
+
     /// Called when resource should be loaded.
     virtual void OnResourceLoaded(const ea::string& resourceName) = 0;
     /// Called when resource should be unloaded.

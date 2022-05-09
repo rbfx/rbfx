@@ -303,14 +303,14 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
                 RevealInExplorer(entry.absolutePath_);
         }
 
-        if (!entry.resourceName_.empty() && !IsEntryFromCache(entry))
-        {
-            if (ui::MenuItem("Rename"))
-                renamePending = true;
+        const bool isEditable = !entry.resourceName_.empty() && !IsEntryFromCache(entry);
+        ui::BeginDisabled(!isEditable);
+        if (ui::MenuItem("Rename"))
+            renamePending = true;
 
-            if (ui::MenuItem("Delete"))
-                deletePending = true;
-        }
+        if (ui::MenuItem("Delete"))
+            deletePending = true;
+        ui::EndDisabled();
 
         ui::EndPopup();
     }

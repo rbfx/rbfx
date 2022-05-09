@@ -100,6 +100,10 @@ protected:
 
     /// Return current project.
     ProjectEditor* GetProject() const;
+    /// Add context menu separator if not added already.
+    void SetSeparator();
+    /// Reset separator state.
+    void ResetSeparator();
 
 private:
     void UpdateAndRenderWindow();
@@ -115,6 +119,8 @@ private:
     bool openPending_{};
     bool wasOpen_{};
     bool open_{};
+
+    bool hasSeparatorAlready_{};
 
     ImGuiWindowFlags windowFlags_{};
 };
