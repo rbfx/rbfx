@@ -7,6 +7,21 @@
 %csconstvalue("0") Urho3D::SHAPE_BOX;
 %csconstvalue("0") Urho3D::CONSTRAINT_POINT;
 %csconstvalue("0") Urho3D::COLLISION_NEVER;
+%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::Vector3), Gravity, GetGravity, SetGravity);
+%csattribute(Urho3D::PhysicsWorld, %arg(int), MaxSubSteps, GetMaxSubSteps, SetMaxSubSteps);
+%csattribute(Urho3D::PhysicsWorld, %arg(int), NumIterations, GetNumIterations, SetNumIterations);
+%csattribute(Urho3D::PhysicsWorld, %arg(bool), IsUpdateEnabled, IsUpdateEnabled, SetUpdateEnabled);
+%csattribute(Urho3D::PhysicsWorld, %arg(bool), Interpolation, GetInterpolation, SetInterpolation);
+%csattribute(Urho3D::PhysicsWorld, %arg(bool), InternalEdge, GetInternalEdge, SetInternalEdge);
+%csattribute(Urho3D::PhysicsWorld, %arg(bool), SplitImpulse, GetSplitImpulse, SetSplitImpulse);
+%csattribute(Urho3D::PhysicsWorld, %arg(int), Fps, GetFps, SetFps);
+%csattribute(Urho3D::PhysicsWorld, %arg(float), MaxNetworkAngularVelocity, GetMaxNetworkAngularVelocity, SetMaxNetworkAngularVelocity);
+%csattribute(Urho3D::PhysicsWorld, %arg(btDiscreteDynamicsWorld *), World, GetWorld);
+%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::CollisionGeometryDataCache), TriMeshCache, GetTriMeshCache);
+%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::CollisionGeometryDataCache), ConvexCache, GetConvexCache);
+%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::CollisionGeometryDataCache), GImpactTrimeshCache, GetGImpactTrimeshCache);
+%csattribute(Urho3D::PhysicsWorld, %arg(bool), IsApplyingTransforms, IsApplyingTransforms, SetApplyingTransforms);
+%csattribute(Urho3D::PhysicsWorld, %arg(bool), IsSimulating, IsSimulating);
 %csattribute(Urho3D::CollisionShape, %arg(Urho3D::CollisionGeometryData *), GeometryData, GetGeometryData);
 %csattribute(Urho3D::CollisionShape, %arg(Urho3D::PhysicsWorld *), PhysicsWorld, GetPhysicsWorld);
 %csattribute(Urho3D::CollisionShape, %arg(Urho3D::ShapeType), ShapeType, GetShapeType, SetShapeType);
@@ -32,21 +47,22 @@
 %csattribute(Urho3D::Constraint, %arg(float), Erp, GetERP, SetERP);
 %csattribute(Urho3D::Constraint, %arg(float), Cfm, GetCFM, SetCFM);
 %csattribute(Urho3D::Constraint, %arg(bool), DisableCollision, GetDisableCollision, SetDisableCollision);
-%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::Vector3), Gravity, GetGravity, SetGravity);
-%csattribute(Urho3D::PhysicsWorld, %arg(int), MaxSubSteps, GetMaxSubSteps, SetMaxSubSteps);
-%csattribute(Urho3D::PhysicsWorld, %arg(int), NumIterations, GetNumIterations, SetNumIterations);
-%csattribute(Urho3D::PhysicsWorld, %arg(bool), IsUpdateEnabled, IsUpdateEnabled, SetUpdateEnabled);
-%csattribute(Urho3D::PhysicsWorld, %arg(bool), Interpolation, GetInterpolation, SetInterpolation);
-%csattribute(Urho3D::PhysicsWorld, %arg(bool), InternalEdge, GetInternalEdge, SetInternalEdge);
-%csattribute(Urho3D::PhysicsWorld, %arg(bool), SplitImpulse, GetSplitImpulse, SetSplitImpulse);
-%csattribute(Urho3D::PhysicsWorld, %arg(int), Fps, GetFps, SetFps);
-%csattribute(Urho3D::PhysicsWorld, %arg(float), MaxNetworkAngularVelocity, GetMaxNetworkAngularVelocity, SetMaxNetworkAngularVelocity);
-%csattribute(Urho3D::PhysicsWorld, %arg(btDiscreteDynamicsWorld *), World, GetWorld);
-%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::CollisionGeometryDataCache), TriMeshCache, GetTriMeshCache);
-%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::CollisionGeometryDataCache), ConvexCache, GetConvexCache);
-%csattribute(Urho3D::PhysicsWorld, %arg(Urho3D::CollisionGeometryDataCache), GImpactTrimeshCache, GetGImpactTrimeshCache);
-%csattribute(Urho3D::PhysicsWorld, %arg(bool), IsApplyingTransforms, IsApplyingTransforms, SetApplyingTransforms);
-%csattribute(Urho3D::PhysicsWorld, %arg(bool), IsSimulating, IsSimulating);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), RawPosition, GetRawPosition);
+%csattribute(Urho3D::KinematicCharacterController, %arg(unsigned int), CollisionLayer, GetCollisionLayer, SetCollisionLayer);
+%csattribute(Urho3D::KinematicCharacterController, %arg(unsigned int), CollisionMask, GetCollisionMask, SetCollisionMask);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), Gravity, GetGravity, SetGravity);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), LinearDamping, GetLinearDamping, SetLinearDamping);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), AngularDamping, GetAngularDamping, SetAngularDamping);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), Height, GetHeight, SetHeight);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), Diameter, GetDiameter, SetDiameter);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), Offset, GetOffset, SetOffset);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), StepHeight, GetStepHeight, SetStepHeight);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), MaxJumpHeight, GetMaxJumpHeight, SetMaxJumpHeight);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), FallSpeed, GetFallSpeed, SetFallSpeed);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), JumpSpeed, GetJumpSpeed, SetJumpSpeed);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), MaxSlope, GetMaxSlope, SetMaxSlope);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), AngularVelocity, GetAngularVelocity);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), LinearVelocity, GetLinearVelocity);
 %csattribute(Urho3D::RigidBody, %arg(Urho3D::PhysicsWorld *), PhysicsWorld, GetPhysicsWorld);
 %csattribute(Urho3D::RigidBody, %arg(btRigidBody *), Body, GetBody);
 %csattribute(Urho3D::RigidBody, %arg(btCompoundShape *), CompoundShape, GetCompoundShape);
@@ -77,7 +93,6 @@
 %csattribute(Urho3D::RigidBody, %arg(unsigned int), CollisionLayer, GetCollisionLayer, SetCollisionLayer);
 %csattribute(Urho3D::RigidBody, %arg(unsigned int), CollisionMask, GetCollisionMask, SetCollisionMask);
 %csattribute(Urho3D::RigidBody, %arg(Urho3D::CollisionEventMode), CollisionEventMode, GetCollisionEventMode, SetCollisionEventMode);
-%csattribute(Urho3D::RigidBody, %arg(ea::vector<unsigned char>), NetAngularVelocityAttr, GetNetAngularVelocityAttr, SetNetAngularVelocityAttr);
 %csattribute(Urho3D::RaycastVehicle, %arg(int), NumWheels, GetNumWheels);
 %csattribute(Urho3D::RaycastVehicle, %arg(float), MaxSideSlipSpeed, GetMaxSideSlipSpeed, SetMaxSideSlipSpeed);
 %csattribute(Urho3D::RaycastVehicle, %arg(float), InAirRPM, GetInAirRPM, SetInAirRPM);
@@ -86,10 +101,28 @@
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
+    public class PhysicsPreUpdateEvent {
+        private StringHash _event = new StringHash("PhysicsPreUpdate");
+        public StringHash World = new StringHash("World");
+        public StringHash TimeStep = new StringHash("TimeStep");
+        public PhysicsPreUpdateEvent() { }
+        public static implicit operator StringHash(PhysicsPreUpdateEvent e) { return e._event; }
+    }
+    public static PhysicsPreUpdateEvent PhysicsPreUpdate = new PhysicsPreUpdateEvent();
+    public class PhysicsPostUpdateEvent {
+        private StringHash _event = new StringHash("PhysicsPostUpdate");
+        public StringHash World = new StringHash("World");
+        public StringHash TimeStep = new StringHash("TimeStep");
+        public StringHash Overtime = new StringHash("Overtime");
+        public PhysicsPostUpdateEvent() { }
+        public static implicit operator StringHash(PhysicsPostUpdateEvent e) { return e._event; }
+    }
+    public static PhysicsPostUpdateEvent PhysicsPostUpdate = new PhysicsPostUpdateEvent();
     public class PhysicsPreStepEvent {
         private StringHash _event = new StringHash("PhysicsPreStep");
         public StringHash World = new StringHash("World");
         public StringHash TimeStep = new StringHash("TimeStep");
+        public StringHash NetworkFrame = new StringHash("NetworkFrame");
         public PhysicsPreStepEvent() { }
         public static implicit operator StringHash(PhysicsPreStepEvent e) { return e._event; }
     }

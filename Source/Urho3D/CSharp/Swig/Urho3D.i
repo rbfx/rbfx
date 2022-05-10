@@ -198,6 +198,9 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %include "eastl_pair.i"
 %include "eastl_unordered_map.i"
 
+// Containers
+using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
+
 // Declare inheritable classes in this file
 %include "Context.i"
 
@@ -754,6 +757,7 @@ public:
 %interface_custom("%s", "I%s", Urho3D::ServerNetworkCallback);
 %interface_custom("%s", "I%s", Urho3D::NetworkCallback);
 
+%include "generated/Urho3D/_pre_replica.i"
 %include "Urho3D/Replica/NetworkCallbacks.h"
 %include "Urho3D/Replica/ReplicationManager.h"
 %include "Urho3D/Replica/NetworkObject.h"
@@ -973,6 +977,7 @@ using ImGuiConfigFlags = unsigned;
 %template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
 #endif
 
+%template(StringMap)                    eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>;
 %template(AttributeMap)                 eastl::unordered_map<Urho3D::StringHash, eastl::vector<Urho3D::AttributeInfo>>;
 %template(PackageMap)                   eastl::unordered_map<eastl::string, Urho3D::PackageEntry>;
