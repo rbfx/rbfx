@@ -147,7 +147,7 @@ private:
     Matrix3x4 worldToLocal_{Matrix3x4::IDENTITY};
 
     /// Character body parts.
-    std::vector<BodyPart> bodyParts_;
+    ea::vector<BodyPart> bodyParts_;
 
     /// Cached state machine via fuzzy pattern matching.
     mutable SharedPtr<PatternDatabase> cachedStates_;
