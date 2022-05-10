@@ -77,6 +77,8 @@ public:
     /// Set mip levels to skip on a quality setting when loading. Ensures higher quality levels do not skip more.
     /// @property
     void SetMipsToSkip(MaterialQuality quality, int toSkip);
+    /// Set whether to support unordered access.
+    void SetUnorderedAccess(bool enabled) { unorderedAccess_ = enabled; }
 
     /// Return API-specific texture format.
     /// @property
@@ -132,6 +134,9 @@ public:
     /// Return whether is using sRGB sampling and writing.
     /// @property
     bool GetSRGB() const { return sRGB_; }
+
+    /// Return whether to support unordered access.
+    bool GetUnorderedAccess() const { return unorderedAccess_; }
 
     /// Return texture multisampling level (1 = no multisampling).
     /// @property
@@ -210,6 +215,9 @@ public:
     /// Set or clear the need resolve flag. Called internally by Graphics.
     void SetResolveDirty(bool enable) { resolveDirty_ = enable; }
 
+    /// Return whether the texture can be used as unordered access resource.
+    bool IsUnorderedAccessSupported() const { return unorderedAccess_ && IsComputeWriteable(format_); }
+
     /// Set the mipmap levels dirty flag. Called internally by Graphics.
     void SetLevelsDirty();
     /// Regenerate mipmap levels for a rendertarget after rendering and before sampling. Called internally by Graphics. No-op on Direct3D9. On OpenGL the texture must have been bound to work properly.
@@ -267,6 +275,8 @@ protected:
     int depth_{};
     /// Shadow compare mode.
     bool shadowCompare_{};
+    /// Whether to use this texture as UAV resource in shader.
+    bool unorderedAccess_{};
     /// Filtering mode.
     TextureFilterMode filterMode_{FILTER_DEFAULT};
     /// Addressing mode.

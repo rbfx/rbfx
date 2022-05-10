@@ -126,7 +126,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
         return true;
     }
 
-    if (!Texture::IsComputeWriteable(texture->GetFormat()))
+    if (!texture->IsUnorderedAccessSupported())
     {
         URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, provided texture of format {} is not writeable", texture->GetFormat());
         return false;

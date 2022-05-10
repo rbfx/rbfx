@@ -1,11 +1,20 @@
 %constant unsigned int PackageFragmentSize = Urho3D::PACKAGE_FRAGMENT_SIZE;
 %ignore Urho3D::PACKAGE_FRAGMENT_SIZE;
-%csconstvalue("0") Urho3D::OPSM_NONE;
 %csconstvalue("0") Urho3D::HTTP_INITIALIZING;
+%csattribute(Urho3D::FilteredUint, %arg(unsigned int), MinValue, GetMinValue);
+%csattribute(Urho3D::FilteredUint, %arg(unsigned int), AverageValue, GetAverageValue);
+%csattribute(Urho3D::FilteredUint, %arg(unsigned int), MaxValue, GetMaxValue);
+%csattribute(Urho3D::FilteredUint, %arg(unsigned int), StabilizedAverageMaxValue, GetStabilizedAverageMaxValue);
+%csattribute(Urho3D::FilteredUint, %arg(bool), IsInitialized, IsInitialized);
+%csattribute(Urho3D::ClockSynchronizer, %arg(bool), IsReady, IsReady);
+%csattribute(Urho3D::ClockSynchronizer, %arg(unsigned int), Ping, GetPing);
+%csattribute(Urho3D::ClockSynchronizer, %arg(unsigned int), LocalTimeOfLatestRoundtrip, GetLocalTimeOfLatestRoundtrip);
+%csattribute(Urho3D::Connection, %arg(bool), IsClockSynchronized, IsClockSynchronized);
+%csattribute(Urho3D::Connection, %arg(unsigned int), LocalTime, GetLocalTime);
+%csattribute(Urho3D::Connection, %arg(unsigned int), LocalTimeOfLatestRoundtrip, GetLocalTimeOfLatestRoundtrip);
+%csattribute(Urho3D::Connection, %arg(unsigned int), Ping, GetPing);
 %csattribute(Urho3D::Connection, %arg(SLNet::AddressOrGUID), AddressOrGUID, GetAddressOrGUID, SetAddressOrGUID);
 %csattribute(Urho3D::Connection, %arg(Urho3D::Scene *), Scene, GetScene, SetScene);
-%csattribute(Urho3D::Connection, %arg(Urho3D::Vector3), Position, GetPosition, SetPosition);
-%csattribute(Urho3D::Connection, %arg(Urho3D::Quaternion), Rotation, GetRotation, SetRotation);
 %csattribute(Urho3D::Connection, %arg(bool), IsClient, IsClient);
 %csattribute(Urho3D::Connection, %arg(bool), IsConnected, IsConnected);
 %csattribute(Urho3D::Connection, %arg(bool), IsConnectPending, IsConnectPending, SetConnectPending);
@@ -14,8 +23,8 @@
 %csattribute(Urho3D::Connection, %arg(ea::string), Address, GetAddress);
 %csattribute(Urho3D::Connection, %arg(unsigned short), Port, GetPort);
 %csattribute(Urho3D::Connection, %arg(float), RoundTripTime, GetRoundTripTime);
-%csattribute(Urho3D::Connection, %arg(float), BytesInPerSec, GetBytesInPerSec);
-%csattribute(Urho3D::Connection, %arg(float), BytesOutPerSec, GetBytesOutPerSec);
+%csattribute(Urho3D::Connection, %arg(unsigned long long), BytesInPerSec, GetBytesInPerSec);
+%csattribute(Urho3D::Connection, %arg(unsigned long long), BytesOutPerSec, GetBytesOutPerSec);
 %csattribute(Urho3D::Connection, %arg(int), PacketsInPerSec, GetPacketsInPerSec);
 %csattribute(Urho3D::Connection, %arg(int), PacketsOutPerSec, GetPacketsOutPerSec);
 %csattribute(Urho3D::Connection, %arg(unsigned int), NumDownloads, GetNumDownloads);
@@ -29,11 +38,18 @@
 %csattribute(Urho3D::HttpRequest, %arg(bool), IsOpen, IsOpen);
 %csattribute(Urho3D::Network, %arg(ea::string), Guid, GetGUID);
 %csattribute(Urho3D::Network, %arg(unsigned int), UpdateFps, GetUpdateFps, SetUpdateFps);
+%csattribute(Urho3D::Network, %arg(unsigned int), PingIntervalMs, GetPingIntervalMs, SetPingIntervalMs);
+%csattribute(Urho3D::Network, %arg(unsigned int), MaxPingIntervalMs, GetMaxPingIntervalMs, SetMaxPingIntervalMs);
+%csattribute(Urho3D::Network, %arg(unsigned int), ClockBufferSize, GetClockBufferSize, SetClockBufferSize);
+%csattribute(Urho3D::Network, %arg(unsigned int), PingBufferSize, GetPingBufferSize, SetPingBufferSize);
 %csattribute(Urho3D::Network, %arg(int), SimulatedLatency, GetSimulatedLatency, SetSimulatedLatency);
 %csattribute(Urho3D::Network, %arg(float), SimulatedPacketLoss, GetSimulatedPacketLoss, SetSimulatedPacketLoss);
+%csattribute(Urho3D::Network, %arg(float), UpdateOvertime, GetUpdateOvertime);
+%csattribute(Urho3D::Network, %arg(bool), IsUpdateNow, IsUpdateNow);
 %csattribute(Urho3D::Network, %arg(Urho3D::Connection *), ServerConnection, GetServerConnection);
 %csattribute(Urho3D::Network, %arg(ea::vector<SharedPtr<Connection>>), ClientConnections, GetClientConnections);
 %csattribute(Urho3D::Network, %arg(bool), IsServerRunning, IsServerRunning);
+%csattribute(Urho3D::Network, %arg(ea::string), DebugInfo, GetDebugInfo);
 %csattribute(Urho3D::Network, %arg(ea::string), PackageCacheDir, GetPackageCacheDir, SetPackageCacheDir);
 %pragma(csharp) moduleimports=%{
 public static partial class E
@@ -100,14 +116,51 @@ public static partial class E
         public static implicit operator StringHash(NetworkMessageEvent e) { return e._event; }
     }
     public static NetworkMessageEvent NetworkMessage = new NetworkMessageEvent();
+    public class NetworkInputProcessedEvent {
+        private StringHash _event = new StringHash("NetworkInputProcessed");
+        public StringHash TimeStep = new StringHash("TimeStep");
+        public NetworkInputProcessedEvent() { }
+        public static implicit operator StringHash(NetworkInputProcessedEvent e) { return e._event; }
+    }
+    public static NetworkInputProcessedEvent NetworkInputProcessed = new NetworkInputProcessedEvent();
+    public class BeginServerNetworkFrameEvent {
+        private StringHash _event = new StringHash("BeginServerNetworkFrame");
+        public StringHash Frame = new StringHash("Frame");
+        public BeginServerNetworkFrameEvent() { }
+        public static implicit operator StringHash(BeginServerNetworkFrameEvent e) { return e._event; }
+    }
+    public static BeginServerNetworkFrameEvent BeginServerNetworkFrame = new BeginServerNetworkFrameEvent();
+    public class EndServerNetworkFrameEvent {
+        private StringHash _event = new StringHash("EndServerNetworkFrame");
+        public StringHash Frame = new StringHash("Frame");
+        public EndServerNetworkFrameEvent() { }
+        public static implicit operator StringHash(EndServerNetworkFrameEvent e) { return e._event; }
+    }
+    public static EndServerNetworkFrameEvent EndServerNetworkFrame = new EndServerNetworkFrameEvent();
+    public class BeginClientNetworkFrameEvent {
+        private StringHash _event = new StringHash("BeginClientNetworkFrame");
+        public StringHash Frame = new StringHash("Frame");
+        public BeginClientNetworkFrameEvent() { }
+        public static implicit operator StringHash(BeginClientNetworkFrameEvent e) { return e._event; }
+    }
+    public static BeginClientNetworkFrameEvent BeginClientNetworkFrame = new BeginClientNetworkFrameEvent();
+    public class EndClientNetworkFrameEvent {
+        private StringHash _event = new StringHash("EndClientNetworkFrame");
+        public StringHash Frame = new StringHash("Frame");
+        public EndClientNetworkFrameEvent() { }
+        public static implicit operator StringHash(EndClientNetworkFrameEvent e) { return e._event; }
+    }
+    public static EndClientNetworkFrameEvent EndClientNetworkFrame = new EndClientNetworkFrameEvent();
     public class NetworkUpdateEvent {
         private StringHash _event = new StringHash("NetworkUpdate");
+        public StringHash IsServer = new StringHash("IsServer");
         public NetworkUpdateEvent() { }
         public static implicit operator StringHash(NetworkUpdateEvent e) { return e._event; }
     }
     public static NetworkUpdateEvent NetworkUpdate = new NetworkUpdateEvent();
     public class NetworkUpdateSentEvent {
         private StringHash _event = new StringHash("NetworkUpdateSent");
+        public StringHash IsServer = new StringHash("IsServer");
         public NetworkUpdateSentEvent() { }
         public static implicit operator StringHash(NetworkUpdateSentEvent e) { return e._event; }
     }

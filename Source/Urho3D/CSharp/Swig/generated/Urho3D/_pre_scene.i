@@ -1,8 +1,5 @@
 %constant Urho3D::Rect FullScreenViewport = Urho3D::fullScreenViewport;
 %ignore Urho3D::fullScreenViewport;
-%ignore Urho3D::MAX_NETWORK_ATTRIBUTES;
-%csconst(1) Urho3D::MAX_NETWORK_ATTRIBUTES;
-%constant unsigned int MaxNetworkAttributes = 64;
 %ignore Urho3D::FIRST_REPLICATED_ID;
 %csconst(1) Urho3D::FIRST_REPLICATED_ID;
 %constant unsigned int FirstReplicatedId = 1;
@@ -15,6 +12,8 @@
 %ignore Urho3D::LAST_LOCAL_ID;
 %csconst(1) Urho3D::LAST_LOCAL_ID;
 %constant unsigned int LastLocalId = 4294967295;
+//%constant Urho3D::ComponentReference InvalidComponentReference = Urho3D::InvalidComponentReference;
+//%ignore Urho3D::InvalidComponentReference;
 %csconstvalue("0") Urho3D::REMOVE_DISABLED;
 %csconstvalue("0") Urho3D::REPLICATED;
 %csconstvalue("1") Urho3D::LOCAL;
@@ -23,14 +22,8 @@
 using UpdateEventFlags = Urho3D::UpdateEvent;
 %typemap(ctype) UpdateEventFlags "size_t";
 %typemap(out) UpdateEventFlags "$result = (size_t)$1.AsInteger();"
-%typemap(csattributes) Urho3D::SmoothingType "[global::System.Flags]";
-using SmoothingTypeFlags = Urho3D::SmoothingType;
-%typemap(ctype) SmoothingTypeFlags "size_t";
-%typemap(out) SmoothingTypeFlags "$result = (size_t)$1.AsInteger();"
 %csattribute(Urho3D::Serializable, %arg(unsigned int), NumAttributes, GetNumAttributes);
-%csattribute(Urho3D::Serializable, %arg(unsigned int), NumNetworkAttributes, GetNumNetworkAttributes);
 %csattribute(Urho3D::Serializable, %arg(bool), IsTemporary, IsTemporary, SetTemporary);
-%csattribute(Urho3D::Serializable, %arg(Urho3D::NetworkState *), NetworkState, GetNetworkState);
 %csattribute(Urho3D::ValueAnimationInfo, %arg(Urho3D::Object *), Target, GetTarget);
 %csattribute(Urho3D::ValueAnimationInfo, %arg(Urho3D::ValueAnimation *), Animation, GetAnimation);
 %csattribute(Urho3D::ValueAnimationInfo, %arg(Urho3D::WrapMode), WrapMode, GetWrapMode, SetWrapMode);
@@ -55,9 +48,9 @@ using SmoothingTypeFlags = Urho3D::SmoothingType;
 %csattribute(Urho3D::Node, %arg(Urho3D::StringVector), Tags, GetTags, SetTags);
 %csattribute(Urho3D::Node, %arg(Urho3D::Node *), Parent, GetParent, SetParent);
 %csattribute(Urho3D::Node, %arg(Urho3D::Scene *), Scene, GetScene, SetScene);
+%csattribute(Urho3D::Node, %arg(bool), IsTransformHierarchyRoot, IsTransformHierarchyRoot);
 %csattribute(Urho3D::Node, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
 %csattribute(Urho3D::Node, %arg(bool), IsEnabledSelf, IsEnabledSelf);
-%csattribute(Urho3D::Node, %arg(Urho3D::Connection *), Owner, GetOwner, SetOwner);
 %csattribute(Urho3D::Node, %arg(Urho3D::Vector3), Position, GetPosition, SetPosition);
 %csattribute(Urho3D::Node, %arg(Urho3D::Vector2), Position2D, GetPosition2D, SetPosition2D);
 %csattribute(Urho3D::Node, %arg(Urho3D::Quaternion), Rotation, GetRotation, SetRotation);
@@ -82,16 +75,12 @@ using SmoothingTypeFlags = Urho3D::SmoothingType;
 %csattribute(Urho3D::Node, %arg(unsigned int), NumNetworkComponents, GetNumNetworkComponents);
 %csattribute(Urho3D::Node, %arg(ea::vector<WeakPtr<Component>>), Listeners, GetListeners);
 %csattribute(Urho3D::Node, %arg(Urho3D::VariantMap), Vars, GetVars);
-%csattribute(Urho3D::Node, %arg(Urho3D::Vector3), NetPositionAttr, GetNetPositionAttr, SetNetPositionAttr);
-%csattribute(Urho3D::Node, %arg(ea::vector<unsigned char>), NetRotationAttr, GetNetRotationAttr, SetNetRotationAttr);
-%csattribute(Urho3D::Node, %arg(ea::vector<unsigned char>), NetParentAttr, GetNetParentAttr, SetNetParentAttr);
 %csattribute(Urho3D::Node, %arg(ea::vector<Node *>), DependencyNodes, GetDependencyNodes);
 %csattribute(Urho3D::Node, %arg(unsigned int), NumPersistentChildren, GetNumPersistentChildren);
 %csattribute(Urho3D::Node, %arg(unsigned int), NumPersistentComponents, GetNumPersistentComponents);
 %csattribute(Urho3D::CameraViewport, %arg(Urho3D::Rect), NormalizedRect, GetNormalizedRect, SetNormalizedRect);
 %csattribute(Urho3D::CameraViewport, %arg(Urho3D::ResourceRef), LastRenderPath, GetLastRenderPath);
 %csattribute(Urho3D::CameraViewport, %arg(Urho3D::Viewport *), Viewport, GetViewport);
-%csattribute(Urho3D::CameraViewport, %arg(ea::vector<AttributeInfo> *), Attributes, GetAttributes);
 %csattribute(Urho3D::CameraViewport, %arg(Urho3D::IntRect), ScreenRect, GetScreenRect, SetScreenRect);
 %csattribute(Urho3D::LogicComponent, %arg(Urho3D::UpdateEventFlags), UpdateEventMask, GetUpdateEventMask, SetUpdateEventMask);
 %csattribute(Urho3D::LogicComponent, %arg(bool), IsDelayedStartCalled, IsDelayedStartCalled);
@@ -105,8 +94,6 @@ using SmoothingTypeFlags = Urho3D::SmoothingType;
 %csattribute(Urho3D::Scene, %arg(unsigned int), Checksum, GetChecksum);
 %csattribute(Urho3D::Scene, %arg(float), TimeScale, GetTimeScale, SetTimeScale);
 %csattribute(Urho3D::Scene, %arg(float), ElapsedTime, GetElapsedTime, SetElapsedTime);
-%csattribute(Urho3D::Scene, %arg(float), SmoothingConstant, GetSmoothingConstant, SetSmoothingConstant);
-%csattribute(Urho3D::Scene, %arg(float), SnapThreshold, GetSnapThreshold, SetSnapThreshold);
 %csattribute(Urho3D::Scene, %arg(int), AsyncLoadingMs, GetAsyncLoadingMs, SetAsyncLoadingMs);
 %csattribute(Urho3D::Scene, %arg(ea::vector<SharedPtr<PackageFile>>), RequiredPackageFiles, GetRequiredPackageFiles);
 %csattribute(Urho3D::Scene, %arg(bool), IsThreadedUpdate, IsThreadedUpdate);
@@ -120,6 +107,12 @@ using SmoothingTypeFlags = Urho3D::SmoothingType;
 %csattribute(Urho3D::SplinePath, %arg(bool), IsFinished, IsFinished);
 %csattribute(Urho3D::SplinePath, %arg(Urho3D::VariantVector), ControlPointIdsAttr, GetControlPointIdsAttr, SetControlPointIdsAttr);
 %csattribute(Urho3D::SplinePath, %arg(unsigned int), ControlledIdAttr, GetControlledIdAttr, SetControlledIdAttr);
+%csattribute(Urho3D::TrackedComponentBase, %arg(unsigned int), IndexInArray, GetIndexInArray, SetIndexInArray);
+%csattribute(Urho3D::TrackedComponentBase, %arg(bool), IsTrackedInRegistry, IsTrackedInRegistry);
+%csattribute(Urho3D::TrackedComponentRegistryBase, %arg(unsigned int), NumTrackedComponents, GetNumTrackedComponents);
+%csattribute(Urho3D::TrackedComponentRegistryBase, %arg(ea::span<TrackedComponentBase *const>), TrackedComponents, GetTrackedComponents);
+%csattribute(Urho3D::ReferencedComponentBase, %arg(Urho3D::ComponentReference), Reference, GetReference, SetReference);
+%csattribute(Urho3D::ReferencedComponentRegistryBase, %arg(unsigned int), ReferenceIndexUpperBound, GetReferenceIndexUpperBound);
 %csattribute(Urho3D::UnknownComponent, %arg(ea::string), TypeName, GetTypeName, SetTypeName);
 %csattribute(Urho3D::UnknownComponent, %arg(ea::vector<AttributeInfo> *), Attributes, GetAttributes);
 %csattribute(Urho3D::UnknownComponent, %arg(ea::vector<ea::string>), XMLAttributes, GetXMLAttributes);
@@ -154,6 +147,15 @@ public static partial class E
         public static implicit operator StringHash(SceneUpdateEvent e) { return e._event; }
     }
     public static SceneUpdateEvent SceneUpdate = new SceneUpdateEvent();
+    public class SceneNetworkUpdateEvent {
+        private StringHash _event = new StringHash("SceneNetworkUpdate");
+        public StringHash Scene = new StringHash("Scene");
+        public StringHash TimeStepReplica = new StringHash("TimeStepReplica");
+        public StringHash TimeStepInput = new StringHash("TimeStepInput");
+        public SceneNetworkUpdateEvent() { }
+        public static implicit operator StringHash(SceneNetworkUpdateEvent e) { return e._event; }
+    }
+    public static SceneNetworkUpdateEvent SceneNetworkUpdate = new SceneNetworkUpdateEvent();
     public class SceneSubsystemUpdateEvent {
         private StringHash _event = new StringHash("SceneSubsystemUpdate");
         public StringHash Scene = new StringHash("Scene");
@@ -162,14 +164,6 @@ public static partial class E
         public static implicit operator StringHash(SceneSubsystemUpdateEvent e) { return e._event; }
     }
     public static SceneSubsystemUpdateEvent SceneSubsystemUpdate = new SceneSubsystemUpdateEvent();
-    public class UpdateSmoothingEvent {
-        private StringHash _event = new StringHash("UpdateSmoothing");
-        public StringHash Constant = new StringHash("Constant");
-        public StringHash SquaredSnapThreshold = new StringHash("SquaredSnapThreshold");
-        public UpdateSmoothingEvent() { }
-        public static implicit operator StringHash(UpdateSmoothingEvent e) { return e._event; }
-    }
-    public static UpdateSmoothingEvent UpdateSmoothing = new UpdateSmoothingEvent();
     public class SceneDrawableUpdateFinishedEvent {
         private StringHash _event = new StringHash("SceneDrawableUpdateFinished");
         public StringHash Scene = new StringHash("Scene");
@@ -178,18 +172,6 @@ public static partial class E
         public static implicit operator StringHash(SceneDrawableUpdateFinishedEvent e) { return e._event; }
     }
     public static SceneDrawableUpdateFinishedEvent SceneDrawableUpdateFinished = new SceneDrawableUpdateFinishedEvent();
-    public class TargetPositionChangedEvent {
-        private StringHash _event = new StringHash("TargetPositionChanged");
-        public TargetPositionChangedEvent() { }
-        public static implicit operator StringHash(TargetPositionChangedEvent e) { return e._event; }
-    }
-    public static TargetPositionChangedEvent TargetPositionChanged = new TargetPositionChangedEvent();
-    public class TargetRotationChangedEvent {
-        private StringHash _event = new StringHash("TargetRotationChanged");
-        public TargetRotationChangedEvent() { }
-        public static implicit operator StringHash(TargetRotationChangedEvent e) { return e._event; }
-    }
-    public static TargetRotationChangedEvent TargetRotationChanged = new TargetRotationChangedEvent();
     public class AttributeAnimationUpdateEvent {
         private StringHash _event = new StringHash("AttributeAnimationUpdate");
         public StringHash Scene = new StringHash("Scene");

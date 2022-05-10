@@ -37,7 +37,7 @@
 #include <Urho3D/Resource/JSONArchive.h>
 
 #include <Toolbox/SystemUI/Widgets.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 #include <EASTL/sort.h>
 
@@ -966,7 +966,7 @@ void Pipeline::RenderSettingsUI()
             {
                 ui::Text("You are about to remove '%s' flavor.", flavorPendingRemoval_->GetName().c_str());
                 ui::TextUnformatted("All asset settings of this flavor will be removed permanently.");
-                ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone! " ICON_FA_EXCLAMATION_TRIANGLE);
+                ui::TextUnformatted(ICON_FA_TRIANGLE_EXCLAMATION " This action can not be undone! " ICON_FA_TRIANGLE_EXCLAMATION);
                 ui::NewLine();
 
                 if (ui::Button(ICON_FA_TRASH " Remove"))
@@ -976,7 +976,7 @@ void Pipeline::RenderSettingsUI()
                     ui::CloseCurrentPopup();
                 }
                 ui::SameLine();
-                if (ui::Button(ICON_FA_TIMES " Cancel"))
+                if (ui::Button(ICON_FA_XMARK " Cancel"))
                 {
                     flavorPendingRemoval_ = nullptr;
                     ui::CloseCurrentPopup();

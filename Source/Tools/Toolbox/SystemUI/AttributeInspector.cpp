@@ -38,7 +38,7 @@
 #include "AttributeInspector.h"
 #include "Widgets.h"
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGui/imgui_stdlib.h>
 #include <Urho3D/Graphics/StaticModel.h>

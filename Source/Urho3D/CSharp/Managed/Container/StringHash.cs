@@ -93,6 +93,27 @@ public struct StringHash : IEquatable<StringHash>
     {
             return Hash == other.Hash;
     }
+
+    public override bool Equals(object obj)
+    {
+        return obj is StringHash other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return (int)Hash;
+    }
+
+    public static bool operator ==(StringHash left, StringHash right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(StringHash left, StringHash right)
+    {
+        return !left.Equals(right);
+    }
+
 }
 
 }

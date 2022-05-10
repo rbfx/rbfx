@@ -24,7 +24,7 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 #include "Editor.h"
 #include "Inspector/ComponentInspector.h"

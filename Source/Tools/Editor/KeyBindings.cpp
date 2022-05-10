@@ -27,7 +27,7 @@
 
 #include <EASTL/sort.h>
 #include <SDL/SDL_keyboard.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 #include "Editor.h"
 #include "KeyBindings.h"
@@ -172,7 +172,7 @@ void KeyBindings::RenderSettingsUI()
             }
         }
         ui::SameLine();
-        if (ui::Button(ICON_FA_UNDO))
+        if (ui::Button(ICON_FA_ARROW_ROTATE_LEFT))
         {
             action.key_ = defaults_[i].key_;
             action.qualifiers_ = defaults_[i].qualifiers_;
@@ -183,7 +183,7 @@ void KeyBindings::RenderSettingsUI()
         ui::NextColumn();
     }
     ui::Columns();
-    if (ui::Button(ICON_FA_UNDO " Restore Defaults"))
+    if (ui::Button(ICON_FA_ARROW_ROTATE_LEFT " Restore Defaults"))
     {
         for (int i = 0; i < ActionType::MaxCount; i++)
         {

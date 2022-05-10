@@ -99,6 +99,11 @@ namespace Urho3DNet
         public const float Epsilon = 0.000001f;
 
         /// <summary>
+        /// Defines the large epsilon value. It is larger than builtin MathDefs.Epsilon.
+        /// </summary>
+        public const float LargeEpsilon = 0.00005f;
+
+        /// <summary>
         /// Minimal near clippi8ng value.
         /// </summary>
         public const float MinNearClip = 0.01f;
@@ -324,6 +329,26 @@ namespace Urho3DNet
         {
             const double radToDeg = 360.0 / System.Math.PI;
             return radians * radToDeg;
+        }
+
+        /// <summary>
+        /// Returns the angle whose cosine is the specified number
+        /// </summary>
+        /// <param name="d">A number representing a cosine</param>
+        /// <returns>An angle, θ, measured in degrees, such that 0 ≤ θ ≤ 180</returns>
+        public static float Acos(float d)
+        {
+            return RadiansToDegrees((float)Math.Acos(Clamp(d, -1.0f, 1.0f)));
+        }
+
+        /// <summary>
+        /// Returns the angle whose cosine is the specified number
+        /// </summary>
+        /// <param name="d">A number representing a cosine</param>
+        /// <returns>An angle, θ, measured in degrees, such that 0 ≤ θ ≤ 180</returns>
+        public static double Acos(double d)
+        {
+            return RadiansToDegrees(Math.Acos(Clamp(d, -1.0, 1.0)));
         }
 
         /// <summary>

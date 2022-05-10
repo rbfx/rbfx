@@ -36,7 +36,7 @@
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/ModelView.h>
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <SDL/SDL_clipboard.h>
 
@@ -857,7 +857,7 @@ void ResourceTab::RenderDeletionDialog()
     if (ui::BeginPopupModal("Delete?", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ui::Text("Would you like to delete '%s%s'?", currentDir_.c_str(), selectedItem_ == ".." ? "" : selectedItem_.c_str());
-        ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone!");
+        ui::TextUnformatted(ICON_FA_TRIANGLE_EXCLAMATION " This action can not be undone!");
         ui::NewLine();
 
         if (ui::Button("Delete Permanently"))

@@ -42,7 +42,7 @@
 
 #include <Toolbox/ToolboxAPI.h>
 #include <Toolbox/SystemUI/Widgets.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <nativefiledialog/nfd.h>
 
 #include "Editor.h"
@@ -488,7 +488,7 @@ void Editor::OnUpdate(VariantMap& args)
             {
                 ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
 
-                if (ui::Button(ICON_FA_SAVE " Save & Close"))
+                if (ui::Button(ICON_FA_FLOPPY_DISK " Save & Close"))
                 {
                     for (auto& tab : tabs_)
                     {
@@ -500,15 +500,15 @@ void Editor::OnUpdate(VariantMap& args)
 
                 ui::SameLine();
 
-                if (ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving"))
+                if (ui::Button(ICON_FA_TRIANGLE_EXCLAMATION " Close without saving"))
                 {
                     engine_->Exit();
                 }
-                ui::SetHelpTooltip(ICON_FA_EXCLAMATION_TRIANGLE " All unsaved changes will be lost!", KEY_UNKNOWN);
+                ui::SetHelpTooltip(ICON_FA_TRIANGLE_EXCLAMATION " All unsaved changes will be lost!", KEY_UNKNOWN);
 
                 ui::SameLine();
 
-                if (ui::Button(ICON_FA_TIMES " Cancel"))
+                if (ui::Button(ICON_FA_XMARK " Cancel"))
                 {
                     exiting_ = false;
                     ui::CloseCurrentPopup();

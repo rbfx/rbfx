@@ -38,7 +38,7 @@
 #   include <Urho3D/RmlUI/RmlUI.h>
 #endif
 #include <Toolbox/SystemUI/Widgets.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include "EditorEventsPrivate.h"
 #include "EditorEvents.h"
 #include "Editor.h"
@@ -330,7 +330,7 @@ void PreviewTab::RenderButtons()
     }
 
     ui::BeginButtonGroup();
-    if (ui::EditorToolbarButton(ICON_FA_FAST_BACKWARD, "Restore"))
+    if (ui::EditorToolbarButton(ICON_FA_BACKWARD_FAST, "Restore"))
         Stop();
 
     bool isSimulationRunning = simulationStatus_ == SCENE_SIMULATION_RUNNING;
@@ -338,10 +338,10 @@ void PreviewTab::RenderButtons()
                                 isSimulationRunning ? "Pause" : "Play", simulationStatus_ != SCENE_SIMULATION_STOPPED))
         Toggle();
 
-    if (ui::EditorToolbarButton(ICON_FA_STEP_FORWARD, "Simulate one frame"))
+    if (ui::EditorToolbarButton(ICON_FA_FORWARD_STEP, "Simulate one frame"))
         Step(1.f / 60.f);
 
-    if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save current state as master state.\n" ICON_FA_EXCLAMATION_TRIANGLE " Clears scene undo state!"))
+    if (ui::EditorToolbarButton(ICON_FA_FLOPPY_DISK, "Save current state as master state.\n" ICON_FA_TRIANGLE_EXCLAMATION " Clears scene undo state!"))
         Snapshot();
     ui::EndButtonGroup();
 }

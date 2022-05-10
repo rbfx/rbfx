@@ -234,6 +234,19 @@ namespace Urho3DNet
             }
         }
 
+        /// Return normalized to unit length or zero if length is too small.
+        public Vector2 NormalizedOrDefault
+        {
+            get
+            {
+                float lenSquared = LengthSquared;
+                if (lenSquared < MathDefs.LargeEpsilon * MathDefs.LargeEpsilon)
+                    return Vector2.ZERO;
+                float invLen = 1.0f / (float)Math.Sqrt(lenSquared);
+                return this * invLen;
+            }
+        }
+
         /// Return float data.
         public float[] Data => new float[] {X, Y};
 

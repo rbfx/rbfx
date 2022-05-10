@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <Urho3D/Core/Thread.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <ImGui/imgui_stdlib.h>

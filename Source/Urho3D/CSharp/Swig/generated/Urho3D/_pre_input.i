@@ -553,6 +553,9 @@ using QualifierFlags = Urho3D::Qualifier;
 %csattribute(Urho3D::Input, %arg(bool), IsMouseLocked, IsMouseLocked);
 %csattribute(Urho3D::Input, %arg(bool), IsMinimized, IsMinimized);
 %csattribute(Urho3D::Input, %arg(bool), Enabled, GetEnabled, SetEnabled);
+%csattribute(Urho3D::MultitouchAdapter, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
+%csattribute(Urho3D::FreeFlyController, %arg(float), Speed, GetSpeed, SetSpeed);
+%csattribute(Urho3D::FreeFlyController, %arg(float), AcceleratedSpeed, GetAcceleratedSpeed, SetAcceleratedSpeed);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
@@ -797,4 +800,18 @@ public static partial class E
         public static implicit operator StringHash(InputEndEvent e) { return e._event; }
     }
     public static InputEndEvent InputEnd = new InputEndEvent();
+    public class MultitouchEvent {
+        private StringHash _event = new StringHash("Multitouch");
+        public StringHash NumFingers = new StringHash("NumFingers");
+        public StringHash EventType = new StringHash("EventType");
+        public StringHash X = new StringHash("X");
+        public StringHash Y = new StringHash("Y");
+        public StringHash DX = new StringHash("DX");
+        public StringHash DY = new StringHash("DY");
+        public StringHash Size = new StringHash("Size");
+        public StringHash DSize = new StringHash("DSize");
+        public MultitouchEvent() { }
+        public static implicit operator StringHash(MultitouchEvent e) { return e._event; }
+    }
+    public static MultitouchEvent Multitouch = new MultitouchEvent();
 } %}

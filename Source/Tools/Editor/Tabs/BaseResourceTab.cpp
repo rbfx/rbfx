@@ -22,7 +22,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include "BaseResourceTab.h"
 
@@ -146,9 +146,9 @@ bool BaseResourceTab::RenderWindowContent()
                 GetFileNameAndExtension(resourceName_).c_str(),
                 GetFileNameAndExtension(pendingLoadResource_).c_str());
 
-            bool save = ui::Button(ICON_FA_SAVE " Save & Open");
+            bool save = ui::Button(ICON_FA_FLOPPY_DISK " Save & Open");
             ui::SameLine();
-            bool open = save || ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close & Open");
+            bool open = save || ui::Button(ICON_FA_TRIANGLE_EXCLAMATION " Close & Open");
 
             if (save)
                 SaveResource();
@@ -165,9 +165,9 @@ bool BaseResourceTab::RenderWindowContent()
             ui::Text("Resource '%s' was modified. Would you like to save it before closing?",
                 GetFileNameAndExtension(resourceName_).c_str());
 
-            bool save = ui::Button(ICON_FA_SAVE " Save & Close");
+            bool save = ui::Button(ICON_FA_FLOPPY_DISK " Save & Close");
             ui::SameLine();
-            bool close = ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving");
+            bool close = ui::Button(ICON_FA_TRIANGLE_EXCLAMATION " Close without saving");
             ui::SetHelpTooltip("Can not be undone!", KEY_UNKNOWN);
 
             if (save)
@@ -180,7 +180,7 @@ bool BaseResourceTab::RenderWindowContent()
             }
         }
         ui::SameLine();
-        if (ui::Button(ICON_FA_TIMES " Cancel"))
+        if (ui::Button(ICON_FA_XMARK " Cancel"))
         {
             pendingLoadResource_.clear();
             ui::CloseCurrentPopup();

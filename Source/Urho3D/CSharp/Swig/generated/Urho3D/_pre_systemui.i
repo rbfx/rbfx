@@ -9,6 +9,9 @@
 using DebugHudModeFlags = Urho3D::DebugHudMode;
 %typemap(ctype) DebugHudModeFlags "size_t";
 %typemap(out) DebugHudModeFlags "$result = (size_t)$1.AsInteger();"
+%csconstvalue("7") Urho3D::GIZMOOP_TRANSLATE;
+%csconstvalue("120") Urho3D::GIZMOOP_ROTATE;
+%csconstvalue("896") Urho3D::GIZMOOP_SCALE;
 %csattribute(Urho3D::Console, %arg(bool), IsVisible, IsVisible, SetVisible);
 %csattribute(Urho3D::Console, %arg(bool), IsAutoVisibleOnError, IsAutoVisibleOnError, SetAutoVisibleOnError);
 %csattribute(Urho3D::Console, %arg(ea::string), CommandInterpreter, GetCommandInterpreter, SetCommandInterpreter);
@@ -18,6 +21,10 @@ using DebugHudModeFlags = Urho3D::DebugHudMode;
 %csattribute(Urho3D::SystemUI, %arg(bool), PassThroughEvents, GetPassThroughEvents, SetPassThroughEvents);
 %csattribute(Urho3D::DebugHud, %arg(Urho3D::DebugHudModeFlags), Mode, GetMode, SetMode);
 %csattribute(Urho3D::DebugHud, %arg(bool), UseRendererStats, GetUseRendererStats, SetUseRendererStats);
+%csattribute(Urho3D::Gizmo, %arg(Urho3D::GizmoOperation), Operation, GetOperation, SetOperation);
+%csattribute(Urho3D::Gizmo, %arg(ImGuiWindow *), Window, GetWindow, SetWindow);
+%csattribute(Urho3D::Gizmo, %arg(Urho3D::TransformSpace), TransformSpace, GetTransformSpace, SetTransformSpace);
+%csattribute(Urho3D::Gizmo, %arg(bool), IsActive, IsActive);
 %csattribute(Urho3D::SystemMessageBox, %arg(ea::string), Title, GetTitle, SetTitle);
 %csattribute(Urho3D::SystemMessageBox, %arg(ea::string), Message, GetMessage, SetMessage);
 %csattribute(Urho3D::SystemMessageBox, %arg(bool), IsOpen, IsOpen);
