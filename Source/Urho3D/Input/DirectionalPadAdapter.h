@@ -44,15 +44,33 @@ private:
 
     typedef ea::fixed_vector<InputType, 4> InputVector;
 
+    enum class SubscriptionMask
+    {
+        None = 0,
+        Keyboard = 1 << 0,
+        Joystick = 1 << 1,
+        All = Keyboard | Joystick,
+    };
+
+    URHO3D_NESTED_FLAGSET(SubscriptionMask, SubscriptionFlags);
+
 public:
     /// Construct.
     explicit DirectionalPadAdapter(Context* context);
 
     /// Set enabled flag. The object subscribes for events when enabled.
-    /// Input messages could be passed to the object manually when disabled.
     void SetEnabled(bool enabled);
+    /// Set keyboard enabled flag.
+    void SetKeyboardEnabled(bool enabled);
+    /// Set joystick enabled flag.
+    void SetJoystickEnabled(bool enabled);
 
+    /// Get enabled flag.
     bool IsEnabled() const { return enabled_; }
+    /// Get keyboard enabled flag.
+    bool IsKeyboardEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Keyboard; }
+    /// Set joystick enabled flag.
+    bool IsJoystickEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
 
     /// Check if a key is held down by Key code. Only Up, Down, Left and Right keys are supported.
     bool GetKeyDown(Key key) const;
@@ -61,9 +79,7 @@ public:
     bool GetScancodeDown(Scancode scancode) const;
 
 private:
-    void SubscribeToEvents();
-
-    void UnsubscribeFromEvents();
+    void UpdateSubscriptions(SubscriptionFlags flags);
 
     void HandleKeyDown(StringHash eventType, VariantMap& args);
     void HandleKeyUp(StringHash eventType, VariantMap& args);
@@ -76,17 +92,24 @@ private:
     void Append(InputVector& activeInput, InputType input, Scancode scancode);
     // Remove input from set.
     void Remove(InputVector& activeInput, InputType input, Scancode scancode);
+    // Remove input from set.
+    void RemoveIf(InputVector& activeInput, const ea::function<bool(InputType)>& pred, Scancode scancode);
 
     void SendKeyUp(Scancode key);
     void SendKeyDown(Scancode key);
 
+    /// Is adapter enabled
     bool enabled_{false};
+    /// Enabled subscriptions
+    SubscriptionFlags enabledSubscriptions_{SubscriptionMask::All};
+    /// Active subscriptions bitmask
+    SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
     Input* input_{};
     InputVector up_;
     InputVector down_;
     InputVector left_;
     InputVector right_;
-    int ignoreJoystickId_{-10};
+    int ignoreJoystickId_{ea::numeric_limits<int>::lowest()};
 };
 
 } // namespace Urho3D

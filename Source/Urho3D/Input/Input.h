@@ -320,6 +320,8 @@ public:
     /// Return active finger touch by index.
     /// @property{get_touches}
     TouchState* GetTouch(unsigned index) const;
+    /// Return active finger touch by touch id.
+    TouchState* GetTouchById(int touchId) const;
 
     /// Return number of connected joysticks.
     /// @property

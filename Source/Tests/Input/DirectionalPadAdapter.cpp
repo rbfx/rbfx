@@ -90,4 +90,15 @@ TEST_CASE("DirectionalPadAdapter tests")
         CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
         CHECK(!adapter.GetScancodeDown(SCANCODE_DOWN));
     }
+    SECTION("Test disabling source")
+    {
+        SendAxisEvent(input, 0, 0.8f);
+        CHECK(adapter.GetScancodeDown(SCANCODE_RIGHT));
+        adapter.SetJoystickEnabled(false);
+        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+        SendAxisEvent(input, 0, 1.0f);
+        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+        adapter.SetJoystickEnabled(true);
+        CHECK(!adapter.GetScancodeDown(SCANCODE_RIGHT));
+    }
 }

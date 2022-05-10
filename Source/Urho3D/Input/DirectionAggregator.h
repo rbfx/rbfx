@@ -22,65 +22,135 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "InputConstants.h"
+#include "../Container/FlagSet.h"
+#include "../UI/UIElement.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {
 
-/// Class to aggregate all movement inputs into a signle direction vector.
+/// Class to aggregate all movement inputs into a single direction vector.
 class URHO3D_API DirectionAggregator : public Object
 {
     URHO3D_OBJECT(DirectionAggregator, Object)
 
 private:
+    /// Type of input source.
     enum class InputType
     {
+        // External input
         External = 0,
+        // Keyboard input (WASD and arrows)
         Keyboard = 1,
+        // Touch input
+        Touch = 2,
+        // Next values reserved for future use...
+
+        // Joystick inputs should be last values in the enum
+
+        // Joystick Axis start index. Add joystick index to calculate actual value.
         JoystickAxis = 100,
+        // Joystick DPad (hat) start index. Add joystick index to calculate actual value.
         JoystickDPad = 200,
     };
 
+    // State of an axis
     struct AxisState
     {
+        // Type of input device
         InputType input_;
+        // Value to accumulate
         float value_;
     };
+
+    enum class SubscriptionMask
+    {
+        None = 0,
+        Keyboard = 1 << 0,
+        Joystick = 1 << 1,
+        Touch = 1 << 2,
+        All = Keyboard | Joystick | Touch,
+    };
+
+    URHO3D_NESTED_FLAGSET(SubscriptionMask, SubscriptionFlags);
+
+    /// Type definition for active input sources
     typedef ea::fixed_vector<AxisState, 4> InputVector;
 
 public:
     /// Construct.
     explicit DirectionAggregator(Context* context);
+    /// Destruct.
+    ~DirectionAggregator();
 
     /// Set enabled flag. The object subscribes for events when enabled.
-    /// Input messages could be passed to the object manually when disabled.
     void SetEnabled(bool enabled);
+    /// Set keyboard enabled flag.
+    void SetKeyboardEnabled(bool enabled);
+    /// Set joystick enabled flag.
+    void SetJoystickEnabled(bool enabled);
+    /// Set touch enabled flag.
+    void SetTouchEnabled(bool enabled);
+    /// Set UI element to filter touch events. Only touch events originated in the element going to be handled.
+    void SetUIElement(UIElement* element);
+    /// Set dead zone to mitigate axis drift.
+    void SetDeadZone(float deadZone);
 
+    /// Get enabled flag.
     bool IsEnabled() const { return enabled_; }
+    /// Get keyboard enabled flag.
+    bool IsKeyboardEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Keyboard; }
+    /// Set joystick enabled flag.
+    bool IsJoystickEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
+    /// Set touch enabled flag.
+    bool IsTouchEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Touch; }
+    /// Get UI element to filter touch events.
+    UIElement* GetUIElement() const { return uiElement_; }
+    /// Get dead zone.
+    float GetDeadZone() const { return axisDeadZone_; }
 
     /// Get aggregated direction vector with X pointing right and Y pointing down (similar to gamepad axis).
     Vector2 GetDirection() const;
 
-private:
-    void SubscribeToEvents();
 
-    void UnsubscribeFromEvents();
+private:
+    void UpdateSubscriptions(SubscriptionFlags flags);
 
     void HandleKeyDown(StringHash eventType, VariantMap& args);
     void HandleKeyUp(StringHash eventType, VariantMap& args);
     void HandleJoystickAxisMove(StringHash eventType, VariantMap& args);
     void HandleJoystickHatMove(StringHash eventType, VariantMap& args);
     void HandleJoystickDisconnected(StringHash eventType, VariantMap& args);
+    void HandleTouchBegin(StringHash eventType, VariantMap& args);
+    void HandleTouchMove(StringHash eventType, VariantMap& args);
+    void HandleTouchEnd(StringHash eventType, VariantMap& args);
 
     void UpdateAxis(ea::fixed_vector<AxisState, 4>& activeStates, AxisState state);
 
+    /// Is aggregator enabled
     bool enabled_{false};
+    /// Enabled subscriptions
+    SubscriptionFlags enabledSubscriptions_{SubscriptionMask::All};
+    /// Active subscriptions bitmask
+    SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
+    /// Cached input subsystem pointer
     Input* input_{};
+    /// Collection of active vertical axis inputs
     InputVector verticalAxis_;
+    /// Collection of active horizontal axis inputs
     InputVector horizontalAxis_;
+    /// Joystick dead zone value
     float axisDeadZone_{0.1f};
-    int ignoreJoystickId_{-10};
+    /// Joystick to ignore (SDL gyroscope virtual joystick)
+    int ignoreJoystickId_{ea::numeric_limits<int>::lowest()};
+    /// UI element to filter touch events
+    WeakPtr<UIElement> uiElement_{};
+    /// Identifier of active touch
+    ea::optional<int> activeTouchId_{};
+    /// Origin of the touch
+    IntVector2 touchOrigin_{};
+    /// Touch sensitivity
+    float touchSensitivity_{};
 };
 
 } // namespace Urho3D

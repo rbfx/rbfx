@@ -34,6 +34,7 @@ TEST_CASE("DirectionAggregator tests")
 
     DirectionAggregator adapter(context);
     adapter.SetEnabled(true);
+    adapter.SetDeadZone(0.1f);
 
     SECTION("Press S and Down at the same time")
     {
@@ -77,10 +78,21 @@ TEST_CASE("DirectionAggregator tests")
     SECTION("Axis input")
     {
         SendAxisEvent(input, 0, 0.8f);
-        CHECK(Vector2(0.8f, 0.0f).Equals(adapter.GetDirection()));
+        CHECK(Vector2(0.7f / 0.9f, 0.0f).Equals(adapter.GetDirection()));
         SendAxisEvent(input, 1, 0.9f);
-        CHECK(Vector2(0.8f, 0.9f).Equals(adapter.GetDirection()));
+        CHECK(Vector2(0.7f / 0.9f, 0.8f / 0.9f).Equals(adapter.GetDirection()));
         SendJoystickDisconnected(input, 0);
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
+    }
+    SECTION("Test disabling source")
+    {
+        SendAxisEvent(input, 0, 1.0f);
+        CHECK(Vector2(1.0f, 0.0f).Equals(adapter.GetDirection()));
+        adapter.SetJoystickEnabled(false);
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
+        SendAxisEvent(input, 0, 1.0f);
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
+        adapter.SetJoystickEnabled(true);
         CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
 }

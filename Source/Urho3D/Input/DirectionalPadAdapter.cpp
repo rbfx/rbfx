@@ -44,7 +44,6 @@ DirectionalPadAdapter::DirectionalPadAdapter(Context* context)
 }
 
 /// Set enabled flag. The object subscribes for events when enabled.
-/// Input messages could be passed to the object manually when disabled.
 void DirectionalPadAdapter::SetEnabled(bool enabled)
 {
     if (enabled_ != enabled)
@@ -52,14 +51,46 @@ void DirectionalPadAdapter::SetEnabled(bool enabled)
         enabled_ = enabled;
         if (enabled_)
         {
-            SubscribeToEvents();
+            UpdateSubscriptions(enabledSubscriptions_);
         }
         else
         {
-            UnsubscribeFromEvents();
+            UpdateSubscriptions(SubscriptionMask::None);
         }
     }
 }
+
+
+/// Set keyboard enabled flag.
+void DirectionalPadAdapter::SetKeyboardEnabled(bool enabled)
+{
+    if (enabled)
+    {
+        enabledSubscriptions_ |= SubscriptionMask::Keyboard;
+    }
+    else
+    {
+        enabledSubscriptions_ &= ~SubscriptionMask::Keyboard;
+    }
+    if (IsEnabled())
+        UpdateSubscriptions(enabledSubscriptions_);
+}
+
+/// Set joystick enabled flag.
+void DirectionalPadAdapter::SetJoystickEnabled(bool enabled)
+{
+    if (enabled)
+    {
+        enabledSubscriptions_ |= SubscriptionMask::Joystick;
+    }
+    else
+    {
+        enabledSubscriptions_ &= ~SubscriptionMask::Joystick;
+    }
+    if (IsEnabled())
+        UpdateSubscriptions(enabledSubscriptions_);
+}
+
 
 bool DirectionalPadAdapter::GetKeyDown(Key key) const
 {
@@ -76,15 +107,6 @@ bool DirectionalPadAdapter::GetScancodeDown(Scancode scancode) const
     case SCANCODE_RIGHT: return !right_.empty();
     }
     return false;
-}
-
-void DirectionalPadAdapter::SubscribeToEvents()
-{
-    SubscribeToEvent(input_, E_KEYUP, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyUp));
-    SubscribeToEvent(input_, E_KEYDOWN, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyDown));
-    SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickAxisMove));
-    SubscribeToEvent(input_, E_JOYSTICKHATMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickHatMove));
-    SubscribeToEvent(input_, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickDisconnected));
 }
 
 void DirectionalPadAdapter::SendKeyDown(Scancode key)
@@ -319,33 +341,62 @@ void DirectionalPadAdapter::Remove(InputVector& activeInput, InputType input, Sc
     }
 }
 
-void DirectionalPadAdapter::UnsubscribeFromEvents()
+void DirectionalPadAdapter::RemoveIf(InputVector& activeInput, const ea::function<bool(InputType)>& pred, Scancode scancode)
 {
-    UnsubscribeFromEvent(E_KEYUP);
-    UnsubscribeFromEvent(E_KEYDOWN);
-    UnsubscribeFromEvent(E_JOYSTICKAXISMOVE);
-    UnsubscribeFromEvent(E_JOYSTICKHATMOVE);
-    UnsubscribeFromEvent(E_JOYSTICKDISCONNECTED);
+    if (activeInput.empty())
+        return;
 
-    if (!up_.empty())
+    for (int i = static_cast<int>(activeInput.size())-1; i >=0; --i)
     {
-        SendKeyUp(SCANCODE_UP);
-        up_.clear();
+        if (pred(activeInput[i]))
+        {
+            activeInput.erase_unsorted(activeInput.begin() + i);
+            if (activeInput.empty())
+            {
+                SendKeyUp(scancode);
+            }
+        }
     }
-    if (!down_.empty())
+}
+
+void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
+{
+    const auto toSubscribe = flags & ~subscriptionFlags_;
+    const auto toUnsubscribe = subscriptionFlags_ & ~flags;
+    subscriptionFlags_ = flags;
+    if (toSubscribe & SubscriptionMask::Keyboard)
     {
-        SendKeyUp(SCANCODE_DOWN);
-        down_.clear();
+        SubscribeToEvent(input_, E_KEYUP, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyUp));
+        SubscribeToEvent(input_, E_KEYDOWN, URHO3D_HANDLER(DirectionalPadAdapter, HandleKeyDown));
     }
-    if (!left_.empty())
+    else if (toUnsubscribe & SubscriptionMask::Keyboard)
     {
-        SendKeyUp(SCANCODE_LEFT);
-        left_.clear();
+        UnsubscribeFromEvent(E_KEYUP);
+        UnsubscribeFromEvent(E_KEYDOWN);
+
+        ea::function<bool(InputType)> pred = [](InputType i) { return i == InputType::Keyboard; };
+        RemoveIf(up_, pred, SCANCODE_UP);
+        RemoveIf(down_, pred, SCANCODE_DOWN);
+        RemoveIf(left_, pred, SCANCODE_LEFT);
+        RemoveIf(right_, pred, SCANCODE_RIGHT);
     }
-    if (!right_.empty())
+    if (toSubscribe & SubscriptionMask::Joystick)
     {
-        SendKeyUp(SCANCODE_RIGHT);
-        right_.clear();
+        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickAxisMove));
+        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickHatMove));
+        SubscribeToEvent(input_, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(DirectionalPadAdapter, HandleJoystickDisconnected));
+    }
+    else if (toUnsubscribe & SubscriptionMask::Joystick)
+    {
+        UnsubscribeFromEvent(E_JOYSTICKAXISMOVE);
+        UnsubscribeFromEvent(E_JOYSTICKHATMOVE);
+        UnsubscribeFromEvent(E_JOYSTICKDISCONNECTED);
+
+        ea::function<bool(InputType)> pred = [](InputType i) { return i >= InputType::JoystickAxis; };
+        RemoveIf(up_, pred, SCANCODE_UP);
+        RemoveIf(down_, pred, SCANCODE_DOWN);
+        RemoveIf(left_, pred, SCANCODE_LEFT);
+        RemoveIf(right_, pred, SCANCODE_RIGHT);
     }
 }
 
