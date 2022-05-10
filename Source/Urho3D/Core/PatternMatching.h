@@ -72,8 +72,8 @@ private:
 class URHO3D_API PatternCollection
 {
 private:
-    inline static const float DefaultMin = std::numeric_limits<float>::lowest();
-    inline static const float DefaultMax = std::numeric_limits<float>::max();
+    inline static const float DefaultMin = ea::numeric_limits<float>::lowest();
+    inline static const float DefaultMax = ea::numeric_limits<float>::max();
 
     struct SerializableElement
     {

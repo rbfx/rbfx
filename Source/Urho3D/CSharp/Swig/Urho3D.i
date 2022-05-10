@@ -342,7 +342,6 @@ namespace SDL
 %include "Urho3D/Core/Timer.h"
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
-%include "Urho3D/Core/PatternMatching.h"
 
 // --------------------------------------- Container ------------------------------------
 %include "Urho3D/Container/ByteVector.h"
@@ -514,8 +513,9 @@ public:
 %include "Urho3D/Scene/SceneResolver.h"
 %include "Urho3D/Scene/UnknownComponent.h"
 
-// --------------------------------------- Extra components ---------------------------------------
+// --------------------------------------- Extra components and resources --------------
 %include "Urho3D/Input/FreeFlyController.h"
+%include "Urho3D/Core/PatternMatching.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
