@@ -28,6 +28,8 @@
 
 namespace Urho3D
 {
+using namespace DirectionAggregatorDetail;
+
 /// Construct.
 DirectionAggregator::DirectionAggregator(Context* context)
     : Object(context)

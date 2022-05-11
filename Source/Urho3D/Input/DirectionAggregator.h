@@ -21,13 +21,27 @@
 //
 #pragma once
 
-#include "../Core/Object.h"
 #include "../Container/FlagSet.h"
+#include "../Core/Object.h"
 #include "../UI/UIElement.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {
+namespace DirectionAggregatorDetail
+{
+
+enum class SubscriptionMask : unsigned
+{
+    None = 0,
+    Keyboard = 1 << 0,
+    Joystick = 1 << 1,
+    Touch = 1 << 2,
+    All = Keyboard | Joystick | Touch,
+};
+URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
+
+} // namespace DirectionAggregatorDetail
 
 /// Class to aggregate all movement inputs into a single direction vector.
 class URHO3D_API DirectionAggregator : public Object
@@ -63,19 +77,10 @@ private:
         float value_;
     };
 
-    enum class SubscriptionMask
-    {
-        None = 0,
-        Keyboard = 1 << 0,
-        Joystick = 1 << 1,
-        Touch = 1 << 2,
-        All = Keyboard | Joystick | Touch,
-    };
-
-    URHO3D_NESTED_FLAGSET(SubscriptionMask, SubscriptionFlags);
-
     /// Type definition for active input sources
     typedef ea::fixed_vector<AxisState, 4> InputVector;
+    typedef DirectionAggregatorDetail::SubscriptionFlags SubscriptionFlags;
+    typedef DirectionAggregatorDetail::SubscriptionMask SubscriptionMask;
 
 public:
     /// Construct.
@@ -112,9 +117,8 @@ public:
     /// Get aggregated direction vector with X pointing right and Y pointing down (similar to gamepad axis).
     Vector2 GetDirection() const;
 
-
 private:
-    void UpdateSubscriptions(SubscriptionFlags flags);
+    void UpdateSubscriptions(DirectionAggregatorDetail::SubscriptionFlags flags);
 
     void HandleKeyDown(StringHash eventType, VariantMap& args);
     void HandleKeyUp(StringHash eventType, VariantMap& args);

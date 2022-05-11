@@ -27,8 +27,22 @@
 
 namespace Urho3D
 {
+namespace DirectionalPadAdapterDetail
+{
 
-/// Adapter to translate gamepad axis and dpad messages along with keyboard (WASD and arrows) and externally provided directions into keyboard arrow messages.
+enum class SubscriptionMask : unsigned
+{
+    None = 0,
+    Keyboard = 1 << 0,
+    Joystick = 1 << 1,
+    All = Keyboard | Joystick,
+};
+URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
+
+} // namespace DirectionalPadAdapterDetail
+
+/// Adapter to translate gamepad axis and dpad messages along with keyboard (WASD and arrows) and externally provided
+/// directions into keyboard arrow messages.
 class URHO3D_API DirectionalPadAdapter : public Object
 {
     URHO3D_OBJECT(DirectionalPadAdapter, Object)
@@ -43,16 +57,8 @@ private:
     };
 
     typedef ea::fixed_vector<InputType, 4> InputVector;
-
-    enum class SubscriptionMask
-    {
-        None = 0,
-        Keyboard = 1 << 0,
-        Joystick = 1 << 1,
-        All = Keyboard | Joystick,
-    };
-
-    URHO3D_NESTED_FLAGSET(SubscriptionMask, SubscriptionFlags);
+    typedef DirectionalPadAdapterDetail::SubscriptionFlags SubscriptionFlags;
+    typedef DirectionalPadAdapterDetail::SubscriptionMask SubscriptionMask;
 
 public:
     /// Construct.
@@ -86,7 +92,6 @@ private:
     void HandleJoystickAxisMove(StringHash eventType, VariantMap& args);
     void HandleJoystickHatMove(StringHash eventType, VariantMap& args);
     void HandleJoystickDisconnected(StringHash eventType, VariantMap& args);
-
 
     // Append input to set.
     void Append(InputVector& activeInput, InputType input, Scancode scancode);

@@ -27,6 +27,8 @@
 
 namespace Urho3D
 {
+using namespace DirectionalPadAdapterDetail;
+
 /// Construct.
 DirectionalPadAdapter::DirectionalPadAdapter(Context* context)
     : Object(context)

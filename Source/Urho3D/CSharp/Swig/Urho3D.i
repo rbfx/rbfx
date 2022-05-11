@@ -383,6 +383,9 @@ namespace SDL
 %ignore Urho3D::TouchState::GetTouchedElement;
 %ignore Urho3D::Input::OnRawInput;
 
+%ignore Urho3D::DirectionAggregatorDetail::SubscriptionMask;
+%ignore Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
+
 %include "generated/Urho3D/_pre_input.i"
 %include "Urho3D/Input/InputConstants.h"
 %include "Urho3D/Input/Controls.h"
