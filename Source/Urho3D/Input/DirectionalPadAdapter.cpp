@@ -93,6 +93,11 @@ void DirectionalPadAdapter::SetJoystickEnabled(bool enabled)
         UpdateSubscriptions(enabledSubscriptions_);
 }
 
+/// Set axis upper threshold. Axis value greater than threshold is interpreted as key press.
+void DirectionalPadAdapter::SetAxisUpperThreshold(float threshold) { axisUpperThreshold_ = threshold; }
+
+/// Set axis lower threshold. Axis value lower than threshold is interpreted as key press.
+void DirectionalPadAdapter::SetAxisLowerThreshold(float threshold) { axisLowerThreshold_ = threshold; }
 
 bool DirectionalPadAdapter::GetKeyDown(Key key) const
 {
@@ -219,17 +224,17 @@ void DirectionalPadAdapter::HandleJoystickAxisMove(StringHash eventType, Variant
     // Up-Down
     if (axisIndex == 1)
     {
-        if (value > 0.6f)
+        if (value > axisUpperThreshold_)
         {
             Append(down_, eventId, SCANCODE_DOWN);
             Remove(up_, eventId, SCANCODE_UP);
         }
-        else if (value < -0.6f)
+        else if (value < -axisUpperThreshold_)
         {
             Remove(down_, eventId, SCANCODE_DOWN);
             Append(up_, eventId, SCANCODE_UP);
         }
-        else if (value > -0.4f && value < 0.4f)
+        else if (value > -axisLowerThreshold_ && value < axisLowerThreshold_)
         {
             Remove(up_, eventId, SCANCODE_UP);
             Remove(down_, eventId, SCANCODE_DOWN);
@@ -238,17 +243,17 @@ void DirectionalPadAdapter::HandleJoystickAxisMove(StringHash eventType, Variant
     // Left-Right
     if (axisIndex == 0)
     {
-        if (value > 0.6f)
+        if (value > axisUpperThreshold_)
         {
             Append(right_, eventId, SCANCODE_RIGHT);
             Remove(left_, eventId, SCANCODE_LEFT);
         }
-        else if (value < -0.6f)
+        else if (value < -axisUpperThreshold_)
         {
             Append(left_, eventId, SCANCODE_LEFT);
             Remove(right_, eventId, SCANCODE_RIGHT);
         }
-        else if (value > -0.4f && value < 0.4f)
+        else if (value > -axisLowerThreshold_ && value < axisLowerThreshold_)
         {
             Remove(right_, eventId, SCANCODE_RIGHT);
             Remove(left_, eventId, SCANCODE_LEFT);

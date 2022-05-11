@@ -75,6 +75,10 @@ public:
     void SetKeyboardEnabled(bool enabled);
     /// Set joystick enabled flag.
     void SetJoystickEnabled(bool enabled);
+    /// Set axis upper threshold. Axis value greater than threshold is interpreted as key press.
+    void SetAxisUpperThreshold(float threshold);
+    /// Set axis lower threshold. Axis value lower than threshold is interpreted as key press.
+    void SetAxisLowerThreshold(float threshold);
 
     /// Get enabled flag.
     bool IsEnabled() const { return enabled_; }
@@ -88,6 +92,11 @@ public:
 
     /// Check if a key is held down by scancode. Only Up, Down, Left and Right scancodes are supported.
     bool GetScancodeDown(Scancode scancode) const;
+
+    /// Get axis upper threshold. Axis value greater than threshold is interpreted as key press.
+    float GetAxisUpperThreshold() const { return axisUpperThreshold_; }
+    /// Get axis lower threshold. Axis value lower than threshold is interpreted as key press.
+    float GetAxisLowerThreshold() const { return axisLowerThreshold_; }
 
 private:
     void UpdateSubscriptions(SubscriptionFlags flags);
@@ -120,6 +129,8 @@ private:
     InputVector left_;
     InputVector right_;
     int ignoreJoystickId_{ea::numeric_limits<int>::lowest()};
+    float axisUpperThreshold_{0.6f};
+    float axisLowerThreshold_{0.4f};
 };
 
 } // namespace Urho3D
