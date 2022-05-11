@@ -76,10 +76,10 @@ SplashScreen::SplashScreen(Context* context)
 void SplashScreen::Activate(SingleStateApplication* application)
 {
     ApplicationState::Activate(application);
-
-    SubscribeToEvent(E_KEYUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
-    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
-    SubscribeToEvent(E_JOYSTICKBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
+    auto* input = context_->GetSubsystem<Input>();
+    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
+    SubscribeToEvent(input, E_JOYSTICKBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
 
     state_ = SplashScreenState::FadeIn;
     timeLeft_ = fadeInDuration_;
@@ -101,9 +101,10 @@ void SplashScreen::Deactivate()
 {
     ApplicationState::Deactivate();
 
-    UnsubscribeFromEvent(E_KEYUP);
-    UnsubscribeFromEvent(E_MOUSEBUTTONUP);
-    UnsubscribeFromEvent(E_JOYSTICKBUTTONUP);
+    auto* input = context_->GetSubsystem<Input>();
+    UnsubscribeFromEvent(input, E_KEYUP);
+    UnsubscribeFromEvent(input, E_MOUSEBUTTONUP);
+    UnsubscribeFromEvent(input ,E_JOYSTICKBUTTONUP);
 }
 
 void SplashScreen::HandleKeyUp(StringHash eventType, VariantMap& args)

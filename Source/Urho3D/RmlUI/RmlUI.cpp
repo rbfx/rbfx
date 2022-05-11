@@ -286,15 +286,17 @@ RmlUI::RmlUI(Context* context, const char* name)
     if (auto* ui = GetSubsystem<RmlUI>())
         ui->siblingSubsystems_.push_back(WeakPtr(this));
 
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
-    SubscribeToEvent(E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
-    SubscribeToEvent(E_MOUSEMOVE, &RmlUI::HandleMouseMove);
-    SubscribeToEvent(E_MOUSEWHEEL, &RmlUI::HandleMouseWheel);
-    SubscribeToEvent(E_TOUCHBEGIN, &RmlUI::HandleTouchBegin);
-    SubscribeToEvent(E_TOUCHEND, &RmlUI::HandleTouchEnd);
-    SubscribeToEvent(E_TOUCHMOVE, &RmlUI::HandleTouchMove);
-    SubscribeToEvent(E_KEYDOWN, &RmlUI::HandleKeyDown);
-    SubscribeToEvent(E_KEYUP, &RmlUI::HandleKeyUp);
+    Input* input = context_->GetSubsystem<Input>();
+
+    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
+    SubscribeToEvent(input, E_MOUSEMOVE, &RmlUI::HandleMouseMove);
+    SubscribeToEvent(input, E_MOUSEWHEEL, &RmlUI::HandleMouseWheel);
+    SubscribeToEvent(input, E_TOUCHBEGIN, &RmlUI::HandleTouchBegin);
+    SubscribeToEvent(input, E_TOUCHEND, &RmlUI::HandleTouchEnd);
+    SubscribeToEvent(input, E_TOUCHMOVE, &RmlUI::HandleTouchMove);
+    SubscribeToEvent(input, E_KEYDOWN, &RmlUI::HandleKeyDown);
+    SubscribeToEvent(input, E_KEYUP, &RmlUI::HandleKeyUp);
     SubscribeToEvent(E_TEXTINPUT, &RmlUI::HandleTextInput);
     SubscribeToEvent(E_DROPFILE, &RmlUI::HandleDropFile);
 

@@ -130,7 +130,7 @@ void DirectionalPadAdapter::SendKeyDown(Scancode key)
     args[P_BUTTONS] = 0;
     args[P_QUALIFIERS] = 0;
     args[P_REPEAT] = false;
-    SendEvent(E_KEYDOWN, args, false);
+    SendEvent(E_KEYDOWN, args);
 }
 
 void DirectionalPadAdapter::SendKeyUp(Scancode key)
@@ -151,7 +151,7 @@ void DirectionalPadAdapter::SendKeyUp(Scancode key)
     args[P_SCANCODE] = key;
     args[P_BUTTONS] = 0;
     args[P_QUALIFIERS] = 0;
-    SendEvent(E_KEYUP, args, false);
+    SendEvent(E_KEYUP, args);
 }
 
 void DirectionalPadAdapter::HandleKeyDown(StringHash eventType, VariantMap& args)

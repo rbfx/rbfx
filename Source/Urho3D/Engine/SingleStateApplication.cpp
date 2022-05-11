@@ -26,6 +26,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Zone.h"
 #include "../UI/UI.h"
+#include "../Resource/ResourceCache.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/Console.h"
 #endif
@@ -316,5 +317,6 @@ void SingleStateApplication::SetState(ApplicationState* gameScreen)
 }
 
 ApplicationState* SingleStateApplication::GetState() const { return gameScreen_; }
+
 
 } // namespace Urho3D

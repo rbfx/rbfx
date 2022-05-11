@@ -154,8 +154,6 @@ public:
     void SendEvent(StringHash eventType);
     /// Send event with parameters to all subscribers.
     void SendEvent(StringHash eventType, VariantMap& eventData);
-    /// Send event with parameters to subscribers. If broadcast is true the event is sent to all subscribers, otherwise only to specific subscribers.
-    void SendEvent(StringHash eventType, VariantMap& eventData, bool broadcast);
     /// Return a preallocated map for event data. Used for optimization to avoid constant re-allocation of event data
     /// maps.
     VariantMap& GetEventDataMap() const;

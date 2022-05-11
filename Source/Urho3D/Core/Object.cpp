@@ -312,9 +312,7 @@ void Object::SendEvent(StringHash eventType)
     SendEvent(eventType, noEventData);
 }
 
-void Object::SendEvent(StringHash eventType, VariantMap& eventData) { SendEvent(eventType, eventData, true); }
-
-void Object::SendEvent(StringHash eventType, VariantMap& eventData, bool broadcast)
+void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 {
     if (!Thread::IsMainThread())
     {
@@ -367,7 +365,6 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData, bool broadca
     }
 
     // Then the non-specific receivers
-    if (broadcast)
     {
         SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
         if (groupNonSpec)

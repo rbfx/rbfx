@@ -141,6 +141,7 @@
 #endif
 #endif
 #include "111_SplashScreen/SplashScreenDemo.h"
+#include "112_AggregatedInput/AggregatedInput.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -224,10 +225,10 @@ void SamplesManager::Start()
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
         debugHud->ToggleAll();
 #endif
-
+    auto* input = context_->GetSubsystem<Input>();
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
-    SubscribeToEvent( E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(input, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
@@ -375,6 +376,7 @@ void SamplesManager::Start()
 #endif
 #endif
     RegisterSample<SplashScreenDemo>();
+    RegisterSample<AggregatedInput>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

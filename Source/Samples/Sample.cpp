@@ -54,6 +54,8 @@ void Sample::Start(const ea::vector<ea::string>& args)
 
 void Sample::Start()
 {
+    auto* input = context_->GetSubsystem<Input>();
+
     if (GetPlatform() == "Android" || GetPlatform() == "iOS")
         // On mobile platform, enable touch by adding a screen joystick
         InitTouchInput();
@@ -72,9 +74,9 @@ void Sample::Start()
     }
 
     // Subscribe key down event
-    SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(Sample, HandleKeyDown));
+    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(Sample, HandleKeyDown));
     // Subscribe key up event
-    SubscribeToEvent(E_KEYUP, URHO3D_HANDLER(Sample, HandleKeyUp));
+    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(Sample, HandleKeyUp));
     // Subscribe scene update event
     SubscribeToEvent(E_SCENEUPDATE, URHO3D_HANDLER(Sample, HandleSceneUpdate));
 }
@@ -326,6 +328,7 @@ void Sample::HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData)
 
 void Sample::CloseSample()
 {
+    auto* input = context_->GetSubsystem<Input>();
     VariantMap args;
     {
         using namespace KeyDown;
@@ -334,7 +337,7 @@ void Sample::CloseSample()
         args[P_BUTTONS] = 0;
         args[P_QUALIFIERS] = 0;
         args[P_REPEAT] = false;
-        SendEvent(E_KEYDOWN, args);
+        input->SendEvent(E_KEYDOWN, args);
     }
     {
         using namespace KeyUp;
@@ -342,6 +345,6 @@ void Sample::CloseSample()
         args[P_SCANCODE] = SCANCODE_ESCAPE;
         args[P_BUTTONS] = 0;
         args[P_QUALIFIERS] = 0;
-        SendEvent(E_KEYUP, args);
+        input->SendEvent(E_KEYUP, args);
     }
 }

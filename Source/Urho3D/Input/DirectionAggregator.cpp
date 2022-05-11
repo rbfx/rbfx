@@ -38,9 +38,9 @@ DirectionAggregator::DirectionAggregator(Context* context)
     // By default the full axis range is about 1 inch
     auto* graphics = context->GetSubsystem<Graphics>();
     if (graphics && graphics->GetDisplayDPI().x_ > 0)
-        touchSensitivity_ = 1.0f / graphics->GetDisplayDPI().x_;
+        touchSensitivity_ = 2.0f / graphics->GetDisplayDPI().x_;
     else
-        touchSensitivity_ = 1.0f / 96.0f;
+        touchSensitivity_ = 2.0f / 96.0f;
 
     unsigned numJoysticks = input_->GetNumJoysticks();
     for (unsigned i = 0; i < numJoysticks; ++i)
@@ -329,7 +329,7 @@ void DirectionAggregator::HandleTouchMove(StringHash eventType, VariantMap& args
     touchOrigin_.y_ = pos.y_ - static_cast<int>(dy / touchSensitivity_);
 
     UpdateAxis(horizontalAxis_, AxisState{InputType::Touch, dx});
-    UpdateAxis(horizontalAxis_, AxisState{InputType::Touch, dy});
+    UpdateAxis(verticalAxis_, AxisState{InputType::Touch, dy});
 }
 
 void DirectionAggregator::HandleTouchEnd(StringHash eventType, VariantMap& args)
@@ -345,6 +345,7 @@ void DirectionAggregator::HandleTouchEnd(StringHash eventType, VariantMap& args)
 
     activeTouchId_.reset();
     UpdateAxis(horizontalAxis_, AxisState{InputType::Touch, 0.0f});
+    UpdateAxis(verticalAxis_, AxisState{InputType::Touch, 0.0f});
 }
 
 void DirectionAggregator::UpdateAxis(ea::fixed_vector<AxisState, 4>& activeStates, AxisState state)

@@ -41,8 +41,13 @@ URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
 
 } // namespace DirectionalPadAdapterDetail
 
-/// Adapter to translate gamepad axis and dpad messages along with keyboard (WASD and arrows) and externally provided
+/// Adapter to translate gamepad axis and DPad messages along with keyboard (WASD and arrows) and externally provided
 /// directions into keyboard arrow messages.
+///
+/// DPadAdapter collects all inputs that it can categorize as a movement into specific direction. When at least one
+/// input received it sends a corresponding keyboard message about arrow key been pressed. When last input is
+/// released it sends a message about key been released. It can also be used as a substitute for Input as it implements
+/// GetScancodeDown and GetKeyDown methods but it only supports arrow key and scan codes.
 class URHO3D_API DirectionalPadAdapter : public Object
 {
     URHO3D_OBJECT(DirectionalPadAdapter, Object)

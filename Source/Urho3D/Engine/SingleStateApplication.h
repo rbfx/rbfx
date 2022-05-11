@@ -29,6 +29,8 @@
 namespace Urho3D
 {
 class SingleStateApplication;
+class ResourceCache;
+class UI;
 
 /// Base class for an application state. Tipical samples of a state would be loading screen, menu or a game screen.
 class URHO3D_API ApplicationState : public Object
