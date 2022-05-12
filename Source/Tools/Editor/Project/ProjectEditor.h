@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/HotkeyManager.h"
+#include "../Core/UndoManager.h"
 #include "../Project/EditorTab.h"
 
 #include <Urho3D/Core/Object.h>
@@ -77,15 +78,21 @@ public:
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;
 
-    /// Plugin API
-    /// @{
-    void AddTab(SharedPtr<EditorTab> tab);
-    template <class T> T* FindTab() const;
-    void OpenResource(const OpenResourceRequest& request);
-    /// @}
-
     void UpdateAndRender();
+
+    /// Add new tab. Avoid calling it in realtime.
+    void AddTab(SharedPtr<EditorTab> tab);
+    /// Find first tab of matching type.
+    template <class T> T* FindTab() const;
+    /// Open resource in appropriate resource tab.
+    void OpenResource(const OpenResourceRequest& request);
+
+    /// Commands
+    /// @{
     void Save();
+    void Undo();
+    void Redo();
+    /// @}
 
     void ReadIniSettings(const char* entry, const char* line);
     void WriteIniSettings(ImGuiTextBuffer* output);
@@ -100,6 +107,7 @@ public:
     /// Return singletons
     /// @{
     HotkeyManager* GetHotkeyManager() const { return hotkeyManager_; }
+    UndoManager* GetUndoManager() const { return undoManager_; }
     /// @}
 
 private:
@@ -123,6 +131,8 @@ private:
     /// @}
 
     SharedPtr<HotkeyManager> hotkeyManager_;
+    SharedPtr<UndoManager> undoManager_;
+
     bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
 

@@ -36,6 +36,8 @@ namespace
 {
 
 URHO3D_EDITOR_HOTKEY(Hotkey_SaveProject, "Global.SaveProject", QUAL_CTRL, KEY_S);
+URHO3D_EDITOR_HOTKEY(Hotkey_Undo, "Global.Undo", QUAL_CTRL, KEY_Z);
+URHO3D_EDITOR_HOTKEY(Hotkey_Redo, "Global.Redo", QUAL_CTRL, KEY_Y);
 
 static unsigned numActiveProjects = 0;
 
@@ -102,6 +104,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , dataPath_(projectPath_ + "Data/")
     , oldCacheState_(context)
     , hotkeyManager_(MakeShared<HotkeyManager>(context_))
+    , undoManager_(MakeShared<UndoManager>(context_))
 {
     URHO3D_ASSERT(numActiveProjects == 0);
     context_->RegisterSubsystem(this, ProjectEditor::GetTypeStatic());
@@ -148,6 +151,8 @@ void ProjectEditor::OpenResource(const OpenResourceRequest& request)
 void ProjectEditor::InitializeHotkeys()
 {
     hotkeyManager_->BindHotkey(this, Hotkey_SaveProject, &ProjectEditor::Save);
+    hotkeyManager_->BindHotkey(this, Hotkey_Undo, &ProjectEditor::Undo);
+    hotkeyManager_->BindHotkey(this, Hotkey_Redo, &ProjectEditor::Redo);
 }
 
 void ProjectEditor::EnsureDirectoryInitialized()
@@ -280,6 +285,16 @@ void ProjectEditor::UpdateAndRender()
 void ProjectEditor::Save()
 {
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
+}
+
+void ProjectEditor::Undo()
+{
+    undoManager_->Undo();
+}
+
+void ProjectEditor::Redo()
+{
+    undoManager_->Redo();
 }
 
 void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
