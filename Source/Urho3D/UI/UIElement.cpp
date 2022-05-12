@@ -1969,7 +1969,10 @@ void UIElement::MarkDirty()
     derivedColorDirty_ = true;
 
     for (auto i = children_.begin(); i != children_.end(); ++i)
-        (*i)->MarkDirty();
+    {
+        if (*i)
+            (*i)->MarkDirty();
+    }
 }
 
 bool UIElement::RemoveChildXML(XMLElement& parent, const ea::string& name) const
