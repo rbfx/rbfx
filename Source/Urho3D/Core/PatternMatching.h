@@ -34,6 +34,7 @@ namespace Urho3D
 class Archive;
 class ArchiveBlock;
 class PatternCollection;
+class PatternIndex;
 
 /// Collection of patterns
 class URHO3D_API PatternQuery
@@ -65,7 +66,7 @@ private:
     ea::fixed_vector<Element, 4> elements_;
     bool dirty_{};
 
-    friend class PatternCollection;
+    friend class PatternIndex;
 };
 
 /// Collection of patterns
@@ -104,18 +105,10 @@ private:
         // Serialize content from/to archive. May throw ArchiveException.
         void SerializeInBlock(Archive& archive);
 
-        void Commit();
-
         // Serializabe event identifier.
         ea::string serializabeEventId_;
         // Serializabe event arguments.
         StringVariantMap serializabeArguments_;
-
-        // Event identifier.
-        StringHash eventId_;
-        // Event arguments.
-        VariantMap arguments_;
-
     };
     struct SerializableRecord
     {
@@ -130,22 +123,6 @@ private:
     };
 
 
-    struct Element
-    {
-        // Element key.
-        StringHash key_;
-        // Minimum matching value.
-        float min_{DefaultMin};
-        // Maximum matching value.
-        float max_{DefaultMax};
-    };
-
-    struct Record
-    {
-        int startIndex_{};
-        int length_{};
-        int recordId_{};
-    };
 public:
     void Clear();
     /// Start new pattern creation.
@@ -163,28 +140,73 @@ public:
     /// Commit changes and recalculate derived members.
     void CommitPattern();
 
-    /// Commit changes and recalculate derived members.
-    /// Query should be called only on committed collection!
-    void Commit();
-    /// Sample value at given time.
-    int Query(const PatternQuery& query) const;
-
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive);
 
-    void SendEvent(int patternIndex, Object* object, bool broadcast) const;
-    unsigned GetNumEvents(int patternIndex) const;
-    StringHash GetEventId (int patternIndex, unsigned eventIndex) const;
-    const VariantMap& GetEventArgs (int patternIndex, unsigned eventIndex) const;
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive, const char* elementName);
 
+    /// Is collection empty. Required for optional field serialization.
     bool empty() const { return serializableRecords_.empty(); }
 
 private:
     ea::vector<SerializableRecord> serializableRecords_;
-    ea::vector<Record> records_;
-    ea::vector<Element> elements_;
+
     bool dirtyPattern_{};
     bool dirty_{};
+
+    friend class PatternIndex;
+};
+
+
+/// Optimized collection of patterns ready for queries
+class URHO3D_API PatternIndex
+{
+    struct Element
+    {
+        // Element key.
+        StringHash key_;
+        // Minimum matching value.
+        float min_{PatternCollection::DefaultMin};
+        // Maximum matching value.
+        float max_{PatternCollection::DefaultMax};
+    };
+
+    struct Event
+    {
+        // Event identifier.
+        StringHash eventId_;
+        // Event arguments.
+        VariantMap arguments_;
+    };
+
+    struct Record
+    {
+        int startIndex_{};
+        int length_{};
+        const PatternCollection* collection_{};
+        int recordId_{};
+        // One or more event prototypes.
+        ea::fixed_vector<Event, 1> events_;
+    };
+public:
+    /// Build index from single collection
+    void Build(const PatternCollection* collection);
+    /// Build index from multiple collections
+    void Build(const PatternCollection** begin, const PatternCollection** end);
+
+    /// Sample value at given time.
+    int Query(const PatternQuery& query) const;
+
+    void SendEvent(int patternIndex, Object* object) const;
+
+    unsigned GetNumEvents(int patternIndex) const;
+    StringHash GetEventId(int patternIndex, unsigned eventIndex) const;
+    const VariantMap& GetEventArgs(int patternIndex, unsigned eventIndex) const;
+
+private:
+    ea::vector<Record> records_;
+    ea::vector<Element> elements_;
 };
 
 /// Collection of patterns as resource
@@ -213,6 +235,7 @@ public:
 
 private:
     PatternCollection patterns_;
+    PatternIndex index_;
 };
 
 }

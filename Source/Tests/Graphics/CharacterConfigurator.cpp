@@ -21,10 +21,12 @@
 //
 
 #include "../CommonUtils.h"
+#include "Urho3D/Graphics/Material.h"
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Scene/Scene.h"
 
-#include <Urho3D/Graphics//CharacterConfigurator.h>
+#include <Urho3D/Graphics/CharacterConfigurator.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Resource/XMLArchive.h>
@@ -36,19 +38,60 @@ using namespace Urho3D;
 TEST_CASE("CharacterConfigurator serilization")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto cache = context->GetSubsystem<ResourceCache>();
 
-    auto configuration = MakeShared<CharacterConfiguration>(context);
-    configuration->SetName("Chars/Char01.xml");
-    context->GetSubsystem<ResourceCache>()->AddManualResource(configuration);
-    configuration->SetModelAttr(ResourceRef("Model", "bla"));
+    auto conf = MakeShared<CharacterConfiguration>(context);
+    conf->SetModelAttr(ResourceRef(Model::GetTypeStatic(),("Models/Mutant/Mutant.mdl")));
+    conf->SetMaterialAttr(ResourceRefList(Material::GetTypeStatic(), StringVector{"Models/Mutant/Materials/mutant_M.xml" }));
+    conf->SetRotation(Quaternion(180, Vector3(0, 1, 0)));
+    auto* states = conf->GetStates();
+    {
+        states->BeginPattern();
+        StringVariantMap idleArgs;
+        idleArgs["existing"] = true;
+        idleArgs["exclusive"] = true;
+        idleArgs["looped"] = true;
+        idleArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Idle0.ani");
+        idleArgs["fadeInTime"] = 0.2f;
+        states->AddEvent("PlayAnimation", idleArgs);
+        states->CommitPattern();
+    }
+    {
+        states->BeginPattern();
+        states->AddKey("Run");
+        states->AddKeyGreaterOrEqual("OnGround", 0.5f);
+        StringVariantMap runArgs;
+        runArgs["existing"] = true;
+        runArgs["exclusive"] = true;
+        runArgs["looped"] = true;
+        runArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Run.ani");
+        runArgs["fadeInTime"] = 0.2f;
+        states->AddEvent("PlayAnimation", runArgs);
+        states->CommitPattern();
+    }
+    {
+        states->BeginPattern();
+        states->AddKeyLessOrEqual("OnGround", 0.5f);
+        StringVariantMap jumpArgs;
+        jumpArgs["existing"] = false;
+        jumpArgs["exclusive"] = true;
+        jumpArgs["removeOnCompletion"] = false;
+        jumpArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Jump1.ani");
+        jumpArgs["fadeInTime"] = 0.2f;
+        states->AddEvent("PlayAnimation", jumpArgs);
+        states->CommitPattern();
+    }
+    conf->Commit();
+
+    conf->SaveFile("Char.xml");
 
     auto scene =  MakeShared<Scene>(context);
     auto configurator = scene->CreateComponent<CharacterConfigurator>();
-    configurator->SetConfiguration(configuration);
+    configurator->SetConfiguration(conf);
     
     {
         VectorBuffer buf;
-        configuration->Save(buf);
+        conf->Save(buf);
         ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
     }
 }

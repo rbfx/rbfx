@@ -33,10 +33,11 @@ using namespace Urho3D;
 TEST_CASE("PatternMatching query")
 {
     PatternCollection patternCollection;
-    patternCollection.Commit();
+    PatternIndex index;
+    index.Build(&patternCollection);
 
     PatternQuery query;
-    CHECK(-1 == patternCollection.Query(query));
+    CHECK(-1 == index.Query(query));
 
     auto expectedTwoKeys = patternCollection.BeginPattern();
     patternCollection.AddKey("TestKey");
@@ -45,31 +46,31 @@ TEST_CASE("PatternMatching query")
     auto expectedOneKey = patternCollection.BeginPattern();
     patternCollection.AddKey("TestKey");
     patternCollection.CommitPattern();
-    patternCollection.Commit();
+    index.Build(&patternCollection);
 
     query.SetKey("MinMax", 1.5f);
     query.Commit();
-    CHECK(-1 == patternCollection.Query(query));
+    CHECK(-1 == index.Query(query));
 
     query.SetKey("TestKey", 1.5f);
     query.Commit();
-    CHECK(expectedTwoKeys == patternCollection.Query(query));
+    CHECK(expectedTwoKeys == index.Query(query));
     query.SetKey("MinMax", 2.5f);
     query.Commit();
-    CHECK(expectedOneKey == patternCollection.Query(query));
+    CHECK(expectedOneKey == index.Query(query));
 
     query.RemoveKey("TestKey");
     query.Commit();
-    CHECK(-1 == patternCollection.Query(query));
+    CHECK(-1 == index.Query(query));
 
     auto expectedEmpty = patternCollection.BeginPattern();
     patternCollection.CommitPattern();
-    patternCollection.Commit();
-    CHECK(expectedEmpty == patternCollection.Query(query));
+    index.Build(&patternCollection);
+    CHECK(expectedEmpty == index.Query(query));
 
     query.Clear();
     query.Commit();
-    CHECK(expectedEmpty == patternCollection.Query(query));
+    CHECK(expectedEmpty == index.Query(query));
 }
 
 TEST_CASE("PatternMatching serilization")

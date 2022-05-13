@@ -51,6 +51,7 @@ private:
         ea::string attachmentBone_;
         /// Model selector via fuzzy pattern matching.
         PatternCollection variants_;
+        PatternIndex variantIndex_;
     };
 
 public:
@@ -70,10 +71,15 @@ public:
     /// Serialize from/to archive. Return true if successful.
     void SerializeInBlock(Archive& archive) override;
 
+    /// Update pattern indices to query.
+    void Commit();
+
     /// Resize body parts vector.
     void SetNumBodyParts(unsigned num);
     /// Get number of body parts.
     unsigned GetNumBodyParts() const;
+    /// Get total number of body parts including parent body parts.
+    unsigned GetTotalNumBodyParts() const;
 
     void SetModel(Model* model);
     void SetModelAttr(ResourceRef model);
@@ -83,10 +89,21 @@ public:
     void SetMaterialAttr(const ResourceRefList& materials);
     const ResourceRefList& GetMaterialAttr() const { return material_; }
 
-    void SetStatesAttr(ResourceRef states);
-    ResourceRef GetStatesAttr() const { return states_; }
-    void SetStates(PatternDatabase* states);
-    PatternCollection* GetStates() const;
+    /// Set parent configuration reference. All states and body parts for it will be appended to the current configuration.
+    void SetParentAttr(ResourceRef parent);
+    /// Get parent configuration reference.
+    ResourceRef GetParentAttr() const { return parentConfiguration_; }
+    /// Set parent configuration. All states and body parts for it will be appended to the current
+    /// configuration.
+    void SetParent(CharacterConfiguration* parent);
+    /// Get parent configuration.
+    CharacterConfiguration* GetParent() const;
+
+    /// Get pattern state machine configuration.
+    PatternCollection* GetStates();
+
+    /// Get pattern state machine index to query.
+    PatternIndex* GetIndex();
 
     /// Set shadowcaster flag.
     /// @property
@@ -129,12 +146,13 @@ private:
     /// Update matrices.
     void UpdateMatrices();
 
-    /// Skeleton model that has complete bone structure 
+    /// Master model that has complete bone structure 
     ResourceRef model_;
-    /// Skeleton model materials
+    /// Master model materials
     ResourceRefList material_;
-    /// Character states
-    ResourceRef states_;
+
+    /// Parent CharacterConfiguration
+    ResourceRef parentConfiguration_;
     /// Model offset
     Vector3 position_{Vector3::ZERO};
     /// Model rotation
@@ -149,8 +167,12 @@ private:
     /// Character body parts.
     ea::vector<BodyPart> bodyParts_;
 
-    /// Cached state machine via fuzzy pattern matching.
-    mutable SharedPtr<PatternDatabase> cachedStates_;
+    /// State machine implemented via fuzzy pattern matching.
+    PatternCollection states_;
+    /// Pattern index to query.
+    PatternIndex stateIndex_;
+    /// Cached parent state pointer.
+    SharedPtr<CharacterConfiguration> parent_;
 };
 
 }

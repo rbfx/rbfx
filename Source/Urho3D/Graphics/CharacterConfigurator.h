@@ -37,6 +37,8 @@ private:
     struct BodyPart
     {
         int lastMatch_{-1};
+        WeakPtr<CharacterConfiguration> configuration_;
+        unsigned index_{};
         SharedPtr<StaticModel> modelComponent_;
     };
 public:
@@ -68,11 +70,19 @@ public:
     /// Get linear velocity from current animation metadata.
     const Vector3& GetLinearVelocity() const { return velocity_; }
 
+    /// Handle enabled/disabled state change.
+    virtual void OnSetEnabled() override;
+    /// Handle scene node being assigned at creation.
+    virtual void OnNodeSet(Node* node) override;
+
 private:
     /// Handle configuration reload finished.
     void HandleConfigurationReloadFinished(StringHash eventType, VariantMap& eventData);
 
-    void RecreateBodyStructure();
+    void ResizeBodyParts(unsigned num);
+    void ResetBodyStructure();
+    void ResetMasterModel();
+    void ResetBodyPartModels(ea::span<BodyPart> parts, const CharacterConfiguration* configuration, const PatternQuery& query);
 
     void PlayAnimation(StringHash eventType, const VariantMap& eventData);
 
@@ -87,7 +97,7 @@ private:
     Vector3 velocity_ {Vector3::ZERO};
 
     /// Last query applied to restore state from scene xml file.
-    VariantMap savedState_;
+    VariantMap savedQuery_;
 
     int stateIndex_{-1};
 };

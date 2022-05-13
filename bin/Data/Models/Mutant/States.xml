@@ -1,49 +1,51 @@
 <?xml version="1.0"?>
-<patterns>
-	<pattern>
-		<events>
-			<event name="PlayAnimation">
-				<args>
-					<element key="existing" type="Bool" value="true" />
-					<element key="looped" type="Bool" value="true" />
-					<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Idle0.ani" />
-					<element key="exclusive" type="Bool" value="true" />
-					<element key="fadeInTime" type="Float" value="0.200000" />
-				</args>
-			</event>
-		</events>
-	</pattern>
-	<pattern>
-		<predicate>
-			<key word="Run" />
-			<key word="OnGround" min="0.500000" />
-		</predicate>
-		<events>
-			<event name="PlayAnimation">
-				<args>
-					<element key="existing" type="Bool" value="true" />
-					<element key="looped" type="Bool" value="true" />
-					<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Run.ani" />
-					<element key="exclusive" type="Bool" value="true" />
-					<element key="fadeInTime" type="Float" value="0.200000" />
-				</args>
-			</event>
-		</events>
-	</pattern>
-	<pattern>
-		<predicate>
-			<key word="OnGround" max="0.500000" />
-		</predicate>
-		<events>
-			<event name="PlayAnimation">
-				<args>
-					<element key="removeOnCompletion" type="Bool" value="false" />
-					<element key="existing" type="Bool" value="false" />
-					<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Jump1.ani" />
-					<element key="exclusive" type="Bool" value="true" />
-					<element key="fadeInTime" type="Float" value="0.200000" />
-				</args>
-			</event>
-		</events>
-	</pattern>
-</patterns>
+<character>
+	<states>
+		<pattern>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Idle0.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern>
+			<predicate>
+				<key word="Run" />
+				<key word="OnGround" min="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="existing" type="Bool" value="true" />
+						<element key="looped" type="Bool" value="true" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Run.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+		<pattern>
+			<predicate>
+				<key word="OnGround" max="0.500000" />
+			</predicate>
+			<events>
+				<event name="PlayAnimation">
+					<args>
+						<element key="removeOnCompletion" type="Bool" value="false" />
+						<element key="existing" type="Bool" value="false" />
+						<element key="animation" type="ResourceRef" value="Animation;Models/Mutant/Mutant_Jump1.ani" />
+						<element key="exclusive" type="Bool" value="true" />
+						<element key="fadeInTime" type="Float" value="0.200000" />
+					</args>
+				</event>
+			</events>
+		</pattern>
+	</states>
+</character>

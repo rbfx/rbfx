@@ -36,11 +36,7 @@ void PatternCollection::SerializableEventPrototype::SerializeInBlock(Archive& ar
     SerializeValue(archive, "name", serializabeEventId_);
     SerializeOptionalValue(archive, "args", serializabeArguments_, EmptyObject{});
 }
-void PatternCollection::SerializableEventPrototype::Commit()
-{
-    eventId_ = serializabeEventId_;
-    arguments_.insert(serializabeArguments_.begin(), serializabeArguments_.end());
-}
+
 void PatternCollection::SerializableElement::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "word", word_);
@@ -121,8 +117,6 @@ bool PatternQuery::Commit()
 void PatternCollection::Clear()
 {
     serializableRecords_.clear();
-    elements_.clear();
-    records_.clear();
     dirty_ = false;
     dirtyPattern_ = false;
 }
@@ -197,36 +191,19 @@ void PatternCollection::CommitPattern()
     dirtyPattern_ = false;
 }
 
-void PatternCollection::Commit()
+void PatternCollection::SerializeInBlock(Archive& archive)
 {
-    dirty_ = false;
-    int index = 0;
-    for (auto& rec: serializableRecords_)
-    {
-        auto& record = records_.emplace_back();
-        record.startIndex_ = elements_.size();
-        record.recordId_ = index;
-        ++index;
-        for (auto& key: rec.predicate_)
-        {
-            auto& element = elements_.emplace_back();
-            element.key_ = key.word_;
-            element.min_ = key.min_;
-            element.max_ = key.max_;
-            ++record.length_;
-        }
-        for (auto& event : rec.events_)
-        {
-            event.Commit();
-        }
-        std::sort(elements_.begin() + record.startIndex_, elements_.end(),
-            [](Element& a, Element& b) { return a.key_ < b.key_; });
-
-    }
-    //TODO: Sort collection for optimal search
+    SerializeInBlock(archive, "patterns");
+}
+/// Serialize content from/to archive. May throw ArchiveException.
+void PatternCollection::SerializeInBlock(Archive& archive, const char* elementName)
+{
+    SerializeOptionalValue(archive, elementName, serializableRecords_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "pattern"); });
 }
 
-int PatternCollection::Query(const PatternQuery& query) const
+
+int PatternIndex::Query(const PatternQuery& query) const
 {
     if (query.dirty_)
     {
@@ -277,43 +254,81 @@ int PatternCollection::Query(const PatternQuery& query) const
     return bestMatchIndex;
 }
 
-void PatternCollection::SerializeInBlock(Archive& archive)
+void PatternIndex::SendEvent(int patternIndex, Object* object) const
 {
-    SerializeVector(archive, "patterns", serializableRecords_, "pattern");
-    if (archive.IsInput())
-    {
-        Commit();
-    }
-}
-
-void PatternCollection::SendEvent(int patternIndex, Object* object, bool broadcast) const
-{
-    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
+    if (patternIndex < 0 || patternIndex >= records_.size())
         return;
-    for (auto& event : serializableRecords_[patternIndex].events_)
+    for (auto& event : records_[patternIndex].events_)
     {
         object->SendEvent(event.eventId_, event.arguments_);
     }
 }
-unsigned PatternCollection::GetNumEvents(int patternIndex) const
+unsigned PatternIndex::GetNumEvents(int patternIndex) const
 {
-    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
+    if (patternIndex < 0 || patternIndex >= records_.size())
         return 0;
-    return serializableRecords_[patternIndex].events_.size();
+    return records_[patternIndex].events_.size();
 }
-StringHash PatternCollection::GetEventId(int patternIndex, unsigned eventIndex) const
+StringHash PatternIndex::GetEventId(int patternIndex, unsigned eventIndex) const
 {
-    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
+    if (patternIndex < 0 || patternIndex >= records_.size())
         return StringHash{};
-    return serializableRecords_[patternIndex].events_[eventIndex].eventId_;
+    return records_[patternIndex].events_[eventIndex].eventId_;
 }
 
-const VariantMap& PatternCollection::GetEventArgs(int patternIndex, unsigned eventIndex) const
+const VariantMap& PatternIndex::GetEventArgs(int patternIndex, unsigned eventIndex) const
 {
     static VariantMap empty;
-    if (patternIndex < 0 || patternIndex >= serializableRecords_.size())
+    if (patternIndex < 0 || patternIndex >= records_.size())
         return empty;
-    return serializableRecords_[patternIndex].events_[eventIndex].arguments_;
+    return records_[patternIndex].events_[eventIndex].arguments_;
+}
+
+/// Build index from single collection
+void PatternIndex::Build(const PatternCollection* collection)
+{ Build(&collection, &collection + 1); }
+
+/// Build index from multiple collections
+void PatternIndex::Build(const PatternCollection** begin, const PatternCollection** end)
+{
+    if (!begin || !end)
+        return;
+
+    for (auto ptr=begin; ptr != end; ++ptr)
+    {
+        int index = 0;
+        const PatternCollection* patterns = *ptr;
+        if (!patterns)
+            continue;
+
+        for (auto& rec : patterns->serializableRecords_)
+        {
+            auto& record = records_.emplace_back();
+            record.startIndex_ = elements_.size();
+            record.collection_ = patterns;
+            record.recordId_ = index;
+            ++index;
+            record.events_.resize(rec.events_.size());
+            for (unsigned eventIndex = 0; eventIndex < record.events_.size(); ++eventIndex)
+            {
+                const auto& serializabeEvent = rec.events_[eventIndex];
+                auto& newEvent = record.events_[eventIndex];
+                newEvent.eventId_ = serializabeEvent.serializabeEventId_;
+                newEvent.arguments_.insert(
+                    serializabeEvent.serializabeArguments_.begin(), serializabeEvent.serializabeArguments_.end());
+            }
+            for (auto& key : rec.predicate_)
+            {
+                auto& element = elements_.emplace_back();
+                element.key_ = key.word_;
+                element.min_ = key.min_;
+                element.max_ = key.max_;
+                ++record.length_;
+            }
+            std::sort(elements_.begin() + record.startIndex_, elements_.end(),
+                [](Element& a, Element& b) { return a.key_ < b.key_; });
+        }
+    }
 }
 
 PatternDatabase::PatternDatabase(Context* context): Resource(context)
@@ -339,6 +354,7 @@ bool PatternDatabase::BeginLoad(Deserializer& source)
 
     XMLInputArchive archive{xmlFile};
     SerializeInBlock(archive);
+    index_.Build(&patterns_);
     return true;
 }
 

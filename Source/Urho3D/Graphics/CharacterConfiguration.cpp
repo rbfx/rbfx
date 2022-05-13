@@ -53,7 +53,7 @@ void CharacterConfiguration::BodyPart::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "name", name_, {});
     SerializeOptionalValue(archive, "static", static_, {});
     SerializeOptionalValue(archive, "bone", attachmentBone_, {});
-    SerializeOptionalValue(archive, "variants", variants_, EmptyObject{});
+    variants_.SerializeInBlock(archive, "variants");
     if (archive.IsInput())
     {
         ResourceRef model;
@@ -73,7 +73,7 @@ void CharacterConfiguration::BodyPart::SerializeInBlock(Archive& archive)
             
             variants_.AddEvent("SetModel", args);
             variants_.CommitPattern();
-            variants_.Commit();
+            variantIndex_.Build(&variants_);
         }
     }
 }
@@ -119,7 +119,8 @@ void CharacterConfiguration::ResetToDefaults()
 
     model_ = ResourceRef{};
     material_ = ResourceRefList{};
-    states_ = ResourceRef{};
+    parentConfiguration_ = ResourceRef{};
+    parent_.Reset();
     bodyParts_.clear();
 }
 
@@ -128,7 +129,6 @@ void CharacterConfiguration::UpdateMatrices()
     localToWorld_ = Matrix3x4(position_, rotation_, scale_);
     worldToLocal_ = localToWorld_.Inverse();
 }
-
 
 bool CharacterConfiguration::Save(Serializer& dest) const
 {
@@ -140,19 +140,52 @@ bool CharacterConfiguration::Save(Serializer& dest) const
 
 void CharacterConfiguration::SerializeInBlock(Archive& archive)
 {
+    SerializeOptionalValue(archive, "parent", parentConfiguration_);
     SerializeOptionalValue(archive, "model", model_);
     SerializeOptionalValue(archive, "material", material_);
     SerializeOptionalValue(archive, "position", position_, Vector3::ZERO);
     SerializeOptionalValue(archive, "rotation", rotation_, Quaternion::IDENTITY);
     SerializeOptionalValue(archive, "scale", scale_, Vector3::ONE);
     SerializeOptionalValue(archive, "castShadows", castShadows_, true);
-    SerializeOptionalValue(archive, "states", states_);
+    states_.SerializeInBlock(archive, "states");
     SerializeOptionalValue(archive, "bodyParts", bodyParts_, EmptyObject{},
         [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "part"); });
+
+    if (archive.IsInput())
+    {
+        if (!parentConfiguration_.name_.empty())
+        {
+            parent_ = context_->GetSubsystem<ResourceCache>()->GetResource<CharacterConfiguration>(parentConfiguration_.name_);
+        }
+        Commit();
+    }
+}
+
+void CharacterConfiguration::Commit()
+{
+    ea::fixed_vector<const PatternCollection*,2> patterns;
+    CharacterConfiguration* conf = this;
+    while (conf)
+    {
+        patterns.push_back(&conf->states_);
+        conf = conf->GetParent();
+    }
+    stateIndex_.Build(patterns.begin(), patterns.end());
 }
 
 /// Resize body parts vector.
 void CharacterConfiguration::SetNumBodyParts(unsigned num) { bodyParts_.resize(num); }
+
+/// Get total number of body parts including parent body parts.
+unsigned CharacterConfiguration::GetTotalNumBodyParts() const
+{
+    unsigned num = GetNumBodyParts();
+    if (parent_)
+    {
+        num += parent_->GetTotalNumBodyParts();
+    }
+    return num;
+}
 /// Get number of body parts.
 unsigned CharacterConfiguration::GetNumBodyParts() const { return bodyParts_.size(); }
 
@@ -176,35 +209,48 @@ void CharacterConfiguration::SetMaterial(Material* material)
         SetMaterialAttr(ResourceRefList{});
 }
 
-void CharacterConfiguration::SetStatesAttr(ResourceRef state)
+/// Set parent configuration reference. All states and body parts for it will be appended to the current configuration.
+void CharacterConfiguration::SetParentAttr(ResourceRef parent)
 {
-    if (states_ != state)
+    if (parentConfiguration_ != parent)
     {
-        states_ = state;
-        cachedStates_.Reset();
+        parentConfiguration_ = parent;
     }
 }
 
-void CharacterConfiguration::SetStates(PatternDatabase* states)
+/// Set parent configuration. All states and body parts for it will be appended to the current
+/// configuration.
+void CharacterConfiguration::SetParent(CharacterConfiguration* parent)
 {
-    if (cachedStates_)
-        SetStatesAttr(ResourceRef{cachedStates_->GetType(), {cachedStates_->GetName()}});
+    CharacterConfiguration* p = parent;
+    while (p)
+    {
+        if (p == this)
+        {
+            URHO3D_LOGERROR("CharacterConfiguration loop detected");
+            return;
+        }
+        p = p->GetParent();
+    }
+    parent_ = parent;
+    if (parent_)
+        parentConfiguration_ = ResourceRef(parent_->GetType(), parent_->GetName());
     else
-        SetStatesAttr(ResourceRef{});
-    cachedStates_ = states;
+        parentConfiguration_ = ResourceRef{CharacterConfiguration ::GetTypeStatic()};
 }
 
-PatternCollection* CharacterConfiguration::GetStates() const
+/// Get parent configuration.
+CharacterConfiguration* CharacterConfiguration::GetParent() const
 {
-    if (cachedStates_)
-        return cachedStates_->GetPatterns();
-    if (states_.name_.empty())
-        return nullptr;
-    cachedStates_ = context_->GetSubsystem<ResourceCache>()->GetResource<PatternDatabase>(states_.name_);
-    if (cachedStates_)
-        return cachedStates_->GetPatterns();
-    return nullptr;
+    return parent_;
 }
+
+PatternCollection* CharacterConfiguration::GetStates()
+{
+    return &states_;
+}
+
+PatternIndex* CharacterConfiguration::GetIndex() { return &stateIndex_; }
 
 void CharacterConfiguration::SetCastShadows(bool enable) { castShadows_ = enable; }
 
@@ -265,16 +311,16 @@ int CharacterConfiguration::UpdateBodyPart(
         return -1;
 
     auto& bodyPart = bodyParts_[bodyPartIndex];
-    auto res = bodyPart.variants_.Query(query);
+    auto res = bodyPart.variantIndex_.Query(query);
     if (res != lastQueryResult)
     {
-        const auto numEvents = bodyPart.variants_.GetNumEvents(res);
+        const auto numEvents = bodyPart.variantIndex_.GetNumEvents(res);
         for (unsigned i = 0; i < numEvents; ++i)
         {
-            auto eventId = bodyPart.variants_.GetEventId(res, i);
+            auto eventId = bodyPart.variantIndex_.GetEventId(res, i);
             if (eventId == "SetModel")
             {
-                auto& eventArgs = bodyPart.variants_.GetEventArgs(res, i);
+                auto& eventArgs = bodyPart.variantIndex_.GetEventArgs(res, i);
                 modelComponent->SetModelAttr(GetOptional<ResourceRef>("model", eventArgs, {}));
                 modelComponent->SetMaterialsAttr(GetOptional<ResourceRefList>("material", eventArgs, {}));
                 modelComponent->SetCastShadows(GetOptional<bool>("castShadows", eventArgs, true));

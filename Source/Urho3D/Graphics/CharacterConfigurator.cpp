@@ -1,23 +1,23 @@
 #include "CharacterConfigurator.h"
-#include "CharacterConfiguration.h"
-#include "Material.h"
-#include "AnimatedModel.h"
-#include "Animation.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
+#include "AnimatedModel.h"
+#include "Animation.h"
+#include "CharacterConfiguration.h"
+#include "Material.h"
 
 namespace Urho3D
 {
-namespace 
+namespace
 {
-template <typename  T> T GetOptional(StringHash key, const VariantMap& map, const T& defaultValue)
+template <typename T> T GetOptional(StringHash key, const VariantMap& map, const T& defaultValue)
 {
     auto it = map.find(key);
     if (it == map.end())
         return defaultValue;
     return it->second.Get<T>();
 }
-}
+} // namespace
 
 extern const char* GEOMETRY_CATEGORY;
 
@@ -26,7 +26,7 @@ CharacterConfigurator::CharacterConfigurator(Context* context)
 {
 }
 
-Urho3D::CharacterConfigurator::~CharacterConfigurator() { }
+Urho3D::CharacterConfigurator::~CharacterConfigurator() {}
 
 void CharacterConfigurator::RegisterObject(Context* context)
 {
@@ -34,6 +34,7 @@ void CharacterConfigurator::RegisterObject(Context* context)
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Configuration", GetConfigurationAttr, SetConfigurationAttr, ResourceRef,
         ResourceRef(CharacterConfiguration::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Query", VariantMap, savedQuery_, Variant::emptyVariantMap, AM_DEFAULT);
 }
 
 void CharacterConfigurator::SetConfiguration(CharacterConfiguration* configuration)
@@ -56,23 +57,14 @@ void CharacterConfigurator::SetConfiguration(CharacterConfiguration* configurati
 
     if (configuration_)
     {
-        SubscribeToEvent(configuration_, E_RELOADFINISHED,
-            URHO3D_HANDLER(CharacterConfigurator, HandleConfigurationReloadFinished));
+        SubscribeToEvent(
+            configuration_, E_RELOADFINISHED, URHO3D_HANDLER(CharacterConfigurator, HandleConfigurationReloadFinished));
 
-        RecreateBodyStructure();
+        ResetBodyStructure();
     }
 }
-
-void CharacterConfigurator::RecreateBodyStructure()
+void CharacterConfigurator::ResetMasterModel()
 {
-    if (!configuration_)
-    {
-        characterNode_->Remove();
-        masterModel.Reset();
-        characterNode_.Reset();
-        return;
-    }
-
     auto* cache = context_->GetSubsystem<ResourceCache>();
 
     if (!characterNode_)
@@ -87,15 +79,22 @@ void CharacterConfigurator::RecreateBodyStructure()
     if (!masterModel)
         masterModel = characterNode_->GetOrCreateComponent<AnimatedModel>(LOCAL);
 
-    const auto rootModel = configuration_->GetModelAttr();
-    if (!rootModel.name_.empty())
+    const auto materModel = configuration_->GetModelAttr();
+    if (!materModel.name_.empty())
     {
         masterModel->SetModel(cache->GetResource<Model>(configuration_->GetModelAttr().name_));
-        unsigned materialIndex = 0;
-        for (auto& material : configuration_->GetMaterialAttr().names_)
+        auto materialNames = configuration_->GetMaterialAttr().names_;
+        const unsigned numMaterials = materialNames.size();
+        if (numMaterials == 1)
         {
-            masterModel->SetMaterial(materialIndex, cache->GetResource<Material>(material));
-            ++materialIndex;
+            masterModel->SetMaterial(cache->GetResource<Material>(materialNames.front()));
+        }
+        else
+        {
+            for (unsigned materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
+            {
+                masterModel->SetMaterial(materialIndex, cache->GetResource<Material>(materialNames[materialIndex]));
+            }
         }
         masterModel->SetCastShadows(configuration_->GetCastShadows());
     }
@@ -103,51 +102,121 @@ void CharacterConfigurator::RecreateBodyStructure()
     {
         masterModel->SetModel(nullptr);
     }
-    // Create and setup body parts
-    const unsigned numBodyParts = configuration_->GetNumBodyParts();
-    bodyPartNodes_.resize(numBodyParts);
-    PatternQuery q;
-    for (auto& savedKey: savedState_)
-    {
-        q.SetKey(savedKey.first, savedKey.second.GetFloat());
-    }
-    for (unsigned bodyPartIndex = 0; bodyPartIndex < numBodyParts; ++bodyPartIndex)
+}
+
+void CharacterConfigurator::ResetBodyPartModels(
+    ea::span<BodyPart> parts, const CharacterConfiguration* configuration, const PatternQuery& query)
+{
+    if (!configuration)
+        return;
+
+    unsigned bodyPartIndex = 0;
+    for (; bodyPartIndex < configuration->GetNumBodyParts() && bodyPartIndex < parts.size(); ++bodyPartIndex)
     {
         auto& bodyPart = bodyPartNodes_[bodyPartIndex];
         if (!bodyPart.modelComponent_)
         {
+            bodyPart.configuration_ = configuration_;
+            bodyPart.index_ = bodyPartIndex;
             bodyPart.modelComponent_ = configuration_->CreateBodyPartModelComponent(bodyPartIndex, characterNode_);
-            bodyPart.lastMatch_ = configuration_->UpdateBodyPart(bodyPartIndex, bodyPart.modelComponent_, q, -1);
+            bodyPart.lastMatch_ = configuration_->UpdateBodyPart(bodyPartIndex, bodyPart.modelComponent_, query, -1);
         }
     }
+    if (bodyPartIndex < parts.size())
+    {
+        ResetBodyPartModels(parts.subspan(bodyPartIndex), configuration->GetParent(), query);
+    }
+}
+
+void CharacterConfigurator::ResetBodyStructure()
+{
+    if (!configuration_)
+    {
+        if (characterNode_)
+            characterNode_->Remove();
+        masterModel.Reset();
+        characterNode_.Reset();
+        return;
+    }
+
+    // Create and setup body parts
+    ResizeBodyParts(configuration_->GetTotalNumBodyParts());
+
+    PatternQuery q;
+    for (auto& savedKey : savedQuery_)
+    {
+        q.SetKey(savedKey.first, savedKey.second.GetFloat());
+    }
+
+    ResetMasterModel();
+
+    ResetBodyPartModels(ea::span<BodyPart>(bodyPartNodes_), configuration_, q);
 
     animationController_ = characterNode_->GetOrCreateComponent<AnimationController>(LOCAL);
+}
+void CharacterConfigurator::ResizeBodyParts(unsigned numBodyParts)
+{
+    for (unsigned partToDelete = numBodyParts; partToDelete < bodyPartNodes_.size(); ++partToDelete)
+    {
+        auto& model = bodyPartNodes_[partToDelete].modelComponent_;
+        if (model && model->GetNode())
+        {
+            Node* node = model->GetNode();
+            if (node != characterNode_)
+                node->Remove();
+            else
+                model->GetNode()->RemoveComponent(model);
+        }
+        model.Reset();
+    }
+    bodyPartNodes_.resize(numBodyParts);
+}
+
+    /// Handle enabled/disabled state change.
+void CharacterConfigurator::OnSetEnabled()
+{
+    Component::OnSetEnabled();
+}
+/// Handle scene node being assigned at creation.
+void CharacterConfigurator::OnNodeSet(Node* node)
+{
+    Component::OnNodeSet(node);
+    if (node)
+    {
+        ResetBodyStructure();
+    }
+    else
+    {
+        ResizeBodyParts(0);
+        if (characterNode_)
+        {
+            characterNode_->Remove();
+            characterNode_.Reset();
+        }
+    }
 }
 
 void CharacterConfigurator::Update(const PatternQuery& query)
 {
-    RecreateBodyStructure();
+    ResetBodyStructure();
 
-    savedState_.clear();
+    savedQuery_.clear();
     for (unsigned i = 0; i < query.GetNumKeys(); ++i)
     {
-        savedState_[query.GetKeyHash(i)] = query.GetValue(i);
+        savedQuery_[query.GetKeyHash(i)] = query.GetValue(i);
     }
 
-    const unsigned numBodyParts = configuration_->GetNumBodyParts();
-    bodyPartNodes_.resize(numBodyParts);
-
-    for (unsigned bodyPartIndex = 0; bodyPartIndex < numBodyParts; ++bodyPartIndex)
+    for (unsigned bodyPartIndex = 0; bodyPartIndex < bodyPartNodes_.size(); ++bodyPartIndex)
     {
         auto& bodyPart = bodyPartNodes_[bodyPartIndex];
-        if (bodyPart.modelComponent_)
+        if (bodyPart.modelComponent_ && bodyPart.configuration_)
         {
-            bodyPart.lastMatch_ = configuration_->UpdateBodyPart(
-                bodyPartIndex, bodyPart.modelComponent_, query, bodyPart.lastMatch_);
+            bodyPart.lastMatch_ = bodyPart.configuration_->UpdateBodyPart(
+                bodyPart.index_, bodyPart.modelComponent_, query, bodyPart.lastMatch_);
         }
     }
 
-    const auto* states = configuration_->GetStates();
+    const auto* states = configuration_->GetIndex();
     if (states)
     {
         const auto stateMatch = states->Query(query);
@@ -156,13 +225,13 @@ void CharacterConfigurator::Update(const PatternQuery& query)
             stateIndex_ = stateMatch;
             if (stateIndex_ >= 0)
             {
-                const auto numEvents = configuration_->GetStates()->GetNumEvents(stateIndex_);
+                const auto numEvents = states->GetNumEvents(stateIndex_);
                 for (unsigned i = 0; i < numEvents; ++i)
                 {
-                    auto eventId = configuration_->GetStates()->GetEventId(stateIndex_, i);
-                    if (eventId == "PlayAnimation")
+                    auto eventId = states->GetEventId(stateIndex_, i);
+                    if (eventId == StringHash("PlayAnimation"))
                     {
-                        PlayAnimation(eventId, configuration_->GetStates()->GetEventArgs(stateIndex_, i));
+                        PlayAnimation(eventId, states->GetEventArgs(stateIndex_, i));
                     }
                 }
             }
@@ -178,7 +247,8 @@ void CharacterConfigurator::PlayAnimation(StringHash eventType, const VariantMap
     Animation* animation{};
     if (animationIt->second.GetType() == VAR_RESOURCEREF)
     {
-        animation = context_->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationIt->second.GetResourceRef().name_);
+        animation =
+            context_->GetSubsystem<ResourceCache>()->GetResource<Animation>(animationIt->second.GetResourceRef().name_);
     }
     else if (animationIt->second.GetType() == VAR_RESOURCEREFLIST)
     {
@@ -203,7 +273,8 @@ void CharacterConfigurator::PlayAnimation(StringHash eventType, const VariantMap
     params.weight_ = GetOptional<float>("weight", eventData, params.weight_);
     params.removeOnZeroWeight_ = GetOptional<bool>("removeOnZeroWeight", eventData, params.removeOnZeroWeight_);
 
-    velocity_ = configuration_->LocalToWorld() * (animation->GetMetadata("LinearVelocity").GetVector3() * params.speed_);
+    velocity_ =
+        configuration_->LocalToWorld() * (animation->GetMetadata("LinearVelocity").GetVector3() * params.speed_);
 
     if (exclusive)
     {
