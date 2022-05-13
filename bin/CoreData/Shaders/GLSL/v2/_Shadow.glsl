@@ -95,10 +95,7 @@ vec3 DirectionToUV(const vec3 vec, const vec2 bias)
     }
 
     /// Sample shadow map texture with given offset
-    #if defined(GL_ES)
-        #define SampleShadowOffset(shadowPos, identity, dx, dy) \
-            SampleShadow((shadowPos) + vec4(identity.x * float(dx), identity.y * float(dy), 0.0, 0.0))
-    #elif defined(GL3)
+    #if defined(GL3) && !defined(GL_ES)
         #define SampleShadowOffset(shadowPos, identity, dx, dy) \
             textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy))
     #else
