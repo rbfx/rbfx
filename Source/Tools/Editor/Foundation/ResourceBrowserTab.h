@@ -90,7 +90,7 @@ public:
 
     /// Implement EditorTab
     /// @{
-    void WriteIniSettings(ImGuiTextBuffer* output) override;
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
     /// @}
 

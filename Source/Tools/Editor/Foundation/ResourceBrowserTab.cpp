@@ -179,7 +179,7 @@ void ResourceBrowserTab::RevealInExplorerSelected()
         RevealInExplorer(entry->absolutePath_);
 }
 
-void ResourceBrowserTab::WriteIniSettings(ImGuiTextBuffer* output)
+void ResourceBrowserTab::WriteIniSettings(ImGuiTextBuffer& output)
 {
     BaseClassName::WriteIniSettings(output);
 
@@ -287,6 +287,10 @@ void ResourceBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 
 void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName)
 {
+    const auto project = GetProject();
+    if (project->IsFileNameIgnored(displayedName))
+        return;
+
     ui::PushID(displayedName.c_str());
 
     const unsigned rootIndex = GetRootIndex(entry);
@@ -507,6 +511,10 @@ void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
 
 void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entry)
 {
+    const auto project = GetProject();
+    if (project->IsFileNameIgnored(entry.localName_))
+        return;
+
     ui::PushID(entry.localName_.c_str());
 
     ImGuiContext& g = *GImGui;
@@ -601,6 +609,10 @@ void ResourceBrowserTab::RenderCompositeFile(const FileSystemEntry& entry)
 
 void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, const FileSystemEntry& ownerEntry)
 {
+    const auto project = GetProject();
+    if (project->IsFileNameIgnored(entry.localName_))
+        return;
+
     ui::PushID(entry.resourceName_.c_str());
 
     // Render the element itself

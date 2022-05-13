@@ -34,6 +34,51 @@ namespace Urho3D
 
 void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor);
 
+/// Interface of Camera controller used by Scene.
+class SceneCameraController : public Object
+{
+    URHO3D_OBJECT(SceneCameraController, Object);
+
+public:
+    explicit SceneCameraController(Scene* scene, Camera* camera);
+    ~SceneCameraController() override;
+
+    /// Return name in UI.
+    virtual ea::string GetTitle() const = 0;
+    /// Return whether the mouse should be hidden.
+    virtual bool IsMouseHidden() { return false; }
+    /// Update controller for given camera object.
+    virtual void Update() = 0;
+
+protected:
+    const WeakPtr<Scene> scene_;
+    const WeakPtr<Camera> camera_;
+};
+
+using SceneCameraControllerPtr = SharedPtr<SceneCameraController>;
+
+/// Description of camera controller for SceneViewTab.
+struct SceneCameraControllerDesc
+{
+    ea::string name_;
+    ea::function<SceneCameraControllerPtr(Scene* scene, Camera* camera)> factory_;
+};
+
+/// Single page of SceneViewTab.
+struct SceneViewPage
+{
+    SharedPtr<Scene> scene_;
+    SharedPtr<SceneRendererToTexture> renderer_;
+    ea::vector<SceneCameraControllerPtr> cameraControllers_;
+    ea::string cfgFileName_;
+
+    /// UI state
+    /// @{
+    unsigned currentCameraController_{};
+    /// @}
+};
+
+/// Tab that renders Scene and enables Scene manipulation.
 class SceneViewTab : public ResourceEditorTab
 {
     URHO3D_OBJECT(SceneViewTab, ResourceEditorTab);
@@ -42,8 +87,13 @@ public:
     explicit SceneViewTab(Context* context);
     ~SceneViewTab() override;
 
+    /// Register new type of camera controller. Should be called before any scenes are loaded.
+    void RegisterCameraController(const SceneCameraControllerDesc& desc);
+    template <class T> void RegisterCameraController();
+
     /// ResourceEditorTab implementation
     /// @{
+    ea::string GetResourceTitle() { return "Scene"; }
     bool SupportMultipleResources() { return true; }
     bool CanOpenResource(const OpenResourceRequest& request) override;
     /// @}
@@ -51,9 +101,13 @@ public:
 protected:
     /// ResourceEditorTab implementation
     /// @{
+    void UpdateAndRenderContextMenuItems() override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+
     void OnResourceLoaded(const ea::string& resourceName) override;
     void OnResourceUnloaded(const ea::string& resourceName) override;
     void OnActiveResourceChanged(const ea::string& resourceName) override;
+    void OnResourceSaved(const ea::string& resourceName) override;
 
     void UpdateAndRenderContent() override;
     /// @}
@@ -61,13 +115,24 @@ protected:
 private:
     IntVector2 GetContentSize() const;
 
-    struct SceneData
-    {
-        SharedPtr<Scene> scene_;
-        SharedPtr<SceneRendererToTexture> renderer_;
-    };
+    SceneViewPage* GetPage(const ea::string& resourceName);
+    SceneViewPage* GetActivePage();
+    SceneViewPage CreatePage(Scene* scene) const;
 
-    ea::unordered_map<ea::string, SceneData> scenes_;
+    void SavePageConfig(const SceneViewPage& page) const;
+    void LoadPageConfig(SceneViewPage& page) const;
+
+    ea::vector<SceneCameraControllerDesc> cameraControllers_;
+    ea::unordered_map<ea::string, SceneViewPage> scenes_;
 };
+
+template <class T>
+void SceneViewTab::RegisterCameraController()
+{
+    SceneCameraControllerDesc desc;
+    desc.name_ = T::GetTypeNameStatic();
+    desc.factory_ = [](Scene* scene, Camera* camera) { return MakeShared<T>(scene, camera); };
+    RegisterCameraController(desc);
+}
 
 }

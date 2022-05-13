@@ -77,6 +77,8 @@
 #include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
+#include "Foundation/DefaultCameraController2D.h"
+#include "Foundation/DefaultCameraController3D.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
 #include "Foundation/ResourceBrowserTab.h"
@@ -108,6 +110,9 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.InspectorTab", &Foundation_InspectorTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowserTab", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowserTab", &Foundation_HierarchyBrowserTab);
+
+    editorPluginManager_->AddPlugin("Foundation.DefaultCameraController3D", &Foundation_DefaultCameraController3D);
+    editorPluginManager_->AddPlugin("Foundation.DefaultCameraController2D", &Foundation_DefaultCameraController2D);
 }
 
 void Editor::Setup()
@@ -862,7 +867,7 @@ void Editor::SetupSystemUI()
         if (auto* editor = systemUI->GetSubsystem<Editor>())
         {
             if (auto* projectEditor = editor->GetProjectEditor())
-                projectEditor->WriteIniSettings(buf);
+                projectEditor->WriteIniSettings(*buf);
         }
 #if 0
         // Save tabs

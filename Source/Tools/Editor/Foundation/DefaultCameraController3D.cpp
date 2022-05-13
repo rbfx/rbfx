@@ -20,21 +20,19 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include <Urho3D/SystemUI/SystemUI.h>
-
-#include <EASTL/functional.h>
-#include <EASTL/optional.h>
-#include <EASTL/string.h>
+#include "../Foundation/DefaultCameraController3D.h"
 
 namespace Urho3D
 {
 
-void WriteStringToIni(ImGuiTextBuffer& output, ea::string_view name, ea::string_view value);
-ea::optional<ea::string> ReadStringFromIni(ea::string_view line, ea::string_view name);
+void Foundation_DefaultCameraController3D(Context* context, SceneViewTab* sceneViewTab)
+{
+    sceneViewTab->RegisterCameraController<DefaultCameraController3D>();
+}
 
-void WriteIntToIni(ImGuiTextBuffer& output, ea::string_view name, int value);
-ea::optional<int> ReadIntFromIni(ea::string_view line, ea::string_view name);
+DefaultCameraController3D::DefaultCameraController3D(Scene* scene, Camera* camera)
+    : SceneCameraController(scene, camera)
+{
+}
 
 }

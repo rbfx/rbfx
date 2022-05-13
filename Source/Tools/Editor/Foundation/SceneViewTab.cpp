@@ -20,35 +20,101 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/IniHelpers.h"
 #include "../Foundation/SceneViewTab.h"
 
+#include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/Scene.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 namespace Urho3D
 {
 
+namespace
+{
+
+void SerializeValue(Archive& archive, const char* name, SceneViewPage& page)
+{
+    auto block = archive.OpenUnorderedBlock(name);
+
+    SerializeOptionalValue(archive, "CurrentCameraController", page.currentCameraController_, AlwaysSerialize{});
+
+    for (SceneCameraController* controller : page.cameraControllers_)
+        SerializeOptionalValue(archive, controller->GetTypeName().c_str(), *controller, AlwaysSerialize{});
+}
+
+}
+
 void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor)
 {
     projectEditor->AddTab(MakeShared<SceneViewTab>(context));
+}
+
+SceneCameraController::SceneCameraController(Scene* scene, Camera* camera)
+    : Object(scene->GetContext())
+    , scene_(scene)
+    , camera_(camera)
+{
+}
+
+SceneCameraController::~SceneCameraController()
+{
 }
 
 SceneViewTab::SceneViewTab(Context* context)
     : ResourceEditorTab(context, "Scene View", "9f4f7432-dd60-4c83-aecd-2f6cf69d3549",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
 {
+    auto project = GetProject();
+    project->IgnoreFileNamePattern("*.xml.cfg");
 }
 
 SceneViewTab::~SceneViewTab()
 {
 }
 
+void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
+{
+    cameraControllers_.push_back(desc);
+}
+
 bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)
 {
     return request.xmlFile_ && request.xmlFile_->GetRoot("scene");
+}
+
+void SceneViewTab::UpdateAndRenderContextMenuItems()
+{
+    BaseClassName::UpdateAndRenderContextMenuItems();
+
+    if (SceneViewPage* activePage = GetActivePage())
+    {
+        ResetSeparator();
+
+        unsigned index = 0;
+        for (const SceneCameraController* controller : activePage->cameraControllers_)
+        {
+            const bool selected = index == activePage->currentCameraController_;
+            if (ui::MenuItem(controller->GetTitle().c_str(), nullptr, selected))
+                activePage->currentCameraController_ = index;
+            ++index;
+        }
+    }
+
+    SetSeparator();
+
+}
+
+void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    BaseClassName::ApplyHotkeys(hotkeyManager);
 }
 
 void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
@@ -64,10 +130,9 @@ void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
 
     auto scene = MakeShared<Scene>(context_);
     scene->LoadXML(xmlFile->GetRoot());
+    scene->SetFileName(xmlFile->GetAbsoluteFileName());
 
-    SceneData& data = scenes_[resourceName];
-    data.scene_ = scene;
-    data.renderer_ = MakeShared<SceneRendererToTexture>(scene);
+    scenes_[resourceName] = CreatePage(scene);
 }
 
 void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
@@ -81,17 +146,25 @@ void SceneViewTab::OnActiveResourceChanged(const ea::string& resourceName)
         data.renderer_->SetActive(name == resourceName);
 }
 
-void SceneViewTab::UpdateAndRenderContent()
+void SceneViewTab::OnResourceSaved(const ea::string& resourceName)
 {
-    const auto iter = scenes_.find(GetActiveResourceName());
-    if (iter == scenes_.end())
+    SceneViewPage* page = GetPage(resourceName);
+    if (!page)
         return;
 
-    SceneData& currentScene = iter->second;
-    currentScene.renderer_->SetTextureSize(GetContentSize());
-    currentScene.renderer_->Update();
+    SavePageConfig(*page);
+}
 
-    Texture2D* sceneTexture = currentScene.renderer_->GetTexture();
+void SceneViewTab::UpdateAndRenderContent()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    activePage->renderer_->SetTextureSize(GetContentSize());
+    activePage->renderer_->Update();
+
+    Texture2D* sceneTexture = activePage->renderer_->GetTexture();
     ui::SetCursorPos({0, 0});
     ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 }
@@ -102,6 +175,46 @@ IntVector2 SceneViewTab::GetContentSize() const
     const ImGuiWindow* window = g.CurrentWindow;
     const ImRect rect = ImRound(window->ContentRegionRect);
     return {RoundToInt(rect.GetWidth()), RoundToInt(rect.GetHeight())};
+}
+
+SceneViewPage* SceneViewTab::GetPage(const ea::string& resourceName)
+{
+    auto iter = scenes_.find(resourceName);
+    return iter != scenes_.end() ? &iter->second : nullptr;
+}
+
+SceneViewPage* SceneViewTab::GetActivePage()
+{
+    return GetPage(GetActiveResourceName());
+}
+
+SceneViewPage SceneViewTab::CreatePage(Scene* scene) const
+{
+    SceneViewPage page;
+
+    page.scene_ = scene;
+    page.renderer_ = MakeShared<SceneRendererToTexture>(scene);
+    page.cfgFileName_ = scene->GetFileName() + ".cfg";
+
+    for (const SceneCameraControllerDesc& desc : cameraControllers_)
+        page.cameraControllers_.push_back(desc.factory_(scene, page.renderer_->GetCamera()));
+
+    LoadPageConfig(page);
+    return page;
+}
+
+void SceneViewTab::SavePageConfig(const SceneViewPage& page) const
+{
+    auto jsonFile = MakeShared<JSONFile>(context_);
+    jsonFile->SaveObject("Scene", page);
+    jsonFile->SaveFile(page.cfgFileName_);
+}
+
+void SceneViewTab::LoadPageConfig(SceneViewPage& page) const
+{
+    auto jsonFile = MakeShared<JSONFile>(context_);
+    jsonFile->LoadFile(page.cfgFileName_);
+    jsonFile->LoadObject("Scene", page);
 }
 
 }

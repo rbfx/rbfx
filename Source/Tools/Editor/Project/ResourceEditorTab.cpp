@@ -21,6 +21,7 @@
 //
 
 #include "../Core/IniHelpers.h"
+#include "../Core/HotkeyManager.h"
 #include "../Project/ResourceEditorTab.h"
 
 namespace Urho3D
@@ -38,7 +39,7 @@ ResourceEditorTab::~ResourceEditorTab()
 {
 }
 
-void ResourceEditorTab::WriteIniSettings(ImGuiTextBuffer* output)
+void ResourceEditorTab::WriteIniSettings(ImGuiTextBuffer& output)
 {
     BaseClassName::WriteIniSettings(output);
 
@@ -132,8 +133,26 @@ void ResourceEditorTab::CloseAllResources()
     resourceNames_.clear();
 }
 
+void ResourceEditorTab::SaveResource(const ea::string& resourceName)
+{
+    if (resourceNames_.contains(resourceName))
+    {
+        OnResourceSaved(resourceName);
+    }
+}
+
+void ResourceEditorTab::SaveAllResources()
+{
+    for (const ea::string& resourceName : resourceNames_)
+    {
+        OnResourceSaved(resourceName);
+    }
+}
+
 void ResourceEditorTab::UpdateAndRenderContextMenuItems()
 {
+    ea::string closeResourcePending;
+
     ResetSeparator();
     if (resourceNames_.empty())
     {
@@ -148,16 +167,25 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
             bool selected = resourceName == activeResourceName_;
             if (ui::MenuItem(resourceName.c_str(), nullptr, &selected))
                 SetActiveResource(resourceName);
+            else if (ui::IsItemClicked(MOUSEB_MIDDLE))
+                closeResourcePending = resourceName;
         }
         ui::PopID();
         SetSeparator();
     }
 
-    ResetSeparator();
-    if (ui::MenuItem("Close Resource", nullptr, false, !resourceNames_.empty()))
-        CloseResource(activeResourceName_);
+    {
+        ResetSeparator();
+        const ea::string title = Format("Close Current {}", GetResourceTitle());
+        const HotkeyCombination hotkey{QUAL_NONE, MOUSEB_MIDDLE};
+        if (ui::MenuItem(title.c_str(), hotkey.ToString().c_str(), false, !resourceNames_.empty()))
+            closeResourcePending = activeResourceName_;
+    }
 
     SetSeparator();
+
+    if (!closeResourcePending.empty())
+        CloseResource(closeResourcePending);
 }
 
 void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)

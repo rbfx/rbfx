@@ -50,9 +50,27 @@ enum class EditorTabPlacement
     DockBottom,
 };
 
-class EditorTab : public Object
+/// Interface for entity configurable via INI file.
+class EditorConfigurable : public Object
 {
-    URHO3D_OBJECT(EditorTab, Object);
+    URHO3D_OBJECT(EditorConfigurable, Object);
+
+public:
+    explicit EditorConfigurable(Context* context) : Object(context) {}
+
+    /// Write all UI settings to text INI file.
+    virtual void WriteIniSettings(ImGuiTextBuffer& output) = 0;
+    /// Read one line of text INI file. May be called several times.
+    virtual void ReadIniSettings(const char* line) = 0;
+    /// Return entry that should be read.
+    virtual ea::string GetIniEntry() const = 0;
+};
+
+/// Base class for any Editor tab.
+/// It's recommended to create exactly one instance of the tab for the project lifetime.
+class EditorTab : public EditorConfigurable
+{
+    URHO3D_OBJECT(EditorTab, EditorConfigurable);
 
 public:
     Signal<void()> OnRenderContextMenu;
@@ -75,10 +93,12 @@ public:
     /// Called when project is fully loaded.
     virtual void OnProjectLoaded() {}
 
-    /// Write all UI settings to text INI file.
-    virtual void WriteIniSettings(ImGuiTextBuffer* output);
-    /// Read one line of text INI file. May be called several times.
-    virtual void ReadIniSettings(const char* line);
+    /// Implement EditorConfigurable
+    /// @{
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
+    void ReadIniSettings(const char* line) override;
+    ea::string GetIniEntry() const override { return GetUniqueId(); }
+    /// @}
 
     /// Return properties of the tab.
     /// @{

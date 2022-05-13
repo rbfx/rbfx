@@ -32,7 +32,7 @@ namespace Urho3D
 
 EditorTab::EditorTab(Context* context, const ea::string& title, const ea::string& guid,
     EditorTabFlags flags, EditorTabPlacement placement)
-    : Object(context)
+    : EditorConfigurable(context)
     , title_(title)
     , guid_(guid)
     , uniqueId_(Format("{}###{}", title_, guid_))
@@ -51,10 +51,8 @@ void EditorTab::ApplyPlugins()
     editorPluginManager->Apply(this);
 }
 
-void EditorTab::WriteIniSettings(ImGuiTextBuffer* output)
+void EditorTab::WriteIniSettings(ImGuiTextBuffer& output)
 {
-    output->appendf("\n[Project][%s]\n", GetUniqueId().c_str());
-
     WriteIntToIni(output, "IsOpen", open_ ? 1 : 0);
 }
 
