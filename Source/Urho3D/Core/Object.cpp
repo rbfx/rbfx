@@ -390,6 +390,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 
         groupNonSpec->EndSendEvent();
     }
+
     context->EndSendEvent();
 }
 
