@@ -17,7 +17,7 @@ SAMPLER(4, samplerCube sEnvCubeMap)
 SAMPLER(8, sampler2D sLightRampMap)
 SAMPLER(9, sampler2D sLightSpotMap)
 SAMPLER(9, samplerCube sLightCubeMap)
-#if defined(URHO3D_VARIANCE_SHADOW_MAP) || (defined(GL_ES) && !defined(GL3))
+#if defined(URHO3D_VARIANCE_SHADOW_MAP) || defined(GL_ES)
     SAMPLER_HIGHP(10, sampler2D sShadowMap)
 #else
     SAMPLER_HIGHP(10, sampler2DShadow sShadowMap)
