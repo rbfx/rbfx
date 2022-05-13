@@ -219,6 +219,8 @@ void SamplesManager::Start()
 
     inspectorNode_ = MakeShared<Scene>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
+    // Keyboard arrow keys are already handled by UI
+    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
     SetState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
@@ -257,6 +259,7 @@ void SamplesManager::Start()
     list->SetHighlightMode(HM_ALWAYS);
     list->SetStyleAuto();
     list->SetName("SampleList");
+    list->SetFocus(true);
 
     // Get logo texture
     ResourceCache* cache = GetSubsystem<ResourceCache>();

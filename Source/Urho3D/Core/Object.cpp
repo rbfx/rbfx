@@ -365,32 +365,30 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
     }
 
     // Then the non-specific receivers
+    SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
+    if (groupNonSpec)
     {
-        SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
-        if (groupNonSpec)
+        groupNonSpec->BeginSendEvent();
+
+        const unsigned numReceivers = groupNonSpec->receivers_.size();
+        for (unsigned i = 0; i < numReceivers; ++i)
         {
-            groupNonSpec->BeginSendEvent();
+            Object* receiver = groupNonSpec->receivers_[i];
+            // If there were specific receivers, check that the event is not sent doubly to them
+            if (!receiver || (group && group->receivers_.contains(receiver)))
+                continue;
 
-            const unsigned numReceivers = groupNonSpec->receivers_.size();
-            for (unsigned i = 0; i < numReceivers; ++i)
+            receiver->OnEvent(this, eventType, eventData);
+
+            if (self.Expired())
             {
-                Object* receiver = groupNonSpec->receivers_[i];
-                // If there were specific receivers, check that the event is not sent doubly to them
-                if (!receiver || (group && group->receivers_.contains(receiver)))
-                    continue;
-
-                receiver->OnEvent(this, eventType, eventData);
-
-                if (self.Expired())
-                {
-                    groupNonSpec->EndSendEvent();
-                    context->EndSendEvent();
-                    return;
-                }
+                groupNonSpec->EndSendEvent();
+                context->EndSendEvent();
+                return;
             }
-
-            groupNonSpec->EndSendEvent();
         }
+
+        groupNonSpec->EndSendEvent();
     }
     context->EndSendEvent();
 }

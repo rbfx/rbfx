@@ -25,6 +25,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
+#include <SDL.h>
 
 namespace Urho3D
 {
@@ -36,19 +37,26 @@ DirectionAggregator::DirectionAggregator(Context* context)
     , input_(context->GetSubsystem<Input>())
 {
     // By default the full axis range is about 1 inch
-    auto* graphics = context->GetSubsystem<Graphics>();
+    const auto* graphics = context->GetSubsystem<Graphics>();
     if (graphics && graphics->GetDisplayDPI().x_ > 0)
         touchSensitivity_ = 2.0f / graphics->GetDisplayDPI().x_;
     else
         touchSensitivity_ = 2.0f / 96.0f;
 
-    unsigned numJoysticks = input_->GetNumJoysticks();
-    for (unsigned i = 0; i < numJoysticks; ++i)
+    // Check if "accelerometer as joystick" option enabled in SDL (it is ON by default)
+    const auto accelerometerAsJoystick = SDL_GetHint("SDL_HINT_ACCELEROMETER_AS_JOYSTICK");
+    if (!accelerometerAsJoystick || std::string_view("0") != accelerometerAsJoystick)
     {
-        auto* joystick = input_->GetJoystickByIndex(i);
-        if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
+        // Find and ignore virtual joystick id.
+        // SDL defines a virtual joystick as having 3 axis and no buttons or hats.
+        const unsigned numJoysticks = input_->GetNumJoysticks();
+        for (unsigned i = 0; i < numJoysticks; ++i)
         {
-            ignoreJoystickId_ = joystick->joystickID_;
+            const auto* joystick = input_->GetJoystickByIndex(i);
+            if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
+            {
+                ignoreJoystickId_ = joystick->joystickID_;
+            }
         }
     }
 }
