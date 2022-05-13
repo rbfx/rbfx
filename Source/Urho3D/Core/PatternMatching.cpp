@@ -73,7 +73,8 @@ void PatternQuery::SetKey(StringHash key)
     auto& element = elements_.emplace_back();
     element.key_ = key;
     element.value_ = 1.0f;
-    dirty_ |= elements_.size() > 1 && elements_[elements_.size()-2].key_ > elements_.back().key_;
+    // needsSorting_   |= elements_.size() > 1 && elements_[elements_.size() - 2].key_ > elements_.back().key_;
+    dirty_ = true;
 }
 
 /// Add key with associated value to the current query.
@@ -82,6 +83,7 @@ void PatternQuery::SetKey(StringHash key, float value) {
     {
         if (element.key_ == key)
         {
+            dirty_ |= element.value_ != value;
             element.value_ = value;
             return;
         }
@@ -89,7 +91,8 @@ void PatternQuery::SetKey(StringHash key, float value) {
     auto& element = elements_.emplace_back();
     element.key_ = key;
     element.value_ = value;
-    dirty_ |= elements_.size() > 1 && elements_[elements_.size() - 2].key_ > elements_.back().key_;
+    //needsSorting_ |= elements_.size() > 1 && elements_[elements_.size() - 2].key_ > elements_.back().key_;
+    dirty_ = true;
 }
 
 /// Remove key from the query.
@@ -106,12 +109,13 @@ void PatternQuery::RemoveKey(const ea::string& key) {
 }
 
 /// Commit changes and recalculate derived members.
-void PatternQuery::Commit()
+bool PatternQuery::Commit()
 {
     if (!dirty_)
-        return;
+        return false;
     dirty_ = false;
     std::sort(elements_.begin(), elements_.end(), [](Element& a, Element& b) { return a.key_ < b.key_; });
+    return true;
 }
 
 void PatternCollection::Clear()

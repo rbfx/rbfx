@@ -140,6 +140,9 @@
 #endif
 #endif
 #endif
+#if URHO3D_SYSTEMUI
+#include "113_PatternMatching/PatternMatchingDemo.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -364,6 +367,9 @@ void SamplesManager::Start()
     RegisterSample<AdvancedNetworking>();
 #endif
 #endif
+#endif
+#if URHO3D_SYSTEMUI
+    RegisterSample<PatternMatchingDemo>();
 #endif
 
     if (!commandLineArgs_.empty())

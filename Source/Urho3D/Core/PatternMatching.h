@@ -54,8 +54,8 @@ public:
     void SetKey(StringHash key, float value);
     /// Remove key from the query.
     void RemoveKey(const ea::string& key);
-    /// Commit changes and recalculate derived members.
-    void Commit();
+    /// Commit changes and recalculate derived members. Returns true if any changes were made to the pattern.
+    bool Commit();
 
     unsigned GetNumKeys() const { return elements_.size(); }
     StringHash GetKeyHash(unsigned index) const { return elements_[index].key_; }
