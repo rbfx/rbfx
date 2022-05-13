@@ -470,7 +470,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         ResetLodLevels();
 
         // Reserve space for skinning matrices
-        skinMatrices_.resize(2, skeleton_.GetNumBones());
+        skinMatrices_.resize(skeleton_.GetNumBones());
         skeletonData_.resize(skeleton_.GetNumBones());
         SetGeometryBoneMappings();
 

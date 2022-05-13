@@ -86,7 +86,7 @@ vec3 DirectionToUV(const vec3 vec, const vec2 bias)
     half SampleShadow(const vec4 shadowPos)
     {
         #if defined(GL3)
-            return textureProj(sShadowMap, shadowPos).r;
+            return textureProj(sShadowMap, shadowPos);
         #elif defined(GL_ES)
             return texture2DProj(sShadowMap, shadowPos).r * shadowPos.w > shadowPos.z ? 1.0 : 0.0;
         #else
@@ -97,7 +97,7 @@ vec3 DirectionToUV(const vec3 vec, const vec2 bias)
     /// Sample shadow map texture with given offset
     #if defined(GL3)
         #define SampleShadowOffset(shadowPos, identity, dx, dy) \
-            textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy)).r
+            textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy))
     #else
         #define SampleShadowOffset(shadowPos, identity, dx, dy) \
             SampleShadow((shadowPos) + vec4(identity.x * float(dx), identity.y * float(dy), 0.0, 0.0))
