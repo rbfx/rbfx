@@ -81,6 +81,12 @@ void Sample::Start()
 
 void Sample::Stop()
 {
+    if (screenJoystickIndex_ != M_MAX_UNSIGNED)
+    {
+        Input* input = GetSubsystem<Input>();
+        input->RemoveScreenJoystick((SDL_JoystickID)screenJoystickIndex_);
+        screenJoystickIndex_ = M_MAX_UNSIGNED;
+    }
 }
 
 void Sample::InitTouchInput()
