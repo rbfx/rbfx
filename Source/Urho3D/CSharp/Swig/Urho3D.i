@@ -515,7 +515,14 @@ public:
 
 // --------------------------------------- Extra components and resources --------------
 %include "Urho3D/Input/FreeFlyController.h"
-%include "Urho3D/Core/PatternMatching.h"
+// --------------------------------------- Pattern matching --------------
+%ignore Urho3D::PatternIndex::void Build(const PatternCollection** begin, const PatternCollection** end);
+%include "Urho3D/PatternMatching/PatternCollection.h"
+%include "Urho3D/PatternMatching/PatternDatabase.h"
+%include "Urho3D/PatternMatching/PatternIndex.h"
+%include "Urho3D/PatternMatching/PatternQuery.h"
+%include "Urho3D/PatternMatching/CharacterConfiguration.h"
+%include "Urho3D/PatternMatching/CharacterConfigurator.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
@@ -680,8 +687,6 @@ public:
 %include "Urho3D/Graphics/DebugRenderer.h"
 %include "Urho3D/Graphics/Zone.h"
 %include "Urho3D/Graphics/Renderer.h"
-%include "Urho3D/Graphics/CharacterConfiguration.h"
-%include "Urho3D/Graphics/CharacterConfigurator.h"
 %include "Urho3D/Graphics/Graphics.h"
 
 // ------------------------------------- RenderPipeline -------------------------------------

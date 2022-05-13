@@ -23,8 +23,8 @@
 #pragma once
 #include "CharacterConfiguration.h"
 #include "../Scene/Component.h"
-#include "AnimatedModel.h"
-#include "AnimationController.h"
+#include "../Graphics/AnimatedModel.h"
+#include "../Graphics/AnimationController.h"
 
 namespace Urho3D
 {
@@ -37,7 +37,7 @@ private:
     struct BodyPart
     {
         int lastMatch_{-1};
-        WeakPtr<CharacterConfiguration> configuration_;
+        const CharacterConfiguration* configuration_{};
         unsigned index_{};
         SharedPtr<StaticModel> modelComponent_;
     };

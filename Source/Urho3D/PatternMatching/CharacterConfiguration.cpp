@@ -28,10 +28,9 @@
 #include "../Particles/ParticleGraphEffect.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
-#include "Material.h"
-#include "Model.h"
-#include "StaticModel.h"
-#include "AnimatedModel.h"
+#include "../Graphics/Material.h"
+#include "../Graphics/Model.h"
+#include "../Graphics/AnimatedModel.h"
 
 namespace Urho3D
 {
@@ -171,6 +170,11 @@ void CharacterConfiguration::Commit()
         conf = conf->GetParent();
     }
     stateIndex_.Build(patterns.begin(), patterns.end());
+
+    for (auto&bodyPart:bodyParts_)
+    {
+        bodyPart.variantIndex_.Build(&bodyPart.variants_);
+    }
 }
 
 /// Resize body parts vector.
@@ -186,6 +190,18 @@ unsigned CharacterConfiguration::GetTotalNumBodyParts() const
     }
     return num;
 }
+
+void CharacterConfiguration::SetAttachmentBone(unsigned bodyPartIndex, const ea::string& name)
+{
+    bodyParts_[bodyPartIndex].attachmentBone_ = name;
+}
+
+const ea::string& CharacterConfiguration::GetAttachmentBone(unsigned bodyPartIndex) const
+{
+    return bodyParts_[bodyPartIndex].attachmentBone_;
+}
+
+
 /// Get number of body parts.
 unsigned CharacterConfiguration::GetNumBodyParts() const { return bodyParts_.size(); }
 
@@ -289,7 +305,7 @@ StaticModel* CharacterConfiguration::CreateBodyPartModelComponent(unsigned bodyP
     Node* bodyPartNode{};
     if (!bodyPart.attachmentBone_.empty())
     {
-        attachmentBone = root->GetChild(bodyPart.name_, true);
+        attachmentBone = root->GetChild(bodyPart.attachmentBone_, true);
         if (!attachmentBone)
             attachmentBone = root;
         bodyPartNode = attachmentBone->CreateChild(bodyPart.name_, LOCAL, true);
@@ -324,6 +340,13 @@ int CharacterConfiguration::UpdateBodyPart(
                 modelComponent->SetModelAttr(GetOptional<ResourceRef>("model", eventArgs, {}));
                 modelComponent->SetMaterialsAttr(GetOptional<ResourceRefList>("material", eventArgs, {}));
                 modelComponent->SetCastShadows(GetOptional<bool>("castShadows", eventArgs, true));
+                if (!bodyPart.attachmentBone_.empty())
+                {
+                    auto node = modelComponent->GetNode();
+                    node->SetPosition(GetOptional<Vector3>("position", eventArgs, Vector3::ZERO));
+                    node->SetRotation(GetOptional<Quaternion>("rotation", eventArgs, Quaternion::IDENTITY));
+                    node->SetScale(GetOptional<Vector3>("scale", eventArgs, Vector3::ONE));
+                }
             }
         }
     }

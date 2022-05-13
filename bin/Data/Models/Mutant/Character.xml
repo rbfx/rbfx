@@ -1,2 +1,2 @@
 <?xml version="1.0"?>
-<character model="Model;Models/Mutant/Mutant.mdl" material="Material;Models/Mutant/Materials/mutant_M.xml" rotation="-4.37114e-08 0 1 0" parent="PatternDatabase;Models/Mutant/States.xml" />
+<character model="Model;Models/Mutant/Mutant.mdl" material="Material;Models/Mutant/Materials/mutant_M.xml" parent="PatternDatabase;Models/Mutant/States.xml" />

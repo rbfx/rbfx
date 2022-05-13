@@ -23,7 +23,7 @@
 #pragma once
 
 #include "Sample.h"
-#include <Urho3D/Core/PatternMatching.h>
+#include <Urho3D/PatternMatching/CharacterConfigurator.h>
 
 /// This first example, maintaining tradition, prints a "Hello World" message.
 /// Furthermore it shows:
@@ -61,6 +61,10 @@ private:
 
     CharacterConfigurator* configurator_{};
     PatternQuery pattern_;
+    bool shield_{};
+    bool sword_{};
     bool run_{};
+    bool left_{};
+    bool right_{};
     bool onGround_{true};
 };

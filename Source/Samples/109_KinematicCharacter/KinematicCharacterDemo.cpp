@@ -197,7 +197,7 @@ void KinematicCharacterDemo::CreateCharacter()
     auto* object = objectNode->GetComponent<AnimatedModel>(true);
 
     // Set the head bone for manual control
-    object->GetSkeleton().GetBone("Mutant:Head")->animated_ = false;
+    object->GetSkeleton().GetBone("mixamorig:Head")->animated_ = false;
 
     // Create rigidbody
     auto* body = objectNode->CreateComponent<RigidBody>();
@@ -293,15 +293,17 @@ void KinematicCharacterDemo::Update(float timeStep)
                 for (unsigned i = 0; i < input->GetNumTouches(); ++i)
                 {
                     TouchState* state = input->GetTouch(i);
-                    if (!state->touchedElement_)    // Touch on empty space
+                    if (!state->touchedElement_) // Touch on empty space
                     {
                         auto* camera = cameraNode_->GetComponent<Camera>();
                         if (!camera)
                             return;
 
                         auto* graphics = GetSubsystem<Graphics>();
-                        character_->controls_.yaw_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
-                        character_->controls_.pitch_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
+                        character_->controls_.yaw_ +=
+                            TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
+                        character_->controls_.pitch_ +=
+                            TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
                     }
                 }
             }
@@ -326,15 +328,17 @@ void KinematicCharacterDemo::Update(float timeStep)
             // Check for loading / saving the scene
             if (input->GetKeyPress(KEY_F5))
             {
-                File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml", FILE_WRITE);
+                File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml",
+                    FILE_WRITE);
                 scene_->SaveXML(saveFile);
             }
             if (input->GetKeyPress(KEY_F7))
             {
-                File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml", FILE_READ);
+                File loadFile(
+                    context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml", FILE_READ);
                 scene_->LoadXML(loadFile);
-                // After loading we have to reacquire the weak pointer to the Character component, as it has been recreated
-                // Simply find the character's scene node by name as there's only one of them
+                // After loading we have to reacquire the weak pointer to the Character component, as it has been
+                // recreated Simply find the character's scene node by name as there's only one of them
                 Node* characterNode = scene_->GetChild("Jack", true);
                 if (characterNode)
                     character_ = characterNode->GetComponent<KinematicCharacter>();
@@ -365,7 +369,7 @@ void KinematicCharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& 
     Quaternion dir = rot * Quaternion(character_->controls_.pitch_, Vector3::RIGHT);
 
     // Turn head to camera pitch, but limit to avoid unnatural animation
-    Node* headNode = characterNode->GetChild("Mutant:Head", true);
+    Node* headNode = characterNode->GetChild("mixamorig:Head", true);
     if (headNode)
     {
         float limitPitch = Clamp(character_->controls_.pitch_, -45.0f, 45.0f);

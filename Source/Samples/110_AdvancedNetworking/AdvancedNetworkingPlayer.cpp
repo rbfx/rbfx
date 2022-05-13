@@ -59,9 +59,9 @@ AdvancedNetworkingPlayer::AdvancedNetworkingPlayer(Context* context)
 {
     auto cache = GetSubsystem<ResourceCache>();
     animations_ = {
-        cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani"),
+        cache->GetResource<Animation>("Models/Mutant/Mutant_Idle.ani"),
         cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani"),
-        cache->GetResource<Animation>("Models/Mutant/Mutant_Jump1.ani"),
+        cache->GetResource<Animation>("Models/Mutant/Mutant_Jump.ani"),
     };
 }
 

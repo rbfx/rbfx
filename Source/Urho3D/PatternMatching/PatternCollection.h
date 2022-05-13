@@ -22,52 +22,13 @@
 
 #pragma once
 
-#include "Object.h"
-#include "../Core/Variant.h"
-#include "Urho3D/Resource/Resource.h"
-
+#include "../Core/Object.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {
-
 class Archive;
-class ArchiveBlock;
-class PatternCollection;
 class PatternIndex;
-
-/// Collection of patterns
-class URHO3D_API PatternQuery
-{
-private:
-    struct Element
-    {
-        StringHash key_;
-        float value_;
-    };
-
-public:
-    /// Remove all keys from the query.
-    void Clear();
-    /// Add key requirement to the query.
-    void SetKey(StringHash key);
-    /// Add key with associated value to the current query.
-    void SetKey(StringHash key, float value);
-    /// Remove key from the query.
-    void RemoveKey(const ea::string& key);
-    /// Commit changes and recalculate derived members. Returns true if any changes were made to the pattern.
-    bool Commit();
-
-    unsigned GetNumKeys() const { return elements_.size(); }
-    StringHash GetKeyHash(unsigned index) const { return elements_[index].key_; }
-    float GetValue(unsigned index) const { return elements_[index].value_; }
-
-private:
-    ea::fixed_vector<Element, 4> elements_;
-    bool dirty_{};
-
-    friend class PatternIndex;
-};
 
 /// Collection of patterns
 class URHO3D_API PatternCollection
@@ -83,15 +44,10 @@ private:
 
         friend bool operator==(const SerializableElement& lhs, const SerializableElement& rhs)
         {
-            return lhs.word_ == rhs.word_
-                && lhs.min_ == rhs.min_
-                && lhs.max_ == rhs.max_;
+            return lhs.word_ == rhs.word_ && lhs.min_ == rhs.min_ && lhs.max_ == rhs.max_;
         }
 
-        friend bool operator!=(const SerializableElement& lhs, const SerializableElement& rhs)
-        {
-            return !(lhs == rhs);
-        }
+        friend bool operator!=(const SerializableElement& lhs, const SerializableElement& rhs) { return !(lhs == rhs); }
 
         // Element key.
         ea::string word_;
@@ -121,7 +77,6 @@ private:
         // One or more event prototypes.
         ea::fixed_vector<SerializableEventPrototype, 1> events_;
     };
-
 
 public:
     void Clear();
@@ -158,84 +113,4 @@ private:
     friend class PatternIndex;
 };
 
-
-/// Optimized collection of patterns ready for queries
-class URHO3D_API PatternIndex
-{
-    struct Element
-    {
-        // Element key.
-        StringHash key_;
-        // Minimum matching value.
-        float min_{PatternCollection::DefaultMin};
-        // Maximum matching value.
-        float max_{PatternCollection::DefaultMax};
-    };
-
-    struct Event
-    {
-        // Event identifier.
-        StringHash eventId_;
-        // Event arguments.
-        VariantMap arguments_;
-    };
-
-    struct Record
-    {
-        int startIndex_{};
-        int length_{};
-        const PatternCollection* collection_{};
-        int recordId_{};
-        // One or more event prototypes.
-        ea::fixed_vector<Event, 1> events_;
-    };
-public:
-    /// Build index from single collection
-    void Build(const PatternCollection* collection);
-    /// Build index from multiple collections
-    void Build(const PatternCollection** begin, const PatternCollection** end);
-
-    /// Sample value at given time.
-    int Query(const PatternQuery& query) const;
-
-    void SendEvent(int patternIndex, Object* object) const;
-
-    unsigned GetNumEvents(int patternIndex) const;
-    StringHash GetEventId(int patternIndex, unsigned eventIndex) const;
-    const VariantMap& GetEventArgs(int patternIndex, unsigned eventIndex) const;
-
-private:
-    ea::vector<Record> records_;
-    ea::vector<Element> elements_;
-};
-
-/// Collection of patterns as resource
-class URHO3D_API PatternDatabase : public Resource
-{
-    URHO3D_OBJECT(PatternDatabase, Resource)
-public:
-    /// Construct.
-    explicit PatternDatabase(Context* context);
-    /// Destruct.
-    ~PatternDatabase() override;
-    /// Register object factory.
-    /// @nobind
-    static void RegisterObject(Context* context);
-
-    /// Load resource from stream. May be called from a worker thread. Return true if successful.
-    bool BeginLoad(Deserializer& source) override;
-
-    /// Save resource. Return true if successful.
-    bool Save(Serializer& dest) const override;
-    /// Serialize from/to archive. Return true if successful.
-    void SerializeInBlock(Archive& archive) override;
-
-    /// Get patterns. Returns pointer for SWIG compatibility.
-    PatternCollection* GetPatterns() { return &patterns_; }
-
-private:
-    PatternCollection patterns_;
-    PatternIndex index_;
-};
-
-}
+} // namespace Urho3D

@@ -97,7 +97,7 @@ void BakedLighting::CreateScene()
     agent_->SetUpdateNodePosition(false);
 
     auto animController = agent_->GetNode()->GetComponent<AnimationController>(true);
-    animController->PlayNewExclusive(AnimationParameters{context_, "Models/Mutant/Mutant_Idle0.ani"}.Looped());
+    animController->PlayNewExclusive(AnimationParameters{context_, "Models/Mutant/Mutant_Idle.ani"}.Looped());
 
     auto crowdManager = scene_->GetComponent<CrowdManager>();
     CrowdObstacleAvoidanceParams params = crowdManager->GetObstacleAvoidanceParams(0);
@@ -174,7 +174,7 @@ void BakedLighting::Update(float timeStep)
 
     // Animate model
     auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
-    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
+    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle.ani");
 
     auto animController = agent_->GetNode()->GetComponent<AnimationController>(true);
     auto rotationNode = animController->GetNode()->GetParent();

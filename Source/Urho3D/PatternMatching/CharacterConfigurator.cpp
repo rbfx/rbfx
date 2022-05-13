@@ -1,10 +1,11 @@
 #include "CharacterConfigurator.h"
+#include "CharacterConfiguration.h"
+#include "PatternDatabase.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
-#include "AnimatedModel.h"
-#include "Animation.h"
-#include "CharacterConfiguration.h"
-#include "Material.h"
+#include "../Graphics/AnimatedModel.h"
+#include "../Graphics/Animation.h"
+#include "../Graphics/Material.h"
 
 namespace Urho3D
 {
@@ -116,10 +117,10 @@ void CharacterConfigurator::ResetBodyPartModels(
         auto& bodyPart = bodyPartNodes_[bodyPartIndex];
         if (!bodyPart.modelComponent_)
         {
-            bodyPart.configuration_ = configuration_;
+            bodyPart.configuration_ = configuration;
             bodyPart.index_ = bodyPartIndex;
-            bodyPart.modelComponent_ = configuration_->CreateBodyPartModelComponent(bodyPartIndex, characterNode_);
-            bodyPart.lastMatch_ = configuration_->UpdateBodyPart(bodyPartIndex, bodyPart.modelComponent_, query, -1);
+            bodyPart.modelComponent_ = configuration->CreateBodyPartModelComponent(bodyPartIndex, characterNode_);
+            bodyPart.lastMatch_ = configuration->UpdateBodyPart(bodyPartIndex, bodyPart.modelComponent_, query, -1);
         }
     }
     if (bodyPartIndex < parts.size())
@@ -316,6 +317,13 @@ void CharacterConfigurator::HandleConfigurationReloadFinished(StringHash eventTy
     CharacterConfiguration* currentModel = configuration_;
     configuration_.Reset(); // Set null to allow to be re-set
     SetConfiguration(currentModel);
+}
+
+void RegisterPatternMatchingLibrary(Context* context)
+{
+    CharacterConfigurator::RegisterObject(context);
+    CharacterConfiguration::RegisterObject(context);
+    PatternDatabase::RegisterObject(context);
 }
 
 } // namespace Urho3D

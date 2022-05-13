@@ -25,7 +25,8 @@
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Scene/Scene.h"
 
-#include <Urho3D/Graphics/CharacterConfigurator.h>
+#include <Urho3D/PatternMatching/CharacterConfigurator.h>
+#include <Urho3D/PatternMatching/PatternCollection.h>
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/IO/VectorBuffer.h>
@@ -44,6 +45,9 @@ TEST_CASE("CharacterConfigurator serilization")
     conf->SetModelAttr(ResourceRef(Model::GetTypeStatic(),("Models/Mutant/Mutant.mdl")));
     conf->SetMaterialAttr(ResourceRefList(Material::GetTypeStatic(), StringVector{"Models/Mutant/Materials/mutant_M.xml" }));
     conf->SetRotation(Quaternion(180, Vector3(0, 1, 0)));
+    conf->SetNumBodyParts(2);
+    conf->SetAttachmentBone(0, "mixamorig:RightHand");
+    conf->SetAttachmentBone(1, "mixamorig:LeftHand");
     auto* states = conf->GetStates();
     {
         states->BeginPattern();
@@ -51,7 +55,7 @@ TEST_CASE("CharacterConfigurator serilization")
         idleArgs["existing"] = true;
         idleArgs["exclusive"] = true;
         idleArgs["looped"] = true;
-        idleArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Idle0.ani");
+        idleArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Idle.ani");
         idleArgs["fadeInTime"] = 0.2f;
         states->AddEvent("PlayAnimation", idleArgs);
         states->CommitPattern();
@@ -76,7 +80,7 @@ TEST_CASE("CharacterConfigurator serilization")
         jumpArgs["existing"] = false;
         jumpArgs["exclusive"] = true;
         jumpArgs["removeOnCompletion"] = false;
-        jumpArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Jump1.ani");
+        jumpArgs["animation"] = ResourceRef(Animation::GetTypeStatic(), "Models/Mutant/Mutant_Jump.ani");
         jumpArgs["fadeInTime"] = 0.2f;
         states->AddEvent("PlayAnimation", jumpArgs);
         states->CommitPattern();

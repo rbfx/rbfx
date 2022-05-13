@@ -66,8 +66,8 @@ void Character::FixedUpdate(float timeStep)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
-    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
-    auto* jumpAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Jump1.ani");
+    auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle.ani");
+    auto* jumpAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Jump.ani");
 
     /// \todo Could cache the components for faster access instead of finding them each frame
     auto* body = GetComponent<RigidBody>();

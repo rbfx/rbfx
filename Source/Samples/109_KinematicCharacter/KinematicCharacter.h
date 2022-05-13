@@ -24,7 +24,7 @@
 
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Scene/LogicComponent.h>
-#include <Urho3D/Graphics/CharacterConfigurator.h>
+#include <Urho3D/PatternMatching/CharacterConfigurator.h>
 
 namespace Urho3D
 {

@@ -20,15 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/CharacterConfigurator.h>
+#include <Urho3D/PatternMatching/CharacterConfigurator.h>
 
 #include "PatternMatchingDemo.h"
 
@@ -125,12 +123,40 @@ void PatternMatchingDemo::Update(float timeStep)
 {
     if (ui::Begin("Pattern", 0, ImGuiWindowFlags_NoSavedSettings))
     {
+        if (ui::Checkbox("Shield", &shield_))
+        {
+            if (shield_)
+                pattern_.SetKey("Shield");
+            else
+                pattern_.RemoveKey("Shield");
+        }
+        if (ui::Checkbox("Sword", &sword_))
+        {
+            if (sword_)
+                pattern_.SetKey("Sword");
+            else
+                pattern_.RemoveKey("Sword");
+        }
         if (ui::Checkbox("Run", &run_))
         {
             if (run_)
                 pattern_.SetKey("Run");
             else
                 pattern_.RemoveKey("Run");
+        }
+        if (ui::Checkbox("Left", &left_))
+        {
+            if (left_)
+                pattern_.SetKey("Left");
+            else
+                pattern_.RemoveKey("Left");
+        }
+        if (ui::Checkbox("Right", &right_))
+        {
+            if (right_)
+                pattern_.SetKey("Right");
+            else
+                pattern_.RemoveKey("Right");
         }
         if (ui::Checkbox("OnGround", &onGround_))
         {

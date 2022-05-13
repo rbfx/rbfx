@@ -22,9 +22,10 @@
 
 #pragma once
 
-#include "StaticModel.h"
+#include "../Graphics/StaticModel.h"
 #include "../Resource/Resource.h"
-#include "../Core/PatternMatching.h"
+#include "PatternCollection.h"
+#include "PatternIndex.h"
 
 namespace Urho3D
 {
@@ -49,8 +50,11 @@ private:
 
         /// Bone name to attach to.
         ea::string attachmentBone_;
+
         /// Model selector via fuzzy pattern matching.
         PatternCollection variants_;
+
+        /// Indexed model selector
         PatternIndex variantIndex_;
     };
 
@@ -80,6 +84,10 @@ public:
     unsigned GetNumBodyParts() const;
     /// Get total number of body parts including parent body parts.
     unsigned GetTotalNumBodyParts() const;
+
+    void SetAttachmentBone(unsigned bodyPartIndex, const ea::string& name);
+    const ea::string& GetAttachmentBone(unsigned bodyPartIndex) const;
+
 
     void SetModel(Model* model);
     void SetModelAttr(ResourceRef model);

@@ -115,7 +115,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         moveDir.Normalize();
 
     // rotate movedir
-    const float linearSpeed = 12.0f; //characterConfigurator_->GetLinearVelocity().Length()
+    const float linearSpeed = characterConfigurator_->GetLinearVelocity().Length();
     const Vector3 velocity = rot * moveDir * linearSpeed;
     if (onGround_)
     {
@@ -157,9 +157,19 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         characterPattern_.RemoveKey("Run");
     else
         characterPattern_.SetKey("Run");
-    characterPattern_.Commit();
+    if (controls_.IsDown(CTRL_LEFT))
+        characterPattern_.SetKey("Left");
+    else
+        characterPattern_.RemoveKey("Left");
+    if (controls_.IsDown(CTRL_RIGHT))
+        characterPattern_.SetKey("Right");
+    else
+        characterPattern_.RemoveKey("Right");
 
-    characterConf->Update(characterPattern_);
+    if (characterPattern_.Commit())
+    {
+        characterConf->Update(characterPattern_);
+    }
 }
 
 void KinematicCharacter::FixedPostUpdate(float timeStep)

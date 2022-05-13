@@ -114,6 +114,7 @@ typedef struct _CrtMemBlockHeader
 
 namespace Urho3D
 {
+void RegisterPatternMatchingLibrary(Context* context);
 
 extern const char* logLevelNames[];
 
@@ -199,6 +200,8 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NAVIGATION
     RegisterNavigationLibrary(context_);
 #endif
+
+    RegisterPatternMatchingLibrary(context_);
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
