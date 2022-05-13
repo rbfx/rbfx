@@ -42,10 +42,12 @@ public:
 
     /// EditorTab implementation
     /// @{
-    void WriteIniSettings(ImGuiTextBuffer* output) override;
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
     /// @}
 
+    /// Return user-readable name of resource.
+    virtual ea::string GetResourceTitle() { return "Resource"; }
     /// Return whether the specified request can be handled by this tab.
     virtual bool CanOpenResource(const OpenResourceRequest& request) = 0;
     /// Return whether the several resources can be handled simultaneously.
@@ -56,6 +58,10 @@ public:
     void CloseResource(const ea::string& resourceName);
     /// Close all opened resources.
     void CloseAllResources();
+    /// Save specific opened resource.
+    void SaveResource(const ea::string& resourceName);
+    /// Save all resources.
+    void SaveAllResources();
 
     /// Return properties of the tab.
     /// @{
@@ -76,6 +82,8 @@ protected:
     virtual void OnResourceUnloaded(const ea::string& resourceName) = 0;
     /// Called when active resource changed.
     virtual void OnActiveResourceChanged(const ea::string& resourceName) = 0;
+    /// Called when resource should be saved.
+    virtual void OnResourceSaved(const ea::string& resourceName) = 0;
 
 private:
     void OnProjectInitialized();

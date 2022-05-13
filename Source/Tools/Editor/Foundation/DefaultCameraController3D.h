@@ -22,19 +22,29 @@
 
 #pragma once
 
-#include <Urho3D/SystemUI/SystemUI.h>
-
-#include <EASTL/functional.h>
-#include <EASTL/optional.h>
-#include <EASTL/string.h>
+#include "../Foundation/SceneViewTab.h"
 
 namespace Urho3D
 {
 
-void WriteStringToIni(ImGuiTextBuffer& output, ea::string_view name, ea::string_view value);
-ea::optional<ea::string> ReadStringFromIni(ea::string_view line, ea::string_view name);
+void Foundation_DefaultCameraController3D(Context* context, SceneViewTab* sceneViewTab);
 
-void WriteIntToIni(ImGuiTextBuffer& output, ea::string_view name, int value);
-ea::optional<int> ReadIntFromIni(ea::string_view line, ea::string_view name);
+/// Interface of Camera controller used by Scene.
+class DefaultCameraController3D : public SceneCameraController
+{
+    URHO3D_OBJECT(DefaultCameraController3D, SceneCameraController);
+
+public:
+    explicit DefaultCameraController3D(Scene* scene, Camera* camera);
+
+    /// Implement SceneCameraController.
+    /// @{
+    void SerializeInBlock(Archive& archive) override {}
+
+    ea::string GetTitle() const override { return "3D Camera"; }
+    bool IsMouseHidden() { return false; }
+    void Update() {}
+    /// @}
+};
 
 }

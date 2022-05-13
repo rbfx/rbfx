@@ -57,6 +57,7 @@ public:
     /// Return aspects of the renderer
     /// @{
     Texture2D* GetTexture() const { return texture_; }
+    Camera* GetCamera() const { return camera_; }
     /// @}
 
 private:

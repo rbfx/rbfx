@@ -31,6 +31,10 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
 
+#include <EASTL/set.h>
+
+#include <regex>
+
 namespace Urho3D
 {
 
@@ -80,6 +84,10 @@ public:
 
     void UpdateAndRender();
 
+    /// Mark files with specified name pattern as internal and ignore them in UI.
+    void IgnoreFileNamePattern(const ea::string& pattern);
+    /// Return whether the file name is ignored.
+    bool IsFileNameIgnored(const ea::string& fileName) const;
     /// Add new tab. Avoid calling it in realtime.
     void AddTab(SharedPtr<EditorTab> tab);
     /// Find first tab of matching type.
@@ -95,7 +103,7 @@ public:
     /// @}
 
     void ReadIniSettings(const char* entry, const char* line);
-    void WriteIniSettings(ImGuiTextBuffer* output);
+    void WriteIniSettings(ImGuiTextBuffer& output);
 
     /// Return global properties.
     /// @{
@@ -116,6 +124,7 @@ private:
     void InitializeResourceCache();
     void ResetLayout();
     void ApplyPlugins();
+    void SaveGitIgnore();
 
     /// Project properties
     /// @{
@@ -125,6 +134,7 @@ private:
     const ea::string cachePath_;
     const ea::string projectJsonPath_;
     const ea::string uiIniPath_;
+    const ea::string gitIgnorePath_;
     ea::string dataPath_;
 
     const ResourceCacheGuard oldCacheState_;
@@ -135,6 +145,8 @@ private:
 
     bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
+    ea::set<ea::string> ignoredFileNames_;
+    ea::vector<std::regex> ignoredFileNameRegexes_;
 
     /// UI state
     /// @{

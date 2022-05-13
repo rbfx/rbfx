@@ -24,10 +24,13 @@
 #include "../Project/ProjectEditor.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+
+#include <string>
 
 namespace Urho3D
 {
@@ -40,6 +43,56 @@ URHO3D_EDITOR_HOTKEY(Hotkey_Undo, "Global.Undo", QUAL_CTRL, KEY_Z);
 URHO3D_EDITOR_HOTKEY(Hotkey_Redo, "Global.Redo", QUAL_CTRL, KEY_Y);
 
 static unsigned numActiveProjects = 0;
+
+bool IsEscapedChar(const char ch)
+{
+    switch (ch)
+    {
+    case '[':
+    case ']':
+
+    case '(':
+    case ')':
+
+    case '{':
+    case '}':
+
+    case '*':
+    case '+':
+    case '?':
+    case '|':
+
+    case '^':
+    case '$':
+
+    case '.':
+    case '\\':
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+std::regex PatternToRegex(const ea::string& pattern)
+{
+    std::string r;
+    for (const char ch : pattern)
+    {
+        if (ch == '*')
+            r += ".*";
+        else if (ch == '?')
+            r += '.';
+        else if (IsEscapedChar(ch))
+        {
+            r += '\\';
+            r += ch;
+        }
+        else
+            r += ch;
+    }
+    return std::regex(r, std::regex::ECMAScript | std::regex::icase | std::regex::optimize);
+}
 
 }
 
@@ -101,6 +154,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , cachePath_(projectPath_ + "Cache/")
     , projectJsonPath_(projectPath_ + "Project.json")
     , uiIniPath_(projectPath_ + ".ui.ini")
+    , gitIgnorePath_(projectPath_ + ".gitignore")
     , dataPath_(projectPath_ + "Data/")
     , oldCacheState_(context)
     , hotkeyManager_(MakeShared<HotkeyManager>(context_))
@@ -125,6 +179,23 @@ ProjectEditor::~ProjectEditor()
     URHO3D_ASSERT(numActiveProjects == 0);
 
     ui::GetIO().IniFilename = nullptr;
+}
+
+void ProjectEditor::IgnoreFileNamePattern(const ea::string& pattern)
+{
+    const bool inserted = ignoredFileNames_.insert(pattern).second;
+    if (inserted)
+        ignoredFileNameRegexes_.push_back(PatternToRegex(pattern));
+}
+
+bool ProjectEditor::IsFileNameIgnored(const ea::string& fileName) const
+{
+    for (const std::regex& r : ignoredFileNameRegexes_)
+    {
+        if (std::regex_match(fileName.begin(), fileName.end(), r))
+            return true;
+    }
+    return false;
 }
 
 void ProjectEditor::AddTab(SharedPtr<EditorTab> tab)
@@ -260,6 +331,23 @@ void ProjectEditor::ApplyPlugins()
         tab->ApplyPlugins();
 }
 
+void ProjectEditor::SaveGitIgnore()
+{
+    ea::string content;
+
+    content += "# Ignore asset cache\n";
+    content += "/Cache/\n\n";
+    content += "# Ignore UI settings\n";
+    content += "/.ui.ini\n\n";
+    content += "# Ignore internal files\n";
+    for (const ea::string& pattern : ignoredFileNames_)
+        content += Format("{}\n", pattern);
+
+    File file(context_, gitIgnorePath_, FILE_WRITE);
+    if (file.IsOpen())
+        file.Write(content.c_str(), content.size());
+}
+
 void ProjectEditor::UpdateAndRender()
 {
     hotkeyManager_->Update();
@@ -285,6 +373,13 @@ void ProjectEditor::UpdateAndRender()
 void ProjectEditor::Save()
 {
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
+    SaveGitIgnore();
+
+    for (EditorTab* tab : tabs_)
+    {
+        if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
+            resourceTab->SaveAllResources();
+    }
 }
 
 void ProjectEditor::Undo()
@@ -301,15 +396,18 @@ void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
 {
     for (EditorTab* tab : tabs_)
     {
-        if (entry == tab->GetUniqueId())
+        if (entry == tab->GetIniEntry())
             tab->ReadIniSettings(line);
     }
 }
 
-void ProjectEditor::WriteIniSettings(ImGuiTextBuffer* output)
+void ProjectEditor::WriteIniSettings(ImGuiTextBuffer& output)
 {
     for (EditorTab* tab : tabs_)
+    {
+        output.appendf("\n[Project][%s]\n", tab->GetIniEntry().c_str());
         tab->WriteIniSettings(output);
+    }
 }
 
 }
