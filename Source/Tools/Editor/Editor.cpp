@@ -77,12 +77,14 @@
 #include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
-#include "Foundation/DefaultCameraController2D.h"
-#include "Foundation/DefaultCameraController3D.h"
+#include "Foundation/ConsoleTab.h"
+#include "Foundation/EditorCamera2D.h"
+#include "Foundation/EditorCamera3D.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/SceneViewTab.h"
+#include "Foundation/SettingsTab.h"
 
 namespace Urho3D
 {
@@ -108,11 +110,13 @@ Editor::Editor(Context* context)
 {
     editorPluginManager_->AddPlugin("Foundation.SceneViewTab", &Foundation_SceneViewTab);
     editorPluginManager_->AddPlugin("Foundation.InspectorTab", &Foundation_InspectorTab);
+    editorPluginManager_->AddPlugin("Foundation.ConsoleTab", &Foundation_ConsoleTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowserTab", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowserTab", &Foundation_HierarchyBrowserTab);
+    editorPluginManager_->AddPlugin("Foundation.SettingsTab", &Foundation_SettingsTab);
 
-    editorPluginManager_->AddPlugin("Foundation.DefaultCameraController3D", &Foundation_DefaultCameraController3D);
-    editorPluginManager_->AddPlugin("Foundation.DefaultCameraController2D", &Foundation_DefaultCameraController2D);
+    editorPluginManager_->AddPlugin("Foundation.EditorCamera3D", &Foundation_EditorCamera3D);
+    editorPluginManager_->AddPlugin("Foundation.EditorCamera2D", &Foundation_EditorCamera2D);
 }
 
 void Editor::Setup()

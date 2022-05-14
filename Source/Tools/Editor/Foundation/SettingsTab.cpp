@@ -20,31 +20,24 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "../Foundation/SceneViewTab.h"
+#include "../Foundation/SettingsTab.h"
 
 namespace Urho3D
 {
 
-void Foundation_DefaultCameraController2D(Context* context, SceneViewTab* sceneViewTab);
-
-/// Interface of Camera controller used by Scene.
-class DefaultCameraController2D : public SceneCameraController
+void Foundation_SettingsTab(Context* context, ProjectEditor* projectEditor)
 {
-    URHO3D_OBJECT(DefaultCameraController2D, SceneCameraController);
+    projectEditor->AddTab(MakeShared<SettingsTab>(context));
+}
 
-public:
-    explicit DefaultCameraController2D(Scene* scene, Camera* camera);
+SettingsTab::SettingsTab(Context* context)
+    : EditorTab(context, "Settings", "5123082a-1ded-4de7-bab0-b48a3d56a073",
+        EditorTabFlag::None, EditorTabPlacement::DockCenter)
+{
+}
 
-    /// Implement SceneCameraController.
-    /// @{
-    void SerializeInBlock(Archive& archive) override {}
-
-    ea::string GetTitle() const override { return "2D Camera"; }
-    bool IsMouseHidden() { return false; }
-    void Update() {}
-    /// @}
-};
+void SettingsTab::UpdateAndRenderContent()
+{
+}
 
 }

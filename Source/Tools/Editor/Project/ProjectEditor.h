@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/HotkeyManager.h"
+#include "../Core/SettingsManager.h"
 #include "../Core/UndoManager.h"
 #include "../Project/EditorTab.h"
 
@@ -82,7 +83,12 @@ public:
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;
 
+    /// Update and render main window with tabs.
     void UpdateAndRender();
+    /// Update and render project menu.
+    void UpdateAndRenderProjectMenu();
+    /// Update and render the rest of menu bar.
+    void UpdateAndRenderMainMenu();
 
     /// Mark files with specified name pattern as internal and ignore them in UI.
     void IgnoreFileNamePattern(const ea::string& pattern);
@@ -115,6 +121,7 @@ public:
     /// Return singletons
     /// @{
     HotkeyManager* GetHotkeyManager() const { return hotkeyManager_; }
+    SettingsManager* GetSettingsManager() const { return settingsManager_; }
     UndoManager* GetUndoManager() const { return undoManager_; }
     /// @}
 
@@ -133,6 +140,7 @@ private:
     const ea::string coreDataPath_;
     const ea::string cachePath_;
     const ea::string projectJsonPath_;
+    const ea::string settingsJsonPath_;
     const ea::string uiIniPath_;
     const ea::string gitIgnorePath_;
     ea::string dataPath_;
@@ -141,10 +149,12 @@ private:
     /// @}
 
     SharedPtr<HotkeyManager> hotkeyManager_;
+    SharedPtr<SettingsManager> settingsManager_;
     SharedPtr<UndoManager> undoManager_;
 
     bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
+    ea::map<ea::string, SharedPtr<EditorTab>> sortedTabs_;
     ea::set<ea::string> ignoredFileNames_;
     ea::vector<std::regex> ignoredFileNameRegexes_;
 

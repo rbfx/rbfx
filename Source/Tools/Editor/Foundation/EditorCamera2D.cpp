@@ -20,17 +20,17 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/DefaultCameraController2D.h"
+#include "../Foundation/EditorCamera2D.h"
 
 namespace Urho3D
 {
 
-void Foundation_DefaultCameraController2D(Context* context, SceneViewTab* sceneViewTab)
+void Foundation_EditorCamera2D(Context* context, SceneViewTab* sceneViewTab)
 {
-    sceneViewTab->RegisterCameraController<DefaultCameraController2D>();
+    sceneViewTab->RegisterCameraController<EditorCamera2D>();
 }
 
-DefaultCameraController2D::DefaultCameraController2D(Scene* scene, Camera* camera)
+EditorCamera2D::EditorCamera2D(Scene* scene, Camera* camera)
     : SceneCameraController(scene, camera)
 {
 }

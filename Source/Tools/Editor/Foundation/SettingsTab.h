@@ -20,37 +20,29 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/Archive.h"
+#pragma once
 
-#include <cassert>
+#include "../Project/ProjectEditor.h"
+#include "../Project/EditorTab.h"
 
 namespace Urho3D
 {
 
-ArchiveBlock::~ArchiveBlock()
+void Foundation_SettingsTab(Context* context, ProjectEditor* projectEditor);
+
+/// Tab that displays project settings.
+class SettingsTab : public EditorTab
 {
-    if (archive_)
-        archive_->EndBlock();
-}
+    URHO3D_OBJECT(SettingsTab, EditorTab)
 
-bool Archive::ValidateName(ea::string_view name)
-{
-    // Empty names are not allowed
-    if (name.empty())
-        return false;
+public:
+    explicit SettingsTab(Context* context);
 
-    // Name must start with letter or underscore.
-    if (!isalpha(name[0]) && name[0] != '_')
-        return false;
-
-    // Name must contain only letters, digits, underscores or dots.
-    for (const char ch : name)
-    {
-        if (!isalnum(ch) && ch != '_' && ch != '.')
-            return false;
-    }
-
-    return true;
-}
+protected:
+    /// Implement EditorTab
+    /// @{
+    void UpdateAndRenderContent() override;
+    /// @}
+};
 
 }

@@ -153,12 +153,14 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
     , projectJsonPath_(projectPath_ + "Project.json")
+    , settingsJsonPath_(projectPath_ + "Settings.json")
     , uiIniPath_(projectPath_ + ".ui.ini")
     , gitIgnorePath_(projectPath_ + ".gitignore")
     , dataPath_(projectPath_ + "Data/")
     , oldCacheState_(context)
     , hotkeyManager_(MakeShared<HotkeyManager>(context_))
     , undoManager_(MakeShared<UndoManager>(context_))
+    , settingsManager_(MakeShared<SettingsManager>(context_))
 {
     URHO3D_ASSERT(numActiveProjects == 0);
     context_->RegisterSubsystem(this, ProjectEditor::GetTypeStatic());
@@ -171,6 +173,8 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     InitializeResourceCache();
 
     ApplyPlugins();
+
+    settingsManager_->LoadFile(settingsJsonPath_);
 }
 
 ProjectEditor::~ProjectEditor()
@@ -201,6 +205,7 @@ bool ProjectEditor::IsFileNameIgnored(const ea::string& fileName) const
 void ProjectEditor::AddTab(SharedPtr<EditorTab> tab)
 {
     tabs_.push_back(tab);
+    sortedTabs_[tab->GetTitle()] = tab;
 }
 
 void ProjectEditor::OpenResource(const OpenResourceRequest& request)
@@ -244,7 +249,16 @@ void ProjectEditor::EnsureDirectoryInitialized()
         fs->CopyDir(oldCacheState_.GetCoreData(), coreDataPath_);
     }
 
-    if (!fs->FileExists(projectJsonPath_))
+    if (!fs->FileExists(settingsJsonPath_))
+    {
+        if (fs->DirExists(settingsJsonPath_))
+            fs->RemoveDir(settingsJsonPath_, true);
+
+        JSONFile emptyFile(context_);
+        emptyFile.SaveFile(settingsJsonPath_);
+    }
+
+    if (!fs->FileExists(settingsJsonPath_))
     {
         if (fs->DirExists(projectJsonPath_))
             fs->RemoveDir(projectJsonPath_, true);
@@ -370,10 +384,36 @@ void ProjectEditor::UpdateAndRender()
         tab->UpdateAndRender();
 }
 
+void ProjectEditor::UpdateAndRenderProjectMenu()
+{
+    if (ui::MenuItem("Save Project", hotkeyManager_->GetHotkeyLabel(Hotkey_SaveProject).c_str()))
+        Save();
+}
+
+void ProjectEditor::UpdateAndRenderMainMenu()
+{
+    if (ui::BeginMenu("View"))
+    {
+        for (const auto& [title, tab] : sortedTabs_)
+        {
+            bool open = tab->IsOpen();
+            if (ui::MenuItem(title.c_str(), "", &open))
+            {
+                if (!open)
+                    tab->Close();
+                else
+                    tab->Focus();
+            }
+        }
+        ui::EndMenu();
+    }
+}
+
 void ProjectEditor::Save()
 {
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     SaveGitIgnore();
+    settingsManager_->SaveFile(settingsJsonPath_);
 
     for (EditorTab* tab : tabs_)
     {
