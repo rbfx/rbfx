@@ -20,31 +20,48 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "../Core/SettingsManager.h"
 
-#include "../Foundation/SceneViewTab.h"
+#include <Urho3D/IO/ArchiveSerialization.h>
+#include <Urho3D/Resource/JSONFile.h>
 
 namespace Urho3D
 {
 
-void Foundation_DefaultCameraController3D(Context* context, SceneViewTab* sceneViewTab);
-
-/// Interface of Camera controller used by Scene.
-class DefaultCameraController3D : public SceneCameraController
+SettingsPage::SettingsPage(Context* context)
+    : Object(context)
 {
-    URHO3D_OBJECT(DefaultCameraController3D, SceneCameraController);
+}
 
-public:
-    explicit DefaultCameraController3D(Scene* scene, Camera* camera);
+SettingsManager::SettingsManager(Context* context)
+    : Object(context)
+{
+}
 
-    /// Implement SceneCameraController.
-    /// @{
-    void SerializeInBlock(Archive& archive) override {}
+void SettingsManager::SerializeInBlock(Archive& archive)
+{
+    for (const auto& [key, page] : sortedPages_)
+        SerializeOptionalValue(archive, key.c_str(), *page, AlwaysSerialize{});
+}
 
-    ea::string GetTitle() const override { return "3D Camera"; }
-    bool IsMouseHidden() { return false; }
-    void Update() {}
-    /// @}
-};
+void SettingsManager::LoadFile(const ea::string& fileName)
+{
+    auto jsonFile = MakeShared<JSONFile>(context_);
+    if (jsonFile->LoadFile(fileName))
+        jsonFile->LoadObject("Settings", *this);
+}
+
+void SettingsManager::SaveFile(const ea::string& fileName) const
+{
+    auto jsonFile = MakeShared<JSONFile>(context_);
+    if (jsonFile->SaveObject("Settings", *this))
+        jsonFile->SaveFile(fileName);
+}
+
+void SettingsManager::AddPage(SharedPtr<SettingsPage> page)
+{
+    pages_.push_back(page);
+    sortedPages_[page->GetPageKey()] = page;
+}
 
 }

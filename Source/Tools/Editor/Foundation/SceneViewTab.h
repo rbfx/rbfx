@@ -45,12 +45,16 @@ public:
 
     /// Return name in UI.
     virtual ea::string GetTitle() const = 0;
-    /// Return whether the mouse should be hidden.
-    virtual bool IsMouseHidden() { return false; }
+    /// Return whether the camera manipulation is active.
+    virtual bool IsActive(bool wasActive) { return false; }
     /// Update controller for given camera object.
-    virtual void Update() = 0;
+    virtual void Update(bool isActive) = 0;
 
 protected:
+    Vector2 GetMouseMove() const;
+    Vector3 GetMoveDirection() const;
+    bool GetMoveAccelerated() const;
+
     const WeakPtr<Scene> scene_;
     const WeakPtr<Camera> camera_;
 };
@@ -76,6 +80,8 @@ struct SceneViewPage
     /// @{
     unsigned currentCameraController_{};
     /// @}
+
+    SceneCameraController* GetCurrentCameraController() const;
 };
 
 /// Tab that renders Scene and enables Scene manipulation.
@@ -89,7 +95,7 @@ public:
 
     /// Register new type of camera controller. Should be called before any scenes are loaded.
     void RegisterCameraController(const SceneCameraControllerDesc& desc);
-    template <class T> void RegisterCameraController();
+    template <class T, class ... Args> void RegisterCameraController(const Args&... args);
 
     /// ResourceEditorTab implementation
     /// @{
@@ -110,28 +116,40 @@ protected:
     void OnResourceSaved(const ea::string& resourceName) override;
 
     void UpdateAndRenderContent() override;
+    void UpdateFocused() override;
     /// @}
 
 private:
     IntVector2 GetContentSize() const;
 
+    /// Manage pages
+    /// @{
     SceneViewPage* GetPage(const ea::string& resourceName);
     SceneViewPage* GetActivePage();
     SceneViewPage CreatePage(Scene* scene) const;
 
     void SavePageConfig(const SceneViewPage& page) const;
     void LoadPageConfig(SceneViewPage& page) const;
+    /// @}
+
+    void UpdateCameraController(SceneViewPage& page);
 
     ea::vector<SceneCameraControllerDesc> cameraControllers_;
     ea::unordered_map<ea::string, SceneViewPage> scenes_;
+
+    /// UI state
+    /// @{
+    unsigned wasCameraControllerActive_{};
+    /// @}
+
 };
 
-template <class T>
-void SceneViewTab::RegisterCameraController()
+template <class T, class ... Args>
+void SceneViewTab::RegisterCameraController(const Args&... args)
 {
     SceneCameraControllerDesc desc;
     desc.name_ = T::GetTypeNameStatic();
-    desc.factory_ = [](Scene* scene, Camera* camera) { return MakeShared<T>(scene, camera); };
+    desc.factory_ = [=](Scene* scene, Camera* camera) { return MakeShared<T>(scene, camera, args...); };
     RegisterCameraController(desc);
 }
 

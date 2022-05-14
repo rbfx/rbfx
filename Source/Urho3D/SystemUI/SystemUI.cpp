@@ -70,7 +70,8 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
     SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
+    SubscribeToEvent(E_INPUTBEGIN, [this](StringHash, VariantMap& args) { OnInputBegin(); });
+    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(); });
     SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
     SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
@@ -146,6 +147,8 @@ void SystemUI::OnRawEvent(VariantMap& args)
             io.MousePos.x = evt->motion.x;
             io.MousePos.y = evt->motion.y;
         }
+        relativeMouseMove_.x_ += evt->motion.xrel;
+        relativeMouseMove_.y_ += evt->motion.yrel;
         break;
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
@@ -199,7 +202,12 @@ void SystemUI::OnScreenMode(VariantMap& args)
     io.DisplaySize = {args[P_WIDTH].GetFloat(), args[P_HEIGHT].GetFloat()};
 }
 
-void SystemUI::OnInputEnd(VariantMap& args)
+void SystemUI::OnInputBegin()
+{
+    relativeMouseMove_ = Vector2::ZERO;
+}
+
+void SystemUI::OnInputEnd()
 {
     assert(imContext_ != nullptr);
 
@@ -232,40 +240,27 @@ void SystemUI::OnInputEnd(VariantMap& args)
     ImGuizmo::BeginFrame();
 }
 
-void SystemUI::SetMouseWrapping(bool enabled, bool revertMousePositionOnDisable)
+void SystemUI::SetRelativeMouseMove(bool enabled, bool revertMousePositionOnDisable)
 {
     ImGuiWindow* currentWindow = ui::GetCurrentWindowRead();
     const ImGuiContext& g = *ui::GetCurrentContext();
     if (!enabled || !currentWindow)
     {
-        enableWrapping_ = false;
+        enableRelativeMouseMove_ = false;
+        SDL_SetRelativeMouseMode(SDL_FALSE);
         return;
     }
 
-    enableWrapping_ = true;
-    const ImVec2& windowPosition = currentWindow->Pos;
-    const ImVec2& windowSize = currentWindow->Size;
-    minWrapBound_ = windowPosition;
-    maxWrapBound_ = windowPosition + windowSize - ImVec2{ 1, 1 };
-
-    const unsigned monitorIndex = currentWindow->Viewport->PlatformMonitor;
-    if (monitorIndex < g.PlatformIO.Monitors.size())
-    {
-        const ImGuiPlatformMonitor& currentMonitor = g.PlatformIO.Monitors[monitorIndex];
-        const ImVec2& monitorPosition = currentMonitor.WorkPos;
-        const ImVec2& monitorSize = currentMonitor.WorkSize;
-        const ImVec2 minMonitorBound = monitorPosition;
-        const ImVec2 maxMonitorBound = monitorPosition + monitorSize - ImVec2{ 1, 1 };
-        minWrapBound_ = ImClamp(minWrapBound_, minMonitorBound, maxMonitorBound);
-        maxWrapBound_ = ImClamp(maxWrapBound_, minMonitorBound, maxMonitorBound);
-    }
-
-    const ImVec2 wrapRegionSize = maxWrapBound_ - minWrapBound_;
-    if (wrapRegionSize.x <= 3 || wrapRegionSize.y <= 3)
-        enableWrapping_ = false;
+    enableRelativeMouseMove_ = true;
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     revertMousePositionOnDisable_ = revertMousePositionOnDisable;
     revertMousePosition_ = g.IO.MousePos;
+}
+
+const Vector2 SystemUI::GetRelativeMouseMove() const
+{
+    return relativeMouseMove_;
 }
 
 void SystemUI::OnRenderEnd()
@@ -278,42 +273,19 @@ void SystemUI::OnRenderEnd()
     URHO3D_PROFILE("SystemUiRender");
     SendEvent(E_ENDRENDERINGSYSTEMUI);
 
-    // Disable mouse wrapping automatically if none of mouse buttons are down
+    // Disable relative mouse movement automatically if none of mouse buttons are down
     if (!ui::IsAnyMouseDown())
-        enableWrapping_ = false;
+    {
+        enableRelativeMouseMove_ = false;
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+    }
 
     ImGuiIO& io = ui::GetIO();
     if (imContext_->WithinFrameScope)
         ui::Render();
 
-    // Apply mouse wrapping in the same way ImGUI controls mouse
-    if (enableWrapping_)
-    {
-        ImVec2 mousePos = io.MousePos;
-
-        if (mousePos.x <= minWrapBound_.x)
-            mousePos.x = maxWrapBound_.x - 1;
-        if (mousePos.x >= maxWrapBound_.x)
-            mousePos.x = minWrapBound_.x + 1;
-        if (mousePos.y <= minWrapBound_.y)
-            mousePos.y = maxWrapBound_.y - 1;
-        if (mousePos.y >= maxWrapBound_.y)
-            mousePos.y = minWrapBound_.y + 1;
-
-        if (mousePos != io.MousePos)
-        {
-            for (int btn = 0; btn < ImGuiMouseButton_COUNT; btn++)
-            {
-                if (io.MouseDown[btn])
-                    io.MouseClickedPos[btn] += mousePos - io.MousePos;
-            }
-
-            io.MousePos = mousePos;
-            io.MousePosPrev = mousePos;
-            io.WantSetMousePos = true;
-        }
-    }
-    else if (revertMousePositionOnDisable_)
+    // Revert mouse position after relative movement
+    if (!enableRelativeMouseMove_ && revertMousePositionOnDisable_)
     {
         revertMousePositionOnDisable_ = false;
         io.MousePos = revertMousePosition_;
@@ -673,14 +645,14 @@ void ui::HideCursorWhenActive(Urho3D::MouseButton button, bool on_drag)
             Input* input = systemUI->GetSubsystem<Input>();
             if (input->IsMouseVisible())
             {
-                systemUI->SetMouseWrapping(true, true);
+                systemUI->SetRelativeMouseMove(true, true);
                 input->SetMouseVisible(false);
             }
         }
     }
     else if (ui::IsItemDeactivated())
     {
-        systemUI->SetMouseWrapping(false, true);
+        systemUI->SetRelativeMouseMove(false, true);
         systemUI->GetSubsystem<Input>()->SetMouseVisible(true);
     }
 }

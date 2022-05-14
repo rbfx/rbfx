@@ -64,10 +64,12 @@ public:
     /// Destruct.
     ~SystemUI() override;
 
-    /// Enable or disable mouse wrapping for current display and window.
+    /// Enable or disable relative mouse movement.
     /// Should be called withing ImGUI window.
-    /// Mouse wrapping is automatically disabled when all mouse buttons are released.
-    void SetMouseWrapping(bool enabled, bool revertMousePositionOnDisable);
+    /// Relative mouse movement is automatically disabled when all mouse buttons are released.
+    void SetRelativeMouseMove(bool enabled, bool revertMousePositionOnDisable);
+    /// Return relative mouse movement value.
+    const Vector2 GetRelativeMouseMove() const;
 
     /// Add font to imgui subsystem.
     /// \param fontPath a string pointing to TTF font resource.
@@ -112,13 +114,13 @@ protected:
     ImTextureID AllocateFontTexture(ImFontAtlas* atlas);
     void OnRawEvent(VariantMap& args);
     void OnScreenMode(VariantMap& args);
-    void OnInputEnd(VariantMap& args);
+    void OnInputBegin();
+    void OnInputEnd();
     void OnRenderEnd();
     void OnMouseVisibilityChanged(StringHash, VariantMap& args);
 
-    bool enableWrapping_{};
-    ImVec2 minWrapBound_;
-    ImVec2 maxWrapBound_;
+    bool enableRelativeMouseMove_{};
+    Vector2 relativeMouseMove_;
     bool revertMousePositionOnDisable_{};
     ImVec2 revertMousePosition_;
 };

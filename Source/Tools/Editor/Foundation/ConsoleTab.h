@@ -20,19 +20,31 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/DefaultCameraController3D.h"
+#pragma once
+
+#include "../Project/ProjectEditor.h"
+#include "../Project/EditorTab.h"
 
 namespace Urho3D
 {
 
-void Foundation_DefaultCameraController3D(Context* context, SceneViewTab* sceneViewTab)
-{
-    sceneViewTab->RegisterCameraController<DefaultCameraController3D>();
-}
+void Foundation_ConsoleTab(Context* context, ProjectEditor* projectEditor);
 
-DefaultCameraController3D::DefaultCameraController3D(Scene* scene, Camera* camera)
-    : SceneCameraController(scene, camera)
+/// Tab that displays application log and enables console input.
+/// TODO(editor): Rename
+class ConsoleTab_ : public EditorTab
 {
-}
+    URHO3D_OBJECT(ConsoleTab_, EditorTab)
+
+public:
+    explicit ConsoleTab_(Context* context);
+
+protected:
+    /// Implement EditorTab
+    /// @{
+    void UpdateAndRenderContent() override;
+    void UpdateAndRenderContextMenuItems() override;
+    /// @}
+};
 
 }

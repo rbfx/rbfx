@@ -25,6 +25,7 @@
 
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
@@ -66,6 +67,44 @@ SceneCameraController::SceneCameraController(Scene* scene, Camera* camera)
 
 SceneCameraController::~SceneCameraController()
 {
+}
+
+Vector2 SceneCameraController::GetMouseMove() const
+{
+    auto systemUI = GetSubsystem<SystemUI>();
+    return systemUI->GetRelativeMouseMove();
+}
+
+Vector3 SceneCameraController::GetMoveDirection() const
+{
+    static const ea::pair<Scancode, Vector3> keyMapping[]{
+        {SCANCODE_W, Vector3::FORWARD},
+        {SCANCODE_S, Vector3::BACK},
+        {SCANCODE_A, Vector3::LEFT},
+        {SCANCODE_D, Vector3::RIGHT},
+        {SCANCODE_SPACE, Vector3::UP},
+        {SCANCODE_LCTRL, Vector3::DOWN},
+    };
+
+    Vector3 moveDirection;
+    for (const auto& [scancode, direction] : keyMapping)
+    {
+        if (ui::IsKeyDown(Input::GetKeyFromScancode(scancode)))
+            moveDirection += direction;
+    }
+    return moveDirection;
+}
+
+bool SceneCameraController::GetMoveAccelerated() const
+{
+    return ui::IsKeyDown(Input::GetKeyFromScancode(SCANCODE_LSHIFT));
+}
+
+SceneCameraController* SceneViewPage::GetCurrentCameraController() const
+{
+    return currentCameraController_ < cameraControllers_.size()
+        ? cameraControllers_[currentCameraController_]
+        : nullptr;
 }
 
 SceneViewTab::SceneViewTab(Context* context)
@@ -167,6 +206,33 @@ void SceneViewTab::UpdateAndRenderContent()
     Texture2D* sceneTexture = activePage->renderer_->GetTexture();
     ui::SetCursorPos({0, 0});
     ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+
+    UpdateCameraController(*activePage);
+}
+
+void SceneViewTab::UpdateCameraController(SceneViewPage& page)
+{
+    auto systemUI = GetSubsystem<SystemUI>();
+
+    const auto cameraController = page.GetCurrentCameraController();
+    const bool isActive = cameraController && cameraController->IsActive(wasCameraControllerActive_);
+    if (isActive)
+    {
+        if (!wasCameraControllerActive_)
+            systemUI->SetRelativeMouseMove(true, true);
+    }
+    else if (wasCameraControllerActive_)
+    {
+        systemUI->SetRelativeMouseMove(false, true);
+    }
+    cameraController->Update(isActive);
+
+    wasCameraControllerActive_ = isActive;
+}
+
+void SceneViewTab::UpdateFocused()
+{
+
 }
 
 IntVector2 SceneViewTab::GetContentSize() const

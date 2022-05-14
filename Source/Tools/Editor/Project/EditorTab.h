@@ -109,6 +109,9 @@ public:
     bool IsOpen() const { return open_; }
     /// @}
 
+    /// Return current project.
+    ProjectEditor* GetProject() const;
+
 protected:
     /// Render contents of the tab.
     virtual void UpdateAndRenderContent() {}
@@ -121,8 +124,6 @@ protected:
     /// Apply scoped hotkeys for this tab.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
 
-    /// Return current project.
-    ProjectEditor* GetProject() const;
     /// Add context menu separator if not added already.
     void SetSeparator();
     /// Reset separator state.

@@ -20,37 +20,30 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/Archive.h"
+#pragma once
 
-#include <cassert>
+#include "../Foundation/SceneViewTab.h"
 
 namespace Urho3D
 {
 
-ArchiveBlock::~ArchiveBlock()
+void Foundation_EditorCamera2D(Context* context, SceneViewTab* sceneViewTab);
+
+class EditorCamera2D : public SceneCameraController
 {
-    if (archive_)
-        archive_->EndBlock();
-}
+    URHO3D_OBJECT(EditorCamera2D, SceneCameraController);
 
-bool Archive::ValidateName(ea::string_view name)
-{
-    // Empty names are not allowed
-    if (name.empty())
-        return false;
+public:
+    explicit EditorCamera2D(Scene* scene, Camera* camera);
 
-    // Name must start with letter or underscore.
-    if (!isalpha(name[0]) && name[0] != '_')
-        return false;
+    /// Implement SceneCameraController.
+    /// @{
+    void SerializeInBlock(Archive& archive) override {}
 
-    // Name must contain only letters, digits, underscores or dots.
-    for (const char ch : name)
-    {
-        if (!isalnum(ch) && ch != '_' && ch != '.')
-            return false;
-    }
-
-    return true;
-}
+    ea::string GetTitle() const override { return "2D Camera"; }
+    bool IsActive(bool wasActive) { return false; }
+    void Update(bool isActive) {}
+    /// @}
+};
 
 }

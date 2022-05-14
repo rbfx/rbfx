@@ -56,11 +56,11 @@ void Editor::RenderMenuBar()
 
             if (projectEditor_)
             {
-                if (ui::MenuItem("Save Project", keyBindings_.GetKeyCombination(ActionType::SaveProject)))
-                    projectEditor_->Save();
+                projectEditor_->UpdateAndRenderProjectMenu();
+                ui::Separator();
             }
 
-            if (ui::MenuItem("Open/Create Project", keyBindings_.GetKeyCombination(ActionType::OpenProject)))
+            if (ui::MenuItem("Open or Create Project", keyBindings_.GetKeyCombination(ActionType::OpenProject)))
                 OpenOrCreateProject();
 
             StringVector & recents = recentProjects_;
@@ -89,6 +89,12 @@ void Editor::RenderMenuBar()
                 ui::EndMenu();
             }
 
+            if (projectEditor_)
+            {
+                if (ui::MenuItem("Close Project"))
+                    CloseProject();
+            }
+
             ui::Separator();
 
             if (project_)
@@ -112,6 +118,8 @@ void Editor::RenderMenuBar()
 
             ui::EndMenu();
         }
+        if (projectEditor_)
+            projectEditor_->UpdateAndRenderMainMenu();
         if (project_)
         {
             if (ui::BeginMenu("View"))
