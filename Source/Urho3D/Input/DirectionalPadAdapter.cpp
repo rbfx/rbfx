@@ -159,6 +159,21 @@ void DirectionalPadAdapter::SendKeyUp(Scancode key)
     SendEvent(E_KEYUP, args);
 }
 
+void DirectionalPadAdapter::HandleInputFocus(StringHash eventType, VariantMap& args)
+{
+    using namespace InputFocus;
+    const unsigned focus = args[P_FOCUS].GetBool();
+    if (!focus)
+    {
+        // Clear all input and send even if necessary.
+        ea::function<bool(InputType)> pred = [](InputType i) { return true; };
+        RemoveIf(up_, pred, SCANCODE_UP);
+        RemoveIf(down_, pred, SCANCODE_DOWN);
+        RemoveIf(left_, pred, SCANCODE_LEFT);
+        RemoveIf(right_, pred, SCANCODE_RIGHT);
+    }
+}
+
 void DirectionalPadAdapter::HandleKeyDown(StringHash eventType, VariantMap& args)
 {
     using namespace KeyDown;
@@ -370,6 +385,16 @@ void DirectionalPadAdapter::UpdateSubscriptions(SubscriptionFlags flags)
 {
     const auto toSubscribe = flags & ~subscriptionFlags_;
     const auto toUnsubscribe = subscriptionFlags_ & ~flags;
+
+    if (!subscriptionFlags_ && flags)
+    {
+        SubscribeToEvent(input_, E_INPUTFOCUS, URHO3D_HANDLER(DirectionalPadAdapter, HandleInputFocus));
+    }
+    else if (subscriptionFlags_ && !flags)
+    {
+        UnsubscribeFromEvent(input_, E_INPUTFOCUS);
+    }
+
     subscriptionFlags_ = flags;
     if (toSubscribe & SubscriptionMask::Keyboard)
     {

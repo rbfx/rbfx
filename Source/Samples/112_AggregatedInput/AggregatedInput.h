@@ -55,5 +55,5 @@ private:
     DirectionAggregator aggregatedInput_;
 
     SharedPtr<Sprite> pivot_;
-    SharedPtr<Sprite> _marker;
+    SharedPtr<Sprite> marker_;
 };

@@ -55,7 +55,7 @@ DirectionAggregator::DirectionAggregator(Context* context)
             const auto* joystick = input_->GetJoystickByIndex(i);
             if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
             {
-                ignoreJoystickId_ = joystick->joystickID_;
+                ignoreJoystickId_ = static_cast<unsigned>(joystick->joystickID_);
             }
         }
     }
@@ -137,6 +137,16 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
 {
     const auto toSubscribe = flags & ~subscriptionFlags_;
     const auto toUnsubscribe = subscriptionFlags_ & ~flags;
+
+    if (!subscriptionFlags_ && flags)
+    {
+        SubscribeToEvent(input_, E_INPUTFOCUS, URHO3D_HANDLER(DirectionAggregator, HandleInputFocus));
+    }
+    else if (subscriptionFlags_ && !flags)
+    {
+        UnsubscribeFromEvent(input_, E_INPUTFOCUS);
+    }
+
     subscriptionFlags_ = flags;
     if (toSubscribe & SubscriptionMask::Keyboard)
     {
@@ -203,41 +213,54 @@ Vector2 DirectionAggregator::GetDirection() const
     {
         for (const AxisState& activeState : verticalAxis_)
             res.y_ += activeState.value_;
-        res.x_ *= 1.0f / static_cast<float>(verticalAxis_.size());
+        res.y_ *= 1.0f / static_cast<float>(verticalAxis_.size());
     }
 
     return res;
 }
 
+void DirectionAggregator::HandleInputFocus(StringHash eventType, VariantMap& args)
+{
+    using namespace InputFocus;
+    const unsigned focus = args[P_FOCUS].GetBool();
+    if (!focus)
+    {
+        horizontalAxis_.clear();
+        verticalAxis_.clear();
+    }
+}
+
 void DirectionAggregator::HandleKeyDown(StringHash eventType, VariantMap& args)
 {
     using namespace KeyDown;
-    switch (args[P_SCANCODE].GetUInt())
+    const unsigned scancode = args[P_SCANCODE].GetUInt();
+    switch (scancode)
     {
     case SCANCODE_W:
-    case SCANCODE_UP: UpdateAxis(verticalAxis_, {InputType::Keyboard, -1}); break;
+    case SCANCODE_UP: UpdateAxis(verticalAxis_, {InputType::Keyboard, scancode, - 1.0f}); break;
     case SCANCODE_S:
-    case SCANCODE_DOWN: UpdateAxis(verticalAxis_, {InputType::Keyboard, 1}); break;
+    case SCANCODE_DOWN: UpdateAxis(verticalAxis_, {InputType::Keyboard, scancode, 1.0f}); break;
     case SCANCODE_A:
-    case SCANCODE_LEFT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, -1}); break;
+    case SCANCODE_LEFT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, scancode, -1.0f}); break;
     case SCANCODE_D:
-    case SCANCODE_RIGHT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, 1}); break;
+    case SCANCODE_RIGHT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, scancode, 1.0f}); break;
     }
 }
 
 void DirectionAggregator::HandleKeyUp(StringHash eventType, VariantMap& args)
 {
     using namespace KeyUp;
-    switch (args[P_SCANCODE].GetUInt())
+    const unsigned scancode = args[P_SCANCODE].GetUInt();
+    switch (scancode)
     {
     case SCANCODE_W:
-    case SCANCODE_UP: UpdateAxis(verticalAxis_, {InputType::Keyboard, 0.0f}); break;
+    case SCANCODE_UP: UpdateAxis(verticalAxis_, {InputType::Keyboard, scancode, 0.0f}); break;
     case SCANCODE_S:
-    case SCANCODE_DOWN: UpdateAxis(verticalAxis_, {InputType::Keyboard, 0.0f}); break;
+    case SCANCODE_DOWN: UpdateAxis(verticalAxis_, {InputType::Keyboard, scancode, 0.0f}); break;
     case SCANCODE_A:
-    case SCANCODE_LEFT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, 0.0f}); break;
+    case SCANCODE_LEFT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, scancode, 0.0f}); break;
     case SCANCODE_D:
-    case SCANCODE_RIGHT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, 0.0f}); break;
+    case SCANCODE_RIGHT: UpdateAxis(horizontalAxis_, {InputType::Keyboard, scancode, 0.0f}); break;
     }
 }
 
@@ -245,11 +268,9 @@ void DirectionAggregator::HandleJoystickAxisMove(StringHash eventType, VariantMa
 {
     using namespace JoystickAxisMove;
 
-    const auto joystickId = args[P_JOYSTICKID].GetInt();
+    const auto joystickId = args[P_JOYSTICKID].GetUInt();
     if (joystickId == ignoreJoystickId_)
         return;
-
-    const auto eventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickAxis) + joystickId);
 
     const auto axisIndex = args[P_AXIS].GetUInt();
     const auto value = args[P_POSITION].GetFloat();
@@ -257,12 +278,12 @@ void DirectionAggregator::HandleJoystickAxisMove(StringHash eventType, VariantMa
     // Up-Down
     if (axisIndex == 1)
     {
-        UpdateAxis(verticalAxis_, {eventId, value});
+        UpdateAxis(verticalAxis_, {InputType::JoystickAxis, joystickId, value});
     }
     // Left-Right
     if (axisIndex == 0)
     {
-        UpdateAxis(horizontalAxis_, {eventId, value});
+        UpdateAxis(horizontalAxis_, {InputType::JoystickAxis, joystickId, value});
     }
 }
 
@@ -274,14 +295,12 @@ void DirectionAggregator::HandleJoystickHatMove(StringHash eventType, VariantMap
         return;
 
     const auto joystickId = args[P_JOYSTICKID].GetUInt();
-    const auto eventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickDPad) + joystickId);
-
     const auto position = args[P_POSITION].GetUInt();
 
     const float horizontalValue = ((position & HAT_RIGHT) ? 1.0f : 0.0f) + ((position & HAT_LEFT) ? -1.0f : 0.0f);
-    UpdateAxis(horizontalAxis_, {eventId, horizontalValue});
+    UpdateAxis(horizontalAxis_, {InputType::JoystickDPad, joystickId, horizontalValue});
     const float verticalValue = ((position & HAT_DOWN) ? 1.0f : 0.0f) + ((position & HAT_UP) ? -1.0f : 0.0f);
-    UpdateAxis(verticalAxis_, {eventId, verticalValue});
+    UpdateAxis(verticalAxis_, {InputType::JoystickDPad, joystickId, verticalValue});
 }
 
 void DirectionAggregator::HandleJoystickDisconnected(StringHash eventType, VariantMap& args)
@@ -290,14 +309,14 @@ void DirectionAggregator::HandleJoystickDisconnected(StringHash eventType, Varia
     const auto joystickId = args[P_JOYSTICKID].GetUInt();
 
     // Cancel Axis states.
-    const auto joyEventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickAxis) + joystickId);
-    UpdateAxis(verticalAxis_, {joyEventId, 0.0f});
-    UpdateAxis(horizontalAxis_, {joyEventId, 0.0f});
+    const auto joyEventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickAxis));
+    UpdateAxis(verticalAxis_, {joyEventId, joystickId, 0.0f});
+    UpdateAxis(horizontalAxis_, {joyEventId, joystickId, 0.0f});
 
     // Cancel DPad states.
-    const auto dpadEventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickDPad) + joystickId);
-    UpdateAxis(verticalAxis_, {dpadEventId, 0.0f});
-    UpdateAxis(horizontalAxis_, {dpadEventId, 0.0f});
+    const auto dpadEventId = static_cast<InputType>(static_cast<unsigned>(InputType::JoystickDPad));
+    UpdateAxis(verticalAxis_, {dpadEventId, joystickId, 0.0f});
+    UpdateAxis(horizontalAxis_, {dpadEventId, joystickId, 0.0f});
 }
 
 void DirectionAggregator::HandleTouchBegin(StringHash eventType, VariantMap& args)
@@ -336,8 +355,8 @@ void DirectionAggregator::HandleTouchMove(StringHash eventType, VariantMap& args
     touchOrigin_.x_ = pos.x_ - static_cast<int>(dx / touchSensitivity_);
     touchOrigin_.y_ = pos.y_ - static_cast<int>(dy / touchSensitivity_);
 
-    UpdateAxis(horizontalAxis_, AxisState{InputType::Touch, dx});
-    UpdateAxis(verticalAxis_, AxisState{InputType::Touch, dy});
+    UpdateAxis(horizontalAxis_, AxisState{InputType::Touch, 0, dx});
+    UpdateAxis(verticalAxis_, AxisState{InputType::Touch, 0, dy});
 }
 
 void DirectionAggregator::HandleTouchEnd(StringHash eventType, VariantMap& args)
@@ -352,8 +371,8 @@ void DirectionAggregator::HandleTouchEnd(StringHash eventType, VariantMap& args)
         return;
 
     activeTouchId_.reset();
-    UpdateAxis(horizontalAxis_, AxisState{InputType::Touch, 0.0f});
-    UpdateAxis(verticalAxis_, AxisState{InputType::Touch, 0.0f});
+    UpdateAxis(horizontalAxis_, AxisState{InputType::Touch, 0, 0.0f});
+    UpdateAxis(verticalAxis_, AxisState{InputType::Touch, 0, 0.0f});
 }
 
 void DirectionAggregator::UpdateAxis(ea::fixed_vector<AxisState, 4>& activeStates, AxisState state)
@@ -366,7 +385,7 @@ void DirectionAggregator::UpdateAxis(ea::fixed_vector<AxisState, 4>& activeState
     // Find and replace value
     for (AxisState& activeState : activeStates)
     {
-        if (activeState.input_ == state.input_)
+        if ((activeState.input_ == state.input_) && (activeState.key_ == state.key_))
         {
             if (adjustedValue == 0.0f)
                 activeStates.erase_unsorted(&activeState);
@@ -377,7 +396,7 @@ void DirectionAggregator::UpdateAxis(ea::fixed_vector<AxisState, 4>& activeState
     }
     // Add value if not found
     if (adjustedValue != 0.0f)
-        activeStates.push_back(AxisState{state.input_, adjustedValue});
+        activeStates.push_back(AxisState{state.input_, state.key_, adjustedValue});
 }
 
 } // namespace Urho3D

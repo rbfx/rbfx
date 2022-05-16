@@ -101,6 +101,7 @@ public:
 private:
     void UpdateSubscriptions(SubscriptionFlags flags);
 
+    void HandleInputFocus(StringHash eventType, VariantMap& args);
     void HandleKeyDown(StringHash eventType, VariantMap& args);
     void HandleKeyUp(StringHash eventType, VariantMap& args);
     void HandleJoystickAxisMove(StringHash eventType, VariantMap& args);

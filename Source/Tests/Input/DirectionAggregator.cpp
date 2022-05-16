@@ -43,9 +43,9 @@ TEST_CASE("DirectionAggregator tests")
         CHECK(Vector2(0.0f, 1.0f).Equals(adapter.GetDirection()));
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_S, KEY_S);
         CHECK(Vector2(0.0f, 1.0f).Equals(adapter.GetDirection()));
-        // Release Down. It releases keyboard "down" state.
+        // Release one key but the other key still considered as pressed.
         SendKeyEvent(input, E_KEYUP, SCANCODE_DOWN, KEY_DOWN);
-        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
+        CHECK(Vector2(0.0f, 1.0f).Equals(adapter.GetDirection()));
         SendKeyEvent(input, E_KEYUP, SCANCODE_S, KEY_S);
         CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
@@ -53,12 +53,13 @@ TEST_CASE("DirectionAggregator tests")
     {
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_LEFT, KEY_LEFT);
         CHECK(Vector2(-1.0f, 0.0f).Equals(adapter.GetDirection()));
-        // Press Right. It overrides horizontal axis
+        // Press Right. The average value becomes 0
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_RIGHT, KEY_RIGHT);
-        CHECK(Vector2(1.0f, 0.0f).Equals(adapter.GetDirection()));
-        // Release left. It overrides horizontal axis
+        CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
+        // Release left. The average becomes positive 1
         SendKeyEvent(input, E_KEYUP, SCANCODE_LEFT, KEY_LEFT);
-        CHECK(Vector2(0.0f, 0.0f).Equals(adapter.GetDirection()));
+        CHECK(Vector2(1.0f, 0.0f).Equals(adapter.GetDirection()));
+        // Release Right. No buttons left.
         SendKeyEvent(input, E_KEYUP, SCANCODE_RIGHT, KEY_RIGHT);
         CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
@@ -66,10 +67,10 @@ TEST_CASE("DirectionAggregator tests")
     {
         SendKeyEvent(input, E_KEYDOWN, SCANCODE_LEFT, KEY_LEFT);
         CHECK(Vector2(-1.0f, 0.0f).Equals(adapter.GetDirection()));
-        // Press Right.
+        // Press Right on hat.
         SendDPadEvent(input, HAT_RIGHT);
         CHECK(Vector2(0.0f, 0.0f).Equals(adapter.GetDirection()));
-        // Release left.
+        // Release left on keyboard.
         SendKeyEvent(input, E_KEYUP, SCANCODE_LEFT, KEY_LEFT);
         CHECK(Vector2(1.0f, 0.0f).Equals(adapter.GetDirection()));
         SendDPadEvent(input, HAT_CENTER);

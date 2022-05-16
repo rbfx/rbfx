@@ -58,14 +58,10 @@ private:
         Keyboard = 1,
         // Touch input
         Touch = 2,
-        // Next values reserved for future use...
-
-        // Joystick inputs should be last values in the enum
-
-        // Joystick Axis start index. Add joystick index to calculate actual value.
-        JoystickAxis = 100,
-        // Joystick DPad (hat) start index. Add joystick index to calculate actual value.
-        JoystickDPad = 200,
+        // Joystick Axis
+        JoystickAxis = 3,
+        // Joystick DPad (hat)
+        JoystickDPad = 4,
     };
 
     // State of an axis
@@ -73,8 +69,10 @@ private:
     {
         // Type of input device
         InputType input_;
+        // Additional input information: Key scan code, joystick id etc.
+        unsigned key_ {};
         // Value to accumulate
-        float value_;
+        float value_ {};
     };
 
     /// Type definition for active input sources
@@ -120,6 +118,7 @@ public:
 private:
     void UpdateSubscriptions(DirectionAggregatorDetail::SubscriptionFlags flags);
 
+    void HandleInputFocus(StringHash eventType, VariantMap& args);
     void HandleKeyDown(StringHash eventType, VariantMap& args);
     void HandleKeyUp(StringHash eventType, VariantMap& args);
     void HandleJoystickAxisMove(StringHash eventType, VariantMap& args);
@@ -146,7 +145,7 @@ private:
     /// Joystick dead zone value
     float axisDeadZone_{0.1f};
     /// Joystick to ignore (SDL gyroscope virtual joystick)
-    int ignoreJoystickId_{ea::numeric_limits<int>::lowest()};
+    unsigned ignoreJoystickId_{ea::numeric_limits<unsigned>::max()};
     /// UI element to filter touch events
     WeakPtr<UIElement> uiElement_{};
     /// Identifier of active touch

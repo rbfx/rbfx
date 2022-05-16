@@ -58,15 +58,16 @@ void AggregatedInput::CreateUI()
 
     auto uiRoot = GetUIRoot();
     pivot_ =  uiRoot->CreateChild<Sprite>();
-    pivot_->SetSize(20, 20);
-    _marker = uiRoot->CreateChild<Sprite>();
-    _marker->SetSize(20, 20);
+    pivot_->SetSize(24, 24);
+    pivot_->SetColor(Color::GRAY);
+    marker_ = uiRoot->CreateChild<Sprite>();
+    marker_->SetSize(20, 20);
     // Construct new Text object
     SharedPtr<Text> helloText(MakeShared<Text>(context_));
 
     // Set String to display
     
-    helloText->SetText("Move marker around with keyboard, mouse or touch");
+    helloText->SetText("Move marker around with keyboard, joystick or touch");
 
     // Set font and text color
     helloText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
@@ -85,13 +86,13 @@ void AggregatedInput::Deactivate() { aggregatedInput_.SetEnabled(false); }
 
 void AggregatedInput::Update(float timeStep)
 {
-    auto uiRoot = GetUIRoot();
-    auto screenSize = uiRoot->GetSize();
+    const auto uiRoot = GetUIRoot();
+    const auto screenSize = uiRoot->GetSize();
 
-    auto center = Vector2(screenSize.x_ / 2, screenSize.y_ / 2);
-    auto quater = Min(screenSize.x_ / 4, screenSize.y_ / 4);
+    const auto center = Vector2(screenSize.x_ / 2, screenSize.y_ / 2);
+    const auto quater = Min(screenSize.x_ / 4, screenSize.y_ / 4);
 
-    auto d = aggregatedInput_.GetDirection();
-    pivot_->SetPosition(center - Vector2(10,10));
-    _marker->SetPosition(center + Vector2(quater, quater) * d - Vector2(10, 10));
+    const auto d = aggregatedInput_.GetDirection();
+    pivot_->SetPosition(center - Vector2(pivot_->GetSize())*0.5f);
+    marker_->SetPosition(center + Vector2(quater, quater) * d - Vector2(marker_->GetSize())*0.5f);
 }
