@@ -71,6 +71,11 @@ void VertexBuffer::Release()
 
 bool VertexBuffer::SetData(const void* data)
 {
+    if (!vertexCount_)
+    {
+        return true;
+    }
+
     if (!data)
     {
         URHO3D_LOGERROR("Null pointer for vertex buffer data");
