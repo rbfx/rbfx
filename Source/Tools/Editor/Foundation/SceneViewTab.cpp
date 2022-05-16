@@ -92,7 +92,7 @@ Vector3 SceneCameraController::GetMoveDirection() const
         if (ui::IsKeyDown(Input::GetKeyFromScancode(scancode)))
             moveDirection += direction;
     }
-    return moveDirection;
+    return moveDirection.Normalized();
 }
 
 bool SceneCameraController::GetMoveAccelerated() const

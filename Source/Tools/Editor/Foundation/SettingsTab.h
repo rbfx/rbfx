@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/SettingsManager.h"
 #include "../Project/ProjectEditor.h"
 #include "../Project/EditorTab.h"
 
@@ -38,11 +39,26 @@ class SettingsTab : public EditorTab
 public:
     explicit SettingsTab(Context* context);
 
+    /// Implement EditorTab
+    /// @{
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
+    void ReadIniSettings(const char* line) override;
+    /// @}
+
 protected:
     /// Implement EditorTab
     /// @{
     void UpdateAndRenderContent() override;
     /// @}
+
+private:
+    void RenderSettingsTree();
+    void RenderSettingsSubtree(const SettingTreeNode& treeNode, const ea::string& shortName);
+
+    void RenderCurrentSettingsPage();
+
+    bool selectNextValidPage_{};
+    ea::string selectedPage_;
 };
 
 }
