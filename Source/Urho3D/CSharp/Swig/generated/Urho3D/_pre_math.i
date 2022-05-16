@@ -64,6 +64,7 @@
 %csattribute(Urho3D::AreaAllocator, %arg(int), Width, GetWidth);
 %csattribute(Urho3D::AreaAllocator, %arg(int), Height, GetHeight);
 %csattribute(Urho3D::AreaAllocator, %arg(bool), FastMode, GetFastMode);
+%csattribute(Urho3D::Circle, %arg(bool), IsValid, IsValid);
 %csattribute(Urho3D::Matrix2, %arg(bool), IsNaN, IsNaN);
 %csattribute(Urho3D::Matrix2, %arg(bool), IsInf, IsInf);
 %csattribute(Urho3D::RandomEngine, %arg(ea::pair<float, float>), StandardNormalFloatPair, GetStandardNormalFloatPair);

@@ -198,6 +198,9 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %include "eastl_pair.i"
 %include "eastl_unordered_map.i"
 
+// Containers
+using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
+
 // Declare inheritable classes in this file
 %include "Context.i"
 
@@ -512,6 +515,7 @@ public:
 %include "Urho3D/Scene/ObjectAnimation.h"
 %include "Urho3D/Scene/SceneResolver.h"
 %include "Urho3D/Scene/UnknownComponent.h"
+%include "Urho3D/Scene/TrackedComponent.h"
 
 // --------------------------------------- Extra components and resources --------------
 %include "Urho3D/Input/FreeFlyController.h"
@@ -752,18 +756,30 @@ public:
 
 %template(ConnectionVector) eastl::vector<Urho3D::SharedPtr<Urho3D::Connection>>;
 
+%typemap(csbase) Urho3D::NetworkFrame "long";
+%csconstvalue("long.MinValue") Urho3D::NetworkFrame::Min;
+%csconstvalue("long.MaxValue") Urho3D::NetworkFrame::Max;
+
+%template(TrackedNetworkObjectRegistry) Urho3D::TrackedComponent<Urho3D::ReferencedComponentBase, Urho3D::NetworkObjectRegistry>;
+%interface_custom("%s", "I%s", Urho3D::ClientNetworkCallback);
+%interface_custom("%s", "I%s", Urho3D::ServerNetworkCallback);
+%interface_custom("%s", "I%s", Urho3D::NetworkCallback);
+
+%include "generated/Urho3D/_pre_replica.i"
+%include "Urho3D/Replica/NetworkCallbacks.h"
+%include "Urho3D/Replica/ReplicationManager.h"
+%include "Urho3D/Replica/NetworkObject.h"
+%include "Urho3D/Replica/StaticNetworkObject.h"
 %include "Urho3D/Replica/BehaviorNetworkObject.h"
 %include "Urho3D/Replica/ClientInputStatistics.h"
 %include "Urho3D/Replica/ClientReplica.h"
 %include "Urho3D/Replica/FilteredByDistance.h"
-%include "Urho3D/Replica/NetworkObject.h"
 %include "Urho3D/Replica/NetworkTime.h"
+%include "Urho3D/Replica/NetworkId.h"
 %include "Urho3D/Replica/PredictedKinematicController.h"
 %include "Urho3D/Replica/ReplicatedAnimation.h"
 %include "Urho3D/Replica/ReplicatedTransform.h"
-%include "Urho3D/Replica/ReplicationManager.h"
 %include "Urho3D/Replica/ServerReplicator.h"
-%include "Urho3D/Replica/StaticNetworkObject.h"
 %include "Urho3D/Replica/TickSynchronizer.h"
 %include "Urho3D/Replica/TrackedAnimatedModel.h"
 #endif
@@ -969,6 +985,7 @@ using ImGuiConfigFlags = unsigned;
 %template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
 #endif
 
+%template(StringMap)                    eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>;
 %template(StringVariantMap)             eastl::unordered_map<eastl::string, Urho3D::Variant>;
 %template(AttributeMap)                 eastl::unordered_map<Urho3D::StringHash, eastl::vector<Urho3D::AttributeInfo>>;

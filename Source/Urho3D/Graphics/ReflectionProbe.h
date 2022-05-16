@@ -76,6 +76,8 @@ class URHO3D_API ReflectionProbeManager : public TrackedComponentRegistryBase
     URHO3D_OBJECT(ReflectionProbeManager, TrackedComponentRegistryBase);
 
 public:
+    static constexpr bool IsOnlyEnabledTracked = true;
+
     using ReflectionProbeSpan = TransformedSpan<TrackedComponentBase* const, ReflectionProbe* const, StaticCaster<ReflectionProbe* const>>;
     static constexpr float DefaultQueryPadding = 2.0f;
     static constexpr unsigned DefaultRenderBudget = 6;
@@ -170,7 +172,7 @@ enum class ReflectionProbeType
 };
 
 /// Reflection probe component that specifies reflection applied within a region.
-class URHO3D_API ReflectionProbe : public TrackedComponent<ReflectionProbeManager, EnabledOnlyTag>
+class URHO3D_API ReflectionProbe : public TrackedComponent<TrackedComponentBase, ReflectionProbeManager>
 {
     URHO3D_OBJECT(ReflectionProbe, TrackedComponentBase);
 

@@ -9,3 +9,4 @@
 %csattribute(Urho3D::LightmapChartRegion, %arg(Urho3D::Vector2), Scale, GetScale);
 %csattribute(Urho3D::LightmapChartRegion, %arg(Urho3D::Vector2), Offset, GetOffset);
 %csattribute(Urho3D::LightmapChartRegion, %arg(Urho3D::Vector4), ScaleOffset, GetScaleOffset);
+%csattribute(Urho3D::IncrementalLightBaker, %arg(Urho3D::IncrementalLightBakerStatus), Status, GetStatus);

@@ -12,8 +12,9 @@
 %ignore Urho3D::STREAM_BUFFER_LENGTH;
 %csattribute(Urho3D::Audio, %arg(unsigned int), SampleSize, GetSampleSize);
 %csattribute(Urho3D::Audio, %arg(int), MixRate, GetMixRate);
+%csattribute(Urho3D::Audio, %arg(unsigned int), BufferLengthMS, GetBufferLengthMS);
 %csattribute(Urho3D::Audio, %arg(bool), Interpolation, GetInterpolation);
-%csattribute(Urho3D::Audio, %arg(bool), IsStereo, IsStereo);
+%csattribute(Urho3D::Audio, %arg(Urho3D::SpeakerMode), SpeakerMode, GetSpeakerMode);
 %csattribute(Urho3D::Audio, %arg(bool), IsPlaying, IsPlaying);
 %csattribute(Urho3D::Audio, %arg(bool), IsInitialized, IsInitialized);
 %csattribute(Urho3D::Audio, %arg(Urho3D::SoundListener *), Listener, GetListener, SetListener);
@@ -27,6 +28,13 @@
 %csattribute(Urho3D::SoundStream, %arg(bool), IsStereo, IsStereo);
 %csattribute(Urho3D::BufferedSoundStream, %arg(unsigned int), BufferNumBytes, GetBufferNumBytes);
 %csattribute(Urho3D::BufferedSoundStream, %arg(float), BufferLength, GetBufferLength);
+%csattribute(Urho3D::Microphone, %arg(ea::vector<int16_t>), Data, GetData);
+%csattribute(Urho3D::Microphone, %arg(unsigned int), Frequency, GetFrequency);
+%csattribute(Urho3D::Microphone, %arg(ea::string), Name, GetName);
+%csattribute(Urho3D::Microphone, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
+%csattribute(Urho3D::Microphone, %arg(unsigned int), WakeThreshold, GetWakeThreshold, SetWakeThreshold);
+%csattribute(Urho3D::Microphone, %arg(bool), IsSleeping, IsSleeping);
+%csattribute(Urho3D::Microphone, %arg(SharedPtr<Urho3D::BufferedSoundStream>), Linked, GetLinked);
 %csattribute(Urho3D::Sound, %arg(SharedPtr<Urho3D::SoundStream>), DecoderStream, GetDecoderStream);
 %csattribute(Urho3D::Sound, %arg(ea::shared_array<signed char>), Data, GetData);
 %csattribute(Urho3D::Sound, %arg(signed char *), Start, GetStart);
@@ -49,6 +57,8 @@
 %csattribute(Urho3D::SoundSource, %arg(float), Gain, GetGain, SetGain);
 %csattribute(Urho3D::SoundSource, %arg(float), Attenuation, GetAttenuation, SetAttenuation);
 %csattribute(Urho3D::SoundSource, %arg(float), Panning, GetPanning, SetPanning);
+%csattribute(Urho3D::SoundSource, %arg(float), Reach, GetReach, SetReach);
+%csattribute(Urho3D::SoundSource, %arg(bool), IsLowFrequency, IsLowFrequency, SetLowFrequency);
 %csattribute(Urho3D::SoundSource, %arg(Urho3D::AutoRemoveMode), AutoRemoveMode, GetAutoRemoveMode, SetAutoRemoveMode);
 %csattribute(Urho3D::SoundSource, %arg(bool), IsPlaying, IsPlaying);
 %csattribute(Urho3D::SoundSource, %arg(Urho3D::ResourceRef), SoundAttr, GetSoundAttr, SetSoundAttr);
@@ -69,4 +79,29 @@ public static partial class E
         public static implicit operator StringHash(SoundFinishedEvent e) { return e._event; }
     }
     public static SoundFinishedEvent SoundFinished = new SoundFinishedEvent();
+    public class RecordingUpdatedEvent {
+        private StringHash _event = new StringHash("RecordingUpdated");
+        public StringHash Microphone = new StringHash("Microphone");
+        public StringHash DataLength = new StringHash("DataLength");
+        public StringHash ClearData = new StringHash("ClearData");
+        public RecordingUpdatedEvent() { }
+        public static implicit operator StringHash(RecordingUpdatedEvent e) { return e._event; }
+    }
+    public static RecordingUpdatedEvent RecordingUpdated = new RecordingUpdatedEvent();
+    public class RecordingStartedEvent {
+        private StringHash _event = new StringHash("RecordingStarted");
+        public StringHash Microphone = new StringHash("Microphone");
+        public RecordingStartedEvent() { }
+        public static implicit operator StringHash(RecordingStartedEvent e) { return e._event; }
+    }
+    public static RecordingStartedEvent RecordingStarted = new RecordingStartedEvent();
+    public class RecordingEndedEvent {
+        private StringHash _event = new StringHash("RecordingEnded");
+        public StringHash Microphone = new StringHash("Microphone");
+        public StringHash DataLength = new StringHash("DataLength");
+        public StringHash ClearData = new StringHash("ClearData");
+        public RecordingEndedEvent() { }
+        public static implicit operator StringHash(RecordingEndedEvent e) { return e._event; }
+    }
+    public static RecordingEndedEvent RecordingEnded = new RecordingEndedEvent();
 } %}

@@ -117,6 +117,15 @@
 %csattribute(Urho3D::Engine, %arg(bool), IsInitialized, IsInitialized);
 %csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
 %csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
+%csattribute(Urho3D::ApplicationState, %arg(bool), IsActive, IsActive);
+%csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseVisible, IsMouseVisible, SetMouseVisible);
+%csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseGrabbed, IsMouseGrabbed, SetMouseGrabbed);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::MouseMode), MouseMode, GetMouseMode, SetMouseMode);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::UIElement *), UIRoot, GetUIRoot);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::IntVector2), UICustomSize, GetUICustomSize, SetUICustomSize);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::Color), DefaultFogColor, GetDefaultFogColor, SetDefaultFogColor);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::SingleStateApplication *), Application, GetApplication);
+%csattribute(Urho3D::SingleStateApplication, %arg(Urho3D::ApplicationState *), State, GetState, SetState);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
