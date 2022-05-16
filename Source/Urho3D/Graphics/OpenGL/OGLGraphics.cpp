@@ -1451,6 +1451,10 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
         {
             switch (info->glType_)
             {
+            case GL_FLOAT_VEC4:
+                glUniform4fv(info->location_, 3, matrix.Data());
+                break;
+
             case GL_FLOAT_MAT3:
                 glUniformMatrix3fv(info->location_, 1, GL_FALSE, matrix.ToMatrix3().Data());
                 break;
