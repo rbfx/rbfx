@@ -44,6 +44,35 @@ public:
     virtual void SerializeInBlock(Archive& archive) override = 0;
     /// Render page with settings.
     virtual void RenderSettings() = 0;
+    /// Reset settings to default.
+    virtual void ResetToDefaults() = 0;
+};
+
+/// Simple settings page that expects struct with methods.
+template <class T>
+class SimpleSettingsPage : public SettingsPage
+{
+public:
+    using SettingsPage::SettingsPage;
+
+    /// Implement SettingsPage
+    /// @{
+    ea::string GetPageKey() override { return values_.GetKey(); }
+    void SerializeInBlock(Archive& archive) override { values_.SerializeInBlock(archive); }
+    void RenderSettings() override { values_.RenderSettings(); }
+    void ResetToDefaults() override { values_ = T{}; }
+    /// @}
+
+    const T& GetValues() const { return values_; }
+
+private:
+    T values_;
+};
+
+struct SettingTreeNode
+{
+    SharedPtr<SettingsPage> page_;
+    ea::map<ea::string, SettingTreeNode> children_;
 };
 
 /// Class used to manage and serialize settings.
@@ -66,12 +95,19 @@ public:
     void SaveFile(const ea::string& fileName) const;
     /// @}
 
+    /// Find page by key.
+    SettingsPage* FindPage(const ea::string& key) const;
     /// Return sorted pages.
     const PageMap& GetSortedPages() const { return sortedPages_; }
+    /// Return page tree for rendering.
+    const SettingTreeNode& GetPageTree() const { return rootNode_; }
 
 private:
+    void InsertNode(SettingTreeNode& parentNode, ea::string_view path, const SharedPtr<SettingsPage>& page);
+
     ea::vector<SharedPtr<SettingsPage>> pages_;
     PageMap sortedPages_;
+    SettingTreeNode rootNode_;
 };
 
 }

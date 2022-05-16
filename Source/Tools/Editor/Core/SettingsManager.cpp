@@ -62,6 +62,26 @@ void SettingsManager::AddPage(SharedPtr<SettingsPage> page)
 {
     pages_.push_back(page);
     sortedPages_[page->GetPageKey()] = page;
+    InsertNode(rootNode_, page->GetPageKey(), page);
+}
+
+SettingsPage* SettingsManager::FindPage(const ea::string& key) const
+{
+    const auto iter = sortedPages_.find(key);
+    return iter != sortedPages_.end() ? iter->second : nullptr;
+}
+
+void SettingsManager::InsertNode(SettingTreeNode& parentNode, ea::string_view path, const SharedPtr<SettingsPage>& page)
+{
+    const auto dotIndex = path.find_first_of('.');
+    const bool isLeaf = dotIndex == ea::string_view::npos;
+    const ea::string childName{isLeaf ? path : path.substr(0, dotIndex)};
+
+    SettingTreeNode& childNode = parentNode.children_[childName];
+    if (isLeaf)
+        childNode.page_ = page;
+    else
+        InsertNode(childNode, path.substr(dotIndex + 1), page);
 }
 
 }

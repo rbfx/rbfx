@@ -30,33 +30,28 @@ namespace Urho3D
 
 void Foundation_EditorCamera3D(Context* context, SceneViewTab* sceneViewTab);
 
-class EditorCamera3DSettings : public SettingsPage
-{
-public:
-    using SettingsPage::SettingsPage;
-
-    /// Implement SettingsPage
-    /// @{
-    ea::string GetPageKey() override { return "SceneView.Camera3D"; }
-    void SerializeInBlock(Archive& archive) override;
-    void RenderSettings() override;
-    /// @}
-
-public:
-    float mouseSensitivity_{0.25f};
-    float minSpeed_{2.0f};
-    float maxSpeed_{10.0f};
-    float acceleration_{1.0f};
-    float shiftFactor_{4.0f};
-};
-
 /// Basic 3D Camera controller.
 class EditorCamera3D : public SceneCameraController
 {
     URHO3D_OBJECT(EditorCamera3D, SceneCameraController);
 
 public:
-    EditorCamera3D(Scene* scene, Camera* camera, EditorCamera3DSettings* settings);
+    struct Settings
+    {
+        ea::string GetKey() { return "SceneView.Camera3D"; }
+
+        void SerializeInBlock(Archive& archive);
+        void RenderSettings();
+
+        float mouseSensitivity_{0.25f};
+        float minSpeed_{2.0f};
+        float maxSpeed_{10.0f};
+        float acceleration_{1.0f};
+        float shiftFactor_{4.0f};
+    };
+    using SettingsPage = SimpleSettingsPage<Settings>;
+
+    EditorCamera3D(Scene* scene, Camera* camera, SettingsPage* settings);
 
     /// Reset position and orientation.
     void Reset(const Vector3& position, const Vector3& lookAt);
@@ -71,7 +66,7 @@ public:
     /// @}
 
 private:
-    const WeakPtr<EditorCamera3DSettings> settings_;
+    const WeakPtr<SettingsPage> settings_;
 
     Vector3 lastCameraPosition_;
     Quaternion lastCameraRotation_;

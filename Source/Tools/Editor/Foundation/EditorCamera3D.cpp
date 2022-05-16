@@ -37,13 +37,13 @@ void Foundation_EditorCamera3D(Context* context, SceneViewTab* sceneViewTab)
     auto project = sceneViewTab->GetProject();
     auto settingsManager = project->GetSettingsManager();
 
-    auto settingsPage = MakeShared<EditorCamera3DSettings>(context);
+    auto settingsPage = MakeShared<EditorCamera3D::SettingsPage>(context);
     settingsManager->AddPage(settingsPage);
 
     sceneViewTab->RegisterCameraController<EditorCamera3D>(settingsPage);
 }
 
-void EditorCamera3DSettings::SerializeInBlock(Archive& archive)
+void EditorCamera3D::Settings::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "MouseSensitivity", mouseSensitivity_);
     SerializeOptionalValue(archive, "MinSpeed", minSpeed_);
@@ -52,16 +52,16 @@ void EditorCamera3DSettings::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "ShiftFactor", shiftFactor_);
 }
 
-void EditorCamera3DSettings::RenderSettings()
+void EditorCamera3D::Settings::RenderSettings()
 {
     ui::DragFloat("Mouse Sensitivity", &mouseSensitivity_, 0.01f, 0.0f, 1.0f, "%.2f");
-    ui::DragFloat("Mouse Sensitivity", &minSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
-    ui::DragFloat("Mouse Sensitivity", &maxSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
-    ui::DragFloat("Mouse Sensitivity", &acceleration_, 0.1f, 0.1f, 100.0f, "%.1f");
-    ui::DragFloat("Mouse Sensitivity", &shiftFactor_, 0.5f, 1.0f, 10.0f, "%.1f");
+    ui::DragFloat("Min Speed", &minSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
+    ui::DragFloat("Max Speed", &maxSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
+    ui::DragFloat("Acceleration", &acceleration_, 0.1f, 0.1f, 100.0f, "%.1f");
+    ui::DragFloat("Shift Factor", &shiftFactor_, 0.5f, 1.0f, 10.0f, "%.1f");
 }
 
-EditorCamera3D::EditorCamera3D(Scene* scene, Camera* camera, EditorCamera3DSettings* settings)
+EditorCamera3D::EditorCamera3D(Scene* scene, Camera* camera, SettingsPage* settings)
     : SceneCameraController(scene, camera)
     , settings_(settings)
 {
@@ -86,6 +86,7 @@ void EditorCamera3D::Update(bool isActive)
     if (!camera_ || !settings_)
         return;
 
+    const Settings& cfg = settings_->GetValues();
     Node* node = camera_->GetNode();
 
     // Restore camera to previous step if moved
@@ -97,7 +98,7 @@ void EditorCamera3D::Update(bool isActive)
     if (isActive)
     {
         // Apply mouse movement
-        const Vector2 mouseMove = GetMouseMove() * settings_->mouseSensitivity_;
+        const Vector2 mouseMove = GetMouseMove() * cfg.mouseSensitivity_;
         yaw_ = Mod(yaw_ + mouseMove.x_, 360.0f);
         pitch_ = Clamp(pitch_ + mouseMove.y_, -89.0f, 89.0f);
 
@@ -107,19 +108,19 @@ void EditorCamera3D::Update(bool isActive)
         // Apply camera movement
         const float timeStep = GetSubsystem<Time>()->GetTimeStep();
         const Vector3 moveDirection = GetMoveDirection();
-        const float multiplier = GetMoveAccelerated() ? settings_->shiftFactor_ : 1.0f;
+        const float multiplier = GetMoveAccelerated() ? cfg.shiftFactor_ : 1.0f;
         if (moveDirection == Vector3::ZERO)
-            currentMoveSpeed_ = settings_->minSpeed_;
+            currentMoveSpeed_ = cfg.minSpeed_;
 
         node->Translate(moveDirection * currentMoveSpeed_ * multiplier * timeStep);
         lastCameraPosition_ = node->GetPosition();
 
         // Apply acceleration
-        currentMoveSpeed_ = ea::min(settings_->maxSpeed_, currentMoveSpeed_ + settings_->acceleration_ * timeStep);
+        currentMoveSpeed_ = ea::min(cfg.maxSpeed_, currentMoveSpeed_ + cfg.acceleration_ * timeStep);
     }
     else
     {
-        currentMoveSpeed_ = settings_->minSpeed_;
+        currentMoveSpeed_ = cfg.minSpeed_;
     }
 }
 
