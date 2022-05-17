@@ -38,9 +38,6 @@
 namespace Urho3D
 {
 
-namespace
-{
-
 void SerializeValue(Archive& archive, const char* name, SceneViewPage& page)
 {
     auto block = archive.OpenUnorderedBlock(name);
@@ -49,8 +46,6 @@ void SerializeValue(Archive& archive, const char* name, SceneViewPage& page)
 
     for (SceneCameraController* controller : page.cameraControllers_)
         SerializeOptionalValue(archive, controller->GetTypeName().c_str(), *controller, AlwaysSerialize{});
-}
-
 }
 
 void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor)
