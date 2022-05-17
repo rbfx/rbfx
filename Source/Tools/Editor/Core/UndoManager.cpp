@@ -35,7 +35,8 @@ UndoManager::UndoManager(Context* context)
 
 void UndoManager::PushAction(const EditorActionPtr& action)
 {
-    redoStack_.clear();
+    if (!action->IsTransparent())
+        redoStack_.clear();
     if (!undoStack_.empty() && undoStack_.back()->MergeWith(*action))
         return;
     undoStack_.push_back(action);

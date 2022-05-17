@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/UndoManager.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 
@@ -53,7 +54,7 @@ public:
     /// Return whether the several resources can be handled simultaneously.
     virtual bool SupportMultipleResources() = 0;
     /// Open resource.
-    void OpenResource(const ea::string& resourceName);
+    void OpenResource(const ea::string& resourceName, bool activate = true);
     /// Close resource.
     void CloseResource(const ea::string& resourceName);
     /// Close all opened resources.
@@ -92,6 +93,24 @@ private:
     bool loadResources_{};
     ea::set<ea::string> resourceNames_;
     ea::string activeResourceName_;
+};
+
+class CloseResourceAction : public EditorAction
+{
+public:
+    CloseResourceAction(ResourceEditorTab* tab, const ea::string& resourceName, bool activate);
+
+    /// Implement EditorAction
+    /// @{
+    bool Redo() const override { return true; }
+    bool Undo() const override;
+    bool IsTransparent() const override { return true; }
+    /// @}
+
+private:
+    const WeakPtr<ResourceEditorTab> tab_;
+    const ea::string resourceName_;
+    const bool activate_{};
 };
 
 }
