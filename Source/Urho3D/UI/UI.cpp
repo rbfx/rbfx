@@ -130,18 +130,19 @@ UI::UI(Context* context) :
 {
     rootElement_->SetTraversalMode(TM_DEPTH_FIRST);
     rootModalElement_->SetTraversalMode(TM_DEPTH_FIRST);
-
+    Input* input = context_->GetSubsystem<Input>();
+    URHO3D_ASSERT(input);
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(UI, HandleScreenMode));
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(UI, HandleMouseButtonDown));
-    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(UI, HandleMouseButtonUp));
-    SubscribeToEvent(E_MOUSEMOVE, URHO3D_HANDLER(UI, HandleMouseMove));
-    SubscribeToEvent(E_MOUSEWHEEL, URHO3D_HANDLER(UI, HandleMouseWheel));
-    SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(UI, HandleTouchBegin));
-    SubscribeToEvent(E_TOUCHEND, URHO3D_HANDLER(UI, HandleTouchEnd));
-    SubscribeToEvent(E_TOUCHMOVE, URHO3D_HANDLER(UI, HandleTouchMove));
-    SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(UI, HandleKeyDown));
-    SubscribeToEvent(E_TEXTINPUT, URHO3D_HANDLER(UI, HandleTextInput));
-    SubscribeToEvent(E_DROPFILE, URHO3D_HANDLER(UI, HandleDropFile));
+    SubscribeToEvent(input, E_MOUSEBUTTONDOWN, URHO3D_HANDLER(UI, HandleMouseButtonDown));
+    SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(UI, HandleMouseButtonUp));
+    SubscribeToEvent(input, E_MOUSEMOVE, URHO3D_HANDLER(UI, HandleMouseMove));
+    SubscribeToEvent(input, E_MOUSEWHEEL, URHO3D_HANDLER(UI, HandleMouseWheel));
+    SubscribeToEvent(input, E_TOUCHBEGIN, URHO3D_HANDLER(UI, HandleTouchBegin));
+    SubscribeToEvent(input, E_TOUCHEND, URHO3D_HANDLER(UI, HandleTouchEnd));
+    SubscribeToEvent(input, E_TOUCHMOVE, URHO3D_HANDLER(UI, HandleTouchMove));
+    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(UI, HandleKeyDown));
+    SubscribeToEvent(input, E_TEXTINPUT, URHO3D_HANDLER(UI, HandleTextInput));
+    SubscribeToEvent(input, E_DROPFILE, URHO3D_HANDLER(UI, HandleDropFile));
     SubscribeToEvent(E_FOCUSED, URHO3D_HANDLER(UI, HandleFocused));
 
     // Try to initialize right now, but skip if screen mode is not yet set

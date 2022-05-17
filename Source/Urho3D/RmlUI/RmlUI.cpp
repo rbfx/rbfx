@@ -287,7 +287,7 @@ RmlUI::RmlUI(Context* context, const char* name)
         ui->siblingSubsystems_.push_back(WeakPtr(this));
 
     Input* input = context_->GetSubsystem<Input>();
-
+    URHO3D_ASSERT(input);
     SubscribeToEvent(input, E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
     SubscribeToEvent(input, E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
     SubscribeToEvent(input, E_MOUSEMOVE, &RmlUI::HandleMouseMove);
