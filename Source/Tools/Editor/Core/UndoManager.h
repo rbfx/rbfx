@@ -39,6 +39,8 @@ public:
     virtual bool Undo() const = 0;
     /// Try to merge this action with another. Return true if successfully merged.
     virtual bool MergeWith(const EditorAction& other) { return false; }
+    /// Return whether the action should not reset redo stack on creation. Use with caution.
+    virtual bool IsTransparent() const { return false; }
 };
 
 using EditorActionPtr = SharedPtr<EditorAction>;

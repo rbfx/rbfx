@@ -659,7 +659,9 @@ void ResourceBrowserTab::RenderRenameDialog()
 
     const auto [isEnabled, extraLine] = CheckFileNameInput(
         *entry->parent_, entry->localName_, rename_.inputBuffer_);
-    ui::Text("Would you like to rename '%s'?\n%s", entry->absolutePath_.c_str(), extraLine.c_str());
+    const char* formatString = "Would you like to rename '%s'?\n"
+        ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!\n%s";
+    ui::Text(formatString, entry->absolutePath_.c_str(), extraLine.c_str());
 
     ui::SetKeyboardFocusHere();
     const bool done = ui::InputText("##Rename", &rename_.inputBuffer_,

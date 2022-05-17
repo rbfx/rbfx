@@ -31,6 +31,7 @@ ResourceEditorTab::ResourceEditorTab(Context* context, const ea::string& title, 
     EditorTabFlags flags, EditorTabPlacement placement)
     : EditorTab(context, title, guid, flags, placement)
 {
+    // TODO(editor): Consider doing it at first tab open after loading
     auto project = GetProject();
     project->OnInitialized.Subscribe(this, &ResourceEditorTab::OnProjectInitialized);
 }
@@ -63,7 +64,7 @@ void ResourceEditorTab::ReadIniSettings(const char* line)
         SetActiveResource(*value);
 }
 
-void ResourceEditorTab::OpenResource(const ea::string& resourceName)
+void ResourceEditorTab::OpenResource(const ea::string& resourceName, bool activate)
 {
     if (!resourceNames_.contains(resourceName))
     {
@@ -75,13 +76,18 @@ void ResourceEditorTab::OpenResource(const ea::string& resourceName)
             OnResourceLoaded(resourceName);
     }
 
-    SetActiveResource(resourceName);
+    if (activate || activeResourceName_.empty())
+        SetActiveResource(resourceName);
 }
 
 void ResourceEditorTab::CloseResource(const ea::string& resourceName)
 {
     if (resourceNames_.contains(resourceName))
     {
+        auto undoManager = GetProject()->GetUndoManager();
+        const bool isActive = resourceName == activeResourceName_;
+        undoManager->PushAction(MakeShared<CloseResourceAction>(this, resourceName, isActive));
+
         resourceNames_.erase(resourceName);
         if (loadResources_)
             OnResourceUnloaded(resourceName);
@@ -97,7 +103,6 @@ void ResourceEditorTab::CloseResource(const ea::string& resourceName)
                 SetActiveResource("");
         }
     }
-
 }
 
 void ResourceEditorTab::OnProjectInitialized()
@@ -125,12 +130,18 @@ void ResourceEditorTab::SetActiveResource(const ea::string& activeResourceName)
 
 void ResourceEditorTab::CloseAllResources()
 {
+    auto undoManager = GetProject()->GetUndoManager();
     if (loadResources_)
     {
         for (const ea::string& resourceName : resourceNames_)
+        {
+            const bool isActive = resourceName == activeResourceName_;
+            undoManager->PushAction(MakeShared<CloseResourceAction>(this, resourceName, isActive));
             OnResourceUnloaded(resourceName);
+        }
     }
     resourceNames_.clear();
+    activeResourceName_ = "";
 }
 
 void ResourceEditorTab::SaveResource(const ea::string& resourceName)
@@ -152,6 +163,7 @@ void ResourceEditorTab::SaveAllResources()
 void ResourceEditorTab::UpdateAndRenderContextMenuItems()
 {
     ea::string closeResourcePending;
+    bool closeAllResourcesPending = false;
 
     ResetSeparator();
     if (resourceNames_.empty())
@@ -174,23 +186,46 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
         SetSeparator();
     }
 
+    ResetSeparator();
     {
-        ResetSeparator();
-        const ea::string title = Format("Close Current {}", GetResourceTitle());
+        const ea::string title = Format("Close Current [{}]", GetResourceTitle());
         const HotkeyCombination hotkey{QUAL_NONE, MOUSEB_MIDDLE};
         if (ui::MenuItem(title.c_str(), hotkey.ToString().c_str(), false, !resourceNames_.empty()))
             closeResourcePending = activeResourceName_;
     }
+    {
+        const ea::string title = Format("Close All [{}]s", GetResourceTitle());
+        if (ui::MenuItem(title.c_str(), nullptr, false, !resourceNames_.empty()))
+            closeAllResourcesPending = true;
+    }
 
     SetSeparator();
 
-    if (!closeResourcePending.empty())
+    if (closeAllResourcesPending)
+        CloseAllResources();
+    else if (!closeResourcePending.empty())
         CloseResource(closeResourcePending);
 }
 
 void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     BaseClassName::ApplyHotkeys(hotkeyManager);
+}
+
+CloseResourceAction::CloseResourceAction(ResourceEditorTab* tab, const ea::string& resourceName, bool activate)
+    : tab_(tab)
+    , resourceName_(resourceName)
+    , activate_(activate)
+{
+}
+
+bool CloseResourceAction::Undo() const
+{
+    if (!tab_)
+        return false;
+
+    tab_->OpenResource(resourceName_, activate_);
+    return true;
 }
 
 }
