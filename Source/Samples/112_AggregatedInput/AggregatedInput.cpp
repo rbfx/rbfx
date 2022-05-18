@@ -145,6 +145,7 @@ void AggregatedInput::AddFilteredEvent(const ea::string& str)
         filteredEvents_.pop();
 
     filteredEventsText_.clear();
+    filteredEventsText_.append("Filtered events:\n");
     for (int i = filteredEvents_.size() - 1; i >= 0; --i)
     {
         if (!filteredEventsText_.empty())
@@ -160,10 +161,10 @@ void AggregatedInput::AddRawEvent(const ea::string& str)
         rawEvents_.pop();
 
     rawEventsText_.clear();
+    rawEventsText_.append("Input events:\n");
     for (int i = rawEvents_.size() - 1; i >= 0; --i)
     {
-        if (!rawEventsText_.empty())
-            rawEventsText_.append("\n");
+        rawEventsText_.append("\n");
         rawEventsText_.append(rawEvents_.get_container()[i]);
     }
     rawEventsLog_->SetText(rawEventsText_);
