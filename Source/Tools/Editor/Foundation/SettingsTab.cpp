@@ -93,7 +93,7 @@ void SettingsTab::RenderSettingsSubtree(const SettingTreeNode& treeNode, const e
     if (selectNextValidPage_ && treeNode.page_)
     {
         selectNextValidPage_ = false;
-        selectedPage_ = treeNode.page_->GetPageKey();
+        selectedPage_ = treeNode.page_->GetUniqueName();
     }
 
     ui::PushID(shortName.c_str());
@@ -102,7 +102,7 @@ void SettingsTab::RenderSettingsSubtree(const SettingTreeNode& treeNode, const e
         | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
     if (treeNode.children_.empty())
         flags |= ImGuiTreeNodeFlags_Leaf;
-    if (treeNode.page_ && treeNode.page_->GetPageKey() == selectedPage_)
+    if (treeNode.page_ && treeNode.page_->GetUniqueName() == selectedPage_)
         flags |= ImGuiTreeNodeFlags_Selected;
 
     if (selectNextValidPage_)
@@ -114,7 +114,7 @@ void SettingsTab::RenderSettingsSubtree(const SettingTreeNode& treeNode, const e
     if (ui::IsItemClicked(MOUSEB_LEFT))
     {
         if (treeNode.page_)
-            selectedPage_ = treeNode.page_->GetPageKey();
+            selectedPage_ = treeNode.page_->GetUniqueName();
         else
             selectNextValidPage_ = true;
     }

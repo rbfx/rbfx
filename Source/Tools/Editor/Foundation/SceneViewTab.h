@@ -76,12 +76,39 @@ struct SceneViewPage
     ea::vector<SceneCameraControllerPtr> cameraControllers_;
     ea::string cfgFileName_;
 
+    struct Selection
+    {
+        ea::unordered_set<WeakPtr<Node>> nodes_;
+        ea::unordered_set<WeakPtr<Component>> components_;
+        WeakPtr<Node> anchor_{};
+
+        bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
+        bool IsSelected(Node* node) const;
+
+        void Clear();
+        void SetSelected(Node* node, bool selected, bool anchored = false);
+    } selection_;
+
     /// UI state
     /// @{
     unsigned currentCameraController_{};
     /// @}
 
     SceneCameraController* GetCurrentCameraController() const;
+};
+
+/// Interface of SceneViewTab addon.
+class SceneViewAddon : public Object
+{
+    URHO3D_OBJECT(SceneViewAddon, Object);
+
+public:
+    explicit SceneViewAddon(Context* context) : Object(context) {}
+
+    /// Return unique human-readable name of the addon.
+    virtual ea::string GetUniqueName() const = 0;
+    /// Update and render addon.
+    virtual void UpdateAndRender(SceneViewPage& scenePage, bool& mouseConsumed) = 0;
 };
 
 /// Tab that renders Scene and enables Scene manipulation.
@@ -93,6 +120,9 @@ public:
     explicit SceneViewTab(Context* context);
     ~SceneViewTab() override;
 
+    /// Register new scene addon.
+    void RegisterAddon(const SharedPtr<SceneViewAddon>& addon);
+    template <class T, class ... Args> void RegisterAddon(const Args&... args);
     /// Register new type of camera controller. Should be called before any scenes are loaded.
     void RegisterCameraController(const SceneCameraControllerDesc& desc);
     template <class T, class ... Args> void RegisterCameraController(const Args&... args);
@@ -133,16 +163,24 @@ private:
     /// @}
 
     void UpdateCameraController(SceneViewPage& page);
+    void UpdateAddons(SceneViewPage& page);
 
+    ea::vector<SharedPtr<SceneViewAddon>> addons_;
     ea::vector<SceneCameraControllerDesc> cameraControllers_;
     ea::unordered_map<ea::string, SceneViewPage> scenes_;
 
     /// UI state
     /// @{
-    unsigned wasCameraControllerActive_{};
+    unsigned isCameraControllerActive_{};
     /// @}
 
 };
+
+template <class T, class ... Args>
+void SceneViewTab::RegisterAddon(const Args&... args)
+{
+    RegisterAddon(MakeShared<T>(context_, args...));
+}
 
 template <class T, class ... Args>
 void SceneViewTab::RegisterCameraController(const Args&... args)

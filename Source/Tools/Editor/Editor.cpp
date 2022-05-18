@@ -86,6 +86,9 @@
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SettingsTab.h"
 
+#include "Foundation/SceneViewTab/SceneSelector.h"
+#include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
+
 namespace Urho3D
 {
 
@@ -115,6 +118,8 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowserTab", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.SettingsTab", &Foundation_SettingsTab);
 
+    editorPluginManager_->AddPlugin("Foundation.SceneSelector", &Foundation_SceneSelector);
+    editorPluginManager_->AddPlugin("Foundation.SceneSelectionRenderer", &Foundation_SceneSelectionRenderer);
     editorPluginManager_->AddPlugin("Foundation.EditorCamera3D", &Foundation_EditorCamera3D);
     editorPluginManager_->AddPlugin("Foundation.EditorCamera2D", &Foundation_EditorCamera2D);
 }
