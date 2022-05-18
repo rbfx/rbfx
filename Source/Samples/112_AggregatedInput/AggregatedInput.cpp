@@ -31,6 +31,7 @@
 
 AggregatedInput::AggregatedInput(Context* context) : Sample(context)
     , aggregatedInput_(context)
+    , dpadInput_(context)
 {
     // Set the mouse mode to use in the sample
     SetMouseMode(MM_FREE);
@@ -55,13 +56,41 @@ void AggregatedInput::Start()
 void AggregatedInput::CreateUI()
 {
     auto* cache = GetSubsystem<ResourceCache>();
+    auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
 
     auto uiRoot = GetUIRoot();
-    pivot_ =  uiRoot->CreateChild<Sprite>();
-    pivot_->SetSize(24, 24);
-    pivot_->SetColor(Color::GRAY);
-    marker_ = uiRoot->CreateChild<Sprite>();
-    marker_->SetSize(20, 20);
+    analogPivot_ =  uiRoot->CreateChild<Sprite>();
+    analogPivot_->SetSize(24, 24);
+    analogPivot_->SetColor(Color::GRAY);
+    analogMarker_ = uiRoot->CreateChild<Sprite>();
+    analogMarker_->SetSize(20, 20);
+
+    upMarker_ = uiRoot->CreateChild<Sprite>();
+    upMarker_->SetSize(20, 20);
+    upMarker_->SetEnabled(false);
+
+    leftMarker_ = uiRoot->CreateChild<Sprite>();
+    leftMarker_->SetSize(20, 20);
+    leftMarker_->SetEnabled(false);
+
+    rightMarker_ = uiRoot->CreateChild<Sprite>();
+    rightMarker_->SetSize(20, 20);
+    rightMarker_->SetEnabled(false);
+
+    downMarker_ = uiRoot->CreateChild<Sprite>();
+    downMarker_->SetSize(20, 20);
+    downMarker_->SetEnabled(false);
+
+    rawEventsLog_ = uiRoot->CreateChild<Text>();
+    rawEventsLog_->SetFont(font, 10);
+    rawEventsLog_->SetHorizontalAlignment(HA_LEFT);
+    rawEventsLog_->SetVerticalAlignment(VA_CENTER);
+
+    filteredEventsLog_ = uiRoot->CreateChild<Text>();
+    filteredEventsLog_->SetFont(font, 10);
+    filteredEventsLog_->SetHorizontalAlignment(HA_LEFT);
+    filteredEventsLog_->SetVerticalAlignment(VA_CENTER);
+
     // Construct new Text object
     SharedPtr<Text> helloText(MakeShared<Text>(context_));
 
@@ -70,7 +99,7 @@ void AggregatedInput::CreateUI()
     helloText->SetText("Move marker around with keyboard, joystick or touch");
 
     // Set font and text color
-    helloText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
+    helloText->SetFont(font, 15);
 
     // Align Text center-screen
     helloText->SetHorizontalAlignment(HA_CENTER);
@@ -80,19 +109,156 @@ void AggregatedInput::CreateUI()
     uiRoot->AddChild(helloText);
 }
 
-void AggregatedInput::SubscribeToEvents() { aggregatedInput_.SetEnabled(true); }
+void AggregatedInput::SubscribeToEvents()
+{
+    auto* input = context_->GetSubsystem<Input>();
+    aggregatedInput_.SetEnabled(true);
+    dpadInput_.SetEnabled(true);
+    SubscribeToEvent(&dpadInput_, E_KEYUP, URHO3D_HANDLER(AggregatedInput, HandleDPadKeyUp));
+    SubscribeToEvent(&dpadInput_, E_KEYDOWN, URHO3D_HANDLER(AggregatedInput, HandleDPadKeyDown));
+    SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(AggregatedInput, HandleKeyUp));
+    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(AggregatedInput, HandleKeyDown));
+    SubscribeToEvent(input, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(AggregatedInput, HandleJoystickAxisMove));
+    SubscribeToEvent(input, E_JOYSTICKHATMOVE, URHO3D_HANDLER(AggregatedInput, HandleJoystickHatMove));
+    SubscribeToEvent(input, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(AggregatedInput, HandleJoystickDisconnected));
+    SubscribeToEvent(input, E_TOUCHBEGIN, URHO3D_HANDLER(AggregatedInput, HandleTouchBegin));
+    SubscribeToEvent(input, E_TOUCHMOVE, URHO3D_HANDLER(AggregatedInput, HandleTouchMove));
+    SubscribeToEvent(input, E_TOUCHEND, URHO3D_HANDLER(AggregatedInput, HandleTouchEnd));
+}
 
-void AggregatedInput::Deactivate() { aggregatedInput_.SetEnabled(false); }
+void AggregatedInput::Deactivate()
+{
+    aggregatedInput_.SetEnabled(false);
+    dpadInput_.SetEnabled(false);
+    UnsubscribeFromAllEvents();
+}
+
+
+void AggregatedInput::AddFilteredEvent(const ea::string& str)
+{
+    filteredEvents_.push(str);
+    if (filteredEvents_.size() > 32)
+        filteredEvents_.pop();
+
+    filteredEventsText_.clear();
+    for (int i = filteredEvents_.size()-1; i>=0; --i)
+    {
+        if (!filteredEventsText_.empty())
+            filteredEventsText_.append("\n");
+        filteredEventsText_.append(filteredEvents_.get_container()[i]);
+    }
+    filteredEventsLog_->SetText(filteredEventsText_);
+}
+void AggregatedInput::AddRawEvent(const ea::string& str)
+{
+    rawEvents_.push(str);
+    if (rawEvents_.size() > 32)
+        rawEvents_.pop();
+
+    rawEventsText_.clear();
+    for (int i = rawEvents_.size() - 1; i >= 0; --i)
+    {
+        if (!rawEventsText_.empty())
+            rawEventsText_.append("\n");
+        rawEventsText_.append(rawEvents_.get_container()[i]);
+    }
+    rawEventsLog_->SetText(rawEventsText_);
+}
+
+void AggregatedInput::HandleDPadKeyDown(StringHash eventType, VariantMap& args)
+{
+    using namespace KeyDown;
+    const auto* input = context_->GetSubsystem<Input>();
+
+    if (args[P_REPEAT].GetBool())
+        return;
+
+    AddFilteredEvent(Format("KeyDown: Key {}, Scancode {}", input->GetKeyName(static_cast<Key>(args[P_KEY].GetUInt())),
+        input->GetScancodeName(static_cast<Scancode>(args[P_SCANCODE].GetUInt()))));
+}
+
+void AggregatedInput::HandleDPadKeyUp(StringHash eventType, VariantMap& args)
+{
+    using namespace KeyUp;
+    const auto* input = context_->GetSubsystem<Input>();
+
+    AddFilteredEvent(Format("KeyUp: Key {}, Scancode {}", input->GetKeyName(static_cast<Key>(args[P_KEY].GetUInt())),
+        input->GetScancodeName(static_cast<Scancode>(args[P_SCANCODE].GetUInt()))));
+}
+
+void AggregatedInput::HandleKeyDown(StringHash eventType, VariantMap& args)
+{
+    using namespace KeyDown;
+    const auto* input = context_->GetSubsystem<Input>();
+
+    if (args[P_REPEAT].GetBool())
+        return;
+
+    AddRawEvent(Format("KeyDown: Key {}, Scancode {}", input->GetKeyName(static_cast<Key>(args[P_KEY].GetUInt())),
+        input->GetScancodeName(static_cast<Scancode>(args[P_SCANCODE].GetUInt()))));
+}
+
+void AggregatedInput::HandleKeyUp(StringHash eventType, VariantMap& args)
+{
+    using namespace KeyUp;
+    const auto* input = context_->GetSubsystem<Input>();
+
+    AddRawEvent(Format("KeyUp: Key {}, Scancode {}", input->GetKeyName(static_cast<Key>(args[P_KEY].GetUInt())),
+        input->GetScancodeName(static_cast<Scancode>(args[P_SCANCODE].GetUInt()))));
+}
+
+void AggregatedInput::HandleJoystickAxisMove(StringHash eventType, VariantMap& args)
+{
+    using namespace JoystickAxisMove;
+    const auto* input = context_->GetSubsystem<Input>();
+
+    AddRawEvent(Format("AxisMove: Axis {}, Value {}", args[P_AXIS].GetUInt(), args[P_POSITION].GetFloat()));
+}
+
+void AggregatedInput::HandleJoystickHatMove(StringHash eventType, VariantMap& args)
+{
+    using namespace JoystickHatMove;
+    const auto* input = context_->GetSubsystem<Input>();
+
+    const char* posName = "";
+    switch ((HatPosition)args[P_POSITION].GetInt())
+    {
+    case HAT_RIGHT: posName = "Right"; break;
+    case HAT_LEFT: posName = "Left"; break;
+    case HAT_UP: posName = "Up"; break;
+    case HAT_DOWN: posName = "Down"; break;
+    case HAT_CENTER: posName = "Center"; break;
+    case HAT_RIGHTDOWN: posName = "Right Down"; break;
+    case HAT_LEFTDOWN: posName = "Left Down"; break;
+    case HAT_RIGHTUP: posName = "Right Up"; break;
+    case HAT_LEFTUP: posName = "Left Up"; break;
+    }
+    AddRawEvent(Format("HatMove: Hat {}, Value {}", args[P_HAT].GetUInt(), posName));
+}
+
+void AggregatedInput::HandleJoystickDisconnected(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
+void AggregatedInput::HandleTouchBegin(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
+void AggregatedInput::HandleTouchMove(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
+void AggregatedInput::HandleTouchEnd(StringHash eventType, VariantMap& args) { using namespace KeyDown; }
 
 void AggregatedInput::Update(float timeStep)
 {
     const auto uiRoot = GetUIRoot();
     const auto screenSize = uiRoot->GetSize();
 
-    const auto center = Vector2(screenSize.x_ / 2, screenSize.y_ / 2);
-    const auto quater = Min(screenSize.x_ / 4, screenSize.y_ / 4);
+    const auto widthQuater = screenSize.x_ / 4;
+    const auto unit = Min(widthQuater / 2, screenSize.y_ / 2);
 
-    const auto d = aggregatedInput_.GetDirection();
-    pivot_->SetPosition(center - Vector2(pivot_->GetSize())*0.5f);
-    marker_->SetPosition(center + Vector2(quater, quater) * d - Vector2(marker_->GetSize())*0.5f);
+    rawEventsLog_->SetPosition(0, 32);
+    rawEventsLog_->SetSize(widthQuater, screenSize.y_-32);
+
+    filteredEventsLog_->SetPosition(widthQuater * 3, 32);
+    filteredEventsLog_->SetSize(widthQuater, screenSize.y_ - 32);
+
+    {
+        const auto center = Vector2(widthQuater * 1.5f, screenSize.y_ / 2);
+        const auto d = aggregatedInput_.GetDirection();
+        analogPivot_->SetPosition(center - Vector2(analogPivot_->GetSize()) * 0.5f);
+        analogMarker_->SetPosition(center + Vector2(unit, unit) * d - Vector2(analogMarker_->GetSize()) * 0.5f);
+    }
 }
