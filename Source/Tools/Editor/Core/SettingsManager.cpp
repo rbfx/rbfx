@@ -61,8 +61,8 @@ void SettingsManager::SaveFile(const ea::string& fileName) const
 void SettingsManager::AddPage(SharedPtr<SettingsPage> page)
 {
     pages_.push_back(page);
-    sortedPages_[page->GetPageKey()] = page;
-    InsertNode(rootNode_, page->GetPageKey(), page);
+    sortedPages_[page->GetUniqueName()] = page;
+    InsertNode(rootNode_, page->GetUniqueName(), page);
 }
 
 SettingsPage* SettingsManager::FindPage(const ea::string& key) const

@@ -38,8 +38,8 @@ class SettingsPage : public Object
 public:
     explicit SettingsPage(Context* context);
 
-    /// Return page key.
-    virtual ea::string GetPageKey() = 0;
+    /// Return unique name of the page.
+    virtual ea::string GetUniqueName() = 0;
     /// Serialization must be provided for settings page.
     virtual void SerializeInBlock(Archive& archive) override = 0;
     /// Render page with settings.
@@ -57,7 +57,7 @@ public:
 
     /// Implement SettingsPage
     /// @{
-    ea::string GetPageKey() override { return values_.GetKey(); }
+    ea::string GetUniqueName() override { return values_.GetUniqueName(); }
     void SerializeInBlock(Archive& archive) override { values_.SerializeInBlock(archive); }
     void RenderSettings() override { values_.RenderSettings(); }
     void ResetToDefaults() override { values_ = T{}; }

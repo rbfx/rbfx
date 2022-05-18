@@ -38,7 +38,7 @@ class EditorCamera3D : public SceneCameraController
 public:
     struct Settings
     {
-        ea::string GetKey() { return "SceneView.Camera3D"; }
+        ea::string GetUniqueName() { return "SceneView.Camera3D"; }
 
         void SerializeInBlock(Archive& archive);
         void RenderSettings();

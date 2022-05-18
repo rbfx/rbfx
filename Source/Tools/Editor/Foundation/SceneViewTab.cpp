@@ -95,6 +95,39 @@ bool SceneCameraController::GetMoveAccelerated() const
     return ui::IsKeyDown(Input::GetKeyFromScancode(SCANCODE_LSHIFT));
 }
 
+bool SceneViewPage::Selection::IsSelected(Node* node) const
+{
+    const auto iter = nodes_.find_as(node);
+    return iter != nodes_.end();
+}
+
+void SceneViewPage::Selection::Clear()
+{
+    nodes_.clear();
+    components_.clear();
+    anchor_ = nullptr;
+}
+
+void SceneViewPage::Selection::SetSelected(Node* node, bool selected, bool anchored)
+{
+    const WeakPtr<Node> weakNode{node};
+
+    if (selected)
+    {
+        if (nodes_.empty() || anchored)
+            anchor_ = weakNode;
+        nodes_.insert(weakNode);
+    }
+    else
+    {
+        nodes_.erase(weakNode);
+        if (nodes_.empty())
+            anchor_ = nullptr;
+        else if (anchor_ == weakNode)
+            anchor_ = *nodes_.begin();
+    }
+}
+
 SceneCameraController* SceneViewPage::GetCurrentCameraController() const
 {
     return currentCameraController_ < cameraControllers_.size()
@@ -112,6 +145,11 @@ SceneViewTab::SceneViewTab(Context* context)
 
 SceneViewTab::~SceneViewTab()
 {
+}
+
+void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
+{
+    addons_.push_back(addon);
 }
 
 void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
@@ -203,6 +241,9 @@ void SceneViewTab::UpdateAndRenderContent()
     ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
     UpdateCameraController(*activePage);
+
+    if (!isCameraControllerActive_)
+        UpdateAddons(*activePage);
 }
 
 void SceneViewTab::UpdateCameraController(SceneViewPage& page)
@@ -210,19 +251,27 @@ void SceneViewTab::UpdateCameraController(SceneViewPage& page)
     auto systemUI = GetSubsystem<SystemUI>();
 
     const auto cameraController = page.GetCurrentCameraController();
-    const bool isActive = cameraController && cameraController->IsActive(wasCameraControllerActive_);
+    const bool wasActive = isCameraControllerActive_;
+    const bool isActive = cameraController && cameraController->IsActive(wasActive);
     if (isActive)
     {
-        if (!wasCameraControllerActive_)
+        if (!wasActive)
             systemUI->SetRelativeMouseMove(true, true);
     }
-    else if (wasCameraControllerActive_)
+    else if (wasActive)
     {
         systemUI->SetRelativeMouseMove(false, true);
     }
     cameraController->Update(isActive);
 
-    wasCameraControllerActive_ = isActive;
+    isCameraControllerActive_ = isActive;
+}
+
+void SceneViewTab::UpdateAddons(SceneViewPage& page)
+{
+    bool mouseConsumed = false;
+    for (SceneViewAddon* addon : addons_)
+        addon->UpdateAndRender(page, mouseConsumed);
 }
 
 void SceneViewTab::UpdateFocused()

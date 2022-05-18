@@ -22,44 +22,30 @@
 
 #pragma once
 
-#include "../Core/SettingsManager.h"
-#include "../Project/ProjectEditor.h"
-#include "../Project/EditorTab.h"
+#include "../../Core/SettingsManager.h"
+#include "../../Foundation/SceneViewTab.h"
 
 namespace Urho3D
 {
 
-void Foundation_SettingsTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_SceneSelectionRenderer(Context* context, SceneViewTab* sceneViewTab);
 
-/// Tab that displays project settings.
-// TODO(editor): Rename to EditorSettingsTab?
-class SettingsTab : public EditorTab
+/// Addon to manage scene selection with mouse and render debug geometry.
+class SceneSelectionRenderer : public SceneViewAddon
 {
-    URHO3D_OBJECT(SettingsTab, EditorTab)
+    URHO3D_OBJECT(SceneSelectionRenderer, SceneViewAddon);
 
 public:
-    explicit SettingsTab(Context* context);
+    explicit SceneSelectionRenderer(Context* context);
 
-    /// Implement EditorTab
+    /// Implement SceneViewAddon.
     /// @{
-    void WriteIniSettings(ImGuiTextBuffer& output) override;
-    void ReadIniSettings(const char* line) override;
-    /// @}
-
-protected:
-    /// Implement EditorTab
-    /// @{
-    void UpdateAndRenderContent() override;
+    ea::string GetUniqueName() const override { return "SelectionRenderer"; }
+    void UpdateAndRender(SceneViewPage& scenePage, bool& mouseConsumed) override;
     /// @}
 
 private:
-    void RenderSettingsTree();
-    void RenderSettingsSubtree(const SettingTreeNode& treeNode, const ea::string& shortName);
-
-    void RenderCurrentSettingsPage();
-
-    bool selectNextValidPage_{};
-    ea::string selectedPage_;
+    void DrawSelection(Scene* scene, Component* component);
 };
 
 }
