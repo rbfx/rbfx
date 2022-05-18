@@ -29,7 +29,8 @@
 
 #include <Urho3D/DebugNew.h>
 
-AggregatedInput::AggregatedInput(Context* context) : Sample(context)
+AggregatedInput::AggregatedInput(Context* context)
+    : Sample(context)
     , aggregatedInput_(context)
     , dpadInput_(context)
 {
@@ -46,11 +47,10 @@ void AggregatedInput::Start()
     // Create UI elements
     CreateUI();
 
-    // Finally subscribe to the update event. Note that by subscribing events at this point we have already missed some events
-    // like the ScreenMode event sent by the Graphics subsystem when opening the application window. To catch those as well we
-    // could subscribe in the constructor instead.
+    // Finally subscribe to the update event. Note that by subscribing events at this point we have already missed some
+    // events like the ScreenMode event sent by the Graphics subsystem when opening the application window. To catch
+    // those as well we could subscribe in the constructor instead.
     SubscribeToEvents();
-
 }
 
 void AggregatedInput::CreateUI()
@@ -59,27 +59,6 @@ void AggregatedInput::CreateUI()
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
 
     auto uiRoot = GetUIRoot();
-    analogPivot_ =  uiRoot->CreateChild<Sprite>();
-    analogPivot_->SetSize(24, 24);
-    analogPivot_->SetColor(Color::GRAY);
-    analogMarker_ = uiRoot->CreateChild<Sprite>();
-    analogMarker_->SetSize(20, 20);
-
-    upMarker_ = uiRoot->CreateChild<Sprite>();
-    upMarker_->SetSize(20, 20);
-    upMarker_->SetEnabled(false);
-
-    leftMarker_ = uiRoot->CreateChild<Sprite>();
-    leftMarker_->SetSize(20, 20);
-    leftMarker_->SetEnabled(false);
-
-    rightMarker_ = uiRoot->CreateChild<Sprite>();
-    rightMarker_->SetSize(20, 20);
-    rightMarker_->SetEnabled(false);
-
-    downMarker_ = uiRoot->CreateChild<Sprite>();
-    downMarker_->SetSize(20, 20);
-    downMarker_->SetEnabled(false);
 
     rawEventsLog_ = uiRoot->CreateChild<Text>();
     rawEventsLog_->SetFont(font, 10);
@@ -91,11 +70,37 @@ void AggregatedInput::CreateUI()
     filteredEventsLog_->SetHorizontalAlignment(HA_LEFT);
     filteredEventsLog_->SetVerticalAlignment(VA_CENTER);
 
+    upMarker_ = uiRoot->CreateChild<Sprite>();
+    upMarker_->SetSize(40, 40);
+    upMarker_->SetColor(Color::YELLOW);
+    upMarker_->SetEnabled(false);
+
+    leftMarker_ = uiRoot->CreateChild<Sprite>();
+    leftMarker_->SetSize(40, 40);
+    leftMarker_->SetColor(Color::BLUE);
+    leftMarker_->SetEnabled(false);
+
+    rightMarker_ = uiRoot->CreateChild<Sprite>();
+    rightMarker_->SetSize(40, 40);
+    rightMarker_->SetColor(Color::RED);
+    rightMarker_->SetEnabled(false);
+
+    downMarker_ = uiRoot->CreateChild<Sprite>();
+    downMarker_->SetSize(40, 40);
+    downMarker_->SetColor(Color::GREEN);
+    downMarker_->SetEnabled(false);
+
+    analogPivot_ = uiRoot->CreateChild<Sprite>();
+    analogPivot_->SetSize(24, 24);
+    analogPivot_->SetColor(Color::GRAY);
+    analogMarker_ = uiRoot->CreateChild<Sprite>();
+    analogMarker_->SetSize(20, 20);
+
     // Construct new Text object
     SharedPtr<Text> helloText(MakeShared<Text>(context_));
 
     // Set String to display
-    
+
     helloText->SetText("Move marker around with keyboard, joystick or touch");
 
     // Set font and text color
@@ -133,7 +138,6 @@ void AggregatedInput::Deactivate()
     UnsubscribeFromAllEvents();
 }
 
-
 void AggregatedInput::AddFilteredEvent(const ea::string& str)
 {
     filteredEvents_.push(str);
@@ -141,7 +145,7 @@ void AggregatedInput::AddFilteredEvent(const ea::string& str)
         filteredEvents_.pop();
 
     filteredEventsText_.clear();
-    for (int i = filteredEvents_.size()-1; i>=0; --i)
+    for (int i = filteredEvents_.size() - 1; i >= 0; --i)
     {
         if (!filteredEventsText_.empty())
             filteredEventsText_.append("\n");
@@ -250,7 +254,7 @@ void AggregatedInput::Update(float timeStep)
     const auto unit = Min(widthQuater / 2, screenSize.y_ / 2);
 
     rawEventsLog_->SetPosition(0, 32);
-    rawEventsLog_->SetSize(widthQuater, screenSize.y_-32);
+    rawEventsLog_->SetSize(widthQuater, screenSize.y_ - 32);
 
     filteredEventsLog_->SetPosition(widthQuater * 3, 32);
     filteredEventsLog_->SetSize(widthQuater, screenSize.y_ - 32);
@@ -261,4 +265,16 @@ void AggregatedInput::Update(float timeStep)
         analogPivot_->SetPosition(center - Vector2(analogPivot_->GetSize()) * 0.5f);
         analogMarker_->SetPosition(center + Vector2(unit, unit) * d - Vector2(analogMarker_->GetSize()) * 0.5f);
     }
+    {
+        const auto center = Vector2(widthQuater * 2.5f, screenSize.y_ / 2);
+        downMarker_->SetPosition(center + Vector2(0, unit) - Vector2(downMarker_->GetSize()) * 0.5f);
+        upMarker_->SetPosition(center + Vector2(0, -unit) - Vector2(upMarker_->GetSize()) * 0.5f);
+        rightMarker_->SetPosition(center + Vector2(unit, 0) - Vector2(rightMarker_->GetSize()) * 0.5f);
+        leftMarker_->SetPosition(center + Vector2(-unit, 0) - Vector2(leftMarker_->GetSize()) * 0.5f);
+    }
+
+    downMarker_->SetVisible(dpadInput_.GetScancodeDown(SCANCODE_DOWN));
+    leftMarker_->SetVisible(dpadInput_.GetScancodeDown(SCANCODE_LEFT));
+    rightMarker_->SetVisible(dpadInput_.GetScancodeDown(SCANCODE_RIGHT));
+    upMarker_->SetVisible(dpadInput_.GetScancodeDown(SCANCODE_UP));
 }
