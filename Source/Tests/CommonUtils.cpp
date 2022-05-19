@@ -22,6 +22,9 @@
 
 #include "CommonUtils.h"
 
+#include "Urho3D/Input/InputEvents.h"
+#include "Urho3D/Input/Input.h"
+
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
@@ -108,6 +111,50 @@ Resource* GetOrCreateResource(
     resource->SetName(name);
     cache->AddManualResource(resource);
     return resource;
+}
+
+void SendKeyEvent(Input* input, StringHash eventId, Scancode scancode, Key key)
+{
+    using namespace KeyDown;
+
+    VariantMap args;
+    args[P_BUTTONS] = 0;
+    args[P_QUALIFIERS] = 0;
+    args[P_KEY] = key;
+    args[P_SCANCODE] = scancode;
+    args[P_REPEAT] = false;
+    input->SendEvent(eventId, args);
+}
+
+void SendDPadEvent(Input* input, HatPosition position, int hatIndex, int joystickId)
+{
+    using namespace JoystickHatMove;
+
+    VariantMap args;
+    args[P_JOYSTICKID] = joystickId;
+    args[P_HAT] = hatIndex;
+    args[P_POSITION] = (int)position;
+    input->SendEvent(E_JOYSTICKHATMOVE, args);
+}
+
+void SendJoystickDisconnected(Input* input, int joystickId)
+{
+    using namespace JoystickDisconnected;
+
+    VariantMap args;
+    args[P_JOYSTICKID] = joystickId;
+    input->SendEvent(E_JOYSTICKDISCONNECTED, args);
+}
+
+void SendAxisEvent(Input* input, int axis, float value, int joystickId)
+{
+    using namespace JoystickAxisMove;
+
+    VariantMap args;
+    args[P_JOYSTICKID] = joystickId;
+    args[P_AXIS] = axis;
+    args[P_POSITION] = value;
+    input->SendEvent(E_JOYSTICKAXISMOVE, args);
 }
 
 FrameEventTracker::FrameEventTracker(Context* context)

@@ -140,6 +140,8 @@
 #endif
 #endif
 #endif
+#include "111_SplashScreen/SplashScreenDemo.h"
+#include "112_AggregatedInput/AggregatedInput.h"
 #if URHO3D_SYSTEMUI
 #include "113_PatternMatching/PatternMatchingDemo.h"
 #endif
@@ -181,9 +183,22 @@ void SamplesManager::Setup()
 
 SampleSelectionScreen::SampleSelectionScreen(Context* context)
     : ApplicationState(context)
+    , dpadAdapter_(context)
 {
     SetMouseMode(MM_FREE);
     SetMouseVisible(true);
+}
+
+void SampleSelectionScreen::Activate(SingleStateApplication* application)
+{
+    ApplicationState::Activate(application);
+    dpadAdapter_.SetEnabled(true);
+}
+
+void SampleSelectionScreen::Deactivate()
+{
+    ApplicationState::Deactivate();
+    dpadAdapter_.SetEnabled(false);
 }
 
 void SamplesManager::Start()
@@ -206,22 +221,19 @@ void SamplesManager::Start()
     context_->AddFactoryReflection<SampleSelectionScreen>();
 
     inspectorNode_ = MakeShared<Scene>(context_);
-    splashScreen_ = MakeShared<SplashScreen>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
-    splashScreen_->SetNextState(sampleSelectionScreen_);
-    splashScreen_->FetchSceneResourcesAsync("Scenes/RenderingShowcase_0.xml");
-    splashScreen_->SetBackgroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/StoneDiffuse.dds"));
-    splashScreen_->SetForegroundImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/LogoLarge.png"));
-    splashScreen_->SetProgressImage(context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/TerrainDetail2.dds"));
-    SetState(splashScreen_);
+    // Keyboard arrow keys are already handled by UI
+    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
+    SetState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
         debugHud->ToggleAll();
 #endif
-
+    auto* input = context_->GetSubsystem<Input>();
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
+    SubscribeToEvent(input, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
@@ -250,6 +262,7 @@ void SamplesManager::Start()
     list->SetHighlightMode(HM_ALWAYS);
     list->SetStyleAuto();
     list->SetName("SampleList");
+    list->SetFocus(true);
 
     // Get logo texture
     ResourceCache* cache = GetSubsystem<ResourceCache>();
@@ -368,6 +381,8 @@ void SamplesManager::Start()
 #endif
 #endif
 #endif
+    RegisterSample<SplashScreenDemo>();
+    RegisterSample<AggregatedInput>();
 #if URHO3D_SYSTEMUI
     RegisterSample<PatternMatchingDemo>();
 #endif
@@ -449,6 +464,8 @@ int SamplesManager::GetSelectedIndex() const
 
 void SamplesManager::OnButtonPress(VariantMap& args)
 {
+    if (!sampleSelectionScreen_->IsActive())
+        return;
     using namespace JoystickButtonDown;
     int key = args[P_BUTTON].GetInt();
     int joystick = args[P_JOYSTICKID].GetInt();
@@ -459,28 +476,6 @@ void SamplesManager::OnButtonPress(VariantMap& args)
     {
         switch (key)
         {
-            case CONTROLLER_BUTTON_DPAD_UP:
-            {
-                int currentIndex = GetSelectedIndex();
-                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
-                if (currentSelection)
-                    currentSelection->SetSelected(false);
-                UIElement* nextSelection = GetSampleButtonAt(currentIndex - 1);
-                if (nextSelection)
-                    nextSelection->SetSelected(true);
-                break;
-            }
-            case CONTROLLER_BUTTON_DPAD_DOWN:
-            {
-                int currentIndex = GetSelectedIndex();
-                UIElement* currentSelection = GetSampleButtonAt(currentIndex);
-                if (currentSelection)
-                    currentSelection->SetSelected(false);
-                UIElement* nextSelection = GetSampleButtonAt(currentIndex + 1);
-                if (nextSelection)
-                    nextSelection->SetSelected(true);
-                break;
-            }
             case CONTROLLER_BUTTON_A:
             {
                 UIElement* button = GetSampleButtonAt(GetSelectedIndex());
@@ -496,12 +491,6 @@ void SamplesManager::OnButtonPress(VariantMap& args)
                 }
                 break;
             }
-            // CONTROLLER_BUTTON_B converted by SDL into Escape key code.
-            //case CONTROLLER_BUTTON_B:
-            //{
-            //    isClosing_ = true;
-            //    break;
-            //}
         }
     }
 }
@@ -544,7 +533,7 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     }
 #endif
 
-    if (GetState() != sampleSelectionScreen_)
+    if (!sampleSelectionScreen_->IsActive())
         return;
 
     if (key == KEY_SPACE)
@@ -561,6 +550,13 @@ void SamplesManager::OnKeyPress(VariantMap& args)
             StartSample(sampleType);
         }
     }
+}
+
+void SamplesManager::OnArrowKeyPress(VariantMap& args)
+{
+    using namespace KeyUp;
+
+    int key = args[P_KEY].GetInt();
 
     if (key == KEY_DOWN)
     {
@@ -572,7 +568,6 @@ void SamplesManager::OnKeyPress(VariantMap& args)
         if (nextSelection)
             nextSelection->SetSelected(true);
     }
-
 
     if (key == KEY_UP)
     {

@@ -67,8 +67,9 @@ void ConsoleInput::Start()
     SubscribeToEvent(E_CONSOLECOMMAND, URHO3D_HANDLER(ConsoleInput, HandleConsoleCommand));
 
     // Subscribe key down event
-    SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(ConsoleInput, HandleEscKeyDown));
-    UnsubscribeFromEvent(E_KEYUP);
+    auto* input = context_->GetSubsystem<Input>();
+    SubscribeToEvent(input, E_KEYDOWN, URHO3D_HANDLER(ConsoleInput, HandleEscKeyDown));
+    UnsubscribeFromEvent(input, E_KEYUP);
 
     // Enable filesystem interaction in console.
     context_->GetSubsystem<FileSystem>()->SetExecuteConsoleCommands(true);

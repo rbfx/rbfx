@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2021 the rbfx project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,33 @@
 // THE SOFTWARE.
 //
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace Urho3DNet
 {
-    public partial class Application
+    public partial class ApplicationState
     {
-        public delegate IntPtr UserApplicationFactory(HandleRef context);
-        public static Application CreateApplicationFromFactory(Context context, UserApplicationFactory factory)
-        {
-            return Application.wrap(factory(Context.getCPtr(context)), true);
-        }
+        private UI _cachedUI;
+        private ResourceCache _resourceCache;
+        private Input _input;
+        private Graphics _graphics;
+
+        /// <summary>
+        /// Get input subsystem from current context.
+        /// </summary>
+        public Input Input => _input ?? (_input = Context.GetSubsystem<Input>());
+
+        /// <summary>
+        /// Get graphics subsystem from current context.
+        /// </summary>
+        public Graphics Graphics => _graphics ?? (_graphics = Context.GetSubsystem<Graphics>());
+
+        /// <summary>
+        /// Get resource cache subsystem from current context.
+        /// </summary>
+        public ResourceCache ResourceCache => _resourceCache ?? (_resourceCache = Context.GetSubsystem<ResourceCache>());
+
+        /// <summary>
+        /// Get UI subsystem from current context.
+        /// </summary>
+        public UI UI => _cachedUI ?? (_cachedUI = Context.GetSubsystem<UI>());
     }
 }

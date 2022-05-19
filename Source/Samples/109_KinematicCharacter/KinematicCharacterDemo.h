@@ -24,6 +24,7 @@
 
 #include "Sample.h"
 #include "KinematicCharacter.h"
+#include <Urho3D/Input/DirectionalPadAdapter.h>
 
 namespace Urho3D
 {
@@ -129,6 +130,6 @@ private:
     bool firstPerson_;
 
     bool drawDebug_;
-
+    DirectionalPadAdapter dPadAdapter_;
     PatternQuery characterPattern_;
 };

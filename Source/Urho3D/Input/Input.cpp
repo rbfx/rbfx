@@ -1476,6 +1476,14 @@ TouchState* Input::GetTouch(unsigned index) const
     return const_cast<TouchState*>(&i->second);
 }
 
+TouchState* Input::GetTouchById(int touchId) const
+{
+    const auto i = touches_.find(touchId);
+    if (i == touches_.end())
+        return nullptr;
+    return const_cast<TouchState*>(&i->second);
+}
+
 JoystickState* Input::GetJoystickByIndex(unsigned index)
 {
     unsigned compare = 0;

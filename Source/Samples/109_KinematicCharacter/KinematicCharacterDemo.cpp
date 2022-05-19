@@ -51,10 +51,11 @@
 #include <Urho3D/DebugNew.h>
 
 
-KinematicCharacterDemo::KinematicCharacterDemo(Context* context) :
-    Sample(context)
+KinematicCharacterDemo::KinematicCharacterDemo(Context* context)
+    : Sample(context)
     , firstPerson_(false)
     , drawDebug_(false)
+    , dPadAdapter_(context)
 {
     if (!context_->IsReflected<KinematicCharacter>())
         KinematicCharacter::RegisterObject(context);
@@ -68,6 +69,8 @@ void KinematicCharacterDemo::Start()
     Sample::Start();
     if (touchEnabled_)
         touch_ = new Touch(context_, TOUCH_SENSITIVITY);
+
+    dPadAdapter_.SetEnabled(true);
 
     // Create static scene content
     CreateScene();
@@ -279,10 +282,10 @@ void KinematicCharacterDemo::Update(float timeStep)
         {
             if (!touch_ || !touch_->useGyroscope_)
             {
-                character_->controls_.Set(CTRL_FORWARD, input->GetKeyDown(KEY_W));
-                character_->controls_.Set(CTRL_BACK, input->GetKeyDown(KEY_S));
-                character_->controls_.Set(CTRL_LEFT, input->GetKeyDown(KEY_A));
-                character_->controls_.Set(CTRL_RIGHT, input->GetKeyDown(KEY_D));
+                character_->controls_.Set(CTRL_FORWARD, dPadAdapter_.GetScancodeDown(SCANCODE_UP));
+                character_->controls_.Set(CTRL_BACK, dPadAdapter_.GetScancodeDown(SCANCODE_DOWN));
+                character_->controls_.Set(CTRL_LEFT, dPadAdapter_.GetScancodeDown(SCANCODE_LEFT));
+                character_->controls_.Set(CTRL_RIGHT, dPadAdapter_.GetScancodeDown(SCANCODE_RIGHT));
                 character_->controls_.Set(CTRL_CROUCH, input->GetKeyDown(KEY_SHIFT));
             }
             character_->controls_.Set(CTRL_JUMP, input->GetKeyDown(KEY_SPACE));
