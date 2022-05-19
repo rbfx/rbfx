@@ -29,6 +29,8 @@
 namespace Urho3D
 {
 class SingleStateApplication;
+class ResourceCache;
+class UI;
 
 /// Base class for an application state. Tipical samples of a state would be loading screen, menu or a game screen.
 class URHO3D_API ApplicationState : public Object
@@ -122,7 +124,7 @@ private:
     /// Is the game screen active.
     bool active_{false};
     /// Application activated the state instance.
-    SingleStateApplication* application_;
+    SingleStateApplication* application_{};
     /// UI root element.
     SharedPtr<UIElement> rootElement_{};
     /// UI root element saved upon activation to be restored at deactivation.

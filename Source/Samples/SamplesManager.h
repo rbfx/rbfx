@@ -25,6 +25,7 @@
 #include <Urho3D/UI/SplashScreen.h>
 
 #include "Sample.h"
+#include "Urho3D/Input/DirectionalPadAdapter.h"
 
 #include <string>
 #include <vector>
@@ -49,6 +50,12 @@ class SampleSelectionScreen
 public:
     /// Construct.
     explicit SampleSelectionScreen(Context* context);
+
+    void Activate(SingleStateApplication* application) override;
+
+    void Deactivate() override;
+
+    DirectionalPadAdapter dpadAdapter_;
 };
 
 class SamplesManager : public SingleStateApplication
@@ -70,7 +77,9 @@ public:
     /// Return command line arguments.
     const ea::vector<ea::string>& GetArgs() const { return commandLineArgs_; }
 
-private:
+    ApplicationState* GetMenuState() const { return sampleSelectionScreen_; }
+
+    private:
     ///
     int GetSelectedIndex() const;
     ///
@@ -79,6 +88,8 @@ private:
     void OnClickSample(VariantMap& args);
     ///
     void OnKeyPress(VariantMap& args);
+    ///
+    void OnArrowKeyPress(VariantMap& args);
     ///
     void OnButtonPress(VariantMap& args);
     ///
@@ -90,8 +101,6 @@ private:
 
     ///
     SharedPtr<SampleSelectionScreen> sampleSelectionScreen_;
-    ///
-    SharedPtr<SplashScreen> splashScreen_;
     ///
     SharedPtr<UIElement> listViewHolder_;
     /// Logo sprite.

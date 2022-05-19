@@ -558,6 +558,10 @@ enum HatPosition : unsigned
     HAT_RIGHT = SDL_HAT_RIGHT,
     HAT_DOWN = SDL_HAT_DOWN,
     HAT_LEFT = SDL_HAT_LEFT,
+    HAT_RIGHTUP = SDL_HAT_RIGHTUP,
+    HAT_RIGHTDOWN = SDL_HAT_RIGHTDOWN,
+    HAT_LEFTUP = SDL_HAT_LEFTUP,
+    HAT_LEFTDOWN = SDL_HAT_LEFTDOWN,
 };
 
 enum ControllerButton : unsigned

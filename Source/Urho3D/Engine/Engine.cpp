@@ -163,11 +163,6 @@ Engine::Engine(Context* context) :
     // Register UI library object factories before creation of subsystem. This is not done inside subsystem because
     // there may exist multiple instances of UI.
     RegisterUILibrary(context_);
-    context_->RegisterSubsystem(new UI(context_));
-#ifdef URHO3D_RMLUI
-    RegisterRmlUILibrary(context_);
-    context_->RegisterSubsystem(new RmlUI(context_));
-#endif
 #ifdef URHO3D_SYSTEMUI
     Gizmo::RegisterObject(context_);
 #endif
@@ -229,6 +224,13 @@ bool Engine::Initialize(const VariantMap& parameters)
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
     context_->RegisterFactory<FreeFlyController>();
+
+    context_->RegisterSubsystem(new UI(context_));
+
+#ifdef URHO3D_RMLUI
+    RegisterRmlUILibrary(context_);
+    context_->RegisterSubsystem(new RmlUI(context_));
+#endif
 
     context_->RegisterSubsystem(new Audio(context_));
     if (!headless_)

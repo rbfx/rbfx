@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Input/DirectionalPadAdapter.h>
 
 namespace Urho3D
 {
@@ -123,4 +124,5 @@ private:
     WeakPtr<Character> character_;
     /// First person camera flag.
     bool firstPerson_;
+    DirectionalPadAdapter dPadAdapter_;
 };

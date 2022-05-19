@@ -26,6 +26,7 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Variant.h>
 #include <Urho3D/Container/Ptr.h>
+#include <Urho3D/Input/Input.h>
 
 #include <EASTL/optional.h>
 
@@ -62,6 +63,14 @@ void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALU
 /// Return resource by name. Creates and adds manual resource if missing.
 Resource* GetOrCreateResource(
     Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory);
+
+void SendKeyEvent(Input* input, StringHash eventId, Scancode scancode, Key key);
+
+void SendDPadEvent(Input* input, HatPosition position, int hatIndex = 0, int joystickId = 0);
+
+void SendJoystickDisconnected(Input* input, int joystickId = 0);
+
+void SendAxisEvent(Input* input, int axis, float value, int joystickId = 0);
 
 /// Return resource by name. Creates and adds manual resource if missing.
 template <class T>

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2021 the rbfx project.
+// Copyright (c) 2022-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,18 @@
 // THE SOFTWARE.
 //
 
-using System;
-using System.Runtime.InteropServices;
+#pragma once
 
-namespace Urho3DNet
+#include "Sample.h"
+#include <Urho3D/UI/SplashScreen.h>
+
+class SplashScreenDemo : public Sample
 {
-    public partial class Application
-    {
-        public delegate IntPtr UserApplicationFactory(HandleRef context);
-        public static Application CreateApplicationFromFactory(Context context, UserApplicationFactory factory)
-        {
-            return Application.wrap(factory(Context.getCPtr(context)), true);
-        }
-    }
-}
+    URHO3D_OBJECT(SplashScreenDemo, Sample);
+
+public:
+    /// Construct.
+    explicit SplashScreenDemo(Context* context);
+
+    void Activate(SingleStateApplication* application) override;
+};
