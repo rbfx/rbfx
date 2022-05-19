@@ -520,7 +520,7 @@ public:
 // --------------------------------------- Extra components and resources --------------
 %include "Urho3D/Input/FreeFlyController.h"
 // --------------------------------------- Pattern matching --------------
-%ignore Urho3D::PatternIndex::void Build(const PatternCollection** begin, const PatternCollection** end);
+%ignore Urho3D::PatternIndex::Build(const PatternCollection** begin, const PatternCollection** end);
 %include "Urho3D/PatternMatching/PatternCollection.h"
 %include "Urho3D/PatternMatching/PatternDatabase.h"
 %include "Urho3D/PatternMatching/PatternIndex.h"

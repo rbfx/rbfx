@@ -59,16 +59,26 @@ void CharacterConfiguration::BodyPart::SerializeInBlock(Archive& archive)
         SerializeOptionalValue(archive, "model", model, {});
         if (!model.name_.empty())
         {
+            Quaternion q(Vector3(90, 0, 0));
             ResourceRefList material;
             SerializeOptionalValue(archive, "material", material, {});
             bool castShadows = true;
             SerializeOptionalValue(archive, "castShadows", castShadows, castShadows);
+            Vector3 position{Vector3::ZERO};
+            SerializeOptionalValue(archive, "position", position, position);
+            Quaternion rotation = Quaternion::IDENTITY;
+            SerializeOptionalValue(archive, "rotation", rotation, rotation);
+            Vector3 scale = Vector3::ONE;
+            SerializeOptionalValue(archive, "scale", scale, scale);
 
             variants_.BeginPattern();
             StringVariantMap args;
             args["model"] = model;
             args["material"] = material;
             args["castShadows"] = castShadows;
+            args["position"] = position;
+            args["rotation"] = rotation;
+            args["scale"] = scale;
             
             variants_.AddEvent("SetModel", args);
             variants_.CommitPattern();
