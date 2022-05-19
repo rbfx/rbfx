@@ -252,7 +252,7 @@ void AggregatedInput::Update(float timeStep)
     const auto screenSize = uiRoot->GetSize();
 
     const auto widthQuater = screenSize.x_ / 4;
-    const auto unit = Min(widthQuater / 2, screenSize.y_ / 2);
+    const auto unit = Min(widthQuater / 1.5f, screenSize.y_ / 2);
 
     rawEventsLog_->SetPosition(0, 32);
     rawEventsLog_->SetSize(widthQuater, screenSize.y_ - 32);
@@ -260,14 +260,13 @@ void AggregatedInput::Update(float timeStep)
     filteredEventsLog_->SetPosition(widthQuater * 3, 32);
     filteredEventsLog_->SetSize(widthQuater, screenSize.y_ - 32);
 
+    const auto center = Vector2(widthQuater * 2.0f, screenSize.y_ / 2);
     {
-        const auto center = Vector2(widthQuater * 1.5f, screenSize.y_ / 2);
         const auto d = aggregatedInput_.GetDirection();
         analogPivot_->SetPosition(center - Vector2(analogPivot_->GetSize()) * 0.5f);
-        analogMarker_->SetPosition(center + Vector2(unit, unit) * d - Vector2(analogMarker_->GetSize()) * 0.5f);
+        analogMarker_->SetPosition(center + Vector2(unit, unit) * d * 0.6f - Vector2(analogMarker_->GetSize()) * 0.5f);
     }
     {
-        const auto center = Vector2(widthQuater * 2.5f, screenSize.y_ / 2);
         downMarker_->SetPosition(center + Vector2(0, unit) - Vector2(downMarker_->GetSize()) * 0.5f);
         upMarker_->SetPosition(center + Vector2(0, -unit) - Vector2(upMarker_->GetSize()) * 0.5f);
         rightMarker_->SetPosition(center + Vector2(unit, 0) - Vector2(rightMarker_->GetSize()) * 0.5f);
