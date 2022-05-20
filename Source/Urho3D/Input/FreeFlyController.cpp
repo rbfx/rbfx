@@ -164,10 +164,9 @@ void FreeFlyController::UpdateCameraAngles()
         lastKnownCameraRotation_ = rotation;
         lastKnownEulerAngles_ = rotation.EulerAngles();
         // Detect gimbal lock and restore from it.
-        if ((lastKnownEulerAngles_.x_ > 89.999f || lastKnownEulerAngles_.x_ < -89.999f)
-            && Abs(lastKnownEulerAngles_.y_) < 0.001f)
+        if (Abs(lastKnownEulerAngles_.x_) > 89.999f && Abs(lastKnownEulerAngles_.y_) < 0.001f)
         {
-            lastKnownEulerAngles_.z_ = 0;
+            ea::swap(lastKnownEulerAngles_.y_, lastKnownEulerAngles_.z_);
         }
     }
 }
