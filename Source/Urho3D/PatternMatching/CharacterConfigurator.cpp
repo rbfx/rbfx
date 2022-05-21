@@ -207,6 +207,11 @@ void CharacterConfigurator::Update(const PatternQuery& query)
         savedQuery_[query.GetKeyHash(i)] = query.GetValue(i);
     }
 
+    if (!configuration_)
+    {
+        return;
+    }
+
     for (unsigned bodyPartIndex = 0; bodyPartIndex < bodyPartNodes_.size(); ++bodyPartIndex)
     {
         auto& bodyPart = bodyPartNodes_[bodyPartIndex];
