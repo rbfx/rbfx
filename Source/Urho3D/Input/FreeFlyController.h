@@ -72,6 +72,10 @@ private:
     void HandleKeyboardAndMouse(float timeStep);
     /// Handle multitouch input event.
     void HandleMultitouch(StringHash eventType, VariantMap& eventData);
+    /// Detect camera angles if camera has changed.
+    void UpdateCameraAngles();
+    /// Update camera rotation.
+    void SetCameraAngles(Vector3 eulerAngles);
 
 private:
     /// Camera speed.
@@ -90,6 +94,10 @@ private:
     bool subscribed_{false};
     /// Multitouch input adapter
     MultitouchAdapter multitouchAdapter_;
+    /// Last known camera rotation to keep track of yaw and pitch.
+    ea::optional<Quaternion> lastKnownCameraRotation_;
+    /// Last known yaw, pitch and roll to prevent gimbal lock.
+    Vector3 lastKnownEulerAngles_;
 };
 
 } // namespace Urho3D
