@@ -114,6 +114,10 @@ if (URHO3D_CSHARP)
     define_engine_source_files (Script)
 endif ()
 
+if (URHO3D_ACTIONS)
+    define_engine_source_files (Actions)
+endif ()
+
 # Remove compute source files as needed
 if (NOT URHO3D_COMPUTE)
     list(REMOVE_ITEM SOURCE_FILES 

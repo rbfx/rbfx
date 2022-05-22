@@ -85,6 +85,10 @@
 #ifdef URHO3D_COMPUTE
 #include "../Graphics/ComputeDevice.h"
 #endif
+#ifdef URHO3D_ACTIONS
+#include "../Actions/ActionManager.h"
+#endif
+
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -243,6 +247,10 @@ bool Engine::Initialize(const VariantMap& parameters)
     }
 #ifdef URHO3D_PARTICLE_GRAPH
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
+#endif
+
+#ifdef URHO3D_ACTIONS
+    context_->RegisterSubsystem(new ActionManager(context_));
 #endif
 
 #ifdef URHO3D_URHO2D
