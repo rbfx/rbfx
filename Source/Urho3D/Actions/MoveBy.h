@@ -23,11 +23,10 @@
 #pragma once
 
 #include "FiniteTimeAction.h"
-#include "../Scene/Node.h"
 
 namespace Urho3D
 {
-/// Action manager.
+/// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
 class URHO3D_API MoveBy : public FiniteTimeAction
 {
     URHO3D_OBJECT(MoveBy, FiniteTimeAction)
@@ -37,22 +36,22 @@ public:
     explicit MoveBy(Context* context);
     /// Construct.
     explicit MoveBy(Context* context, float duration, const Vector3& position);
-
     /// Destruct.
     ~MoveBy() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
+    /// Get position delta.
     const Vector3& GetPositionDelta() const { return position_; }
 
-    FiniteTimeAction* Reverse() const;
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
 
 protected:
-    virtual SharedPtr<ActionState> StartAction(Object* target) override;
+    SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
     Vector3 position_{Vector3::ZERO};
 };
-
 
 } // namespace Urho3D

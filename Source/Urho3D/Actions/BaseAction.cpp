@@ -21,11 +21,23 @@
 //
 
 #include "BaseAction.h"
+#include "ActionState.h"
 
 #include "../Core/Context.h"
 
 using namespace Urho3D;
 
+namespace 
+{
+struct NoActionState: public ActionState
+{
+    NoActionState(BaseAction* action, Object* target)
+        : ActionState(action, target)
+    {
+    }
+};
+
+}
 /// Construct.
 BaseAction::BaseAction(Context* context)
     : Object(context)
@@ -41,18 +53,5 @@ void BaseAction::RegisterObject(Context* context) { context->RegisterFactory<Bas
 /// Create new action state from the action.
 SharedPtr<ActionState> BaseAction::StartAction(Object* target)
 {
-    return {};
+    return MakeShared<NoActionState>(this, target);
 }
-
-ActionState::ActionState(BaseAction* action, Object* target)
-{
-    _action = action;
-    _target = target;
-    _originalTarget = target;
-}
-
-void ActionState::Update(float time) {}
-
-void ActionState::Stop() { _target.Reset(); }
-
-void ActionState::Step(float dt) {}

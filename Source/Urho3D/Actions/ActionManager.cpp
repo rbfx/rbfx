@@ -21,9 +21,12 @@
 //
 
 #include "ActionManager.h"
-
+#include "ActionState.h"
 #include "MoveBy.h"
-#include "Urho3D/IO/Log.h"
+#include "MoveBy2D.h"
+#include "MoveTo.h"
+#include "MoveTo2D.h"
+#include "../IO/Log.h"
 
 namespace Urho3D
 {
@@ -46,6 +49,9 @@ void RegisterActionLibrary(Context* context)
         BaseAction::RegisterObject(context);
         FiniteTimeAction::RegisterObject(context);
         MoveBy::RegisterObject(context);
+        MoveTo::RegisterObject(context);
+        MoveBy2D::RegisterObject(context);
+        MoveTo2D::RegisterObject(context);
     }
 }
 
@@ -110,6 +116,16 @@ void ActionManager::RemoveAction(ActionState* actionState)
     }
 }
 
+unsigned ActionManager::GetNumActions(Object* target) const
+{
+    if (!target)
+        return 0;
+    const auto existingTargetIt = targets_.find(target);
+    if (existingTargetIt == targets_.end())
+        return 0;
+    return existingTargetIt->second.ActionStates.size();
+}
+
 ActionState* ActionManager::AddAction(BaseAction* action, Object* target, bool paused)
 {
     if (action == nullptr)
@@ -125,7 +141,8 @@ ActionState* ActionManager::AddAction(BaseAction* action, Object* target, bool p
 
     const auto existingTargetIt = targets_.find(target);
     HashElement* element = nullptr;
-    if (existingTargetIt == targets_.end())
+    // Check if element is missing or if we have a record with conflicting pointer (happens in unit tests).
+    if (existingTargetIt == targets_.end() || existingTargetIt->second.Target.Expired())
     {
         element = &targets_[target];
         element->Paused = paused;

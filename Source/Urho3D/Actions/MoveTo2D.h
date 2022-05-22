@@ -20,34 +20,35 @@
 // THE SOFTWARE.
 //
 
-#include "FiniteTimeActionState.h"
+#pragma once
 
-#include "../Core/Context.h"
 #include "FiniteTimeAction.h"
 
-using namespace Urho3D;
-
-/// Construct.
-FiniteTimeActionState::FiniteTimeActionState(FiniteTimeAction* action, Object* target)
-    : ActionState(action, target)
+namespace Urho3D
 {
-    duration_ = action->GetDuration();
-}
-
-/// Destruct.
-FiniteTimeActionState::~FiniteTimeActionState() {}
-
-void FiniteTimeActionState::Step(float dt)
+/// Move to 2D postion action. Target should have attribute "Position" of type Vector2 or IntVector2.
+class URHO3D_API MoveTo2D : public FiniteTimeAction
 {
-    if (firstTick_)
-    {
-        firstTick_ = false;
-        elapsed_ = 0.0f;
-    }
-    else
-    {
-        elapsed_ += dt;
-    }
+    URHO3D_OBJECT(MoveTo2D, FiniteTimeAction)
 
-    Update(Clamp(elapsed_ / Max(duration_, ea::numeric_limits<float>::epsilon()), 0.0f, 1.0f));
-}
+public:
+    /// Construct.
+    explicit MoveTo2D(Context* context);
+    /// Construct.
+    explicit MoveTo2D(Context* context, float duration, const Vector2& position);
+    /// Destruct.
+    ~MoveTo2D() override;
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    /// Get position delta.
+    const Vector2& GetPosition() const { return position_; }
+
+protected:
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+private:
+    Vector2 position_{Vector2::ZERO};
+};
+
+} // namespace Urho3D

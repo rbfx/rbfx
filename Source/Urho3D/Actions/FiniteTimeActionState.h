@@ -22,14 +22,14 @@
 
 #pragma once
 
-#include "BaseAction.h"
+#include "ActionState.h"
 
 namespace Urho3D
 {
 class FiniteTimeAction;
 class Object;
 
-/// Action manager.
+/// Finite time action state.
 class URHO3D_API FiniteTimeActionState : public ActionState
 {
 public:

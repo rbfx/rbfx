@@ -20,34 +20,44 @@
 // THE SOFTWARE.
 //
 
+#pragma once
+
 #include "FiniteTimeActionState.h"
+#include "../Core/Attribute.h"
+#include "../Scene/Serializable.h"
 
-#include "../Core/Context.h"
-#include "FiniteTimeAction.h"
-
-using namespace Urho3D;
-
-/// Construct.
-FiniteTimeActionState::FiniteTimeActionState(FiniteTimeAction* action, Object* target)
-    : ActionState(action, target)
+namespace Urho3D
 {
-    duration_ = action->GetDuration();
-}
 
-/// Destruct.
-FiniteTimeActionState::~FiniteTimeActionState() {}
-
-void FiniteTimeActionState::Step(float dt)
+/// Attribute action state.
+class URHO3D_API AttributeActionState : public FiniteTimeActionState
 {
-    if (firstTick_)
+public:
+    /// Construct.
+    AttributeActionState(FiniteTimeAction* action, Object* target, const char* attribute, VariantType type = VAR_NONE);
+    /// Destruct.
+    ~AttributeActionState() override;
+
+protected:
+    /// Called every frame with it's delta time and attribute value.
+    virtual void Update(float dt, Variant& value);
+
+    /// Get attribute value or default value.
+    template <typename T> T Get() const
     {
-        firstTick_ = false;
-        elapsed_ = 0.0f;
-    }
-    else
-    {
-        elapsed_ += dt;
+        Variant tmp;
+        if (attribute_)
+        {
+            attribute_->accessor_->Get(static_cast<const Serializable*>(GetTarget()), tmp);
+        }
+        return tmp.Get<T>();
     }
 
-    Update(Clamp(elapsed_ / Max(duration_, ea::numeric_limits<float>::epsilon()), 0.0f, 1.0f));
-}
+private:
+    void Update(float dt) override;
+
+protected:
+    AttributeInfo* attribute_{};
+    VariantType attributeType_{VAR_NONE};
+};
+} // namespace Urho3D

@@ -26,7 +26,7 @@
 
 namespace Urho3D
 {
-/// Action manager.
+/// Finite time action.
 class URHO3D_API FiniteTimeAction : public BaseAction
 {
     URHO3D_OBJECT(FiniteTimeAction, BaseAction)
@@ -41,8 +41,14 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
+    /// Get action duration.
     float GetDuration() const;
+    /// Set action duration.
     void SetDuration(float duration);
+
+    /// Create reversed action.
+    virtual SharedPtr<FiniteTimeAction> Reverse() const;
+
 private:
     float duration_{ea::numeric_limits<float>::epsilon()};
 };

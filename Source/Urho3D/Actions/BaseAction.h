@@ -29,7 +29,7 @@ namespace Urho3D
 class ActionState;
 class ActionManager;
 
-/// Action manager.
+/// Base action state.
 class URHO3D_API BaseAction : public Object
 {
     URHO3D_OBJECT(BaseAction, Object)
@@ -45,49 +45,6 @@ public:
 protected:
     /// Create new action state from the action.
     virtual SharedPtr<ActionState> StartAction(Object* target);
-
-    friend class ActionManager;
-};
-
-class ActionState : public RefCounted
-{
-protected:
-    ActionState(BaseAction* action, Object* target);
-
-public:
-    /// Called once per frame.
-    /// Time value is between 0 and 1
-    /// For example:
-    /// 0 means that the action just started
-    /// 0.5 means that the action is in the middle
-    /// 1 means that the action is over
-    virtual void Update(float time);
-
-    /// Gets the target.
-    /// Will be set with the 'StartAction' method of the corresponding Action.
-    /// When the 'Stop' method is called, Target will be set to null.
-    Object* GetTarget() const { return _target; }
-    /// Gets the original target.
-    Object* GetOriginalTarget() const { return _originalTarget; }
-    /// Gets the action.
-    BaseAction* GetAction() const { return _action; }
-    /// Gets a value indicating whether this instance is done.
-    virtual bool IsDone() const { return true; }
-
-protected:
-    /// Called after the action has finished.
-    /// It will set the 'Target' to null.
-    /// IMPORTANT: You should never call this method manually. Instead, use: "target.StopAction(actionState);"
-    virtual void Stop();
-
-    /// Called every frame with it's delta time.
-    /// DON'T override unless you know what you are doing.
-    virtual void Step(float dt);
-
-private:
-    SharedPtr<BaseAction> _action;
-    SharedPtr<Object> _target;
-    SharedPtr<Object> _originalTarget;
 
     friend class ActionManager;
 };

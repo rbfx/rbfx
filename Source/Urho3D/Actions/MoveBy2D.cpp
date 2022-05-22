@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "MoveBy.h"
+#include "MoveBy2D.h"
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"
@@ -31,87 +31,79 @@ using namespace Urho3D;
 
 namespace
 {
-class MoveByState : public AttributeActionState
+class MoveBy2DState : public AttributeActionState
 {
-    Vector3 positionDelta_;
-    Vector3 startPosition_;
-    Vector3 previousPosition_;
+    Vector2 positionDelta_;
+    Vector2 startPosition_;
+    Vector2 previousPosition_;
 
 public:
-    MoveByState(MoveBy* action, Object* target)
+    MoveBy2DState(MoveBy2D* action, Object* target)
         : AttributeActionState(action, target, "Position")
     {
         positionDelta_ = action->GetPositionDelta();
         if (attribute_)
         {
-            if (attribute_->type_ == VAR_VECTOR3)
-                previousPosition_ = startPosition_ = Get<Vector3>();
-            else if (attribute_->type_ == VAR_INTVECTOR3)
-                previousPosition_ = startPosition_ = Vector3(Get<IntVector3>());
+            if (attribute_->type_ == VAR_VECTOR2)
+                previousPosition_ = startPosition_ = Get<Vector2>();
+            else if (attribute_->type_ == VAR_INTVECTOR2)
+                previousPosition_ = startPosition_ = Vector2(Get<IntVector2>());
             else
             {
-                URHO3D_LOGERROR(
-                    Format("Attribute {} is not of type VAR_VECTOR3 or VAR_INTVECTOR3.", attribute_->name_));
+                URHO3D_LOGERROR(Format("Attribute {} is not of type VAR_VECTOR2 or VAR_INTVECTOR2.", attribute_->name_));
                 attribute_ = nullptr;
                 return;
             }
         }
     }
 
-    ~MoveByState() override = default;
+    ~MoveBy2DState() override = default;
 
     void Update(float time, Variant& value) override
     {
-        if (attribute_->type_ == VAR_VECTOR3)
+        if (attribute_->type_ == VAR_VECTOR2)
         {
-            const auto currentPos = value.GetVector3();
+            const auto currentPos = value.GetVector2();
             auto diff = currentPos - previousPosition_;
             startPosition_ = startPosition_ + diff;
             const auto newPos = startPosition_ + positionDelta_ * time;
             value = newPos;
             previousPosition_ = newPos;
-        } else
+        }
+        else
         {
-            const auto currentPos = Vector3(value.GetIntVector3());
+            const auto currentPos = Vector2(value.GetIntVector2());
             auto diff = currentPos - previousPosition_;
             startPosition_ = startPosition_ + diff;
             const auto newPos = startPosition_ + positionDelta_ * time;
-            const IntVector3 newIntPos = IntVector3(newPos.x_, newPos.y_, newPos.z_);
+            const IntVector2 newIntPos = IntVector2(newPos.x_, newPos.y_);
             value = newIntPos;
-            previousPosition_ = Vector3(newIntPos);
+            previousPosition_ = Vector2(newIntPos);
         }
     }
 };
 
-}
+} // namespace
 
 /// Construct.
-MoveBy::MoveBy(Context* context)
+MoveBy2D::MoveBy2D(Context* context)
     : FiniteTimeAction(context)
 {
 }
 
-    /// Construct.
-MoveBy::MoveBy(Context* context, float duration, const Vector3& position)
+/// Construct.
+MoveBy2D::MoveBy2D(Context* context, float duration, const Vector2& position)
     : FiniteTimeAction(context, duration)
     , position_(position)
 {
 }
 
-
 /// Destruct.
-MoveBy::~MoveBy() {
-}
+MoveBy2D::~MoveBy2D() {}
 
 /// Register object factory.
-void MoveBy::RegisterObject(Context* context) { context->RegisterFactory<MoveBy>(); }
+void MoveBy2D::RegisterObject(Context* context) { context->RegisterFactory<MoveBy2D>(); }
 
-SharedPtr<FiniteTimeAction> MoveBy::Reverse() const
-{
-    return MakeShared<MoveBy>(context_, GetDuration(), -position_);
-}
+SharedPtr<FiniteTimeAction> MoveBy2D::Reverse() const { return MakeShared<MoveBy2D>(context_, GetDuration(), -position_); }
 
-SharedPtr<ActionState> MoveBy::StartAction(Object* target)
-{
-    return MakeShared<MoveByState>(this, target);
-}
+SharedPtr<ActionState> MoveBy2D::StartAction(Object* target) { return MakeShared<MoveBy2DState>(this, target); }

@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "MoveBy.h"
+#include "MoveTo.h"
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"
@@ -31,87 +31,61 @@ using namespace Urho3D;
 
 namespace
 {
-class MoveByState : public AttributeActionState
+class MoveToState : public AttributeActionState
 {
     Vector3 positionDelta_;
     Vector3 startPosition_;
-    Vector3 previousPosition_;
 
 public:
-    MoveByState(MoveBy* action, Object* target)
+    MoveToState(MoveTo* action, Object* target)
         : AttributeActionState(action, target, "Position")
     {
-        positionDelta_ = action->GetPositionDelta();
+        positionDelta_ = action->GetPosition();
         if (attribute_)
         {
             if (attribute_->type_ == VAR_VECTOR3)
-                previousPosition_ = startPosition_ = Get<Vector3>();
+                startPosition_ = Get<Vector3>();
             else if (attribute_->type_ == VAR_INTVECTOR3)
-                previousPosition_ = startPosition_ = Vector3(Get<IntVector3>());
-            else
-            {
-                URHO3D_LOGERROR(
-                    Format("Attribute {} is not of type VAR_VECTOR3 or VAR_INTVECTOR3.", attribute_->name_));
+                startPosition_ = Vector3(Get<IntVector3>());
+            else {
+                URHO3D_LOGERROR(Format("Attribute {} is not of type VAR_VECTOR3 or VAR_INTVECTOR3.", attribute_->name_));
                 attribute_ = nullptr;
                 return;
             }
         }
     }
 
-    ~MoveByState() override = default;
+    ~MoveToState() override = default;
 
     void Update(float time, Variant& value) override
     {
+        const Vector3 result = startPosition_ + positionDelta_ * time;
         if (attribute_->type_ == VAR_VECTOR3)
-        {
-            const auto currentPos = value.GetVector3();
-            auto diff = currentPos - previousPosition_;
-            startPosition_ = startPosition_ + diff;
-            const auto newPos = startPosition_ + positionDelta_ * time;
-            value = newPos;
-            previousPosition_ = newPos;
-        } else
-        {
-            const auto currentPos = Vector3(value.GetIntVector3());
-            auto diff = currentPos - previousPosition_;
-            startPosition_ = startPosition_ + diff;
-            const auto newPos = startPosition_ + positionDelta_ * time;
-            const IntVector3 newIntPos = IntVector3(newPos.x_, newPos.y_, newPos.z_);
-            value = newIntPos;
-            previousPosition_ = Vector3(newIntPos);
-        }
+            value = result;
+        else
+            value = IntVector3(result.x_, result.y_, result.z_);
     }
 };
 
-}
+} // namespace
 
 /// Construct.
-MoveBy::MoveBy(Context* context)
+MoveTo::MoveTo(Context* context)
     : FiniteTimeAction(context)
 {
 }
 
-    /// Construct.
-MoveBy::MoveBy(Context* context, float duration, const Vector3& position)
+/// Construct.
+MoveTo::MoveTo(Context* context, float duration, const Vector3& position)
     : FiniteTimeAction(context, duration)
     , position_(position)
 {
 }
 
-
 /// Destruct.
-MoveBy::~MoveBy() {
-}
+MoveTo::~MoveTo() {}
 
 /// Register object factory.
-void MoveBy::RegisterObject(Context* context) { context->RegisterFactory<MoveBy>(); }
+void MoveTo::RegisterObject(Context* context) { context->RegisterFactory<MoveTo>(); }
 
-SharedPtr<FiniteTimeAction> MoveBy::Reverse() const
-{
-    return MakeShared<MoveBy>(context_, GetDuration(), -position_);
-}
-
-SharedPtr<ActionState> MoveBy::StartAction(Object* target)
-{
-    return MakeShared<MoveByState>(this, target);
-}
+SharedPtr<ActionState> MoveTo::StartAction(Object* target) { return MakeShared<MoveToState>(this, target); }

@@ -57,6 +57,8 @@ public:
 
     void RemoveAction(ActionState* actionState);
 
+    unsigned GetNumActions(Object* target) const;
+
     ActionState* AddAction(BaseAction* action, Object* target, bool paused = false);
 
     void Update(float dt);

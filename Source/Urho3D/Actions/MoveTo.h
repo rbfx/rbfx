@@ -20,34 +20,35 @@
 // THE SOFTWARE.
 //
 
-#include "FiniteTimeActionState.h"
+#pragma once
 
-#include "../Core/Context.h"
 #include "FiniteTimeAction.h"
 
-using namespace Urho3D;
-
-/// Construct.
-FiniteTimeActionState::FiniteTimeActionState(FiniteTimeAction* action, Object* target)
-    : ActionState(action, target)
+namespace Urho3D
 {
-    duration_ = action->GetDuration();
-}
-
-/// Destruct.
-FiniteTimeActionState::~FiniteTimeActionState() {}
-
-void FiniteTimeActionState::Step(float dt)
+/// Move to 3D postion action. Target should have attribute "Position" of type Vector3 or IntVector3.
+class URHO3D_API MoveTo : public FiniteTimeAction
 {
-    if (firstTick_)
-    {
-        firstTick_ = false;
-        elapsed_ = 0.0f;
-    }
-    else
-    {
-        elapsed_ += dt;
-    }
+    URHO3D_OBJECT(MoveTo, FiniteTimeAction)
 
-    Update(Clamp(elapsed_ / Max(duration_, ea::numeric_limits<float>::epsilon()), 0.0f, 1.0f));
-}
+public:
+    /// Construct.
+    explicit MoveTo(Context* context);
+    /// Construct.
+    explicit MoveTo(Context* context, float duration, const Vector3& position);
+    /// Destruct.
+    ~MoveTo() override;
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    /// Get position delta.
+    const Vector3& GetPosition() const { return position_; }
+
+protected:
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+private:
+    Vector3 position_{Vector3::ZERO};
+};
+
+} // namespace Urho3D

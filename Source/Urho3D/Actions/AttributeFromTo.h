@@ -20,34 +20,45 @@
 // THE SOFTWARE.
 //
 
-#include "FiniteTimeActionState.h"
+#pragma once
 
-#include "../Core/Context.h"
 #include "FiniteTimeAction.h"
 
-using namespace Urho3D;
-
-/// Construct.
-FiniteTimeActionState::FiniteTimeActionState(FiniteTimeAction* action, Object* target)
-    : ActionState(action, target)
+namespace Urho3D
 {
-    duration_ = action->GetDuration();
-}
-
-/// Destruct.
-FiniteTimeActionState::~FiniteTimeActionState() {}
-
-void FiniteTimeActionState::Step(float dt)
+/// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
+class URHO3D_API AttributeFromTo : public FiniteTimeAction
 {
-    if (firstTick_)
-    {
-        firstTick_ = false;
-        elapsed_ = 0.0f;
-    }
-    else
-    {
-        elapsed_ += dt;
-    }
+    URHO3D_OBJECT(AttributeFromTo, FiniteTimeAction)
 
-    Update(Clamp(elapsed_ / Max(duration_, ea::numeric_limits<float>::epsilon()), 0.0f, 1.0f));
-}
+public:
+    /// Construct.
+    explicit AttributeFromTo(Context* context);
+    /// Construct.
+    explicit AttributeFromTo(
+        Context* context, float duration, const ea::string& attribute, const Variant& from, const Variant& to);
+    /// Destruct.
+    ~AttributeFromTo() override;
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    // Get "from" value.
+    const Variant& GetFrom() const { return from_; }
+    // Get "to" value.
+    const Variant& GetTo() const { return to_; }
+    // Get attribute parameter name.
+    const ea::string& GetName() const { return name_; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+protected:
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+private:
+    ea::string name_;
+    Variant from_;
+    Variant to_;
+};
+
+} // namespace Urho3D

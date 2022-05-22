@@ -23,8 +23,27 @@
 #include "FiniteTimeAction.h"
 
 #include "../Core/Context.h"
+#include "../IO/Log.h"
 
 using namespace Urho3D;
+
+namespace 
+{
+/// "No-operation" finite time action for irreversible actions.
+class URHO3D_API NoAction : public FiniteTimeAction
+{
+public:
+    /// Construct.
+    NoAction(Context* context, FiniteTimeAction* reversed);
+    /// Destruct.
+    ~NoAction() override;
+    /// Create reversed action.
+    virtual SharedPtr<FiniteTimeAction> Reverse() const;
+
+private:
+    SharedPtr<FiniteTimeAction> reversed_;
+};
+}
 
 /// Construct.
 FiniteTimeAction::FiniteTimeAction(Context* context)
@@ -45,10 +64,7 @@ FiniteTimeAction::~FiniteTimeAction() {}
 /// Register object factory.
 void FiniteTimeAction::RegisterObject(Context* context) { context->RegisterFactory<FiniteTimeAction>(); }
 
-float FiniteTimeAction::GetDuration() const
-{
-    return duration_;
-}
+float FiniteTimeAction::GetDuration() const { return duration_; }
 
 void FiniteTimeAction::SetDuration(float duration)
 {
@@ -58,3 +74,19 @@ void FiniteTimeAction::SetDuration(float duration)
 
     duration_ = duration;
 }
+
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> FiniteTimeAction::Reverse() const { return MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this)); }
+
+/// Construct.
+NoAction::NoAction(Context* context, FiniteTimeAction* reversed)
+    : FiniteTimeAction(context)
+    , reversed_(reversed)
+{
+}
+
+/// Destruct.
+NoAction::~NoAction() {}
+
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> NoAction::Reverse() const { return reversed_; }
