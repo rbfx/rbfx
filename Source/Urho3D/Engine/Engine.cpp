@@ -250,7 +250,7 @@ bool Engine::Initialize(const VariantMap& parameters)
 #endif
 
 #ifdef URHO3D_ACTIONS
-    context_->RegisterSubsystem(new ActionManager(context_));
+    context_->RegisterSubsystem(new ActionManager(context_, true));
 #endif
 
 #ifdef URHO3D_URHO2D

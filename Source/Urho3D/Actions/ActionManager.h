@@ -49,6 +49,8 @@ private:
 public:
     ActionManager(Context* context);
 
+    ActionManager(Context* context, bool autoupdate);
+
     ~ActionManager() override;
 
     void RemoveAllActions();
@@ -62,6 +64,9 @@ public:
     ActionState* AddAction(BaseAction* action, Object* target, bool paused = false);
 
     void Update(float dt);
+
+private:
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
 private:
     Object* currentTarget_{};

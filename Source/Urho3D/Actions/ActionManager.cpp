@@ -22,19 +22,31 @@
 
 #include "ActionManager.h"
 #include "ActionState.h"
+#include "AttributeFromTo.h"
 #include "MoveBy.h"
 #include "MoveBy2D.h"
 #include "MoveTo.h"
 #include "MoveTo2D.h"
+#include "ShaderParameterFromTo.h"
 #include "../IO/Log.h"
+#include "../Core/CoreEvents.h"
 
 namespace Urho3D
 {
 
 ActionManager::ActionManager(Context* context)
+    : ActionManager(context, true)
+{
+}
+
+ActionManager::ActionManager(Context* context, bool autoupdate)
     : Object(context)
 {
     RegisterActionLibrary(context);
+    if (autoupdate)
+    {
+        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ActionManager, HandleUpdate));
+    }
 }
 
 ActionManager::~ActionManager()
@@ -52,7 +64,17 @@ void RegisterActionLibrary(Context* context)
         MoveTo::RegisterObject(context);
         MoveBy2D::RegisterObject(context);
         MoveTo2D::RegisterObject(context);
+        AttributeFromTo::RegisterObject(context);
+        ShaderParameterFromTo::RegisterObject(context);
     }
+}
+
+void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace Update;
+
+    // Then execute user-defined update function
+    Update(eventData[P_TIMESTEP].GetFloat());
 }
 
 void ActionManager::RemoveAllActions()
