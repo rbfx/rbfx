@@ -95,37 +95,91 @@ bool SceneCameraController::GetMoveAccelerated() const
     return ui::IsKeyDown(Input::GetKeyFromScancode(SCANCODE_LSHIFT));
 }
 
-bool SceneViewPage::Selection::IsSelected(Node* node) const
+bool SceneSelection::IsSelected(Node* node) const
 {
-    const auto iter = nodes_.find_as(node);
-    return iter != nodes_.end();
+    return nodes_.contains(WeakPtr<Node>(node));
 }
 
-void SceneViewPage::Selection::Clear()
+void SceneSelection::Clear()
 {
+    UpdateRevision();
+
     nodes_.clear();
     components_.clear();
     anchor_ = nullptr;
 }
 
-void SceneViewPage::Selection::SetSelected(Node* node, bool selected, bool anchored)
+void SceneSelection::ConvertToNodes()
 {
+    UpdateRevision();
+
+    for (Component* component : components_)
+    {
+        if (Node* node = component->GetNode())
+            SetSelected(node, true);
+    }
+    components_.clear();
+}
+
+void SceneSelection::SetSelected(Component* component, bool selected, bool anchored)
+{
+    UpdateRevision();
+
+    const WeakPtr<Component> weakComponent{component};
+
+    if (selected)
+    {
+        if (anchor_ == nullptr || anchored)
+        {
+            if (const WeakPtr<Node> weakNode{component->GetNode()})
+                anchor_ = weakNode;
+        }
+        components_.insert(weakComponent);
+    }
+    else
+        components_.erase(weakComponent);
+
+    UpdateEffectiveNodes();
+}
+
+void SceneSelection::SetSelected(Node* node, bool selected, bool anchored)
+{
+    UpdateRevision();
+
     const WeakPtr<Node> weakNode{node};
 
     if (selected)
     {
-        if (nodes_.empty() || anchored)
+        if (anchor_ == nullptr || anchored)
             anchor_ = weakNode;
         nodes_.insert(weakNode);
     }
     else
-    {
         nodes_.erase(weakNode);
-        if (nodes_.empty())
-            anchor_ = nullptr;
-        else if (anchor_ == weakNode)
-            anchor_ = *nodes_.begin();
+
+    UpdateEffectiveNodes();
+}
+
+void SceneSelection::UpdateEffectiveNodes()
+{
+    effectiveNodes_.clear();
+
+    for (Node* node : nodes_)
+    {
+        if (const WeakPtr<Node> weakNode{node})
+            effectiveNodes_.insert(weakNode);
     }
+    for (Component* component : components_)
+    {
+        if (component)
+        {
+            if (const WeakPtr<Node> weakNode{component->GetNode()})
+                effectiveNodes_.insert(weakNode);
+        }
+    }
+
+    if (!effectiveNodes_.contains(anchor_))
+        anchor_ = !effectiveNodes_.empty() ? *effectiveNodes_.begin() : nullptr;
 }
 
 SceneCameraController* SceneViewPage::GetCurrentCameraController() const
@@ -150,6 +204,7 @@ SceneViewTab::~SceneViewTab()
 void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
 {
     addons_.push_back(addon);
+    addonsByInputPriority_.insert(addon);
 }
 
 void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
@@ -187,6 +242,8 @@ void SceneViewTab::UpdateAndRenderContextMenuItems()
 void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     BaseClassName::ApplyHotkeys(hotkeyManager);
+    for (SceneViewAddon* addon : addons_)
+        addon->ApplyHotkeys(hotkeyManager);
 }
 
 void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
@@ -236,14 +293,18 @@ void SceneViewTab::UpdateAndRenderContent()
     activePage->renderer_->SetTextureSize(GetContentSize());
     activePage->renderer_->Update();
 
+    const ImVec2 basePosition = ui::GetCursorPos();
+
     Texture2D* sceneTexture = activePage->renderer_->GetTexture();
-    ui::SetCursorPos({0, 0});
+    ui::SetCursorPos(basePosition);
     ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
-    UpdateCameraController(*activePage);
+    const auto contentAreaMin = static_cast<Vector2>(ui::GetItemRectMin());
+    const auto contentAreaMax = static_cast<Vector2>(ui::GetItemRectMax());
+    activePage->contentArea_ = Rect{contentAreaMin, contentAreaMax};
 
-    if (!isCameraControllerActive_)
-        UpdateAddons(*activePage);
+    UpdateCameraController(*activePage);
+    UpdateAddons(*activePage);
 }
 
 void SceneViewTab::UpdateCameraController(SceneViewPage& page)
@@ -269,9 +330,12 @@ void SceneViewTab::UpdateCameraController(SceneViewPage& page)
 
 void SceneViewTab::UpdateAddons(SceneViewPage& page)
 {
-    bool mouseConsumed = false;
+    bool mouseConsumed = isCameraControllerActive_;
+    for (SceneViewAddon* addon : addonsByInputPriority_)
+        addon->ProcessInput(page, mouseConsumed);
+
     for (SceneViewAddon* addon : addons_)
-        addon->UpdateAndRender(page, mouseConsumed);
+        addon->UpdateAndRender(page);
 }
 
 void SceneViewTab::UpdateFocused()

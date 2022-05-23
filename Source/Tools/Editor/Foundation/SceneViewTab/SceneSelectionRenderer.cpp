@@ -40,11 +40,11 @@ SceneSelectionRenderer::SceneSelectionRenderer(Context* context)
 {
 }
 
-void SceneSelectionRenderer::UpdateAndRender(SceneViewPage& scenePage, bool& mouseConsumed)
+void SceneSelectionRenderer::UpdateAndRender(SceneViewPage& scenePage)
 {
     Scene* scene = scenePage.scene_;
 
-    for (Node* node : scenePage.selection_.nodes_)
+    for (Node* node : scenePage.selection_.GetNodes())
     {
         if (node)
         {
@@ -53,7 +53,7 @@ void SceneSelectionRenderer::UpdateAndRender(SceneViewPage& scenePage, bool& mou
         }
     }
 
-    for (Component* component : scenePage.selection_.components_)
+    for (Component* component : scenePage.selection_.GetComponents())
     {
         if (component)
             DrawSelection(scene, component);
