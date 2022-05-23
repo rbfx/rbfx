@@ -29,6 +29,8 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
 
+#include <EASTL/vector_multiset.h>
+
 namespace Urho3D
 {
 
@@ -68,6 +70,37 @@ struct SceneCameraControllerDesc
     ea::function<SceneCameraControllerPtr(Scene* scene, Camera* camera)> factory_;
 };
 
+/// Selected nodes and components in the Scene.
+class SceneSelection
+{
+public:
+    using WeakNodeSet = ea::unordered_set<WeakPtr<Node>>;
+    using WeakComponentSet = ea::unordered_set<WeakPtr<Component>>;
+
+    unsigned GetRevision() const { return revision_; }
+    bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
+    bool IsSelected(Node* node) const;
+    Node* GetAnchor() const { return anchor_; }
+    const WeakNodeSet& GetNodes() const { return nodes_; }
+    const WeakNodeSet& GetEffectiveNodes() const { return effectiveNodes_; }
+    const WeakComponentSet& GetComponents() const { return components_; }
+
+    void Clear();
+    void ConvertToNodes();
+    void SetSelected(Component* component, bool selected, bool anchored = false);
+    void SetSelected(Node* node, bool selected, bool anchored = false);
+
+private:
+    void UpdateRevision() { revision_ = ea::max(1u, revision_ + 1); }
+    void UpdateEffectiveNodes();
+
+    WeakNodeSet nodes_;
+    WeakComponentSet components_;
+    WeakNodeSet effectiveNodes_;
+    WeakPtr<Node> anchor_{};
+    unsigned revision_{1};
+};
+
 /// Single page of SceneViewTab.
 struct SceneViewPage
 {
@@ -76,21 +109,11 @@ struct SceneViewPage
     ea::vector<SceneCameraControllerPtr> cameraControllers_;
     ea::string cfgFileName_;
 
-    struct Selection
-    {
-        ea::unordered_set<WeakPtr<Node>> nodes_;
-        ea::unordered_set<WeakPtr<Component>> components_;
-        WeakPtr<Node> anchor_{};
-
-        bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
-        bool IsSelected(Node* node) const;
-
-        void Clear();
-        void SetSelected(Node* node, bool selected, bool anchored = false);
-    } selection_;
+    SceneSelection selection_;
 
     /// UI state
     /// @{
+    Rect contentArea_;
     unsigned currentCameraController_{};
     /// @}
 
@@ -103,12 +126,26 @@ class SceneViewAddon : public Object
     URHO3D_OBJECT(SceneViewAddon, Object);
 
 public:
+    struct GreaterPriority
+    {
+        bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
+        {
+            return lhs->GetInputPriority() > rhs->GetInputPriority();
+        }
+    };
+
     explicit SceneViewAddon(Context* context) : Object(context) {}
 
     /// Return unique human-readable name of the addon.
     virtual ea::string GetUniqueName() const = 0;
+    /// Return input priority.
+    virtual int GetInputPriority() const { return 0; }
+    /// Process input.
+    virtual void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) {}
     /// Update and render addon.
-    virtual void UpdateAndRender(SceneViewPage& scenePage, bool& mouseConsumed) = 0;
+    virtual void UpdateAndRender(SceneViewPage& scenePage) {}
+    /// Apply hotkeys for given addon.
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
 };
 
 /// Tab that renders Scene and enables Scene manipulation.
@@ -122,7 +159,7 @@ public:
 
     /// Register new scene addon.
     void RegisterAddon(const SharedPtr<SceneViewAddon>& addon);
-    template <class T, class ... Args> void RegisterAddon(const Args&... args);
+    template <class T, class ... Args> SceneViewAddon* RegisterAddon(const Args&... args);
     /// Register new type of camera controller. Should be called before any scenes are loaded.
     void RegisterCameraController(const SceneCameraControllerDesc& desc);
     template <class T, class ... Args> void RegisterCameraController(const Args&... args);
@@ -166,6 +203,8 @@ private:
     void UpdateAddons(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
+    ea::vector_multiset<SharedPtr<SceneViewAddon>, SceneViewAddon::GreaterPriority> addonsByInputPriority_;
+
     ea::vector<SceneCameraControllerDesc> cameraControllers_;
     ea::unordered_map<ea::string, SceneViewPage> scenes_;
 
@@ -177,9 +216,11 @@ private:
 };
 
 template <class T, class ... Args>
-void SceneViewTab::RegisterAddon(const Args&... args)
+SceneViewAddon* SceneViewTab::RegisterAddon(const Args&... args)
 {
-    RegisterAddon(MakeShared<T>(context_, args...));
+    const auto addon = MakeShared<T>(context_, args...);
+    RegisterAddon(addon);
+    return addon;
 }
 
 template <class T, class ... Args>

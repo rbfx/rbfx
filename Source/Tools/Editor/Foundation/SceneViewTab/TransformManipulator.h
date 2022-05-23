@@ -25,27 +25,40 @@
 #include "../../Core/SettingsManager.h"
 #include "../../Foundation/SceneViewTab.h"
 
+#include <Urho3D/SystemUI/TransformGizmo.h>
+
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
-void Foundation_SceneSelectionRenderer(Context* context, SceneViewTab* sceneViewTab);
+void Foundation_TransformManipulator(Context* context, SceneViewTab* sceneViewTab);
 
 /// Addon to manage scene selection with mouse and render debug geometry.
-class SceneSelectionRenderer : public SceneViewAddon
+class TransformManipulator : public SceneViewAddon
 {
-    URHO3D_OBJECT(SceneSelectionRenderer, SceneViewAddon);
+    URHO3D_OBJECT(TransformManipulator, SceneViewAddon);
 
 public:
-    explicit SceneSelectionRenderer(Context* context);
+    TransformManipulator(Context* context, HotkeyManager* hotkeyManager);
+
+    void ToggleSpace() { isLocal_ = !isLocal_; }
 
     /// Implement SceneViewAddon.
     /// @{
-    ea::string GetUniqueName() const override { return "SelectionRenderer"; }
+    ea::string GetUniqueName() const override { return "TransformManipulator"; }
+    void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     void UpdateAndRender(SceneViewPage& scenePage) override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 
 private:
-    void DrawSelection(Scene* scene, Component* component);
+    void EnsureGizmoInitialized(SceneSelection& selection);
+
+    unsigned selectionRevision_{};
+    ea::optional<TransformNodesGizmo> transformGizmo_;
+
+    bool isLocal_{};
 };
 
 }

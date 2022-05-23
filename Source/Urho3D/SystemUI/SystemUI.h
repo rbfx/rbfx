@@ -36,11 +36,11 @@
 #include "../SystemUI/SystemUIEvents.h"
 
 #define IM_VEC2_CLASS_EXTRA                                                                                            \
-    operator Urho3D::Vector2() { return {x, y}; }                                                                      \
+    operator Urho3D::Vector2() const { return {x, y}; }                                                                      \
     ImVec2(const Urho3D::Vector2& vec) { x = vec.x_; y = vec.y_; }
 
 #define IM_VEC4_CLASS_EXTRA                                                                                            \
-    operator Urho3D::Vector4() { return {x, y, z, w}; }                                                                \
+    operator Urho3D::Vector4() const { return {x, y, z, w}; }                                                                \
     ImVec4(const Urho3D::Vector4& vec) { x = vec.x_; y = vec.y_; z = vec.z_; w = vec.w_; }
 
 #include <EASTL/unordered_map.h>

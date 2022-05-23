@@ -24,6 +24,8 @@
 #include "../Core/HotkeyManager.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
+
 namespace Urho3D
 {
 
@@ -177,10 +179,11 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
         for (const ea::string& resourceName : resourceNames_)
         {
             bool selected = resourceName == activeResourceName_;
+            if (ui::SmallButton(ICON_FA_XMARK))
+                closeResourcePending = resourceName;
+            ui::SameLine();
             if (ui::MenuItem(resourceName.c_str(), nullptr, &selected))
                 SetActiveResource(resourceName);
-            else if (ui::IsItemClicked(MOUSEB_MIDDLE))
-                closeResourcePending = resourceName;
         }
         ui::PopID();
         SetSeparator();
@@ -189,8 +192,7 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
     ResetSeparator();
     {
         const ea::string title = Format("Close Current [{}]", GetResourceTitle());
-        const HotkeyCombination hotkey{QUAL_NONE, MOUSEB_MIDDLE};
-        if (ui::MenuItem(title.c_str(), hotkey.ToString().c_str(), false, !resourceNames_.empty()))
+        if (ui::MenuItem(title.c_str(), nullptr, false, !resourceNames_.empty()))
             closeResourcePending = activeResourceName_;
     }
     {

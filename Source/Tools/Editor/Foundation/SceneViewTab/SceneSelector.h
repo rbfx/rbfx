@@ -44,13 +44,14 @@ public:
     /// Implement SceneViewAddon.
     /// @{
     ea::string GetUniqueName() const override { return "Selector"; }
-    void UpdateAndRender(SceneViewPage& scenePage, bool& mouseConsumed) override;
+    int GetInputPriority() const override { return M_MIN_INT; }
+    void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     /// @}
 
 private:
     Drawable* QuerySelectedDrawable(Scene* scene, Camera* camera, RayQueryLevel level) const;
     Node* QuerySelectedNode(Scene* scene, Camera* camera) const;
-    void SelectNode(SceneViewPage::Selection& selection, Node* node, bool toggle, bool append) const;
+    void SelectNode(SceneSelection& selection, Node* node, bool toggle, bool append) const;
 };
 
 }

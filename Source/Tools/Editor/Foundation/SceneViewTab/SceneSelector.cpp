@@ -39,7 +39,7 @@ SceneSelector::SceneSelector(Context* context)
 {
 }
 
-void SceneSelector::UpdateAndRender(SceneViewPage& scenePage, bool& mouseConsumed)
+void SceneSelector::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
 {
     Scene* scene = scenePage.scene_;
     Camera* camera = scenePage.renderer_->GetCamera();
@@ -87,9 +87,9 @@ Node* SceneSelector::QuerySelectedNode(Scene* scene, Camera* camera) const
     return selectedNode;
 }
 
-void SceneSelector::SelectNode(SceneViewPage::Selection& selection, Node* node, bool toggle, bool append) const
+void SceneSelector::SelectNode(SceneSelection& selection, Node* node, bool toggle, bool append) const
 {
-    selection.components_.clear();
+    selection.ConvertToNodes();
 
     if (toggle)
         selection.SetSelected(node, !selection.IsSelected(node));

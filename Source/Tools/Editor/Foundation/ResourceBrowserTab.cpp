@@ -223,6 +223,7 @@ void ResourceBrowserTab::UpdateAndRenderContent()
     if (waitingForUpdate_ && ui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         ui::SetTooltip("%s", "Waiting for update...");
 
+    static const ImVec2 workaroundPadding{0, -5};
     if (ui::BeginTable("##ResourceBrowserTab", 2, ImGuiTableFlags_Resizable))
     {
         ui::TableSetupColumn("Left", ImGuiTableColumnFlags_WidthStretch, 0.35f);
@@ -231,7 +232,7 @@ void ResourceBrowserTab::UpdateAndRenderContent()
         ui::TableNextRow();
 
         ui::TableSetColumnIndex(0);
-        if (ui::BeginChild("##DirectoryTree", ui::GetContentRegionAvail()))
+        if (ui::BeginChild("##DirectoryTree", ui::GetContentRegionAvail() + workaroundPadding))
         {
             for (ResourceRoot& root : roots_)
                 RenderDirectoryTree(root.reflection_->GetRoot(), root.name_);
@@ -240,7 +241,7 @@ void ResourceBrowserTab::UpdateAndRenderContent()
         ui::EndChild();
 
         ui::TableSetColumnIndex(1);
-        if (ui::BeginChild("##DirectoryContent", ui::GetContentRegionAvail()))
+        if (ui::BeginChild("##DirectoryContent", ui::GetContentRegionAvail() + workaroundPadding))
         {
             RenderDirectoryContent();
             right_.scrollToSelection_ = false;
