@@ -22,44 +22,36 @@
 
 #pragma once
 
-#include "../../Core/SettingsManager.h"
-#include "../../Foundation/SceneViewTab.h"
+#include "../Core/UndoManager.h"
 
-#include <Urho3D/SystemUI/TransformGizmo.h>
-
-#include <EASTL/optional.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D
 {
 
-void Foundation_TransformManipulator(Context* context, SceneViewTab* sceneViewTab);
-
-/// Addon to manage scene selection with mouse and render debug geometry.
-class TransformManipulator : public SceneViewAddon
+/// Change node transform.
+class ChangeNodeTransformAction : public EditorAction
 {
-    URHO3D_OBJECT(TransformManipulator, SceneViewAddon);
-
 public:
-    explicit TransformManipulator(SceneViewTab* owner);
+    ChangeNodeTransformAction(Node* node, const Transform& oldTransform);
 
-    void ToggleSpace() { isLocal_ = !isLocal_; }
-
-    /// Implement SceneViewAddon.
+    /// Implement EditorAction.
     /// @{
-    ea::string GetUniqueName() const override { return "TransformManipulator"; }
-    void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
-    void UpdateAndRender(SceneViewPage& scenePage) override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+    bool IsAlive() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
     /// @}
 
 private:
-    void EnsureGizmoInitialized(SceneSelection& selection);
-    void OnNodeTransformChanged(Node* node, const Transform& oldTransform);
-
-    unsigned selectionRevision_{};
-    ea::optional<TransformNodesGizmo> transformGizmo_;
-
-    bool isLocal_{};
+    struct NodeData
+    {
+        Transform oldTransform_;
+        Transform newTransform_;
+    };
+    WeakPtr<Scene> scene_;
+    ea::unordered_map<unsigned, NodeData> nodes_;
 };
 
 }

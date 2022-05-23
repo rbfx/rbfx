@@ -33,14 +33,14 @@ namespace Urho3D
 class EditorAction : public RefCounted
 {
 public:
+    /// Check if action is valid and alive, i.e. Undo and Redo can be called.
+    virtual bool IsAlive() const { return true; }
     /// Redo this action. May fail if external state has unexpectedly changed.
-    virtual bool Redo() const = 0;
+    virtual void Redo() const = 0;
     /// Undo this action. May fail if external state has unexpectedly changed.
-    virtual bool Undo() const = 0;
+    virtual void Undo() const = 0;
     /// Try to merge this action with another. Return true if successfully merged.
     virtual bool MergeWith(const EditorAction& other) { return false; }
-    /// Return whether the action should not reset redo stack on creation. Use with caution.
-    virtual bool IsTransparent() const { return false; }
 };
 
 using EditorActionPtr = SharedPtr<EditorAction>;
@@ -61,8 +61,19 @@ public:
     bool Redo();
 
 private:
-    ea::vector<EditorActionPtr> undoStack_;
-    ea::vector<EditorActionPtr> redoStack_;
+    struct ActionGroup
+    {
+        unsigned long long frame_{};
+        ea::vector<EditorActionPtr> actions_;
+
+        bool IsAlive() const;
+    };
+
+    bool NeedNewGroup() const;
+
+    ea::vector<ActionGroup> undoStack_;
+    ea::vector<ActionGroup> redoStack_;
+    unsigned long long frame_{};
 };
 
 }

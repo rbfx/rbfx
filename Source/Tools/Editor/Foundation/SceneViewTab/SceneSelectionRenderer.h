@@ -36,7 +36,7 @@ class SceneSelectionRenderer : public SceneViewAddon
     URHO3D_OBJECT(SceneSelectionRenderer, SceneViewAddon);
 
 public:
-    explicit SceneSelectionRenderer(Context* context);
+    explicit SceneSelectionRenderer(SceneViewTab* owner);
 
     /// Implement SceneViewAddon.
     /// @{

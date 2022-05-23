@@ -34,8 +34,8 @@ void Foundation_SceneSelector(Context* context, SceneViewTab* sceneViewTab)
     sceneViewTab->RegisterAddon<SceneSelector>();
 }
 
-SceneSelector::SceneSelector(Context* context)
-    : SceneViewAddon(context)
+SceneSelector::SceneSelector(SceneViewTab* owner)
+    : SceneViewAddon(owner)
 {
 }
 
