@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/Signal.h"
 #include "../Scene/Node.h"
 
 #include <EASTL/optional.h>
@@ -70,6 +71,8 @@ private:
 class URHO3D_API TransformNodesGizmo
 {
 public:
+    Signal<void(Node* node, const Transform& oldTransform), TransformNodesGizmo> OnNodeTransformChanged;
+
     TransformNodesGizmo() = default;
     template <class Iter>
     TransformNodesGizmo(const Matrix3x4& anchor, Iter begin, Iter end)

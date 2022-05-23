@@ -63,9 +63,17 @@ public:
     void SaveResource(const ea::string& resourceName);
     /// Save all resources.
     void SaveAllResources();
+    /// Set currently active resource.
+    void SetActiveResource(const ea::string& activeResourceName);
+
+    /// Wrap action to focus currently active resource.
+    SharedPtr<EditorAction> WrapAction(SharedPtr<EditorAction> action);
+    template <class T, class ... Args> SharedPtr<EditorAction> CreateWrappedAction(const Args& ... args);
+    template <class T, class ... Args> void PushWrappedAction(const Args& ... args);
 
     /// Return properties of the tab.
     /// @{
+    bool IsResourceOpen(const ea::string& resourceName) const { return resourceNames_.contains(resourceName); }
     const ea::set<ea::string>& GetResourceNames() const { return resourceNames_; }
     const ea::string& GetActiveResourceName() const { return activeResourceName_; }
     /// @}
@@ -88,29 +96,48 @@ protected:
 
 private:
     void OnProjectInitialized();
-    void SetActiveResource(const ea::string& activeResourceName);
 
     bool loadResources_{};
     ea::set<ea::string> resourceNames_;
     ea::string activeResourceName_;
 };
 
-class CloseResourceAction : public EditorAction
+/// Action wrapper that focuses resource on undo/redo.
+class ResourceActionWrapper : public EditorAction
 {
 public:
-    CloseResourceAction(ResourceEditorTab* tab, const ea::string& resourceName, bool activate);
+    ResourceActionWrapper(SharedPtr<EditorAction> action, ResourceEditorTab* tab, const ea::string& resourceName);
 
-    /// Implement EditorAction
+    /// Implement EditorAction.
     /// @{
-    bool Redo() const override { return true; }
-    bool Undo() const override;
-    bool IsTransparent() const override { return true; }
+    bool IsAlive() const;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
     /// @}
 
 private:
-    const WeakPtr<ResourceEditorTab> tab_;
-    const ea::string resourceName_;
-    const bool activate_{};
+    void FocusMe();
+
+    SharedPtr<EditorAction> action_;
+    WeakPtr<ResourceEditorTab> tab_;
+    ea::string resourceName_;
 };
+
+template <class T, class ... Args>
+SharedPtr<EditorAction> ResourceEditorTab::CreateWrappedAction(const Args& ... args)
+{
+    return WrapAction(MakeShared<T>(args...));
+}
+
+template <class T, class ... Args>
+void ResourceEditorTab::PushWrappedAction(const Args& ... args)
+{
+    auto project = GetProject();
+    UndoManager* undoManager = project->GetUndoManager();
+
+    const auto action = CreateWrappedAction<T>(args...);
+    undoManager->PushAction(action);
+}
 
 }

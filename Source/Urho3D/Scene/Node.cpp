@@ -587,6 +587,11 @@ void Node::SetTransform(const Matrix3x4& matrix)
     SetTransform(matrix.Translation(), matrix.Rotation(), matrix.Scale());
 }
 
+void Node::SetTransform(const Transform& transform)
+{
+    SetTransform(transform.position_, transform.rotation_, transform.scale_);
+}
+
 void Node::SetWorldPosition(const Vector3& position)
 {
     SetPosition(IsTransformHierarchyRoot() ? position : parent_->GetWorldTransform().Inverse() * position);

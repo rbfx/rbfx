@@ -39,7 +39,7 @@ class SceneSelector : public SceneViewAddon
     URHO3D_OBJECT(SceneSelector, SceneViewAddon);
 
 public:
-    explicit SceneSelector(Context* context);
+    explicit SceneSelector(SceneViewTab* owner);
 
     /// Implement SceneViewAddon.
     /// @{

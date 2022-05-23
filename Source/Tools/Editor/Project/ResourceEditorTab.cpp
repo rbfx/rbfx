@@ -88,7 +88,6 @@ void ResourceEditorTab::CloseResource(const ea::string& resourceName)
     {
         auto undoManager = GetProject()->GetUndoManager();
         const bool isActive = resourceName == activeResourceName_;
-        undoManager->PushAction(MakeShared<CloseResourceAction>(this, resourceName, isActive));
 
         resourceNames_.erase(resourceName);
         if (loadResources_)
@@ -138,7 +137,6 @@ void ResourceEditorTab::CloseAllResources()
         for (const ea::string& resourceName : resourceNames_)
         {
             const bool isActive = resourceName == activeResourceName_;
-            undoManager->PushAction(MakeShared<CloseResourceAction>(this, resourceName, isActive));
             OnResourceUnloaded(resourceName);
         }
     }
@@ -160,6 +158,11 @@ void ResourceEditorTab::SaveAllResources()
     {
         OnResourceSaved(resourceName);
     }
+}
+
+SharedPtr<EditorAction> ResourceEditorTab::WrapAction(SharedPtr<EditorAction> action)
+{
+    return MakeShared<ResourceActionWrapper>(action, this, activeResourceName_);
 }
 
 void ResourceEditorTab::UpdateAndRenderContextMenuItems()
@@ -214,20 +217,46 @@ void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
     BaseClassName::ApplyHotkeys(hotkeyManager);
 }
 
-CloseResourceAction::CloseResourceAction(ResourceEditorTab* tab, const ea::string& resourceName, bool activate)
-    : tab_(tab)
+ResourceActionWrapper::ResourceActionWrapper(SharedPtr<EditorAction> action,
+    ResourceEditorTab* tab, const ea::string& resourceName)
+    : action_(action)
+    , tab_(tab)
     , resourceName_(resourceName)
-    , activate_(activate)
 {
+    URHO3D_ASSERT(action);
 }
 
-bool CloseResourceAction::Undo() const
+bool ResourceActionWrapper::IsAlive() const
 {
-    if (!tab_)
+    return tab_ && tab_->IsResourceOpen(resourceName_) && action_->IsAlive();
+}
+
+void ResourceActionWrapper::Redo() const
+{
+    action_->Redo();
+}
+
+void ResourceActionWrapper::Undo() const
+{
+    action_->Undo();
+}
+
+bool ResourceActionWrapper::MergeWith(const EditorAction& other)
+{
+    const auto otherWrapper = dynamic_cast<const ResourceActionWrapper*>(&other);
+    if (!otherWrapper)
         return false;
 
-    tab_->OpenResource(resourceName_, activate_);
-    return true;
+    if (tab_ != otherWrapper->tab_ || resourceName_ != otherWrapper->resourceName_)
+        return false;
+
+    return action_->MergeWith(*otherWrapper->action_);
+}
+
+void ResourceActionWrapper::FocusMe()
+{
+    if (tab_)
+        tab_->SetActiveResource(resourceName_);
 }
 
 }

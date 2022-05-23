@@ -139,11 +139,18 @@ bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo, TransformGizmo
     case TransformGizmoOperation::Translate:
         if (const auto delta = gizmo.ManipulatePosition(anchorTransform_, local, snap))
         {
-            anchorTransform_.SetTranslation(anchorTransform_.Translation() + *delta);
-            for (Node* node : nodes_)
+            if (*delta != Vector3::ZERO)
             {
-                if (node)
-                    node->Translate(*delta, TS_WORLD);
+                anchorTransform_.SetTranslation(anchorTransform_.Translation() + *delta);
+                for (Node* node : nodes_)
+                {
+                    if (node)
+                    {
+                        const Transform& oldTransform = node->GetDecomposedTransform();
+                        node->Translate(*delta, TS_WORLD);
+                        OnNodeTransformChanged(this, node, oldTransform);
+                    }
+                }
             }
             return true;
         }

@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../../Core/CommonEditorActions.h"
 #include "../../Foundation/SceneViewTab/TransformManipulator.h"
 
 #include <Urho3D/Graphics/Camera.h>
@@ -42,14 +43,14 @@ URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_ToggleSpace,
 
 void Foundation_TransformManipulator(Context* context, SceneViewTab* sceneViewTab)
 {
-    auto project = sceneViewTab->GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-    sceneViewTab->RegisterAddon<TransformManipulator>(hotkeyManager);
+    sceneViewTab->RegisterAddon<TransformManipulator>();
 }
 
-TransformManipulator::TransformManipulator(Context* context, HotkeyManager* hotkeyManager)
-    : SceneViewAddon(context)
+TransformManipulator::TransformManipulator(SceneViewTab* owner)
+    : SceneViewAddon(owner)
 {
+    auto project = owner_->GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
     hotkeyManager->BindHotkey(this, Hotkey_ToggleSpace, &TransformManipulator::ToggleSpace);
 }
 
@@ -85,7 +86,13 @@ void TransformManipulator::EnsureGizmoInitialized(SceneSelection& selection)
         const Node* anchorNode = selection.GetAnchor();
         const Matrix3x4& anchorTransform = anchorNode ? anchorNode->GetWorldTransform() : Matrix3x4::IDENTITY;
         transformGizmo_ = TransformNodesGizmo{anchorTransform, nodes.begin(), nodes.end()};
+        transformGizmo_->OnNodeTransformChanged.Subscribe(this, &TransformManipulator::OnNodeTransformChanged);
     }
+}
+
+void TransformManipulator::OnNodeTransformChanged(Node* node, const Transform& oldTransform)
+{
+    owner_->PushWrappedAction<ChangeNodeTransformAction>(node, oldTransform);
 }
 
 void TransformManipulator::UpdateAndRender(SceneViewPage& scenePage)

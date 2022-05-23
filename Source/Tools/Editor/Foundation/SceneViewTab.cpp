@@ -189,6 +189,16 @@ SceneCameraController* SceneViewPage::GetCurrentCameraController() const
         : nullptr;
 }
 
+SceneViewAddon::SceneViewAddon(SceneViewTab* owner)
+    : Object(owner->GetContext())
+    , owner_(owner)
+{
+}
+
+SceneViewAddon::~SceneViewAddon()
+{
+}
+
 SceneViewTab::SceneViewTab(Context* context)
     : ResourceEditorTab(context, "Scene View", "9f4f7432-dd60-4c83-aecd-2f6cf69d3549",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)

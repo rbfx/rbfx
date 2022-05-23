@@ -36,6 +36,8 @@ namespace Urho3D
 
 void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor);
 
+class SceneViewTab;
+
 /// Interface of Camera controller used by Scene.
 class SceneCameraController : public Object
 {
@@ -134,7 +136,8 @@ public:
         }
     };
 
-    explicit SceneViewAddon(Context* context) : Object(context) {}
+    explicit SceneViewAddon(SceneViewTab* owner);
+    ~SceneViewAddon() override;
 
     /// Return unique human-readable name of the addon.
     virtual ea::string GetUniqueName() const = 0;
@@ -146,6 +149,9 @@ public:
     virtual void UpdateAndRender(SceneViewPage& scenePage) {}
     /// Apply hotkeys for given addon.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
+
+protected:
+    WeakPtr<SceneViewTab> owner_;
 };
 
 /// Tab that renders Scene and enables Scene manipulation.
@@ -218,7 +224,7 @@ private:
 template <class T, class ... Args>
 SceneViewAddon* SceneViewTab::RegisterAddon(const Args&... args)
 {
-    const auto addon = MakeShared<T>(context_, args...);
+    const auto addon = MakeShared<T>(this, args...);
     RegisterAddon(addon);
     return addon;
 }

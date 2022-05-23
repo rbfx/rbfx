@@ -23,23 +23,44 @@
 #include "../Core/UndoManager.h"
 
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/Input/InputEvents.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+
+#include <EASTL/bonus/adaptors.h>
 
 namespace Urho3D
 {
 
+bool UndoManager::ActionGroup::IsAlive() const
+{
+    const auto isAlive = [](const EditorActionPtr& action) { return action->IsAlive(); };
+    return ea::all_of(actions_.begin(), actions_.end(), isAlive);
+}
+
 UndoManager::UndoManager(Context* context)
     : Object(context)
 {
+    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap&)
+    {
+        const bool mouseDown = ui::IsMouseDown(MOUSEB_LEFT)
+            || ui::IsMouseDown(MOUSEB_RIGHT) || ui::IsMouseDown(MOUSEB_MIDDLE);
+        if (!mouseDown)
+            ++frame_;
+    });
 }
 
 void UndoManager::PushAction(const EditorActionPtr& action)
 {
-    if (!action->IsTransparent())
-        redoStack_.clear();
-    if (!undoStack_.empty() && undoStack_.back()->MergeWith(*action))
-        return;
-    undoStack_.push_back(action);
+    if (NeedNewGroup())
+        undoStack_.push_back(ActionGroup{frame_});
+
+    ActionGroup& group = undoStack_.back();
+    if (!group.actions_.empty())
+    {
+        if (group.actions_.back()->MergeWith(*action))
+            return;
+    }
+    group.actions_.push_back(action);
 }
 
 bool UndoManager::Undo()
@@ -47,12 +68,15 @@ bool UndoManager::Undo()
     if (undoStack_.empty())
         return false;
 
-    const auto action = undoStack_.back();
-    if (!action->Undo())
+    ActionGroup& group = undoStack_.back();
+    if (!group.IsAlive())
         return false;
 
+    for (EditorAction* action : ea::reverse(group.actions_))
+        action->Undo();
+
+    redoStack_.push_back(ea::move(group));
     undoStack_.pop_back();
-    redoStack_.push_back(action);
     return true;
 }
 
@@ -61,13 +85,21 @@ bool UndoManager::Redo()
     if (redoStack_.empty())
         return false;
 
-    const auto action = redoStack_.back();
-    if (!action->Redo())
+    ActionGroup& group = redoStack_.back();
+    if (!group.IsAlive())
         return false;
 
+    for (EditorAction* action : group.actions_)
+        action->Redo();
+
+    undoStack_.push_back(ea::move(group));
     redoStack_.pop_back();
-    undoStack_.push_back(action);
     return true;
+}
+
+bool UndoManager::NeedNewGroup() const
+{
+    return undoStack_.empty() || undoStack_.back().frame_ != frame_;
 }
 
 }

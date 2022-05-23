@@ -26,6 +26,7 @@
 
 #include "../IO/VectorBuffer.h"
 #include "../Math/Matrix3x4.h"
+#include "../Math/Transform.h"
 #include "../Scene/Animatable.h"
 
 #include <atomic>
@@ -173,6 +174,8 @@ public:
     void SetTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale);
     /// Set node transformation in parent space as an atomic operation.
     void SetTransform(const Matrix3x4& matrix);
+    /// Set node transformation in parent space as an atomic operation.
+    void SetTransform(const Transform& transform);
 
     /// Set both position and rotation in parent space as an atomic operation (for Urho2D).
     void SetTransform2D(const Vector2& position, float rotation) { SetTransform(Vector3(position), Quaternion(rotation)); }
@@ -443,6 +446,9 @@ public:
     /// Return parent space transform matrix.
     /// @property
     Matrix3x4 GetTransform() const { return Matrix3x4(position_, rotation_, scale_); }
+
+    /// Return parent space transform tuple.
+    Transform GetDecomposedTransform() const { return Transform{position_, rotation_, scale_}; }
 
     /// Return position in world space.
     /// @property
