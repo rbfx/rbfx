@@ -26,32 +26,46 @@
 
 namespace Urho3D
 {
-/// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
-class URHO3D_API MoveBy : public FiniteTimeAction
+/// Animate attribute between two values.
+class URHO3D_API AttributeFromTo : public FiniteTimeAction
 {
-    URHO3D_OBJECT(MoveBy, FiniteTimeAction)
+    URHO3D_FINITETIMEACTION(AttributeFromTo, FiniteTimeAction)
 
 public:
     /// Construct.
-    explicit MoveBy(Context* context);
-    /// Construct.
-    explicit MoveBy(Context* context, float duration, const Vector3& position);
-    /// Destruct.
-    ~MoveBy() override;
-    /// Register object factory.
-    static void RegisterObject(Context* context);
+    explicit AttributeFromTo(
+        Context* context, float duration, const ea::string& attribute, const Variant& from, const Variant& to);
 
-    /// Get position delta.
-    const Vector3& GetPositionDelta() const { return position_; }
-
-    /// Create reversed action.
-    SharedPtr<FiniteTimeAction> Reverse() const override;
-
-protected:
-    SharedPtr<ActionState> StartAction(Object* target) override;
+    // Get "from" value.
+    const Variant& GetFrom() const { return from_; }
+    // Get "to" value.
+    const Variant& GetTo() const { return to_; }
+    // Get attribute parameter name.
+    const ea::string& GetName() const { return name_; }
 
 private:
-    Vector3 position_{Vector3::ZERO};
+    ea::string name_;
+    Variant from_;
+    Variant to_;
+};
+
+/// Animate attribute between current and provided value.
+class URHO3D_API AttributeTo : public FiniteTimeAction
+{
+    URHO3D_FINITETIMEACTION(AttributeTo, FiniteTimeAction)
+
+public:
+    /// Construct.
+    explicit AttributeTo(Context* context, float duration, const ea::string& attribute, const Variant& to);
+
+    // Get "to" value.
+    const Variant& GetTo() const { return to_; }
+    // Get attribute parameter name.
+    const ea::string& GetName() const { return name_; }
+
+private:
+    ea::string name_;
+    Variant to_;
 };
 
 } // namespace Urho3D

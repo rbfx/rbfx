@@ -28,6 +28,7 @@ namespace Urho3D
 {
 class FiniteTimeAction;
 class Object;
+class ActionEaseState;
 
 /// Finite time action state.
 class URHO3D_API FiniteTimeActionState : public ActionState
@@ -49,6 +50,8 @@ private:
     float duration_{};
     float elapsed_{};
     bool firstTick_ {true};
+
+    friend class ActionEaseState;
 };
 
 } // namespace Urho3D

@@ -22,31 +22,36 @@
 
 #pragma once
 
-#include "../Core/Object.h"
+#include "../Scene/Serializable.h"
 
 namespace Urho3D
 {
 class ActionState;
 class ActionManager;
+class ActionEaseState;
 
 /// Base action state.
-class URHO3D_API BaseAction : public Object
+class URHO3D_API BaseAction : public Serializable
 {
-    URHO3D_OBJECT(BaseAction, Object)
+    URHO3D_OBJECT(BaseAction, Serializable)
 
 public:
     /// Construct.
     BaseAction(Context* context);
     /// Destruct.
     ~BaseAction() override;
-    /// Register object factory.
-    static void RegisterObject(Context* context);
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
 
 protected:
     /// Create new action state from the action.
     virtual SharedPtr<ActionState> StartAction(Object* target);
 
     friend class ActionManager;
+    friend class ActionEaseState;
 };
+
+void SerializeValue(Archive& archive, const char* name, SharedPtr<BaseAction>& value);
 
 } // namespace Urho3D

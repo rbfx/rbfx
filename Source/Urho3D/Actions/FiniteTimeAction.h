@@ -38,8 +38,9 @@ public:
     FiniteTimeAction(Context* context, float duration);
     /// Destruct.
     ~FiniteTimeAction() override;
-    /// Register object factory.
-    static void RegisterObject(Context* context);
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
 
     /// Get action duration.
     float GetDuration() const;
@@ -52,5 +53,20 @@ public:
 private:
     float duration_{ea::numeric_limits<float>::epsilon()};
 };
+
+
+#define URHO3D_FINITETIMEACTION(typeName, baseTypeName)          \
+    URHO3D_OBJECT(typeName, baseTypeName)                        \
+    typeName(Context* context);                                  \
+    SharedPtr<FiniteTimeAction> Reverse() const override;        \
+protected:                                                       \
+    SharedPtr<ActionState> StartAction(Object* target) override; \
+    void SerializeInBlock(Archive& archive);
+
+#define URHO3D_FINITETIMEACTIONDEF(typeName) \
+    typeName::typeName(Context* context) : BaseClassName(context) { } \
+    SharedPtr<ActionState> typeName::StartAction(Object* target) { return MakeShared<typeName##State>(this, target); }
+
+void SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeAction>& value);
 
 } // namespace Urho3D

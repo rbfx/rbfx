@@ -26,29 +26,42 @@
 
 namespace Urho3D
 {
-/// Move to 2D postion action. Target should have attribute "Position" of type Vector2 or IntVector2.
-class URHO3D_API MoveTo2D : public FiniteTimeAction
+
+/// Base action state.
+class URHO3D_API ActionEase : public FiniteTimeAction
 {
-    URHO3D_OBJECT(MoveTo2D, FiniteTimeAction)
+    URHO3D_FINITETIMEACTION(ActionEase, FiniteTimeAction)
 
 public:
     /// Construct.
-    explicit MoveTo2D(Context* context);
-    /// Construct.
-    explicit MoveTo2D(Context* context, float duration, const Vector2& position);
-    /// Destruct.
-    ~MoveTo2D() override;
-    /// Register object factory.
-    static void RegisterObject(Context* context);
+    explicit ActionEase(Context* context, FiniteTimeAction* action);
 
-    /// Get position delta.
-    const Vector2& GetPosition() const { return position_; }
-
-protected:
-    SharedPtr<ActionState> StartAction(Object* target) override;
+    /// Get inner action.
+    FiniteTimeAction* GetInnerAction() const { return innerAction_; }
 
 private:
-    Vector2 position_{Vector2::ZERO};
+    SharedPtr<FiniteTimeAction> innerAction_;
 };
+
+/// Base action state.
+class URHO3D_API EaseBackIn : public ActionEase
+{
+    URHO3D_FINITETIMEACTION(EaseBackIn, ActionEase)
+
+public:
+    /// Construct.
+    explicit EaseBackIn(Context* context, FiniteTimeAction* action);
+};
+
+/// Base action state.
+class URHO3D_API EaseBackOut : public ActionEase
+{
+    URHO3D_FINITETIMEACTION(EaseBackOut, ActionEase)
+
+public:
+    /// Construct.
+    explicit EaseBackOut(Context* context, FiniteTimeAction* action);
+};
+
 
 } // namespace Urho3D

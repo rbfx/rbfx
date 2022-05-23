@@ -33,6 +33,7 @@ class BaseAction;
 /// Action manager.
 class URHO3D_API ActionManager
     : public Object
+    , public ObjectReflectionRegistry
 {
     URHO3D_OBJECT(ActionManager, Object)
 private:
@@ -73,10 +74,9 @@ private:
     bool currentTargetSalvaged_{};
     ea::unordered_map<Object*, HashElement> targets_;
     ea::vector<Object*> tmpKeysArray_;
-    bool targetsAvailable_{};
 };
 
 /// Register Particle Graph library objects.
-void URHO3D_API RegisterActionLibrary(Context* context);
+void URHO3D_API RegisterActionLibrary(Context* context, ActionManager* manager);
 
 } // namespace Urho3D

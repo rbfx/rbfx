@@ -26,29 +26,32 @@
 
 namespace Urho3D
 {
+/// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
+class URHO3D_API MoveBy : public FiniteTimeAction
+{
+    URHO3D_FINITETIMEACTION(MoveBy, FiniteTimeAction)
+public:
+    /// Construct.
+    explicit MoveBy(Context* context, float duration, const Vector3& position);
+
+    /// Get position delta.
+    const Vector3& GetPositionDelta() const { return position_; }
+
+private:
+    Vector3 position_{Vector3::ZERO};
+};
+
 /// Move by 2D offset action. Target should have attribute "Position" of type Vector2 or IntVector2.
 class URHO3D_API MoveBy2D : public FiniteTimeAction
 {
-    URHO3D_OBJECT(MoveBy2D, FiniteTimeAction)
+    URHO3D_FINITETIMEACTION(MoveBy2D, FiniteTimeAction)
 
 public:
     /// Construct.
-    explicit MoveBy2D(Context* context);
-    /// Construct.
     explicit MoveBy2D(Context* context, float duration, const Vector2& position);
-    /// Destruct.
-    ~MoveBy2D() override;
-    /// Register object factory.
-    static void RegisterObject(Context* context);
 
     /// Get position delta.
     const Vector2& GetPositionDelta() const { return position_; }
-
-    /// Create reversed action.
-    SharedPtr<FiniteTimeAction> Reverse() const override;
-
-protected:
-    SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
     Vector2 position_{Vector2::ZERO};

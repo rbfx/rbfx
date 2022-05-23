@@ -21,12 +21,12 @@
 //
 
 #include "ActionManager.h"
+
+#include "Action.h"
 #include "ActionState.h"
-#include "AttributeFromTo.h"
-#include "MoveBy.h"
-#include "MoveBy2D.h"
-#include "MoveTo.h"
-#include "MoveTo2D.h"
+#include "Attribute.h"
+#include "Move.h"
+#include "Ease.h"
 #include "ShaderParameterFromTo.h"
 #include "../IO/Log.h"
 #include "../Core/CoreEvents.h"
@@ -41,8 +41,9 @@ ActionManager::ActionManager(Context* context)
 
 ActionManager::ActionManager(Context* context, bool autoupdate)
     : Object(context)
+    , ObjectReflectionRegistry(context)
 {
-    RegisterActionLibrary(context);
+    RegisterActionLibrary(context, this);
     if (autoupdate)
     {
         SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ActionManager, HandleUpdate));
@@ -54,19 +55,21 @@ ActionManager::~ActionManager()
     RemoveAllActions();
 }
 
-void RegisterActionLibrary(Context* context)
+void RegisterActionLibrary(Context* context, ActionManager* manager)
 {
-    if (!context->GetObjectReflections().contains(MoveBy::GetTypeStatic()))
+    if (!context->GetObjectReflections().contains(Action::GetTypeStatic()))
     {
-        BaseAction::RegisterObject(context);
-        FiniteTimeAction::RegisterObject(context);
-        MoveBy::RegisterObject(context);
-        MoveTo::RegisterObject(context);
-        MoveBy2D::RegisterObject(context);
-        MoveTo2D::RegisterObject(context);
-        AttributeFromTo::RegisterObject(context);
-        ShaderParameterFromTo::RegisterObject(context);
+        Action::RegisterObject(context);
     }
+
+    manager->AddFactoryReflection<BaseAction>();
+    manager->AddFactoryReflection<FiniteTimeAction>();
+    manager->AddFactoryReflection<MoveBy>();
+    manager->AddFactoryReflection<MoveBy2D>();
+    manager->AddFactoryReflection<AttributeFromTo>();
+    manager->AddFactoryReflection<AttributeTo>();
+    manager->AddFactoryReflection<ShaderParameterFromTo>();
+    manager->AddFactoryReflection<EaseBackIn>();
 }
 
 void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)
@@ -79,7 +82,7 @@ void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
 void ActionManager::RemoveAllActions()
 {
-    if (!targetsAvailable_)
+    if (targets_.empty())
         return;
 
     auto count = targets_.size();
@@ -169,7 +172,6 @@ ActionState* ActionManager::AddAction(BaseAction* action, Object* target, bool p
         element = &targets_[target];
         element->Paused = paused;
         element->Target = target;
-        targetsAvailable_ = true;
     }
     else
     {
@@ -194,10 +196,10 @@ ActionState* ActionManager::AddAction(BaseAction* action, Object* target, bool p
 
 void ActionManager::Update(float dt)
 {
-    if (!targetsAvailable_)
+    if (targets_.empty())
         return;
 
-    auto count = targets_.size();
+    const auto count = targets_.size();
 
     tmpKeysArray_.clear();
     if (tmpKeysArray_.capacity() < count)
@@ -224,6 +226,7 @@ void ActionManager::Update(float dt)
         currentTargetSalvaged_ = false;
 
         if (!element.Paused)
+        {
             // The 'actions' may change while inside this loop.
             for (element.ActionIndex = 0; element.ActionIndex < element.ActionStates.size(); element.ActionIndex++)
             {
@@ -240,7 +243,7 @@ void ActionManager::Update(float dt)
                 if (element.CurrentActionSalvaged)
                 {
                     // The currentAction told the node to remove it. To prevent the action from
-                    // aidentally deallocating itself before finishing its step, we retained
+                    // accidentally deallocating itself before finishing its step, we retained
                     // it. Now that step is done, it's safe to release it.
 
                     // currentTarget->currentAction->release();
@@ -257,6 +260,7 @@ void ActionManager::Update(float dt)
 
                 element.CurrentActionState.Reset();
             }
+        }
 
         // only delete currentTarget if no actions were scheduled during the cycle (issue #481)
         if (currentTargetSalvaged_ && element.ActionStates.empty())

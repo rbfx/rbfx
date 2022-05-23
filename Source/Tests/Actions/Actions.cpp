@@ -20,17 +20,13 @@
 // THE SOFTWARE.
 //
 #include "../CommonUtils.h"
-#include "Urho3D/Actions/AttributeFromTo.h"
+#include "Urho3D/Actions/Action.h"
+#include "Urho3D/Actions/Attribute.h"
 #include "Urho3D/Actions/ShaderParameterFromTo.h"
-
-#include <Urho3D/Actions/MoveTo.h>
-#include <Urho3D/Actions/MoveTo2D.h>
-
+#include <Urho3D/Actions/Move.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/UI/UIElement.h>
-#include <Urho3D/Actions/MoveBy2D.h>
 #include <Urho3D/Actions/ActionManager.h>
-#include <Urho3D/Actions/MoveBy.h>
 
 using namespace Urho3D;
 
@@ -100,7 +96,7 @@ TEST_CASE("MoveTo tweening")
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = MakeShared<MoveTo>(context, 2.0f, Vector3(10, 0, 0));
+    auto moveBy = MakeShared<AttributeTo>(context, 2.0f, "Position", Vector3(10, 0, 0));
     auto node = MakeShared<Node>(context);
 
     // Initial state - no actions added
@@ -130,7 +126,7 @@ TEST_CASE("MoveTo2D tweening")
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = MakeShared<MoveTo2D>(context, 2.0f, Vector2(12, 0));
+    auto moveBy = MakeShared<AttributeTo>(context, 2.0f, "Position", IntVector2(12, 0));
     auto uiElement = MakeShared<UIElement>(context);
 
     // Initial state - no actions added
@@ -211,4 +207,26 @@ TEST_CASE("ShaderParameterFromTo tweening")
     // Advance beyond the end of animation.
     actionManager->Update(2.5f);
     CHECK(0 == actionManager->GetNumActions(material));
+}
+
+TEST_CASE("Serialize Action")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto action = MakeShared<Action>(context);
+    action->SetAction(new MoveBy(context, 2.0f, Vector3(1, 2, 3)));
+
+    VectorBuffer buf;
+    action->Save(buf);
+    //ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+
+    buf.Seek(0);
+    auto action2 = MakeShared<Action>(context);
+    action2->Load(buf);
+
+    CHECK(action->GetAction()->GetType() == action2->GetAction()->GetType());
+    auto expected = static_cast<MoveBy*>(action->GetAction());
+    auto actual = static_cast<MoveBy*>(action2->GetAction());
+    CHECK(Equals(expected->GetDuration(), actual->GetDuration()));
+    CHECK(expected->GetPositionDelta().Equals(actual->GetPositionDelta()));
 }

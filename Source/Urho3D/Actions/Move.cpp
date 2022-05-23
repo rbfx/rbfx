@@ -20,12 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "MoveBy.h"
+#include "Move.h"
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "AttributeActionState.h"
 #include "FiniteTimeActionState.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
 
 using namespace Urho3D;
 
@@ -70,7 +71,8 @@ public:
             const auto newPos = startPosition_ + positionDelta_ * time;
             value = newPos;
             previousPosition_ = newPos;
-        } else
+        }
+        else
         {
             const auto currentPos = Vector3(value.GetIntVector3());
             auto diff = currentPos - previousPosition_;
@@ -83,35 +85,91 @@ public:
     }
 };
 
-}
+class MoveBy2DState : public AttributeActionState
+{
+    Vector2 positionDelta_;
+    Vector2 startPosition_;
+    Vector2 previousPosition_;
+
+public:
+    MoveBy2DState(MoveBy2D* action, Object* target)
+        : AttributeActionState(action, target, "Position")
+    {
+        positionDelta_ = action->GetPositionDelta();
+        if (attribute_)
+        {
+            if (attribute_->type_ == VAR_VECTOR2)
+                previousPosition_ = startPosition_ = Get<Vector2>();
+            else if (attribute_->type_ == VAR_INTVECTOR2)
+                previousPosition_ = startPosition_ = Vector2(Get<IntVector2>());
+            else
+            {
+                URHO3D_LOGERROR(
+                    Format("Attribute {} is not of type VAR_VECTOR2 or VAR_INTVECTOR2.", attribute_->name_));
+                attribute_ = nullptr;
+                return;
+            }
+        }
+    }
+
+    ~MoveBy2DState() override = default;
+
+    void Update(float time, Variant& value) override
+    {
+        if (attribute_->type_ == VAR_VECTOR2)
+        {
+            const auto currentPos = value.GetVector2();
+            auto diff = currentPos - previousPosition_;
+            startPosition_ = startPosition_ + diff;
+            const auto newPos = startPosition_ + positionDelta_ * time;
+            value = newPos;
+            previousPosition_ = newPos;
+        }
+        else
+        {
+            const auto currentPos = Vector2(value.GetIntVector2());
+            auto diff = currentPos - previousPosition_;
+            startPosition_ = startPosition_ + diff;
+            const auto newPos = startPosition_ + positionDelta_ * time;
+            const IntVector2 newIntPos = IntVector2(newPos.x_, newPos.y_);
+            value = newIntPos;
+            previousPosition_ = Vector2(newIntPos);
+        }
+    }
+};
+
+} // namespace
+
+URHO3D_FINITETIMEACTIONDEF(MoveBy)
+URHO3D_FINITETIMEACTIONDEF(MoveBy2D)
 
 /// Construct.
-MoveBy::MoveBy(Context* context)
-    : FiniteTimeAction(context)
-{
-}
-
-    /// Construct.
 MoveBy::MoveBy(Context* context, float duration, const Vector3& position)
     : FiniteTimeAction(context, duration)
     , position_(position)
 {
 }
 
+SharedPtr<FiniteTimeAction> MoveBy::Reverse() const { return MakeShared<MoveBy>(context_, GetDuration(), -position_); }
 
-/// Destruct.
-MoveBy::~MoveBy() {
-}
-
-/// Register object factory.
-void MoveBy::RegisterObject(Context* context) { context->RegisterFactory<MoveBy>(); }
-
-SharedPtr<FiniteTimeAction> MoveBy::Reverse() const
+/// Serialize content from/to archive. May throw ArchiveException.
+void MoveBy::SerializeInBlock(Archive& archive)
 {
-    return MakeShared<MoveBy>(context_, GetDuration(), -position_);
+    FiniteTimeAction::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "delta", position_, Vector3::ZERO);
 }
 
-SharedPtr<ActionState> MoveBy::StartAction(Object* target)
+/// Construct.
+MoveBy2D::MoveBy2D(Context* context, float duration, const Vector2& position)
+    : FiniteTimeAction(context, duration)
+    , position_(position)
 {
-    return MakeShared<MoveByState>(this, target);
 }
+
+SharedPtr<FiniteTimeAction> MoveBy2D::Reverse() const
+{
+    return MakeShared<MoveBy2D>(context_, GetDuration(), -position_);
+}
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void MoveBy2D::SerializeInBlock(Archive& archive) { FiniteTimeAction::SerializeInBlock(archive); }

@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
 
 using namespace Urho3D;
 
@@ -61,8 +62,12 @@ FiniteTimeAction::FiniteTimeAction(Context* context, float duration)
 /// Destruct.
 FiniteTimeAction::~FiniteTimeAction() {}
 
-/// Register object factory.
-void FiniteTimeAction::RegisterObject(Context* context) { context->RegisterFactory<FiniteTimeAction>(); }
+/// Serialize content from/to archive. May throw ArchiveException.
+void FiniteTimeAction::SerializeInBlock(Archive& archive)
+{
+    BaseAction::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "duration", duration_, ea::numeric_limits<float>::epsilon());
+}
 
 float FiniteTimeAction::GetDuration() const { return duration_; }
 
@@ -90,3 +95,13 @@ NoAction::~NoAction() {}
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> NoAction::Reverse() const { return reversed_; }
+
+void Urho3D::SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeAction>& value)
+{
+    SharedPtr<BaseAction> baseAction = value;
+    SerializeValue(archive, name, baseAction);
+    if (archive.IsInput())
+    {
+        value.DynamicCast(baseAction);
+    }
+}

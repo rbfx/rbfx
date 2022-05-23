@@ -46,8 +46,6 @@ public:
     {
     }
 
-    ~ShaderParameterFromToState() override = default;
-
     void Update(float time) override
     {
         auto* material = GetTarget()->Cast<Material>();
@@ -60,11 +58,7 @@ public:
 
 } // namespace
 
-/// Construct.
-ShaderParameterFromTo::ShaderParameterFromTo(Context* context)
-    : FiniteTimeAction(context)
-{
-}
+URHO3D_FINITETIMEACTIONDEF(ShaderParameterFromTo)
 
 /// Construct.
 ShaderParameterFromTo::ShaderParameterFromTo(
@@ -76,16 +70,14 @@ ShaderParameterFromTo::ShaderParameterFromTo(
 {
 }
 
-/// Destruct.
-ShaderParameterFromTo::~ShaderParameterFromTo() {}
-
-/// Register object factory.
-void ShaderParameterFromTo::RegisterObject(Context* context) { context->RegisterFactory<ShaderParameterFromTo>(); }
-
-SharedPtr<ActionState> ShaderParameterFromTo::StartAction(Object* target)
-{
-    return MakeShared<ShaderParameterFromToState>(this, target);
-}
-
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> ShaderParameterFromTo::Reverse() const { return MakeShared<ShaderParameterFromTo>(context_, GetDuration(), name_, to_, from_); }
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void ShaderParameterFromTo::SerializeInBlock(Archive& archive)
+{
+    FiniteTimeAction::SerializeInBlock(archive);
+    SerializeValue(archive, "name", name_);
+    SerializeOptionalValue(archive, "from", from_, Variant::EMPTY);
+    SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
+}
