@@ -121,7 +121,7 @@ void SceneSelection::Clear()
 
     nodes_.clear();
     components_.clear();
-    anchor_ = nullptr;
+    activeNode_ = nullptr;
 }
 
 void SceneSelection::ConvertToNodes()
@@ -136,7 +136,7 @@ void SceneSelection::ConvertToNodes()
     components_.clear();
 }
 
-void SceneSelection::SetSelected(Component* component, bool selected, bool anchored)
+void SceneSelection::SetSelected(Component* component, bool selected, bool activated)
 {
     UpdateRevision();
 
@@ -144,10 +144,10 @@ void SceneSelection::SetSelected(Component* component, bool selected, bool ancho
 
     if (selected)
     {
-        if (anchor_ == nullptr || anchored)
+        if (activeNode_ == nullptr || activated)
         {
             if (const WeakPtr<Node> weakNode{component->GetNode()})
-                anchor_ = weakNode;
+                activeNode_ = weakNode;
         }
         components_.insert(weakComponent);
     }
@@ -157,7 +157,7 @@ void SceneSelection::SetSelected(Component* component, bool selected, bool ancho
     UpdateEffectiveNodes();
 }
 
-void SceneSelection::SetSelected(Node* node, bool selected, bool anchored)
+void SceneSelection::SetSelected(Node* node, bool selected, bool activated)
 {
     UpdateRevision();
 
@@ -165,8 +165,8 @@ void SceneSelection::SetSelected(Node* node, bool selected, bool anchored)
 
     if (selected)
     {
-        if (anchor_ == nullptr || anchored)
-            anchor_ = weakNode;
+        if (activeNode_ == nullptr || activated)
+            activeNode_ = weakNode;
         nodes_.insert(weakNode);
     }
     else
@@ -193,8 +193,8 @@ void SceneSelection::UpdateEffectiveNodes()
         }
     }
 
-    if (!effectiveNodes_.contains(anchor_))
-        anchor_ = !effectiveNodes_.empty() ? *effectiveNodes_.begin() : nullptr;
+    if (!effectiveNodes_.contains(activeNode_))
+        activeNode_ = !effectiveNodes_.empty() ? *effectiveNodes_.begin() : nullptr;
 }
 
 SceneCameraController* SceneViewPage::GetCurrentCameraController() const
@@ -230,6 +230,7 @@ void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
 {
     addons_.push_back(addon);
     addonsByInputPriority_.insert(addon);
+    addonsByTitle_.insert(addon);
 }
 
 void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
@@ -240,6 +241,20 @@ void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& des
 bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)
 {
     return request.xmlFile_ && request.xmlFile_->GetRoot("scene");
+}
+
+void SceneViewTab::WriteIniSettings(ImGuiTextBuffer& output)
+{
+    ResourceEditorTab::WriteIniSettings(output);
+    for (SceneViewAddon* addon : addons_)
+        addon->WriteIniSettings(output);
+}
+
+void SceneViewTab::ReadIniSettings(const char* line)
+{
+    ResourceEditorTab::ReadIniSettings(line);
+    for (SceneViewAddon* addon : addons_)
+        addon->ReadIniSettings(line);
 }
 
 void SceneViewTab::UpdateAndRenderContextMenuItems()
@@ -262,6 +277,20 @@ void SceneViewTab::UpdateAndRenderContextMenuItems()
 
     SetSeparator();
 
+    for (SceneViewAddon* addon : addonsByTitle_)
+    {
+        if (addon->NeedTabContextMenu())
+        {
+            ResetSeparator();
+            if (ui::BeginMenu(addon->GetContextMenuTitle().c_str()))
+            {
+                addon->RenderTabContextMenu();
+                ui::EndMenu();
+            }
+        }
+    }
+
+    SetSeparator();
 }
 
 void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)

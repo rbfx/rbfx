@@ -786,6 +786,34 @@ void Node::Scale(const Vector3& scale)
     MarkDirty();
 }
 
+void Node::ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space)
+{
+    Vector3 parentSpacePoint;
+    const Vector3 oldScale = scale_;
+
+    switch (space)
+    {
+    case TS_LOCAL:
+        parentSpacePoint = GetTransform() * point;
+        break;
+
+    case TS_PARENT:
+        parentSpacePoint = point;
+        break;
+
+    case TS_WORLD:
+        parentSpacePoint = IsTransformHierarchyRoot() ? point : parent_->GetWorldTransform().Inverse() * point;
+        break;
+    }
+
+    scale_ *= scale;
+
+    const Vector3 oldRelativePos = (Vector3::ONE / oldScale) * (position_ - parentSpacePoint);
+    position_ = scale_ * oldRelativePos + parentSpacePoint;
+
+    MarkDirty();
+}
+
 void Node::SetEnabled(bool enable)
 {
     SetEnabled(enable, false, true);

@@ -126,21 +126,18 @@ bool HotkeyManager::IsInvoked(const HotkeyCombination& hotkey) const
         if (!ui::IsMouseClicked(hotkey.mouseButton_))
             return false;
     }
-    if (hotkey.qualifiers_.Test(QUAL_CTRL))
-    {
-        if (!ui::IsKeyDown(KEY_LCTRL) && !ui::IsKeyDown(KEY_RCTRL))
-            return false;
-    }
-    if (hotkey.qualifiers_.Test(QUAL_ALT))
-    {
-        if (!ui::IsKeyDown(KEY_LALT))
-            return false;
-    }
-    if (hotkey.qualifiers_.Test(QUAL_SHIFT))
-    {
-        if (!ui::IsKeyDown(KEY_LSHIFT) && !ui::IsKeyDown(KEY_RSHIFT))
-            return false;
-    }
+
+    const bool ctrlDown = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
+    const bool altDown = ui::IsKeyDown(KEY_LALT);
+    const bool shiftDown = ui::IsKeyDown(KEY_LSHIFT) || ui::IsKeyDown(KEY_RSHIFT);
+
+    if (hotkey.qualifiers_.Test(QUAL_CTRL) != ctrlDown)
+        return false;
+    if (hotkey.qualifiers_.Test(QUAL_ALT) != altDown)
+        return false;
+    if (hotkey.qualifiers_.Test(QUAL_SHIFT) != shiftDown)
+        return false;
+
     return true;
 }
 

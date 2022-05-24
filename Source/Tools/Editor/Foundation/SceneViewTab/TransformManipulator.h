@@ -47,6 +47,8 @@ public:
         void SerializeInBlock(Archive& archive);
         void RenderSettings();
 
+        float GetSnapValue(TransformGizmoOperation op) const;
+
         float snapPosition_{0.5f};
         float snapRotation_{5.0f};
         float snapScale_{0.1f};
@@ -55,14 +57,29 @@ public:
 
     TransformManipulator(SceneViewTab* owner, SettingsPage* settings);
 
+    /// Commands
+    /// @{
     void ToggleSpace() { isLocal_ = !isLocal_; }
+    void TogglePivoted() { isPivoted_ = !isPivoted_; }
+    void SetSelect() { operation_ = TransformGizmoOperation::None; }
+    void SetTranslate() { operation_ = TransformGizmoOperation::Translate; }
+    void SetRotate() { operation_ = TransformGizmoOperation::Rotate; }
+    void SetScale() { operation_ = TransformGizmoOperation::Scale; }
+    /// @}
 
     /// Implement SceneViewAddon.
     /// @{
-    ea::string GetUniqueName() const override { return "TransformManipulator"; }
+    ea::string GetUniqueName() const override { return "TransformGizmo"; }
     void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     void UpdateAndRender(SceneViewPage& scenePage) override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+
+    bool NeedTabContextMenu() const override { return true; }
+    ea::string GetContextMenuTitle() const override { return "Transform Gizmo"; }
+    void RenderTabContextMenu() override;
+
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
+    void ReadIniSettings(const char* line) override;
     /// @}
 
 private:
@@ -72,9 +89,11 @@ private:
     const WeakPtr<SettingsPage> settings_;
 
     unsigned selectionRevision_{};
-    ea::optional<TransformNodesGizmo> transformGizmo_;
+    ea::optional<TransformNodesGizmo> transformNodesGizmo_;
 
     bool isLocal_{};
+    bool isPivoted_{};
+    TransformGizmoOperation operation_{TransformGizmoOperation::Translate};
 };
 
 }

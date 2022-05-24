@@ -65,6 +65,8 @@ ImGuizmo::OPERATION GetInternalOperation(TransformGizmoOperation op)
 
 }
 
+Matrix4 TransformGizmo::internalTransformMatrix;
+
 TransformGizmo::TransformGizmo(Camera* camera)
     : TransformGizmo(camera, true, GetMainViewportRect())
 {
@@ -93,15 +95,17 @@ ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
 
     PrepareToManipulate();
 
+    if (!ImGuizmo::IsUsing())
+        internalTransformMatrix = transform.Transpose();
+
     const ImGuizmo::OPERATION operation = GetInternalOperation(op);
     const ImGuizmo::MODE mode = local ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
     const Vector3 snapVector = snap * Vector3::ONE;
 
-    transform = transform.Transpose();
     Matrix4 delta;
     ImGuizmo::Manipulate(internalViewMatrix_.Data(), internalProjMatrix_.Data(), operation,
-        mode, &transform.m00_, &delta.m00_, snap != 0.0f ? snapVector.Data() : nullptr);
-    transform = transform.Transpose();
+        mode, &internalTransformMatrix.m00_, &delta.m00_, snap != 0.0f ? snapVector.Data() : nullptr);
+    transform = internalTransformMatrix.Transpose();
 
     if (!ImGuizmo::IsUsing())
         return ea::nullopt;
@@ -119,6 +123,26 @@ ea::optional<Vector3> TransformGizmo::ManipulatePosition(const Matrix4& transfor
     return Matrix3x4(*delta).Translation();
 }
 
+ea::optional<Quaternion> TransformGizmo::ManipulateRotation(const Matrix4& transform, bool local, float snap) const
+{
+    Matrix4 transformCopy = transform;
+    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Rotate, local, snap);
+    if (!delta)
+        return ea::nullopt;
+
+    return Matrix3x4(*delta).Rotation();
+}
+
+ea::optional<Vector3> TransformGizmo::ManipulateScale(const Matrix4& transform, bool local, float snap) const
+{
+    Matrix4 transformCopy = transform;
+    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Scale, local, snap);
+    if (!delta)
+        return ea::nullopt;
+
+    return Matrix3x4(*delta).SignedScale(Matrix3::IDENTITY);
+}
+
 void TransformGizmo::PrepareToManipulate() const
 {
     const Vector2 pos = viewportRect_.Min();
@@ -133,27 +157,44 @@ void TransformGizmo::PrepareToManipulate() const
     ImGuizmo::SetOrthographic(camera_->IsOrthographic());
 }
 
-bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, float snap)
+bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo,
+    TransformGizmoOperation op, bool local, bool pivoted, float snap)
 {
-    const Matrix3x4& anchorTransform = anchor_ ? anchor_->GetWorldTransform() : Matrix3x4::IDENTITY;
     switch (op)
     {
     case TransformGizmoOperation::Translate:
-        return ManipulatePosition(gizmo, local, snap);
+        return ManipulatePosition(gizmo, local, pivoted, snap);
+
+    case TransformGizmoOperation::Rotate:
+        return ManipulateRotation(gizmo, local, pivoted, snap);
+
+    case TransformGizmoOperation::Scale:
+        return ManipulateScale(gizmo, local, pivoted, snap);
 
     default:
         return false;
     }
 }
 
-Matrix4 TransformNodesGizmo::GetAnchorTransform() const
+Matrix4 TransformNodesGizmo::GetGizmoTransform(bool pivoted) const
 {
-    return anchor_ ? anchor_->GetWorldTransform().ToMatrix4() : Matrix4::IDENTITY;
+    if (pivoted && activeNode_)
+        return activeNode_->GetWorldTransform().ToMatrix4();
+    else if (nodes_.size() == 1)
+        return (**nodes_.begin()).GetWorldTransform().ToMatrix4();
+    else
+    {
+        Vector3 centerPosition;
+        for (Node* node : nodes_)
+            centerPosition += node->GetWorldPosition();
+        centerPosition /= nodes_.size();
+        return Matrix3x4{centerPosition, Quaternion::IDENTITY, Vector3::ONE}.ToMatrix4();
+    }
 }
 
-bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool local, float snap)
+bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool local, bool pivoted, float snap)
 {
-    const auto delta = gizmo.ManipulatePosition(GetAnchorTransform(), local, snap);
+    const auto delta = gizmo.ManipulatePosition(GetGizmoTransform(pivoted), local, snap);
     if (!delta)
         return false;
 
@@ -171,6 +212,59 @@ bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool l
     }
 
     return true;
+}
+
+bool TransformNodesGizmo::ManipulateRotation(const TransformGizmo& gizmo, bool local, bool pivoted, float snap)
+{
+    const Matrix4 anchorTransform = GetGizmoTransform(pivoted);
+    const auto delta = gizmo.ManipulateRotation(anchorTransform, local, snap);
+    if (!delta)
+        return false;
+
+    if (*delta == Quaternion::IDENTITY)
+        return true;
+
+    for (Node* node : nodes_)
+    {
+        if (node)
+        {
+            const Transform& oldTransform = node->GetDecomposedTransform();
+            if (pivoted)
+                node->Rotate(*delta, TS_WORLD);
+            else
+                node->RotateAround(anchorTransform.Translation(), *delta, TS_WORLD);
+            OnNodeTransformChanged(this, node, oldTransform);
+        }
+    }
+
+    return true;
+}
+
+bool TransformNodesGizmo::ManipulateScale(const TransformGizmo& gizmo, bool local, bool pivoted, float snap)
+{
+    const Matrix4 anchorTransform = GetGizmoTransform(pivoted);
+    const auto delta = gizmo.ManipulateScale(anchorTransform, local, snap);
+    if (!delta)
+        return false;
+
+    if (*delta == Vector3::ONE)
+        return true;
+
+    for (Node* node : nodes_)
+    {
+        if (node)
+        {
+            const Transform& oldTransform = node->GetDecomposedTransform();
+            if (pivoted)
+                node->Scale(*delta);
+            else
+                node->ScaleAround(anchorTransform.Translation(), *delta, TS_WORLD);
+            OnNodeTransformChanged(this, node, oldTransform);
+        }
+    }
+
+    return true;
+
 }
 
 }

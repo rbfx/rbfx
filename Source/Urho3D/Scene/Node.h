@@ -288,6 +288,9 @@ public:
     /// Modify scale in parent space.
     void Scale(const Vector3& scale);
 
+    /// Scale around a point in the chosen transform space.
+    void ScaleAround(const Vector3& point, const Vector3& scale, TransformSpace space = TS_LOCAL);
+
     /// Modify scale in parent space (for Urho2D).
     void Scale2D(const Vector2& scale) { Scale(Vector3(scale, 1.0f)); }
 
