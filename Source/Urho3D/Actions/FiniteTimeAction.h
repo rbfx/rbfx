@@ -40,7 +40,7 @@ public:
     ~FiniteTimeAction() override;
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive);
+    void SerializeInBlock(Archive& archive) override;
 
     /// Get action duration.
     float GetDuration() const;
@@ -61,7 +61,7 @@ private:
     SharedPtr<FiniteTimeAction> Reverse() const override;        \
 protected:                                                       \
     SharedPtr<ActionState> StartAction(Object* target) override; \
-    void SerializeInBlock(Archive& archive);
+    void SerializeInBlock(Archive& archive) override;
 
 #define URHO3D_FINITETIMEACTIONDEF(typeName) \
     typeName::typeName(Context* context) : BaseClassName(context) { } \

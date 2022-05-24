@@ -42,7 +42,7 @@ public:
     ~BaseAction() override;
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive);
+    void SerializeInBlock(Archive& archive) override;
 
 protected:
     /// Create new action state from the action.
