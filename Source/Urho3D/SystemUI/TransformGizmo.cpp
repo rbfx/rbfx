@@ -95,11 +95,12 @@ ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
 
     const ImGuizmo::OPERATION operation = GetInternalOperation(op);
     const ImGuizmo::MODE mode = local ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+    const Vector3 snapVector = snap * Vector3::ONE;
 
     transform = transform.Transpose();
     Matrix4 delta;
     ImGuizmo::Manipulate(internalViewMatrix_.Data(), internalProjMatrix_.Data(), operation,
-        mode, &transform.m00_, &delta.m00_, snap != 0.0f ? &snap : nullptr);
+        mode, &transform.m00_, &delta.m00_, snap != 0.0f ? snapVector.Data() : nullptr);
     transform = transform.Transpose();
 
     if (!ImGuizmo::IsUsing())
@@ -134,31 +135,42 @@ void TransformGizmo::PrepareToManipulate() const
 
 bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, float snap)
 {
+    const Matrix3x4& anchorTransform = anchor_ ? anchor_->GetWorldTransform() : Matrix3x4::IDENTITY;
     switch (op)
     {
     case TransformGizmoOperation::Translate:
-        if (const auto delta = gizmo.ManipulatePosition(anchorTransform_, local, snap))
-        {
-            if (*delta != Vector3::ZERO)
-            {
-                anchorTransform_.SetTranslation(anchorTransform_.Translation() + *delta);
-                for (Node* node : nodes_)
-                {
-                    if (node)
-                    {
-                        const Transform& oldTransform = node->GetDecomposedTransform();
-                        node->Translate(*delta, TS_WORLD);
-                        OnNodeTransformChanged(this, node, oldTransform);
-                    }
-                }
-            }
-            return true;
-        }
-        return false;
+        return ManipulatePosition(gizmo, local, snap);
 
     default:
         return false;
     }
+}
+
+Matrix4 TransformNodesGizmo::GetAnchorTransform() const
+{
+    return anchor_ ? anchor_->GetWorldTransform().ToMatrix4() : Matrix4::IDENTITY;
+}
+
+bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool local, float snap)
+{
+    const auto delta = gizmo.ManipulatePosition(GetAnchorTransform(), local, snap);
+    if (!delta)
+        return false;
+
+    if (*delta == Vector3::ZERO)
+        return true;
+
+    for (Node* node : nodes_)
+    {
+        if (node)
+        {
+            const Transform& oldTransform = node->GetDecomposedTransform();
+            node->Translate(*delta, TS_WORLD);
+            OnNodeTransformChanged(this, node, oldTransform);
+        }
+    }
+
+    return true;
 }
 
 }

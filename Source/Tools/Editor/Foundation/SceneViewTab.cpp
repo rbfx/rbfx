@@ -100,6 +100,21 @@ bool SceneSelection::IsSelected(Node* node) const
     return nodes_.contains(WeakPtr<Node>(node));
 }
 
+void SceneSelection::Update()
+{
+    const unsigned numComponents = components_.size();
+    const unsigned numNodes = nodes_.size();
+
+    ea::erase_if(components_, [](Component* component) { return component == nullptr; });
+    ea::erase_if(nodes_, [](Node* node) { return node == nullptr; });
+
+    if (components_.size() != numComponents || nodes_.size() != numNodes)
+    {
+        UpdateRevision();
+        UpdateEffectiveNodes();
+    }
+}
+
 void SceneSelection::Clear()
 {
     UpdateRevision();
@@ -299,6 +314,8 @@ void SceneViewTab::UpdateAndRenderContent()
     SceneViewPage* activePage = GetActivePage();
     if (!activePage)
         return;
+
+    activePage->selection_.Update();
 
     activePage->renderer_->SetTextureSize(GetContentSize());
     activePage->renderer_->Update();
