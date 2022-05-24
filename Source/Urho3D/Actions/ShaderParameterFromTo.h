@@ -29,12 +29,18 @@ namespace Urho3D
 /// Move to 2D postion action. Target should have attribute "Position" of type Vector3 or IntVector3.
 class URHO3D_API ShaderParameterFromTo : public FiniteTimeAction
 {
-    URHO3D_FINITETIMEACTION(ShaderParameterFromTo, FiniteTimeAction)
+    URHO3D_OBJECT(ShaderParameterFromTo, FiniteTimeAction)
 
 public:
     /// Construct.
-    explicit ShaderParameterFromTo(
-        Context* context, float duration, const ea::string& name, const Variant& from, const Variant& to);
+    explicit ShaderParameterFromTo(Context* context);
+
+    // Set "from" value.
+    void SetFrom(const Variant&);
+    // Get "to" value.
+    void SetTo(const Variant&);
+    // Get shader parameter name.
+    void SetName(const ea::string&);
 
     // Get "from" value.
     const Variant& GetFrom() const { return from_; }
@@ -42,6 +48,13 @@ public:
     const Variant& GetTo() const { return to_; }
     // Get shader parameter name.
     const ea::string& GetName() const { return name_; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+protected:
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
 
 private:
     ea::string name_;

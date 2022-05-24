@@ -29,7 +29,8 @@
 #include "AttributeActionState.h"
 #include "FiniteTimeActionState.h"
 
-using namespace Urho3D;
+namespace Urho3D
+{
 
 namespace
 {
@@ -69,25 +70,31 @@ public:
 };
 } // namespace
 
-URHO3D_FINITETIMEACTIONDEF(AttributeFromTo)
-URHO3D_FINITETIMEACTIONDEF(AttributeTo)
-
 /// Construct.
-AttributeFromTo::AttributeFromTo(
-    Context* context, float duration, const ea::string& attribute, const Variant& from, const Variant& to)
-    : FiniteTimeAction(context, duration)
-    , name_(attribute)
-    , from_(from)
-    , to_(to)
+AttributeFromTo::AttributeFromTo(Context* context)
+    : BaseClassName(context)
 {
 }
+
+// Set "from" value.
+void AttributeFromTo::SetFrom(const Variant& variant) { from_ = variant; }
+
+// Get "to" value.
+void AttributeFromTo::SetTo(const Variant& variant) { to_ = variant; }
+
+// Get shader parameter name
+void AttributeFromTo::SetName(const ea::string& name) { name_ = name; }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> AttributeFromTo::Reverse() const
 {
-    return MakeShared<AttributeFromTo>(context_, GetDuration(), name_, to_, from_);
+    auto result = MakeShared<AttributeFromTo>(context_);
+    result->SetDuration(GetDuration());
+    result->SetName(name_);
+    result->SetFrom(to_);
+    result->SetTo(from_);
+    return result;
 }
-
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void AttributeFromTo::SerializeInBlock(Archive& archive)
@@ -98,17 +105,23 @@ void AttributeFromTo::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
 
+/// Create new action state from the action.
+SharedPtr<ActionState> AttributeFromTo::StartAction(Object* target)
+{
+    return MakeShared<AttributeFromToState>(this, target);
+}
 
 /// Construct.
-AttributeTo::AttributeTo(Context* context, float duration, const ea::string& attribute, const Variant& to)
-    : FiniteTimeAction(context, duration)
-    , name_(attribute)
-    , to_(to)
+AttributeTo::AttributeTo(Context* context)
+    : BaseClassName(context)
 {
 }
 
-/// Create reversed action.
-SharedPtr<FiniteTimeAction> AttributeTo::Reverse() const { return FiniteTimeAction::Reverse(); }
+// Get "to" value.
+void AttributeTo::SetTo(const Variant& variant) { to_ = variant; }
+
+// Get shader parameter name
+void AttributeTo::SetName(const ea::string& name) { name_ = name; }
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void AttributeTo::SerializeInBlock(Archive& archive)
@@ -117,3 +130,8 @@ void AttributeTo::SerializeInBlock(Archive& archive)
     SerializeValue(archive, "name", name_);
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
+
+/// Create new action state from the action.
+SharedPtr<ActionState> AttributeTo::StartAction(Object* target) { return MakeShared<AttributeToState>(this, target); }
+
+} // namespace Urho3D

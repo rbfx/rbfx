@@ -27,7 +27,8 @@
 #include "FiniteTimeActionState.h"
 #include "Urho3D/Graphics/Material.h"
 
-using namespace Urho3D;
+namespace Urho3D
+{
 
 namespace
 {
@@ -58,20 +59,31 @@ public:
 
 } // namespace
 
-URHO3D_FINITETIMEACTIONDEF(ShaderParameterFromTo)
-
 /// Construct.
-ShaderParameterFromTo::ShaderParameterFromTo(
-    Context* context, float duration, const ea::string& name, const Variant& from, const Variant& to)
-    : FiniteTimeAction(context, duration)
-    , name_(name)
-    , from_(from)
-    , to_(to)
+ShaderParameterFromTo::ShaderParameterFromTo(Context* context)
+    : BaseClassName(context)
 {
 }
 
+// Set "from" value.
+void ShaderParameterFromTo::SetFrom(const Variant& variant) { from_ = variant; }
+
+// Get "to" value.
+void ShaderParameterFromTo::SetTo(const Variant& variant) { to_ = variant; }
+
+// Get shader parameter name
+void ShaderParameterFromTo::SetName(const ea::string& name) { name_ = name; }
+
 /// Create reversed action.
-SharedPtr<FiniteTimeAction> ShaderParameterFromTo::Reverse() const { return MakeShared<ShaderParameterFromTo>(context_, GetDuration(), name_, to_, from_); }
+SharedPtr<FiniteTimeAction> ShaderParameterFromTo::Reverse() const
+{
+    auto result = MakeShared<ShaderParameterFromTo>(context_);
+    result->SetDuration(GetDuration());
+    result->SetName(name_);
+    result->SetFrom(to_);
+    result->SetTo(from_);
+    return result;
+}
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void ShaderParameterFromTo::SerializeInBlock(Archive& archive)
@@ -81,3 +93,5 @@ void ShaderParameterFromTo::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "from", from_, Variant::EMPTY);
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
+
+} // namespace Urho3D

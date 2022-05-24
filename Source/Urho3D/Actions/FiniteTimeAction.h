@@ -34,18 +34,14 @@ class URHO3D_API FiniteTimeAction : public BaseAction
 public:
     /// Construct.
     FiniteTimeAction(Context* context);
-    /// Construct.
-    FiniteTimeAction(Context* context, float duration);
-    /// Destruct.
-    ~FiniteTimeAction() override;
+
+    /// Set action duration.
+    void SetDuration(float duration);
+    /// Get action duration.
+    float GetDuration() const;
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
-
-    /// Get action duration.
-    float GetDuration() const;
-    /// Set action duration.
-    void SetDuration(float duration);
 
     /// Create reversed action.
     virtual SharedPtr<FiniteTimeAction> Reverse() const;
@@ -53,19 +49,6 @@ public:
 private:
     float duration_{ea::numeric_limits<float>::epsilon()};
 };
-
-
-#define URHO3D_FINITETIMEACTION(typeName, baseTypeName)          \
-    URHO3D_OBJECT(typeName, baseTypeName)                        \
-    typeName(Context* context);                                  \
-    SharedPtr<FiniteTimeAction> Reverse() const override;        \
-protected:                                                       \
-    SharedPtr<ActionState> StartAction(Object* target) override; \
-    void SerializeInBlock(Archive& archive) override;
-
-#define URHO3D_FINITETIMEACTIONDEF(typeName) \
-    typeName::typeName(Context* context) : BaseClassName(context) { } \
-    SharedPtr<ActionState> typeName::StartAction(Object* target) { return MakeShared<typeName##State>(this, target); }
 
 void SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeAction>& value);
 

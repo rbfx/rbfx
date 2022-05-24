@@ -29,12 +29,18 @@ namespace Urho3D
 /// Animate attribute between two values.
 class URHO3D_API AttributeFromTo : public FiniteTimeAction
 {
-    URHO3D_FINITETIMEACTION(AttributeFromTo, FiniteTimeAction)
+    URHO3D_OBJECT(AttributeFromTo, FiniteTimeAction)
 
 public:
     /// Construct.
-    explicit AttributeFromTo(
-        Context* context, float duration, const ea::string& attribute, const Variant& from, const Variant& to);
+    explicit AttributeFromTo(Context* context);
+
+    // Set "from" value.
+    void SetFrom(const Variant&);
+    // Get "to" value.
+    void SetTo(const Variant&);
+    // Get shader parameter name.
+    void SetName(const ea::string&);
 
     // Get "from" value.
     const Variant& GetFrom() const { return from_; }
@@ -42,6 +48,16 @@ public:
     const Variant& GetTo() const { return to_; }
     // Get attribute parameter name.
     const ea::string& GetName() const { return name_; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
     ea::string name_;
@@ -52,16 +68,28 @@ private:
 /// Animate attribute between current and provided value.
 class URHO3D_API AttributeTo : public FiniteTimeAction
 {
-    URHO3D_FINITETIMEACTION(AttributeTo, FiniteTimeAction)
+    URHO3D_OBJECT(AttributeTo, FiniteTimeAction)
 
 public:
     /// Construct.
-    explicit AttributeTo(Context* context, float duration, const ea::string& attribute, const Variant& to);
+    explicit AttributeTo(Context* context);
+
+    // Get "to" value.
+    void SetTo(const Variant&);
+    // Get shader parameter name.
+    void SetName(const ea::string&);
 
     // Get "to" value.
     const Variant& GetTo() const { return to_; }
     // Get attribute parameter name.
     const ea::string& GetName() const { return name_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
     ea::string name_;

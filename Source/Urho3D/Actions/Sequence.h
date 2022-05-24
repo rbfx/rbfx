@@ -22,35 +22,42 @@
 
 #pragma once
 
-#include "../Scene/Serializable.h"
+#include "FiniteTimeAction.h"
+#include <EASTL/array.h>
 
 namespace Urho3D
 {
-class ActionState;
-class ActionManager;
-
-/// Base action state.
-class URHO3D_API BaseAction : public Serializable
+/// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
+class URHO3D_API Sequence : public FiniteTimeAction
 {
-    URHO3D_OBJECT(BaseAction, Serializable)
-
+    URHO3D_OBJECT(Sequence, FiniteTimeAction)
 public:
     /// Construct.
-    BaseAction(Context* context);
-    /// Destruct.
-    ~BaseAction() override;
+    explicit Sequence(Context* context);
+
+    /// Set first action in sequence.
+    void SetFirstAction(FiniteTimeAction* action);
+    /// Set second action in sequence.
+    void SetSecondAction(FiniteTimeAction* action);
+
+    /// Get first action.
+    FiniteTimeAction* GetFirstAction() const { return actions_[0]; }
+    /// Get second action.
+    FiniteTimeAction* GetSecondAction() const { return actions_[1]; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
 protected:
     /// Create new action state from the action.
-    virtual SharedPtr<ActionState> StartAction(Object* target);
+    SharedPtr<ActionState> StartAction(Object* target) override;
 
-    friend class ActionManager;
-    friend class ActionState;
+private:
+    ea::array<SharedPtr<FiniteTimeAction>,2> actions_;
 };
 
-void SerializeValue(Archive& archive, const char* name, SharedPtr<BaseAction>& value);
 
 } // namespace Urho3D

@@ -316,9 +316,9 @@ URHO3D_REFCOUNTED(Urho3D::SystemMessageBox);
 URHO3D_REFCOUNTED(Urho3D::Script);
 URHO3D_REFCOUNTED(Urho3D::BaseAction);
 URHO3D_REFCOUNTED(Urho3D::Action);
+URHO3D_REFCOUNTED(Urho3D::FiniteTimeAction);
 URHO3D_REFCOUNTED(Urho3D::ActionManager);
 URHO3D_REFCOUNTED(Urho3D::ActionState);
-URHO3D_REFCOUNTED(Urho3D::FiniteTimeAction);
 URHO3D_REFCOUNTED(Urho3D::AttributeFromTo);
 URHO3D_REFCOUNTED(Urho3D::AttributeTo);
 URHO3D_REFCOUNTED(Urho3D::FiniteTimeActionState);
@@ -328,6 +328,7 @@ URHO3D_REFCOUNTED(Urho3D::EaseBackIn);
 URHO3D_REFCOUNTED(Urho3D::EaseBackOut);
 URHO3D_REFCOUNTED(Urho3D::MoveBy);
 URHO3D_REFCOUNTED(Urho3D::MoveBy2D);
+URHO3D_REFCOUNTED(Urho3D::Sequence);
 URHO3D_REFCOUNTED(Urho3D::ShaderParameterFromTo);
 
 // Manually added

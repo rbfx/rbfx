@@ -23,6 +23,7 @@
 #pragma once
 
 #include "FiniteTimeAction.h"
+#include "../Math/EaseMath.h"
 
 namespace Urho3D
 {
@@ -30,37 +31,70 @@ namespace Urho3D
 /// Base action state.
 class URHO3D_API ActionEase : public FiniteTimeAction
 {
-    URHO3D_FINITETIMEACTION(ActionEase, FiniteTimeAction)
-
+    URHO3D_OBJECT(ActionEase, FiniteTimeAction)
 public:
     /// Construct.
-    explicit ActionEase(Context* context, FiniteTimeAction* action);
+    explicit ActionEase(Context* context);
+
+    /// Set inner action.
+    void SetInnerAction(FiniteTimeAction* action);
 
     /// Get inner action.
-    FiniteTimeAction* GetInnerAction() const { return innerAction_; }
+    FiniteTimeAction* GetInnerAction() const { return innerAction_.Get(); }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Apply easing function to the time argument.
+    virtual float Ease(float time) const;
 
 private:
     SharedPtr<FiniteTimeAction> innerAction_;
 };
 
-/// Base action state.
+/// -------------------------------------------------------------------
+/// BackIn easing action.
 class URHO3D_API EaseBackIn : public ActionEase
 {
-    URHO3D_FINITETIMEACTION(EaseBackIn, ActionEase)
+    URHO3D_OBJECT(EaseBackIn, ActionEase)
 
 public:
     /// Construct.
-    explicit EaseBackIn(Context* context, FiniteTimeAction* action);
+    explicit EaseBackIn(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Apply easing function to the time argument.
+    float Ease(float time) const override { return BackIn(time); }
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
 };
 
-/// Base action state.
+/// -------------------------------------------------------------------
+/// BackOut easing action.
 class URHO3D_API EaseBackOut : public ActionEase
 {
-    URHO3D_FINITETIMEACTION(EaseBackOut, ActionEase)
+    URHO3D_OBJECT(EaseBackOut, ActionEase)
 
 public:
     /// Construct.
-    explicit EaseBackOut(Context* context, FiniteTimeAction* action);
+    explicit EaseBackOut(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Apply easing function to the time argument.
+    float Ease(float time) const override { return BackOut(time); }
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
 };
 
 

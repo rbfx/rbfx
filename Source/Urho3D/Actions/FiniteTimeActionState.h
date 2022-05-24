@@ -28,7 +28,6 @@ namespace Urho3D
 {
 class FiniteTimeAction;
 class Object;
-class ActionEaseState;
 
 /// Finite time action state.
 class URHO3D_API FiniteTimeActionState : public ActionState
@@ -42,7 +41,6 @@ public:
     /// Gets a value indicating whether this instance is done.
     bool IsDone() const override { return elapsed_ >= duration_; }
 
-protected:
     /// Called every frame with it's delta time.
     void Step(float dt) override;
 
@@ -50,8 +48,6 @@ private:
     float duration_{};
     float elapsed_{};
     bool firstTick_ {true};
-
-    friend class ActionEaseState;
 };
 
 } // namespace Urho3D

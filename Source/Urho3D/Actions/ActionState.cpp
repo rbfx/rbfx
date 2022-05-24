@@ -21,10 +21,12 @@
 //
 
 #include "ActionState.h"
+#include "BaseAction.h"
 
 #include "../Core/Context.h"
 
-using namespace Urho3D;
+namespace Urho3D
+{
 
 ActionState::ActionState(BaseAction* action, Object* target)
 {
@@ -38,3 +40,12 @@ void ActionState::Update(float time) {}
 void ActionState::Stop() { _target.Reset(); }
 
 void ActionState::Step(float dt) {}
+
+SharedPtr<ActionState> ActionState::StartAction(BaseAction* action, Object* target) const
+{
+    if (action)
+        return action->StartAction(target);
+    return {};
+}
+
+} // namespace Urho3D

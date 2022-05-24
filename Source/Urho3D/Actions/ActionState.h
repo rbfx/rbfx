@@ -64,6 +64,9 @@ protected:
     /// DON'T override unless you know what you are doing.
     virtual void Step(float dt);
 
+    /// Call StartAction on an action.
+    SharedPtr<ActionState> StartAction(BaseAction* action, Object* target) const;
+
 private:
     SharedPtr<BaseAction> _action;
     SharedPtr<Object> _target;

@@ -542,17 +542,21 @@ public:
 %include "Urho3D/Audio/SoundSource3D.h"
 
 // --------------------------------------- Actions ---------------------------------------
+
 %include "Urho3D/Actions/BaseAction.h"
+%include "Urho3D/Actions/Action.h"
+%include "Urho3D/Actions/ActionBuilder.h"
 %include "Urho3D/Actions/ActionState.h"
 %include "Urho3D/Actions/ActionManager.h"
 %include "Urho3D/Actions/FiniteTimeAction.h"
 %include "Urho3D/Actions/FiniteTimeActionState.h"
 %include "Urho3D/Actions/AttributeActionState.h"
-%include "Urho3D/Actions/AttributeFromTo.h"
-%include "Urho3D/Actions/MoveBy.h"
-%include "Urho3D/Actions/MoveBy2D.h"
-%include "Urho3D/Actions/MoveTo.h"
-%include "Urho3D/Actions/MoveTo2D.h"
+%include "Urho3D/Actions/Attribute.h"
+%include "Urho3D/Actions/Move.h"
+%include "Urho3D/Actions/Ease.h"
+%include "Urho3D/Actions/Parallel.h"
+%include "Urho3D/Actions/Sequence.h"
+%include "Urho3D/Actions/Speed.h"
 %include "Urho3D/Actions/ShaderParameterFromTo.h"
 
 // --------------------------------------- IK ---------------------------------------

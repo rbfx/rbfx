@@ -52,16 +52,6 @@ FiniteTimeAction::FiniteTimeAction(Context* context)
 {
 }
 
-/// Construct.
-FiniteTimeAction::FiniteTimeAction(Context* context, float duration)
-    : BaseAction(context)
-    , duration_(Max(duration, ea::numeric_limits<float>::epsilon()))
-{
-}
-
-/// Destruct.
-FiniteTimeAction::~FiniteTimeAction() {}
-
 /// Serialize content from/to archive. May throw ArchiveException.
 void FiniteTimeAction::SerializeInBlock(Archive& archive)
 {

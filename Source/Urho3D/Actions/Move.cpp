@@ -140,17 +140,22 @@ public:
 
 } // namespace
 
-URHO3D_FINITETIMEACTIONDEF(MoveBy)
-URHO3D_FINITETIMEACTIONDEF(MoveBy2D)
-
 /// Construct.
-MoveBy::MoveBy(Context* context, float duration, const Vector3& position)
-    : FiniteTimeAction(context, duration)
-    , position_(position)
+MoveBy::MoveBy(Context* context)
+    : BaseClassName(context)
 {
 }
 
-SharedPtr<FiniteTimeAction> MoveBy::Reverse() const { return MakeShared<MoveBy>(context_, GetDuration(), -position_); }
+/// Set position delta.
+void MoveBy::SetPositionDelta(const Vector3& pos) { position_ = pos; }
+
+SharedPtr<FiniteTimeAction> MoveBy::Reverse() const
+{
+    auto result = MakeShared<MoveBy>(context_);
+    result->SetDuration(GetDuration());
+    result->SetPositionDelta(-position_);
+    return result;
+}
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void MoveBy::SerializeInBlock(Archive& archive)
@@ -159,17 +164,28 @@ void MoveBy::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "delta", position_, Vector3::ZERO);
 }
 
+/// Create new action state from the action.
+SharedPtr<ActionState> MoveBy::StartAction(Object* target) { return MakeShared<MoveByState>(this, target); }
+
 /// Construct.
-MoveBy2D::MoveBy2D(Context* context, float duration, const Vector2& position)
-    : FiniteTimeAction(context, duration)
-    , position_(position)
+MoveBy2D::MoveBy2D(Context* context)
+    : BaseClassName(context)
 {
 }
 
+/// Set position delta.
+void MoveBy2D::SetPositionDelta(const Vector2& pos) { position_ = pos; }
+
 SharedPtr<FiniteTimeAction> MoveBy2D::Reverse() const
 {
-    return MakeShared<MoveBy2D>(context_, GetDuration(), -position_);
+    auto result = MakeShared<MoveBy2D>(context_);
+    result->SetDuration(GetDuration());
+    result->SetPositionDelta(-position_);
+    return result;
 }
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void MoveBy2D::SerializeInBlock(Archive& archive) { FiniteTimeAction::SerializeInBlock(archive); }
+
+/// Create new action state from the action.
+SharedPtr<ActionState> MoveBy2D::StartAction(Object* target) { return MakeShared<MoveBy2DState>(this, target); }

@@ -29,13 +29,26 @@ namespace Urho3D
 /// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
 class URHO3D_API MoveBy : public FiniteTimeAction
 {
-    URHO3D_FINITETIMEACTION(MoveBy, FiniteTimeAction)
+    URHO3D_OBJECT(MoveBy, FiniteTimeAction)
 public:
     /// Construct.
-    explicit MoveBy(Context* context, float duration, const Vector3& position);
+    explicit MoveBy(Context* context);
+
+    /// Set position delta.
+    void SetPositionDelta(const Vector3& pos);
 
     /// Get position delta.
     const Vector3& GetPositionDelta() const { return position_; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
     Vector3 position_{Vector3::ZERO};
@@ -44,14 +57,27 @@ private:
 /// Move by 2D offset action. Target should have attribute "Position" of type Vector2 or IntVector2.
 class URHO3D_API MoveBy2D : public FiniteTimeAction
 {
-    URHO3D_FINITETIMEACTION(MoveBy2D, FiniteTimeAction)
+    URHO3D_OBJECT(MoveBy2D, FiniteTimeAction)
 
 public:
     /// Construct.
-    explicit MoveBy2D(Context* context, float duration, const Vector2& position);
+    explicit MoveBy2D(Context* context);
+
+    /// Set position delta.
+    void SetPositionDelta(const Vector2& pos);
 
     /// Get position delta.
     const Vector2& GetPositionDelta() const { return position_; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
     Vector2 position_{Vector2::ZERO};

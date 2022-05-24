@@ -28,9 +28,9 @@
 #include "../IO/ArchiveSerializationBasic.h"
 #include "FiniteTimeActionState.h"
 
-using namespace Urho3D;
+namespace Urho3D {
 
-namespace Urho3D
+namespace
 {
 class ActionEaseState : public FiniteTimeActionState
 {
@@ -38,35 +38,57 @@ class ActionEaseState : public FiniteTimeActionState
 public:
     ActionEaseState(ActionEase* action, Object* target)
         : FiniteTimeActionState(action, target)
+        , action_(action)
     {
-        innerAction_.DynamicCast(action->GetInnerAction()->StartAction(target));
+        innerAction_.DynamicCast(StartAction(action->GetInnerAction(), target));
     }
 
-    void StepInner(float dt)
+    /// Called every frame with it's delta time.
+    void Update(float dt) override
     {
         if (innerAction_)
         {
-            innerAction_->Step(BackIn(dt));
+            innerAction_->Update(action_->Ease(dt));
         }
     }
 
-    private:
+private:
+    SharedPtr<ActionEase> action_;
     SharedPtr<FiniteTimeActionState> innerAction_;
 };
 
 } // namespace
 
-URHO3D_FINITETIMEACTIONDEF(ActionEase)
 
 /// Construct.
-ActionEase::ActionEase(Context* context, FiniteTimeAction* action)
-    : FiniteTimeAction(context, action->GetDuration())
-    , innerAction_(action)
+ActionEase::ActionEase(Context* context)
+    : BaseClassName(context)
 {
 }
 
+/// Set inner action.
+void ActionEase::SetInnerAction(FiniteTimeAction* action)
+{
+    innerAction_ = action;
+    if (innerAction_)
+    {
+        SetDuration(innerAction_->GetDuration());
+    }
+}
+
+/// Create reversed action.
 SharedPtr<FiniteTimeAction> ActionEase::Reverse() const
-{ return MakeShared<ActionEase>(context_, innerAction_->Reverse()); }
+{
+    auto result = MakeShared<ActionEase>(context_);
+    if (innerAction_)
+    {
+        result->SetInnerAction(innerAction_->Reverse());
+    }
+    return result;
+}
+
+/// Apply easing function to the time argument.
+float ActionEase::Ease(float time) const { return time; }
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void ActionEase::SerializeInBlock(Archive& archive)
@@ -75,27 +97,38 @@ void ActionEase::SerializeInBlock(Archive& archive)
     SerializeValue(archive, "innerAction", innerAction_);
 }
 
-#define URHO3D_EASEACTIONDEF(typeName) \
-namespace { \
-struct Ease##typeName##State : public ActionEaseState { \
-    Ease##typeName##State(ActionEase* action, Object* target): ActionEaseState(action, target) { } \
-    void Step(float dt) override { StepInner(typeName(dt)); } \
-    }; \
-} \
-URHO3D_FINITETIMEACTIONDEF(Ease##typeName) \
-Ease##typeName::Ease##typeName(Context* context, FiniteTimeAction* action): ActionEase(context, action) {} \
-void Ease##typeName::SerializeInBlock(Archive& archive) { ActionEase::SerializeInBlock(archive); }
-
-URHO3D_EASEACTIONDEF(BackIn)
+/// Construct.
+EaseBackIn::EaseBackIn(Context* context)
+    : BaseClassName(context)
+{
+}
 
 SharedPtr<FiniteTimeAction> EaseBackIn::Reverse() const
 {
-    return MakeShared<EaseBackOut>(context_, GetInnerAction()->Reverse());
+    auto result = MakeShared<EaseBackOut>(context_);
+    result->SetInnerAction(GetInnerAction()->Reverse());
+    return result;
 }
 
-URHO3D_EASEACTIONDEF(BackOut)
+/// Create new action state from the action.
+SharedPtr<ActionState> EaseBackIn::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
 
+
+/// Construct.
+EaseBackOut::EaseBackOut(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Create reversed action.
 SharedPtr<FiniteTimeAction> EaseBackOut::Reverse() const
 {
-    return MakeShared<EaseBackIn>(context_, GetInnerAction()->Reverse());
+    auto result = MakeShared<EaseBackIn>(context_);
+    result->SetInnerAction(GetInnerAction()->Reverse());
+    return result;
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> EaseBackOut::StartAction(Object* target) { return MakeShared<ActionEaseState>(this, target); }
+
 }
