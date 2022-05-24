@@ -72,8 +72,6 @@ void NetworkObject::OnNodeSet(Node* node)
 {
     if (node)
     {
-        URHO3D_ASSERT(!node->IsReplicated(), "NetworkObject can be assigned only to LOCAL Node");
-
         node->AddListener(this);
         node->MarkDirty();
     }
