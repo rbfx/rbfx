@@ -43,11 +43,32 @@ URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_ToggleSpace,
 
 void Foundation_TransformManipulator(Context* context, SceneViewTab* sceneViewTab)
 {
-    sceneViewTab->RegisterAddon<TransformManipulator>();
+    auto project = sceneViewTab->GetProject();
+    auto settingsManager = project->GetSettingsManager();
+
+    auto settingsPage = MakeShared<TransformManipulator::SettingsPage>(context);
+    settingsManager->AddPage(settingsPage);
+
+    sceneViewTab->RegisterAddon<TransformManipulator>(settingsPage);
 }
 
-TransformManipulator::TransformManipulator(SceneViewTab* owner)
+void TransformManipulator::Settings::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "SnapPosition", snapPosition_);
+    SerializeOptionalValue(archive, "SnapRotation", snapRotation_);
+    SerializeOptionalValue(archive, "SnapScale", snapScale_);
+}
+
+void TransformManipulator::Settings::RenderSettings()
+{
+    ui::DragFloat("Snap Position", &snapPosition_, 0.001f, 0.001f, 10.0f, "%.3f");
+    ui::DragFloat("Snap Rotation", &snapRotation_, 0.001f, 0.001f, 360.0f, "%.3f");
+    ui::DragFloat("Snap Scale", &snapScale_, 0.001f, 0.001f, 1.0f, "%.3f");
+}
+
+TransformManipulator::TransformManipulator(SceneViewTab* owner, SettingsPage* settings)
     : SceneViewAddon(owner)
+    , settings_(settings)
 {
     auto project = owner_->GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
@@ -56,6 +77,10 @@ TransformManipulator::TransformManipulator(SceneViewTab* owner)
 
 void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
 {
+    if (!settings_)
+        return;
+    const Settings& cfg = settings_->GetValues();
+
     const auto& nodes = scenePage.selection_.GetEffectiveNodes();
     if (nodes.empty())
         return;
@@ -67,7 +92,8 @@ void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseCon
         Camera* camera = scenePage.renderer_->GetCamera();
         const TransformGizmo gizmo{camera, scenePage.contentArea_};
 
-        if (transformGizmo_->Manipulate(gizmo, TransformGizmoOperation::Translate, isLocal_, 0.0f))
+        const bool needSnap = ui::IsKeyDown(KEY_CTRL);
+        if (transformGizmo_->Manipulate(gizmo, TransformGizmoOperation::Translate, isLocal_, needSnap ? cfg.snapPosition_ : 0.0f))
             mouseConsumed = true;
     }
 }
@@ -84,8 +110,7 @@ void TransformManipulator::EnsureGizmoInitialized(SceneSelection& selection)
     {
         const auto& nodes = selection.GetEffectiveNodes();
         const Node* anchorNode = selection.GetAnchor();
-        const Matrix3x4& anchorTransform = anchorNode ? anchorNode->GetWorldTransform() : Matrix3x4::IDENTITY;
-        transformGizmo_ = TransformNodesGizmo{anchorTransform, nodes.begin(), nodes.end()};
+        transformGizmo_ = TransformNodesGizmo{anchorNode, nodes.begin(), nodes.end()};
         transformGizmo_->OnNodeTransformChanged.Subscribe(this, &TransformManipulator::OnNodeTransformChanged);
     }
 }

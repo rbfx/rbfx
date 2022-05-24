@@ -79,6 +79,8 @@ public:
     using WeakNodeSet = ea::unordered_set<WeakPtr<Node>>;
     using WeakComponentSet = ea::unordered_set<WeakPtr<Component>>;
 
+    /// Return current state
+    /// @{
     unsigned GetRevision() const { return revision_; }
     bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
     bool IsSelected(Node* node) const;
@@ -86,10 +88,18 @@ public:
     const WeakNodeSet& GetNodes() const { return nodes_; }
     const WeakNodeSet& GetEffectiveNodes() const { return effectiveNodes_; }
     const WeakComponentSet& GetComponents() const { return components_; }
+    /// @}
 
+    /// Cleanup expired selection.
+    void Update();
+
+    /// Clear selection.
     void Clear();
+    /// Convert component selection to node selection.
     void ConvertToNodes();
+    /// Set whether the component is selected.
     void SetSelected(Component* component, bool selected, bool anchored = false);
+    /// Set whether the node is selected.
     void SetSelected(Node* node, bool selected, bool anchored = false);
 
 private:

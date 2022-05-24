@@ -75,8 +75,8 @@ public:
 
     TransformNodesGizmo() = default;
     template <class Iter>
-    TransformNodesGizmo(const Matrix3x4& anchor, Iter begin, Iter end)
-        : anchorTransform_(anchor.ToMatrix4())
+    TransformNodesGizmo(const Node* anchor, Iter begin, Iter end)
+        : anchor_(anchor)
         , nodes_(begin, end)
     {}
 
@@ -84,7 +84,10 @@ public:
     bool Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, float snap);
 
 private:
-    Matrix4 anchorTransform_;
+    Matrix4 GetAnchorTransform() const;
+    bool ManipulatePosition(const TransformGizmo& gizmo, bool local, float snap);
+
+    WeakPtr<const Node> anchor_;
     ea::vector<WeakPtr<Node>> nodes_;
 };
 

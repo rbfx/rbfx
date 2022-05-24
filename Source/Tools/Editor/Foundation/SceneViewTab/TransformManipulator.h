@@ -40,7 +40,20 @@ class TransformManipulator : public SceneViewAddon
     URHO3D_OBJECT(TransformManipulator, SceneViewAddon);
 
 public:
-    explicit TransformManipulator(SceneViewTab* owner);
+    struct Settings
+    {
+        ea::string GetUniqueName() { return "SceneView.TransformGizmo"; }
+
+        void SerializeInBlock(Archive& archive);
+        void RenderSettings();
+
+        float snapPosition_{0.5f};
+        float snapRotation_{5.0f};
+        float snapScale_{0.1f};
+    };
+    using SettingsPage = SimpleSettingsPage<Settings>;
+
+    TransformManipulator(SceneViewTab* owner, SettingsPage* settings);
 
     void ToggleSpace() { isLocal_ = !isLocal_; }
 
@@ -55,6 +68,8 @@ public:
 private:
     void EnsureGizmoInitialized(SceneSelection& selection);
     void OnNodeTransformChanged(Node* node, const Transform& oldTransform);
+
+    const WeakPtr<SettingsPage> settings_;
 
     unsigned selectionRevision_{};
     ea::optional<TransformNodesGizmo> transformGizmo_;
