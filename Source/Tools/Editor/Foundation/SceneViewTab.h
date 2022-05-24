@@ -84,7 +84,7 @@ public:
     unsigned GetRevision() const { return revision_; }
     bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
     bool IsSelected(Node* node) const;
-    Node* GetAnchor() const { return anchor_; }
+    Node* GetActiveNode() const { return activeNode_; }
     const WeakNodeSet& GetNodes() const { return nodes_; }
     const WeakNodeSet& GetEffectiveNodes() const { return effectiveNodes_; }
     const WeakComponentSet& GetComponents() const { return components_; }
@@ -98,9 +98,9 @@ public:
     /// Convert component selection to node selection.
     void ConvertToNodes();
     /// Set whether the component is selected.
-    void SetSelected(Component* component, bool selected, bool anchored = false);
+    void SetSelected(Component* component, bool selected, bool activated = false);
     /// Set whether the node is selected.
-    void SetSelected(Node* node, bool selected, bool anchored = false);
+    void SetSelected(Node* node, bool selected, bool activated = false);
 
 private:
     void UpdateRevision() { revision_ = ea::max(1u, revision_ + 1); }
@@ -109,7 +109,7 @@ private:
     WeakNodeSet nodes_;
     WeakComponentSet components_;
     WeakNodeSet effectiveNodes_;
-    WeakPtr<Node> anchor_{};
+    WeakPtr<Node> activeNode_{};
     unsigned revision_{1};
 };
 
@@ -138,18 +138,25 @@ class SceneViewAddon : public Object
     URHO3D_OBJECT(SceneViewAddon, Object);
 
 public:
-    struct GreaterPriority
+    struct ByPriority
     {
         bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
         {
             return lhs->GetInputPriority() > rhs->GetInputPriority();
         }
     };
+    struct ByTitle
+    {
+        bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
+        {
+            return lhs->GetContextMenuTitle() < rhs->GetContextMenuTitle();
+        }
+    };
 
     explicit SceneViewAddon(SceneViewTab* owner);
     ~SceneViewAddon() override;
 
-    /// Return unique human-readable name of the addon.
+    /// Return unique name of the addon for serialization.
     virtual ea::string GetUniqueName() const = 0;
     /// Return input priority.
     virtual int GetInputPriority() const { return 0; }
@@ -159,6 +166,18 @@ public:
     virtual void UpdateAndRender(SceneViewPage& scenePage) {}
     /// Apply hotkeys for given addon.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
+
+    /// Return whether the addon needs context menu in the tab.
+    virtual bool NeedTabContextMenu() const { return false; }
+    /// Return addon title for context menu.
+    virtual ea::string GetContextMenuTitle() const { return ""; }
+    /// Render context menu of the tab.
+    virtual void RenderTabContextMenu() {}
+
+    /// Write INI settings to file. Use as few lines as possible.
+    virtual void WriteIniSettings(ImGuiTextBuffer& output) {}
+    /// Read INI settings from file. Use as few lines as possible.
+    virtual void ReadIniSettings(const char* line) {}
 
 protected:
     WeakPtr<SceneViewTab> owner_;
@@ -185,6 +204,9 @@ public:
     ea::string GetResourceTitle() { return "Scene"; }
     bool SupportMultipleResources() { return true; }
     bool CanOpenResource(const OpenResourceRequest& request) override;
+
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
+    void ReadIniSettings(const char* line) override;
     /// @}
 
 protected:
@@ -219,7 +241,8 @@ private:
     void UpdateAddons(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
-    ea::vector_multiset<SharedPtr<SceneViewAddon>, SceneViewAddon::GreaterPriority> addonsByInputPriority_;
+    ea::vector_multiset<SharedPtr<SceneViewAddon>, SceneViewAddon::ByPriority> addonsByInputPriority_;
+    ea::vector_multiset<SharedPtr<SceneViewAddon>, SceneViewAddon::ByTitle> addonsByTitle_;
 
     ea::vector<SceneCameraControllerDesc> cameraControllers_;
     ea::unordered_map<ea::string, SceneViewPage> scenes_;

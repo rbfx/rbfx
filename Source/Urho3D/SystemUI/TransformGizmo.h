@@ -52,8 +52,13 @@ public:
 
     /// Manipulate transform. Returns delta matrix in world space.
     ea::optional<Matrix4> ManipulateTransform(Matrix4& transform, TransformGizmoOperation op, bool local, float snap) const;
+
     /// Manipulate position. Returns delta position in world space.
     ea::optional<Vector3> ManipulatePosition(const Matrix4& transform, bool local, float snap) const;
+    /// Manipulate rotation. Returns delta rotation in world space.
+    ea::optional<Quaternion> ManipulateRotation(const Matrix4& transform, bool local, float snap) const;
+    /// Manipulate scale. Returns multiplicative delta scale in local space.
+    ea::optional<Vector3> ManipulateScale(const Matrix4& transform, bool local, float snap) const;
 
 private:
     TransformGizmo(Camera* camera, bool isMainViewport, const Rect& viewportRect);
@@ -65,6 +70,8 @@ private:
 
     const bool isMainViewport_{};
     const Rect viewportRect_;
+
+    static Matrix4 internalTransformMatrix;
 };
 
 /// Gizmo for manipulating a set of scene nodes.
@@ -75,19 +82,21 @@ public:
 
     TransformNodesGizmo() = default;
     template <class Iter>
-    TransformNodesGizmo(const Node* anchor, Iter begin, Iter end)
-        : anchor_(anchor)
+    TransformNodesGizmo(const Node* activeNode, Iter begin, Iter end)
+        : activeNode_(activeNode)
         , nodes_(begin, end)
     {}
 
     /// Manipulate nodes.
-    bool Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, float snap);
+    bool Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, bool pivoted, float snap);
 
 private:
-    Matrix4 GetAnchorTransform() const;
-    bool ManipulatePosition(const TransformGizmo& gizmo, bool local, float snap);
+    Matrix4 GetGizmoTransform(bool pivoted) const;
+    bool ManipulatePosition(const TransformGizmo& gizmo, bool local, bool pivoted, float snap);
+    bool ManipulateRotation(const TransformGizmo& gizmo, bool local, bool pivoted, float snap);
+    bool ManipulateScale(const TransformGizmo& gizmo, bool local, bool pivoted, float snap);
 
-    WeakPtr<const Node> anchor_;
+    WeakPtr<const Node> activeNode_;
     ea::vector<WeakPtr<Node>> nodes_;
 };
 

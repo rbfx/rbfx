@@ -21,6 +21,7 @@
 //
 
 #include "../../Core/CommonEditorActions.h"
+#include "../../Core/IniHelpers.h"
 #include "../../Foundation/SceneViewTab/TransformManipulator.h"
 
 #include <Urho3D/Graphics/Camera.h>
@@ -35,9 +36,19 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_SCOPE(Scope_TransformManipulator, "TransformManipulator");
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_ToggleSpace,
-    "TransformManipulator.ToggleSpace", Scope_TransformManipulator, QUAL_NONE, KEY_X);
+URHO3D_EDITOR_SCOPE(Scope_TransformGizmo, "TransformGizmo");
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_ToggleLocal,
+    "TransformGizmo.ToggleLocal", Scope_TransformGizmo, QUAL_NONE, KEY_X);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_TogglePivoted,
+    "TransformGizmo.TogglePivoted", Scope_TransformGizmo, QUAL_NONE, KEY_Z);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Select,
+    "TransformGizmo.Select", Scope_TransformGizmo, QUAL_NONE, KEY_Q);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Translate,
+    "TransformGizmo.Translate", Scope_TransformGizmo, QUAL_NONE, KEY_W);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Rotate,
+    "TransformGizmo.Rotate", Scope_TransformGizmo, QUAL_NONE, KEY_E);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Scale,
+    "TransformGizmo.Scale", Scope_TransformGizmo, QUAL_NONE, KEY_R);
 
 }
 
@@ -66,13 +77,34 @@ void TransformManipulator::Settings::RenderSettings()
     ui::DragFloat("Snap Scale", &snapScale_, 0.001f, 0.001f, 1.0f, "%.3f");
 }
 
+float TransformManipulator::Settings::GetSnapValue(TransformGizmoOperation op) const
+{
+    switch (op)
+    {
+    case TransformGizmoOperation::Translate:
+        return snapPosition_;
+    case TransformGizmoOperation::Rotate:
+        return snapRotation_;
+    case TransformGizmoOperation::Scale:
+        return snapScale_;
+    case TransformGizmoOperation::None:
+    default:
+        return 0.0f;
+    }
+}
+
 TransformManipulator::TransformManipulator(SceneViewTab* owner, SettingsPage* settings)
     : SceneViewAddon(owner)
     , settings_(settings)
 {
     auto project = owner_->GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-    hotkeyManager->BindHotkey(this, Hotkey_ToggleSpace, &TransformManipulator::ToggleSpace);
+    hotkeyManager->BindHotkey(this, Hotkey_ToggleLocal, &TransformManipulator::ToggleSpace);
+    hotkeyManager->BindHotkey(this, Hotkey_TogglePivoted, &TransformManipulator::TogglePivoted);
+    hotkeyManager->BindHotkey(this, Hotkey_Select, &TransformManipulator::SetSelect);
+    hotkeyManager->BindHotkey(this, Hotkey_Translate, &TransformManipulator::SetTranslate);
+    hotkeyManager->BindHotkey(this, Hotkey_Rotate, &TransformManipulator::SetRotate);
+    hotkeyManager->BindHotkey(this, Hotkey_Scale, &TransformManipulator::SetScale);
 }
 
 void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
@@ -93,7 +125,8 @@ void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseCon
         const TransformGizmo gizmo{camera, scenePage.contentArea_};
 
         const bool needSnap = ui::IsKeyDown(KEY_CTRL);
-        if (transformGizmo_->Manipulate(gizmo, TransformGizmoOperation::Translate, isLocal_, needSnap ? cfg.snapPosition_ : 0.0f))
+        const float snapValue = needSnap ? cfg.GetSnapValue(operation_) : 0.0f;
+        if (transformNodesGizmo_->Manipulate(gizmo, operation_, isLocal_, isPivoted_, snapValue))
             mouseConsumed = true;
     }
 }
@@ -103,15 +136,15 @@ void TransformManipulator::EnsureGizmoInitialized(SceneSelection& selection)
     if (selection.GetRevision() != selectionRevision_)
     {
         selectionRevision_ = selection.GetRevision();
-        transformGizmo_ = ea::nullopt;
+        transformNodesGizmo_ = ea::nullopt;
     }
 
-    if (!transformGizmo_)
+    if (!transformNodesGizmo_)
     {
         const auto& nodes = selection.GetEffectiveNodes();
-        const Node* anchorNode = selection.GetAnchor();
-        transformGizmo_ = TransformNodesGizmo{anchorNode, nodes.begin(), nodes.end()};
-        transformGizmo_->OnNodeTransformChanged.Subscribe(this, &TransformManipulator::OnNodeTransformChanged);
+        const Node* activeNode = selection.GetActiveNode();
+        transformNodesGizmo_ = TransformNodesGizmo{activeNode, nodes.begin(), nodes.end()};
+        transformNodesGizmo_->OnNodeTransformChanged.Subscribe(this, &TransformManipulator::OnNodeTransformChanged);
     }
 }
 
@@ -126,7 +159,50 @@ void TransformManipulator::UpdateAndRender(SceneViewPage& scenePage)
 
 void TransformManipulator::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
-    hotkeyManager->InvokeScopedHotkeys(Scope_TransformManipulator);
+    hotkeyManager->InvokeScopedHotkeys(Scope_TransformGizmo);
+}
+
+void TransformManipulator::RenderTabContextMenu()
+{
+    auto project = owner_->GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    if (ui::MenuItem("In Local Space", hotkeyManager->GetHotkeyLabel(Hotkey_ToggleLocal).c_str(), isLocal_))
+        isLocal_ = !isLocal_;
+
+    if (ui::MenuItem("In Pivoted", hotkeyManager->GetHotkeyLabel(Hotkey_TogglePivoted).c_str(), isPivoted_))
+        isPivoted_ = !isPivoted_;
+
+    ui::Separator();
+
+    if (ui::MenuItem("Select", hotkeyManager->GetHotkeyLabel(Hotkey_Select).c_str(), operation_ == TransformGizmoOperation::None))
+        operation_ = TransformGizmoOperation::None;
+    if (ui::MenuItem("Translate", hotkeyManager->GetHotkeyLabel(Hotkey_Translate).c_str(), operation_ == TransformGizmoOperation::Translate))
+        operation_ = TransformGizmoOperation::Translate;
+    if (ui::MenuItem("Rotate", hotkeyManager->GetHotkeyLabel(Hotkey_Rotate).c_str(), operation_ == TransformGizmoOperation::Rotate))
+        operation_ = TransformGizmoOperation::Rotate;
+    if (ui::MenuItem("Scale", hotkeyManager->GetHotkeyLabel(Hotkey_Scale).c_str(), operation_ == TransformGizmoOperation::Scale))
+        operation_ = TransformGizmoOperation::Scale;
+}
+
+void TransformManipulator::WriteIniSettings(ImGuiTextBuffer& output)
+{
+    WriteIntToIni(output, "TransformGizmo.IsLocal", isLocal_);
+    WriteIntToIni(output, "TransformGizmo.IsPivoted", isPivoted_);
+    WriteIntToIni(output, "TransformGizmo.Operation", static_cast<int>(operation_));
+}
+
+void TransformManipulator::ReadIniSettings(const char* line)
+{
+    if (const auto value = ReadIntFromIni(line, "TransformGizmo.IsLocal"))
+        isLocal_ = *value != 0;
+    if (const auto value = ReadIntFromIni(line, "TransformGizmo.IsPivoted"))
+        isPivoted_ = *value != 0;
+    if (const auto value = ReadIntFromIni(line, "TransformGizmo.Operation"))
+    {
+        operation_ = Clamp(static_cast<TransformGizmoOperation>(*value),
+            TransformGizmoOperation::None, TransformGizmoOperation::Scale);
+    }
 }
 
 }
