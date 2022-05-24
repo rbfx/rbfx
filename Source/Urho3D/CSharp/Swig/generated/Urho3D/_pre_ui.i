@@ -236,6 +236,7 @@ using DragAndDropModeFlags = Urho3D::DragAndDropMode;
 %csattribute(Urho3D::SplashScreen, %arg(float), FadeInDuration, GetFadeInDuration, SetFadeInDuration);
 %csattribute(Urho3D::SplashScreen, %arg(float), FadeOutDuration, GetFadeOutDuration, SetFadeOutDuration);
 %csattribute(Urho3D::SplashScreen, %arg(float), Duration, GetDuration, SetDuration);
+%csattribute(Urho3D::SplashScreen, %arg(bool), IsSkippable, IsSkippable, SetSkippable);
 %csattribute(Urho3D::Text3D, %arg(Urho3D::UpdateGeometryType), UpdateGeometryType, GetUpdateGeometryType);
 %csattribute(Urho3D::Text3D, %arg(float), FontSize, GetFontSize, SetFontSize);
 %csattribute(Urho3D::Text3D, %arg(Urho3D::Material *), Material, GetMaterial, SetMaterial);

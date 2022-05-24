@@ -51,6 +51,8 @@ URHO3D_REFCOUNTED(Urho3D::Input);
 URHO3D_REFCOUNTED(Urho3D::Viewport);
 URHO3D_REFCOUNTED(Urho3D::ApplicationState);
 URHO3D_REFCOUNTED(Urho3D::SingleStateApplication);
+URHO3D_REFCOUNTED(Urho3D::DirectionAggregator);
+URHO3D_REFCOUNTED(Urho3D::DirectionalPadAdapter);
 URHO3D_REFCOUNTED(Urho3D::MultitouchAdapter);
 URHO3D_REFCOUNTED(Urho3D::FreeFlyController);
 URHO3D_REFCOUNTED(Urho3D::IndexBuffer);
@@ -310,9 +312,10 @@ URHO3D_REFCOUNTED(Urho3D::Console);
 URHO3D_REFCOUNTED(Urho3D::SystemUI);
 URHO3D_REFCOUNTED(Urho3D::DebugHud);
 URHO3D_REFCOUNTED(Urho3D::Gizmo);
-URHO3D_REFCOUNTED(Urho3D::FreeFlyController);
-URHO3D_REFCOUNTED(Urho3D::DirectionalPadAdapter);
-URHO3D_REFCOUNTED(Urho3D::DirectionAggregator);
-URHO3D_REFCOUNTED(Urho3D::MultitouchAdapter);
 URHO3D_REFCOUNTED(Urho3D::SystemMessageBox);
 URHO3D_REFCOUNTED(Urho3D::Script);
+
+// Manually added
+URHO3D_REFCOUNTED(Urho3D::NetworkObject);
+URHO3D_REFCOUNTED(Urho3D::StaticNetworkObject);
+URHO3D_REFCOUNTED(Urho3D::BehaviorNetworkObject);
