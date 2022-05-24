@@ -538,6 +538,10 @@ ea::string IncrementalLightBakerStatus::ToString() const
     }
 }
 
+IncrementalLightBaker::IncrementalLightBaker()
+{
+}
+
 IncrementalLightBaker::~IncrementalLightBaker()
 {
 }
