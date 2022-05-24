@@ -1,0 +1,16 @@
+%csattribute(Urho3D::ActionState, %arg(Urho3D::Object *), Target, GetTarget);
+%csattribute(Urho3D::ActionState, %arg(Urho3D::Object *), OriginalTarget, GetOriginalTarget);
+%csattribute(Urho3D::ActionState, %arg(Urho3D::BaseAction *), Action, GetAction);
+%csattribute(Urho3D::FiniteTimeAction, %arg(float), Duration, GetDuration, SetDuration);
+%csattribute(Urho3D::AttributeFromTo, %arg(Urho3D::Variant), From, GetFrom);
+%csattribute(Urho3D::AttributeFromTo, %arg(Urho3D::Variant), To, GetTo);
+%csattribute(Urho3D::AttributeFromTo, %arg(ea::string), Name, GetName);
+%csattribute(Urho3D::AttributeTo, %arg(Urho3D::Variant), To, GetTo);
+%csattribute(Urho3D::AttributeTo, %arg(ea::string), Name, GetName);
+%csattribute(Urho3D::FiniteTimeActionState, %arg(bool), IsDone, IsDone);
+%csattribute(Urho3D::ActionEase, %arg(Urho3D::FiniteTimeAction *), InnerAction, GetInnerAction);
+%csattribute(Urho3D::MoveBy, %arg(Urho3D::Vector3), PositionDelta, GetPositionDelta);
+%csattribute(Urho3D::MoveBy2D, %arg(Urho3D::Vector2), PositionDelta, GetPositionDelta);
+%csattribute(Urho3D::ShaderParameterFromTo, %arg(Urho3D::Variant), From, GetFrom);
+%csattribute(Urho3D::ShaderParameterFromTo, %arg(Urho3D::Variant), To, GetTo);
+%csattribute(Urho3D::ShaderParameterFromTo, %arg(ea::string), Name, GetName);

@@ -97,11 +97,11 @@ void FreeFlyController::HandleMultitouch(StringHash /*eventType*/, VariantMap& e
         const int dy = eventData[P_DY].GetInt();
         if (numFingers == 1)
         {
-            Vector3 eulerAngles = node_->GetRotation().EulerAngles();
+            UpdateCameraAngles();
+            Vector3 eulerAngles = lastKnownEulerAngles_;
             eulerAngles.y_ -= sensitivity * dx;
             eulerAngles.x_ -= sensitivity * dy;
-            eulerAngles.x_ = Clamp(eulerAngles.x_, -89.999f, 89.999f);
-            node_->SetRotation(Quaternion(eulerAngles));
+            SetCameraAngles(eulerAngles);
         }
         else if (numFingers == 2)
         {
@@ -146,12 +146,38 @@ void FreeFlyController::SetAcceleratedSpeed(float speed)
     acceleratedSpeed_ = speed;
 }
 
+void FreeFlyController::SetCameraAngles(Vector3 eulerAngles)
+{
+    eulerAngles.x_ = Clamp(eulerAngles.x_, -90.0f, 90.0f);
+    lastKnownEulerAngles_ = eulerAngles;
+    lastKnownCameraRotation_ = Quaternion(eulerAngles);
+
+    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
+    node_->SetRotation(lastKnownCameraRotation_.value());
+}
+
+void FreeFlyController::UpdateCameraAngles()
+{
+    auto rotation = node_->GetRotation();
+    if (!lastKnownCameraRotation_.has_value() || !lastKnownCameraRotation_.value().Equals(rotation))
+    {
+        lastKnownCameraRotation_ = rotation;
+        lastKnownEulerAngles_ = rotation.EulerAngles();
+        // Detect gimbal lock and restore from it.
+        if (Abs(lastKnownEulerAngles_.x_) > 89.999f && Abs(lastKnownEulerAngles_.y_) < 0.001f)
+        {
+            ea::swap(lastKnownEulerAngles_.y_, lastKnownEulerAngles_.z_);
+        }
+    }
+}
+
 void FreeFlyController::HandleKeyboardAndMouse(float timeStep)
 {
     auto* input = GetSubsystem<Input>();
 
     // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-    Vector3 eulerAngles = node_->GetRotation().EulerAngles();
+    UpdateCameraAngles();
+    Vector3 eulerAngles = lastKnownEulerAngles_;
     IntVector2 mouseMove = input->GetMouseMove();
     eulerAngles.y_ += mouseSensitivity_ * mouseMove.x_;
     eulerAngles.x_ += mouseSensitivity_ * mouseMove.y_;
@@ -222,10 +248,7 @@ void FreeFlyController::HandleKeyboardAndMouse(float timeStep)
         }
     }
 
-    eulerAngles.x_ = Clamp(eulerAngles.x_, -89.999f, 89.999f);
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    node_->SetRotation(Quaternion(eulerAngles));
+    SetCameraAngles(eulerAngles);
 }
 
 void FreeFlyController::Update(float timeStep)
