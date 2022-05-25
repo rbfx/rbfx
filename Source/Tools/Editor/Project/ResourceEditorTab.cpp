@@ -46,7 +46,10 @@ void ResourceEditorTab::WriteIniSettings(ImGuiTextBuffer& output)
 {
     BaseClassName::WriteIniSettings(output);
 
-    const StringVector resourceNamesVector{resourceNames_.begin(), resourceNames_.end()};
+    StringVector resourceNamesVector;
+    for (const auto& [resourceName, data] : resources_)
+        resourceNamesVector.push_back(resourceName);
+
     WriteStringToIni(output, "ResourceNames", ea::string::joined(resourceNamesVector, "|"));
     WriteStringToIni(output, "ActiveResourceName", activeResourceName_);
 }
@@ -68,12 +71,12 @@ void ResourceEditorTab::ReadIniSettings(const char* line)
 
 void ResourceEditorTab::OpenResource(const ea::string& resourceName, bool activate)
 {
-    if (!resourceNames_.contains(resourceName))
+    if (!resources_.contains(resourceName))
     {
         if (!SupportMultipleResources())
             CloseAllResources();
 
-        resourceNames_.insert(resourceName);
+        resources_.emplace(resourceName, ResourceData{});
         if (loadResources_)
             OnResourceLoaded(resourceName);
     }
@@ -84,22 +87,22 @@ void ResourceEditorTab::OpenResource(const ea::string& resourceName, bool activa
 
 void ResourceEditorTab::CloseResource(const ea::string& resourceName)
 {
-    if (resourceNames_.contains(resourceName))
+    if (resources_.contains(resourceName))
     {
         auto undoManager = GetProject()->GetUndoManager();
         const bool isActive = resourceName == activeResourceName_;
 
-        resourceNames_.erase(resourceName);
+        resources_.erase(resourceName);
         if (loadResources_)
             OnResourceUnloaded(resourceName);
 
-        if (!resourceNames_.contains(activeResourceName_))
+        if (!resources_.contains(activeResourceName_))
         {
-            const auto iter = resourceNames_.lower_bound(activeResourceName_);
-            if (iter != resourceNames_.end())
-                SetActiveResource(*iter);
-            else if (!resourceNames_.empty())
-                SetActiveResource(*resourceNames_.begin());
+            const auto iter = resources_.lower_bound(activeResourceName_);
+            if (iter != resources_.end())
+                SetActiveResource(iter->first);
+            else if (!resources_.empty())
+                SetActiveResource(resources_.begin()->first);
             else
                 SetActiveResource("");
         }
@@ -109,7 +112,7 @@ void ResourceEditorTab::CloseResource(const ea::string& resourceName)
 void ResourceEditorTab::OnProjectInitialized()
 {
     loadResources_ = true;
-    for (const ea::string& resourceName : resourceNames_)
+    for (const auto& [resourceName, data] : resources_)
         OnResourceLoaded(resourceName);
 }
 
@@ -117,7 +120,7 @@ void ResourceEditorTab::SetActiveResource(const ea::string& activeResourceName)
 {
     if (activeResourceName_ != activeResourceName)
     {
-        if (resourceNames_.contains(activeResourceName))
+        if (resources_.contains(activeResourceName))
         {
             activeResourceName_ = activeResourceName;
             OnActiveResourceChanged(activeResourceName_);
@@ -129,49 +132,85 @@ void ResourceEditorTab::SetActiveResource(const ea::string& activeResourceName)
     }
 }
 
+void ResourceEditorTab::SetCurrentAction(const ea::string& resourceName, ea::optional<EditorActionFrame> frame)
+{
+    const auto iter = resources_.find(resourceName);
+    if (iter != resources_.end())
+    {
+        iter->second.currentActionFrame_ = frame;
+    }
+}
+
 void ResourceEditorTab::CloseAllResources()
 {
     auto undoManager = GetProject()->GetUndoManager();
     if (loadResources_)
     {
-        for (const ea::string& resourceName : resourceNames_)
+        for (const auto& [resourceName, data] : resources_)
         {
             const bool isActive = resourceName == activeResourceName_;
             OnResourceUnloaded(resourceName);
         }
     }
-    resourceNames_.clear();
+    resources_.clear();
     activeResourceName_ = "";
 }
 
 void ResourceEditorTab::SaveResource(const ea::string& resourceName)
 {
-    if (resourceNames_.contains(resourceName))
+    const auto iter = resources_.find(resourceName);
+    if (iter != resources_.end())
     {
-        OnResourceSaved(resourceName);
+        DoSaveResource(iter->first, iter->second);
     }
 }
 
 void ResourceEditorTab::SaveAllResources()
 {
-    for (const ea::string& resourceName : resourceNames_)
+    for (auto& [resourceName, data] : resources_)
     {
-        OnResourceSaved(resourceName);
+        DoSaveResource(resourceName, data);
     }
 }
 
-SharedPtr<EditorAction> ResourceEditorTab::WrapAction(SharedPtr<EditorAction> action)
+void ResourceEditorTab::DoSaveResource(const ea::string& resourceName, ResourceData& data)
 {
-    return MakeShared<ResourceActionWrapper>(action, this, activeResourceName_);
+    OnResourceSaved(resourceName);
+    data.savedActionFrame_ = data.currentActionFrame_;
+}
+
+void ResourceEditorTab::PushAction(SharedPtr<EditorAction> action)
+{
+    const auto iter = resources_.find(activeResourceName_);
+    if (iter != resources_.end())
+    {
+        ResourceData& data = iter->second;
+        auto project = GetProject();
+        UndoManager* undoManager = project->GetUndoManager();
+
+        const auto oldActionFrame = data.currentActionFrame_;
+        const auto wrappedAction = MakeShared<ResourceActionWrapper>(action, this, activeResourceName_, oldActionFrame);
+        data.currentActionFrame_ = undoManager->PushAction(wrappedAction);
+    }
+}
+
+bool ResourceEditorTab::IsModified()
+{
+    const auto iter = resources_.find(activeResourceName_);
+    if (iter != resources_.end())
+        return iter->second.IsModified();
+    return false;
 }
 
 void ResourceEditorTab::UpdateAndRenderContextMenuItems()
 {
     ea::string closeResourcePending;
     bool closeAllResourcesPending = false;
+    ea::string saveResourcePending;
+    bool saveAllResourcesPending = false;
 
     ResetSeparator();
-    if (resourceNames_.empty())
+    if (resources_.empty())
     {
         ui::MenuItem("(No Resources)", nullptr, false, false);
         SetSeparator();
@@ -179,13 +218,19 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
     else
     {
         ui::PushID("ActiveResources");
-        for (const ea::string& resourceName : resourceNames_)
+        for (const auto& [resourceName, data] : resources_)
         {
             bool selected = resourceName == activeResourceName_;
             if (ui::SmallButton(ICON_FA_XMARK))
                 closeResourcePending = resourceName;
             ui::SameLine();
-            if (ui::MenuItem(resourceName.c_str(), nullptr, &selected))
+
+            ea::string title;
+            if (data.IsModified())
+                title += "* ";
+            title += resourceName;
+
+            if (ui::MenuItem(title.c_str(), nullptr, &selected))
                 SetActiveResource(resourceName);
         }
         ui::PopID();
@@ -194,22 +239,41 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
 
     ResetSeparator();
     {
+        const ea::string title = Format("Save Current [{}]", GetResourceTitle());
+        if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
+            saveResourcePending = activeResourceName_;
+    }
+    {
+        const ea::string title = Format("Save All [{}]s", GetResourceTitle());
+        if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
+            saveAllResourcesPending = true;
+    }
+
+    SetSeparator();
+
+    ResetSeparator();
+    {
         const ea::string title = Format("Close Current [{}]", GetResourceTitle());
-        if (ui::MenuItem(title.c_str(), nullptr, false, !resourceNames_.empty()))
+        if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
             closeResourcePending = activeResourceName_;
     }
     {
         const ea::string title = Format("Close All [{}]s", GetResourceTitle());
-        if (ui::MenuItem(title.c_str(), nullptr, false, !resourceNames_.empty()))
+        if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
             closeAllResourcesPending = true;
     }
 
     SetSeparator();
 
+    // Apply delayed actions
     if (closeAllResourcesPending)
         CloseAllResources();
     else if (!closeResourcePending.empty())
         CloseResource(closeResourcePending);
+    else if (saveAllResourcesPending)
+        SaveAllResources();
+    else if (!saveResourcePending.empty())
+        SaveResource(closeResourcePending);
 }
 
 void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
@@ -218,10 +282,11 @@ void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 }
 
 ResourceActionWrapper::ResourceActionWrapper(SharedPtr<EditorAction> action,
-    ResourceEditorTab* tab, const ea::string& resourceName)
+    ResourceEditorTab* tab, const ea::string& resourceName, ea::optional<EditorActionFrame> oldFrame)
     : action_(action)
     , tab_(tab)
     , resourceName_(resourceName)
+    , oldFrame_(oldFrame)
 {
     URHO3D_ASSERT(action);
 }
@@ -231,14 +296,23 @@ bool ResourceActionWrapper::IsAlive() const
     return tab_ && tab_->IsResourceOpen(resourceName_) && action_->IsAlive();
 }
 
+void ResourceActionWrapper::OnPushed(EditorActionFrame frame)
+{
+    newFrame_ = frame;
+}
+
 void ResourceActionWrapper::Redo() const
 {
     action_->Redo();
+    FocusMe();
+    UpdateCurrentAction(newFrame_);
 }
 
 void ResourceActionWrapper::Undo() const
 {
     action_->Undo();
+    FocusMe();
+    UpdateCurrentAction(oldFrame_);
 }
 
 bool ResourceActionWrapper::MergeWith(const EditorAction& other)
@@ -250,13 +324,24 @@ bool ResourceActionWrapper::MergeWith(const EditorAction& other)
     if (tab_ != otherWrapper->tab_ || resourceName_ != otherWrapper->resourceName_)
         return false;
 
-    return action_->MergeWith(*otherWrapper->action_);
+    if (action_->MergeWith(*otherWrapper->action_))
+    {
+        newFrame_ = otherWrapper->newFrame_;
+        return true;
+    }
+    return false;
 }
 
-void ResourceActionWrapper::FocusMe()
+void ResourceActionWrapper::FocusMe() const
 {
     if (tab_)
         tab_->SetActiveResource(resourceName_);
+}
+
+void ResourceActionWrapper::UpdateCurrentAction(ea::optional<EditorActionFrame> frame) const
+{
+    if (tab_)
+        tab_->SetCurrentAction(resourceName_, frame);
 }
 
 }

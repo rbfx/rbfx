@@ -83,11 +83,12 @@ public:
     /// @}
 
 private:
-    void EnsureGizmoInitialized(SceneSelection& selection);
+    void EnsureGizmoInitialized(SceneViewPage& scenePage);
     void OnNodeTransformChanged(Node* node, const Transform& oldTransform);
 
     const WeakPtr<SettingsPage> settings_;
 
+    WeakPtr<Scene> selectionScene_;
     unsigned selectionRevision_{};
     ea::optional<TransformNodesGizmo> transformNodesGizmo_;
 

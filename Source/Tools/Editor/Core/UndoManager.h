@@ -29,12 +29,17 @@
 namespace Urho3D
 {
 
+/// ID corresponding to the temporal order of undo actions.
+using EditorActionFrame = unsigned long long;
+
 /// Abstract undoable and redoable action.
 class EditorAction : public RefCounted
 {
 public:
     /// Check if action is valid and alive, i.e. Undo and Redo can be called.
     virtual bool IsAlive() const { return true; }
+    /// Action is pushed to the stack.
+    virtual void OnPushed(EditorActionFrame frame) {}
     /// Redo this action. May fail if external state has unexpectedly changed.
     virtual void Redo() const = 0;
     /// Undo this action. May fail if external state has unexpectedly changed.
@@ -53,8 +58,10 @@ class UndoManager : public Object
 public:
     explicit UndoManager(Context* context);
 
+    /// Force new frame. Call it on any resource save.
+    void NewFrame();
     /// Push new action. May be merged with the top of the stack. Drops redo stack.
-    void PushAction(const EditorActionPtr& action);
+    EditorActionFrame PushAction(const EditorActionPtr& action);
     /// Try to undo action. May fail if external state changed.
     bool Undo();
     /// Try to redo action. May fail if external state changed.
@@ -63,7 +70,7 @@ public:
 private:
     struct ActionGroup
     {
-        unsigned long long frame_{};
+        EditorActionFrame frame_{};
         ea::vector<EditorActionPtr> actions_;
 
         bool IsAlive() const;
@@ -73,7 +80,7 @@ private:
 
     ea::vector<ActionGroup> undoStack_;
     ea::vector<ActionGroup> redoStack_;
-    unsigned long long frame_{};
+    EditorActionFrame frame_{};
 };
 
 }
