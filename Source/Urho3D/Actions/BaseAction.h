@@ -26,8 +26,12 @@
 
 namespace Urho3D
 {
-class ActionState;
 class ActionManager;
+
+namespace Actions
+{
+
+class ActionState;
 
 /// Base action state.
 class URHO3D_API BaseAction : public Serializable
@@ -40,6 +44,9 @@ public:
     /// Destruct.
     ~BaseAction() override;
 
+    /// Get action from argument or empty action.
+    BaseAction* GetOrDefault(BaseAction* action) const;
+
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
@@ -51,6 +58,8 @@ protected:
     friend class ActionState;
 };
 
-void SerializeValue(Archive& archive, const char* name, SharedPtr<BaseAction>& value);
+} // namespace Actions
+
+void SerializeValue(Archive& archive, const char* name, SharedPtr<Actions::BaseAction>& value);
 
 } // namespace Urho3D

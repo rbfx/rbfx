@@ -31,17 +31,19 @@
 
 namespace Urho3D
 {
+namespace Actions
+{
 
 namespace
 {
-class AttributeFromToState : public Urho3D::AttributeActionState
+class AttributeFromToState : public AttributeActionState
 {
     Variant from_;
     Variant to_;
 
 public:
     AttributeFromToState(AttributeFromTo* action, Object* target)
-        : AttributeActionState(action, target, action->GetName().c_str())
+        : AttributeActionState(action, target, action->GetAttributeName(), action->GetFrom().GetType())
         , from_(action->GetFrom())
         , to_(action->GetTo())
     {
@@ -57,7 +59,7 @@ class AttributeToState : public AttributeActionState
 
 public:
     AttributeToState(AttributeTo* action, Object* target)
-        : AttributeActionState(action, target, action->GetName().c_str())
+        : AttributeActionState(action, target, action->GetAttributeName().c_str(), action->GetTo().GetType())
         , to_(action->GetTo())
     {
         if (attribute_)
@@ -83,14 +85,14 @@ void AttributeFromTo::SetFrom(const Variant& variant) { from_ = variant; }
 void AttributeFromTo::SetTo(const Variant& variant) { to_ = variant; }
 
 // Get shader parameter name
-void AttributeFromTo::SetName(const ea::string& name) { name_ = name; }
+void AttributeFromTo::SetAttributeName(const ea::string& name) { name_ = name; }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> AttributeFromTo::Reverse() const
 {
     auto result = MakeShared<AttributeFromTo>(context_);
     result->SetDuration(GetDuration());
-    result->SetName(name_);
+    result->SetAttributeName(name_);
     result->SetFrom(to_);
     result->SetTo(from_);
     return result;
@@ -100,7 +102,7 @@ SharedPtr<FiniteTimeAction> AttributeFromTo::Reverse() const
 void AttributeFromTo::SerializeInBlock(Archive& archive)
 {
     FiniteTimeAction::SerializeInBlock(archive);
-    SerializeValue(archive, "name", name_);
+    SerializeValue(archive, "attribute", name_);
     SerializeOptionalValue(archive, "from", from_, Variant::EMPTY);
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
@@ -121,17 +123,59 @@ AttributeTo::AttributeTo(Context* context)
 void AttributeTo::SetTo(const Variant& variant) { to_ = variant; }
 
 // Get shader parameter name
-void AttributeTo::SetName(const ea::string& name) { name_ = name; }
+void AttributeTo::SetAttributeName(const ea::string& name) { name_ = name; }
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void AttributeTo::SerializeInBlock(Archive& archive)
 {
     FiniteTimeAction::SerializeInBlock(archive);
-    SerializeValue(archive, "name", name_);
+    SerializeValue(archive, "attribute", name_);
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
 
 /// Create new action state from the action.
 SharedPtr<ActionState> AttributeTo::StartAction(Object* target) { return MakeShared<AttributeToState>(this, target); }
 
+/// Construct.
+AttributeBlink::AttributeBlink(Context* context)
+    : BaseClassName(context)
+{
+}
+
+// Set "from" value.
+void AttributeBlink::SetFrom(const Variant& variant) { from_ = variant; }
+
+// Get "to" value.
+void AttributeBlink::SetTo(const Variant& variant) { to_ = variant; }
+
+// Get shader parameter name
+void AttributeBlink::SetAttributeName(const ea::string& name) { name_ = name; }
+
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> AttributeBlink::Reverse() const
+{
+    auto result = MakeShared<AttributeFromTo>(context_);
+    result->SetDuration(GetDuration());
+    result->SetAttributeName(name_);
+    result->SetFrom(to_);
+    result->SetTo(from_);
+    return result;
+}
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void AttributeBlink::SerializeInBlock(Archive& archive)
+{
+    FiniteTimeAction::SerializeInBlock(archive);
+    SerializeValue(archive, "attribute", name_);
+    SerializeOptionalValue(archive, "from", from_, Variant::EMPTY);
+    SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> AttributeBlink::StartAction(Object* target)
+{
+    return MakeShared<AttributeBlinkState>(this, target, name_, from_, to_, times_);
+}
+
+} // namespace Actions
 } // namespace Urho3D

@@ -25,24 +25,21 @@
 #include "Urho3D/Actions/Attribute.h"
 #include "Urho3D/Actions/ShaderParameterFromTo.h"
 #include "Urho3D/Math/EaseMath.h"
+#include "Urho3D/Scene/Scene.h"
 
+#include <Urho3D/Actions/ActionManager.h>
 #include <Urho3D/Actions/Move.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/UI/UIElement.h>
-#include <Urho3D/Actions/ActionManager.h>
 
 using namespace Urho3D;
-
 
 TEST_CASE("BackIn tweening")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto backIn = ActionBuilder(context)
-        .MoveBy(1.0f, Vector3(1.0f, 0, 0))
-        .BackIn()
-        .Commit();
+    auto backIn = ActionBuilder(context).MoveBy(1.0f, Vector3(1.0f, 0, 0)).BackIn().Build();
     auto node = MakeShared<Node>(context);
     auto* state = actionManager->AddAction(backIn, node);
     actionManager->Update(0.0f);
@@ -63,7 +60,7 @@ TEST_CASE("MoveBy tweening")
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = ActionBuilder(context).MoveBy(1.0f, Vector3(1.0f, 0, 0)).Commit();
+    auto moveBy = ActionBuilder(context).MoveBy(2.0f, Vector3(10.0f, 0, 0)).Build();
     auto node = MakeShared<Node>(context);
 
     // Initial state - no actions added
@@ -93,7 +90,7 @@ TEST_CASE("MoveBy2D tweening")
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = MakeShared<MoveBy2D>(context);
+    auto moveBy = MakeShared<Actions::MoveBy2D>(context);
     moveBy->SetDuration(2.0f);
     moveBy->SetPositionDelta(Vector2(12, 0));
     auto uiElement = MakeShared<UIElement>(context);
@@ -125,9 +122,9 @@ TEST_CASE("MoveTo tweening")
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = MakeShared<AttributeTo>(context);
+    auto moveBy = MakeShared<Actions::AttributeTo>(context);
     moveBy->SetDuration(2.0f);
-    moveBy->SetName("Position");
+    moveBy->SetAttributeName("Position");
     moveBy->SetTo(Vector3(10, 0, 0));
     auto node = MakeShared<Node>(context);
 
@@ -158,9 +155,9 @@ TEST_CASE("MoveTo2D tweening")
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = MakeShared<AttributeTo>(context);
+    auto moveBy = MakeShared<Actions::AttributeTo>(context);
     moveBy->SetDuration(2.0f);
-    moveBy->SetName("Position");
+    moveBy->SetAttributeName("Position");
     moveBy->SetTo(IntVector2(12, 0));
     auto uiElement = MakeShared<UIElement>(context);
 
@@ -185,16 +182,15 @@ TEST_CASE("MoveTo2D tweening")
     CHECK(0 == actionManager->GetNumActions(uiElement));
 }
 
-
 TEST_CASE("AttributeFromTo tweening")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto moveBy = MakeShared<AttributeFromTo>(context);
+    auto moveBy = MakeShared<Actions::AttributeFromTo>(context);
     moveBy->SetDuration(2.0f);
-    moveBy->SetName("Color");
+    moveBy->SetAttributeName("Color");
     moveBy->SetFrom(Color::BLACK);
     moveBy->SetTo(Color::WHITE);
     auto uiElement = MakeShared<UIElement>(context);
@@ -219,13 +215,31 @@ TEST_CASE("AttributeFromTo tweening")
     CHECK(0 == actionManager->GetNumActions(uiElement));
 }
 
+TEST_CASE("RemoveSelf action deletes node")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto actionManager = context->GetSubsystem<ActionManager>();
+    
+    auto scene = MakeShared<Scene>(context);
+    WeakPtr<Node> weakNode = WeakPtr<Node>(scene->CreateChild("", REPLICATED, 0, false));
+
+    auto action = ActionBuilder(context).RemoveSelf().DelayTime(10).Build();
+    actionManager->AddAction(action, weakNode);
+
+    // Tick the manager. It should trigger RemoveSelf and remove the node.
+    actionManager->Update(0.5f);
+    CHECK(0 == scene->GetNumChildren());
+    CHECK(weakNode.Expired());
+}
+
 TEST_CASE("ShaderParameterFromTo tweening")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto actionManager = context->GetSubsystem<ActionManager>();
 
-    auto shaderParameterFromTo = MakeShared<ShaderParameterFromTo>(context);
+    auto shaderParameterFromTo = MakeShared<Actions::ShaderParameterFromTo>(context);
     shaderParameterFromTo->SetDuration(2.0f);
     shaderParameterFromTo->SetName("MatDiffColor");
     shaderParameterFromTo->SetFrom(Color::BLACK);
@@ -257,20 +271,20 @@ TEST_CASE("Serialize Action")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto action = MakeShared<Action>(context);
-    SharedPtr<BaseAction> innerAction = ActionBuilder(context).MoveBy(2.0f, Vector3(1, 2, 3));
+    SharedPtr<Actions::BaseAction> innerAction = ActionBuilder(context).MoveBy(2.0f, Vector3(1, 2, 3)).Build();
     action->SetAction(innerAction);
 
     VectorBuffer buf;
     action->Save(buf);
-    //ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+    // ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
 
     buf.Seek(0);
     auto action2 = MakeShared<Action>(context);
     action2->Load(buf);
 
     CHECK(action->GetAction()->GetType() == action2->GetAction()->GetType());
-    auto expected = static_cast<MoveBy*>(action->GetAction());
-    auto actual = static_cast<MoveBy*>(action2->GetAction());
+    auto expected = static_cast<Actions::MoveBy*>(action->GetAction());
+    auto actual = static_cast<Actions::MoveBy*>(action2->GetAction());
     CHECK(Equals(expected->GetDuration(), actual->GetDuration()));
     CHECK(expected->GetPositionDelta().Equals(actual->GetPositionDelta()));
 }

@@ -1,4 +1,5 @@
 //
+// Copyright (c) 2015 Xamarin Inc.
 // Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +27,9 @@
 
 namespace Urho3D
 {
+namespace Actions
+{
+
 /// Move by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
 class URHO3D_API MoveBy : public FiniteTimeAction
 {
@@ -44,7 +48,7 @@ public:
     SharedPtr<FiniteTimeAction> Reverse() const override;
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive);
+    void SerializeInBlock(Archive& archive) override;
 
 protected:
     /// Create new action state from the action.
@@ -73,7 +77,7 @@ public:
     SharedPtr<FiniteTimeAction> Reverse() const override;
 
     /// Serialize content from/to archive. May throw ArchiveException.
-    void SerializeInBlock(Archive& archive);
+    void SerializeInBlock(Archive& archive) override;
 
 protected:
     /// Create new action state from the action.
@@ -83,4 +87,5 @@ private:
     Vector2 position_{Vector2::ZERO};
 };
 
+} // namespace Actions
 } // namespace Urho3D

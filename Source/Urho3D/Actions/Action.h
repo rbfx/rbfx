@@ -53,13 +53,13 @@ public:
     void SerializeInBlock(Archive& archive) override;
 
     /// Get action
-    BaseAction* GetAction() const { return action_; }
+    Actions::BaseAction* GetAction() const { return action_; }
     /// Set action
-    void SetAction(BaseAction* action) { action_ = action; }
+    void SetAction(Actions::BaseAction* action);
 
 private:
     /// Root action.
-    SharedPtr<BaseAction> action_;
+    SharedPtr<Actions::BaseAction> action_;
 };
 
 } // namespace Urho3D

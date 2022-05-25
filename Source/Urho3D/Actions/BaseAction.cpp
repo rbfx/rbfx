@@ -24,16 +24,18 @@
 
 #include "ActionManager.h"
 #include "ActionState.h"
+#include "FiniteTimeAction.h"
 
 #include "../Core/Context.h"
-#include "Urho3D/IO/Archive.h"
-#include "Urho3D/IO/ArchiveSerializationBasic.h"
+#include "../IO/Archive.h"
 
-using namespace Urho3D;
-
-namespace 
+namespace Urho3D
 {
-struct NoActionState: public ActionState
+namespace Actions
+{
+namespace
+{
+struct NoActionState : public ActionState
 {
     NoActionState(BaseAction* action, Object* target)
         : ActionState(action, target)
@@ -41,7 +43,7 @@ struct NoActionState: public ActionState
     }
 };
 
-}
+} // namespace
 /// Construct.
 BaseAction::BaseAction(Context* context)
     : Serializable(context)
@@ -51,57 +53,19 @@ BaseAction::BaseAction(Context* context)
 /// Destruct.
 BaseAction::~BaseAction() {}
 
-/// Serialize content from/to archive. May throw ArchiveException.
-void BaseAction::SerializeInBlock(Archive& archive) {
-    
+/// Get action from argument or empty action.
+BaseAction* BaseAction::GetOrDefault(BaseAction* action) const
+{
+    if (action)
+        return action;
+    return context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction();
 }
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void BaseAction::SerializeInBlock(Archive& archive) {}
 
 /// Create new action state from the action.
-SharedPtr<ActionState> BaseAction::StartAction(Object* target)
-{
-    return MakeShared<NoActionState>(this, target);
-}
+SharedPtr<ActionState> BaseAction::StartAction(Object* target) { return MakeShared<NoActionState>(this, target); }
 
-void Urho3D::SerializeValue(Archive& archive, const char* name, SharedPtr<BaseAction>& value)
-{
-    const bool loading = archive.IsInput();
-    ArchiveBlock block = archive.OpenUnorderedBlock(name);
-
-    StringHash type{};
-    ea::string_view typeName{};
-    if (!loading && value)
-    {
-        type = value->GetType();
-        typeName = value->GetTypeName();
-    }
-
-    SerializeStringHash(archive, "type", type, typeName);
-
-    if (loading)
-    {
-        // Serialize null object
-        if (type == StringHash{})
-        {
-            value = nullptr;
-            return;
-        }
-
-        // Create instance
-        Context* context = archive.GetContext();
-        ActionManager* actionManager = context->GetSubsystem<ActionManager>();
-        value.StaticCast(actionManager->CreateObject(type));
-        if (!value)
-        {
-            throw ArchiveException("Failed to create action '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
-                type.ToDebugString());
-        }
-        if (archive.HasElementOrBlock("args"))
-        {
-            SerializeValue(archive, "args", *value);
-        }
-    }
-    else if (value)
-    {
-        SerializeValue(archive, "args", *value);
-    }
-}
+} // namespace Actions
+} // namespace Urho3D

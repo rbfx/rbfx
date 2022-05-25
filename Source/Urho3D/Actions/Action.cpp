@@ -22,6 +22,7 @@
 
 #include "Action.h"
 
+#include "ActionManager.h"
 #include "../Core/Context.h"
 #include "../Resource/XMLFile.h"
 #include "../IO/FileSystem.h"
@@ -29,10 +30,12 @@
 
 namespace Urho3D
 {
+using namespace Actions;
 
 Action::Action(Context* context)
     : Resource(context)
 {
+    SetAction(nullptr);
 }
 
 Action::~Action() = default;
@@ -51,6 +54,13 @@ bool Action::BeginLoad(Deserializer& source)
 
     return xmlFile->LoadObject("actions", *this);
 }
+
+/// Set action
+void Action::SetAction(BaseAction* action)
+{
+    action_ = (action) ? action : (BaseAction*)context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction();
+}
+
 
 bool Action::Save(Serializer& dest) const
 {

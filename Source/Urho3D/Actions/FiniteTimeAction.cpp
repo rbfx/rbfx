@@ -1,4 +1,5 @@
 //
+// Copyright (c) 2015 Xamarin Inc.
 // Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,13 +23,17 @@
 
 #include "FiniteTimeAction.h"
 
+#include "ActionManager.h"
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "Urho3D/IO/ArchiveSerializationBasic.h"
 
-using namespace Urho3D;
+namespace Urho3D
+{
+namespace Actions
+{
 
-namespace 
+namespace
 {
 /// "No-operation" finite time action for irreversible actions.
 class URHO3D_API NoAction : public FiniteTimeAction
@@ -44,7 +49,7 @@ public:
 private:
     SharedPtr<FiniteTimeAction> reversed_;
 };
-}
+} // namespace
 
 /// Construct.
 FiniteTimeAction::FiniteTimeAction(Context* context)
@@ -55,8 +60,16 @@ FiniteTimeAction::FiniteTimeAction(Context* context)
 /// Serialize content from/to archive. May throw ArchiveException.
 void FiniteTimeAction::SerializeInBlock(Archive& archive)
 {
-    BaseAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "duration", duration_, ea::numeric_limits<float>::epsilon());
+}
+
+/// Get action from argument or empty action.
+FiniteTimeAction* FiniteTimeAction::GetOrDefault(FiniteTimeAction* action) const
+{
+    if (action)
+        return action;
+    return context_->GetSubsystem<ActionManager>()->GetEmptyAction();
 }
 
 float FiniteTimeAction::GetDuration() const { return duration_; }
@@ -71,7 +84,10 @@ void FiniteTimeAction::SetDuration(float duration)
 }
 
 /// Create reversed action.
-SharedPtr<FiniteTimeAction> FiniteTimeAction::Reverse() const { return MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this)); }
+SharedPtr<FiniteTimeAction> FiniteTimeAction::Reverse() const
+{
+    return MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this));
+}
 
 /// Construct.
 NoAction::NoAction(Context* context, FiniteTimeAction* reversed)
@@ -86,12 +102,5 @@ NoAction::~NoAction() {}
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> NoAction::Reverse() const { return reversed_; }
 
-void Urho3D::SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeAction>& value)
-{
-    SharedPtr<BaseAction> baseAction = value;
-    SerializeValue(archive, name, baseAction);
-    if (archive.IsInput())
-    {
-        value.DynamicCast(baseAction);
-    }
-}
+} // namespace Actions
+} // namespace Urho3D

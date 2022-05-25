@@ -1,4 +1,5 @@
 //
+// Copyright (c) 2015 Xamarin Inc.
 // Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,17 +23,60 @@
 
 #include "ActionManager.h"
 
+#include "../Core/CoreEvents.h"
+#include "../IO/Log.h"
 #include "Action.h"
 #include "ActionState.h"
 #include "Attribute.h"
-#include "Move.h"
 #include "Ease.h"
+#include "FiniteTimeActionState.h"
+#include "Move.h"
+#include "Repeat.h"
+#include "Sequence.h"
 #include "ShaderParameterFromTo.h"
-#include "../IO/Log.h"
-#include "../Core/CoreEvents.h"
 
 namespace Urho3D
 {
+using namespace Urho3D::Actions;
+
+namespace
+{
+struct EmptyState : public FiniteTimeActionState
+{
+    EmptyState(FiniteTimeAction* action, Object* target)
+        : FiniteTimeActionState(action, target)
+    {
+    }
+};
+
+class EmptyAction : public FiniteTimeAction
+{
+    URHO3D_OBJECT(EmptyAction, FiniteTimeAction)
+
+public:
+    EmptyAction(Context* context)
+        : FiniteTimeAction(context)
+    {
+    }
+
+    /// Get action duration.
+    float GetDuration() const override { return ea::numeric_limits<float>::epsilon(); }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override
+    {
+        //Empty action is immutable so we can reuse it.
+        return SharedPtr<FiniteTimeAction>(const_cast<EmptyAction*>(this));
+    }
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override
+    {
+        return MakeShared<EmptyState>(this, target);
+    }
+};
+} // namespace
 
 ActionManager::ActionManager(Context* context)
     : ActionManager(context, true)
@@ -42,6 +86,7 @@ ActionManager::ActionManager(Context* context)
 ActionManager::ActionManager(Context* context, bool autoupdate)
     : Object(context)
     , ObjectReflectionRegistry(context)
+    , emptyAction_(MakeShared<EmptyAction>(context))
 {
     RegisterActionLibrary(context, this);
     if (autoupdate)
@@ -50,10 +95,7 @@ ActionManager::ActionManager(Context* context, bool autoupdate)
     }
 }
 
-ActionManager::~ActionManager()
-{
-    RemoveAllActions();
-}
+ActionManager::~ActionManager() { RemoveAllActions(); }
 
 void RegisterActionLibrary(Context* context, ActionManager* manager)
 {
@@ -62,6 +104,7 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
         Action::RegisterObject(context);
     }
 
+    manager->AddFactoryReflection<EmptyAction>();
     manager->AddFactoryReflection<BaseAction>();
     manager->AddFactoryReflection<FiniteTimeAction>();
     manager->AddFactoryReflection<MoveBy>();
@@ -70,6 +113,12 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<AttributeTo>();
     manager->AddFactoryReflection<ShaderParameterFromTo>();
     manager->AddFactoryReflection<EaseBackIn>();
+    manager->AddFactoryReflection<EaseBackOut>();
+    manager->AddFactoryReflection<EaseElasticIn>();
+    manager->AddFactoryReflection<EaseElasticInOut>();
+    manager->AddFactoryReflection<EaseElasticOut>();
+    manager->AddFactoryReflection<Sequence>();
+    manager->AddFactoryReflection<RepeatForever>();
 }
 
 void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)
@@ -90,12 +139,12 @@ void ActionManager::RemoveAllActions()
     tmpKeysArray_.clear();
     tmpKeysArray_.reserve(targets_.size() * 2);
 
-    for (auto target:targets_)
+    for (auto target : targets_)
     {
         tmpKeysArray_.push_back(target.first);
     }
 
-    for (auto target: tmpKeysArray_)
+    for (auto target : tmpKeysArray_)
     {
         RemoveAllActionsFromTarget(target);
     }
@@ -137,7 +186,8 @@ void ActionManager::RemoveAction(ActionState* actionState)
     if (targetIt != targets_.end())
     {
         HashElement& element = targetIt->second;
-        ea::erase_if(element.ActionStates, [&](const SharedPtr<ActionState>& state) { return state.Get() == actionState; });
+        ea::erase_if(
+            element.ActionStates, [&](const SharedPtr<ActionState>& state) { return state.Get() == actionState; });
     }
 }
 
@@ -179,7 +229,7 @@ ActionState* ActionManager::AddAction(BaseAction* action, Object* target, bool p
     }
 
     auto isActionRunning = false;
-    for (auto& existingState: element->ActionStates)
+    for (auto& existingState : element->ActionStates)
     {
         if (existingState->GetAction() == action)
         {
@@ -193,7 +243,6 @@ ActionState* ActionManager::AddAction(BaseAction* action, Object* target, bool p
     return state;
 }
 
-
 void ActionManager::Update(float dt)
 {
     if (targets_.empty())
@@ -203,7 +252,7 @@ void ActionManager::Update(float dt)
 
     tmpKeysArray_.clear();
     if (tmpKeysArray_.capacity() < count)
-        tmpKeysArray_.reserve(count*2);
+        tmpKeysArray_.reserve(count * 2);
     for (auto target : targets_)
     {
         tmpKeysArray_.push_back(target.first);
@@ -270,4 +319,62 @@ void ActionManager::Update(float dt)
     currentTarget_ = nullptr;
 }
 
+FiniteTimeAction* ActionManager::GetEmptyAction() { return emptyAction_; }
+
+
+void SerializeValue(Archive& archive, const char* name, SharedPtr<BaseAction>& value)
+{
+    const bool loading = archive.IsInput();
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+
+    StringHash type{};
+    ea::string_view typeName{};
+    if (!loading && value)
+    {
+        type = value->GetType();
+        typeName = value->GetTypeName();
+    }
+
+    SerializeStringHash(archive, "type", type, typeName);
+
+    if (loading)
+    {
+        // Serialize null object
+        if (type == StringHash{} || type == EmptyAction::GetTypeStatic())
+        {
+            value = archive.GetContext()->GetSubsystem<ActionManager>()->GetEmptyAction();
+            return;
+        }
+
+        // Create instance
+        Context* context = archive.GetContext();
+        ActionManager* actionManager = context->GetSubsystem<ActionManager>();
+        value.StaticCast(actionManager->CreateObject(type));
+        if (!value)
+        {
+            throw ArchiveException("Failed to create action '{}/{}' of type {}", archive.GetCurrentBlockPath(), name,
+                type.ToDebugString());
+        }
+        if (archive.HasElementOrBlock("args"))
+        {
+            SerializeValue(archive, "args", *value);
+        }
+    }
+    else if (value && value->GetType() != EmptyAction::GetTypeStatic())
+    {
+        SerializeValue(archive, "args", *value);
+    }
+}
+
+void SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeAction>& value)
+{
+    SharedPtr<BaseAction> baseAction = value;
+    SerializeValue(archive, name, baseAction);
+    if (archive.IsInput())
+    {
+        value.DynamicCast(baseAction);
+    }
+}
+
 } // namespace Urho3D
+

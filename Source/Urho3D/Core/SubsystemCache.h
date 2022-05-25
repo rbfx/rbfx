@@ -57,6 +57,9 @@ using CachedSubsystemList = ea::tuple<
 #if URHO3D_COMPUTE
     , class ComputeDevice
 #endif
+#if URHO3D_ACTIONS
+    , class ActionManager
+#endif
 >;
 
 class Object;

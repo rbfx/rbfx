@@ -28,19 +28,25 @@
 
 namespace Urho3D
 {
+namespace Actions
+{
 
 /// Attribute action state.
 class URHO3D_API AttributeActionState : public FiniteTimeActionState
 {
 public:
     /// Construct.
-    AttributeActionState(FiniteTimeAction* action, Object* target, const char* attribute, VariantType type = VAR_NONE);
+    AttributeActionState(FiniteTimeAction* action, Object* target, const ea::string_view& attribute, VariantType type = VAR_NONE);
     /// Destruct.
     ~AttributeActionState() override;
 
 protected:
     /// Called every frame with it's delta time and attribute value.
     virtual void Update(float dt, Variant& value);
+
+    void Get(Variant& value) const;
+
+    void Set(const Variant& value);
 
     /// Get attribute value or default value.
     template <typename T> T Get() const
@@ -60,4 +66,37 @@ protected:
     AttributeInfo* attribute_{};
     VariantType attributeType_{VAR_NONE};
 };
+
+class SetAttributeState : public AttributeActionState
+{
+public:
+    SetAttributeState(FiniteTimeAction* action, Object* target, const ea::string_view& attribute, const Variant& value);
+
+private:
+    void Update(float time, Variant& var) override;
+
+private:
+    Variant value_;
+    bool triggered_{};
+};
+
+
+class AttributeBlinkState : public AttributeActionState
+{
+public:
+    AttributeBlinkState(FiniteTimeAction* action, Object* target, const ea::string_view& attribute, Variant from,
+        Variant to, unsigned times);
+
+    void Update(float time, Variant& var) override;
+
+    void Stop() override;
+
+private:
+    unsigned times_;
+    Variant originalState_;
+    Variant from_;
+    Variant to_;
+};
+
+} // namespace Actions
 } // namespace Urho3D

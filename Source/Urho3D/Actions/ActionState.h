@@ -22,12 +22,14 @@
 
 #pragma once
 
-#include "BaseAction.h"
 #include "../Core/Object.h"
+#include "BaseAction.h"
 
 namespace Urho3D
 {
 class ActionManager;
+namespace Actions
+{
 
 class ActionState : public RefCounted
 {
@@ -54,12 +56,12 @@ public:
     /// Gets a value indicating whether this instance is done.
     virtual bool IsDone() const { return true; }
 
-protected:
     /// Called after the action has finished.
     /// It will set the 'Target' to null.
     /// IMPORTANT: You should never call this method manually. Instead, use: "target.StopAction(actionState);"
     virtual void Stop();
 
+protected:
     /// Called every frame with it's delta time.
     /// DON'T override unless you know what you are doing.
     virtual void Step(float dt);
@@ -75,4 +77,5 @@ private:
     friend class ActionManager;
 };
 
+} // namespace Actions
 } // namespace Urho3D

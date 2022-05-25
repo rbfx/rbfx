@@ -29,6 +29,8 @@
 
 namespace Urho3D
 {
+namespace Actions
+{
 
 namespace
 {
@@ -94,4 +96,12 @@ void ShaderParameterFromTo::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "to", to_, Variant::EMPTY);
 }
 
+/// Create new action state from the action.
+SharedPtr<ActionState> ShaderParameterFromTo::StartAction(Object* target)
+{
+    return MakeShared<ShaderParameterFromToState>(this, target);
+}
+
+
+} // namespace Actions
 } // namespace Urho3D

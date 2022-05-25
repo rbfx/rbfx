@@ -14,40 +14,23 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR rhs
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR rhsWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR rhs DEALINGS IN
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
 
-#include "ActionState.h"
-#include "BaseAction.h"
-
-#include "../Core/Context.h"
+#include "Repeat.h"
 
 namespace Urho3D
 {
 namespace Actions
 {
 
-ActionState::ActionState(BaseAction* action, Object* target)
+/// Construct.
+RepeatForever::RepeatForever(Context* context)
+    : BaseClassName(context)
 {
-    _action = action;
-    _target = target;
-    _originalTarget = target;
-}
-
-void ActionState::Update(float time) {}
-
-void ActionState::Stop() { _target.Reset(); }
-
-void ActionState::Step(float dt) {}
-
-SharedPtr<ActionState> ActionState::StartAction(BaseAction* action, Object* target) const
-{
-    if (action)
-        return action->StartAction(target);
-    return {};
 }
 
 } // namespace Actions

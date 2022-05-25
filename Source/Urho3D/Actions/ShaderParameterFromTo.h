@@ -26,6 +26,9 @@
 
 namespace Urho3D
 {
+namespace Actions
+{
+
 /// Move to 2D postion action. Target should have attribute "Position" of type Vector3 or IntVector3.
 class URHO3D_API ShaderParameterFromTo : public FiniteTimeAction
 {
@@ -56,10 +59,14 @@ protected:
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
 private:
     ea::string name_;
     Variant from_;
     Variant to_;
 };
 
+} // namespace Actions
 } // namespace Urho3D

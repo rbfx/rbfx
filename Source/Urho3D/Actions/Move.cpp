@@ -1,4 +1,5 @@
 //
+// Copyright (c) 2015 Xamarin Inc.
 // Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,7 +29,10 @@
 #include "FiniteTimeActionState.h"
 #include "Urho3D/IO/ArchiveSerializationBasic.h"
 
-using namespace Urho3D;
+namespace Urho3D
+{
+namespace Actions
+{
 
 namespace
 {
@@ -58,8 +62,6 @@ public:
             }
         }
     }
-
-    ~MoveByState() override = default;
 
     void Update(float time, Variant& value) override
     {
@@ -111,8 +113,6 @@ public:
             }
         }
     }
-
-    ~MoveBy2DState() override = default;
 
     void Update(float time, Variant& value) override
     {
@@ -189,3 +189,6 @@ void MoveBy2D::SerializeInBlock(Archive& archive) { FiniteTimeAction::SerializeI
 
 /// Create new action state from the action.
 SharedPtr<ActionState> MoveBy2D::StartAction(Object* target) { return MakeShared<MoveBy2DState>(this, target); }
+
+} // namespace Actions
+} // namespace Urho3D

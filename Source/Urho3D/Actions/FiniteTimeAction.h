@@ -1,4 +1,5 @@
 //
+// Copyright (c) 2015 Xamarin Inc.
 // Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +27,8 @@
 
 namespace Urho3D
 {
+namespace Actions
+{
 /// Finite time action.
 class URHO3D_API FiniteTimeAction : public BaseAction
 {
@@ -38,10 +41,13 @@ public:
     /// Set action duration.
     void SetDuration(float duration);
     /// Get action duration.
-    float GetDuration() const;
+    virtual float GetDuration() const;
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
+
+    /// Get action from argument or empty action.
+    FiniteTimeAction* GetOrDefault(FiniteTimeAction* action) const;
 
     /// Create reversed action.
     virtual SharedPtr<FiniteTimeAction> Reverse() const;
@@ -50,6 +56,8 @@ private:
     float duration_{ea::numeric_limits<float>::epsilon()};
 };
 
-void SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeAction>& value);
+} // namespace Actions
+
+void SerializeValue(Archive& archive, const char* name, SharedPtr<Actions::FiniteTimeAction>& value);
 
 } // namespace Urho3D

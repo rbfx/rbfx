@@ -1,4 +1,5 @@
 //
+// Copyright (c) 2015 Xamarin Inc.
 // Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,8 +28,12 @@
 
 namespace Urho3D
 {
+namespace Actions
+{
 class ActionState;
 class BaseAction;
+class FiniteTimeAction;
+} // namespace Actions
 
 /// Action manager.
 class URHO3D_API ActionManager
@@ -40,8 +45,8 @@ private:
     struct HashElement
     {
         int ActionIndex {};
-        ea::vector<SharedPtr<ActionState>> ActionStates;
-        SharedPtr<ActionState> CurrentActionState;
+        ea::vector<SharedPtr<Actions::ActionState>> ActionStates;
+        SharedPtr<Actions::ActionState> CurrentActionState;
         bool CurrentActionSalvaged {};
         bool Paused {};
         WeakPtr<Object> Target;
@@ -58,13 +63,15 @@ public:
 
     void RemoveAllActionsFromTarget(Object* target);
 
-    void RemoveAction(ActionState* actionState);
+    void RemoveAction(Actions::ActionState* actionState);
 
     unsigned GetNumActions(Object* target) const;
 
-    ActionState* AddAction(BaseAction* action, Object* target, bool paused = false);
+    Actions::ActionState* AddAction(Actions::BaseAction* action, Object* target, bool paused = false);
 
     void Update(float dt);
+
+    Actions::FiniteTimeAction* GetEmptyAction();
 
 private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
@@ -74,6 +81,7 @@ private:
     bool currentTargetSalvaged_{};
     ea::unordered_map<Object*, HashElement> targets_;
     ea::vector<Object*> tmpKeysArray_;
+    SharedPtr<Actions::FiniteTimeAction> emptyAction_;
 };
 
 /// Register Particle Graph library objects.

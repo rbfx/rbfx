@@ -25,7 +25,10 @@
 #include "../Core/Context.h"
 #include "FiniteTimeAction.h"
 
-using namespace Urho3D;
+namespace Urho3D
+{
+namespace Actions
+{
 
 /// Construct.
 FiniteTimeActionState::FiniteTimeActionState(FiniteTimeAction* action, Object* target)
@@ -51,3 +54,17 @@ void FiniteTimeActionState::Step(float dt)
 
     Update(Clamp(elapsed_ / Max(duration_, ea::numeric_limits<float>::epsilon()), 0.0f, 1.0f));
 }
+
+SharedPtr<FiniteTimeActionState> FiniteTimeActionState::StartAction(FiniteTimeAction* action, Object* target) const
+{
+    if (action)
+    {
+        SharedPtr<FiniteTimeActionState> res;
+        res.DynamicCast(ActionState::StartAction(action, target));
+        return res;
+    }
+    return {};
+}
+
+} // namespace Actions
+} // namespace Urho3D

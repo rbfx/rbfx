@@ -26,8 +26,11 @@
 
 namespace Urho3D
 {
-class FiniteTimeAction;
 class Object;
+
+namespace Actions
+{
+class FiniteTimeAction;
 
 /// Finite time action state.
 class URHO3D_API FiniteTimeActionState : public ActionState
@@ -37,17 +40,24 @@ public:
     FiniteTimeActionState(FiniteTimeAction* action, Object* target);
     /// Destruct.
     ~FiniteTimeActionState() override;
-    
+
     /// Gets a value indicating whether this instance is done.
     bool IsDone() const override { return elapsed_ >= duration_; }
 
     /// Called every frame with it's delta time.
     void Step(float dt) override;
 
+    /// Get action duration.
+    float GetDuration() const { return duration_; }
+protected:
+    /// Call StartAction on an action.
+    SharedPtr<FiniteTimeActionState> StartAction(FiniteTimeAction* action, Object* target) const;
+
 private:
     float duration_{};
     float elapsed_{};
-    bool firstTick_ {true};
+    bool firstTick_{true};
 };
 
+} // namespace Actions
 } // namespace Urho3D
