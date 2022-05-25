@@ -54,7 +54,7 @@ protected:
     /// Create new action state from the action.
     virtual SharedPtr<ActionState> StartAction(Object* target);
 
-    friend class ActionManager;
+    friend class Urho3D::ActionManager;
     friend class ActionState;
 };
 

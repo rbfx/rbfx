@@ -74,7 +74,7 @@ private:
     SharedPtr<Object> _target;
     SharedPtr<Object> _originalTarget;
 
-    friend class ActionManager;
+    friend class Urho3D::ActionManager;
 };
 
 } // namespace Actions
