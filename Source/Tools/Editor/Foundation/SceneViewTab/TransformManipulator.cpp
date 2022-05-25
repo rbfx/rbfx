@@ -117,7 +117,7 @@ void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseCon
     if (nodes.empty())
         return;
 
-    EnsureGizmoInitialized(scenePage.selection_);
+    EnsureGizmoInitialized(scenePage);
 
     if (!mouseConsumed)
     {
@@ -131,18 +131,19 @@ void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseCon
     }
 }
 
-void TransformManipulator::EnsureGizmoInitialized(SceneSelection& selection)
+void TransformManipulator::EnsureGizmoInitialized(SceneViewPage& scenePage)
 {
-    if (selection.GetRevision() != selectionRevision_)
+    if (scenePage.selection_.GetRevision() != selectionRevision_ || scenePage.scene_ != selectionScene_)
     {
-        selectionRevision_ = selection.GetRevision();
+        selectionRevision_ = scenePage.selection_.GetRevision();
+        selectionScene_ = scenePage.scene_;
         transformNodesGizmo_ = ea::nullopt;
     }
 
     if (!transformNodesGizmo_)
     {
-        const auto& nodes = selection.GetEffectiveNodes();
-        const Node* activeNode = selection.GetActiveNode();
+        const auto& nodes = scenePage.selection_.GetEffectiveNodes();
+        const Node* activeNode = scenePage.selection_.GetActiveNode();
         transformNodesGizmo_ = TransformNodesGizmo{activeNode, nodes.begin(), nodes.end()};
         transformNodesGizmo_->OnNodeTransformChanged.Subscribe(this, &TransformManipulator::OnNodeTransformChanged);
     }
@@ -150,7 +151,7 @@ void TransformManipulator::EnsureGizmoInitialized(SceneSelection& selection)
 
 void TransformManipulator::OnNodeTransformChanged(Node* node, const Transform& oldTransform)
 {
-    owner_->PushWrappedAction<ChangeNodeTransformAction>(node, oldTransform);
+    owner_->PushAction<ChangeNodeTransformAction>(node, oldTransform);
 }
 
 void TransformManipulator::UpdateAndRender(SceneViewPage& scenePage)
@@ -170,7 +171,7 @@ void TransformManipulator::RenderTabContextMenu()
     if (ui::MenuItem("In Local Space", hotkeyManager->GetHotkeyLabel(Hotkey_ToggleLocal).c_str(), isLocal_))
         isLocal_ = !isLocal_;
 
-    if (ui::MenuItem("In Pivoted", hotkeyManager->GetHotkeyLabel(Hotkey_TogglePivoted).c_str(), isPivoted_))
+    if (ui::MenuItem("Is Pivoted", hotkeyManager->GetHotkeyLabel(Hotkey_TogglePivoted).c_str(), isPivoted_))
         isPivoted_ = !isPivoted_;
 
     ui::Separator();

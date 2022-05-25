@@ -45,12 +45,19 @@ UndoManager::UndoManager(Context* context)
         const bool mouseDown = ui::IsMouseDown(MOUSEB_LEFT)
             || ui::IsMouseDown(MOUSEB_RIGHT) || ui::IsMouseDown(MOUSEB_MIDDLE);
         if (!mouseDown)
-            ++frame_;
+            NewFrame();
     });
 }
 
-void UndoManager::PushAction(const EditorActionPtr& action)
+void UndoManager::NewFrame()
 {
+    ++frame_;
+}
+
+EditorActionFrame UndoManager::PushAction(const EditorActionPtr& action)
+{
+    action->OnPushed(frame_);
+
     if (NeedNewGroup())
         undoStack_.push_back(ActionGroup{frame_});
 
@@ -58,9 +65,10 @@ void UndoManager::PushAction(const EditorActionPtr& action)
     if (!group.actions_.empty())
     {
         if (group.actions_.back()->MergeWith(*action))
-            return;
+            return frame_;
     }
     group.actions_.push_back(action);
+    return frame_;
 }
 
 bool UndoManager::Undo()

@@ -26,6 +26,7 @@
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 
+#include <EASTL/optional.h>
 #include <EASTL/set.h>
 
 namespace Urho3D
@@ -65,22 +66,23 @@ public:
     void SaveAllResources();
     /// Set currently active resource.
     void SetActiveResource(const ea::string& activeResourceName);
+    /// Set current action for resource.
+    void SetCurrentAction(const ea::string& resourceName, ea::optional<EditorActionFrame> frame);
 
-    /// Wrap action to focus currently active resource.
-    SharedPtr<EditorAction> WrapAction(SharedPtr<EditorAction> action);
-    template <class T, class ... Args> SharedPtr<EditorAction> CreateWrappedAction(const Args& ... args);
-    template <class T, class ... Args> void PushWrappedAction(const Args& ... args);
+    /// Push undo action from currently active resource.
+    void PushAction(SharedPtr<EditorAction> action);
+    template <class T, class ... Args> void PushAction(const Args& ... args);
 
     /// Return properties of the tab.
     /// @{
-    bool IsResourceOpen(const ea::string& resourceName) const { return resourceNames_.contains(resourceName); }
-    const ea::set<ea::string>& GetResourceNames() const { return resourceNames_; }
+    bool IsResourceOpen(const ea::string& resourceName) const { return resources_.contains(resourceName); }
     const ea::string& GetActiveResourceName() const { return activeResourceName_; }
     /// @}
 
 protected:
     /// EditorTab implementation
     /// @{
+    bool IsModified() override;
     void UpdateAndRenderContextMenuItems() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
@@ -95,10 +97,19 @@ protected:
     virtual void OnResourceSaved(const ea::string& resourceName) = 0;
 
 private:
+    struct ResourceData
+    {
+        ea::optional<EditorActionFrame> currentActionFrame_;
+        ea::optional<EditorActionFrame> savedActionFrame_;
+
+        bool IsModified() const { return currentActionFrame_ != savedActionFrame_; }
+    };
+
     void OnProjectInitialized();
+    void DoSaveResource(const ea::string& resourceName, ResourceData& data);
 
     bool loadResources_{};
-    ea::set<ea::string> resourceNames_;
+    ea::map<ea::string, ResourceData> resources_;
     ea::string activeResourceName_;
 };
 
@@ -106,38 +117,34 @@ private:
 class ResourceActionWrapper : public EditorAction
 {
 public:
-    ResourceActionWrapper(SharedPtr<EditorAction> action, ResourceEditorTab* tab, const ea::string& resourceName);
+    ResourceActionWrapper(SharedPtr<EditorAction> action,
+        ResourceEditorTab* tab, const ea::string& resourceName, ea::optional<EditorActionFrame> oldFrame);
 
     /// Implement EditorAction.
     /// @{
     bool IsAlive() const;
+    void OnPushed(EditorActionFrame frame) override;
     void Redo() const override;
     void Undo() const override;
     bool MergeWith(const EditorAction& other) override;
     /// @}
 
 private:
-    void FocusMe();
+    void FocusMe() const;
+    void UpdateCurrentAction(ea::optional<EditorActionFrame> frame) const;
 
     SharedPtr<EditorAction> action_;
     WeakPtr<ResourceEditorTab> tab_;
     ea::string resourceName_;
+
+    ea::optional<EditorActionFrame> oldFrame_;
+    EditorActionFrame newFrame_{};
 };
 
 template <class T, class ... Args>
-SharedPtr<EditorAction> ResourceEditorTab::CreateWrappedAction(const Args& ... args)
+void ResourceEditorTab::PushAction(const Args& ... args)
 {
-    return WrapAction(MakeShared<T>(args...));
-}
-
-template <class T, class ... Args>
-void ResourceEditorTab::PushWrappedAction(const Args& ... args)
-{
-    auto project = GetProject();
-    UndoManager* undoManager = project->GetUndoManager();
-
-    const auto action = CreateWrappedAction<T>(args...);
-    undoManager->PushAction(action);
+    PushAction(MakeShared<T>(args...));
 }
 
 }
