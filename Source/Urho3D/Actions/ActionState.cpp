@@ -31,10 +31,10 @@ namespace Actions
 {
 
 ActionState::ActionState(BaseAction* action, Object* target)
+    : _action(action)
+    , _target(target)
+    , _originalTarget(target)
 {
-    _action = action;
-    _target = target;
-    _originalTarget = target;
 }
 
 void ActionState::Update(float time) {}

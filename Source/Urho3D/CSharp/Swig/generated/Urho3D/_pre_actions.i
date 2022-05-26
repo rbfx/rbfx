@@ -1,4 +1,5 @@
 %csattribute(Urho3D::ActionManager, %arg(Actions::FiniteTimeAction *), EmptyAction, GetEmptyAction);
+%csattribute(Urho3D::ActionSet, %arg(Actions::BaseAction *), DefaultAction, GetDefaultAction, SetDefaultAction);
 %csattribute(Urho3D::Actions::ActionState, %arg(Urho3D::Object *), Target, GetTarget);
 %csattribute(Urho3D::Actions::ActionState, %arg(Urho3D::Object *), OriginalTarget, GetOriginalTarget);
 %csattribute(Urho3D::Actions::ActionState, %arg(Urho3D::Actions::BaseAction *), Action, GetAction);
@@ -20,6 +21,10 @@
 %csattribute(Urho3D::Actions::Blink, %arg(ea::string), AttributeName, GetAttributeName);
 %csattribute(Urho3D::Actions::MoveBy, %arg(Urho3D::Vector3), PositionDelta, GetPositionDelta, SetPositionDelta);
 %csattribute(Urho3D::Actions::MoveBy2D, %arg(Urho3D::Vector2), PositionDelta, GetPositionDelta, SetPositionDelta);
+%csattribute(Urho3D::Actions::JumpBy, %arg(Urho3D::Vector3), PositionDelta, GetPositionDelta, SetPositionDelta);
+%csattribute(Urho3D::Actions::JumpBy2D, %arg(Urho3D::Vector2), PositionDelta, GetPositionDelta, SetPositionDelta);
+%csattribute(Urho3D::Actions::ScaleBy, %arg(Urho3D::Vector3), ScaleDelta, GetScaleDelta, SetScaleDelta);
+%csattribute(Urho3D::Actions::RotateBy, %arg(Urho3D::Quaternion), RotationDelta, GetRotationDelta, SetRotationDelta);
 %csattribute(Urho3D::Actions::Parallel, %arg(unsigned int), NumActions, GetNumActions, SetNumActions);
 %csattribute(Urho3D::Actions::Parallel, %arg(float), Duration, GetDuration);
 %csattribute(Urho3D::Actions::Sequence, %arg(float), Duration, GetDuration);

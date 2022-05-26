@@ -20,13 +20,13 @@
 // THE SOFTWARE.
 //
 #include "../CommonUtils.h"
-#include "Urho3D/Actions/Action.h"
-#include "Urho3D/Actions/ActionBuilder.h"
-#include "Urho3D/Actions/Attribute.h"
-#include "Urho3D/Actions/ShaderParameterFromTo.h"
-#include "Urho3D/Math/EaseMath.h"
-#include "Urho3D/Scene/Scene.h"
 
+#include <Urho3D/Actions/ActionSet.h>
+#include <Urho3D/Actions/ActionBuilder.h>
+#include <Urho3D/Actions/Attribute.h>
+#include <Urho3D/Actions/ShaderParameter.h>
+#include <Urho3D/Math/EaseMath.h>
+#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Actions/ActionManager.h>
 #include <Urho3D/Actions/Move.h>
 #include <Urho3D/Scene/Node.h>
@@ -215,6 +215,42 @@ TEST_CASE("AttributeFromTo tweening")
     CHECK(0 == actionManager->GetNumActions(uiElement));
 }
 
+
+TEST_CASE("Simultanious *By tweening")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto actionManager = context->GetSubsystem<ActionManager>();
+    auto movedNode = MakeShared<Node>(context);
+    auto scaledNode = MakeShared<Node>(context);
+    auto rotatedNode = MakeShared<Node>(context);
+    rotatedNode->SetRotation(Quaternion(20, Vector3::RIGHT));
+    ActionBuilder(context)
+        .MoveBy(2.0f, Vector3(0, 0, 10))
+        .Also(ActionBuilder(context).MoveBy(1.0f, Vector3(10, 0, 0)).Build())
+        .Run(movedNode);
+    ActionBuilder(context)
+        .ScaleBy(2.0f, Vector3(1, 1, 10))
+        .Also(ActionBuilder(context).ScaleBy(1.0f, Vector3(1, 1, 10)).Build())
+        .Run(scaledNode);
+    ActionBuilder(context)
+        .RotateBy(2.0f, Quaternion(10, Vector3::UP))
+        .Also(ActionBuilder(context).RotateBy(1.0f, Quaternion(10, Vector3::UP)).Build())
+        .Run(rotatedNode);
+
+    //Tick for 3 seconds
+    for (int i=0; i<30; ++i)
+        actionManager->Update(0.1f);
+
+    //CHECK(Quaternion(Vector3(10, 20, 0)).Equals(Quaternion(20, Vector3::UP) * Quaternion(10, Vector3::RIGHT)));
+
+    CHECK(movedNode->GetPosition().Equals(Vector3(10,0,10)));
+    CHECK(scaledNode->GetScale().Equals(Vector3(1, 1, 100)));
+    CHECK(rotatedNode->GetRotation().Equals(Quaternion(20, Vector3::RIGHT) * Quaternion(20, Vector3::UP)));
+
+
+}
+
 TEST_CASE("RemoveSelf action deletes node")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
@@ -270,21 +306,21 @@ TEST_CASE("Serialize Action")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    auto action = MakeShared<Action>(context);
+    auto action = MakeShared<ActionSet>(context);
     SharedPtr<Actions::BaseAction> innerAction = ActionBuilder(context).MoveBy(2.0f, Vector3(1, 2, 3)).Build();
-    action->SetAction(innerAction);
+    action->SetDefaultAction(innerAction);
 
     VectorBuffer buf;
     action->Save(buf);
     // ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
 
     buf.Seek(0);
-    auto action2 = MakeShared<Action>(context);
+    auto action2 = MakeShared<ActionSet>(context);
     action2->Load(buf);
 
-    CHECK(action->GetAction()->GetType() == action2->GetAction()->GetType());
-    auto expected = static_cast<Actions::MoveBy*>(action->GetAction());
-    auto actual = static_cast<Actions::MoveBy*>(action2->GetAction());
+    CHECK(action->GetDefaultAction()->GetType() == action2->GetDefaultAction()->GetType());
+    auto expected = static_cast<Actions::MoveBy*>(action->GetDefaultAction());
+    auto actual = static_cast<Actions::MoveBy*>(action2->GetDefaultAction());
     CHECK(Equals(expected->GetDuration(), actual->GetDuration()));
     CHECK(expected->GetPositionDelta().Equals(actual->GetPositionDelta()));
 }

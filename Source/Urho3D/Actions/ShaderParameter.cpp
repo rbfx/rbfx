@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "ShaderParameterFromTo.h"
+#include "ShaderParameter.h"
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"

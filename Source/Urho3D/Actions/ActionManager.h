@@ -77,7 +77,8 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
 private:
-    Object* currentTarget_{};
+    // Current target strong pointer to keep target alive while manager operates on actions.
+    SharedPtr<Object> currentTarget_{};
     bool currentTargetSalvaged_{};
     ea::unordered_map<Object*, HashElement> targets_;
     ea::vector<Object*> tmpKeysArray_;

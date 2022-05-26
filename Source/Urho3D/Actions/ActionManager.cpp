@@ -25,7 +25,7 @@
 
 #include "../Core/CoreEvents.h"
 #include "../IO/Log.h"
-#include "Action.h"
+#include "ActionSet.h"
 #include "ActionState.h"
 #include "Attribute.h"
 #include "Ease.h"
@@ -33,7 +33,7 @@
 #include "Move.h"
 #include "Repeat.h"
 #include "Sequence.h"
-#include "ShaderParameterFromTo.h"
+#include "ShaderParameter.h"
 
 namespace Urho3D
 {
@@ -47,6 +47,12 @@ struct EmptyState : public FiniteTimeActionState
         : FiniteTimeActionState(action, target)
     {
     }
+
+    /// Gets a value indicating whether this instance is done.
+    bool IsDone() const override { return true; }
+
+    /// Called every frame with it's delta time.
+    void Step(float dt) override {}
 };
 
 class EmptyAction : public FiniteTimeAction
@@ -57,6 +63,7 @@ public:
     EmptyAction(Context* context)
         : FiniteTimeAction(context)
     {
+        state_ = MakeShared<EmptyState>(this, nullptr);
     }
 
     /// Get action duration.
@@ -65,16 +72,15 @@ public:
     /// Create reversed action.
     SharedPtr<FiniteTimeAction> Reverse() const override
     {
-        //Empty action is immutable so we can reuse it.
+        // Empty action is immutable so we can reuse it.
         return SharedPtr<FiniteTimeAction>(const_cast<EmptyAction*>(this));
     }
 
 protected:
     /// Create new action state from the action.
-    SharedPtr<ActionState> StartAction(Object* target) override
-    {
-        return MakeShared<EmptyState>(this, target);
-    }
+    SharedPtr<ActionState> StartAction(Object* target) override { return state_; }
+
+    SharedPtr<EmptyState> state_;
 };
 } // namespace
 
@@ -99,9 +105,9 @@ ActionManager::~ActionManager() { RemoveAllActions(); }
 
 void RegisterActionLibrary(Context* context, ActionManager* manager)
 {
-    if (!context->GetObjectReflections().contains(Action::GetTypeStatic()))
+    if (!context->GetObjectReflections().contains(ActionSet::GetTypeStatic()))
     {
-        Action::RegisterObject(context);
+        ActionSet::RegisterObject(context);
     }
 
     manager->AddFactoryReflection<EmptyAction>();
@@ -111,12 +117,23 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<MoveBy2D>();
     manager->AddFactoryReflection<AttributeFromTo>();
     manager->AddFactoryReflection<AttributeTo>();
+    manager->AddFactoryReflection<AttributeBlink>();
     manager->AddFactoryReflection<ShaderParameterFromTo>();
     manager->AddFactoryReflection<EaseBackIn>();
+    manager->AddFactoryReflection<EaseBackInOut>();
     manager->AddFactoryReflection<EaseBackOut>();
     manager->AddFactoryReflection<EaseElasticIn>();
     manager->AddFactoryReflection<EaseElasticInOut>();
     manager->AddFactoryReflection<EaseElasticOut>();
+    manager->AddFactoryReflection<EaseBounceIn>();
+    manager->AddFactoryReflection<EaseBounceInOut>();
+    manager->AddFactoryReflection<EaseBounceOut>();
+    manager->AddFactoryReflection<EaseSineIn>();
+    manager->AddFactoryReflection<EaseSineInOut>();
+    manager->AddFactoryReflection<EaseSineOut>();
+    manager->AddFactoryReflection<EaseExponentialIn>();
+    manager->AddFactoryReflection<EaseExponentialInOut>();
+    manager->AddFactoryReflection<EaseExponentialOut>();
     manager->AddFactoryReflection<Sequence>();
     manager->AddFactoryReflection<RepeatForever>();
 }
@@ -321,7 +338,6 @@ void ActionManager::Update(float dt)
 
 FiniteTimeAction* ActionManager::GetEmptyAction() { return emptyAction_; }
 
-
 void SerializeValue(Archive& archive, const char* name, SharedPtr<BaseAction>& value)
 {
     const bool loading = archive.IsInput();
@@ -377,4 +393,3 @@ void SerializeValue(Archive& archive, const char* name, SharedPtr<FiniteTimeActi
 }
 
 } // namespace Urho3D
-

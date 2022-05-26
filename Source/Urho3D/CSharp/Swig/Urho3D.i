@@ -544,7 +544,7 @@ public:
 // --------------------------------------- Actions ---------------------------------------
 
 %include "Urho3D/Actions/BaseAction.h"
-%include "Urho3D/Actions/Action.h"
+%include "Urho3D/Actions/ActionSet.h"
 %include "Urho3D/Actions/ActionBuilder.h"
 %include "Urho3D/Actions/ActionState.h"
 %include "Urho3D/Actions/ActionManager.h"
@@ -559,7 +559,7 @@ public:
 %include "Urho3D/Actions/Misc.h"
 %include "Urho3D/Actions/Repeat.h"
 %include "Urho3D/Actions/Speed.h"
-%include "Urho3D/Actions/ShaderParameterFromTo.h"
+%include "Urho3D/Actions/ShaderParameter.h"
 
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)

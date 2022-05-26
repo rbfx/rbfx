@@ -71,8 +71,10 @@ protected:
 
 private:
     SharedPtr<BaseAction> _action;
-    SharedPtr<Object> _target;
-    SharedPtr<Object> _originalTarget;
+    /// Active target reference. Set to nullptr when action is complete.
+    WeakPtr<Object> _target;
+    /// Original target reference. To track target references in ActionManager.
+    WeakPtr<Object> _originalTarget;
 
     friend class Urho3D::ActionManager;
 };

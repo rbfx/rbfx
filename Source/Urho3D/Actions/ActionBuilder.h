@@ -22,18 +22,18 @@
 
 #pragma once
 
-#include "BaseAction.h"
 #include "FiniteTimeAction.h"
 
 namespace Urho3D
 {
+class ActionManager;
 
 /// Action as resource
 class URHO3D_API ActionBuilder
 {
 private:
     /// Construct.
-    explicit ActionBuilder(Context* context, Actions::BaseAction* action);
+    explicit ActionBuilder(Context* context, Actions::FiniteTimeAction* action);
 
 public:
     /// Construct.
@@ -51,6 +51,18 @@ public:
     /// Continue with MoveBy2D action.
     ActionBuilder MoveBy2D(float duration, const Vector2& offset);
 
+    /// Continue with JumpBy action.
+    ActionBuilder JumpBy(const Vector3& offset);
+
+    /// Continue with MoveBy2D action.
+    ActionBuilder JumpBy2D(const Vector2& offset);
+
+    /// Continue with ScaleBy action.
+    ActionBuilder ScaleBy(float duration, const Vector3& delta);
+
+    /// Continue with RotateBy action.
+    ActionBuilder RotateBy(float duration, const Quaternion& delta);
+
     /// Continue with Hide action.
     ActionBuilder Hide();
 
@@ -59,10 +71,10 @@ public:
 
     /// Continue with Blink action.
     ActionBuilder Blink(float duration, unsigned numOfBlinks);
-    
+
     /// Continue with AttributeBlink action.
     ActionBuilder Blink(float duration, unsigned numOfBlinks, const ea::string_view& attributeName);
-    
+
     /// Combine with BackIn action.
     ActionBuilder BackIn();
 
@@ -115,13 +127,21 @@ public:
     ActionBuilder DelayTime(float duration);
 
     /// Complete action building and produce result.
-    SharedPtr<Actions::BaseAction> Build() { return action_; }
+    SharedPtr<Actions::FiniteTimeAction> Build() { return action_; }
+
+    /// Run current action on object.
+    /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
+    Actions::ActionState* Run(Object* target);
+    
+    /// Run current action on object via action manager.
+    /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
+    Actions::ActionState* Run(ActionManager* actionManager, Object* target);
 
 private:
     /// Urho3D context.
     Context* context_{};
     /// Action on top of stack (current).
-    SharedPtr<Actions::BaseAction> action_;
+    SharedPtr<Actions::FiniteTimeAction> action_;
 };
 
 } // namespace Urho3D

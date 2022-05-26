@@ -20,59 +20,44 @@
 // THE SOFTWARE.
 //
 
-#include "Action.h"
+#pragma once
 
-#include "ActionManager.h"
-#include "../Core/Context.h"
-#include "../Resource/XMLFile.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Deserializer.h"
+#include "BaseAction.h"
+#include "../Resource/Resource.h"
+#include "../IO/Archive.h"
 
 namespace Urho3D
 {
-using namespace Actions;
 
-Action::Action(Context* context)
-    : Resource(context)
+class XMLFile;
+
+/// Action as resource
+class URHO3D_API ActionSet : public Resource
 {
-    SetAction(nullptr);
-}
+    URHO3D_OBJECT(ActionSet, Resource)
 
-Action::~Action() = default;
+public:
+    /// Construct.
+    explicit ActionSet(Context* context);
+    /// Register object factory.
+    static void RegisterObject(Context* context);
 
-void Action::RegisterObject(Context* context) { context->RegisterFactory<Action>(); }
+    /// Load resource from stream. May be called from a worker thread. Return true if successful.
+    bool BeginLoad(Deserializer& source) override;
 
-bool Action::BeginLoad(Deserializer& source)
-{
-    ea::string extension = GetExtension(source.GetName());
+    /// Save resource. Return true if successful.
+    bool Save(Serializer& dest) const override;
+    /// Serialize from/to archive. Return true if successful.
+    void SerializeInBlock(Archive& archive) override;
 
-    action_.Reset();
+    /// Get action
+    Actions::BaseAction* GetDefaultAction() const { return defaultAction_; }
+    /// Set action
+    void SetDefaultAction(Actions::BaseAction* action);
 
-    const auto xmlFile = MakeShared<XMLFile>(context_);
-    if (!xmlFile->Load(source))
-        return false;
-
-    return xmlFile->LoadObject("actions", *this);
-}
-
-/// Set action
-void Action::SetAction(BaseAction* action)
-{
-    action_ = (action) ? action : (BaseAction*)context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction();
-}
-
-
-bool Action::Save(Serializer& dest) const
-{
-    const auto xmlFile = MakeShared<XMLFile>(context_);
-    xmlFile->SaveObject("actions", *this);
-    xmlFile->Save(dest);
-    return true;
-}
-
-void Action::SerializeInBlock(Archive& archive)
-{
-    SerializeValue(archive, "action", action_);
-}
+private:
+    /// Root action.
+    SharedPtr<Actions::BaseAction> defaultAction_;
+};
 
 } // namespace Urho3D

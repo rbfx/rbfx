@@ -22,18 +22,20 @@
 
 #include "ActionBuilder.h"
 
+#include "ActionManager.h"
 #include "Ease.h"
 #include "Move.h"
 #include "Sequence.h"
 #include "Misc.h"
 #include "Parallel.h"
+#include "Urho3D/Core/Context.h"
 
 namespace Urho3D
 {
 using namespace Actions;
 
 /// Construct.
-ActionBuilder::ActionBuilder(Context* context, BaseAction* action)
+ActionBuilder::ActionBuilder(Context* context, FiniteTimeAction* action)
     : context_(context)
     , action_(action)
 {
@@ -102,6 +104,38 @@ ActionBuilder ActionBuilder::MoveBy2D(float duration, const Vector2& offset)
     auto action = MakeShared<Actions::MoveBy2D>(context_);
     action->SetDuration(duration);
     action->SetPositionDelta(offset);
+    return Then(action);
+}
+
+ActionBuilder ActionBuilder::JumpBy(const Vector3& offset)
+{
+    auto action = MakeShared<Actions::JumpBy>(context_);
+    action->SetPositionDelta(offset);
+    return Then(action);
+}
+
+ActionBuilder ActionBuilder::JumpBy2D(const Vector2& offset)
+{
+    auto action = MakeShared<Actions::JumpBy2D>(context_);
+    action->SetPositionDelta(offset);
+    return Then(action);
+}
+
+/// Continue with ScaleBy action.
+ActionBuilder ActionBuilder::ScaleBy(float duration, const Vector3& delta)
+{
+    auto action = MakeShared<Actions::ScaleBy>(context_);
+    action->SetDuration(duration);
+    action->SetScaleDelta(delta);
+    return Then(action);
+}
+
+/// Continue with RotateBy action.
+ActionBuilder ActionBuilder::RotateBy(float duration, const Quaternion& delta)
+{
+    auto action = MakeShared<Actions::RotateBy>(context_);
+    action->SetDuration(duration);
+    action->SetRotationDelta(delta);
     return Then(action);
 }
 
@@ -267,5 +301,24 @@ ActionBuilder ActionBuilder::DelayTime(float duration)
     action->SetDuration(duration);
     return Then(action);
 }
+
+    /// Run current action on object.
+/// Use Build() instead of Run() if you run the action more than once to reduce allocations.
+Actions::ActionState* ActionBuilder::Run(Object* target)
+{
+    return Run(context_->GetSubsystem<ActionManager>(), target);
+}
+
+/// Run current action on object via action manager.
+/// Use Build() instead of Run() if you run the action more than once to reduce allocations.
+Actions::ActionState* ActionBuilder::Run(ActionManager* actionManager, Object* target)
+{
+    if (actionManager)
+    {
+        return actionManager->AddAction(action_, target);
+    }
+    return nullptr;
+}
+
 
 } // namespace Urho3D
