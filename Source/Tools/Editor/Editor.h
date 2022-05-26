@@ -161,6 +161,7 @@ protected:
     ImGuiID dockspaceId_;
     /// Path to a project that editor should open on the end of the frame.
     ea::string pendingOpenProject_;
+    bool pendingCloseProject_{};
     /// Flag indicating that editor should create and load default layout.
     bool loadDefaultLayout_ = false;
     /// Monospace font.

@@ -232,6 +232,7 @@ private:
     SceneViewPage* GetPage(const ea::string& resourceName);
     SceneViewPage* GetActivePage();
     SceneViewPage CreatePage(Scene* scene) const;
+    void SavePageScene(SceneViewPage& page) const;
 
     void SavePageConfig(const SceneViewPage& page) const;
     void LoadPageConfig(SceneViewPage& page) const;

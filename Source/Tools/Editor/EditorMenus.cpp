@@ -92,7 +92,7 @@ void Editor::RenderMenuBar()
             if (projectEditor_)
             {
                 if (ui::MenuItem("Close Project"))
-                    CloseProject();
+                    pendingCloseProject_ = true;
             }
 
             ui::Separator();
@@ -114,7 +114,7 @@ void Editor::RenderMenuBar()
             }
 
             if (ui::MenuItem("Exit", keyBindings_.GetKeyCombination(ActionType::Exit)))
-                engine_->Exit();
+                SendEvent(E_EXITREQUESTED);
 
             ui::EndMenu();
         }

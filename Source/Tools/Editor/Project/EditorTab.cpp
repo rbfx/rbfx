@@ -87,7 +87,7 @@ void EditorTab::UpdateAndRenderWindow()
     if (noContentPadding)
         ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
 
-    if (IsModified())
+    if (IsMarkedUnsaved())
         windowFlags_ |= ImGuiWindowFlags_UnsavedDocument;
     else
         windowFlags_ &= ~ImGuiWindowFlags_UnsavedDocument;

@@ -549,6 +549,14 @@ void Editor::OnUpdate(VariantMap& args)
                 ui::EndPopup();
             }
         }
+        else if (projectEditor_)
+        {
+            const auto result = projectEditor_->CloseGracefully();
+            if (result == CloseProjectResult::Closed)
+                engine_->Exit();
+            else if (result == CloseProjectResult::Canceled)
+                exiting_ = false;
+        }
         else
         {
             context_->GetSubsystem<WorkQueue>()->Complete(0);
@@ -596,10 +604,35 @@ void Editor::OnConsoleCommand(VariantMap& args)
 
 void Editor::OnEndFrame()
 {
+    if (pendingCloseProject_)
+    {
+        if (projectEditor_)
+        {
+            const auto result = projectEditor_->CloseGracefully();
+            if (result == CloseProjectResult::Canceled)
+            {
+                pendingCloseProject_ = false;
+                pendingOpenProject_.clear();
+            }
+
+            if (result != CloseProjectResult::Closed)
+                return;
+
+            projectEditor_ = nullptr;
+        }
+        pendingCloseProject_ = false;
+    }
+
     // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
     // candidate. This subsystem will be recreated.
     if (!pendingOpenProject_.empty())
     {
+        if (projectEditor_)
+        {
+            pendingCloseProject_ = true;
+            return;
+        }
+
         CloseProject();
         // Reset SystemUI so that imgui loads it's config proper.
         context_->RemoveSubsystem<SystemUI>();
@@ -608,38 +641,6 @@ void Editor::OnEndFrame()
         SetupSystemUI();
 
         projectEditor_ = MakeShared<ProjectEditor>(context_, pendingOpenProject_);
-
-#if 0
-        project_ = new Project(context_);
-        context_->RegisterSubsystem(project_);
-        bool loaded = project_->LoadProject(pendingOpenProject_);
-        // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
-        // subsystem reads this file and loads settings.
-        if (loaded)
-        {
-            auto* fs = context_->GetSubsystem<FileSystem>();
-            loadDefaultLayout_ = project_->NeeDefaultUIPlacement();
-            StringVector& recents = recentProjects_;
-            // Remove latest project if it was already opened or any projects that no longer exists.
-            for (auto it = recents.begin(); it != recents.end();)
-            {
-                if (*it == pendingOpenProject_ || !fs->DirExists(*it))
-                    it = recents.erase(it);
-                else
-                    ++it;
-            }
-            // Latest project goes to front
-            recents.insert(recents.begin(), pendingOpenProject_);
-            // Limit recents list size
-            if (recents.size() > 10)
-                recents.resize(10);
-        }
-        else
-        {
-            CloseProject();
-            URHO3D_LOGERROR("Loading project failed.");
-        }
-#endif
         pendingOpenProject_.clear();
     }
 }
