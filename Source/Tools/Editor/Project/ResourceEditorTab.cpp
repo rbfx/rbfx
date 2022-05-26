@@ -26,6 +26,8 @@
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
+#include <EASTL/finally.h>
+
 namespace Urho3D
 {
 
@@ -42,15 +44,21 @@ ResourceEditorTab::~ResourceEditorTab()
 {
 }
 
+void ResourceEditorTab::EnumerateUnsavedItems(ea::vector<ea::string>& items)
+{
+    for (const auto& [resourceName, data] : resources_)
+    {
+        if (data.IsUnsaved())
+            items.push_back(resourceName);
+    }
+}
+
 void ResourceEditorTab::WriteIniSettings(ImGuiTextBuffer& output)
 {
     BaseClassName::WriteIniSettings(output);
 
-    StringVector resourceNamesVector;
-    for (const auto& [resourceName, data] : resources_)
-        resourceNamesVector.push_back(resourceName);
-
-    WriteStringToIni(output, "ResourceNames", ea::string::joined(resourceNamesVector, "|"));
+    const StringVector resourceNames = GetResourceNames();
+    WriteStringToIni(output, "ResourceNames", ea::string::joined(resourceNames, "|"));
     WriteStringToIni(output, "ActiveResourceName", activeResourceName_);
 }
 
@@ -60,8 +68,8 @@ void ResourceEditorTab::ReadIniSettings(const char* line)
 
     if (const auto value = ReadStringFromIni(line, "ResourceNames"))
     {
-        const StringVector resourceNamesVector = value->split('|');
-        for (const ea::string& resourceName : resourceNamesVector)
+        const StringVector resourceNames = value->split('|');
+        for (const ea::string& resourceName : resourceNames)
             OpenResource(resourceName);
     }
 
@@ -74,7 +82,10 @@ void ResourceEditorTab::OpenResource(const ea::string& resourceName, bool activa
     if (!resources_.contains(resourceName))
     {
         if (!SupportMultipleResources())
-            CloseAllResources();
+        {
+            CloseAllResourcesGracefully(resourceName);
+            return;
+        }
 
         resources_.emplace(resourceName, ResourceData{});
         if (loadResources_)
@@ -107,6 +118,14 @@ void ResourceEditorTab::CloseResource(const ea::string& resourceName)
                 SetActiveResource("");
         }
     }
+}
+
+StringVector ResourceEditorTab::GetResourceNames() const
+{
+    StringVector resourceNames;
+    for (const auto& [resourceName, data] : resources_)
+        resourceNames.push_back(resourceName);
+    return resourceNames;
 }
 
 void ResourceEditorTab::OnProjectInitialized()
@@ -143,7 +162,6 @@ void ResourceEditorTab::SetCurrentAction(const ea::string& resourceName, ea::opt
 
 void ResourceEditorTab::CloseAllResources()
 {
-    auto undoManager = GetProject()->GetUndoManager();
     if (loadResources_)
     {
         for (const auto& [resourceName, data] : resources_)
@@ -154,6 +172,71 @@ void ResourceEditorTab::CloseAllResources()
     }
     resources_.clear();
     activeResourceName_ = "";
+}
+
+void ResourceEditorTab::CloseResourceGracefully(const ea::string& resourceName, ea::function<void()> onClosed)
+{
+    if (!IsResourceUnsaved(resourceName))
+    {
+        CloseResource(resourceName);
+        onClosed();
+        return;
+    }
+
+    const WeakPtr<ResourceEditorTab> weakSelf(this);
+
+    CloseResourceRequest request;
+    request.resourceNames_ = {resourceName};
+    request.onSave_ = [=]()
+    {
+        if (weakSelf)
+        {
+            weakSelf->SaveResource(resourceName);
+            weakSelf->CloseResource(resourceName);
+            onClosed();
+        }
+    };
+    request.onDiscard_ = [=]()
+    {
+        if (weakSelf)
+        {
+            weakSelf->CloseResource(resourceName);
+            onClosed();
+        }
+    };
+
+    auto project = GetProject();
+    project->CloseResourceGracefully(request);
+}
+
+void ResourceEditorTab::CloseAllResourcesGracefully(ea::function<void()> onAllClosed)
+{
+    if (!IsAnyResourceUnsaved())
+    {
+        CloseAllResources();
+        return;
+    }
+
+    auto delayedCallback = ea::make_finally([onAllClosed]() { onAllClosed(); });
+    auto releaseWhenClosed = ea::make_shared<decltype(delayedCallback)>(ea::move(delayedCallback));
+
+    const StringVector resourceNames = GetResourceNames();
+    for (const ea::string& resourceName : resourceNames)
+    {
+        CloseResourceGracefully(resourceName, [releaseWhenClosed]() mutable
+        {
+            releaseWhenClosed.reset();
+        });
+    }
+}
+
+void ResourceEditorTab::CloseAllResourcesGracefully(const ea::string& pendingOpenResourceName)
+{
+    CloseAllResourcesGracefully([=]()
+    {
+        if (!pendingOpenResourceName.empty())
+            OpenResource(pendingOpenResourceName);
+    });
 }
 
 void ResourceEditorTab::SaveResource(const ea::string& resourceName)
@@ -194,12 +277,25 @@ void ResourceEditorTab::PushAction(SharedPtr<EditorAction> action)
     }
 }
 
-bool ResourceEditorTab::IsModified()
+bool ResourceEditorTab::IsResourceUnsaved(const ea::string& resourceName) const
 {
-    const auto iter = resources_.find(activeResourceName_);
-    if (iter != resources_.end())
-        return iter->second.IsModified();
+    const auto iter = resources_.find(resourceName);
+    return iter != resources_.end() && iter->second.IsUnsaved();
+}
+
+bool ResourceEditorTab::IsAnyResourceUnsaved() const
+{
+    for (const auto& [resourceName, data] : resources_)
+    {
+        if (data.IsUnsaved())
+            return true;
+    }
     return false;
+}
+
+bool ResourceEditorTab::IsMarkedUnsaved()
+{
+    return IsResourceUnsaved(activeResourceName_);
 }
 
 void ResourceEditorTab::UpdateAndRenderContextMenuItems()
@@ -220,18 +316,21 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
         ui::PushID("ActiveResources");
         for (const auto& [resourceName, data] : resources_)
         {
+            ui::PushID(resourceName.c_str());
+
             bool selected = resourceName == activeResourceName_;
             if (ui::SmallButton(ICON_FA_XMARK))
                 closeResourcePending = resourceName;
             ui::SameLine();
 
             ea::string title;
-            if (data.IsModified())
+            if (data.IsUnsaved())
                 title += "* ";
             title += resourceName;
 
             if (ui::MenuItem(title.c_str(), nullptr, &selected))
                 SetActiveResource(resourceName);
+            ui::PopID();
         }
         ui::PopID();
         SetSeparator();
@@ -267,9 +366,9 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
 
     // Apply delayed actions
     if (closeAllResourcesPending)
-        CloseAllResources();
+        CloseAllResourcesGracefully();
     else if (!closeResourcePending.empty())
-        CloseResource(closeResourcePending);
+        CloseResourceGracefully(closeResourcePending);
     else if (saveAllResourcesPending)
         SaveAllResources();
     else if (!saveResourcePending.empty())

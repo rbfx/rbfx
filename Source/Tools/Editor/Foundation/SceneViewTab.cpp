@@ -336,6 +336,14 @@ void SceneViewTab::OnResourceSaved(const ea::string& resourceName)
         return;
 
     SavePageConfig(*page);
+    SavePageScene(*page);
+}
+
+void SceneViewTab::SavePageScene(SceneViewPage& page) const
+{
+    XMLFile xmlFile(context_);
+    page.scene_->SaveXML(xmlFile.GetOrCreateRoot("scene"));
+    xmlFile.SaveFile(page.scene_->GetFileName());
 }
 
 void SceneViewTab::UpdateAndRenderContent()

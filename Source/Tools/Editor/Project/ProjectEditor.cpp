@@ -30,6 +30,8 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
+
 #include <string>
 
 namespace Urho3D
@@ -161,6 +163,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , hotkeyManager_(MakeShared<HotkeyManager>(context_))
     , undoManager_(MakeShared<UndoManager>(context_))
     , settingsManager_(MakeShared<SettingsManager>(context_))
+    , closeDialog_(MakeShared<CloseDialog>(context_))
 {
     URHO3D_ASSERT(numActiveProjects == 0);
     context_->RegisterSubsystem(this, ProjectEditor::GetTypeStatic());
@@ -183,6 +186,54 @@ ProjectEditor::~ProjectEditor()
     URHO3D_ASSERT(numActiveProjects == 0);
 
     ui::GetIO().IniFilename = nullptr;
+}
+
+CloseProjectResult ProjectEditor::CloseGracefully()
+{
+    // If result is ready, return it now and reset state
+    if (closeProjectResult_ != CloseProjectResult::Undefined)
+    {
+        const auto result = closeProjectResult_;
+        closeProjectResult_ = CloseProjectResult::Undefined;
+        return result;
+    }
+
+    // Wait if dialog is already open
+    if (closeDialog_->IsActive())
+        return CloseProjectResult::Undefined;
+
+    // Collect unsaved items
+    ea::vector<ea::string> unsavedItems;
+    for (EditorTab* tab : tabs_)
+        tab->EnumerateUnsavedItems(unsavedItems);
+
+    // If nothing to save, close immediately
+    if (unsavedItems.empty())
+        return CloseProjectResult::Closed;
+
+    // Open popup otherwise
+    CloseResourceRequest request;
+    request.resourceNames_ = ea::move(unsavedItems);
+    request.onSave_ = [this]()
+    {
+        Save();
+        closeProjectResult_ = CloseProjectResult::Closed;
+    };
+    request.onDiscard_ = [this]()
+    {
+        closeProjectResult_ = CloseProjectResult::Closed;
+    };
+    request.onCancel_ = [this]()
+    {
+        closeProjectResult_ = CloseProjectResult::Canceled;
+    };
+    closeDialog_->RequestClose(ea::move(request));
+    return CloseProjectResult::Undefined;
+}
+
+void ProjectEditor::CloseResourceGracefully(const CloseResourceRequest& request)
+{
+    closeDialog_->RequestClose(request);
 }
 
 void ProjectEditor::IgnoreFileNamePattern(const ea::string& pattern)
@@ -382,6 +433,8 @@ void ProjectEditor::UpdateAndRender()
 
     for (EditorTab* tab : tabs_)
         tab->UpdateAndRender();
+
+    closeDialog_->UpdateAndRender();
 }
 
 void ProjectEditor::UpdateAndRenderProjectMenu()
@@ -409,17 +462,26 @@ void ProjectEditor::UpdateAndRenderMainMenu()
     }
 }
 
-void ProjectEditor::Save()
+void ProjectEditor::SaveProjectOnly()
 {
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     SaveGitIgnore();
     settingsManager_->SaveFile(settingsJsonPath_);
+}
 
+void ProjectEditor::SaveResourcesOnly()
+{
     for (EditorTab* tab : tabs_)
     {
         if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
             resourceTab->SaveAllResources();
     }
+}
+
+void ProjectEditor::Save()
+{
+    SaveProjectOnly();
+    SaveResourcesOnly();
 }
 
 void ProjectEditor::Undo()

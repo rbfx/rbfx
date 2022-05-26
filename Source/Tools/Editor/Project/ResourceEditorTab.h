@@ -44,6 +44,8 @@ public:
 
     /// EditorTab implementation
     /// @{
+    void EnumerateUnsavedItems(ea::vector<ea::string>& items) override;
+
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
     /// @}
@@ -60,6 +62,12 @@ public:
     void CloseResource(const ea::string& resourceName);
     /// Close all opened resources.
     void CloseAllResources();
+    /// Close resource gracefully.
+    void CloseResourceGracefully(const ea::string& resourceName, ea::function<void()> onClosed = []{});
+    /// Close all opened resources gracefully.
+    void CloseAllResourcesGracefully(ea::function<void()> onAllClosed = []{});
+    /// Close all opened resources gracefully. Open other resource if requested.
+    void CloseAllResourcesGracefully(const ea::string& pendingOpenResourceName);
     /// Save specific opened resource.
     void SaveResource(const ea::string& resourceName);
     /// Save all resources.
@@ -76,13 +84,15 @@ public:
     /// Return properties of the tab.
     /// @{
     bool IsResourceOpen(const ea::string& resourceName) const { return resources_.contains(resourceName); }
+    bool IsResourceUnsaved(const ea::string& resourceName) const;
+    bool IsAnyResourceUnsaved() const;
     const ea::string& GetActiveResourceName() const { return activeResourceName_; }
     /// @}
 
 protected:
     /// EditorTab implementation
     /// @{
-    bool IsModified() override;
+    bool IsMarkedUnsaved() override;
     void UpdateAndRenderContextMenuItems() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
@@ -102,9 +112,10 @@ private:
         ea::optional<EditorActionFrame> currentActionFrame_;
         ea::optional<EditorActionFrame> savedActionFrame_;
 
-        bool IsModified() const { return currentActionFrame_ != savedActionFrame_; }
+        bool IsUnsaved() const { return currentActionFrame_ != savedActionFrame_; }
     };
 
+    StringVector GetResourceNames() const;
     void OnProjectInitialized();
     void DoSaveResource(const ea::string& resourceName, ResourceData& data);
 

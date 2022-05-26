@@ -25,6 +25,7 @@
 #include "../Core/HotkeyManager.h"
 #include "../Core/SettingsManager.h"
 #include "../Core/UndoManager.h"
+#include "../Project/CloseDialog.h"
 #include "../Project/EditorTab.h"
 
 #include <Urho3D/Core/Object.h>
@@ -32,6 +33,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
 
+#include <EASTL/functional.h>
 #include <EASTL/set.h>
 
 #include <regex>
@@ -53,6 +55,14 @@ struct OpenResourceRequest
     explicit operator bool() const { return IsValid(); }
 
     static OpenResourceRequest FromResourceName(Context* context, const ea::string& resourceName);
+};
+
+/// Result of the graceful project close.
+enum class CloseProjectResult
+{
+    Undefined,
+    Closed,
+    Canceled
 };
 
 /// Helper class to keep and restore state of ResourceCache.
@@ -83,6 +93,11 @@ public:
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;
 
+    /// Request graceful close of the project. Called multiple times during close sequence.
+    CloseProjectResult CloseGracefully();
+    /// Request graceful close of the resource.
+    void CloseResourceGracefully(const CloseResourceRequest& request);
+
     /// Update and render main window with tabs.
     void UpdateAndRender();
     /// Update and render project menu.
@@ -103,6 +118,8 @@ public:
 
     /// Commands
     /// @{
+    void SaveProjectOnly();
+    void SaveResourcesOnly();
     void Save();
     void Undo();
     void Redo();
@@ -157,6 +174,12 @@ private:
     ea::map<ea::string, SharedPtr<EditorTab>> sortedTabs_;
     ea::set<ea::string> ignoredFileNames_;
     ea::vector<std::regex> ignoredFileNameRegexes_;
+
+    /// Close popup handling
+    /// @{
+    SharedPtr<CloseDialog> closeDialog_;
+    CloseProjectResult closeProjectResult_{};
+    /// @}
 
     /// UI state
     /// @{

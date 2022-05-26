@@ -92,6 +92,8 @@ public:
     virtual void ApplyPlugins();
     /// Called when project is fully loaded.
     virtual void OnProjectLoaded() {}
+    /// Enumerates all unsaved items corresponding to this tab.
+    virtual void EnumerateUnsavedItems(ea::vector<ea::string>& items) {}
 
     /// Implement EditorConfigurable
     /// @{
@@ -118,7 +120,7 @@ protected:
     /// Render context menu of the tab.
     virtual void UpdateAndRenderContextMenuItems() {}
     /// Return whether the document is modified and prompt to save should be shown.
-    virtual bool IsModified() { return false; }
+    virtual bool IsMarkedUnsaved() { return false; }
     /// Update tab in focus.
     virtual void UpdateFocused() {};
     /// Apply scoped hotkeys for this tab.
