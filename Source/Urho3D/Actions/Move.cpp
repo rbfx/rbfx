@@ -223,7 +223,7 @@ public:
     void Update(float time, Variant& value) override
     {
         const auto currentScale = value.GetVector3();
-        auto diff = currentScale/previousScale_;
+        const auto diff = currentScale/previousScale_;
         startScale_ = startScale_ * diff;
         const auto newScale = startScale_ * Vector3::ONE.Lerp(scaleDelta_, time);
         value = newScale;
@@ -280,7 +280,7 @@ SharedPtr<FiniteTimeAction> MoveBy::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void MoveBy::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "delta", delta_, Vector3::ZERO);
 }
 
@@ -308,7 +308,7 @@ SharedPtr<FiniteTimeAction> MoveBy2D::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void MoveBy2D::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "delta", delta_, Vector2::ZERO);
 }
 
@@ -337,7 +337,7 @@ SharedPtr<FiniteTimeAction> JumpBy::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void JumpBy::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "delta", delta_, Vector3::ZERO);
 }
 
@@ -365,7 +365,7 @@ SharedPtr<FiniteTimeAction> JumpBy2D::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void JumpBy2D::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "delta", delta_, Vector2::ZERO);
 }
 
@@ -393,7 +393,7 @@ SharedPtr<FiniteTimeAction> ScaleBy::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void ScaleBy::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "delta", delta_, Vector3::ONE);
 }
 
@@ -422,7 +422,7 @@ SharedPtr<FiniteTimeAction> RotateBy::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void RotateBy::SerializeInBlock(Archive& archive)
 {
-    FiniteTimeAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeOptionalValue(archive, "delta", delta_, Quaternion::IDENTITY);
 }
 

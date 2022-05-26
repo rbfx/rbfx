@@ -26,7 +26,6 @@
 #include "ActionBuilder.h"
 #include "ActionManager.h"
 #include "FiniteTimeActionState.h"
-#include "Repeat.h"
 #include "Urho3D/IO/ArchiveSerializationContainer.h"
 
 #include <numeric>
@@ -38,6 +37,12 @@ namespace Actions
 
 namespace
 {
+
+struct StateAndDuration
+{
+    SharedPtr<FiniteTimeActionState> state_;
+    float timeScale_;
+};
 struct ParallelState : public FiniteTimeActionState
 {
     ParallelState(Parallel* action, Object* target)
@@ -45,10 +50,13 @@ struct ParallelState : public FiniteTimeActionState
     {
         const unsigned numActions = action->GetNumActions();
         innerActionStates_.reserve(numActions);
+        const auto totalDuration = action->GetDuration();
         for (unsigned i = 0; i < numActions; ++i)
         {
             FiniteTimeAction* innerAction = action->GetAction(i);
-            innerActionStates_.emplace_back(StartAction(innerAction, target));
+            const auto innerDuration = innerAction->GetDuration();
+            innerActionStates_.emplace_back(
+                StateAndDuration{StartAction(innerAction, target), totalDuration / innerDuration});
         }
     }
 
@@ -56,20 +64,18 @@ struct ParallelState : public FiniteTimeActionState
     {
         for (auto& state : innerActionStates_)
         {
-            if (!state->IsDone())
-                state->Update(time);
+            state.state_->Update(Clamp(time * state.timeScale_, 0.0f, 1.0f));
         }
     }
 
     void Stop() override
     {
         for (auto& state : innerActionStates_)
-            state->Stop();
+            state.state_->Stop();
         FiniteTimeActionState::Stop();
     }
 
-
-    ea::fixed_vector<SharedPtr<FiniteTimeActionState>, 4> innerActionStates_;
+    ea::fixed_vector<StateAndDuration, 4> innerActionStates_;
 };
 
 } // namespace

@@ -245,10 +245,41 @@ TEST_CASE("Simultanious *By tweening")
     //CHECK(Quaternion(Vector3(10, 20, 0)).Equals(Quaternion(20, Vector3::UP) * Quaternion(10, Vector3::RIGHT)));
 
     CHECK(movedNode->GetPosition().Equals(Vector3(10,0,10)));
-    CHECK(scaledNode->GetScale().Equals(Vector3(1, 1, 100)));
+    CHECK(scaledNode->GetScale().Equals(Vector3(1, 1, 100), 1e-4f));
     CHECK(rotatedNode->GetRotation().Equals(Quaternion(20, Vector3::RIGHT) * Quaternion(20, Vector3::UP)));
+}
 
+TEST_CASE("Repeat MoveBy")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
+    auto actionManager = context->GetSubsystem<ActionManager>();
+    auto movedNode = MakeShared<Node>(context);
+    ActionBuilder(context)
+        .MoveBy(1.0f, Vector3(0, 0, 10))
+        .Repeat(2)
+        .Run(movedNode);
+
+    // Tick for 3 seconds
+    for (int i = 0; i < 30; ++i)
+        actionManager->Update(0.1f);
+
+    CHECK(movedNode->GetPosition().Equals(Vector3(0, 0, 20)));
+}
+
+TEST_CASE("Repeat JumpBy")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto actionManager = context->GetSubsystem<ActionManager>();
+    auto movedNode = MakeShared<Node>(context);
+    ActionBuilder(context).JumpBy(Vector3(0, 0, 10)).Repeat(2).Run(movedNode);
+
+    // Tick for 3 seconds
+    for (int i = 0; i < 30; ++i)
+        actionManager->Update(0.1f);
+
+    CHECK(movedNode->GetPosition().Equals(Vector3(0, 0, 20)));
 }
 
 TEST_CASE("RemoveSelf action deletes node")

@@ -44,8 +44,6 @@ struct SequenceState : public FiniteTimeActionState
         hasInfiniteAction_ = innerActions_[0]->IsInstanceOf(RepeatForever::GetTypeStatic())
             || innerActions_[1]->IsInstanceOf(RepeatForever::GetTypeStatic());
         split_ = innerActions_[0]->GetDuration() / GetDuration();
-        // innerActionStates_[0].DynamicCast(StartAction(innerActions_[0], target));
-        // innerActionStates_[1].DynamicCast(StartAction(innerActions_[1], target));
     }
 
     /// Gets a value indicating whether this instance is done.
@@ -58,8 +56,8 @@ struct SequenceState : public FiniteTimeActionState
 
     void Update(float time) override
     {
-        int found;
-        float new_t;
+        int found {0};
+        float new_t {0.0f};
 
         if (time < split_)
         {

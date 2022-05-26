@@ -42,7 +42,7 @@ public:
     // Get "to" value.
     void SetTo(const Variant&);
     // Get shader parameter name.
-    void SetAttributeName(const ea::string& attribute);
+    void SetAttributeName(const ea::string_view& attribute);
 
     // Get "from" value.
     const Variant& GetFrom() const { return from_; }
@@ -79,7 +79,7 @@ public:
     // Get "to" value.
     void SetTo(const Variant&);
     // Get shader parameter name.
-    void SetAttributeName(const ea::string& attribute);
+    void SetAttributeName(const ea::string_view& attribute);
 
     // Get "to" value.
     const Variant& GetTo() const { return to_; }

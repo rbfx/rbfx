@@ -31,6 +31,7 @@
 #include "Ease.h"
 #include "FiniteTimeActionState.h"
 #include "Move.h"
+#include "Parallel.h"
 #include "Repeat.h"
 #include "Sequence.h"
 #include "ShaderParameter.h"
@@ -135,6 +136,8 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
     manager->AddFactoryReflection<EaseExponentialInOut>();
     manager->AddFactoryReflection<EaseExponentialOut>();
     manager->AddFactoryReflection<Sequence>();
+    manager->AddFactoryReflection<Parallel>();
+    manager->AddFactoryReflection<Repeat>();
     manager->AddFactoryReflection<RepeatForever>();
 }
 

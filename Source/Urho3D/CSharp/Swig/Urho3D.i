@@ -710,6 +710,13 @@ public:
 %include "Urho3D/Graphics/Renderer.h"
 %include "Urho3D/Graphics/Graphics.h"
 
+%include "Urho3D/Particles/ParticleGraphPin.h"
+%include "Urho3D/Particles/ParticleGraphNode.h"
+%include "Urho3D/Particles/ParticleGraphSystem.h"
+%include "Urho3D/Particles/ParticleGraphLayer.h"
+%include "Urho3D/Particles/ParticleGraphEffect.h"
+%include "Urho3D/Particles/ParticleGraphEmitter.h"
+
 // ------------------------------------- RenderPipeline -------------------------------------
 %include "generated/Urho3D/_pre_renderpipeline.i"
 %include "Urho3D/RenderPipeline/RenderPipeline.h"

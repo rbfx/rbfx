@@ -70,7 +70,9 @@ public:
     /// Construct.
     explicit EaseElastic(Context* context);
 
+    /// Set period
     void SetPeriod(float period) { period_ = period; }
+    /// Get period
     float GetPeriod() const { return period_; }
 
     /// Serialize content from/to archive. May throw ArchiveException.

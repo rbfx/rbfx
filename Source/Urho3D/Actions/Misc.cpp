@@ -48,11 +48,16 @@ public:
 
     void Update(float time) override
     {
-        if (Node* node = GetTarget()->Cast<Node>())
+        const auto target = GetTarget();
+        if (!target)
+        {
+            return;
+        }
+        if (Node* node = target->Cast<Node>())
         {
             node->Remove();
         }
-        else if (UIElement* element = GetTarget()->Cast<UIElement>())
+        else if (UIElement* element = target->Cast<UIElement>())
         {
             element->Remove();
         }

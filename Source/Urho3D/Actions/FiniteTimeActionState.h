@@ -49,6 +49,9 @@ public:
 
     /// Get action duration.
     float GetDuration() const { return duration_; }
+    /// Get action elapsed time.
+    float GetElapsed() const { return elapsed_; }
+
 protected:
     /// Call StartAction on an action.
     SharedPtr<FiniteTimeActionState> StartAction(FiniteTimeAction* action, Object* target) const;

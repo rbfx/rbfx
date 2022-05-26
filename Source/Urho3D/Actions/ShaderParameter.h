@@ -28,11 +28,59 @@ namespace Urho3D
 {
 namespace Actions
 {
-
-/// Move to 2D postion action. Target should have attribute "Position" of type Vector3 or IntVector3.
-class URHO3D_API ShaderParameterFromTo : public FiniteTimeAction
+/// Animate shader parameter.
+class URHO3D_API ShaderParameterAction : public FiniteTimeAction
 {
-    URHO3D_OBJECT(ShaderParameterFromTo, FiniteTimeAction)
+    URHO3D_OBJECT(ShaderParameterAction, FiniteTimeAction)
+
+public:
+    /// Construct.
+    explicit ShaderParameterAction(Context* context);
+
+        // Get shader parameter name.
+    void SetName(const ea::string_view&);
+
+        // Get shader parameter name.
+    const ea::string& GetName() const { return name_; }
+
+        /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+private:
+    ea::string name_;
+};
+
+
+/// Animate shader parameter from current value to another.
+class URHO3D_API ShaderParameterTo : public ShaderParameterAction
+{
+    URHO3D_OBJECT(ShaderParameterTo, ShaderParameterAction)
+
+public:
+    /// Construct.
+    explicit ShaderParameterTo(Context* context);
+
+    // Get "to" value.
+    void SetTo(const Variant&);
+
+    // Get "to" value.
+    const Variant& GetTo() const { return to_; }
+
+protected:
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+private:
+    Variant to_;
+};
+
+/// Animate shader parameter from one value to another.
+class URHO3D_API ShaderParameterFromTo : public ShaderParameterTo
+{
+    URHO3D_OBJECT(ShaderParameterFromTo, ShaderParameterTo)
 
 public:
     /// Construct.
@@ -40,17 +88,9 @@ public:
 
     // Set "from" value.
     void SetFrom(const Variant&);
-    // Get "to" value.
-    void SetTo(const Variant&);
-    // Get shader parameter name.
-    void SetName(const ea::string&);
 
     // Get "from" value.
     const Variant& GetFrom() const { return from_; }
-    // Get "to" value.
-    const Variant& GetTo() const { return to_; }
-    // Get shader parameter name.
-    const ea::string& GetName() const { return name_; }
 
     /// Create reversed action.
     SharedPtr<FiniteTimeAction> Reverse() const override;
@@ -63,9 +103,7 @@ protected:
     SharedPtr<ActionState> StartAction(Object* target) override;
 
 private:
-    ea::string name_;
     Variant from_;
-    Variant to_;
 };
 
 } // namespace Actions

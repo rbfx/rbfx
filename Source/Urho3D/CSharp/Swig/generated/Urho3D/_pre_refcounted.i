@@ -357,8 +357,11 @@ URHO3D_REFCOUNTED(Urho3D::Actions::JumpBy2D);
 URHO3D_REFCOUNTED(Urho3D::Actions::ScaleBy);
 URHO3D_REFCOUNTED(Urho3D::Actions::RotateBy);
 URHO3D_REFCOUNTED(Urho3D::Actions::Parallel);
+URHO3D_REFCOUNTED(Urho3D::Actions::Repeat);
 URHO3D_REFCOUNTED(Urho3D::Actions::RepeatForever);
 URHO3D_REFCOUNTED(Urho3D::Actions::Sequence);
+URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterAction);
+URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterTo);
 URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterFromTo);
 
 // Manually added

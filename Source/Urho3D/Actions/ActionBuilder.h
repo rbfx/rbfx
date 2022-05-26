@@ -75,6 +75,20 @@ public:
     /// Continue with AttributeBlink action.
     ActionBuilder Blink(float duration, unsigned numOfBlinks, const ea::string_view& attributeName);
 
+    /// Continue with AttributeTo action.
+    ActionBuilder AttributeTo(float duration, const ea::string_view& attributeName, const Variant& to);
+
+    /// Continue with AttributeFromTo action.
+    ActionBuilder AttributeFromTo(
+        float duration, const ea::string_view& attributeName, const Variant& from, const Variant& to);
+
+    /// Continue with ShaderParameterTo action.
+    ActionBuilder ShaderParameterTo(float duration, const ea::string_view& parameter, const Variant& to);
+
+    /// Continue with ShaderParameterFromTo action.
+    ActionBuilder ShaderParameterFromTo(
+        float duration, const ea::string_view& parameter, const Variant& from, const Variant& to);
+
     /// Combine with BackIn action.
     ActionBuilder BackIn();
 
@@ -125,6 +139,12 @@ public:
 
     /// Combine with DelayTime action.
     ActionBuilder DelayTime(float duration);
+
+    /// Repeat current action.
+    ActionBuilder Repeat(unsigned times);
+
+    /// Repeat current action forever (until canceled).
+    ActionBuilder RepeatForever();
 
     /// Complete action building and produce result.
     SharedPtr<Actions::FiniteTimeAction> Build() { return action_; }
