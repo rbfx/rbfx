@@ -87,6 +87,9 @@ void ParticleGraphLayerInstance::Apply(const SharedPtr<ParticleGraphLayer>& laye
     Reset();
 }
 
+/// Remove all current particles.
+void ParticleGraphLayerInstance::RemoveAllParticles() { activeParticles_ = 0; }
+
 bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
 {
     emitCounterReminder_ += numParticles;
@@ -111,14 +114,17 @@ bool ParticleGraphLayerInstance::EmitNewParticles(float numParticles)
     return true;
 }
 
-void ParticleGraphLayerInstance::Update(float timeStep)
+void ParticleGraphLayerInstance::Update(float timeStep, bool emitting)
 {
     timeStep *= layer_->GetTimeScale();
     auto emitContext = MakeUpdateContext(timeStep);
     if (indices_.empty())
         return;
-    emitContext.indices_ = indices_.subspan(0, 1);
-    RunGraph(emitNodeInstances_, emitContext);
+    if (emitting)
+    {
+        emitContext.indices_ = indices_.subspan(0, 1);
+        RunGraph(emitNodeInstances_, emitContext);
+    }
 
     auto updateContext = MakeUpdateContext(timeStep);
     RunGraph(updateNodeInstances_, updateContext);

@@ -103,7 +103,7 @@ ShaderParameterAction::ShaderParameterAction(Context* context)
 }
 
 // Get shader parameter name
-void ShaderParameterAction::SetName(const ea::string_view& name) { name_ = name; }
+void ShaderParameterAction::SetName(ea::string_view name) { name_ = name; }
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void ShaderParameterAction::SerializeInBlock(Archive& archive)

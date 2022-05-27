@@ -25,11 +25,11 @@
 #include "ActionManager.h"
 #include "Attribute.h"
 #include "Ease.h"
-#include "Move.h"
-#include "Sequence.h"
 #include "Misc.h"
+#include "Move.h"
 #include "Parallel.h"
 #include "Repeat.h"
+#include "Sequence.h"
 #include "ShaderParameter.h"
 #include "Urho3D/Core/Context.h"
 
@@ -162,7 +162,7 @@ ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks)
     return Then(action);
 }
 
-ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks, const ea::string_view& attributeName)
+ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName)
 {
     auto action = MakeShared<Actions::Blink>(context_);
     action->SetDuration(duration);
@@ -171,8 +171,8 @@ ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks, const e
     return Then(action);
 }
 
-    /// Continue with AttributeTo action.
-ActionBuilder ActionBuilder::AttributeTo(float duration, const ea::string_view& attributeName, const Variant& to)
+/// Continue with AttributeTo action.
+ActionBuilder ActionBuilder::AttributeTo(float duration, ea::string_view attributeName, const Variant& to)
 {
     auto action = MakeShared<Actions::AttributeTo>(context_);
     action->SetDuration(duration);
@@ -183,7 +183,7 @@ ActionBuilder ActionBuilder::AttributeTo(float duration, const ea::string_view& 
 
 /// Continue with AttributeFromTo action.
 ActionBuilder ActionBuilder::AttributeFromTo(
-    float duration, const ea::string_view& attributeName, const Variant& from, const Variant& to)
+    float duration, ea::string_view attributeName, const Variant& from, const Variant& to)
 {
     auto action = MakeShared<Actions::AttributeFromTo>(context_);
     action->SetDuration(duration);
@@ -194,7 +194,7 @@ ActionBuilder ActionBuilder::AttributeFromTo(
 }
 
 /// Continue with ShaderParameterTo action.
-ActionBuilder ActionBuilder::ShaderParameterTo(float duration, const ea::string_view& parameter, const Variant& to)
+ActionBuilder ActionBuilder::ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to)
 {
     auto action = MakeShared<Actions::ShaderParameterTo>(context_);
     action->SetDuration(duration);
@@ -205,7 +205,7 @@ ActionBuilder ActionBuilder::ShaderParameterTo(float duration, const ea::string_
 
 /// Continue with ShaderParameterFromTo action.
 ActionBuilder ActionBuilder::ShaderParameterFromTo(
-    float duration, const ea::string_view& parameter, const Variant& from, const Variant& to)
+    float duration, ea::string_view parameter, const Variant& from, const Variant& to)
 {
     auto action = MakeShared<Actions::ShaderParameterFromTo>(context_);
     action->SetDuration(duration);
@@ -350,7 +350,8 @@ ActionBuilder ActionBuilder::DelayTime(float duration)
 }
 
 /// Repeat current action.
-ActionBuilder ActionBuilder::Repeat(unsigned times) {
+ActionBuilder ActionBuilder::Repeat(unsigned times)
+{
     auto action = MakeShared<Actions::Repeat>(context_);
     action->SetInnerAction(action_);
     action->SetTimes(times);
@@ -358,7 +359,8 @@ ActionBuilder ActionBuilder::Repeat(unsigned times) {
 }
 
 /// Repeat current action forever (until canceled).
-ActionBuilder ActionBuilder::RepeatForever() {
+ActionBuilder ActionBuilder::RepeatForever()
+{
     auto action = MakeShared<Actions::RepeatForever>(context_);
     action->SetInnerAction(action_);
     return ActionBuilder(context_, action);
@@ -381,6 +383,5 @@ Actions::ActionState* ActionBuilder::Run(ActionManager* actionManager, Object* t
     }
     return nullptr;
 }
-
 
 } // namespace Urho3D

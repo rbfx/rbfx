@@ -38,7 +38,7 @@ public:
     explicit ShaderParameterAction(Context* context);
 
         // Get shader parameter name.
-    void SetName(const ea::string_view&);
+    void SetName(ea::string_view parameter);
 
         // Get shader parameter name.
     const ea::string& GetName() const { return name_; }

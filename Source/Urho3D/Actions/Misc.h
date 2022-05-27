@@ -113,7 +113,7 @@ public:
     /// Get target attibute name.
     const ea::string& GetAttributeName() const { return attribute_; };
     /// Set target attibute name.
-    void SetAttributeName(const ea::string_view& attribute) { attribute_ = attribute; };
+    void SetAttributeName(ea::string_view attribute) { attribute_ = attribute; };
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;

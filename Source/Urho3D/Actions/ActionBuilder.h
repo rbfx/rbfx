@@ -73,21 +73,21 @@ public:
     ActionBuilder Blink(float duration, unsigned numOfBlinks);
 
     /// Continue with AttributeBlink action.
-    ActionBuilder Blink(float duration, unsigned numOfBlinks, const ea::string_view& attributeName);
+    ActionBuilder Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName);
 
     /// Continue with AttributeTo action.
-    ActionBuilder AttributeTo(float duration, const ea::string_view& attributeName, const Variant& to);
+    ActionBuilder AttributeTo(float duration, ea::string_view attributeName, const Variant& to);
 
     /// Continue with AttributeFromTo action.
     ActionBuilder AttributeFromTo(
-        float duration, const ea::string_view& attributeName, const Variant& from, const Variant& to);
+        float duration, ea::string_view attributeName, const Variant& from, const Variant& to);
 
     /// Continue with ShaderParameterTo action.
-    ActionBuilder ShaderParameterTo(float duration, const ea::string_view& parameter, const Variant& to);
+    ActionBuilder ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to);
 
     /// Continue with ShaderParameterFromTo action.
     ActionBuilder ShaderParameterFromTo(
-        float duration, const ea::string_view& parameter, const Variant& from, const Variant& to);
+        float duration, ea::string_view parameter, const Variant& from, const Variant& to);
 
     /// Combine with BackIn action.
     ActionBuilder BackIn();
@@ -152,7 +152,7 @@ public:
     /// Run current action on object.
     /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
     Actions::ActionState* Run(Object* target);
-    
+
     /// Run current action on object via action manager.
     /// Use Build() instead of Run() if you run the action more than once to reduce allocations.
     Actions::ActionState* Run(ActionManager* actionManager, Object* target);

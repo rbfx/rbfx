@@ -85,7 +85,7 @@ void AttributeFromTo::SetFrom(const Variant& variant) { from_ = variant; }
 void AttributeFromTo::SetTo(const Variant& variant) { to_ = variant; }
 
 // Get shader parameter name
-void AttributeFromTo::SetAttributeName(const ea::string_view& name) { name_ = name; }
+void AttributeFromTo::SetAttributeName(ea::string_view name) { name_ = name; }
 
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> AttributeFromTo::Reverse() const
@@ -123,7 +123,7 @@ AttributeTo::AttributeTo(Context* context)
 void AttributeTo::SetTo(const Variant& variant) { to_ = variant; }
 
 // Get shader parameter name
-void AttributeTo::SetAttributeName(const ea::string_view& name) { name_ = name; }
+void AttributeTo::SetAttributeName(ea::string_view name) { name_ = name; }
 
 /// Serialize content from/to archive. May throw ArchiveException.
 void AttributeTo::SerializeInBlock(Archive& archive)

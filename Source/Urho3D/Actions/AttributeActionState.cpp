@@ -33,7 +33,7 @@ namespace Actions
 {
 /// Construct.
 AttributeActionState::AttributeActionState(
-    FiniteTimeAction* action, Object* target, const ea::string_view& attribute, VariantType type)
+    FiniteTimeAction* action, Object* target, ea::string_view attribute, VariantType type)
     : FiniteTimeActionState(action, target)
     , attributeType_(type)
 {
@@ -103,7 +103,7 @@ void AttributeActionState::Update(float dt)
 }
 
 SetAttributeState::SetAttributeState(
-    FiniteTimeAction* action, Object* target, const ea::string_view& attribute, const Variant& value)
+    FiniteTimeAction* action, Object* target, ea::string_view attribute, const Variant& value)
     : AttributeActionState(action, target, attribute, value.GetType())
     , value_(value)
     , triggered_(false)
@@ -119,7 +119,7 @@ void SetAttributeState::Update(float time, Variant& var)
     }
 }
 
-AttributeBlinkState::AttributeBlinkState(FiniteTimeAction* action, Object* target, const ea::string_view& attribute,
+AttributeBlinkState::AttributeBlinkState(FiniteTimeAction* action, Object* target, ea::string_view attribute,
     Variant from,
     Variant to, unsigned times)
     : AttributeActionState(action, target, attribute, from.GetType())
