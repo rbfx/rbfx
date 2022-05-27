@@ -425,7 +425,7 @@ void ProjectEditor::SaveGitIgnore()
 void ProjectEditor::UpdateAndRender()
 {
     hotkeyManager_->Update();
-    hotkeyManager_->InvokeGlobalHotkeys();
+    hotkeyManager_->InvokeFor(this);
 
     dockspaceId_ = ui::GetID("Root");
     ui::DockSpace(dockspaceId_);

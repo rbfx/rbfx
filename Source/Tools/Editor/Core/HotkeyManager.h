@@ -33,6 +33,7 @@
 namespace Urho3D
 {
 
+/// Mouse and keyboard combination that can be used as Editor hotkey.
 struct HotkeyCombination
 {
     QualifierFlags qualifiers_;
@@ -57,6 +58,7 @@ struct HotkeyCombination
     ea::string ToString() const;
 };
 
+/// Editor hotkey description.
 struct HotkeyInfo
 {
     ea::string command_;
@@ -104,10 +106,8 @@ public:
     void Update();
     /// @}
 
-    /// Check and invoke all hotkeys within a scope.
-    void InvokeScopedHotkeys(const ea::string& scope);
-    /// Check and invoke all hotkeys within a global (unspecified) scope.
-    void InvokeGlobalHotkeys() { InvokeScopedHotkeys(""); }
+    /// Check and invoke all hotkeys corresponding to the owner.
+    void InvokeFor(Object* owner);
 
 private:
     struct HotkeyBinding
@@ -119,15 +119,15 @@ private:
     };
     using HotkeyBindingPtr = ea::shared_ptr<HotkeyBinding>;
 
-    static bool IsHotkeyExpired(const HotkeyBindingPtr& ptr) { return !ptr->owner_; }
+    static bool IsBindingExpired(const HotkeyBindingPtr& ptr) { return !ptr->owner_; }
     bool IsInvoked(const HotkeyCombination& hotkey) const;
     HotkeyBindingPtr FindByCommand(const ea::string& command) const;
 
     unsigned cleanupMs_{1000};
     Timer cleanupTimer_;
 
-    ea::unordered_map<ea::string, ea::vector<HotkeyBindingPtr>> hotkeysByScope_;
-    ea::unordered_map<ea::string, HotkeyBindingPtr> hotkeyByCommand_;
+    ea::unordered_map<WeakPtr<Object>, ea::vector<HotkeyBindingPtr>> hotkeyByOwner_;
+    ea::unordered_map<ea::string, ea::vector<HotkeyBindingPtr>> hotkeyByCommand_;
 };
 
 
@@ -139,12 +139,6 @@ void HotkeyManager::BindHotkey(T* owner, const HotkeyInfo& info, HotkeyMemberCal
 
 }
 
-/// Define hotkey scope constant.
-#define URHO3D_EDITOR_SCOPE(name, id) \
-    URHO3D_GLOBAL_CONSTANT(Urho3D::ConstString name{id})
-/// Define global hotkey.
+/// Define hotkey.
 #define URHO3D_EDITOR_HOTKEY(name, command, qual, key) \
-    URHO3D_GLOBAL_CONSTANT(HotkeyInfo name(command, HotkeyCombination(qual, key)))
-/// Define scoped hotkey.
-#define URHO3D_EDITOR_SCOPED_HOTKEY(name, command, scope, qual, key) \
-    URHO3D_GLOBAL_CONSTANT(HotkeyInfo name(command, scope, HotkeyCombination(qual, key)))
+    URHO3D_GLOBAL_CONSTANT(Urho3D::HotkeyInfo name(command, Urho3D::HotkeyCombination(qual, key)))

@@ -98,7 +98,6 @@ protected:
     /// Implement EditorTab
     /// @{
     void UpdateAndRenderContent() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 
 private:

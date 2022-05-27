@@ -42,6 +42,12 @@ public:
         EditorTabFlags flags, EditorTabPlacement placement);
     ~ResourceEditorTab() override;
 
+    /// Commands
+    /// @{
+    void SaveCurrentResource();
+    void CloseCurrentResource();
+    /// @}
+
     /// EditorTab implementation
     /// @{
     void EnumerateUnsavedItems(ea::vector<ea::string>& items) override;
