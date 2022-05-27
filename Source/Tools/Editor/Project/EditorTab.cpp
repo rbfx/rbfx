@@ -30,6 +30,14 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+URHO3D_EDITOR_HOTKEY(Hotkey_Undo, "Global.Undo", QUAL_CTRL, KEY_Z);
+URHO3D_EDITOR_HOTKEY(Hotkey_Redo, "Global.Redo", QUAL_CTRL, KEY_Y);
+
+}
+
 EditorTab::EditorTab(Context* context, const ea::string& title, const ea::string& guid,
     EditorTabFlags flags, EditorTabPlacement placement)
     : EditorConfigurable(context)
@@ -39,6 +47,11 @@ EditorTab::EditorTab(Context* context, const ea::string& title, const ea::string
     , flags_(flags)
     , placement_(placement)
 {
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    hotkeyManager->BindHotkey(this, Hotkey_Undo, &EditorTab::Undo);
+    hotkeyManager->BindHotkey(this, Hotkey_Redo, &EditorTab::Redo);
 }
 
 EditorTab::~EditorTab()
@@ -74,6 +87,13 @@ void EditorTab::UpdateAndRender()
 
     focusPending_ = false;
     openPending_ = false;
+}
+
+void EditorTab::Focus()
+{
+    auto project = GetProject();
+    if (project->GetRootFocusedTab() != this)
+        focusPending_ = true;
 }
 
 void EditorTab::UpdateAndRenderWindow()
@@ -148,9 +168,41 @@ void EditorTab::UpdateAndRenderContextMenu()
         Close();
 }
 
+void EditorTab::Undo()
+{
+    if (IsUndoSupported())
+    {
+        auto project = GetProject();
+        UndoManager* undoManager = project->GetUndoManager();
+        undoManager->Undo();
+    }
+}
+
+void EditorTab::Redo()
+{
+    if (IsUndoSupported())
+    {
+        auto project = GetProject();
+        UndoManager* undoManager = project->GetUndoManager();
+        undoManager->Redo();
+    }
+}
+
 void EditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     hotkeyManager->InvokeFor(this);
+}
+
+void EditorTab::UpdateAndRenderEditMenuItems()
+{
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    if (ui::MenuItem("Undo", hotkeyManager->GetHotkeyLabel(Hotkey_Undo).c_str()))
+        Undo();
+    if (ui::MenuItem("Redo", hotkeyManager->GetHotkeyLabel(Hotkey_Redo).c_str()))
+        Redo();
+    ui::Separator();
 }
 
 ProjectEditor* EditorTab::GetProject() const

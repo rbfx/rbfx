@@ -211,6 +211,8 @@ public:
     /// ResourceEditorTab implementation
     /// @{
     void UpdateAndRenderMenu() override;
+    bool IsUndoSupported() { return true; }
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
 
     ea::string GetResourceTitle() { return "Scene"; }
     bool SupportMultipleResources() { return true; }
@@ -224,7 +226,6 @@ protected:
     /// ResourceEditorTab implementation
     /// @{
     void UpdateAndRenderContextMenuItems() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
 
     void OnResourceLoaded(const ea::string& resourceName) override;
     void OnResourceUnloaded(const ea::string& resourceName) override;

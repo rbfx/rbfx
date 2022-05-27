@@ -22,42 +22,34 @@
 
 #pragma once
 
-#include "../Foundation/Shared/HierarchyBrowserSource.h"
-#include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include <Urho3D/Core/Object.h>
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor);
+class EditorTab;
+class HotkeyManager;
 
-/// Tab that hosts hierarchy display of any kind
-class HierarchyBrowserTab : public EditorTab
+/// Interface used to provide content for hierarchy browser tab.
+class HierarchyBrowserSource : public Object
 {
-    URHO3D_OBJECT(HierarchyBrowserTab, EditorTab)
+    URHO3D_OBJECT(HierarchyBrowserSource, Object)
 
 public:
-    explicit HierarchyBrowserTab(Context* context);
+    explicit HierarchyBrowserSource(Context* context) : Object(context) {}
 
-    /// Connect to data source.
-    void ConnectToSource(HierarchyBrowserSource* source);
+    /// Return owner tab.
+    virtual EditorTab* GetOwnerTab() = 0;
 
-    /// Implement EditorTab
-    /// @{
-    void UpdateAndRenderMenu() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_->GetOwnerTab(); }
-    /// @}
+    /// Update and render tab contents.
+    virtual void UpdateAndRenderContent() {}
+    /// Update and render tab context menu.
+    virtual void UpdateAndRenderContextMenuItems() {}
+    /// Render main menu when the hierarchy browser tab is focused.
+    virtual void UpdateAndRenderMenu() {}
+    /// Apply hotkeys when the hierarchy browser tab is focused.
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
 
-protected:
-    /// Implement EditorTab
-    /// @{
-    void UpdateAndRenderContent() override;
-    void UpdateAndRenderContextMenuItems() override;
-    /// @}
-
-private:
-    WeakPtr<HierarchyBrowserSource> source_;
 };
 
 }

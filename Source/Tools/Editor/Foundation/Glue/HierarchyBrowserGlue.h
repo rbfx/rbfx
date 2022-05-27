@@ -22,42 +22,13 @@
 
 #pragma once
 
-#include "../Foundation/Shared/HierarchyBrowserSource.h"
-#include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../../Foundation/SceneViewTab.h"
+#include "../../Foundation/HierarchyBrowserTab.h"
+#include "../../Foundation/SceneViewTab/SceneHierarchy.h"
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor);
-
-/// Tab that hosts hierarchy display of any kind
-class HierarchyBrowserTab : public EditorTab
-{
-    URHO3D_OBJECT(HierarchyBrowserTab, EditorTab)
-
-public:
-    explicit HierarchyBrowserTab(Context* context);
-
-    /// Connect to data source.
-    void ConnectToSource(HierarchyBrowserSource* source);
-
-    /// Implement EditorTab
-    /// @{
-    void UpdateAndRenderMenu() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_->GetOwnerTab(); }
-    /// @}
-
-protected:
-    /// Implement EditorTab
-    /// @{
-    void UpdateAndRenderContent() override;
-    void UpdateAndRenderContextMenuItems() override;
-    /// @}
-
-private:
-    WeakPtr<HierarchyBrowserSource> source_;
-};
+void Foundation_HierarchyBrowserGlue(Context* context, SceneViewTab* sceneViewTab);
 
 }
