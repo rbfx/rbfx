@@ -96,7 +96,7 @@ void Node::SerializeInBlock(Archive& archive)
 
         // Load this node ID for resolver
         unsigned nodeID{};
-        Urho3D::SerializeValue(archive, "id", id_);
+        Urho3D::SerializeValue(archive, "id", nodeID);
         resolver.AddNode(nodeID, this);
 
         // Load node content

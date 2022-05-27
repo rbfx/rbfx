@@ -28,6 +28,7 @@
 
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
+#include <Urho3D/Utility/PackedSceneData.h>
 
 #include <EASTL/vector_multiset.h>
 
@@ -199,8 +200,18 @@ public:
     void RegisterCameraController(const SceneCameraControllerDesc& desc);
     template <class T, class ... Args> void RegisterCameraController(const Args&... args);
 
+    /// Commands
+    /// @{
+    void CutSelection();
+    void CopySelection();
+    void PasteNextToSelection();
+    void DeleteSelection();
+    /// @}
+
     /// ResourceEditorTab implementation
     /// @{
+    void UpdateAndRenderMenu() override;
+
     ea::string GetResourceTitle() { return "Scene"; }
     bool SupportMultipleResources() { return true; }
     bool CanOpenResource(const OpenResourceRequest& request) override;
@@ -247,6 +258,7 @@ private:
 
     ea::vector<SceneCameraControllerDesc> cameraControllers_;
     ea::unordered_map<ea::string, SceneViewPage> scenes_;
+    PackedSceneData clipboard_;
 
     /// UI state
     /// @{

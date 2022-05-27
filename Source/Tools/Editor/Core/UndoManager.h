@@ -22,12 +22,20 @@
 
 #pragma once
 
+#include <Urho3D/Core/Exception.h>
 #include <Urho3D/Core/Object.h>
 
 #include <EASTL/vector.h>
 
 namespace Urho3D
 {
+
+/// Exception thrown when UndoManager stack is desynchronized with editor state.
+class UndoException : public RuntimeException
+{
+public:
+    using RuntimeException::RuntimeException;
+};
 
 /// ID corresponding to the temporal order of undo actions.
 using EditorActionFrame = unsigned long long;

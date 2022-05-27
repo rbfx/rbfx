@@ -305,11 +305,11 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
     ea::string saveResourcePending;
     bool saveAllResourcesPending = false;
 
-    ResetSeparator();
+    contextMenuSeparator_.Reset();
     if (resources_.empty())
     {
         ui::MenuItem("(No Resources)", nullptr, false, false);
-        SetSeparator();
+        contextMenuSeparator_.Add();
     }
     else
     {
@@ -333,10 +333,10 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
             ui::PopID();
         }
         ui::PopID();
-        SetSeparator();
+        contextMenuSeparator_.Add();
     }
 
-    ResetSeparator();
+    contextMenuSeparator_.Reset();
     {
         const ea::string title = Format("Save Current [{}]", GetResourceTitle());
         if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
@@ -348,9 +348,9 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
             saveAllResourcesPending = true;
     }
 
-    SetSeparator();
+    contextMenuSeparator_.Add();
 
-    ResetSeparator();
+    contextMenuSeparator_.Reset();
     {
         const ea::string title = Format("Close Current [{}]", GetResourceTitle());
         if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
@@ -362,7 +362,7 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
             closeAllResourcesPending = true;
     }
 
-    SetSeparator();
+    contextMenuSeparator_.Add();
 
     // Apply delayed actions
     if (closeAllResourcesPending)
@@ -434,13 +434,19 @@ bool ResourceActionWrapper::MergeWith(const EditorAction& other)
 void ResourceActionWrapper::FocusMe() const
 {
     if (tab_)
+    {
+        tab_->Focus();
         tab_->SetActiveResource(resourceName_);
+    }
 }
 
 void ResourceActionWrapper::UpdateCurrentAction(ea::optional<EditorActionFrame> frame) const
 {
     if (tab_)
+    {
+        tab_->Focus();
         tab_->SetCurrentAction(resourceName_, frame);
+    }
 }
 
 }
