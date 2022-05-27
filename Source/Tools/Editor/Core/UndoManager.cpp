@@ -73,36 +73,56 @@ EditorActionFrame UndoManager::PushAction(const EditorActionPtr& action)
 
 bool UndoManager::Undo()
 {
-    if (undoStack_.empty())
+    try
+    {
+        if (undoStack_.empty())
+            return false;
+
+        ActionGroup& group = undoStack_.back();
+        if (!group.IsAlive())
+            return false;
+
+        for (EditorAction* action : ea::reverse(group.actions_))
+            action->Undo();
+
+        redoStack_.push_back(ea::move(group));
+        undoStack_.pop_back();
+        return true;
+    }
+    catch (const UndoException& e)
+    {
+        URHO3D_ASSERTLOG(0, "Desynchronized on UndoManager::Undo: {}", e.GetMessage());
+        redoStack_.clear();
+        undoStack_.clear();
         return false;
-
-    ActionGroup& group = undoStack_.back();
-    if (!group.IsAlive())
-        return false;
-
-    for (EditorAction* action : ea::reverse(group.actions_))
-        action->Undo();
-
-    redoStack_.push_back(ea::move(group));
-    undoStack_.pop_back();
-    return true;
+    }
 }
 
 bool UndoManager::Redo()
 {
-    if (redoStack_.empty())
+    try
+    {
+        if (redoStack_.empty())
+            return false;
+
+        ActionGroup& group = redoStack_.back();
+        if (!group.IsAlive())
+            return false;
+
+        for (EditorAction* action : group.actions_)
+            action->Redo();
+
+        undoStack_.push_back(ea::move(group));
+        redoStack_.pop_back();
+        return true;
+    }
+    catch (const UndoException& e)
+    {
+        URHO3D_ASSERTLOG(0, "Desynchronized on UndoManager::Redo: {}", e.GetMessage());
+        redoStack_.clear();
+        undoStack_.clear();
         return false;
-
-    ActionGroup& group = redoStack_.back();
-    if (!group.IsAlive())
-        return false;
-
-    for (EditorAction* action : group.actions_)
-        action->Redo();
-
-    undoStack_.push_back(ea::move(group));
-    redoStack_.pop_back();
-    return true;
+    }
 }
 
 bool UndoManager::NeedNewGroup() const

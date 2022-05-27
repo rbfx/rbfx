@@ -40,7 +40,7 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_SaveProject, "Global.SaveProject", QUAL_CTRL, KEY_S);
+URHO3D_EDITOR_HOTKEY(Hotkey_SaveProject, "Global.SaveProject", QUAL_CTRL | QUAL_SHIFT, KEY_S);
 URHO3D_EDITOR_HOTKEY(Hotkey_Undo, "Global.Undo", QUAL_CTRL, KEY_Z);
 URHO3D_EDITOR_HOTKEY(Hotkey_Redo, "Global.Redo", QUAL_CTRL, KEY_Y);
 
@@ -275,6 +275,15 @@ void ProjectEditor::OpenResource(const OpenResourceRequest& request)
     }
 }
 
+void ProjectEditor::RenderUndoRedoMenu()
+{
+    if (ui::MenuItem("Undo", hotkeyManager_->GetHotkeyLabel(Hotkey_Undo).c_str()))
+        Undo();
+    if (ui::MenuItem("Redo", hotkeyManager_->GetHotkeyLabel(Hotkey_Redo).c_str()))
+        Redo();
+    ui::Separator();
+}
+
 void ProjectEditor::InitializeHotkeys()
 {
     hotkeyManager_->BindHotkey(this, Hotkey_SaveProject, &ProjectEditor::Save);
@@ -445,6 +454,9 @@ void ProjectEditor::UpdateAndRenderProjectMenu()
 
 void ProjectEditor::UpdateAndRenderMainMenu()
 {
+    if (focusedTab_)
+        focusedTab_->UpdateAndRenderMenu();
+
     if (ui::BeginMenu("View"))
     {
         for (const auto& [title, tab] : sortedTabs_)
@@ -486,12 +498,14 @@ void ProjectEditor::Save()
 
 void ProjectEditor::Undo()
 {
-    undoManager_->Undo();
+    if (focusedTab_ && focusedTab_->IsUndoSupported())
+        undoManager_->Undo();
 }
 
 void ProjectEditor::Redo()
 {
-    undoManager_->Redo();
+    if (focusedTab_ && focusedTab_->IsUndoSupported())
+        undoManager_->Redo();
 }
 
 void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
@@ -510,6 +524,11 @@ void ProjectEditor::WriteIniSettings(ImGuiTextBuffer& output)
         output.appendf("\n[Project][%s]\n", tab->GetIniEntry().c_str());
         tab->WriteIniSettings(output);
     }
+}
+
+void ProjectEditor::SetFocusedTab(EditorTab* tab)
+{
+    focusedTab_ = tab;
 }
 
 }

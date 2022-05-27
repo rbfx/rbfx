@@ -57,7 +57,7 @@ void ConsoleTab_::UpdateAndRenderContextMenuItems()
 {
     auto console = GetSubsystem<Console>();
 
-    ResetSeparator();
+    contextMenuSeparator_.Reset();
     if (ui::BeginMenu("Levels"))
     {
         for (const LogLevel level : {LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR})
@@ -69,7 +69,7 @@ void ConsoleTab_::UpdateAndRenderContextMenuItems()
         ui::EndMenu();
     }
 
-    SetSeparator();
+    contextMenuSeparator_.Add();
 }
 
 }

@@ -115,6 +115,8 @@ public:
     template <class T> T* FindTab() const;
     /// Open resource in appropriate resource tab.
     void OpenResource(const OpenResourceRequest& request);
+    /// Render undo and redo commands in menu.
+    void RenderUndoRedoMenu();
 
     /// Commands
     /// @{
@@ -128,7 +130,7 @@ public:
     void ReadIniSettings(const char* entry, const char* line);
     void WriteIniSettings(ImGuiTextBuffer& output);
 
-    /// Return global properties.
+    /// Return global properties
     /// @{
     const ea::string& GetCoreDataPath() const { return coreDataPath_; }
     const ea::string& GetDataPath() const { return dataPath_; }
@@ -140,6 +142,11 @@ public:
     HotkeyManager* GetHotkeyManager() const { return hotkeyManager_; }
     SettingsManager* GetSettingsManager() const { return settingsManager_; }
     UndoManager* GetUndoManager() const { return undoManager_; }
+    /// @}
+
+    /// Internal
+    /// @{
+    void SetFocusedTab(EditorTab* tab);
     /// @}
 
 private:
@@ -185,6 +192,7 @@ private:
     /// @{
     bool pendingResetLayout_{};
     ImGuiID dockspaceId_{};
+    WeakPtr<EditorTab> focusedTab_;
     /// @}
 };
 

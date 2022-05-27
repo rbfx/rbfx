@@ -26,9 +26,32 @@
 
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Utility/PackedSceneData.h>
 
 namespace Urho3D
 {
+
+/// Create or remove node.
+class CreateRemoveNodeAction : public EditorAction
+{
+public:
+    CreateRemoveNodeAction(Node* node, bool removed);
+
+    /// Implement EditorAction.
+    /// @{
+    bool IsAlive() const override;
+    void Redo() const override;
+    void Undo() const override;
+    /// @}
+
+private:
+    void AddNode() const;
+    void RemoveNode() const;
+
+    const bool removed_{};
+    WeakPtr<Scene> scene_;
+    PackedNodeData data_;
+};
 
 /// Change node transform.
 class ChangeNodeTransformAction : public EditorAction

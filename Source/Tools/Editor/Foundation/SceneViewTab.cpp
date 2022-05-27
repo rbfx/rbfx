@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/CommonEditorActions.h"
 #include "../Core/IniHelpers.h"
 #include "../Foundation/SceneViewTab.h"
 
@@ -37,6 +38,21 @@
 
 namespace Urho3D
 {
+
+namespace
+{
+
+URHO3D_EDITOR_SCOPE(Scope_SceneViewTab, "SceneViewTab");
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Cut,
+    "SceneViewTab.Cut", Scope_SceneViewTab, QUAL_CTRL, KEY_X);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Copy,
+    "SceneViewTab.Copy", Scope_SceneViewTab, QUAL_CTRL, KEY_C);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Paste,
+    "SceneViewTab.Paste", Scope_SceneViewTab, QUAL_CTRL, KEY_V);
+URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Delete,
+    "SceneViewTab.Delete", Scope_SceneViewTab, QUAL_NONE, KEY_DELETE);
+
+}
 
 void SerializeValue(Archive& archive, const char* name, SceneViewPage& page)
 {
@@ -121,6 +137,7 @@ void SceneSelection::Clear()
 
     nodes_.clear();
     components_.clear();
+    effectiveNodes_.clear();
     activeNode_ = nullptr;
 }
 
@@ -216,10 +233,17 @@ SceneViewAddon::~SceneViewAddon()
 
 SceneViewTab::SceneViewTab(Context* context)
     : ResourceEditorTab(context, "Scene View", "9f4f7432-dd60-4c83-aecd-2f6cf69d3549",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
+        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault | EditorTabFlag::UndoSupported,
+        EditorTabPlacement::DockCenter)
 {
     auto project = GetProject();
     project->IgnoreFileNamePattern("*.xml.cfg");
+
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+    hotkeyManager->BindHotkey(this, Hotkey_Cut, &SceneViewTab::CutSelection);
+    hotkeyManager->BindHotkey(this, Hotkey_Copy, &SceneViewTab::CopySelection);
+    hotkeyManager->BindHotkey(this, Hotkey_Paste, &SceneViewTab::PasteNextToSelection);
+    hotkeyManager->BindHotkey(this, Hotkey_Delete, &SceneViewTab::DeleteSelection);
 }
 
 SceneViewTab::~SceneViewTab()
@@ -236,6 +260,110 @@ void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
 void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
 {
     cameraControllers_.push_back(desc);
+}
+
+void SceneViewTab::CutSelection()
+{
+    CopySelection();
+    DeleteSelection();
+}
+
+void SceneViewTab::CopySelection()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    SceneSelection& selection = activePage->selection_;
+    const auto& selectedNodes = selection.GetNodes();
+    const auto& selectedComponents = selection.GetComponents();
+
+    if (!selectedNodes.empty())
+        clipboard_ = PackedSceneData::FromNodes(selectedNodes.begin(), selectedNodes.end());
+    else if (!selectedComponents.empty())
+    {
+        // TODO(editor): Implement
+    }
+}
+
+void SceneViewTab::PasteNextToSelection()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    SceneSelection& selection = activePage->selection_;
+    if (clipboard_.HasNodes())
+    {
+        Node* siblingNode = selection.GetActiveNode();
+        Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : activePage->scene_;
+
+        selection.Clear();
+        for (const PackedNodeData& packedNode : clipboard_.GetNodes())
+        {
+            Node* newNode = packedNode.SpawnCopy(parentNode);
+            selection.SetSelected(newNode, true);
+            PushAction(MakeShared<CreateRemoveNodeAction>(newNode, false));
+        }
+    }
+    else if (clipboard_.HasComponents())
+    {
+        // TODO(editor): Implement
+    }
+}
+
+void SceneViewTab::DeleteSelection()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    const auto& selectedNodes = activePage->selection_.GetNodes();
+    const auto& selectedComponents = activePage->selection_.GetComponents();
+
+    for (Node* node : selectedNodes)
+    {
+        if (node)
+        {
+            PushAction(MakeShared<CreateRemoveNodeAction>(node, true));
+            node->Remove();
+        }
+    }
+
+    // TODO(editor): Implement
+    /*for (Component* component : selectedComponents)
+    {
+        if (component)
+            component->Remove();
+    }*/
+
+    activePage->selection_.Clear();
+}
+
+void SceneViewTab::UpdateAndRenderMenu()
+{
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    if (ui::BeginMenu("Edit"))
+    {
+        project->RenderUndoRedoMenu();
+
+        ui::Separator();
+
+        if (ui::MenuItem("Cut", hotkeyManager->GetHotkeyLabel(Hotkey_Cut).c_str()))
+            CutSelection();
+        if (ui::MenuItem("Copy", hotkeyManager->GetHotkeyLabel(Hotkey_Copy).c_str()))
+            CopySelection();
+        if (ui::MenuItem("Paste", hotkeyManager->GetHotkeyLabel(Hotkey_Paste).c_str()))
+            PasteNextToSelection();
+        if (ui::MenuItem("Delete", hotkeyManager->GetHotkeyLabel(Hotkey_Delete).c_str()))
+            DeleteSelection();
+
+        ui::Separator();
+
+        ui::EndMenu();
+    }
 }
 
 bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)
@@ -263,7 +391,7 @@ void SceneViewTab::UpdateAndRenderContextMenuItems()
 
     if (SceneViewPage* activePage = GetActivePage())
     {
-        ResetSeparator();
+        contextMenuSeparator_.Reset();
 
         unsigned index = 0;
         for (const SceneCameraController* controller : activePage->cameraControllers_)
@@ -275,13 +403,13 @@ void SceneViewTab::UpdateAndRenderContextMenuItems()
         }
     }
 
-    SetSeparator();
+    contextMenuSeparator_.Add();
 
     for (SceneViewAddon* addon : addonsByTitle_)
     {
         if (addon->NeedTabContextMenu())
         {
-            ResetSeparator();
+            contextMenuSeparator_.Reset();
             if (ui::BeginMenu(addon->GetContextMenuTitle().c_str()))
             {
                 addon->RenderTabContextMenu();
@@ -290,12 +418,15 @@ void SceneViewTab::UpdateAndRenderContextMenuItems()
         }
     }
 
-    SetSeparator();
+    contextMenuSeparator_.Add();
 }
 
 void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     BaseClassName::ApplyHotkeys(hotkeyManager);
+
+    hotkeyManager->InvokeScopedHotkeys(Scope_SceneViewTab);
+
     for (SceneViewAddon* addon : addons_)
         addon->ApplyHotkeys(hotkeyManager);
 }

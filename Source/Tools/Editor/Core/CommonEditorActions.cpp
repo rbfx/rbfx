@@ -25,6 +25,56 @@
 namespace Urho3D
 {
 
+CreateRemoveNodeAction::CreateRemoveNodeAction(Node* node, bool removed)
+    : removed_(removed)
+    , scene_(node->GetScene())
+    , data_(node)
+{
+}
+
+bool CreateRemoveNodeAction::IsAlive() const
+{
+    return scene_ != nullptr;
+}
+
+void CreateRemoveNodeAction::Redo() const
+{
+    if (removed_)
+        RemoveNode();
+    else
+        AddNode();
+}
+
+void CreateRemoveNodeAction::Undo() const
+{
+    if (removed_)
+        AddNode();
+    else
+        RemoveNode();
+}
+
+void CreateRemoveNodeAction::AddNode() const
+{
+    if (!scene_)
+        return;
+
+    if (Node* node = data_.SpawnExact(scene_))
+        ;
+    else
+        throw UndoException("Cannot create node with id {}", data_.GetId());
+}
+
+void CreateRemoveNodeAction::RemoveNode() const
+{
+    if (!scene_)
+        return;
+
+    if (Node* node = scene_->GetNode(data_.GetId()))
+        node->Remove();
+    else
+        throw UndoException("Cannot remove node with id {}", data_.GetId());
+}
+
 ChangeNodeTransformAction::ChangeNodeTransformAction(Node* node, const Transform& oldTransform)
     : scene_(node->GetScene())
     , nodes_{{node->GetID(), NodeData{oldTransform, node->GetDecomposedTransform()}}}
@@ -45,6 +95,8 @@ void ChangeNodeTransformAction::Redo() const
     {
         if (Node* node = scene_->GetNode(nodeId))
             node->SetTransform(nodeData.newTransform_);
+        else
+            throw UndoException("Cannot find node with id {}", nodeId);
     }
 }
 
@@ -57,6 +109,8 @@ void ChangeNodeTransformAction::Undo() const
     {
         if (Node* node = scene_->GetNode(nodeId))
             node->SetTransform(nodeData.oldTransform_);
+        else
+            throw UndoException("Cannot find node with id {}", nodeId);
     }
 }
 

@@ -108,6 +108,7 @@ void EditorTab::UpdateAndRenderWindow()
 
     if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
     {
+        project->SetFocusedTab(this);
         ApplyHotkeys(project->GetHotkeyManager());
         UpdateFocused();
     }
@@ -133,32 +134,18 @@ void EditorTab::UpdateAndRenderWindow()
 
 void EditorTab::UpdateAndRenderContextMenu()
 {
-    ResetSeparator();
+    contextMenuSeparator_.Reset();
     UpdateAndRenderContextMenuItems();
-    SetSeparator();
+    contextMenuSeparator_.Add();
 
-    ResetSeparator();
+    contextMenuSeparator_.Reset();
     const int oldY = ui::GetCursorPosY();
     OnRenderContextMenu(this);
     if (oldY != ui::GetCursorPosY())
-        SetSeparator();
+        contextMenuSeparator_.Add();
 
     if (ui::MenuItem("Close Tab"))
         Close();
-}
-
-void EditorTab::SetSeparator()
-{
-    if (!hasSeparatorAlready_)
-    {
-        hasSeparatorAlready_ = true;
-        ui::Separator();
-    }
-}
-
-void EditorTab::ResetSeparator()
-{
-    hasSeparatorAlready_ = false;
 }
 
 void EditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
