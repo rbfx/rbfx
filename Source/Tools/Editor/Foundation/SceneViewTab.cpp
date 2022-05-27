@@ -228,7 +228,7 @@ SceneViewAddon::~SceneViewAddon()
 
 SceneViewTab::SceneViewTab(Context* context)
     : ResourceEditorTab(context, "Scene View", "9f4f7432-dd60-4c83-aecd-2f6cf69d3549",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault | EditorTabFlag::UndoSupported,
+        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault | EditorTabFlag::FocusOnStart,
         EditorTabPlacement::DockCenter)
 {
     auto project = GetProject();
@@ -342,7 +342,7 @@ void SceneViewTab::UpdateAndRenderMenu()
 
     if (ui::BeginMenu("Edit"))
     {
-        project->RenderUndoRedoMenu();
+        UpdateAndRenderEditMenuItems();
 
         ui::Separator();
 

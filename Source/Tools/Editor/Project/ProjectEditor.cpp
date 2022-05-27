@@ -41,8 +41,6 @@ namespace
 {
 
 URHO3D_EDITOR_HOTKEY(Hotkey_SaveProject, "Global.SaveProject", QUAL_CTRL | QUAL_SHIFT, KEY_S);
-URHO3D_EDITOR_HOTKEY(Hotkey_Undo, "Global.Undo", QUAL_CTRL, KEY_Z);
-URHO3D_EDITOR_HOTKEY(Hotkey_Redo, "Global.Redo", QUAL_CTRL, KEY_Y);
 
 static unsigned numActiveProjects = 0;
 
@@ -275,20 +273,9 @@ void ProjectEditor::OpenResource(const OpenResourceRequest& request)
     }
 }
 
-void ProjectEditor::RenderUndoRedoMenu()
-{
-    if (ui::MenuItem("Undo", hotkeyManager_->GetHotkeyLabel(Hotkey_Undo).c_str()))
-        Undo();
-    if (ui::MenuItem("Redo", hotkeyManager_->GetHotkeyLabel(Hotkey_Redo).c_str()))
-        Redo();
-    ui::Separator();
-}
-
 void ProjectEditor::InitializeHotkeys()
 {
     hotkeyManager_->BindHotkey(this, Hotkey_SaveProject, &ProjectEditor::Save);
-    hotkeyManager_->BindHotkey(this, Hotkey_Undo, &ProjectEditor::Undo);
-    hotkeyManager_->BindHotkey(this, Hotkey_Redo, &ProjectEditor::Redo);
 }
 
 void ProjectEditor::EnsureDirectoryInitialized()
@@ -437,6 +424,13 @@ void ProjectEditor::UpdateAndRender()
     if (!initialized_)
     {
         initialized_ = true;
+
+        for (EditorTab* tab : tabs_)
+        {
+            if (tab->IsOpen() && tab->GetFlags().Test(EditorTabFlag::FocusOnStart))
+                tab->Focus();
+        }
+
         OnInitialized(this);
     }
 
@@ -496,18 +490,6 @@ void ProjectEditor::Save()
     SaveResourcesOnly();
 }
 
-void ProjectEditor::Undo()
-{
-    if (focusedTab_ && focusedTab_->IsUndoSupported())
-        undoManager_->Undo();
-}
-
-void ProjectEditor::Redo()
-{
-    if (focusedTab_ && focusedTab_->IsUndoSupported())
-        undoManager_->Redo();
-}
-
 void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
 {
     for (EditorTab* tab : tabs_)
@@ -528,7 +510,18 @@ void ProjectEditor::WriteIniSettings(ImGuiTextBuffer& output)
 
 void ProjectEditor::SetFocusedTab(EditorTab* tab)
 {
-    focusedTab_ = tab;
+    if (focusedTab_ != tab)
+    {
+        focusedTab_ = tab;
+        if (tab)
+            tab->OnFocused(tab);
+    }
+
+    EditorTab* ownerTab = tab ? tab->GetOwnerTab() : nullptr;
+    if (focusedRootTab_ != ownerTab)
+    {
+        focusedRootTab_ = ownerTab;
+    }
 }
 
 }

@@ -91,7 +91,7 @@ bool UndoManager::Undo()
     }
     catch (const UndoException& e)
     {
-        URHO3D_ASSERTLOG(0, "Desynchronized on UndoManager::Undo: {}", e.GetMessage());
+        URHO3D_ASSERTLOG(0, "Desynchronized on UndoManager::Undo: {}", e.what());
         redoStack_.clear();
         undoStack_.clear();
         return false;
@@ -118,7 +118,7 @@ bool UndoManager::Redo()
     }
     catch (const UndoException& e)
     {
-        URHO3D_ASSERTLOG(0, "Desynchronized on UndoManager::Redo: {}", e.GetMessage());
+        URHO3D_ASSERTLOG(0, "Desynchronized on UndoManager::Redo: {}", e.what());
         redoStack_.clear();
         undoStack_.clear();
         return false;

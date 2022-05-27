@@ -20,44 +20,41 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "../Foundation/Shared/HierarchyBrowserSource.h"
-#include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../../Foundation/SceneViewTab/SceneHierarchy.h"
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor);
-
-/// Tab that hosts hierarchy display of any kind
-class HierarchyBrowserTab : public EditorTab
+void Foundation_SceneHierarchy(Context* context, SceneViewTab* sceneViewTab)
 {
-    URHO3D_OBJECT(HierarchyBrowserTab, EditorTab)
+}
 
-public:
-    explicit HierarchyBrowserTab(Context* context);
+SceneHierarchy::SceneHierarchy(SceneViewTab* sceneViewTab)
+    : HierarchyBrowserSource(sceneViewTab->GetContext())
+    , owner_(sceneViewTab)
+{
+}
 
-    /// Connect to data source.
-    void ConnectToSource(HierarchyBrowserSource* source);
+void SceneHierarchy::UpdateAndRenderContent()
+{
 
-    /// Implement EditorTab
-    /// @{
-    void UpdateAndRenderMenu() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_->GetOwnerTab(); }
-    /// @}
+}
 
-protected:
-    /// Implement EditorTab
-    /// @{
-    void UpdateAndRenderContent() override;
-    void UpdateAndRenderContextMenuItems() override;
-    /// @}
+void SceneHierarchy::UpdateAndRenderContextMenuItems()
+{
 
-private:
-    WeakPtr<HierarchyBrowserSource> source_;
-};
+}
+
+void SceneHierarchy::UpdateAndRenderMenu()
+{
+    if (owner_)
+        owner_->UpdateAndRenderMenu();
+}
+
+void SceneHierarchy::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    if (owner_)
+        owner_->ApplyHotkeys(hotkeyManager);
+}
 
 }

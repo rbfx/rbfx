@@ -115,16 +115,12 @@ public:
     template <class T> T* FindTab() const;
     /// Open resource in appropriate resource tab.
     void OpenResource(const OpenResourceRequest& request);
-    /// Render undo and redo commands in menu.
-    void RenderUndoRedoMenu();
 
     /// Commands
     /// @{
     void SaveProjectOnly();
     void SaveResourcesOnly();
     void Save();
-    void Undo();
-    void Redo();
     /// @}
 
     void ReadIniSettings(const char* entry, const char* line);
@@ -147,6 +143,7 @@ public:
     /// Internal
     /// @{
     void SetFocusedTab(EditorTab* tab);
+    EditorTab* GetRootFocusedTab() { return focusedRootTab_; }
     /// @}
 
 private:
@@ -193,6 +190,7 @@ private:
     bool pendingResetLayout_{};
     ImGuiID dockspaceId_{};
     WeakPtr<EditorTab> focusedTab_;
+    WeakPtr<EditorTab> focusedRootTab_;
     /// @}
 };
 

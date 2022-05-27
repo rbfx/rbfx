@@ -38,7 +38,7 @@ enum class EditorTabFlag
     None = 0,
     NoContentPadding = 1 << 0,
     OpenByDefault = 1 << 1,
-    UndoSupported = 1 << 2
+    FocusOnStart = 1 << 2,
 };
 URHO3D_FLAGSET(EditorTabFlag, EditorTabFlags);
 
@@ -95,6 +95,7 @@ class EditorTab : public EditorConfigurable
 
 public:
     Signal<void()> OnRenderContextMenu;
+    Signal<void()> OnFocused;
 
     EditorTab(Context* context, const ea::string& title, const ea::string& guid,
         EditorTabFlags flags, EditorTabPlacement placement);
@@ -104,8 +105,8 @@ public:
     void UpdateAndRender();
     /// Open tab without focusing.
     void Open() { openPending_ = true; }
-    /// Open tab if it's closed and focus on it.
-    void Focus() { focusPending_ = true; }
+    /// Open tab if it's closed and focus on it unless owned tab is already focused.
+    void Focus();
     /// Close tab.
     void Close() { open_ = false; }
 
@@ -115,8 +116,14 @@ public:
     virtual void ApplyPlugins();
     /// Called when project is fully loaded.
     virtual void OnProjectLoaded() {}
+    /// Return whether the tab is connected to undo stack.
+    virtual bool IsUndoSupported() { return false; }
+    /// Return owner tab or itself.
+    virtual EditorTab* GetOwnerTab() { return this; }
     /// Enumerates all unsaved items corresponding to this tab.
     virtual void EnumerateUnsavedItems(ea::vector<ea::string>& items) {}
+    /// Apply hotkeys for this tab.
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
 
     /// Implement EditorConfigurable
     /// @{
@@ -132,7 +139,6 @@ public:
     EditorTabFlags GetFlags() const { return flags_; }
     EditorTabPlacement GetPlacement() const { return placement_; }
     bool IsOpen() const { return open_; }
-    bool IsUndoSupported() const { return flags_.Test(EditorTabFlag::UndoSupported); }
     /// @}
 
     /// Return current project.
@@ -148,8 +154,9 @@ protected:
     virtual bool IsMarkedUnsaved() { return false; }
     /// Update tab in focus.
     virtual void UpdateFocused() {};
-    /// Apply scoped hotkeys for this tab.
-    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
+
+    /// Render common Edit menu.
+    void UpdateAndRenderEditMenuItems();
 
     /// Helper for building menu
     SeparatorHelper contextMenuSeparator_;
@@ -157,6 +164,8 @@ protected:
 private:
     void UpdateAndRenderWindow();
     void UpdateAndRenderContextMenu();
+    void Undo();
+    void Redo();
 
     const ea::string title_;
     const ea::string guid_;

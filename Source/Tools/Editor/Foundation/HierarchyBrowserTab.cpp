@@ -20,18 +20,49 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/SceneViewTab.h"
-
-#include <IconFontCppHeaders/IconsFontAwesome6.h>
+#include "../Foundation/HierarchyBrowserTab.h"
 
 namespace Urho3D
 {
 
 void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor)
 {
-    // TODO(editor): Implement
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Hierarchy", "2",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft));
+    projectEditor->AddTab(MakeShared<HierarchyBrowserTab>(context));
+}
+
+HierarchyBrowserTab::HierarchyBrowserTab(Context* context)
+    : EditorTab(context, "Hierarchy Browser", "38ee90af-0a65-4d7d-93e2-d446ae54dffd",
+        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft)
+{
+}
+
+void HierarchyBrowserTab::ConnectToSource(HierarchyBrowserSource* source)
+{
+    source_ = source;
+}
+
+void HierarchyBrowserTab::UpdateAndRenderMenu()
+{
+    if (source_)
+        source_->UpdateAndRenderMenu();
+}
+
+void HierarchyBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    if (source_)
+        source_->ApplyHotkeys(hotkeyManager);
+}
+
+void HierarchyBrowserTab::UpdateAndRenderContent()
+{
+    if (source_)
+        source_->UpdateAndRenderContent();
+}
+
+void HierarchyBrowserTab::UpdateAndRenderContextMenuItems()
+{
+    if (source_)
+        source_->UpdateAndRenderContextMenuItems();
 }
 
 }
