@@ -31,6 +31,14 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+URHO3D_EDITOR_HOTKEY(Hotkey_SaveDocument, "Global.SaveDocument", QUAL_CTRL, KEY_S);
+URHO3D_EDITOR_HOTKEY(Hotkey_CloseDocument, "Global.CloseDocument", QUAL_CTRL, KEY_W);
+
+}
+
 ResourceEditorTab::ResourceEditorTab(Context* context, const ea::string& title, const ea::string& guid,
     EditorTabFlags flags, EditorTabPlacement placement)
     : EditorTab(context, title, guid, flags, placement)
@@ -38,10 +46,24 @@ ResourceEditorTab::ResourceEditorTab(Context* context, const ea::string& title, 
     // TODO(editor): Consider doing it at first tab open after loading
     auto project = GetProject();
     project->OnInitialized.Subscribe(this, &ResourceEditorTab::OnProjectInitialized);
+
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+    hotkeyManager->BindHotkey(this, Hotkey_SaveDocument, &ResourceEditorTab::SaveCurrentResource);
+    hotkeyManager->BindHotkey(this, Hotkey_CloseDocument, &ResourceEditorTab::CloseCurrentResource);
 }
 
 ResourceEditorTab::~ResourceEditorTab()
 {
+}
+
+void ResourceEditorTab::SaveCurrentResource()
+{
+    SaveResource(activeResourceName_);
+}
+
+void ResourceEditorTab::CloseCurrentResource()
+{
+    CloseResourceGracefully(activeResourceName_);
 }
 
 void ResourceEditorTab::EnumerateUnsavedItems(ea::vector<ea::string>& items)
@@ -300,6 +322,9 @@ bool ResourceEditorTab::IsMarkedUnsaved()
 
 void ResourceEditorTab::UpdateAndRenderContextMenuItems()
 {
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
     ea::string closeResourcePending;
     bool closeAllResourcesPending = false;
     ea::string saveResourcePending;
@@ -339,7 +364,8 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
     contextMenuSeparator_.Reset();
     {
         const ea::string title = Format("Save Current [{}]", GetResourceTitle());
-        if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
+        const ea::string hotkey = hotkeyManager->GetHotkeyLabel(Hotkey_SaveDocument);
+        if (ui::MenuItem(title.c_str(), hotkey.c_str(), false, !resources_.empty()))
             saveResourcePending = activeResourceName_;
     }
     {
@@ -353,7 +379,8 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
     contextMenuSeparator_.Reset();
     {
         const ea::string title = Format("Close Current [{}]", GetResourceTitle());
-        if (ui::MenuItem(title.c_str(), nullptr, false, !resources_.empty()))
+        const ea::string hotkey = hotkeyManager->GetHotkeyLabel(Hotkey_CloseDocument);
+        if (ui::MenuItem(title.c_str(), hotkey.c_str(), false, !resources_.empty()))
             closeResourcePending = activeResourceName_;
     }
     {
@@ -372,7 +399,7 @@ void ResourceEditorTab::UpdateAndRenderContextMenuItems()
     else if (saveAllResourcesPending)
         SaveAllResources();
     else if (!saveResourcePending.empty())
-        SaveResource(closeResourcePending);
+        SaveResource(saveResourcePending);
 }
 
 void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)

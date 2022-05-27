@@ -25,6 +25,8 @@
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
+#include <EASTL/unordered_set.h>
+
 namespace Urho3D
 {
 
@@ -65,10 +67,11 @@ HotkeyManager::HotkeyManager(Context* context)
 
 void HotkeyManager::BindHotkey(Object* owner, const HotkeyInfo& info, ea::function<void()> callback)
 {
+    const WeakPtr<Object> weakOwner{owner};
     const auto binding = ea::make_shared<HotkeyBinding>(HotkeyBinding{
-        WeakPtr<Object>{owner}, info, info.defaultHotkey_, callback});
-    hotkeysByScope_[info.scope_].push_back(binding);
-    hotkeyByCommand_[info.command_] = binding;
+        weakOwner, info, info.defaultHotkey_, callback});
+    hotkeyByOwner_[weakOwner].push_back(binding);
+    hotkeyByCommand_[info.command_].push_back(binding);
 }
 
 HotkeyCombination HotkeyManager::GetHotkey(const HotkeyInfo& info) const
@@ -84,9 +87,28 @@ ea::string HotkeyManager::GetHotkeyLabel(const HotkeyInfo& info) const
 
 void HotkeyManager::RemoveExpired()
 {
-    for (auto& [scope, hotkeys] : hotkeysByScope_)
-        ea::erase_if(hotkeys, &HotkeyManager::IsHotkeyExpired);
-    ea::erase_if(hotkeyByCommand_, [](const auto& item) { return IsHotkeyExpired(item.second); });
+    ea::unordered_set<ea::string> commandsToCheck;
+    ea::erase_if(hotkeyByOwner_, [&](const auto& elem)
+    {
+        const auto& [owner, bindings] = elem;
+        if (!owner && !bindings.empty())
+        {
+            commandsToCheck.insert(bindings[0]->info_.command_);
+            return true;
+        }
+        return false;
+    });
+
+    for (const ea::string& command : commandsToCheck)
+    {
+        const auto iter = hotkeyByCommand_.find(command);
+        if (iter == hotkeyByCommand_.end())
+            continue;
+
+        ea::erase_if(iter->second, &IsBindingExpired);
+        if (iter->second.empty())
+            hotkeyByCommand_.erase(iter);
+    }
 }
 
 void HotkeyManager::Update()
@@ -98,15 +120,16 @@ void HotkeyManager::Update()
     }
 }
 
-void HotkeyManager::InvokeScopedHotkeys(const ea::string& scope)
+void HotkeyManager::InvokeFor(Object* owner)
 {
-    auto& hotkeys = hotkeysByScope_[scope];
-    for (const auto& bindingPtr : hotkeys)
-    {
-        if (!bindingPtr->owner_)
-            continue;
+    const WeakPtr<Object> weakOwner{owner};
+    const auto iter = hotkeyByOwner_.find(weakOwner);
+    if (iter == hotkeyByOwner_.end())
+        return;
 
-        if (bindingPtr->owner_ && IsInvoked(bindingPtr->hotkey_))
+    for (const HotkeyBindingPtr& bindingPtr : iter->second)
+    {
+        if (IsInvoked(bindingPtr->hotkey_))
             bindingPtr->callback_();
     }
 }
@@ -144,8 +167,8 @@ bool HotkeyManager::IsInvoked(const HotkeyCombination& hotkey) const
 HotkeyManager::HotkeyBindingPtr HotkeyManager::FindByCommand(const ea::string& command) const
 {
     const auto iter = hotkeyByCommand_.find(command);
-    if (iter != hotkeyByCommand_.end())
-        return iter->second;
+    if (iter != hotkeyByCommand_.end() && !iter->second.empty())
+        return iter->second[0];
     return nullptr;
 }
 

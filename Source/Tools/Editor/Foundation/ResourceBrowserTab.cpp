@@ -36,13 +36,9 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_SCOPE(Scope_ResourceBrowserTab, "ResourceBrowserTab");
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Delete,
-    "ResourceBrowserTab.Delete", Scope_ResourceBrowserTab, QUAL_NONE, KEY_DELETE);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Rename,
-    "ResourceBrowserTab.Rename", Scope_ResourceBrowserTab, QUAL_NONE, KEY_F2);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_RevealInExplorer,
-    "ResourceBrowserTab.RevealInExplorer", Scope_ResourceBrowserTab, QUAL_ALT | QUAL_SHIFT, KEY_R);
+URHO3D_EDITOR_HOTKEY(Hotkey_Delete, "ResourceBrowserTab.Delete", QUAL_NONE, KEY_DELETE);
+URHO3D_EDITOR_HOTKEY(Hotkey_Rename, "ResourceBrowserTab.Rename", QUAL_NONE, KEY_F2);
+URHO3D_EDITOR_HOTKEY(Hotkey_RevealInExplorer, "ResourceBrowserTab.RevealInExplorer", QUAL_ALT | QUAL_SHIFT, KEY_R);
 
 const ea::string contextMenuId = "ResourceBrowserTab_PopupDirectory";
 
@@ -278,12 +274,6 @@ void ResourceBrowserTab::UpdateAndRenderDialogs()
     RenderRenameDialog();
     RenderDeleteDialog();
     RenderCreateDialog();
-}
-
-void ResourceBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
-{
-    BaseClassName::ApplyHotkeys(hotkeyManager);
-    hotkeyManager->InvokeScopedHotkeys(Scope_ResourceBrowserTab);
 }
 
 void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName)

@@ -36,19 +36,12 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_SCOPE(Scope_TransformGizmo, "TransformGizmo");
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_ToggleLocal,
-    "TransformGizmo.ToggleLocal", Scope_TransformGizmo, QUAL_NONE, KEY_X);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_TogglePivoted,
-    "TransformGizmo.TogglePivoted", Scope_TransformGizmo, QUAL_NONE, KEY_Z);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Select,
-    "TransformGizmo.Select", Scope_TransformGizmo, QUAL_NONE, KEY_Q);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Translate,
-    "TransformGizmo.Translate", Scope_TransformGizmo, QUAL_NONE, KEY_W);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Rotate,
-    "TransformGizmo.Rotate", Scope_TransformGizmo, QUAL_NONE, KEY_E);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Scale,
-    "TransformGizmo.Scale", Scope_TransformGizmo, QUAL_NONE, KEY_R);
+URHO3D_EDITOR_HOTKEY(Hotkey_ToggleLocal, "TransformGizmo.ToggleLocal", QUAL_NONE, KEY_X);
+URHO3D_EDITOR_HOTKEY(Hotkey_TogglePivoted, "TransformGizmo.TogglePivoted", QUAL_NONE, KEY_Z);
+URHO3D_EDITOR_HOTKEY(Hotkey_Select, "TransformGizmo.Select", QUAL_NONE, KEY_Q);
+URHO3D_EDITOR_HOTKEY(Hotkey_Translate, "TransformGizmo.Translate", QUAL_NONE, KEY_W);
+URHO3D_EDITOR_HOTKEY(Hotkey_Rotate, "TransformGizmo.Rotate", QUAL_NONE, KEY_E);
+URHO3D_EDITOR_HOTKEY(Hotkey_Scale, "TransformGizmo.Scale", QUAL_NONE, KEY_R);
 
 }
 
@@ -160,7 +153,7 @@ void TransformManipulator::UpdateAndRender(SceneViewPage& scenePage)
 
 void TransformManipulator::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
-    hotkeyManager->InvokeScopedHotkeys(Scope_TransformGizmo);
+    hotkeyManager->InvokeFor(this);
 }
 
 void TransformManipulator::RenderTabContextMenu()

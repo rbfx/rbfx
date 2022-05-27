@@ -150,7 +150,7 @@ void EditorTab::UpdateAndRenderContextMenu()
 
 void EditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
-
+    hotkeyManager->InvokeFor(this);
 }
 
 ProjectEditor* EditorTab::GetProject() const

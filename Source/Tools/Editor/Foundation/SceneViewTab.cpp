@@ -42,15 +42,10 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_SCOPE(Scope_SceneViewTab, "SceneViewTab");
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Cut,
-    "SceneViewTab.Cut", Scope_SceneViewTab, QUAL_CTRL, KEY_X);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Copy,
-    "SceneViewTab.Copy", Scope_SceneViewTab, QUAL_CTRL, KEY_C);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Paste,
-    "SceneViewTab.Paste", Scope_SceneViewTab, QUAL_CTRL, KEY_V);
-URHO3D_EDITOR_SCOPED_HOTKEY(Hotkey_Delete,
-    "SceneViewTab.Delete", Scope_SceneViewTab, QUAL_NONE, KEY_DELETE);
+URHO3D_EDITOR_HOTKEY(Hotkey_Cut, "SceneViewTab.Cut", QUAL_CTRL, KEY_X);
+URHO3D_EDITOR_HOTKEY(Hotkey_Copy, "SceneViewTab.Copy", QUAL_CTRL, KEY_C);
+URHO3D_EDITOR_HOTKEY(Hotkey_Paste, "SceneViewTab.Paste", QUAL_CTRL, KEY_V);
+URHO3D_EDITOR_HOTKEY(Hotkey_Delete, "SceneViewTab.Delete", QUAL_NONE, KEY_DELETE);
 
 }
 
@@ -425,8 +420,6 @@ void SceneViewTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     BaseClassName::ApplyHotkeys(hotkeyManager);
 
-    hotkeyManager->InvokeScopedHotkeys(Scope_SceneViewTab);
-
     for (SceneViewAddon* addon : addons_)
         addon->ApplyHotkeys(hotkeyManager);
 }
@@ -473,7 +466,8 @@ void SceneViewTab::OnResourceSaved(const ea::string& resourceName)
 void SceneViewTab::SavePageScene(SceneViewPage& page) const
 {
     XMLFile xmlFile(context_);
-    page.scene_->SaveXML(xmlFile.GetOrCreateRoot("scene"));
+    XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+    page.scene_->SaveXML(rootElement);
     xmlFile.SaveFile(page.scene_->GetFileName());
 }
 
