@@ -79,14 +79,20 @@ class SceneSelection
 public:
     using WeakNodeSet = ea::unordered_set<WeakPtr<Node>>;
     using WeakComponentSet = ea::unordered_set<WeakPtr<Component>>;
+    using WeakObjectSet = ea::unordered_set<WeakPtr<Object>>;
 
     /// Return current state
     /// @{
     unsigned GetRevision() const { return revision_; }
-    bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
+    bool IsEmpty() const { return nodesAndScenes_.empty() && components_.empty(); }
     bool IsSelected(Node* node) const;
+
+    Node* GetActiveNodeOrScene() const { return activeNodeOrScene_; }
     Node* GetActiveNode() const { return activeNode_; }
+    Object* GetActiveObject() const { return activeObject_; }
+    const WeakNodeSet& GetNodesAndScenes() const { return nodesAndScenes_; }
     const WeakNodeSet& GetNodes() const { return nodes_; }
+    const WeakNodeSet& GetEffectiveNodesAndScenes() const { return effectiveNodesAndScenes_; }
     const WeakNodeSet& GetEffectiveNodes() const { return effectiveNodes_; }
     const WeakComponentSet& GetComponents() const { return components_; }
     /// @}
@@ -102,15 +108,25 @@ public:
     void SetSelected(Component* component, bool selected, bool activated = false);
     /// Set whether the node is selected.
     void SetSelected(Node* node, bool selected, bool activated = false);
+    /// Set whether the node or component is selected.
+    void SetSelected(Object* object, bool selected, bool activated = false);
 
 private:
     void UpdateRevision() { revision_ = ea::max(1u, revision_ + 1); }
+    void UpdateActiveObject(const WeakPtr<Node>& node, const WeakPtr<Component>& component, bool forceUpdate);
     void UpdateEffectiveNodes();
 
+    WeakObjectSet objects_;
+    WeakNodeSet nodesAndScenes_;
     WeakNodeSet nodes_;
     WeakComponentSet components_;
+
+    WeakPtr<Node> activeNodeOrScene_;
+    WeakPtr<Node> activeNode_;
+    WeakPtr<Object> activeObject_;
+
+    WeakNodeSet effectiveNodesAndScenes_;
     WeakNodeSet effectiveNodes_;
-    WeakPtr<Node> activeNode_{};
     unsigned revision_{1};
 };
 
@@ -222,6 +238,12 @@ public:
     void ReadIniSettings(const char* line) override;
     /// @}
 
+    /// Return current state.
+    /// @{
+    SceneViewPage* GetPage(const ea::string& resourceName);
+    SceneViewPage* GetActivePage();
+    /// @}
+
 protected:
     /// ResourceEditorTab implementation
     /// @{
@@ -241,8 +263,6 @@ private:
 
     /// Manage pages
     /// @{
-    SceneViewPage* GetPage(const ea::string& resourceName);
-    SceneViewPage* GetActivePage();
     SceneViewPage CreatePage(Scene* scene) const;
     void SavePageScene(SceneViewPage& page) const;
 

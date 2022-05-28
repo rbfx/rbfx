@@ -108,18 +108,20 @@ bool SceneCameraController::GetMoveAccelerated() const
 
 bool SceneSelection::IsSelected(Node* node) const
 {
-    return nodes_.contains(WeakPtr<Node>(node));
+    return nodesAndScenes_.contains(WeakPtr<Node>(node));
 }
 
 void SceneSelection::Update()
 {
-    const unsigned numComponents = components_.size();
-    const unsigned numNodes = nodes_.size();
+    const unsigned componentsSize = components_.size();
+    const unsigned numNodes = nodesAndScenes_.size();
 
     ea::erase_if(components_, [](Component* component) { return component == nullptr; });
+    ea::erase_if(nodesAndScenes_, [](Node* node) { return node == nullptr; });
     ea::erase_if(nodes_, [](Node* node) { return node == nullptr; });
 
-    if (components_.size() != numComponents || nodes_.size() != numNodes)
+    // No need to check nodes_ because it is a subset of nodesAndScenes_
+    if (components_.size() != componentsSize || nodesAndScenes_.size() != numNodes)
     {
         UpdateRevision();
         UpdateEffectiveNodes();
@@ -130,10 +132,17 @@ void SceneSelection::Clear()
 {
     UpdateRevision();
 
+    objects_.clear();
+    nodesAndScenes_.clear();
     nodes_.clear();
     components_.clear();
-    effectiveNodes_.clear();
+
+    activeNodeOrScene_ = nullptr;
     activeNode_ = nullptr;
+    activeObject_ = nullptr;
+
+    effectiveNodesAndScenes_.clear();
+    effectiveNodes_.clear();
 }
 
 void SceneSelection::ConvertToNodes()
@@ -150,63 +159,123 @@ void SceneSelection::ConvertToNodes()
 
 void SceneSelection::SetSelected(Component* component, bool selected, bool activated)
 {
+    if (!component)
+        return;
+
     UpdateRevision();
 
     const WeakPtr<Component> weakComponent{component};
 
     if (selected)
     {
-        if (activeNode_ == nullptr || activated)
-        {
-            if (const WeakPtr<Node> weakNode{component->GetNode()})
-                activeNode_ = weakNode;
-        }
+        if (const WeakPtr<Node> weakNode{component->GetNode()})
+            UpdateActiveObject(weakNode, weakComponent, activated);
+        objects_.insert(weakComponent);
         components_.insert(weakComponent);
     }
     else
+    {
+        objects_.erase(weakComponent);
         components_.erase(weakComponent);
+    }
 
     UpdateEffectiveNodes();
 }
 
 void SceneSelection::SetSelected(Node* node, bool selected, bool activated)
 {
+    if (!node)
+        return;
+
     UpdateRevision();
 
     const WeakPtr<Node> weakNode{node};
 
     if (selected)
     {
-        if (activeNode_ == nullptr || activated)
-            activeNode_ = weakNode;
-        nodes_.insert(weakNode);
+        UpdateActiveObject(weakNode, nullptr, activated);
+        objects_.insert(weakNode);
+        nodesAndScenes_.insert(weakNode);
+        if (node->GetParent() != nullptr)
+            nodes_.insert(weakNode);
     }
     else
+    {
+        objects_.erase(weakNode);
+        nodesAndScenes_.erase(weakNode);
         nodes_.erase(weakNode);
+    }
 
     UpdateEffectiveNodes();
 }
 
+void SceneSelection::SetSelected(Object* object, bool selected, bool activated)
+{
+    if (auto node = dynamic_cast<Node*>(object))
+        SetSelected(node, selected, activated);
+    else if (auto component = dynamic_cast<Component*>(object))
+        SetSelected(component, selected, activated);
+    else
+        URHO3D_ASSERT(0, "SceneSelection::SetSelected received unexpected object");
+}
+
+void SceneSelection::UpdateActiveObject(const WeakPtr<Node>& node, const WeakPtr<Component>& component, bool forceUpdate)
+{
+    if (activeNodeOrScene_ == nullptr || forceUpdate)
+    {
+        activeNodeOrScene_ = node;
+    }
+
+    if (activeNode_ == nullptr || forceUpdate)
+    {
+        if (node->GetParent() != nullptr)
+            activeNode_ = node;
+    }
+
+    if (activeObject_ == nullptr || forceUpdate)
+    {
+        if (component)
+            activeObject_ = component;
+        else
+            activeObject_ = node;
+    }
+}
+
 void SceneSelection::UpdateEffectiveNodes()
 {
+    effectiveNodesAndScenes_.clear();
     effectiveNodes_.clear();
 
     for (Node* node : nodes_)
     {
         if (const WeakPtr<Node> weakNode{node})
+        {
+            if (weakNode->GetParent() != nullptr)
+                effectiveNodesAndScenes_.insert(weakNode);
             effectiveNodes_.insert(weakNode);
+        }
     }
     for (Component* component : components_)
     {
         if (component)
         {
             if (const WeakPtr<Node> weakNode{component->GetNode()})
+            {
+                if (weakNode->GetParent() != nullptr)
+                    effectiveNodesAndScenes_.insert(weakNode);
                 effectiveNodes_.insert(weakNode);
+            }
         }
     }
 
+    if (!effectiveNodesAndScenes_.contains(activeNodeOrScene_))
+        activeNodeOrScene_ = !effectiveNodesAndScenes_.empty() ? *effectiveNodesAndScenes_.begin() : nullptr;
+
     if (!effectiveNodes_.contains(activeNode_))
         activeNode_ = !effectiveNodes_.empty() ? *effectiveNodes_.begin() : nullptr;
+
+    if (!objects_.contains(activeObject_))
+        activeObject_ = !objects_.empty() ? *objects_.begin() : nullptr;
 }
 
 SceneCameraController* SceneViewPage::GetCurrentCameraController() const
@@ -290,7 +359,7 @@ void SceneViewTab::PasteNextToSelection()
     SceneSelection& selection = activePage->selection_;
     if (clipboard_.HasNodes())
     {
-        Node* siblingNode = selection.GetActiveNode();
+        Node* siblingNode = selection.GetActiveNodeOrScene();
         Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : activePage->scene_;
 
         selection.Clear();
@@ -318,7 +387,7 @@ void SceneViewTab::DeleteSelection()
 
     for (Node* node : selectedNodes)
     {
-        if (node)
+        if (node && node->GetParent() != nullptr)
         {
             PushAction(MakeShared<CreateRemoveNodeAction>(node, true));
             node->Remove();
