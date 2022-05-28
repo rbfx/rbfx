@@ -71,7 +71,7 @@ public:
     /// @{
     ea::string GetUniqueName() const override { return "TransformGizmo"; }
     void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
-    void UpdateAndRender(SceneViewPage& scenePage) override;
+    void Render(SceneViewPage& scenePage) override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
 
     bool NeedTabContextMenu() const override { return true; }

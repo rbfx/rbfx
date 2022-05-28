@@ -35,20 +35,20 @@ SceneHierarchy::SceneHierarchy(SceneViewTab* sceneViewTab)
 {
 }
 
-void SceneHierarchy::UpdateAndRenderContent()
+void SceneHierarchy::RenderContent()
 {
 
 }
 
-void SceneHierarchy::UpdateAndRenderContextMenuItems()
+void SceneHierarchy::RenderContextMenuItems()
 {
 
 }
 
-void SceneHierarchy::UpdateAndRenderMenu()
+void SceneHierarchy::RenderMenu()
 {
     if (owner_)
-        owner_->UpdateAndRenderMenu();
+        owner_->RenderMenu();
 }
 
 void SceneHierarchy::ApplyHotkeys(HotkeyManager* hotkeyManager)

@@ -320,7 +320,7 @@ bool ResourceEditorTab::IsMarkedUnsaved()
     return IsResourceUnsaved(activeResourceName_);
 }
 
-void ResourceEditorTab::UpdateAndRenderContextMenuItems()
+void ResourceEditorTab::RenderContextMenuItems()
 {
     auto project = GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();

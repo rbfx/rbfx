@@ -41,9 +41,10 @@ public:
     /// Implement HierarchyBrowserSource
     /// @{
     EditorTab* GetOwnerTab() override { return owner_; }
-    void UpdateAndRenderContent() override;
-    void UpdateAndRenderContextMenuItems() override;
-    void UpdateAndRenderMenu() override;
+
+    void RenderContent() override;
+    void RenderContextMenuItems() override;
+    void RenderMenu() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 

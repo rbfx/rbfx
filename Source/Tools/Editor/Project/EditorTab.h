@@ -102,7 +102,7 @@ public:
     ~EditorTab() override;
 
     /// Render contents of the tab. Returns false if closed.
-    void UpdateAndRender();
+    void Render();
     /// Open tab without focusing.
     void Open() { openPending_ = true; }
     /// Open tab if it's closed and focus on it unless owned tab is already focused.
@@ -111,7 +111,7 @@ public:
     void Close() { open_ = false; }
 
     /// Render main menu of the tab.
-    virtual void UpdateAndRenderMenu() {}
+    virtual void RenderMenu() {}
     /// Called when all tabs are created and multi-tab plugins can be safely applied.
     virtual void ApplyPlugins();
     /// Called when project is fully loaded.
@@ -146,9 +146,9 @@ public:
 
 protected:
     /// Render contents of the tab.
-    virtual void UpdateAndRenderContent() {}
+    virtual void RenderContent() {}
     /// Render context menu of the tab.
-    virtual void UpdateAndRenderContextMenuItems() {}
+    virtual void RenderContextMenuItems() {}
 
     /// Return whether the document is modified and prompt to save should be shown.
     virtual bool IsMarkedUnsaved() { return false; }
@@ -156,14 +156,14 @@ protected:
     virtual void UpdateFocused() {};
 
     /// Render common Edit menu.
-    void UpdateAndRenderEditMenuItems();
+    void RenderEditMenuItems();
 
     /// Helper for building menu
     SeparatorHelper contextMenuSeparator_;
 
 private:
-    void UpdateAndRenderWindow();
-    void UpdateAndRenderContextMenu();
+    void RenderWindow();
+    void RenderContextMenu();
     void Undo();
     void Redo();
 

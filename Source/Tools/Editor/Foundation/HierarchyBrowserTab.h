@@ -44,7 +44,7 @@ public:
 
     /// Implement EditorTab
     /// @{
-    void UpdateAndRenderMenu() override;
+    void RenderMenu() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     EditorTab* GetOwnerTab() override { return source_->GetOwnerTab(); }
     /// @}
@@ -52,8 +52,8 @@ public:
 protected:
     /// Implement EditorTab
     /// @{
-    void UpdateAndRenderContent() override;
-    void UpdateAndRenderContextMenuItems() override;
+    void RenderContent() override;
+    void RenderContextMenuItems() override;
     /// @}
 
 private:

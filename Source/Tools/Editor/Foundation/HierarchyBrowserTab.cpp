@@ -41,10 +41,10 @@ void HierarchyBrowserTab::ConnectToSource(HierarchyBrowserSource* source)
     source_ = source;
 }
 
-void HierarchyBrowserTab::UpdateAndRenderMenu()
+void HierarchyBrowserTab::RenderMenu()
 {
     if (source_)
-        source_->UpdateAndRenderMenu();
+        source_->RenderMenu();
 }
 
 void HierarchyBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
@@ -53,16 +53,16 @@ void HierarchyBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
         source_->ApplyHotkeys(hotkeyManager);
 }
 
-void HierarchyBrowserTab::UpdateAndRenderContent()
+void HierarchyBrowserTab::RenderContent()
 {
     if (source_)
-        source_->UpdateAndRenderContent();
+        source_->RenderContent();
 }
 
-void HierarchyBrowserTab::UpdateAndRenderContextMenuItems()
+void HierarchyBrowserTab::RenderContextMenuItems()
 {
     if (source_)
-        source_->UpdateAndRenderContextMenuItems();
+        source_->RenderContextMenuItems();
 }
 
 }

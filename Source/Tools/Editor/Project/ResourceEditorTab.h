@@ -100,7 +100,7 @@ protected:
     /// EditorTab implementation
     /// @{
     bool IsMarkedUnsaved() override;
-    void UpdateAndRenderContextMenuItems() override;
+    void RenderContextMenuItems() override;
     /// @}
 
     /// Called when resource should be loaded.

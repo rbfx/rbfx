@@ -164,7 +164,7 @@ public:
     /// Process input.
     virtual void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) {}
     /// Update and render addon.
-    virtual void UpdateAndRender(SceneViewPage& scenePage) {}
+    virtual void Render(SceneViewPage& scenePage) {}
     /// Apply hotkeys for given addon.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
 
@@ -210,7 +210,7 @@ public:
 
     /// ResourceEditorTab implementation
     /// @{
-    void UpdateAndRenderMenu() override;
+    void RenderMenu() override;
     bool IsUndoSupported() { return true; }
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
 
@@ -225,14 +225,14 @@ public:
 protected:
     /// ResourceEditorTab implementation
     /// @{
-    void UpdateAndRenderContextMenuItems() override;
+    void RenderContextMenuItems() override;
 
     void OnResourceLoaded(const ea::string& resourceName) override;
     void OnResourceUnloaded(const ea::string& resourceName) override;
     void OnActiveResourceChanged(const ea::string& resourceName) override;
     void OnResourceSaved(const ea::string& resourceName) override;
 
-    void UpdateAndRenderContent() override;
+    void RenderContent() override;
     void UpdateFocused() override;
     /// @}
 

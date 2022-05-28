@@ -53,7 +53,7 @@ public:
     /// @{
     virtual bool IsEnabled(const FileSystemEntry& parentEntry) const { return true; }
     virtual void BeginCreate() {}
-    virtual void UpdateAndRender() {}
+    virtual void Render() {}
     virtual void EndCreate(const ea::string& fileName, const ea::string& resourceName);
     /// @}
 
@@ -97,7 +97,7 @@ public:
 protected:
     /// Implement EditorTab
     /// @{
-    void UpdateAndRenderContent() override;
+    void RenderContent() override;
     /// @}
 
 private:
@@ -139,7 +139,7 @@ private:
 
     /// Common rendering
     /// @{
-    void UpdateAndRenderDialogs();
+    void RenderDialogs();
 
     void RenderEntryContextMenu(const FileSystemEntry& entry);
     ea::optional<unsigned> RenderEntryCreateContextMenu(const FileSystemEntry& entry);

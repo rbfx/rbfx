@@ -335,14 +335,14 @@ void SceneViewTab::DeleteSelection()
     activePage->selection_.Clear();
 }
 
-void SceneViewTab::UpdateAndRenderMenu()
+void SceneViewTab::RenderMenu()
 {
     auto project = GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
 
     if (ui::BeginMenu("Edit"))
     {
-        UpdateAndRenderEditMenuItems();
+        RenderEditMenuItems();
 
         ui::Separator();
 
@@ -380,9 +380,9 @@ void SceneViewTab::ReadIniSettings(const char* line)
         addon->ReadIniSettings(line);
 }
 
-void SceneViewTab::UpdateAndRenderContextMenuItems()
+void SceneViewTab::RenderContextMenuItems()
 {
-    BaseClassName::UpdateAndRenderContextMenuItems();
+    BaseClassName::RenderContextMenuItems();
 
     if (SceneViewPage* activePage = GetActivePage())
     {
@@ -471,7 +471,7 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     xmlFile.SaveFile(page.scene_->GetFileName());
 }
 
-void SceneViewTab::UpdateAndRenderContent()
+void SceneViewTab::RenderContent()
 {
     SceneViewPage* activePage = GetActivePage();
     if (!activePage)
@@ -524,7 +524,7 @@ void SceneViewTab::UpdateAddons(SceneViewPage& page)
         addon->ProcessInput(page, mouseConsumed);
 
     for (SceneViewAddon* addon : addons_)
-        addon->UpdateAndRender(page);
+        addon->Render(page);
 }
 
 void SceneViewTab::UpdateFocused()

@@ -20,12 +20,12 @@
 // THE SOFTWARE.
 //
 
-#include "../../Foundation/Glue/HierarchyBrowserGlue.h"
+#include "../../Foundation/Glue/SceneViewGlue.h"
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserGlue(Context* context, SceneViewTab* sceneViewTab)
+void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab)
 {
     auto project = sceneViewTab->GetProject();
     const WeakPtr<HierarchyBrowserTab> hierarchyBrowserTab{project->FindTab<HierarchyBrowserTab>()};

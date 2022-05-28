@@ -40,7 +40,7 @@ SceneSelectionRenderer::SceneSelectionRenderer(SceneViewTab* owner)
 {
 }
 
-void SceneSelectionRenderer::UpdateAndRender(SceneViewPage& scenePage)
+void SceneSelectionRenderer::Render(SceneViewPage& scenePage)
 {
     Scene* scene = scenePage.scene_;
 

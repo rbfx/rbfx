@@ -99,11 +99,11 @@ public:
     void CloseResourceGracefully(const CloseResourceRequest& request);
 
     /// Update and render main window with tabs.
-    void UpdateAndRender();
+    void Render();
     /// Update and render project menu.
-    void UpdateAndRenderProjectMenu();
+    void RenderProjectMenu();
     /// Update and render the rest of menu bar.
-    void UpdateAndRenderMainMenu();
+    void RenderMainMenu();
 
     /// Mark files with specified name pattern as internal and ignore them in UI.
     void IgnoreFileNamePattern(const ea::string& pattern);

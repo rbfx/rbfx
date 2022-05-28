@@ -147,7 +147,7 @@ void TransformManipulator::OnNodeTransformChanged(Node* node, const Transform& o
     owner_->PushAction<ChangeNodeTransformAction>(node, oldTransform);
 }
 
-void TransformManipulator::UpdateAndRender(SceneViewPage& scenePage)
+void TransformManipulator::Render(SceneViewPage& scenePage)
 {
 }
 

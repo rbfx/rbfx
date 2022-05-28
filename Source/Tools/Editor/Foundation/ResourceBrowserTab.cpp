@@ -211,7 +211,7 @@ void ResourceBrowserTab::ScrollToSelection()
     right_.scrollToSelection_ = true;
 }
 
-void ResourceBrowserTab::UpdateAndRenderContent()
+void ResourceBrowserTab::RenderContent()
 {
     for (ResourceRoot& root : roots_)
         root.reflection_->Update();
@@ -247,10 +247,10 @@ void ResourceBrowserTab::UpdateAndRenderContent()
         ui::EndTable();
     }
 
-    UpdateAndRenderDialogs();
+    RenderDialogs();
 }
 
-void ResourceBrowserTab::UpdateAndRenderDialogs()
+void ResourceBrowserTab::RenderDialogs()
 {
     if (delete_.openPending_)
     {
@@ -727,7 +727,7 @@ void ResourceBrowserTab::RenderCreateDialog()
     const bool done = ui::InputText("##Create", &create_.inputBuffer_,
         ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 
-    create_.factory_->UpdateAndRender();
+    create_.factory_->Render();
 
     ui::BeginDisabled(!isEnabled);
     if (ui::Button(ICON_FA_CHECK " Create") || (isEnabled && done))
