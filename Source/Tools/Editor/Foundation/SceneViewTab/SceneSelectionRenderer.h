@@ -41,7 +41,7 @@ public:
     /// Implement SceneViewAddon.
     /// @{
     ea::string GetUniqueName() const override { return "SelectionRenderer"; }
-    void UpdateAndRender(SceneViewPage& scenePage) override;
+    void Render(SceneViewPage& scenePage) override;
     /// @}
 
 private:

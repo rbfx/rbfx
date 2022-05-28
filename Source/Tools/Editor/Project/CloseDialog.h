@@ -55,7 +55,7 @@ public:
     bool IsActive() const;
 
     /// Update and render contents if necessary.
-    void UpdateAndRender();
+    void Render();
 
 private:
     void CloseDialogSave();

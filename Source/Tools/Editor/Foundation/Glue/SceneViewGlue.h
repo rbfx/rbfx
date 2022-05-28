@@ -29,6 +29,6 @@
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserGlue(Context* context, SceneViewTab* sceneViewTab);
+void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab);
 
 }

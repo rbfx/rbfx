@@ -49,7 +49,7 @@ public:
 protected:
     /// Implement EditorTab
     /// @{
-    void UpdateAndRenderContent() override;
+    void RenderContent() override;
     /// @}
 
 private:

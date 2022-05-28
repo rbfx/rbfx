@@ -91,7 +91,7 @@
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
 #include "Foundation/SceneViewTab/TransformManipulator.h"
 
-#include "Foundation/Glue/HierarchyBrowserGlue.h"
+#include "Foundation/Glue/SceneViewGlue.h"
 
 namespace Urho3D
 {
@@ -129,7 +129,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.EditorCamera3D", &Foundation_EditorCamera3D);
     editorPluginManager_->AddPlugin("Foundation.EditorCamera2D", &Foundation_EditorCamera2D);
 
-    editorPluginManager_->AddPlugin("Foundation.HierarchyBrowserGlue", &Foundation_HierarchyBrowserGlue);
+    editorPluginManager_->AddPlugin("Foundation.SceneViewGlue", &Foundation_SceneViewGlue);
 }
 
 void Editor::Setup()
@@ -388,7 +388,7 @@ void Editor::OnUpdate(VariantMap& args)
     bool hasModified = false;
     if (projectEditor_)
     {
-        projectEditor_->UpdateAndRender();
+        projectEditor_->Render();
     }
     else if (project_.NotNull())
     {

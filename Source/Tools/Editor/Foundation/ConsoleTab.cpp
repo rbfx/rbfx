@@ -39,7 +39,7 @@ ConsoleTab_::ConsoleTab_(Context* context)
 {
 }
 
-void ConsoleTab_::UpdateAndRenderContent()
+void ConsoleTab_::RenderContent()
 {
     auto console = GetSubsystem<Console>();
     /// TODO(editor): Revisit dependency
@@ -53,7 +53,7 @@ void ConsoleTab_::UpdateAndRenderContent()
         ui::PopFont();
 }
 
-void ConsoleTab_::UpdateAndRenderContextMenuItems()
+void ConsoleTab_::RenderContextMenuItems()
 {
     auto console = GetSubsystem<Console>();
 

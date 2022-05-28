@@ -50,7 +50,7 @@ bool CloseDialog::IsActive() const
     return isOpen_ || !requests_.empty();
 }
 
-void CloseDialog::UpdateAndRender()
+void CloseDialog::Render()
 {
     if (!isOpen_ && !requests_.empty())
     {

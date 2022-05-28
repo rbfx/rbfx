@@ -52,7 +52,7 @@ void SettingsTab::ReadIniSettings(const char* line)
         selectedPage_ = *value;
 }
 
-void SettingsTab::UpdateAndRenderContent()
+void SettingsTab::RenderContent()
 {
     if (selectedPage_.empty())
         selectNextValidPage_ = true;

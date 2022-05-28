@@ -42,11 +42,11 @@ public:
     virtual EditorTab* GetOwnerTab() = 0;
 
     /// Update and render tab contents.
-    virtual void UpdateAndRenderContent() {}
+    virtual void RenderContent() {}
     /// Update and render tab context menu.
-    virtual void UpdateAndRenderContextMenuItems() {}
+    virtual void RenderContextMenuItems() {}
     /// Render main menu when the hierarchy browser tab is focused.
-    virtual void UpdateAndRenderMenu() {}
+    virtual void RenderMenu() {}
     /// Apply hotkeys when the hierarchy browser tab is focused.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
 

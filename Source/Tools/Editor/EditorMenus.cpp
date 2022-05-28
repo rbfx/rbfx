@@ -56,7 +56,7 @@ void Editor::RenderMenuBar()
 
             if (projectEditor_)
             {
-                projectEditor_->UpdateAndRenderProjectMenu();
+                projectEditor_->RenderProjectMenu();
                 ui::Separator();
             }
 
@@ -119,7 +119,7 @@ void Editor::RenderMenuBar()
             ui::EndMenu();
         }
         if (projectEditor_)
-            projectEditor_->UpdateAndRenderMainMenu();
+            projectEditor_->RenderMainMenu();
         if (project_)
         {
             if (ui::BeginMenu("View"))

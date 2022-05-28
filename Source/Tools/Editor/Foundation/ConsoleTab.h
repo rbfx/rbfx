@@ -42,8 +42,8 @@ public:
 protected:
     /// Implement EditorTab
     /// @{
-    void UpdateAndRenderContent() override;
-    void UpdateAndRenderContextMenuItems() override;
+    void RenderContent() override;
+    void RenderContextMenuItems() override;
     /// @}
 };
 

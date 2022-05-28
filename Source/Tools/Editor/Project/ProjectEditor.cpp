@@ -409,7 +409,7 @@ void ProjectEditor::SaveGitIgnore()
         file.Write(content.c_str(), content.size());
 }
 
-void ProjectEditor::UpdateAndRender()
+void ProjectEditor::Render()
 {
     hotkeyManager_->Update();
     hotkeyManager_->InvokeFor(this);
@@ -435,21 +435,21 @@ void ProjectEditor::UpdateAndRender()
     }
 
     for (EditorTab* tab : tabs_)
-        tab->UpdateAndRender();
+        tab->Render();
 
-    closeDialog_->UpdateAndRender();
+    closeDialog_->Render();
 }
 
-void ProjectEditor::UpdateAndRenderProjectMenu()
+void ProjectEditor::RenderProjectMenu()
 {
     if (ui::MenuItem("Save Project", hotkeyManager_->GetHotkeyLabel(Hotkey_SaveProject).c_str()))
         Save();
 }
 
-void ProjectEditor::UpdateAndRenderMainMenu()
+void ProjectEditor::RenderMainMenu()
 {
     if (focusedTab_)
-        focusedTab_->UpdateAndRenderMenu();
+        focusedTab_->RenderMenu();
 
     if (ui::BeginMenu("View"))
     {

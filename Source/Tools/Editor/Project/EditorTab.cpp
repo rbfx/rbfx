@@ -75,7 +75,7 @@ void EditorTab::ReadIniSettings(const char* line)
         open_ = *isOpen != 0;
 }
 
-void EditorTab::UpdateAndRender()
+void EditorTab::Render()
 {
     wasOpen_ = open_;
 
@@ -83,7 +83,7 @@ void EditorTab::UpdateAndRender()
         open_ = true;
 
     if (open_)
-        UpdateAndRenderWindow();
+        RenderWindow();
 
     focusPending_ = false;
     openPending_ = false;
@@ -96,7 +96,7 @@ void EditorTab::Focus()
         focusPending_ = true;
 }
 
-void EditorTab::UpdateAndRenderWindow()
+void EditorTab::RenderWindow()
 {
     // TODO(editor): Hide this dependency
     auto input = GetSubsystem<Input>();
@@ -122,7 +122,7 @@ void EditorTab::UpdateAndRenderWindow()
 
     if (ui::BeginPopupContextItem("EditorTab_ContextMenu"))
     {
-        UpdateAndRenderContextMenu();
+        RenderContextMenu();
         ui::EndPopup();
     }
 
@@ -141,7 +141,7 @@ void EditorTab::UpdateAndRenderWindow()
         }
     }
 
-    UpdateAndRenderContent();
+    RenderContent();
 
     if (noContentPadding)
         ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
@@ -152,10 +152,10 @@ void EditorTab::UpdateAndRenderWindow()
         ui::PopStyleVar();
 }
 
-void EditorTab::UpdateAndRenderContextMenu()
+void EditorTab::RenderContextMenu()
 {
     contextMenuSeparator_.Reset();
-    UpdateAndRenderContextMenuItems();
+    RenderContextMenuItems();
     contextMenuSeparator_.Add();
 
     contextMenuSeparator_.Reset();
@@ -193,7 +193,7 @@ void EditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
     hotkeyManager->InvokeFor(this);
 }
 
-void EditorTab::UpdateAndRenderEditMenuItems()
+void EditorTab::RenderEditMenuItems()
 {
     auto project = GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
