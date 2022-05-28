@@ -49,7 +49,41 @@ public:
     /// @}
 
 private:
+    void RenderNode(SceneViewPage& page, Node* node);
+    void ProcessNodeSelected(SceneViewPage& page, Node* node, bool toggle, bool range);
+    void UpdateActiveObjectVisibility(SceneViewPage& page, Object* currentObject);
+
+    void BeginRangeSelection();
+    void ProcessRangeSelection(Object* currentObject, bool open);
+    void EndRangeSelection(SceneViewPage& page);
+
+    struct RangeSelectionRequest
+    {
+        WeakPtr<Object> from_;
+        WeakPtr<Object> to_;
+
+        bool IsBorder(Object* object) const { return object == from_ || object == to_; }
+    };
+
     WeakPtr<SceneViewTab> owner_;
+
+    bool showTemporary_{};
+    bool showComponents_{};
+
+    /// UI state
+    /// @{
+    bool isActiveObjectVisible_{};
+    bool wasActiveObjectVisible_{};
+
+    struct RangeSelection
+    {
+        ea::optional<RangeSelectionRequest> pendingRequest_;
+
+        ea::optional<RangeSelectionRequest> currentRequest_;
+        bool isActive_{};
+        ea::vector<WeakPtr<Object>> result_;
+    } rangeSelection_;
+    /// @}
 };
 
 }
