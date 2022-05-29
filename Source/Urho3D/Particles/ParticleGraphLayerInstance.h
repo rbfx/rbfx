@@ -74,11 +74,14 @@ public:
     /// Return number of active particles.
     unsigned GetNumActiveParticles() const { return activeParticles_; }
 
+    /// Remove all current particles.
+    void RemoveAllParticles();
+
     /// Create a new particles. Return true if there was room.
     bool EmitNewParticles(float numParticles = 1.0f);
 
     /// Run update step.
-    void Update(float timeStep);
+    void Update(float timeStep, bool emitting);
 
     /// Get number of attributes.
     unsigned GetNumAttributes() const;

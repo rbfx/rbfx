@@ -59,6 +59,24 @@ public:
     /// particle effect. Call this if you change the effect programmatically.
     void ApplyEffect();
 
+    /// Set whether should be emitting. If the state was changed, also resets the emission period timer.
+    /// @property
+    void SetEmitting(bool enable);
+    /// Return whether is currently emitting.
+    /// @property
+    bool IsEmitting() const { return emitting_; }
+
+    /// Set to remove either the emitter component or its owner node from the scene automatically on particle effect
+    /// completion. Disabled by default.
+    /// @property
+    void SetAutoRemoveMode(AutoRemoveMode mode);
+    /// Return automatic removal mode on particle effect completion.
+    /// @property
+    AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
+    /// Remove all current particles.
+    void RemoveAllParticles();
+
+
     /// Return particle effect.
     ParticleGraphEffect* GetEffect() const;
 
@@ -99,6 +117,11 @@ private:
 
     /// Last scene timestep.
     float lastTimeStep_{};
+
+    /// Currently emitting flag.
+    bool emitting_{true};
+    /// Automatic removal mode.
+    AutoRemoveMode autoRemove_{REMOVE_DISABLED};
 };
 
 }
