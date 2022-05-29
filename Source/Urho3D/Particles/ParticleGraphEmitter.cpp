@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -102,8 +102,6 @@ void ParticleGraphEmitter::SetEmitting(bool enable)
         //periodTimer_ = 0.0f;
     }
 }
-
-void ParticleGraphEmitter::SetAutoRemoveMode(AutoRemoveMode mode) { autoRemove_ = mode; }
 
 void ParticleGraphEmitter::RemoveAllParticles()
 {
