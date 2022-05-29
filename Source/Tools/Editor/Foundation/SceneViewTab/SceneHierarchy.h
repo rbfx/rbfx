@@ -50,7 +50,8 @@ public:
 
 private:
     void RenderNode(SceneViewPage& page, Node* node);
-    void ProcessNodeSelected(SceneViewPage& page, Node* node, bool toggle, bool range);
+    void RenderComponent(SceneViewPage& page, Component* component);
+    void ProcessObjectSelected(SceneViewPage& page, Object* object, bool toggle, bool range);
     void UpdateActiveObjectVisibility(SceneViewPage& page, Object* currentObject);
 
     void BeginRangeSelection();
@@ -68,7 +69,7 @@ private:
     WeakPtr<SceneViewTab> owner_;
 
     bool showTemporary_{};
-    bool showComponents_{};
+    bool showComponents_{true};
 
     /// UI state
     /// @{

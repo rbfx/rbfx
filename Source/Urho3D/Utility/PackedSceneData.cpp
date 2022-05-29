@@ -24,6 +24,7 @@
 
 #include "../IO/BinaryArchive.h"
 #include "../IO/MemoryBuffer.h"
+#include "../Scene/Component.h"
 #include "../Scene/Scene.h"
 #include "../Utility/PackedSceneData.h"
 
@@ -69,6 +70,50 @@ Node* PackedNodeData::SpawnCopy(Node* parent) const
     SerializeValue(archive, "Node", *node);
 
     return node;
+}
+
+PackedComponentData::PackedComponentData(Component* component)
+    : id_(component->GetID())
+    , nodeId_(component->GetNode() ? component->GetNode()->GetID() : 0)
+    , type_(component->GetType())
+{
+    BinaryOutputArchive archive{component->GetContext(), data_};
+    SerializeValue(archive, "Component", *component);
+}
+
+Component* PackedComponentData::SpawnExact(Scene* scene) const
+{
+    Node* node = scene->GetNode(nodeId_);
+    if (node == nullptr)
+        return nullptr;
+
+    Component* component = node->CreateComponent(type_, id_ < FIRST_LOCAL_ID ? REPLICATED : LOCAL, id_);
+    if (component == nullptr)
+        return nullptr;
+
+    if (component->GetID() != id_)
+    {
+        component->Remove();
+        return nullptr;
+    }
+
+    MemoryBuffer view{data_.GetBuffer()};
+    BinaryInputArchive archive{scene->GetContext(), view};
+    SerializeValue(archive, "Component", *component);
+    return component;
+}
+
+Component* PackedComponentData::SpawnCopy(Node* node) const
+{
+    Component* component = node->CreateComponent(type_, id_ < FIRST_LOCAL_ID ? REPLICATED : LOCAL, id_);
+    if (component == nullptr)
+        return nullptr;
+
+    MemoryBuffer view{data_.GetBuffer()};
+    BinaryInputArchive archive{node->GetContext(), view};
+    SerializeValue(archive, "Component", *component);
+
+    return component;
 }
 
 }

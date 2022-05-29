@@ -58,6 +58,8 @@ EditorActionFrame UndoManager::PushAction(const EditorActionPtr& action)
 {
     action->OnPushed(frame_);
 
+    redoStack_.clear();
+
     if (NeedNewGroup())
         undoStack_.push_back(ActionGroup{frame_});
 

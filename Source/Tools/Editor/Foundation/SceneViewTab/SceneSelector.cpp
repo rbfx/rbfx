@@ -94,7 +94,7 @@ void SceneSelector::SelectNode(SceneSelection& selection, Node* node, bool toggl
     if (toggle)
         selection.SetSelected(node, !selection.IsSelected(node));
     else if (append)
-        selection.SetSelected(node, true, true);
+        selection.SetSelected(node, true);
     else
     {
         selection.Clear();

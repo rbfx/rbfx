@@ -55,6 +55,29 @@ private:
     VectorBuffer data_;
 };
 
+/// Packed component data.
+class URHO3D_API PackedComponentData
+{
+public:
+    PackedComponentData() = default;
+    /// Create from existing component.
+    explicit PackedComponentData(Component* component);
+
+    /// Spawn exact component in the scene. May fail.
+    Component* SpawnExact(Scene* scene) const;
+    /// Spawn similar component at the node. May fail only if component type is unknown.
+    Component* SpawnCopy(Node* node) const;
+
+    /// Return component ID.
+    unsigned GetId() const { return id_; }
+
+private:
+    unsigned id_{};
+    unsigned nodeId_{};
+    StringHash type_;
+    VectorBuffer data_;
+};
+
 /// Packed nodes and components.
 class URHO3D_API PackedSceneData
 {
@@ -74,15 +97,30 @@ public:
         return result;
     }
 
+    /// Pack components.
+    template <class Iter>
+    static PackedSceneData FromComponents(Iter begin, Iter end)
+    {
+        PackedSceneData result;
+        for (Component* component : MakeIteratorRange(begin, end))
+        {
+            if (component)
+                result.components_.emplace_back(component);
+        }
+        return result;
+    }
+
     /// Return contents
     /// @{
     bool HasNodes() const { return !nodes_.empty(); }
     const ea::vector<PackedNodeData>& GetNodes() const { return nodes_; }
-    bool HasComponents() const { return false; }
+    bool HasComponents() const { return !components_.empty(); }
+    const ea::vector<PackedComponentData>& GetComponents() const { return components_; }
     /// @}
 
 private:
     ea::vector<PackedNodeData> nodes_;
+    ea::vector<PackedComponentData> components_;
 };
 
 }

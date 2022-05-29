@@ -29,6 +29,7 @@ CreateRemoveNodeAction::CreateRemoveNodeAction(Node* node, bool removed)
     : removed_(removed)
     , scene_(node->GetScene())
     , data_(node)
+    , indexInParent_(node->GetParent()->GetChildIndex(node))
 {
 }
 
@@ -59,7 +60,7 @@ void CreateRemoveNodeAction::AddNode() const
         return;
 
     if (Node* node = data_.SpawnExact(scene_))
-        ;
+        node->GetParent()->ReorderChild(node, indexInParent_);
     else
         throw UndoException("Cannot create node with id {}", data_.GetId());
 }
@@ -73,6 +74,57 @@ void CreateRemoveNodeAction::RemoveNode() const
         node->Remove();
     else
         throw UndoException("Cannot remove node with id {}", data_.GetId());
+}
+
+CreateRemoveComponentAction::CreateRemoveComponentAction(Component* component, bool removed)
+    : removed_(removed)
+    , scene_(component->GetScene())
+    , data_(component)
+    , indexInParent_(component->GetNode()->GetComponentIndex(component))
+{
+}
+
+bool CreateRemoveComponentAction::IsAlive() const
+{
+    return scene_ != nullptr;
+}
+
+void CreateRemoveComponentAction::Redo() const
+{
+    if (removed_)
+        RemoveComponent();
+    else
+        AddComponent();
+}
+
+void CreateRemoveComponentAction::Undo() const
+{
+    if (removed_)
+        AddComponent();
+    else
+        RemoveComponent();
+}
+
+void CreateRemoveComponentAction::AddComponent() const
+{
+    if (!scene_)
+        return;
+
+    if (Component* component = data_.SpawnExact(scene_))
+        component->GetNode()->ReorderComponent(component, indexInParent_);
+    else
+        throw UndoException("Cannot create component with id {}", data_.GetId());
+}
+
+void CreateRemoveComponentAction::RemoveComponent() const
+{
+    if (!scene_)
+        return;
+
+    if (Component* component = scene_->GetComponent(data_.GetId()))
+        component->Remove();
+    else
+        throw UndoException("Cannot remove component with id {}", data_.GetId());
 }
 
 ChangeNodeTransformAction::ChangeNodeTransformAction(Node* node, const Transform& oldTransform)

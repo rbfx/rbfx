@@ -106,9 +106,19 @@ bool SceneCameraController::GetMoveAccelerated() const
     return ui::IsKeyDown(Input::GetKeyFromScancode(SCANCODE_LSHIFT));
 }
 
+bool SceneSelection::IsSelected(Component* component) const
+{
+    return components_.contains(WeakPtr<Component>(component));
+}
+
 bool SceneSelection::IsSelected(Node* node) const
 {
     return nodesAndScenes_.contains(WeakPtr<Node>(node));
+}
+
+bool SceneSelection::IsSelected(Object* object) const
+{
+    return objects_.contains(WeakPtr<Object>(object));
 }
 
 void SceneSelection::Update()
@@ -345,9 +355,7 @@ void SceneViewTab::CopySelection()
     if (!selectedNodes.empty())
         clipboard_ = PackedSceneData::FromNodes(selectedNodes.begin(), selectedNodes.end());
     else if (!selectedComponents.empty())
-    {
-        // TODO(editor): Implement
-    }
+        clipboard_ = PackedSceneData::FromComponents(selectedComponents.begin(), selectedComponents.end());
 }
 
 void SceneViewTab::PasteNextToSelection()
@@ -372,7 +380,15 @@ void SceneViewTab::PasteNextToSelection()
     }
     else if (clipboard_.HasComponents())
     {
-        // TODO(editor): Implement
+        Node* parentNode = selection.GetActiveNodeOrScene();
+
+        selection.Clear();
+        for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
+        {
+            Component* newComponent = packedComponent.SpawnCopy(parentNode);
+            selection.SetSelected(newComponent, true);
+            PushAction(MakeShared<CreateRemoveComponentAction>(newComponent, false));
+        }
     }
 }
 
@@ -394,12 +410,14 @@ void SceneViewTab::DeleteSelection()
         }
     }
 
-    // TODO(editor): Implement
-    /*for (Component* component : selectedComponents)
+    for (Component* component : selectedComponents)
     {
         if (component)
+        {
+            PushAction(MakeShared<CreateRemoveComponentAction>(component, true));
             component->Remove();
-    }*/
+        }
+    }
 
     activePage->selection_.Clear();
 }
