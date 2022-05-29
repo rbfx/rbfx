@@ -595,6 +595,36 @@ bool ui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, con
     return ImageButton(texture_id, size, uv0, uv1, frame_padding, bg_col, tint_col);
 }
 
+float ui::GetSmallButtonSize()
+{
+    ImGuiContext& g = *GImGui;
+    return g.FontSize + g.Style.FramePadding.y * 2.0f;
+}
+
+bool ui::ToolbarButton(const char* label, const char* tooltip, bool active)
+{
+    const auto& g = *ui::GetCurrentContext();
+    const float dimension = GetSmallButtonSize();
+
+    if (active)
+        ui::PushStyleColor(ImGuiCol_Button, g.Style.Colors[ImGuiCol_ButtonActive]);
+    else
+        ui::PushStyleColor(ImGuiCol_Button, g.Style.Colors[ImGuiCol_Button]);
+    ui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{});
+
+    const bool result = ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
+
+    ui::PopStyleVar();
+    ui::PopStyleColor();
+
+    ui::SameLine(0, 0);
+
+    if (ui::IsItemHovered() && tooltip)
+        ui::SetTooltip("%s", tooltip);
+
+    return result;
+}
+
 bool ui::IsKeyDown(Urho3D::Key key)
 {
     return IsKeyDown(SDL_GetScancodeFromKey(key));
