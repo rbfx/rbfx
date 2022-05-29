@@ -24,6 +24,7 @@
 
 #include "../Core/UndoManager.h"
 
+#include <Urho3D/Scene/Component.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/PackedSceneData.h>
@@ -51,6 +52,30 @@ private:
     const bool removed_{};
     WeakPtr<Scene> scene_;
     PackedNodeData data_;
+    unsigned indexInParent_{};
+};
+
+/// Create or remove component.
+class CreateRemoveComponentAction : public EditorAction
+{
+public:
+    CreateRemoveComponentAction(Component* component, bool removed);
+
+    /// Implement EditorAction.
+    /// @{
+    bool IsAlive() const override;
+    void Redo() const override;
+    void Undo() const override;
+    /// @}
+
+private:
+    void AddComponent() const;
+    void RemoveComponent() const;
+
+    const bool removed_{};
+    WeakPtr<Scene> scene_;
+    PackedComponentData data_;
+    unsigned indexInParent_{};
 };
 
 /// Change node transform.

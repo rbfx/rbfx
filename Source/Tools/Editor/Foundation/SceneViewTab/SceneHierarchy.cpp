@@ -117,11 +117,17 @@ void SceneHierarchy::RenderNode(SceneViewPage& page, Node* node)
     {
         const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
         const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
-        ProcessNodeSelected(page, node, toggleSelect, rangeSelect);
+        ProcessObjectSelected(page, node, toggleSelect, rangeSelect);
     }
 
     if (opened)
     {
+        if (showComponents_)
+        {
+            for (Component* component : node->GetComponents())
+                RenderComponent(page, component);
+        }
+
         for (Node* child : node->GetChildren())
             RenderNode(page, child);
 
@@ -130,19 +136,50 @@ void SceneHierarchy::RenderNode(SceneViewPage& page, Node* node)
     ui::PopID();
 }
 
-void SceneHierarchy::ProcessNodeSelected(SceneViewPage& page, Node* node, bool toggle, bool range)
+void SceneHierarchy::RenderComponent(SceneViewPage& page, Component* component)
+{
+    if (component->IsTemporary() && !showTemporary_)
+        return;
+
+    UpdateActiveObjectVisibility(page, component);
+
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
+        | ImGuiTreeNodeFlags_OpenOnDoubleClick
+        | ImGuiTreeNodeFlags_SpanAvailWidth
+        | ImGuiTreeNodeFlags_AllowItemOverlap
+        | ImGuiTreeNodeFlags_Leaf;
+    if (page.selection_.IsSelected(component))
+        flags |= ImGuiTreeNodeFlags_Selected;
+
+    ui::PushID(static_cast<void*>(component));
+    const bool opened = ui::TreeNodeEx(component->GetTypeName().c_str(), flags);
+    ProcessRangeSelection(component, opened);
+
+    if (ui::IsItemClicked(MOUSEB_LEFT) || ui::IsItemClicked(MOUSEB_RIGHT))
+    {
+        const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
+        const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
+        ProcessObjectSelected(page, component, toggleSelect, rangeSelect);
+    }
+
+    if (opened)
+        ui::TreePop();
+    ui::PopID();
+}
+
+void SceneHierarchy::ProcessObjectSelected(SceneViewPage& page, Object* object, bool toggle, bool range)
 {
     SceneSelection& selection = page.selection_;
     Object* activeObject = selection.GetActiveObject();
 
     if (toggle)
-        selection.SetSelected(node, !selection.IsSelected(node));
-    else if (range && activeObject && wasActiveObjectVisible_ && activeObject != node)
-        rangeSelection_.pendingRequest_ = RangeSelectionRequest{WeakPtr<Object>(activeObject), WeakPtr<Object>(node)};
+        selection.SetSelected(object, !selection.IsSelected(object));
+    else if (range && activeObject && wasActiveObjectVisible_ && activeObject != object)
+        rangeSelection_.pendingRequest_ = RangeSelectionRequest{WeakPtr<Object>(activeObject), WeakPtr<Object>(object)};
     else
     {
         selection.Clear();
-        selection.SetSelected(node, true);
+        selection.SetSelected(object, true);
     }
 }
 

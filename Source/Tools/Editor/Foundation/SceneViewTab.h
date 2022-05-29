@@ -85,7 +85,9 @@ public:
     /// @{
     unsigned GetRevision() const { return revision_; }
     bool IsEmpty() const { return nodesAndScenes_.empty() && components_.empty(); }
+    bool IsSelected(Component* component) const;
     bool IsSelected(Node* node) const;
+    bool IsSelected(Object* object) const;
 
     Node* GetActiveNodeOrScene() const { return activeNodeOrScene_; }
     Node* GetActiveNode() const { return activeNode_; }
@@ -105,11 +107,11 @@ public:
     /// Convert component selection to node selection.
     void ConvertToNodes();
     /// Set whether the component is selected.
-    void SetSelected(Component* component, bool selected, bool activated = false);
+    void SetSelected(Component* component, bool selected, bool activated = true);
     /// Set whether the node is selected.
-    void SetSelected(Node* node, bool selected, bool activated = false);
+    void SetSelected(Node* node, bool selected, bool activated = true);
     /// Set whether the node or component is selected.
-    void SetSelected(Object* object, bool selected, bool activated = false);
+    void SetSelected(Object* object, bool selected, bool activated = true);
 
 private:
     void UpdateRevision() { revision_ = ea::max(1u, revision_ + 1); }
