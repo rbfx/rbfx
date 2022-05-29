@@ -63,6 +63,8 @@ void SceneHierarchy::RenderContent()
     if (!activePage)
         return;
 
+    RenderToolbar(*activePage);
+
     BeginRangeSelection();
 
     const ImGuiStyle& style = ui::GetStyle();
@@ -90,6 +92,21 @@ void SceneHierarchy::ApplyHotkeys(HotkeyManager* hotkeyManager)
         owner_->ApplyHotkeys(hotkeyManager);
 }
 
+void SceneHierarchy::RenderToolbar(SceneViewPage& page)
+{
+    if (ui::ToolbarButton(ICON_FA_CLOCK, "Show Temporary Nodes & Components", showTemporary_))
+        showTemporary_ = !showTemporary_;
+    if (ui::ToolbarButton(ICON_FA_DIAGRAM_PROJECT, "Show Components", showComponents_))
+        showComponents_ = !showComponents_;
+
+    ui::BeginDisabled();
+    ui::ToolbarButton(ICON_FA_MAGNIFYING_GLASS);
+    ui::EndDisabled();
+
+    ea::string buffer = "(to be implemented)";
+    ui::InputText("##Rename", &buffer);
+}
+
 void SceneHierarchy::RenderNode(SceneViewPage& page, Node* node)
 {
     if (node->IsTemporary() && !showTemporary_)
@@ -113,7 +130,7 @@ void SceneHierarchy::RenderNode(SceneViewPage& page, Node* node)
     const bool opened = ui::TreeNodeEx(GetNodeTitle(node).c_str(), flags);
     ProcessRangeSelection(node, opened);
 
-    if (ui::IsItemClicked(MOUSEB_LEFT) || ui::IsItemClicked(MOUSEB_RIGHT))
+    if ((ui::IsItemClicked(MOUSEB_LEFT) || ui::IsItemClicked(MOUSEB_RIGHT)) && !ui::IsItemToggledOpen())
     {
         const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
         const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);

@@ -163,6 +163,8 @@ URHO3D_API void Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, co
 /// Render an image which is also an item that can be activated.
 URHO3D_API void ImageItem(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
 URHO3D_API bool ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1, const ImVec4 & bg_col = ImVec4(0, 0, 0, 0), const ImVec4 & tint_col = ImVec4(1, 1, 1, 1));
+URHO3D_API float GetSmallButtonSize();
+URHO3D_API bool ToolbarButton(const char* label, const char* tooltip = nullptr, bool active = false);
 URHO3D_API bool IsKeyDown(Urho3D::Key key);
 URHO3D_API bool IsKeyPressed(Urho3D::Key key, bool repeat = true);
 URHO3D_API bool IsKeyReleased(Urho3D::Key key);

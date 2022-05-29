@@ -66,13 +66,6 @@ bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)
     return open;
 }
 
-bool ToolbarButton(const char* label)
-{
-    auto& g = *ui::GetCurrentContext();
-    float dimension = g.FontSize + g.Style.FramePadding.y * 2.0f;
-    return ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
-}
-
 void SetHelpTooltip(const char* text, Key requireKey)
 {
     unsigned scancode = requireKey & (~SDLK_SCANCODE_MASK);
@@ -82,8 +75,7 @@ void SetHelpTooltip(const char* text, Key requireKey)
 
 float IconButtonSize()
 {
-    ImGuiContext& g = *GImGui;
-    return g.FontSize + g.Style.FramePadding.y * 2.0f;
+    return ui::GetSmallButtonSize();
 }
 
 bool IconButton(const char* label)
@@ -328,17 +320,7 @@ SystemUI* GetSystemUI()
 
 bool EditorToolbarButton(const char* text, const char* tooltip, bool active)
 {
-    const auto& style = ui::GetStyle();
-    if (active)
-        ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
-    else
-        ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-    bool result = ui::ToolbarButton(text);
-    ui::PopStyleColor();
-    ui::SameLine(0, 0);
-    if (ui::IsItemHovered() && tooltip)
-        ui::SetTooltip("%s", tooltip);
-    return result;
+    return ui::ToolbarButton(text, tooltip, active);
 }
 
 void OpenTreeNode(ImGuiID id)

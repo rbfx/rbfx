@@ -27,6 +27,7 @@
 #include "../Core/IteratorRange.h"
 #include "../Core/Signal.h"
 #include "../IO/VectorBuffer.h"
+#include "../Scene/Component.h"
 #include "../Scene/Node.h"
 
 namespace Urho3D

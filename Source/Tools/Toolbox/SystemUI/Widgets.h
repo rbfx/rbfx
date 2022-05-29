@@ -187,8 +187,6 @@ URHO3D_TOOLBOX_API int DoubleClickSelectable(const char* label, bool* p_selected
 URHO3D_TOOLBOX_API int DoubleClickSelectable(const char* label, bool selected = false, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0,0));
 /// Same as ImGui::CollapsingHeader(), except does not draw a frame and background.
 URHO3D_TOOLBOX_API bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags=0);
-/// A button that perfectly fits in menu bar.
-URHO3D_TOOLBOX_API bool ToolbarButton(const char* label);
 /// Display help tooltip when alt is pressed.
 URHO3D_TOOLBOX_API void SetHelpTooltip(const char* text, Urho3D::Key requireKey = Urho3D::KEY_ALT);
 /// Returns edge length of square icon button.

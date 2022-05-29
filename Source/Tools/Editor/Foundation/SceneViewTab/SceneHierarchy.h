@@ -49,6 +49,8 @@ public:
     /// @}
 
 private:
+    void RenderToolbar(SceneViewPage& page);
+
     void RenderNode(SceneViewPage& page, Node* node);
     void RenderComponent(SceneViewPage& page, Component* component);
     void ProcessObjectSelected(SceneViewPage& page, Object* object, bool toggle, bool range);
