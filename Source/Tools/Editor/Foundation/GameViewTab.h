@@ -27,10 +27,6 @@
 
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/SceneRendererToTexture.h>
-#include <Urho3D/Utility/SceneSelection.h>
-#include <Urho3D/Utility/PackedSceneData.h>
-
-#include <EASTL/vector_multiset.h>
 
 namespace Urho3D
 {
@@ -46,8 +42,22 @@ public:
     explicit GameViewTab(Context* context);
     ~GameViewTab() override;
 
-private:
+    void Stop();
+    void PlayScene(const ea::string& sceneName);
 
+protected:
+    /// Implement EditorTab
+    /// @{
+    void RenderContent() override;
+    /// @}
+
+private:
+    struct PlayState
+    {
+        ea::string sceneName_;
+    };
+
+    ea::optional<PlayState> state_;
 };
 
 }

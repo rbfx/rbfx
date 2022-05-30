@@ -73,10 +73,7 @@ public:
     void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     void Render(SceneViewPage& scenePage) override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-
-    bool NeedTabContextMenu() const override { return true; }
-    ea::string GetContextMenuTitle() const override { return "Transform Gizmo"; }
-    void RenderTabContextMenu() override;
+    bool RenderTabContextMenu() override;
 
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;

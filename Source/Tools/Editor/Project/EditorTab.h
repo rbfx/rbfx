@@ -106,7 +106,7 @@ public:
     /// Open tab without focusing.
     void Open() { openPending_ = true; }
     /// Open tab if it's closed and focus on it unless owned tab is already focused.
-    void Focus();
+    void Focus(bool force = false);
     /// Close tab.
     void Close() { open_ = false; }
 

@@ -156,10 +156,13 @@ void TransformManipulator::ApplyHotkeys(HotkeyManager* hotkeyManager)
     hotkeyManager->InvokeFor(this);
 }
 
-void TransformManipulator::RenderTabContextMenu()
+bool TransformManipulator::RenderTabContextMenu()
 {
     auto project = owner_->GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    if (!ui::BeginMenu("Transform Gizmo"))
+        return true;
 
     if (ui::MenuItem("In Local Space", hotkeyManager->GetHotkeyLabel(Hotkey_ToggleLocal).c_str(), isLocal_))
         isLocal_ = !isLocal_;
@@ -177,6 +180,9 @@ void TransformManipulator::RenderTabContextMenu()
         operation_ = TransformGizmoOperation::Rotate;
     if (ui::MenuItem("Scale", hotkeyManager->GetHotkeyLabel(Hotkey_Scale).c_str(), operation_ == TransformGizmoOperation::Scale))
         operation_ = TransformGizmoOperation::Scale;
+
+    ui::EndMenu();
+    return true;
 }
 
 void TransformManipulator::WriteIniSettings(ImGuiTextBuffer& output)

@@ -99,21 +99,6 @@ class SceneViewAddon : public Object
     URHO3D_OBJECT(SceneViewAddon, Object);
 
 public:
-    struct ByPriority
-    {
-        bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
-        {
-            return lhs->GetInputPriority() > rhs->GetInputPriority();
-        }
-    };
-    struct ByTitle
-    {
-        bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
-        {
-            return lhs->GetContextMenuTitle() < rhs->GetContextMenuTitle();
-        }
-    };
-
     explicit SceneViewAddon(SceneViewTab* owner);
     ~SceneViewAddon() override;
 
@@ -126,14 +111,9 @@ public:
     /// Update and render addon.
     virtual void Render(SceneViewPage& scenePage) {}
     /// Apply hotkeys for given addon.
-    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
-
-    /// Return whether the addon needs context menu in the tab.
-    virtual bool NeedTabContextMenu() const { return false; }
-    /// Return addon title for context menu.
-    virtual ea::string GetContextMenuTitle() const { return ""; }
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
     /// Render context menu of the tab.
-    virtual void RenderTabContextMenu() {}
+    virtual bool RenderTabContextMenu() { return false; }
 
     /// Write INI settings to file. Use as few lines as possible.
     virtual void WriteIniSettings(ImGuiTextBuffer& output) {}
@@ -203,6 +183,16 @@ protected:
     /// @}
 
 private:
+    struct ByPriority
+    {
+        bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const;
+    };
+
+    struct ByName
+    {
+        bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const;
+    };
+
     /// Manage pages
     /// @{
     SceneViewPage CreatePage(Scene* scene) const;
@@ -216,8 +206,8 @@ private:
     void UpdateAddons(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
-    ea::vector_multiset<SharedPtr<SceneViewAddon>, SceneViewAddon::ByPriority> addonsByInputPriority_;
-    ea::vector_multiset<SharedPtr<SceneViewAddon>, SceneViewAddon::ByTitle> addonsByTitle_;
+    ea::vector_multiset<SharedPtr<SceneViewAddon>, ByPriority> addonsByInputPriority_;
+    ea::vector_multiset<SharedPtr<SceneViewAddon>, ByName> addonsByName_;
 
     ea::vector<SceneCameraControllerDesc> cameraControllers_;
     ea::unordered_map<ea::string, SceneViewPage> scenes_;

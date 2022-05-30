@@ -421,15 +421,11 @@ void ProjectEditor::Render()
         ResetLayout();
 
     // TODO(editor): Postpone this call until assets are imported
+    bool initialFocusPending = false;
     if (!initialized_)
     {
         initialized_ = true;
-
-        for (EditorTab* tab : tabs_)
-        {
-            if (tab->IsOpen() && tab->GetFlags().Test(EditorTabFlag::FocusOnStart))
-                tab->Focus();
-        }
+        initialFocusPending = true;
 
         OnInitialized(this);
     }
@@ -438,6 +434,15 @@ void ProjectEditor::Render()
         tab->Render();
 
     closeDialog_->Render();
+
+    if (initialFocusPending)
+    {
+        for (EditorTab* tab : tabs_)
+        {
+            if (tab->IsOpen() && tab->GetFlags().Test(EditorTabFlag::FocusOnStart))
+                tab->Focus(true);
+        }
+    }
 }
 
 void ProjectEditor::RenderProjectMenu()

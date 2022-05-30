@@ -20,18 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/CommonEditorActions.h"
-#include "../Core/IniHelpers.h"
 #include "../Foundation/GameViewTab.h"
 
-#include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Texture2D.h>
-#include <Urho3D/Input/Input.h>
-#include <Urho3D/IO/ArchiveSerialization.h>
-#include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Scene.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
@@ -53,6 +46,30 @@ GameViewTab::GameViewTab(Context* context)
 
 GameViewTab::~GameViewTab()
 {
+}
+
+void GameViewTab::Stop()
+{
+    state_ = ea::nullopt;
+}
+
+void GameViewTab::PlayScene(const ea::string& sceneName)
+{
+    if (state_)
+        Stop();
+
+    auto cache = GetSubsystem<ResourceCache>();
+    auto xmlFile = cache->GetResource<XMLFile>(sceneName);
+    if (!xmlFile)
+        return;
+
+    state_ = PlayState{};
+    state_->sceneName_ = sceneName;
+}
+
+void GameViewTab::RenderContent()
+{
+
 }
 
 }

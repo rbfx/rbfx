@@ -89,10 +89,10 @@ void EditorTab::Render()
     openPending_ = false;
 }
 
-void EditorTab::Focus()
+void EditorTab::Focus(bool force)
 {
     auto project = GetProject();
-    if (project->GetRootFocusedTab() != this)
+    if (force || project->GetRootFocusedTab() != this)
         focusPending_ = true;
 }
 
