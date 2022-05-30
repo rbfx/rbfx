@@ -117,7 +117,7 @@ public:
     /// Update time, result should be as close to target as possible.
     float Update(float timeStep, const NetworkTime& targetTime);
 
-    const NetworkTime& Get() const { return smoothTime_; }
+    const NetworkTime& GetTime() const { return smoothTime_; }
 
 private:
     const unsigned updateFrequency_{};

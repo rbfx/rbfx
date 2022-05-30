@@ -74,12 +74,12 @@ public:
 
     /// Return replica interpolation time which is always behind server time.
     /// Scene is expected to be exactly replicated at replica time.
-    NetworkTime GetReplicaTime() const { return replicaTime_.Get(); }
+    NetworkTime GetReplicaTime() const { return replicaTime_.GetTime(); }
     float GetReplicaTimeStep() const { return replicaTimeStep_; }
 
     /// Return time at which ongoing client input will be processed on server.
     /// Input time is always ahead of server.
-    NetworkTime GetInputTime() const { return inputTime_.Get(); }
+    NetworkTime GetInputTime() const { return inputTime_.GetTime(); }
     float GetInputTimeStep() const { return inputTimeStep_; }
     bool IsNewInputFrame() const { return isNewInputFrame_; }
     NetworkTime GetLatestScaledInputTime() const { return latestScaledInputTime_; }
