@@ -69,7 +69,18 @@ void SceneHierarchy::RenderContent()
 
     const ImGuiStyle& style = ui::GetStyle();
     ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 0));
-    RenderNode(*activePage, activePage->scene_);
+    if (search_.lastQuery_.empty())
+    {
+        RenderNode(*activePage, activePage->scene_);
+    }
+    else
+    {
+        for (Node* node : search_.lastResults_)
+        {
+            if (node && (showTemporary_ || !node->IsTemporaryEffective()))
+                RenderNode(*activePage, node);
+        }
+    }
     ui::PopStyleVar();
 
     EndRangeSelection(*activePage);
@@ -103,13 +114,15 @@ void SceneHierarchy::RenderToolbar(SceneViewPage& page)
     ui::ToolbarButton(ICON_FA_MAGNIFYING_GLASS);
     ui::EndDisabled();
 
-    ea::string buffer = "(to be implemented)";
-    ui::InputText("##Rename", &buffer);
+    const bool sceneChanged = search_.lastScene_ != page.scene_;
+    const bool queryChanged = ui::InputText("##Rename", &search_.currentQuery_);
+    if (queryChanged || sceneChanged)
+        UpdateSearchResults(page);
 }
 
 void SceneHierarchy::RenderNode(SceneViewPage& page, Node* node)
 {
-    if (node->IsTemporary() && !showTemporary_)
+    if (!showTemporary_ && node->IsTemporary())
         return;
 
     UpdateActiveObjectVisibility(page, node);
@@ -249,6 +262,45 @@ void SceneHierarchy::EndRangeSelection(SceneViewPage& page)
     {
         for (Object* object : rangeSelection_.result_)
             page.selection_.SetSelected(object, true);
+    }
+}
+
+void SceneHierarchy::UpdateSearchResults(SceneViewPage& page)
+{
+    const bool sceneChanged = search_.lastScene_ != page.scene_;
+    search_.lastScene_ = page.scene_;
+
+    // Early return if search was canceled
+    if (search_.currentQuery_.empty())
+    {
+        search_.lastResults_.clear();
+        search_.lastQuery_.clear();
+        return;
+    }
+
+    const bool resultsExpired = sceneChanged
+        || search_.lastResults_.empty()
+        || !search_.lastQuery_.contains(search_.currentQuery_);
+    search_.lastQuery_ = search_.currentQuery_;
+
+    if (resultsExpired)
+    {
+        ea::vector<Node*> children;
+        page.scene_->GetChildren(children, true);
+
+        search_.lastResults_.clear();
+        for (Node* child : children)
+        {
+            if (child->GetName().contains(search_.currentQuery_, false))
+                search_.lastResults_.emplace_back(child);
+        }
+    }
+    else
+    {
+        ea::erase_if(search_.lastResults_, [&](const WeakPtr<Node>& node)
+        {
+            return !node || !node->GetName().contains(search_.currentQuery_, false);
+        });
     }
 }
 

@@ -1539,6 +1539,18 @@ bool Node::IsChildOf(Node* node) const
     return false;
 }
 
+bool Node::IsTemporaryEffective() const
+{
+    const Node* parent = this;
+    while (parent)
+    {
+        if (parent->IsTemporary())
+            return true;
+        parent = parent->parent_;
+    }
+    return false;
+}
+
 Node* Node::GetDirectChildFor(Node* indirectChild) const
 {
     Node* parent = indirectChild->GetParent();
