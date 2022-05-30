@@ -30,6 +30,7 @@ using ParticleGraphPinFlags = Urho3D::ParticleGraphPinFlag;
 %csattribute(Urho3D::ParticleGraphLayer, %arg(Urho3D::ParticleGraphAttributeLayout), AttributeLayout, GetAttributeLayout);
 %csattribute(Urho3D::ParticleGraphLayer, %arg(Urho3D::ParticleGraphBufferLayout), IntermediateValues, GetIntermediateValues);
 %csattribute(Urho3D::ParticleGraphLayer, %arg(unsigned int), TempBufferSize, GetTempBufferSize);
+%csattribute(Urho3D::ParticleGraphEmitter, %arg(bool), IsEmitting, IsEmitting, SetEmitting);
 %csattribute(Urho3D::ParticleGraphEmitter, %arg(Urho3D::ParticleGraphEffect *), Effect, GetEffect, SetEffect);
 %csattribute(Urho3D::ParticleGraphEmitter, %arg(Urho3D::ResourceRef), EffectAttr, GetEffectAttr, SetEffectAttr);
 %csattribute(Urho3D::ParicleGraphUniform, %arg(ea::string), Name, GetName);

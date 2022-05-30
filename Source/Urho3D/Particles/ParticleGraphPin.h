@@ -37,8 +37,8 @@ enum class ParticleGraphPinFlag
 {
     /// No flags set.
     None = 0x0,
-    /// No flags set.
-    Output = ParticleGraphPinFlag::None,
+    /// Output pin is the same as unset Input pin flag.
+    Output = 0x0, //ParticleGraphPinFlag::None,
     /// Input pin.
     Input = 0x1,
     /// Pin name defined in runtime.

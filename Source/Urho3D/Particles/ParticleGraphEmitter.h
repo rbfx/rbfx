@@ -59,6 +59,17 @@ public:
     /// particle effect. Call this if you change the effect programmatically.
     void ApplyEffect();
 
+    /// Set whether should be emitting. If the state was changed, also resets the emission period timer.
+    /// @property
+    void SetEmitting(bool enable);
+    /// Return whether is currently emitting.
+    /// @property
+    bool IsEmitting() const { return emitting_; }
+
+    /// Remove all current particles.
+    void RemoveAllParticles();
+
+
     /// Return particle effect.
     ParticleGraphEffect* GetEffect() const;
 
@@ -99,6 +110,9 @@ private:
 
     /// Last scene timestep.
     float lastTimeStep_{};
+
+    /// Currently emitting flag.
+    bool emitting_{true};
 };
 
 }

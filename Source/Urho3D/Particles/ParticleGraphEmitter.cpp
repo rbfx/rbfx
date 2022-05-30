@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -91,6 +91,26 @@ void ParticleGraphEmitter::ApplyEffect()
     Reset();
 }
 
+void ParticleGraphEmitter::SetEmitting(bool enable)
+{
+    if (enable != emitting_)
+    {
+        emitting_ = enable;
+
+        // If stopping emission now, and there are active particles, send finish event once they are gone
+        //sendFinishedEvent_ = enable || CheckActiveParticles();
+        //periodTimer_ = 0.0f;
+    }
+}
+
+void ParticleGraphEmitter::RemoveAllParticles()
+{
+    for (unsigned i = 0; i < layers_.size(); ++i)
+    {
+        layers_[i].RemoveAllParticles();
+    }
+}
+
 void ParticleGraphEmitter::SetEffect(ParticleGraphEffect* effect)
 {
     if (effect == effect_)
@@ -151,7 +171,7 @@ void ParticleGraphEmitter::Tick(float timeStep)
 {
     for (unsigned i = 0; i < layers_.size(); ++i)
     {
-        layers_[i].Update(timeStep);
+        layers_[i].Update(timeStep, emitting_);
     }
 }
 

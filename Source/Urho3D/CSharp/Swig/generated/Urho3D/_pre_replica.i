@@ -57,7 +57,7 @@
 using NetworkCallbackFlags = Urho3D::NetworkCallbackMask;
 %typemap(ctype) NetworkCallbackFlags "size_t";
 %typemap(out) NetworkCallbackFlags "$result = (size_t)$1.AsInteger();"
-//%csattribute(Urho3D::SoftNetworkTime, %arg(Urho3D::NetworkTime), , Get);
+%csattribute(Urho3D::SoftNetworkTime, %arg(Urho3D::NetworkTime), Time, GetTime);
 %csattribute(Urho3D::TickSynchronizer, %arg(unsigned int), PendingFollowerTicks, GetPendingFollowerTicks);
 %csattribute(Urho3D::TickSynchronizer, %arg(unsigned int), FollowerFrequency, GetFollowerFrequency, SetFollowerFrequency);
 %csattribute(Urho3D::TickSynchronizer, %arg(float), FollowerAccumulatedTime, GetFollowerAccumulatedTime);
