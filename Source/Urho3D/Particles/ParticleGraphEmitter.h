@@ -66,13 +66,6 @@ public:
     /// @property
     bool IsEmitting() const { return emitting_; }
 
-    /// Set to remove either the emitter component or its owner node from the scene automatically on particle effect
-    /// completion. Disabled by default.
-    /// @property
-    void SetAutoRemoveMode(AutoRemoveMode mode);
-    /// Return automatic removal mode on particle effect completion.
-    /// @property
-    AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
     /// Remove all current particles.
     void RemoveAllParticles();
 
@@ -120,8 +113,6 @@ private:
 
     /// Currently emitting flag.
     bool emitting_{true};
-    /// Automatic removal mode.
-    AutoRemoveMode autoRemove_{REMOVE_DISABLED};
 };
 
 }

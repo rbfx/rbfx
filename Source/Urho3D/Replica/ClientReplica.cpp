@@ -57,7 +57,7 @@ ClientReplicaClock::ClientReplicaClock(Scene* scene, AbstractConnection* connect
     UpdateServerTime(initialClock, false);
     replicaTime_.Reset(ToReplicaTime(serverTime_));
     inputTime_.Reset(ToInputTime(serverTime_));
-    latestScaledInputTime_ = replicaTime_.Get();
+    latestScaledInputTime_ = replicaTime_.GetTime();
 }
 
 ClientReplicaClock::~ClientReplicaClock()
@@ -72,15 +72,15 @@ void ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<Msg
 
     replicaTimeStep_ = replicaTime_.Update(timeStep, ToReplicaTime(serverTime_));
 
-    const NetworkTime previousInputTime = inputTime_.Get();
+    const NetworkTime previousInputTime = inputTime_.GetTime();
     inputTimeStep_ = inputTime_.Update(timeStep, ToInputTime(serverTime_));
 
     if (timeStep != inputTimeStep_)
-        latestScaledInputTime_ = inputTime_.Get();
+        latestScaledInputTime_ = inputTime_.GetTime();
 
-    isNewInputFrame_ = previousInputTime.Frame() != inputTime_.Get().Frame();
+    isNewInputFrame_ = previousInputTime.Frame() != inputTime_.GetTime().Frame();
     if (isNewInputFrame_)
-        physicsSync_.Synchronize(inputTime_.Get().Frame(), inputTime_.Get().Fraction() / updateFrequency_);
+        physicsSync_.Synchronize(inputTime_.GetTime().Frame(), inputTime_.GetTime().Fraction() / updateFrequency_);
     else
         physicsSync_.Update(inputTimeStep_);
 }

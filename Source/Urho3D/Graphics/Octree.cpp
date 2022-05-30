@@ -627,7 +627,10 @@ void Octree::RemoveManualDrawable(Drawable* drawable)
 
     Octant* octant = drawable->GetOctant();
     if (octant && octant->GetOctree() == this)
+    {
+        CancelUpdate(drawable);
         RemoveDrawable(drawable, octant);
+    }
 }
 
 void Octree::AddDrawable(Drawable* drawable)
