@@ -396,6 +396,9 @@ public:
     /// Return whether is a direct or indirect child of specified node.
     bool IsChildOf(Node* node) const;
 
+    /// Return whether the node is effectively temporary, i.e. is temporary or is a child of temporary node.
+    bool IsTemporaryEffective() const;
+
     /// Return direct child of this node which contains specified indirect child.
     Node* GetDirectChildFor(Node* indirectChild) const;
 

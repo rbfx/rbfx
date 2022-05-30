@@ -60,6 +60,8 @@ private:
     void ProcessRangeSelection(Object* currentObject, bool open);
     void EndRangeSelection(SceneViewPage& page);
 
+    void UpdateSearchResults(SceneViewPage& page);
+
     struct RangeSelectionRequest
     {
         WeakPtr<Object> from_;
@@ -86,6 +88,14 @@ private:
         bool isActive_{};
         ea::vector<WeakPtr<Object>> result_;
     } rangeSelection_;
+
+    struct NodeSearch
+    {
+        ea::string currentQuery_;
+        WeakPtr<Scene> lastScene_;
+        ea::string lastQuery_;
+        ea::vector<WeakPtr<Node>> lastResults_;
+    } search_;
     /// @}
 };
 
