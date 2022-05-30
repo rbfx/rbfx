@@ -451,7 +451,7 @@ void ProjectEditor::RenderMainMenu()
     if (focusedTab_)
         focusedTab_->RenderMenu();
 
-    if (ui::BeginMenu("View"))
+    if (ui::BeginMenu("Window"))
     {
         for (const auto& [title, tab] : sortedTabs_)
         {

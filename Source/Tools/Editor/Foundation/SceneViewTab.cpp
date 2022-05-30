@@ -124,7 +124,7 @@ SceneViewAddon::~SceneViewAddon()
 }
 
 SceneViewTab::SceneViewTab(Context* context)
-    : ResourceEditorTab(context, "Scene View", "9f4f7432-dd60-4c83-aecd-2f6cf69d3549",
+    : ResourceEditorTab(context, "Scene", "9f4f7432-dd60-4c83-aecd-2f6cf69d3549",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault | EditorTabFlag::FocusOnStart,
         EditorTabPlacement::DockCenter)
 {
@@ -435,14 +435,6 @@ void SceneViewTab::UpdateAddons(SceneViewPage& page)
 void SceneViewTab::UpdateFocused()
 {
 
-}
-
-IntVector2 SceneViewTab::GetContentSize() const
-{
-    const ImGuiContext& g = *GImGui;
-    const ImGuiWindow* window = g.CurrentWindow;
-    const ImRect rect = ImRound(window->ContentRegionRect);
-    return {RoundToInt(rect.GetWidth()), RoundToInt(rect.GetHeight())};
 }
 
 SceneViewPage* SceneViewTab::GetPage(const ea::string& resourceName)

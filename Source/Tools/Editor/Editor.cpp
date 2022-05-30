@@ -78,6 +78,7 @@
 #include "EditorUndo.h"
 
 #include "Foundation/ConsoleTab.h"
+#include "Foundation/GameViewTab.h"
 #include "Foundation/EditorCamera2D.h"
 #include "Foundation/EditorCamera3D.h"
 #include "Foundation/HierarchyBrowserTab.h"
@@ -115,6 +116,7 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
+    editorPluginManager_->AddPlugin("Foundation.GameViewTab", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneViewTab", &Foundation_SceneViewTab);
     editorPluginManager_->AddPlugin("Foundation.InspectorTab", &Foundation_InspectorTab);
     editorPluginManager_->AddPlugin("Foundation.ConsoleTab", &Foundation_ConsoleTab);
