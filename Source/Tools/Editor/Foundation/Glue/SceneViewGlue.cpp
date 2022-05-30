@@ -21,14 +21,25 @@
 //
 
 #include "../../Foundation/Glue/SceneViewGlue.h"
+#include "../../Foundation/SceneViewTab/SceneHierarchy.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+URHO3D_EDITOR_HOTKEY(Hotkey_Play, "ScenePlayerLauncher.Play", QUAL_CTRL, KEY_P);
+
+}
 
 void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab)
 {
     auto project = sceneViewTab->GetProject();
     const WeakPtr<HierarchyBrowserTab> hierarchyBrowserTab{project->FindTab<HierarchyBrowserTab>()};
+    const WeakPtr<GameViewTab> gameViewTab{project->FindTab<GameViewTab>()};
+
+    sceneViewTab->RegisterAddon<ScenePlayerLauncher>(gameViewTab);
 
     auto source = MakeShared<SceneHierarchy>(sceneViewTab);
     sceneViewTab->OnFocused.Subscribe(source.Get(), [source, hierarchyBrowserTab](Object* receiver)
@@ -37,5 +48,43 @@ void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab)
             hierarchyBrowserTab->ConnectToSource(source);
     });
 }
+
+ScenePlayerLauncher::ScenePlayerLauncher(SceneViewTab* owner, GameViewTab* gameViewTab)
+    : SceneViewAddon(owner)
+    , gameViewTab_(gameViewTab)
+{
+    auto project = owner_->GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+    hotkeyManager->BindHotkey(this, Hotkey_Play, &ScenePlayerLauncher::PlayCurrentScene);
+}
+
+ScenePlayerLauncher::~ScenePlayerLauncher()
+{
+}
+
+void ScenePlayerLauncher::PlayCurrentScene()
+{
+    SceneViewPage* activePage = owner_->GetActivePage();
+    if (!gameViewTab_ || !activePage)
+        return;
+
+    auto project = owner_->GetProject();
+    project->Save();
+    gameViewTab_->Focus();
+    gameViewTab_->PlayScene(owner_->GetActiveResourceName());
+}
+
+bool ScenePlayerLauncher::RenderTabContextMenu()
+{
+    auto project = owner_->GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    const bool enabled = owner_->GetActivePage() != nullptr;
+    if (ui::MenuItem("Play Current Scene", hotkeyManager->GetHotkeyLabel(Hotkey_Play).c_str(), false, enabled))
+        PlayCurrentScene();
+
+    return true;
+}
+
 
 }

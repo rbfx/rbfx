@@ -22,13 +22,37 @@
 
 #pragma once
 
-#include "../../Foundation/SceneViewTab.h"
+#include "../../Foundation/GameViewTab.h"
 #include "../../Foundation/HierarchyBrowserTab.h"
-#include "../../Foundation/SceneViewTab/SceneHierarchy.h"
+#include "../../Foundation/SceneViewTab.h"
 
 namespace Urho3D
 {
 
 void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab);
+
+/// Addon to play current Scene from scene tab.
+class ScenePlayerLauncher : public SceneViewAddon
+{
+    URHO3D_OBJECT(ScenePlayerLauncher, SceneViewAddon);
+
+public:
+    ScenePlayerLauncher(SceneViewTab* owner, GameViewTab* gameViewTab);
+    ~ScenePlayerLauncher() override;
+
+    /// Commands
+    /// @{
+    void PlayCurrentScene();
+    /// @}
+
+    /// Implement SceneViewAddon
+    /// @{
+    ea::string GetUniqueName() const override { return "PlayerLauncher"; }
+    bool RenderTabContextMenu() override;
+    /// @}
+
+private:
+    WeakPtr<GameViewTab> gameViewTab_;
+};
 
 }

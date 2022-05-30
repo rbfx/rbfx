@@ -402,11 +402,6 @@ void ResourceEditorTab::RenderContextMenuItems()
         SaveResource(saveResourcePending);
 }
 
-void ResourceEditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
-{
-    BaseClassName::ApplyHotkeys(hotkeyManager);
-}
-
 ResourceActionWrapper::ResourceActionWrapper(SharedPtr<EditorAction> action,
     ResourceEditorTab* tab, const ea::string& resourceName, ea::optional<EditorActionFrame> oldFrame)
     : action_(action)

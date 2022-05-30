@@ -51,7 +51,6 @@ public:
     /// EditorTab implementation
     /// @{
     void EnumerateUnsavedItems(ea::vector<ea::string>& items) override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
 
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;

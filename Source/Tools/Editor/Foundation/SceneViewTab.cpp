@@ -123,6 +123,21 @@ SceneViewAddon::~SceneViewAddon()
 {
 }
 
+void SceneViewAddon::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    hotkeyManager->InvokeFor(this);
+}
+
+bool SceneViewTab::ByPriority::operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
+{
+    return lhs->GetInputPriority() > rhs->GetInputPriority();
+}
+
+bool SceneViewTab::ByName::operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
+{
+    return lhs->GetUniqueName() < rhs->GetUniqueName();
+}
+
 SceneViewTab::SceneViewTab(Context* context)
     : ResourceEditorTab(context, "Scene", "9f4f7432-dd60-4c83-aecd-2f6cf69d3549",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault | EditorTabFlag::FocusOnStart,
@@ -146,7 +161,7 @@ void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
 {
     addons_.push_back(addon);
     addonsByInputPriority_.insert(addon);
-    addonsByTitle_.insert(addon);
+    addonsByName_.insert(addon);
 }
 
 void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
@@ -305,17 +320,10 @@ void SceneViewTab::RenderContextMenuItems()
 
     contextMenuSeparator_.Add();
 
-    for (SceneViewAddon* addon : addonsByTitle_)
+    for (SceneViewAddon* addon : addonsByName_)
     {
-        if (addon->NeedTabContextMenu())
-        {
+        if (addon->RenderTabContextMenu())
             contextMenuSeparator_.Reset();
-            if (ui::BeginMenu(addon->GetContextMenuTitle().c_str()))
-            {
-                addon->RenderTabContextMenu();
-                ui::EndMenu();
-            }
-        }
     }
 
     contextMenuSeparator_.Add();
