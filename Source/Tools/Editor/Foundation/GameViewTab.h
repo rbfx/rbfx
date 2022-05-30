@@ -20,49 +20,34 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/HierarchyBrowserTab.h"
+#pragma once
+
+#include "../Project/EditorTab.h"
+#include "../Project/ProjectEditor.h"
+
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Utility/SceneRendererToTexture.h>
+#include <Urho3D/Utility/SceneSelection.h>
+#include <Urho3D/Utility/PackedSceneData.h>
+
+#include <EASTL/vector_multiset.h>
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor)
-{
-    projectEditor->AddTab(MakeShared<HierarchyBrowserTab>(context));
-}
+void Foundation_GameViewTab(Context* context, ProjectEditor* projectEditor);
 
-HierarchyBrowserTab::HierarchyBrowserTab(Context* context)
-    : EditorTab(context, "Hierarchy", "38ee90af-0a65-4d7d-93e2-d446ae54dffd",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft)
+/// Tab that renders Scene and enables Scene manipulation.
+class GameViewTab : public EditorTab
 {
-}
+    URHO3D_OBJECT(GameViewTab, EditorTab);
 
-void HierarchyBrowserTab::ConnectToSource(HierarchyBrowserSource* source)
-{
-    source_ = source;
-}
+public:
+    explicit GameViewTab(Context* context);
+    ~GameViewTab() override;
 
-void HierarchyBrowserTab::RenderMenu()
-{
-    if (source_)
-        source_->RenderMenu();
-}
+private:
 
-void HierarchyBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
-{
-    if (source_)
-        source_->ApplyHotkeys(hotkeyManager);
-}
-
-void HierarchyBrowserTab::RenderContent()
-{
-    if (source_)
-        source_->RenderContent();
-}
-
-void HierarchyBrowserTab::RenderContextMenuItems()
-{
-    if (source_)
-        source_->RenderContextMenuItems();
-}
+};
 
 }

@@ -155,6 +155,8 @@ protected:
     /// Update tab in focus.
     virtual void UpdateFocused() {};
 
+    /// Return size of the window content. Should be called only during content rendering.
+    IntVector2 GetContentSize() const;
     /// Render common Edit menu.
     void RenderEditMenuItems();
 

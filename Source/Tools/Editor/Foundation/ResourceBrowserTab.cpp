@@ -88,7 +88,7 @@ bool ResourceBrowserFactory::Compare(
 }
 
 ResourceBrowserTab::ResourceBrowserTab(Context* context)
-    : EditorTab(context, "Resource Browser", "96c69b8e-ee83-43de-885c-8a51cef65d59",
+    : EditorTab(context, "Resources", "96c69b8e-ee83-43de-885c-8a51cef65d59",
         EditorTabFlag::OpenByDefault, EditorTabPlacement::DockBottom)
 {
     InitializeRoots();

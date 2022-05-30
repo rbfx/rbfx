@@ -20,49 +20,39 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/HierarchyBrowserTab.h"
+#include "../Core/CommonEditorActions.h"
+#include "../Core/IniHelpers.h"
+#include "../Foundation/GameViewTab.h"
+
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/Input/Input.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/JSONFile.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/Scene.h>
+
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_GameViewTab(Context* context, ProjectEditor* projectEditor)
 {
-    projectEditor->AddTab(MakeShared<HierarchyBrowserTab>(context));
+    projectEditor->AddTab(MakeShared<GameViewTab>(context));
 }
 
-HierarchyBrowserTab::HierarchyBrowserTab(Context* context)
-    : EditorTab(context, "Hierarchy", "38ee90af-0a65-4d7d-93e2-d446ae54dffd",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockLeft)
+GameViewTab::GameViewTab(Context* context)
+    : EditorTab(context, "Game", "212a6577-8a2a-42d6-aaed-042d226c724c",
+        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
+        EditorTabPlacement::DockCenter)
 {
 }
 
-void HierarchyBrowserTab::ConnectToSource(HierarchyBrowserSource* source)
+GameViewTab::~GameViewTab()
 {
-    source_ = source;
-}
-
-void HierarchyBrowserTab::RenderMenu()
-{
-    if (source_)
-        source_->RenderMenu();
-}
-
-void HierarchyBrowserTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
-{
-    if (source_)
-        source_->ApplyHotkeys(hotkeyManager);
-}
-
-void HierarchyBrowserTab::RenderContent()
-{
-    if (source_)
-        source_->RenderContent();
-}
-
-void HierarchyBrowserTab::RenderContextMenuItems()
-{
-    if (source_)
-        source_->RenderContextMenuItems();
 }
 
 }

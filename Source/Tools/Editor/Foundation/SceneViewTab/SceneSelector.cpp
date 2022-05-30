@@ -68,9 +68,15 @@ Drawable* SceneSelector::QuerySelectedDrawable(Scene* scene, Camera* camera, Ray
 
     ea::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
-    scene->GetComponent<Octree>()->RaycastSingle(query);
+    scene->GetComponent<Octree>()->Raycast(query);
 
-    return !results.empty() ? results[0].drawable_ : nullptr;
+    for (const RayQueryResult& result : results)
+    {
+        if (result.drawable_->GetScene() != nullptr)
+            return result.drawable_;
+    }
+
+    return nullptr;
 }
 
 Node* SceneSelector::QuerySelectedNode(Scene* scene, Camera* camera) const

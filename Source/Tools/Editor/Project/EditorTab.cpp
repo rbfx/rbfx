@@ -193,6 +193,14 @@ void EditorTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
     hotkeyManager->InvokeFor(this);
 }
 
+IntVector2 EditorTab::GetContentSize() const
+{
+    const ImGuiContext& g = *GImGui;
+    const ImGuiWindow* window = g.CurrentWindow;
+    const ImRect rect = ImRound(window->ContentRegionRect);
+    return {RoundToInt(rect.GetWidth()), RoundToInt(rect.GetHeight())};
+}
+
 void EditorTab::RenderEditMenuItems()
 {
     auto project = GetProject();

@@ -47,20 +47,29 @@ void SceneSelectionRenderer::Render(SceneViewPage& scenePage)
     for (Node* node : scenePage.selection_.GetNodes())
     {
         if (node)
-        {
-            for (Component* component : node->GetComponents())
-                DrawSelection(scene, component);
-        }
+            DrawNodeSelection(scene, node, node != node->GetScene());
     }
 
     for (Component* component : scenePage.selection_.GetComponents())
     {
         if (component)
-            DrawSelection(scene, component);
+            DrawComponentSelection(scene, component);
     }
 }
 
-void SceneSelectionRenderer::DrawSelection(Scene* scene, Component* component)
+void SceneSelectionRenderer::DrawNodeSelection(Scene* scene, Node* node, bool recursive)
+{
+    for (Component* component : node->GetComponents())
+        DrawComponentSelection(scene, component);
+
+    if (recursive)
+    {
+        for (Node* child : node->GetChildren())
+            DrawNodeSelection(scene, child, true);
+    }
+}
+
+void SceneSelectionRenderer::DrawComponentSelection(Scene* scene, Component* component)
 {
     auto debugRenderer = scene->GetComponent<DebugRenderer>();
 

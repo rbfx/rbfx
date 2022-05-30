@@ -45,7 +45,8 @@ public:
     /// @}
 
 private:
-    void DrawSelection(Scene* scene, Component* component);
+    void DrawNodeSelection(Scene* scene, Node* node, bool recursive);
+    void DrawComponentSelection(Scene* scene, Component* component);
 };
 
 }

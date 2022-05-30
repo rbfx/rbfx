@@ -203,8 +203,6 @@ protected:
     /// @}
 
 private:
-    IntVector2 GetContentSize() const;
-
     /// Manage pages
     /// @{
     SceneViewPage CreatePage(Scene* scene) const;
