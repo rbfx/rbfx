@@ -45,8 +45,8 @@
 #include "EditorEvents.h"
 #include "Project.h"
 #include "Pipeline/Pipeline.h"
-#include "Plugins/PluginManager.h"
-#include "Plugins/ModulePlugin.h"
+//#include "Plugins/PluginManager.h"
+//#include "Plugins/ModulePlugin.h"
 #include "Tabs/InspectorTab.h"
 #include "Tabs/ResourceTab.h"
 
@@ -601,7 +601,7 @@ bool Pipeline::CookSettings() const
         for (const auto& pair : flavor->GetEngineParameters())
             settings.engineParameters_[pair.first] = pair.second;
 
-#if URHO3D_PLUGINS
+/*#if URHO3D_PLUGINS
         settings.plugins_.clear();
         for (Plugin* plugin : project->GetPlugins()->GetPlugins())
         {
@@ -613,7 +613,7 @@ bool Pipeline::CookSettings() const
 
             settings.plugins_.push_back(plugin->GetName());
         }
-#endif
+#endif*/
 
         JSONFile file(context_);
         JSONOutputArchive archive(&file);

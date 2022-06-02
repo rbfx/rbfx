@@ -41,7 +41,7 @@ URHO3D_EVENT(E_CONSOLEURICLICK, ConsoleUriClick)
     URHO3D_PARAM(P_PROTOCOL, Protocol);            // String
 }
 
-/// Engine finished initialization, but Application::Start() was not claled yet.
+/// Engine finished initialization, but Application::Start() was not called yet.
 URHO3D_EVENT(E_ENGINEINITIALIZED, EngineInitialized)
 {
 }
@@ -51,28 +51,13 @@ URHO3D_EVENT(E_APPLICATIONSTARTED, ApplicationStarted)
 {
 }
 
-/// Plugin::Load() is about to get called.
-URHO3D_EVENT(E_PLUGINLOAD, PluginLoad)
+/// Begin plugin reloading.
+URHO3D_EVENT(E_BEGINPLUGINRELOAD, BeginPluginReload)
 {
 }
 
-/// Plugin::Unload() is about to get called.
-URHO3D_EVENT(E_PLUGINUNLOAD, PluginUnload)
-{
-}
-
-/// Plugin::Start() is about to get called.
-URHO3D_EVENT(E_PLUGINSTART, PluginStart)
-{
-}
-
-/// Plugin::Stop() is about to get called.
-URHO3D_EVENT(E_PLUGINSTOP, PluginStop)
-{
-}
-
-/// A request for user to manually register static plugins.
-URHO3D_EVENT(E_REGISTERSTATICPLUGINS, RegisterStaticPlugins)
+/// End plugin reloading.
+URHO3D_EVENT(E_ENDPLUGINRELOAD, EndPluginReload)
 {
 }
 

@@ -26,11 +26,10 @@
 #include "../IO/Log.h"
 #include "../Script/Script.h"
 
-
 namespace Urho3D
 {
 
-ScriptRuntimeApi* Script::api_{nullptr};
+ScriptRuntimeApi* Script::api_{};
 
 Script::Script(Context* context)
     : Object(context)

@@ -87,13 +87,14 @@ public:
 
     /// Return pointer to the reference count structure.
     RefCount* RefCountPtr() const { return refCount_; }
-#if URHO3D_CSHARP
+
     /// Return true if script runtime object wrapping this native object exists.
     bool HasScriptObject() const { return scriptObject_ != nullptr; }
     /// Return true if script reference is strong.
     bool IsScriptStrongRef() const { return isScriptStrongRef_; }
 
 protected:
+#if URHO3D_CSHARP
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
     void* GetScriptObject() const { return scriptObject_; }
     /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
@@ -101,14 +102,20 @@ protected:
     /// Clears script object value. Script object has to be freed externally.
     void ResetScriptObject();
 #endif
+
 private:
     /// Pointer to the reference count structure.
-    RefCount* refCount_ = nullptr;
+    RefCount* refCount_{};
+
 #if URHO3D_CSHARP
     /// A handle to script object that wraps this native instance.
-    void* scriptObject_ = nullptr;
+    void* scriptObject_{};
     /// GC Handle type (strong vs weak).
-    bool isScriptStrongRef_ = false;
+    bool isScriptStrongRef_{};
+#else
+    /// Placeholders set to 0
+    static void* scriptObject_;
+    static bool isScriptStrongRef_;
 #endif
 };
 

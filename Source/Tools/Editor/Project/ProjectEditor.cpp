@@ -161,11 +161,15 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , hotkeyManager_(MakeShared<HotkeyManager>(context_))
     , undoManager_(MakeShared<UndoManager>(context_))
     , settingsManager_(MakeShared<SettingsManager>(context_))
+    , pluginManager_(MakeShared<PluginManager>(context_))
     , closeDialog_(MakeShared<CloseDialog>(context_))
 {
     URHO3D_ASSERT(numActiveProjects == 0);
     context_->RegisterSubsystem(this, ProjectEditor::GetTypeStatic());
     ++numActiveProjects;
+
+    context_->RemoveSubsystem<PluginManager>();
+    context_->RegisterSubsystem(pluginManager_);
 
     ui::GetIO().IniFilename = uiIniPath_.c_str();
 
@@ -182,6 +186,9 @@ ProjectEditor::~ProjectEditor()
 {
     --numActiveProjects;
     URHO3D_ASSERT(numActiveProjects == 0);
+
+    context_->RemoveSubsystem<PluginManager>();
+    context_->RegisterSubsystem(pluginManager_);
 
     ui::GetIO().IniFilename = nullptr;
 }
@@ -522,7 +529,7 @@ void ProjectEditor::SetFocusedTab(EditorTab* tab)
             tab->OnFocused(tab);
     }
 
-    EditorTab* ownerTab = tab ? tab->GetOwnerTab() : nullptr;
+    EditorTab* ownerTab = tab && tab->GetOwnerTab() ? tab->GetOwnerTab() : nullptr;
     if (focusedRootTab_ != ownerTab)
     {
         focusedRootTab_ = ownerTab;

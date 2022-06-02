@@ -39,11 +39,7 @@ public:
     void Start() override
     {
 #if URHO3D_PLUGINS && URHO3D_SAMPLES && URHO3D_STATIC
-        // Static plugins must be initialized manually.
-        SubscribeToEvent(E_REGISTERSTATICPLUGINS, [this](StringHash, VariantMap&) {
-            RegisterPlugin(new GamePlugin(context_));
-            UnsubscribeFromEvent(E_REGISTERSTATICPLUGINS);
-        });
+        PluginApplication::RegisterPluginApplication<GamePlugin>("103_GamePlugin");
 #endif
         BaseClassName::Start();
     }

@@ -27,7 +27,6 @@
 #include <nativefiledialog/nfd.h>
 #include <Toolbox/SystemUI/Widgets.h>
 
-#include "Plugins/ModulePlugin.h"
 #include "Pipeline/Flavor.h"
 #include "Pipeline/Pipeline.h"
 #include "Tabs/Scene/SceneTab.h"

@@ -44,3 +44,6 @@
 #else
 #  define URHO3D_STDCALL
 #endif
+
+#define CONCATENATE(a, b) CONCATENATE_IMPL(a, b)
+#define CONCATENATE_IMPL(a, b) a##b

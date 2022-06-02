@@ -23,7 +23,7 @@
 #pragma once
 
 
-#include <Urho3D/Engine/PluginApplication.h>
+#include <Urho3D/Plugins/PluginApplication.h>
 
 
 namespace Urho3D

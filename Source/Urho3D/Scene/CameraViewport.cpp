@@ -24,7 +24,6 @@
 
 #include "../Core/CoreEvents.h"
 #include "../Core/StringUtils.h"
-#include "../Engine/PluginApplication.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/RenderPath.h"

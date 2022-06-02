@@ -46,7 +46,7 @@ public:
     /// @{
     void RenderMenu() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_->GetOwnerTab(); }
+    EditorTab* GetOwnerTab() override { return source_ ? source_->GetOwnerTab() : nullptr; }
     /// @}
 
 protected:

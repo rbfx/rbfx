@@ -357,15 +357,14 @@ namespace SDL
 %ignore Urho3D::Application::engine_;
 %ignore Urho3D::Application::GetCommandLineParser;
 %ignore Urho3D::PluginApplication::PluginApplicationMain;
-%ignore Urho3D::PluginApplication::InitializeReloadablePlugin;
-%ignore Urho3D::PluginApplication::UninitializeReloadablePlugin;
+%ignore Urho3D::PluginApplication::Dispose;
 
 %include "generated/Urho3D/_pre_engine.i"
 %include "Urho3D/Engine/EngineDefs.h"
 %include "Urho3D/Engine/Engine.h"
 %include "Urho3D/Engine/Application.h"
 %include "Urho3D/Engine/StateManager.h"
-%include "Urho3D/Engine/PluginApplication.h"
+%include "Urho3D/Plugins/PluginApplication.h"
 %include "generated/Urho3D/_pre_script.i"
 #if URHO3D_CSHARP
 %include "Urho3D/Script/Script.h"

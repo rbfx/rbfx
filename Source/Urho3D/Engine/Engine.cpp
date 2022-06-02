@@ -82,6 +82,7 @@
 #ifdef URHO3D_PARTICLE_GRAPH
 #include "../Particles/ParticleGraphSystem.h"
 #endif
+#include "../Plugins/PluginManager.h"
 #ifdef URHO3D_COMPUTE
 #include "../Graphics/ComputeDevice.h"
 #endif
@@ -250,6 +251,8 @@ bool Engine::Initialize(const VariantMap& parameters)
     // 2D graphics library is dependent on 3D graphics library
     RegisterUrho2DLibrary(context_);
 #endif
+
+    context_->RegisterSubsystem(new PluginManager(context_));
 
     // Set maximally accurate low res timer
     GetSubsystem<Time>()->SetTimerPeriod(1);

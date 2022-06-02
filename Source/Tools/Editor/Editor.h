@@ -105,10 +105,7 @@ public:
     ///
     VariantMap& GetEngineParameters() { return engineParameters_; }
     ProjectEditor* GetProjectEditor() const { return projectEditor_; }
-#if URHO3D_STATIC && URHO3D_PLUGINS
-    /// Register static plugin.
-    bool RegisterPlugin(PluginApplication* plugin);
-#endif
+
     /// Serialize editor user-specific settings.
     void SerializeInBlock(Archive& archive) override;
 
