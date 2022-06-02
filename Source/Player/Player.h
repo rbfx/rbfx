@@ -25,7 +25,8 @@
 
 #include <Urho3D/Engine/Application.h>
 #include <Urho3D/Engine/ApplicationSettings.h>
-#include <Urho3D/Engine/PluginApplication.h>
+#include <Urho3D/Plugins/DynamicModule.h>
+#include <Urho3D/Plugins/PluginApplication.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -34,6 +35,7 @@
 namespace Urho3D
 {
 
+// TODO(editor): Refactor it
 class Player : public Application
 {
 public:
@@ -58,7 +60,7 @@ protected:
 
     struct LoadedModule
     {
-        SharedPtr<PluginModule> module_;
+        SharedPtr<DynamicModule> module_;
         SharedPtr<PluginApplication> application_;
     };
 

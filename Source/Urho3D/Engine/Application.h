@@ -29,7 +29,7 @@
 #include "../Core/Context.h"
 #include "../Core/Main.h"
 #include "../Engine/Engine.h"
-#include "../Engine/PluginApplication.h"
+#include "../Plugins/PluginApplication.h"
 
 namespace Urho3D
 {
@@ -37,6 +37,7 @@ namespace Urho3D
 class Engine;
 
 /// Base class for creating applications which initialize the Urho3D engine and run a main loop until exited.
+// TODO(editor): Support plugins
 class URHO3D_API Application : public Object
 {
     URHO3D_OBJECT(Application, Object);
@@ -74,8 +75,6 @@ protected:
     ea::string startupErrors_;
     /// Application exit code.
     int exitCode_;
-    /// A plugin responsible for automatically loading scripts from resource path.
-    SharedPtr<PluginApplication> scriptsPlugin_;
 };
 
 // Macro for defining a main function which creates a Context and the application, then runs it

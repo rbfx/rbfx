@@ -30,6 +30,7 @@
 
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/File.h>
+#include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
 
@@ -138,6 +139,7 @@ public:
     HotkeyManager* GetHotkeyManager() const { return hotkeyManager_; }
     SettingsManager* GetSettingsManager() const { return settingsManager_; }
     UndoManager* GetUndoManager() const { return undoManager_; }
+    PluginManager* GetPluginManager() const { return pluginManager_; }
     /// @}
 
     /// Internal
@@ -172,6 +174,7 @@ private:
     SharedPtr<HotkeyManager> hotkeyManager_;
     SharedPtr<SettingsManager> settingsManager_;
     SharedPtr<UndoManager> undoManager_;
+    SharedPtr<PluginManager> pluginManager_;
 
     bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;

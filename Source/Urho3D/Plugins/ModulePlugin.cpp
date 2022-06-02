@@ -20,17 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/ProcessUtils.h>
-#include <Urho3D/Core/StringUtils.h>
-#include <Urho3D/Engine/Engine.h>
-#include <Urho3D/IO/File.h>
-#include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/IO/VectorBuffer.h>
-#include <Urho3D/Script/Script.h>
-
-#include "Plugins/ModulePlugin.h"
-
+#include "../Core/ProcessUtils.h"
+#include "../Core/StringUtils.h"
+#include "../Engine/Engine.h"
+#include "../IO/File.h"
+#include "../IO/FileSystem.h"
+#include "../IO/Log.h"
+#include "../IO/VectorBuffer.h"
+#include "../Plugins/ModulePlugin.h"
+#include "../Script/Script.h"
 
 namespace Urho3D
 {
@@ -38,7 +36,7 @@ namespace Urho3D
 bool ModulePlugin::Load()
 {
     ea::string path = NameToPath(name_);
-    ea::string pluginPath = VersionModule(path);
+    ea::string pluginPath = GetVersionModulePath(path);
 
     if (pluginPath.empty())
         return false;
@@ -47,12 +45,11 @@ bool ModulePlugin::Load()
     if (module_.Load(pluginPath))
     {
         application_ = module_.InstantiatePlugin();
-        if (application_.NotNull())
+        if (application_)
         {
-            application_->InitializeReloadablePlugin();
             path_ = path;
             mtime_ = context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(pluginPath);
-            version_++;
+            ++version_;
             unloading_ = false;
             lastModuleType_ = module_.GetModuleType();
             return true;
@@ -61,24 +58,29 @@ bool ModulePlugin::Load()
     return false;
 }
 
+bool ModulePlugin::IsLoaded() const
+{
+    return module_.GetModuleType() != MODULE_INVALID && !unloading_ && application_ != nullptr;
+}
+
 bool ModulePlugin::PerformUnload()
 {
-    if (application_.Null())
+    if (!application_)
         return false;
 
-#if URHO3D_CSHARP
-    ModuleType moduleType = module_.GetModuleType();
-#endif
     // Disposing object requires managed reference to be the last one alive.
     WeakPtr<PluginApplication> application(application_);
-    application_->UninitializeReloadablePlugin();
+    application_->Dispose();
+
 #if URHO3D_CSHARP
-    if (moduleType == MODULE_MANAGED)
-         Script::GetRuntimeApi()->Dispose(application_.Detach());
+    if (module_.GetModuleType() == MODULE_MANAGED)
+        Script::GetRuntimeApi()->Dispose(application_.Detach());
 #endif
+
     application_ = nullptr;
     if (!module_.Unload())
         return false;
+
     return true;
 }
 
@@ -106,7 +108,7 @@ ea::string ModulePlugin::NameToPath(const ea::string& name) const
     return EMPTY_STRING;
 }
 
-ea::string ModulePlugin::VersionModule(const ea::string& path)
+ea::string ModulePlugin::GetVersionModulePath(const ea::string& path)
 {
     auto* fs = context_->GetSubsystem<FileSystem>();
     ea::string dir, name, ext;
@@ -114,7 +116,7 @@ ea::string ModulePlugin::VersionModule(const ea::string& path)
 
     ea::string versionString, shortenedName;
 
-    // Headless utilities do not reuqire reloading. They will load module directly.
+    // Headless utilities do not require reloading. They will load module directly.
     if (context_->GetSubsystem<Engine>()->IsHeadless())
     {
         versionString = "";
@@ -132,7 +134,7 @@ ea::string ModulePlugin::VersionModule(const ea::string& path)
         return EMPTY_STRING;
     }
 
-    ea::string versionedPath = dir + shortenedName + versionString + ext;
+    const ea::string versionedPath = dir + shortenedName + versionString + ext;
 
     // Non-versioned modules do not need pdb/version patching.
     if (context_->GetSubsystem<Engine>()->IsHeadless())
@@ -146,7 +148,7 @@ ea::string ModulePlugin::VersionModule(const ea::string& path)
 
 #if _MSC_VER || URHO3D_CSHARP
     unsigned pdbOffset = 0, pdbSize = 0;
-    ModuleType type = PluginModule::ReadModuleInformation(context_, path, &pdbOffset, &pdbSize);
+    const ModuleType type = DynamicModule::ReadModuleInformation(context_, path, &pdbOffset, &pdbSize);
 #if _MSC_VER
     bool hashPdb = true;
 #else
@@ -205,7 +207,7 @@ bool ModulePlugin::WaitForCompleteFile(unsigned timeoutMs) const
 {
     Timer wait;
     // Plugin change is detected the moment compiler starts linking file. We should wait until linker is done.
-    while (PluginModule::ReadModuleInformation(context_, path_) != lastModuleType_)
+    while (DynamicModule::ReadModuleInformation(context_, path_) != lastModuleType_)
     {
         Time::Sleep(0);
         if (wait.GetMSec(false) >= timeoutMs)

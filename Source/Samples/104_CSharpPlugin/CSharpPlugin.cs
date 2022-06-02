@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,7 +33,7 @@ namespace CSharpPlugin
         {
         }
 
-        public override void Load()
+        protected override void Load()
         {
             SubscribeToEvent("EditorApplicationMenu", RenderMenu);
         }
@@ -47,15 +47,15 @@ namespace CSharpPlugin
             }
         }
 
-        public override void Start()
+        protected override void Start()
         {
         }
 
-        public override void Stop()
+        protected override void Stop()
         {
         }
 
-        public override void Unload()
+        protected override void Unload()
         {
         }
     }

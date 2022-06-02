@@ -19,12 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#if URHO3D_PLUGINS && URHO3D_CSHARP
-#include <Urho3D/Resource/ResourceEvents.h>
-#include <Urho3D/Script/Script.h>
-#include "Plugins/PluginManager.h"
-#include "Plugins/ScriptBundlePlugin.h"
-#include "Project.h"
+
+#include "../Plugins/PluginManager.h"
+#include "../Plugins/ScriptBundlePlugin.h"
+#include "../Resource/ResourceEvents.h"
+#include "../Script/Script.h"
 
 namespace Urho3D
 {
@@ -32,42 +31,45 @@ namespace Urho3D
 ScriptBundlePlugin::ScriptBundlePlugin(Context* context)
     : Plugin(context)
 {
-    isManagedManually_ = false;
-    SubscribeToEvent(E_FILECHANGED, [this](StringHash, VariantMap& args) { OnFileChanged(args); });
+    SubscribeToEvent(E_FILECHANGED, [this](StringHash, VariantMap& args)
+    {
+        using namespace FileChanged;
+        const ea::string& name = args[P_RESOURCENAME].GetString();
+
+        OnFileChanged(name);
+    });
 }
 
 bool ScriptBundlePlugin::Load()
 {
-    application_ = Script::GetRuntimeApi()->CompileResourceScriptPlugin();
-    if (application_.NotNull())
-    {
-        application_->InitializeReloadablePlugin();
-        unloading_ = false;
-        outOfDate_ = false;
-        version_++;
-        return true;
-    }
-    return false;
+    ScriptRuntimeApi* runtime = Script::GetRuntimeApi();
+    if (!runtime)
+        return false;
+
+    application_ = runtime->CompileResourceScriptPlugin();
+    if (!application_)
+        return false;
+
+    unloading_ = false;
+    outOfDate_ = false;
+    ++version_;
+    return true;
 }
 
 bool ScriptBundlePlugin::PerformUnload()
 {
-    application_->UninitializeReloadablePlugin();
-    Script::GetRuntimeApi()->Dispose(application_.Detach());
+    ScriptRuntimeApi* runtime = Script::GetRuntimeApi();
+    if (!runtime)
+        return false;
+
+    application_->Dispose();
+    runtime->Dispose(application_.Detach());
     return true;
 }
 
-void ScriptBundlePlugin::OnFileChanged(VariantMap& args)
+void ScriptBundlePlugin::OnFileChanged(const ea::string& name)
 {
-    using namespace FileChanged;
-    const ea::string& name = args[P_RESOURCENAME].GetString();
     outOfDate_ |= name.ends_with(".cs");
-    if (outOfDate_ && !IsLoaded())
-    {
-        GetSubsystem<Project>()->GetPlugins()->Load(ScriptBundlePlugin::GetTypeStatic(), name_);
-        outOfDate_ = false;
-    }
 }
 
 }
-#endif

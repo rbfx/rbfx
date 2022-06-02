@@ -20,9 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/PluginModule.h"
 #include "../IO/Log.h"
 #include "../IO/File.h"
+#include "../Plugins/DynamicModule.h"
 
 #if URHO3D_CSHARP
 #   include "../Script/Script.h"
@@ -30,7 +30,7 @@
 #if _WIN32
 #   include <windows.h>
 #else
-#   include "PE.h"
+#   include "../Core/PE.h"
 #   include <dlfcn.h>
 #endif
 #if __linux__
@@ -135,13 +135,18 @@ static bool IsValidPtr(const ea::vector<unsigned char>& data, const T* p, unsign
            reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
-PluginModule::~PluginModule()
+DynamicModule::DynamicModule(Context* context)
+    : Object(context)
+{
+}
+
+DynamicModule::~DynamicModule()
 {
     if (handle_ != 0)
         Unload();
 }
 
-bool PluginModule::Load(const ea::string& path)
+bool DynamicModule::Load(const ea::string& path)
 {
 #if URHO3D_PLUGINS
     if (handle_ != 0)
@@ -185,7 +190,7 @@ bool PluginModule::Load(const ea::string& path)
     return false;
 }
 
-bool PluginModule::Unload()
+bool DynamicModule::Unload()
 {
 #if URHO3D_PLUGINS
     if (handle_ == 0)
@@ -218,7 +223,7 @@ bool PluginModule::Unload()
 #endif  // URHO3D_PLUGINS
 }
 
-void* PluginModule::GetSymbol(const ea::string& symbol)
+void* DynamicModule::GetSymbol(const ea::string& symbol)
 {
 #if URHO3D_PLUGINS
 #if URHO3D_CSHARP
@@ -242,7 +247,7 @@ void* PluginModule::GetSymbol(const ea::string& symbol)
 #endif  // URHO3D_PLUGINS
 }
 
-ModuleType PluginModule::ReadModuleInformation(Context* context, const ea::string& path, unsigned* pdbPathOffset, unsigned* pdbPathLength)
+ModuleType DynamicModule::ReadModuleInformation(Context* context, const ea::string& path, unsigned* pdbPathOffset, unsigned* pdbPathLength)
 {
 #if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
@@ -538,7 +543,7 @@ ModuleType PluginModule::ReadModuleInformation(Context* context, const ea::strin
     return MODULE_INVALID;
 }
 
-PluginApplication* PluginModule::InstantiatePlugin()
+PluginApplication* DynamicModule::InstantiatePlugin()
 {
     if (moduleType_ == MODULE_NATIVE)
     {

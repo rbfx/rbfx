@@ -40,32 +40,34 @@ enum ModuleType
     MODULE_MANAGED,
 };
 
-/// A class managing lifetime of dynamic library module.
-class URHO3D_API PluginModule : public Object
+/// A class managing lifetime of dynamically loaded library module.
+class URHO3D_API DynamicModule : public Object
 {
-    URHO3D_OBJECT(PluginModule, Object);
+    URHO3D_OBJECT(DynamicModule, Object);
+
 public:
-    /// Construct.
-    explicit PluginModule(Context* context) : Object(context) { }
-    /// Destruct.
-    ~PluginModule() override;
+    explicit DynamicModule(Context* context);
+    ~DynamicModule() override;
+
     /// Load a specified dynamic library and return true on success.
     bool Load(const ea::string& path);
     /// Unload currently loaded dynamic library. Returns true only if library was previously loaded and unloading succeeded.
     bool Unload();
+    /// Instantiate plugin interface from DLL.
+    PluginApplication* InstantiatePlugin();
+
     /// Looks up exported symbol in current loaded dynamic library and returns it. Works only for native modules.
     void* GetSymbol(const ea::string& symbol);
     /// Return a type of current loaded module.
     ModuleType GetModuleType() const { return moduleType_; }
-    ///
+    /// Return a path to loaded module.
     const ea::string& GetPath() const { return path_; }
+
     /// Inspects a specified file and detects it's type.
     static ModuleType ReadModuleInformation(Context* context, const ea::string& path, unsigned* pdbPathOffset=nullptr,
         unsigned* pdbPathLength=nullptr);
-    ///
-    PluginApplication* InstantiatePlugin();
 
-protected:
+private:
     /// A path of current loaded module.
     ea::string path_;
     /// A platform-specific handle to current loaded module.

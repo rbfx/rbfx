@@ -5,7 +5,7 @@ URHO3D_REFCOUNTED(Urho3D::AttributeAccessor);
 URHO3D_REFCOUNTED(Urho3D::ObjectReflection);
 URHO3D_REFCOUNTED(Urho3D::EventReceiverGroup);
 URHO3D_REFCOUNTED(Urho3D::Context);
-URHO3D_REFCOUNTED(Urho3D::PluginModule);
+URHO3D_REFCOUNTED(Urho3D::DynamicModule);
 URHO3D_REFCOUNTED(Urho3D::WorkItem);
 URHO3D_REFCOUNTED(Urho3D::WorkQueue);
 URHO3D_REFCOUNTED(Urho3D::Log);

@@ -20,31 +20,32 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/Context.h"
-#include "../Engine/PluginApplication.h"
-#include "../IO/Log.h"
+#pragma once
+
+#include "../Plugins/Plugin.h"
 
 namespace Urho3D
 {
 
-void PluginApplication::RegisterPluginType(StringHash type)
+class URHO3D_API ScriptBundlePlugin : public Plugin
 {
-    registeredTypes_.push_back(type);
-}
+    URHO3D_OBJECT(ScriptBundlePlugin, Plugin);
 
-void PluginApplication::InitializeReloadablePlugin()
-{
-    RegisterPluginType(GetType());
-}
+public:
+    explicit ScriptBundlePlugin(Context* context);
 
-void PluginApplication::UninitializeReloadablePlugin()
-{
-    for (const auto type : registeredTypes_)
-    {
-        context_->RemoveReflection(type);
-        context_->RemoveSubsystem(type);
-    }
-    registeredTypes_.clear();
-}
+    /// Implement Plugin
+    /// @{
+    bool Load() override;
+    bool IsLoaded() const override { return application_ != nullptr; }
+    bool IsOutOfDate() const override { return outOfDate_; }
+    bool PerformUnload() override;
+    /// @}
+
+private:
+    void OnFileChanged(const ea::string& name);
+
+    bool outOfDate_{};
+};
 
 }

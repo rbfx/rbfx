@@ -62,11 +62,11 @@
 #include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
 #include "Pipeline/Importers/TextureImporter.h"
-#if URHO3D_PLUGINS
+/*#if URHO3D_PLUGINS
 #   include "Plugins/PluginManager.h"
 #   include "Plugins/ModulePlugin.h"
 #endif
-#include "Plugins/ScriptBundlePlugin.h"
+#include "Plugins/ScriptBundlePlugin.h"*/
 #include "Inspector/AssetInspector.h"
 #include "Inspector/MaterialInspector.h"
 #include "Inspector/ModelInspector.h"
@@ -83,6 +83,7 @@
 #include "Foundation/EditorCamera3D.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
+#include "Foundation/PluginsTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SettingsTab.h"
@@ -116,22 +117,23 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
-    editorPluginManager_->AddPlugin("Foundation.GameViewTab", &Foundation_GameViewTab);
-    editorPluginManager_->AddPlugin("Foundation.SceneViewTab", &Foundation_SceneViewTab);
-    editorPluginManager_->AddPlugin("Foundation.InspectorTab", &Foundation_InspectorTab);
-    editorPluginManager_->AddPlugin("Foundation.ConsoleTab", &Foundation_ConsoleTab);
-    editorPluginManager_->AddPlugin("Foundation.ResourceBrowserTab", &Foundation_ResourceBrowserTab);
-    editorPluginManager_->AddPlugin("Foundation.HierarchyBrowserTab", &Foundation_HierarchyBrowserTab);
-    editorPluginManager_->AddPlugin("Foundation.SettingsTab", &Foundation_SettingsTab);
+    editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
+    editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
+    editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
+    editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
+    editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);
+    editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
+    editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
+    editorPluginManager_->AddPlugin("Foundation.Plugins", &Foundation_PluginsTab);
 
-    editorPluginManager_->AddPlugin("Foundation.SceneSelector", &Foundation_SceneSelector);
-    editorPluginManager_->AddPlugin("Foundation.SceneHierarchy", &Foundation_SceneHierarchy);
-    editorPluginManager_->AddPlugin("Foundation.SceneSelectionRenderer", &Foundation_SceneSelectionRenderer);
-    editorPluginManager_->AddPlugin("Foundation.TransformManipulator", &Foundation_TransformManipulator);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.Selector", &Foundation_SceneSelector);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.Hierarchy", &Foundation_SceneHierarchy);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.SelectionRenderer", &Foundation_SceneSelectionRenderer);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
     editorPluginManager_->AddPlugin("Foundation.EditorCamera3D", &Foundation_EditorCamera3D);
     editorPluginManager_->AddPlugin("Foundation.EditorCamera2D", &Foundation_EditorCamera2D);
 
-    editorPluginManager_->AddPlugin("Foundation.SceneViewGlue", &Foundation_SceneViewGlue);
+    editorPluginManager_->AddPlugin("Foundation.Glue.SceneView", &Foundation_SceneViewGlue);
 }
 
 void Editor::Setup()
@@ -237,7 +239,7 @@ void Editor::Setup()
     inspectors_.push_back(SharedPtr(new SerializableInspector(context_)));
 
 #if URHO3D_PLUGINS
-    RegisterPluginsLibrary(context_);
+    //RegisterPluginsLibrary(context_);
 #endif
     RegisterToolboxTypes(context_);
     EditorSceneSettings::RegisterObject(context_);
@@ -939,13 +941,6 @@ void Editor::OpenOrCreateProject()
         NFD_FreePath(projectDir);
     }
 }
-
-#if URHO3D_STATIC && URHO3D_PLUGINS
-bool Editor::RegisterPlugin(PluginApplication* plugin)
-{
-    return project_->GetPlugins()->RegisterPlugin(plugin);
-}
-#endif
 
 void Editor::OnConsoleUriClick(VariantMap& args)
 {

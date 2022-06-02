@@ -180,7 +180,7 @@ void Player::Start()
 
 #if URHO3D_STATIC
     // Static builds require user to manually register plugins by subclassing Player class.
-    SendEvent(E_REGISTERSTATICPLUGINS);
+    //SendEvent(E_REGISTERSTATICPLUGINS);
 #else
     // Shared builds load plugin .so/.dll specified in config file.
     if (!LoadPlugins(settings_.plugins_))
@@ -193,8 +193,7 @@ void Player::Start()
 
     for (LoadedModule& plugin : plugins_)
     {
-        plugin.application_->SendEvent(E_PLUGINSTART);
-        plugin.application_->Start();
+        plugin.application_->StartApplication();
     }
 
     // Load main scene.
@@ -213,8 +212,7 @@ void Player::Stop()
 {
     for (LoadedModule& plugin : plugins_)
     {
-        plugin.application_->SendEvent(E_PLUGINSTOP);
-        plugin.application_->Stop();
+        plugin.application_->StopApplication();
     }
 
     if (auto* manager = GetSubsystem<SceneManager>())
@@ -222,8 +220,7 @@ void Player::Stop()
 
     for (LoadedModule& plugin : plugins_)
     {
-        plugin.application_->SendEvent(E_PLUGINUNLOAD);
-        plugin.application_->Unload();
+        plugin.application_->UnloadPlugin();
     }
 
 #if URHO3D_CSHARP
@@ -299,15 +296,14 @@ bool Player::LoadAssembly(const ea::string& path)
 {
     LoadedModule moduleInfo;
 
-    moduleInfo.module_ = new PluginModule(context_);
+    moduleInfo.module_ = new DynamicModule(context_);
     if (moduleInfo.module_->Load(path))
     {
         moduleInfo.application_ = moduleInfo.module_->InstantiatePlugin();
         if (moduleInfo.application_.NotNull())
         {
             plugins_.emplace_back(moduleInfo);
-            moduleInfo.application_->SendEvent(E_PLUGINLOAD);
-            moduleInfo.application_->Load();
+            moduleInfo.application_->LoadPlugin();
             return true;
         }
     }
@@ -324,8 +320,7 @@ bool Player::RegisterPlugin(PluginApplication* plugin)
     LoadedModule moduleInfo;
     moduleInfo.application_ = plugin;
     plugins_.emplace_back(moduleInfo);
-    plugin->SendEvent(E_PLUGINLOAD);
-    plugin->Load();
+    plugin->LoadPlugin();
     return true;
 }
 #endif

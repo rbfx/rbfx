@@ -22,34 +22,35 @@
 
 #pragma once
 
-#include "Plugins/Plugin.h"
+#include "../Project/ProjectEditor.h"
+#include "../Project/EditorTab.h"
 
-#if URHO3D_PLUGINS && URHO3D_CSHARP
 namespace Urho3D
 {
 
-class ScriptBundlePlugin : public Plugin
+void Foundation_PluginsTab(Context* context, ProjectEditor* projectEditor);
+
+/// Tab that displays project settings.
+class PluginsTab : public EditorTab
 {
-    URHO3D_OBJECT(ScriptBundlePlugin, Plugin);
+    URHO3D_OBJECT(PluginsTab, EditorTab)
+
 public:
-    ///
-    explicit ScriptBundlePlugin(Context* context);
-    ///
-    bool Load() override;
-    ///
-    bool IsLoaded() const override { return application_.NotNull(); }
-    ///
-    bool IsOutOfDate() const override { return outOfDate_; }
+    explicit PluginsTab(Context* context);
 
 protected:
-    ///
-    bool PerformUnload() override;
-    ///
-    void OnFileChanged(VariantMap& args);
+    /// Implement EditorTab
+    /// @{
+    void RenderContent() override;
+    /// @}
 
-    ///
-    bool outOfDate_ = false;
+private:
+    void UpdateList();
+
+    const unsigned refreshInterval_{3000};
+    bool refreshPlugins_{true};
+    Timer refreshTimer_;
+    StringVector availablePlugins_;
 };
 
 }
-#endif

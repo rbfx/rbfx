@@ -44,11 +44,11 @@
 #include "EditorEvents.h"
 #include "Pipeline/Pipeline.h"
 #include "Project.h"
-#if URHO3D_PLUGINS
+/*#if URHO3D_PLUGINS
 #   include "Plugins/ModulePlugin.h"
 #   include "Plugins/PluginManager.h"
 #   include "Plugins/ScriptBundlePlugin.h"
-#endif
+#endif*/
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/ResourceTab.h"
 
@@ -60,7 +60,7 @@ Project::Project(Context* context)
     : Object(context)
     , pipeline_(new Pipeline(context))
 #if URHO3D_PLUGINS
-    , plugins_(new PluginManager(context))
+    //, plugins_(new PluginManager(context))
 #endif
     , undo_(new UndoStack(context))
 {
@@ -70,7 +70,7 @@ Project::Project(Context* context)
     SubscribeToEvent(E_ENDFRAME, &Project::OnEndFrame);
     context_->RegisterSubsystem(pipeline_);
 #if URHO3D_PLUGINS
-    context_->RegisterSubsystem(plugins_);
+    //context_->RegisterSubsystem(plugins_);
 #endif
     context_->RegisterSubsystem(undo_);
 
@@ -87,7 +87,7 @@ Project::~Project()
     context_->RemoveSubsystem(undo_->GetType());
     context_->RemoveSubsystem(pipeline_->GetType());
 #if URHO3D_PLUGINS
-    context_->RemoveSubsystem(plugins_->GetType());
+    //context_->RemoveSubsystem(plugins_->GetType());
 #endif
     if (context_->GetSubsystem<SystemUI>())
         ui::GetIO().IniFilename = nullptr;
@@ -227,7 +227,7 @@ bool Project::LoadProject(const ea::string& projectPath, bool disableAssetImport
 #endif
 
 #if URHO3D_PLUGINS && URHO3D_CSHARP
-    plugins_->Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
+    //plugins_->Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
 #endif
 
     if (!disableAssetImport)
@@ -320,7 +320,7 @@ void Project::SerializeInBlock(Archive& archive)
 
     pipeline_->SerializeOptional(archive);
 #if URHO3D_PLUGINS
-    plugins_->SerializeAsArray(archive);
+    //plugins_->SerializeAsArray(archive);
 #endif
     using namespace EditorProjectSerialize;
     SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);
@@ -371,7 +371,7 @@ void Project::RenderSettingsUI()
         ui::PopID();    // Default Scene
 
         // Plugins
-#if URHO3D_PLUGINS
+#if 0 //URHO3D_PLUGINS
         ui::PushID("Plugins");
         ui::Separator();
         ui::Text("Active plugins:");

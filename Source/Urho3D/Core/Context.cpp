@@ -166,6 +166,7 @@ Context::~Context()
 #endif
     // Remove subsystems that use SDL in reverse order of construction, so that Graphics can shut down SDL last
     /// \todo Context should not need to know about subsystems
+    RemoveSubsystem("PluginManager");
     RemoveSubsystem("Audio");
     RemoveSubsystem("UI");
     RemoveSubsystem("SystemUI");

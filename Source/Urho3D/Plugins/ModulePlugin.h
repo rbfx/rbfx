@@ -22,46 +22,43 @@
 
 #pragma once
 
-
-#include "Plugins/Plugin.h"
+#include "../Plugins/DynamicModule.h"
+#include "../Plugins/Plugin.h"
 
 namespace Urho3D
 {
 
 /// Plugin that is loaded from a native or managed dynamic library.
-class ModulePlugin : public Plugin
+class URHO3D_API ModulePlugin : public Plugin
 {
     URHO3D_OBJECT(ModulePlugin, Plugin);
+
 public:
-    /// Construct.
     explicit ModulePlugin(Context* context) : Plugin(context) { }
-    /// Loads plugin into application memory space and initializes it.
+
+    /// Implement Plugin
+    /// @{
     bool Load() override;
-    /// Returns true if plugin is loaded and functional.
-    bool IsLoaded() const override { return module_.GetModuleType() != MODULE_INVALID && !unloading_ && application_.NotNull(); }
-    /// Returns true if plugin was modified on the disk and should be reloaded.
+    bool IsLoaded() const override;
     bool IsOutOfDate() const override;
-    /// This function will block until plugin file is complete and ready to be loaded. Returns false if timeout exceeded, but file is still incomplete.
     bool WaitForCompleteFile(unsigned timeoutMs) const override;
+    bool PerformUnload() override;
+    /// @}
 
 protected:
-    ///
-    const ea::string& GetPath() const { return path_; }
     /// Converts name to a full plugin file path. Returns empty string on error.
     ea::string NameToPath(const ea::string& name) const;
-    ///
-    ea::string VersionModule(const ea::string& path);
-    ///
-    bool PerformUnload() override;
+    /// Return path to the current version of the module.
+    ea::string GetVersionModulePath(const ea::string& path);
 
     /// Unversioned plugin module path.
     ea::string path_;
     /// Native module of this plugin.
-    PluginModule module_{context_};
+    DynamicModule module_{context_};
     /// Last modification time.
-    unsigned mtime_ = 0;
+    unsigned mtime_{};
     /// Last loaded module type.
-    ModuleType lastModuleType_ = MODULE_INVALID;
+    ModuleType lastModuleType_{};
 };
 
 

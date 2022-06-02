@@ -24,7 +24,7 @@
 
 
 #include <Urho3D/Core/Context.h>
-#include <Urho3D/Engine/PluginApplication.h>
+#include <Urho3D/Plugins/PluginApplication.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/LogicComponent.h>
