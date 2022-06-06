@@ -282,6 +282,34 @@ TEST_CASE("Repeat JumpBy")
     CHECK(movedNode->GetPosition().Equals(Vector3(0, 0, 20)));
 }
 
+TEST_CASE("RotateAround action")
+{
+    Vector3 pos{3, 2, 0};
+    Quaternion rot{15, Vector3(1,0,0)};
+    Vector3 pivot{1, -2, 0};
+    Quaternion delta{75.0f, Vector3(0, 2, 3)};
+
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto actionManager = context->GetSubsystem<ActionManager>();
+    auto movedNode = MakeShared<Node>(context);
+    movedNode->SetPosition(pos);
+    movedNode->SetRotation(rot);
+    auto expectedNode = MakeShared<Node>(context);
+    expectedNode->SetPosition(pos);
+    expectedNode->SetRotation(rot);
+
+    //expectedNode->RotateAround(pivot, delta, TS_WORLD);
+    expectedNode->RotateAround(pivot, delta, TS_PARENT);
+    ActionBuilder(context).RotateAround(2.0f, pivot, delta).Run(movedNode);
+    // Tick for 2.5 seconds
+    for (int i = 0; i < 5; ++i)
+        actionManager->Update(0.5f);
+
+    CHECK(movedNode->GetRotation().Equals(expectedNode->GetRotation()));
+    CHECK(movedNode->GetPosition().Equals(expectedNode->GetPosition()));
+}
+
 TEST_CASE("RemoveSelf action deletes node")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);

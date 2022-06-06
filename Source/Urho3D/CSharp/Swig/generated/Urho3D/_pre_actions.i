@@ -26,6 +26,8 @@
 %csattribute(Urho3D::Actions::JumpBy2D, %arg(Urho3D::Vector2), PositionDelta, GetPositionDelta, SetPositionDelta);
 %csattribute(Urho3D::Actions::ScaleBy, %arg(Urho3D::Vector3), ScaleDelta, GetScaleDelta, SetScaleDelta);
 %csattribute(Urho3D::Actions::RotateBy, %arg(Urho3D::Quaternion), RotationDelta, GetRotationDelta, SetRotationDelta);
+%csattribute(Urho3D::Actions::RotateAround, %arg(Urho3D::Quaternion), RotationDelta, GetRotationDelta, SetRotationDelta);
+%csattribute(Urho3D::Actions::RotateAround, %arg(Urho3D::Vector3), Pivot, GetPivot, SetPivot);
 %csattribute(Urho3D::Actions::Parallel, %arg(unsigned int), NumActions, GetNumActions, SetNumActions);
 %csattribute(Urho3D::Actions::Parallel, %arg(float), Duration, GetDuration);
 %csattribute(Urho3D::Actions::Repeat, %arg(float), Duration, GetDuration);

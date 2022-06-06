@@ -231,32 +231,6 @@ public:
     }
 };
 
-
-class RotateByState : public AttributeActionState
-{
-    Quaternion rotationDelta_;
-    Quaternion startRotation_;
-    Quaternion previousRotation_;
-
-public:
-    RotateByState(RotateBy* action, Object* target)
-        : AttributeActionState(action, target, "Rotation", VAR_QUATERNION)
-    {
-        rotationDelta_ = action->GetRotationDelta();
-        previousRotation_ = startRotation_ = Get<Quaternion>();
-    }
-
-    void Update(float time, Variant& value) override
-    {
-        const auto currentRotation = value.GetQuaternion();
-        auto diff = previousRotation_.Inverse() * currentRotation;
-        startRotation_ = startRotation_ * diff;
-        const auto newRotation = startRotation_ * Quaternion::IDENTITY.Slerp(rotationDelta_, time);
-        value = newRotation;
-        previousRotation_ = newRotation;
-    }
-};
-
 } // namespace
 
 /// ------------------------------------------------------------------------------
@@ -402,13 +376,42 @@ SharedPtr<ActionState> ScaleBy::StartAction(Object* target) { return MakeShared<
 
 
 /// ------------------------------------------------------------------------------
+
+namespace
+{
+class RotateByState : public AttributeActionState
+{
+    Quaternion rotationDelta_;
+    Quaternion startRotation_;
+    Quaternion previousRotation_;
+
+public:
+    RotateByState(RotateBy* action, Object* target)
+        : AttributeActionState(action, target, "Rotation", VAR_QUATERNION)
+    {
+        rotationDelta_ = action->GetRotationDelta();
+        previousRotation_ = startRotation_ = Get<Quaternion>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto currentRotation = value.GetQuaternion();
+        auto diff = previousRotation_.Inverse() * currentRotation;
+        startRotation_ = startRotation_ * diff;
+        const auto newRotation = startRotation_ * Quaternion::IDENTITY.Slerp(rotationDelta_, time);
+        value = newRotation;
+        previousRotation_ = newRotation;
+    }
+};
+} // namespace
+
 /// Construct.
 RotateBy::RotateBy(Context* context)
     : BaseClassName(context)
 {
 }
 
-/// Set scale delta.
+/// Set rotation delta.
 void RotateBy::SetRotationDelta(const Quaternion& delta) { delta_ = delta; }
 
 SharedPtr<FiniteTimeAction> RotateBy::Reverse() const
@@ -429,6 +432,133 @@ void RotateBy::SerializeInBlock(Archive& archive)
 /// Create new action state from the action.
 SharedPtr<ActionState> RotateBy::StartAction(Object* target) { return MakeShared<RotateByState>(this, target); }
 
+/// ------------------------------------------------------------------------------
+
+namespace
+{
+class RotateAroundState : public FiniteTimeActionState
+{
+    Quaternion rotationDelta_;
+    Quaternion startRotation_;
+    Quaternion previousRotation_;
+    Vector3 pivot_;
+    AttributeInfo* rotationAttribute_{};
+    AttributeInfo* positionAttribute_{};
+
+public:
+    RotateAroundState(RotateAround* action, Object* target)
+        : FiniteTimeActionState(action, target)
+    {
+        auto serializable = target->Cast<Serializable>();
+        if (!serializable)
+        {
+            URHO3D_LOGERROR(
+                Format("Can animate only serializable class but {} is not serializable.", target->GetTypeName()));
+            return;
+        }
+        {
+            const static char* RotationAttributeName = "Rotation";
+            rotationAttribute_ =
+                target->GetContext()->GetReflection(target->GetType())->GetAttribute(RotationAttributeName);
+            if (!rotationAttribute_)
+            {
+                URHO3D_LOGERROR(Format("Attribute {} not found in {}.", RotationAttributeName, target->GetTypeName()));
+                return;
+            }
+            if (rotationAttribute_->type_ != VAR_QUATERNION)
+            {
+                URHO3D_LOGERROR(Format(
+                    "Attribute {} is not of type {}.", RotationAttributeName, Variant::GetTypeName(VAR_QUATERNION)));
+                rotationAttribute_ = nullptr;
+                return;
+            }
+        }
+        {
+            const static char* PositionAttributeName = "Position";
+            positionAttribute_ =
+                target->GetContext()->GetReflection(target->GetType())->GetAttribute(PositionAttributeName);
+            if (!positionAttribute_)
+            {
+                URHO3D_LOGERROR(Format("Attribute {} not found in {}.", PositionAttributeName, target->GetTypeName()));
+                return;
+            }
+            if (positionAttribute_->type_ != VAR_VECTOR3)
+            {
+                URHO3D_LOGERROR(Format(
+                    "Attribute {} is not of type {}.", PositionAttributeName, Variant::GetTypeName(VAR_VECTOR3)));
+                positionAttribute_ = nullptr;
+                return;
+            }
+        }
+        rotationDelta_ = action->GetRotationDelta();
+        pivot_ = action->GetPivot();
+        Variant rotationVariant;
+        rotationAttribute_->accessor_->Get(serializable, rotationVariant);
+        previousRotation_ = startRotation_ = rotationVariant.GetQuaternion();
+    }
+
+    void Update(float time) override
+    {
+        if (!positionAttribute_ || !rotationAttribute_)
+            return;
+        Variant positionVariant;
+        Variant rotationVariant;
+        positionAttribute_->accessor_->Get(static_cast<const Serializable*>(GetTarget()), positionVariant);
+        rotationAttribute_->accessor_->Get(static_cast<const Serializable*>(GetTarget()), rotationVariant);
+
+        const auto currentRotation = rotationVariant.GetQuaternion();
+        const auto currentPosition = positionVariant.GetVector3();
+        Matrix3x4 currentTR(currentPosition, rotationVariant.GetQuaternion(), 1.0f);
+        Matrix3x4 currentITR{currentTR.Inverse()};
+        const auto localPivot = currentITR * pivot_;
+
+        auto diff = previousRotation_.Inverse() * currentRotation;
+        startRotation_ = startRotation_ * diff;
+        const auto newRotation = Quaternion::IDENTITY.Slerp(rotationDelta_, time) * startRotation_;
+        rotationVariant = newRotation;
+        previousRotation_ = newRotation;
+
+        Matrix3x4 newTR(currentPosition, newRotation, 1.0f);
+        auto newPivot = newTR * localPivot;
+        positionVariant = currentPosition + (pivot_ - newPivot);
+
+        positionAttribute_->accessor_->Set(static_cast<Serializable*>(GetTarget()), positionVariant);
+        rotationAttribute_->accessor_->Set(static_cast<Serializable*>(GetTarget()), rotationVariant);
+    }
+};
+} // namespace
+
+/// Construct.
+RotateAround::RotateAround(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Set rotation delta.
+void RotateAround::SetRotationDelta(const Quaternion& delta) { delta_ = delta; }
+
+/// Set pivot.
+void RotateAround::SetPivot(const Vector3& pivot) { pivot_ = pivot; }
+
+SharedPtr<FiniteTimeAction> RotateAround::Reverse() const
+{
+    auto result = MakeShared<RotateAround>(context_);
+    result->SetDuration(GetDuration());
+    result->SetRotationDelta(delta_.Inverse());
+    result->SetPivot(GetPivot());
+    return result;
+}
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void RotateAround::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "delta", delta_, Quaternion::IDENTITY);
+    SerializeOptionalValue(archive, "pivot", pivot_, Vector3::ZERO);
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> RotateAround::StartAction(Object* target) { return MakeShared<RotateAroundState>(this, target); }
 
 } // namespace Actions
 } // namespace Urho3D

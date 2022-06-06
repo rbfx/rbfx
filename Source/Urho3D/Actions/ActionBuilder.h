@@ -63,6 +63,9 @@ public:
     /// Continue with RotateBy action.
     ActionBuilder RotateBy(float duration, const Quaternion& delta);
 
+    /// Continue with RotateAround action.
+    ActionBuilder RotateAround(float duration, const Vector3& pivot, const Quaternion& delta);
+
     /// Continue with Hide action.
     ActionBuilder Hide();
 

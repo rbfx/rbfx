@@ -201,5 +201,40 @@ private:
     Quaternion delta_{Quaternion::IDENTITY};
 };
 
+
+/// Rotate around 3D point action. Target should have "Position" of type Vector3 and "Rotation" of type Quaternion attributes.
+class URHO3D_API RotateAround : public FiniteTimeAction
+{
+    URHO3D_OBJECT(RotateAround, FiniteTimeAction)
+public:
+    /// Construct.
+    explicit RotateAround(Context* context);
+
+    /// Set rotation delta.
+    void SetRotationDelta(const Quaternion& delta);
+
+    /// Get rotation delta.
+    const Quaternion& GetRotationDelta() const { return delta_; }
+
+    /// Set rotation pivot.
+    void SetPivot(const Vector3& pivot);
+
+    /// Get rotation pivot.
+    const Vector3& GetPivot() const { return pivot_; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+private:
+    Quaternion delta_{Quaternion::IDENTITY};
+    Vector3 pivot_{Vector3::ZERO};
+};
 } // namespace Actions
 } // namespace Urho3D

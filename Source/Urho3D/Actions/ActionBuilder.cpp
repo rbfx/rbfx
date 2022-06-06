@@ -142,6 +142,17 @@ ActionBuilder ActionBuilder::RotateBy(float duration, const Quaternion& delta)
     return Then(action);
 }
 
+/// Continue with RotateAround action.
+ActionBuilder ActionBuilder::RotateAround(float duration, const Vector3& pivot, const Quaternion& delta)
+{
+    auto action = MakeShared<Actions::RotateAround>(context_);
+    action->SetDuration(duration);
+    action->SetRotationDelta(delta);
+    action->SetPivot(pivot);
+    return Then(action);
+}
+
+
 ActionBuilder ActionBuilder::Hide()
 {
     auto action = MakeShared<Actions::Hide>(context_);
