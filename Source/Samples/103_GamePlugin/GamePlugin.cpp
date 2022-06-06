@@ -27,7 +27,7 @@
 #include "RotateObject.h"
 #include "GamePlugin.h"
 
-URHO3D_DEFINE_PLUGIN_MAIN(103_GamePlugin, Urho3D::GamePlugin);
+URHO3D_DEFINE_PLUGIN_MAIN(Urho3D::GamePlugin);
 
 namespace Urho3D
 {
@@ -40,8 +40,8 @@ GamePlugin::GamePlugin(Context* context)
 void GamePlugin::Load()
 {
     // Register custom components/subsystems/events when plugin is loaded.
-    RotateObject::RegisterObject(context_, this);
-    FPSCameraController::RegisterObject(context_, this);
+    AddObjectReflection<RotateObject>();
+    AddObjectReflection<FPSCameraController>();
 }
 
 void GamePlugin::Unload()

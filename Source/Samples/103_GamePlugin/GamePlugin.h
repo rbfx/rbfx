@@ -31,7 +31,8 @@ namespace Urho3D
 
 class GamePlugin : public PluginApplication
 {
-    URHO3D_OBJECT(GamePlugin, PluginApplication);
+    URHO3D_PLUGIN_OBJECT(GamePlugin, PluginApplication, "103_GamePlugin");
+
 public:
     /// Construct.
     explicit GamePlugin(Context* context);

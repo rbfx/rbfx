@@ -50,6 +50,8 @@ bool ScriptBundlePlugin::Load()
     if (!application_)
         return false;
 
+    application_->SetPluginName(name_);
+
     unloading_ = false;
     outOfDate_ = false;
     ++version_;

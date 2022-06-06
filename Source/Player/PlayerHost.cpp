@@ -39,7 +39,7 @@ public:
     void Start() override
     {
 #if URHO3D_PLUGINS && URHO3D_SAMPLES && URHO3D_STATIC
-        PluginApplication::RegisterPluginApplication<GamePlugin>("103_GamePlugin");
+        PluginApplication::RegisterPluginApplication<GamePlugin>();
 #endif
         BaseClassName::Start();
     }
