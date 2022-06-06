@@ -64,7 +64,7 @@ void ConsoleTab_::RenderContextMenuItems()
         {
             const bool visible = console->GetLevelVisible(level);
             if (ui::MenuItem(logLevelNames[level], nullptr, visible))
-                console->SetLevelVisible(level, visible);
+                console->SetLevelVisible(level, !visible);
         }
         ui::EndMenu();
     }

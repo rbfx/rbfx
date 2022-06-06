@@ -49,9 +49,9 @@ public:
             GetNode()->Rotate(Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep));
     }
 
-    static void RegisterObject(Context* context, PluginApplication* plugin)
+    static void RegisterObject(Context* context)
     {
-        plugin->AddFactoryReflection<RotateObject>("User Components");
+        context->AddFactoryReflection<RotateObject>("User Components");
         URHO3D_ATTRIBUTE("Animate", bool, animate_, true, AM_EDIT);
     }
 

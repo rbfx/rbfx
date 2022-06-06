@@ -64,9 +64,9 @@ public:
             GetNode()->Translate(Vector3::RIGHT * timeStep);
     }
 
-    static void RegisterObject(Context* context, PluginApplication* plugin)
+    static void RegisterObject(Context* context)
     {
-        plugin->AddFactoryReflection<FPSCameraController>("User Components");
+        context->AddFactoryReflection<FPSCameraController>("User Components");
     }
 };
 

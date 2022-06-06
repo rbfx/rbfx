@@ -196,7 +196,11 @@ PluginManager::PluginManager(Context* context)
     , pluginStack_(MakeShared<PluginStack>(this, loadedPlugins_))
 {
     for (const auto& [name, factory] : getRegistry())
-        AddStaticPlugin(factory(context_));
+    {
+        const auto application = factory(context_);
+        application->SetPluginName(name);
+        AddStaticPlugin(application);
+    }
 
 #if URHO3D_PLUGINS && URHO3D_CSHARP
     auto scriptBundlePlugin = MakeShared<ScriptBundlePlugin>(context_);
@@ -279,6 +283,10 @@ bool PluginManager::AddDynamicPlugin(Plugin* plugin)
         return false;
     }
 
+    const ea::string& internalName = plugin->GetApplication()->GetPluginName();
+    if (name != internalName)
+        URHO3D_LOGWARNING("Plugin file name {} doesn't match plugin class name", name, internalName);
+
     dynamicPlugins_.emplace(name, SharedPtr<Plugin>(plugin));
 
     URHO3D_LOGINFO("Loaded plugin '{}' version {}", name, plugin->GetVersion());
@@ -287,7 +295,7 @@ bool PluginManager::AddDynamicPlugin(Plugin* plugin)
 
 bool PluginManager::AddStaticPlugin(PluginApplication* pluginApplication)
 {
-    const ea::string name = Format("Static:{}", pluginApplication->GetTypeName());
+    const ea::string name = pluginApplication->GetPluginName();
     if (dynamicPlugins_.contains(name) || staticPlugins_.contains(name))
     {
         URHO3D_ASSERTLOG(0, "Plugin name '{}' is already used", name);

@@ -47,6 +47,9 @@ bool ModulePlugin::Load()
         application_ = module_.InstantiatePlugin();
         if (application_)
         {
+            if (application_->GetPluginName().empty())
+                application_->SetPluginName(name_);
+
             path_ = path;
             mtime_ = context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(pluginPath);
             ++version_;
