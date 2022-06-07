@@ -195,7 +195,7 @@ private:
 
     /// Manage pages
     /// @{
-    SceneViewPage CreatePage(Scene* scene) const;
+    SceneViewPage CreatePage(Scene* scene, bool isActive) const;
     void SavePageScene(SceneViewPage& page) const;
 
     void SavePageConfig(const SceneViewPage& page) const;

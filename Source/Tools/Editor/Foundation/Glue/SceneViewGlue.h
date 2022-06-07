@@ -52,6 +52,8 @@ public:
     /// @}
 
 private:
+    void FocusSceneViewTab();
+
     WeakPtr<GameViewTab> gameViewTab_;
 };
 

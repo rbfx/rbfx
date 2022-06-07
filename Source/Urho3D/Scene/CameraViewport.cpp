@@ -42,6 +42,7 @@ namespace Urho3D
 
 static ResourceRef defaultRenderPath{XMLFile::GetTypeStatic(), "RenderPaths/Forward.xml"};
 
+// TODO(editor): Remove this class
 CameraViewport::CameraViewport(Context* context)
     : Component(context)
     , viewport_(context->CreateObject<Viewport>())

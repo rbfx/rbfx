@@ -56,6 +56,8 @@ ScenePlayerLauncher::ScenePlayerLauncher(SceneViewTab* owner, GameViewTab* gameV
     auto project = owner_->GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
     hotkeyManager->BindHotkey(this, Hotkey_Play, &ScenePlayerLauncher::PlayCurrentScene);
+
+    gameViewTab_->OnSimulationStopped.Subscribe(this, &ScenePlayerLauncher::FocusSceneViewTab);
 }
 
 ScenePlayerLauncher::~ScenePlayerLauncher()
@@ -86,5 +88,10 @@ bool ScenePlayerLauncher::RenderTabContextMenu()
     return true;
 }
 
+void ScenePlayerLauncher::FocusSceneViewTab()
+{
+    if (owner_)
+        owner_->Focus();
+}
 
 }

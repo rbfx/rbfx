@@ -87,7 +87,7 @@ protected:
     /// Called on SuspendApplication().
     virtual void Suspend(Archive& output) {}
     /// Called on ResumeApplication().
-    virtual void Resume(Archive& input, unsigned oldVersion, unsigned newVersion) {}
+    virtual void Resume(Archive& input, bool differentVersion) {}
 
 private:
     ea::string pluginName_;

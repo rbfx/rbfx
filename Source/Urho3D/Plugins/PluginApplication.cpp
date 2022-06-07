@@ -141,7 +141,7 @@ void PluginApplication::ResumeApplication(Archive& input, unsigned version)
 
     unsigned oldVersion{};
     SerializeValue(input, "Version", oldVersion);
-    Resume(input, oldVersion, version);
+    Resume(input, oldVersion != version);
 }
 
 }

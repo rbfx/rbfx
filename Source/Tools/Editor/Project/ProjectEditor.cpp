@@ -29,6 +29,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/Utility/SceneViewerApplication.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -433,6 +434,9 @@ void ProjectEditor::Render()
     {
         initialized_ = true;
         initialFocusPending = true;
+
+        // TODO(editor): Do it only once on project creation
+        pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetPluginNameStatic()});
 
         OnInitialized(this);
     }

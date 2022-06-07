@@ -22,53 +22,38 @@
 
 #pragma once
 
-#include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
-
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Utility/SceneRendererToTexture.h>
+#include "../Graphics/Viewport.h"
+#include "../Plugins/PluginApplication.h"
+#include "../Scene/Scene.h"
 
 namespace Urho3D
 {
 
-void Foundation_GameViewTab(Context* context, ProjectEditor* projectEditor);
-
-/// Tab that renders Scene and enables Scene manipulation.
-class GameViewTab : public EditorTab
+/// Simple application to show scene with free-fly camera.
+class URHO3D_API SceneViewerApplication : public PluginApplication
 {
-    URHO3D_OBJECT(GameViewTab, EditorTab);
+    URHO3D_PLUGIN_OBJECT(SceneViewerApplication, PluginApplication, "Builtin.SceneViewer");
 
 public:
-    Signal<void()> OnSimulationStarted;
-    Signal<void()> OnSimulationStopped;
-
-    explicit GameViewTab(Context* context);
-    ~GameViewTab() override;
-
-    void PlayScene(const ea::string& sceneName);
-    bool IsPlaying() const { return !!state_; }
-
-    /// Commands
-    /// @{
-    void Stop();
-    void PlayLastScene();
-    void ToggleScenePlayed();
-    /// @}
+    explicit SceneViewerApplication(Context* context);
+    ~SceneViewerApplication() override;
 
 protected:
-    /// Implement EditorTab
+    /// Implement PluginApplication
     /// @{
-    void RenderContent() override;
-    void RenderContextMenuItems() override;
+    void Load() override;
+    void Unload() override;
+    void Start() override;
+    void Stop() override;
+    void Suspend(Archive& output) override;
+    void Resume(Archive& input, bool differentVersion) override;
     /// @}
 
 private:
-    class PlayState;
+    SharedPtr<Viewport> viewport_;
+    SharedPtr<Scene> scene_;
 
-    SharedPtr<CustomBackbufferTexture> backbuffer_;
-
-    ea::string lastPlayedScene_;
-    ea::unique_ptr<PlayState> state_;
+    SharedPtr<Node> cameraNode_;
 };
 
 }
