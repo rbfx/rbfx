@@ -86,6 +86,7 @@
 #ifdef URHO3D_COMPUTE
 #include "../Graphics/ComputeDevice.h"
 #endif
+#include "../Utility/SceneViewerApplication.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -195,6 +196,8 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NAVIGATION
     RegisterNavigationLibrary(context_);
 #endif
+
+    PluginApplication::RegisterPluginApplication<SceneViewerApplication>();
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));

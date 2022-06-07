@@ -34,41 +34,65 @@ namespace Urho3D
 
 class Camera;
 class Node;
+class RenderSurface;
 class Scene;
 class Texture2D;
 class Viewport;
 
-/// Utility class that watches all files in ResourceCache.
-class URHO3D_API SceneRendererToTexture : public Object
+/// Maintains texture usable as custom backbuffer.
+class URHO3D_API CustomBackbufferTexture : public Object
 {
-    URHO3D_OBJECT(SceneRendererToTexture, Object);
+    URHO3D_OBJECT(CustomBackbufferTexture, Object);
+
+public:
+    Signal<void(RenderSurface*)> OnRenderSurfaceCreated;
+
+    explicit CustomBackbufferTexture(Context* context);
+    ~CustomBackbufferTexture() override;
+
+    /// Resize output texture.
+    void SetTextureSize(const IntVector2& size);
+    /// Set whether to update texture every frame.
+    void SetActive(bool active);
+    /// Periodical update.
+    void Update();
+
+    /// Return properties
+    /// @{
+    Texture2D* GetTexture() const { return texture_; }
+    const IntVector2& GetTextureSize() const { return textureSize_; }
+    bool IsActive() const { return isActive_; }
+    /// @}
+
+private:
+    bool textureDirty_{true};
+    bool isActive_{};
+    IntVector2 textureSize_;
+    SharedPtr<Texture2D> texture_;
+};
+
+/// Renders scene to texture with its own camera.
+// TODO(editor): Remove inheritance
+class URHO3D_API SceneRendererToTexture : public CustomBackbufferTexture
+{
+    URHO3D_OBJECT(SceneRendererToTexture, CustomBackbufferTexture);
 
 public:
     explicit SceneRendererToTexture(Scene* scene);
     ~SceneRendererToTexture() override;
 
-    /// Resize output texture.
-    void SetTextureSize(const IntVector2& size);
-    /// Set whether to render scene.
-    void SetActive(bool active);
-    /// Periodical update.
-    void Update();
-
-    /// Return aspects of the renderer
+    /// Return properties
     /// @{
-    Texture2D* GetTexture() const { return texture_; }
     Camera* GetCamera() const { return camera_; }
     /// @}
 
 private:
+    void SetupViewport(RenderSurface* renderSurface);
+
     SharedPtr<Scene> scene_;
     SharedPtr<Node> cameraNode_;
     Camera* camera_{};
 
-    bool textureDirty_{true};
-    bool isActive_{};
-    IntVector2 textureSize_;
-    SharedPtr<Texture2D> texture_;
     SharedPtr<Viewport> viewport_;
 };
 

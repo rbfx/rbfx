@@ -352,7 +352,8 @@ void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
     scene->LoadXML(xmlFile->GetRoot());
     scene->SetFileName(xmlFile->GetAbsoluteFileName());
 
-    scenes_[resourceName] = CreatePage(scene);
+    const bool isActive = resourceName == GetActiveResourceName();
+    scenes_[resourceName] = CreatePage(scene, isActive);
 }
 
 void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
@@ -456,13 +457,15 @@ SceneViewPage* SceneViewTab::GetActivePage()
     return GetPage(GetActiveResourceName());
 }
 
-SceneViewPage SceneViewTab::CreatePage(Scene* scene) const
+SceneViewPage SceneViewTab::CreatePage(Scene* scene, bool isActive) const
 {
     SceneViewPage page;
 
     page.scene_ = scene;
     page.renderer_ = MakeShared<SceneRendererToTexture>(scene);
     page.cfgFileName_ = scene->GetFileName() + ".cfg";
+
+    page.renderer_->SetActive(isActive);
 
     for (const SceneCameraControllerDesc& desc : cameraControllers_)
         page.cameraControllers_.push_back(desc.factory_(scene, page.renderer_->GetCamera()));

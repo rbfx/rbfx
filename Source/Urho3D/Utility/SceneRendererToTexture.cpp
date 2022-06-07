@@ -53,21 +53,17 @@ unsigned GetViewportTextureFormat()
 
 }
 
-SceneRendererToTexture::SceneRendererToTexture(Scene* scene)
-    : Object(scene->GetContext())
-    , scene_(scene)
-    , cameraNode_(MakeShared<Node>(context_))
-    , camera_(cameraNode_->CreateComponent<Camera>())
+CustomBackbufferTexture::CustomBackbufferTexture(Context* context)
+    : Object(context)
     , texture_(MakeShared<Texture2D>(context_))
-    , viewport_(MakeShared<Viewport>(context_, scene_, camera_))
 {
 }
 
-SceneRendererToTexture::~SceneRendererToTexture()
+CustomBackbufferTexture::~CustomBackbufferTexture()
 {
 }
 
-void SceneRendererToTexture::SetTextureSize(const IntVector2& size)
+void CustomBackbufferTexture::SetTextureSize(const IntVector2& size)
 {
     if (textureSize_ != size)
     {
@@ -76,22 +72,42 @@ void SceneRendererToTexture::SetTextureSize(const IntVector2& size)
     }
 }
 
-void SceneRendererToTexture::SetActive(bool active)
+void CustomBackbufferTexture::SetActive(bool active)
 {
     isActive_ = active;
     if (auto renderSurface = texture_->GetRenderSurface())
-        renderSurface->SetUpdateMode(active ? SURFACE_UPDATEALWAYS : SURFACE_MANUALUPDATE);
+        renderSurface->SetUpdateMode(isActive_ ? SURFACE_UPDATEALWAYS : SURFACE_MANUALUPDATE);
 }
 
-void SceneRendererToTexture::Update()
+void CustomBackbufferTexture::Update()
 {
     if (textureDirty_)
     {
         textureDirty_ = false;
         texture_->SetSize(textureSize_.x_, textureSize_.y_, GetViewportTextureFormat(), TEXTURE_RENDERTARGET);
-        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
-        texture_->GetRenderSurface()->SetViewport(0, viewport_);
+        RenderSurface* renderSurface = texture_->GetRenderSurface();
+        OnRenderSurfaceCreated(this, renderSurface);
+        renderSurface->SetUpdateMode(isActive_ ? SURFACE_UPDATEALWAYS : SURFACE_MANUALUPDATE);
     }
+}
+
+SceneRendererToTexture::SceneRendererToTexture(Scene* scene)
+    : CustomBackbufferTexture(scene->GetContext())
+    , scene_(scene)
+    , cameraNode_(MakeShared<Node>(context_))
+    , camera_(cameraNode_->CreateComponent<Camera>())
+    , viewport_(MakeShared<Viewport>(context_, scene_, camera_))
+{
+    OnRenderSurfaceCreated.Subscribe(this, &SceneRendererToTexture::SetupViewport);
+}
+
+SceneRendererToTexture::~SceneRendererToTexture()
+{
+}
+
+void SceneRendererToTexture::SetupViewport(RenderSurface* renderSurface)
+{
+    renderSurface->SetViewport(0, viewport_);
 }
 
 }

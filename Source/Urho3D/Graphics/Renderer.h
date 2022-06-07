@@ -205,6 +205,8 @@ public:
     /// Destruct.
     ~Renderer() override;
 
+    /// Set backbuffer render surface. Null corresponds to the application backbuffer.
+    void SetBackbufferRenderSurface(RenderSurface* renderSurface);
     /// Set global shader define on or off.
     void SetGlobalShaderDefine(ea::string_view define, bool enabled);
     /// Set number of backbuffer viewports to render.
@@ -596,6 +598,9 @@ private:
 
     /// Graphics subsystem.
     WeakPtr<Graphics> graphics_;
+    /// Render surface that acts as backbuffer.
+    WeakPtr<RenderSurface> backbufferSurface_;
+    bool backbufferSurfaceViewportsDirty_{};
     /// Default renderpath.
     SharedPtr<RenderPath> defaultRenderPath_;
     /// Default non-textured material technique.

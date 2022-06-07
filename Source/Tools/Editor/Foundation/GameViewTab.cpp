@@ -22,54 +22,189 @@
 
 #include "../Foundation/GameViewTab.h"
 
+#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/Input/Input.h>
+#include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Scene.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
+// TODO(editor): Disable hotkeys during play
+
 namespace Urho3D
 {
+
+namespace
+{
+
+URHO3D_EDITOR_HOTKEY(Hotkey_TogglePlay, "GameViewTab.TogglePlay", QUAL_CTRL, KEY_P);
+
+}
 
 void Foundation_GameViewTab(Context* context, ProjectEditor* projectEditor)
 {
     projectEditor->AddTab(MakeShared<GameViewTab>(context));
 }
 
+class GameViewTab::PlayState : public Object
+{
+    URHO3D_OBJECT(PlayState, Object);
+
+public:
+    PlayState(Context* context, CustomBackbufferTexture* backbuffer)
+        : Object(context)
+        , renderer_(GetSubsystem<Renderer>())
+        , pluginManager_(GetSubsystem<PluginManager>())
+        , input_(GetSubsystem<Input>())
+        , systemUi_(GetSubsystem<SystemUI>())
+        , backbuffer_(backbuffer)
+    {
+        renderer_->SetBackbufferRenderSurface(backbuffer_->GetTexture()->GetRenderSurface());
+        backbuffer_->SetActive(true);
+        GrabInput();
+        pluginManager_->StartApplication();
+        UpdatePreferredMouseSetup();
+    }
+
+    void GrabInput()
+    {
+        if (inputGrabbed_)
+            return;
+
+        input_->SetMouseVisible(preferredMouseVisible_);
+        input_->SetMouseMode(preferredMouseMode_);
+        input_->SetEnabled(true);
+        systemUi_->SetPassThroughEvents(true);
+
+        inputGrabbed_ = true;
+    }
+
+    void ReleaseInput()
+    {
+        if (!inputGrabbed_)
+            return;
+
+        UpdatePreferredMouseSetup();
+        input_->SetMouseVisible(true);
+        input_->SetMouseMode(MM_ABSOLUTE);
+        input_->SetEnabled(false);
+        systemUi_->SetPassThroughEvents(false);
+
+        inputGrabbed_ = false;
+    }
+
+    bool IsPaused() const { return false; }
+
+    ~PlayState()
+    {
+        ReleaseInput();
+        pluginManager_->StopApplication();
+        backbuffer_->SetActive(false);
+        renderer_->SetBackbufferRenderSurface(nullptr);
+        renderer_->SetNumViewports(0);
+    }
+
+private:
+    void UpdatePreferredMouseSetup()
+    {
+        preferredMouseVisible_ = input_->IsMouseVisible();
+        preferredMouseMode_ = input_->GetMouseMode();
+    }
+
+    Renderer* renderer_{};
+    PluginManager* pluginManager_{};
+    Input* input_{};
+    SystemUI* systemUi_{};
+
+    CustomBackbufferTexture* backbuffer_{};
+
+    bool inputGrabbed_{};
+
+    bool preferredMouseVisible_{true};
+    MouseMode preferredMouseMode_{MM_FREE};
+};
+
 GameViewTab::GameViewTab(Context* context)
     : EditorTab(context, "Game", "212a6577-8a2a-42d6-aaed-042d226c724c",
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
         EditorTabPlacement::DockCenter)
+    , backbuffer_(MakeShared<CustomBackbufferTexture>(context_))
 {
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+    hotkeyManager->BindHotkey(this, Hotkey_TogglePlay, &GameViewTab::ToggleScenePlayed);
 }
 
 GameViewTab::~GameViewTab()
 {
 }
 
-void GameViewTab::Stop()
-{
-    state_ = ea::nullopt;
-}
-
 void GameViewTab::PlayScene(const ea::string& sceneName)
 {
+    lastPlayedScene_ = sceneName;
     if (state_)
         Stop();
 
-    auto cache = GetSubsystem<ResourceCache>();
-    auto xmlFile = cache->GetResource<XMLFile>(sceneName);
-    if (!xmlFile)
+    state_ = ea::make_unique<PlayState>(context_, backbuffer_);
+    OnSimulationStarted(this);
+}
+
+void GameViewTab::Stop()
+{
+    if (!state_)
         return;
 
-    state_ = PlayState{};
-    state_->sceneName_ = sceneName;
+    state_ = nullptr;
+    OnSimulationStopped(this);
+}
+
+void GameViewTab::PlayLastScene()
+{
+    PlayScene(lastPlayedScene_);
+}
+
+void GameViewTab::ToggleScenePlayed()
+{
+    if (IsPlaying())
+        Stop();
+    else
+        PlayLastScene();
 }
 
 void GameViewTab::RenderContent()
 {
+    backbuffer_->SetTextureSize(GetContentSize());
+    backbuffer_->Update();
 
+    if (state_)
+    {
+        Texture2D* sceneTexture = backbuffer_->GetTexture();
+        ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+    }
+
+    /*if (state_ && !state_->IsPaused())
+    {
+        if (ui::IsWindowFocused() && !inputGrabbed_)
+            GrabInput();
+        else if (!ui::IsWindowFocused() && inputGrabbed_)
+            ReleaseInput();
+    }*/
+
+}
+
+void GameViewTab::RenderContextMenuItems()
+{
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    const char* togglePlayTitle = IsPlaying() ? ICON_FA_STOP " Stop" : ICON_FA_PLAY " Play";
+    if (ui::MenuItem(togglePlayTitle, hotkeyManager->GetHotkeyLabel(Hotkey_TogglePlay).c_str()))
+        ToggleScenePlayed();
+
+    contextMenuSeparator_.Add();
 }
 
 }
