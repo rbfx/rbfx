@@ -32,7 +32,7 @@ target_compile_definitions(RmlUi
     PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
     PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1
             RMLUI_CUSTOM_CONFIGURATION_FILE="../RbfxConfig.h"
-            $<$<CONFIG:Debug>:RMLUI_DEBUG>
+            RMLUI_DEBUG_BUILD=$<CONFIG:Debug>
 )
 if (APPLE)
     # Disables naked builtins from AssertMacros.h which
