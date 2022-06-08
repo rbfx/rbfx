@@ -53,6 +53,20 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+template <class T>
+bool AnyMouseButton(MouseButton buttons, const T& callback)
+{
+    bool result = false;
+    for (MouseButton button : {MOUSEB_LEFT, MOUSEB_RIGHT, MOUSEB_MIDDLE, MOUSEB_X1, MOUSEB_X2})
+        result |= (buttons & button) && callback(button);
+    return result;
+}
+
+}
+
 SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     : Object(context)
     , vertexBuffer_(context)
@@ -477,34 +491,40 @@ int ToImGui(MouseButton button)
 
 }
 
-bool ui::IsMouseDown(Urho3D::MouseButton button)
+bool ui::IsMouseDown(Urho3D::MouseButton buttons)
 {
-    return ui::IsMouseDown(Urho3D::ToImGui(button));
+    return Urho3D::AnyMouseButton(buttons,
+        [&](Urho3D::MouseButton button) { return ui::IsMouseDown(Urho3D::ToImGui(button)); });
 }
 
-bool ui::IsMouseDoubleClicked(Urho3D::MouseButton button)
+bool ui::IsMouseDoubleClicked(Urho3D::MouseButton buttons)
 {
-    return ui::IsMouseDoubleClicked(Urho3D::ToImGui(button));
+    return Urho3D::AnyMouseButton(buttons,
+        [&](Urho3D::MouseButton button) { return ui::IsMouseDoubleClicked(Urho3D::ToImGui(button)); });
 }
 
-bool ui::IsMouseDragging(Urho3D::MouseButton button, float lock_threshold)
+bool ui::IsMouseDragging(Urho3D::MouseButton buttons, float lock_threshold)
 {
-    return ui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold);
+    return Urho3D::AnyMouseButton(buttons,
+        [&](Urho3D::MouseButton button) { return ui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold); });
 }
 
-bool ui::IsMouseReleased(Urho3D::MouseButton button)
+bool ui::IsMouseReleased(Urho3D::MouseButton buttons)
 {
-    return ui::IsMouseReleased(Urho3D::ToImGui(button));
+    return Urho3D::AnyMouseButton(buttons,
+        [&](Urho3D::MouseButton button) { return ui::IsMouseReleased(Urho3D::ToImGui(button)); });
 }
 
-bool ui::IsMouseClicked(Urho3D::MouseButton button, bool repeat)
+bool ui::IsMouseClicked(Urho3D::MouseButton buttons, bool repeat)
 {
-    return ui::IsMouseClicked(Urho3D::ToImGui(button), repeat);
+    return Urho3D::AnyMouseButton(buttons,
+        [&](Urho3D::MouseButton button) { return ui::IsMouseClicked(Urho3D::ToImGui(button), repeat); });
 }
 
-bool ui::IsItemClicked(Urho3D::MouseButton button)
+bool ui::IsItemClicked(Urho3D::MouseButton buttons)
 {
-    return ui::IsItemClicked(Urho3D::ToImGui(button));
+    return Urho3D::AnyMouseButton(buttons,
+        [&](Urho3D::MouseButton button) { return ui::IsItemClicked(Urho3D::ToImGui(button)); });
 }
 
 ImVec2 ui::GetMouseDragDelta(Urho3D::MouseButton button, float lock_threshold)

@@ -47,12 +47,14 @@ public:
 
     void PlayScene(const ea::string& sceneName);
     bool IsPlaying() const { return !!state_; }
+    bool IsInputGrabbed() const;
 
     /// Commands
     /// @{
     void Stop();
     void PlayLastScene();
     void ToggleScenePlayed();
+    void ReleaseInput();
     /// @}
 
 protected:

@@ -123,13 +123,15 @@ void PluginApplication::SuspendApplication(Archive& output, unsigned version)
     }
 
     isStarted_ = false;
+
+    const auto block = output.OpenUnorderedBlock("Application");
     SerializeValue(output, "Version", version);
     Suspend(output);
 }
 
-void PluginApplication::ResumeApplication(Archive& input, unsigned version)
+void PluginApplication::ResumeApplication(Archive* input, unsigned version)
 {
-    URHO3D_ASSERT(input.IsInput());
+    URHO3D_ASSERT(!input || input->IsInput());
 
     if (isStarted_)
     {
@@ -139,9 +141,15 @@ void PluginApplication::ResumeApplication(Archive& input, unsigned version)
 
     isStarted_ = true;
 
-    unsigned oldVersion{};
-    SerializeValue(input, "Version", oldVersion);
-    Resume(input, oldVersion != version);
+    if (!input)
+        Resume(nullptr, true);
+    else
+    {
+        const auto block = input->OpenUnorderedBlock("Application");
+        unsigned oldVersion{};
+        SerializeValue(*input, "Version", oldVersion);
+        Resume(input, oldVersion != version);
+    }
 }
 
 }

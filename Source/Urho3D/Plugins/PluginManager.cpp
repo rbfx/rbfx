@@ -137,11 +137,11 @@ SerializedPlugins PluginStack::SuspendApplication()
 
     for (const PluginInfo& info : ea::reverse(applications_))
     {
-        if (info.application_)
-        {
-            BinaryOutputArchive archive{context_, data[info.name_]};
-            info.application_->SuspendApplication(archive, info.version_);
-        }
+        if (!info.application_)
+            continue;
+
+        BinaryOutputArchive archive{context_, data[info.name_]};
+        info.application_->SuspendApplication(archive, info.version_);
     }
     return data;
 }
@@ -156,13 +156,18 @@ void PluginStack::ResumeApplication(const SerializedPlugins& serializedPlugins)
 
     for (const PluginInfo& info : applications_)
     {
+        if (!info.application_)
+            continue;
+
         const auto iter = serializedPlugins.find(info.name_);
-        if (info.application_ && iter != serializedPlugins.end())
+        if (iter == serializedPlugins.end())
+            info.application_->ResumeApplication(nullptr, info.version_);
+        else
         {
             const VectorBuffer& pluginData = iter->second;
             MemoryBuffer dataView{pluginData.GetBuffer()};
             BinaryInputArchive archive{context_, dataView};
-            info.application_->ResumeApplication(archive, info.version_);
+            info.application_->ResumeApplication(&archive, info.version_);
         }
     }
     isStarted_ = true;

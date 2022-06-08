@@ -46,7 +46,7 @@ protected:
     void Start() override;
     void Stop() override;
     void Suspend(Archive& output) override;
-    void Resume(Archive& input, bool differentVersion) override;
+    void Resume(Archive* input, bool differentVersion) override;
     /// @}
 
 private:

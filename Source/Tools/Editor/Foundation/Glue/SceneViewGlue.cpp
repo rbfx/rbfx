@@ -74,6 +74,7 @@ void ScenePlayerLauncher::PlayCurrentScene()
     project->Save();
     gameViewTab_->Focus();
     gameViewTab_->PlayScene(owner_->GetActiveResourceName());
+    focusSceneOnStop_ = project->GetRootFocusedTab() == owner_;
 }
 
 bool ScenePlayerLauncher::RenderTabContextMenu()
@@ -90,8 +91,9 @@ bool ScenePlayerLauncher::RenderTabContextMenu()
 
 void ScenePlayerLauncher::FocusSceneViewTab()
 {
-    if (owner_)
+    if (focusSceneOnStop_ && owner_)
         owner_->Focus();
+    focusSceneOnStop_ = false;
 }
 
 }

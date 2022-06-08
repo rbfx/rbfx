@@ -60,8 +60,8 @@ public:
 
     /// Suspend application. It's highly recommended to release all plugin-related objects here.
     void SuspendApplication(Archive& output, unsigned version);
-    /// Resume application.
-    void ResumeApplication(Archive& input, unsigned version);
+    /// Resume application. Archive may be null if it wasn't serialized before.
+    void ResumeApplication(Archive* input, unsigned version);
 
     /// Return plugin name. Should be the same as dynamic library name when plugin is linked dynamically.
     const ea::string& GetPluginName() { return pluginName_; }
@@ -87,7 +87,7 @@ protected:
     /// Called on SuspendApplication().
     virtual void Suspend(Archive& output) {}
     /// Called on ResumeApplication().
-    virtual void Resume(Archive& input, bool differentVersion) {}
+    virtual void Resume(Archive* input, bool differentVersion) {}
 
 private:
     ea::string pluginName_;
