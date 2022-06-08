@@ -58,9 +58,7 @@ vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} "Sample Projects")
 if (URHO3D_PACKAGING)
     create_pak("${rbfx_SOURCE_DIR}/bin/Data"               "${CMAKE_BINARY_DIR}/bin/Data.pak")
     create_pak("${rbfx_SOURCE_DIR}/bin/CoreData"           "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
-    create_pak("${rbfx_SOURCE_DIR}/bin/Autoload/LargeData" "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
     set (URHO3D_DATA_PAKS "${CMAKE_BINARY_DIR}/bin/Data.pak" "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
-    set (URHO3D_AUTOLOAD_PAKS "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
 endif ()
 
 if (WEB)
@@ -68,7 +66,6 @@ if (WEB)
     package_resources_web(
         FILES        "${CMAKE_BINARY_DIR}/bin/Data.pak"
                      "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
-                     "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak"
         RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
         OUTPUT       "Resources.js"
         INSTALL_TO   ${DEST_BIN_DIR_CONFIG}
@@ -98,14 +95,13 @@ if (XCODE)
         )
         if (URHO3D_PACKAGING)
             set_source_files_properties (${URHO3D_DATA_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-            set_source_files_properties (${URHO3D_AUTOLOAD_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Autoload)
-            target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
+            target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS})
         else ()
             set_source_files_properties (
-                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData" "${rbfx_SOURCE_DIR}/bin/Autoload"
+                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData"
                 PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
             target_sources(Samples PRIVATE
-                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData" "${rbfx_SOURCE_DIR}/bin/Autoload")
+                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData")
         endif ()
     endif ()
 endif ()
@@ -113,15 +109,15 @@ endif ()
 if (MSVC)
     if (URHO3D_PACKAGING)
         # Include .pak files under "Resource Files" in VS project.
-        source_group("Resource Files" FILES ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
+        source_group("Resource Files" FILES ${URHO3D_DATA_PAKS})
         # Ensure file VS wont try to build resources.
-        set_property(SOURCE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS} PROPERTY VS_TOOL_OVERRIDE None)
+        set_property(SOURCE ${URHO3D_DATA_PAKS} PROPERTY VS_TOOL_OVERRIDE None)
         # Include .pak files in UWP app. VS_DEPLOYMENT_LOCATION is not set, they will go into root of app dir.
-        set_property(SOURCE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS} PROPERTY VS_DEPLOYMENT_CONTENT 1)
+        set_property(SOURCE ${URHO3D_DATA_PAKS} PROPERTY VS_DEPLOYMENT_CONTENT 1)
         # Consume file. Without this resources are just ignored.
-        target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS} ${URHO3D_AUTOLOAD_PAKS})
+        target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS})
     else ()
-        foreach (subfolder Data CoreData Autoload)
+        foreach (subfolder Data CoreData)
             file(GLOB_RECURSE DATA_FILES RELATIVE "${rbfx_SOURCE_DIR}/bin" "${rbfx_SOURCE_DIR}/bin/${subfolder}/**")
             foreach (filename ${DATA_FILES})
                 set (filepath "${rbfx_SOURCE_DIR}/bin/${filename}")
