@@ -116,6 +116,10 @@ public:
     template <class T> T* FindTab() const;
     /// Open resource in appropriate resource tab.
     void OpenResource(const OpenResourceRequest& request);
+    /// Set whether the global hotkeys are enabled.
+    void SetGlobalHotkeysEnabled(bool enabled) { areGlobalHotkeysEnabled_ = enabled; }
+    /// Set whether the UI highlight is enabled.
+    void SetHighlightEnabled(bool enabled) { isHighlightEnabled_ = enabled; }
 
     /// Commands
     /// @{
@@ -194,6 +198,8 @@ private:
     ImGuiID dockspaceId_{};
     WeakPtr<EditorTab> focusedTab_;
     WeakPtr<EditorTab> focusedRootTab_;
+    bool areGlobalHotkeysEnabled_{};
+    bool isHighlightEnabled_{};
     /// @}
 };
 

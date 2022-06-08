@@ -133,17 +133,7 @@ void FreeFlyController::RegisterObject(Context* context)
     context->AddFactoryReflection<FreeFlyController>();
 
     URHO3D_ATTRIBUTE("Speed", float, speed_, 20.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("AcceleratedSpeed", float, acceleratedSpeed_, 100.0f, AM_DEFAULT);
-}
-
-void FreeFlyController::SetSpeed(float speed)
-{
-    speed_ = speed;
-}
-
-void FreeFlyController::SetAcceleratedSpeed(float speed)
-{
-    acceleratedSpeed_ = speed;
+    URHO3D_ATTRIBUTE("Accelerated Speed", float, acceleratedSpeed_, 100.0f, AM_DEFAULT);
 }
 
 void FreeFlyController::SetCameraAngles(Vector3 eulerAngles)
@@ -262,9 +252,24 @@ void FreeFlyController::Update(float timeStep)
         return;
 
     auto* input = GetSubsystem<Input>();
-    if (input->GetMouseMode() == MM_FREE)
+    if (isActive_ || input->GetMouseMode() == MM_FREE)
     {
-        if (input->GetMouseButtonDown(MOUSEB_RIGHT))
+        if (!isActive_ && input->GetMouseButtonPress(MOUSEB_RIGHT))
+        {
+            isActive_ = true;
+            oldMouseVisible_ = input->IsMouseVisible();
+            oldMouseMode_ = input->GetMouseMode();
+            input->SetMouseVisible(false);
+            input->SetMouseMode(MM_RELATIVE);
+        }
+        else if (isActive_ && !input->GetMouseButtonDown(MOUSEB_RIGHT))
+        {
+            isActive_ = false;
+            input->SetMouseVisible(oldMouseVisible_);
+            input->SetMouseMode(oldMouseMode_);
+        }
+
+        if (isActive_)
         {
             HandleKeyboardAndMouse(timeStep);
         }

@@ -41,6 +41,7 @@ namespace
 {
 
 URHO3D_EDITOR_HOTKEY(Hotkey_TogglePlay, "GameViewTab.TogglePlay", QUAL_CTRL, KEY_P);
+URHO3D_EDITOR_HOTKEY(Hotkey_ReleaseInput, "GameViewTab.ReleaseInput", QUAL_SHIFT, KEY_ESCAPE);
 
 }
 
@@ -60,6 +61,7 @@ public:
         , pluginManager_(GetSubsystem<PluginManager>())
         , input_(GetSubsystem<Input>())
         , systemUi_(GetSubsystem<SystemUI>())
+        , project_(GetSubsystem<ProjectEditor>())
         , backbuffer_(backbuffer)
     {
         renderer_->SetBackbufferRenderSurface(backbuffer_->GetTexture()->GetRenderSurface());
@@ -78,6 +80,8 @@ public:
         input_->SetMouseMode(preferredMouseMode_);
         input_->SetEnabled(true);
         systemUi_->SetPassThroughEvents(true);
+        project_->SetGlobalHotkeysEnabled(false);
+        project_->SetHighlightEnabled(true);
 
         inputGrabbed_ = true;
     }
@@ -92,11 +96,13 @@ public:
         input_->SetMouseMode(MM_ABSOLUTE);
         input_->SetEnabled(false);
         systemUi_->SetPassThroughEvents(false);
+        project_->SetGlobalHotkeysEnabled(true);
+        project_->SetHighlightEnabled(false);
 
         inputGrabbed_ = false;
     }
 
-    bool IsPaused() const { return false; }
+    bool IsInputGrabbed() const { return inputGrabbed_; }
 
     ~PlayState()
     {
@@ -118,6 +124,7 @@ private:
     PluginManager* pluginManager_{};
     Input* input_{};
     SystemUI* systemUi_{};
+    ProjectEditor* project_{};
 
     CustomBackbufferTexture* backbuffer_{};
 
@@ -136,10 +143,16 @@ GameViewTab::GameViewTab(Context* context)
     auto project = GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
     hotkeyManager->BindHotkey(this, Hotkey_TogglePlay, &GameViewTab::ToggleScenePlayed);
+    hotkeyManager->BindHotkey(this, Hotkey_ReleaseInput, &GameViewTab::ReleaseInput);
 }
 
 GameViewTab::~GameViewTab()
 {
+}
+
+bool GameViewTab::IsInputGrabbed() const
+{
+    return state_ && state_->IsInputGrabbed();
 }
 
 void GameViewTab::PlayScene(const ea::string& sceneName)
@@ -174,6 +187,12 @@ void GameViewTab::ToggleScenePlayed()
         PlayLastScene();
 }
 
+void GameViewTab::ReleaseInput()
+{
+    if (state_)
+        state_->ReleaseInput();
+}
+
 void GameViewTab::RenderContent()
 {
     backbuffer_->SetTextureSize(GetContentSize());
@@ -185,14 +204,16 @@ void GameViewTab::RenderContent()
         ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
     }
 
-    /*if (state_ && !state_->IsPaused())
+    if (state_)
     {
-        if (ui::IsWindowFocused() && !inputGrabbed_)
-            GrabInput();
-        else if (!ui::IsWindowFocused() && inputGrabbed_)
-            ReleaseInput();
-    }*/
-
+        const bool wasGrabbed = state_->IsInputGrabbed();
+        const bool needGrab = ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_ANY);
+        const bool needRelease = !ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_ANY);
+        if (!wasGrabbed && needGrab)
+            state_->GrabInput();
+        else if (wasGrabbed && needRelease)
+            state_->ReleaseInput();
+    }
 }
 
 void GameViewTab::RenderContextMenuItems()

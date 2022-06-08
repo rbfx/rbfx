@@ -129,7 +129,9 @@ void EditorTab::RenderWindow()
     if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
     {
         project->SetFocusedTab(this);
-        ApplyHotkeys(project->GetHotkeyManager());
+        // Suppress hotkeys on the first focused frame so we don't process them more than once
+        if (!focusPending_)
+            ApplyHotkeys(project->GetHotkeyManager());
         UpdateFocused();
     }
     else

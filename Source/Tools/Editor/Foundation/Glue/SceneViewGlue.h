@@ -55,6 +55,7 @@ private:
     void FocusSceneViewTab();
 
     WeakPtr<GameViewTab> gameViewTab_;
+    bool focusSceneOnStop_{};
 };
 
 }

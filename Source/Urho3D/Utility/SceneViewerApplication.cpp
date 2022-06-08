@@ -52,18 +52,14 @@ void SceneViewerApplication::Start()
 {
     auto cache = GetSubsystem<ResourceCache>();
     auto renderer = GetSubsystem<Renderer>();
-    auto input = GetSubsystem<Input>();
-
-    input->SetMouseVisible(false);
-    input->SetMouseMode(MM_RELATIVE);
 
     scene_ = MakeShared<Scene>(context_);
     // TODO(editor): Fix me
     scene_->LoadFile("Scenes/RenderingShowcase_2_BakedDirectIndirect.xml");
 
     cameraNode_ = scene_->CreateChild("Viewer Camera");
-    Camera* camera = cameraNode_->CreateComponent<Camera>();
-    cameraNode_->CreateComponent<FreeFlyController>();
+    auto camera = cameraNode_->CreateComponent<Camera>();
+    auto controller = cameraNode_->CreateComponent<FreeFlyController>();
 
     // TODO(editor): Fix me
     cameraNode_->SetPosition({0.0f, 5.0f, -10.0f});
@@ -88,7 +84,7 @@ void SceneViewerApplication::Suspend(Archive& output)
 {
 }
 
-void SceneViewerApplication::Resume(Archive& input, bool differentVersion)
+void SceneViewerApplication::Resume(Archive* input, bool differentVersion)
 {
 }
 
