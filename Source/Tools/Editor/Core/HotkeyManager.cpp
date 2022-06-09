@@ -137,7 +137,7 @@ void HotkeyManager::InvokeFor(Object* owner)
 bool HotkeyManager::IsInvoked(const HotkeyCombination& hotkey) const
 {
     if (!hotkey.IsValid())
-        return "";
+        return false;
 
     if (hotkey.key_ != SCANCODE_UNKNOWN)
     {

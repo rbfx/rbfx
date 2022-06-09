@@ -44,6 +44,9 @@ using EditorActionFrame = unsigned long long;
 class EditorAction : public RefCounted
 {
 public:
+    /// Return whether the action should be completely removed from stack on undo.
+    /// Useful for injecting callback on undoing. Don't change any important state if true!
+    virtual bool RemoveOnUndo() const { return false; }
     /// Check if action is valid and alive, i.e. Undo and Redo can be called.
     virtual bool IsAlive() const { return true; }
     /// Action is pushed to the stack.
@@ -54,6 +57,26 @@ public:
     virtual void Undo() const = 0;
     /// Try to merge this action with another. Return true if successfully merged.
     virtual bool MergeWith(const EditorAction& other) { return false; }
+};
+
+/// Base class for action wrappers.
+class BaseEditorActionWrapper : public EditorAction
+{
+public:
+    explicit BaseEditorActionWrapper(SharedPtr<EditorAction> action);
+
+    /// Implement EditorAction.
+    /// @{
+    bool RemoveOnUndo() const override;
+    bool IsAlive() const override;
+    void OnPushed(EditorActionFrame frame) override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+protected:
+    SharedPtr<EditorAction> action_;
 };
 
 using EditorActionPtr = SharedPtr<EditorAction>;

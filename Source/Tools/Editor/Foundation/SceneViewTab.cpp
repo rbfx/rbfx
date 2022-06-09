@@ -42,6 +42,9 @@ namespace Urho3D
 namespace
 {
 
+URHO3D_EDITOR_HOTKEY(Hotkey_RewindSimulation, "SceneViewTab.RewindSimulation", QUAL_NONE, KEY_UNKNOWN);
+URHO3D_EDITOR_HOTKEY(Hotkey_TogglePaused, "SceneViewTab.TogglePaused", QUAL_NONE, KEY_PAUSE);
+
 URHO3D_EDITOR_HOTKEY(Hotkey_Cut, "SceneViewTab.Cut", QUAL_CTRL, KEY_X);
 URHO3D_EDITOR_HOTKEY(Hotkey_Copy, "SceneViewTab.Copy", QUAL_CTRL, KEY_C);
 URHO3D_EDITOR_HOTKEY(Hotkey_Paste, "SceneViewTab.Paste", QUAL_CTRL, KEY_V);
@@ -113,6 +116,16 @@ SceneCameraController* SceneViewPage::GetCurrentCameraController() const
         : nullptr;
 }
 
+void SceneViewPage::RewindSimulation()
+{
+    scene_->SetUpdateEnabled(false);
+    if (simulationBase_)
+    {
+        simulationBase_->ToScene(scene_);
+        simulationBase_ = ea::nullopt;
+    }
+}
+
 SceneViewAddon::SceneViewAddon(SceneViewTab* owner)
     : Object(owner->GetContext())
     , owner_(owner)
@@ -147,6 +160,8 @@ SceneViewTab::SceneViewTab(Context* context)
     project->IgnoreFileNamePattern("*.xml.cfg");
 
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+    hotkeyManager->BindHotkey(this, Hotkey_RewindSimulation, &SceneViewTab::RewindSimulation);
+    hotkeyManager->BindHotkey(this, Hotkey_TogglePaused, &SceneViewTab::ToggleSimulationPaused);
     hotkeyManager->BindHotkey(this, Hotkey_Cut, &SceneViewTab::CutSelection);
     hotkeyManager->BindHotkey(this, Hotkey_Copy, &SceneViewTab::CopySelection);
     hotkeyManager->BindHotkey(this, Hotkey_Paste, &SceneViewTab::PasteNextToSelection);
@@ -167,6 +182,50 @@ void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
 void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
 {
     cameraControllers_.push_back(desc);
+}
+
+void SceneViewTab::ResumeSimulation()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    if (!activePage->simulationBase_)
+    {
+        PushAction<EmptyEditorAction>();
+        activePage->simulationBase_ = PackedSceneData::FromScene(activePage->scene_);
+    }
+    activePage->scene_->SetUpdateEnabled(true);
+}
+
+void SceneViewTab::PauseSimulation()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    activePage->scene_->SetUpdateEnabled(false);
+}
+
+void SceneViewTab::ToggleSimulationPaused()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    if (activePage->scene_->IsUpdateEnabled())
+        PauseSimulation();
+    else
+        ResumeSimulation();
+}
+
+void SceneViewTab::RewindSimulation()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    activePage->RewindSimulation();
 }
 
 void SceneViewTab::CutSelection()
@@ -300,13 +359,42 @@ void SceneViewTab::ReadIniSettings(const char* line)
         addon->ReadIniSettings(line);
 }
 
+void SceneViewTab::PushAction(SharedPtr<EditorAction> action)
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    // Ignore all actions while simulating
+    if (activePage->simulationBase_)
+        return;
+
+    const auto wrappedAction = MakeShared<RewindSceneActionWrapper>(action, activePage);
+    BaseClassName::PushAction(wrappedAction);
+}
+
 void SceneViewTab::RenderContextMenuItems()
 {
+    // TODO(editor): Hide boilerplate with HotkeyManager
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
     BaseClassName::RenderContextMenuItems();
 
     if (SceneViewPage* activePage = GetActivePage())
     {
         contextMenuSeparator_.Reset();
+
+        const char* rewindTitle = ICON_FA_BACKWARD_FAST " Rewind Simulation";
+        const char* rewindShortcut = hotkeyManager->GetHotkeyLabel(Hotkey_RewindSimulation).c_str();
+        if (ui::MenuItem(rewindTitle, rewindShortcut, false, !!activePage->simulationBase_))
+            RewindSimulation();
+
+        const char* pauseTitle = !activePage->scene_->IsUpdateEnabled()
+            ? (activePage->simulationBase_ ? ICON_FA_PLAY " Resume Simulation" : ICON_FA_PLAY " Start Simulation")
+            : ICON_FA_PAUSE " Pause Simulation";
+        if (ui::MenuItem(pauseTitle, hotkeyManager->GetHotkeyLabel(Hotkey_TogglePaused).c_str()))
+            ToggleSimulationPaused();
 
         unsigned index = 0;
         for (const SceneCameraController* controller : activePage->cameraControllers_)
@@ -351,6 +439,7 @@ void SceneViewTab::OnResourceLoaded(const ea::string& resourceName)
     auto scene = MakeShared<Scene>(context_);
     scene->LoadXML(xmlFile->GetRoot());
     scene->SetFileName(xmlFile->GetAbsoluteFileName());
+    scene->SetUpdateEnabled(false);
 
     const bool isActive = resourceName == GetActiveResourceName();
     scenes_[resourceName] = CreatePage(scene, isActive);
@@ -363,8 +452,11 @@ void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
 
 void SceneViewTab::OnActiveResourceChanged(const ea::string& resourceName)
 {
+    if (SceneViewPage* activePage = GetActivePage())
+        activePage->scene_->SetUpdateEnabled(false);
+
     for (const auto& [name, data] : scenes_)
-        data.renderer_->SetActive(name == resourceName);
+        data->renderer_->SetActive(name == resourceName);
 }
 
 void SceneViewTab::OnResourceSaved(const ea::string& resourceName)
@@ -381,7 +473,10 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
 {
     XMLFile xmlFile(context_);
     XMLElement rootElement = xmlFile.GetOrCreateRoot("scene");
+
+    page.scene_->SetUpdateEnabled(false);
     page.scene_->SaveXML(rootElement);
+
     xmlFile.SaveFile(page.scene_->GetFileName());
 }
 
@@ -449,7 +544,7 @@ void SceneViewTab::UpdateFocused()
 SceneViewPage* SceneViewTab::GetPage(const ea::string& resourceName)
 {
     auto iter = scenes_.find(resourceName);
-    return iter != scenes_.end() ? &iter->second : nullptr;
+    return iter != scenes_.end() ? iter->second : nullptr;
 }
 
 SceneViewPage* SceneViewTab::GetActivePage()
@@ -457,20 +552,20 @@ SceneViewPage* SceneViewTab::GetActivePage()
     return GetPage(GetActiveResourceName());
 }
 
-SceneViewPage SceneViewTab::CreatePage(Scene* scene, bool isActive) const
+SharedPtr<SceneViewPage> SceneViewTab::CreatePage(Scene* scene, bool isActive) const
 {
-    SceneViewPage page;
+    auto page = MakeShared<SceneViewPage>();
 
-    page.scene_ = scene;
-    page.renderer_ = MakeShared<SceneRendererToTexture>(scene);
-    page.cfgFileName_ = scene->GetFileName() + ".cfg";
+    page->scene_ = scene;
+    page->renderer_ = MakeShared<SceneRendererToTexture>(scene);
+    page->cfgFileName_ = scene->GetFileName() + ".cfg";
 
-    page.renderer_->SetActive(isActive);
+    page->renderer_->SetActive(isActive);
 
     for (const SceneCameraControllerDesc& desc : cameraControllers_)
-        page.cameraControllers_.push_back(desc.factory_(scene, page.renderer_->GetCamera()));
+        page->cameraControllers_.push_back(desc.factory_(scene, page->renderer_->GetCamera()));
 
-    LoadPageConfig(page);
+    LoadPageConfig(*page);
     return page;
 }
 
@@ -486,6 +581,30 @@ void SceneViewTab::LoadPageConfig(SceneViewPage& page) const
     auto jsonFile = MakeShared<JSONFile>(context_);
     jsonFile->LoadFile(page.cfgFileName_);
     jsonFile->LoadObject("Scene", page);
+}
+
+RewindSceneActionWrapper::RewindSceneActionWrapper(SharedPtr<EditorAction> action, SceneViewPage* page)
+    : BaseEditorActionWrapper(action)
+    , page_(page)
+{
+
+}
+
+bool RewindSceneActionWrapper::IsAlive() const
+{
+    return page_ && BaseEditorActionWrapper::IsAlive();
+}
+
+void RewindSceneActionWrapper::Redo() const
+{
+    page_->RewindSimulation();
+    BaseEditorActionWrapper::Redo();
+}
+
+void RewindSceneActionWrapper::Undo() const
+{
+    page_->RewindSimulation();
+    BaseEditorActionWrapper::Undo();
 }
 
 }

@@ -31,6 +31,45 @@
 namespace Urho3D
 {
 
+BaseEditorActionWrapper::BaseEditorActionWrapper(SharedPtr<EditorAction> action)
+    : action_(action)
+{
+}
+
+bool BaseEditorActionWrapper::RemoveOnUndo() const
+{
+    return action_->RemoveOnUndo();
+}
+
+bool BaseEditorActionWrapper::IsAlive() const
+{
+    return action_->IsAlive();
+}
+
+void BaseEditorActionWrapper::OnPushed(EditorActionFrame frame)
+{
+    action_->OnPushed(frame);
+}
+
+void BaseEditorActionWrapper::Redo() const
+{
+    action_->Redo();
+}
+
+void BaseEditorActionWrapper::Undo() const
+{
+    action_->Undo();
+}
+
+bool BaseEditorActionWrapper::MergeWith(const EditorAction& other)
+{
+    if (typeid(*this) != typeid(other))
+        return false;
+
+    const auto& otherWrapper = static_cast<const BaseEditorActionWrapper&>(other);
+    return action_->MergeWith(*otherWrapper.action_);
+}
+
 bool UndoManager::ActionGroup::IsAlive() const
 {
     const auto isAlive = [](const EditorActionPtr& action) { return action->IsAlive(); };
@@ -87,7 +126,10 @@ bool UndoManager::Undo()
         for (EditorAction* action : ea::reverse(group.actions_))
             action->Undo();
 
-        redoStack_.push_back(ea::move(group));
+        ea::erase_if(group.actions_, [](const EditorActionPtr& action) { return action->RemoveOnUndo(); });
+
+        if (!group.actions_.empty())
+            redoStack_.push_back(ea::move(group));
         undoStack_.pop_back();
         return true;
     }
