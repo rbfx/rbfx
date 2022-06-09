@@ -160,9 +160,6 @@ struct AlwaysSerialize
 {
     template <class T>
     bool operator==(const T& rhs) const { return false; }
-
-    template <class T>
-    explicit operator T() const { return T{}; }
 };
 
 /// @name Serialize primitive types

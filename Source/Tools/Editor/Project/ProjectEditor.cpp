@@ -26,6 +26,7 @@
 
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
@@ -181,6 +182,16 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     ApplyPlugins();
 
     settingsManager_->LoadFile(settingsJsonPath_);
+
+    JSONFile projectJsonFile(context_);
+    projectJsonFile.LoadFile(projectJsonPath_);
+    JSONInputArchive archive{&projectJsonFile};
+    SerializeOptionalValue(archive, "Project", *this, AlwaysSerialize{});
+}
+
+void ProjectEditor::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "PluginManager", *pluginManager_, AlwaysSerialize{});
 }
 
 ProjectEditor::~ProjectEditor()
@@ -503,6 +514,11 @@ void ProjectEditor::RenderMainMenu()
 
 void ProjectEditor::SaveProjectOnly()
 {
+    JSONFile projectJsonFile(context_);
+    JSONOutputArchive archive{&projectJsonFile};
+    SerializeOptionalValue(archive, "Project", *this, AlwaysSerialize{});
+    projectJsonFile.SaveFile(projectJsonPath_);
+
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     SaveGitIgnore();
     settingsManager_->SaveFile(settingsJsonPath_);

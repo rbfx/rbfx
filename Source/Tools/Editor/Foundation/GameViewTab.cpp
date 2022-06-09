@@ -22,6 +22,8 @@
 
 #include "../Foundation/GameViewTab.h"
 
+#include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/Graphics/GraphicsEvents.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
@@ -68,6 +70,14 @@ public:
         GrabInput();
         pluginManager_->StartApplication();
         UpdatePreferredMouseSetup();
+
+        SubscribeToEvent(E_BEGINRENDERING, [this](StringHash, VariantMap&)
+        {
+            auto graphics = GetSubsystem<Graphics>();
+            graphics->SetRenderTarget(0, backbuffer_->GetTexture());
+            graphics->Clear(CLEAR_COLOR, Color::RED);
+            UnsubscribeFromEvent(E_BEGINRENDERING);
+        });
     }
 
     void GrabInput()

@@ -144,6 +144,9 @@ public:
     void RegisterCameraController(const SceneCameraControllerDesc& desc);
     template <class T, class ... Args> void RegisterCameraController(const Args&... args);
 
+    /// Setup context for plugin execution.
+    void SetupPluginContext();
+
     /// Commands
     /// @{
     void ResumeSimulation();

@@ -25,6 +25,8 @@
 #include "../Project/ProjectEditor.h"
 #include "../Project/EditorTab.h"
 
+#include <EASTL/set.h>
+
 namespace Urho3D
 {
 
@@ -38,6 +40,12 @@ class PluginsTab : public EditorTab
 public:
     explicit PluginsTab(Context* context);
 
+    /// Commands
+    /// @{
+    void Apply();
+    void Discard();
+    /// @}
+
 protected:
     /// Implement EditorTab
     /// @{
@@ -45,12 +53,17 @@ protected:
     /// @}
 
 private:
-    void UpdateList();
+    void UpdateAvailablePlugins();
+    void UpdateLoadedPlugins();
 
     const unsigned refreshInterval_{3000};
     bool refreshPlugins_{true};
     Timer refreshTimer_;
-    StringVector availablePlugins_;
+    ea::set<ea::string> availablePlugins_;
+
+    unsigned revision_{};
+    bool hasChanges_{};
+    StringVector loadedPlugins_;
 };
 
 }

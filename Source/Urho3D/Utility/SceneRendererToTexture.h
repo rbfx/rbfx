@@ -84,6 +84,9 @@ public:
     /// Return properties
     /// @{
     Camera* GetCamera() const { return camera_; }
+    Node* GetCameraNode() const { return cameraNode_; }
+    Vector3 GetCameraPosition() const;
+    Quaternion GetCameraRotation() const;
     /// @}
 
 private:

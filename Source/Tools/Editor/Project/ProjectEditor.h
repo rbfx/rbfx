@@ -94,6 +94,7 @@ public:
 
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;
+    void SerializeInBlock(Archive& archive) override;
 
     /// Request graceful close of the project. Called multiple times during close sequence.
     CloseProjectResult CloseGracefully();
@@ -199,7 +200,7 @@ private:
     ImGuiID dockspaceId_{};
     WeakPtr<EditorTab> focusedTab_;
     WeakPtr<EditorTab> focusedRootTab_;
-    bool areGlobalHotkeysEnabled_{};
+    bool areGlobalHotkeysEnabled_{true};
     bool isHighlightEnabled_{};
     /// @}
 };
