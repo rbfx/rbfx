@@ -38,8 +38,11 @@ PackedNodeData::PackedNodeData(Node* node)
     , parentId_(node->GetParent() ? node->GetParent()->GetID() : 0)
     , name_(node->GetName())
 {
-    BinaryOutputArchive archive{node->GetContext(), data_};
-    SerializeValue(archive, "Node", *node);
+    ConsumeArchiveException([&]
+    {
+        BinaryOutputArchive archive{node->GetContext(), data_};
+        SerializeValue(archive, "Node", *node);
+    });
 }
 
 Node* PackedNodeData::SpawnExact(Scene* scene) const
@@ -55,9 +58,13 @@ Node* PackedNodeData::SpawnExact(Scene* scene) const
         return nullptr;
     }
 
-    MemoryBuffer view{data_.GetBuffer()};
-    BinaryInputArchive archive{scene->GetContext(), view};
-    SerializeValue(archive, "Node", *node);
+    ConsumeArchiveException([&]
+    {
+        MemoryBuffer view{data_.GetBuffer()};
+        BinaryInputArchive archive{scene->GetContext(), view};
+        SerializeValue(archive, "Node", *node);
+    });
+
     return node;
 }
 
@@ -65,9 +72,12 @@ Node* PackedNodeData::SpawnCopy(Node* parent) const
 {
     Node* node = parent->CreateChild(name_, id_ < FIRST_LOCAL_ID ? REPLICATED : LOCAL);
 
-    MemoryBuffer view{data_.GetBuffer()};
-    BinaryInputArchive archive{parent->GetContext(), view};
-    SerializeValue(archive, "Node", *node);
+    ConsumeArchiveException([&]
+    {
+        MemoryBuffer view{data_.GetBuffer()};
+        BinaryInputArchive archive{parent->GetContext(), view};
+        SerializeValue(archive, "Node", *node);
+    });
 
     return node;
 }
@@ -77,8 +87,11 @@ PackedComponentData::PackedComponentData(Component* component)
     , nodeId_(component->GetNode() ? component->GetNode()->GetID() : 0)
     , type_(component->GetType())
 {
-    BinaryOutputArchive archive{component->GetContext(), data_};
-    SerializeValue(archive, "Component", *component);
+    ConsumeArchiveException([&]
+    {
+        BinaryOutputArchive archive{component->GetContext(), data_};
+        SerializeValue(archive, "Component", *component);
+    });
 }
 
 Component* PackedComponentData::SpawnExact(Scene* scene) const
@@ -97,9 +110,13 @@ Component* PackedComponentData::SpawnExact(Scene* scene) const
         return nullptr;
     }
 
-    MemoryBuffer view{data_.GetBuffer()};
-    BinaryInputArchive archive{scene->GetContext(), view};
-    SerializeValue(archive, "Component", *component);
+    ConsumeArchiveException([&]
+    {
+        MemoryBuffer view{data_.GetBuffer()};
+        BinaryInputArchive archive{scene->GetContext(), view};
+        SerializeValue(archive, "Component", *component);
+    });
+
     return component;
 }
 
@@ -109,11 +126,37 @@ Component* PackedComponentData::SpawnCopy(Node* node) const
     if (component == nullptr)
         return nullptr;
 
-    MemoryBuffer view{data_.GetBuffer()};
-    BinaryInputArchive archive{node->GetContext(), view};
-    SerializeValue(archive, "Component", *component);
+    ConsumeArchiveException([&]
+    {
+        MemoryBuffer view{data_.GetBuffer()};
+        BinaryInputArchive archive{node->GetContext(), view};
+        SerializeValue(archive, "Component", *component);
+    });
 
     return component;
+}
+
+void PackedSceneData::ToScene(Scene* scene) const
+{
+    ConsumeArchiveException([&]
+    {
+        MemoryBuffer view{sceneData_.GetBuffer()};
+        BinaryInputArchive archive{scene->GetContext(), view};
+        SerializeValue(archive, "Scene", *scene);
+    });
+}
+
+PackedSceneData PackedSceneData::FromScene(Scene* scene)
+{
+    PackedSceneData result;
+
+    ConsumeArchiveException([&]
+    {
+        BinaryOutputArchive archive{scene->GetContext(), result.sceneData_};
+        SerializeValue(archive, "Scene", *scene);
+    });
+
+    return result;
 }
 
 }

@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/CommonEditorActions.h"
 #include "../Core/ResourceDragDropPayload.h"
 #include "../Project/ProjectEditor.h"
 #include "../Project/ResourceEditorTab.h"
@@ -75,7 +76,7 @@ struct SceneCameraControllerDesc
 };
 
 /// Single page of SceneViewTab.
-struct SceneViewPage
+struct SceneViewPage : public RefCounted
 {
     SharedPtr<Scene> scene_;
     SharedPtr<SceneRendererToTexture> renderer_;
@@ -84,6 +85,8 @@ struct SceneViewPage
 
     SceneSelection selection_;
 
+    ea::optional<PackedSceneData> simulationBase_;
+
     /// UI state
     /// @{
     Rect contentArea_;
@@ -91,6 +94,7 @@ struct SceneViewPage
     /// @}
 
     SceneCameraController* GetCurrentCameraController() const;
+    void RewindSimulation();
 };
 
 /// Interface of SceneViewTab addon.
@@ -142,6 +146,11 @@ public:
 
     /// Commands
     /// @{
+    void ResumeSimulation();
+    void PauseSimulation();
+    void ToggleSimulationPaused();
+    void RewindSimulation();
+
     void CutSelection();
     void CopySelection();
     void PasteNextToSelection();
@@ -160,6 +169,9 @@ public:
 
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
+
+    void PushAction(SharedPtr<EditorAction> action) override;
+    using ResourceEditorTab::PushAction;
     /// @}
 
     /// Return current state.
@@ -195,7 +207,7 @@ private:
 
     /// Manage pages
     /// @{
-    SceneViewPage CreatePage(Scene* scene, bool isActive) const;
+    SharedPtr<SceneViewPage> CreatePage(Scene* scene, bool isActive) const;
     void SavePageScene(SceneViewPage& page) const;
 
     void SavePageConfig(const SceneViewPage& page) const;
@@ -210,7 +222,7 @@ private:
     ea::vector_multiset<SharedPtr<SceneViewAddon>, ByName> addonsByName_;
 
     ea::vector<SceneCameraControllerDesc> cameraControllers_;
-    ea::unordered_map<ea::string, SceneViewPage> scenes_;
+    ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
     PackedSceneData clipboard_;
 
     /// UI state
@@ -218,6 +230,23 @@ private:
     unsigned isCameraControllerActive_{};
     /// @}
 
+};
+
+/// Action wrapper that rewinds scene simulation.
+class RewindSceneActionWrapper : public BaseEditorActionWrapper
+{
+public:
+    RewindSceneActionWrapper(SharedPtr<EditorAction> action, SceneViewPage* page);
+
+    /// Implement EditorAction.
+    /// @{
+    bool IsAlive() const override;
+    void Redo() const override;
+    void Undo() const override;
+    /// @}
+
+private:
+    WeakPtr<SceneViewPage> page_;
 };
 
 template <class T, class ... Args>

@@ -32,6 +32,18 @@
 namespace Urho3D
 {
 
+/// Empty action.
+class EmptyEditorAction : public EditorAction
+{
+public:
+    /// Implement EditorAction.
+    /// @{
+    bool RemoveOnUndo() const override { return true; }
+    void Redo() const override {}
+    void Undo() const override {}
+    /// @}
+};
+
 /// Create or remove node.
 class CreateRemoveNodeAction : public EditorAction
 {

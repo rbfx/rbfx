@@ -163,8 +163,8 @@ void ResourceEditorTab::SetActiveResource(const ea::string& activeResourceName)
     {
         if (resources_.contains(activeResourceName))
         {
+            OnActiveResourceChanged(activeResourceName);
             activeResourceName_ = activeResourceName;
-            OnActiveResourceChanged(activeResourceName_);
         }
         else
         {
@@ -404,7 +404,7 @@ void ResourceEditorTab::RenderContextMenuItems()
 
 ResourceActionWrapper::ResourceActionWrapper(SharedPtr<EditorAction> action,
     ResourceEditorTab* tab, const ea::string& resourceName, ea::optional<EditorActionFrame> oldFrame)
-    : action_(action)
+    : BaseEditorActionWrapper(action)
     , tab_(tab)
     , resourceName_(resourceName)
     , oldFrame_(oldFrame)
@@ -414,24 +414,25 @@ ResourceActionWrapper::ResourceActionWrapper(SharedPtr<EditorAction> action,
 
 bool ResourceActionWrapper::IsAlive() const
 {
-    return tab_ && tab_->IsResourceOpen(resourceName_) && action_->IsAlive();
+    return tab_ && tab_->IsResourceOpen(resourceName_) && BaseEditorActionWrapper::IsAlive();
 }
 
 void ResourceActionWrapper::OnPushed(EditorActionFrame frame)
 {
     newFrame_ = frame;
+    BaseEditorActionWrapper::OnPushed(frame);
 }
 
 void ResourceActionWrapper::Redo() const
 {
-    action_->Redo();
+    BaseEditorActionWrapper::Redo();
     FocusMe();
     UpdateCurrentAction(newFrame_);
 }
 
 void ResourceActionWrapper::Undo() const
 {
-    action_->Undo();
+    BaseEditorActionWrapper::Undo();
     FocusMe();
     UpdateCurrentAction(oldFrame_);
 }

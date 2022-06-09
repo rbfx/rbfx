@@ -84,7 +84,7 @@ public:
     void SetCurrentAction(const ea::string& resourceName, ea::optional<EditorActionFrame> frame);
 
     /// Push undo action from currently active resource.
-    void PushAction(SharedPtr<EditorAction> action);
+    virtual void PushAction(SharedPtr<EditorAction> action);
     template <class T, class ... Args> void PushAction(const Args& ... args);
 
     /// Return properties of the tab.
@@ -130,7 +130,7 @@ private:
 };
 
 /// Action wrapper that focuses resource on undo/redo.
-class ResourceActionWrapper : public EditorAction
+class ResourceActionWrapper : public BaseEditorActionWrapper
 {
 public:
     ResourceActionWrapper(SharedPtr<EditorAction> action,
@@ -149,7 +149,6 @@ private:
     void FocusMe() const;
     void UpdateCurrentAction(ea::optional<EditorActionFrame> frame) const;
 
-    SharedPtr<EditorAction> action_;
     WeakPtr<ResourceEditorTab> tab_;
     ea::string resourceName_;
 

@@ -85,6 +85,12 @@ class URHO3D_API PackedSceneData
 public:
     PackedSceneData() = default;
 
+    /// Load into scene.
+    void ToScene(Scene* scene) const;
+
+    /// Pack whole scene.
+    static PackedSceneData FromScene(Scene* scene);
+
     /// Pack nodes.
     template <class Iter>
     static PackedSceneData FromNodes(Iter begin, Iter end)
@@ -122,6 +128,7 @@ public:
 private:
     ea::vector<PackedNodeData> nodes_;
     ea::vector<PackedComponentData> components_;
+    VectorBuffer sceneData_;
 };
 
 }
