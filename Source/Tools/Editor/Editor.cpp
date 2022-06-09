@@ -93,6 +93,7 @@
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
 #include "Foundation/SceneViewTab/TransformManipulator.h"
 
+#include "Foundation/Glue/ProjectEditorGlue.h"
 #include "Foundation/Glue/SceneViewGlue.h"
 
 namespace Urho3D
@@ -133,6 +134,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.EditorCamera3D", &Foundation_EditorCamera3D);
     editorPluginManager_->AddPlugin("Foundation.EditorCamera2D", &Foundation_EditorCamera2D);
 
+    editorPluginManager_->AddPlugin("Foundation.Glue.ProjectEditor", &Foundation_ProjectEditorGlue);
     editorPluginManager_->AddPlugin("Foundation.Glue.SceneView", &Foundation_SceneViewGlue);
 }
 

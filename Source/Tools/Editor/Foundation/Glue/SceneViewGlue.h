@@ -31,31 +31,4 @@ namespace Urho3D
 
 void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab);
 
-/// Addon to play current Scene from scene tab.
-class ScenePlayerLauncher : public SceneViewAddon
-{
-    URHO3D_OBJECT(ScenePlayerLauncher, SceneViewAddon);
-
-public:
-    ScenePlayerLauncher(SceneViewTab* owner, GameViewTab* gameViewTab);
-    ~ScenePlayerLauncher() override;
-
-    /// Commands
-    /// @{
-    void PlayCurrentScene();
-    /// @}
-
-    /// Implement SceneViewAddon
-    /// @{
-    ea::string GetUniqueName() const override { return "PlayerLauncher"; }
-    bool RenderTabContextMenu() override;
-    /// @}
-
-private:
-    void FocusSceneViewTab();
-
-    WeakPtr<GameViewTab> gameViewTab_;
-    bool focusSceneOnStop_{};
-};
-
 }
