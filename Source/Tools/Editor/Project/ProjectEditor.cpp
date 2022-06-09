@@ -431,6 +431,7 @@ void ProjectEditor::Render()
     }
 
     hotkeyManager_->Update();
+    hotkeyManager_->InvokeFor(hotkeyManager_);
     if (areGlobalHotkeysEnabled_)
         hotkeyManager_->InvokeFor(this);
 
@@ -475,6 +476,7 @@ void ProjectEditor::RenderProjectMenu()
 {
     if (ui::MenuItem("Save Project", hotkeyManager_->GetHotkeyLabel(Hotkey_SaveProject).c_str()))
         Save();
+    OnRenderProjectMenu(this);
 }
 
 void ProjectEditor::RenderMainMenu()

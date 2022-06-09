@@ -45,15 +45,14 @@ public:
     explicit GameViewTab(Context* context);
     ~GameViewTab() override;
 
-    void PlayScene(const ea::string& sceneName);
+    void Play();
     bool IsPlaying() const { return !!state_; }
     bool IsInputGrabbed() const;
 
     /// Commands
     /// @{
     void Stop();
-    void PlayLastScene();
-    void ToggleScenePlayed();
+    void TogglePlayed();
     void ReleaseInput();
     /// @}
 

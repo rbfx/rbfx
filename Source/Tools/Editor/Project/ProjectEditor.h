@@ -90,6 +90,7 @@ class ProjectEditor : public Object
 
 public:
     Signal<void()> OnInitialized;
+    Signal<void()> OnRenderProjectMenu;
 
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;

@@ -40,7 +40,6 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_TogglePlay, "GameViewTab.TogglePlay", QUAL_CTRL, KEY_P);
 URHO3D_EDITOR_HOTKEY(Hotkey_ReleaseInput, "GameViewTab.ReleaseInput", QUAL_SHIFT, KEY_ESCAPE);
 
 }
@@ -142,7 +141,6 @@ GameViewTab::GameViewTab(Context* context)
 {
     auto project = GetProject();
     HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-    hotkeyManager->BindHotkey(this, Hotkey_TogglePlay, &GameViewTab::ToggleScenePlayed);
     hotkeyManager->BindHotkey(this, Hotkey_ReleaseInput, &GameViewTab::ReleaseInput);
 }
 
@@ -155,9 +153,8 @@ bool GameViewTab::IsInputGrabbed() const
     return state_ && state_->IsInputGrabbed();
 }
 
-void GameViewTab::PlayScene(const ea::string& sceneName)
+void GameViewTab::Play()
 {
-    lastPlayedScene_ = sceneName;
     if (state_)
         Stop();
 
@@ -174,17 +171,12 @@ void GameViewTab::Stop()
     OnSimulationStopped(this);
 }
 
-void GameViewTab::PlayLastScene()
-{
-    PlayScene(lastPlayedScene_);
-}
-
-void GameViewTab::ToggleScenePlayed()
+void GameViewTab::TogglePlayed()
 {
     if (IsPlaying())
         Stop();
     else
-        PlayLastScene();
+        Play();
 }
 
 void GameViewTab::ReleaseInput()
@@ -218,14 +210,6 @@ void GameViewTab::RenderContent()
 
 void GameViewTab::RenderContextMenuItems()
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
-    const char* togglePlayTitle = IsPlaying() ? ICON_FA_STOP " Stop" : ICON_FA_PLAY " Play";
-    if (ui::MenuItem(togglePlayTitle, hotkeyManager->GetHotkeyLabel(Hotkey_TogglePlay).c_str()))
-        ToggleScenePlayed();
-
-    contextMenuSeparator_.Add();
 }
 
 }
