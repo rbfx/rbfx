@@ -24,6 +24,7 @@
 #include "../Input/Input.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Renderer.h"
+#include "../Plugins/PluginManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 #include "../Utility/SceneViewerApplication.h"
@@ -52,18 +53,25 @@ void SceneViewerApplication::Start()
 {
     auto cache = GetSubsystem<ResourceCache>();
     auto renderer = GetSubsystem<Renderer>();
+    auto pluginManager = GetSubsystem<PluginManager>();
 
     scene_ = MakeShared<Scene>(context_);
-    // TODO(editor): Fix me
-    scene_->LoadFile("Scenes/RenderingShowcase_2_BakedDirectIndirect.xml");
+    if (const auto sceneName = pluginManager->GetParameter(Plugin_SceneName); !sceneName.IsEmpty())
+        scene_->LoadFile(sceneName.GetString());
 
     cameraNode_ = scene_->CreateChild("Viewer Camera");
     auto camera = cameraNode_->CreateComponent<Camera>();
     auto controller = cameraNode_->CreateComponent<FreeFlyController>();
 
-    // TODO(editor): Fix me
-    cameraNode_->SetPosition({0.0f, 5.0f, -10.0f});
-    cameraNode_->LookAt({0.0f, 0.0f, 0.0f});
+    if (const auto position = pluginManager->GetParameter(Plugin_ScenePosition); !position.IsEmpty())
+        cameraNode_->SetWorldPosition(position.GetVector3());
+    else
+        cameraNode_->SetWorldPosition({0.0f, 5.0f, -10.0f});
+
+    if (const auto rotation = pluginManager->GetParameter(Plugin_SceneRotation); !rotation.IsEmpty())
+        cameraNode_->SetWorldRotation(rotation.GetQuaternion());
+    else
+        cameraNode_->LookAt({0.0f, 0.0f, 0.0f});
 
     viewport_ = MakeShared<Viewport>(context_, scene_, camera);
     renderer->SetNumViewports(1);

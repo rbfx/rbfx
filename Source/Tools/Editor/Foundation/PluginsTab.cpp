@@ -23,10 +23,20 @@
 #include "../Core/IniHelpers.h"
 #include "../Foundation/PluginsTab.h"
 
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
+
 #include <EASTL/sort.h>
 
 namespace Urho3D
 {
+
+namespace
+{
+
+URHO3D_EDITOR_HOTKEY(Hotkey_Apply, "PluginsTab.Apply", QUAL_CTRL, KEY_RETURN);
+URHO3D_EDITOR_HOTKEY(Hotkey_Discard, "PluginsTab.Discard", QUAL_NONE, KEY_ESCAPE);
+
+}
 
 void Foundation_PluginsTab(Context* context, ProjectEditor* projectEditor)
 {
@@ -35,44 +45,117 @@ void Foundation_PluginsTab(Context* context, ProjectEditor* projectEditor)
 
 PluginsTab::PluginsTab(Context* context)
     : EditorTab(context, "Plugins", "b1c35ca0-e90f-4f32-9311-d7d349c3ac98",
-        EditorTabFlag::None, EditorTabPlacement::DockCenter)
+        EditorTabFlag::None, EditorTabPlacement::DockRight)
 {
+    auto project = GetProject();
+    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+
+    hotkeyManager->BindHotkey(this, Hotkey_Apply, &PluginsTab::Apply);
+    hotkeyManager->BindHotkey(this, Hotkey_Discard, &PluginsTab::Discard);
+}
+
+void PluginsTab::Apply()
+{
+    auto pluginManager = GetSubsystem<PluginManager>();
+    if (hasChanges_)
+        pluginManager->SetPluginsLoaded(loadedPlugins_);
+}
+
+void PluginsTab::Discard()
+{
+    if (hasChanges_)
+        revision_ = 0;
 }
 
 void PluginsTab::RenderContent()
 {
-    UpdateList();
-
-    ui::PushID("##Plugins");
     auto pluginManager = GetSubsystem<PluginManager>();
 
-    bool pluginsChanged = false;
-    StringVector enabledPlugins;
-    for (const ea::string& name : availablePlugins_)
+    UpdateAvailablePlugins();
+    UpdateLoadedPlugins();
+
+    ui::PushID("##LoadedPlugins");
+
+    if (ui::SmallButton(ICON_FA_SQUARE_MINUS))
     {
-        bool isLoaded = pluginManager->IsPluginLoaded(name);
-        if (ui::Checkbox(name.c_str(), &isLoaded))
-            pluginsChanged = true;
-        if (isLoaded)
-            enabledPlugins.push_back(name);
+        loadedPlugins_.clear();
+        hasChanges_ = true;
     }
-    if (pluginsChanged)
-        pluginManager->SetPluginsLoaded(enabledPlugins);
+    ui::SameLine();
+    ui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", "[Unload All]");
+
+    ea::unordered_set<ea::string> pluginsToUnload;
+    for (const ea::string& plugin : loadedPlugins_)
+    {
+        ui::PushID(plugin.c_str());
+        if (ui::SmallButton(ICON_FA_SQUARE_MINUS))
+        {
+            pluginsToUnload.insert(plugin);
+            hasChanges_ = true;
+        }
+        ui::SameLine();
+        ui::Text("%s", plugin.c_str());
+        ui::PopID();
+    }
+    ea::erase_if(loadedPlugins_, [&](const ea::string& plugin) { return pluginsToUnload.contains(plugin); });
 
     ui::PopID();
 
     ui::Separator();
+
+    ui::PushID("##UnloadedPlugins");
+    if (ui::SmallButton(ICON_FA_SQUARE_PLUS))
+    {
+        auto pluginsToLoad = availablePlugins_;
+        for (const ea::string& alreadyLoadedPlugin : loadedPlugins_)
+            pluginsToLoad.erase(alreadyLoadedPlugin);
+        loadedPlugins_.insert(loadedPlugins_.end(), pluginsToLoad.begin(), pluginsToLoad.end());
+        hasChanges_ = true;
+    }
+    ui::SameLine();
+    ui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", "[Load All]");
+
+    for (const ea::string& plugin : availablePlugins_)
+    {
+        // TODO: Optimize?
+        if (loadedPlugins_.contains(plugin))
+            continue;
+
+        ui::PushID(plugin.c_str());
+        if (ui::SmallButton(ICON_FA_SQUARE_PLUS))
+        {
+            loadedPlugins_.push_back(plugin);
+            hasChanges_ = true;
+        }
+        ui::SameLine();
+        ui::Text("%s", plugin.c_str());
+        ui::PopID();
+    }
+
+    ui::PopID();
+
+    ui::Separator();
+
+    ui::BeginDisabled(!hasChanges_);
+    if (ui::Button("Apply"))
+        Apply();
+    ui::SameLine();
+    if (ui::Button("Discard"))
+        Discard();
+    ui::EndDisabled();
+
+    ui::SameLine();
     if (ui::Button("Refresh List"))
         refreshPlugins_ = true;
     ui::SameLine();
     if (ui::Button("Reload Plugins"))
         pluginManager->Reload();
-
-    ui::Text("TODO: Plugins can be reordered, but UI doesn't support it");
 }
 
-void PluginsTab::UpdateList()
+void PluginsTab::UpdateAvailablePlugins()
 {
+    auto pluginManager = GetSubsystem<PluginManager>();
+
     if (refreshTimer_.GetMSec(false) >= refreshInterval_)
     {
         refreshTimer_.Reset();
@@ -84,12 +167,23 @@ void PluginsTab::UpdateList()
         availablePlugins_.clear();
         refreshPlugins_ = false;
 
-        auto pluginManager = GetSubsystem<PluginManager>();
-        availablePlugins_ = pluginManager->ScanAvailableModules();
-        availablePlugins_.append(pluginManager->EnumerateLoadedModules());
-        ea::sort(availablePlugins_.begin(), availablePlugins_.end());
-        availablePlugins_.erase(ea::unique(availablePlugins_.begin(), availablePlugins_.end()), availablePlugins_.end());
+        const auto availableModules = pluginManager->ScanAvailableModules();
+        const auto loadedModules = pluginManager->EnumerateLoadedModules();
+        availablePlugins_.insert(availableModules.begin(), availableModules.end());
+        availablePlugins_.insert(loadedModules.begin(), loadedModules.end());
     }
+}
+
+void PluginsTab::UpdateLoadedPlugins()
+{
+    auto pluginManager = GetSubsystem<PluginManager>();
+
+    if (revision_ == pluginManager->GetRevision())
+        return;
+
+    revision_ = pluginManager->GetRevision();
+    hasChanges_ = false;
+    loadedPlugins_ = pluginManager->GetLoadedPlugins();
 }
 
 }

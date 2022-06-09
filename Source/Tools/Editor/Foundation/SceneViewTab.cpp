@@ -30,6 +30,7 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
@@ -182,6 +183,25 @@ void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
 void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
 {
     cameraControllers_.push_back(desc);
+}
+
+void SceneViewTab::SetupPluginContext()
+{
+    SceneViewPage* activePage = GetActivePage();
+
+    auto pluginManager = GetSubsystem<PluginManager>();
+    if (activePage)
+    {
+        pluginManager->SetParameter(Plugin_SceneName, GetActiveResourceName());
+        pluginManager->SetParameter(Plugin_ScenePosition, activePage->renderer_->GetCameraPosition());
+        pluginManager->SetParameter(Plugin_SceneRotation, activePage->renderer_->GetCameraRotation());
+    }
+    else
+    {
+        pluginManager->SetParameter(Plugin_SceneName, Variant::EMPTY);
+        pluginManager->SetParameter(Plugin_ScenePosition, Variant::EMPTY);
+        pluginManager->SetParameter(Plugin_SceneRotation, Variant::EMPTY);
+    }
 }
 
 void SceneViewTab::ResumeSimulation()

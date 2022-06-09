@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/ConstString.h"
 #include "../IO/FileWatcher.h"
 #include "../IO/VectorBuffer.h"
 #include "../Plugins/DynamicModule.h"
@@ -31,6 +32,10 @@
 
 namespace Urho3D
 {
+
+URHO3D_GLOBAL_CONSTANT(ConstString Plugin_SceneName{"SceneName"});
+URHO3D_GLOBAL_CONSTANT(ConstString Plugin_ScenePosition{"ScenePosition"});
+URHO3D_GLOBAL_CONSTANT(ConstString Plugin_SceneRotation{"SceneRotation"});
 
 class PluginManager;
 
@@ -87,6 +92,11 @@ public:
 
     explicit PluginManager(Context* context);
     ~PluginManager() override;
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Set global parameter that can be used as hint during plugin execution.
+    void SetParameter(const ea::string& name, const Variant& value);
+    const Variant& GetParameter(const ea::string& name) const;
 
     /// Reload all dynamic modules.
     void Reload();
@@ -102,6 +112,10 @@ public:
     void SetPluginsLoaded(const StringVector& plugins);
     /// Return whether the plugin is loaded.
     bool IsPluginLoaded(const ea::string& name);
+    /// Return loaded plugins.
+    const StringVector& GetLoadedPlugins() const { return loadedPlugins_; }
+    /// Return revision of loaded plugins.
+    unsigned GetRevision() const { return revision_; }
 
     /// Manually add new plugin with dynamic reloading.
     bool AddDynamicPlugin(Plugin* plugin);
@@ -147,8 +161,11 @@ private:
     unsigned reloadTimeoutMs_{10000};
     /// @}
 
+    StringVariantMap parameters_;
+
     bool stackReloadPending_{};
     StringVector loadedPlugins_;
+    unsigned revision_{};
     SharedPtr<PluginStack> pluginStack_;
 
     SerializedPlugins restoreBuffer_;

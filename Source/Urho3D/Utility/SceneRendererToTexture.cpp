@@ -110,4 +110,14 @@ void SceneRendererToTexture::SetupViewport(RenderSurface* renderSurface)
     renderSurface->SetViewport(0, viewport_);
 }
 
+Vector3 SceneRendererToTexture::GetCameraPosition() const
+{
+    return cameraNode_->GetWorldPosition();
+}
+
+Quaternion SceneRendererToTexture::GetCameraRotation() const
+{
+    return cameraNode_->GetWorldRotation();
+}
+
 }

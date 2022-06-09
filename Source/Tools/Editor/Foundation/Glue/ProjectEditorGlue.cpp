@@ -49,25 +49,26 @@ public:
         if (!gameViewTab_)
             return;
 
-        gameViewTab_->TogglePlayed();
-        if (gameViewTab_->IsPlaying())
+        if (!gameViewTab_->IsPlaying())
         {
-            previouslyFocusedTab_ = project_->GetRootFocusedTab();
+            tabToFocusAfter_ = sceneViewTab_;
+            sceneViewTab_->SetupPluginContext();
             project_->Save();
             gameViewTab_->Focus();
         }
-        else if (previouslyFocusedTab_)
+        else if (tabToFocusAfter_)
         {
-            previouslyFocusedTab_->Focus();
-            previouslyFocusedTab_ = nullptr;
+            tabToFocusAfter_->Focus();
+            tabToFocusAfter_ = nullptr;
         }
+        gameViewTab_->TogglePlayed();
     }
 
 private:
     const WeakPtr<ProjectEditor> project_;
     const WeakPtr<GameViewTab> gameViewTab_;
     const WeakPtr<SceneViewTab> sceneViewTab_;
-    WeakPtr<EditorTab> previouslyFocusedTab_;
+    WeakPtr<EditorTab> tabToFocusAfter_;
 };
 
 }

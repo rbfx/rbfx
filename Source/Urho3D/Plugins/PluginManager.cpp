@@ -24,6 +24,7 @@
 #include "../Core/ProcessUtils.h"
 #include "../Engine/Engine.h"
 #include "../Engine/EngineEvents.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/BinaryArchive.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
@@ -226,6 +227,27 @@ PluginManager::~PluginManager()
     Update();
 }
 
+void PluginManager::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "LoadedPlugins", loadedPlugins_);
+    if (archive.IsInput())
+        SetPluginsLoaded(loadedPlugins_);
+}
+
+void PluginManager::SetParameter(const ea::string& name, const Variant& value)
+{
+    if (value.IsEmpty())
+        parameters_.erase(name);
+    else
+        parameters_[name] = value;
+}
+
+const Variant& PluginManager::GetParameter(const ea::string& name) const
+{
+    const auto iter = parameters_.find(name);
+    return iter != parameters_.end() ? iter->second : Variant::EMPTY;
+}
+
 void PluginManager::Reload()
 {
     forceReload_ = true;
@@ -259,6 +281,7 @@ void PluginManager::SetPluginsLoaded(const StringVector& plugins)
 {
     loadedPlugins_ = plugins;
     stackReloadPending_ = true;
+    revision_ = ea::max(1u, revision_ + 1);
 }
 
 bool PluginManager::IsPluginLoaded(const ea::string& name)
