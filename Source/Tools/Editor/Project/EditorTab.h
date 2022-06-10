@@ -112,6 +112,8 @@ public:
 
     /// Render main menu of the tab.
     virtual void RenderMenu() {}
+    /// Render toolbar of the tab.
+    virtual void RenderToolbar() {}
     /// Called when all tabs are created and multi-tab plugins can be safely applied.
     virtual void ApplyPlugins();
     /// Called when project is fully loaded.
