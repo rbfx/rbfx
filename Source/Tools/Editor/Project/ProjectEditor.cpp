@@ -483,9 +483,16 @@ void ProjectEditor::Render()
         ui::PopStyleColor(5);
 }
 
+void ProjectEditor::RenderToolbar()
+{
+    if (ui::ToolbarButton(ICON_FA_FLOPPY_DISK, "Save Project"))
+        Save();
+    OnRenderProjectToolbar(this);
+}
+
 void ProjectEditor::RenderProjectMenu()
 {
-    if (ui::MenuItem("Save Project", hotkeyManager_->GetHotkeyLabel(Hotkey_SaveProject).c_str()))
+    if (ui::MenuItem(ICON_FA_FLOPPY_DISK " Save Project", hotkeyManager_->GetHotkeyLabel(Hotkey_SaveProject).c_str()))
         Save();
     OnRenderProjectMenu(this);
 }

@@ -375,11 +375,21 @@ void Editor::Stop()
 
 void Editor::OnUpdate(VariantMap& args)
 {
+    ImGuiContext& g = *GImGui;
+
+    const bool hasToolbar = projectEditor_ != nullptr;
+    const float toolbarButtonHeight = ui::GetSmallButtonSize();
+    const float toolbarWindowPadding = ea::max(3.0f, (g.Style.WindowMinSize.y - toolbarButtonHeight) / 2);
+    const float toolbarHeight = hasToolbar
+        ? ui::GetSmallButtonSize() + 2 * (toolbarWindowPadding + 0)//g.Style.FramePadding.y)
+        : 0.0f;
+    const float toolbarEffectiveHeight = toolbarHeight + 1;
+
     ImGuiWindowFlags flags = ImGuiWindowFlags_MenuBar;
     flags |= ImGuiWindowFlags_NoDocking;
     ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbarEffectiveHeight));
+    ImGui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
     ImGui::SetNextWindowViewport(viewport->ID);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
@@ -504,8 +514,31 @@ void Editor::OnUpdate(VariantMap& args)
         ui::PopStyleVar();
     }
 
+    const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight();
+
     ui::End();
     ImGui::PopStyleVar();
+
+    // TODO(editor): Refactor this function
+    if (hasToolbar)
+    {
+        ui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + menuBarHeight));
+        ui::SetNextWindowSize(ImVec2(viewport->Size.x, toolbarHeight));
+        ui::SetNextWindowViewport(viewport->ID);
+
+        const ImGuiWindowFlags toolbarWindowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar
+            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar
+            | ImGuiWindowFlags_NoSavedSettings;
+        ui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+        ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(toolbarWindowPadding, toolbarWindowPadding));
+        ui::Begin("Toolbar", nullptr, toolbarWindowFlags);
+
+        if (projectEditor_)
+            projectEditor_->RenderToolbar();
+
+        ui::End();
+        ui::PopStyleVar(2);
+    }
 
     // Dialog for a warning when application is being closed with unsaved resources.
     if (exiting_)

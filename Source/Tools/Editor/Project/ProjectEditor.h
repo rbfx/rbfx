@@ -91,6 +91,7 @@ class ProjectEditor : public Object
 public:
     Signal<void()> OnInitialized;
     Signal<void()> OnRenderProjectMenu;
+    Signal<void()> OnRenderProjectToolbar;
 
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;
@@ -103,6 +104,8 @@ public:
 
     /// Update and render main window with tabs.
     void Render();
+    /// Update and render toolbar.
+    void RenderToolbar();
     /// Update and render project menu.
     void RenderProjectMenu();
     /// Update and render the rest of menu bar.
