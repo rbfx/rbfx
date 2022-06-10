@@ -245,7 +245,11 @@ void SceneViewTab::RewindSimulation()
     if (!activePage)
         return;
 
-    activePage->RewindSimulation();
+    // This is a little hack used to rewind consistently both via menu and via Undo action
+    auto project = GetProject();
+    UndoManager* undoManager = project->GetUndoManager();
+    undoManager->Undo();
+    //activePage->RewindSimulation();
 }
 
 void SceneViewTab::CutSelection()

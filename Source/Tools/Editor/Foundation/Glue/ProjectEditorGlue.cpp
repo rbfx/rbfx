@@ -88,6 +88,15 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
         if (ui::MenuItem(title, hotkeyManager->GetHotkeyLabel(Hotkey_Play).c_str()))
             state->TogglePlayed();
     });
+
+    project->OnRenderProjectToolbar.Subscribe(project, [state](ProjectEditor* project)
+    {
+        const bool isPlaying = state->IsPlaying();
+        const char* title = isPlaying ? ICON_FA_STOP : ICON_FA_EJECT;
+        const char* tooltip = isPlaying ? "Stop" : "Launch";
+        if (ui::ToolbarButton(title, tooltip))
+            state->TogglePlayed();
+    });
 }
 
 }
