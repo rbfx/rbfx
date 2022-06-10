@@ -488,6 +488,11 @@ void ProjectEditor::RenderToolbar()
     if (ui::ToolbarButton(ICON_FA_FLOPPY_DISK, "Save Project"))
         Save();
     OnRenderProjectToolbar(this);
+
+    ui::ToolbarSeparator();
+
+    if (focusedRootTab_)
+        focusedRootTab_->RenderToolbar();
 }
 
 void ProjectEditor::RenderProjectMenu()
@@ -499,8 +504,8 @@ void ProjectEditor::RenderProjectMenu()
 
 void ProjectEditor::RenderMainMenu()
 {
-    if (focusedTab_)
-        focusedTab_->RenderMenu();
+    if (focusedRootTab_)
+        focusedRootTab_->RenderMenu();
 
     if (ui::BeginMenu("Window"))
     {

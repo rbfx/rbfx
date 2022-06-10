@@ -364,6 +364,32 @@ void SceneViewTab::RenderMenu()
     }
 }
 
+void SceneViewTab::RenderToolbar()
+{
+    SceneViewPage* activePage = GetActivePage();
+
+    {
+        const bool canRewind = activePage && activePage->simulationBase_;
+        ui::BeginDisabled(!canRewind);
+        if (ui::ToolbarButton(ICON_FA_BACKWARD_FAST, "Rewind Simulation"))
+            RewindSimulation();
+        ui::EndDisabled();
+    }
+
+    {
+        const bool isStarted = activePage && activePage->simulationBase_;
+        const bool isUpdating = activePage && activePage->scene_->IsUpdateEnabled();
+        const char* label = isUpdating ? ICON_FA_PAUSE : ICON_FA_PLAY;
+        const char* tooltip = isUpdating ? "Pause Simulation" : (isStarted ? "Resume Simulation" : "Start Simulation");
+        ui::BeginDisabled(!activePage);
+        if (ui::ToolbarButton(label, tooltip))
+            ToggleSimulationPaused();
+        ui::EndDisabled();
+    }
+
+    ui::ToolbarSeparator();
+}
+
 bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)
 {
     return request.xmlFile_ && request.xmlFile_->GetRoot("scene");

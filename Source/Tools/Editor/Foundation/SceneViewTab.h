@@ -163,6 +163,7 @@ public:
     /// ResourceEditorTab implementation
     /// @{
     void RenderMenu() override;
+    void RenderToolbar() override;
     bool IsUndoSupported() { return true; }
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
 

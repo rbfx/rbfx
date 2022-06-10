@@ -645,6 +645,12 @@ bool ui::ToolbarButton(const char* label, const char* tooltip, bool active)
     return result;
 }
 
+void ui::ToolbarSeparator()
+{
+    ImGuiContext& g = *GImGui;
+    ui::SetCursorPosX(ui::GetCursorPosX() + g.Style.FramePadding.x);
+}
+
 bool ui::IsKeyDown(Urho3D::Key key)
 {
     return IsKeyDown(SDL_GetScancodeFromKey(key));
