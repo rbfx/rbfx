@@ -79,8 +79,6 @@
 
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/GameViewTab.h"
-#include "Foundation/EditorCamera2D.h"
-#include "Foundation/EditorCamera3D.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
 #include "Foundation/PluginsTab.h"
@@ -88,6 +86,7 @@
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SettingsTab.h"
 
+#include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneSelector.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
@@ -127,12 +126,11 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
     editorPluginManager_->AddPlugin("Foundation.Plugins", &Foundation_PluginsTab);
 
+    editorPluginManager_->AddPlugin("Foundation.SceneView.EditorCamera", &Foundation_EditorCamera);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Selector", &Foundation_SceneSelector);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Hierarchy", &Foundation_SceneHierarchy);
     editorPluginManager_->AddPlugin("Foundation.SceneView.SelectionRenderer", &Foundation_SceneSelectionRenderer);
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
-    editorPluginManager_->AddPlugin("Foundation.EditorCamera3D", &Foundation_EditorCamera3D);
-    editorPluginManager_->AddPlugin("Foundation.EditorCamera2D", &Foundation_EditorCamera2D);
 
     editorPluginManager_->AddPlugin("Foundation.Glue.ProjectEditor", &Foundation_ProjectEditorGlue);
     editorPluginManager_->AddPlugin("Foundation.Glue.SceneView", &Foundation_SceneViewGlue);

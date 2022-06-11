@@ -22,23 +22,23 @@
 
 #pragma once
 
-#include "../Core/SettingsManager.h"
-#include "../Foundation/SceneViewTab.h"
+#include "../../Core/SettingsManager.h"
+#include "../../Foundation/SceneViewTab.h"
 
 namespace Urho3D
 {
 
-void Foundation_EditorCamera3D(Context* context, SceneViewTab* sceneViewTab);
+void Foundation_EditorCamera(Context* context, SceneViewTab* sceneViewTab);
 
-/// Basic 3D Camera controller.
-class EditorCamera3D : public SceneCameraController
+/// Camera controller used by Scene View.
+class EditorCamera : public SceneViewAddon
 {
-    URHO3D_OBJECT(EditorCamera3D, SceneCameraController);
+    URHO3D_OBJECT(EditorCamera, SceneViewAddon);
 
 public:
     struct Settings
     {
-        ea::string GetUniqueName() { return "SceneView.Camera3D"; }
+        ea::string GetUniqueName() { return "SceneView.Camera"; }
 
         void SerializeInBlock(Archive& archive);
         void RenderSettings();
@@ -51,28 +51,42 @@ public:
     };
     using SettingsPage = SimpleSettingsPage<Settings>;
 
-    EditorCamera3D(Scene* scene, Camera* camera, SettingsPage* settings);
+    struct PageState
+    {
+        Vector3 lastCameraPosition_;
+        Quaternion lastCameraRotation_;
+        float yaw_{};
+        float pitch_{};
+        float currentMoveSpeed_{};
 
-    /// Reset position and orientation.
-    void Reset(const Vector3& position, const Vector3& lookAt);
+        void LookAt(const Vector3& position, const Vector3& target)
+        {
+            lastCameraPosition_ = position;
+            lastCameraRotation_ = Quaternion{Vector3::FORWARD, target - position};
+            yaw_ = lastCameraRotation_.YawAngle();
+            pitch_ = lastCameraRotation_.PitchAngle();
+        }
+    };
 
-    /// Implement SceneCameraController.
+    EditorCamera(SceneViewTab* owner, SettingsPage* settings);
+
+    /// Implement SceneViewAddon.
     /// @{
-    void SerializeInBlock(Archive& archive) override {}
-
-    ea::string GetTitle() const override { return "3D Camera"; }
-    bool IsActive(bool wasActive) override;
-    void Update(bool isActive) override;
+    ea::string GetUniqueName() const override { return "Camera"; }
+    int GetInputPriority() const override { return M_MAX_INT; }
+    void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     /// @}
 
 private:
-    const WeakPtr<SettingsPage> settings_;
+    PageState& GetOrInitializeState(SceneViewPage& scenePage) const;
+    void UpdateState(SceneViewPage& scenePage, PageState& state);
 
-    Vector3 lastCameraPosition_;
-    Quaternion lastCameraRotation_;
-    float yaw_{};
-    float pitch_{};
-    float currentMoveSpeed_{};
+    Vector2 GetMouseMove() const;
+    Vector3 GetMoveDirection() const;
+    bool GetMoveAccelerated() const;
+
+    const WeakPtr<SettingsPage> settings_;
+    bool isActive_{};
 };
 
 }

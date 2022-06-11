@@ -57,10 +57,10 @@ void SerializeValue(Archive& archive, const char* name, SceneViewPage& page)
 {
     auto block = archive.OpenUnorderedBlock(name);
 
-    SerializeOptionalValue(archive, "CurrentCameraController", page.currentCameraController_, AlwaysSerialize{});
+    /*SerializeOptionalValue(archive, "CurrentCameraController", page.currentCameraController_, AlwaysSerialize{});
 
     for (SceneCameraController* controller : page.cameraControllers_)
-        SerializeOptionalValue(archive, controller->GetTypeName().c_str(), *controller, AlwaysSerialize{});
+        SerializeOptionalValue(archive, controller->GetTypeName().c_str(), *controller, AlwaysSerialize{});*/
 }
 
 void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor)
@@ -68,53 +68,27 @@ void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor)
     projectEditor->AddTab(MakeShared<SceneViewTab>(context));
 }
 
-SceneCameraController::SceneCameraController(Scene* scene, Camera* camera)
+SceneViewPage::SceneViewPage(Scene* scene)
     : Object(scene->GetContext())
     , scene_(scene)
-    , camera_(camera)
+    , renderer_(MakeShared<SceneRendererToTexture>(scene_))
+    , cfgFileName_(scene_->GetFileName() + ".cfg")
 {
 }
 
-SceneCameraController::~SceneCameraController()
+SceneViewPage::~SceneViewPage()
 {
 }
 
-Vector2 SceneCameraController::GetMouseMove() const
+ea::any& SceneViewPage::GetAddonData(const SceneViewAddon& addon)
 {
-    auto systemUI = GetSubsystem<SystemUI>();
-    return systemUI->GetRelativeMouseMove();
-}
-
-Vector3 SceneCameraController::GetMoveDirection() const
-{
-    static const ea::pair<Scancode, Vector3> keyMapping[]{
-        {SCANCODE_W, Vector3::FORWARD},
-        {SCANCODE_S, Vector3::BACK},
-        {SCANCODE_A, Vector3::LEFT},
-        {SCANCODE_D, Vector3::RIGHT},
-        {SCANCODE_SPACE, Vector3::UP},
-        {SCANCODE_LCTRL, Vector3::DOWN},
-    };
-
-    Vector3 moveDirection;
-    for (const auto& [scancode, direction] : keyMapping)
+    auto& [addonPtr, addonData] = addonData_[addon.GetUniqueName()];
+    if (addonPtr != &addon)
     {
-        if (ui::IsKeyDown(Input::GetKeyFromScancode(scancode)))
-            moveDirection += direction;
+        addonPtr = &addon;
+        addonData = ea::any{};
     }
-    return moveDirection.Normalized();
-}
-
-bool SceneCameraController::GetMoveAccelerated() const
-{
-    return ui::IsKeyDown(Input::GetKeyFromScancode(SCANCODE_LSHIFT));
-}
-
-SceneCameraController* SceneViewPage::GetCurrentCameraController() const
-{
-    return currentCameraController_ < cameraControllers_.size()
-        ? cameraControllers_[currentCameraController_]
-        : nullptr;
+    return addonData;
 }
 
 void SceneViewPage::RewindSimulation()
@@ -178,11 +152,6 @@ void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
     addons_.push_back(addon);
     addonsByInputPriority_.insert(addon);
     addonsByName_.insert(addon);
-}
-
-void SceneViewTab::RegisterCameraController(const SceneCameraControllerDesc& desc)
-{
-    cameraControllers_.push_back(desc);
 }
 
 void SceneViewTab::SetupPluginContext()
@@ -445,15 +414,6 @@ void SceneViewTab::RenderContextMenuItems()
             : ICON_FA_PAUSE " Pause Simulation";
         if (ui::MenuItem(pauseTitle, hotkeyManager->GetHotkeyLabel(Hotkey_TogglePaused).c_str()))
             ToggleSimulationPaused();
-
-        unsigned index = 0;
-        for (const SceneCameraController* controller : activePage->cameraControllers_)
-        {
-            const bool selected = index == activePage->currentCameraController_;
-            if (ui::MenuItem(controller->GetTitle().c_str(), nullptr, selected))
-                activePage->currentCameraController_ = index;
-            ++index;
-        }
     }
 
     contextMenuSeparator_.Add();
@@ -551,34 +511,12 @@ void SceneViewTab::RenderContent()
     const auto contentAreaMax = static_cast<Vector2>(ui::GetItemRectMax());
     activePage->contentArea_ = Rect{contentAreaMin, contentAreaMax};
 
-    UpdateCameraController(*activePage);
     UpdateAddons(*activePage);
-}
-
-void SceneViewTab::UpdateCameraController(SceneViewPage& page)
-{
-    auto systemUI = GetSubsystem<SystemUI>();
-
-    const auto cameraController = page.GetCurrentCameraController();
-    const bool wasActive = isCameraControllerActive_;
-    const bool isActive = cameraController && cameraController->IsActive(wasActive);
-    if (isActive)
-    {
-        if (!wasActive)
-            systemUI->SetRelativeMouseMove(true, true);
-    }
-    else if (wasActive)
-    {
-        systemUI->SetRelativeMouseMove(false, true);
-    }
-    cameraController->Update(isActive);
-
-    isCameraControllerActive_ = isActive;
 }
 
 void SceneViewTab::UpdateAddons(SceneViewPage& page)
 {
-    bool mouseConsumed = isCameraControllerActive_;
+    bool mouseConsumed = false;
     for (SceneViewAddon* addon : addonsByInputPriority_)
         addon->ProcessInput(page, mouseConsumed);
 
@@ -604,16 +542,9 @@ SceneViewPage* SceneViewTab::GetActivePage()
 
 SharedPtr<SceneViewPage> SceneViewTab::CreatePage(Scene* scene, bool isActive) const
 {
-    auto page = MakeShared<SceneViewPage>();
-
-    page->scene_ = scene;
-    page->renderer_ = MakeShared<SceneRendererToTexture>(scene);
-    page->cfgFileName_ = scene->GetFileName() + ".cfg";
+    auto page = MakeShared<SceneViewPage>(scene);
 
     page->renderer_->SetActive(isActive);
-
-    for (const SceneCameraControllerDesc& desc : cameraControllers_)
-        page->cameraControllers_.push_back(desc.factory_(scene, page->renderer_->GetCamera()));
 
     LoadPageConfig(*page);
     return page;
