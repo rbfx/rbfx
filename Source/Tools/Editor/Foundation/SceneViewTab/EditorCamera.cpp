@@ -61,6 +61,31 @@ void EditorCamera::Settings::RenderSettings()
     ui::DragFloat("Shift Factor", &shiftFactor_, 0.5f, 1.0f, 10.0f, "%.1f");
 }
 
+EditorCamera::PageState::PageState()
+{
+    LookAt(Vector3{0.0f, 5.0f, -10.0f}, Vector3::ZERO);
+}
+
+void EditorCamera::PageState::LookAt(const Vector3& position, const Vector3& target)
+{
+    lastCameraPosition_ = position;
+    lastCameraRotation_ = Quaternion{Vector3::FORWARD, target - position};
+    yaw_ = lastCameraRotation_.YawAngle();
+    pitch_ = lastCameraRotation_.PitchAngle();
+}
+
+void EditorCamera::PageState::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "Position", lastCameraPosition_);
+    SerializeOptionalValue(archive, "Rotation", lastCameraRotation_);
+
+    if (archive.IsInput())
+    {
+        yaw_ = lastCameraRotation_.YawAngle();
+        pitch_ = lastCameraRotation_.PitchAngle();
+    }
+}
+
 EditorCamera::EditorCamera(SceneViewTab* owner, SettingsPage* settings)
     : SceneViewAddon(owner)
     , settings_(settings)
@@ -118,15 +143,18 @@ void EditorCamera::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
     UpdateState(scenePage, state);
 }
 
+void EditorCamera::SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const
+{
+    if (!stateWrapped.has_value())
+        stateWrapped = PageState{};
+    SerializeValue(archive, name, ea::any_cast<PageState&>(stateWrapped));
+}
+
 EditorCamera::PageState& EditorCamera::GetOrInitializeState(SceneViewPage& scenePage) const
 {
     ea::any& stateWrapped = scenePage.GetAddonData(*this);
     if (!stateWrapped.has_value())
-    {
-        PageState state;
-        state.LookAt(Vector3{0.0f, 5.0f, -10.0f}, Vector3::ZERO);
-        stateWrapped = state;
-    }
+        stateWrapped = PageState{};
     return ea::any_cast<PageState&>(stateWrapped);
 }
 

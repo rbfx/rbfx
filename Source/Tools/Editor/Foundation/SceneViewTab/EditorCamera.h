@@ -59,13 +59,9 @@ public:
         float pitch_{};
         float currentMoveSpeed_{};
 
-        void LookAt(const Vector3& position, const Vector3& target)
-        {
-            lastCameraPosition_ = position;
-            lastCameraRotation_ = Quaternion{Vector3::FORWARD, target - position};
-            yaw_ = lastCameraRotation_.YawAngle();
-            pitch_ = lastCameraRotation_.PitchAngle();
-        }
+        PageState();
+        void LookAt(const Vector3& position, const Vector3& target);
+        void SerializeInBlock(Archive& archive);
     };
 
     EditorCamera(SceneViewTab* owner, SettingsPage* settings);
@@ -75,6 +71,7 @@ public:
     ea::string GetUniqueName() const override { return "Camera"; }
     int GetInputPriority() const override { return M_MAX_INT; }
     void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
+    void SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const override;
     /// @}
 
 private:

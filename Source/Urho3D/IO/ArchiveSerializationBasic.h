@@ -162,6 +162,12 @@ struct AlwaysSerialize
     bool operator==(const T& rhs) const { return false; }
 };
 
+/// Placeholder object that can be serialized as nothing.
+struct EmptySerializableObject
+{
+    void SerializeInBlock(Archive& archive) {}
+};
+
 /// @name Serialize primitive types
 /// @{
 inline void SerializeValue(Archive& archive, const char* name, bool& value) { archive.Serialize(name, value); }

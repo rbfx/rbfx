@@ -53,14 +53,19 @@ URHO3D_EDITOR_HOTKEY(Hotkey_Delete, "SceneViewTab.Delete", QUAL_NONE, KEY_DELETE
 
 }
 
-void SerializeValue(Archive& archive, const char* name, SceneViewPage& page)
+void SerializeValue(Archive& archive, const char* name, SceneViewPage& page, const SceneViewTab* owner)
 {
     auto block = archive.OpenUnorderedBlock(name);
 
-    /*SerializeOptionalValue(archive, "CurrentCameraController", page.currentCameraController_, AlwaysSerialize{});
-
-    for (SceneCameraController* controller : page.cameraControllers_)
-        SerializeOptionalValue(archive, controller->GetTypeName().c_str(), *controller, AlwaysSerialize{});*/
+    for (const SceneViewAddon* addon : owner->GetAddonsByName())
+    {
+        ea::any& state = page.GetAddonData(*addon);
+        SerializeOptionalValue(archive, addon->GetUniqueName().c_str(), state, AlwaysSerialize{},
+            [&](Archive& archive, const char* name, ea::any& value)
+        {
+            addon->SerializePageState(archive, name, value);
+        });
+    }
 }
 
 void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor)
@@ -114,6 +119,13 @@ SceneViewAddon::~SceneViewAddon()
 void SceneViewAddon::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
     hotkeyManager->InvokeFor(this);
+}
+
+void SceneViewAddon::SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const
+{
+    // Just open empty block
+    EmptySerializableObject placeholder;
+    SerializeOptionalValue(archive, name, placeholder, AlwaysSerialize{});
 }
 
 bool SceneViewTab::ByPriority::operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
@@ -553,7 +565,7 @@ SharedPtr<SceneViewPage> SceneViewTab::CreatePage(Scene* scene, bool isActive) c
 void SceneViewTab::SavePageConfig(const SceneViewPage& page) const
 {
     auto jsonFile = MakeShared<JSONFile>(context_);
-    jsonFile->SaveObject("Scene", page);
+    jsonFile->SaveObject("Scene", page, this);
     jsonFile->SaveFile(page.cfgFileName_);
 }
 
@@ -561,7 +573,7 @@ void SceneViewTab::LoadPageConfig(SceneViewPage& page) const
 {
     auto jsonFile = MakeShared<JSONFile>(context_);
     jsonFile->LoadFile(page.cfgFileName_);
-    jsonFile->LoadObject("Scene", page);
+    jsonFile->LoadObject("Scene", page, this);
 }
 
 RewindSceneActionWrapper::RewindSceneActionWrapper(SharedPtr<EditorAction> action, SceneViewPage* page)
