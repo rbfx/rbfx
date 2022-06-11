@@ -32,6 +32,7 @@
 #include <Urho3D/Utility/SceneSelection.h>
 #include <Urho3D/Utility/PackedSceneData.h>
 
+#include <EASTL/any.h>
 #include <EASTL/vector_multiset.h>
 
 namespace Urho3D
@@ -39,49 +40,27 @@ namespace Urho3D
 
 void Foundation_SceneViewTab(Context* context, ProjectEditor* projectEditor);
 
+class SceneViewAddon;
 class SceneViewTab;
 
-/// Interface of Camera controller used by Scene.
-class SceneCameraController : public Object
+/// Single page of SceneViewTab.
+/// TODO(editor): Encapsulate
+class SceneViewPage : public Object
 {
-    URHO3D_OBJECT(SceneCameraController, Object);
+    URHO3D_OBJECT(SceneViewPage, Object);
 
 public:
-    explicit SceneCameraController(Scene* scene, Camera* camera);
-    ~SceneCameraController() override;
+    explicit SceneViewPage(Scene* scene);
+    ~SceneViewPage() override;
 
-    /// Return name in UI.
-    virtual ea::string GetTitle() const = 0;
-    /// Return whether the camera manipulation is active.
-    virtual bool IsActive(bool wasActive) { return false; }
-    /// Update controller for given camera object.
-    virtual void Update(bool isActive) = 0;
+    ea::any& GetAddonData(const SceneViewAddon& addon);
 
-protected:
-    Vector2 GetMouseMove() const;
-    Vector3 GetMoveDirection() const;
-    bool GetMoveAccelerated() const;
+public:
+    const SharedPtr<Scene> scene_;
+    const SharedPtr<SceneRendererToTexture> renderer_;
+    const ea::string cfgFileName_;
 
-    const WeakPtr<Scene> scene_;
-    const WeakPtr<Camera> camera_;
-};
-
-using SceneCameraControllerPtr = SharedPtr<SceneCameraController>;
-
-/// Description of camera controller for SceneViewTab.
-struct SceneCameraControllerDesc
-{
-    ea::string name_;
-    ea::function<SceneCameraControllerPtr(Scene* scene, Camera* camera)> factory_;
-};
-
-/// Single page of SceneViewTab.
-struct SceneViewPage : public RefCounted
-{
-    SharedPtr<Scene> scene_;
-    SharedPtr<SceneRendererToTexture> renderer_;
-    ea::vector<SceneCameraControllerPtr> cameraControllers_;
-    ea::string cfgFileName_;
+    ea::unordered_map<ea::string, ea::pair<WeakPtr<const SceneViewAddon>, ea::any>> addonData_;
 
     SceneSelection selection_;
 
@@ -90,10 +69,8 @@ struct SceneViewPage : public RefCounted
     /// UI state
     /// @{
     Rect contentArea_;
-    unsigned currentCameraController_{};
     /// @}
 
-    SceneCameraController* GetCurrentCameraController() const;
     void RewindSimulation();
 };
 
@@ -140,11 +117,8 @@ public:
     /// Register new scene addon.
     void RegisterAddon(const SharedPtr<SceneViewAddon>& addon);
     template <class T, class ... Args> SceneViewAddon* RegisterAddon(const Args&... args);
-    /// Register new type of camera controller. Should be called before any scenes are loaded.
-    void RegisterCameraController(const SceneCameraControllerDesc& desc);
-    template <class T, class ... Args> void RegisterCameraController(const Args&... args);
 
-    /// Setup context for plugin execution.
+    /// Setup context for plugin application execution.
     void SetupPluginContext();
 
     /// Commands
@@ -218,22 +192,14 @@ private:
     void LoadPageConfig(SceneViewPage& page) const;
     /// @}
 
-    void UpdateCameraController(SceneViewPage& page);
     void UpdateAddons(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
     ea::vector_multiset<SharedPtr<SceneViewAddon>, ByPriority> addonsByInputPriority_;
     ea::vector_multiset<SharedPtr<SceneViewAddon>, ByName> addonsByName_;
 
-    ea::vector<SceneCameraControllerDesc> cameraControllers_;
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
     PackedSceneData clipboard_;
-
-    /// UI state
-    /// @{
-    unsigned isCameraControllerActive_{};
-    /// @}
-
 };
 
 /// Action wrapper that rewinds scene simulation.
@@ -259,15 +225,6 @@ SceneViewAddon* SceneViewTab::RegisterAddon(const Args&... args)
     const auto addon = MakeShared<T>(this, args...);
     RegisterAddon(addon);
     return addon;
-}
-
-template <class T, class ... Args>
-void SceneViewTab::RegisterCameraController(const Args&... args)
-{
-    SceneCameraControllerDesc desc;
-    desc.name_ = T::GetTypeNameStatic();
-    desc.factory_ = [=](Scene* scene, Camera* camera) { return MakeShared<T>(scene, camera, args...); };
-    RegisterCameraController(desc);
 }
 
 }
