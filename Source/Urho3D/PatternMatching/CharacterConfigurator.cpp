@@ -1,11 +1,11 @@
 #include "CharacterConfigurator.h"
-#include "CharacterConfiguration.h"
-#include "PatternDatabase.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
 #include "../Graphics/AnimatedModel.h"
 #include "../Graphics/Animation.h"
 #include "../Graphics/Material.h"
+#include "../Resource/ResourceCache.h"
+#include "../Resource/ResourceEvents.h"
+#include "CharacterConfiguration.h"
+#include "PatternDatabase.h"
 
 namespace Urho3D
 {
@@ -36,6 +36,8 @@ void CharacterConfigurator::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Configuration", GetConfigurationAttr, SetConfigurationAttr, ResourceRef,
         ResourceRef(CharacterConfiguration::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Query", VariantMap, savedQuery_, Variant::emptyVariantMap, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Secondary Material", GetSecondaryMaterialAttr, SetSecondaryMaterialAttr,
+        ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
 }
 
 void CharacterConfigurator::SetConfiguration(CharacterConfiguration* configuration)
@@ -71,38 +73,23 @@ void CharacterConfigurator::ResetMasterModel()
     if (!characterNode_)
     {
         characterNode_ = node_->CreateChild("CharacterRoot", LOCAL, 0, true);
-        characterNode_->SetPosition(configuration_->GetPosition());
-        characterNode_->SetRotation(configuration_->GetRotation());
-        characterNode_->SetScale(configuration_->GetScale());
     }
+    characterNode_->SetPosition(configuration_->GetPosition());
+    characterNode_->SetRotation(configuration_->GetRotation());
+    characterNode_->SetScale(configuration_->GetScale());
+
+    CharacterBodyPart masterModelBodyPart;
+    masterModelBodyPart.static_ = false;
 
     // Create and setup master animated model
-    if (!masterModel)
-        masterModel = characterNode_->GetOrCreateComponent<AnimatedModel>(LOCAL);
+    if (!masterModel_.primaryModel_)
+        masterModel_ = configuration_->CreateBodyPartModelComponent(masterModelBodyPart, characterNode_);
 
-    const auto materModel = configuration_->GetModelAttr();
-    if (!materModel.name_.empty())
-    {
-        masterModel->SetModel(cache->GetResource<Model>(configuration_->GetModelAttr().name_));
-        auto materialNames = configuration_->GetMaterialAttr().names_;
-        const unsigned numMaterials = materialNames.size();
-        if (numMaterials == 1)
-        {
-            masterModel->SetMaterial(cache->GetResource<Material>(materialNames.front()));
-        }
-        else
-        {
-            for (unsigned materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
-            {
-                masterModel->SetMaterial(materialIndex, cache->GetResource<Material>(materialNames[materialIndex]));
-            }
-        }
-        masterModel->SetCastShadows(configuration_->GetCastShadows());
-    }
-    else
-    {
-        masterModel->SetModel(nullptr);
-    }
+    VariantMap masterModelArgs;
+    masterModelArgs["model"] = configuration_->GetActualModelAttr();
+    masterModelArgs["material"] = configuration_->GetActualMaterialAttr();
+    masterModelArgs["castShadows"] = configuration_->GetCastShadows();
+    configuration_->SetBodyPartModel(masterModel_, masterModelArgs, secondaryMaterial_);
 }
 
 void CharacterConfigurator::ResetBodyPartModels(
@@ -115,12 +102,20 @@ void CharacterConfigurator::ResetBodyPartModels(
     for (; bodyPartIndex < configuration->GetNumBodyParts() && bodyPartIndex < parts.size(); ++bodyPartIndex)
     {
         auto& bodyPart = bodyPartNodes_[bodyPartIndex];
-        if (!bodyPart.modelComponent_)
+        if (!bodyPart.modelComponent_.primaryModel_)
         {
             bodyPart.configuration_ = configuration;
             bodyPart.index_ = bodyPartIndex;
-            bodyPart.modelComponent_ = configuration->CreateBodyPartModelComponent(bodyPartIndex, characterNode_);
-            bodyPart.lastMatch_ = configuration->UpdateBodyPart(bodyPartIndex, bodyPart.modelComponent_, query, -1);
+
+            const auto& charBodyParts = configuration->GetBodyParts();
+
+            if (bodyPartIndex < charBodyParts.size())
+            {
+                auto& charBodyPart = charBodyParts[bodyPartIndex];
+
+                bodyPart.modelComponent_ = configuration->CreateBodyPartModelComponent(charBodyPart, characterNode_);
+                configuration->UpdateBodyPart(bodyPart.modelComponent_, charBodyPart, query, secondaryMaterial_);
+            }
         }
     }
     if (bodyPartIndex < parts.size())
@@ -135,7 +130,8 @@ void CharacterConfigurator::ResetBodyStructure()
     {
         if (characterNode_)
             characterNode_->Remove();
-        masterModel.Reset();
+        masterModel_.primaryModel_.Reset();
+        masterModel_.secondaryModel_.Reset();
         characterNode_.Reset();
         return;
     }
@@ -157,9 +153,12 @@ void CharacterConfigurator::ResetBodyStructure()
 }
 void CharacterConfigurator::ResizeBodyParts(unsigned numBodyParts)
 {
+    if (bodyPartNodes_.size() == numBodyParts)
+        return;
+
     for (unsigned partToDelete = numBodyParts; partToDelete < bodyPartNodes_.size(); ++partToDelete)
     {
-        auto& model = bodyPartNodes_[partToDelete].modelComponent_;
+        auto& model = bodyPartNodes_[partToDelete].modelComponent_.primaryModel_;
         if (model && model->GetNode())
         {
             Node* node = model->GetNode();
@@ -173,11 +172,9 @@ void CharacterConfigurator::ResizeBodyParts(unsigned numBodyParts)
     bodyPartNodes_.resize(numBodyParts);
 }
 
-    /// Handle enabled/disabled state change.
-void CharacterConfigurator::OnSetEnabled()
-{
-    Component::OnSetEnabled();
-}
+/// Handle enabled/disabled state change.
+void CharacterConfigurator::OnSetEnabled() { Component::OnSetEnabled(); }
+
 /// Handle scene node being assigned at creation.
 void CharacterConfigurator::OnNodeSet(Node* node)
 {
@@ -215,10 +212,10 @@ void CharacterConfigurator::Update(const PatternQuery& query)
     for (unsigned bodyPartIndex = 0; bodyPartIndex < bodyPartNodes_.size(); ++bodyPartIndex)
     {
         auto& bodyPart = bodyPartNodes_[bodyPartIndex];
-        if (bodyPart.modelComponent_ && bodyPart.configuration_)
+        if (bodyPart.modelComponent_.primaryModel_ && bodyPart.configuration_)
         {
-            bodyPart.lastMatch_ = bodyPart.configuration_->UpdateBodyPart(
-                bodyPart.index_, bodyPart.modelComponent_, query, bodyPart.lastMatch_);
+            bodyPart.configuration_->UpdateBodyPart(bodyPart.modelComponent_,
+                bodyPart.configuration_->GetBodyParts()[bodyPart.index_], query, secondaryMaterial_);
         }
     }
 
@@ -315,6 +312,36 @@ void CharacterConfigurator::SetConfigurationAttr(const ResourceRef& value)
 ResourceRef CharacterConfigurator::GetConfigurationAttr() const
 {
     return GetResourceRef(configuration_, CharacterConfiguration::GetTypeStatic());
+}
+
+/// Set secondary material.
+void CharacterConfigurator::SetSecondaryMaterial(Material* material)
+{
+    if (secondaryMaterial_ != material)
+    {
+        secondaryMaterial_ = material;
+        for (auto& part : bodyPartNodes_)
+        {
+            StaticModel* model = part.modelComponent_.secondaryModel_;
+            if (model)
+            {
+                model->SetEnabled(material != nullptr);
+                model->SetMaterial(material);
+            }
+        }
+    }
+}
+
+/// Set secondary material attribute.
+void CharacterConfigurator::SetSecondaryMaterialAttr(const ResourceRef& value)
+{
+    SetSecondaryMaterial(context_->GetSubsystem<ResourceCache>()->GetResource<Material>(value.name_));
+}
+
+/// Return secondary material attribute.
+ResourceRef CharacterConfigurator::GetSecondaryMaterialAttr() const
+{
+    return GetResourceRef(secondaryMaterial_, Material::GetTypeStatic());
 }
 
 void CharacterConfigurator::HandleConfigurationReloadFinished(StringHash eventType, VariantMap& eventData)

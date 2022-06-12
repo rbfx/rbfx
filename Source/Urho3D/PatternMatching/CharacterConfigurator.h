@@ -39,8 +39,9 @@ private:
         int lastMatch_{-1};
         const CharacterConfiguration* configuration_{};
         unsigned index_{};
-        SharedPtr<StaticModel> modelComponent_;
+        CharacterBodyPartInstance modelComponent_;
     };
+
 public:
     /// Construct.
     CharacterConfigurator(Context* context);
@@ -56,16 +57,24 @@ public:
     //void OnSetEnabled() override;
 
     /// Set configuration.
-    /// @manualbind
-    virtual void SetConfiguration(CharacterConfiguration* configuration);
+    void SetConfiguration(CharacterConfiguration* configuration);
     /// Return model.
-    /// @property
     CharacterConfiguration* GetConfiguration() const { return configuration_; }
 
     /// Set configuration attribute.
     void SetConfigurationAttr(const ResourceRef& value);
     /// Return configuration attribute.
     ResourceRef GetConfigurationAttr() const;
+
+    /// Set secondary material.
+    void SetSecondaryMaterial(Material* material);
+    /// Return secondary material.
+    Material* GetSecondaryMaterial() const { return secondaryMaterial_; }
+
+    /// Set secondary material attribute.
+    void SetSecondaryMaterialAttr(const ResourceRef& value);
+    /// Return secondary material attribute.
+    ResourceRef GetSecondaryMaterialAttr() const;
 
     /// Get linear velocity from current animation metadata.
     const Vector3& GetLinearVelocity() const { return velocity_; }
@@ -88,10 +97,12 @@ private:
 
     /// Configuration.
     SharedPtr<CharacterConfiguration> configuration_;
+    /// Shadow material.
+    SharedPtr<Material> secondaryMaterial_;
 
     SharedPtr<Node> characterNode_;
     ea::vector<BodyPart> bodyPartNodes_;
-    SharedPtr<AnimatedModel> masterModel;
+    CharacterBodyPartInstance masterModel_;
     SharedPtr<AnimationController> animationController_;
     /// Velocity in master model local space.
     Vector3 velocity_ {Vector3::ZERO};

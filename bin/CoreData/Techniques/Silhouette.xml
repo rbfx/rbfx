@@ -1,0 +1,4 @@
+<technique vs="M_Default" ps="M_Default" vsdefines="UNLIT" psdefines="UNLIT" >
+    <pass name="base" depthtest="greater" depthwrite="false" />
+    <pass name="deferred" depthtest="greater" depthwrite="false" />
+</technique>

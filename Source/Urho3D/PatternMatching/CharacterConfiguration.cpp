@@ -47,7 +47,7 @@ template <typename T> T GetOptional(StringHash key, const VariantMap& map, const
 
 
 /// Serialize from/to archive. Return true if successful.
-void CharacterConfiguration::BodyPart::SerializeInBlock(Archive& archive)
+void CharacterBodyPart::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "name", name_, {});
     SerializeOptionalValue(archive, "static", static_, {});
@@ -88,7 +88,7 @@ void CharacterConfiguration::BodyPart::SerializeInBlock(Archive& archive)
 }
 
 CharacterConfiguration::CharacterConfiguration(Context* context)
-    : Resource(context)
+    : BaseClassName(context)
 {
 }
 
@@ -159,6 +159,7 @@ void CharacterConfiguration::SerializeInBlock(Archive& archive)
     states_.SerializeInBlock(archive, "states");
     SerializeOptionalValue(archive, "bodyParts", bodyParts_, EmptyObject{},
         [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "part"); });
+    SerializeInArrayBlock(archive, "metadata");
 
     if (archive.IsInput())
     {
@@ -193,24 +194,15 @@ void CharacterConfiguration::SetNumBodyParts(unsigned num) { bodyParts_.resize(n
 /// Get total number of body parts including parent body parts.
 unsigned CharacterConfiguration::GetTotalNumBodyParts() const
 {
-    unsigned num = GetNumBodyParts();
-    if (parent_)
+    unsigned num = 0;
+    const CharacterConfiguration* conf = this;
+    while (conf)
     {
-        num += parent_->GetTotalNumBodyParts();
+        num += conf->GetNumBodyParts();
+        conf = conf->GetParent();
     }
     return num;
 }
-
-void CharacterConfiguration::SetAttachmentBone(unsigned bodyPartIndex, const ea::string& name)
-{
-    bodyParts_[bodyPartIndex].attachmentBone_ = name;
-}
-
-const ea::string& CharacterConfiguration::GetAttachmentBone(unsigned bodyPartIndex) const
-{
-    return bodyParts_[bodyPartIndex].attachmentBone_;
-}
-
 
 /// Get number of body parts.
 unsigned CharacterConfiguration::GetNumBodyParts() const { return bodyParts_.size(); }
@@ -225,7 +217,28 @@ void CharacterConfiguration::SetModel(Model* model)
 
 void CharacterConfiguration::SetModelAttr(ResourceRef model) { model_ = model; }
 
+/// Get model from configuration or from parent configuration.
+ResourceRef CharacterConfiguration::GetActualModelAttr() const {
+    if (model_.name_.empty())
+    {
+        if (parent_)
+            return parent_->GetActualModelAttr();
+    }
+    return model_;
+}
+
 void CharacterConfiguration::SetMaterialAttr(const ResourceRefList& materials) { material_ = materials; }
+
+/// Get material list from configuration or from parent configuration.
+const ResourceRefList& CharacterConfiguration::GetActualMaterialAttr() const
+{
+    if (material_.names_.empty())
+    {
+        if (parent_)
+            return parent_->GetActualMaterialAttr();
+    }
+    return material_;
+}
 
 void CharacterConfiguration::SetMaterial(Material* material)
 {
@@ -301,15 +314,11 @@ void CharacterConfiguration::SetScale(const Vector3& scale)
     UpdateMatrices();
 }
 
-StaticModel* CharacterConfiguration::CreateBodyPartModelComponent(unsigned bodyPartIndex, Node* root) const
+CharacterBodyPartInstance CharacterConfiguration::CreateBodyPartModelComponent(const CharacterBodyPart& bodyPart, Node* root) const
 {
+    CharacterBodyPartInstance instance;
     if (!root)
-        return nullptr;
-
-    if (bodyPartIndex >= bodyParts_.size())
-        return nullptr;
-
-    auto& bodyPart = bodyParts_[bodyPartIndex];
+        return instance;
 
     Node* attachmentBone = root;
     Node* bodyPartNode{};
@@ -324,22 +333,34 @@ StaticModel* CharacterConfiguration::CreateBodyPartModelComponent(unsigned bodyP
     {
         bodyPartNode = root;
     }
+    instance.attachedToRoot_ = bodyPartNode == root;
 
     if (bodyPart.static_)
-        return bodyPartNode->CreateComponent<StaticModel>();
-    return bodyPartNode->CreateComponent<AnimatedModel>();
+    {
+        instance.primaryModel_ = bodyPartNode->CreateComponent<StaticModel>();
+        instance.secondaryModel_ = bodyPartNode->CreateComponent<StaticModel>();
+    }
+    else
+    {
+        instance.primaryModel_ = bodyPartNode->CreateComponent<AnimatedModel>();
+        instance.secondaryModel_ = bodyPartNode->CreateComponent<AnimatedModel>();
+    }
+    instance.secondaryModel_->SetEnabled(false);
+    instance.secondaryModel_->SetCastShadows(false);
+    instance.lastQueryResult = -1;
+    return instance;
 }
 
-int CharacterConfiguration::UpdateBodyPart(
-    unsigned bodyPartIndex, StaticModel* modelComponent, const PatternQuery& query, int lastQueryResult) const
+void CharacterConfiguration::UpdateBodyPart(CharacterBodyPartInstance& instance, const CharacterBodyPart& bodyPart,
+    const PatternQuery& query, Material* secondaryMaterial) const
 {
-    if (!modelComponent || bodyPartIndex >= bodyParts_.size())
-        return -1;
+    if (!instance.primaryModel_)
+        return;
 
-    auto& bodyPart = bodyParts_[bodyPartIndex];
-    auto res = bodyPart.variantIndex_.Query(query);
-    if (res != lastQueryResult)
+    const auto res = bodyPart.variantIndex_.Query(query);
+    if (res != instance.lastQueryResult)
     {
+        instance.lastQueryResult = res;
         const auto numEvents = bodyPart.variantIndex_.GetNumEvents(res);
         for (unsigned i = 0; i < numEvents; ++i)
         {
@@ -347,20 +368,47 @@ int CharacterConfiguration::UpdateBodyPart(
             if (eventId == "SetModel")
             {
                 auto& eventArgs = bodyPart.variantIndex_.GetEventArgs(res, i);
-                modelComponent->SetModelAttr(GetOptional<ResourceRef>("model", eventArgs, {}));
-                modelComponent->SetMaterialsAttr(GetOptional<ResourceRefList>("material", eventArgs, {}));
-                modelComponent->SetCastShadows(GetOptional<bool>("castShadows", eventArgs, true));
-                if (!bodyPart.attachmentBone_.empty())
-                {
-                    auto node = modelComponent->GetNode();
-                    node->SetPosition(GetOptional<Vector3>("position", eventArgs, Vector3::ZERO));
-                    node->SetRotation(GetOptional<Quaternion>("rotation", eventArgs, Quaternion::IDENTITY));
-                    node->SetScale(GetOptional<Vector3>("scale", eventArgs, Vector3::ONE));
-                }
+
+                SetBodyPartModel(instance, eventArgs, secondaryMaterial);
             }
         }
     }
-    return res;
+    else
+    {
+        const auto& secondaryModel = instance.secondaryModel_;
+        if (secondaryModel->GetMaterial() != secondaryMaterial)
+        {
+            secondaryModel->SetMaterial(secondaryMaterial);
+            secondaryModel->SetEnabled(secondaryMaterial != nullptr);
+        }
+    }
+}
+
+void CharacterConfiguration::SetBodyPartModel(CharacterBodyPartInstance& instance, const VariantMap eventArgs, Material* secondaryMaterial) const
+{
+    const auto& primaryModel = instance.primaryModel_;
+    const auto& secondaryModel = instance.secondaryModel_;
+
+    const ResourceRef model = GetOptional<ResourceRef>("model", eventArgs, {});
+    primaryModel->SetModelAttr(model);
+    const ResourceRefList materials = GetOptional<ResourceRefList>("material", eventArgs, {});
+    primaryModel->SetMaterialsAttr(materials);
+
+    secondaryModel->SetModelAttr(model);
+
+    primaryModel->SetCastShadows(GetOptional<bool>("castShadows", eventArgs, true));
+    if (!instance.attachedToRoot_)
+    {
+        Node* node = primaryModel->GetNode();
+        node->SetPosition(GetOptional<Vector3>("position", eventArgs, Vector3::ZERO));
+        node->SetRotation(GetOptional<Quaternion>("rotation", eventArgs, Quaternion::IDENTITY));
+        node->SetScale(GetOptional<Vector3>("scale", eventArgs, Vector3::ONE));
+    }
+    if (secondaryModel->GetMaterial() != secondaryMaterial)
+    {
+        secondaryModel->SetMaterial(secondaryMaterial);
+        secondaryModel->SetEnabled(secondaryMaterial != nullptr);
+    }
 }
 
 } // namespace Urho3D

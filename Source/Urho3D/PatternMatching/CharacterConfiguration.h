@@ -33,30 +33,42 @@ class Model;
 class Material;
 class PatternCollection;
 
-/// Character configuration resource.
-class URHO3D_API CharacterConfiguration : public Resource
+struct URHO3D_API CharacterBodyPart
 {
-    URHO3D_OBJECT(CharacterConfiguration, Resource)
-private:
-    struct BodyPart
-    {
-        /// Serialize from/to archive. Return true if successful.
-        void SerializeInBlock(Archive& archive);
+    /// Serialize from/to archive. Return true if successful.
+    void SerializeInBlock(Archive& archive);
 
-        /// Name of the body part.
-        ea::string name_;
-        /// Is model static or animated.
-        bool static_{};
+    /// Name of the body part.
+    ea::string name_;
+    /// Is model static or animated.
+    bool static_{};
 
-        /// Bone name to attach to.
-        ea::string attachmentBone_;
+    /// Bone name to attach to.
+    ea::string attachmentBone_;
 
-        /// Model selector via fuzzy pattern matching.
-        PatternCollection variants_;
+    /// Model selector via fuzzy pattern matching.
+    PatternCollection variants_;
 
-        /// Indexed model selector
-        PatternIndex variantIndex_;
-    };
+    /// Indexed model selector
+    PatternIndex variantIndex_;
+};
+
+struct URHO3D_API CharacterBodyPartInstance
+{
+    /// Primary animated or static model instance.
+    SharedPtr<StaticModel> primaryModel_;
+    /// Secondary (outline, shadow, etc) animated or static model instance.
+    SharedPtr<StaticModel> secondaryModel_;
+    /// Last matching variation match index.
+    int lastQueryResult{-1};
+    /// Body part attached to root.
+    bool attachedToRoot_{true};
+};
+
+/// Character configuration resource.
+class URHO3D_API CharacterConfiguration : public ResourceWithMetadata
+{
+    URHO3D_OBJECT(CharacterConfiguration, ResourceWithMetadata)
 
 public:
     /// Construct.
@@ -85,17 +97,24 @@ public:
     /// Get total number of body parts including parent body parts.
     unsigned GetTotalNumBodyParts() const;
 
-    void SetAttachmentBone(unsigned bodyPartIndex, const ea::string& name);
-    const ea::string& GetAttachmentBone(unsigned bodyPartIndex) const;
+    /// Return all body parts.
+    const ea::vector<CharacterBodyPart>& GetBodyParts() const { return bodyParts_; }
+
+    /// Return modifiable body parts.
+    ea::vector<CharacterBodyPart>& GetModifiableBodyParts() { return bodyParts_; }
 
 
     void SetModel(Model* model);
     void SetModelAttr(ResourceRef model);
     ResourceRef GetModelAttr() const { return model_; }
+    /// Get model from configuration or from parent configuration.
+    ResourceRef GetActualModelAttr() const;
 
     void SetMaterial(Material* material);
     void SetMaterialAttr(const ResourceRefList& materials);
     const ResourceRefList& GetMaterialAttr() const { return material_; }
+    /// Get material list from configuration or from parent configuration.
+    const ResourceRefList& GetActualMaterialAttr() const;
 
     /// Set parent configuration reference. All states and body parts for it will be appended to the current configuration.
     void SetParentAttr(ResourceRef parent);
@@ -145,8 +164,11 @@ public:
     const Matrix3x4& LocalToWorld() { return localToWorld_; }
     const Matrix3x4& WorldToLocal() { return worldToLocal_; }
 
-    StaticModel* CreateBodyPartModelComponent(unsigned bodyPartIndex, Node* root) const;
-    int UpdateBodyPart(unsigned bodyPartIndex, StaticModel* modelComponent, const PatternQuery& query, int lastQueryResult = -1) const;
+    CharacterBodyPartInstance CreateBodyPartModelComponent(const CharacterBodyPart& bodyPart, Node* root) const;
+    void UpdateBodyPart(CharacterBodyPartInstance& instance, const CharacterBodyPart& bodyPart,
+        const PatternQuery& query, Material* secondaryMaterial) const;
+    void SetBodyPartModel(
+        CharacterBodyPartInstance& instance, const VariantMap eventArgs, Material* secondaryMaterial) const;
 
 private:
     /// Reset to defaults.
@@ -173,7 +195,7 @@ private:
     Matrix3x4 worldToLocal_{Matrix3x4::IDENTITY};
 
     /// Character body parts.
-    ea::vector<BodyPart> bodyParts_;
+    ea::vector<CharacterBodyPart> bodyParts_;
 
     /// State machine implemented via fuzzy pattern matching.
     PatternCollection states_;

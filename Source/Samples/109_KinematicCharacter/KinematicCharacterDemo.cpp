@@ -195,6 +195,7 @@ void KinematicCharacterDemo::CreateCharacter()
     CharacterConfigurator* configurator = objectNode->CreateComponent<CharacterConfigurator>();
     configurator->SetConfiguration(conf);
     configurator->Update(characterPattern_);
+    configurator->SetSecondaryMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutantSilhouette.xml"));
 
     // Create the rendering component + animation controller
     auto* object = objectNode->GetComponent<AnimatedModel>(true);
