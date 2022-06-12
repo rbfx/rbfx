@@ -43,12 +43,12 @@ Now you are inside of the docker image.
 
 Run this if you need to configure the rbfx:
 ```console
-cmake -DURHO3D_TESTING=OFF -DURHO3D_PROFILING=OFF -DURHO3D_SAMPLES=OFF -DURHO3D_GLOW=OFF -DURHO3D_CSHARP=ON -S /rbfx -B /rbfx/cmake-build-clang
+cmake -DURHO3D_TESTING=OFF -DURHO3D_PROFILING=OFF -DURHO3D_SAMPLES=OFF -DURHO3D_GLOW=ON -DURHO3D_CSHARP=ON -S /rbfx -B /cmake-build-clang
 ```
 
 The following commands would generate the Urho3D SWIG files:
 ```console
 cd /rbfx/Source/Urho3D
-python3 ../Tools/BindTool/BindTool.py --clang /usr/bin/clang --output /rbfx/Source/Urho3D/CSharp/Swig/generated/Urho3D /rbfx/cmake-build-clang/Source/Urho3D/GeneratorOptions_Urho3D_Debug.txt BindAll.cpp
+python3 ../Tools/BindTool/BindTool.py --clang /usr/bin/clang --output /rbfx/Source/Urho3D/CSharp/Swig/generated/Urho3D /cmake-build-clang/Source/Urho3D/GeneratorOptions_Urho3D_Debug.txt BindAll.cpp
 ```
 **Don't blindly commit all the changes produced by the BindTool.py! Unfortunatelly the resulting files need some manual tweaks. Please check what was changed in the files already before commiting them.**
