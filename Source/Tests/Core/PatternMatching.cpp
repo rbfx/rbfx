@@ -21,7 +21,9 @@
 //
 
 #include "../CommonUtils.h"
-#include <Urho3D/Core/PatternMatching.h>
+#include <Urho3D/PatternMatching/PatternIndex.h>
+#include <Urho3D/PatternMatching/PatternQuery.h>
+#include <Urho3D/PatternMatching/PatternCollection.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Resource/XMLArchive.h>

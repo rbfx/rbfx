@@ -63,12 +63,16 @@ struct URHO3D_API CharacterBodyPartInstance
     int lastQueryResult{-1};
     /// Body part attached to root.
     bool attachedToRoot_{true};
+
+    void SetModel(ResourceRef model, const ResourceRefList& materials);
+    void SetSecondaryMaterial(Material* material);
+    void Reset();
 };
 
 /// Character configuration resource.
-class URHO3D_API CharacterConfiguration : public ResourceWithMetadata
+class URHO3D_API CharacterConfiguration : public Resource
 {
-    URHO3D_OBJECT(CharacterConfiguration, ResourceWithMetadata)
+    URHO3D_OBJECT(CharacterConfiguration, Resource)
 
 public:
     /// Construct.
@@ -103,6 +107,14 @@ public:
     /// Return modifiable body parts.
     ea::vector<CharacterBodyPart>& GetModifiableBodyParts() { return bodyParts_; }
 
+    /// Add new metadata variable or overwrite old value.
+    void AddMetadata(const ea::string& name, const Variant& value);
+    /// Remove metadata variable.
+    void RemoveMetadata(const ea::string& name);
+    /// Remove all metadata variables.
+    void RemoveAllMetadata();
+    /// Return metadata variable.
+    const Variant& GetMetadata(const ea::string& name) const;
 
     void SetModel(Model* model);
     void SetModelAttr(ResourceRef model);
@@ -167,8 +179,7 @@ public:
     CharacterBodyPartInstance CreateBodyPartModelComponent(const CharacterBodyPart& bodyPart, Node* root) const;
     void UpdateBodyPart(CharacterBodyPartInstance& instance, const CharacterBodyPart& bodyPart,
         const PatternQuery& query, Material* secondaryMaterial) const;
-    void SetBodyPartModel(
-        CharacterBodyPartInstance& instance, const VariantMap eventArgs, Material* secondaryMaterial) const;
+    void SetBodyPartModel(CharacterBodyPartInstance& instance, const VariantMap eventArgs) const;
 
 private:
     /// Reset to defaults.
@@ -203,6 +214,8 @@ private:
     PatternIndex stateIndex_;
     /// Cached parent state pointer.
     SharedPtr<CharacterConfiguration> parent_;
+    /// Configuration metadata.
+    StringVariantMap metadata_;
 };
 
 }

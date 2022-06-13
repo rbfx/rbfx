@@ -89,7 +89,8 @@ void CharacterConfigurator::ResetMasterModel()
     masterModelArgs["model"] = configuration_->GetActualModelAttr();
     masterModelArgs["material"] = configuration_->GetActualMaterialAttr();
     masterModelArgs["castShadows"] = configuration_->GetCastShadows();
-    configuration_->SetBodyPartModel(masterModel_, masterModelArgs, secondaryMaterial_);
+    configuration_->SetBodyPartModel(masterModel_, masterModelArgs);
+    masterModel_.SetSecondaryMaterial(secondaryMaterial_);
 }
 
 void CharacterConfigurator::ResetBodyPartModels(
@@ -130,8 +131,7 @@ void CharacterConfigurator::ResetBodyStructure()
     {
         if (characterNode_)
             characterNode_->Remove();
-        masterModel_.primaryModel_.Reset();
-        masterModel_.secondaryModel_.Reset();
+        masterModel_.Reset();
         characterNode_.Reset();
         return;
     }
@@ -158,16 +158,7 @@ void CharacterConfigurator::ResizeBodyParts(unsigned numBodyParts)
 
     for (unsigned partToDelete = numBodyParts; partToDelete < bodyPartNodes_.size(); ++partToDelete)
     {
-        auto& model = bodyPartNodes_[partToDelete].modelComponent_.primaryModel_;
-        if (model && model->GetNode())
-        {
-            Node* node = model->GetNode();
-            if (node != characterNode_)
-                node->Remove();
-            else
-                model->GetNode()->RemoveComponent(model);
-        }
-        model.Reset();
+        bodyPartNodes_[partToDelete].modelComponent_.Reset();
     }
     bodyPartNodes_.resize(numBodyParts);
 }
@@ -320,14 +311,10 @@ void CharacterConfigurator::SetSecondaryMaterial(Material* material)
     if (secondaryMaterial_ != material)
     {
         secondaryMaterial_ = material;
+        masterModel_.SetSecondaryMaterial(material);
         for (auto& part : bodyPartNodes_)
         {
-            StaticModel* model = part.modelComponent_.secondaryModel_;
-            if (model)
-            {
-                model->SetEnabled(material != nullptr);
-                model->SetMaterial(material);
-            }
+            part.modelComponent_.SetSecondaryMaterial(material);
         }
     }
 }

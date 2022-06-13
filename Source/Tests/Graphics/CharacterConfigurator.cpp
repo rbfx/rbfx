@@ -46,8 +46,9 @@ TEST_CASE("CharacterConfigurator serilization")
     conf->SetMaterialAttr(ResourceRefList(Material::GetTypeStatic(), StringVector{"Models/Mutant/Materials/mutant_M.xml" }));
     conf->SetRotation(Quaternion(180, Vector3(0, 1, 0)));
     conf->SetNumBodyParts(2);
-    conf->SetAttachmentBone(0, "mixamorig:RightHand");
-    conf->SetAttachmentBone(1, "mixamorig:LeftHand");
+    auto& bodyParts = conf->GetModifiableBodyParts();
+    bodyParts[0].attachmentBone_ = "mixamorig:RightHand";
+    bodyParts[1].attachmentBone_ = "mixamorig:LeftHand";
     auto* states = conf->GetStates();
     {
         states->BeginPattern();
@@ -87,15 +88,24 @@ TEST_CASE("CharacterConfigurator serilization")
     }
     conf->Commit();
 
+    conf->AddMetadata("Key0", "Value0");
+    conf->AddMetadata("Key1", 42);
+
     conf->SaveFile("Char.xml");
 
     auto scene =  MakeShared<Scene>(context);
     auto configurator = scene->CreateComponent<CharacterConfigurator>();
     configurator->SetConfiguration(conf);
     
-    {
-        VectorBuffer buf;
-        conf->Save(buf);
-        ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
-    }
+    VectorBuffer buf;
+    conf->Save(buf);
+    //ea::string xml((char*)buf.GetData(), (char*)buf.GetData() + buf.GetPosition());
+
+    auto conf2 = MakeShared<CharacterConfiguration>(context);
+
+    buf.Seek(0);
+    conf2->Load(buf);
+
+    CHECK(conf2->GetMetadata("Key0").GetString() == "Value0");
+    CHECK(conf2->GetMetadata("Key1").GetInt() == 42);
 }
