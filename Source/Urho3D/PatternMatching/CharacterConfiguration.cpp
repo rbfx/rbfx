@@ -289,6 +289,9 @@ const Variant& CharacterConfiguration::GetMetadata(const ea::string& name) const
     if (it != metadata_.end())
         return it->second;
 
+    if (parent_)
+        return parent_->GetMetadata(name);
+
     return Variant::EMPTY;
 }
 
