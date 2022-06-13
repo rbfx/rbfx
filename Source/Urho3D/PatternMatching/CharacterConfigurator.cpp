@@ -100,9 +100,10 @@ void CharacterConfigurator::ResetBodyPartModels(
         return;
 
     unsigned bodyPartIndex = 0;
-    for (; bodyPartIndex < configuration->GetNumBodyParts() && bodyPartIndex < parts.size(); ++bodyPartIndex)
+    const unsigned bodyPartCount = Urho3D::Min(configuration->GetNumBodyParts(), parts.size());
+    for (; bodyPartIndex < bodyPartCount; ++bodyPartIndex)
     {
-        auto& bodyPart = bodyPartNodes_[bodyPartIndex];
+        auto& bodyPart = parts[bodyPartIndex];
         if (!bodyPart.modelComponent_.primaryModel_)
         {
             bodyPart.configuration_ = configuration;
