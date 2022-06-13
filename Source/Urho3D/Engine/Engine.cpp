@@ -86,6 +86,7 @@
 #ifdef URHO3D_COMPUTE
 #include "../Graphics/ComputeDevice.h"
 #endif
+#include "../Utility/AssetTransformer.h"
 #include "../Utility/SceneViewerApplication.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
@@ -198,6 +199,7 @@ Engine::Engine(Context* context) :
 #endif
 
     PluginApplication::RegisterPluginApplication<SceneViewerApplication>();
+    context_->RegisterFactory<AssetTransformer>();
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
