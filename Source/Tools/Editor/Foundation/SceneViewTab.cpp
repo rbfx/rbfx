@@ -25,6 +25,7 @@
 #include "../Foundation/SceneViewTab.h"
 
 #include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
@@ -507,6 +508,13 @@ void SceneViewTab::RenderContent()
     SceneViewPage* activePage = GetActivePage();
     if (!activePage)
         return;
+
+    if (!activePage->scene_->HasComponent<DebugRenderer>())
+    {
+        auto debug = activePage->scene_->GetOrCreateComponent<DebugRenderer>();
+        debug->SetTemporary(true);
+        debug->SetLineAntiAlias(true);
+    }
 
     activePage->selection_.Update();
 

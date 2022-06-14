@@ -59,7 +59,7 @@
 #include "Pipeline/Commands/CookScene.h"
 #include "Pipeline/Commands/BuildAssets.h"
 #include "Pipeline/Commands/ImportGLTFCommand.h"
-#include "Pipeline/Importers/ModelImporter.h"
+//#include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
 #include "Pipeline/Importers/TextureImporter.h"
 /*#if URHO3D_PLUGINS
@@ -81,6 +81,7 @@
 #include "Foundation/GameViewTab.h"
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
+#include "Foundation/ModelImporter.h"
 #include "Foundation/PluginsTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/SceneViewTab.h"
@@ -125,6 +126,8 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
     editorPluginManager_->AddPlugin("Foundation.Plugins", &Foundation_PluginsTab);
+
+    editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);
 
     editorPluginManager_->AddPlugin("Foundation.SceneView.EditorCamera", &Foundation_EditorCamera);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Selector", &Foundation_SceneSelector);
@@ -246,7 +249,7 @@ void Editor::Setup()
     context_->RegisterFactory<SerializableInspector>();
 
     // Importers
-    ModelImporter::RegisterObject(context_);
+    //ModelImporter::RegisterObject(context_);
     SceneConverter::RegisterObject(context_);
     TextureImporter::RegisterObject(context_);
     Asset::RegisterObject(context_);

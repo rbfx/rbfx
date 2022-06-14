@@ -179,6 +179,9 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     EnsureDirectoryInitialized();
     InitializeResourceCache();
 
+    // Delay asset manager creation until project is ready
+    assetManager_ = MakeShared<AssetManager>(context);
+
     ApplyPlugins();
 
     settingsManager_->LoadFile(settingsJsonPath_);
@@ -445,6 +448,8 @@ void ProjectEditor::Render()
     hotkeyManager_->InvokeFor(hotkeyManager_);
     if (areGlobalHotkeysEnabled_)
         hotkeyManager_->InvokeFor(this);
+
+    assetManager_->Update();
 
     dockspaceId_ = ui::GetID("Root");
     ui::DockSpace(dockspaceId_);

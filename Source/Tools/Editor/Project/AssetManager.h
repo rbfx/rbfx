@@ -20,36 +20,42 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/Log.h"
-#include "../Utility/AssetTransformer.h"
+#pragma once
 
-#include <EASTL/sort.h>
-#include <EASTL/unordered_set.h>
+#include <Urho3D/Scene/Serializable.h>
+#include <Urho3D/Utility/AssetTransformerHierarchy.h>
 
 namespace Urho3D
 {
 
-AssetTransformer::AssetTransformer(Context* context)
-    : Serializable(context)
-{
-}
+class ProjectEditor;
 
-bool AssetTransformer::Execute(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers)
+/// Manages assets of the project.
+class AssetManager : public Object
 {
-    bool success = false;
-    for (AssetTransformer* transformer : transformers)
-        success = transformer->Execute(ctx) || success;
-    return success;
-}
+    URHO3D_OBJECT(AssetManager, Object);
 
-void AssetTransformer::SetFlavor(const ea::string& value)
-{
-    if (value.empty())
-        flavor_ = "*";
-    else if (!value.starts_with("*"))
-        flavor_ = Format("*.{}", value);
-    else
-        flavor_ = value;
-}
+public:
+    static const ea::string ResourceName;
+
+    explicit AssetManager(Context* context);
+    ~AssetManager() override;
+
+    void Update();
+
+private:
+    void ReloadPipelines();
+    void ProcessAssets();
+    StringVector EnumeratePipelineFiles() const;
+    StringVector EnumerateAssetFiles() const;
+
+    const WeakPtr<ProjectEditor> projectEditor_;
+
+    ea::string defaultFlavor_{"*"}; // TODO(editor): Make configurable
+    bool reloadPipelines_{true};
+    bool processAssets_{true};
+
+    SharedPtr<AssetTransformerHierarchy> hierarchy_;
+};
 
 }
