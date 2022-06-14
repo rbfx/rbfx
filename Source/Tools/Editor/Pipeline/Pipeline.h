@@ -35,7 +35,7 @@
 #include <Toolbox/IO/ContentUtilities.h>
 
 #include "Pipeline/Importers/AssetImporter.h"
-#include "Pipeline/Importers/ModelImporter.h"
+//#include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
 #include "Pipeline/Importers/TextureImporter.h"
 #include "Pipeline/Asset.h"
@@ -127,7 +127,7 @@ protected:
     /// A list of all available importers. When new importer is created it should be added here.
     ea::vector<const TypeInfo*> importers_
     {
-        ModelImporter::GetTypeInfoStatic(),
+        //ModelImporter::GetTypeInfoStatic(),
         SceneConverter::GetTypeInfoStatic(),
         TextureImporter::GetTypeInfoStatic(),
     };

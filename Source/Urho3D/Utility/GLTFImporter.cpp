@@ -117,6 +117,13 @@ public:
     {
     }
 
+    ~GLTFImporterBase()
+    {
+        auto cache = context_->GetSubsystem<ResourceCache>();
+        for (const auto& [type, name] : manualResources_)
+            cache->ReleaseResource(type, name, true);
+    }
+
     ea::string CreateLocalResourceName(const ea::string& nameHint,
         const ea::string& prefix, const ea::string& defaultName, const ea::string& suffix)
     {
@@ -161,6 +168,7 @@ public:
     {
         auto cache = context_->GetSubsystem<ResourceCache>();
         cache->AddManualResource(resource);
+        manualResources_.emplace_back(resource->GetType(), resource->GetName());
     }
 
     void SaveResource(Resource* resource)
@@ -210,6 +218,8 @@ private:
 
     ea::unordered_set<ea::string> localResourceNames_;
     ea::unordered_map<ea::string, ea::string> resourceNameToAbsoluteFileName_;
+
+    ea::vector<ea::pair<StringHash, ea::string>> manualResources_;
 };
 
 /// Utility to parse GLTF buffers.

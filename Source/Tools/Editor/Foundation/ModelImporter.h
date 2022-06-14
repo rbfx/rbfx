@@ -20,36 +20,28 @@
 // THE SOFTWARE.
 //
 
-#include "../IO/Log.h"
-#include "../Utility/AssetTransformer.h"
+#pragma once
 
-#include <EASTL/sort.h>
-#include <EASTL/unordered_set.h>
+#include "../Project/ProjectEditor.h"
+
+#include <Urho3D/Utility/AssetTransformer.h>
 
 namespace Urho3D
 {
 
-AssetTransformer::AssetTransformer(Context* context)
-    : Serializable(context)
-{
-}
+void Foundation_ModelImporter(Context* context, ProjectEditor* project);
 
-bool AssetTransformer::Execute(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers)
+/// Asset transformer that imports GLTF models.
+class ModelImporter : public AssetTransformer
 {
-    bool success = false;
-    for (AssetTransformer* transformer : transformers)
-        success = transformer->Execute(ctx) || success;
-    return success;
-}
+    URHO3D_OBJECT(ModelImporter, AssetTransformer);
 
-void AssetTransformer::SetFlavor(const ea::string& value)
-{
-    if (value.empty())
-        flavor_ = "*";
-    else if (!value.starts_with("*"))
-        flavor_ = Format("*.{}", value);
-    else
-        flavor_ = value;
-}
+public:
+    explicit ModelImporter(Context* context);
+
+    bool Execute(const AssetTransformerContext& ctx) override;
+
+private:
+};
 
 }

@@ -25,6 +25,7 @@
 #include "../Core/HotkeyManager.h"
 #include "../Core/SettingsManager.h"
 #include "../Core/UndoManager.h"
+#include "../Project/AssetManager.h"
 #include "../Project/CloseDialog.h"
 #include "../Project/EditorTab.h"
 
@@ -145,6 +146,7 @@ public:
 
     /// Return singletons
     /// @{
+    AssetManager* GetAssetManager() const { return assetManager_; }
     HotkeyManager* GetHotkeyManager() const { return hotkeyManager_; }
     SettingsManager* GetSettingsManager() const { return settingsManager_; }
     UndoManager* GetUndoManager() const { return undoManager_; }
@@ -180,6 +182,7 @@ private:
     const ResourceCacheGuard oldCacheState_;
     /// @}
 
+    SharedPtr<AssetManager> assetManager_;
     SharedPtr<HotkeyManager> hotkeyManager_;
     SharedPtr<SettingsManager> settingsManager_;
     SharedPtr<UndoManager> undoManager_;

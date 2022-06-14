@@ -89,6 +89,7 @@ static const char* MODEL_IMPORTER_FBX_PIVOT = "Suppress $fbx pivot nodes";
 
 }
 
+#if 0
 ModelImporter::ModelImporter(Context* context)
     : AssetImporter(context)
 {
@@ -336,4 +337,5 @@ bool ModelImporter::Accepts(const ea::string& path) const
     return false;
 }
 
+#endif
 }

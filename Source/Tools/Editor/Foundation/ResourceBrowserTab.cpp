@@ -619,7 +619,13 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
 
     if (ui::IsItemClicked(MOUSEB_LEFT))
+    {
         SelectRightPanel(entry.resourceName_);
+        if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+        {
+            OpenEntryInEditor(entry);
+        }
+    }
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())

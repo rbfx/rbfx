@@ -24,11 +24,23 @@
 
 #include "../Scene/Serializable.h"
 
-#include <EASTL/optional.h>
-#include <EASTL/vector_multiset.h>
-
 namespace Urho3D
 {
+
+class AssetTransformer;
+using AssetTransformerVector = ea::vector<AssetTransformer*>;
+
+/// Context of transformer invocation.
+struct AssetTransformerContext
+{
+    Context* context_{};
+    /// Resource name that can be used to access resource via cache.
+    ea::string resourceName_;
+    /// Absolute file name to the processed resource.
+    ea::string fileName_;
+    /// Absolute file name to the file counterpart in writeable directory.
+    ea::string cacheFileName_;
+};
 
 /// Interface of a script that can be used to transform assets.
 /// Flavor is used for hierarchical filtering.
@@ -39,7 +51,11 @@ class URHO3D_API AssetTransformer : public Serializable
 
 public:
     explicit AssetTransformer(Context* context);
+    /// Execute transformer array on the asset.
+    static bool Execute(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers);
 
+    /// Execute this transformer on the asset. Return true if any action was performed.
+    virtual bool Execute(const AssetTransformerContext& ctx) { return false; }
     /// Return whether the importer of this type should be invoked at most once.
     virtual bool IsSingleInstanced() { return true; }
 
@@ -51,75 +67,6 @@ public:
 
 private:
     ea::string flavor_{"*"};
-};
-
-/// Container for a hierarchy of AssetTransformer instances.
-/// Inner (more specific) transformers are preferred to outer (more generic) transformers.
-class URHO3D_API AssetTransformerHierarchy : public Object
-{
-    URHO3D_OBJECT(AssetTransformerHierarchy, Object);
-
-public:
-    explicit AssetTransformerHierarchy(Context* context);
-
-    /// Clear all cached transformers and dependencies.
-    void Clear();
-    /// Add new transformer.
-    void AddTransformer(const ea::string& path, AssetTransformer* transformer);
-    /// Add dependency between transformer types.
-    bool AddDependency(const ea::string& transformerClass, const ea::string& dependsOn);
-    /// Should be called after all dependencies are added.
-    void CommitDependencies();
-
-    /// Enumerate all transformers for given path and any flavor.
-    ea::vector<AssetTransformer*> GetTransformerCandidates(const ea::string& resourcePath) const;
-    /// Enumerate all transformers for given path and flavor.
-    ea::vector<AssetTransformer*> GetTransformerCandidates(
-        const ea::string& resourcePath, const ea::string& flavor) const;
-
-private:
-    struct DependencyGraphNode
-    {
-        ea::optional<unsigned> depth_;
-        ea::string name_;
-        ea::vector<ea::shared_ptr<DependencyGraphNode>> dependencies_;
-    };
-
-    using DependencyGraphNodePtr = ea::shared_ptr<DependencyGraphNode>;
-
-    struct TreeNode
-    {
-        struct ByName
-        {
-            bool operator()(const ea::unique_ptr<TreeNode>& lhs, const ea::unique_ptr<TreeNode>& rhs) const;
-            bool operator()(const ea::string& lhs, const ea::unique_ptr<TreeNode>& rhs) const;
-            bool operator()(const ea::unique_ptr<TreeNode>& lhs, const ea::string& rhs) const;
-        };
-
-        TreeNode& GetOrCreateChild(const ea::string& name);
-        TreeNode& GetOrCreateChild(ea::span<const ea::string> path);
-        const TreeNode* GetChild(const ea::string& name) const;
-
-        template <class T>
-        void IterateNodesChildFirst(ea::span<const ea::string> path, const T& callback) const;
-
-        TreeNode() = default;
-        explicit TreeNode(const ea::string& name) : name_(name) {}
-
-        ea::string name_;
-        ea::vector<SharedPtr<AssetTransformer>> transformers_;
-        ea::vector_multiset<ea::unique_ptr<TreeNode>, ByName> children_;
-    };
-
-    DependencyGraphNodePtr GetOrCreateDependencyNode(const ea::string& name);
-    bool DependsOn(const DependencyGraphNode& queryNode, const DependencyGraphNode& dependencyNode) const;
-    unsigned GetTypeOrder(StringHash type) const;
-
-    TreeNode root_;
-
-    DependencyGraphNodePtr dependencyRoot_;
-    ea::unordered_map<ea::string, DependencyGraphNodePtr> dependencyNodes_;
-    ea::unordered_map<StringHash, unsigned> dependencyOrder_;
 };
 
 }
