@@ -403,6 +403,7 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
         {
             switch (mode)
             {
+            case SPK_AUTO: break;
             case SPK_MONO:
                 if (!lowFrequency_) MixMonoToMonoIP(sound, dest, samples, mixRate);
                 break;
@@ -424,6 +425,7 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
         {
             switch (mode)
             {
+            case SPK_AUTO: break;
             case SPK_MONO:
                 if (!lowFrequency_) MixMonoToStereo(sound, dest, samples, mixRate);
                 break;

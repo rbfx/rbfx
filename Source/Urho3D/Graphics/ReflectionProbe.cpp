@@ -755,6 +755,8 @@ void ReflectionProbe::UpdateCubemapRenderer()
             UpdateProbeTextureData(mixedProbeTexture_);
         }
         break;
+    default:
+        break;
     }
 }
 
