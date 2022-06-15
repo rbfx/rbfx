@@ -756,6 +756,7 @@ void ReflectionProbe::UpdateCubemapRenderer()
         }
         break;
     default:
+        assert(!"Unsupported probe type");
         break;
     }
 }
