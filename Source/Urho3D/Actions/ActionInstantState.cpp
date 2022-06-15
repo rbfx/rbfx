@@ -1,5 +1,4 @@
 //
-// Copyright (c) 2015 Xamarin Inc.
 // Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,47 +20,28 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "ActionInstantState.h"
 
-#include "ActionState.h"
+#include "../Core/Context.h"
+#include "ActionInstant.h"
 
 namespace Urho3D
 {
-class Object;
-
 namespace Actions
 {
-class FiniteTimeAction;
 
-/// Finite time action state.
-class URHO3D_API FiniteTimeActionState : public ActionState
+/// Construct.
+ActionInstantState::ActionInstantState(ActionInstant* action, Object* target)
+    : FiniteTimeActionState(action, target)
 {
-public:
-    /// Construct.
-    FiniteTimeActionState(FiniteTimeAction* action, Object* target);
-    /// Destruct.
-    ~FiniteTimeActionState() override;
+}
 
-    /// Gets a value indicating whether this instance is done.
-    bool IsDone() const override { return elapsed_ >= duration_; }
+/// Destruct.
+ActionInstantState::~ActionInstantState() {}
 
-    /// Called every frame with it's delta time.
-    void Step(float dt) override;
+bool ActionInstantState::IsDone() const { return true; }
 
-    /// Get action duration.
-    float GetDuration() const { return duration_; }
-    /// Get action elapsed time.
-    float GetElapsed() const { return elapsed_; }
-
-protected:
-    /// Call StartAction on an action.
-    SharedPtr<FiniteTimeActionState> StartAction(FiniteTimeAction* action, Object* target) const;
-
-private:
-    float duration_{};
-    float elapsed_{};
-    bool firstTick_{true};
-};
+void ActionInstantState::Step(float dt) { Update(1.0f); }
 
 } // namespace Actions
 } // namespace Urho3D

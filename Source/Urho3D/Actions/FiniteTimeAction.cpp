@@ -44,7 +44,7 @@ public:
     /// Destruct.
     ~NoAction() override;
     /// Create reversed action.
-    virtual SharedPtr<FiniteTimeAction> Reverse() const;
+    SharedPtr<FiniteTimeAction> Reverse() const override;
 
 private:
     SharedPtr<FiniteTimeAction> reversed_;
@@ -53,7 +53,7 @@ private:
 
 /// Construct.
 FiniteTimeAction::FiniteTimeAction(Context* context)
-    : BaseAction(context)
+    : BaseClassName(context)
 {
 }
 

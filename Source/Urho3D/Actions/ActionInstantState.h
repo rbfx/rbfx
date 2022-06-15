@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "ActionState.h"
+#include "FiniteTimeActionState.h"
 
 namespace Urho3D
 {
@@ -31,36 +31,22 @@ class Object;
 
 namespace Actions
 {
-class FiniteTimeAction;
+class ActionInstant;
 
 /// Finite time action state.
-class URHO3D_API FiniteTimeActionState : public ActionState
+class URHO3D_API ActionInstantState : public FiniteTimeActionState
 {
 public:
     /// Construct.
-    FiniteTimeActionState(FiniteTimeAction* action, Object* target);
+    ActionInstantState(ActionInstant* action, Object* target);
     /// Destruct.
-    ~FiniteTimeActionState() override;
+    ~ActionInstantState() override;
 
     /// Gets a value indicating whether this instance is done.
-    bool IsDone() const override { return elapsed_ >= duration_; }
+    bool IsDone() const override;
 
     /// Called every frame with it's delta time.
     void Step(float dt) override;
-
-    /// Get action duration.
-    float GetDuration() const { return duration_; }
-    /// Get action elapsed time.
-    float GetElapsed() const { return elapsed_; }
-
-protected:
-    /// Call StartAction on an action.
-    SharedPtr<FiniteTimeActionState> StartAction(FiniteTimeAction* action, Object* target) const;
-
-private:
-    float duration_{};
-    float elapsed_{};
-    bool firstTick_{true};
 };
 
 } // namespace Actions

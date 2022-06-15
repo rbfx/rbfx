@@ -25,6 +25,9 @@
 #include "../Core/Context.h"
 #include "../Input/Input.h"
 #include "../Graphics/Viewport.h"
+#if URHO3D_ACTIONS
+#include "../Actions/ActionManager.h"
+#endif
 
 namespace Urho3D
 {
@@ -109,6 +112,14 @@ public:
     /// @property{get_viewports}
     SingleStateApplication* GetApplication() const { return application_; }
 
+#if URHO3D_ACTIONS
+    /// Return application state's action manager.
+    ActionManager* GetActionManager() const { return actionManager_; }
+
+    /// Add action to the state's action manager.
+    Actions::ActionState* AddAction(Actions::BaseAction* action, Object* target, bool paused = false);
+#endif
+
 private:
     /// Initialize mouse mode on non-web platform.
     void InitMouseMode();
@@ -146,6 +157,9 @@ private:
     Color fogColor_{0.0f, 0.0f, 0.0f};
     /// Saved fog color to be restored at deactivation.
     Color savedFogColor_{};
+#if URHO3D_ACTIONS
+    SharedPtr<ActionManager> actionManager_;
+#endif
 };
 
 class URHO3D_API SingleStateApplication: public Application

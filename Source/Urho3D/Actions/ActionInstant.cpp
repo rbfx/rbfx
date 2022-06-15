@@ -21,47 +21,44 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "ActionInstant.h"
+#include "ActionInstantState.h"
 
-#include "ActionState.h"
+#include "../IO/ArchiveSerializationBasic.h"
+#include "../Core/Context.h"
 
 namespace Urho3D
 {
-class Object;
-
 namespace Actions
 {
-class FiniteTimeAction;
 
-/// Finite time action state.
-class URHO3D_API FiniteTimeActionState : public ActionState
+/// Construct.
+ActionInstant::ActionInstant(Context* context)
+    : BaseClassName(context)
 {
-public:
-    /// Construct.
-    FiniteTimeActionState(FiniteTimeAction* action, Object* target);
-    /// Destruct.
-    ~FiniteTimeActionState() override;
+}
 
-    /// Gets a value indicating whether this instance is done.
-    bool IsDone() const override { return elapsed_ >= duration_; }
-
-    /// Called every frame with it's delta time.
-    void Step(float dt) override;
+/// Serialize content from/to archive. May throw ArchiveException.
+void ActionInstant::SerializeInBlock(Archive& archive)
+{
+    // Skip FiniteTimeAction::SerializeInBlock because duration is always 0
+    BaseAction::SerializeInBlock(archive);
+}
 
     /// Get action duration.
-    float GetDuration() const { return duration_; }
-    /// Get action elapsed time.
-    float GetElapsed() const { return elapsed_; }
+float ActionInstant::GetDuration() const { return 0.0f; }
 
-protected:
-    /// Call StartAction on an action.
-    SharedPtr<FiniteTimeActionState> StartAction(FiniteTimeAction* action, Object* target) const;
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> ActionInstant::Reverse() const
+{
+    return MakeShared<ActionInstant>(context_);
+}
 
-private:
-    float duration_{};
-    float elapsed_{};
-    bool firstTick_{true};
-};
+/// Create new action state from the action.
+SharedPtr<ActionState> ActionInstant::StartAction(Object* target)
+{
+    return MakeShared<ActionInstantState>(this, target);
+}
 
 } // namespace Actions
 } // namespace Urho3D

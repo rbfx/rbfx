@@ -22,10 +22,15 @@
 
 #pragma once
 
-#include "FiniteTimeAction.h"
+#include "CallFunc.h"
 
 namespace Urho3D
 {
+namespace Actions
+{
+class ActionCallHandler;
+}
+
 class ActionManager;
 
 /// Action as resource
@@ -91,6 +96,20 @@ public:
     /// Continue with ShaderParameterFromTo action.
     ActionBuilder ShaderParameterFromTo(
         float duration, ea::string_view parameter, const Variant& from, const Variant& to);
+
+    /// Continue with SendEvent action.
+    ActionBuilder SendEvent(ea::string_view eventType, const StringVariantMap& data);
+
+    /// Continue with CallFunc action.
+    ActionBuilder CallFunc(Actions::ActionCallHandler* handler);
+
+    /// Continue with CallFunc action.
+    template <typename T>
+    ActionBuilder CallFunc(
+        T* receiver, typename Actions::ActionCallHandlerImpl<T>::HandlerFunctionPtr func, void* userData = nullptr)
+    {
+        return CallFunc(new Actions::ActionCallHandlerImpl<T>(receiver, func, userData));
+    }
 
     /// Combine with BackIn action.
     ActionBuilder BackIn();

@@ -67,6 +67,7 @@ public:
 
     unsigned GetNumActions(Object* target) const;
 
+    /// Add action to the action manager.
     Actions::ActionState* AddAction(Actions::BaseAction* action, Object* target, bool paused = false);
 
     void Update(float dt);

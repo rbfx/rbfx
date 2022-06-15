@@ -23,45 +23,35 @@
 
 #pragma once
 
-#include "ActionState.h"
+#include "FiniteTimeAction.h"
 
 namespace Urho3D
 {
-class Object;
-
 namespace Actions
 {
-class FiniteTimeAction;
-
-/// Finite time action state.
-class URHO3D_API FiniteTimeActionState : public ActionState
+/// Finite time action.
+class URHO3D_API ActionInstant : public FiniteTimeAction
 {
+    URHO3D_OBJECT(ActionInstant, FiniteTimeAction)
+
 public:
     /// Construct.
-    FiniteTimeActionState(FiniteTimeAction* action, Object* target);
-    /// Destruct.
-    ~FiniteTimeActionState() override;
-
-    /// Gets a value indicating whether this instance is done.
-    bool IsDone() const override { return elapsed_ >= duration_; }
-
-    /// Called every frame with it's delta time.
-    void Step(float dt) override;
+    ActionInstant(Context* context);
 
     /// Get action duration.
-    float GetDuration() const { return duration_; }
-    /// Get action elapsed time.
-    float GetElapsed() const { return elapsed_; }
+    float GetDuration() const override;
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
 
 protected:
-    /// Call StartAction on an action.
-    SharedPtr<FiniteTimeActionState> StartAction(FiniteTimeAction* action, Object* target) const;
-
-private:
-    float duration_{};
-    float elapsed_{};
-    bool firstTick_{true};
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
 };
 
 } // namespace Actions
+
 } // namespace Urho3D

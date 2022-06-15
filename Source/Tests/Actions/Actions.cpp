@@ -271,8 +271,8 @@ TEST_CASE("Repeat JumpBy")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    auto actionManager = context->GetSubsystem<ActionManager>();
-    auto movedNode = MakeShared<Node>(context);
+    const auto actionManager = context->GetSubsystem<ActionManager>();
+    const auto movedNode = MakeShared<Node>(context);
     ActionBuilder(context).JumpBy(Vector3(0, 0, 10)).Repeat(2).Run(movedNode);
 
     // Tick for 3 seconds
@@ -359,6 +359,60 @@ TEST_CASE("ShaderParameterFromTo tweening")
     // Advance beyond the end of animation.
     actionManager->Update(2.5f);
     CHECK(0 == actionManager->GetNumActions(material));
+}
+
+namespace
+{
+class CallReceiver : public Object
+{
+    URHO3D_OBJECT(CallReceiver, Object)
+public:
+    CallReceiver(Context* context)
+        : BaseClassName(context)
+    {
+    }
+
+    void Handle(Object* target) { target_ = target; }
+
+    Object* target_{nullptr};
+};
+} // namespace
+
+TEST_CASE("SendEvent action")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    const auto actionManager = context->GetSubsystem<ActionManager>();
+
+    StringVariantMap data;
+    data["A"] = "B";
+    const auto action = ActionBuilder(context).SendEvent("Event", data).Build();
+
+    const auto target = MakeShared<CallReceiver>(context);
+
+    ea::string res;
+    target->SubscribeToEvent(target, "Event", [&res](StringHash e, VariantMap& args) { res = args["A"].GetString(); });
+
+    actionManager->AddAction(action, target);
+    actionManager->Update(0.1f);
+
+    CHECK(res == "B");
+}
+
+TEST_CASE("CallFunc action")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    const auto actionManager = context->GetSubsystem<ActionManager>();
+    const auto target = MakeShared<CallReceiver>(context);
+
+    CallReceiver r(context);
+    const auto action = ActionBuilder(context).CallFunc<CallReceiver>(&r, &CallReceiver::Handle).Build();
+
+    actionManager->AddAction(action, target);
+    actionManager->Update(0.1f);
+
+    CHECK(r.target_ == target);
 }
 
 TEST_CASE("Serialize Action")

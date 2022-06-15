@@ -96,7 +96,7 @@ ActionBuilder ActionBuilder::Also(Actions::FiniteTimeAction* parallelAction)
 /// Build MoveBy action.
 ActionBuilder ActionBuilder::MoveBy(float duration, const Vector3& offset)
 {
-    auto action = MakeShared<Actions::MoveBy>(context_);
+    const auto action = MakeShared<Actions::MoveBy>(context_);
     action->SetDuration(duration);
     action->SetPositionDelta(offset);
     return Then(action);
@@ -104,7 +104,7 @@ ActionBuilder ActionBuilder::MoveBy(float duration, const Vector3& offset)
 
 ActionBuilder ActionBuilder::MoveBy2D(float duration, const Vector2& offset)
 {
-    auto action = MakeShared<Actions::MoveBy2D>(context_);
+    const auto action = MakeShared<Actions::MoveBy2D>(context_);
     action->SetDuration(duration);
     action->SetPositionDelta(offset);
     return Then(action);
@@ -112,7 +112,7 @@ ActionBuilder ActionBuilder::MoveBy2D(float duration, const Vector2& offset)
 
 ActionBuilder ActionBuilder::JumpBy(const Vector3& offset)
 {
-    auto action = MakeShared<Actions::JumpBy>(context_);
+    const auto action = MakeShared<Actions::JumpBy>(context_);
     action->SetPositionDelta(offset);
     return Then(action);
 }
@@ -127,7 +127,7 @@ ActionBuilder ActionBuilder::JumpBy2D(const Vector2& offset)
 /// Continue with ScaleBy action.
 ActionBuilder ActionBuilder::ScaleBy(float duration, const Vector3& delta)
 {
-    auto action = MakeShared<Actions::ScaleBy>(context_);
+    const auto action = MakeShared<Actions::ScaleBy>(context_);
     action->SetDuration(duration);
     action->SetScaleDelta(delta);
     return Then(action);
@@ -136,7 +136,7 @@ ActionBuilder ActionBuilder::ScaleBy(float duration, const Vector3& delta)
 /// Continue with RotateBy action.
 ActionBuilder ActionBuilder::RotateBy(float duration, const Quaternion& delta)
 {
-    auto action = MakeShared<Actions::RotateBy>(context_);
+    const auto action = MakeShared<Actions::RotateBy>(context_);
     action->SetDuration(duration);
     action->SetRotationDelta(delta);
     return Then(action);
@@ -145,7 +145,7 @@ ActionBuilder ActionBuilder::RotateBy(float duration, const Quaternion& delta)
 /// Continue with RotateAround action.
 ActionBuilder ActionBuilder::RotateAround(float duration, const Vector3& pivot, const Quaternion& delta)
 {
-    auto action = MakeShared<Actions::RotateAround>(context_);
+    const auto action = MakeShared<Actions::RotateAround>(context_);
     action->SetDuration(duration);
     action->SetRotationDelta(delta);
     action->SetPivot(pivot);
@@ -155,13 +155,13 @@ ActionBuilder ActionBuilder::RotateAround(float duration, const Vector3& pivot, 
 
 ActionBuilder ActionBuilder::Hide()
 {
-    auto action = MakeShared<Actions::Hide>(context_);
+    const auto action = MakeShared<Actions::Hide>(context_);
     return Then(action);
 }
 
 ActionBuilder ActionBuilder::Show()
 {
-    auto action = MakeShared<Actions::Show>(context_);
+    const auto action = MakeShared<Actions::Show>(context_);
     return Then(action);
 }
 
@@ -175,7 +175,7 @@ ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks)
 
 ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::string_view attributeName)
 {
-    auto action = MakeShared<Actions::Blink>(context_);
+    const auto action = MakeShared<Actions::Blink>(context_);
     action->SetDuration(duration);
     action->SetNumOfBlinks(numOfBlinks);
     action->SetAttributeName(attributeName);
@@ -185,7 +185,7 @@ ActionBuilder ActionBuilder::Blink(float duration, unsigned numOfBlinks, ea::str
 /// Continue with AttributeTo action.
 ActionBuilder ActionBuilder::AttributeTo(float duration, ea::string_view attributeName, const Variant& to)
 {
-    auto action = MakeShared<Actions::AttributeTo>(context_);
+    const auto action = MakeShared<Actions::AttributeTo>(context_);
     action->SetDuration(duration);
     action->SetAttributeName(attributeName);
     action->SetTo(to);
@@ -196,7 +196,7 @@ ActionBuilder ActionBuilder::AttributeTo(float duration, ea::string_view attribu
 ActionBuilder ActionBuilder::AttributeFromTo(
     float duration, ea::string_view attributeName, const Variant& from, const Variant& to)
 {
-    auto action = MakeShared<Actions::AttributeFromTo>(context_);
+    const auto action = MakeShared<Actions::AttributeFromTo>(context_);
     action->SetDuration(duration);
     action->SetAttributeName(attributeName);
     action->SetFrom(from);
@@ -207,7 +207,7 @@ ActionBuilder ActionBuilder::AttributeFromTo(
 /// Continue with ShaderParameterTo action.
 ActionBuilder ActionBuilder::ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to)
 {
-    auto action = MakeShared<Actions::ShaderParameterTo>(context_);
+    const auto action = MakeShared<Actions::ShaderParameterTo>(context_);
     action->SetDuration(duration);
     action->SetName(parameter);
     action->SetTo(to);
@@ -218,11 +218,28 @@ ActionBuilder ActionBuilder::ShaderParameterTo(float duration, ea::string_view p
 ActionBuilder ActionBuilder::ShaderParameterFromTo(
     float duration, ea::string_view parameter, const Variant& from, const Variant& to)
 {
-    auto action = MakeShared<Actions::ShaderParameterFromTo>(context_);
+    const auto action = MakeShared<Actions::ShaderParameterFromTo>(context_);
     action->SetDuration(duration);
     action->SetName(parameter);
     action->SetFrom(from);
     action->SetTo(to);
+    return Then(action);
+}
+
+/// Continue with SendEvent action.
+ActionBuilder ActionBuilder::SendEvent(ea::string_view eventType, const StringVariantMap& data)
+{
+    const auto action = MakeShared<Actions::SendEvent>(context_);
+    action->SetEventType(eventType);
+    action->SetEventData(data);
+    return Then(action);
+}
+
+/// Continue with CallFunc action.
+ActionBuilder ActionBuilder::CallFunc(Actions::ActionCallHandler* handler)
+{
+    const auto action = MakeShared<Actions::CallFunc>(context_);
+    action->SetCallHandler(handler);
     return Then(action);
 }
 
@@ -355,7 +372,7 @@ ActionBuilder ActionBuilder::RemoveSelf() { return Then(MakeShared<Actions::Remo
 /// Combine with DelayTime action.
 ActionBuilder ActionBuilder::DelayTime(float duration)
 {
-    auto action = MakeShared<Actions::DelayTime>(context_);
+    const auto action = MakeShared<Actions::DelayTime>(context_);
     action->SetDuration(duration);
     return Then(action);
 }
@@ -363,7 +380,7 @@ ActionBuilder ActionBuilder::DelayTime(float duration)
 /// Repeat current action.
 ActionBuilder ActionBuilder::Repeat(unsigned times)
 {
-    auto action = MakeShared<Actions::Repeat>(context_);
+    const auto action = MakeShared<Actions::Repeat>(context_);
     action->SetInnerAction(action_);
     action->SetTimes(times);
     return ActionBuilder(context_, action);

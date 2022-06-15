@@ -59,6 +59,7 @@ inline void SerializeValue(Archive& archive, const char* name, Variant& value)
 URHO3D_API void SerializeValue(Archive& archive, const char* name, StringVector& value);
 URHO3D_API void SerializeValue(Archive& archive, const char* name, VariantVector& value);
 URHO3D_API void SerializeValue(Archive& archive, const char* name, VariantMap& value);
+URHO3D_API void SerializeValue(Archive& archive, const char* name, StringVariantMap& value);
 URHO3D_API void SerializeValue(Archive& archive, const char* name, ResourceRef& value);
 URHO3D_API void SerializeValue(Archive& archive, const char* name, ResourceRefList& value);
 /// @}

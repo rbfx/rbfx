@@ -240,6 +240,8 @@ ActionState* ActionManager::AddAction(BaseAction* action, Object* target, bool p
     if (existingTargetIt == targets_.end() || existingTargetIt->second.Target.Expired())
     {
         element = &targets_[target];
+        // Hack to handle expired target with reused pointer.
+        element->ActionStates.clear();
         element->Paused = paused;
         element->Target = target;
     }
