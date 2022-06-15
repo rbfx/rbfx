@@ -204,6 +204,8 @@ void SplashScreen::UpdateState(float timeStep, unsigned resourceCounter)
             return;
         }
         return;
+    case SplashScreenState::Complete:
+        return;
     }
 }
 

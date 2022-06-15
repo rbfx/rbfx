@@ -45,6 +45,9 @@ template <typename T> struct CopyValues
         const unsigned numParticles = context.indices_.size();
         switch (pin1.GetContainerType())
         {
+        case ParticleGraphContainerType::Auto:
+            assert(!"ParticleGraphContainerType::Auto");
+            break;
         case ParticleGraphContainerType::Scalar:
         {
             auto src = context.GetScalar<T>(pin1.GetMemoryReference());

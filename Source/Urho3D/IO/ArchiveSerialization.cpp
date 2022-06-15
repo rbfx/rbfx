@@ -305,6 +305,11 @@ void SerializeValue(Archive& archive, const char* name, VariantMap& value)
     SerializeMap(archive, name, value);
 }
 
+void SerializeValue(Archive& archive, const char* name, StringVariantMap& value)
+{
+    SerializeMap(archive, name, value);
+}
+
 void SerializeValue(Archive& archive, const char* name, ResourceRef& value)
 {
     if (!archive.IsHumanReadable())
