@@ -22,7 +22,7 @@
 
 #include "../CommonUtils.h"
 
-#include <Urho3D/Utility/AssetTransformer.h>
+#include <Urho3D/Utility/AssetTransformerHierarchy.h>
 
 namespace
 {
