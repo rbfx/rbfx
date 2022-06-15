@@ -37,7 +37,7 @@ namespace Urho3DNet
         private delegate void ActionCallbackDelegate(IntPtr actionHandle, IntPtr obj);
 
 #if __IOS__
-        [global::ObjCRuntime.MonoPInvokeCallback(typeof(EventCallbackDelegate))]
+        [global::ObjCRuntime.MonoPInvokeCallback(typeof(ActionCallbackDelegate))]
 #endif
         private static void ActionHandlerCallback(IntPtr actionHandle, IntPtr obj)
         {
