@@ -153,6 +153,10 @@ void PrefabReference::ToggleNode(bool forceReload)
         {
             // Don't destroy the node as it may be enabled later.
             node_->Remove();
+
+            // If reload is required then unload existing node so it will be reloaded when required.
+            if (forceReload)
+                node_.Reset();
         }
     }
     else
