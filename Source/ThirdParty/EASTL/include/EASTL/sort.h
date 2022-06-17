@@ -305,7 +305,7 @@ namespace eastl
 					{
 						iBack = iCurrent = iSorted;
 						
-						for(iBack -= nSpace; (iCurrent != iInsertFirst) && compare(*iCurrent, *iBack); iCurrent = iBack, iBack -= nSpace)
+						for(; (iCurrent != iInsertFirst) && compare(*iCurrent, *(iBack -= nSpace)); iCurrent = iBack)
 						{
 							EASTL_VALIDATE_COMPARE(!compare(*iBack, *iCurrent)); // Validate that the compare function is sane.
 							eastl::iter_swap(iCurrent, iBack);
@@ -715,18 +715,20 @@ namespace eastl
 	template <typename RandomAccessIterator, typename T>
 	inline RandomAccessIterator get_partition_impl(RandomAccessIterator first, RandomAccessIterator last, T&& pivotValue)
 	{
+		using PureT = decay_t<T>;
+
 		for(; ; ++first)
 		{
-			while(*first < pivotValue)
+			while(eastl::less<PureT>()(*first, pivotValue))
 			{
-				EASTL_VALIDATE_COMPARE(!(pivotValue < *first)); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!eastl::less<PureT>()(pivotValue, *first)); // Validate that the compare function is sane.
 				++first;
 			}
 			--last;
 
-			while(pivotValue < *last)
+			while(eastl::less<PureT>()(pivotValue, *last))
 			{
-				EASTL_VALIDATE_COMPARE(!(*last < pivotValue)); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!eastl::less<PureT>()(*last, pivotValue)); // Validate that the compare function is sane.
 				--last;
 			}
 
@@ -813,9 +815,9 @@ namespace eastl
 				RandomAccessIterator end(current), prev(current);
 				value_type           value(eastl::forward<value_type>(*current));
 
-				for(--prev; value < *prev; --end, --prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
+				for(--prev; eastl::less<value_type>()(value, *prev); --end, --prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
 				{
-					EASTL_VALIDATE_COMPARE(!(*prev < value)); // Validate that the compare function is sane.
+					EASTL_VALIDATE_COMPARE(!eastl::less<value_type>()(*prev, value)); // Validate that the compare function is sane.
 					*end = eastl::forward<value_type>(*prev);
 				}
 
@@ -860,9 +862,9 @@ namespace eastl
 
 		for(RandomAccessIterator i = middle; i < last; ++i)
 		{
-			if(*i < *first)
+			if(eastl::less<value_type>()(*i, *first))
 			{
-				EASTL_VALIDATE_COMPARE(!(*first < *i)); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!eastl::less<value_type>()(*first, *i)); // Validate that the compare function is sane.
 				value_type temp(eastl::forward<value_type>(*i));
 				*i = eastl::forward<value_type>(*first);
 				eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
@@ -1653,8 +1655,8 @@ namespace eastl
 			IntegerType)
 		{
 			RandomAccessIterator srcFirst = first;
-			constexpr size_t numBuckets = 1 << DigitBits;
-			constexpr IntegerType bucketMask = numBuckets - 1;
+			EA_CONSTEXPR_OR_CONST size_t numBuckets = 1 << DigitBits;
+			EA_CONSTEXPR_OR_CONST IntegerType bucketMask = numBuckets - 1;
 
 			// The alignment of this variable isn't required; it merely allows the code below to be faster on some platforms.
 			uint32_t EA_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[numBuckets];
