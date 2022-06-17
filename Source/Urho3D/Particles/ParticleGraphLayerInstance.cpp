@@ -182,6 +182,24 @@ void ParticleGraphLayerInstance::SetEmitter(ParticleGraphEmitter* emitter)
     emitter_ = emitter;
 }
 
+/// Handle scene change in instance.
+void ParticleGraphLayerInstance::OnSceneSet(Scene* scene)
+{
+    for (ParticleGraphNodeInstance* node : initNodeInstances_)
+    {
+        node->OnSceneSet(scene);
+    }
+    for (ParticleGraphNodeInstance* node : emitNodeInstances_)
+    {
+        node->OnSceneSet(scene);
+    }
+    for (ParticleGraphNodeInstance* node : updateNodeInstances_)
+    {
+        node->OnSceneSet(scene);
+    }
+}
+
+
 UpdateContext ParticleGraphLayerInstance::MakeUpdateContext(float timeStep)
 {
     UpdateContext context;

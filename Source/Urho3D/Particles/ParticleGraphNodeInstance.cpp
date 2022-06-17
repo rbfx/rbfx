@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-
 #include "../Precompiled.h"
 
 #include "ParticleGraphNodeInstance.h"
@@ -32,9 +31,9 @@ ParticleGraphNodeInstance::ParticleGraphNodeInstance() = default;
 
 ParticleGraphNodeInstance::~ParticleGraphNodeInstance() = default;
 
-void ParticleGraphNodeInstance::Reset()
-{
-}
+void ParticleGraphNodeInstance::Reset() {}
+
+/// Handle scene change in instance.
+void ParticleGraphNodeInstance::OnSceneSet(Scene* scene) {}
 
 } // namespace Urho3D
-

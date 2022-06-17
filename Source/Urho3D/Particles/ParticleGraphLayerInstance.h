@@ -115,6 +115,9 @@ public:
     ParticleGraphLayer* GetLayer() const { return layer_; }
 
 protected:
+    /// Handle scene change in instance.
+    void OnSceneSet(Scene* scene);
+
     /// Set emitter reference.
     void SetEmitter(ParticleGraphEmitter* emitter);
 

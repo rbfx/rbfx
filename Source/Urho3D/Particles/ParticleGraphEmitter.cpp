@@ -155,6 +155,11 @@ void ParticleGraphEmitter::OnSceneSet(Scene* scene)
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleGraphEmitter, HandleScenePostUpdate));
     else if (!scene)
         UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
+
+    for (unsigned i = 0; i < layers_.size(); ++i)
+    {
+            layers_[i].OnSceneSet(scene);
+    }
 }
 
 bool ParticleGraphEmitter::EmitNewParticle(unsigned layer)

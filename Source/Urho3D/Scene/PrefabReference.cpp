@@ -123,7 +123,8 @@ Node* PrefabReference::CreateInstance() const
         return nullptr;
     }
 
-    auto* node = new Node(context_);
+    auto* node = GetNode()->CreateTemporaryChild();
+    //auto* node = new Node(context_);
     node->LoadXML(prefab_->GetRoot());
     MarkAsTemp(node);
     return node;
@@ -174,6 +175,7 @@ void PrefabReference::ToggleNode(bool forceReload)
         // Add it to the component's parent.
         if (node_ && node != node_->GetParent())
         {
+            node_->Remove();
             node->AddChild(node_);
         }
     }
