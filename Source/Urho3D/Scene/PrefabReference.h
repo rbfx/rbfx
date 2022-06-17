@@ -49,6 +49,23 @@ public:
     /// Get reference to prefab resource.
     ResourceRef GetPrefabAttr() const;
 
+    /// Is prefab open (inlined).
+    bool IsOpen() const;
+
+    /// Set prefab state to open (inlined) or closed (referencing external resource)
+    void SetOpen(bool open);
+
+    /// Transition prefab into "Open" state.
+    /// This means that the prefab nodes won't be temporary anymore and should be available in editor.
+    void Open();
+
+    /// Transition prefab into "Closed" state.
+    /// This means that the prefab nodes would become temporary.
+    void Close();
+
+    /// Transition prefab into "Closed" state, save the current prefab node state into resource.
+    void Save();
+
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
@@ -73,6 +90,8 @@ private:
     SharedPtr<XMLFile> prefab_;
     /// Reference to prefab resource.
     ResourceRef prefabRef_;
+    /// Is prefab open.
+    bool isOpen_;
 };
 
 } // namespace Urho3D

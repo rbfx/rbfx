@@ -34,17 +34,39 @@ extern const char* SCENE_CATEGORY;
 
 namespace
 {
-void MarkAsTemp(Node* node)
+void SetTemporaryFlag(Node* node, bool isTemporary)
 {
-    node->SetTemporary(true);
+    if (!node)
+    {
+        return;
+    }
+
+    node->SetTemporary(isTemporary);
+
+    ea::vector<PrefabReference*> refs;
+    node->GetComponents<PrefabReference>(refs, false);
+
     for (auto& component : node->GetComponents())
     {
-        component->SetTemporary(true);
+        component->SetTemporary(isTemporary);
     }
 
     for (auto& child : node->GetChildren())
     {
-        MarkAsTemp(child);
+        bool isPrefabRoot = false;
+        for (auto* prefabRef: refs)
+        {
+            //Skip inner prefabs
+            if (child == prefabRef->GetRootNode())
+            {
+                isPrefabRoot = true;
+                break;;
+            }
+        }
+        if (!isPrefabRoot)
+        {
+            SetTemporaryFlag(child, isTemporary);
+        }
     }
 }
 } // namespace
@@ -60,7 +82,13 @@ PrefabReference::~PrefabReference() = default;
 void PrefabReference::RegisterObject(Context* context)
 {
     context->RegisterFactory<PrefabReference>(SCENE_CATEGORY);
+
+    URHO3D_ACTION_STATIC_LABEL("Open", Open, "Open and inline the prefab reference");
+    URHO3D_ACTION_STATIC_LABEL("Save", Save, "Save prefab node to resource");
+    URHO3D_ACTION_STATIC_LABEL("Close", Close, "Make prefab nodes temporary");
+
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Open", IsOpen, SetOpen, bool, false, AM_DEFAULT);
 }
 
 /// Set prefab resource.
@@ -126,8 +154,56 @@ Node* PrefabReference::CreateInstance() const
     auto* node = GetNode()->CreateTemporaryChild();
     //auto* node = new Node(context_);
     node->LoadXML(prefab_->GetRoot());
-    MarkAsTemp(node);
+    SetTemporaryFlag(node, true);
     return node;
+}
+/// Is prefab open (inlined).
+bool PrefabReference::IsOpen() const
+{
+    return isOpen_;
+}
+
+/// Set prefab state to open (inlined) or closed (referencing external resource)
+void PrefabReference::SetOpen(bool open)
+{
+    if (open != isOpen_)
+    {
+        isOpen_ = open;
+        if (isOpen_)
+        {
+            if (!node_)
+                node_ = CreateInstance();
+
+            SetTemporaryFlag(node_, false);
+        }
+        else
+        {
+            SetTemporaryFlag(node_, true);
+        }
+    }
+}
+
+void PrefabReference::Open()
+{
+    SetOpen(true);
+}
+
+void PrefabReference::Close()
+{
+    SetOpen(false);
+}
+
+void PrefabReference::Save()
+{
+    if (!prefab_ || !node_ || !IsOpen())
+    {
+        return;
+    }
+
+    auto file = MakeShared<XMLFile>(context_);
+    
+    node_->SaveXML(file->GetOrCreateRoot("node"));
+    file->SaveFile(prefab_->GetAbsoluteFileName());
 }
 
 /// Handle enabled/disabled state change.
@@ -168,6 +244,7 @@ void PrefabReference::ToggleNode(bool forceReload)
             if (node_)
             {
                 node_->Remove();
+                node_.Reset();
             }
             node_ = CreateInstance();
         }
