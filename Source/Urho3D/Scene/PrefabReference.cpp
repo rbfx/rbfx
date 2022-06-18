@@ -200,10 +200,14 @@ void PrefabReference::Save()
         return;
     }
 
-    auto file = MakeShared<XMLFile>(context_);
-    
-    node_->SaveXML(file->GetOrCreateRoot("node"));
-    file->SaveFile(prefab_->GetAbsoluteFileName());
+    const auto file = MakeShared<XMLFile>(context_);
+
+    auto root = file->GetOrCreateRoot("node");
+    node_->SaveXML(root);
+    if (!file->SaveFile(prefab_->GetAbsoluteFileName()))
+    {
+        URHO3D_LOGERROR("Saving prefab failed");
+    }
 }
 
 /// Handle enabled/disabled state change.
