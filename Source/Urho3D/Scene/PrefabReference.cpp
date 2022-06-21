@@ -154,6 +154,9 @@ Node* PrefabReference::CreateInstance() const
     auto* node = GetNode()->CreateTemporaryChild();
     //auto* node = new Node(context_);
     node->LoadXML(prefab_->GetRoot());
+    node->SetPosition(Vector3::ZERO);
+    node->SetRotation(Quaternion::IDENTITY);
+    node->SetScale(Vector3::ONE);
     SetTemporaryFlag(node, true);
     return node;
 }

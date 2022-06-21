@@ -315,10 +315,20 @@ bool SceneTab::RenderWindowContent()
             GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
         }
 
-        if (results.size() && results[0].drawable_->GetNode() != nullptr)
+        WeakPtr<Node> clickNode;
+        if (results.size())
+        {
+            clickNode = results[0].drawable_->GetNode();
+        }
+
+        while (clickNode && clickNode->IsTemporary())
+        {
+            clickNode = clickNode->GetParent();
+        }
+
+        if (clickNode)
         {
             StringHash componentType;
-            WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
 
             if (clickNode->HasTag("DebugIcon"))
                 componentType = clickNode->GetVar("ComponentType").GetStringHash();
