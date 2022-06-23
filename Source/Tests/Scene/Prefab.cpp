@@ -22,9 +22,12 @@
 
 #include "../CommonUtils.h"
 #include "../SceneUtils.h"
+
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Physics/Constraint.h>
+#include <Urho3D/Physics/RigidBody.h>
 
 #include <Urho3D/Scene/PrefabReference.h>
 
@@ -40,14 +43,15 @@ TEST_CASE("Prefab reference")
     auto xmlFile = new XMLFile(context);
     xmlFile->SetName("Objects/Obj0.xml");
     auto fileText = MemoryBuffer("<node><component type=\"StaticModel\"/></node>");
-    xmlFile->Load(fileText);
+    REQUIRE(xmlFile->Load(fileText));
     cache->AddManualResource(xmlFile);
 
     SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
     prefabRef->SetPrefab(xmlFile);
 
     // Setting prefab to enabled node makes component to create temporary node attached to the component's node.
-    auto* prefabRoot = prefabRef->GetRootNode();
+    // Make it shared ptr to ensure that new node won't be allocated at the same address.
+    SharedPtr<Node> prefabRoot{prefabRef->GetRootNode()};
     REQUIRE(prefabRoot != nullptr);
     CHECK(prefabRoot->IsTemporary());
     CHECK(prefabRoot->GetParent() == node0);
@@ -75,3 +79,62 @@ TEST_CASE("Prefab reference")
     CHECK(prefabRoot->GetNumChildren() == 1);
 }
 
+
+TEST_CASE("Prefab with node reference")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto cache = context->GetSubsystem<ResourceCache>();
+    auto scene = MakeShared<Scene>(context);
+
+    auto node0 = scene->CreateChild();
+    auto node1 = scene->CreateChild();
+
+    auto xmlFile = new XMLFile(context);
+    xmlFile->SetName("Objects/Obj1.xml");
+    auto fileText = MemoryBuffer("<node id=\"1\">"
+        "<node id=\"3\">"
+        "<component type=\"RigidBody\">"
+        "</component>"
+        "</node>"
+        "<node id=\"2\">"
+        "<component type=\"RigidBody\">"
+        "</component>"
+        "<component type=\"Constraint\">"
+        "<attribute name=\"Other Body NodeID\" value=\"3\" />"
+        "</component>"
+        "</node>"
+        "</node>");
+    REQUIRE(xmlFile->Load(fileText));
+    cache->AddManualResource(xmlFile);
+
+    SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
+    {
+        prefabRef->SetPrefab(xmlFile);
+
+        // Setting prefab to enabled node makes component to create temporary node attached to the component's node.
+        auto* prefabRoot = prefabRef->GetRootNode();
+        REQUIRE(prefabRoot);
+        auto* node3 = prefabRoot->GetChild(0u);
+        REQUIRE(node3);
+        auto* node2 = prefabRoot->GetChild(1u);
+        REQUIRE(node2);
+        auto* constraint = node2->GetComponent<Constraint>();
+        REQUIRE(constraint);
+        REQUIRE(constraint->GetOtherBody() == node3->GetComponent<RigidBody>());
+    }
+    SharedPtr<PrefabReference> prefabRef2{node1->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
+    {
+        prefabRef2->SetPrefab(xmlFile);
+
+        // Setting prefab to enabled node makes component to create temporary node attached to the component's node.
+        auto* prefabRoot = prefabRef2->GetRootNode();
+        REQUIRE(prefabRoot);
+        auto* node3 = prefabRoot->GetChild(0u);
+        REQUIRE(node3);
+        auto* node2 = prefabRoot->GetChild(1u);
+        REQUIRE(node2);
+        auto* constraint = node2->GetComponent<Constraint>();
+        REQUIRE(constraint);
+        REQUIRE(constraint->GetOtherBody() == node3->GetComponent<RigidBody>());
+    }
+}
