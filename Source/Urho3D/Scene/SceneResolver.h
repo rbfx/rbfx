@@ -52,10 +52,12 @@ public:
     void Resolve();
 
 private:
-    /// Nodes.
-    ea::unordered_map<unsigned, WeakPtr<Node> > nodes_;
-    /// Components.
-    ea::unordered_map<unsigned, WeakPtr<Component> > components_;
+    /// Node by old Id.
+    ea::unordered_map<unsigned, WeakPtr<Node> > nodeLookup_;
+    /// Component by old Id.
+    ea::unordered_map<unsigned, WeakPtr<Component> > componentLookup_;
+    /// Components to resolve.
+    ea::vector<WeakPtr<Component>> components_;
 };
 
 }
