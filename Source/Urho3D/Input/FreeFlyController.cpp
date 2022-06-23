@@ -194,6 +194,10 @@ void FreeFlyController::HandleKeyboardAndMouse(float timeStep)
             node_->Translate(Vector3::LEFT * speed * timeStep);
         if (input->GetScancodeDown(SCANCODE_D))
             node_->Translate(Vector3::RIGHT * speed * timeStep);
+        if (input->GetScancodeDown(SCANCODE_Q))
+            node_->Translate(Vector3::DOWN * speed * timeStep);
+        if (input->GetScancodeDown(SCANCODE_E))
+            node_->Translate(Vector3::UP * speed * timeStep);
     }
 
     if (input->GetNumJoysticks() > 0)
