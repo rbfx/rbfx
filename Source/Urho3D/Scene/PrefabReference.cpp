@@ -87,8 +87,9 @@ void PrefabReference::RegisterObject(Context* context)
     URHO3D_ACTION_STATIC_LABEL("Save", Save, "Save prefab node to resource");
     URHO3D_ACTION_STATIC_LABEL("Close", Close, "Make prefab nodes temporary");
 
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Preserve Transform", GetPreserveTransfrom, SetPreserveTransfrom, bool, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Open", IsOpen, SetOpen, bool, false, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
 }
 
 /// Set prefab resource.
@@ -125,6 +126,21 @@ XMLFile* PrefabReference::GetPrefab() const
     return prefab_;
 }
 
+/// Set flag to preserve prefab root node transform.
+void PrefabReference::SetPreserveTransfrom(bool preserve)
+{
+    if (preserve != _preserveTransform)
+    {
+        _preserveTransform = preserve;
+        if (node_)
+        {
+            node_->Remove();
+            node_ = CreateInstance();
+        }
+    }
+}
+
+
 /// Set reference to prefab resource.
 void PrefabReference::SetPrefabAttr(ResourceRef prefab)
 {
@@ -152,11 +168,15 @@ Node* PrefabReference::CreateInstance() const
     }
 
     auto* node = GetNode()->CreateTemporaryChild();
-    //auto* node = new Node(context_);
+
     node->LoadXML(prefab_->GetRoot());
-    node->SetPosition(Vector3::ZERO);
-    node->SetRotation(Quaternion::IDENTITY);
-    node->SetScale(Vector3::ONE);
+
+    if (!_preserveTransform)
+    {
+        node->SetPosition(Vector3::ZERO);
+        node->SetRotation(Quaternion::IDENTITY);
+        node->SetScale(Vector3::ONE);
+    }
     SetTemporaryFlag(node, true);
     return node;
 }

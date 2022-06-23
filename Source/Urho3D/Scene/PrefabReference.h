@@ -44,6 +44,11 @@ public:
     /// Get prefab resource.
     XMLFile* GetPrefab() const;
 
+    /// Set flag to preserve prefab root node transform.
+    void SetPreserveTransfrom(bool preserve);
+    /// Get preserve prefab root node transform flag state.
+    bool GetPreserveTransfrom() const { return _preserveTransform; }
+
     /// Set reference to prefab resource.
     void SetPrefabAttr(ResourceRef prefab);
     /// Get reference to prefab resource.
@@ -91,7 +96,9 @@ private:
     /// Reference to prefab resource.
     ResourceRef prefabRef_;
     /// Is prefab open.
-    bool isOpen_;
+    bool isOpen_{};
+    /// Preserve prefab root node transform.
+    bool _preserveTransform{false};
 };
 
 } // namespace Urho3D
