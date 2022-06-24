@@ -72,11 +72,14 @@ void RenderingShowcase::CreateInstructions()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
+    auto* input = GetSubsystem<Input>();
 
     // Construct new Text object, set string to display and font to use
     auto* instructionText = GetUIRoot()->CreateChild<Text>();
-    instructionText->SetText("Press Tab to switch scene. Press Q to switch scene mode. \n"
-        "Press F to toggle probe object. Use WASD keys and mouse to move.");
+    auto rName = input->GetKeyName(input->GetKeyFromScancode(SCANCODE_R));
+    auto fName = input->GetKeyName(input->GetKeyFromScancode(SCANCODE_F));
+    instructionText->SetText(Format("Press Tab to switch scene. Press {} to switch scene mode. \n"
+        "Press {} to toggle probe object. Use WASD keys and mouse to move.", rName, fName));
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     instructionText->SetTextAlignment(HA_CENTER);
 
@@ -165,7 +168,7 @@ void RenderingShowcase::Update(float timeStep)
     }
 
     // Update scene mode
-    if (sceneNames_[sceneIndex_].size() > 1 && input->GetKeyPress(KEY_Q))
+    if (sceneNames_[sceneIndex_].size() > 1 && input->GetScancodePress(SCANCODE_R))
     {
         sceneMode_ = (sceneMode_ + 1) % sceneNames_[sceneIndex_].size();
         SetupSelectedScene(false);
@@ -178,7 +181,7 @@ void RenderingShowcase::Update(float timeStep)
         "Materials/Constant/GlossyWhiteMetal.xml",
         "Materials/CheckboardProperties.xml",
     };
-    if (input->GetKeyPress(KEY_F))
+    if (input->GetScancodePress(SCANCODE_F))
     {
         const unsigned numProbeMaterials = sizeof(probeMaterials) / sizeof(probeMaterials[0]);
         probeMaterialIndex_ = (probeMaterialIndex_ + 1) % numProbeMaterials;
