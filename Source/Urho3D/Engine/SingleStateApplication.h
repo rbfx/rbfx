@@ -32,7 +32,7 @@ class SingleStateApplication;
 class ResourceCache;
 class UI;
 
-/// Base class for an application state. Tipical samples of a state would be loading screen, menu or a game screen.
+/// Base class for an application state. Examples of a state would be a loading screen, a menu or a game screen.
 class URHO3D_API ApplicationState : public Object
 {
     URHO3D_OBJECT(ApplicationState, Object);
