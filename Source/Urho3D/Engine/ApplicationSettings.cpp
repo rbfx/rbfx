@@ -34,12 +34,15 @@ ApplicationSettings::ApplicationSettings(Context* context)
 
 void ApplicationSettings::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "defaultScene", defaultScene_);
-    SerializeValue(archive, "platforms", platforms_);
-    SerializeMap(archive, "settings", engineParameters_, "value");
+    SerializeOptionalValue(archive, "defaultScene", defaultScene_, EmptyObject{});
+    SerializeOptionalValue(archive, "platforms", platforms_, EmptyObject{});
+    SerializeOptionalValue(archive, "settings", engineParameters_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value)
+        { SerializeMap(archive, name, engineParameters_, "value"); });
 
 #if URHO3D_PLUGINS
-    SerializeVector(archive, "plugins", plugins_, "plugin");
+    SerializeOptionalValue(archive, "plugins", plugins_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, plugins_, "plugin"); });
 #endif
 }
 
