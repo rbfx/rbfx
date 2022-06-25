@@ -712,7 +712,7 @@ bool FileSystem::CheckAccess(const ea::string& pathName) const
     return false;
 }
 
-unsigned FileSystem::GetLastModifiedTime(const ea::string& fileName) const
+FileTime FileSystem::GetLastModifiedTime(const ea::string& fileName, bool creationIsModification) const
 {
     if (fileName.empty() || !CheckAccess(fileName))
         return 0;
@@ -720,13 +720,13 @@ unsigned FileSystem::GetLastModifiedTime(const ea::string& fileName) const
 #ifdef _WIN32
     struct _stat st;
     if (!_stat(fileName.c_str(), &st))
-        return (unsigned)st.st_mtime;
+        return static_cast<FileTime>(ea::max(st.st_mtime, creationIsModification ? st.st_ctime : time_t{}));
     else
         return 0;
 #else
     struct stat st{};
     if (!stat(fileName.c_str(), &st))
-        return (unsigned)st.st_mtime;
+        return static_cast<FileTime>(st.st_mtime);
     else
         return 0;
 #endif
@@ -929,7 +929,7 @@ void FileSystem::RegisterPath(const ea::string& pathName)
     allowedPaths_.insert(AddTrailingSlash(pathName));
 }
 
-bool FileSystem::SetLastModifiedTime(const ea::string& fileName, unsigned newTime)
+bool FileSystem::SetLastModifiedTime(const ea::string& fileName, FileTime newTime)
 {
     if (fileName.empty() || !CheckAccess(fileName))
         return false;
@@ -1101,14 +1101,28 @@ void FileSystem::HandleConsoleCommand(StringHash eventType, VariantMap& eventDat
 
 TemporaryDir::TemporaryDir(Context* context, const ea::string& path)
     : fs_(context->GetSubsystem<FileSystem>())
-    , path_(path)
+    , path_(AddTrailingSlash(path))
 {
     fs_->CreateDirsRecursive(path_);
 }
 
 TemporaryDir::~TemporaryDir()
 {
-    fs_->RemoveDir(path_, true);
+    if (fs_)
+        fs_->RemoveDir(path_, true);
+}
+
+TemporaryDir::TemporaryDir(TemporaryDir&& rhs)
+{
+    *this = std::move(rhs);
+}
+
+TemporaryDir& TemporaryDir::operator=(TemporaryDir&& rhs)
+{
+    fs_ = rhs.fs_;
+    path_ = ea::move(rhs.path_);
+    rhs.fs_ = nullptr;
+    return *this;
 }
 
 void SplitPath(const ea::string& fullPath, ea::string& pathName, ea::string& fileName, ea::string& extension, bool lowercaseExtension)
@@ -1370,30 +1384,39 @@ bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
 
 }
 
-bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& directoryOut)
+bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& directoryOut, StringVector* copiedFiles)
 {
     if (FileExists(directoryOut))
         return false;
 
     ea::vector<ea::string> results;
-    ScanDir(results, directoryIn, "*", SCAN_FILES, true );
+    ScanDir(results, directoryIn, "*", SCAN_FILES, true);
 
+    bool success = true;
     for (unsigned i = 0; i < results.size(); i++)
     {
-        ea::string srcFile = directoryIn + "/" + results[i];
-        ea::string dstFile = directoryOut + "/" + results[i];
+        const ea::string srcFile = AddTrailingSlash(directoryIn) + results[i];
+        const ea::string dstFile = AddTrailingSlash(directoryOut) + results[i];
 
-        ea::string dstPath = GetPath(dstFile);
+        const ea::string dstPath = GetPath(dstFile);
 
         if (!CreateDirsRecursive(dstPath))
-            return false;
+        {
+            success = false;
+            continue;
+        }
 
-        //LOGINFOF("SRC: %s DST: %s", srcFile.c_str(), dstFile.c_str());
         if (!Copy(srcFile, dstFile))
-            return false;
+        {
+            success = false;
+            continue;
+        }
+
+        if (copiedFiles)
+            copiedFiles->push_back(dstFile);
     }
 
-    return true;
+    return success;
 
 }
 

@@ -39,7 +39,8 @@ class ModelImporter : public AssetTransformer
 public:
     explicit ModelImporter(Context* context);
 
-    bool Execute(const AssetTransformerContext& ctx) override;
+    bool IsApplicable(const AssetTransformerContext& ctx) override;
+    bool Execute(AssetTransformerContext& ctx) override;
 
 private:
 };

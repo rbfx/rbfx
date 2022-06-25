@@ -29,17 +29,40 @@
 namespace Urho3D
 {
 
+AssetTransformerContext::AssetTransformerContext(Context* context, const ea::string& resourceName, const ea::string& fileName)
+    : context_(context)
+    , resourceName_(resourceName)
+    , fileName_(fileName)
+{
+}
+
 AssetTransformer::AssetTransformer(Context* context)
     : Serializable(context)
 {
 }
 
-bool AssetTransformer::Execute(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers)
+bool AssetTransformer::IsApplicable(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers)
 {
-    bool success = false;
     for (AssetTransformer* transformer : transformers)
-        success = transformer->Execute(ctx) || success;
-    return success;
+    {
+        if (transformer->IsApplicable(ctx))
+            return true;
+    }
+    return false;
+}
+
+bool AssetTransformer::Execute(AssetTransformerContext& ctx, const AssetTransformerVector& transformers)
+{
+    for (AssetTransformer* transformer : transformers)
+    {
+        if (transformer->IsApplicable(ctx))
+        {
+            ctx.AddAppliedTransformer(transformer);
+            if (!transformer->Execute(ctx))
+                return false;
+        }
+    }
+    return true;
 }
 
 void AssetTransformer::SetFlavor(const ea::string& value)
