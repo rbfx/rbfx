@@ -124,8 +124,10 @@
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::UIElement *), UIRoot, GetUIRoot);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::IntVector2), UICustomSize, GetUICustomSize, SetUICustomSize);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::Color), DefaultFogColor, GetDefaultFogColor, SetDefaultFogColor);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::SingleStateApplication *), Application, GetApplication);
-%csattribute(Urho3D::SingleStateApplication, %arg(Urho3D::ApplicationState *), State, GetState, SetState);
+%csattribute(Urho3D::StateManager, %arg(Urho3D::ApplicationState *), State, GetState);
+%csattribute(Urho3D::StateManager, %arg(Urho3D::StringHash), TargetState, GetTargetState);
+%csattribute(Urho3D::StateManager, %arg(float), FadeInDuration, GetFadeInDuration, SetFadeInDuration);
+%csattribute(Urho3D::StateManager, %arg(float), FadeOutDuration, GetFadeOutDuration, SetFadeOutDuration);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
@@ -187,4 +189,11 @@ public static partial class E
         public static implicit operator StringHash(RegisterStaticPluginsEvent e) { return e._event; }
     }
     public static RegisterStaticPluginsEvent RegisterStaticPlugins = new RegisterStaticPluginsEvent();
+    public class SetApplicationStateEvent {
+        private StringHash _event = new StringHash("SetApplicationState");
+        public StringHash State = new StringHash("State");
+        public SetApplicationStateEvent() { }
+        public static implicit operator StringHash(SetApplicationStateEvent e) { return e._event; }
+    }
+    public static SetApplicationStateEvent SetApplicationState = new SetApplicationStateEvent();
 } %}
