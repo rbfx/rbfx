@@ -177,6 +177,9 @@ public:
 
     virtual ~StateManager() override;
 
+    /// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
+    void Reset();
+
     /// Transition to the application state.
     void EnqueueState(ApplicationState* gameScreen, VariantMap& bundle);
 
