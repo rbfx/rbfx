@@ -76,7 +76,7 @@ void Player::Setup()
 
             for (const auto& pair : settings_.engineParameters_)
                 engineParameters_[pair.first] = pair.second;
-            engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
+            engineParameters_[EP_RESOURCE_PATHS] = "Cache;Data;CoreData";
             // Unpacked application is executing. Do not attempt to load paks.
             URHO3D_LOGINFO("This is a developer build executing unpacked application.");
             return;
@@ -198,6 +198,7 @@ void Player::Start()
     }
 
     // Load main scene.
+    if (!settings_.defaultScene_.empty())
     {
         auto* manager = GetSubsystem<SceneManager>();
         Scene* scene = manager->CreateScene();

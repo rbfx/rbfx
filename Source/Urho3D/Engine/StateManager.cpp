@@ -311,6 +311,21 @@ StateManager::StateManager(Context* context)
 
 StateManager::~StateManager()
 {
+    Reset();
+}
+
+/// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
+void StateManager::Reset()
+{
+    if (activeState_)
+    {
+        activeState_->Deactivate();
+        activeState_.Reset();
+    }
+    ea::queue<QueueItem> emptyQueue;
+    std::swap(stateQueue_, emptyQueue);
+
+    SetTransitionState(TransitionState::Sustain);
 }
 
 /// Set current game state.
