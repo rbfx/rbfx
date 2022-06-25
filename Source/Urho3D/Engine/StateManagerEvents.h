@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022-2022 the rbfx project.
+// Copyright (c) 2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,14 @@
 
 #pragma once
 
-#include "Sample.h"
-#include <Urho3D/UI/SplashScreen.h>
+#include "../Core/Object.h"
 
-class SplashScreenDemo : public Sample
+namespace Urho3D
 {
-    URHO3D_OBJECT(SplashScreenDemo, Sample);
 
-public:
-    /// Construct.
-    explicit SplashScreenDemo(Context* context);
+URHO3D_EVENT(E_SETAPPLICATIONSTATE, SetApplicationState)
+{
+    URHO3D_PARAM(P_STATE, State); // (StringHash) Target state type hash
+}
 
-    void Activate(VariantMap& bundle) override;
-};
+} // namespace Urho3D

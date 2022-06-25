@@ -21,8 +21,10 @@
 // THE SOFTWARE.
 //
 
-#include "../Engine/SingleStateApplication.h"
+#include "../Engine/StateManager.h"
+#include "../Engine/StateManagerEvents.h"
 #include "../Core/CoreEvents.h"
+#include "../Core/Thread.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Zone.h"
 #include "../UI/UI.h"
@@ -45,7 +47,7 @@ ApplicationState::~ApplicationState() = default;
 void ApplicationState::RegisterObject(Context* context) { context->AddFactoryReflection<ApplicationState>(); }
 
 /// Activate game screen. Executed by Application.
-void ApplicationState::Activate(SingleStateApplication* application)
+void ApplicationState::Activate(VariantMap& bundle)
 {
     if (active_)
     {
@@ -53,7 +55,6 @@ void ApplicationState::Activate(SingleStateApplication* application)
     }
 
     active_ = true;
-    application_ = application;
 
     // Subscribe HandleUpdate() method for processing update events
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ApplicationState, HandleUpdate));
@@ -89,6 +90,14 @@ void ApplicationState::Activate(SingleStateApplication* application)
         }
     }
 }
+
+/// Return true if state is ready to be deactivated. Executed by StateManager.
+bool ApplicationState::CanLeaveState() const
+{
+    return true;
+}
+
+
 /// Handle the logic update event.
 void ApplicationState::Update(float timeStep) {}
 
@@ -294,29 +303,253 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
 /// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
 /// state.
 
-SingleStateApplication::SingleStateApplication(Context* context)
-    : Application(context)
+StateManager::StateManager(Context* context)
+    : BaseClassName(context)
+{
+    SubscribeToEvent(E_SETAPPLICATIONSTATE, URHO3D_HANDLER(StateManager, HandleSetApplicationState));
+}
+
+StateManager::~StateManager()
 {
 }
 
-SingleStateApplication::~SingleStateApplication() = default;
-
-void SingleStateApplication::SetState(ApplicationState* gameScreen)
+/// Set current game state.
+void StateManager::EnqueueState(ApplicationState* gameScreen, VariantMap& bundle)
 {
-    if (gameScreen_)
+    if (!gameScreen)
     {
-        gameScreen_->Deactivate();
+        URHO3D_LOGERROR("No target state provided");
+        return;
     }
-
-    gameScreen_ = gameScreen;
-
-    if (gameScreen_)
+    if (!Thread::IsMainThread())
     {
-        gameScreen_->Activate(this);
+        URHO3D_LOGERROR("State transition could only be scheduled from the main thread");
+        return;
+    }
+    stateQueue_.push(QueueItem{SharedPtr<ApplicationState>(gameScreen), gameScreen->GetType(), bundle});
+    InitiateTransition();
+}
+
+/// Transition to the application state.
+void StateManager::EnqueueState(ApplicationState* gameScreen)
+{
+    VariantMap bundle;
+    EnqueueState(gameScreen, bundle);
+}
+
+/// Transition to the application state.
+void StateManager::EnqueueState(StringHash type, VariantMap& bundle)
+{
+    if (!Thread::IsMainThread())
+    {
+        URHO3D_LOGERROR("State transition could only be scheduled from the main thread");
+        return;
+    }
+    stateQueue_.push(QueueItem{SharedPtr<ApplicationState>(nullptr), type, bundle});
+    InitiateTransition();
+}
+
+/// Transition to the application state.
+void StateManager::EnqueueState(StringHash type)
+{
+    VariantMap bundle;
+    EnqueueState(type, bundle);
+}
+
+/// Set current transition state and initialize related values.
+void StateManager::SetTransitionState(TransitionState state)
+{
+    transitionState_ = state;
+    switch (transitionState_)
+    {
+    case TransitionState::Sustain:
+        UnsubscribeFromEvent(E_UPDATE);
+        if (fadeOverlay_)
+        {
+            fadeOverlay_->Remove();
+        }
+        break;
+    case TransitionState::FadeIn:
+    case TransitionState::FadeOut:
+        if (!fadeOverlay_)
+        {
+            fadeOverlay_ = MakeShared<Window>(context_);
+            fadeOverlay_->SetLayout(LM_FREE);
+            fadeOverlay_->SetAlignment(HA_CENTER, VA_CENTER);
+            fadeOverlay_->SetColor(Color(0, 0, 0, 1));
+            fadeOverlay_->SetPriority(ea::numeric_limits<int>::max());
+            fadeOverlay_->BringToFront();
+        }
+        fadeTime_ = 0.0f;
+        UpdateFadeOverlay(0.0f);
+        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(StateManager, HandleUpdate));
+        break;
+    case TransitionState::WaitToExit:
+        if (fadeOverlay_)
+        {
+            fadeOverlay_->Remove();
+        }
+        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(StateManager, HandleUpdate));
+        break;
     }
 }
 
-ApplicationState* SingleStateApplication::GetState() const { return gameScreen_; }
+/// Update fade overlay size and transparency.
+void StateManager::UpdateFadeOverlay(float t)
+{
+    auto* ui = context_->GetSubsystem<UI>();
+    auto* root = ui->GetRoot();
+    if (root && fadeOverlay_->GetParent() != root)
+    {
+        fadeOverlay_->Remove();
+        root->AddChild(fadeOverlay_);
+        fadeOverlay_->BringToFront();
+    }
+    t = Clamp(t, 0.0f, 1.0f);
+    if (transitionState_ == TransitionState::FadeIn)
+    {
+        t = 1.0f - t;
+    }
+    fadeOverlay_->SetOpacity(t);
+    fadeOverlay_->SetSize(ui->GetSize());
+}
+
+
+/// Initiate state transition if necessary.
+void StateManager::InitiateTransition()
+{
+    if (stateQueue_.empty())
+    {
+        SetTransitionState(TransitionState::Sustain);
+        return;
+    }
+
+    if (transitionState_ == TransitionState::Sustain)
+    {
+        if (activeState_ != nullptr)
+        {
+            SetTransitionState(TransitionState::FadeOut);
+        }
+        else
+        {
+            CreateNextState();
+        }
+    }
+}
+
+ApplicationState* StateManager::GetState() const { return activeState_; }
+
+/// Get target application state.
+StringHash StateManager::GetTargetState() const
+{
+    if (stateQueue_.empty())
+    {
+        return activeState_ ? activeState_->GetType() : StringHash::ZERO;
+    }
+    return stateQueue_.back().stateType_;
+}
+
+/// Set fade in animation duration;
+void StateManager::SetFadeInDuration(float durationInSeconds)
+{
+    fadeInDuration_ = Clamp(durationInSeconds, ea::numeric_limits<float>::epsilon(), ea::numeric_limits<float>::max());
+}
+/// Set fade out animation duration;
+void StateManager::SetFadeOutDuration(float durationInSeconds)
+{
+    fadeOutDuration_ = Clamp(durationInSeconds, ea::numeric_limits<float>::epsilon(), ea::numeric_limits<float>::max());
+}
+
+/// Handle SetApplicationState event and add the state to the queue.
+void StateManager::HandleSetApplicationState(StringHash eventName, VariantMap& args)
+{
+    using namespace SetApplicationState;
+    EnqueueState(args[P_STATE].GetStringHash(), args);
+}
+
+/// Handle update event to animate state transitions.
+void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
+{
+    using namespace Update;
+    auto timeStep = args[P_TIMESTEP].GetFloat();
+
+    fadeTime_ += timeStep;
+
+    switch (transitionState_)
+    {
+    case TransitionState::WaitToExit:
+        if (activeState_ && activeState_->CanLeaveState())
+            SetTransitionState(TransitionState::FadeOut);
+        break;
+    case TransitionState::FadeIn:
+        if (fadeTime_ >= fadeInDuration_)
+        {
+            if (stateQueue_.empty())
+                SetTransitionState(TransitionState::Sustain);
+            else if (activeState_ && !activeState_->CanLeaveState())
+                SetTransitionState(TransitionState::WaitToExit);
+            else
+                SetTransitionState(TransitionState::FadeOut);
+        }
+        else
+        {
+            UpdateFadeOverlay(fadeTime_ / fadeInDuration_);
+        }
+        break;
+    case TransitionState::FadeOut:
+        if (fadeTime_ >= fadeOutDuration_)
+        {
+            CreateNextState();
+        }
+        else
+        {
+            UpdateFadeOverlay(fadeTime_ / fadeOutDuration_);
+        }
+        break;
+    }
+}
+
+/// Dequeue and set next state as active.
+void StateManager::CreateNextState()
+{
+    if (activeState_)
+    {
+        activeState_->Deactivate();
+    }
+    activeState_.Reset();
+
+    while (!stateQueue_.empty())
+    {
+        QueueItem nextQueueItem = stateQueue_.front();
+        stateQueue_.pop();
+        SharedPtr<ApplicationState> nextState = nextQueueItem.state_;
+        if (!nextState)
+        {
+            auto stateCacheIt = stateCache_.find(nextQueueItem.stateType_);
+            if (stateCacheIt != stateCache_.end() && !stateCacheIt->second.Expired())
+            {
+                nextState = stateCacheIt->second;
+            }
+            else
+            {
+                nextState.DynamicCast(context_->CreateObject(nextQueueItem.stateType_));
+                if (!nextState)
+                {
+                    URHO3D_LOGERROR("Can't create application state object");
+                    continue;
+                }
+            }
+        }
+        stateCache_[nextState->GetType()] = nextState;
+        activeState_ = nextState;
+        SetTransitionState(TransitionState::FadeIn);
+        activeState_->Activate(nextQueueItem.bundle_);
+        UpdateFadeOverlay(0.0f);
+        return;
+    }
+
+    SetTransitionState(TransitionState::Sustain);
+}
 
 
 } // namespace Urho3D

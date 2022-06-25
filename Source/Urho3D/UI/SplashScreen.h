@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Engine/SingleStateApplication.h"
+#include "../Engine/StateManager.h"
 #include "../Audio/SoundSource.h"
 #include "../Audio/Sound.h"
 #include "../UI/Sprite.h"
@@ -35,21 +35,17 @@ class URHO3D_API SplashScreen : public ApplicationState
 {
     URHO3D_OBJECT(SplashScreen, ApplicationState)
 
-    enum class SplashScreenState
-    {
-        FadeIn,
-        Sustain,
-        FadeOut,
-        Complete
-    };
 public:
     /// Construct.
     explicit SplashScreen(Context* context);
 
-    /// Activate game screen. Executed by Application.
-    void Activate(SingleStateApplication* application) override;
+    /// Activate game screen. Executed by StateManager.
+    void Activate(VariantMap& bundle) override;
 
-    /// Deactivate game screen. Executed by Application.
+    /// Return true if state is ready to be deactivated. Executed by StateManager.
+    bool CanLeaveState() const override;
+
+    /// Deactivate game screen. Executed by StateManager.
     void Deactivate() override;
 
     /// Handle the logic update event.
@@ -68,9 +64,6 @@ public:
     void SetProgressImage(Texture* image);
     void SetProgressColor(const Color& color);
     void SetSound(Sound* sound, float gain);
-    void SetNextState(ApplicationState* state);
-    void SetFadeInDuration(float durationInSeconds);
-    void SetFadeOutDuration(float durationInSeconds);
     void SetDuration(float durationInSeconds);
     void SetSkippable(bool skippable);
 
@@ -78,9 +71,6 @@ public:
     Texture* GetForegroundImage() const;
     Texture* GetProgressImage() const;
     const Color& GetProgressColor() const { return progressBar_->GetColor(C_TOPLEFT); }
-    ApplicationState* GetNextState() const;
-    float GetFadeInDuration() const { return fadeInDuration_; }
-    float GetFadeOutDuration() const { return fadeOutDuration_; }
     float GetDuration() const { return duration_; }
     bool IsSkippable() const { return skippable_; }
 
@@ -95,26 +85,17 @@ private:
     // Is exit requested by user.
     bool exitRequested_{};
 
-    // Splash screen state
-    SplashScreenState state_{SplashScreenState ::Complete};
     // Max visited resource counter
     unsigned maxResourceCounter_{0};
-    // Current state time left
-    float timeLeft_ {0.0f};
-    // Current state duration
-    float stateDuration_{0.0f};
+    // Accumulated on-screen time.
+    float timeAcc_ {0.0f};
 
-    // Fade in duration
-    float fadeInDuration_{0.0f};
-    // Fade out duration
-    float fadeOutDuration_{0.0f};
     // Minimum screen time duration
     float duration_{0.0f};
 
     SharedPtr<Scene> scene_;
     SharedPtr<SoundSource> soundSource_;
     
-    SharedPtr<ApplicationState> nextState_;
     SharedPtr<Sprite> background_;
     SharedPtr<Sprite> foreground_;
     SharedPtr<Sprite> progressBar_;

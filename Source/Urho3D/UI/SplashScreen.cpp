@@ -73,17 +73,15 @@ SplashScreen::SplashScreen(Context* context)
     soundSource_ = scene_->CreateComponent<SoundSource>();
 }
 
-void SplashScreen::Activate(SingleStateApplication* application)
+void SplashScreen::Activate(VariantMap& bundle)
 {
-    ApplicationState::Activate(application);
+    ApplicationState::Activate(bundle);
     auto* input = context_->GetSubsystem<Input>();
     SubscribeToEvent(input, E_KEYUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
     SubscribeToEvent(input, E_MOUSEBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
     SubscribeToEvent(input, E_JOYSTICKBUTTONUP, URHO3D_HANDLER(SplashScreen, HandleKeyUp));
 
-    state_ = SplashScreenState::FadeIn;
-    timeLeft_ = fadeInDuration_;
-    stateDuration_ = fadeInDuration_;
+    timeAcc_ = 0.0;
     exitRequested_ = false;
 
     auto* cache = GetSubsystem<ResourceCache>();
@@ -95,6 +93,17 @@ void SplashScreen::Activate(SingleStateApplication* application)
         soundSource_->Play(sound_);
 
     Update(0);
+}
+
+/// Return true if state is ready to be deactivated. Executed by StateManager.
+bool SplashScreen::CanLeaveState() const
+{
+    if (exitRequested_)
+        return true;
+
+    auto* cache = GetSubsystem<ResourceCache>();
+    const unsigned resourceCounter = cache->GetNumBackgroundLoadResources();
+    return resourceCounter == 0 && timeAcc_ > duration_;
 }
 
 void SplashScreen::Deactivate()
@@ -116,18 +125,19 @@ void SplashScreen::HandleKeyUp(StringHash eventType, VariantMap& args)
         {
         case KEY_SPACE:
         case KEY_ESCAPE:
-        case KEY_BACKSPACE: exitRequested_ = true; break;
+        case KEY_BACKSPACE:
+            exitRequested_ |= skippable_; break;
         }
         return;
     }
     if (eventType == E_MOUSEBUTTONUP)
     {
-        exitRequested_ = true;
+        exitRequested_ |= skippable_;
         return;
     }
     if (eventType == E_JOYSTICKBUTTONUP)
     {
-        exitRequested_ = true;
+        exitRequested_ |= skippable_;
         return;
     }
 }
@@ -157,58 +167,6 @@ void SplashScreen::UpdateLayout(float ratio)
     progressBar_->SetSize(progressBarAreaSize.x_ * ratio, progressBarAreaSize.y_);
 }
 
-void SplashScreen::UpdateState(float timeStep, unsigned resourceCounter)
-{
-    if (exitRequested_)
-    {
-        GetApplication()->SetState(nextState_);
-        return;
-    }
-    timeLeft_ -= timeStep;
-    switch (state_)
-    {
-    case SplashScreenState::FadeIn:
-        if (timeLeft_ <= 0)
-        {
-            timeLeft_ += duration_;
-            state_ = SplashScreenState::Sustain;
-            foreground_->SetColor(Color::WHITE);
-            background_->SetColor(Color::WHITE);
-            UpdateState(0.0f, resourceCounter);
-            return;
-        }
-        foreground_->SetColor(Lerp(Color::WHITE, Color::BLACK, timeLeft_ / stateDuration_));
-        background_->SetColor(Lerp(Color::WHITE, Color::BLACK, timeLeft_ / stateDuration_));
-        return;
-    case SplashScreenState::FadeOut:
-        if (timeLeft_ <= 0)
-        {
-            state_ = SplashScreenState::Complete;
-            GetApplication()->SetState(nextState_);
-            return;
-        }
-        foreground_->SetColor(Lerp(Color::BLACK, Color::WHITE, timeLeft_ / stateDuration_));
-        background_->SetColor(Lerp(Color::BLACK, Color::WHITE, timeLeft_ / stateDuration_));
-        return;
-    case SplashScreenState::Sustain:
-        if (timeLeft_ <= 0)
-        {
-            if (resourceCounter == 0 && !soundSource_->IsPlaying())
-            {
-                state_ = SplashScreenState::FadeOut;
-                timeLeft_ += fadeOutDuration_;
-                UpdateState(0.0f, resourceCounter);
-                return;
-            }
-            timeLeft_ = 0.0f;
-            return;
-        }
-        return;
-    case SplashScreenState::Complete:
-        return;
-    }
-}
-
 /// Handle the logic update event.
 void SplashScreen::Update(float timeStep)
 {
@@ -220,23 +178,9 @@ void SplashScreen::Update(float timeStep)
         maxResourceCounter_ = resourceCounter;
     }
     UpdateLayout(static_cast<float>(maxResourceCounter_ - resourceCounter) / maxResourceCounter_);
-    UpdateState(timeStep, resourceCounter);
+
+    timeAcc_ += timeStep;
 };
-
-void SplashScreen::SetNextState(ApplicationState* state)
-{
-    nextState_ = state;
-}
-
-void SplashScreen::SetFadeInDuration(float durationInSeconds)
-{
-    fadeInDuration_ = durationInSeconds;
-}
-
-void SplashScreen::SetFadeOutDuration(float durationInSeconds)
-{
-    fadeOutDuration_ = durationInSeconds;
-}
 
 void SplashScreen::SetDuration(float durationInSeconds)
 {
@@ -291,10 +235,6 @@ Texture* SplashScreen::GetProgressImage() const
     return progressBar_->GetTexture();
 }
 
-ApplicationState* SplashScreen::GetNextState() const
-{
-    return nextState_;
-}
 
 /// Background load a resource. Return true if successfully stored to the load
 /// queue, false if eg. already exists. Can be called from outside the main thread.

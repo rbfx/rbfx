@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -153,7 +153,7 @@ namespace Urho3D
 {
 
 SamplesManager::SamplesManager(Context* context) :
-    SingleStateApplication(context)
+    Application(context)
 {
 }
 
@@ -186,9 +186,9 @@ SampleSelectionScreen::SampleSelectionScreen(Context* context)
     SetMouseVisible(true);
 }
 
-void SampleSelectionScreen::Activate(SingleStateApplication* application)
+void SampleSelectionScreen::Activate(VariantMap& bundle)
 {
-    ApplicationState::Activate(application);
+    ApplicationState::Activate(bundle);
     dpadAdapter_.SetEnabled(true);
 }
 
@@ -221,7 +221,7 @@ void SamplesManager::Start()
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
     // Keyboard arrow keys are already handled by UI
     sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
-    SetState(sampleSelectionScreen_);
+    context_->GetSubsystem<StateManager>()->EnqueueState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
     if (DebugHud* debugHud = context_->GetSubsystem<Engine>()->CreateDebugHud())
@@ -411,15 +411,9 @@ void SamplesManager::StartSample(StringHash sampleType)
     IntVector2 screenSize = graphics->GetSize();
     graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
-    SharedPtr<Sample> sample;
-    sample.DynamicCast(context_->CreateObject(sampleType));
-    if (sample)
-    {
-        SetState(sample);
-        sample->Start(GetArgs());
-    }
-    else
-        ErrorExit("Specified sample does not exist.");
+    VariantMap args;
+    args["Args"] = GetArgs();
+    context_->GetSubsystem<StateManager>()->EnqueueState(sampleType, args);
 }
 
 UIElement* SamplesManager::GetSampleButtonAt(int index)
@@ -579,13 +573,13 @@ void SamplesManager::OnFrameStart()
 {
     if (isClosing_)
     {
+        StateManager* stateManager = context_->GetSubsystem<StateManager>();
         isClosing_ = false;
-        if (GetState() != sampleSelectionScreen_)
+        if (stateManager->GetTargetState() != SampleSelectionScreen::GetTypeNameStatic())
         {
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
-
-            SetState(sampleSelectionScreen_);
+            stateManager->EnqueueState(sampleSelectionScreen_);
             ui->SetCursor(nullptr);
 #if MOBILE
             Graphics* graphics = context_->GetSubsystem<Graphics>();
