@@ -31,6 +31,7 @@
 
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/File.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
@@ -126,6 +127,8 @@ public:
     void SetGlobalHotkeysEnabled(bool enabled) { areGlobalHotkeysEnabled_ = enabled; }
     /// Set whether the UI highlight is enabled.
     void SetHighlightEnabled(bool enabled) { isHighlightEnabled_ = enabled; }
+    /// Create temporary directory that will be automatically deleted when the handler is destroyed.
+    TemporaryDir CreateTemporaryDir();
 
     /// Commands
     /// @{
@@ -173,10 +176,14 @@ private:
 
     const ea::string coreDataPath_;
     const ea::string cachePath_;
+    const ea::string tempPath_;
+
     const ea::string projectJsonPath_;
     const ea::string settingsJsonPath_;
+    const ea::string cacheJsonPath_;
     const ea::string uiIniPath_;
     const ea::string gitIgnorePath_;
+
     ea::string dataPath_;
 
     const ResourceCacheGuard oldCacheState_;

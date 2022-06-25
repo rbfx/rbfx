@@ -30,16 +30,40 @@ namespace Urho3D
 class AssetTransformer;
 using AssetTransformerVector = ea::vector<AssetTransformer*>;
 
-/// Context of transformer invocation.
-struct AssetTransformerContext
+/// Context of transformer execution.
+class URHO3D_API AssetTransformerContext
 {
+public:
+    AssetTransformerContext(Context* context, const ea::string& resourceName, const ea::string& fileName);
+    /// Assign output file name.
+    void SetOutputFileName(const ea::string& fileName) { outputFileName_ = fileName; }
+    /// Add applied transformer.
+    void AddAppliedTransformer(AssetTransformer* transformer) { appliedTransformers_.push_back(transformer); }
+
+    /// Return properties.
+    /// @{
+    const ea::string& GetResourceName() const { return resourceName_; }
+    const ea::string& GetFileName() const { return fileName_; }
+    const ea::string& GetOutputFileName() const { return outputFileName_; }
+    /// @}
+
+    /// Return execution result.
+    /// @{
+    const AssetTransformerVector& GetAppliedTransformers() const { return appliedTransformers_; }
+    /// @}
+
+private:
     Context* context_{};
+
     /// Resource name that can be used to access resource via cache.
     ea::string resourceName_;
     /// Absolute file name to the processed resource.
     ea::string fileName_;
     /// Absolute file name to the file counterpart in writeable directory.
-    ea::string cacheFileName_;
+    ea::string outputFileName_;
+
+    /// Transformers applied to the asset during execution.
+    AssetTransformerVector appliedTransformers_;
 };
 
 /// Interface of a script that can be used to transform assets.
@@ -51,11 +75,16 @@ class URHO3D_API AssetTransformer : public Serializable
 
 public:
     explicit AssetTransformer(Context* context);
-    /// Execute transformer array on the asset.
-    static bool Execute(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers);
 
+    /// Return whether the transformer array is applied to the given asset in any way.
+    static bool IsApplicable(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers);
+    /// Execute transformer array on the asset.
+    static bool Execute(AssetTransformerContext& ctx, const AssetTransformerVector& transformers);
+
+    /// Return whether the transformer can be applied to the given asset. Should be as fast as possible.
+    virtual bool IsApplicable(const AssetTransformerContext& ctx) { return false; }
     /// Execute this transformer on the asset. Return true if any action was performed.
-    virtual bool Execute(const AssetTransformerContext& ctx) { return false; }
+    virtual bool Execute(AssetTransformerContext& ctx) { return false; }
     /// Return whether the importer of this type should be invoked at most once.
     virtual bool IsSingleInstanced() { return true; }
 

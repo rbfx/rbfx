@@ -24,8 +24,8 @@
 #include "../Project/ProjectEditor.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/IO/File.h>
-#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -154,8 +154,10 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , projectPath_(GetSanitizedPath(projectPath + "/"))
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
+    , tempPath_(projectPath_ + "Temp/")
     , projectJsonPath_(projectPath_ + "Project.json")
     , settingsJsonPath_(projectPath_ + "Settings.json")
+    , cacheJsonPath_(projectPath_ + "Cache.json")
     , uiIniPath_(projectPath_ + ".ui.ini")
     , gitIgnorePath_(projectPath_ + ".gitignore")
     , dataPath_(projectPath_ + "Data/")
@@ -181,6 +183,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
 
     // Delay asset manager creation until project is ready
     assetManager_ = MakeShared<AssetManager>(context);
+    assetManager_->LoadFile(cacheJsonPath_);
 
     ApplyPlugins();
 
@@ -295,6 +298,12 @@ void ProjectEditor::OpenResource(const OpenResourceRequest& request)
     }
 }
 
+TemporaryDir ProjectEditor::CreateTemporaryDir()
+{
+    const ea::string tempPath = Format("{}{}", tempPath_, GenerateUUID());
+    return TemporaryDir{context_, tempPath};
+}
+
 void ProjectEditor::InitializeHotkeys()
 {
     hotkeyManager_->BindHotkey(this, Hotkey_SaveProject, &ProjectEditor::Save);
@@ -309,6 +318,13 @@ void ProjectEditor::EnsureDirectoryInitialized()
         if (fs->FileExists(cachePath_))
             fs->Delete(cachePath_);
         fs->CreateDirsRecursive(cachePath_);
+    }
+
+    if (!fs->DirExists(tempPath_))
+    {
+        if (fs->FileExists(tempPath_))
+            fs->Delete(tempPath_);
+        fs->CreateDirsRecursive(tempPath_);
     }
 
     if (!fs->DirExists(coreDataPath_))
@@ -327,13 +343,22 @@ void ProjectEditor::EnsureDirectoryInitialized()
         emptyFile.SaveFile(settingsJsonPath_);
     }
 
-    if (!fs->FileExists(settingsJsonPath_))
+    if (!fs->FileExists(projectJsonPath_))
     {
         if (fs->DirExists(projectJsonPath_))
             fs->RemoveDir(projectJsonPath_, true);
 
         JSONFile emptyFile(context_);
         emptyFile.SaveFile(projectJsonPath_);
+    }
+
+    if (!fs->FileExists(cacheJsonPath_))
+    {
+        if (fs->DirExists(cacheJsonPath_))
+            fs->RemoveDir(cacheJsonPath_, true);
+
+        JSONFile emptyFile(context_);
+        emptyFile.SaveFile(cacheJsonPath_);
     }
 
     // Legacy: to support old projects
@@ -419,12 +444,18 @@ void ProjectEditor::SaveGitIgnore()
     ea::string content;
 
     content += "# Ignore asset cache\n";
-    content += "/Cache/\n\n";
+    content += "/Cache/\n";
+    content += "/Cache.json\n";
+    content += "\n";
+
     content += "# Ignore UI settings\n";
-    content += "/.ui.ini\n\n";
+    content += "/.ui.ini\n";
+    content += "\n";
+
     content += "# Ignore internal files\n";
     for (const ea::string& pattern : ignoredFileNames_)
         content += Format("{}\n", pattern);
+    content += "\n";
 
     File file(context_, gitIgnorePath_, FILE_WRITE);
     if (file.IsOpen())
@@ -539,6 +570,7 @@ void ProjectEditor::SaveProjectOnly()
     ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     SaveGitIgnore();
     settingsManager_->SaveFile(settingsJsonPath_);
+    assetManager_->SaveFile(cacheJsonPath_);
 }
 
 void ProjectEditor::SaveResourcesOnly()
