@@ -160,7 +160,7 @@ protected:
     template <class Receiver, class Callback>
     Handler WrapHandler(Callback handler)
     {
-        return [handler](RefCounted* receiverPtr, Sender* sender, Args... args)
+        return [handler](RefCounted* receiverPtr, Sender* sender, Args... args) mutable
         {
             // MSVC has some issues with static constexpr bool, use macros
 #define INVOKE_SENDER_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Receiver*, Sender*, Args...>

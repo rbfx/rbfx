@@ -31,26 +31,30 @@
 namespace Urho3D
 {
 
-AssetTransformerInput::AssetTransformerInput(const ea::string& flavor, const ea::string& resourceName, const ea::string& inputFileName)
+AssetTransformerInput::AssetTransformerInput(const ea::string& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime)
     : flavor_(flavor)
     , resourceName_(resourceName)
-    , fileName_(inputFileName)
+    , inputFileName_(inputFileName)
+    , inputFileTime_(inputFileTime)
 {
 }
 
-AssetTransformerInput::AssetTransformerInput(const AssetTransformerInput& other, const ea::string& outputFileName)
-    : flavor_(other.flavor_)
-    , resourceName_(other.resourceName_)
-    , fileName_(other.fileName_)
-    , outputFileName_(outputFileName)
+AssetTransformerInput::AssetTransformerInput(const AssetTransformerInput& other, const ea::string& tempPath, const ea::string& outputFileName)
 {
+    *this = other;
+    tempPath_ = tempPath;
+    outputFileName_ = outputFileName;
 }
 
 void AssetTransformerInput::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "Flavor", flavor_);
     SerializeValue(archive, "ResourceName", resourceName_);
-    SerializeValue(archive, "FileName", fileName_);
+
+    SerializeValue(archive, "InputFileName", inputFileName_);
+    SerializeValue(archive, "InputFileTime", inputFileTime_);
+
+    SerializeValue(archive, "TempPath", tempPath_);
     SerializeValue(archive, "OutputFileName", outputFileName_);
 }
 
@@ -104,19 +108,39 @@ bool AssetTransformer::IsApplicable(const AssetTransformerInput& input, const As
     return false;
 }
 
-bool AssetTransformer::Execute(const AssetTransformerInput& input, const AssetTransformerVector& transformers, AssetTransformerOutput& output)
+bool AssetTransformer::Execute(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
+    AssetTransformerOutput& output)
 {
-    unsigned index = 0;
+    URHO3D_ASSERT(!transformers.empty());
     for (AssetTransformer* transformer : transformers)
     {
         if (transformer->IsApplicable(input))
         {
             if (!transformer->Execute(input, output))
                 return false;
-            output.appliedTransformers_.push_back(index);
+            output.appliedTransformers_.insert(transformer->GetTypeName());
         }
-        ++index;
     }
+    return true;
+}
+
+bool AssetTransformer::ExecuteAndStore(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
+    const ea::string& outputPath, AssetTransformerOutput& output)
+{
+    URHO3D_ASSERT(!transformers.empty());
+    Context* context = transformers[0]->GetContext();
+    auto fs = context->GetSubsystem<FileSystem>();
+
+    const TemporaryDir tempFolderHolder{context, input.tempPath_};
+    if (!AssetTransformer::Execute(input, transformers, output))
+        return false;
+
+    StringVector copiedFiles;
+    fs->CopyDir(tempFolderHolder.GetPath(), outputPath, &copiedFiles);
+
+    for (const ea::string& fileName : copiedFiles)
+        output.outputResourceNames_.push_back(fileName.substr(outputPath.length()));
+
     return true;
 }
 

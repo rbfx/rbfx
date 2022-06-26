@@ -261,8 +261,11 @@ void ResourceEditorTab::CloseAllResourcesGracefully(const ea::string& pendingOpe
     });
 }
 
-void ResourceEditorTab::SaveResource(const ea::string& resourceName)
+void ResourceEditorTab::SaveResource(const ea::string& resourceName, bool forced)
 {
+    if (!forced && !IsResourceUnsaved(resourceName))
+        return;
+
     const auto iter = resources_.find(resourceName);
     if (iter != resources_.end())
     {
@@ -270,11 +273,12 @@ void ResourceEditorTab::SaveResource(const ea::string& resourceName)
     }
 }
 
-void ResourceEditorTab::SaveAllResources()
+void ResourceEditorTab::SaveAllResources(bool forced)
 {
     for (auto& [resourceName, data] : resources_)
     {
-        DoSaveResource(resourceName, data);
+        if (forced || IsResourceUnsaved(resourceName))
+            DoSaveResource(resourceName, data);
     }
 }
 

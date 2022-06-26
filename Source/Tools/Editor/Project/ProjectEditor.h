@@ -128,6 +128,8 @@ public:
     void SetGlobalHotkeysEnabled(bool enabled) { areGlobalHotkeysEnabled_ = enabled; }
     /// Set whether the UI highlight is enabled.
     void SetHighlightEnabled(bool enabled) { isHighlightEnabled_ = enabled; }
+    /// Return name of random temporary directory.
+    ea::string GetRandomTemporaryPath() const;
     /// Create temporary directory that will be automatically deleted when the handler is destroyed.
     TemporaryDir CreateTemporaryDir();
 
@@ -196,6 +198,7 @@ private:
     SharedPtr<UndoManager> undoManager_;
     SharedPtr<PluginManager> pluginManager_;
 
+    ea::weak_ptr<void> initializationGuard_;
     bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
     ea::map<ea::string, SharedPtr<EditorTab>> sortedTabs_;

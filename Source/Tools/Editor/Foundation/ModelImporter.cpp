@@ -59,7 +59,7 @@ bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformer
     const GLTFImporterSettings importerSettings;
     auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
 
-    if (!importer->LoadFile(input.fileName_, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
+    if (!importer->LoadFile(input.inputFileName_, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
     {
         URHO3D_LOGERROR("Failed to load asset {} as GLTF model", input.resourceName_);
         return false;

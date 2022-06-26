@@ -173,6 +173,9 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , pluginManager_(MakeShared<PluginManager>(context_))
     , closeDialog_(MakeShared<CloseDialog>(context_))
 {
+    auto initializationGuard = ea::make_shared<int>(0);
+    initializationGuard_ = initializationGuard;
+
     URHO3D_ASSERT(numActiveProjects == 0);
     context_->RegisterSubsystem(this, ProjectEditor::GetTypeStatic());
     ++numActiveProjects;
@@ -188,6 +191,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
 
     // Delay asset manager creation until project is ready
     assetManager_ = MakeShared<AssetManager>(context);
+    assetManager_->OnInitialized.Subscribe(this, [=](ProjectEditor*) mutable { initializationGuard.reset(); });
 
     ApplyPlugins();
 
@@ -303,10 +307,14 @@ void ProjectEditor::OpenResource(const OpenResourceRequest& request)
     }
 }
 
+ea::string ProjectEditor::GetRandomTemporaryPath() const
+{
+    return Format("{}{}/", tempPath_, GenerateUUID());
+}
+
 TemporaryDir ProjectEditor::CreateTemporaryDir()
 {
-    const ea::string tempPath = Format("{}{}", tempPath_, GenerateUUID());
-    return TemporaryDir{context_, tempPath};
+    return TemporaryDir{context_, GetRandomTemporaryPath()};
 }
 
 void ProjectEditor::InitializeHotkeys()
@@ -493,9 +501,8 @@ void ProjectEditor::Render()
     if (pendingResetLayout_)
         ResetLayout();
 
-    // TODO(editor): Postpone this call until assets are imported
     bool initialFocusPending = false;
-    if (!initialized_)
+    if (!initialized_ && initializationGuard_.expired())
     {
         initialized_ = true;
         initialFocusPending = true;
