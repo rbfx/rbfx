@@ -27,8 +27,8 @@
 #include <Urho3D/Scene/Serializable.h>
 #include <Urho3D/Utility/AssetTransformerHierarchy.h>
 
+#include <EASTL/map.h>
 #include <EASTL/optional.h>
-#include <EASTL/unordered_map.h>
 #include <EASTL/unordered_set.h>
 
 namespace Urho3D
@@ -38,7 +38,7 @@ class JSONFile;
 class ProjectEditor;
 
 /// Sorted list of asset transformer pipelines.
-using AssetPipelineList = ea::unordered_map<ea::string, FileTime>;
+using AssetPipelineList = ea::map<ea::string, FileTime>;
 
 /// Manages assets of the project.
 class AssetManager : public Object
@@ -106,6 +106,7 @@ private:
 
     /// Cache manipulation.
     /// @{
+    void InvalidateAssetsInPath(const ea::string& resourcePath);
     void InvalidateTransformedAssetsInPath(const ea::string& resourcePath, const StringVector& transformers);
     void InvalidateApplicableAssetsInPath(const ea::string& resourcePath, const AssetTransformerVector& transformers);
     void InvalidateOutdatedAssetsInPath(const ea::string& resourcePath);
@@ -116,7 +117,7 @@ private:
     void CollectPathUpdates();
     void InitializeAssetPipelines();
     void UpdateAssetPipelines();
-    void UpdateTransformHierarchy(const AssetPipelineDescVector& pipelines);
+    void UpdateTransformHierarchy();
 
     void ScanAssetsInPath(const ea::string& resourcePath);
     void ProcessAsset(const ea::string& resourceName);
@@ -126,6 +127,7 @@ private:
     SharedPtr<FileWatcher> dataWatcher_;
 
     ea::string defaultFlavor_{"*"}; // TODO(editor): Make configurable
+
     bool reloadAssetPipelines_{};
     bool validateAssets_{};
     bool rescanAssets_{};
@@ -134,6 +136,7 @@ private:
     AssetPipelineDescVector assetPipelines_;
     SharedPtr<AssetTransformerHierarchy> transformerHierarchy_;
     ea::unordered_map<ea::string, AssetDesc> assets_;
+    AssetPipelineList assetPipelineFiles_;
 
     struct Stats
     {
