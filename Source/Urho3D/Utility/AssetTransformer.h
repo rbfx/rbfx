@@ -30,40 +30,36 @@ namespace Urho3D
 class AssetTransformer;
 using AssetTransformerVector = ea::vector<AssetTransformer*>;
 
-/// Context of transformer execution.
-class URHO3D_API AssetTransformerContext
+/// Transformer execution inputs (should be serializable on its own).
+struct URHO3D_API AssetTransformerInput
 {
-public:
-    AssetTransformerContext(Context* context, const ea::string& resourceName, const ea::string& fileName);
-    /// Assign output file name.
-    void SetOutputFileName(const ea::string& fileName) { outputFileName_ = fileName; }
-    /// Add applied transformer.
-    void AddAppliedTransformer(AssetTransformer* transformer) { appliedTransformers_.push_back(transformer); }
+    AssetTransformerInput() = default;
+    AssetTransformerInput(const ea::string& flavor, const ea::string& resourceName, const ea::string& inputFileName);
+    AssetTransformerInput(const AssetTransformerInput& other, const ea::string& outputFileName);
 
-    /// Return properties.
-    /// @{
-    const ea::string& GetResourceName() const { return resourceName_; }
-    const ea::string& GetFileName() const { return fileName_; }
-    const ea::string& GetOutputFileName() const { return outputFileName_; }
-    /// @}
+    void SerializeInBlock(Archive& archive);
+    static AssetTransformerInput FromBase64(const ea::string& base64);
+    ea::string ToBase64() const;
 
-    /// Return execution result.
-    /// @{
-    const AssetTransformerVector& GetAppliedTransformers() const { return appliedTransformers_; }
-    /// @}
-
-private:
-    Context* context_{};
-
+    /// Flavor of the transformer.
+    ea::string flavor_;
     /// Resource name that can be used to access resource via cache.
     ea::string resourceName_;
     /// Absolute file name to the processed resource.
     ea::string fileName_;
     /// Absolute file name to the file counterpart in writeable directory.
     ea::string outputFileName_;
+};
 
-    /// Transformers applied to the asset during execution.
-    AssetTransformerVector appliedTransformers_;
+/// Transformer execution result (should be serializable on its own).
+struct URHO3D_API AssetTransformerOutput
+{
+    void SerializeInBlock(Archive& archive);
+    static AssetTransformerOutput FromBase64(const ea::string& base64);
+    ea::string ToBase64() const;
+
+    /// Transformers that were applied to the asset, referenced by index.
+    ea::vector<unsigned> appliedTransformers_;
 };
 
 /// Interface of a script that can be used to transform assets.
@@ -77,14 +73,14 @@ public:
     explicit AssetTransformer(Context* context);
 
     /// Return whether the transformer array is applied to the given asset in any way.
-    static bool IsApplicable(const AssetTransformerContext& ctx, const AssetTransformerVector& transformers);
+    static bool IsApplicable(const AssetTransformerInput& input, const AssetTransformerVector& transformers);
     /// Execute transformer array on the asset.
-    static bool Execute(AssetTransformerContext& ctx, const AssetTransformerVector& transformers);
+    static bool Execute(const AssetTransformerInput& input, const AssetTransformerVector& transformers, AssetTransformerOutput& output);
 
     /// Return whether the transformer can be applied to the given asset. Should be as fast as possible.
-    virtual bool IsApplicable(const AssetTransformerContext& ctx) { return false; }
+    virtual bool IsApplicable(const AssetTransformerInput& input) { return false; }
     /// Execute this transformer on the asset. Return true if any action was performed.
-    virtual bool Execute(AssetTransformerContext& ctx) { return false; }
+    virtual bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output) { return false; }
     /// Return whether the importer of this type should be invoked at most once.
     virtual bool IsSingleInstanced() { return true; }
 

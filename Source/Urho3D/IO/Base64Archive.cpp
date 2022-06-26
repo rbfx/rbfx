@@ -20,29 +20,26 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "../Project/ProjectEditor.h"
-
-#include <Urho3D/Utility/AssetTransformer.h>
+#include "../Core/StringUtils.h"
+#include "../IO/Base64Archive.h"
 
 namespace Urho3D
 {
 
-void Foundation_ModelImporter(Context* context, ProjectEditor* project);
-
-/// Asset transformer that imports GLTF models.
-class ModelImporter : public AssetTransformer
+Base64OutputArchive::Base64OutputArchive(Context* context)
+    : BinaryOutputArchive(context, static_cast<VectorBuffer&>(*this))
 {
-    URHO3D_OBJECT(ModelImporter, AssetTransformer);
+}
 
-public:
-    explicit ModelImporter(Context* context);
+ea::string Base64OutputArchive::GetBase64() const
+{
+    return EncodeBase64(GetBuffer());
+}
 
-    bool IsApplicable(const AssetTransformerInput& input) override;
-    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output) override;
-
-private:
-};
+Base64InputArchive::Base64InputArchive(Context* context, const ea::string& base64)
+    : VectorBuffer(DecodeBase64(base64))
+    , BinaryInputArchive(context, static_cast<VectorBuffer&>(*this))
+{
+}
 
 }

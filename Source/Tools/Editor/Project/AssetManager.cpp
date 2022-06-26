@@ -289,8 +289,8 @@ void AssetManager::InvalidateApplicableAssetsInPath(const ea::string& resourcePa
     {
         if (resourceName.starts_with(resourcePath))
         {
-            AssetTransformerContext ctx{context_, resourceName, GetFileName(resourceName)};
-            if (AssetTransformer::IsApplicable(ctx, transformers))
+            const AssetTransformerInput input{defaultFlavor_, resourceName, GetFileName(resourceName)};
+            if (AssetTransformer::IsApplicable(input, transformers))
                 assetDesc.cacheInvalid_ = true;
         }
     }
@@ -452,7 +452,7 @@ void AssetManager::ScanAssetsInPath(const ea::string& resourcePath)
     {
         const auto iter = assets_.find(resourceName);
         if (iter == assets_.end())
-            ProcessAsset(resourceName);
+            ProcessAsset(resourceName, defaultFlavor_);
         else if (iter->second.transformers_.empty())
             ++stats_.numIgnoredAssets_;
         else
@@ -460,27 +460,28 @@ void AssetManager::ScanAssetsInPath(const ea::string& resourcePath)
     }
 }
 
-void AssetManager::ProcessAsset(const ea::string& resourceName)
+void AssetManager::ProcessAsset(const ea::string& resourceName, const ea::string& flavor)
 {
     auto fs = GetSubsystem<FileSystem>();
 
-    const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(resourceName, defaultFlavor_);
+    const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(resourceName, flavor);
     const ea::string fileName = GetFileName(resourceName);
     const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName);
 
-    AssetTransformerContext ctx{context_, resourceName, fileName};
-    if (AssetTransformer::IsApplicable(ctx, transformers))
+    const AssetTransformerInput input{flavor, resourceName, fileName};
+    if (AssetTransformer::IsApplicable(input, transformers))
     {
         ++stats_.numProcessedAssets_;
 
-        const TemporaryDir tempDir = projectEditor_->CreateTemporaryDir();
-        ctx.SetOutputFileName(tempDir.GetPath() + resourceName);
-        if (AssetTransformer::Execute(ctx, transformers))
+        const TemporaryDir tempFolderHolder = projectEditor_->CreateTemporaryDir();
+        const ea::string tempFolder = tempFolderHolder.GetPath() + resourceName;
+        AssetTransformerOutput output;
+        if (AssetTransformer::Execute(AssetTransformerInput{input, tempFolder}, transformers, output))
         {
             const ea::string& cachePath = projectEditor_->GetCachePath();
 
             StringVector copiedFiles;
-            fs->CopyDir(tempDir.GetPath(), cachePath, &copiedFiles);
+            fs->CopyDir(tempFolderHolder.GetPath(), cachePath, &copiedFiles);
 
             for (ea::string& fileName : copiedFiles)
                 fileName = fileName.substr(cachePath.length());
@@ -489,8 +490,8 @@ void AssetManager::ProcessAsset(const ea::string& resourceName)
             assetDesc.resourceName_ = resourceName;
             assetDesc.modificationTime_ = assetModifiedTime;
             assetDesc.outputs_ = copiedFiles;
-            for (AssetTransformer* assetTransformer : ctx.GetAppliedTransformers())
-                assetDesc.transformers_.insert(assetTransformer->GetTypeName());
+            for (unsigned index : output.appliedTransformers_)
+                assetDesc.transformers_.insert(transformers[index]->GetTypeName());
 
             URHO3D_LOGDEBUG("Asset {} was processed with {} outputs", resourceName, copiedFiles.size());
         }
