@@ -22,7 +22,10 @@
 
 #pragma once
 
+#include "../IO/FileSystem.h"
 #include "../Scene/Serializable.h"
+
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
@@ -34,8 +37,8 @@ using AssetTransformerVector = ea::vector<AssetTransformer*>;
 struct URHO3D_API AssetTransformerInput
 {
     AssetTransformerInput() = default;
-    AssetTransformerInput(const ea::string& flavor, const ea::string& resourceName, const ea::string& inputFileName);
-    AssetTransformerInput(const AssetTransformerInput& other, const ea::string& outputFileName);
+    AssetTransformerInput(const ea::string& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime);
+    AssetTransformerInput(const AssetTransformerInput& other, const ea::string& tempPath, const ea::string& outputFileName);
 
     void SerializeInBlock(Archive& archive);
     static AssetTransformerInput FromBase64(const ea::string& base64);
@@ -45,8 +48,12 @@ struct URHO3D_API AssetTransformerInput
     ea::string flavor_;
     /// Resource name that can be used to access resource via cache.
     ea::string resourceName_;
-    /// Absolute file name to the processed resource.
-    ea::string fileName_;
+    /// Absolute file name of the asset.
+    ea::string inputFileName_;
+    /// Modification time of the input file.
+    FileTime inputFileTime_;
+    /// Absolute path to the temporary directory used to store output files.
+    ea::string tempPath_;
     /// Absolute file name to the file counterpart in writeable directory.
     ea::string outputFileName_;
 };
@@ -58,8 +65,10 @@ struct URHO3D_API AssetTransformerOutput
     static AssetTransformerOutput FromBase64(const ea::string& base64);
     ea::string ToBase64() const;
 
-    /// Transformers that were applied to the asset, referenced by index.
-    ea::vector<unsigned> appliedTransformers_;
+    /// Resource names of the output files.
+    ea::vector<ea::string> outputResourceNames_;
+    /// Types of transformers that were applied to the asset.
+    ea::unordered_set<ea::string> appliedTransformers_;
 };
 
 /// Interface of a script that can be used to transform assets.
@@ -75,7 +84,11 @@ public:
     /// Return whether the transformer array is applied to the given asset in any way.
     static bool IsApplicable(const AssetTransformerInput& input, const AssetTransformerVector& transformers);
     /// Execute transformer array on the asset.
-    static bool Execute(const AssetTransformerInput& input, const AssetTransformerVector& transformers, AssetTransformerOutput& output);
+    static bool Execute(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
+        AssetTransformerOutput& output);
+    /// Execute transformer array on the asset and copy results in the output path.
+    static bool ExecuteAndStore(const AssetTransformerInput& input, const AssetTransformerVector& transformers,
+        const ea::string& outputPath, AssetTransformerOutput& output);
 
     /// Return whether the transformer can be applied to the given asset. Should be as fast as possible.
     virtual bool IsApplicable(const AssetTransformerInput& input) { return false; }

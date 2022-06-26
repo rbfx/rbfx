@@ -75,9 +75,9 @@ public:
     /// Close all opened resources gracefully. Open other resource if requested.
     void CloseAllResourcesGracefully(const ea::string& pendingOpenResourceName);
     /// Save specific opened resource.
-    void SaveResource(const ea::string& resourceName);
+    void SaveResource(const ea::string& resourceName, bool forced = false);
     /// Save all resources.
-    void SaveAllResources();
+    void SaveAllResources(bool forced = false);
     /// Set currently active resource.
     void SetActiveResource(const ea::string& activeResourceName);
     /// Set current action for resource.

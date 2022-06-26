@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <Urho3D/Core/Signal.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/Scene/Serializable.h>
@@ -44,6 +45,7 @@ class AssetManager : public Object
 
 public:
     static const ea::string ResourceNameSuffix;
+    Signal<void()> OnInitialized;
 
     explicit AssetManager(Context* context);
     ~AssetManager() override;
@@ -88,10 +90,19 @@ private:
 
         void SerializeInBlock(Archive& archive);
         bool IsAnyTransformerUsed(const StringVector& transformers) const;
+        ea::string GetTransformerDebugString() const;
+    };
+
+    struct Stats
+    {
+        unsigned numProcessedAssets_{};
+        unsigned numIgnoredAssets_{};
+        unsigned numUpToDateAssets_{};
     };
 
     /// Utility functions that don't change internal state
     /// @{
+    StringVector EnumerateAssetFiles(const ea::string& resourcePath) const;
     AssetPipelineList EnumerateAssetPipelineFiles() const;
     AssetPipelineDesc LoadAssetPipeline(const JSONFile& jsonFile,
         const ea::string& resourceName, FileTime modificationTime) const;
@@ -114,36 +125,37 @@ private:
     void CleanupCacheFolder();
     /// @}
 
-    void CollectPathUpdates();
+    StringVector GetUpdatedPaths(bool updateAll);
+
+    void Initialize();
+
     void InitializeAssetPipelines();
     void UpdateAssetPipelines();
     void UpdateTransformHierarchy();
+    void ProcessFileSystemUpdates();
+    void EnsureAssetsAndCacheValid();
+    void ScanAndQueueAssetProcessing();
 
-    void ScanAssetsInPath(const ea::string& resourcePath);
-    void ProcessAsset(const ea::string& resourceName, const ea::string& flavor);
-    StringVector EnumerateAssetFiles(const ea::string& resourcePath) const;
+    void ScanAssetsInPath(const ea::string& resourcePath, Stats& stats);
+    bool QueueAssetProcessing(const ea::string& resourceName, const ea::string& flavor);
+    void ProcessAsset(const AssetTransformerInput& input);
 
     const WeakPtr<ProjectEditor> projectEditor_;
     SharedPtr<FileWatcher> dataWatcher_;
 
     ea::string defaultFlavor_{"*"}; // TODO(editor): Make configurable
 
+    bool initialized_{};
     bool reloadAssetPipelines_{};
-    bool validateAssets_{};
-    bool rescanAssets_{};
-    StringVector pendingPathUpdates_;
+    bool hasInvalidAssets_{};
+    bool scanAssets_{};
 
     AssetPipelineDescVector assetPipelines_;
     SharedPtr<AssetTransformerHierarchy> transformerHierarchy_;
     ea::unordered_map<ea::string, AssetDesc> assets_;
     AssetPipelineList assetPipelineFiles_;
 
-    struct Stats
-    {
-        unsigned numProcessedAssets_{};
-        unsigned numIgnoredAssets_{};
-        unsigned numUpToDateAssets_{};
-    } stats_;
+    ea::vector<AssetTransformerInput> requestQueue_;
 };
 
 }

@@ -52,6 +52,14 @@ bool AssetManager::AssetDesc::IsAnyTransformerUsed(const StringVector& transform
     return false;
 }
 
+ea::string AssetManager::AssetDesc::GetTransformerDebugString() const
+{
+    // TODO(editor): Make algo?
+    StringVector transformers{transformers_.begin(), transformers_.end()};
+    ea::sort(transformers.begin(), transformers.end());
+    return ea::string::joined(transformers, ", ");
+}
+
 AssetManager::AssetManager(Context* context)
     : Object(context)
     , projectEditor_(GetSubsystem<ProjectEditor>())
@@ -65,33 +73,78 @@ AssetManager::~AssetManager()
 {
 }
 
+void AssetManager::Initialize()
+{
+    InitializeAssetPipelines();
+    InvalidateOutdatedAssetsInPath("");
+    EnsureAssetsAndCacheValid();
+    ScanAndQueueAssetProcessing();
+
+    if (requestQueue_.empty())
+    {
+        initialized_ = true;
+        OnInitialized(this);
+    }
+}
+
 void AssetManager::Update()
 {
-    CollectPathUpdates();
-    if (!pendingPathUpdates_.empty())
+    if (!requestQueue_.empty())
+    {
+        // TODO(editor): Be smarter about this.
+        ProcessAsset(requestQueue_.back());
+        requestQueue_.pop_back();
+        return;
+    }
+
+    if (!initialized_)
+    {
+        initialized_ = true;
+        OnInitialized(this);
+    }
+
+    ProcessFileSystemUpdates();
+    EnsureAssetsAndCacheValid();
+    ScanAndQueueAssetProcessing();
+}
+
+void AssetManager::ProcessFileSystemUpdates()
+{
+    // TODO(editor): Throttle updates?
+    const StringVector pathUpdates = GetUpdatedPaths(reloadAssetPipelines_);
+    reloadAssetPipelines_ = false;
+
+    if (!pathUpdates.empty())
     {
         UpdateAssetPipelines();
-        for (const ea::string& updatedPath : pendingPathUpdates_)
+        for (const ea::string& updatedPath : pathUpdates)
             InvalidateOutdatedAssetsInPath(updatedPath);
     }
+}
 
-    if (validateAssets_)
-    {
-        CleanupInvalidatedAssets();
-        CleanupCacheFolder();
-        rescanAssets_ = true;
-        validateAssets_ = false;
-    }
+void AssetManager::EnsureAssetsAndCacheValid()
+{
+    if (!hasInvalidAssets_)
+        return;
 
-    if (rescanAssets_)
-    {
-        stats_ = {};
-        ScanAssetsInPath("");
+    CleanupInvalidatedAssets();
+    CleanupCacheFolder();
+    scanAssets_ = true;
+    hasInvalidAssets_ = false;
+}
 
-        rescanAssets_ = false;
-        URHO3D_LOGINFO("Assets scanned: {} processed, {} up-to-date, {} ignored",
-            stats_.numProcessedAssets_, stats_.numUpToDateAssets_, stats_.numIgnoredAssets_);
-    }
+void AssetManager::ScanAndQueueAssetProcessing()
+{
+    if (!scanAssets_)
+        return;
+
+    Stats stats;
+    ScanAssetsInPath("", stats);
+
+    URHO3D_LOGINFO("Assets scanned: {} processed, {} up-to-date, {} ignored",
+        stats.numProcessedAssets_, stats.numUpToDateAssets_, stats.numIgnoredAssets_);
+
+    scanAssets_ = false;
 }
 
 void AssetManager::SerializeInBlock(Archive& archive)
@@ -112,9 +165,7 @@ void AssetManager::LoadFile(const ea::string& fileName)
     if (jsonFile->LoadFile(fileName))
         jsonFile->LoadObject("Cache", *this);
 
-    InitializeAssetPipelines();
-    InvalidateOutdatedAssetsInPath("");
-    rescanAssets_ = true;
+    Initialize();
 }
 
 void AssetManager::SaveFile(const ea::string& fileName) const
@@ -261,7 +312,7 @@ bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
 
 void AssetManager::InvalidateAssetsInPath(const ea::string& resourcePath)
 {
-    validateAssets_ = true;
+    hasInvalidAssets_ = true;
     for (auto& [resourceName, assetDesc] : assets_)
     {
         if (resourceName.starts_with(resourcePath))
@@ -271,7 +322,7 @@ void AssetManager::InvalidateAssetsInPath(const ea::string& resourcePath)
 
 void AssetManager::InvalidateTransformedAssetsInPath(const ea::string& resourcePath, const StringVector& transformers)
 {
-    validateAssets_ = true;
+    hasInvalidAssets_ = true;
     for (auto& [resourceName, assetDesc] : assets_)
     {
         if (resourceName.starts_with(resourcePath))
@@ -284,12 +335,12 @@ void AssetManager::InvalidateTransformedAssetsInPath(const ea::string& resourceP
 
 void AssetManager::InvalidateApplicableAssetsInPath(const ea::string& resourcePath, const AssetTransformerVector& transformers)
 {
-    validateAssets_ = true;
+    hasInvalidAssets_ = true;
     for (auto& [resourceName, assetDesc] : assets_)
     {
         if (resourceName.starts_with(resourcePath))
         {
-            const AssetTransformerInput input{defaultFlavor_, resourceName, GetFileName(resourceName)};
+            const AssetTransformerInput input{defaultFlavor_, resourceName, GetFileName(resourceName), assetDesc.modificationTime_};
             if (AssetTransformer::IsApplicable(input, transformers))
                 assetDesc.cacheInvalid_ = true;
         }
@@ -298,7 +349,7 @@ void AssetManager::InvalidateApplicableAssetsInPath(const ea::string& resourcePa
 
 void AssetManager::InvalidateOutdatedAssetsInPath(const ea::string& resourcePath)
 {
-    validateAssets_ = true;
+    hasInvalidAssets_ = true;
     for (auto& [resourceName, assetDesc] : assets_)
     {
         if (resourceName.starts_with(resourcePath))
@@ -358,33 +409,32 @@ void AssetManager::CleanupCacheFolder()
     }
 }
 
-void AssetManager::CollectPathUpdates()
+StringVector AssetManager::GetUpdatedPaths(bool updateAll)
 {
-    // TODO(editor): Throttle this
-    StringVector pathUpdates;
+    StringVector allPathUpdates;
     FileChange change;
     while (dataWatcher_->GetNextChange(change))
     {
-        pathUpdates.push_back(change.fileName_);
+        allPathUpdates.push_back(change.fileName_);
         if (!change.oldFileName_.empty())
-            pathUpdates.push_back(change.oldFileName_);
+            allPathUpdates.push_back(change.oldFileName_);
     }
-    ea::sort(pathUpdates.begin(), pathUpdates.end());
+    ea::sort(allPathUpdates.begin(), allPathUpdates.end());
 
-    pendingPathUpdates_.clear();
-    if (reloadAssetPipelines_)
-        pendingPathUpdates_.push_back("");
+    StringVector compressedPathUpdates;
+    if (updateAll)
+        compressedPathUpdates.push_back("");
     else
     {
-        for (const ea::string& path : pathUpdates)
+        for (const ea::string& path : allPathUpdates)
         {
-            if (!pendingPathUpdates_.empty() && path.starts_with(pendingPathUpdates_.back()))
+            if (!compressedPathUpdates.empty() && path.starts_with(compressedPathUpdates.back()))
                 continue;
-            pendingPathUpdates_.push_back(path);
+            compressedPathUpdates.push_back(path);
         }
     }
 
-    reloadAssetPipelines_ = false;
+    return compressedPathUpdates;
 }
 
 void AssetManager::InitializeAssetPipelines()
@@ -446,21 +496,26 @@ void AssetManager::UpdateTransformHierarchy()
     transformerHierarchy_->CommitDependencies();
 }
 
-void AssetManager::ScanAssetsInPath(const ea::string& resourcePath)
+void AssetManager::ScanAssetsInPath(const ea::string& resourcePath, Stats& stats)
 {
     for (const ea::string& resourceName : EnumerateAssetFiles(resourcePath))
     {
         const auto iter = assets_.find(resourceName);
         if (iter == assets_.end())
-            ProcessAsset(resourceName, defaultFlavor_);
+        {
+            if (QueueAssetProcessing(resourceName, defaultFlavor_))
+                ++stats.numProcessedAssets_;
+            else
+                ++stats.numIgnoredAssets_;
+        }
         else if (iter->second.transformers_.empty())
-            ++stats_.numIgnoredAssets_;
+            ++stats.numIgnoredAssets_;
         else
-            ++stats_.numUpToDateAssets_;
+            ++stats.numUpToDateAssets_;
     }
 }
 
-void AssetManager::ProcessAsset(const ea::string& resourceName, const ea::string& flavor)
+bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const ea::string& flavor)
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -468,41 +523,40 @@ void AssetManager::ProcessAsset(const ea::string& resourceName, const ea::string
     const ea::string fileName = GetFileName(resourceName);
     const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName);
 
-    const AssetTransformerInput input{flavor, resourceName, fileName};
-    if (AssetTransformer::IsApplicable(input, transformers))
+    const AssetTransformerInput input{flavor, resourceName, fileName, assetModifiedTime};
+    if (!AssetTransformer::IsApplicable(input, transformers))
     {
-        ++stats_.numProcessedAssets_;
-
-        const TemporaryDir tempFolderHolder = projectEditor_->CreateTemporaryDir();
-        const ea::string tempFolder = tempFolderHolder.GetPath() + resourceName;
-        AssetTransformerOutput output;
-        if (AssetTransformer::Execute(AssetTransformerInput{input, tempFolder}, transformers, output))
-        {
-            const ea::string& cachePath = projectEditor_->GetCachePath();
-
-            StringVector copiedFiles;
-            fs->CopyDir(tempFolderHolder.GetPath(), cachePath, &copiedFiles);
-
-            for (ea::string& fileName : copiedFiles)
-                fileName = fileName.substr(cachePath.length());
-
-            AssetDesc& assetDesc = assets_[resourceName];
-            assetDesc.resourceName_ = resourceName;
-            assetDesc.modificationTime_ = assetModifiedTime;
-            assetDesc.outputs_ = copiedFiles;
-            for (unsigned index : output.appliedTransformers_)
-                assetDesc.transformers_.insert(transformers[index]->GetTypeName());
-
-            URHO3D_LOGDEBUG("Asset {} was processed with {} outputs", resourceName, copiedFiles.size());
-        }
-    }
-    else
-    {
-        ++stats_.numIgnoredAssets_;
-
         AssetDesc& assetDesc = assets_[resourceName];
         assetDesc.resourceName_ = resourceName;
         assetDesc.modificationTime_ = assetModifiedTime;
+        return false;
+    }
+
+    const ea::string tempPath = projectEditor_->GetRandomTemporaryPath();
+    const ea::string outputFileName = tempPath + resourceName;
+    requestQueue_.push_back(AssetTransformerInput{input, tempPath, outputFileName});
+    return true;
+}
+
+void AssetManager::ProcessAsset(const AssetTransformerInput& input)
+{
+    auto fs = GetSubsystem<FileSystem>();
+
+    const ea::string& cachePath = projectEditor_->GetCachePath();
+    const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(
+        input.resourceName_, input.flavor_);
+
+    AssetTransformerOutput output;
+    if (AssetTransformer::ExecuteAndStore(input, transformers, cachePath, output))
+    {
+        AssetDesc& assetDesc = assets_[input.resourceName_];
+        assetDesc.resourceName_ = input.resourceName_;
+        assetDesc.modificationTime_ = input.inputFileTime_;
+        assetDesc.outputs_ = output.outputResourceNames_;
+        assetDesc.transformers_ = output.appliedTransformers_;
+
+        URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated)",
+            input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size());
     }
 }
 
