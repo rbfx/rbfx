@@ -49,29 +49,29 @@ ModelImporter::ModelImporter(Context* context)
 {
 }
 
-bool ModelImporter::IsApplicable(const AssetTransformerContext& ctx)
+bool ModelImporter::IsApplicable(const AssetTransformerInput& input)
 {
-    return IsFileNameGLTF(ctx.GetResourceName());
+    return IsFileNameGLTF(input.resourceName_);
 }
 
-bool ModelImporter::Execute(AssetTransformerContext& ctx)
+bool ModelImporter::Execute(const AssetTransformerInput& input, AssetTransformerOutput& output)
 {
     const GLTFImporterSettings importerSettings;
     auto importer = MakeShared<GLTFImporter>(context_, importerSettings);
 
-    if (!importer->LoadFile(ctx.GetFileName(), AddTrailingSlash(ctx.GetOutputFileName()), AddTrailingSlash(ctx.GetResourceName())))
+    if (!importer->LoadFile(input.fileName_, AddTrailingSlash(input.outputFileName_), AddTrailingSlash(input.resourceName_)))
     {
-        URHO3D_LOGERROR("Failed to load asset {} as GLTF model", ctx.GetResourceName());
+        URHO3D_LOGERROR("Failed to load asset {} as GLTF model", input.resourceName_);
         return false;
     }
 
     auto fs = GetSubsystem<FileSystem>();
-    fs->RemoveDir(ctx.GetOutputFileName(), true);
-    fs->Delete(ctx.GetOutputFileName());
+    fs->RemoveDir(input.outputFileName_, true);
+    fs->Delete(input.outputFileName_);
 
     if (!importer->SaveResources())
     {
-        URHO3D_LOGERROR("Failed to save output files for asset {}", ctx.GetResourceName());
+        URHO3D_LOGERROR("Failed to save output files for asset {}", input.resourceName_);
         return false;
     }
 

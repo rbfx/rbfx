@@ -120,7 +120,7 @@ private:
     void UpdateTransformHierarchy();
 
     void ScanAssetsInPath(const ea::string& resourcePath);
-    void ProcessAsset(const ea::string& resourceName);
+    void ProcessAsset(const ea::string& resourceName, const ea::string& flavor);
     StringVector EnumerateAssetFiles(const ea::string& resourcePath) const;
 
     const WeakPtr<ProjectEditor> projectEditor_;

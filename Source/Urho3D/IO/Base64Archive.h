@@ -22,27 +22,27 @@
 
 #pragma once
 
-#include "../Project/ProjectEditor.h"
-
-#include <Urho3D/Utility/AssetTransformer.h>
+#include "../IO/BinaryArchive.h"
+#include "../IO/VectorBuffer.h"
 
 namespace Urho3D
 {
 
-void Foundation_ModelImporter(Context* context, ProjectEditor* project);
-
-/// Asset transformer that imports GLTF models.
-class ModelImporter : public AssetTransformer
+/// Base64 output archive.
+class URHO3D_API Base64OutputArchive : private VectorBuffer, public BinaryOutputArchive
 {
-    URHO3D_OBJECT(ModelImporter, AssetTransformer);
-
 public:
-    explicit ModelImporter(Context* context);
+    Base64OutputArchive(Context* context);
 
-    bool IsApplicable(const AssetTransformerInput& input) override;
-    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output) override;
+    /// Return base64-encoded result.
+    ea::string GetBase64() const;
+};
 
-private:
+/// Base64 input archive.
+class URHO3D_API Base64InputArchive : private VectorBuffer, public BinaryInputArchive
+{
+public:
+    Base64InputArchive(Context* context, const ea::string& base64);
 };
 
 }
