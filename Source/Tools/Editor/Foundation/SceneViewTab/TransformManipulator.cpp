@@ -21,6 +21,7 @@
 //
 
 #include "../../Core/CommonEditorActions.h"
+#include "../../Core/HotkeyManager.h"
 #include "../../Core/IniHelpers.h"
 #include "../../Foundation/SceneViewTab/TransformManipulator.h"
 

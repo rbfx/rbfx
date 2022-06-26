@@ -20,8 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/EditorPluginManager.h"
 #include "../Project/ProjectEditor.h"
+
+#include "../Core/EditorPluginManager.h"
+#include "../Core/HotkeyManager.h"
+#include "../Core/SettingsManager.h"
+#include "../Core/UndoManager.h"
+#include "../Project/AssetManager.h"
 #include "../Project/ResourceEditorTab.h"
 
 #include <Urho3D/Core/ProcessUtils.h>

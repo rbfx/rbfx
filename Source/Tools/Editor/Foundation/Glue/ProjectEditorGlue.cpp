@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../../Core/HotkeyManager.h"
 #include "../../Foundation/Glue/ProjectEditorGlue.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>

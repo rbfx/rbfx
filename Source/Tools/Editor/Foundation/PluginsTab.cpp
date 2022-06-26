@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/HotkeyManager.h"
 #include "../Core/IniHelpers.h"
 #include "../Foundation/PluginsTab.h"
 
