@@ -60,15 +60,12 @@ if (TARGET libEditor)
 endif ()
 
 target_include_directories(${EDITOR_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries (${EDITOR_TARGET} Toolbox Urho3D)
+target_link_libraries (${EDITOR_TARGET} PUBLIC Toolbox Urho3D)
 if (TARGET TracyEmbedded)
-    target_link_libraries (${EDITOR_TARGET} TracyEmbedded)
+    target_link_libraries (${EDITOR_TARGET} PUBLIC TracyEmbedded)
 endif ()
 
-if (NOT BUILD_SHARED_LIBS AND URHO3D_SAMPLES)
-    # Static plugins have to be linked into target application.
-    target_link_libraries(${EDITOR_TARGET} 103_GamePlugin)
-endif ()
+link_static_plugins (${EDITOR_TARGET} "${URHO3D_PLUGIN_LIST}")
 
 install(TARGETS ${EDITOR_TARGET}
     RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
