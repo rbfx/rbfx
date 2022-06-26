@@ -27,7 +27,7 @@ endif ()
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_library (103_GamePlugin ${SOURCE_FILES})
 target_link_libraries (103_GamePlugin PUBLIC Urho3D)
-target_include_directories(103_GamePlugin PRIVATE ..)
+target_include_directories(103_GamePlugin PUBLIC ..)
 install(TARGETS 103_GamePlugin
     RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}

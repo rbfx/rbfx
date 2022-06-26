@@ -30,6 +30,13 @@
 namespace Urho3D
 {
 
+// Placeholder for shared linking
+#if !URHO3D_STATIC
+void PluginApplication::RegisterStaticPlugins()
+{
+}
+#endif
+
 void PluginApplication::RegisterPluginApplication(const ea::string& name, PluginApplicationFactory factory)
 {
     PluginManager::RegisterPluginApplication(name, factory);
