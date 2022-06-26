@@ -42,7 +42,8 @@ ComponentInspector::ComponentInspector(Context* context)
 
 void ComponentInspector::RenderInspector(InspectArgs& args)
 {
-    auto* component = args.object_.Expired() ? nullptr : args.object_->Cast<Component>();
+    // Preserve component in memory while we render attributes as some action may destroy it while we render it.
+    const SharedPtr<Component> component{args.object_.Expired() ? nullptr : args.object_->Cast<Component>()};
     if (component == nullptr)
         return;
 

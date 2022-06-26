@@ -78,8 +78,11 @@ TEST_CASE("Prefab reference")
     CHECK(prefabRef->GetRootNode() != prefabRoot);
     prefabRoot = prefabRef->GetRootNode();
     CHECK(prefabRoot->GetNumChildren() == 1);
-}
 
+    prefabRef->Inline();
+    CHECK(prefabRef->GetNode() == nullptr);
+    CHECK(!prefabRoot->IsTemporary());
+}
 
 TEST_CASE("Prefab with node reference")
 {

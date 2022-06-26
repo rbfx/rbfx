@@ -83,12 +83,9 @@ void PrefabReference::RegisterObject(Context* context)
 {
     context->RegisterFactory<PrefabReference>(SCENE_CATEGORY);
 
-    URHO3D_ACTION_STATIC_LABEL("Open", Open, "Open and inline the prefab reference");
-    URHO3D_ACTION_STATIC_LABEL("Save", Save, "Save prefab node to resource");
-    URHO3D_ACTION_STATIC_LABEL("Close", Close, "Make prefab nodes temporary");
+    URHO3D_ACTION_STATIC_LABEL("Inline", Inline, "Inline the prefab nodes");
 
     URHO3D_ACCESSOR_ATTRIBUTE("Preserve Transform", GetPreserveTransfrom, SetPreserveTransfrom, bool, false, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Is Open", IsOpen, SetOpen, bool, false, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Prefab", GetPrefabAttr, SetPrefabAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
 }
 
@@ -180,57 +177,12 @@ Node* PrefabReference::CreateInstance() const
     SetTemporaryFlag(node, true);
     return node;
 }
-/// Is prefab open (inlined).
-bool PrefabReference::IsOpen() const
+
+void PrefabReference::Inline()
 {
-    return isOpen_;
-}
-
-/// Set prefab state to open (inlined) or closed (referencing external resource)
-void PrefabReference::SetOpen(bool open)
-{
-    if (open != isOpen_)
-    {
-        isOpen_ = open;
-        if (isOpen_)
-        {
-            if (!node_)
-                node_ = CreateInstance();
-
-            SetTemporaryFlag(node_, false);
-        }
-        else
-        {
-            SetTemporaryFlag(node_, true);
-        }
-    }
-}
-
-void PrefabReference::Open()
-{
-    SetOpen(true);
-}
-
-void PrefabReference::Close()
-{
-    SetOpen(false);
-}
-
-void PrefabReference::Save()
-{
-    if (!prefab_ || !node_ || !IsOpen())
-    {
-        return;
-    }
-
-    const auto file = MakeShared<XMLFile>(context_);
-
-    auto root = file->GetOrCreateRoot("node");
-    node_->SaveXML(root);
-    if (!file->SaveFile(prefab_->GetAbsoluteFileName()))
-    {
-        URHO3D_LOGERROR("Saving prefab failed");
-    }
+    SetTemporaryFlag(node_, false);
+    node_.Reset();
+    Remove();
 }
 
 /// Handle enabled/disabled state change.
