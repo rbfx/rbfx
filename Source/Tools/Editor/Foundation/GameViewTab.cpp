@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../Core/HotkeyManager.h"
 #include "../Foundation/GameViewTab.h"
 
 #include <Urho3D/Graphics/Graphics.h>

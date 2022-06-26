@@ -21,7 +21,9 @@
 //
 
 #include "../Core/EditorPluginManager.h"
+#include "../Core/HotkeyManager.h"
 #include "../Core/IniHelpers.h"
+#include "../Core/UndoManager.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 

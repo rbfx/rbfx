@@ -124,7 +124,7 @@ void AssetManager::SaveFile(const ea::string& fileName) const
         jsonFile->SaveFile(fileName);
 }
 
-AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() const
+AssetManager::AssetPipelineList AssetManager::EnumerateAssetPipelineFiles() const
 {
     auto fs = GetSubsystem<FileSystem>();
 

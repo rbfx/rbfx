@@ -22,10 +22,6 @@
 
 #pragma once
 
-#include "../Core/HotkeyManager.h"
-#include "../Core/SettingsManager.h"
-#include "../Core/UndoManager.h"
-#include "../Project/AssetManager.h"
 #include "../Project/CloseDialog.h"
 #include "../Project/EditorTab.h"
 
@@ -43,6 +39,11 @@
 
 namespace Urho3D
 {
+
+class AssetManager;
+class HotkeyManager;
+class SettingsManager;
+class UndoManager;
 
 /// Request to open resource in Editor.
 struct OpenResourceRequest

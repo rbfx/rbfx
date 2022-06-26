@@ -37,9 +37,6 @@ namespace Urho3D
 class JSONFile;
 class ProjectEditor;
 
-/// Sorted list of asset transformer pipelines.
-using AssetPipelineList = ea::map<ea::string, FileTime>;
-
 /// Manages assets of the project.
 class AssetManager : public Object
 {
@@ -61,6 +58,9 @@ public:
     /// @}
 
 private:
+    /// Sorted list of asset pipeline files.
+    using AssetPipelineList = ea::map<ea::string, FileTime>;
+
     struct AssetPipelineDesc
     {
         ea::string resourceName_;
