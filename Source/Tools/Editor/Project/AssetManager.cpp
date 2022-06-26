@@ -97,6 +97,7 @@ void AssetManager::Update()
 void AssetManager::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "Assets", assets_);
+    SerializeOptionalValue(archive, "AssetPipelineModificationTimes", assetPipelineFiles_);
 
     if (archive.IsInput())
     {
@@ -258,6 +259,16 @@ bool AssetManager::IsAssetUpToDate(const AssetDesc& assetDesc) const
     return true;
 }
 
+void AssetManager::InvalidateAssetsInPath(const ea::string& resourcePath)
+{
+    validateAssets_ = true;
+    for (auto& [resourceName, assetDesc] : assets_)
+    {
+        if (resourceName.starts_with(resourcePath))
+            assetDesc.cacheInvalid_ = true;
+    }
+}
+
 void AssetManager::InvalidateTransformedAssetsInPath(const ea::string& resourcePath, const StringVector& transformers)
 {
     validateAssets_ = true;
@@ -378,9 +389,21 @@ void AssetManager::CollectPathUpdates()
 
 void AssetManager::InitializeAssetPipelines()
 {
-    const AssetPipelineList assetPipelineFiles = EnumerateAssetPipelineFiles();
-    const AssetPipelineDescVector assetPipelines = LoadAssetPipelines(assetPipelineFiles);
-    UpdateTransformHierarchy(assetPipelines);
+    const AssetPipelineList newAssetPipelineFiles = EnumerateAssetPipelineFiles();
+    const AssetPipelineDescVector newAssetPipelines = LoadAssetPipelines(newAssetPipelineFiles);
+
+    ea::vector<AssetPipelineList::value_type> changedPipelines;
+    ea::set_symmetric_difference(
+        assetPipelineFiles_.begin(), assetPipelineFiles_.end(),
+        newAssetPipelineFiles.begin(), newAssetPipelineFiles.end(),
+        std::back_inserter(changedPipelines));
+
+    for (const auto& [resourceName, _] : changedPipelines)
+        InvalidateAssetsInPath(GetPath(resourceName));
+
+    assetPipelines_ = newAssetPipelines;
+    assetPipelineFiles_ = newAssetPipelineFiles;
+    UpdateTransformHierarchy();
 }
 
 void AssetManager::UpdateAssetPipelines()
@@ -405,12 +428,13 @@ void AssetManager::UpdateAssetPipelines()
             InvalidateApplicableAssetsInPath(resourcePath, GetTransformers(*diff.newPipeline_));
     }
 
-    UpdateTransformHierarchy(newAssetPipelines);
+    assetPipelineFiles_ = newAssetPipelineFiles;
+    assetPipelines_ = newAssetPipelines;
+    UpdateTransformHierarchy();
 }
 
-void AssetManager::UpdateTransformHierarchy(const AssetPipelineDescVector& pipelines)
+void AssetManager::UpdateTransformHierarchy()
 {
-    assetPipelines_ = pipelines;
     transformerHierarchy_->Clear();
     for (const AssetPipelineDesc& pipeline : assetPipelines_)
     {

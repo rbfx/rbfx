@@ -183,10 +183,10 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
 
     // Delay asset manager creation until project is ready
     assetManager_ = MakeShared<AssetManager>(context);
-    assetManager_->LoadFile(cacheJsonPath_);
 
     ApplyPlugins();
 
+    assetManager_->LoadFile(cacheJsonPath_);
     settingsManager_->LoadFile(settingsJsonPath_);
 
     JSONFile projectJsonFile(context_);

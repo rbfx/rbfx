@@ -53,8 +53,8 @@ struct GLTFImporterSettings
 URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
 
 /// Utility class to load GLTF file and save it as Urho resources.
-/// It may modify Context singletons, so it's better to use this utility from separate executable.
-/// TODO: Remove imported resources from cache on destruction?
+/// Temporarily loads resources into resource cache, removes them from the cache on destruction.
+/// It's better to use this utility from separate executable.
 class URHO3D_API GLTFImporter : public Object
 {
     URHO3D_OBJECT(GLTFImporter, Object);
