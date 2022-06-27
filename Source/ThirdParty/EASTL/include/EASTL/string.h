@@ -132,9 +132,7 @@ EA_DISABLE_VC_WARNING(4530 4480 4571 4267 4702);
 
 #include <EASTL/internal/char_traits.h>
 #include <EASTL/string_view.h>
-#if EASTL_URHO3D_EXTENSIONS
 #include <EASTL/vector.h>
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_STRING_EXPLICIT
@@ -203,7 +201,7 @@ EA_DISABLE_VC_WARNING(4530 4480 4571 4267 4702);
 		#endif
 	}
 #else
-    // rbfx: replaced extern with EASTL_API to fix shared builds.
+    // replaced extern with EASTL_API to fix shared builds.
 	// User-provided functions.
 	int EASTL_API Vsnprintf8 (char*  pDestination, size_t n, const char*  pFormat, va_list arguments);
 	int EASTL_API Vsnprintf16(char16_t* pDestination, size_t n, const char16_t* pFormat, va_list arguments);
@@ -298,7 +296,7 @@ namespace eastl
 		typedef ptrdiff_t                                       difference_type;
 		typedef Allocator                                       allocator_type;
 
-	static const size_type npos     = (size_type)-1;      /// 'npos' means non-valid position or simply non-position.
+	static const EA_CONSTEXPR size_type npos     = (size_type)-1;      /// 'npos' means non-valid position or simply non-position.
 
 	public:
 		// CtorDoNotInitialize exists so that we can create a constructor that allocates but doesn't
@@ -308,7 +306,7 @@ namespace eastl
 		// CtorSprintf exists so that we can create a constructor that accepts printf-style
 		// arguments but also doesn't collide with any other constructor declaration.
 		#ifdef EA_PLATFORM_MINGW
-			// rbfx: Workaround for MinGW compiler bug: variadic arguments are corrupted if empty object is passed before it
+			// Workaround for MinGW compiler bug: variadic arguments are corrupted if empty object is passed before it
 			struct CtorSprintf{ int dummy; };
 		#else
 			struct CtorSprintf{};
@@ -322,19 +320,19 @@ namespace eastl
 		// Masks used to determine if we are in SSO or Heap
 		#ifdef EA_SYSTEM_BIG_ENDIAN
 			// Big Endian use LSB, unless we want to reorder struct layouts on endianness, Bit is set when we are in Heap
-			static constexpr size_type kHeapMask = 0x1;
-			static constexpr size_type kSSOMask  = 0x1;
+			static EA_CONSTEXPR_OR_CONST size_type kHeapMask = 0x1;
+			static EA_CONSTEXPR_OR_CONST size_type kSSOMask  = 0x1;
 		#else
 			// Little Endian use MSB
-			static constexpr size_type kHeapMask = ~(size_type(~size_type(0)) >> 1);
-			static constexpr size_type kSSOMask  = 0x80;
+			static EA_CONSTEXPR_OR_CONST size_type kHeapMask = ~(size_type(~size_type(0)) >> 1);
+			static EA_CONSTEXPR_OR_CONST size_type kSSOMask  = 0x80;
 		#endif
 
 	public:
 		#ifdef EA_SYSTEM_BIG_ENDIAN
-			static constexpr size_type kMaxSize = (~kHeapMask) >> 1;
+			static EA_CONSTEXPR_OR_CONST size_type kMaxSize = (~kHeapMask) >> 1;
 		#else
-			static constexpr size_type kMaxSize = ~kHeapMask;
+			static EA_CONSTEXPR_OR_CONST size_type kMaxSize = ~kHeapMask;
 		#endif
 
 	protected:
@@ -362,7 +360,7 @@ namespace eastl
 		// The view of memory when the string data is able to store the string data locally (without a heap allocation).
 		struct SSOLayout
 		{
-			static constexpr size_type SSO_CAPACITY = (sizeof(HeapLayout) - sizeof(char)) / sizeof(value_type);
+			static EA_CONSTEXPR_OR_CONST size_type SSO_CAPACITY = (sizeof(HeapLayout) - sizeof(char)) / sizeof(value_type);
 
 			// mnSize must correspond to the last byte of HeapLayout.mnCapacity, so we don't want the compiler to insert
 			// padding after mnSize if sizeof(value_type) != 1; Also ensures both layouts are the same size.
@@ -757,7 +755,6 @@ namespace eastl
 		bool validate() const EA_NOEXCEPT;
 		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
-#if EASTL_URHO3D_EXTENSIONS
 		this_type trimmed() const
 		{
 			this_type result(*this);
@@ -913,112 +910,6 @@ namespace eastl
 			return joinedString;
 		}
 
-#ifdef URHO3D_CONTAINER_ADAPTERS
-		using Iterator = iterator;
-		using ConstIterator = const_iterator;
-
-		basic_string(value_type x, size_type n) : basic_string(n, x)
-		{
-			static_assert(0, "This constructor is deprecated. "
-				"Change the order of arguments from { character, size } to { size, character }.");
-		}
-
-		explicit basic_string(int value) : basic_string(CtorSprintf(), "%d", value) {}
-		explicit basic_string(unsigned value) : basic_string(CtorSprintf(), "%u", value) {}
-		explicit basic_string(long long value) : basic_string(CtorSprintf(), "%lld", value) {}
-		explicit basic_string(unsigned long long value) : basic_string(CtorSprintf(), "%llu", value) {}
-		explicit basic_string(float value) : basic_string(CtorSprintf(), "%g", value) {}
-		explicit basic_string(double value) : basic_string(CtorSprintf(), "%.15g", value) {}
-		explicit basic_string(bool value) : basic_string(value ? "true" : "false") {}
-		explicit basic_string(char value) : basic_string(1, value) {}
-		
-		size_type Length() const { return size(); }
-		size_type Capacity() const { return capacity(); }
-		bool Empty() const { return empty(); }
-
-		reference At(size_type n) { return (*this)[n]; }
-		const_reference At(size_type n) const { return (*this)[n]; }
-
-		iterator Begin() { return begin(); }
-		iterator End() { return end(); }
-		const_iterator Begin() const { return begin(); }
-		const_iterator End() const { return end(); }
-		reference Front() { return front(); }
-		reference Back() { return back(); }
-		const_reference Front() const { return front(); }
-		const_reference Back() const { return back(); }
-		const_pointer CString() const { return c_str(); }
-
-		void Replace(value_type old_value, value_type new_value) { replace(old_value, new_value); }
-		void Replace(view_type old_value, view_type new_value) { replace(old_value, new_value); }
-		void Replace(size_type position, size_type n, const this_type& x) { replace(position, n, x); }
-		void Replace(size_type position, size_type n, const value_type* x) { replace(position, n, x); }
-		iterator Replace(const_iterator first, const_iterator last, const this_type& x)
-		{
-			size_type pos = first - begin();
-			replace(first, last, x);
-			return begin() + pos;
-		}
-		this_type Replaced(value_type old_value, value_type new_value) const { return replaced(old_value, new_value); }
-		this_type Replaced(view_type old_value, view_type new_value) const { return replaced(old_value, new_value); }
-
-		this_type& Append(const this_type& x) { return append(x); }
-		this_type& Append(const value_type* p) { return append(p); }
-		this_type& Append(const value_type* p, size_type n) { return append(p, n); }
-		this_type& Append(value_type x) { return append(&x, 1); }
-		this_type& AppendWithFormat(const char* pFormat, ...)
-		{
-			va_list args;
-			va_start(args, pFormat);
-			append_sprintf_va_list(pFormat, args);
-			va_end(args);
-			return *this;
-		}
-
-		void Insert(size_type position, const this_type& x) { insert(position, x); }
-		void Insert(size_type position, value_type x) { insert(position, 1, x); }
-		iterator Insert(const_iterator p, const this_type& x) { return insert(p, x.begin(), x.end()); }
-		iterator Insert(const_iterator p, const value_type* pBegin, const value_type* pEnd) { return insert(p, pBegin, pEnd); }
-		iterator Insert(const_iterator p, value_type x) { return insert(p, x); }
-		void Erase(size_type position, size_type n = 1) { erase(position, n); }
-		iterator Erase(const_iterator p) { return erase(p, p + 1); }
-		iterator Erase(const_iterator pBegin, const_iterator pEnd) { return erase(pBegin, pEnd); }
-
-		void Reserve(size_type size) { reserve(size); }
-		void Resize(size_type size) { resize(size); }
-		void Resize(size_type size, value_type value) { resize(size, value); }
-		void Clear() { clear(); }
-		void Compact() { shrink_to_fit(); }
-		void Swap(this_type& other) { swap(other); }
-
-		this_type Substring(size_type position, size_type n = npos) const { return substr(position, n); }
-		this_type Trimmed() const { return trimmed(); }
-		this_type ToUpper() const { return to_upper(); }
-		this_type ToLower() const { return to_lower(); }
-
-		size_type Find(const this_type& x, size_type position = 0) const { return find(x, position); }
-		size_type Find(value_type x, size_type position = 0) const { return find(x, position); }
-		size_type FindLast(const this_type& x, size_type position = npos) const { return rfind(x, position); }
-		size_type FindLast(value_type x, size_type position = npos) const { return rfind(x, position); }
-		bool StartsWith(const this_type& x, bool caseSensitive = true) const { return starts_with(x, caseSensitive); }
-		bool EndsWith(const this_type& x, bool caseSensitive = true) const { return ends_with(x, caseSensitive); }
-		bool Contains(const this_type& x, bool caseSensitive = true) const { return contains(x, caseSensitive); }
-		bool Contains(value_type x, bool caseSensitive = true) const { return contains(x, caseSensitive); }
-
-		eastl::vector<this_type> Split(value_type separator, bool keepEmptyStrings = false) const
-		{
-			return split(separator, keepEmptyStrings);
-		}
-		static eastl::vector<this_type> Split(const value_type* str, value_type separator, bool keepEmptyStrings = false)
-		{
-			return split(str, separator, keepEmptyStrings);
-		}
-		static this_type Joined(const eastl::vector<this_type>& subStrings, const this_type& glue) { return joined(subStrings, glue); }
-
-		static const size_type NPOS = npos;
-		static const this_type EMPTY;
-#endif
-#endif
 
 	protected:
 		// Helper functions for initialization/insertion operations.
@@ -4188,15 +4079,7 @@ namespace eastl
 	///    #include <EASTL/hash_set.h>
 	///    hash_set<string> stringHashSet;
 	///
-#if EASTL_URHO3D_EXTENSIONS
-#ifdef URHO3D_CONTAINER_ADAPTERS
-	template <typename T, typename Allocator> const basic_string<T, Allocator> basic_string<T, Allocator>::EMPTY;
-#endif
-
 	template <typename T, typename Enable> struct hash;
-#else
-	template <typename T> struct hash;
-#endif
 	template <>
 	struct hash<string>
 	{

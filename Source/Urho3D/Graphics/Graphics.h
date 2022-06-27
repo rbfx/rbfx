@@ -258,7 +258,7 @@ public:
     /// Set shaders.
     void SetShaders(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shader constant buffers.
-    void SetShaderConstantBuffers(ea::span<const ConstantBufferRange, MAX_SHADER_PARAMETER_GROUPS> constantBuffers);
+    void SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers);
     /// Set shader float constants.
     void SetShaderParameter(StringHash param, const float data[], unsigned count);
     /// Set shader float constant.
