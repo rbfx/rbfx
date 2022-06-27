@@ -583,6 +583,7 @@ void Pipeline::OnImporterModified(StringHash, VariantMap& args)
 
 bool Pipeline::CookSettings() const
 {
+#if 0
     auto* project = GetSubsystem<Project>();
     ApplicationSettings settings(context_);
     settings.defaultScene_ = project->GetDefaultSceneName();
@@ -621,6 +622,7 @@ bool Pipeline::CookSettings() const
         context_->GetSubsystem<FileSystem>()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(flavor->GetCachePath() + "Settings.json");
     }
+#endif
     return true;
 }
 

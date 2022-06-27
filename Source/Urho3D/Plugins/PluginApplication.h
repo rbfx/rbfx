@@ -47,6 +47,9 @@ public:
     ~PluginApplication() override;
     void SetPluginName(const ea::string& name) { pluginName_ = name; }
 
+    /// Return whether the plugin can act as main entry point.
+    virtual bool IsMain() const { return false; }
+
     /// Prepare object for destruction.
     void Dispose();
 
@@ -56,7 +59,7 @@ public:
     void UnloadPlugin();
 
     /// Start application.
-    void StartApplication();
+    void StartApplication(bool isMain);
     /// Stop application.
     void StopApplication();
 
@@ -83,7 +86,7 @@ protected:
     /// Called on UnloadPlugin().
     virtual void Unload() {}
     /// Called on StartApplication().
-    virtual void Start() {}
+    virtual void Start(bool isMain) {}
     /// Called on StopApplication().
     virtual void Stop() {}
     /// Called on SuspendApplication().
@@ -131,6 +134,11 @@ void PluginApplication::RegisterPluginApplication()
 #define URHO3D_PLUGIN_OBJECT(typeName, baseTypeName, pluginName) \
     URHO3D_OBJECT(typeName, baseTypeName); \
     static const char* GetPluginNameStatic() { return pluginName; }
+
+/// Macro for using instead of URHO3D_OBJECT for plugin applications that can act as main entry point.
+#define URHO3D_MAIN_PLUGIN_OBJECT(typeName, baseTypeName, pluginName) \
+    URHO3D_PLUGIN_OBJECT(typeName, baseTypeName, pluginName); \
+    bool IsMain() const override { return true; }
 
 /// Macro for defining entry point of editor plugin.
 // TODO(editor): Revisit macros

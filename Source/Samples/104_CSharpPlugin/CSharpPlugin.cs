@@ -47,7 +47,7 @@ namespace CSharpPlugin
             }
         }
 
-        protected override void Start()
+        protected override void Start(bool isMain)
         {
         }
 
