@@ -126,9 +126,9 @@ XMLFile* PrefabReference::GetPrefab() const
 /// Set flag to preserve prefab root node transform.
 void PrefabReference::SetPreserveTransfrom(bool preserve)
 {
-    if (preserve != _preserveTransform)
+    if (preserve != preserveTransform_)
     {
-        _preserveTransform = preserve;
+        preserveTransform_ = preserve;
         if (node_)
         {
             node_->Remove();
@@ -168,7 +168,7 @@ Node* PrefabReference::CreateInstance() const
 
     node->LoadXML(prefab_->GetRoot());
 
-    if (!_preserveTransform)
+    if (!preserveTransform_)
     {
         node->SetPosition(Vector3::ZERO);
         node->SetRotation(Quaternion::IDENTITY);

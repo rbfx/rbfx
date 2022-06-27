@@ -47,7 +47,7 @@ public:
     /// Set flag to preserve prefab root node transform.
     void SetPreserveTransfrom(bool preserve);
     /// Get preserve prefab root node transform flag state.
-    bool GetPreserveTransfrom() const { return _preserveTransform; }
+    bool GetPreserveTransfrom() const { return preserveTransform_; }
 
     /// Set reference to prefab resource.
     void SetPrefabAttr(ResourceRef prefab);
@@ -82,7 +82,7 @@ private:
     /// Reference to prefab resource.
     ResourceRef prefabRef_;
     /// Preserve prefab root node transform.
-    bool _preserveTransform{false};
+    bool preserveTransform_{false};
 };
 
 } // namespace Urho3D

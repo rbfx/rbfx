@@ -32,6 +32,7 @@
 
 #include <Urho3D/Scene/PrefabReference.h>
 
+
 TEST_CASE("Prefab reference")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
@@ -43,8 +44,10 @@ TEST_CASE("Prefab reference")
 
     auto xmlFile = new XMLFile(context);
     xmlFile->SetName("Objects/Obj0.xml");
-    auto fileText = MemoryBuffer("<node><component type=\"StaticModel\"/></node>");
-    REQUIRE(xmlFile->Load(fileText));
+    auto nodeElement = xmlFile->GetOrCreateRoot("node");
+    auto componentElement = nodeElement.CreateChild("component");
+    componentElement.SetAttribute("type", "StaticModel");
+
     cache->AddManualResource(xmlFile);
 
     SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
@@ -68,8 +71,7 @@ TEST_CASE("Prefab reference")
     CHECK(prefabRoot->GetParent() == node1);
 
     // Reload the prefab on file change
-    auto fileText2 = MemoryBuffer("<node><component type=\"StaticModel\"/><node/></node>");
-    xmlFile->Load(fileText2);
+    nodeElement.CreateChild("node");
     {
         using namespace ReloadFinished;
         VariantMap data;
@@ -95,22 +97,25 @@ TEST_CASE("Prefab with node reference")
 
     auto xmlFile = new XMLFile(context);
     xmlFile->SetName("Objects/Obj1.xml");
-    auto fileText = MemoryBuffer("<node id=\"1\">"
-        "<node id=\"2\">"
-        "<component type=\"RigidBody\">"
-        "</component>"
-        "<component type=\"Constraint\">"
-        "<attribute name=\"Other Body NodeID\" value=\"3\" />"
-        "</component>"
-        "</node>"
-        "<node id=\"3\">"
-        "<component type=\"RigidBody\">"
-        "</component>"
-        "<component type=\"StaticModel\">"
-        "</component>"
-        "</node>"
-        "</node>");
-    REQUIRE(xmlFile->Load(fileText));
+
+    auto nodeElement1 = xmlFile->GetOrCreateRoot("node");
+    nodeElement1.SetAttribute("id", "1");
+    auto nodeElement2 = nodeElement1.CreateChild("node");
+    nodeElement2.SetAttribute("id", "2");
+    auto rigidBody2Element = nodeElement2.CreateChild("component");
+    rigidBody2Element.SetAttribute("type", "RigidBody");
+    auto constraint2Element = nodeElement2.CreateChild("component");
+    constraint2Element.SetAttribute("type", "Constraint");
+    auto constraint2Attr = constraint2Element.CreateChild("attribute");
+    constraint2Attr.SetAttribute("name", "Other Body NodeID");
+    constraint2Attr.SetAttribute("value", "3");
+    auto nodeElement3 = nodeElement1.CreateChild("node");
+    nodeElement3.SetAttribute("id", "3");
+    auto rigidBody3Element = nodeElement3.CreateChild("component");
+    rigidBody3Element.SetAttribute("type", "RigidBody");
+    auto staticModel3Element = nodeElement3.CreateChild("component");
+    staticModel3Element.SetAttribute("type", "StaticModel");
+    
     cache->AddManualResource(xmlFile);
 
     SharedPtr<PrefabReference> prefabRef{node0->CreateComponent<PrefabReference>(CreateMode::REPLICATED)};
