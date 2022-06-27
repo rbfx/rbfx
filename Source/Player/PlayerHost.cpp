@@ -19,36 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include <Urho3D/Engine/EngineEvents.h>
+
 #include "Player.h"
-#if URHO3D_SAMPLES && URHO3D_STATIC
-#   include "../Samples/103_GamePlugin/GamePlugin.h"
-#endif
-
-namespace Urho3D
-{
-
-/// A simple player loader.
-class PlayerHost : public Player
-{
-    URHO3D_OBJECT(PlayerHost, Player);
-public:
-    /// Construct.
-    explicit PlayerHost(Context* context) : Player(context) { }
-    /// Extend initialization of player application.
-    void Start() override
-    {
-#if URHO3D_PLUGINS && URHO3D_SAMPLES && URHO3D_STATIC
-        PluginApplication::RegisterPluginApplication<GamePlugin>();
-#endif
-        BaseClassName::Start();
-    }
-};
-
-}
 
 #if URHO3D_CSHARP
-URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::PlayerHost);
+URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::Player);
 #else
-URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::PlayerHost);
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Player);
 #endif

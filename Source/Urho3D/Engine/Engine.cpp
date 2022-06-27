@@ -1040,6 +1040,8 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
 #ifdef URHO3D_TESTING
     addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
 #endif
+    addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->set_custom_option("plugin1;plugin2;...");
+    addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->set_custom_option("plugin");
 }
 #endif
 

@@ -34,13 +34,12 @@ class EditorHost : public Editor
 {
     URHO3D_OBJECT(EditorHost, Editor);
 public:
-    /// Construct.
     explicit EditorHost(Context* context) : Editor(context) { }
-    /// Extend initialization of editor application.
-    void Start() override
+
+    void Setup() override
     {
         PluginApplication::RegisterStaticPlugins();
-        BaseClassName::Start();
+        BaseClassName::Setup();
     }
 };
 

@@ -34,8 +34,8 @@ namespace Urho3D
 class RotateObject
     : public LogicComponent
 {
-    URHO3D_OBJECT(RotateObject, LogicComponent
-    );
+    URHO3D_OBJECT(RotateObject, LogicComponent);
+
 public:
     RotateObject(Context* context)
         : LogicComponent(context)

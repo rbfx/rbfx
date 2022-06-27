@@ -49,8 +49,11 @@ void SceneViewerApplication::Unload()
 {
 }
 
-void SceneViewerApplication::Start()
+void SceneViewerApplication::Start(bool isMain)
 {
+    if (!isMain)
+        return;
+
     auto cache = GetSubsystem<ResourceCache>();
     auto renderer = GetSubsystem<Renderer>();
     auto pluginManager = GetSubsystem<PluginManager>();

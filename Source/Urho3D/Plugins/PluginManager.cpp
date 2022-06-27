@@ -77,8 +77,13 @@ PluginStack::PluginStack(PluginManager* manager, const StringVector& plugins)
     for (const ea::string& name : plugins)
     {
         unsigned version{};
-        if (WeakPtr<PluginApplication> application{manager->GetPluginApplication(name, false, &version)})
-            applications_.push_back(PluginInfo{name, version, application});
+        if (const WeakPtr<PluginApplication> application{manager->GetPluginApplication(name, false, &version)})
+        {
+            const PluginInfo info{name, version, application};
+            applications_.push_back(info);
+            if (application->IsMain())
+                mainApplications_.push_back(info);
+        }
     }
 
     LoadPlugins();
@@ -109,7 +114,29 @@ void PluginStack::UnloadPlugins()
     }
 }
 
-void PluginStack::StartApplication()
+PluginApplication* PluginStack::FindMainPlugin(const ea::string& mainPlugin) const
+{
+    if (!mainPlugin.empty())
+    {
+        for (const PluginInfo& info : mainApplications_)
+        {
+            if (info.name_ == mainPlugin)
+                return info.application_.Get();
+        }
+
+        URHO3D_LOGWARNING("Cannot find main plugin '{}'", mainPlugin);
+    }
+
+    if (mainApplications_.size() > 1)
+        URHO3D_LOGWARNING("Multiple main plugins found, using '{}'", mainApplications_.front().name_);
+
+    if (!mainApplications_.empty())
+        return mainApplications_.front().application_;
+
+    return nullptr;
+}
+
+void PluginStack::StartApplication(const ea::string& mainPlugin)
 {
     if (isStarted_)
     {
@@ -117,10 +144,12 @@ void PluginStack::StartApplication()
         return;
     }
 
+    const PluginApplication* mainApplication = FindMainPlugin(mainPlugin);
+
     for (const PluginInfo& info : applications_)
     {
         if (info.application_)
-            info.application_->StartApplication();
+            info.application_->StartApplication(info.application_ == mainApplication);
     }
     isStarted_ = true;
 }
@@ -255,26 +284,34 @@ void PluginManager::Reload()
 
 void PluginManager::StartApplication()
 {
-    if (pluginStack_->IsStarted())
+    // If StopApplication was called during this frame, it's okay to start again
+    if ((pluginStack_->IsStarted() || startPending_) && !stopPending_)
     {
+        // Already started
         URHO3D_ASSERT(0);
         return;
     }
 
-    pluginStack_->StartApplication();
-    URHO3D_LOGINFO("Application is started with {} plugins", pluginStack_->GetNumPlugins());
+    startPending_ = true;
 }
 
 void PluginManager::StopApplication()
 {
-    if (!pluginStack_->IsStarted())
+    // If StartApplication was called during this frame, just cancel it
+    if (startPending_)
     {
+        startPending_ = false;
+        return;
+    }
+
+    if (!pluginStack_->IsStarted() || stopPending_)
+    {
+        // Already stopped
         URHO3D_ASSERT(0);
         return;
     }
 
-    pluginStack_->StopApplication();
-    URHO3D_LOGINFO("Application is stopped with {} plugins", pluginStack_->GetNumPlugins());
+    stopPending_ = true;
 }
 
 void PluginManager::SetPluginsLoaded(const StringVector& plugins)
@@ -399,6 +436,14 @@ void PluginManager::RestoreStack()
 
 void PluginManager::Update()
 {
+    if (stopPending_)
+    {
+        pluginStack_->StopApplication();
+        URHO3D_LOGINFO("Application is stopped with {} plugins", pluginStack_->GetNumPlugins());
+
+        stopPending_ = false;
+    }
+
     if (stackReloadPending_)
     {
         stackReloadPending_ = false;
@@ -417,6 +462,14 @@ void PluginManager::Update()
     if (!pluginStack_)
         RestoreStack();
     forceReload_ = false;
+
+    if (startPending_)
+    {
+        pluginStack_->StartApplication(GetParameter(Plugin_MainPlugin).GetString());
+        URHO3D_LOGINFO("Application is started with {} plugins", pluginStack_->GetNumPlugins());
+
+        startPending_ = false;
+    }
 }
 
 void PluginManager::UpdatePlugin(Plugin* plugin, bool checkOutOfDate)

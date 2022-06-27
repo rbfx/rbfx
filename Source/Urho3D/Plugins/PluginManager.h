@@ -33,6 +33,7 @@
 namespace Urho3D
 {
 
+URHO3D_GLOBAL_CONSTANT(ConstString Plugin_MainPlugin{"MainPlugin"});
 URHO3D_GLOBAL_CONSTANT(ConstString Plugin_SceneName{"SceneName"});
 URHO3D_GLOBAL_CONSTANT(ConstString Plugin_ScenePosition{"ScenePosition"});
 URHO3D_GLOBAL_CONSTANT(ConstString Plugin_SceneRotation{"SceneRotation"});
@@ -51,7 +52,7 @@ public:
     ~PluginStack() override;
 
     /// Start application for all plugins in the stack.
-    void StartApplication();
+    void StartApplication(const ea::string& mainPlugin);
     /// Suspend all plugins in the stack and stop application.
     SerializedPlugins SuspendApplication();
     /// Resume all plugins in the stack and start application.
@@ -74,8 +75,10 @@ private:
 
     void LoadPlugins();
     void UnloadPlugins();
+    PluginApplication* FindMainPlugin(const ea::string& mainPlugin) const;
 
     ea::vector<PluginInfo> applications_;
+    ea::vector<PluginInfo> mainApplications_;
 
     bool isStarted_{};
 };
@@ -163,6 +166,8 @@ private:
 
     StringVariantMap parameters_;
 
+    bool startPending_{};
+    bool stopPending_{};
     bool stackReloadPending_{};
     StringVector loadedPlugins_;
     unsigned revision_{};

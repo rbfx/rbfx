@@ -95,7 +95,7 @@ void PluginApplication::UnloadPlugin()
     reflectedTypes_.clear();
 }
 
-void PluginApplication::StartApplication()
+void PluginApplication::StartApplication(bool isMain)
 {
     if (isStarted_)
     {
@@ -104,7 +104,7 @@ void PluginApplication::StartApplication()
     }
 
     isStarted_ = true;
-    Start();
+    Start(isMain);
 }
 
 void PluginApplication::StopApplication()
