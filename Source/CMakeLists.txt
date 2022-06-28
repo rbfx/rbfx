@@ -71,9 +71,9 @@ endif ()
 
 add_subdirectory (ThirdParty)
 add_subdirectory (Urho3D)
+add_subdirectory (Samples)
 add_subdirectory (Tools)
 add_subdirectory (Extras)
-add_subdirectory (Samples)
 add_subdirectory (Player)
 add_subdirectory (Tests)
 

@@ -265,6 +265,8 @@ void Editor::Setup()
 
     keyBindings_.Bind(ActionType::OpenProject, this, &Editor::OpenOrCreateProject);
     keyBindings_.Bind(ActionType::Exit, this, &Editor::OnExitHotkeyPressed);
+
+    PluginApplication::RegisterStaticPlugins();
 }
 
 void Editor::Start()

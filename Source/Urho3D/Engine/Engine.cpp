@@ -198,7 +198,7 @@ Engine::Engine(Context* context) :
     RegisterNavigationLibrary(context_);
 #endif
 
-    PluginApplication::RegisterPluginApplication<SceneViewerApplication>();
+    SceneViewerApplication::RegisterObject();
     context_->RegisterFactory<AssetTransformer>();
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));

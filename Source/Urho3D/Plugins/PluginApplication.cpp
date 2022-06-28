@@ -159,4 +159,13 @@ void PluginApplication::ResumeApplication(Archive* input, unsigned version)
     }
 }
 
+MainPluginApplication::MainPluginApplication(Context* context)
+    : PluginApplication(context)
+{
+}
+
+MainPluginApplication::~MainPluginApplication()
+{
+}
+
 }

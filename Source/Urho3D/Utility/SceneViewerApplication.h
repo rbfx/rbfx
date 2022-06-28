@@ -30,16 +30,17 @@ namespace Urho3D
 {
 
 /// Simple application to show scene with free-fly camera.
-class URHO3D_API SceneViewerApplication : public PluginApplication
+class URHO3D_API SceneViewerApplication : public MainPluginApplication
 {
-    URHO3D_MAIN_PLUGIN_OBJECT(SceneViewerApplication, PluginApplication, "Builtin.SceneViewer");
+    URHO3D_OBJECT(SceneViewerApplication, MainPluginApplication);
+    URHO3D_MANUAL_PLUGIN("Builtin.SceneViewer");
 
 public:
     explicit SceneViewerApplication(Context* context);
     ~SceneViewerApplication() override;
 
 protected:
-    /// Implement PluginApplication
+    /// Implement MainPluginApplication
     /// @{
     void Load() override;
     void Unload() override;

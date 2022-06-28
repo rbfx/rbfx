@@ -508,7 +508,7 @@ void ProjectEditor::Render()
         initialFocusPending = true;
 
         // TODO(editor): Do it only once on project creation
-        pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetPluginNameStatic()});
+        pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetStaticPluginName()});
 
         OnInitialized(this);
     }

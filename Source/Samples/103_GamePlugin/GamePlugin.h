@@ -29,16 +29,16 @@
 namespace Urho3D
 {
 
-class GamePlugin : public PluginApplication
+class GamePlugin : public MainPluginApplication
 {
-    URHO3D_MAIN_PLUGIN_OBJECT(GamePlugin, PluginApplication, "Sample.103_GamePlugin");
+    URHO3D_OBJECT(GamePlugin, MainPluginApplication);
 
 public:
     /// Construct.
     explicit GamePlugin(Context* context);
 
 protected:
-    /// Implement PluginApplication
+    /// Implement MainPluginApplication
     /// @{
     void Load() override;
     void Start(bool isMain) override;

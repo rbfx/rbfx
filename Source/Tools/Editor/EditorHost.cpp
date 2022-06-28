@@ -19,34 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include <Urho3D/Engine/EngineEvents.h>
-#if URHO3D_CSHARP
-#   include <Urho3D/Script/Script.h>
-#endif
+
 #include "Editor.h"
-#include "Tabs/Tab.h"
-
-namespace Urho3D
-{
-
-/// A simple editor loader.
-class EditorHost : public Editor
-{
-    URHO3D_OBJECT(EditorHost, Editor);
-public:
-    explicit EditorHost(Context* context) : Editor(context) { }
-
-    void Setup() override
-    {
-        PluginApplication::RegisterStaticPlugins();
-        BaseClassName::Setup();
-    }
-};
-
-}
 
 #if URHO3D_CSHARP
-URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::EditorHost);
+URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::Editor);
 #else
-URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::EditorHost);
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Editor);
 #endif
