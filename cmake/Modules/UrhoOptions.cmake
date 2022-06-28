@@ -148,7 +148,7 @@ set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to
 
 # Misc
 set(URHO3D_PLUGIN_LIST_DOCSTRING "List of plugins to be statically linked with Editor and Player executables")
-set(URHO3D_PLUGIN_LIST_DEFAULT "103_GamePlugin;GamePlugin")
+set(URHO3D_PLUGIN_LIST_DEFAULT "103_GamePlugin")
 set(URHO3D_PLUGIN_LIST "" CACHE STRING          ${URHO3D_PLUGIN_LIST_DOCSTRING})
 
 cmake_dependent_option(URHO3D_PLAYER            "Build player application"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)

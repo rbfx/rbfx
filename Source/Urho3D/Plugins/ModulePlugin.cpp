@@ -36,6 +36,12 @@ namespace Urho3D
 bool ModulePlugin::Load()
 {
     ea::string path = NameToPath(name_);
+    if (path.empty())
+    {
+        URHO3D_LOGERROR("Plugin '{}' is not found", name_);
+        return false;
+    }
+
     ea::string pluginPath = GetVersionModulePath(path);
 
     if (pluginPath.empty())
@@ -47,8 +53,10 @@ bool ModulePlugin::Load()
         application_ = module_.InstantiatePlugin();
         if (application_)
         {
-            if (application_->GetPluginName().empty())
-                application_->SetPluginName(name_);
+            const ea::string& oldName = application_->GetPluginName();
+            if (!oldName.empty() && application_->GetPluginName() != name_)
+                URHO3D_LOGWARNING("Plugin name mismatch: file {} contains plugin {}. This plugin may be incompatible in static build.", name_, oldName);
+            application_->SetPluginName(name_);
 
             path_ = path;
             mtime_ = context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(pluginPath);

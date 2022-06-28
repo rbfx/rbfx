@@ -33,7 +33,7 @@ namespace Urho3D
 {
 
 SceneViewerApplication::SceneViewerApplication(Context* context)
-    : PluginApplication(context)
+    : MainPluginApplication(context)
 {
 }
 

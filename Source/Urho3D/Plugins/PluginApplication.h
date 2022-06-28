@@ -41,6 +41,7 @@ public:
     static void RegisterStaticPlugins();
     /// Register plugin application class to be visible in all future instances of PluginManager.
     static void RegisterPluginApplication(const ea::string& name, PluginApplicationFactory factory);
+    template <class T> static void RegisterPluginApplication(const ea::string& name);
     template <class T> static void RegisterPluginApplication();
 
     explicit PluginApplication(Context* context);
@@ -102,6 +103,21 @@ private:
     bool isStarted_{};
 };
 
+/// Similar to PluginApplication, but can act as entry point.
+class URHO3D_API MainPluginApplication : public PluginApplication
+{
+    URHO3D_OBJECT(MainPluginApplication, PluginApplication);
+
+public:
+    explicit MainPluginApplication(Context* context);
+    ~MainPluginApplication() override;
+
+    /// Implement PluginApplication.
+    /// @{
+    bool IsMain() const final { return true; }
+    /// @}
+};
+
 template<typename T>
 ObjectReflection* PluginApplication::AddFactoryReflection(ea::string_view category)
 {
@@ -119,38 +135,43 @@ void PluginApplication::AddObjectReflection()
 }
 
 template <class T>
-void PluginApplication::RegisterPluginApplication()
+void PluginApplication::RegisterPluginApplication(const ea::string& name)
 {
     const auto factory = +[](Context* context) -> SharedPtr<PluginApplication>
     {
         return MakeShared<T>(context);
     };
-    RegisterPluginApplication(T::GetPluginNameStatic(), factory);
+    RegisterPluginApplication(name, factory);
+}
+
+template <class T>
+void PluginApplication::RegisterPluginApplication()
+{
+    RegisterPluginApplication<T>(T::GetStaticPluginName());
 }
 
 }
 
-/// Macro for using instead of URHO3D_OBJECT for plugin applications.
-#define URHO3D_PLUGIN_OBJECT(typeName, baseTypeName, pluginName) \
-    URHO3D_OBJECT(typeName, baseTypeName); \
-    static const char* GetPluginNameStatic() { return pluginName; }
-
-/// Macro for using instead of URHO3D_OBJECT for plugin applications that can act as main entry point.
-#define URHO3D_MAIN_PLUGIN_OBJECT(typeName, baseTypeName, pluginName) \
-    URHO3D_PLUGIN_OBJECT(typeName, baseTypeName, pluginName); \
-    bool IsMain() const override { return true; }
+/// Macro for marking a class as manual plugin application that doesn't need any automatic registration. Use after `URHO3D_OBJECT`.
+#define URHO3D_MANUAL_PLUGIN(pluginName) \
+    static const ea::string& GetStaticPluginName() { static const ea::string name{pluginName}; return name; } \
+    static void RegisterObject() { PluginApplication::RegisterPluginApplication<ClassName>(); } \
 
 /// Macro for defining entry point of editor plugin.
 // TODO(editor): Revisit macros
 #if !defined(URHO3D_PLUGINS) || defined(URHO3D_STATIC)
-    #define URHO3D_DEFINE_PLUGIN_MAIN(type)
+    #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
+        extern "C" void CONCATENATE(RegisterPlugin_, URHO3D_CURRENT_PLUGIN_NAME_SANITATED)() \
+        { \
+            Urho3D::PluginApplication::RegisterPluginApplication<type>(TO_STRING(URHO3D_CURRENT_PLUGIN_NAME)); \
+        }
 #else
      /// Defines a main entry point of native plugin. Use this macro in a global scope.
     #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
         extern "C" URHO3D_EXPORT_API Urho3D::PluginApplication* PluginApplicationMain(Urho3D::Context* context) \
         { \
             Urho3D::PluginApplication* application = new type(context); \
-            application->SetPluginName(type::GetPluginNameStatic()); \
+            application->SetPluginName(TO_STRING(URHO3D_CURRENT_PLUGIN_NAME)); \
             return application; \
         }
 #endif

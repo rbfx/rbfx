@@ -21,7 +21,11 @@
 //
 
 #include <Urho3D/Plugins/PluginApplication.h>
-@HEADER_FILES@
+
+extern "C"
+{
+@DECLARE_FUNCTIONS@
+}
 
 namespace Urho3D
 {

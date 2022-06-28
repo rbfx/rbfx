@@ -47,7 +47,7 @@ namespace Urho3D
 {
 
 GamePlugin::GamePlugin(Context* context)
-    : PluginApplication(context)
+    : MainPluginApplication(context)
 {
 }
 
