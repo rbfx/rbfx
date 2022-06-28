@@ -113,23 +113,22 @@ void ApplicationState::Deactivate()
     // Subscribe HandleUpdate() method for processing update events
     UnsubscribeFromEvent(E_UPDATE);
 
+    auto* ui = GetSubsystem<UI>();
+    if (ui)
     {
-        auto* ui = GetSubsystem<UI>();
         rootCustomSize_ = ui->GetCustomSize();
         ui->SetRoot(savedRootElement_);
         ui->SetCustomSize(savedRootCustomSize_);
     }
+    auto* renderer = GetSubsystem<Renderer>();
+    if (renderer)
     {
-        auto* renderer = GetSubsystem<Renderer>();
-        if (renderer)
-        {
-            fogColor_ = renderer->GetDefaultZone()->GetFogColor();
-            renderer->GetDefaultZone()->SetFogColor(savedFogColor_);
+        fogColor_ = renderer->GetDefaultZone()->GetFogColor();
+        renderer->GetDefaultZone()->SetFogColor(savedFogColor_);
 
-            if (!viewports_.empty())
-            {
-                renderer->SetNumViewports(0);
-            }
+        if (!viewports_.empty())
+        {
+            renderer->SetNumViewports(0);
         }
     }
 }
@@ -306,7 +305,7 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
 StateManager::StateManager(Context* context)
     : BaseClassName(context)
 {
-    SubscribeToEvent(E_SETAPPLICATIONSTATE, URHO3D_HANDLER(StateManager, HandleSetApplicationState));
+    SubscribeToEvent(E_ENQUEUEAPPLICATIONSTATE, URHO3D_HANDLER(StateManager, HandleSetApplicationState));
 }
 
 StateManager::~StateManager()
@@ -314,18 +313,37 @@ StateManager::~StateManager()
     Reset();
 }
 
-/// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
-void StateManager::Reset()
+/// Deactivate state.
+void StateManager::DeactivateState()
 {
     if (activeState_)
     {
+        Notify(E_LEAVINGAPPLICATIONSTATE);
+
         activeState_->Deactivate();
         activeState_.Reset();
+    }
+}
+
+/// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
+void StateManager::Reset()
+{
+    const bool hasState = activeState_;
+    if (hasState)
+    {
+        originState_ = activeState_->GetType();
+        destinationState_ = StringHash::ZERO;
+        Notify(E_STATETRANSITIONSTARTED);
+        DeactivateState();
     }
     ea::queue<QueueItem> emptyQueue;
     std::swap(stateQueue_, emptyQueue);
 
     SetTransitionState(TransitionState::Sustain);
+    if (hasState)
+    {
+        Notify(E_STATETRANSITIONCOMPLETE);
+    }
 }
 
 /// Set current game state.
@@ -374,7 +392,13 @@ void StateManager::EnqueueState(StringHash type)
 /// Set current transition state and initialize related values.
 void StateManager::SetTransitionState(TransitionState state)
 {
+    if (transitionState_ == state)
+    {
+        return;
+    }
+
     transitionState_ = state;
+   
     switch (transitionState_)
     {
     case TransitionState::Sustain:
@@ -386,15 +410,6 @@ void StateManager::SetTransitionState(TransitionState state)
         break;
     case TransitionState::FadeIn:
     case TransitionState::FadeOut:
-        if (!fadeOverlay_)
-        {
-            fadeOverlay_ = MakeShared<Window>(context_);
-            fadeOverlay_->SetLayout(LM_FREE);
-            fadeOverlay_->SetAlignment(HA_CENTER, VA_CENTER);
-            fadeOverlay_->SetColor(Color(0, 0, 0, 1));
-            fadeOverlay_->SetPriority(ea::numeric_limits<int>::max());
-            fadeOverlay_->BringToFront();
-        }
         fadeTime_ = 0.0f;
         UpdateFadeOverlay(0.0f);
         SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(StateManager, HandleUpdate));
@@ -406,29 +421,63 @@ void StateManager::SetTransitionState(TransitionState state)
         }
         SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(StateManager, HandleUpdate));
         break;
+    default:
+        break;
+    }
+    if (transitionState_ == TransitionState::FadeOut)
+    {
+        if (stateQueue_.empty())
+            destinationState_ = StringHash::ZERO;
+        else
+            destinationState_ = stateQueue_.front().stateType_;
+
+        if (!activeState_)
+            originState_ = StringHash::ZERO;
+        else
+            originState_ = activeState_->GetType();
+
+        Notify(E_STATETRANSITIONSTARTED);
     }
 }
 
 /// Update fade overlay size and transparency.
 void StateManager::UpdateFadeOverlay(float t)
 {
+    Window* overlay = GetFadeOverlay();
     auto* ui = context_->GetSubsystem<UI>();
     auto* root = ui->GetRoot();
-    if (root && fadeOverlay_->GetParent() != root)
+    if (root && overlay->GetParent() != root)
     {
-        fadeOverlay_->Remove();
-        root->AddChild(fadeOverlay_);
-        fadeOverlay_->BringToFront();
+        overlay->Remove();
+        root->AddChild(overlay);
+        overlay->BringToFront();
     }
     t = Clamp(t, 0.0f, 1.0f);
     if (transitionState_ == TransitionState::FadeIn)
     {
         t = 1.0f - t;
     }
-    fadeOverlay_->SetOpacity(t);
-    fadeOverlay_->SetSize(ui->GetSize());
+    overlay->SetOpacity(t);
+    overlay->SetSize(ui->GetSize());
 }
 
+
+/// Notify subscribers about transition state updates.
+void StateManager::Notify(StringHash eventType)
+{
+    // All transition events has same set of arguments so we can re-use one from LeavingApplicationState.
+    using namespace LeavingApplicationState;
+    auto& data = context_->GetEventDataMap();
+    data[P_FROM] = originState_;
+    data[P_TO] = destinationState_;
+    SendEvent(eventType, data);
+
+    if (eventType == E_STATETRANSITIONCOMPLETE)
+    {
+        originState_ = destinationState_;
+        destinationState_ = StringHash::ZERO;
+    }
+}
 
 /// Initiate state transition if necessary.
 void StateManager::InitiateTransition()
@@ -464,6 +513,21 @@ StringHash StateManager::GetTargetState() const
     return stateQueue_.back().stateType_;
 }
 
+/// Get fade overlay
+Window* StateManager::GetFadeOverlay()
+{
+    if (!fadeOverlay_)
+    {
+        fadeOverlay_ = MakeShared<Window>(context_);
+        fadeOverlay_->SetLayout(LM_FREE);
+        fadeOverlay_->SetAlignment(HA_CENTER, VA_CENTER);
+        fadeOverlay_->SetColor(Color(0, 0, 0, 1));
+        fadeOverlay_->SetPriority(ea::numeric_limits<int>::max());
+        fadeOverlay_->BringToFront();
+    }
+    return fadeOverlay_;
+}
+
 /// Set fade in animation duration;
 void StateManager::SetFadeInDuration(float durationInSeconds)
 {
@@ -478,7 +542,7 @@ void StateManager::SetFadeOutDuration(float durationInSeconds)
 /// Handle SetApplicationState event and add the state to the queue.
 void StateManager::HandleSetApplicationState(StringHash eventName, VariantMap& args)
 {
-    using namespace SetApplicationState;
+    using namespace EnqueueApplicationState;
     EnqueueState(args[P_STATE].GetStringHash(), args);
 }
 
@@ -488,50 +552,60 @@ void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
     using namespace Update;
     auto timeStep = args[P_TIMESTEP].GetFloat();
 
-    fadeTime_ += timeStep;
-
-    switch (transitionState_)
+    int iterationCount{0};
+    do
     {
-    case TransitionState::WaitToExit:
-        if (activeState_ && activeState_->CanLeaveState())
-            SetTransitionState(TransitionState::FadeOut);
-        break;
-    case TransitionState::FadeIn:
-        if (fadeTime_ >= fadeInDuration_)
+        switch (transitionState_)
         {
-            if (stateQueue_.empty())
-                SetTransitionState(TransitionState::Sustain);
-            else if (activeState_ && !activeState_->CanLeaveState())
-                SetTransitionState(TransitionState::WaitToExit);
-            else
+        case TransitionState::Sustain:
+            return;
+        case TransitionState::WaitToExit:
+            if (activeState_ && activeState_->CanLeaveState())
                 SetTransitionState(TransitionState::FadeOut);
+            else
+                return;
+            break;
+        case TransitionState::FadeIn:
+            fadeTime_ += timeStep;
+            if (fadeTime_ >= fadeInDuration_)
+            {
+                timeStep = fadeTime_ - fadeInDuration_;
+                Notify(E_STATETRANSITIONCOMPLETE);
+
+                if (stateQueue_.empty())
+                    SetTransitionState(TransitionState::Sustain);
+                else if (activeState_ && !activeState_->CanLeaveState())
+                    SetTransitionState(TransitionState::WaitToExit);
+                else
+                    SetTransitionState(TransitionState::FadeOut);
+            }
+            else
+            {
+                UpdateFadeOverlay(fadeTime_ / fadeInDuration_);
+            }
+            break;
+        case TransitionState::FadeOut:
+            fadeTime_ += timeStep;
+            if (fadeTime_ >= fadeOutDuration_)
+            {
+                timeStep = fadeTime_ - fadeInDuration_;
+                CreateNextState();
+            }
+            else
+            {
+                UpdateFadeOverlay(fadeTime_ / fadeOutDuration_);
+            }
+            break;
         }
-        else
-        {
-            UpdateFadeOverlay(fadeTime_ / fadeInDuration_);
-        }
-        break;
-    case TransitionState::FadeOut:
-        if (fadeTime_ >= fadeOutDuration_)
-        {
-            CreateNextState();
-        }
-        else
-        {
-            UpdateFadeOverlay(fadeTime_ / fadeOutDuration_);
-        }
-        break;
-    }
+        // Limit number of actions per frame
+        ++iterationCount;
+    } while (timeStep > 0.0f && iterationCount < 16);
 }
 
 /// Dequeue and set next state as active.
 void StateManager::CreateNextState()
 {
-    if (activeState_)
-    {
-        activeState_->Deactivate();
-    }
-    activeState_.Reset();
+    DeactivateState();
 
     while (!stateQueue_.empty())
     {
@@ -555,15 +629,24 @@ void StateManager::CreateNextState()
                 }
             }
         }
-        stateCache_[nextState->GetType()] = nextState;
+        destinationState_ = nextState->GetType();
+        stateCache_[destinationState_] = nextState;
         activeState_ = nextState;
+
+        if (originState_ == StringHash::ZERO)
+        {
+            Notify(E_STATETRANSITIONSTARTED);
+        }
+        Notify(E_ENTERINGAPPLICATIONSTATE);
+
         SetTransitionState(TransitionState::FadeIn);
         activeState_->Activate(nextQueueItem.bundle_);
         UpdateFadeOverlay(0.0f);
         return;
     }
-
+    destinationState_ = StringHash::ZERO;
     SetTransitionState(TransitionState::Sustain);
+    Notify(E_STATETRANSITIONCOMPLETE);
 }
 
 

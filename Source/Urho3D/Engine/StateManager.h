@@ -200,10 +200,11 @@ public:
 
     /// Get current application state.
     ApplicationState* GetState() const;
-
     /// Get target application state.
     StringHash GetTargetState() const;
-    
+
+    /// Get fade overlay
+    Window* GetFadeOverlay();
 
     /// Set fade in animation duration;
     void SetFadeInDuration(float durationInSeconds);
@@ -213,7 +214,6 @@ public:
     float GetFadeInDuration() const { return fadeInDuration_; }
     /// Get fade out animation duration;
     float GetFadeOutDuration() const { return fadeOutDuration_; }
-
 
 private:
     /// Initiate state transition if necessary.
@@ -231,8 +231,19 @@ private:
     /// Update fade overlay size and transparency.
     void UpdateFadeOverlay(float t);
 
+    /// Deactivate state.
+    void DeactivateState();
+
     /// Dequeue and set next state as active.
     void CreateNextState();
+
+    /// Notify subscribers about transition state updates.
+    void Notify(StringHash eventType);
+
+    /// Origin state.
+    StringHash originState_{StringHash::ZERO};
+    /// Destination state.
+    StringHash destinationState_{StringHash::ZERO};
 
     /// Cache of previously created states.
     ea::unordered_map<StringHash, WeakPtr<ApplicationState>> stateCache_;
@@ -246,9 +257,12 @@ private:
     /// Fade animation time.
     float fadeTime_{};
 
+    /// Fade in duration in seconds.
     float fadeInDuration_{ea::numeric_limits<float>::epsilon()};
+    /// Fade out duration in seconds.
     float fadeOutDuration_{ea::numeric_limits<float>::epsilon()};
 
+    /// Fade overlay window.
     SharedPtr<Window> fadeOverlay_;
 
     /// State transition state.

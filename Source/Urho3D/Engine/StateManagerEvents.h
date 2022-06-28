@@ -27,9 +27,33 @@
 namespace Urho3D
 {
 
-URHO3D_EVENT(E_SETAPPLICATIONSTATE, SetApplicationState)
+URHO3D_EVENT(E_ENQUEUEAPPLICATIONSTATE, EnqueueApplicationState)
 {
     URHO3D_PARAM(P_STATE, State); // (StringHash) Target state type hash
+}
+
+URHO3D_EVENT(E_STATETRANSITIONSTARTED, StateTransitionStarted)
+{
+    URHO3D_PARAM(P_FROM, From); // (StringHash) Origin state type hash
+    URHO3D_PARAM(P_TO, To); // (StringHash) Destination state type hash
+}
+
+URHO3D_EVENT(E_LEAVINGAPPLICATIONSTATE, LeavingApplicationState)
+{
+    URHO3D_PARAM(P_FROM, From); // (StringHash) Origin state type hash
+    URHO3D_PARAM(P_TO, To); // (StringHash) Destination state type hash
+}
+
+URHO3D_EVENT(E_ENTERINGAPPLICATIONSTATE, EnteringApplicationState)
+{
+    URHO3D_PARAM(P_FROM, From); // (StringHash) Origin state type hash
+    URHO3D_PARAM(P_TO, To); // (StringHash) Destination state type hash
+}
+
+URHO3D_EVENT(E_STATETRANSITIONCOMPLETE, StateTransitionComplete)
+{
+    URHO3D_PARAM(P_FROM, From); // (StringHash) Origin state type hash
+    URHO3D_PARAM(P_TO, To); // (StringHash) Destination state type hash
 }
 
 } // namespace Urho3D
