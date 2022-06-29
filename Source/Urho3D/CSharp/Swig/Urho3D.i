@@ -348,6 +348,9 @@ namespace SDL
 
 // --------------------------------------- Container ------------------------------------
 %include "Urho3D/Container/ByteVector.h"
+%ignore Urho3D::ConstString;
+%apply const eastl::string& { const Urho3D::ConstString& };
+%include "Urho3D/Container/ConstString.h"
 
 // --------------------------------------- Engine ---------------------------------------
 %ignore Urho3D::Engine::DefineParameters;
@@ -694,7 +697,7 @@ public:
 %include "generated/Urho3D/_pre_renderpipeline.i"
 %include "Urho3D/RenderPipeline/RenderPipeline.h"
 %include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
-
+%include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 // --------------------------------------- Navigation ---------------------------------------
 #if defined(URHO3D_NAVIGATION)
