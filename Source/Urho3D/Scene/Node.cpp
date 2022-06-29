@@ -279,6 +279,8 @@ bool Node::LoadXML(const XMLElement& source)
         }
         return LoadXML(firstNode);
     }
+
+    return LoadXMLImpl(source);
 }
 
 bool Node::LoadXMLImpl(const XMLElement& source)

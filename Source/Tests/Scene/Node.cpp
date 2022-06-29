@@ -58,7 +58,6 @@ TEST_CASE("Load node from XML scene file")
     auto constraint2Attr = nodeElement.CreateChild("attribute");
     constraint2Attr.SetAttribute("name", "Name");
     constraint2Attr.SetAttribute("value", "NodeName");
-    nodeElement.SetAttribute("name", "NodeName");
     auto componentElement = nodeElement.CreateChild("component");
     componentElement.SetAttribute("type", "StaticModel");
 
