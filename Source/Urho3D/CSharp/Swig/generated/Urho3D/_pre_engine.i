@@ -118,6 +118,7 @@
 %csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
 %csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsActive, IsActive);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::Cursor *), Cursor, GetCursor, SetCursor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseVisible, IsMouseVisible, SetMouseVisible);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseGrabbed, IsMouseGrabbed, SetMouseGrabbed);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::MouseMode), MouseMode, GetMouseMode, SetMouseMode);

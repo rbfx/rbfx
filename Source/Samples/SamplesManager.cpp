@@ -580,7 +580,6 @@ void SamplesManager::OnFrameStart()
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
             stateManager->EnqueueState(sampleSelectionScreen_);
-            ui->SetCursor(nullptr);
 #if MOBILE
             Graphics* graphics = context_->GetSubsystem<Graphics>();
             graphics->SetOrientations("Portrait");

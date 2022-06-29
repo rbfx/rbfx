@@ -69,8 +69,10 @@ void ApplicationState::Activate(VariantMap& bundle)
         auto* ui = GetSubsystem<UI>();
         savedRootElement_ = ui->GetRoot();
         savedRootCustomSize_ = ui->GetCustomSize();
+        savedCursor_ = ui->GetCursor();
         ui->SetRoot(rootElement_);
         ui->SetCustomSize(rootCustomSize_);
+        ui->SetCursor(cursor_);
     }
     {
         auto* renderer = GetSubsystem<Renderer>();
@@ -117,8 +119,10 @@ void ApplicationState::Deactivate()
     if (ui)
     {
         rootCustomSize_ = ui->GetCustomSize();
+        cursor_ = ui->GetCursor();
         ui->SetRoot(savedRootElement_);
         ui->SetCustomSize(savedRootCustomSize_);
+        ui->SetCursor(savedCursor_);
     }
     auto* renderer = GetSubsystem<Renderer>();
     if (renderer)
@@ -162,6 +166,17 @@ void ApplicationState::SetMouseMode(MouseMode mode)
     if (IsActive())
     {
         InitMouseMode();
+    }
+}
+
+/// Set cursor UI element.
+void ApplicationState::SetCursor(Cursor* cursor)
+{
+    cursor_ = cursor;
+    if (IsActive())
+    {
+        auto* ui = GetSubsystem<UI>();
+        ui->SetCursor(cursor);
     }
 }
 
@@ -290,6 +305,12 @@ void ApplicationState::HandleMouseModeChange(StringHash /*eventType*/, VariantMa
 
 void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
+    // Update can be still executed if Deacivate was called during calling Update subscribers.
+    if (!active_)
+    {
+        return;
+    }
+
     using namespace Update;
 
     // Take the frame time step, which is stored as a float

@@ -69,6 +69,11 @@ public:
     /// Set the mouse mode.
     void SetMouseMode(MouseMode mode);
 
+    /// Set cursor UI element.
+    void SetCursor(Cursor* cursor);
+    /// Return cursor.
+    Cursor* GetCursor() const { return cursor_; }
+
     /// Return whether the operating system mouse cursor is visible.
     /// @property
     bool IsMouseVisible() const { return mouseVisible_; }
@@ -128,6 +133,10 @@ private:
     SharedPtr<UIElement> rootElement_{};
     /// UI root element saved upon activation to be restored at deactivation.
     SharedPtr<UIElement> savedRootElement_{};
+    /// UI cursor.
+    SharedPtr<Cursor> cursor_{};
+    /// UI cursor saved from previous state.
+    SharedPtr<Cursor> savedCursor_{};
     /// UI root element custom size.
     IntVector2 rootCustomSize_{};
     /// UI root element custom size saved upon activation to be restored at deactivation.
