@@ -267,8 +267,6 @@ bool Node::Save(Serializer& dest) const
 
 bool Node::LoadXML(const XMLElement& source)
 {
-    SceneResolver resolver;
-
     // If we parsing a root file element and it is scene then parse the first node of the scene.
     XMLElement parent = source.GetParent();
     if (parent.NotNull() && parent.GetName().empty() && source.GetName() == "scene")
@@ -281,6 +279,11 @@ bool Node::LoadXML(const XMLElement& source)
         }
         return LoadXML(firstNode);
     }
+}
+
+bool Node::LoadXMLImpl(const XMLElement& source)
+{
+    SceneResolver resolver;
 
     // Read own ID. Will not be applied, only stored for resolving possible references
     unsigned nodeID = source.GetUInt("id");

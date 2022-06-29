@@ -685,6 +685,10 @@ public:
     void SetTransformSilent(const Matrix3x4& matrix);
 
 protected:
+
+    /// Load from XML data. Return true if successful.
+    bool LoadXMLImpl(const XMLElement& source);
+
     /// Handle attribute animation added.
     void OnAttributeAnimationAdded() override;
     /// Handle attribute animation removed.
