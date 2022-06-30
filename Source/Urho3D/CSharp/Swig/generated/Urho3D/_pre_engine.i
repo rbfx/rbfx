@@ -118,14 +118,18 @@
 %csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
 %csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsActive, IsActive);
+%csattribute(Urho3D::ApplicationState, %arg(Urho3D::Cursor *), Cursor, GetCursor, SetCursor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseVisible, IsMouseVisible, SetMouseVisible);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseGrabbed, IsMouseGrabbed, SetMouseGrabbed);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::MouseMode), MouseMode, GetMouseMode, SetMouseMode);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::UIElement *), UIRoot, GetUIRoot);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::IntVector2), UICustomSize, GetUICustomSize, SetUICustomSize);
 %csattribute(Urho3D::ApplicationState, %arg(Urho3D::Color), DefaultFogColor, GetDefaultFogColor, SetDefaultFogColor);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::SingleStateApplication *), Application, GetApplication);
-%csattribute(Urho3D::SingleStateApplication, %arg(Urho3D::ApplicationState *), State, GetState, SetState);
+%csattribute(Urho3D::StateManager, %arg(Urho3D::ApplicationState *), State, GetState);
+%csattribute(Urho3D::StateManager, %arg(Urho3D::StringHash), TargetState, GetTargetState);
+%csattribute(Urho3D::StateManager, %arg(Urho3D::Window *), FadeOverlay, GetFadeOverlay);
+%csattribute(Urho3D::StateManager, %arg(float), FadeInDuration, GetFadeInDuration, SetFadeInDuration);
+%csattribute(Urho3D::StateManager, %arg(float), FadeOutDuration, GetFadeOutDuration, SetFadeOutDuration);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
@@ -187,4 +191,43 @@ public static partial class E
         public static implicit operator StringHash(RegisterStaticPluginsEvent e) { return e._event; }
     }
     public static RegisterStaticPluginsEvent RegisterStaticPlugins = new RegisterStaticPluginsEvent();
+    public class EnqueueApplicationStateEvent {
+        private StringHash _event = new StringHash("EnqueueApplicationState");
+        public StringHash State = new StringHash("State");
+        public EnqueueApplicationStateEvent() { }
+        public static implicit operator StringHash(EnqueueApplicationStateEvent e) { return e._event; }
+    }
+    public static EnqueueApplicationStateEvent EnqueueApplicationState = new EnqueueApplicationStateEvent();
+    public class StateTransitionStartedEvent {
+        private StringHash _event = new StringHash("StateTransitionStarted");
+        public StringHash From = new StringHash("From");
+        public StringHash To = new StringHash("To");
+        public StateTransitionStartedEvent() { }
+        public static implicit operator StringHash(StateTransitionStartedEvent e) { return e._event; }
+    }
+    public static StateTransitionStartedEvent StateTransitionStarted = new StateTransitionStartedEvent();
+    public class LeavingApplicationStateEvent {
+        private StringHash _event = new StringHash("LeavingApplicationState");
+        public StringHash From = new StringHash("From");
+        public StringHash To = new StringHash("To");
+        public LeavingApplicationStateEvent() { }
+        public static implicit operator StringHash(LeavingApplicationStateEvent e) { return e._event; }
+    }
+    public static LeavingApplicationStateEvent LeavingApplicationState = new LeavingApplicationStateEvent();
+    public class EnteringApplicationStateEvent {
+        private StringHash _event = new StringHash("EnteringApplicationState");
+        public StringHash From = new StringHash("From");
+        public StringHash To = new StringHash("To");
+        public EnteringApplicationStateEvent() { }
+        public static implicit operator StringHash(EnteringApplicationStateEvent e) { return e._event; }
+    }
+    public static EnteringApplicationStateEvent EnteringApplicationState = new EnteringApplicationStateEvent();
+    public class StateTransitionCompleteEvent {
+        private StringHash _event = new StringHash("StateTransitionComplete");
+        public StringHash From = new StringHash("From");
+        public StringHash To = new StringHash("To");
+        public StateTransitionCompleteEvent() { }
+        public static implicit operator StringHash(StateTransitionCompleteEvent e) { return e._event; }
+    }
+    public static StateTransitionCompleteEvent StateTransitionComplete = new StateTransitionCompleteEvent();
 } %}

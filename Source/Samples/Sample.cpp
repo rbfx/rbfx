@@ -40,6 +40,13 @@ Sample::Sample(Context* context) :
     SetMouseVisible(false);
 }
 
+/// Activate game state. Executed by StateManager.
+void Sample::Activate(VariantMap& bundle)
+{
+    ApplicationState::Activate(bundle);
+    Start(bundle["Args"].GetStringVector());
+}
+
 /// Deactivate game screen. Executed by Application.
 void Sample::Deactivate()
 {

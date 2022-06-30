@@ -29,7 +29,7 @@
 #if URHO3D_SYSTEMUI
 #include <Urho3D/SystemUI/DebugHud.h>
 #endif
-#include <Urho3D/Engine/SingleStateApplication.h>
+#include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -74,7 +74,10 @@ public:
     /// Construct.
     explicit Sample(Context* context);
 
-    /// Deactivate game screen. Executed by Application.
+    /// Activate game state. Executed by StateManager.
+    virtual void Activate(VariantMap& bundle) override;
+
+    /// Deactivate game state. Executed by StateManager.
     virtual void Deactivate() override;
 
     /// Setup after engine initialization with optional command line parameters.

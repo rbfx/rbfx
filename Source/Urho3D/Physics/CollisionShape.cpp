@@ -214,6 +214,10 @@ TriangleMeshData::TriangleMeshData(CustomGeometry* custom)
     btGenerateInternalEdgeInfo(shape_.get(), infoMap_.get());
 }
 
+TriangleMeshData::~TriangleMeshData()
+{
+}
+
 GImpactMeshData::GImpactMeshData(Model* model, unsigned lodLevel)
 {
     meshInterface_ = ea::make_unique<TriangleMeshInterface>(model, lodLevel);
@@ -222,6 +226,10 @@ GImpactMeshData::GImpactMeshData(Model* model, unsigned lodLevel)
 GImpactMeshData::GImpactMeshData(CustomGeometry* custom)
 {
     meshInterface_ = ea::make_unique<TriangleMeshInterface>(custom);
+}
+
+GImpactMeshData::~GImpactMeshData()
+{
 }
 
 ConvexData::ConvexData(Model* model, unsigned lodLevel)

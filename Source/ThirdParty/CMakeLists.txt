@@ -85,7 +85,7 @@ if (NOT MINI_URHO)
         add_subdirectory(embree)
     endif ()
 
-    if (URHO3D_SPIRV)
+    if (URHO3D_SPIRV AND URHO3D_D3D11)
         set (ENABLE_HLSL OFF CACHE BOOL "")
         set (ENABLE_CTEST OFF CACHE BOOL "")
         set (ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "")

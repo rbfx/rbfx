@@ -31,9 +31,9 @@ SplashScreenDemo::SplashScreenDemo(Context* context)
     SetMouseVisible(true);
 }
 
-void SplashScreenDemo::Activate(SingleStateApplication* application)
+void SplashScreenDemo::Activate(VariantMap& bundle)
 {
-    Sample::Activate(application);
+    Sample::Activate(bundle);
 
     auto splashScreen = MakeShared<SplashScreen>(context_);
 
@@ -45,10 +45,9 @@ void SplashScreenDemo::Activate(SingleStateApplication* application)
     splashScreen->SetProgressImage(
         context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/TerrainDetail2.dds"));
     splashScreen->SetDuration(1.0f);
-    splashScreen->SetFadeInDuration(1.0f);
-    splashScreen->SetFadeOutDuration(1.0f);
     splashScreen->SetSkippable(true);
-    splashScreen->SetNextState(static_cast<Urho3D::SamplesManager*>(application)->GetMenuState());
 
-    application->SetState(splashScreen);
+    auto * stateManager = context_->GetSubsystem<StateManager>();
+    stateManager->EnqueueState(splashScreen);
+    stateManager->EnqueueState(SampleSelectionScreen::GetTypeStatic());
 }

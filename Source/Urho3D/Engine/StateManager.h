@@ -25,20 +25,22 @@
 #include "../Core/Context.h"
 #include "../Input/Input.h"
 #include "../Graphics/Viewport.h"
+#include "Urho3D/UI/Window.h"
 #if URHO3D_ACTIONS
 #include "../Actions/ActionManager.h"
 #endif
 
+#include <EASTL/queue.h>
+
 namespace Urho3D
 {
-class SingleStateApplication;
 class ResourceCache;
 class UI;
 
-/// Base class for an application state. Tipical samples of a state would be loading screen, menu or a game screen.
+/// Base class for an application state. Examples of a state would be a loading screen, a menu or a game screen.
 class URHO3D_API ApplicationState : public Object
 {
-    URHO3D_OBJECT(ApplicationState, Object);
+    URHO3D_OBJECT(ApplicationState, Object)
 
 public:
     /// Construct.
@@ -48,10 +50,13 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Activate game state. Executed by SingleStateApplication.
-    virtual void Activate(SingleStateApplication* application);
+    /// Activate game state. Executed by StateManager.
+    virtual void Activate(VariantMap& bundle);
 
-    /// Deactivate game state. Executed by SingleStateApplication.
+    /// Return true if state is ready to be deactivated. Executed by StateManager.
+    virtual bool CanLeaveState() const;
+
+    /// Deactivate game state. Executed by StateManager.
     virtual void Deactivate();
 
     /// Handle the logic update event.
@@ -66,6 +71,11 @@ public:
     void SetMouseGrabbed(bool grab);
     /// Set the mouse mode.
     void SetMouseMode(MouseMode mode);
+
+    /// Set cursor UI element.
+    void SetCursor(Cursor* cursor);
+    /// Return cursor.
+    Cursor* GetCursor() const { return cursor_; }
 
     /// Return whether the operating system mouse cursor is visible.
     /// @property
@@ -108,10 +118,6 @@ public:
     /// Get default zone fog color.
     const Color& GetDefaultFogColor() const { return fogColor_; }
 
-    /// Return application activated the state instance.
-    /// @property{get_viewports}
-    SingleStateApplication* GetApplication() const { return application_; }
-
 #if URHO3D_ACTIONS
     /// Return application state's action manager.
     ActionManager* GetActionManager() const { return actionManager_; }
@@ -134,12 +140,14 @@ private:
 private:
     /// Is the game screen active.
     bool active_{false};
-    /// Application activated the state instance.
-    SingleStateApplication* application_{};
     /// UI root element.
     SharedPtr<UIElement> rootElement_{};
     /// UI root element saved upon activation to be restored at deactivation.
     SharedPtr<UIElement> savedRootElement_{};
+    /// UI cursor.
+    SharedPtr<Cursor> cursor_{};
+    /// UI cursor saved from previous state.
+    SharedPtr<Cursor> savedCursor_{};
     /// UI root element custom size.
     IntVector2 rootCustomSize_{};
     /// UI root element custom size saved upon activation to be restored at deactivation.
@@ -158,28 +166,141 @@ private:
     /// Saved fog color to be restored at deactivation.
     Color savedFogColor_{};
 #if URHO3D_ACTIONS
+    /// Local action manager.
     SharedPtr<ActionManager> actionManager_;
 #endif
 };
 
-class URHO3D_API SingleStateApplication: public Application
+class URHO3D_API StateManager: public Object
 {
+    URHO3D_OBJECT(StateManager, Object);
+
+    /// Queue item
+    struct QueueItem
+    {
+        /// Target state if set by pointer to an object.
+        SharedPtr<ApplicationState> state_;
+        /// Target state if set by type StringHash.
+        StringHash stateType_;
+        /// Target state arguments.
+        VariantMap bundle_;
+    };
+
+    enum class TransitionState
+    {
+        Sustain,
+        FadeOut,
+        FadeIn,
+        WaitToExit,
+    };
+
 public:
     /// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
     /// state.
-    explicit SingleStateApplication(Context* context);
+    explicit StateManager(Context* context);
 
-    virtual ~SingleStateApplication() override;
+    virtual ~StateManager() override;
 
-    /// Set current game screen.
-    void SetState(ApplicationState* gameScreen);
+    /// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
+    void Reset();
 
-    /// Get current game screen.
+    /// Transition to the application state.
+    void EnqueueState(ApplicationState* gameScreen, VariantMap& bundle);
+
+    /// Transition to the application state.
+    void EnqueueState(ApplicationState* gameScreen);
+
+    /// Transition to the application state.
+    void EnqueueState(StringHash type, VariantMap& bundle);
+
+    /// Transition to the application state.
+    void EnqueueState(StringHash type);
+
+    /// Set current application state.
+    template <typename T> void EnqueueState(VariantMap& bundle);
+
+    /// Set current application state.
+    template <typename T> void EnqueueState();
+
+    /// Get current application state.
     ApplicationState* GetState() const;
+    /// Get target application state.
+    StringHash GetTargetState() const;
+
+    /// Get fade overlay
+    Window* GetFadeOverlay();
+
+    /// Set fade in animation duration;
+    void SetFadeInDuration(float durationInSeconds);
+    /// Set fade out animation duration;
+    void SetFadeOutDuration(float durationInSeconds);
+    /// Get fade in animation duration;
+    float GetFadeInDuration() const { return fadeInDuration_; }
+    /// Get fade out animation duration;
+    float GetFadeOutDuration() const { return fadeOutDuration_; }
 
 private:
+    /// Initiate state transition if necessary.
+    void InitiateTransition();
+
+    /// Handle SetApplicationState event and add the state to the queue.
+    void HandleSetApplicationState(StringHash eventName, VariantMap& args);
+
+    /// Handle update event to animate state transitions.
+    void HandleUpdate(StringHash eventName, VariantMap& args);
+
+    /// Set current transition state and initialize related values.
+    void SetTransitionState(TransitionState state);
+
+    /// Update fade overlay size and transparency.
+    void UpdateFadeOverlay(float t);
+
+    /// Deactivate state.
+    void DeactivateState();
+
+    /// Dequeue and set next state as active.
+    void CreateNextState();
+
+    /// Notify subscribers about transition state updates.
+    void Notify(StringHash eventType);
+
+    /// Origin state.
+    StringHash originState_{StringHash::ZERO};
+    /// Destination state.
+    StringHash destinationState_{StringHash::ZERO};
+
+    /// Cache of previously created states.
+    ea::unordered_map<StringHash, WeakPtr<ApplicationState>> stateCache_;
+
+    /// Queue of application states.
+    ea::queue<QueueItem> stateQueue_;
+
     /// Current active game screen.
-    SharedPtr<ApplicationState> gameScreen_;
+    SharedPtr<ApplicationState> activeState_;
+
+    /// Fade animation time.
+    float fadeTime_{};
+
+    /// Fade in duration in seconds.
+    float fadeInDuration_{ea::numeric_limits<float>::epsilon()};
+    /// Fade out duration in seconds.
+    float fadeOutDuration_{ea::numeric_limits<float>::epsilon()};
+
+    /// Fade overlay window.
+    SharedPtr<Window> fadeOverlay_;
+
+    /// State transition state.
+    TransitionState transitionState_{TransitionState::Sustain};
 };
+
+template <class T> void StateManager::EnqueueState(VariantMap& bundle) {
+    SetState(T::GetTypeStatic(), bundle);
+}
+
+template <class T> void StateManager::EnqueueState()
+{
+    VariantMap bundle;
+    EnqueueState<T>(bundle);
+}
 
 }

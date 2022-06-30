@@ -755,6 +755,9 @@ void ReflectionProbe::UpdateCubemapRenderer()
             UpdateProbeTextureData(mixedProbeTexture_);
         }
         break;
+    default:
+        assert(!"Unsupported probe type");
+        break;
     }
 }
 

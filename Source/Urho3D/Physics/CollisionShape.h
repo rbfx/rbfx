@@ -80,6 +80,7 @@ struct TriangleMeshData : public CollisionGeometryData
     TriangleMeshData(Model* model, unsigned lodLevel);
     /// Construct from a custom geometry.
     explicit TriangleMeshData(CustomGeometry* custom);
+    ~TriangleMeshData();
 
     /// Bullet triangle mesh interface.
     ea::unique_ptr<TriangleMeshInterface> meshInterface_;
@@ -96,6 +97,7 @@ struct GImpactMeshData : public CollisionGeometryData
     GImpactMeshData(Model* model, unsigned lodLevel);
     /// Construct from a custom geometry.
     explicit GImpactMeshData(CustomGeometry* custom);
+    ~GImpactMeshData();
 
     /// Bullet triangle mesh interface.
     ea::unique_ptr<TriangleMeshInterface> meshInterface_;

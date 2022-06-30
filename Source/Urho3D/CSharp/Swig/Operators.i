@@ -24,6 +24,11 @@
         {
             return Equals(other as $typemap(cstype, fqn));
         }
+
+        public override int GetHashCode()
+        {
+            return 699609070 + swigCPtr.GetHashCode();
+        }
     %}
   }
 %enddef
