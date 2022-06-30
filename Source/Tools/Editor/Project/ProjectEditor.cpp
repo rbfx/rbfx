@@ -221,6 +221,9 @@ ProjectEditor::~ProjectEditor()
 
 CloseProjectResult ProjectEditor::CloseGracefully()
 {
+    // Always save shallow data on close
+    SaveShallowOnly();
+
     // If result is ready, return it now and reset state
     if (closeProjectResult_ != CloseProjectResult::Undefined)
     {
@@ -325,6 +328,8 @@ void ProjectEditor::EnsureDirectoryInitialized()
 {
     auto fs = GetSubsystem<FileSystem>();
 
+    bool firstInitialization = false;
+
     if (!fs->DirExists(cachePath_))
     {
         if (fs->FileExists(cachePath_))
@@ -362,6 +367,8 @@ void ProjectEditor::EnsureDirectoryInitialized()
 
         JSONFile emptyFile(context_);
         emptyFile.SaveFile(projectJsonPath_);
+
+        firstInitialization = true;
     }
 
     if (!fs->FileExists(cacheJsonPath_))
@@ -390,6 +397,16 @@ void ProjectEditor::EnsureDirectoryInitialized()
             fs->RemoveDir(uiIniPath_, true);
         pendingResetLayout_ = true;
     }
+
+    if (firstInitialization)
+    {
+        InitializeDefaultProject();
+    }
+}
+
+void ProjectEditor::InitializeDefaultProject()
+{
+    pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetStaticPluginName()});
 }
 
 void ProjectEditor::InitializeResourceCache()
@@ -506,9 +523,6 @@ void ProjectEditor::Render()
         initialized_ = true;
         initialFocusPending = true;
 
-        // TODO(editor): Do it only once on project creation
-        pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetStaticPluginName()});
-
         OnInitialized(this);
     }
 
@@ -571,6 +585,18 @@ void ProjectEditor::RenderMainMenu()
     }
 }
 
+void ProjectEditor::SaveShallowOnly()
+{
+    ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
+    settingsManager_->SaveFile(settingsJsonPath_);
+
+    for (EditorTab* tab : tabs_)
+    {
+        if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
+            resourceTab->SaveShallow();
+    }
+}
+
 void ProjectEditor::SaveProjectOnly()
 {
     JSONFile projectJsonFile(context_);
@@ -578,9 +604,7 @@ void ProjectEditor::SaveProjectOnly()
     SerializeOptionalValue(archive, "Project", *this, AlwaysSerialize{});
     projectJsonFile.SaveFile(projectJsonPath_);
 
-    ui::SaveIniSettingsToDisk(uiIniPath_.c_str());
     SaveGitIgnore();
-    settingsManager_->SaveFile(settingsJsonPath_);
     assetManager_->SaveFile(cacheJsonPath_);
 }
 
@@ -596,6 +620,7 @@ void ProjectEditor::SaveResourcesOnly()
 void ProjectEditor::Save()
 {
     SaveProjectOnly();
+    SaveShallowOnly();
     SaveResourcesOnly();
 }
 

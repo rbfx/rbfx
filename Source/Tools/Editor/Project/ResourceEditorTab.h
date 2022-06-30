@@ -78,6 +78,8 @@ public:
     void SaveResource(const ea::string& resourceName, bool forced = false);
     /// Save all resources.
     void SaveAllResources(bool forced = false);
+    /// Save all shallow data.
+    void SaveShallow();
     /// Set currently active resource.
     void SetActiveResource(const ea::string& activeResourceName);
     /// Set current action for resource.
@@ -110,6 +112,8 @@ protected:
     virtual void OnActiveResourceChanged(const ea::string& resourceName) = 0;
     /// Called when resource should be saved.
     virtual void OnResourceSaved(const ea::string& resourceName) = 0;
+    /// Called when shallow data for resource is saved.
+    virtual void OnResourceShallowSaved(const ea::string& resourceName) = 0;
 
 private:
     struct ResourceData

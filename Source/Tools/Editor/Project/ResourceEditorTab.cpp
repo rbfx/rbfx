@@ -280,6 +280,12 @@ void ResourceEditorTab::SaveAllResources(bool forced)
     }
 }
 
+void ResourceEditorTab::SaveShallow()
+{
+    for (auto& [resourceName, data] : resources_)
+        OnResourceShallowSaved(resourceName);
+}
+
 void ResourceEditorTab::DoSaveResource(const ea::string& resourceName, ResourceData& data)
 {
     OnResourceSaved(resourceName);

@@ -135,6 +135,7 @@ public:
 
     /// Commands
     /// @{
+    void SaveShallowOnly();
     void SaveProjectOnly();
     void SaveResourcesOnly();
     void Save();
@@ -168,6 +169,7 @@ public:
 private:
     void InitializeHotkeys();
     void EnsureDirectoryInitialized();
+    void InitializeDefaultProject();
     void InitializeResourceCache();
     void ResetLayout();
     void ApplyPlugins();

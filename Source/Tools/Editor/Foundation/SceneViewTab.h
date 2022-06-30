@@ -44,7 +44,6 @@ class SceneViewAddon;
 class SceneViewTab;
 
 /// Single page of SceneViewTab.
-/// TODO(editor): Encapsulate
 class SceneViewPage : public Object
 {
     URHO3D_OBJECT(SceneViewPage, Object);
@@ -183,6 +182,7 @@ protected:
     void OnResourceUnloaded(const ea::string& resourceName) override;
     void OnActiveResourceChanged(const ea::string& resourceName) override;
     void OnResourceSaved(const ea::string& resourceName) override;
+    void OnResourceShallowSaved(const ea::string& resourceName) override;
 
     void RenderContent() override;
     void UpdateFocused() override;

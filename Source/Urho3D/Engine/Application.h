@@ -38,7 +38,6 @@ namespace Urho3D
 class Engine;
 
 /// Base class for creating applications which initialize the Urho3D engine and run a main loop until exited.
-// TODO(editor): Support plugins
 class URHO3D_API Application : public Object
 {
     URHO3D_OBJECT(Application, Object);

@@ -484,6 +484,15 @@ void SceneViewTab::OnResourceSaved(const ea::string& resourceName)
     SavePageScene(*page);
 }
 
+void SceneViewTab::OnResourceShallowSaved(const ea::string& resourceName)
+{
+    SceneViewPage* page = GetPage(resourceName);
+    if (!page)
+        return;
+
+    SavePageConfig(*page);
+}
+
 void SceneViewTab::SavePageScene(SceneViewPage& page) const
 {
     XMLFile xmlFile(context_);
