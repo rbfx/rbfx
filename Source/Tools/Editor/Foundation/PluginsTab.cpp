@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/HotkeyManager.h"
 #include "../Core/IniHelpers.h"
 #include "../Foundation/PluginsTab.h"
 
@@ -48,11 +47,8 @@ PluginsTab::PluginsTab(Context* context)
     : EditorTab(context, "Plugins", "b1c35ca0-e90f-4f32-9311-d7d349c3ac98",
         EditorTabFlag::None, EditorTabPlacement::DockRight)
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
-    hotkeyManager->BindHotkey(this, Hotkey_Apply, &PluginsTab::Apply);
-    hotkeyManager->BindHotkey(this, Hotkey_Discard, &PluginsTab::Discard);
+    BindHotkey(Hotkey_Apply, &PluginsTab::Apply);
+    BindHotkey(Hotkey_Discard, &PluginsTab::Discard);
 }
 
 void PluginsTab::Apply()

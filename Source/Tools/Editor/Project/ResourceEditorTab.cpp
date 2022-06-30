@@ -21,7 +21,6 @@
 //
 
 #include "../Core/IniHelpers.h"
-#include "../Core/HotkeyManager.h"
 #include "../Project/ResourceEditorTab.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
@@ -47,9 +46,8 @@ ResourceEditorTab::ResourceEditorTab(Context* context, const ea::string& title, 
     auto project = GetProject();
     project->OnInitialized.Subscribe(this, &ResourceEditorTab::OnProjectInitialized);
 
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-    hotkeyManager->BindHotkey(this, Hotkey_SaveDocument, &ResourceEditorTab::SaveCurrentResource);
-    hotkeyManager->BindHotkey(this, Hotkey_CloseDocument, &ResourceEditorTab::CloseCurrentResource);
+    BindHotkey(Hotkey_SaveDocument, &ResourceEditorTab::SaveCurrentResource);
+    BindHotkey(Hotkey_CloseDocument, &ResourceEditorTab::CloseCurrentResource);
 }
 
 ResourceEditorTab::~ResourceEditorTab()
