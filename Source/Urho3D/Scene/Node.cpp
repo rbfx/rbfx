@@ -267,24 +267,6 @@ bool Node::Save(Serializer& dest) const
 
 bool Node::LoadXML(const XMLElement& source)
 {
-    // If we parsing a root file element and it is scene then parse the first node of the scene.
-    XMLElement parent = source.GetParent();
-    if (parent.NotNull() && parent.GetName().empty() && source.GetName() == "scene")
-    {
-        const XMLElement firstNode = source.GetChild("node");
-        const XMLElement nextNode = firstNode.GetNext("node");
-        if (!nextNode.IsNull())
-        {
-            URHO3D_LOGERROR("More than one root node in prefab");
-        }
-        return LoadXML(firstNode);
-    }
-
-    return LoadXMLImpl(source);
-}
-
-bool Node::LoadXMLImpl(const XMLElement& source)
-{
     SceneResolver resolver;
 
     // Read own ID. Will not be applied, only stored for resolving possible references

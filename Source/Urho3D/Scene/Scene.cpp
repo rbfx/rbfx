@@ -196,7 +196,7 @@ bool Scene::LoadXML(const XMLElement& source)
 
     // Load the whole scene, then perform post-load if successfully loaded
     // Note: the scene filename and checksum can not be set, as we only used an XML element
-    if (Node::LoadXMLImpl(source))
+    if (Node::LoadXML(source))
     {
         FinishLoading(nullptr);
         return true;

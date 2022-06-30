@@ -44,25 +44,3 @@ TEST_CASE("Load node from XML node file")
     CHECK(child->GetName() == "NodeName");
     CHECK(child->GetComponent<StaticModel>());
 };
-
-TEST_CASE("Load node from XML scene file")
-{
-    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto scene = MakeShared<Scene>(context);
-
-    auto child = scene->CreateChild("Child");
-
-    XMLFile file(context);
-    auto sceneElement = file.GetOrCreateRoot("scene");
-    auto nodeElement = sceneElement.CreateChild("node");
-    auto constraint2Attr = nodeElement.CreateChild("attribute");
-    constraint2Attr.SetAttribute("name", "Name");
-    constraint2Attr.SetAttribute("value", "NodeName");
-    auto componentElement = nodeElement.CreateChild("component");
-    componentElement.SetAttribute("type", "StaticModel");
-
-    child->LoadXML(sceneElement);
-
-    CHECK(child->GetName() == "NodeName");
-    CHECK(child->GetComponent<StaticModel>());
-};

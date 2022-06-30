@@ -166,7 +166,25 @@ Node* PrefabReference::CreateInstance() const
 
     auto* node = GetNode()->CreateTemporaryChild();
 
-    node->LoadXML(prefab_->GetRoot());
+    // If we parsing a root file element and it is scene then parse the first node of the scene.
+    XMLElement rootElement = prefab_->GetRoot();
+    if (!rootElement)
+    {
+        return nullptr;
+    }
+
+    if (rootElement.GetName() == "scene")
+    {
+        const XMLElement firstNode = rootElement.GetChild("node");
+        const XMLElement nextNode = firstNode.GetNext("node");
+        if (!nextNode.IsNull())
+        {
+            URHO3D_LOGERROR("More than one root node in prefab");
+        }
+        rootElement = firstNode;
+    }
+
+    node->LoadXML(rootElement);
 
     if (!preserveTransform_)
     {

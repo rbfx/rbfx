@@ -151,3 +151,28 @@ TEST_CASE("Prefab with node reference")
         REQUIRE(constraint->GetOtherBody() == otherNode->GetComponent<RigidBody>());
     }
 }
+
+TEST_CASE("Load prefab from scene file")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto scene = MakeShared<Scene>(context);
+
+    auto child = scene->CreateChild("Child");
+    auto prefab = child->CreateComponent<PrefabReference>();
+
+    auto file = MakeShared<XMLFile>(context);
+    auto sceneElement = file->GetOrCreateRoot("scene");
+    auto nodeElement = sceneElement.CreateChild("node");
+    auto constraint2Attr = nodeElement.CreateChild("attribute");
+    constraint2Attr.SetAttribute("name", "Name");
+    constraint2Attr.SetAttribute("value", "NodeName");
+    auto componentElement = nodeElement.CreateChild("component");
+    componentElement.SetAttribute("type", "StaticModel");
+
+    prefab->SetPrefab(file);
+    auto root = prefab->GetRootNode();
+
+    REQUIRE(root);
+    CHECK(root->GetName() == "NodeName");
+    CHECK(root->GetComponent<StaticModel>());
+};
