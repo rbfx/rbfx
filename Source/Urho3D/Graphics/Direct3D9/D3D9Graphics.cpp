@@ -1158,7 +1158,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
 }
 
-void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange, MAX_SHADER_PARAMETER_GROUPS> constantBuffers)
+void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
 {
     URHO3D_LOGERROR("Graphics::SetShaderConstantBuffers is not supported for D3D9 graphics");
 }

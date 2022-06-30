@@ -95,7 +95,7 @@ void SceneAndUILoad::CreateUI()
     // control the camera, and when visible, it will interact with the UI
     SharedPtr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto();
-    ui->SetCursor(cursor);
+    SetCursor(cursor);
     // Set starting position of the cursor at the rendering window center
     auto* graphics = GetSubsystem<Graphics>();
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);

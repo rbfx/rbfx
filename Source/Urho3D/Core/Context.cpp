@@ -174,6 +174,7 @@ Context::~Context()
     RemoveSubsystem("Renderer");
     RemoveSubsystem("ComputeDevice");
     RemoveSubsystem("Graphics");
+    RemoveSubsystem("StateManager");
 
     subsystems_.Clear();
 

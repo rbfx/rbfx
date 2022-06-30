@@ -89,8 +89,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_VERSION
-	#define EASTL_VERSION   "3.17.06"
-	#define EASTL_VERSION_N  31706
+	#define EASTL_VERSION   "3.18.00"
+	#define EASTL_VERSION_N  31800
 #endif
 
 
@@ -660,7 +660,7 @@ namespace eastl
 			#define EASTL_DEBUG_BREAK() asm("int3")
 		#elif defined(EA_PLATFORM_POSIX)
 			#include <signal.h>
-			#define EASTL_DEBUG_BREAK() raise(SIGTRAP)  // Urho3D
+			#define EASTL_DEBUG_BREAK() raise(SIGTRAP)  // rbfx
 		#else
 			void EASTL_DEBUG_BREAK(); // User must define this externally.
 		#endif
@@ -877,7 +877,7 @@ namespace eastl
 	#if EASTL_INT128_SUPPORTED
 		#define EASTL_INT128_DEFINED 1
 
-		#if defined(__SIZEOF_INT128__) || defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_CLANG)
+		#if defined(__SIZEOF_INT128__) || defined(EA_COMPILER_GNUC) || defined(__clang__)
 			typedef __int128_t   eastl_int128_t;
 			typedef __uint128_t eastl_uint128_t;
 		#else
@@ -1287,7 +1287,7 @@ namespace eastl
 // useful macro identifier for our type traits implementation.
 //
 #ifndef EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE
-	#if defined(_MSC_VER) && (_MSC_VER >= 1500) // VS2008 or later
+	#if defined(_MSC_VER) && (_MSC_VER >= 1500) && !defined(EA_COMPILER_CLANG_CL) // VS2008 or later
 		#pragma warning(push, 0)
 			#include <yvals.h>
 		#pragma warning(pop)
@@ -1296,9 +1296,9 @@ namespace eastl
 		#else
 			#define EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE 0
 		#endif
-	#elif defined(EA_COMPILER_CLANG) && defined(__APPLE__) && defined(_CXXCONFIG) // Apple clang but with GCC's libstdc++.
+	#elif defined(__clang__) && defined(__APPLE__) && defined(_CXXCONFIG) // Apple clang but with GCC's libstdc++.
 		#define EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE 0
-	#elif defined(EA_COMPILER_CLANG)
+	#elif defined(__clang__)
 		#define EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE 1
 	#elif defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 4003) && !defined(__GCCXML__)
 		#define EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE 1
@@ -1849,14 +1849,14 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 
 
 /// EASTL_HAS_UNIQUE_OBJECT_REPRESENTATIONS_AVAILABLE
-#if defined(_MSC_VER) && (_MSC_VER >= 1913)  // VS2017+
-	#define EASTL_HAS_UNIQUE_OBJECT_REPRESENTATIONS_AVAILABLE 1
-#elif defined(EA_COMPILER_CLANG)
+#if defined(__clang__)
 	#if !__is_identifier(__has_unique_object_representations)
 		#define EASTL_HAS_UNIQUE_OBJECT_REPRESENTATIONS_AVAILABLE 1
 	#else
 		#define EASTL_HAS_UNIQUE_OBJECT_REPRESENTATIONS_AVAILABLE 0
 	#endif
+#elif defined(_MSC_VER) && (_MSC_VER >= 1913)  // VS2017+
+	#define EASTL_HAS_UNIQUE_OBJECT_REPRESENTATIONS_AVAILABLE 1
 #else
 	#define EASTL_HAS_UNIQUE_OBJECT_REPRESENTATIONS_AVAILABLE 0
 #endif
@@ -1886,8 +1886,17 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 	#define EASTL_SYSTEM_LITTLE_ENDIAN_STATEMENT(...)
 #endif
 
-#if EASTL_URHO3D_EXTENSIONS
-namespace ea = eastl;
+/// EASTL_CONSTEXPR_BIT_CAST_SUPPORTED
+/// eastl::bit_cast, in order to be implemented as constexpr, requires explicit compiler support.
+/// This macro defines whether it's possible for bit_cast to be constexpr.
+///
+#if (defined(EA_COMPILER_MSVC) && defined(EA_COMPILER_MSVC_VERSION_14_26) && EA_COMPILER_VERSION >= EA_COMPILER_MSVC_VERSION_14_26) \
+	|| EA_COMPILER_HAS_BUILTIN(__builtin_bit_cast)
+	#define EASTL_CONSTEXPR_BIT_CAST_SUPPORTED 1
+#else
+	#define EASTL_CONSTEXPR_BIT_CAST_SUPPORTED 0
 #endif
+
+namespace ea = eastl;
 
 #endif // Header include guard

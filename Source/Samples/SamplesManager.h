@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2017-2022 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 //
 #pragma once
 
-#include <Urho3D/Engine/SingleStateApplication.h>
+#include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/UI/SplashScreen.h>
 
 #include "Sample.h"
@@ -51,17 +51,17 @@ public:
     /// Construct.
     explicit SampleSelectionScreen(Context* context);
 
-    void Activate(SingleStateApplication* application) override;
+    void Activate(VariantMap& bundle) override;
 
     void Deactivate() override;
 
     DirectionalPadAdapter dpadAdapter_;
 };
 
-class SamplesManager : public SingleStateApplication
+class SamplesManager : public Application
 {
     // Enable type information.
-    URHO3D_OBJECT(SamplesManager, SingleStateApplication);
+    URHO3D_OBJECT(SamplesManager, Application);
 
 public:
     /// Construct.

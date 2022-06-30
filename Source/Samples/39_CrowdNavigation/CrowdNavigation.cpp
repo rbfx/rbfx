@@ -199,7 +199,7 @@ void CrowdNavigation::CreateUI()
     auto* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
     SharedPtr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto(style);
-    ui->SetCursor(cursor);
+    SetCursor(cursor);
 
     // Set starting position of the cursor at the rendering window center
     auto* graphics = GetSubsystem<Graphics>();

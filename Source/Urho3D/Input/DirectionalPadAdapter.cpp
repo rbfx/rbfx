@@ -112,6 +112,7 @@ bool DirectionalPadAdapter::GetScancodeDown(Scancode scancode) const
     case SCANCODE_DOWN: return !down_.empty();
     case SCANCODE_LEFT: return !left_.empty();
     case SCANCODE_RIGHT: return !right_.empty();
+    default: break;
     }
     return false;
 }

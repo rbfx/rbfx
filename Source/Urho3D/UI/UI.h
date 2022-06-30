@@ -268,6 +268,10 @@ public:
     /// @property
     float GetScale() const { return uiScale_; }
 
+    /// Return screen size adjusted by scale.
+    /// @property
+    IntVector2 GetSize() const;
+
     /// Return root element custom size. Returns 0,0 when custom size is not being used and automatic resizing according to window size is in use instead (default).
     /// @property
     const IntVector2& GetCustomSize() const { return customSize_; }

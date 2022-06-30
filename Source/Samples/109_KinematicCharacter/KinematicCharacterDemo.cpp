@@ -200,7 +200,9 @@ void KinematicCharacterDemo::CreateCharacter()
     auto* object = objectNode->GetComponent<AnimatedModel>(true);
 
     // Set the head bone for manual control
-    object->GetSkeleton().GetBone("mixamorig:Head")->animated_ = false;
+    auto* headBone = object->GetSkeleton().GetBone("mixamorig:Head");
+    if (headBone)
+        headBone->animated_ = false;
 
     // Create rigidbody
     auto* body = objectNode->CreateComponent<RigidBody>();

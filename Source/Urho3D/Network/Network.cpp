@@ -917,7 +917,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
         packetHandled = true;
     }
 
-    if (!packetHandled && packetID < sizeof(RAKNET_MESSAGEID_STRINGS))
+    if (!packetHandled && packetID < ea::size(RAKNET_MESSAGEID_STRINGS))
         URHO3D_LOGERROR("Unhandled network packet: " + ea::string(RAKNET_MESSAGEID_STRINGS[packetID]));
     else if (!packetHandled)
         URHO3D_LOGERRORF("Unhandled network packet: %i", packetID);

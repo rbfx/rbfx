@@ -358,7 +358,6 @@ namespace eastl
 			mAllocator = allocator;
 		}
 
-#if EASTL_URHO3D_EXTENSIONS
 		/// Get pointer to reference count integer. It may be shared between multiple instances of shared_array<>.
 		int* get_refcount_pointer() const
 		{
@@ -386,7 +385,6 @@ namespace eastl
 			if (mpRefCount != nullptr)
 				++*mpRefCount;
 		}
-#endif
 	}; // class shared_array
 
 
@@ -445,7 +443,6 @@ namespace eastl
 		return (sharedArray1.get() < sharedArray2.get()); // Alternatively use: std::less<T*>(a.get(), b.get());
 	}
 
-#if EASTL_URHO3D_EXTENSIONS
 	/// Perform a static cast from one shared array pointer type to another.
 	template <class T, class U> eastl::shared_array<T> do_static_cast(const eastl::shared_array<U>& ptr)
 	{
@@ -461,7 +458,6 @@ namespace eastl
 		ret.do_reinterpret_cast(ptr);
 		return ret;
 	}
-#endif
 } // namespace eastl
 
 

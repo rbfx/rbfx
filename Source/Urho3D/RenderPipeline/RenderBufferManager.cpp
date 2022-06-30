@@ -399,7 +399,7 @@ SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode 
 
 void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadParams& params, bool flipVertical)
 {
-    if (!params.pipelineState_->IsValid())
+    if (!params.pipelineState_ || !params.pipelineState_->IsValid())
         return;
 
     Geometry* quadGeometry = renderer_->GetQuadGeometry();

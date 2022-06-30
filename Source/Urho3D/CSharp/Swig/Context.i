@@ -46,7 +46,6 @@
 %inheritable(Urho3D, Object);
 %inheritable(Urho3D, Application);
 %inheritable(Urho3D, ApplicationState);
-%inheritable(Urho3D, SingleStateApplication);
 %inheritable(Urho3D, Serializable);
 %inheritable(Urho3D, Animatable);
 %inheritable(Urho3D, Component);

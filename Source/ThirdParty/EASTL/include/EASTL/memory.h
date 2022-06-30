@@ -439,7 +439,7 @@ namespace eastl
 			template <typename T>
 			static T* do_move_start(T* first, T* last, T* dest)
 			{
-				if (EASTL_UNLIKELY(first == last)) // rbfx: Fix UB
+				if (EASTL_UNLIKELY(first == last))
 					return dest;
 
 				return (T*)memcpy(dest, first, (size_t)((uintptr_t)last - (uintptr_t)first)) + (last - first);
@@ -885,7 +885,7 @@ namespace eastl
 		template <typename ForwardIterator, typename Count>
 		inline void uninitialized_default_fill_n_impl(ForwardIterator first, Count n, true_type)
 		{
-			if (EASTL_UNLIKELY(n == 0)) // rbfx: Fix UB
+			if (EASTL_UNLIKELY(n == 0))
 				return;
 
 			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
