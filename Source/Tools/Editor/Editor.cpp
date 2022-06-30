@@ -120,12 +120,12 @@ Editor::Editor(Context* context)
 {
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
-    editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
     editorPluginManager_->AddPlugin("Foundation.Plugins", &Foundation_PluginsTab);
+    editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
 
     editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);
 

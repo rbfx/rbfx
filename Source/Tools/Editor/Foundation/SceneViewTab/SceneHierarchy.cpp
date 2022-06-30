@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "../../Core/IniHelpers.h"
 #include "../../Foundation/SceneViewTab/SceneHierarchy.h"
 
 #include <Urho3D/Scene/Component.h>
@@ -49,12 +50,27 @@ ea::string GetNodeTitle(Node* node)
 
 void Foundation_SceneHierarchy(Context* context, SceneViewTab* sceneViewTab)
 {
+    sceneViewTab->RegisterAddon<SceneHierarchy>();
 }
 
 SceneHierarchy::SceneHierarchy(SceneViewTab* sceneViewTab)
-    : HierarchyBrowserSource(sceneViewTab->GetContext())
+    : SceneViewAddon(sceneViewTab)
     , owner_(sceneViewTab)
 {
+}
+
+void SceneHierarchy::WriteIniSettings(ImGuiTextBuffer& output)
+{
+    WriteIntToIni(output, "SceneHierarchy.ShowComponents", showComponents_);
+    WriteIntToIni(output, "SceneHierarchy.ShowTemporary", showTemporary_);
+}
+
+void SceneHierarchy::ReadIniSettings(const char* line)
+{
+    if (const auto value = ReadIntFromIni(line, "SceneHierarchy.ShowComponents"))
+        showComponents_ = *value != 0;
+    if (const auto value = ReadIntFromIni(line, "SceneHierarchy.ShowTemporary"))
+        showTemporary_ = *value != 0;
 }
 
 void SceneHierarchy::RenderContent()
@@ -93,14 +109,22 @@ void SceneHierarchy::RenderContextMenuItems()
 
 void SceneHierarchy::RenderMenu()
 {
-    if (owner_)
+    if (owner_ && !reentrant_)
+    {
+        reentrant_ = true;
         owner_->RenderMenu();
+        reentrant_ = false;
+    }
 }
 
 void SceneHierarchy::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
-    if (owner_)
+    if (owner_ && !reentrant_)
+    {
+        reentrant_ = true;
         owner_->ApplyHotkeys(hotkeyManager);
+        reentrant_ = false;
+    }
 }
 
 void SceneHierarchy::RenderToolbar(SceneViewPage& page)
