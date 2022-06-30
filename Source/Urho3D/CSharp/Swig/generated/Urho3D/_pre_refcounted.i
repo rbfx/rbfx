@@ -114,6 +114,7 @@ URHO3D_REFCOUNTED(Urho3D::ResourceCache);
 URHO3D_REFCOUNTED(Urho3D::CameraViewport);
 URHO3D_REFCOUNTED(Urho3D::LogicComponent);
 URHO3D_REFCOUNTED(Urho3D::ObjectAnimation);
+URHO3D_REFCOUNTED(Urho3D::PrefabReference);
 URHO3D_REFCOUNTED(Urho3D::Scene);
 URHO3D_REFCOUNTED(Urho3D::SceneManager);
 URHO3D_REFCOUNTED(Urho3D::DebugRenderer);
