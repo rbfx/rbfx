@@ -35,6 +35,7 @@
 namespace Urho3D
 {
 
+// TODO(editor): Remove this class
 SceneManager::SceneManager(Context* context)
     : Object(context)
 {

@@ -158,7 +158,6 @@ void PluginApplication::RegisterPluginApplication()
     static void RegisterObject() { PluginApplication::RegisterPluginApplication<ClassName>(); } \
 
 /// Macro for defining entry point of editor plugin.
-// TODO(editor): Revisit macros
 #if !defined(URHO3D_PLUGINS) || defined(URHO3D_STATIC)
     #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
         extern "C" void CONCATENATE(RegisterPlugin_, URHO3D_CURRENT_PLUGIN_NAME_SANITATED)() \
