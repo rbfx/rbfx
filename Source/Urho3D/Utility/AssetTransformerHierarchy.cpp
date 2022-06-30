@@ -67,23 +67,6 @@ AssetTransformerVector Reduce(const TransformerInfoVector& source)
     return result;
 }
 
-ea::optional<unsigned> GetFlavorOrder(const ea::string& query, const ea::string& requirement)
-{
-    // If no flavor specified, return everything and order from generic to specific flavors (doesn't really matter)
-    if (query.empty())
-        return requirement.size();
-
-    URHO3D_ASSERT(!requirement.empty());
-
-    if (!query.starts_with(requirement))
-        return ea::nullopt;
-    if (query.size() > requirement.size() && query[requirement.size()] != '.')
-        return ea::nullopt;
-
-    // Order from specific to generic flavors
-    return query.size() - requirement.size();
-}
-
 }
 
 bool AssetTransformerHierarchy::TreeNode::ByName::operator()(const ea::unique_ptr<TreeNode>& lhs, const ea::unique_ptr<TreeNode>& rhs) const
@@ -209,19 +192,19 @@ void AssetTransformerHierarchy::CommitDependencies()
 
 AssetTransformerVector AssetTransformerHierarchy::GetTransformerCandidates(const ea::string& resourcePath) const
 {
-    return GetTransformerCandidates(resourcePath, "");
+    return GetTransformerCandidates(resourcePath, ApplicationFlavor::Universal);
 }
 
 AssetTransformerVector AssetTransformerHierarchy::GetTransformerCandidates(
-    const ea::string& resourcePath, const ea::string& flavor) const
+    const ea::string& resourcePath, const ApplicationFlavor& flavor) const
 {
     TransformerInfoVector result;
     root_.IterateNodesChildFirst(resourcePath.split('/'), [&](unsigned inverseDepth, const TreeNode& node)
     {
         for (AssetTransformer* transformer : node.transformers_)
         {
-            if (auto flavorOrder = GetFlavorOrder(flavor, transformer->GetFlavor()))
-                result.push_back(TransformerInfo{transformer, GetTypeOrder(transformer->GetType()), inverseDepth, *flavorOrder});
+            if (auto flavorMatchPenalty = flavor.Matches(transformer->GetFlavor()))
+                result.push_back(TransformerInfo{transformer, GetTypeOrder(transformer->GetType()), inverseDepth, *flavorMatchPenalty});
         }
     });
 

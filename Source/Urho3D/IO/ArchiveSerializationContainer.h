@@ -64,13 +64,13 @@ URHO3D_TYPE_TRAIT(IsVectorType, (\
     std::declval<T&>().data(),\
     std::declval<T&>().clear(),\
     std::declval<T&>().resize(0u),\
-    std::declval<T&>()[0u] == std::declval<typename T::value_type>()\
+    std::declval<typename T::value_type&>() = std::declval<T&>()[0u]\
 ));
 
 URHO3D_TYPE_TRAIT(IsMapType, (\
     std::declval<T&>().size(),\
     std::declval<T&>().clear(),\
-    std::declval<T&>()[std::declval<typename T::key_type>()] = std::declval<typename T::mapped_type>()\
+    std::declval<typename T::mapped_type&>() = std::declval<T&>()[std::declval<typename T::key_type>()]\
 ));
 
 URHO3D_TYPE_TRAIT(IsSetType, (\

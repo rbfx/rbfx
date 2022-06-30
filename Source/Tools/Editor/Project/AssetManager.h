@@ -137,13 +137,13 @@ private:
     void ScanAndQueueAssetProcessing();
 
     void ScanAssetsInPath(const ea::string& resourcePath, Stats& stats);
-    bool QueueAssetProcessing(const ea::string& resourceName, const ea::string& flavor);
+    bool QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor);
     void ProcessAsset(const AssetTransformerInput& input);
 
     const WeakPtr<ProjectEditor> projectEditor_;
     SharedPtr<FileWatcher> dataWatcher_;
 
-    ea::string defaultFlavor_{"*"}; // TODO(editor): Make configurable
+    ApplicationFlavor defaultFlavor_; // TODO(editor): Make configurable
 
     bool initialized_{};
     bool reloadAssetPipelines_{};

@@ -29,8 +29,8 @@ namespace Urho3D
 
 void DragDropPayload::Set(const SharedPtr<DragDropPayload>& payload)
 {
-    auto context = Context::GetInstance();
-    context->SetGlobalVar(DragDropPayloadVariable, MakeCustomValue(payload));
+    if (auto context = Context::GetInstance())
+        context->SetGlobalVar(DragDropPayloadVariable, MakeCustomValue(payload));
 }
 
 DragDropPayload* DragDropPayload::Get()
@@ -39,9 +39,11 @@ DragDropPayload* DragDropPayload::Get()
     {
         if (payload->DataType == DragDropPayloadType)
         {
-            auto context = Context::GetInstance();
-            const Variant variant = context->GetGlobalVar(DragDropPayloadVariable);
-            return dynamic_cast<DragDropPayload*>(variant.GetCustom<SharedPtr<DragDropPayload>>().Get());
+            if (auto context = Context::GetInstance())
+            {
+                const Variant variant = context->GetGlobalVar(DragDropPayloadVariable);
+                return dynamic_cast<DragDropPayload*>(variant.GetCustom<SharedPtr<DragDropPayload>>().Get());
+            }
         }
     }
     return nullptr;

@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-AssetTransformerInput::AssetTransformerInput(const ea::string& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime)
+AssetTransformerInput::AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime)
     : flavor_(flavor)
     , resourceName_(resourceName)
     , inputFileName_(inputFileName)
@@ -48,7 +48,7 @@ AssetTransformerInput::AssetTransformerInput(const AssetTransformerInput& other,
 
 void AssetTransformerInput::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "Flavor", flavor_);
+    SerializeValue(archive, "Flavor", flavor_.components_);
     SerializeValue(archive, "ResourceName", resourceName_);
 
     SerializeValue(archive, "InputFileName", inputFileName_);
@@ -142,16 +142,6 @@ bool AssetTransformer::ExecuteAndStore(const AssetTransformerInput& input, const
         output.outputResourceNames_.push_back(fileName.substr(outputPath.length()));
 
     return true;
-}
-
-void AssetTransformer::SetFlavor(const ea::string& value)
-{
-    if (value.empty())
-        flavor_ = "*";
-    else if (!value.starts_with("*"))
-        flavor_ = Format("*.{}", value);
-    else
-        flavor_ = value;
 }
 
 }
