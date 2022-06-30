@@ -190,7 +190,6 @@ Context::~Context()
 
 Context* Context::GetInstance()
 {
-    assert(contextInstance != nullptr);
     return contextInstance;
 }
 

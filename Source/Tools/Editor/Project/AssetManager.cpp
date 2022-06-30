@@ -515,7 +515,7 @@ void AssetManager::ScanAssetsInPath(const ea::string& resourcePath, Stats& stats
     }
 }
 
-bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const ea::string& flavor)
+bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor)
 {
     auto fs = GetSubsystem<FileSystem>();
 

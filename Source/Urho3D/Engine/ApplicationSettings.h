@@ -25,6 +25,7 @@
 #include "../Core/Object.h"
 #include "../Core/Variant.h"
 #include "../IO/Archive.h"
+#include "../Engine/ApplicationFlavor.h"
 
 namespace Urho3D
 {
@@ -35,7 +36,14 @@ class URHO3D_API ApplicationSettings : public Object
     URHO3D_OBJECT(ApplicationSettings, Object);
 
 public:
-    using EngineParametersPerFlavor = ea::unordered_map<ea::string, StringVariantMap>;
+    struct FlavoredSettings
+    {
+        ApplicationFlavorPattern flavor_;
+        StringVariantMap engineParameters_;
+
+        void SerializeInBlock(Archive& archive);
+    };
+    using FlavoredSettingsVector = ea::vector<FlavoredSettings>;
 
     explicit ApplicationSettings(Context* context);
 
@@ -45,15 +53,14 @@ public:
     void SerializeInBlock(Archive& archive) override;
 
     /// Evaluate parameters for specifed flavor.
-    StringVariantMap GetParameters(const ea::string& flavor) const;
+    StringVariantMap GetParameters(const ApplicationFlavor& flavor) const;
     /// Evaluate parameters for the flavor of the current platform.
     StringVariantMap GetParametersForCurrentFlavor() const;
-    /// Return internal map.
-    EngineParametersPerFlavor& GetParametersPerFlavor() { return engineParameters_; }
+
+    FlavoredSettingsVector& GetParametersPerFlavor() { return settings_; }
 
 private:
-    /// Map of engine parameters per flavor.
-    EngineParametersPerFlavor engineParameters_;
+    FlavoredSettingsVector settings_;
 };
 
 

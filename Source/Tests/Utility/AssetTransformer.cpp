@@ -74,73 +74,77 @@ TEST_CASE("Asset transformer performs query by flavor and path")
     auto addTransformer = [&](const ea::string& path, const ea::string& flavor)
     {
         const auto transformer = MakeShared<TestAssetTransformer>(context);
-        transformer->SetFlavor(flavor);
+        transformer->SetFlavor(ApplicationFlavorPattern{flavor});
         hierarchy->AddTransformer(path, transformer);
         return transformer;
     };
+    auto getTransformerCandidates = [&](const ea::string& path, const ea::string& flavor = "*=*")
+    {
+        return hierarchy->GetTransformerCandidates(path, ApplicationFlavor{flavor});
+    };
 
     const auto t0_o_1 = addTransformer("", "");
-    const auto t0_o_2 = addTransformer("", "*");
-    const auto t0_M = addTransformer("", "*.mobile");
-    const auto t0_MI_1 = addTransformer("", "*.mobile.ios");
-    const auto t0_MI_2 = addTransformer("", "*.mobile.ios");
-    const auto t0_MA = addTransformer("", "*.mobile.android");
-    const auto t00_MA = addTransformer("foo", "*.mobile.android");
-    const auto t000_o = addTransformer("foo/bar", "*");
+    const auto t0_o_2 = addTransformer("", "platform=*");
+    const auto t0_M = addTransformer("", "platform=mobile");
+    const auto t0_MI_1 = addTransformer("", "platform=mobile,ios");
+    const auto t0_MI_2 = addTransformer("", "platform=mobile,ios");
+    const auto t0_MA = addTransformer("", "platform=mobile,android");
+    const auto t00_MA = addTransformer("foo", "platform=mobile,android");
+    const auto t000_o = addTransformer("foo/bar", "");
 
     // Test extra slashes
-    REQUIRE(hierarchy->GetTransformerCandidates("/foo/bar") == hierarchy->GetTransformerCandidates("foo/bar"));
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar/") == hierarchy->GetTransformerCandidates("foo/bar"));
-    REQUIRE(hierarchy->GetTransformerCandidates("/foo/bar/") == hierarchy->GetTransformerCandidates("foo/bar"));
+    REQUIRE(getTransformerCandidates("/foo/bar") == getTransformerCandidates("foo/bar"));
+    REQUIRE(getTransformerCandidates("foo/bar/") == getTransformerCandidates("foo/bar"));
+    REQUIRE(getTransformerCandidates("/foo/bar/") == getTransformerCandidates("foo/bar"));
 
     // Test path queries
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar/bun") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/bar/bun") == TestVector{
         t000_o, t00_MA, t0_o_1, t0_o_2, t0_M, t0_MI_1, t0_MI_2, t0_MA});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/bar") == TestVector{
         t000_o, t00_MA, t0_o_1, t0_o_2, t0_M, t0_MI_1, t0_MI_2, t0_MA});
 
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/buz") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/buz") == TestVector{
         t00_MA, t0_o_1, t0_o_2, t0_M, t0_MI_1, t0_MI_2, t0_MA});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo") == TestVector{
+    REQUIRE(getTransformerCandidates("foo") == TestVector{
         t00_MA, t0_o_1, t0_o_2, t0_M, t0_MI_1, t0_MI_2, t0_MA});
 
-    REQUIRE(hierarchy->GetTransformerCandidates("fuz") == TestVector{
+    REQUIRE(getTransformerCandidates("fuz") == TestVector{
         t0_o_1, t0_o_2, t0_M, t0_MI_1, t0_MI_2, t0_MA});
-    REQUIRE(hierarchy->GetTransformerCandidates("") == TestVector{
+    REQUIRE(getTransformerCandidates("") == TestVector{
         t0_o_1, t0_o_2, t0_M, t0_MI_1, t0_MI_2, t0_MA});
 
     // Test path and flavor queries
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/bar", "") == TestVector{
         t000_o, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*.mobile") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=mobile") == TestVector{
         t000_o, t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*.mobile.androids") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=mobile,androids") == TestVector{
         t000_o, t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*.mobile.ios") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=mobile,ios") == TestVector{
         t000_o, t0_MI_1, t0_MI_2, t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*.mobile.android") == TestVector{
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=mobile,android") == TestVector{
         t000_o, t00_MA, t0_MA, t0_M, t0_o_1, t0_o_2});
 
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*") == TestVector{
+    REQUIRE(getTransformerCandidates("foo", "") == TestVector{
         t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*.mobile") == TestVector{
+    REQUIRE(getTransformerCandidates("foo", "platform=mobile") == TestVector{
         t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*.mobile.androids") == TestVector{
+    REQUIRE(getTransformerCandidates("foo", "platform=mobile,androids") == TestVector{
         t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*.mobile.ios") == TestVector{
+    REQUIRE(getTransformerCandidates("foo", "platform=mobile,ios") == TestVector{
         t0_MI_1, t0_MI_2, t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*.mobile.android") == TestVector{
+    REQUIRE(getTransformerCandidates("foo", "platform=mobile,android") == TestVector{
         t00_MA, t0_MA, t0_M, t0_o_1, t0_o_2});
 
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*") == TestVector{
+    REQUIRE(getTransformerCandidates("", "") == TestVector{
         t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*.mobile") == TestVector{
+    REQUIRE(getTransformerCandidates("", "platform=mobile") == TestVector{
         t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*.mobile.androids") == TestVector{
+    REQUIRE(getTransformerCandidates("", "platform=mobile,androids") == TestVector{
         t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*.mobile.ios") == TestVector{
+    REQUIRE(getTransformerCandidates("", "platform=mobile,ios") == TestVector{
         t0_MI_1, t0_MI_2, t0_M, t0_o_1, t0_o_2});
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*.mobile.android") == TestVector{
+    REQUIRE(getTransformerCandidates("", "platform=mobile,android") == TestVector{
         t0_MA, t0_M, t0_o_1, t0_o_2});
 }
 
@@ -152,27 +156,31 @@ TEST_CASE("Asset transformer filters duplicates and sorts by flavor and path")
     {
         const auto transformer = MakeShared<TestAssetTransformer>(context);
         transformer->singleInstanced_ = true;
-        transformer->SetFlavor(flavor);
+        transformer->SetFlavor(ApplicationFlavorPattern{flavor});
         hierarchy->AddTransformer(path, transformer);
         return transformer;
     };
+    auto getTransformerCandidates = [&](const ea::string& path, const ea::string& flavor)
+    {
+        return hierarchy->GetTransformerCandidates(path, ApplicationFlavor{flavor});
+    };
 
-    const auto t0 = addTransformer("", "*");
-    const auto t1 = addTransformer("", "*.mobile");
-    const auto t2 = addTransformer("", "*.mobile.ios");
-    const auto t3 = addTransformer("foo/bar", "*");
+    const auto t0 = addTransformer("", "platform=*");
+    const auto t1 = addTransformer("", "platform=mobile");
+    const auto t2 = addTransformer("", "platform=mobile,ios");
+    const auto t3 = addTransformer("foo/bar", "platform=*");
 
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*") == TestVector{t0});
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*.mobile") == TestVector{t1});
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*.mobile.ios") == TestVector{t2});
+    REQUIRE(getTransformerCandidates("", "platform=*") == TestVector{t0});
+    REQUIRE(getTransformerCandidates("", "platform=mobile") == TestVector{t1});
+    REQUIRE(getTransformerCandidates("", "platform=mobile,ios") == TestVector{t2});
 
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*") == TestVector{t0});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*.mobile") == TestVector{t1});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo", "*.mobile.ios") == TestVector{t2});
+    REQUIRE(getTransformerCandidates("foo", "platform=*") == TestVector{t0});
+    REQUIRE(getTransformerCandidates("foo", "platform=mobile") == TestVector{t1});
+    REQUIRE(getTransformerCandidates("foo", "platform=mobile,ios") == TestVector{t2});
 
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*") == TestVector{t3});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*.mobile") == TestVector{t3});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*.mobile.ios") == TestVector{t3});
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=*") == TestVector{t3});
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=mobile") == TestVector{t3});
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=mobile,ios") == TestVector{t3});
 }
 
 TEST_CASE("Asset transformer sorts by type")
@@ -188,9 +196,13 @@ TEST_CASE("Asset transformer sorts by type")
             transformer = MakeShared<TestAssetTransformerB>(context);
         else
             transformer = MakeShared<TestAssetTransformerC>(context);
-        transformer->SetFlavor(flavor);
+        transformer->SetFlavor(ApplicationFlavorPattern{flavor});
         hierarchy->AddTransformer(path, transformer);
         return transformer;
+    };
+    auto getTransformerCandidates = [&](const ea::string& path, const ea::string& flavor)
+    {
+        return hierarchy->GetTransformerCandidates(path, ApplicationFlavor{flavor});
     };
 
     hierarchy->AddDependency(TestAssetTransformerB::GetTypeNameStatic(), TestAssetTransformerA::GetTypeNameStatic());
@@ -198,14 +210,14 @@ TEST_CASE("Asset transformer sorts by type")
     hierarchy->AddDependency(TestAssetTransformerC::GetTypeNameStatic(), TestAssetTransformerA::GetTypeNameStatic());
     hierarchy->CommitDependencies();
 
-    const auto t0 = addTransformer(0, "", "*");
-    const auto t1 = addTransformer(1, "", "*");
-    const auto t2 = addTransformer(2, "", "*");
-    const auto t3 = addTransformer(1, "", "*.mobile");
-    const auto t4 = addTransformer(1, "foo/bar", "*");
+    const auto t0 = addTransformer(0, "", "platform=*");
+    const auto t1 = addTransformer(1, "", "platform=*");
+    const auto t2 = addTransformer(2, "", "platform=*");
+    const auto t3 = addTransformer(1, "", "platform=mobile");
+    const auto t4 = addTransformer(1, "foo/bar", "platform=*");
 
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*") == TestVector{t0, t1, t2});
-    REQUIRE(hierarchy->GetTransformerCandidates("", "*.mobile") == TestVector{t0, t3, t2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*") == TestVector{t0, t4, t2});
-    REQUIRE(hierarchy->GetTransformerCandidates("foo/bar", "*.mobile") == TestVector{t0, t4, t2});
+    REQUIRE(getTransformerCandidates("", "platform=*") == TestVector{t0, t1, t2});
+    REQUIRE(getTransformerCandidates("", "platform=mobile") == TestVector{t0, t3, t2});
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=*") == TestVector{t0, t4, t2});
+    REQUIRE(getTransformerCandidates("foo/bar", "platform=mobile") == TestVector{t0, t4, t2});
 }

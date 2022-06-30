@@ -28,7 +28,7 @@
 #include "../IO/PackageFile.h"
 #include "../Resource/JSONFile.h"
 
-#include <EASTL/map.h>
+#include <EASTL/sort.h>
 
 namespace Urho3D
 {
@@ -116,6 +116,12 @@ SharedPtr<JSONFile> LoadSettingsFile(Context* context)
 
 }
 
+void ApplicationSettings::FlavoredSettings::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "Flavor", flavor_.components_);
+    SerializeOptionalValue(archive, "EngineParameters", engineParameters_);
+}
+
 ApplicationSettings::ApplicationSettings(Context* context)
     : Object(context)
 {
@@ -123,23 +129,26 @@ ApplicationSettings::ApplicationSettings(Context* context)
 
 void ApplicationSettings::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "EngineParameters", engineParameters_);
+    SerializeOptionalValue(archive, "Settings", settings_);
 }
 
-StringVariantMap ApplicationSettings::GetParameters(const ea::string& flavor) const
+StringVariantMap ApplicationSettings::GetParameters(const ApplicationFlavor& flavor) const
 {
-    ea::map<ea::string, const StringVariantMap*> matchingParameters;
-    for (const auto& pair : engineParameters_)
+    ea::vector<ea::pair<unsigned, const FlavoredSettings*>> filteredSettings;
+    for (const FlavoredSettings& flavoredSettings : settings_)
     {
-        if (flavor.starts_with(pair.first))
-            matchingParameters[pair.first] = &pair.second;
+        if (const auto penalty = flavor.Matches(flavoredSettings.flavor_))
+            filteredSettings.emplace_back(*penalty, &flavoredSettings);
     }
 
+    ea::stable_sort(filteredSettings.begin(), filteredSettings.end(),
+        [](const auto& lhs, const auto& rhs) { return lhs.first > rhs.first; });
+
     StringVariantMap result;
-    for (const auto& pair : matchingParameters)
+    for (const auto& [_, flavoredSettings] : filteredSettings)
     {
-        for (const auto& param : *pair.second)
-            result[param.first] = param.second;
+        for (const auto& [key, value] : flavoredSettings->engineParameters_)
+            result[key] = value;
     }
     return result;
 }
@@ -147,7 +156,7 @@ StringVariantMap ApplicationSettings::GetParameters(const ea::string& flavor) co
 StringVariantMap ApplicationSettings::GetParametersForCurrentFlavor() const
 {
     // TODO(editor): Handle platforms
-    return GetParameters("*");
+    return GetParameters(ApplicationFlavor::Empty);
 }
 
 SharedPtr<ApplicationSettings> ApplicationSettings::LoadForCurrentApplication(Context* context)

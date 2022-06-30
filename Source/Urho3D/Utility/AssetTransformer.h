@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Engine/ApplicationFlavor.h"
 #include "../IO/FileSystem.h"
 #include "../Scene/Serializable.h"
 
@@ -37,7 +38,7 @@ using AssetTransformerVector = ea::vector<AssetTransformer*>;
 struct URHO3D_API AssetTransformerInput
 {
     AssetTransformerInput() = default;
-    AssetTransformerInput(const ea::string& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime);
+    AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime);
     AssetTransformerInput(const AssetTransformerInput& other, const ea::string& tempPath, const ea::string& outputFileName);
 
     void SerializeInBlock(Archive& archive);
@@ -45,7 +46,7 @@ struct URHO3D_API AssetTransformerInput
     ea::string ToBase64() const;
 
     /// Flavor of the transformer.
-    ea::string flavor_;
+    ApplicationFlavor flavor_;
     /// Resource name that can be used to access resource via cache.
     ea::string resourceName_;
     /// Absolute file name of the asset.
@@ -99,12 +100,12 @@ public:
 
     /// Manage requirement flavor of the transformer.
     /// @{
-    void SetFlavor(const ea::string& value);
-    const ea::string& GetFlavor() const { return flavor_; }
+    void SetFlavor(const ApplicationFlavorPattern& value) { flavor_ = value; }
+    const ApplicationFlavorPattern& GetFlavor() const { return flavor_; }
     /// @}
 
 private:
-    ea::string flavor_{"*"};
+    ApplicationFlavorPattern flavor_{};
 };
 
 }

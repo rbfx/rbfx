@@ -52,7 +52,7 @@ public:
     AssetTransformerVector GetTransformerCandidates(const ea::string& resourcePath) const;
     /// Enumerate all transformers for given path and flavor.
     AssetTransformerVector GetTransformerCandidates(
-        const ea::string& resourcePath, const ea::string& flavor) const;
+        const ea::string& resourcePath, const ApplicationFlavor& flavor) const;
 
 private:
     struct DependencyGraphNode
