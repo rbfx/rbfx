@@ -40,13 +40,14 @@ public:
     explicit HierarchyBrowserTab(Context* context);
 
     /// Connect to data source.
-    void ConnectToSource(HierarchyBrowserSource* source);
+    void ConnectToSource(Object* source, HierarchyBrowserSource* sourceInterface);
+    template <class T> void ConnectToSource(T* source) { ConnectToSource(source, source); }
 
     /// Implement EditorTab
     /// @{
     void RenderMenu() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_ ? source_->GetOwnerTab() : nullptr; }
+    EditorTab* GetOwnerTab() override { return source_ ? sourceInterface_->GetOwnerTab() : nullptr; }
     /// @}
 
 protected:
@@ -57,7 +58,8 @@ protected:
     /// @}
 
 private:
-    WeakPtr<HierarchyBrowserSource> source_;
+    WeakPtr<Object> source_;
+    HierarchyBrowserSource* sourceInterface_{};
 };
 
 }

@@ -31,12 +31,19 @@ namespace Urho3D
 void Foundation_SceneHierarchy(Context* context, SceneViewTab* sceneViewTab);
 
 /// Scene hierarchy provider for hierarchy browser tab.
-class SceneHierarchy : public HierarchyBrowserSource
+class SceneHierarchy : public SceneViewAddon, public HierarchyBrowserSource
 {
-    URHO3D_OBJECT(SceneHierarchy, HierarchyBrowserSource)
+    URHO3D_OBJECT(SceneHierarchy, SceneViewAddon)
 
 public:
     explicit SceneHierarchy(SceneViewTab* sceneViewTab);
+
+    /// Implement SceneViewAddon
+    /// @{
+    ea::string GetUniqueName() const override { return "SceneHierarchy"; }
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
+    void ReadIniSettings(const char* line) override;
+    /// @}
 
     /// Implement HierarchyBrowserSource
     /// @{
@@ -71,6 +78,7 @@ private:
     };
 
     WeakPtr<SceneViewTab> owner_;
+    bool reentrant_{};
 
     bool showTemporary_{};
     bool showComponents_{true};

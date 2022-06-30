@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <Urho3D/Core/Object.h>
+#include <Urho3D/Urho3D.h>
 
 namespace Urho3D
 {
@@ -31,13 +31,9 @@ class EditorTab;
 class HotkeyManager;
 
 /// Interface used to provide content for hierarchy browser tab.
-class HierarchyBrowserSource : public Object
+class HierarchyBrowserSource
 {
-    URHO3D_OBJECT(HierarchyBrowserSource, Object)
-
 public:
-    explicit HierarchyBrowserSource(Context* context) : Object(context) {}
-
     /// Return owner tab.
     virtual EditorTab* GetOwnerTab() = 0;
 
@@ -49,7 +45,6 @@ public:
     virtual void RenderMenu() {}
     /// Apply hotkeys when the hierarchy browser tab is focused.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
-
 };
 
 }

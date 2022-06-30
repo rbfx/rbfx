@@ -30,12 +30,13 @@ void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab)
 {
     auto project = sceneViewTab->GetProject();
     const WeakPtr<HierarchyBrowserTab> hierarchyBrowserTab{project->FindTab<HierarchyBrowserTab>()};
+    const WeakPtr<SceneHierarchy> sceneHierarchy{sceneViewTab->GetAddon<SceneHierarchy>()};
 
-    auto source = MakeShared<SceneHierarchy>(sceneViewTab);
-    sceneViewTab->OnFocused.Subscribe(source.Get(), [source, hierarchyBrowserTab](Object* receiver)
+    sceneViewTab->OnFocused.Subscribe(sceneHierarchy.Get(),
+        [hierarchyBrowserTab](SceneHierarchy* sceneHierarchy)
     {
         if (hierarchyBrowserTab)
-            hierarchyBrowserTab->ConnectToSource(source);
+            hierarchyBrowserTab->ConnectToSource(sceneHierarchy);
     });
 }
 

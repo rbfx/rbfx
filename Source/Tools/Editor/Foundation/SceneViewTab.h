@@ -131,6 +131,7 @@ public:
     /// Register new scene addon.
     void RegisterAddon(const SharedPtr<SceneViewAddon>& addon);
     template <class T, class ... Args> SceneViewAddon* RegisterAddon(const Args&... args);
+    template <class T> T* GetAddon();
 
     /// Setup context for plugin application execution.
     void SetupPluginContext();
@@ -231,6 +232,17 @@ SceneViewAddon* SceneViewTab::RegisterAddon(const Args&... args)
     const auto addon = MakeShared<T>(this, args...);
     RegisterAddon(addon);
     return addon;
+}
+
+template <class T>
+T* SceneViewTab::GetAddon()
+{
+    for (SceneViewAddon* addon : addons_)
+    {
+        if (auto casted = dynamic_cast<T*>(addon))
+            return casted;
+    }
+    return nullptr;
 }
 
 }
