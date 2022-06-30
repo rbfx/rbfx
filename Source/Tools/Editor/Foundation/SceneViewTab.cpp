@@ -21,7 +21,6 @@
 //
 
 #include "../Core/CommonEditorActions.h"
-#include "../Core/HotkeyManager.h"
 #include "../Core/IniHelpers.h"
 #include "../Foundation/SceneViewTab.h"
 
@@ -148,13 +147,12 @@ SceneViewTab::SceneViewTab(Context* context)
     auto project = GetProject();
     project->IgnoreFileNamePattern("*.xml.cfg");
 
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-    hotkeyManager->BindHotkey(this, Hotkey_RewindSimulation, &SceneViewTab::RewindSimulation);
-    hotkeyManager->BindHotkey(this, Hotkey_TogglePaused, &SceneViewTab::ToggleSimulationPaused);
-    hotkeyManager->BindHotkey(this, Hotkey_Cut, &SceneViewTab::CutSelection);
-    hotkeyManager->BindHotkey(this, Hotkey_Copy, &SceneViewTab::CopySelection);
-    hotkeyManager->BindHotkey(this, Hotkey_Paste, &SceneViewTab::PasteNextToSelection);
-    hotkeyManager->BindHotkey(this, Hotkey_Delete, &SceneViewTab::DeleteSelection);
+    BindHotkey(Hotkey_RewindSimulation, &SceneViewTab::RewindSimulation);
+    BindHotkey(Hotkey_TogglePaused, &SceneViewTab::ToggleSimulationPaused);
+    BindHotkey(Hotkey_Cut, &SceneViewTab::CutSelection);
+    BindHotkey(Hotkey_Copy, &SceneViewTab::CopySelection);
+    BindHotkey(Hotkey_Paste, &SceneViewTab::PasteNextToSelection);
+    BindHotkey(Hotkey_Delete, &SceneViewTab::DeleteSelection);
 }
 
 SceneViewTab::~SceneViewTab()
@@ -323,22 +321,19 @@ void SceneViewTab::DeleteSelection()
 
 void SceneViewTab::RenderMenu()
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
     if (ui::BeginMenu("Edit"))
     {
         RenderEditMenuItems();
 
         ui::Separator();
 
-        if (ui::MenuItem("Cut", hotkeyManager->GetHotkeyLabel(Hotkey_Cut).c_str()))
+        if (ui::MenuItem("Cut", GetHotkeyLabel(Hotkey_Cut).c_str()))
             CutSelection();
-        if (ui::MenuItem("Copy", hotkeyManager->GetHotkeyLabel(Hotkey_Copy).c_str()))
+        if (ui::MenuItem("Copy", GetHotkeyLabel(Hotkey_Copy).c_str()))
             CopySelection();
-        if (ui::MenuItem("Paste", hotkeyManager->GetHotkeyLabel(Hotkey_Paste).c_str()))
+        if (ui::MenuItem("Paste", GetHotkeyLabel(Hotkey_Paste).c_str()))
             PasteNextToSelection();
-        if (ui::MenuItem("Delete", hotkeyManager->GetHotkeyLabel(Hotkey_Delete).c_str()))
+        if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
             DeleteSelection();
 
         ui::Separator();
@@ -408,10 +403,6 @@ void SceneViewTab::PushAction(SharedPtr<EditorAction> action)
 
 void SceneViewTab::RenderContextMenuItems()
 {
-    // TODO(editor): Hide boilerplate with HotkeyManager
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
     BaseClassName::RenderContextMenuItems();
 
     if (SceneViewPage* activePage = GetActivePage())
@@ -419,14 +410,14 @@ void SceneViewTab::RenderContextMenuItems()
         contextMenuSeparator_.Reset();
 
         const char* rewindTitle = ICON_FA_BACKWARD_FAST " Rewind Simulation";
-        const char* rewindShortcut = hotkeyManager->GetHotkeyLabel(Hotkey_RewindSimulation).c_str();
+        const char* rewindShortcut = GetHotkeyLabel(Hotkey_RewindSimulation).c_str();
         if (ui::MenuItem(rewindTitle, rewindShortcut, false, !!activePage->simulationBase_))
             RewindSimulation();
 
         const char* pauseTitle = !activePage->scene_->IsUpdateEnabled()
             ? (activePage->simulationBase_ ? ICON_FA_PLAY " Resume Simulation" : ICON_FA_PLAY " Start Simulation")
             : ICON_FA_PAUSE " Pause Simulation";
-        if (ui::MenuItem(pauseTitle, hotkeyManager->GetHotkeyLabel(Hotkey_TogglePaused).c_str()))
+        if (ui::MenuItem(pauseTitle, GetHotkeyLabel(Hotkey_TogglePaused).c_str()))
             ToggleSimulationPaused();
     }
 

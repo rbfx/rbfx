@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/HotkeyManager.h"
 #include "../Core/IniHelpers.h"
 #include "../Foundation/ResourceBrowserTab.h"
 
@@ -140,12 +139,9 @@ void ResourceBrowserTab::InitializeDefaultFactories()
 
 void ResourceBrowserTab::InitializeHotkeys()
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
-    hotkeyManager->BindHotkey(this, Hotkey_Delete, &ResourceBrowserTab::DeleteSelected);
-    hotkeyManager->BindHotkey(this, Hotkey_Rename, &ResourceBrowserTab::RenameSelected);
-    hotkeyManager->BindHotkey(this, Hotkey_RevealInExplorer, &ResourceBrowserTab::RevealInExplorerSelected);
+    BindHotkey(Hotkey_Delete, &ResourceBrowserTab::DeleteSelected);
+    BindHotkey(Hotkey_Rename, &ResourceBrowserTab::RenameSelected);
+    BindHotkey(Hotkey_RevealInExplorer, &ResourceBrowserTab::RevealInExplorerSelected);
 }
 
 ResourceBrowserTab::~ResourceBrowserTab()
@@ -352,9 +348,6 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
 
 void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
     bool renamePending = false;
     bool deletePending = false;
     ea::optional<unsigned> createPending;
@@ -379,7 +372,7 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
             ui::Separator();
         needSeparator = false;
 
-        if (ui::MenuItem("Reveal in Explorer", hotkeyManager->GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
+        if (ui::MenuItem("Reveal in Explorer", GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
         {
             if (entry.resourceName_.empty())
                 RevealInExplorer(root.activeDirectory_);
@@ -389,10 +382,10 @@ void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
 
         const bool isEditable = !entry.resourceName_.empty() && !IsEntryFromCache(entry);
         ui::BeginDisabled(!isEditable);
-        if (ui::MenuItem("Rename", hotkeyManager->GetHotkeyLabel(Hotkey_Rename).c_str()))
+        if (ui::MenuItem("Rename", GetHotkeyLabel(Hotkey_Rename).c_str()))
             renamePending = true;
 
-        if (ui::MenuItem("Delete", hotkeyManager->GetHotkeyLabel(Hotkey_Delete).c_str()))
+        if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
             deletePending = true;
         ui::EndDisabled();
 

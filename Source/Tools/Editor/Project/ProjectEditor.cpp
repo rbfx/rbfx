@@ -23,7 +23,6 @@
 #include "../Project/ProjectEditor.h"
 
 #include "../Core/EditorPluginManager.h"
-#include "../Core/HotkeyManager.h"
 #include "../Core/SettingsManager.h"
 #include "../Core/UndoManager.h"
 #include "../Project/AssetManager.h"

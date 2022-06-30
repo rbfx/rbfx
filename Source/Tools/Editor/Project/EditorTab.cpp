@@ -21,7 +21,6 @@
 //
 
 #include "../Core/EditorPluginManager.h"
-#include "../Core/HotkeyManager.h"
 #include "../Core/IniHelpers.h"
 #include "../Core/UndoManager.h"
 #include "../Project/EditorTab.h"
@@ -49,11 +48,8 @@ EditorTab::EditorTab(Context* context, const ea::string& title, const ea::string
     , flags_(flags)
     , placement_(placement)
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
-    hotkeyManager->BindHotkey(this, Hotkey_Undo, &EditorTab::Undo);
-    hotkeyManager->BindHotkey(this, Hotkey_Redo, &EditorTab::Redo);
+    BindHotkey(Hotkey_Undo, &EditorTab::Undo);
+    BindHotkey(Hotkey_Redo, &EditorTab::Redo);
 }
 
 EditorTab::~EditorTab()
@@ -207,12 +203,9 @@ IntVector2 EditorTab::GetContentSize() const
 
 void EditorTab::RenderEditMenuItems()
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-
-    if (ui::MenuItem("Undo", hotkeyManager->GetHotkeyLabel(Hotkey_Undo).c_str()))
+    if (ui::MenuItem("Undo", GetHotkeyLabel(Hotkey_Undo).c_str()))
         Undo();
-    if (ui::MenuItem("Redo", hotkeyManager->GetHotkeyLabel(Hotkey_Redo).c_str()))
+    if (ui::MenuItem("Redo", GetHotkeyLabel(Hotkey_Redo).c_str()))
         Redo();
     ui::Separator();
 }
@@ -220,6 +213,18 @@ void EditorTab::RenderEditMenuItems()
 ProjectEditor* EditorTab::GetProject() const
 {
     return GetSubsystem<ProjectEditor>();
+}
+
+HotkeyManager* EditorTab::GetHotkeyManager() const
+{
+    auto project = GetProject();
+    return project->GetHotkeyManager();
+}
+
+ea::string EditorTab::GetHotkeyLabel(const HotkeyInfo& info) const
+{
+    auto hotkeyManager = GetHotkeyManager();
+    return hotkeyManager->GetHotkeyLabel(info);
 }
 
 }

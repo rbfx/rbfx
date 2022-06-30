@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/HotkeyManager.h"
 #include "../Foundation/GameViewTab.h"
 
 #include <Urho3D/Graphics/Graphics.h>
@@ -34,8 +33,6 @@
 #include <Urho3D/Scene/Scene.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
-
-// TODO(editor): Disable hotkeys during play
 
 namespace Urho3D
 {
@@ -150,9 +147,7 @@ GameViewTab::GameViewTab(Context* context)
         EditorTabPlacement::DockCenter)
     , backbuffer_(MakeShared<CustomBackbufferTexture>(context_))
 {
-    auto project = GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-    hotkeyManager->BindHotkey(this, Hotkey_ReleaseInput, &GameViewTab::ReleaseInput);
+    BindHotkey(Hotkey_ReleaseInput, &GameViewTab::ReleaseInput);
 }
 
 GameViewTab::~GameViewTab()

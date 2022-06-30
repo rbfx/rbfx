@@ -21,7 +21,6 @@
 //
 
 #include "../../Core/CommonEditorActions.h"
-#include "../../Core/HotkeyManager.h"
 #include "../../Core/IniHelpers.h"
 #include "../../Foundation/SceneViewTab/TransformManipulator.h"
 
@@ -91,8 +90,7 @@ TransformManipulator::TransformManipulator(SceneViewTab* owner, SettingsPage* se
     : SceneViewAddon(owner)
     , settings_(settings)
 {
-    auto project = owner_->GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+    auto hotkeyManager = owner_->GetHotkeyManager();
     hotkeyManager->BindHotkey(this, Hotkey_ToggleLocal, &TransformManipulator::ToggleSpace);
     hotkeyManager->BindHotkey(this, Hotkey_TogglePivoted, &TransformManipulator::TogglePivoted);
     hotkeyManager->BindHotkey(this, Hotkey_Select, &TransformManipulator::SetSelect);
@@ -159,8 +157,7 @@ void TransformManipulator::ApplyHotkeys(HotkeyManager* hotkeyManager)
 
 bool TransformManipulator::RenderTabContextMenu()
 {
-    auto project = owner_->GetProject();
-    HotkeyManager* hotkeyManager = project->GetHotkeyManager();
+    auto hotkeyManager = owner_->GetHotkeyManager();
 
     if (!ui::BeginMenu("Transform Gizmo"))
         return true;

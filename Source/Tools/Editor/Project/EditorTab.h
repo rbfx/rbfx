@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "../Core/HotkeyManager.h"
+
 #include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Core/Signal.h>
@@ -143,8 +145,14 @@ public:
     bool IsOpen() const { return open_; }
     /// @}
 
-    /// Return current project.
+    /// Syntax sugar for users.
+    /// @{
     ProjectEditor* GetProject() const;
+    HotkeyManager* GetHotkeyManager() const;
+
+    ea::string GetHotkeyLabel(const HotkeyInfo& info) const;
+    template <class T> void BindHotkey(const HotkeyInfo& info, void(T::*callback)());
+    /// @}
 
 protected:
     /// Render contents of the tab.
@@ -184,5 +192,13 @@ private:
 
     ImGuiWindowFlags windowFlags_{};
 };
+
+template <class T>
+void EditorTab::BindHotkey(const HotkeyInfo& info, void(T::*callback)())
+{
+    auto owner = dynamic_cast<T*>(this);
+    URHO3D_ASSERT(owner);
+    GetHotkeyManager()->BindHotkey(owner, info, callback);
+}
 
 }
