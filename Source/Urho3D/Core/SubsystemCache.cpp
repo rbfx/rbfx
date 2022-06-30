@@ -46,6 +46,7 @@
 #if URHO3D_SYSTEMUI
 #include "../SystemUI/SystemUI.h"
 #endif
+#include "../Engine/StateManager.h"
 
 #include "../DebugNew.h"
 

@@ -2096,6 +2096,16 @@ void UI::ResizeRootElement()
     }
 }
 
+IntVector2 UI::GetSize() const
+{
+    // Use a fake size in headless mode
+    IntVector2 size = graphics_ ? IntVector2(graphics_->GetWidth(), graphics_->GetHeight()) : IntVector2(1024, 768);
+    size.x_ = RoundToInt(static_cast<float>(size.x_) / uiScale_);
+    size.y_ = RoundToInt(static_cast<float>(size.y_) / uiScale_);
+    return size;
+}
+
+
 IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
 {
     // Use a fake size in headless mode
@@ -2105,8 +2115,8 @@ IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
 
     if (applyScale)
     {
-        size.x_ = RoundToInt((float)size.x_ / uiScale_);
-        size.y_ = RoundToInt((float)size.y_ / uiScale_);
+        size.x_ = RoundToInt(static_cast<float>(size.x_) / uiScale_);
+        size.y_ = RoundToInt(static_cast<float>(size.y_) / uiScale_);
     }
 
     return size;
