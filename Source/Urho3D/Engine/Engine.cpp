@@ -37,7 +37,7 @@
 #endif
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
-#include "../Engine/SingleStateApplication.h"
+#include "../Engine/StateManager.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
@@ -90,6 +90,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
+#include "StateManager.h"
 #include "../Core/CommandLine.h"
 
 #include "../DebugNew.h"
@@ -155,7 +156,6 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
 #endif
-    context_->AddReflection<SingleStateApplication>();
     // Required in headless mode as well.
     RegisterGraphicsLibrary(context_);
     // Register object factories for libraries which are not automatically registered along with subsystem creation
@@ -241,6 +241,7 @@ bool Engine::Initialize(const VariantMap& parameters)
         context_->RegisterSubsystem(new ComputeDevice(context_, context_->GetSubsystem<Graphics>()));
 #endif
     }
+    context_->RegisterSubsystem(new StateManager(context_));
 #ifdef URHO3D_PARTICLE_GRAPH
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
 #endif
