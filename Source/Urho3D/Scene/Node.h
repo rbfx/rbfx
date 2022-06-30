@@ -685,7 +685,6 @@ public:
     void SetTransformSilent(const Matrix3x4& matrix);
 
 protected:
-
     /// Handle attribute animation added.
     void OnAttributeAnimationAdded() override;
     /// Handle attribute animation removed.
