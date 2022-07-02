@@ -26,6 +26,7 @@
 #include "../Core/SettingsManager.h"
 #include "../Core/UndoManager.h"
 #include "../Project/AssetManager.h"
+#include "../Project/CreateDefaultScene.h"
 #include "../Project/ResourceEditorTab.h"
 
 #include <Urho3D/Core/ProcessUtils.h>
@@ -201,6 +202,9 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     projectJsonFile.LoadFile(projectJsonPath_);
     JSONInputArchive archive{&projectJsonFile};
     SerializeOptionalValue(archive, "Project", *this, AlwaysSerialize{});
+
+    if (firstInitialization_)
+        InitializeDefaultProject();
 }
 
 void ProjectEditor::SerializeInBlock(Archive& archive)
@@ -328,8 +332,6 @@ void ProjectEditor::EnsureDirectoryInitialized()
 {
     auto fs = GetSubsystem<FileSystem>();
 
-    bool firstInitialization = false;
-
     if (!fs->DirExists(cachePath_))
     {
         if (fs->FileExists(cachePath_))
@@ -368,7 +370,7 @@ void ProjectEditor::EnsureDirectoryInitialized()
         JSONFile emptyFile(context_);
         emptyFile.SaveFile(projectJsonPath_);
 
-        firstInitialization = true;
+        firstInitialization_ = true;
     }
 
     if (!fs->FileExists(cacheJsonPath_))
@@ -397,16 +399,18 @@ void ProjectEditor::EnsureDirectoryInitialized()
             fs->RemoveDir(uiIniPath_, true);
         pendingResetLayout_ = true;
     }
-
-    if (firstInitialization)
-    {
-        InitializeDefaultProject();
-    }
 }
 
 void ProjectEditor::InitializeDefaultProject()
 {
     pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetStaticPluginName()});
+
+    const ea::string defaultSceneName = "Scenes/DefaultScene.xml";
+    DefaultSceneParameters params;
+    params.createObjects_ = true;
+    CreateDefaultScene(context_, dataPath_ + defaultSceneName, params);
+
+    OpenResource(OpenResourceRequest::FromResourceName(context_, defaultSceneName));
 }
 
 void ProjectEditor::InitializeResourceCache()

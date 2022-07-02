@@ -41,7 +41,8 @@ bool IsFileNameGLTF(const ea::string& fileName)
 
 void Foundation_ModelImporter(Context* context, ProjectEditor* project)
 {
-    context->RegisterFactory<ModelImporter>();
+    if (!context->IsReflected<ModelImporter>())
+        context->RegisterFactory<ModelImporter>();
 }
 
 ModelImporter::ModelImporter(Context* context)

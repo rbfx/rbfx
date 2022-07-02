@@ -201,6 +201,7 @@ private:
     SharedPtr<PluginManager> pluginManager_;
 
     ea::weak_ptr<void> initializationGuard_;
+    bool firstInitialization_{};
     bool initialized_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
     ea::map<ea::string, SharedPtr<EditorTab>> sortedTabs_;
