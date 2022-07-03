@@ -97,6 +97,7 @@ ResourceBrowserTab::ResourceBrowserTab(Context* context)
 
     auto project = GetProject();
     project->OnInitialized.Subscribe(this, &ResourceBrowserTab::RefreshContents);
+    project->OnRequest.Subscribe(this, &ResourceBrowserTab::OnProjectRequest);
 }
 
 void ResourceBrowserTab::InitializeRoots()
@@ -142,6 +143,21 @@ void ResourceBrowserTab::InitializeHotkeys()
     BindHotkey(Hotkey_Delete, &ResourceBrowserTab::DeleteSelected);
     BindHotkey(Hotkey_Rename, &ResourceBrowserTab::RenameSelected);
     BindHotkey(Hotkey_RevealInExplorer, &ResourceBrowserTab::RevealInExplorerSelected);
+}
+
+void ResourceBrowserTab::OnProjectRequest(ProjectRequest* request)
+{
+    if (reentrant_)
+        return;
+
+    const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request);
+    if (!openResourceRequest)
+        return;
+
+    const ea::string& resourceName = openResourceRequest->GetResourceName();
+    SelectLeftPanel(GetPath(resourceName));
+    SelectRightPanel(resourceName);
+    ScrollToSelection();
 }
 
 ResourceBrowserTab::~ResourceBrowserTab()
@@ -840,7 +856,7 @@ const FileSystemEntry* ResourceBrowserTab::GetSelectedEntryForCursor() const
 
 void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex)
 {
-    left_.selectedPath_ = path;
+    left_.selectedPath_ = RemoveTrailingSlash(path);
     left_.selectedRoot_ = rootIndex.value_or(left_.selectedRoot_);
     right_.selectedPath_ = "";
     cursor_.selectedPath_ = path;
@@ -848,7 +864,7 @@ void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<un
 
 void ResourceBrowserTab::SelectRightPanel(const ea::string& path)
 {
-    right_.selectedPath_ = path;
+    right_.selectedPath_ = RemoveTrailingSlash(path);
     cursor_.selectedPath_ = path;
 }
 
@@ -990,8 +1006,10 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
 {
     auto project = GetProject();
 
-    if (const OpenResourceRequest request = OpenResourceRequest::FromResourceName(context_, entry.resourceName_))
-        project->OpenResource(request);
+    reentrant_ = true;
+    if (const auto request = OpenResourceRequest::Create(context_, entry.resourceName_, false))
+        project->ProcessRequest(request, this);
+    reentrant_ = false;
 }
 
 }

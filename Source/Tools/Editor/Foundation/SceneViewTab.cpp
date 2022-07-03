@@ -370,7 +370,7 @@ void SceneViewTab::RenderToolbar()
 
 bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)
 {
-    return request.xmlFile_ && request.xmlFile_->GetRoot("scene");
+    return request.GetXMLFile() && request.GetTypeHint() == "scene";
 }
 
 void SceneViewTab::WriteIniSettings(ImGuiTextBuffer& output)
