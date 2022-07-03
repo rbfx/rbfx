@@ -123,6 +123,8 @@ private:
     void InitializeDefaultFactories();
     void InitializeHotkeys();
 
+    void OnProjectRequest(ProjectRequest* request);
+
     /// Render left panel
     /// @{
     void RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName);
@@ -198,6 +200,8 @@ private:
 
     ea::vector<SharedPtr<ResourceBrowserFactory>> factories_;
     bool sortFactories_{true};
+
+    bool reentrant_{};
 
     /// UI state
     /// @{

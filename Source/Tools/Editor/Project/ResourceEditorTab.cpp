@@ -45,6 +45,7 @@ ResourceEditorTab::ResourceEditorTab(Context* context, const ea::string& title, 
     // TODO(editor): Consider doing it at first tab open after loading
     auto project = GetProject();
     project->OnInitialized.Subscribe(this, &ResourceEditorTab::OnProjectInitialized);
+    project->OnRequest.Subscribe(this, &ResourceEditorTab::OnProjectRequest);
 
     BindHotkey(Hotkey_SaveDocument, &ResourceEditorTab::SaveCurrentResource);
     BindHotkey(Hotkey_CloseDocument, &ResourceEditorTab::CloseCurrentResource);
@@ -153,6 +154,19 @@ void ResourceEditorTab::OnProjectInitialized()
     loadResources_ = true;
     for (const auto& [resourceName, data] : resources_)
         OnResourceLoaded(resourceName);
+}
+
+void ResourceEditorTab::OnProjectRequest(ProjectRequest* request)
+{
+    const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request);
+    if (openResourceRequest && !openResourceRequest->UseInspector() && CanOpenResource(*openResourceRequest))
+    {
+        request->QueueProcessCallback([=]()
+        {
+            OpenResource(openResourceRequest->GetResourceName());
+            Focus();
+        });
+    }
 }
 
 void ResourceEditorTab::SetActiveResource(const ea::string& activeResourceName)

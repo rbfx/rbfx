@@ -33,8 +33,8 @@ namespace
 
 bool IsFileNameGLTF(const ea::string& fileName)
 {
-    return fileName.ends_with(".gltf")
-        || fileName.ends_with(".glb");
+    return fileName.ends_with(".gltf", false)
+        || fileName.ends_with(".glb", false);
 }
 
 }

@@ -24,6 +24,7 @@
 
 #include "../Project/CloseDialog.h"
 #include "../Project/EditorTab.h"
+#include "../Project/ProjectRequest.h"
 
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/File.h>
@@ -44,22 +45,6 @@ class AssetManager;
 class HotkeyManager;
 class SettingsManager;
 class UndoManager;
-
-/// Request to open resource in Editor.
-struct OpenResourceRequest
-{
-    ea::string fileName_;
-    ea::string resourceName_;
-
-    SharedPtr<File> file_;
-    SharedPtr<XMLFile> xmlFile_;
-    SharedPtr<JSONFile> jsonFile_;
-
-    bool IsValid() const { return !fileName_.empty(); }
-    explicit operator bool() const { return IsValid(); }
-
-    static OpenResourceRequest FromResourceName(Context* context, const ea::string& resourceName);
-};
 
 /// Result of the graceful project close.
 enum class CloseProjectResult
@@ -95,6 +80,7 @@ public:
     Signal<void()> OnInitialized;
     Signal<void()> OnRenderProjectMenu;
     Signal<void()> OnRenderProjectToolbar;
+    Signal<void(ProjectRequest*)> OnRequest;
 
     ProjectEditor(Context* context, const ea::string& projectPath);
     ~ProjectEditor() override;
@@ -104,6 +90,8 @@ public:
     CloseProjectResult CloseGracefully();
     /// Request graceful close of the resource.
     void CloseResourceGracefully(const CloseResourceRequest& request);
+    /// Process global request.
+    void ProcessRequest(ProjectRequest* request, Object* sender = nullptr);
 
     /// Update and render main window with tabs.
     void Render();
@@ -122,8 +110,6 @@ public:
     void AddTab(SharedPtr<EditorTab> tab);
     /// Find first tab of matching type.
     template <class T> T* FindTab() const;
-    /// Open resource in appropriate resource tab.
-    void OpenResource(const OpenResourceRequest& request);
     /// Set whether the global hotkeys are enabled.
     void SetGlobalHotkeysEnabled(bool enabled) { areGlobalHotkeysEnabled_ = enabled; }
     /// Set whether the UI highlight is enabled.

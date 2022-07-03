@@ -126,6 +126,7 @@ private:
 
     StringVector GetResourceNames() const;
     void OnProjectInitialized();
+    void OnProjectRequest(ProjectRequest* request);
     void DoSaveResource(const ea::string& resourceName, ResourceData& data);
 
     bool loadResources_{};

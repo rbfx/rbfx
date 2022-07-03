@@ -103,35 +103,6 @@ std::regex PatternToRegex(const ea::string& pattern)
 
 }
 
-OpenResourceRequest OpenResourceRequest::FromResourceName(Context* context, const ea::string& resourceName)
-{
-    auto cache = context->GetSubsystem<ResourceCache>();
-
-    const auto file = cache->GetFile(resourceName);
-    if (!file)
-        return {};
-
-    OpenResourceRequest request;
-    request.fileName_ = file->GetAbsoluteName();
-    request.resourceName_ = resourceName;
-    request.file_ = file;
-
-    if (request.resourceName_.ends_with(".xml"))
-    {
-        request.xmlFile_ = MakeShared<XMLFile>(context);
-        request.xmlFile_->Load(*file);
-        file->Seek(0);
-    }
-
-    if (request.resourceName_.ends_with(".json"))
-    {
-        request.jsonFile_ = MakeShared<JSONFile>(context);
-        request.jsonFile_->Load(*file);
-    }
-
-    return request;
-}
-
 ResourceCacheGuard::ResourceCacheGuard(Context* context)
     : context_(context)
 {
@@ -274,6 +245,12 @@ void ProjectEditor::CloseResourceGracefully(const CloseResourceRequest& request)
     closeDialog_->RequestClose(request);
 }
 
+void ProjectEditor::ProcessRequest(ProjectRequest* request, Object* sender)
+{
+    OnRequest(sender ? sender : this, request);
+    request->InvokeProcessCallback();
+}
+
 void ProjectEditor::IgnoreFileNamePattern(const ea::string& pattern)
 {
     const bool inserted = ignoredFileNames_.insert(pattern).second;
@@ -295,22 +272,6 @@ void ProjectEditor::AddTab(SharedPtr<EditorTab> tab)
 {
     tabs_.push_back(tab);
     sortedTabs_[tab->GetTitle()] = tab;
-}
-
-void ProjectEditor::OpenResource(const OpenResourceRequest& request)
-{
-    for (EditorTab* tab : tabs_)
-    {
-        if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
-        {
-            if (resourceTab->CanOpenResource(request))
-            {
-                resourceTab->OpenResource(request.resourceName_);
-                resourceTab->Focus();
-                break;
-            }
-        }
-    }
 }
 
 ea::string ProjectEditor::GetRandomTemporaryPath() const
@@ -410,7 +371,8 @@ void ProjectEditor::InitializeDefaultProject()
     params.createObjects_ = true;
     CreateDefaultScene(context_, dataPath_ + defaultSceneName, params);
 
-    OpenResource(OpenResourceRequest::FromResourceName(context_, defaultSceneName));
+    if (const auto request = OpenResourceRequest::Create(context_, defaultSceneName, false))
+        ProcessRequest(request, this);
 }
 
 void ProjectEditor::InitializeResourceCache()
