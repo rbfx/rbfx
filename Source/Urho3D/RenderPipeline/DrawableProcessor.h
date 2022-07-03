@@ -107,7 +107,7 @@ public:
     DrawableProcessorPass(RenderPipelineInterface* renderPipeline, DrawableProcessorPassFlags flags,
         unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
 
-    AddBatchResult AddBatch(unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique);
+    virtual AddBatchResult AddBatch(unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique);
 
     DrawableProcessorPassFlags GetFlags() const { return flags_; }
     bool HasLightPass() const { return lightPassIndex_ != M_MAX_UNSIGNED; }

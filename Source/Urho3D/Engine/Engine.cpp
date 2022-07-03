@@ -68,6 +68,7 @@
 #include "../Resource/Localization.h"
 #ifndef URHO3D_D3D9
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderPipeline/SelectionGroup.h"
 #endif
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -177,6 +178,7 @@ Engine::Engine(Context* context) :
     // Register render pipeline.
     // Extract this code into function if you are adding more.
     RenderPipeline::RegisterObject(context_);
+    SelectionGroup::RegisterObject(context_);
 #endif
 
 #ifdef URHO3D_IK

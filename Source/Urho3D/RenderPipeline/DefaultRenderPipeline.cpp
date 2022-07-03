@@ -45,6 +45,8 @@
     #include "../SystemUI/SystemUI.h"
 #endif
 
+#include "OutlinePass.h"
+#include "SelectionGroup.h"
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -134,7 +136,9 @@ void DefaultRenderPipelineView::ApplySettings()
         }
     }
 
-    sceneProcessor_->SetPasses({ depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_ });
+    outlinePass_ = sceneProcessor_->CreatePass<OutlineDrawableProcessorPass>(DrawableProcessorPassFlag::None, "outline");
+
+    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlinePass_});
 
     postProcessPasses_.clear();
 
@@ -150,6 +154,11 @@ void DefaultRenderPipelineView::ApplySettings()
         auto pass = MakeShared<BloomPass>(this, renderBufferManager_);
         pass->SetSettings(settings_.bloom_);
         postProcessPasses_.push_back(pass);
+    }
+
+    {
+        outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
+        postProcessPasses_.push_back(outlinePostProcessPass_);
     }
 
     if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
@@ -271,6 +280,17 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
         OnPipelineStatesInvalidated(this);
     }
 
+    SelectionGroup* selection = nullptr;
+    if (frameInfo_.viewport_ && frameInfo_.viewport_->GetScene())
+    {
+        selection = frameInfo_.viewport_->GetScene()->GetComponent<SelectionGroup>();
+    }
+    outlinePass_->SetSelection(selection);
+    if (selection)
+    {
+        outlinePostProcessPass_->SetSelectionColor(selection->GetSelectionColor());
+    }
+
     sceneProcessor_->Update();
 
     SendViewEvent(E_ENDVIEWUPDATE);
@@ -359,6 +379,15 @@ void DefaultRenderPipelineView::Render()
     sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters);
     sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters);
     sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters);
+
+    RenderBuffer* const outlineBuffer = outlinePostProcessPass_->GetColorOutput();
+    if (outlineBuffer)
+    {
+        RenderBuffer* const gBuffer[] = {outlineBuffer};
+        renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
+        renderBufferManager_->ClearColor(outlineBuffer, Color::TRANSPARENT_BLACK);
+        sceneProcessor_->RenderSceneBatches("Outline", camera, outlinePass_->GetBatches(), {}, cameraParameters);
+    }
 
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);

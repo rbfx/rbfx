@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "OutlinePass.h"
 #include "../RenderPipeline/SceneProcessor.h"
 #include "../RenderPipeline/CameraProcessor.h"
 #include "../RenderPipeline/RenderBuffer.h"
@@ -93,6 +94,8 @@ private:
     SharedPtr<UnorderedScenePass> postOpaquePass_;
     SharedPtr<BackToFrontScenePass> alphaPass_;
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
+    SharedPtr<OutlineDrawableProcessorPass> outlinePass_;
+    SharedPtr<OutlinePass> outlinePostProcessPass_;
 
     struct DeferredLightingData
     {
