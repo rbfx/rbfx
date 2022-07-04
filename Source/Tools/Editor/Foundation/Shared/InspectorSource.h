@@ -22,44 +22,29 @@
 
 #pragma once
 
-#include "../Foundation/Shared/HierarchyBrowserSource.h"
-#include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include <Urho3D/Urho3D.h>
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor);
+class EditorTab;
+class HotkeyManager;
 
-/// Tab that hosts hierarchy display of any kind.
-class HierarchyBrowserTab : public EditorTab
+/// Interface used to provide content for inspector tab.
+class InspectorSource
 {
-    URHO3D_OBJECT(HierarchyBrowserTab, EditorTab)
-
 public:
-    explicit HierarchyBrowserTab(Context* context);
+    /// Return owner tab.
+    virtual EditorTab* GetOwnerTab() = 0;
 
-    /// Connect to data source.
-    void ConnectToSource(Object* source, HierarchyBrowserSource* sourceInterface);
-    template <class T> void ConnectToSource(T* source) { ConnectToSource(source, source); }
-
-    /// Implement EditorTab
-    /// @{
-    void RenderMenu() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_ ? sourceInterface_->GetOwnerTab() : nullptr; }
-    /// @}
-
-protected:
-    /// Implement EditorTab
-    /// @{
-    void RenderContent() override;
-    void RenderContextMenuItems() override;
-    /// @}
-
-private:
-    WeakPtr<Object> source_;
-    HierarchyBrowserSource* sourceInterface_{};
+    /// Update and render inspector contents.
+    virtual void RenderContent() {}
+    /// Update and render tab context menu.
+    virtual void RenderContextMenuItems() {}
+    /// Render main menu when the inspector tab is focused.
+    virtual void RenderMenu() {}
+    /// Apply hotkeys when the inspector tab is focused.
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
 };
 
 }

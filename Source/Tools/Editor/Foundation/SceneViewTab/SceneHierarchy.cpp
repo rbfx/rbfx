@@ -55,7 +55,6 @@ void Foundation_SceneHierarchy(Context* context, SceneViewTab* sceneViewTab)
 
 SceneHierarchy::SceneHierarchy(SceneViewTab* sceneViewTab)
     : SceneViewAddon(sceneViewTab)
-    , owner_(sceneViewTab)
 {
 }
 

@@ -51,25 +51,24 @@ void ProjectRequest::InvokeProcessCallback()
     }
 }
 
-SharedPtr<OpenResourceRequest> OpenResourceRequest::Create(Context* context, const ea::string& resourceName, bool useInspector)
-{
-    SharedPtr<OpenResourceRequest> request{new OpenResourceRequest(context, resourceName, useInspector)};
-    return request->IsValid() ? request : nullptr;
-}
-
-OpenResourceRequest::OpenResourceRequest(Context* context, const ea::string& resourceName, bool useInspector)
-    : ProjectRequest(context)
+FileResourceDesc::FileResourceDesc(Context* context, const ea::string& resourceName)
+    : context_(context)
     , resourceName_(resourceName)
-    , useInspector_(useInspector)
 {
     auto cache = context_->GetSubsystem<ResourceCache>();
 
-    file_ = cache->GetFile(resourceName);
-    if (file_)
-        fileName_ = file_->GetAbsoluteName();
+    if (auto file = cache->GetFile(resourceName_))
+        fileName_ = file->GetAbsoluteName();
 }
 
-SharedPtr<XMLFile> OpenResourceRequest::GetXMLFile() const
+SharedPtr<File> FileResourceDesc::GetBinaryFile() const
+{
+    // Don't cache File to avoid races between users
+    auto cache = context_->GetSubsystem<ResourceCache>();
+    return cache->GetFile(resourceName_);
+}
+
+SharedPtr<XMLFile> FileResourceDesc::GetXMLFile() const
 {
     if (!xmlFile_ && resourceName_.ends_with(".xml", false))
     {
@@ -81,7 +80,7 @@ SharedPtr<XMLFile> OpenResourceRequest::GetXMLFile() const
     return xmlFile_;
 }
 
-SharedPtr<JSONFile> OpenResourceRequest::GetJSONFile() const
+SharedPtr<JSONFile> FileResourceDesc::GetJSONFile() const
 {
     if (!jsonFile_ && resourceName_.ends_with(".json", false))
     {
@@ -93,11 +92,24 @@ SharedPtr<JSONFile> OpenResourceRequest::GetJSONFile() const
     return jsonFile_;
 }
 
-ea::string OpenResourceRequest::GetTypeHint() const
+ea::string FileResourceDesc::GetTypeHint() const
 {
     if (const auto xmlFile = GetXMLFile())
         return xmlFile->GetRoot().GetName();
     return EMPTY_STRING;
+}
+
+OpenResourceRequest::OpenResourceRequest(Context* context, const ea::string& resourceName)
+    : ProjectRequest(context)
+    , FileResourceDesc{context, resourceName}
+{
+}
+
+InspectResourceRequest::InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames)
+    : ProjectRequest(context)
+{
+    ea::transform(resourceNames.begin(), resourceNames.end(), ea::back_inserter(resourceDescs_),
+        [&](const ea::string& resourceName) { return FileResourceDesc{context, resourceName}; });
 }
 
 }

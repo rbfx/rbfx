@@ -22,44 +22,47 @@
 
 #pragma once
 
-#include "../Foundation/Shared/HierarchyBrowserSource.h"
-#include "../Project/EditorTab.h"
-#include "../Project/ProjectEditor.h"
+#include "../../Foundation/InspectorTab.h"
 
 namespace Urho3D
 {
 
-void Foundation_HierarchyBrowserTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab_* inspectorTab);
 
-/// Tab that hosts hierarchy display of any kind.
-class HierarchyBrowserTab : public EditorTab
+/// Scene hierarchy provider for hierarchy browser tab.
+class PlaceholderResourceInspector : public InspectorAddon
 {
-    URHO3D_OBJECT(HierarchyBrowserTab, EditorTab)
+    URHO3D_OBJECT(PlaceholderResourceInspector, InspectorAddon)
 
 public:
-    explicit HierarchyBrowserTab(Context* context);
+    explicit PlaceholderResourceInspector(InspectorTab_* owner);
 
-    /// Connect to data source.
-    void ConnectToSource(Object* source, HierarchyBrowserSource* sourceInterface);
-    template <class T> void ConnectToSource(T* source) { ConnectToSource(source, source); }
-
-    /// Implement EditorTab
+    /// Implement InspectorAddon
     /// @{
-    void RenderMenu() override;
-    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
-    EditorTab* GetOwnerTab() override { return source_ ? sourceInterface_->GetOwnerTab() : nullptr; }
-    /// @}
+    EditorTab* GetOwnerTab() override { return nullptr; }
 
-protected:
-    /// Implement EditorTab
-    /// @{
     void RenderContent() override;
     void RenderContextMenuItems() override;
+    void RenderMenu() override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 
 private:
-    WeakPtr<Object> source_;
-    HierarchyBrowserSource* sourceInterface_{};
+    void OnProjectRequest(ProjectRequest* request);
+
+    struct SingleResource
+    {
+        ea::string resourceType_;
+        ea::string resourceName_;
+    };
+    ea::optional<SingleResource> singleResource_;
+
+    struct MultipleResources
+    {
+        unsigned numFiles_{};
+        unsigned numFolders_{};
+    };
+    ea::optional<MultipleResources> multipleResources_;
 };
 
 }
