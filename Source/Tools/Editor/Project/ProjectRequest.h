@@ -60,15 +60,17 @@ private:
     ea::priority_queue<CallbackDesc> callbacks_;
 };
 
-/// Request to open resource.
-class OpenResourceRequest : public ProjectRequest
+/// Helper to describe file resource in the engine.
+class FileResourceDesc
 {
-    URHO3D_OBJECT(OpenResourceRequest, ProjectRequest);
-
 public:
-    static SharedPtr<OpenResourceRequest> Create(Context* context, const ea::string& resourceName, bool useInspector);
+    FileResourceDesc() = default;
+    FileResourceDesc(Context* context, const ea::string& resourceName);
 
-    SharedPtr<File> GetFile() const { return file_; }
+    Context* GetContext() const { return context_; }
+    bool IsValidFile() const { return !fileName_.empty(); }
+
+    SharedPtr<File> GetBinaryFile() const;
     SharedPtr<XMLFile> GetXMLFile() const;
     SharedPtr<JSONFile> GetJSONFile() const;
 
@@ -81,21 +83,39 @@ public:
     /// @{
     const ea::string& GetResourceName() const { return resourceName_; }
     const ea::string& GetFileName() const { return fileName_; }
-    bool UseInspector() const { return useInspector_; }
     /// @}
 
 private:
-    OpenResourceRequest(Context* context, const ea::string& resourceName, bool useInspector);
-    bool IsValid() const { return file_ != nullptr; }
+    Context* context_{};
 
-    const ea::string resourceName_;
-    const bool useInspector_{};
-
+    ea::string resourceName_;
     ea::string fileName_;
 
-    SharedPtr<File> file_;
     mutable SharedPtr<XMLFile> xmlFile_;
     mutable SharedPtr<JSONFile> jsonFile_;
+};
+
+/// Request to open resource.
+class OpenResourceRequest : public ProjectRequest, public FileResourceDesc
+{
+    URHO3D_OBJECT(OpenResourceRequest, ProjectRequest);
+
+public:
+    explicit OpenResourceRequest(Context* context, const ea::string& resourceName);
+};
+
+/// Request to inspect one or more resources.
+class InspectResourceRequest : public ProjectRequest
+{
+    URHO3D_OBJECT(InspectResourceRequest, ProjectRequest);
+
+public:
+    explicit InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames);
+
+    const ea::vector<FileResourceDesc>& GetResources() const { return resourceDescs_; }
+
+private:
+    ea::vector<FileResourceDesc> resourceDescs_;
 };
 
 }

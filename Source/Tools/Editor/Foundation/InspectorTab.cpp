@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Foundation/SceneViewTab.h"
+#include "../Foundation/InspectorTab.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -29,9 +29,64 @@ namespace Urho3D
 
 void Foundation_InspectorTab(Context* context, ProjectEditor* projectEditor)
 {
-    // TODO(editor): Implement
-    projectEditor->AddTab(MakeShared<EditorTab>(context, "Inspector", "3",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight));
+    projectEditor->AddTab(MakeShared<InspectorTab_>(context));
+}
+
+InspectorAddon::InspectorAddon(InspectorTab_* owner)
+    : Object(owner->GetContext())
+    , owner_(owner)
+{
+}
+
+InspectorAddon::~InspectorAddon()
+{
+}
+
+void InspectorAddon::Activate()
+{
+    if (owner_)
+        owner_->ConnectToSource(this, this);
+}
+
+InspectorTab_::InspectorTab_(Context* context)
+    : EditorTab(context, "Inspector", "bd959865-8929-4f92-a20f-97ff867d6ba6",
+        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight)
+{
+}
+
+void InspectorTab_::RegisterAddon(const SharedPtr<InspectorAddon>& addon)
+{
+    addons_.push_back(addon);
+}
+
+void InspectorTab_::ConnectToSource(Object* source, InspectorSource* sourceInterface)
+{
+    source_ = source;
+    sourceInterface_ = sourceInterface;
+}
+
+void InspectorTab_::RenderMenu()
+{
+    if (source_)
+        sourceInterface_->RenderMenu();
+}
+
+void InspectorTab_::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    if (source_)
+        sourceInterface_->ApplyHotkeys(hotkeyManager);
+}
+
+void InspectorTab_::RenderContent()
+{
+    if (source_)
+        sourceInterface_->RenderContent();
+}
+
+void InspectorTab_::RenderContextMenuItems()
+{
+    if (source_)
+        sourceInterface_->RenderContextMenuItems();
 }
 
 }

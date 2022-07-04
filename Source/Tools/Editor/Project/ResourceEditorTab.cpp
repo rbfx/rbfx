@@ -159,7 +159,7 @@ void ResourceEditorTab::OnProjectInitialized()
 void ResourceEditorTab::OnProjectRequest(ProjectRequest* request)
 {
     const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request);
-    if (openResourceRequest && !openResourceRequest->UseInspector() && CanOpenResource(*openResourceRequest))
+    if (openResourceRequest && openResourceRequest->IsValidFile() && CanOpenResource(*openResourceRequest))
     {
         request->QueueProcessCallback([=]()
         {

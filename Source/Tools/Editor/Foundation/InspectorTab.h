@@ -23,12 +23,77 @@
 #pragma once
 
 #include "../Core/ResourceDragDropPayload.h"
+#include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
-#include "../Project/ResourceEditorTab.h"
+#include "../Foundation/Shared/InspectorSource.h"
 
 namespace Urho3D
 {
 
 void Foundation_InspectorTab(Context* context, ProjectEditor* projectEditor);
+
+class InspectorTab_;
+
+/// Addon to inspector tab that can provide content.
+class InspectorAddon : public Object, public InspectorSource
+{
+    URHO3D_OBJECT(InspectorAddon, Object);
+
+public:
+    explicit InspectorAddon(InspectorTab_* owner);
+    ~InspectorAddon() override;
+
+    /// Activate inspector for the addon.
+    void Activate();
+
+protected:
+    WeakPtr<InspectorTab_> owner_;
+};
+
+/// Tab that hosts inspectors of any kind.
+/// TODO(editor): Rename
+class InspectorTab_ : public EditorTab
+{
+    URHO3D_OBJECT(InspectorTab_, EditorTab);
+
+public:
+    explicit InspectorTab_(Context* context);
+
+    /// Register new inspector addon.
+    void RegisterAddon(const SharedPtr<InspectorAddon>& addon);
+    template <class T, class ... Args> InspectorAddon* RegisterAddon(const Args&... args);
+
+    /// Connect to data source.
+    void ConnectToSource(Object* source, InspectorSource* sourceInterface);
+    template <class T> void ConnectToSource(T* source) { ConnectToSource(source, source); }
+
+    /// Implement EditorTab
+    /// @{
+    void RenderMenu() override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+    EditorTab* GetOwnerTab() override { return source_ ? sourceInterface_->GetOwnerTab() : nullptr; }
+    /// @}
+
+protected:
+    /// Implement EditorTab
+    /// @{
+    void RenderContent() override;
+    void RenderContextMenuItems() override;
+    /// @}
+
+private:
+    ea::vector<SharedPtr<InspectorAddon>> addons_;
+    WeakPtr<Object> source_;
+
+    InspectorSource* sourceInterface_{};
+};
+
+template <class T, class ... Args>
+InspectorAddon* InspectorTab_::RegisterAddon(const Args&... args)
+{
+    const auto addon = MakeShared<T>(this, args...);
+    RegisterAddon(addon);
+    return addon;
+}
 
 }

@@ -247,8 +247,7 @@ void ProjectEditor::CloseResourceGracefully(const CloseResourceRequest& request)
 
 void ProjectEditor::ProcessRequest(ProjectRequest* request, Object* sender)
 {
-    OnRequest(sender ? sender : this, request);
-    request->InvokeProcessCallback();
+    pendingRequests_.emplace_back(PendingRequest{SharedPtr<ProjectRequest>{request}, WeakPtr<Object>{sender}});
 }
 
 void ProjectEditor::IgnoreFileNamePattern(const ea::string& pattern)
@@ -371,8 +370,8 @@ void ProjectEditor::InitializeDefaultProject()
     params.createObjects_ = true;
     CreateDefaultScene(context_, dataPath_ + defaultSceneName, params);
 
-    if (const auto request = OpenResourceRequest::Create(context_, defaultSceneName, false))
-        ProcessRequest(request, this);
+    const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
+    ProcessRequest(request, this);
 }
 
 void ProjectEditor::InitializeResourceCache()
@@ -508,6 +507,21 @@ void ProjectEditor::Render()
 
     if (highlightEnabled)
         ui::PopStyleColor(5);
+
+    ProcessPendingRequests();
+}
+
+void ProjectEditor::ProcessPendingRequests()
+{
+    const auto requests = ea::move(pendingRequests_);
+    pendingRequests_.clear();
+
+    for (const PendingRequest& pending : requests)
+    {
+        Object* sender = pending.sender_;
+        OnRequest(sender ? sender : this, pending.request_);
+        pending.request_->InvokeProcessCallback();
+    }
 }
 
 void ProjectEditor::RenderToolbar()

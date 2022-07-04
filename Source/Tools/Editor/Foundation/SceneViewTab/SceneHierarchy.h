@@ -77,7 +77,6 @@ private:
         bool IsBorder(Object* object) const { return object == from_ || object == to_; }
     };
 
-    WeakPtr<SceneViewTab> owner_;
     bool reentrant_{};
 
     bool showTemporary_{};

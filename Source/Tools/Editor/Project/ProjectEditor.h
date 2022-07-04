@@ -153,6 +153,12 @@ public:
     /// @}
 
 private:
+    struct PendingRequest
+    {
+        SharedPtr<ProjectRequest> request_;
+        WeakPtr<Object> sender_;
+    };
+
     void InitializeHotkeys();
     void EnsureDirectoryInitialized();
     void InitializeDefaultProject();
@@ -160,6 +166,7 @@ private:
     void ResetLayout();
     void ApplyPlugins();
     void SaveGitIgnore();
+    void ProcessPendingRequests();
 
     /// Project properties
     /// @{
@@ -193,6 +200,9 @@ private:
     ea::map<ea::string, SharedPtr<EditorTab>> sortedTabs_;
     ea::set<ea::string> ignoredFileNames_;
     ea::vector<std::regex> ignoredFileNameRegexes_;
+
+    /// Global requests to be processed.
+    ea::vector<PendingRequest> pendingRequests_;
 
     /// Close popup handling
     /// @{

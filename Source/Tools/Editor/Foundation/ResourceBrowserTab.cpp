@@ -154,10 +154,19 @@ void ResourceBrowserTab::OnProjectRequest(ProjectRequest* request)
     if (!openResourceRequest)
         return;
 
-    const ea::string& resourceName = openResourceRequest->GetResourceName();
-    SelectLeftPanel(GetPath(resourceName));
-    SelectRightPanel(resourceName);
-    ScrollToSelection();
+    if (openResourceRequest->IsValidFile())
+    {
+        const ea::string& resourceName = openResourceRequest->GetResourceName();
+        SelectLeftPanel(GetPath(resourceName));
+        SelectRightPanel(resourceName);
+        ScrollToSelection();
+    }
+    else
+    {
+        const ea::string& resourcePath = openResourceRequest->GetResourceName();
+        SelectLeftPanel(resourcePath);
+        ScrollToSelection();
+    }
 }
 
 ResourceBrowserTab::~ResourceBrowserTab()
@@ -205,17 +214,10 @@ void ResourceBrowserTab::ReadIniSettings(const char* line)
         left_.selectedRoot_ = *value;
 
     if (const auto value = ReadStringFromIni(line, "SelectedLeftPath"))
-    {
-        left_.selectedPath_ = *value;
-        cursor_.selectedPath_ = left_.selectedPath_;
-    }
+        SelectLeftPanel(*value);
 
     if (const auto value = ReadStringFromIni(line, "SelectedRightPath"))
-    {
-        right_.selectedPath_ = *value;
-        if (!right_.selectedPath_.empty())
-            cursor_.selectedPath_ = right_.selectedPath_;
-    }
+        SelectRightPanel(*value);
 }
 
 void ResourceBrowserTab::ScrollToSelection()
@@ -865,7 +867,15 @@ void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<un
 void ResourceBrowserTab::SelectRightPanel(const ea::string& path)
 {
     right_.selectedPath_ = RemoveTrailingSlash(path);
-    cursor_.selectedPath_ = path;
+    if (!path.empty())
+        cursor_.selectedPath_ = path;
+
+    if (!right_.selectedPath_.empty())
+    {
+        auto project = GetProject();
+        auto request = MakeShared<InspectResourceRequest>(context_, StringVector{right_.selectedPath_});
+        project->ProcessRequest(request, this);
+    }
 }
 
 void ResourceBrowserTab::AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName)
@@ -1007,8 +1017,8 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
     auto project = GetProject();
 
     reentrant_ = true;
-    if (const auto request = OpenResourceRequest::Create(context_, entry.resourceName_, false))
-        project->ProcessRequest(request, this);
+    const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
+    project->ProcessRequest(request, this);
     reentrant_ = false;
 }
 
