@@ -80,8 +80,8 @@ void PlaceholderResourceInspector::RenderContent()
     }
     else if (multipleResources_)
     {
-        ui::Text("%u files", multipleResources_->numFiles_);
-        ui::Text("%u folders", multipleResources_->numFolders_);
+        ui::Text("%u files selected", multipleResources_->numFiles_);
+        ui::Text("%u folders selected", multipleResources_->numFolders_);
     }
 }
 

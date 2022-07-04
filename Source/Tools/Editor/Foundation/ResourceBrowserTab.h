@@ -174,9 +174,12 @@ private:
     /// Manage selection
     /// @{
     void SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex = ea::nullopt);
-    void SelectRightPanel(const ea::string& path);
+    void SelectRightPanel(const ea::string& path, bool clearSelection = true);
+    void DeselectRightPanel(const ea::string& path);
+    void ChangeRightPanelSelection(const ea::string& path, bool toggleSelection);
     void AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName);
     void ScrollToSelection();
+    void UpdateInspectorSelection();
     /// @}
 
     /// Manipulation utilities and helpers
@@ -215,7 +218,8 @@ private:
 
     struct RightPanel
     {
-        ea::string selectedPath_;
+        ea::string lastSelectedPath_;
+        ea::unordered_set<ea::string> selectedPaths_;
 
         bool scrollToSelection_{};
     } right_;
