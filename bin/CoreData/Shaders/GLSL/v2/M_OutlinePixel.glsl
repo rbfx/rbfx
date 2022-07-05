@@ -13,6 +13,7 @@ void main()
         discard;
 #endif
 
+    // Don't do any color space conversions
     gl_FragColor = vec4(cMatDiffColor.rgb, 1.0);
 }
 #endif
