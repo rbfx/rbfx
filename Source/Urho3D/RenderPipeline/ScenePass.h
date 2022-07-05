@@ -52,7 +52,7 @@ public:
         BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags, const ea::string& pass);
 
     /// Prepare instancing buffer for scene pass.
-    virtual void PrepareInstacingBuffer(BatchRenderer* batchRenderer) = 0;
+    virtual void PrepareInstancingBuffer(BatchRenderer* batchRenderer) = 0;
 };
 
 /// Scene pass with batches sorted by render order and pipeline state.
@@ -63,11 +63,11 @@ class URHO3D_API UnorderedScenePass : public ScenePass
 public:
     using ScenePass::ScenePass;
 
-    void PrepareInstacingBuffer(BatchRenderer* batchRenderer) override;
+    void PrepareInstancingBuffer(BatchRenderer* batchRenderer) override;
 
-    PipelineBatchGroup<PipelineBatchByState>& GetDeferredBatches() { return deferredBatchGroup_; }
-    PipelineBatchGroup<PipelineBatchByState>& GetBaseBatches() { return baseBatchGroup_; }
-    PipelineBatchGroup<PipelineBatchByState>& GetLightBatches() { return lightBatchGroup_; }
+    const PipelineBatchGroup<PipelineBatchByState>& GetDeferredBatches() { return deferredBatchGroup_; }
+    const PipelineBatchGroup<PipelineBatchByState>& GetBaseBatches() { return baseBatchGroup_; }
+    const PipelineBatchGroup<PipelineBatchByState>& GetLightBatches() { return lightBatchGroup_; }
 
 protected:
     void OnBatchesReady() override;
@@ -89,9 +89,9 @@ class URHO3D_API BackToFrontScenePass : public ScenePass
 public:
     using ScenePass::ScenePass;
 
-    void PrepareInstacingBuffer(BatchRenderer* batchRenderer) override;
+    void PrepareInstancingBuffer(BatchRenderer* batchRenderer) override;
 
-    PipelineBatchGroup<PipelineBatchBackToFront>& GetBatches() { return batchGroup_; }
+    const PipelineBatchGroup<PipelineBatchBackToFront>& GetBatches() { return batchGroup_; }
 
     bool HasRefractionBatches() const { return hasRefractionBatches_; }
 

@@ -20,113 +20,173 @@
 // THE SOFTWARE.
 //
 
-#include "OutlinePass.h"
+#include "../RenderPipeline/OutlinePass.h"
 
-#include "BatchRenderer.h"
-#include "RenderBufferManager.h"
+#include "../RenderPipeline/BatchRenderer.h"
+#include "../RenderPipeline/RenderBufferManager.h"
+#include "../Scene/Scene.h"
 
 namespace Urho3D
 {
-OutlineDrawableProcessorPass::OutlineDrawableProcessorPass(RenderPipelineInterface* renderPipeline,
-    DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags,
-    const ea::string& pass)
-    : ScenePass(renderPipeline, drawableProcessor, callback, flags, pass)
+
+namespace
 {
-    pass_ = MakeShared<Pass>("Outline");
-    pass_->SetVertexShader("M_Default");
-    pass_->SetPixelShader("M_Default");
-    pass_->SetCullMode(CULL_NONE);
+
+Pass* GetFirstPass(Technique* technique, const ea::vector<unsigned>& passIndices)
+{
+    for (unsigned index : passIndices)
+    {
+        if (Pass* pass = technique->GetPass(index))
+            return pass;
+    }
+    return nullptr;
 }
 
-DrawableProcessorPass::AddBatchResult OutlineDrawableProcessorPass::AddBatch(
+}
+
+OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
+    DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback,
+    const StringVector& outlinedPasses)
+    : ScenePass(renderPipeline, drawableProcessor, callback,
+        DrawableProcessorPassFlag::BatchCallback | DrawableProcessorPassFlag::PipelineStateCallback,
+        "base") // Pass here doesn't matter
+{
+    ea::transform(outlinedPasses.begin(), outlinedPasses.end(), std::back_inserter(outlinedPasses_),
+        [](const ea::string& pass) { return Technique::GetPassIndex(pass); });
+}
+
+void OutlineScenePass::SetOutlineGroups(Scene* scene)
+{
+    scene->GetComponents<OutlineGroup>(outlineGroups_);
+
+    const bool hasDrawables = ea::any_of(outlineGroups_.begin(), outlineGroups_.end(),
+        [](const OutlineGroup* group) { return group->HasDrawables(); });
+    SetEnabled(hasDrawables);
+}
+
+DrawableProcessorPass::AddBatchResult OutlineScenePass::AddCustomBatch(
     unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique)
 {
-    if (!selectionGroup_ || selectionGroup_->Empty())
+    if (outlineGroups_.empty())
+        return {};
+
+    // TODO: Check if all groups are empty
+    bool batchAdded = false;
+    for (OutlineGroup* outlineGroup : outlineGroups_)
     {
-        return {false, false};
+        if (!outlineGroup->ContainsDrawable(drawable))
+            continue;
+
+        Pass* referencePass = GetFirstPass(technique, outlinedPasses_);
+        geometryBatches_.PushBack(threadIndex, GeometryBatch::Deferred(drawable, sourceBatchIndex, referencePass, outlineGroup));
+
+        batchAdded = true;
     }
 
-    if (!selectionGroup_->GetDrawables().contains(WeakPtr<Drawable>(drawable)))
-    {
-        return {false, false};
-    }
-
-    Pass* outlinePass = GetPass(technique);
-    geometryBatches_.PushBack(threadIndex, {drawable, sourceBatchIndex, outlinePass, nullptr, nullptr, nullptr});
-    return {true, false};
+    return {batchAdded, false};
 }
 
-void OutlineDrawableProcessorPass::OnBatchesReady()
+bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+    const BatchStateCreateKey& key, const BatchStateCreateContext& ctx)
 {
-    BatchCompositor::FillSortKeys(sortedBaseBatches_, deferredBatches_);
+    ShaderProgramCompositor* compositor = builder->GetShaderProgramCompositor();
+    shaderProgramDesc_ = {};
 
-    ea::sort(sortedBaseBatches_.begin(), sortedBaseBatches_.end());
+    desc.depthWriteEnabled_ = false;
+    desc.depthCompareFunction_ = CMP_ALWAYS;
 
-    batchGroup_ = {sortedBaseBatches_};
+    desc.colorWriteEnabled_ = true;
+    desc.blendMode_ = BLEND_REPLACE;
+    desc.alphaToCoverageEnabled_ = false;
 
-    if (!GetFlags().Test(DrawableProcessorPassFlag::DisableInstancing))
+    desc.fillMode_ = FILL_SOLID;
+    desc.cullMode_ = CULL_NONE;
+
+    desc.scissorTestEnabled_ = true;
+
+    compositor->ProcessUserBatch(shaderProgramDesc_, GetFlags(),
+        key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_,
+        nullptr, false, BatchCompositorSubpass::Ignored);
+
+    shaderProgramDesc_.pixelShaderName_ = "v2/M_OutlinePixel";
+    if (key.pass_->IsAlphaMask() || key.pass_->GetBlendMode() != BLEND_REPLACE)
     {
-        batchGroup_.flags_ |= BatchRenderFlag::EnableInstancingForStaticGeometry;
+        shaderProgramDesc_.pixelShaderDefines_ = "ALPHAMASK ";
+        if (Texture* diffuseTexture = key.material_->GetTexture(TU_DIFFUSE))
+            shaderProgramDesc_.pixelShaderDefines_ += "URHO3D_MATERIAL_HAS_DIFFUSE ";
     }
+    else
+    {
+        shaderProgramDesc_.pixelShaderDefines_ = "";
+    }
+
+    builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);
+    builder->SetupShaders(desc, shaderProgramDesc_);
+
+    return true;
 }
 
-void OutlineDrawableProcessorPass::SetSelection(SelectionGroup* selectionGroup) { selectionGroup_ = selectionGroup; }
-
-Pass* OutlineDrawableProcessorPass::GetPass(Technique* technique)
+void OutlineScenePass::OnBatchesReady()
 {
-    return pass_;
+    for (PipelineBatch& batch : deferredBatches_)
+    {
+        auto outlineGroup = static_cast<OutlineGroup*>(batch.userData_);
+        batch.material_ = outlineGroup->GetOutlineMaterial(batch.material_);
+    }
+
+    BatchCompositor::FillSortKeys(sortedBatches_, deferredBatches_);
+    ea::sort(sortedBatches_.begin(), sortedBatches_.end());
+
+    batchGroup_ = {sortedBatches_};
+    batchGroup_.flags_ = BatchRenderFlag::EnableInstancingForStaticGeometry;
 }
 
-void OutlineDrawableProcessorPass::PrepareInstacingBuffer(BatchRenderer* batchRenderer)
+void OutlineScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
 {
     batchRenderer->PrepareInstancingBuffer(batchGroup_);
 }
 
 OutlinePass::OutlinePass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager)
     : BaseClassName(renderPipeline, renderBufferManager)
-    , renderPipeline_(renderPipeline)
 {
+    renderPipeline->OnRenderBegin.Subscribe(this, &OutlinePass::OnRenderBegin);
+}
+
+void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
+{
+    if (!enabled_)
+        return;
+
+    if (!outlineBuffer_)
+    {
+        const unsigned format = Graphics::GetRGBAFormat();
+        const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
+        const Vector2 sizeMultiplier = Vector2::ONE; // / 2.0f;
+        outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
+    }
+
+    if (!pipelineState_)
+    {
+        pipelineState_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "");
+    }
 }
 
 void OutlinePass::Execute()
 {
-    if (!pipelineStates_)
-    {
-        InitializeTextures();
-        InitializeStates();
-    }
-
-    if (!pipelineStates_->IsValid())
+    if (!enabled_)
         return;
 
+    if (!pipelineState_->IsValid())
+        return;
+
+    auto texture = outlineBuffer_->GetTexture();
+    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(texture->GetSize());
+
+    const ShaderParameterDesc result[] = {{"InputInvSize", inputInvSize}};
+    const ShaderResourceDesc shaderResources[] = {{TU_DIFFUSE, texture}};
+
     renderBufferManager_->SetOutputRenderTargers();
-    auto texture = GetColorOutput()->GetTexture();
-    if (texture)
-    {
-        const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(texture->GetSize());
-
-        const ShaderParameterDesc result[] = {
-            {"SelectionColor", color_},
-            {"InputInvSize", inputInvSize},
-        };
-
-        const ShaderResourceDesc shaderResources[] = {{TU_DIFFUSE, texture}};
-        renderBufferManager_->DrawViewportQuad("Apply bloom", pipelineStates_->outline_, shaderResources, result);
-    }
+    renderBufferManager_->DrawViewportQuad("Apply outline", pipelineState_, shaderResources, result);
 }
 
-void OutlinePass::InitializeTextures()
-{
-    const unsigned format = Graphics::GetRGBFormat();
-    const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
-    const Vector2 sizeMultiplier = Vector2::ONE; // / 2.0f;
-    texture_.temporary_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
 }
-
-void OutlinePass::InitializeStates()
-{
-    pipelineStates_ = CachedStates{};
-    pipelineStates_->outline_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "");
-}
-
-} // namespace Urho3D

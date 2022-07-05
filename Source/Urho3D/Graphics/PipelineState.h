@@ -63,7 +63,7 @@ struct GeometryBufferArray
         Initialize(vertexBuffers, indexBuffer, instancingBuffer);
     }
 
-    explicit GeometryBufferArray(Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
+    explicit GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
 
 private:
     template <class Container>
@@ -102,7 +102,7 @@ struct PipelineStateDesc
     IndexBufferType indexType_{};
 
     void InitializeInputLayout(const GeometryBufferArray& buffers);
-    void InitializeInputLayoutAndPrimitiveType(Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
+    void InitializeInputLayoutAndPrimitiveType(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
     /// @}
 
     /// Shaders

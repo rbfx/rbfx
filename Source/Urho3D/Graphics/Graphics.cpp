@@ -43,6 +43,7 @@
 #include "../Graphics/Material.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/OutlineGroup.h"
 #include "../Graphics/ParticleEffect.h"
 #include "../Graphics/ParticleEmitter.h"
 #include "../Graphics/ReflectionProbe.h"
@@ -650,6 +651,7 @@ void RegisterGraphicsLibrary(Context* context)
     TerrainPatch::RegisterObject(context);
     DebugRenderer::RegisterObject(context);
     Octree::RegisterObject(context);
+    OutlineGroup::RegisterObject(context);
     Zone::RegisterObject(context);
     VertexBuffer::RegisterObject(context);
     IndexBuffer::RegisterObject(context);

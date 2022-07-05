@@ -22,13 +22,14 @@
 
 #pragma once
 
-#include "PipelineBatchSortKey.h"
-#include "ScenePass.h"
-#include "SelectionGroup.h"
+#include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/DrawableProcessor.h"
+#include "../RenderPipeline/PipelineBatchSortKey.h"
 #include "../RenderPipeline/PostProcessPass.h"
+#include "../RenderPipeline/PipelineStateBuilder.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+#include "../RenderPipeline/ScenePass.h"
 
 namespace Urho3D
 {
@@ -36,35 +37,41 @@ namespace Urho3D
 class RenderBufferManager;
 class RenderPipelineInterface;
 
-class URHO3D_API OutlineDrawableProcessorPass : public ScenePass
+class URHO3D_API OutlineScenePass : public ScenePass
 {
-    URHO3D_OBJECT(OutlineDrawableProcessorPass, ScenePass)
+    URHO3D_OBJECT(OutlineScenePass, ScenePass)
 
 public:
-    OutlineDrawableProcessorPass(RenderPipelineInterface* renderPipeline, DrawableProcessor* drawableProcessor,
-        BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags, const ea::string& pass);
+    OutlineScenePass(RenderPipelineInterface* renderPipeline, DrawableProcessor* drawableProcessor,
+        BatchStateCacheCallback* callback, const StringVector& outlinedPasses);
 
-    AddBatchResult AddBatch(
+    /// Initialize outline groups from scene. Should be called every frame.
+    void SetOutlineGroups(Scene* scene);
+
+    /// Implement ScenePass
+    /// @{
+    AddBatchResult AddCustomBatch(
         unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique) override;
+    bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+        const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) override;
+    /// @}
 
-    void PrepareInstacingBuffer(BatchRenderer* batchRenderer) override;
+    void PrepareInstancingBuffer(BatchRenderer* batchRenderer) override;
 
-    PipelineBatchGroup<PipelineBatchByState>& GetBatches() { return batchGroup_; }
+    const PipelineBatchGroup<PipelineBatchByState>& GetBatches() { return batchGroup_; }
 
     void OnBatchesReady() override;
 
-    void SetSelection(SelectionGroup* selectionGroup);
-
 private:
-    Pass* GetPass(Technique* technique);
+    ea::vector<unsigned> outlinedPasses_;
+    ea::vector<OutlineGroup*> outlineGroups_;
 
+    /// Internal temporary containers:
+    /// @{
+    ShaderProgramDesc shaderProgramDesc_;
+    ea::vector<PipelineBatchByState> sortedBatches_;
     PipelineBatchGroup<PipelineBatchByState> batchGroup_;
-
-    ea::vector<PipelineBatchByState> sortedBaseBatches_;
-
-    SharedPtr<Pass> pass_;
-
-    SelectionGroup* selectionGroup_;
+    /// @}
 };
 
 /// Post-processing pass that renders outline around selected objects.
@@ -75,33 +82,24 @@ class URHO3D_API OutlinePass : public PostProcessPass
 public:
     OutlinePass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
 
+    void SetEnabled(bool enabled) { enabled_ = enabled; }
+    bool IsEnabled() const { return enabled_; }
+
+    /// Implement PostProcessPass.
+    /// @{
     PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
     void Execute() override;
+    /// @}
 
-    RenderBuffer* GetColorOutput() { return texture_.temporary_; }
+    RenderBuffer* GetColorOutput() { return outlineBuffer_; }
 
-    void SetSelectionColor(const Color& color) { color_ = color; }
-    const Color& GetSelectionColor() const { return color_; }
+private:
+    void OnRenderBegin(const CommonFrameInfo& frameInfo);
 
-protected:
-    void InitializeTextures();
-    void InitializeStates();
+    bool enabled_{};
 
-    struct CachedTextures
-    {
-        SharedPtr<RenderBuffer> temporary_;
-    };
-    CachedTextures texture_;
-
-    struct CachedStates
-    {
-        SharedPtr<PipelineState> outline_;
-
-        bool IsValid() { return outline_->IsValid(); }
-    };
-    ea::optional<CachedStates> pipelineStates_;
-    RenderPipelineInterface* renderPipeline_;
-    Color color_{Color::WHITE};
+    SharedPtr<PipelineState> pipelineState_;
+    SharedPtr<RenderBuffer> outlineBuffer_;
 };
 
 } // namespace Urho3D

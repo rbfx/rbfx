@@ -55,6 +55,17 @@ public:
         const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) override;
     /// @}
 
+    /// Helpers for passes that override pipeline state creation.
+    /// @{
+    void SetupInputLayoutAndPrimitiveType(PipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const;
+    void SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const;
+    /// @}
+
+    /// Return global objects.
+    /// @{
+    ShaderProgramCompositor* GetShaderProgramCompositor() const { return compositor_; }
+    /// @}
+
 private:
     /// State builder
     /// @{
@@ -65,8 +76,6 @@ private:
     void SetupLightVolumePassState(const LightProcessor* lightProcessor);
     void SetupShadowPassState(unsigned splitIndex, const LightProcessor* lightProcessor,
         const Material* material, const Pass* pass);
-
-    void SetupShaders();
     /// @}
 
     /// Objects whose settings contribute to pipeline states.

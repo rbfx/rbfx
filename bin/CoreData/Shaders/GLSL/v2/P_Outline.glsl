@@ -39,6 +39,9 @@ vec4 SampleDiff(vec2 offset)
 
 void main()
 {
+#if 1
+    gl_FragColor = SampleDiff(vec2(0.0, 0.0));
+#else
     vec4 inputColor = vec4(0,0,0,0);// = texture2D(sDiffMap, vTexCoord).rgba;
 
     inputColor += SampleDiff(vec2(-1.0, 0.0)) * 0.25;
@@ -54,5 +57,6 @@ void main()
     // if (inputColor.a < 0.1)
     //     discard;
     gl_FragColor = vec4(LinearToGammaSpace(cSelectionColor.rgb), inputColor.a);
+#endif
 }
 #endif

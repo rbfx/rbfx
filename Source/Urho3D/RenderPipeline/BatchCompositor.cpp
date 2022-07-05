@@ -114,7 +114,7 @@ void BatchCompositorPass::OnPipelineStatesInvalidated()
 void BatchCompositorPass::ProcessGeometryBatch(const GeometryBatch& geometryBatch)
 {
     // Skip invalid batches. It may happen if UpdateGeometry removed some source batches.
-    PipelineBatchDesc desc(geometryBatch.drawable_, geometryBatch.sourceBatchIndex_, geometryBatch.deferredPass_);
+    PipelineBatchDesc desc(geometryBatch.drawable_, geometryBatch.sourceBatchIndex_, geometryBatch.deferredPass_, geometryBatch.userData_);
     if (!desc.geometry_)
         return;
 
@@ -226,7 +226,7 @@ BatchCompositor::~BatchCompositor()
 
 void BatchCompositor::SetPasses(ea::vector<SharedPtr<BatchCompositorPass>> passes)
 {
-    passes_ = passes;
+    allPasses_ = passes;
 }
 
 void BatchCompositor::ComposeShadowBatches()
@@ -306,6 +306,10 @@ void BatchCompositor::OnUpdateBegin(const CommonFrameInfo& frameInfo)
     delayedShadowBatches_.Clear();
     lightVolumeBatches_.clear();
     sortedLightVolumeBatches_.clear();
+
+    passes_.clear();
+    ea::copy_if(allPasses_.begin(), allPasses_.end(), ea::back_inserter(passes_),
+        [](const SharedPtr<DrawableProcessorPass>& pass) { return pass->IsEnabled(); });
 }
 
 void BatchCompositor::OnPipelineStatesInvalidated()

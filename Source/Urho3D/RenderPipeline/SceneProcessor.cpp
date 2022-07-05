@@ -46,14 +46,11 @@
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/ScenePass.h"
 #include "../RenderPipeline/SceneProcessor.h"
-#include "../RenderPipeline/SelectionGroup.h"
+#include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
 #include "../Scene/Scene.h"
 
-#include <EASTL/algorithm.h>
-
 #include "../DebugNew.h"
-#include "Urho3D/Graphics/StaticModel.h"
 
 namespace Urho3D
 {
@@ -276,7 +273,7 @@ void SceneProcessor::Update()
 {
     // Collect occluders
     currentOcclusionBuffer_ = nullptr;
-    const auto& frustum = frameInfo_.camera_->GetFrustum();
+    const Frustum& frustum = frameInfo_.camera_->GetFrustum();
     if (settings_.maxOccluderTriangles_ > 0)
     {
         URHO3D_PROFILE("ProcessOccluders");
@@ -310,32 +307,10 @@ void SceneProcessor::Update()
     else
     {
         URHO3D_PROFILE("QueryVisibleDrawables");
-        FrustumOctreeQuery drawableQuery(
-            drawables_, frustum,
+        FrustumOctreeQuery drawableQuery(drawables_, frustum,
             DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
         frameInfo_.octree_->GetDrawables(drawableQuery);
     }
-
-    //    for (auto& selectedNode : selection->GetDrawables())
-    //    {
-    //       /* Drawable* drawable = selectedNode->GetComponent<StaticModel>(true);
-    //        if (drawable && frustum.IsInside(drawable->GetWorldBoundingBox()) != OUTSIDE)
-    //        {
-    //            selectedDrawables_.push_back(drawable); 
-    //        }*/
-    //        for (auto& selectedComponent : selectedNode->GetComponents())
-    //        {
-    //            Drawable* drawable = selectedComponent->Cast<Drawable>();
-    //            if (drawable)
-    //            {
-    //                if (frustum.IsInside(drawable->GetWorldBoundingBox()) != OUTSIDE)
-    //                {
-    //                    selectedDrawables_.push_back(drawable);
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
 
     // Process drawables
     drawableProcessor_->ProcessVisibleDrawables(drawables_, currentOcclusionBuffer_);
@@ -367,7 +342,10 @@ void SceneProcessor::PrepareInstancingBuffer()
     }
 
     for (ScenePass* pass : passes_)
-        pass->PrepareInstacingBuffer(batchRenderer_);
+    {
+        if (pass->IsEnabled())
+            pass->PrepareInstancingBuffer(batchRenderer_);
+    }
 
     instancingBuffer_->End();
 }
@@ -457,6 +435,8 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
 
+    if (batchGroup.scissorRect_ != IntRect::ZERO)
+        drawQueue_->SetScissorRect(batchGroup.scissorRect_);
     batchRenderer_->RenderBatches(ctx, batchGroup);
 
     graphics_->SetClipPlane(camera->GetUseClipping(),

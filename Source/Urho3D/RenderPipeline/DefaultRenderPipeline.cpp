@@ -22,31 +22,32 @@
 
 #include "../Precompiled.h"
 
+#include "../RenderPipeline/DefaultRenderPipeline.h"
+
 #include "../Core/Context.h"
-#include "../Input/Input.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/OutlineGroup.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Viewport.h"
-#include "../RenderPipeline/DefaultRenderPipeline.h"
+#include "../Input/Input.h"
+#include "../RenderPipeline/AutoExposurePass.h"
+#include "../RenderPipeline/BatchRenderer.h"
+#include "../RenderPipeline/BloomPass.h"
+#include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
-#include "../RenderPipeline/AutoExposurePass.h"
-#include "../RenderPipeline/ToneMappingPass.h"
-#include "../RenderPipeline/BloomPass.h"
+#include "../RenderPipeline/OutlinePass.h"
 #include "../RenderPipeline/ShaderConsts.h"
+#include "../RenderPipeline/ShadowMapAllocator.h"
+#include "../RenderPipeline/ToneMappingPass.h"
 #include "../Scene/Scene.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/SystemUI.h"
 #endif
 
-#include "OutlinePass.h"
-#include "SelectionGroup.h"
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -136,9 +137,9 @@ void DefaultRenderPipelineView::ApplySettings()
         }
     }
 
-    outlinePass_ = sceneProcessor_->CreatePass<OutlineDrawableProcessorPass>(DrawableProcessorPassFlag::None, "outline");
+    outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{"deferred", "base", "alpha"});
 
-    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlinePass_});
+    sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
 
     postProcessPasses_.clear();
 
@@ -280,16 +281,8 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
         OnPipelineStatesInvalidated(this);
     }
 
-    SelectionGroup* selection = nullptr;
-    if (frameInfo_.viewport_ && frameInfo_.viewport_->GetScene())
-    {
-        selection = frameInfo_.viewport_->GetScene()->GetComponent<SelectionGroup>();
-    }
-    outlinePass_->SetSelection(selection);
-    if (selection)
-    {
-        outlinePostProcessPass_->SetSelectionColor(selection->GetSelectionColor());
-    }
+    outlineScenePass_->SetOutlineGroups(sceneProcessor_->GetFrameInfo().scene_);
+    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled());
 
     sceneProcessor_->Update();
 
@@ -380,13 +373,26 @@ void DefaultRenderPipelineView::Render()
     sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters);
     sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters);
 
-    RenderBuffer* const outlineBuffer = outlinePostProcessPass_->GetColorOutput();
-    if (outlineBuffer)
+    if (outlineScenePass_->IsEnabled())
     {
-        RenderBuffer* const gBuffer[] = {outlineBuffer};
-        renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
-        renderBufferManager_->ClearColor(outlineBuffer, Color::TRANSPARENT_BLACK);
-        sceneProcessor_->RenderSceneBatches("Outline", camera, outlinePass_->GetBatches(), {}, cameraParameters);
+        // TODO: Do we want it dynamic?
+        const unsigned outlinePadding = 2;
+
+        RenderBuffer* const renderTargets[] = {outlinePostProcessPass_->GetColorOutput()};
+        auto batches = outlineScenePass_->GetBatches();
+
+        batches.scissorRect_ = renderTargets[0]->GetViewportRect();
+        if (batches.scissorRect_.Width() > outlinePadding * 2 && batches.scissorRect_.Height() > outlinePadding * 2)
+        {
+            batches.scissorRect_.left_ += outlinePadding;
+            batches.scissorRect_.top_ += outlinePadding;
+            batches.scissorRect_.right_ -= outlinePadding;
+            batches.scissorRect_.bottom_ -= outlinePadding;
+        }
+
+        renderBufferManager_->SetRenderTargets(nullptr, renderTargets);
+        renderBufferManager_->ClearColor(renderTargets[0], Color::TRANSPARENT_BLACK);
+        sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
 
     if (hasRefraction)
