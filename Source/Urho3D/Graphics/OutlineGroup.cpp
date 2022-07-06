@@ -22,12 +22,15 @@
 
 #include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/ShaderConsts.h"
+#include "../Scene/Scene.h"
 
 #include "../Core/Context.h"
 #include "../Graphics/Material.h"
 
 namespace Urho3D
 {
+
+extern const char* SCENE_CATEGORY;
 
 OutlineGroup::MaterialKey::MaterialKey(const Material& material)
 {
@@ -75,7 +78,30 @@ OutlineGroup::~OutlineGroup()
 
 void OutlineGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<OutlineGroup>();
+    context->RegisterFactory<OutlineGroup>(SCENE_CATEGORY);
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColor, SetColor, Color, Color::WHITE, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Order", GetRenderOrder, SetRenderOrder, unsigned, DEFAULT_RENDER_ORDER, AM_DEFAULT);
+    // TODO: Not resolved on load
+    URHO3D_ACCESSOR_ATTRIBUTE("Drawables", GetDrawablesAttr, SetDrawablesAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
+}
+
+void OutlineGroup::ApplyAttributes()
+{
+    auto scene = GetScene();
+    if (drawablesDirty_ && scene)
+    {
+        drawablesDirty_ = false;
+        drawables_.clear();
+        for (const Variant& drawableId : drawablesAttr_)
+        {
+            if (Component* component = scene->GetComponent(drawableId.GetUInt()))
+            {
+                if (Drawable* drawable = component->Cast<Drawable>())
+                    AddDrawable(drawable);
+            }
+        }
+    }
 }
 
 void OutlineGroup::SetColor(const Color& color)
@@ -94,19 +120,37 @@ void OutlineGroup::SetRenderOrder(unsigned renderOrder)
         material->SetRenderOrder(renderOrder_);
 }
 
+void OutlineGroup::SetDrawablesAttr(const VariantVector& drawables)
+{
+    drawables_.clear();
+    drawablesAttr_ = drawables;
+    drawablesDirty_ = !drawablesAttr_.empty();
+}
+
+const VariantVector& OutlineGroup::GetDrawablesAttr() const
+{
+    drawablesAttr_.clear();
+    for (Drawable* drawable : drawables_)
+    {
+        if (drawable)
+            drawablesAttr_.push_back(drawable->GetID());
+    }
+    return drawablesAttr_;
+}
+
 void OutlineGroup::ClearDrawables()
 {
-    selected_.clear();
+    drawables_.clear();
 }
 
 void OutlineGroup::AddDrawable(Drawable* drawable)
 {
-    selected_.emplace(drawable);
+    drawables_.emplace(drawable);
 }
 
 void OutlineGroup::RemoveDrawable(Drawable* drawable)
 {
-    selected_.erase(WeakPtr<Drawable>(drawable));
+    drawables_.erase(WeakPtr<Drawable>(drawable));
 }
 
 Material* OutlineGroup::GetOutlineMaterial(Material* referenceMaterial)

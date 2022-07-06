@@ -1,4 +1,7 @@
-#include "_Material.glsl"
+#include "_Config.glsl"
+#include "_Uniforms.glsl"
+#include "_Samplers.glsl"
+#include "_Material_Common.glsl"
 
 #ifdef URHO3D_VERTEX_SHADER
     #error This file should not be compiled as vertex shader
@@ -7,7 +10,7 @@
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-#if defined(URHO3D_MATERIAL_HAS_DIFFUSE) && defined(ALPHAMASK)
+#ifdef ALPHAMASK
     half alpha = texture2D(sDiffMap, vTexCoord).a;
     if (alpha < 0.5)
         discard;

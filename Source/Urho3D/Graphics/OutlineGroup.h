@@ -43,12 +43,16 @@ public:
 
     static void RegisterObject(Context* context);
 
+    void ApplyAttributes() override;
+
     /// Attributes for serialization.
     /// @{
     void SetColor(const Color& color);
     const Color& GetColor() const { return color_; }
     void SetRenderOrder(unsigned renderOrder);
     unsigned GetRenderOrder() const { return renderOrder_; }
+    void SetDrawablesAttr(const VariantVector& drawables);
+    const VariantVector& GetDrawablesAttr() const;
     /// @}
 
     /// Return cached artificial material with only resources and shader parameters set.
@@ -56,8 +60,8 @@ public:
 
     /// Manage collection.
     /// @{
-    bool HasDrawables() const { return !selected_.empty(); }
-    bool ContainsDrawable(Drawable* drawable) const { return selected_.find_as(drawable) != selected_.end(); }
+    bool HasDrawables() const { return !drawables_.empty(); }
+    bool ContainsDrawable(Drawable* drawable) const { return drawables_.find_as(drawable) != drawables_.end(); }
     void ClearDrawables();
     void AddDrawable(Drawable* drawable);
     void RemoveDrawable(Drawable* drawable);
@@ -80,7 +84,10 @@ private:
     unsigned renderOrder_{DEFAULT_RENDER_ORDER};
 
     /// Selected drawables.
-    ea::unordered_set<WeakPtr<Drawable>> selected_;
+    ea::unordered_set<WeakPtr<Drawable>> drawables_;
+    bool drawablesDirty_{};
+    mutable VariantVector drawablesAttr_;
+
     /// Cache of materials.
     ea::unordered_map<MaterialKey, SharedPtr<Material>> materials_;
 };

@@ -61,10 +61,7 @@ public:
     void SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const;
     /// @}
 
-    /// Return global objects.
-    /// @{
     ShaderProgramCompositor* GetShaderProgramCompositor() const { return compositor_; }
-    /// @}
 
 private:
     /// State builder

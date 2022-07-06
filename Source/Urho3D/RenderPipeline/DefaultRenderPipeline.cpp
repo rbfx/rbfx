@@ -282,9 +282,10 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
     }
 
     outlineScenePass_->SetOutlineGroups(sceneProcessor_->GetFrameInfo().scene_);
-    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled());
 
     sceneProcessor_->Update();
+
+    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
 
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
@@ -373,7 +374,25 @@ void DefaultRenderPipelineView::Render()
     sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters);
     sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters);
 
-    if (outlineScenePass_->IsEnabled())
+    if (hasRefraction)
+        renderBufferManager_->SwapColorBuffers(true);
+
+#ifdef DESKTOP_GRAPHICS
+    ShaderResourceDesc depthAndColorTextures[] = {
+        { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() },
+        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
+    };
+#else
+    ShaderResourceDesc depthAndColorTextures[] = {
+        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
+    };
+#endif
+
+    sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
+        depthAndColorTextures, cameraParameters);
+    sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches());
+
+    if (outlinePostProcessPass_->IsEnabled())
     {
         // TODO: Do we want it dynamic?
         const unsigned outlinePadding = 2;
@@ -394,24 +413,6 @@ void DefaultRenderPipelineView::Render()
         renderBufferManager_->ClearColor(renderTargets[0], Color::TRANSPARENT_BLACK);
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
-
-    if (hasRefraction)
-        renderBufferManager_->SwapColorBuffers(true);
-
-#ifdef DESKTOP_GRAPHICS
-    ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() },
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
-    };
-#else
-    ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
-    };
-#endif
-
-    sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
-        depthAndColorTextures, cameraParameters);
-    sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches());
 
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessPass->Execute();

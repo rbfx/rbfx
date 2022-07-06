@@ -59,6 +59,7 @@ public:
     void PrepareInstancingBuffer(BatchRenderer* batchRenderer) override;
 
     const PipelineBatchGroup<PipelineBatchByState>& GetBatches() { return batchGroup_; }
+    bool HasBatches() const { return !sortedBatches_.empty(); }
 
     void OnBatchesReady() override;
 

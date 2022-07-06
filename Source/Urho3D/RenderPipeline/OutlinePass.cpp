@@ -109,16 +109,10 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
         nullptr, false, BatchCompositorSubpass::Ignored);
 
     shaderProgramDesc_.pixelShaderName_ = "v2/M_OutlinePixel";
-    if (key.pass_->IsAlphaMask() || key.pass_->GetBlendMode() != BLEND_REPLACE)
-    {
+    if ((key.pass_->IsAlphaMask() || key.pass_->GetBlendMode() != BLEND_REPLACE) && key.material_->GetTexture(TU_DIFFUSE))
         shaderProgramDesc_.pixelShaderDefines_ = "ALPHAMASK ";
-        if (Texture* diffuseTexture = key.material_->GetTexture(TU_DIFFUSE))
-            shaderProgramDesc_.pixelShaderDefines_ += "URHO3D_MATERIAL_HAS_DIFFUSE ";
-    }
     else
-    {
         shaderProgramDesc_.pixelShaderDefines_ = "";
-    }
 
     builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);
     builder->SetupShaders(desc, shaderProgramDesc_);
