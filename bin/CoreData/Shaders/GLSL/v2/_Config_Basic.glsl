@@ -87,6 +87,11 @@
 /// [Pixel shader only] Select value for front and back faces separately.
 // #define SELECT_FRONT_BACK_FACE(frontValue, backValue)
 
+/// =================================== Extensions ===================================
+#extension GL_ARB_shading_language_420pack: enable
+#extension GL_EXT_shader_texture_lod: enable
+#extension GL_OES_standard_derivatives : enable
+
 /// =================================== Types and constants ===================================
 
 #define M_PI 3.14159265358979323846

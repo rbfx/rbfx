@@ -63,12 +63,16 @@ struct CommonFrameInfo
 enum class DrawableProcessorPassFlag
 {
     None = 0,
+
     HasAmbientLighting = 1 << 0,
     DisableInstancing = 1 << 1,
     DeferredLightMaskToStencil = 1 << 2,
     NeedReadableDepth = 1 << 3,
     RefractionPass = 1 << 4,
     DepthOnlyPass = 1 << 5,
+
+    BatchCallback = 1 << 6,
+    PipelineStateCallback = 1 << 7,
 };
 
 URHO3D_FLAGSET(DrawableProcessorPassFlag, DrawableProcessorPassFlags);
@@ -81,7 +85,9 @@ enum class BatchCompositorSubpass
     /// Base pass, optionally lit with forward rendering.
     Base,
     /// Additive light pass for forward rendering.
-    Light
+    Light,
+    /// Artificial value that indicates to ignore subpass-specific properties.
+    Ignored,
 };
 
 /// Flags that control how exactly batches are rendered.

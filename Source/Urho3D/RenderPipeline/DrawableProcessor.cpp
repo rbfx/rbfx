@@ -119,6 +119,7 @@ DrawableProcessorPass::DrawableProcessorPass(RenderPipelineInterface* renderPipe
     unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
     : Object(renderPipeline->GetContext())
     , flags_(flags)
+    , useBatchCallback_(IsFlagSet(DrawableProcessorPassFlag::BatchCallback))
     , deferredPassIndex_(deferredPassIndex)
     , unlitBasePassIndex_(unlitBasePassIndex)
     , litBasePassIndex_(litBasePassIndex)
@@ -130,9 +131,12 @@ DrawableProcessorPass::DrawableProcessorPass(RenderPipelineInterface* renderPipe
 DrawableProcessorPass::AddBatchResult DrawableProcessorPass::AddBatch(unsigned threadIndex,
     Drawable* drawable, unsigned sourceBatchIndex, Technique* technique)
 {
+    if (useBatchCallback_)
+        return AddCustomBatch(threadIndex, drawable, sourceBatchIndex, technique);
+
     if (Pass* deferredPass = technique->GetPass(deferredPassIndex_))
     {
-        geometryBatches_.PushBack(threadIndex, { drawable, sourceBatchIndex, deferredPass, nullptr, nullptr, nullptr });
+        geometryBatches_.PushBack(threadIndex, GeometryBatch::Deferred(drawable, sourceBatchIndex, deferredPass));
         return { true, false };
     }
 
@@ -143,7 +147,7 @@ DrawableProcessorPass::AddBatchResult DrawableProcessorPass::AddBatch(unsigned t
     if (!unlitBasePass)
         return { false, false };
 
-    geometryBatches_.PushBack(threadIndex, { drawable, sourceBatchIndex, nullptr, unlitBasePass, litBasePass, lightPass });
+    geometryBatches_.PushBack(threadIndex, GeometryBatch::Forward(drawable, sourceBatchIndex, unlitBasePass, litBasePass, lightPass));
     return { true, !!lightPass };
 }
 
@@ -167,7 +171,7 @@ DrawableProcessor::~DrawableProcessor()
 
 void DrawableProcessor::SetPasses(ea::vector<SharedPtr<DrawableProcessorPass>> passes)
 {
-    passes_ = ea::move(passes);
+    allPasses_ = ea::move(passes);
 }
 
 void DrawableProcessor::SetSettings(const DrawableProcessorSettings& settings)
@@ -178,6 +182,10 @@ void DrawableProcessor::SetSettings(const DrawableProcessorSettings& settings)
 
 void DrawableProcessor::OnUpdateBegin(const FrameInfo& frameInfo)
 {
+    passes_.clear();
+    ea::copy_if(allPasses_.begin(), allPasses_.end(), ea::back_inserter(passes_),
+        [](const SharedPtr<DrawableProcessorPass>& pass) { return pass->IsEnabled(); });
+
     // Initialize frame constants
     frameInfo_ = frameInfo;
     numDrawables_ = frameInfo_.octree_->GetAllDrawables().size();
