@@ -25,6 +25,8 @@
 #include "../../Core/SettingsManager.h"
 #include "../../Foundation/SceneViewTab.h"
 
+#include <Urho3D/Graphics/OutlineGroup.h>
+
 namespace Urho3D
 {
 
@@ -36,7 +38,29 @@ class SceneSelectionRenderer : public SceneViewAddon
     URHO3D_OBJECT(SceneSelectionRenderer, SceneViewAddon);
 
 public:
-    explicit SceneSelectionRenderer(SceneViewTab* owner);
+    static const unsigned DirectSelectionRenderOrder = 255;
+    static const unsigned IndirectSelectionRenderOrder = 254;
+
+    struct Settings
+    {
+        ea::string GetUniqueName() { return "SceneView.Selection"; }
+
+        void SerializeInBlock(Archive& archive);
+        void RenderSettings();
+
+        Color directSelectionColor_{0xfd5602_rgb};
+        Color indirectSelectionColor_{0x009dff_rgb};
+    };
+    using SettingsPage = SimpleSettingsPage<Settings>;
+
+    struct PageState
+    {
+        WeakPtr<OutlineGroup> directSelection_;
+        WeakPtr<OutlineGroup> indirectSelection_;
+        unsigned currentRevision_{};
+    };
+
+    explicit SceneSelectionRenderer(SceneViewTab* owner, SettingsPage* settings);
 
     /// Implement SceneViewAddon.
     /// @{
@@ -45,8 +69,16 @@ public:
     /// @}
 
 private:
+    PageState& GetOrInitializeState(SceneViewPage& scenePage) const;
+    bool PrepareInternalComponents(SceneViewPage& scenePage, PageState& state) const;
+    void UpdateInternalComponents(SceneViewPage& scenePage, PageState& state) const;
+    void AddNodeDrawablesToGroup(const Node* node, OutlineGroup* group, OutlineGroup* excludeGroup = nullptr) const;
+    void AddNodeChildrenDrawablesToGroup(const Node* node, OutlineGroup* group, OutlineGroup* excludeGroup = nullptr) const;
+
     void DrawNodeSelection(Scene* scene, Node* node, bool recursive);
     void DrawComponentSelection(Scene* scene, Component* component);
+
+    const WeakPtr<SettingsPage> settings_;
 };
 
 }

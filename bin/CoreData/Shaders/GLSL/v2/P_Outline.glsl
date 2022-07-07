@@ -60,6 +60,7 @@ void main()
     half3 color = averageColor / max(0.001, averageAlpha);
     half alpha = clamp(edge, 0.0, 1.0);
 
+    // TODO(editor): Gamma correction?
     gl_FragColor = vec4(color, alpha);
 }
 #endif

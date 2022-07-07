@@ -45,11 +45,11 @@ void Foundation_EditorCamera(Context* context, SceneViewTab* sceneViewTab)
 
 void EditorCamera::Settings::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "MouseSensitivity", mouseSensitivity_);
-    SerializeOptionalValue(archive, "MinSpeed", minSpeed_);
-    SerializeOptionalValue(archive, "MaxSpeed", maxSpeed_);
-    SerializeOptionalValue(archive, "Acceleration", acceleration_);
-    SerializeOptionalValue(archive, "ShiftFactor", shiftFactor_);
+    SerializeOptionalValue(archive, "MouseSensitivity", mouseSensitivity_, Settings{}.mouseSensitivity_);
+    SerializeOptionalValue(archive, "MinSpeed", minSpeed_, Settings{}.minSpeed_);
+    SerializeOptionalValue(archive, "MaxSpeed", maxSpeed_, Settings{}.maxSpeed_);
+    SerializeOptionalValue(archive, "Acceleration", acceleration_, Settings{}.acceleration_);
+    SerializeOptionalValue(archive, "ShiftFactor", shiftFactor_, Settings{}.shiftFactor_);
 }
 
 void EditorCamera::Settings::RenderSettings()

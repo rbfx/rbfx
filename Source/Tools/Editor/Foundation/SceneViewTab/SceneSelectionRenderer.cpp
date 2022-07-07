@@ -23,8 +23,7 @@
 #include "../../Foundation/SceneViewTab/SceneSelectionRenderer.h"
 
 #include <Urho3D/Graphics/DebugRenderer.h>
-#include <Urho3D/Graphics/Light.h>
-#include <Urho3D/Graphics/Terrain.h>
+#include <Urho3D/Graphics/Drawable.h>
 #include <Urho3D/Scene/Node.h>
 
 namespace Urho3D
@@ -32,18 +31,50 @@ namespace Urho3D
 
 void Foundation_SceneSelectionRenderer(Context* context, SceneViewTab* sceneViewTab)
 {
-    sceneViewTab->RegisterAddon<SceneSelectionRenderer>();
+    auto project = sceneViewTab->GetProject();
+    auto settingsManager = project->GetSettingsManager();
+
+    auto settingsPage = MakeShared<SceneSelectionRenderer::SettingsPage>(context);
+    settingsManager->AddPage(settingsPage);
+
+    sceneViewTab->RegisterAddon<SceneSelectionRenderer>(settingsPage);
 }
 
-SceneSelectionRenderer::SceneSelectionRenderer(SceneViewTab* owner)
+void SceneSelectionRenderer::Settings::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "DirectSelectionColor", directSelectionColor_, Settings{}.directSelectionColor_);
+    SerializeOptionalValue(archive, "IndirectSelectionColor", indirectSelectionColor_, Settings{}.indirectSelectionColor_);
+}
+
+void SceneSelectionRenderer::Settings::RenderSettings()
+{
+    ui::Text("TODO(editor): Implement SceneView.Selection settings page");
+}
+
+SceneSelectionRenderer::SceneSelectionRenderer(SceneViewTab* owner, SettingsPage* settings)
     : SceneViewAddon(owner)
+    , settings_(settings)
 {
 }
 
 void SceneSelectionRenderer::Render(SceneViewPage& scenePage)
 {
-    Scene* scene = scenePage.scene_;
+    const Settings& cfg = settings_->GetValues();
+    PageState& state = GetOrInitializeState(scenePage);
 
+    if (PrepareInternalComponents(scenePage, state))
+    {
+        state.directSelection_->SetColor(cfg.directSelectionColor_);
+        state.indirectSelection_->SetColor(cfg.indirectSelectionColor_);
+
+        if (state.currentRevision_ != scenePage.selection_.GetRevision())
+        {
+            state.currentRevision_ = scenePage.selection_.GetRevision();
+            UpdateInternalComponents(scenePage, state);
+        }
+    }
+
+    Scene* scene = scenePage.scene_;
     for (Node* node : scenePage.selection_.GetNodes())
     {
         if (node)
@@ -54,6 +85,90 @@ void SceneSelectionRenderer::Render(SceneViewPage& scenePage)
     {
         if (component)
             DrawComponentSelection(scene, component);
+    }
+}
+
+SceneSelectionRenderer::PageState& SceneSelectionRenderer::GetOrInitializeState(SceneViewPage& scenePage) const
+{
+    ea::any& stateWrapped = scenePage.GetAddonData(*this);
+    if (!stateWrapped.has_value())
+        stateWrapped = PageState{};
+    return ea::any_cast<PageState&>(stateWrapped);
+}
+
+bool SceneSelectionRenderer::PrepareInternalComponents(SceneViewPage& scenePage, PageState& state) const
+{
+    Scene* scene = scenePage.scene_;
+    if (!state.directSelection_ || !state.indirectSelection_)
+    {
+        if (state.directSelection_)
+            state.directSelection_->Remove();
+        if (state.indirectSelection_)
+            state.indirectSelection_->Remove();
+
+        state.currentRevision_ = 0;
+
+        state.directSelection_ = scene->CreateComponent<OutlineGroup>();
+        state.directSelection_->SetRenderOrder(DirectSelectionRenderOrder);
+        state.directSelection_->SetTemporary(true);
+
+        state.indirectSelection_ = scene->CreateComponent<OutlineGroup>();
+        state.indirectSelection_->SetRenderOrder(IndirectSelectionRenderOrder);
+        state.indirectSelection_->SetTemporary(true);
+    }
+
+    return state.directSelection_ && state.indirectSelection_;
+}
+
+void SceneSelectionRenderer::UpdateInternalComponents(SceneViewPage& scenePage, PageState& state) const
+{
+    Scene* scene = scenePage.scene_;
+
+    state.directSelection_->ClearDrawables();
+
+    for (Component* component : scenePage.selection_.GetComponents())
+    {
+        if (Node* node = component->GetNode())
+            AddNodeDrawablesToGroup(node, state.directSelection_);
+    }
+
+    for (Node* node : scenePage.selection_.GetNodes())
+        AddNodeDrawablesToGroup(node, state.directSelection_);
+
+    state.indirectSelection_->ClearDrawables();
+
+    for (Component* component : scenePage.selection_.GetComponents())
+    {
+        if (Node* node = component->GetNode(); node && node != scene)
+            AddNodeChildrenDrawablesToGroup(node, state.indirectSelection_, state.directSelection_);
+    }
+
+    for (Node* node : scenePage.selection_.GetNodes())
+    {
+        if (node != scene)
+            AddNodeChildrenDrawablesToGroup(node, state.indirectSelection_, state.directSelection_);
+    }
+}
+
+void SceneSelectionRenderer::AddNodeDrawablesToGroup(const Node* node, OutlineGroup* group, OutlineGroup* excludeGroup) const
+{
+    for (Component* outlinedComponent : node->GetComponents())
+    {
+        if (auto drawable = outlinedComponent->Cast<Drawable>())
+        {
+            if (excludeGroup && excludeGroup->ContainsDrawable(drawable))
+                continue;
+            group->AddDrawable(drawable);
+        }
+    }
+}
+
+void SceneSelectionRenderer::AddNodeChildrenDrawablesToGroup(const Node* node, OutlineGroup* group, OutlineGroup* excludeGroup) const
+{
+    for (Node* child : node->GetChildren())
+    {
+        AddNodeDrawablesToGroup(child, group, excludeGroup);
+        AddNodeChildrenDrawablesToGroup(child, group, excludeGroup);
     }
 }
 
@@ -72,15 +187,7 @@ void SceneSelectionRenderer::DrawNodeSelection(Scene* scene, Node* node, bool re
 void SceneSelectionRenderer::DrawComponentSelection(Scene* scene, Component* component)
 {
     auto debugRenderer = scene->GetComponent<DebugRenderer>();
-
-    if (auto light = dynamic_cast<Light*>(component))
-        light->DrawDebugGeometry(debugRenderer, true);
-    else if (auto drawable = dynamic_cast<Drawable*>(component))
-        debugRenderer->AddBoundingBox(drawable->GetWorldBoundingBox(), Color::WHITE);
-    else if (auto terrain = dynamic_cast<Terrain*>(component))
-        ;
-    else
-        component->DrawDebugGeometry(debugRenderer, true);
+    component->DrawDebugGeometry(debugRenderer, true);
 }
 
 }
