@@ -88,6 +88,7 @@ UNIFORM_BUFFER_BEGIN(2, Zone)
 UNIFORM_BUFFER_END(2, Zone)
 #endif
 
+#ifndef URHO3D_CUSTOM_LIGHT_UNIFORMS
 UNIFORM_BUFFER_BEGIN(3, Light)
     /// Light position in world space.
     UNIFORM_HIGHP(vec4 cLightPos)
@@ -146,6 +147,7 @@ UNIFORM_BUFFER_BEGIN(3, Light)
 #endif
 #endif
 UNIFORM_BUFFER_END(3, Light)
+#endif
 
 /// Uniforms needed for UV transformation.
 /// cUOffset: U coordinate transformation: u <- dot(uv, xy) + w.

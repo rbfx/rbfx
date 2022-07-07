@@ -15,6 +15,9 @@
 
 /// =================================== Shader configuration controls ===================================
 
+/// Whether to disable light uniform buffer.
+// #define URHO3D_CUSTOM_LIGHT_UNIFORMS
+
 /// Whether to disable default uniform buffer in favor of custom one.
 /// You may still need to declare default constants to use built-in includes.
 // #define URHO3D_CUSTOM_MATERIAL_UNIFORMS

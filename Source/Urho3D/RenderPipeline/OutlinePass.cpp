@@ -90,7 +90,6 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
     const BatchStateCreateKey& key, const BatchStateCreateContext& ctx)
 {
     ShaderProgramCompositor* compositor = builder->GetShaderProgramCompositor();
-    shaderProgramDesc_ = {};
 
     desc.depthWriteEnabled_ = false;
     desc.depthCompareFunction_ = CMP_ALWAYS;
@@ -104,15 +103,18 @@ bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStat
 
     desc.scissorTestEnabled_ = true;
 
+    shaderProgramDesc_.Clear();
     compositor->ProcessUserBatch(shaderProgramDesc_, GetFlags(),
         key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_,
         nullptr, false, BatchCompositorSubpass::Ignored);
 
-    shaderProgramDesc_.pixelShaderName_ = "v2/M_OutlinePixel";
-    if ((key.pass_->IsAlphaMask() || key.pass_->GetBlendMode() != BLEND_REPLACE) && key.material_->GetTexture(TU_DIFFUSE))
-        shaderProgramDesc_.pixelShaderDefines_ = "ALPHAMASK ";
-    else
-        shaderProgramDesc_.pixelShaderDefines_ = "";
+    shaderProgramDesc_.shaderName_[PS] = "v2/M_OutlinePixel";
+    shaderProgramDesc_.shaderDefines_[PS] = "";
+
+    const bool needAlphaMask = key.pass_->IsAlphaMask()
+        || (key.pass_->GetBlendMode() != BLEND_REPLACE && key.material_->GetTexture(TU_DIFFUSE));
+    if (needAlphaMask)
+        shaderProgramDesc_.AddShaderDefines(PS, "ALPHAMASK");
 
     builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);
     builder->SetupShaders(desc, shaderProgramDesc_);

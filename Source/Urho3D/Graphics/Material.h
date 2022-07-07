@@ -97,6 +97,8 @@ struct MaterialShaderParameter
     ea::string name_;
     /// Value.
     Variant value_;
+    /// Whether to assign material to "Custom" uniform group.
+    bool isCustom_{};
 };
 
 /// %Material's technique list entry.
@@ -205,7 +207,7 @@ public:
     void SetPixelShaderDefines(const ea::string& defines);
     /// Set shader parameter.
     /// @property{set_shaderParameters}
-    void SetShaderParameter(const ea::string& name, const Variant& value);
+    void SetShaderParameter(const ea::string& name, const Variant& value, bool isCustom = false);
     /// Set shader parameter animation.
     void
         SetShaderParameterAnimation(const ea::string& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
