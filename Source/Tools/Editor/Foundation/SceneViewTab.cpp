@@ -568,6 +568,8 @@ SharedPtr<SceneViewPage> SceneViewTab::CreatePage(Scene* scene, bool isActive) c
     page->renderer_->SetActive(isActive);
 
     LoadPageConfig(*page);
+    for (SceneViewAddon* addon : addons_)
+        addon->Initialize(*page);
     return page;
 }
 

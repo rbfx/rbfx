@@ -58,9 +58,9 @@ void Foundation_TransformManipulator(Context* context, SceneViewTab* sceneViewTa
 
 void TransformManipulator::Settings::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "SnapPosition", snapPosition_);
-    SerializeOptionalValue(archive, "SnapRotation", snapRotation_);
-    SerializeOptionalValue(archive, "SnapScale", snapScale_);
+    SerializeOptionalValue(archive, "SnapPosition", snapPosition_, Settings{}.snapPosition_);
+    SerializeOptionalValue(archive, "SnapRotation", snapRotation_, Settings{}.snapRotation_);
+    SerializeOptionalValue(archive, "SnapScale", snapScale_, Settings{}.snapScale_);
 }
 
 void TransformManipulator::Settings::RenderSettings()

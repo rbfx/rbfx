@@ -77,10 +77,12 @@ DrawableProcessorPass::AddBatchResult OutlineScenePass::AddCustomBatch(
         if (!outlineGroup->ContainsDrawable(drawable))
             continue;
 
-        Pass* referencePass = GetFirstPass(technique, outlinedPasses_);
-        geometryBatches_.PushBack(threadIndex, GeometryBatch::Deferred(drawable, sourceBatchIndex, referencePass, outlineGroup));
+        if (Pass* referencePass = GetFirstPass(technique, outlinedPasses_))
+        {
+            geometryBatches_.PushBack(threadIndex, GeometryBatch::Deferred(drawable, sourceBatchIndex, referencePass, outlineGroup));
 
-        batchAdded = true;
+            batchAdded = true;
+        }
     }
 
     return {batchAdded, false};

@@ -86,6 +86,8 @@ public:
     virtual ea::string GetUniqueName() const = 0;
     /// Return input priority.
     virtual int GetInputPriority() const { return 0; }
+    /// Initialize addon for the given page.
+    virtual void Initialize(SceneViewPage& page) {}
     /// Process input.
     virtual void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) {}
     /// Update and render addon.
