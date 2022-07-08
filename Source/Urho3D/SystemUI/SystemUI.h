@@ -22,33 +22,20 @@
 //
 #pragma once
 
-
 #include "../Container/ValueCache.h"
 #include "../Core/Object.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Input/InputEvents.h"
-#include "../Math/StringHash.h"
 #include "../Math/Matrix4.h"
+#include "../Math/StringHash.h"
 #include "../Math/Vector2.h"
 #include "../Math/Vector4.h"
+#include "../SystemUI/ImGui.h"
 #include "../SystemUI/SystemUIEvents.h"
 
-#define IM_VEC2_CLASS_EXTRA                                                                                            \
-    operator Urho3D::Vector2() const { return {x, y}; }                                                                      \
-    ImVec2(const Urho3D::Vector2& vec) { x = vec.x_; y = vec.y_; }
-
-#define IM_VEC4_CLASS_EXTRA                                                                                            \
-    operator Urho3D::Vector4() const { return {x, y, z, w}; }                                                                \
-    ImVec4(const Urho3D::Vector4& vec) { x = vec.x_; y = vec.y_; z = vec.z_; w = vec.w_; }
-
 #include <EASTL/unordered_map.h>
-
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_internal.h>
-#include <ImGui/imgui_stdlib.h>
-
 
 namespace Urho3D
 {
@@ -57,7 +44,8 @@ const float SYSTEMUI_DEFAULT_FONT_SIZE = 14;
 
 class URHO3D_API SystemUI : public Object
 {
-URHO3D_OBJECT(SystemUI, Object);
+    URHO3D_OBJECT(SystemUI, Object);
+
 public:
     /// Construct.
     explicit SystemUI(Context* context, ImGuiConfigFlags flags=0);
@@ -125,38 +113,11 @@ protected:
     ImVec2 revertMousePosition_;
 };
 
-/// Convert Color to ImVec4.
-inline ImVec4 ToImGui(const Color& color) { return {color.r_, color.g_, color.b_, color.a_}; }
-/// Convert IntVector2 to ImVec2.
-inline ImVec2 ToImGui(IntVector2 vec) { return {(float)vec.x_, (float)vec.y_}; };
-/// Convert Vector2 to ImVec2.
-inline ImVec2 ToImGui(Vector2 vec) { return {vec.x_, vec.y_}; };
-/// Convert IntRect to ImRect.
-inline ImRect ToImGui(const IntRect& rect) { return { ToImGui(rect.Min()), ToImGui(rect.Max()) }; }
-/// Convert ImVec2 to IntVector2.
-inline IntVector2 ToIntVector2(const ImVec2& vec) { return {(int)Round(vec.x), (int)Round(vec.y)}; }
-/// Convert ImRect to IntRect
-inline IntRect ToIntRect(const ImRect& rect) { return {ToIntVector2(rect.Min), ToIntVector2(rect.Max)}; }
-
 }
-
-enum ImGuiItemMouseActivation
-{
-    ImGuiItemMouseActivation_Click,
-    ImGuiItemMouseActivation_Dragging,
-};
 
 namespace ImGui
 {
 
-URHO3D_API bool IsMouseDown(Urho3D::MouseButton buttons);
-URHO3D_API bool IsMouseDoubleClicked(Urho3D::MouseButton buttons);
-URHO3D_API bool IsMouseDragging(Urho3D::MouseButton buttons, float lock_threshold=-1.0f);
-URHO3D_API bool IsMouseReleased(Urho3D::MouseButton buttons);
-URHO3D_API bool IsMouseClicked(Urho3D::MouseButton buttons, bool repeat=false);
-URHO3D_API bool IsItemClicked(Urho3D::MouseButton buttons);
-URHO3D_API ImVec2 GetMouseDragDelta(Urho3D::MouseButton button, float lock_threshold = -1.0f);
-URHO3D_API void ResetMouseDragDelta(Urho3D::MouseButton button);
 URHO3D_API bool SetDragDropVariant(const ea::string& types, const Urho3D::Variant& variant, ImGuiCond cond = 0);
 URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const ea::string& type, ImGuiDragDropFlags flags = 0);
 URHO3D_API void Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
@@ -166,25 +127,8 @@ URHO3D_API bool ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& si
 URHO3D_API float GetSmallButtonSize();
 URHO3D_API bool ToolbarButton(const char* label, const char* tooltip = nullptr, bool active = false);
 URHO3D_API void ToolbarSeparator();
-URHO3D_API bool IsKeyDown(Urho3D::Key key);
-URHO3D_API bool IsKeyPressed(Urho3D::Key key, bool repeat = true);
-URHO3D_API bool IsKeyReleased(Urho3D::Key key);
-URHO3D_API int GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate);
 /// Activate last item if specified mouse button is pressed and held over it, deactivate when released.
 URHO3D_API bool ItemMouseActivation(Urho3D::MouseButton button, unsigned flags = ImGuiItemMouseActivation_Click);
 URHO3D_API void HideCursorWhenActive(Urho3D::MouseButton button, bool on_drag = false);
 
 }
-
-static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
-static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return !(lhs == rhs); }
-static inline bool operator==(const ImRect& lhs, const ImRect& rhs) { return lhs.Min == rhs.Min && lhs.Max == rhs.Max; }
-static inline bool operator!=(const ImRect& lhs, const ImRect& rhs) { return !(lhs == rhs); }
-static inline ImRect operator+(const ImRect& lhs, const ImRect& rhs) { return ImRect(lhs.Min + rhs.Min, lhs.Max + rhs.Max); }
-static inline ImRect& operator+=(ImRect& lhs, const ImRect& rhs) { lhs.Min += rhs.Min; lhs.Max += rhs.Max; return lhs; }
-static inline ImRect operator/(const ImRect& lhs, float rhs) { return ImRect(lhs.Min / rhs, lhs.Max / rhs); }
-static inline ImRect& operator/=(ImRect& lhs, float rhs) { lhs.Min /= rhs; lhs.Max /= rhs; return lhs; }
-static inline ImRect& operator*=(ImRect& lhs, float rhs) { lhs.Min *= rhs; lhs.Max *= rhs; return lhs; }
-static inline ImRect ImRound(const ImRect& r) { return ImRect({Urho3D::Round(r.Min.x), Urho3D::Round(r.Min.y)}, {Urho3D::Round(r.Max.x), Urho3D::Round(r.Max.y)}); };
-
-namespace ui = ImGui;
