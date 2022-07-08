@@ -45,7 +45,14 @@ void PlaceholderResourceInspector::OnProjectRequest(ProjectRequest* request)
     if (!inspectResourceRequest || inspectResourceRequest->GetResources().empty())
         return;
 
-    const auto& resources = inspectResourceRequest->GetResources();
+    request->QueueProcessCallback([=]()
+    {
+        InspectResources(inspectResourceRequest->GetResources());
+    }, M_MIN_INT);
+}
+
+void PlaceholderResourceInspector::InspectResources(const ea::vector<FileResourceDesc>& resources)
+{
     if (resources.size() == 1)
     {
         const FileResourceDesc& desc = resources.front();

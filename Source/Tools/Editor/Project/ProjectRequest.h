@@ -113,6 +113,7 @@ public:
     explicit InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames);
 
     const ea::vector<FileResourceDesc>& GetResources() const { return resourceDescs_; }
+    StringVector GetSortedResourceNames() const;
 
 private:
     ea::vector<FileResourceDesc> resourceDescs_;
