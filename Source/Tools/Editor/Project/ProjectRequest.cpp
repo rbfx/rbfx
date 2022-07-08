@@ -24,6 +24,8 @@
 
 #include <Urho3D/Resource/ResourceCache.h>
 
+#include <EASTL/sort.h>
+
 namespace Urho3D
 {
 
@@ -110,6 +112,15 @@ InspectResourceRequest::InspectResourceRequest(Context* context, const ea::vecto
 {
     ea::transform(resourceNames.begin(), resourceNames.end(), ea::back_inserter(resourceDescs_),
         [&](const ea::string& resourceName) { return FileResourceDesc{context, resourceName}; });
+}
+
+StringVector InspectResourceRequest::GetSortedResourceNames() const
+{
+    StringVector resourceNames;
+    ea::transform(resourceDescs_.begin(), resourceDescs_.end(), ea::back_inserter(resourceNames),
+        [](const FileResourceDesc& desc) { return desc.GetResourceName(); });
+    ea::sort(resourceNames.begin(), resourceNames.end());
+    return resourceNames;
 }
 
 }

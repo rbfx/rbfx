@@ -24,18 +24,21 @@
 
 #include "../../Foundation/InspectorTab.h"
 
+#include <Urho3D/Graphics/Material.h>
+
 namespace Urho3D
 {
 
-void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab_* inspectorTab);
+void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab);
 
 /// Scene hierarchy provider for hierarchy browser tab.
-class PlaceholderResourceInspector : public InspectorAddon
+/// TODO(editor): Rename
+class MaterialInspector_ : public InspectorAddon
 {
-    URHO3D_OBJECT(PlaceholderResourceInspector, InspectorAddon)
+    URHO3D_OBJECT(MaterialInspector_, InspectorAddon)
 
 public:
-    explicit PlaceholderResourceInspector(InspectorTab_* owner);
+    explicit MaterialInspector_(InspectorTab_* owner);
 
     /// Implement InspectorAddon
     /// @{
@@ -49,21 +52,10 @@ public:
 
 private:
     void OnProjectRequest(ProjectRequest* request);
-    void InspectResources(const ea::vector<FileResourceDesc>& resources);
+    void InspectResources();
 
-    struct SingleResource
-    {
-        ea::string resourceType_;
-        ea::string resourceName_;
-    };
-    ea::optional<SingleResource> singleResource_;
-
-    struct MultipleResources
-    {
-        unsigned numFiles_{};
-        unsigned numFolders_{};
-    };
-    ea::optional<MultipleResources> multipleResources_;
+    StringVector resourceNames_;
+    ea::vector<SharedPtr<Material>> materials_;
 };
 
 }
