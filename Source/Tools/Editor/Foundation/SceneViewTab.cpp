@@ -528,8 +528,8 @@ void SceneViewTab::RenderContent()
     ui::SetCursorPos(basePosition);
     ui::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
-    const auto contentAreaMin = static_cast<Vector2>(ui::GetItemRectMin());
-    const auto contentAreaMax = static_cast<Vector2>(ui::GetItemRectMax());
+    const auto contentAreaMin = ToVector2(ui::GetItemRectMin());
+    const auto contentAreaMax = ToVector2(ui::GetItemRectMax());
     activePage->contentArea_ = Rect{contentAreaMin, contentAreaMax};
 
     UpdateAddons(*activePage);

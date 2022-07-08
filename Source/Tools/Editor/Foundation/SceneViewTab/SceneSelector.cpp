@@ -63,7 +63,7 @@ Drawable* SceneSelector::QuerySelectedDrawable(Scene* scene, Camera* camera, Ray
     ImGuiIO& io = ui::GetIO();
 
     const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
-    const auto pos = static_cast<Vector2>((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
+    const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
     const Ray cameraRay = camera->GetScreenRay(pos.x_, pos.y_);
 
     ea::vector<RayQueryResult> results;

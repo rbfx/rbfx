@@ -114,7 +114,7 @@ void ModelPreview::RenderPreview()
         }
         else
         {
-            Vector2 delta = ui::GetMouseDragDelta(MOUSEB_RIGHT);
+            Vector2 delta = ToVector2(ui::GetMouseDragDelta(MOUSEB_RIGHT));
             ui::ResetMouseDragDelta(MOUSEB_RIGHT);
             Quaternion rotateDelta = Quaternion(delta.x_ * 0.1f, node->GetUp()) *
                 Quaternion(delta.y_ * 0.1f, node->GetRight());

@@ -44,7 +44,7 @@ Rect GetMainViewportRect()
     const ImVec2 pos = ImVec2(0, 0);
     const ImVec2 size = io.DisplaySize;
 #endif
-    return Rect{static_cast<Vector2>(pos), static_cast<Vector2>(pos + size)};
+    return Rect{ToVector2(pos), ToVector2(pos + size)};
 }
 
 ImGuizmo::OPERATION GetInternalOperation(TransformGizmoOperation op)

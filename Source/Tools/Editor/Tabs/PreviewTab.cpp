@@ -221,12 +221,12 @@ bool PreviewTab::RenderWindowContent()
     ui::SetCursorScreenPos(ui::GetItemRectMin());
     ui::InvisibleButton("###preview", rect.GetSize());
 
-    viewportRect_.min_ = ui::GetItemRectMin();
-    viewportRect_.max_ = ui::GetItemRectMax();
+    viewportRect_.min_ = ToVector2(ui::GetItemRectMin());
+    viewportRect_.max_ = ToVector2(ui::GetItemRectMax());
     if (!window->ViewportOwned)
     {
-        viewportRect_.min_ -= static_cast<Vector2>(viewport->Pos);
-        viewportRect_.max_ -= static_cast<Vector2>(viewport->Pos);
+        viewportRect_.min_ -= ToVector2(viewport->Pos);
+        viewportRect_.max_ -= ToVector2(viewport->Pos);
     }
 
     const Vector2 viewportSizeMinusOne = viewportRect_.Size() - Vector2::ONE;
