@@ -526,11 +526,11 @@ void ProjectEditor::ProcessPendingRequests()
 
 void ProjectEditor::RenderToolbar()
 {
-    if (ui::ToolbarButton(ICON_FA_FLOPPY_DISK, "Save Project"))
+    if (Widgets::ToolbarButton(ICON_FA_FLOPPY_DISK, "Save Project"))
         Save();
     OnRenderProjectToolbar(this);
 
-    ui::ToolbarSeparator();
+    Widgets::ToolbarSeparator();
 
     if (focusedRootTab_)
         focusedRootTab_->RenderToolbar();

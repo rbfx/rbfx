@@ -75,7 +75,7 @@ void SetHelpTooltip(const char* text, Key requireKey)
 
 float IconButtonSize()
 {
-    return ui::GetSmallButtonSize();
+    return Widgets::GetSmallButtonSize();
 }
 
 bool IconButton(const char* label)
@@ -320,7 +320,7 @@ SystemUI* GetSystemUI()
 
 bool EditorToolbarButton(const char* text, const char* tooltip, bool active)
 {
-    return ui::ToolbarButton(text, tooltip, active);
+    return Widgets::ToolbarButton(text, tooltip, active);
 }
 
 void OpenTreeNode(ImGuiID id)
@@ -456,53 +456,6 @@ void TextCentered(const char* text)
 {
     ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(text).x) / 2);
     ui::TextUnformatted(text);
-}
-
-void ItemLabel(ea::string_view title, const Color* color, ItemLabelFlags flags)
-{
-    ImGuiWindow* window = ui::GetCurrentWindow();
-    const ImVec2 lineStart = ui::GetCursorScreenPos();
-    const ImGuiStyle& style = ui::GetStyle();
-    float fullWidth = ui::GetContentRegionAvail().x;
-    float itemWidth = ui::CalcItemWidth() + style.ItemSpacing.x;
-    ImVec2 textSize = ui::CalcTextSize(title.begin(), title.end());
-    ImRect textRect;
-    textRect.Min = ui::GetCursorScreenPos();
-    if (flags & ItemLabelFlag::Right)
-        textRect.Min.x = textRect.Min.x + itemWidth;
-    textRect.Max = textRect.Min;
-    textRect.Max.x += fullWidth - itemWidth;
-    textRect.Max.y += textSize.y;
-
-    ui::SetCursorScreenPos(textRect.Min);
-
-    ImGui::AlignTextToFramePadding();
-    // Adjust text rect manually because we render it directly into a drawlist instead of using public functions.
-    textRect.Min.y += window->DC.CurrLineTextBaseOffset;
-    textRect.Max.y += window->DC.CurrLineTextBaseOffset;
-
-    ItemSize(textRect);
-    if (ItemAdd(textRect, window->GetID(title.data(), title.data() + title.size())))
-    {
-        if (color != nullptr)
-            ui::PushStyleColor(ImGuiCol_Text, color->ToUInt());
-
-        RenderTextEllipsis(ui::GetWindowDrawList(), textRect.Min, textRect.Max, textRect.Max.x,
-            textRect.Max.x, title.data(), title.data() + title.size(), &textSize);
-
-        if (color != nullptr)
-            ui::PopStyleColor();
-
-        if (textRect.GetWidth() < textSize.x && ui::IsItemHovered())
-            ui::SetTooltip("%.*s", (int)title.size(), title.data());
-    }
-    if (flags & ItemLabelFlag::Left)
-    {
-        ui::SetCursorScreenPos(textRect.Max - ImVec2{0, textSize.y + window->DC.CurrLineTextBaseOffset});
-        ui::SameLine();
-    }
-    else if (flags & ItemLabelFlag::Right)
-        ui::SetCursorScreenPos(lineStart);
 }
 
 static const ImGuiDataTypeInfo GDataTypeInfo[] =

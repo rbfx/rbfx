@@ -96,7 +96,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     // Cull
     {
         int value = material->GetCullMode(), valuePrev = value;
-        ui::ItemLabel("Cull");
+        Widgets::ItemLabel("Cull");
         if (ui::Combo("###Cull", &value, cullModeNames, MAX_CULLMODES) && value != valuePrev)
         {
             material->SetCullMode(static_cast<CullMode>(value));
@@ -107,7 +107,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     // Shadow Cull
     {
         int value = material->GetShadowCullMode(), valuePrev = value;
-        ui::ItemLabel("Shadow Cull");
+        Widgets::ItemLabel("Shadow Cull");
         if (ui::Combo("###Shadow Cull", &value, cullModeNames, MAX_CULLMODES) && value != valuePrev)
         {
             material->SetShadowCullMode(static_cast<CullMode>(value));
@@ -118,7 +118,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     // Fill Mode
     {
         int value = material->GetFillMode(), valuePrev = value;
-        ui::ItemLabel("Fill Mode");
+        Widgets::ItemLabel("Fill Mode");
         if (ui::Combo("###Fill Mode", &value, fillModeNames, MAX_FILLMODES) && value != valuePrev)
         {
             material->SetFillMode(static_cast<FillMode>(value));
@@ -129,7 +129,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     // Alpha To Coverage
     {
         bool value = material->GetAlphaToCoverage();
-        ui::ItemLabel("Alpha To Coverage");
+        Widgets::ItemLabel("Alpha To Coverage");
         if (ui::Checkbox("###Alpha To Coverage", &value))
         {
             material->SetAlphaToCoverage(value);
@@ -139,7 +139,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     // Line Anti Alias
     {
         bool value = material->GetLineAntiAlias();
-        ui::ItemLabel("Line Anti Alias");
+        Widgets::ItemLabel("Line Anti Alias");
         // if (flags & ui::ItemLabelFlag::Right)
         //     ui::ItemAlign(ui::GetFrameHeight());
         if (ui::Checkbox("###Line Anti Alias", &value))
@@ -161,7 +161,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             }
             return false;
         };
-        ui::ItemLabel("Render Order");
+        Widgets::ItemLabel("Render Order");
         if (auto mod = undo->Track<UndoCustomAction<unsigned char>>(material->GetRenderOrder(), setRenderOrder, save))
             mod.SetModified(ui::DragScalar("###Render Order", ImGuiDataType_U8, &mod.value_, 0.1f));
         ui::PopID();
@@ -169,7 +169,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     // Occlusion
     {
         bool value = material->GetOcclusion();
-        ui::ItemLabel("Occlusion");
+        Widgets::ItemLabel("Occlusion");
         // if (flags & ui::ItemLabelFlag::Right)
         //     ui::ItemAlign(ui::GetFrameHeight());
         if (ui::Checkbox("###Occlusion", &value))
@@ -193,7 +193,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             }
             return false;
         };
-        ui::ItemLabel("Constant Bias");
+        Widgets::ItemLabel("Constant Bias");
         if (auto mod = undo->Track<UndoCustomAction<float>>(material->GetDepthBias().constantBias_, setDepthBias, save))
             mod.SetModified(ui::DragScalar("###Constant Bias", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
@@ -213,7 +213,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             }
             return false;
         };
-        ui::ItemLabel("Slope Scaled Bias");
+        Widgets::ItemLabel("Slope Scaled Bias");
         if (auto mod = undo->Track<UndoCustomAction<float>>(material->GetDepthBias().slopeScaledBias_, setSlopeScaledBias, save))
             mod.SetModified(ui::DragScalar("###Slope Scaled Bias", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
@@ -233,7 +233,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             }
             return false;
         };
-        ui::ItemLabel("Normal Offset");
+        Widgets::ItemLabel("Normal Offset");
         if (auto mod = undo->Track<UndoCustomAction<float>>(material->GetDepthBias().normalOffset_, setNormalOffset, save))
             mod.SetModified(ui::DragScalar("###Normal Offset", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
@@ -283,7 +283,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             // Input
             if (modifiedInput)
                 ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
-            ui::ItemLabel("Technique");
+            Widgets::ItemLabel("Technique");
             ui::SetNextItemWidth(ui::CalcItemWidth() - (ui::IconButtonSize() + style.ItemSpacing.x) * 2);
             bool modified = ui::InputText("##techniqueName", techName, ImGuiInputTextFlags_EnterReturnsTrue);
             if (modifiedInput)
@@ -415,13 +415,13 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
                 }
                 return false;
             };
-            ui::ItemLabel("LOD Distance");
+            Widgets::ItemLabel("LOD Distance");
             if (auto mod = undo->Track<UndoCustomAction<float>>(tech.lodDistance_, setLodDistance, save))
                 mod.SetModified(ui::DragFloat("###LOD Distance", &mod.value_));
             // Quality
             static const char* qualityNames[] = {"low", "medium", "high", "max"};
             int quality = tech.qualityLevel_;
-            ui::ItemLabel("Quality");
+            Widgets::ItemLabel("Quality");
             if (ui::Combo("###Quality", &quality, qualityNames, URHO3D_ARRAYSIZE(qualityNames)) && quality != tech.qualityLevel_)
             {
                 undo->Add<UndoCustomAction<const int>>(static_cast<int>(tech.qualityLevel_), quality,
@@ -442,7 +442,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
         ui::PushID("Add Technique");
         auto* newTechniqueName = ui::GetUIState<ea::string>();
         // New technique name
-        ui::ItemLabel("Add Technique");
+        Widgets::ItemLabel("Add Technique");
         bool modified = ui::InputTextWithHint("###Add Technique", "Enter technique path and press [Enter]", newTechniqueName, ImGuiInputTextFlags_EnterReturnsTrue);
         ui::SetHelpTooltip("Drag and drop technique resource here.");
         // Autocomplete
@@ -561,7 +561,7 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
                 "Vector4",
             };
 
-            ui::ItemLabel("Add Parameter");
+            Widgets::ItemLabel("Add Parameter");
             float width = ui::CalcItemWidth();
             ui::SetNextItemWidth(width * 0.2 - style.ItemSpacing.x);
             ui::Combo("###Type", &paramState->variantTypeIndex_, shaderParameterVariantNames, SDL_arraysize(shaderParameterVariantTypes));

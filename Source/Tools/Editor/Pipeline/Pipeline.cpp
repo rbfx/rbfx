@@ -816,7 +816,7 @@ void Pipeline::RenderSettingsUI()
         ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
     bool addNew = ui::InputText("Flavor Name", &newFlavorName, ImGuiInputTextFlags_EnterReturnsTrue);
     ui::SameLine();
-    addNew |= ui::ToolbarButton(ICON_FA_PLUS " Add New");
+    addNew |= Widgets::ToolbarButton(ICON_FA_PLUS " Add New");
     if (addNew && canAdd)
         AddFlavor(newFlavorName);
     if (!canAdd)
@@ -838,7 +838,7 @@ void Pipeline::RenderSettingsUI()
 
                 bool save = ui::InputText("Flavor Name", &editBuffer, ImGuiInputTextFlags_EnterReturnsTrue);
                 ui::SameLine();
-                save |= ui::ToolbarButton(ICON_FA_CHECK);
+                save |= Widgets::ToolbarButton(ICON_FA_CHECK);
                 ui::SetHelpTooltip("Rename flavor", KEY_UNKNOWN);
                 if (save && canRename && !flavor->IsDefault())
                     RenameFlavor(flavor->GetName(), editBuffer);

@@ -128,13 +128,13 @@ void SceneHierarchy::ApplyHotkeys(HotkeyManager* hotkeyManager)
 
 void SceneHierarchy::RenderToolbar(SceneViewPage& page)
 {
-    if (ui::ToolbarButton(ICON_FA_CLOCK, "Show Temporary Nodes & Components", showTemporary_))
+    if (Widgets::ToolbarButton(ICON_FA_CLOCK, "Show Temporary Nodes & Components", showTemporary_))
         showTemporary_ = !showTemporary_;
-    if (ui::ToolbarButton(ICON_FA_DIAGRAM_PROJECT, "Show Components", showComponents_))
+    if (Widgets::ToolbarButton(ICON_FA_DIAGRAM_PROJECT, "Show Components", showComponents_))
         showComponents_ = !showComponents_;
 
     ui::BeginDisabled();
-    ui::ToolbarButton(ICON_FA_MAGNIFYING_GLASS);
+    Widgets::ToolbarButton(ICON_FA_MAGNIFYING_GLASS);
     ui::EndDisabled();
 
     const bool sceneChanged = search_.lastScene_ != page.scene_;

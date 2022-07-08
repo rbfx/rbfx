@@ -137,7 +137,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.SelectionRenderer", &Foundation_SceneSelectionRenderer);
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
 
-    editorPluginManager_->AddPlugin("Foundation.InspectorTab.PlaceholderResourceInspector", &Foundation_PlaceholderResourceInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
 
     editorPluginManager_->AddPlugin("Foundation.Glue.ProjectEditor", &Foundation_ProjectEditorGlue);
     editorPluginManager_->AddPlugin("Foundation.Glue.SceneView", &Foundation_SceneViewGlue);
@@ -385,10 +385,10 @@ void Editor::OnUpdate(VariantMap& args)
     ImGuiContext& g = *GImGui;
 
     const bool hasToolbar = projectEditor_ != nullptr;
-    const float toolbarButtonHeight = ui::GetSmallButtonSize();
+    const float toolbarButtonHeight = Widgets::GetSmallButtonSize();
     const float toolbarWindowPadding = ea::max(3.0f, (g.Style.WindowMinSize.y - toolbarButtonHeight) / 2);
     const float toolbarHeight = hasToolbar
-        ? ui::GetSmallButtonSize() + 2 * (toolbarWindowPadding + 0)//g.Style.FramePadding.y)
+        ? Widgets::GetSmallButtonSize() + 2 * (toolbarWindowPadding + 0)//g.Style.FramePadding.y)
         : 0.0f;
     const float toolbarEffectiveHeight = toolbarHeight + 1;
 
