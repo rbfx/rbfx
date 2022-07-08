@@ -43,14 +43,6 @@ enum TransformSelector
 };
 URHO3D_FLAGSET(TransformSelector, TransformSelectorFlags);
 
-enum class ItemLabelFlag
-{
-    Left = 1u << 0u,
-    Right = 1u << 1u,
-    Default = Left,
-};
-URHO3D_FLAGSET(ItemLabelFlag, ItemLabelFlags);
-
 /// Helper for running `for` loop just once.
 struct ScopeHelper
 {
@@ -219,8 +211,6 @@ URHO3D_TOOLBOX_API bool WasItemActive();
 URHO3D_TOOLBOX_API void ItemAlign(float itemWidth);
 /// Render text in the center of current available region.
 URHO3D_TOOLBOX_API void TextCentered(const char* text);
-/// Render a label for next item. Label may be on the left or on the right, depending on flags.
-URHO3D_TOOLBOX_API void ItemLabel(ea::string_view title, const Urho3D::Color* color = nullptr, ItemLabelFlags flags=ItemLabelFlag::Default);
 /// Render draggable scalars widget with a custom format for each part.
 URHO3D_TOOLBOX_API bool DragScalarFormatsN(const char* label, ImGuiDataType data_type, void* p_data, int components, float v_speed, const void* p_min=nullptr, const void* p_max=nullptr, const char** formats=nullptr, float power=1.0f);
 

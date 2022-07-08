@@ -94,7 +94,7 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
         const bool isPlaying = state->IsPlaying();
         const char* title = isPlaying ? ICON_FA_STOP : ICON_FA_EJECT;
         const char* tooltip = isPlaying ? "Stop" : "Launch";
-        if (ui::ToolbarButton(title, tooltip))
+        if (Widgets::ToolbarButton(title, tooltip))
             state->TogglePlayed();
     });
 }

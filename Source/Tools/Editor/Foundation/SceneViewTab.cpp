@@ -349,7 +349,7 @@ void SceneViewTab::RenderToolbar()
     {
         const bool canRewind = activePage && activePage->simulationBase_;
         ui::BeginDisabled(!canRewind);
-        if (ui::ToolbarButton(ICON_FA_BACKWARD_FAST, "Rewind Simulation"))
+        if (Widgets::ToolbarButton(ICON_FA_BACKWARD_FAST, "Rewind Simulation"))
             RewindSimulation();
         ui::EndDisabled();
     }
@@ -360,12 +360,12 @@ void SceneViewTab::RenderToolbar()
         const char* label = isUpdating ? ICON_FA_PAUSE : ICON_FA_PLAY;
         const char* tooltip = isUpdating ? "Pause Simulation" : (isStarted ? "Resume Simulation" : "Start Simulation");
         ui::BeginDisabled(!activePage);
-        if (ui::ToolbarButton(label, tooltip))
+        if (Widgets::ToolbarButton(label, tooltip))
             ToggleSimulationPaused();
         ui::EndDisabled();
     }
 
-    ui::ToolbarSeparator();
+    Widgets::ToolbarSeparator();
 }
 
 bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)

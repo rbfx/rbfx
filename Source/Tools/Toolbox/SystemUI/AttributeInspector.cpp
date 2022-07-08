@@ -179,7 +179,7 @@ bool RenderStructVariantVectorAttribute(VariantVector& value, const StringVector
                 ui::Separator();
 
             const ui::IdScope elementIdScope(index);
-            ui::ItemLabel(elementName);
+            Widgets::ItemLabel(elementName);
             modified |= RenderAttribute("", value[index], Color::WHITE, "", nullptr, eventSender,
                 ui::CalcItemWidth() - ui::IconButtonSize());
         }
@@ -203,7 +203,7 @@ bool RenderAnimatedModelMorphsAttribute(ByteVector& value, Object* eventSender)
     for (unsigned morphIndex = 0; morphIndex < value.size(); ++morphIndex)
     {
         const ui::IdScope elementIdScope(morphIndex);
-        ui::ItemLabel(Format("> Morph #{}", morphIndex));
+        Widgets::ItemLabel(Format("> Morph #{}", morphIndex));
 
         float weight = value[morphIndex] / 255.0f;
         modified |= ui::DragFloat("", &weight, 1.0f / 255.0f, 0.0f, 1.0f, "%.3f");
@@ -242,8 +242,8 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
     bool showHelperLabels = false;
 
     // Render label
-    ui::ItemLabelFlags flags = ui::ItemLabelFlag::Left;
-    ItemLabel(title, &color, flags);
+    bool isLeft = true;
+    Widgets::ItemLabel(title, color, isLeft);
     openAttributeMenu |= ui::IsItemClicked(MOUSEB_RIGHT);
     if (item_width != 0)
         ui::PushItemWidth(item_width);
@@ -300,7 +300,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
         case VAR_BOOL:
         {
             auto v = value.GetBool();
-            if (flags & ui::ItemLabelFlag::Right)
+            if (!isLeft)
                 ui::ItemAlign(ui::GetFrameHeight());    // Align checkbox to the right side.
             modified |= ui::Checkbox("", &v);
             if (modified)
@@ -482,7 +482,7 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
 
                 ui::IdScope entryIdScope(index++);
                 // FIXME: Number of components in rendered attribute affects item width and causes misalignment.
-                ui::ItemLabel(keyName);
+                Widgets::ItemLabel(keyName);
                 modified |= RenderAttribute("", it->second, Color::WHITE, "", nullptr, eventSender, ui::CalcItemWidth() - ui::IconButtonSize());
                 // Delete button.
                 ui::SameLine();
