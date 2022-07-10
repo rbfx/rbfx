@@ -102,13 +102,20 @@ EditorActionFrame UndoManager::PushAction(const EditorActionPtr& action)
     if (NeedNewGroup())
         undoStack_.push_back(ActionGroup{frame_});
 
+    // Try merge first
     ActionGroup& group = undoStack_.back();
     if (!group.actions_.empty())
     {
         if (group.actions_.back()->MergeWith(*action))
             return frame_;
     }
+
     group.actions_.push_back(action);
+
+    CommitIncompleteAction();
+    if (!action->IsComplete())
+        incompleteAction_ = action;
+
     return frame_;
 }
 
@@ -118,6 +125,8 @@ bool UndoManager::Undo()
     {
         if (undoStack_.empty())
             return false;
+
+        CommitIncompleteAction();
 
         ActionGroup& group = undoStack_.back();
         if (!group.IsAlive())
@@ -149,6 +158,8 @@ bool UndoManager::Redo()
         if (redoStack_.empty())
             return false;
 
+        CommitIncompleteAction();
+
         ActionGroup& group = redoStack_.back();
         if (!group.IsAlive())
             return false;
@@ -172,6 +183,15 @@ bool UndoManager::Redo()
 bool UndoManager::NeedNewGroup() const
 {
     return undoStack_.empty() || undoStack_.back().frame_ != frame_;
+}
+
+void UndoManager::CommitIncompleteAction()
+{
+    if (!incompleteAction_)
+        return;
+
+    incompleteAction_->Complete();
+    incompleteAction_ = nullptr;
 }
 
 }

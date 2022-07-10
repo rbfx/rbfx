@@ -73,6 +73,7 @@ void InspectorTab_::RenderMenu()
 
 void InspectorTab_::ApplyHotkeys(HotkeyManager* hotkeyManager)
 {
+    EditorTab::ApplyHotkeys(hotkeyManager);
     if (source_)
         sourceInterface_->ApplyHotkeys(hotkeyManager);
 }

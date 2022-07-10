@@ -29,6 +29,72 @@
 namespace Urho3D
 {
 
+// TODO(editor): Extract to Widgets.h/cpp
+#if 0
+void ComboEx(const char* id, const StringVector& items, const ea::function<ea::optional<int>()>& getter, const ea::function<void(int)>& setter)
+{
+    const auto currentValue = getter();
+    const char* currentValueLabel = currentValue && *currentValue < items.size() ? items[*currentValue].c_str() : "";
+    if (!ui::BeginCombo(id, currentValueLabel))
+        return;
+
+    for (int index = 0; index < items.size(); ++index)
+    {
+        const char* label = items[index].c_str();
+        if (ui::Selectable(label, currentValue && *currentValue == index))
+            setter(index);
+    }
+
+    ui::EndCombo();
+}
+
+template <class ObjectType, class ElementType>
+using GetterCallback = ea::function<ElementType(const ObjectType*)>;
+
+template <class ObjectType, class ElementType>
+using SetterCallback = ea::function<void(ObjectType*, const ElementType&)>;
+
+template <class ObjectType, class ElementType>
+GetterCallback<ObjectType, ElementType> MakeGetterCallback(ElementType (ObjectType::*getter)() const)
+{
+    return [getter](const ObjectType* object) { return (object->*getter)(); };
+}
+
+template <class ObjectType, class ElementType>
+SetterCallback<ObjectType, ElementType> MakeSetterCallback(void (ObjectType::*setter)(ElementType))
+{
+    return [setter](ObjectType* object, const ElementType& value) { (object->*setter)(value); };
+}
+
+template <class ContainerType, class GetterCallbackType, class SetterCallbackType>
+void ComboZip(const char* id, const StringVector& items, ContainerType& container, const GetterCallbackType& getter, const SetterCallbackType& setter)
+{
+    using ElementType = decltype(getter(container.front()));
+
+    const auto wrappedGetter = [&]() -> ea::optional<int>
+    {
+        ea::optional<int> result;
+        for (const auto& object : container)
+        {
+            const auto value = static_cast<int>(getter(object));
+            if (!result)
+                result = value;
+            else if (*result != value)
+                return ea::nullopt;
+        }
+        return result;
+    };
+
+    const auto wrappedSetter = [&](int value)
+    {
+        for (const auto& object : container)
+            setter(object, static_cast<ElementType>(value));
+    };
+
+    ComboEx(id, items, wrappedGetter, wrappedSetter);
+}
+#endif
+
 void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab)
 {
     inspectorTab->RegisterAddon<MaterialInspector_>();
@@ -69,18 +135,65 @@ void MaterialInspector_::InspectResources()
 {
     auto cache = GetSubsystem<ResourceCache>();
 
-    materials_.clear();
+    MaterialInspectorWidget::MaterialVector materials;
     for (const ea::string& resourceName : resourceNames_)
     {
         if (auto material = cache->GetResource<Material>(resourceName))
-            materials_.emplace_back(material);
+            materials.emplace_back(material);
     }
+
+    if (materials.empty())
+    {
+        widget_ = nullptr;
+        return;
+    }
+
+    widget_ = MakeShared<MaterialInspectorWidget>(context_, materials);
+    widget_->UpdateTechniques(techniquePath_);
+    widget_->OnEditBegin.Subscribe(this, &MaterialInspector_::BeginEdit);
+    widget_->OnEditEnd.Subscribe(this, &MaterialInspector_::EndEdit);
 
     Activate();
 }
 
+void MaterialInspector_::BeginEdit()
+{
+    URHO3D_ASSERT(!pendingAction_);
+
+    auto project = owner_->GetProject();
+    pendingAction_ = MakeShared<ModifyResourceAction>(project);
+    for (Material* material : widget_->GetMaterials())
+        pendingAction_->AddResource(material);
+}
+
+void MaterialInspector_::EndEdit()
+{
+    URHO3D_ASSERT(pendingAction_);
+
+    auto project = owner_->GetProject();
+    auto undoManager = project->GetUndoManager();
+
+    undoManager->PushAction(pendingAction_);
+    pendingAction_ = nullptr;
+
+    for (Material* material : widget_->GetMaterials())
+        project->SaveFileDelayed(material);
+}
+
 void MaterialInspector_::RenderContent()
 {
+    if (!widget_)
+        return;
+
+    if (updateTimer_.GetMSec(false) > updatePeriodMs_)
+    {
+        widget_->UpdateTechniques(techniquePath_);
+        updateTimer_.Reset();
+    }
+
+    widget_->RenderTitle();
+    ui::Separator();
+    widget_->RenderContent();
 }
 
 void MaterialInspector_::RenderContextMenuItems()

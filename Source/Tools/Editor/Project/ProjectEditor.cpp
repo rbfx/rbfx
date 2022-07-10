@@ -185,6 +185,8 @@ void ProjectEditor::SerializeInBlock(Archive& archive)
 
 ProjectEditor::~ProjectEditor()
 {
+    ProcessDelayedSaves(true);
+
     --numActiveProjects;
     URHO3D_ASSERT(numActiveProjects == 0);
 
@@ -248,6 +250,16 @@ void ProjectEditor::CloseResourceGracefully(const CloseResourceRequest& request)
 void ProjectEditor::ProcessRequest(ProjectRequest* request, Object* sender)
 {
     pendingRequests_.emplace_back(PendingRequest{SharedPtr<ProjectRequest>{request}, WeakPtr<Object>{sender}});
+}
+
+void ProjectEditor::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes)
+{
+    delayedFileSaves_[resourceName] = PendingFileSave{fileName, bytes};
+}
+
+void ProjectEditor::SaveFileDelayed(Resource* resource)
+{
+    delayedFileSaves_[resource->GetName()] = PendingFileSave{resource->GetAbsoluteFileName(), nullptr, SharedPtr<Resource>(resource)};
 }
 
 void ProjectEditor::IgnoreFileNamePattern(const ea::string& pattern)
@@ -508,6 +520,7 @@ void ProjectEditor::Render()
     if (highlightEnabled)
         ui::PopStyleColor(5);
 
+    ProcessDelayedSaves();
     ProcessPendingRequests();
 }
 
@@ -522,6 +535,33 @@ void ProjectEditor::ProcessPendingRequests()
         OnRequest(sender ? sender : this, pending.request_);
         pending.request_->InvokeProcessCallback();
     }
+}
+
+void ProjectEditor::ProcessDelayedSaves(bool forceSave)
+{
+    auto cache = GetSubsystem<ResourceCache>();
+    for (auto& [resourceName, delayedSave] : delayedFileSaves_)
+    {
+        if (!forceSave && delayedSave.timer_.GetMSec(false) < saveDelayMs_)
+            continue;
+
+        if (delayedSave.bytes_)
+        {
+            auto file = MakeShared<File>(context_, delayedSave.fileName_, FILE_WRITE);
+            if (file->IsOpen())
+                file->Write(delayedSave.bytes_->data(), delayedSave.bytes_->size());
+        }
+        else
+        {
+            delayedSave.resource_->SaveFile(delayedSave.fileName_);
+        }
+
+        cache->IgnoreResourceReload(resourceName);
+
+        delayedSave.Clear();
+    }
+
+    ea::erase_if(delayedFileSaves_, [](const auto& pair) { return pair.second.IsEmpty(); });
 }
 
 void ProjectEditor::RenderToolbar()

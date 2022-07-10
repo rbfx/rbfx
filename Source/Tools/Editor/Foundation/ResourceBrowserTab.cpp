@@ -237,6 +237,7 @@ void ResourceBrowserTab::ReadIniSettings(const char* line)
     {
         const StringVector selectedPaths = value->split(';');
         right_.selectedPaths_ = {selectedPaths.begin(), selectedPaths.end()};
+        UpdateInspectorSelection();
     }
 }
 

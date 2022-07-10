@@ -22,31 +22,44 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "../Core/CommonEditorActions.h"
 
 namespace Urho3D
 {
 
-class EditorTab;
-class HotkeyManager;
+class ProjectEditor;
 
-/// Interface used to provide content for inspector tab.
-class InspectorSource
+class ModifyResourceAction : public EditorAction
 {
 public:
-    /// Return owner tab.
-    virtual EditorTab* GetOwnerTab() = 0;
-    /// Return whether the inspector is connected to undo stack.
-    virtual bool IsUndoSupported() { return false; }
+    explicit ModifyResourceAction(ProjectEditor* project);
+    void AddResource(Resource* resource);
 
-    /// Update and render inspector contents.
-    virtual void RenderContent() {}
-    /// Update and render tab context menu.
-    virtual void RenderContextMenuItems() {}
-    /// Render main menu when the inspector tab is focused.
-    virtual void RenderMenu() {}
-    /// Apply hotkeys when the inspector tab is focused.
-    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
+    /// Implement EditorAction.
+    /// @{
+    bool IsComplete() const override { return false; }
+    void Complete() override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    struct ResourceData
+    {
+        StringHash resourceType_;
+        ea::string fileName_;
+        SharedByteVector bytes_;
+    };
+
+    void ApplyResourceData(const ea::string& resourceName, const ResourceData& data) const;
+
+    WeakPtr<ProjectEditor> project_;
+    Context* context_{};
+    ea::unordered_map<ea::string, ResourceData> oldData_;
+    ea::unordered_map<ea::string, ResourceData> newData_;
+
+    mutable ea::function<void()> callback_;
 };
 
 }

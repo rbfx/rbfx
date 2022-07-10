@@ -22,9 +22,12 @@
 
 #pragma once
 
+#include "../../Core/CommonEditorActions.h"
 #include "../../Foundation/InspectorTab.h"
+#include "../../Project/ModifyResourceAction.h"
 
-#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Core/Timer.h>
+#include <Urho3D/Utility/MaterialInspectorWidget.h>
 
 namespace Urho3D
 {
@@ -43,6 +46,7 @@ public:
     /// Implement InspectorAddon
     /// @{
     EditorTab* GetOwnerTab() override { return nullptr; }
+    bool IsUndoSupported() override { return true; }
 
     void RenderContent() override;
     void RenderContextMenuItems() override;
@@ -54,8 +58,17 @@ private:
     void OnProjectRequest(ProjectRequest* request);
     void InspectResources();
 
+    void BeginEdit();
+    void EndEdit();
+
+    const unsigned updatePeriodMs_{1000};
+    const ea::string techniquePath_{"Techniques/"};
+
     StringVector resourceNames_;
-    ea::vector<SharedPtr<Material>> materials_;
+    SharedPtr<MaterialInspectorWidget> widget_;
+    Timer updateTimer_;
+
+    SharedPtr<ModifyResourceAction> pendingAction_;
 };
 
 }
