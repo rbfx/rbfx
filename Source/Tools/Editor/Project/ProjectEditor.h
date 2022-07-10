@@ -102,6 +102,9 @@ public:
     /// Update and render the rest of menu bar.
     void RenderMainMenu();
 
+    /// Save file after delay and ignore reload event.
+    void SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes);
+    void SaveFileDelayed(Resource* resource);
     /// Mark files with specified name pattern as internal and ignore them in UI.
     void IgnoreFileNamePattern(const ea::string& pattern);
     /// Return whether the file name is ignored.
@@ -158,6 +161,16 @@ private:
         SharedPtr<ProjectRequest> request_;
         WeakPtr<Object> sender_;
     };
+    struct PendingFileSave
+    {
+        ea::string fileName_;
+        SharedByteVector bytes_;
+        SharedPtr<Resource> resource_;
+        Timer timer_;
+
+        void Clear() { bytes_ = nullptr; resource_ = nullptr; }
+        bool IsEmpty() const { return !bytes_ && !resource_; }
+    };
 
     void InitializeHotkeys();
     void EnsureDirectoryInitialized();
@@ -167,9 +180,12 @@ private:
     void ApplyPlugins();
     void SaveGitIgnore();
     void ProcessPendingRequests();
+    void ProcessDelayedSaves(bool forceSave = false);
 
     /// Project properties
     /// @{
+    const unsigned saveDelayMs_{3000};
+
     const ea::string projectPath_;
 
     const ea::string coreDataPath_;
@@ -203,6 +219,9 @@ private:
 
     /// Global requests to be processed.
     ea::vector<PendingRequest> pendingRequests_;
+
+    /// File save requests to be processed.
+    ea::unordered_map<ea::string, PendingFileSave> delayedFileSaves_;
 
     /// Close popup handling
     /// @{

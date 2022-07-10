@@ -47,10 +47,14 @@ public:
     /// Return whether the action should be completely removed from stack on undo.
     /// Useful for injecting callback on undoing. Don't change any important state if true!
     virtual bool RemoveOnUndo() const { return false; }
+    /// Return whether the action is incomplete, e.g. "redo" state is not saved. Useful for heavy actions.
+    virtual bool IsComplete() const { return true; }
     /// Check if action is valid and alive, i.e. Undo and Redo can be called.
     virtual bool IsAlive() const { return true; }
     /// Action is pushed to the stack.
     virtual void OnPushed(EditorActionFrame frame) {}
+    /// Complete action if needed. Called after merge attempt but before stack modification.
+    virtual void Complete() {}
     /// Redo this action. May fail if external state has unexpectedly changed.
     virtual void Redo() const = 0;
     /// Undo this action. May fail if external state has unexpectedly changed.
@@ -108,9 +112,11 @@ private:
     };
 
     bool NeedNewGroup() const;
+    void CommitIncompleteAction();
 
     ea::vector<ActionGroup> undoStack_;
     ea::vector<ActionGroup> redoStack_;
+    EditorActionPtr incompleteAction_;
     EditorActionFrame frame_{};
 };
 

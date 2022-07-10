@@ -71,6 +71,7 @@ public:
     /// @{
     void RenderMenu() override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+    bool IsUndoSupported() override { return source_ ? sourceInterface_->IsUndoSupported() : false; }
     EditorTab* GetOwnerTab() override { return source_ ? sourceInterface_->GetOwnerTab() : nullptr; }
     /// @}
 
