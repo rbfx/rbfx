@@ -180,6 +180,16 @@ bool UndoManager::Redo()
     }
 }
 
+bool UndoManager::CanUndo() const
+{
+    return !undoStack_.empty() && undoStack_.back().IsAlive();
+}
+
+bool UndoManager::CanRedo() const
+{
+    return !redoStack_.empty() && redoStack_.back().IsAlive();
+}
+
 void UndoManager::Update()
 {
     const bool mouseDown = ui::IsMouseDown(MOUSEB_LEFT)

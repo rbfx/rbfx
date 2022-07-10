@@ -63,6 +63,12 @@ ea::optional<ea::string> TryAdjustPathOnRename(const ea::string& path, const ea:
     return ea::nullopt;
 }
 
+bool IsPayloadMovable(const ResourceDragDropPayload& payload)
+{
+    return ea::all_of(payload.items_.begin(), payload.items_.end(),
+        [](const ResourceDragDropPayload::Item& item) { return item.isMovable_; });
+}
+
 }
 
 void Foundation_ResourceBrowserTab(Context* context, ProjectEditor* projectEditor)
@@ -96,6 +102,11 @@ bool ResourceBrowserFactory::Compare(
     const SharedPtr<ResourceBrowserFactory>& lhs, const SharedPtr<ResourceBrowserFactory>& rhs)
 {
     return ea::tie(lhs->group_, lhs->title_) < ea::tie(rhs->group_, rhs->title_);
+}
+
+bool ResourceBrowserTab::EntryReference::operator<(const EntryReference& rhs) const
+{
+    return ea::tie(rootIndex_, resourcePath_) < ea::tie(rhs.rootIndex_, rhs.resourcePath_);
 }
 
 ResourceBrowserTab::ResourceBrowserTab(Context* context)
@@ -192,7 +203,10 @@ void ResourceBrowserTab::AddFactory(SharedPtr<ResourceBrowserFactory> factory)
 
 void ResourceBrowserTab::DeleteSelected()
 {
-    if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
+    // For right panel delete all the items in the selection
+    if (!cursor_.isLeftPanel_)
+        BeginRightSelectionDelete();
+    else if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
         BeginEntryDelete(*entry);
 }
 
@@ -566,16 +580,19 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
             OpenEntryInEditor(entry);
         }
-        else
-        {
-            ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
-        }
+    }
+    else if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
+    {
+        ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
     }
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
     {
-        BeginEntryDrag(entry);
+        if (!right_.selectedPaths_.contains(entry.resourceName_))
+            ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+
+        BeginRightSelectionDrag();
         ui::EndDragDropSource();
     }
 
@@ -643,19 +660,20 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
-    if (ui::IsItemClicked(MOUSEB_LEFT))
+    if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
         ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
-        if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
-        {
-            OpenEntryInEditor(entry);
-        }
+        OpenEntryInEditor(entry);
+    }
+    else if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
+    {
+        ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
     }
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
     {
-        BeginEntryDrag(entry);
+        BeginRightSelectionDrag();
         ui::EndDragDropSource();
     }
 
@@ -712,8 +730,8 @@ void ResourceBrowserTab::RenderRenameDialog()
 
 void ResourceBrowserTab::RenderDeleteDialog()
 {
-    const FileSystemEntry* entry = GetEntry(delete_.entryRef_);
-    if (!entry || !entry->parent_)
+    const auto entries = GetEntries(delete_.entryRefs_);
+    if (entries.empty())
         return;
 
     if (!ui::BeginPopupModal(delete_.popupTitle_.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -722,13 +740,29 @@ void ResourceBrowserTab::RenderDeleteDialog()
     //const bool justOpened = delete_.openPending_;
     delete_.openPending_ = false;
 
-    const char* formatString = "Would you like to PERMANENTLY delete '%s'?\n"
-        ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!";
-    ui::Text(formatString, entry->absolutePath_.c_str());
+    ea::string displayText;
+    if (entries.size() == 1)
+        displayText += Format("Are you sure you want to PERMANENTLY delete '{}'?\n", entries[0]->absolutePath_);
+    else
+    {
+        displayText += Format("Are you sure you want to PERMANENTLY delete {} items?\n\n", entries.size());
+        const unsigned maxItems = ea::min<unsigned>(10u, entries.size());
+        for (unsigned i = 0; i < maxItems; ++i)
+            displayText += Format("* {}\n", entries[i]->absolutePath_);
+        if (maxItems < entries.size())
+            displayText += Format("(and {} more items)\n", entries.size() - maxItems);
+        displayText += "\n";
+    }
+    displayText += ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!";
+    ui::Text("%s", displayText.c_str());
 
     if (ui::Button(ICON_FA_CHECK " Delete") || ui::IsKeyPressed(KEY_RETURN))
     {
-        DeleteEntry(*entry);
+        for (const FileSystemEntry* entry : entries)
+        {
+            if (entry->parent_)
+                DeleteEntry(*entry);
+        }
         ui::CloseCurrentPopup();
     }
 
@@ -790,13 +824,33 @@ void ResourceBrowserTab::RenderCreateDialog()
     ui::EndPopup();
 }
 
-SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreateDragDropPayload(const FileSystemEntry& entry) const
+void ResourceBrowserTab::AddEntryToPayload(ResourceDragDropPayload& payload, const FileSystemEntry& entry) const
+{
+    auto& item = payload.items_.emplace_back();
+    item.localName_ = entry.localName_;
+    item.resourceName_ = entry.resourceName_;
+    item.fileName_ = entry.absolutePath_;
+    item.isMovable_ = !IsEntryFromCache(entry) && !entry.resourceName_.empty();
+}
+
+SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromEntry(const FileSystemEntry& entry) const
 {
     auto payload = MakeShared<ResourceDragDropPayload>();
-    payload->localName_ = entry.localName_;
-    payload->resourceName_ = entry.resourceName_;
-    payload->fileName_ = entry.absolutePath_;
-    payload->isMovable_ = !IsEntryFromCache(entry) && !entry.resourceName_.empty();
+    AddEntryToPayload(*payload, entry);
+    return payload;
+}
+
+SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromRightSelection() const
+{
+    auto payload = MakeShared<ResourceDragDropPayload>();
+
+    for (const ea::string& resourcePath : right_.selectedPaths_)
+    {
+        const FileSystemEntry* entry = GetEntry({left_.selectedRoot_, resourcePath});
+        if (entry)
+            AddEntryToPayload(*payload, *entry);
+    }
+
     return payload;
 }
 
@@ -808,12 +862,31 @@ void ResourceBrowserTab::BeginEntryDrag(const FileSystemEntry& entry)
 
     if (!g.DragDropPayload.Data)
     {
-        const auto payload = CreateDragDropPayload(entry);
+        const auto payload = CreatePayloadFromEntry(entry);
         DragDropPayload::Set(payload);
         g.DragDropPayload.Data = payload;
     }
 
     ui::TextUnformatted(entry.localName_.c_str());
+}
+
+void ResourceBrowserTab::BeginRightSelectionDrag()
+{
+    ImGuiContext& g = *GImGui;
+
+    ui::SetDragDropPayload(DragDropPayloadType.c_str(), nullptr, 0, ImGuiCond_Once);
+
+    if (!g.DragDropPayload.Data)
+    {
+        const auto payload = CreatePayloadFromRightSelection();
+        DragDropPayload::Set(payload);
+        g.DragDropPayload.Data = payload;
+    }
+
+    const ea::string text = right_.selectedPaths_.size() == 1
+        ? GetFileNameAndExtension(*right_.selectedPaths_.begin())
+        : Format("{} items", right_.selectedPaths_.size());
+    ui::TextUnformatted(text.c_str());
 }
 
 void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
@@ -823,14 +896,17 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
 
     const ResourceRoot& root = GetRoot(entry);
     auto payload = dynamic_cast<ResourceDragDropPayload*>(DragDropPayload::Get());
-    if (payload && payload->isMovable_)
+    if (payload && IsPayloadMovable(*payload))
     {
         if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str()))
         {
             const char* separator = entry.resourceName_.empty() ? "" : "/";
-            const ea::string newResourceName = Format("{}{}{}", entry.resourceName_, separator, payload->localName_);
-            const ea::string newFileName = Format("{}{}", root.activeDirectory_, newResourceName);
-            RenameOrMoveEntry(payload->fileName_, newFileName, payload->resourceName_, newResourceName, true);
+            for (const auto& payloadItem : payload->items_)
+            {
+                const ea::string newResourceName = Format("{}{}{}", entry.resourceName_, separator, payloadItem.localName_);
+                const ea::string newFileName = Format("{}{}", root.activeDirectory_, newResourceName);
+                RenameOrMoveEntry(payloadItem.fileName_, newFileName, payloadItem.resourceName_, newResourceName, true);
+            }
         }
     }
 }
@@ -892,6 +968,7 @@ void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<un
     right_.selectedPaths_ = {};
 
     cursor_.selectedPath_ = path;
+    cursor_.isLeftPanel_ = true;
 
     UpdateInspectorSelection();
 }
@@ -906,6 +983,7 @@ void ResourceBrowserTab::SelectRightPanel(const ea::string& path, bool clearSele
     {
         right_.selectedPaths_.insert(right_.lastSelectedPath_);
         cursor_.selectedPath_ = right_.lastSelectedPath_;
+        cursor_.isLeftPanel_ = false;
     }
 
     UpdateInspectorSelection();
@@ -984,10 +1062,33 @@ ea::pair<bool, ea::string> ResourceBrowserTab::CheckFileNameInput(
     return {!isDisabled, extraLine};
 }
 
+ea::vector<const FileSystemEntry*> ResourceBrowserTab::GetEntries(const ea::vector<EntryReference>& refs) const
+{
+    ea::vector<const FileSystemEntry*> result;
+    for (const EntryReference& entryRef : delete_.entryRefs_)
+    {
+        const FileSystemEntry* entry = GetEntry(entryRef);
+        if (entry)
+            result.push_back(entry);
+    }
+    return result;
+}
+
 void ResourceBrowserTab::BeginEntryDelete(const FileSystemEntry& entry)
 {
-    delete_.entryRef_ = GetReference(entry);
+    delete_.entryRefs_ = {GetReference(entry)};
     delete_.popupTitle_ = Format("Delete '{}'?##DeleteDialog", entry.localName_);
+    delete_.openPending_ = true;
+}
+
+void ResourceBrowserTab::BeginRightSelectionDelete()
+{
+    delete_.entryRefs_.clear();
+    ea::transform(right_.selectedPaths_.begin(), right_.selectedPaths_.end(), std::back_inserter(delete_.entryRefs_),
+        [this](const ea::string& resourcePath) { return EntryReference{left_.selectedRoot_, resourcePath}; });
+    ea::sort(delete_.entryRefs_.begin(), delete_.entryRefs_.end());
+
+    delete_.popupTitle_ = Format("Delete {} items?##DeleteDialog", right_.selectedPaths_.size());
     delete_.openPending_ = true;
 }
 

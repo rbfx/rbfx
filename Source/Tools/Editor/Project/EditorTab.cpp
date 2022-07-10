@@ -203,9 +203,10 @@ IntVector2 EditorTab::GetContentSize() const
 
 void EditorTab::RenderEditMenuItems()
 {
-    if (ui::MenuItem("Undo", GetHotkeyLabel(Hotkey_Undo).c_str()))
+    auto undoManager = GetProject()->GetUndoManager();
+    if (ui::MenuItem("Undo", GetHotkeyLabel(Hotkey_Undo).c_str(), false, undoManager->CanUndo()))
         Undo();
-    if (ui::MenuItem("Redo", GetHotkeyLabel(Hotkey_Redo).c_str()))
+    if (ui::MenuItem("Redo", GetHotkeyLabel(Hotkey_Redo).c_str(), false, undoManager->CanRedo()))
         Redo();
     ui::Separator();
 }
