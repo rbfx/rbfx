@@ -24,6 +24,8 @@
 
 #include "../Core/DragDropPayload.h"
 
+#include <EASTL/vector.h>
+
 namespace Urho3D
 {
 
@@ -31,10 +33,15 @@ namespace Urho3D
 class ResourceDragDropPayload : public DragDropPayload
 {
 public:
-    ea::string localName_;
-    ea::string resourceName_;
-    ea::string fileName_;
-    bool isMovable_{};
+    struct Item
+    {
+        ea::string localName_;
+        ea::string resourceName_;
+        ea::string fileName_;
+        bool isMovable_{};
+    };
+
+    ea::vector<Item> items_;
 };
 
 }

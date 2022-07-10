@@ -74,10 +74,10 @@ bool ui::IsMouseDoubleClicked(Urho3D::MouseButton buttons)
         [&](Urho3D::MouseButton button) { return ui::IsMouseDoubleClicked(Urho3D::ToImGui(button)); });
 }
 
-bool ui::IsMouseDragging(Urho3D::MouseButton buttons, float lock_threshold)
+bool ui::IsMouseDragPastThreshold(Urho3D::MouseButton buttons, float lockThreshold)
 {
     return Urho3D::AnyMouseButton(buttons,
-        [&](Urho3D::MouseButton button) { return ui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold); });
+        [&](Urho3D::MouseButton button) { return ui::IsMouseDragPastThreshold(Urho3D::ToImGui(button), lockThreshold); });
 }
 
 bool ui::IsMouseReleased(Urho3D::MouseButton buttons)
@@ -98,9 +98,9 @@ bool ui::IsItemClicked(Urho3D::MouseButton buttons)
         [&](Urho3D::MouseButton button) { return ui::IsItemClicked(Urho3D::ToImGui(button)); });
 }
 
-ImVec2 ui::GetMouseDragDelta(Urho3D::MouseButton button, float lock_threshold)
+ImVec2 ui::GetMouseDragDelta(Urho3D::MouseButton button, float lockThreshold)
 {
-    return ui::GetMouseDragDelta(Urho3D::ToImGui(button), lock_threshold);
+    return ui::GetMouseDragDelta(Urho3D::ToImGui(button), lockThreshold);
 }
 
 void ui::ResetMouseDragDelta(Urho3D::MouseButton button)
@@ -123,7 +123,7 @@ bool ui::IsKeyReleased(Urho3D::Key key)
     return IsKeyReleased(SDL_GetScancodeFromKey(key));
 }
 
-int ui::GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate)
+int ui::GetKeyPressedAmount(Urho3D::Key key, float repeatDelay, float rate)
 {
-    return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeat_delay, rate);
+    return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeatDelay, rate);
 }

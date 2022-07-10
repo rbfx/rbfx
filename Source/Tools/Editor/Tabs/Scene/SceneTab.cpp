@@ -247,6 +247,7 @@ bool SceneTab::RenderWindowContent()
     isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT);
     ui::HideCursorWhenActive(MOUSEB_RIGHT, false);
 
+#if 0
     // Left click happens immediately.
     isClickedLeft_ = ui::IsItemClicked(MOUSEB_LEFT) && !ui::IsMouseDragging(MOUSEB_LEFT);
     // Right click is registerd only on release, because we want to support both opening a context menu and camera
@@ -254,6 +255,7 @@ bool SceneTab::RenderWindowContent()
     // when mouse is dragged before button release.
     isClickedRight_ = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT) && !ui::IsMouseDragging(MOUSEB_RIGHT) &&
                       mouseButtonClickedViewport_ == ImGuiMouseButton_Right;   // Ensure that clicks from outside if this viewport do not register.
+#endif
 
     // Store mouse button that clicked viewport.
     if (!ui::IsAnyMouseDown())

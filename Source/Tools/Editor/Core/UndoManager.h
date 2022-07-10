@@ -103,6 +103,11 @@ public:
     /// Try to redo action. May fail if external state changed.
     bool Redo();
 
+    /// Return whether can undo.
+    bool CanUndo() const;
+    /// Return whether can redo.
+    bool CanRedo() const;
+
 private:
     struct ActionGroup
     {

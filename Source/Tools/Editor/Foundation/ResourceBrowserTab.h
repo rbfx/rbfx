@@ -106,6 +106,8 @@ private:
     {
         unsigned rootIndex_{};
         ea::string resourcePath_;
+
+        bool operator<(const EntryReference& rhs) const;
     };
 
     struct ResourceRoot
@@ -153,8 +155,12 @@ private:
 
     /// Drag&drop handling
     /// @{
-    SharedPtr<ResourceDragDropPayload> CreateDragDropPayload(const FileSystemEntry& entry) const;
+    void AddEntryToPayload(ResourceDragDropPayload& payload, const FileSystemEntry& entry) const;
+    SharedPtr<ResourceDragDropPayload> CreatePayloadFromEntry(const FileSystemEntry& entry) const;
+    SharedPtr<ResourceDragDropPayload> CreatePayloadFromRightSelection() const;
+
     void BeginEntryDrag(const FileSystemEntry& entry);
+    void BeginRightSelectionDrag();
     void DropPayloadToFolder(const FileSystemEntry& entry);
     /// @}
 
@@ -169,6 +175,7 @@ private:
     const FileSystemEntry* GetSelectedEntryForCursor() const;
     ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
         const ea::string& oldName, const ea::string& newName) const;
+    ea::vector<const FileSystemEntry*> GetEntries(const ea::vector<EntryReference>& refs) const;
     /// @}
 
     /// Manage selection
@@ -185,6 +192,7 @@ private:
     /// Manipulation utilities and helpers
     /// @{
     void BeginEntryDelete(const FileSystemEntry& entry);
+    void BeginRightSelectionDelete();
     void BeginEntryRename(const FileSystemEntry& entry);
     void BeginEntryCreate(const FileSystemEntry& entry, ResourceBrowserFactory* factory);
 
@@ -227,6 +235,7 @@ private:
     struct CursorForHotkeys
     {
         ea::string selectedPath_{};
+        bool isLeftPanel_{};
     } cursor_;
 
     struct RenameDialog
@@ -239,7 +248,7 @@ private:
 
     struct DeleteDialog
     {
-        EntryReference entryRef_;
+        ea::vector<EntryReference> entryRefs_;
         ea::string popupTitle_;
         bool openPending_{};
     } delete_;
