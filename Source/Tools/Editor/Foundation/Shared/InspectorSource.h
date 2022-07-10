@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include <Urho3D/Core/Signal.h>
 
 namespace Urho3D
 {
@@ -34,6 +34,8 @@ class HotkeyManager;
 class InspectorSource
 {
 public:
+    Signal<void()> OnActivated;
+
     /// Return owner tab.
     virtual EditorTab* GetOwnerTab() = 0;
     /// Return whether the inspector is connected to undo stack.

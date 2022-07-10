@@ -23,7 +23,8 @@
 #pragma once
 
 #include "../../Core/CommonEditorActions.h"
-#include "../../Foundation/InspectorTab.h"
+#include "../../Foundation/ResourceBrowserTab.h"
+#include "../../Foundation/Shared/InspectorSource.h"
 #include "../../Project/ModifyResourceAction.h"
 
 #include <Urho3D/Core/Timer.h>
@@ -32,18 +33,18 @@
 namespace Urho3D
 {
 
-void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab);
+void Foundation_MaterialInspector(Context* context, ResourceBrowserTab* resourceBrowserTab);
 
 /// Scene hierarchy provider for hierarchy browser tab.
 /// TODO(editor): Rename
-class MaterialInspector_ : public InspectorAddon
+class MaterialInspector_ : public Object, public InspectorSource
 {
-    URHO3D_OBJECT(MaterialInspector_, InspectorAddon)
+    URHO3D_OBJECT(MaterialInspector_, Object)
 
 public:
-    explicit MaterialInspector_(InspectorTab_* owner);
+    explicit MaterialInspector_(ResourceBrowserTab* owner);
 
-    /// Implement InspectorAddon
+    /// Implement InspectorSource
     /// @{
     EditorTab* GetOwnerTab() override { return nullptr; }
     bool IsUndoSupported() override { return true; }
@@ -63,6 +64,8 @@ private:
 
     const unsigned updatePeriodMs_{1000};
     const ea::string techniquePath_{"Techniques/"};
+
+    WeakPtr<ResourceBrowserTab> owner_;
 
     StringVector resourceNames_;
     SharedPtr<MaterialInspectorWidget> widget_;

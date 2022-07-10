@@ -29,14 +29,14 @@ namespace Urho3D
 
 void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab_* inspectorTab)
 {
-    inspectorTab->RegisterAddon<PlaceholderResourceInspector>();
+    inspectorTab->RegisterAddon<PlaceholderResourceInspector>(inspectorTab->GetProject());
 }
 
-PlaceholderResourceInspector::PlaceholderResourceInspector(InspectorTab_* owner)
-    : InspectorAddon(owner)
+PlaceholderResourceInspector::PlaceholderResourceInspector(ProjectEditor* project)
+    : Object(project->GetContext())
+    , project_(project)
 {
-    auto project = owner_->GetProject();
-    project->OnRequest.Subscribe(this, &PlaceholderResourceInspector::OnProjectRequest);
+    project_->OnRequest.Subscribe(this, &PlaceholderResourceInspector::OnProjectRequest);
 }
 
 void PlaceholderResourceInspector::OnProjectRequest(ProjectRequest* request)
@@ -69,7 +69,7 @@ void PlaceholderResourceInspector::InspectResources(const ea::vector<FileResourc
         singleResource_ = ea::nullopt;
     }
 
-    Activate();
+    OnActivated(this);
 }
 
 void PlaceholderResourceInspector::RenderContent()
@@ -78,9 +78,8 @@ void PlaceholderResourceInspector::RenderContent()
     {
         if (ui::Button(Format("Open {}", singleResource_->resourceType_).c_str()))
         {
-            auto project = owner_->GetProject();
             auto request = MakeShared<OpenResourceRequest>(context_, singleResource_->resourceName_);
-            project->ProcessRequest(request);
+            project_->ProcessRequest(request);
         }
 
         ui::TextWrapped("%s", singleResource_->resourceName_.c_str());

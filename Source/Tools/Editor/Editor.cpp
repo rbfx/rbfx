@@ -93,10 +93,12 @@
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
 #include "Foundation/SceneViewTab/TransformManipulator.h"
 
-#include "Foundation/InspectorTab/MaterialInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 
+#include "Foundation/ResourceBrowserTab/MaterialInspector.h"
+
 #include "Foundation/Glue/ProjectEditorGlue.h"
+#include "Foundation/Glue/ResourceBrowserGlue.h"
 #include "Foundation/Glue/SceneViewGlue.h"
 
 namespace Urho3D
@@ -142,6 +144,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
 
     editorPluginManager_->AddPlugin("Foundation.Glue.ProjectEditor", &Foundation_ProjectEditorGlue);
+    editorPluginManager_->AddPlugin("Foundation.Glue.ResourceBrowser", &Foundation_ResourceBrowserGlue);
     editorPluginManager_->AddPlugin("Foundation.Glue.SceneView", &Foundation_SceneViewGlue);
 }
 

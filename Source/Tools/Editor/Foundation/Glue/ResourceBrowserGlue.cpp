@@ -20,27 +20,20 @@
 // THE SOFTWARE.
 //
 
-#include "../../Foundation/Glue/SceneViewGlue.h"
-#include "../../Foundation/SceneViewTab/SceneHierarchy.h"
+#include "../../Foundation/Glue/ResourceBrowserGlue.h"
+
+#include "../../Foundation/ResourceBrowserTab/MaterialInspector.h"
 
 namespace Urho3D
 {
 
-void Foundation_SceneViewGlue(Context* context, SceneViewTab* sceneViewTab)
+void Foundation_ResourceBrowserGlue(Context* context, ResourceBrowserTab* resourceBrowserTab)
 {
-    auto project = sceneViewTab->GetProject();
-    const WeakPtr<HierarchyBrowserTab> hierarchyBrowserTab{project->FindTab<HierarchyBrowserTab>()};
-    const WeakPtr<SceneHierarchy> sceneHierarchy{sceneViewTab->GetAddon<SceneHierarchy>()};
+    auto project = resourceBrowserTab->GetProject();
+    auto inspectorTab = project->FindTab<InspectorTab_>();
 
-    if (hierarchyBrowserTab && sceneHierarchy)
-    {
-        sceneViewTab->OnFocused.Subscribe(sceneHierarchy.Get(),
-            [hierarchyBrowserTab](SceneHierarchy* sceneHierarchy)
-        {
-            if (hierarchyBrowserTab)
-                hierarchyBrowserTab->ConnectToSource(sceneHierarchy);
-        });
-    }
+    if (inspectorTab)
+        inspectorTab->RegisterAddon<MaterialInspector_>(resourceBrowserTab);
 }
 
 }
