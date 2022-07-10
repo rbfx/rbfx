@@ -29,6 +29,7 @@
 
 #include <EASTL/shared_ptr.h>
 #include <EASTL/vector.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
@@ -128,6 +129,8 @@ private:
 
     ea::unordered_map<WeakPtr<Object>, ea::vector<HotkeyBindingPtr>> hotkeyByOwner_;
     ea::unordered_map<ea::string, ea::vector<HotkeyBindingPtr>> hotkeyByCommand_;
+
+    ea::unordered_set<ea::string> invokedCommands_;
 };
 
 

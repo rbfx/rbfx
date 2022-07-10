@@ -118,6 +118,8 @@ void HotkeyManager::Update()
         cleanupTimer_.Reset();
         RemoveExpired();
     }
+
+    invokedCommands_.clear();
 }
 
 void HotkeyManager::InvokeFor(Object* owner)
@@ -129,8 +131,12 @@ void HotkeyManager::InvokeFor(Object* owner)
 
     for (const HotkeyBindingPtr& bindingPtr : iter->second)
     {
-        if (IsInvoked(bindingPtr->hotkey_))
+        const ea::string& command = bindingPtr->info_.command_;
+        if (!invokedCommands_.contains(command) && IsInvoked(bindingPtr->hotkey_))
+        {
             bindingPtr->callback_();
+            invokedCommands_.insert(command);
+        }
     }
 }
 

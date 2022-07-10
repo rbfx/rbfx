@@ -81,10 +81,7 @@ UndoManager::UndoManager(Context* context)
 {
     SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap&)
     {
-        const bool mouseDown = ui::IsMouseDown(MOUSEB_LEFT)
-            || ui::IsMouseDown(MOUSEB_RIGHT) || ui::IsMouseDown(MOUSEB_MIDDLE);
-        if (!mouseDown)
-            NewFrame();
+        Update();
     });
 }
 
@@ -114,7 +111,10 @@ EditorActionFrame UndoManager::PushAction(const EditorActionPtr& action)
 
     CommitIncompleteAction();
     if (!action->IsComplete())
+    {
         incompleteAction_ = action;
+        incompleteActionTimer_.Reset();
+    }
 
     return frame_;
 }
@@ -178,6 +178,17 @@ bool UndoManager::Redo()
         undoStack_.clear();
         return false;
     }
+}
+
+void UndoManager::Update()
+{
+    const bool mouseDown = ui::IsMouseDown(MOUSEB_LEFT)
+        || ui::IsMouseDown(MOUSEB_RIGHT) || ui::IsMouseDown(MOUSEB_MIDDLE);
+    if (!mouseDown)
+        NewFrame();
+
+    if (incompleteAction_ && NeedNewGroup() && incompleteActionTimer_.GetMSec(false) > actionCompletionTimeoutMs_)
+        CommitIncompleteAction();
 }
 
 bool UndoManager::NeedNewGroup() const

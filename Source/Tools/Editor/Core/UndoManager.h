@@ -24,6 +24,7 @@
 
 #include <Urho3D/Core/Exception.h>
 #include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/Timer.h>
 
 #include <EASTL/vector.h>
 
@@ -111,13 +112,18 @@ private:
         bool IsAlive() const;
     };
 
+    void Update();
     bool NeedNewGroup() const;
     void CommitIncompleteAction();
 
+    const unsigned actionCompletionTimeoutMs_{1000};
+
     ea::vector<ActionGroup> undoStack_;
     ea::vector<ActionGroup> redoStack_;
-    EditorActionPtr incompleteAction_;
     EditorActionFrame frame_{};
+
+    EditorActionPtr incompleteAction_;
+    Timer incompleteActionTimer_;
 };
 
 }
