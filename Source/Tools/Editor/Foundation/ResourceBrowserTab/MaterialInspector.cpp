@@ -93,24 +93,24 @@ void MaterialInspector_::InspectResources()
 
 void MaterialInspector_::BeginEdit()
 {
-    URHO3D_ASSERT(!pendingAction_);
-
-    auto project = owner_->GetProject();
-    pendingAction_ = MakeShared<ModifyResourceAction>(project);
-    for (Material* material : widget_->GetMaterials())
-        pendingAction_->AddResource(material);
-}
-
-void MaterialInspector_::EndEdit()
-{
-    URHO3D_ASSERT(pendingAction_);
+    // Incomplete action will include all the changes automatically
+    if (pendingAction_ && !pendingAction_->IsComplete())
+        return;
 
     auto project = owner_->GetProject();
     auto undoManager = project->GetUndoManager();
 
-    undoManager->PushAction(pendingAction_);
-    pendingAction_ = nullptr;
+    pendingAction_ = MakeShared<ModifyResourceAction>(project);
+    for (Material* material : widget_->GetMaterials())
+        pendingAction_->AddResource(material);
 
+    // Initialization of "redo" state is delayed so it's okay to push the action here
+    undoManager->PushAction(pendingAction_);
+}
+
+void MaterialInspector_::EndEdit()
+{
+    auto project = owner_->GetProject();
     for (Material* material : widget_->GetMaterials())
         project->SaveFileDelayed(material);
 }

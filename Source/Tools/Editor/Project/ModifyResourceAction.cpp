@@ -67,6 +67,9 @@ void ModifyResourceAction::Complete()
             newData_[resourceName] = ea::move(newData);
         }
     }
+
+    if (oldData_.size() != newData_.size())
+        throw UndoException("ModifyResourceAction failed to complete action creation");
 }
 
 void ModifyResourceAction::Redo() const
