@@ -30,14 +30,14 @@ namespace Urho3D
 void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab_* inspectorTab);
 
 /// Scene hierarchy provider for hierarchy browser tab.
-class PlaceholderResourceInspector : public InspectorAddon
+class PlaceholderResourceInspector : public Object, public InspectorSource
 {
-    URHO3D_OBJECT(PlaceholderResourceInspector, InspectorAddon)
+    URHO3D_OBJECT(PlaceholderResourceInspector, Object)
 
 public:
-    explicit PlaceholderResourceInspector(InspectorTab_* owner);
+    explicit PlaceholderResourceInspector(ProjectEditor* project);
 
-    /// Implement InspectorAddon
+    /// Implement InspectorSource
     /// @{
     EditorTab* GetOwnerTab() override { return nullptr; }
 
@@ -50,6 +50,8 @@ public:
 private:
     void OnProjectRequest(ProjectRequest* request);
     void InspectResources(const ea::vector<FileResourceDesc>& resources);
+
+    WeakPtr<ProjectEditor> project_;
 
     struct SingleResource
     {

@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../../Foundation/InspectorTab/MaterialInspector.h"
+#include "../../Foundation/ResourceBrowserTab/MaterialInspector.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
 
@@ -29,79 +29,14 @@
 namespace Urho3D
 {
 
-// TODO(editor): Extract to Widgets.h/cpp
-#if 0
-void ComboEx(const char* id, const StringVector& items, const ea::function<ea::optional<int>()>& getter, const ea::function<void(int)>& setter)
+void Foundation_MaterialInspector(Context* context, ResourceBrowserTab* resourceBrowserTab)
 {
-    const auto currentValue = getter();
-    const char* currentValueLabel = currentValue && *currentValue < items.size() ? items[*currentValue].c_str() : "";
-    if (!ui::BeginCombo(id, currentValueLabel))
-        return;
-
-    for (int index = 0; index < items.size(); ++index)
-    {
-        const char* label = items[index].c_str();
-        if (ui::Selectable(label, currentValue && *currentValue == index))
-            setter(index);
-    }
-
-    ui::EndCombo();
+    // Don't create inspector here, it's easier when InspectorTab owns it
 }
 
-template <class ObjectType, class ElementType>
-using GetterCallback = ea::function<ElementType(const ObjectType*)>;
-
-template <class ObjectType, class ElementType>
-using SetterCallback = ea::function<void(ObjectType*, const ElementType&)>;
-
-template <class ObjectType, class ElementType>
-GetterCallback<ObjectType, ElementType> MakeGetterCallback(ElementType (ObjectType::*getter)() const)
-{
-    return [getter](const ObjectType* object) { return (object->*getter)(); };
-}
-
-template <class ObjectType, class ElementType>
-SetterCallback<ObjectType, ElementType> MakeSetterCallback(void (ObjectType::*setter)(ElementType))
-{
-    return [setter](ObjectType* object, const ElementType& value) { (object->*setter)(value); };
-}
-
-template <class ContainerType, class GetterCallbackType, class SetterCallbackType>
-void ComboZip(const char* id, const StringVector& items, ContainerType& container, const GetterCallbackType& getter, const SetterCallbackType& setter)
-{
-    using ElementType = decltype(getter(container.front()));
-
-    const auto wrappedGetter = [&]() -> ea::optional<int>
-    {
-        ea::optional<int> result;
-        for (const auto& object : container)
-        {
-            const auto value = static_cast<int>(getter(object));
-            if (!result)
-                result = value;
-            else if (*result != value)
-                return ea::nullopt;
-        }
-        return result;
-    };
-
-    const auto wrappedSetter = [&](int value)
-    {
-        for (const auto& object : container)
-            setter(object, static_cast<ElementType>(value));
-    };
-
-    ComboEx(id, items, wrappedGetter, wrappedSetter);
-}
-#endif
-
-void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab)
-{
-    inspectorTab->RegisterAddon<MaterialInspector_>();
-}
-
-MaterialInspector_::MaterialInspector_(InspectorTab_* owner)
-    : InspectorAddon(owner)
+MaterialInspector_::MaterialInspector_(ResourceBrowserTab* owner)
+    : Object(owner->GetContext())
+    , owner_(owner)
 {
     auto project = owner_->GetProject();
     project->OnRequest.Subscribe(this, &MaterialInspector_::OnProjectRequest);
@@ -153,7 +88,7 @@ void MaterialInspector_::InspectResources()
     widget_->OnEditBegin.Subscribe(this, &MaterialInspector_::BeginEdit);
     widget_->OnEditEnd.Subscribe(this, &MaterialInspector_::EndEdit);
 
-    Activate();
+    OnActivated(this);
 }
 
 void MaterialInspector_::BeginEdit()

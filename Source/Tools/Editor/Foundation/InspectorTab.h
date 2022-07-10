@@ -32,24 +32,6 @@ namespace Urho3D
 
 void Foundation_InspectorTab(Context* context, ProjectEditor* projectEditor);
 
-class InspectorTab_;
-
-/// Addon to inspector tab that can provide content.
-class InspectorAddon : public Object, public InspectorSource
-{
-    URHO3D_OBJECT(InspectorAddon, Object);
-
-public:
-    explicit InspectorAddon(InspectorTab_* owner);
-    ~InspectorAddon() override;
-
-    /// Activate inspector for the addon.
-    void Activate();
-
-protected:
-    WeakPtr<InspectorTab_> owner_;
-};
-
 /// Tab that hosts inspectors of any kind.
 /// TODO(editor): Rename
 class InspectorTab_ : public EditorTab
@@ -60,8 +42,11 @@ public:
     explicit InspectorTab_(Context* context);
 
     /// Register new inspector addon.
-    void RegisterAddon(const SharedPtr<InspectorAddon>& addon);
-    template <class T, class ... Args> InspectorAddon* RegisterAddon(const Args&... args);
+    void RegisterAddon(const SharedPtr<Object>& addon);
+    template <class T, class ... Args> T* RegisterAddon(const Args&... args);
+
+    /// Connect to source when activated.
+    template <class T> void SubscribeOnActivation(T* source);
 
     /// Connect to data source.
     void ConnectToSource(Object* source, InspectorSource* sourceInterface);
@@ -83,18 +68,31 @@ protected:
     /// @}
 
 private:
-    ea::vector<SharedPtr<InspectorAddon>> addons_;
+    ea::vector<SharedPtr<Object>> addons_;
     WeakPtr<Object> source_;
 
     InspectorSource* sourceInterface_{};
 };
 
 template <class T, class ... Args>
-InspectorAddon* InspectorTab_::RegisterAddon(const Args&... args)
+T* InspectorTab_::RegisterAddon(const Args&... args)
 {
-    const auto addon = MakeShared<T>(this, args...);
+    const auto addon = MakeShared<T>(args...);
     RegisterAddon(addon);
+    SubscribeOnActivation(addon.Get());
     return addon;
+}
+
+template <class T>
+void InspectorTab_::SubscribeOnActivation(T* source)
+{
+    WeakPtr<T> sourceWeak{source};
+    source->OnActivated.Subscribe(this,
+        [sourceWeak](InspectorTab_* inspectorTab)
+    {
+        if (sourceWeak)
+            inspectorTab->ConnectToSource(sourceWeak.Get());
+    });
 }
 
 }

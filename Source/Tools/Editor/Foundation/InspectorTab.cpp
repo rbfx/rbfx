@@ -32,29 +32,13 @@ void Foundation_InspectorTab(Context* context, ProjectEditor* projectEditor)
     projectEditor->AddTab(MakeShared<InspectorTab_>(context));
 }
 
-InspectorAddon::InspectorAddon(InspectorTab_* owner)
-    : Object(owner->GetContext())
-    , owner_(owner)
-{
-}
-
-InspectorAddon::~InspectorAddon()
-{
-}
-
-void InspectorAddon::Activate()
-{
-    if (owner_)
-        owner_->ConnectToSource(this, this);
-}
-
 InspectorTab_::InspectorTab_(Context* context)
     : EditorTab(context, "Inspector", "bd959865-8929-4f92-a20f-97ff867d6ba6",
         EditorTabFlag::OpenByDefault, EditorTabPlacement::DockRight)
 {
 }
 
-void InspectorTab_::RegisterAddon(const SharedPtr<InspectorAddon>& addon)
+void InspectorTab_::RegisterAddon(const SharedPtr<Object>& addon)
 {
     addons_.push_back(addon);
 }
