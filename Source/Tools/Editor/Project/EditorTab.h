@@ -34,6 +34,7 @@ namespace Urho3D
 
 class HotkeyManager;
 class ProjectEditor;
+class UndoManager;
 
 enum class EditorTabFlag
 {
@@ -149,6 +150,7 @@ public:
     /// @{
     ProjectEditor* GetProject() const;
     HotkeyManager* GetHotkeyManager() const;
+    UndoManager* GetUndoManager() const;
 
     ea::string GetHotkeyLabel(const HotkeyInfo& info) const;
     template <class T> void BindHotkey(const HotkeyInfo& info, void(T::*callback)());

@@ -52,6 +52,8 @@ public:
     virtual bool IsComplete() const { return true; }
     /// Check if action is valid and alive, i.e. Undo and Redo can be called.
     virtual bool IsAlive() const { return true; }
+    /// Return if action is transparent, i.e. it can be pushed to stack or ignored without desynchronization.
+    virtual bool IsTransparent() const { return false; }
     /// Action is pushed to the stack.
     virtual void OnPushed(EditorActionFrame frame) {}
     /// Complete action if needed. Called after merge attempt but before stack modification.

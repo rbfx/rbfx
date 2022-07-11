@@ -104,6 +104,13 @@ bool ResourceBrowserFactory::Compare(
     return ea::tie(lhs->group_, lhs->title_) < ea::tie(rhs->group_, rhs->title_);
 }
 
+bool ResourceBrowserTab::Selection::operator==(const Selection& rhs) const
+{
+    return selectedRoot_ == rhs.selectedRoot_
+        && selectedLeftPath_ == rhs.selectedLeftPath_
+        && selectedRightPaths_ == rhs.selectedRightPaths_;
+}
+
 bool ResourceBrowserTab::EntryReference::operator<(const EntryReference& rhs) const
 {
     return ea::tie(rootIndex_, resourcePath_) < ea::tie(rhs.rootIndex_, rhs.resourcePath_);
@@ -201,6 +208,24 @@ void ResourceBrowserTab::AddFactory(SharedPtr<ResourceBrowserFactory> factory)
     sortFactories_ = true;
 }
 
+ResourceBrowserTab::Selection ResourceBrowserTab::GetSelection() const
+{
+    Selection selection;
+    selection.selectedRoot_ = left_.selectedRoot_;
+    selection.selectedLeftPath_ = left_.selectedPath_;
+    selection.selectedRightPaths_ = right_.selectedPaths_;
+    return selection;
+}
+
+void ResourceBrowserTab::SetSelection(const Selection& selection)
+{
+    SelectLeftPanel(selection.selectedLeftPath_, selection.selectedRoot_);
+    right_.selectedPaths_ = selection.selectedRightPaths_;
+    right_.lastSelectedPath_ = right_.selectedPaths_.empty() ? "" : *right_.selectedPaths_.begin();
+    OnSelectionChanged();
+    ScrollToSelection();
+}
+
 void ResourceBrowserTab::DeleteSelected()
 {
     // For right panel delete all the items in the selection
@@ -251,7 +276,7 @@ void ResourceBrowserTab::ReadIniSettings(const char* line)
     {
         const StringVector selectedPaths = value->split(';');
         right_.selectedPaths_ = {selectedPaths.begin(), selectedPaths.end()};
-        UpdateInspectorSelection();
+        OnSelectionChanged();
     }
 }
 
@@ -263,6 +288,8 @@ void ResourceBrowserTab::ScrollToSelection()
 
 void ResourceBrowserTab::RenderContent()
 {
+    const Selection oldSelection = GetSelection();
+
     for (ResourceRoot& root : roots_)
         root.reflection_->Update();
 
@@ -298,6 +325,18 @@ void ResourceBrowserTab::RenderContent()
     }
 
     RenderDialogs();
+
+    if (selectionDirty_)
+    {
+        selectionDirty_ = false;
+        Selection newSelection = GetSelection();
+        if (newSelection != oldSelection)
+        {
+            auto undoManager = GetUndoManager();
+            auto action = MakeShared<ChangeResourceSelectionAction>(this, oldSelection, newSelection);
+            undoManager->PushAction(action);
+        }
+    }
 }
 
 void ResourceBrowserTab::RenderDialogs()
@@ -673,6 +712,9 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
     {
+        if (!right_.selectedPaths_.contains(entry.resourceName_))
+            ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+
         BeginRightSelectionDrag();
         ui::EndDragDropSource();
     }
@@ -970,7 +1012,7 @@ void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<un
     cursor_.selectedPath_ = path;
     cursor_.isLeftPanel_ = true;
 
-    UpdateInspectorSelection();
+    OnSelectionChanged();
 }
 
 void ResourceBrowserTab::SelectRightPanel(const ea::string& path, bool clearSelection)
@@ -986,7 +1028,7 @@ void ResourceBrowserTab::SelectRightPanel(const ea::string& path, bool clearSele
         cursor_.isLeftPanel_ = false;
     }
 
-    UpdateInspectorSelection();
+    OnSelectionChanged();
 }
 
 void ResourceBrowserTab::DeselectRightPanel(const ea::string& path)
@@ -999,7 +1041,7 @@ void ResourceBrowserTab::DeselectRightPanel(const ea::string& path)
     if (cursor_.selectedPath_ == path)
         cursor_.selectedPath_ = right_.lastSelectedPath_;
 
-    UpdateInspectorSelection();
+    OnSelectionChanged();
 }
 
 void ResourceBrowserTab::ChangeRightPanelSelection(const ea::string& path, bool toggleSelection)
@@ -1010,8 +1052,9 @@ void ResourceBrowserTab::ChangeRightPanelSelection(const ea::string& path, bool 
         SelectRightPanel(path, !toggleSelection);
 }
 
-void ResourceBrowserTab::UpdateInspectorSelection()
+void ResourceBrowserTab::OnSelectionChanged()
 {
+    selectionDirty_ = true;
     if (!right_.selectedPaths_.empty())
     {
         auto project = GetProject();
@@ -1187,6 +1230,36 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
     const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
     project->ProcessRequest(request, this);
     reentrant_ = false;
+}
+
+ChangeResourceSelectionAction::ChangeResourceSelectionAction(ResourceBrowserTab* tab,
+    const ResourceBrowserTab::Selection& oldSelection, const ResourceBrowserTab::Selection& newSelection)
+    : tab_(tab)
+    , oldSelection_(oldSelection)
+    , newSelection_(newSelection)
+{
+}
+
+void ChangeResourceSelectionAction::Redo() const
+{
+    if (tab_)
+        tab_->SetSelection(newSelection_);
+}
+
+void ChangeResourceSelectionAction::Undo() const
+{
+    if (tab_)
+        tab_->SetSelection(oldSelection_);
+}
+
+bool ChangeResourceSelectionAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ChangeResourceSelectionAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    newSelection_ = otherAction->newSelection_;
+    return true;
 }
 
 }

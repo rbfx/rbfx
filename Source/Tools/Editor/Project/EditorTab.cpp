@@ -222,6 +222,12 @@ HotkeyManager* EditorTab::GetHotkeyManager() const
     return project->GetHotkeyManager();
 }
 
+UndoManager* EditorTab::GetUndoManager() const
+{
+    auto project = GetProject();
+    return project->GetUndoManager();
+}
+
 ea::string EditorTab::GetHotkeyLabel(const HotkeyInfo& info) const
 {
     auto hotkeyManager = GetHotkeyManager();
