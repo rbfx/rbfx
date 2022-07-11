@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/CommonEditorActions.h"
 #include "../Core/ResourceDragDropPayload.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
@@ -76,10 +77,23 @@ class ResourceBrowserTab : public EditorTab
     URHO3D_OBJECT(ResourceBrowserTab, EditorTab);
 
 public:
+    struct Selection
+    {
+        unsigned selectedRoot_{1};
+        ea::string selectedLeftPath_;
+        ea::unordered_set<ea::string> selectedRightPaths_;
+
+        bool operator==(const Selection& rhs) const;
+        bool operator!=(const Selection& rhs) const { return !(*this == rhs); }
+    };
+
     explicit ResourceBrowserTab(Context* context);
     ~ResourceBrowserTab() override;
 
     void AddFactory(SharedPtr<ResourceBrowserFactory> factory);
+
+    Selection GetSelection() const;
+    void SetSelection(const Selection& selection);
 
     /// Commands
     /// @{
@@ -90,6 +104,7 @@ public:
 
     /// Implement EditorTab
     /// @{
+    bool IsUndoSupported() override { return true; }
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
     /// @}
@@ -186,7 +201,7 @@ private:
     void ChangeRightPanelSelection(const ea::string& path, bool toggleSelection);
     void AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName);
     void ScrollToSelection();
-    void UpdateInspectorSelection();
+    void OnSelectionChanged();
     /// @}
 
     /// Manipulation utilities and helpers
@@ -264,6 +279,27 @@ private:
     /// @}
 
     ea::vector<const FileSystemEntry*> tempEntryList_;
+    bool selectionDirty_{};
+};
+
+class ChangeResourceSelectionAction : public EditorAction
+{
+public:
+    ChangeResourceSelectionAction(ResourceBrowserTab* tab,
+        const ResourceBrowserTab::Selection& oldSelection, const ResourceBrowserTab::Selection& newSelection);
+
+    /// Implement EditorAction
+    /// @{
+    bool IsTransparent() const override { return true; }
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    WeakPtr<ResourceBrowserTab> tab_;
+    ResourceBrowserTab::Selection oldSelection_;
+    ResourceBrowserTab::Selection newSelection_;
 };
 
 }
