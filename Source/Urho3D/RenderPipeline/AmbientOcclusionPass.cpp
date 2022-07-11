@@ -59,7 +59,7 @@ void AmbientOcclusionPass::InitializeTextures()
 void AmbientOcclusionPass::InitializeStates()
 {
     pipelineStates_ = CachedStates{};
-    pipelineStates_->ssao_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSTION");
+    pipelineStates_->ssao_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION");
     pipelineStates_->blur_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_SSAO", "BLUR");
 }
 

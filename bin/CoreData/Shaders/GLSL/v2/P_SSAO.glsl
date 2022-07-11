@@ -96,7 +96,7 @@ vec2 findMean(int i0, int i1, int j0, int j1, vec2 meanAndMinVariance) {
 
 void main()
 { 
-#ifdef EVALUATE_OCCLUSTION
+#ifdef EVALUATE_OCCLUSION
   
   const float total_strength = 1.0;
   const float base = 0.2;
