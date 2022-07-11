@@ -936,11 +936,12 @@ void Material::SetPixelShaderDefines(const ea::string& defines)
     }
 }
 
-void Material::SetShaderParameter(const ea::string& name, const Variant& value)
+void Material::SetShaderParameter(const ea::string& name, const Variant& value, bool isCustom)
 {
     MaterialShaderParameter newParam;
     newParam.name_ = name;
     newParam.value_ = value;
+    newParam.isCustom_ = isCustom;
 
     StringHash nameHash(name);
     shaderParameters_[nameHash] = newParam;

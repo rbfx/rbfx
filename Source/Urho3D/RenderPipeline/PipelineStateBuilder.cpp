@@ -146,11 +146,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
 void PipelineStateBuilder::ClearState()
 {
     pipelineStateDesc_ = {};
-    shaderProgramDesc_.vertexShaderName_.clear();
-    shaderProgramDesc_.vertexShaderDefines_.clear();
-    shaderProgramDesc_.pixelShaderName_.clear();
-    shaderProgramDesc_.pixelShaderDefines_.clear();
-    shaderProgramDesc_.commonShaderDefines_.clear();
+    shaderProgramDesc_.Clear();
 }
 
 void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const LightProcessor* lightProcessor,
@@ -254,12 +250,13 @@ void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(
 
 void PipelineStateBuilder::SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const
 {
-    shaderProgramDesc.vertexShaderDefines_ += shaderProgramDesc.commonShaderDefines_;
-    shaderProgramDesc.pixelShaderDefines_ += shaderProgramDesc.commonShaderDefines_;
+    for (ea::string& shaderDefines : shaderProgramDesc.shaderDefines_)
+        shaderDefines += shaderProgramDesc.commonShaderDefines_;
+
     pipelineStateDesc.vertexShader_ = graphics_->GetShader(
-        VS, shaderProgramDesc.vertexShaderName_, shaderProgramDesc.vertexShaderDefines_);
+        VS, shaderProgramDesc.shaderName_[VS], shaderProgramDesc.shaderDefines_[VS]);
     pipelineStateDesc.pixelShader_ = graphics_->GetShader(
-        PS, shaderProgramDesc.pixelShaderName_, shaderProgramDesc.pixelShaderDefines_);
+        PS, shaderProgramDesc.shaderName_[PS], shaderProgramDesc.shaderDefines_[PS]);
 }
 
 }

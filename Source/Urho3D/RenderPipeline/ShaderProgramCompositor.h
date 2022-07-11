@@ -45,17 +45,40 @@ class CameraProcessor;
 /// TODO: Consider replacing define string with tokenized define lists
 struct ShaderProgramDesc
 {
-    ea::string vertexShaderName_;
-    ea::string vertexShaderDefines_;
-    ea::string pixelShaderName_;
-    ea::string pixelShaderDefines_;
-
+    ea::string shaderName_[MAX_SHADER_TYPES];
+    ea::string shaderDefines_[MAX_SHADER_TYPES];
     ea::string commonShaderDefines_;
 
     /// Hints about what the shader program is
     /// @{
     bool isInstancingUsed_{};
     /// @}
+
+    void Clear()
+    {
+        for (ea::string& shaderName : shaderName_)
+            shaderName.clear();
+
+        for (ea::string& shaderDefines : shaderDefines_)
+            shaderDefines.clear();
+        commonShaderDefines_.clear();
+
+        isInstancingUsed_ = false;
+    }
+
+    void AddCommonShaderDefines(ea::string_view defines)
+    {
+        commonShaderDefines_.append(defines.begin(), defines.end());
+        if (!defines.ends_with(' '))
+            commonShaderDefines_ += ' ';
+    }
+
+    void AddShaderDefines(ShaderType type, ea::string_view defines)
+    {
+        shaderDefines_[type].append(defines.begin(), defines.end());
+        if (!defines.ends_with(' '))
+            shaderDefines_[type] += ' ';
+    }
 };
 
 /// Generates shader program descritpions for scene and light volume batches.

@@ -94,6 +94,8 @@ namespace ShaderConsts
     URHO3D_SHADER_CONST(Material, DielectricReflectance);
     /// @}
 
+    URHO3D_SHADER_CONST(Custom, OutlineColor);
+
     URHO3D_SHADER_CONST(Object, Model);
     URHO3D_SHADER_CONST(Object, SHAr);
     URHO3D_SHADER_CONST(Object, SHAg);

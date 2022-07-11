@@ -106,18 +106,24 @@ void OutlineGroup::ApplyAttributes()
 
 void OutlineGroup::SetColor(const Color& color)
 {
-    color_ = color;
+    if (color_ != color)
+    {
+        color_ = color;
 
-    for (const auto& [_, material] : materials_)
-        material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, color_);
+        for (const auto& [_, material] : materials_)
+            material->SetShaderParameter(ShaderConsts::Custom_OutlineColor, color_.ToVector4(), true);
+    }
 }
 
 void OutlineGroup::SetRenderOrder(unsigned renderOrder)
 {
-    renderOrder_ = renderOrder;
+    if (renderOrder_ != renderOrder)
+    {
+        renderOrder_ = renderOrder;
 
-    for (const auto& [_, material] : materials_)
-        material->SetRenderOrder(renderOrder_);
+        for (const auto& [_, material] : materials_)
+            material->SetRenderOrder(renderOrder_);
+    }
 }
 
 void OutlineGroup::SetDrawablesAttr(const VariantVector& drawables)
@@ -165,7 +171,7 @@ Material* OutlineGroup::GetOutlineMaterial(Material* referenceMaterial)
     for (const auto& [unit, value] : referenceMaterial->GetTextures())
         material->SetTexture(unit, value);
 
-    material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, color_);
+    material->SetShaderParameter(ShaderConsts::Custom_OutlineColor, color_.ToVector4(), true);
     material->SetRenderOrder(renderOrder_);
 
     materials_[key] = material;
