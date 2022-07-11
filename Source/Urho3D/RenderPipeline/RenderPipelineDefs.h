@@ -655,6 +655,23 @@ struct AutoExposurePassSettings
     /// @}
 };
 
+struct AmbientOcclusionPassSettings
+{
+    bool enabled_{};
+
+    /// Utility operators
+    /// @{
+    void Validate() { }
+
+    bool operator==(const AmbientOcclusionPassSettings& rhs) const
+    {
+        return enabled_ == rhs.enabled_;
+    }
+
+    bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }
+    /// @}
+};
+
 struct BloomPassSettings
 {
     bool enabled_{};
@@ -707,6 +724,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     /// @{
     AutoExposurePassSettings autoExposure_;
     BloomPassSettings bloom_;
+    AmbientOcclusionPassSettings ssao_;
     ToneMappingMode toneMapping_{};
     PostProcessAntialiasing antialiasing_{};
     bool greyScale_{};
