@@ -165,7 +165,7 @@ meanAndMinVariance = findMean(-size, 0, 0, size, meanAndMinVariance);
 
 meanAndMinVariance = findMean(0, size, -size, 0, meanAndMinVariance);
 
-gl_FragColor = vec4(meanAndMinVariance.xxx,1.0);
+gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0 - meanAndMinVariance.x);
 
 #endif
 }

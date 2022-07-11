@@ -49,7 +49,7 @@ void AmbientOcclusionPass::SetSettings(const AmbientOcclusionPassSettings& setti
 
 void AmbientOcclusionPass::InitializeTextures()
 {
-    const unsigned format = Graphics::GetRGBFormat();
+    const unsigned format = Graphics::GetRGBAFormat();
     const Vector2 sizeMultiplier = Vector2::ONE / static_cast<float>(1 << 0);
     const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
     textures_.ssao_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
@@ -60,7 +60,7 @@ void AmbientOcclusionPass::InitializeStates()
 {
     pipelineStates_ = CachedStates{};
     pipelineStates_->ssao_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSTION");
-    pipelineStates_->blur_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR");
+    pipelineStates_->blur_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_SSAO", "BLUR");
 }
 
 void AmbientOcclusionPass::BlurTexture()
