@@ -94,6 +94,17 @@ SharedPtr<JSONFile> FileResourceDesc::GetJSONFile() const
     return jsonFile_;
 }
 
+bool FileResourceDesc::HasExtension(ea::span<const ea::string_view> extensions) const
+{
+    return ea::any_of(extensions.begin(), extensions.end(),
+        [this](const ea::string_view& ext) { return resourceName_.ends_with(ext, false); });
+}
+
+bool FileResourceDesc::HasExtension(std::initializer_list<ea::string_view> extensions) const
+{
+    return HasExtension(ea::span<const ea::string_view>(extensions));
+}
+
 ea::string FileResourceDesc::GetTypeHint() const
 {
     if (const auto xmlFile = GetXMLFile())

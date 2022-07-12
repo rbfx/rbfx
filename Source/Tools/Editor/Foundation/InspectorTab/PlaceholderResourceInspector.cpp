@@ -48,6 +48,7 @@ void PlaceholderResourceInspector::OnProjectRequest(ProjectRequest* request)
     request->QueueProcessCallback([=]()
     {
         InspectResources(inspectResourceRequest->GetResources());
+        OnActivated(this);
     }, M_MIN_INT);
 }
 
@@ -68,8 +69,6 @@ void PlaceholderResourceInspector::InspectResources(const ea::vector<FileResourc
         multipleResources_ = MultipleResources{numFiles, numFolders};
         singleResource_ = ea::nullopt;
     }
-
-    OnActivated(this);
 }
 
 void PlaceholderResourceInspector::RenderContent()

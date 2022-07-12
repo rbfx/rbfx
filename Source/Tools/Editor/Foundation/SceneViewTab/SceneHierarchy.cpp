@@ -162,7 +162,7 @@ void SceneHierarchy::RenderNode(SceneViewPage& page, Node* node)
     if (isEmpty)
         flags |= ImGuiTreeNodeFlags_Leaf;
 
-    ui::PushID(static_cast<void*>(node));
+    const IdScopeGuard guard(static_cast<void*>(node));
     const bool opened = ui::TreeNodeEx(GetNodeTitle(node).c_str(), flags);
     ProcessRangeSelection(node, opened);
 
@@ -186,7 +186,6 @@ void SceneHierarchy::RenderNode(SceneViewPage& page, Node* node)
 
         ui::TreePop();
     }
-    ui::PopID();
 }
 
 void SceneHierarchy::RenderComponent(SceneViewPage& page, Component* component)
@@ -204,7 +203,7 @@ void SceneHierarchy::RenderComponent(SceneViewPage& page, Component* component)
     if (page.selection_.IsSelected(component))
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    ui::PushID(static_cast<void*>(component));
+    const IdScopeGuard guard(static_cast<void*>(component));
     const bool opened = ui::TreeNodeEx(component->GetTypeName().c_str(), flags);
     ProcessRangeSelection(component, opened);
 
@@ -217,7 +216,6 @@ void SceneHierarchy::RenderComponent(SceneViewPage& page, Component* component)
 
     if (opened)
         ui::TreePop();
-    ui::PopID();
 }
 
 void SceneHierarchy::ProcessObjectSelected(SceneViewPage& page, Object* object, bool toggle, bool range)

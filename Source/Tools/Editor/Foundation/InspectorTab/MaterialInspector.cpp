@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../../Foundation/ResourceBrowserTab/MaterialInspector.h"
+#include "../../Foundation/InspectorTab/MaterialInspector.h"
 
 #include <Urho3D/Resource/ResourceCache.h>
 
@@ -29,17 +29,16 @@
 namespace Urho3D
 {
 
-void Foundation_MaterialInspector(Context* context, ResourceBrowserTab* resourceBrowserTab)
+void Foundation_MaterialInspector(Context* context, InspectorTab_* inspectorTab)
 {
-    // Don't create inspector here, it's easier when InspectorTab owns it
+    inspectorTab->RegisterAddon<MaterialInspector_>(inspectorTab->GetProject());
 }
 
-MaterialInspector_::MaterialInspector_(ResourceBrowserTab* owner)
-    : Object(owner->GetContext())
-    , owner_(owner)
+MaterialInspector_::MaterialInspector_(ProjectEditor* project)
+    : Object(project->GetContext())
+    , project_(project)
 {
-    auto project = owner_->GetProject();
-    project->OnRequest.Subscribe(this, &MaterialInspector_::OnProjectRequest);
+    project_->OnRequest.Subscribe(this, &MaterialInspector_::OnProjectRequest);
 }
 
 void MaterialInspector_::OnProjectRequest(ProjectRequest* request)
@@ -63,6 +62,7 @@ void MaterialInspector_::OnProjectRequest(ProjectRequest* request)
             resourceNames_ = resourceNames;
             InspectResources();
         }
+        OnActivated(this);
     });
 }
 
@@ -87,8 +87,6 @@ void MaterialInspector_::InspectResources()
     widget_->UpdateTechniques(techniquePath_);
     widget_->OnEditBegin.Subscribe(this, &MaterialInspector_::BeginEdit);
     widget_->OnEditEnd.Subscribe(this, &MaterialInspector_::EndEdit);
-
-    OnActivated(this);
 }
 
 void MaterialInspector_::BeginEdit()
@@ -97,10 +95,9 @@ void MaterialInspector_::BeginEdit()
     if (pendingAction_ && !pendingAction_->IsComplete())
         return;
 
-    auto project = owner_->GetProject();
-    auto undoManager = project->GetUndoManager();
+    auto undoManager = project_->GetUndoManager();
 
-    pendingAction_ = MakeShared<ModifyResourceAction>(project);
+    pendingAction_ = MakeShared<ModifyResourceAction>(project_);
     for (Material* material : widget_->GetMaterials())
         pendingAction_->AddResource(material);
 
@@ -110,9 +107,8 @@ void MaterialInspector_::BeginEdit()
 
 void MaterialInspector_::EndEdit()
 {
-    auto project = owner_->GetProject();
     for (Material* material : widget_->GetMaterials())
-        project->SaveFileDelayed(material);
+        project_->SaveFileDelayed(material);
 }
 
 void MaterialInspector_::RenderContent()

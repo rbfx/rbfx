@@ -37,7 +37,7 @@ public:
     Signal<void()> OnActivated;
 
     /// Return owner tab.
-    virtual EditorTab* GetOwnerTab() = 0;
+    virtual EditorTab* GetOwnerTab() { return nullptr; }
     /// Return whether the inspector is connected to undo stack.
     virtual bool IsUndoSupported() { return false; }
 

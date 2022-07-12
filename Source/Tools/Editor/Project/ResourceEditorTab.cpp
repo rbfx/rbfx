@@ -360,10 +360,10 @@ void ResourceEditorTab::RenderContextMenuItems()
     }
     else
     {
-        ui::PushID("ActiveResources");
+        const IdScopeGuard guardCollection("ActiveResources");
         for (const auto& [resourceName, data] : resources_)
         {
-            ui::PushID(resourceName.c_str());
+            const IdScopeGuard guardItem(resourceName.c_str());
 
             bool selected = resourceName == activeResourceName_;
             if (ui::SmallButton(ICON_FA_XMARK))
@@ -377,9 +377,7 @@ void ResourceEditorTab::RenderContextMenuItems()
 
             if (ui::MenuItem(title.c_str(), nullptr, &selected))
                 SetActiveResource(resourceName);
-            ui::PopID();
         }
-        ui::PopID();
         contextMenuSeparator_.Add();
     }
 
