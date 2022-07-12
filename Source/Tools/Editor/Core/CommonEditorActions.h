@@ -52,7 +52,7 @@ public:
 
     /// Implement EditorAction.
     /// @{
-    bool IsAlive() const override;
+    bool CanUndoRedo() const override;
     void Redo() const override;
     void Undo() const override;
     /// @}
@@ -75,7 +75,7 @@ public:
 
     /// Implement EditorAction.
     /// @{
-    bool IsAlive() const override;
+    bool CanUndoRedo() const override;
     void Redo() const override;
     void Undo() const override;
     /// @}
@@ -98,7 +98,7 @@ public:
 
     /// Implement EditorAction.
     /// @{
-    bool IsAlive() const override;
+    bool CanUndoRedo() const override;
     void Redo() const override;
     void Undo() const override;
     bool MergeWith(const EditorAction& other) override;

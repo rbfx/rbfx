@@ -143,9 +143,10 @@ public:
 
     /// Implement EditorAction.
     /// @{
-    bool IsAlive() const;
     void OnPushed(EditorActionFrame frame) override;
+    bool CanRedo() const override;
     void Redo() const override;
+    bool CanUndo() const override;
     void Undo() const override;
     bool MergeWith(const EditorAction& other) override;
     /// @}

@@ -925,9 +925,10 @@ void ResourceBrowserTab::BeginRightSelectionDrag()
         g.DragDropPayload.Data = payload;
     }
 
-    const ea::string text = right_.selectedPaths_.size() == 1
-        ? GetFileNameAndExtension(*right_.selectedPaths_.begin())
-        : Format("{} items", right_.selectedPaths_.size());
+    const auto payload = dynamic_cast<ResourceDragDropPayload*>(DragDropPayload::Get());
+    const ea::string text = payload->items_.size() == 1
+        ? payload->items_[0].localName_
+        : Format("{} items", payload->items_.size());
     ui::TextUnformatted(text.c_str());
 }
 
@@ -947,7 +948,7 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
             {
                 const ea::string newResourceName = Format("{}{}{}", entry.resourceName_, separator, payloadItem.localName_);
                 const ea::string newFileName = Format("{}{}", root.activeDirectory_, newResourceName);
-                RenameOrMoveEntry(payloadItem.fileName_, newFileName, payloadItem.resourceName_, newResourceName, true);
+                RenameOrMove(payloadItem.fileName_, newFileName, payloadItem.resourceName_, newResourceName);
             }
         }
     }
@@ -1003,6 +1004,12 @@ const FileSystemEntry* ResourceBrowserTab::GetSelectedEntryForCursor() const
 
 void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex)
 {
+    const ea::string newPath = RemoveTrailingSlash(path);
+    const unsigned newRoot = rootIndex.value_or(left_.selectedRoot_);
+
+    if (newPath == left_.selectedPath_ && newRoot == left_.selectedRoot_)
+        return;
+
     left_.selectedPath_ = RemoveTrailingSlash(path);
     left_.selectedRoot_ = rootIndex.value_or(left_.selectedRoot_);
 
@@ -1063,14 +1070,18 @@ void ResourceBrowserTab::OnSelectionChanged()
     }
 }
 
-void ResourceBrowserTab::AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName)
+void ResourceBrowserTab::AdjustSelectionOnRename(unsigned oldRootIndex, const ea::string& oldResourceName,
+        unsigned newRootIndex, const ea::string& newResourceName)
 {
+    if (left_.selectedRoot_ != oldRootIndex)
+        return;
+
     // Cache results because following calls may change values
     const ea::string lastSelectedRightPath = right_.lastSelectedPath_;
     StringVector selectedRightPaths{right_.selectedPaths_.begin(), right_.selectedPaths_.end()};
 
     if (auto newPath = TryAdjustPathOnRename(left_.selectedPath_, oldResourceName, newResourceName))
-        SelectLeftPanel(*newPath);
+        SelectLeftPanel(*newPath, newRootIndex);
 
     if (auto newPath = TryAdjustPathOnRename(lastSelectedRightPath, oldResourceName, newResourceName))
         SelectRightPanel(*newPath);
@@ -1115,6 +1126,20 @@ ea::vector<const FileSystemEntry*> ResourceBrowserTab::GetEntries(const ea::vect
             result.push_back(entry);
     }
     return result;
+}
+
+ea::optional<unsigned> ResourceBrowserTab::GetRootIndex(const ea::string& fileName) const
+{
+    for (unsigned rootIndex = 0; rootIndex < roots_.size(); ++rootIndex)
+    {
+        const ResourceRoot& root = roots_[rootIndex];
+        for (const ea::string& rootPath : root.watchedDirectories_)
+        {
+            if (fileName.starts_with(rootPath))
+                return rootIndex;
+        }
+    }
+    return ea::nullopt;
 }
 
 void ResourceBrowserTab::BeginEntryDelete(const FileSystemEntry& entry)
@@ -1170,31 +1195,40 @@ void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::str
 {
     const ea::string newFileName = GetPath(entry.absolutePath_) + newName;
     const ea::string newResourceName = GetPath(entry.resourceName_) + newName;
-    const bool thisRootSelected = GetRootIndex(entry) == left_.selectedRoot_;
-    RenameOrMoveEntry(entry.absolutePath_, newFileName, entry.resourceName_, newResourceName, thisRootSelected);
+    RenameOrMove(entry.absolutePath_, newFileName, entry.resourceName_, newResourceName);
 }
 
-void ResourceBrowserTab::RenameOrMoveEntry(const ea::string& oldFileName, const ea::string& newFileName,
-    const ea::string& oldResourceName, const ea::string& newResourceName, bool adjustSelection)
+void ResourceBrowserTab::RenameOrMove(const ea::string& oldFileName, const ea::string& newFileName,
+    const ea::string& oldResourceName, const ea::string& newResourceName, bool suppressUndo)
 {
     auto fs = GetSubsystem<FileSystem>();
     auto project = GetProject();
 
+    const unsigned oldRootIndex = GetRootIndex(oldFileName).value_or(0);
+    const unsigned newRootIndex = GetRootIndex(newFileName).value_or(0);
+
     const bool isFile = fs->FileExists(oldFileName);
 
     const bool renamed = fs->Rename(oldFileName, newFileName);
-
-    // Show tooltip if waiting for refresh
     if (renamed)
+    {
+        // Show tooltip if waiting for refresh
         waitingForUpdate_ = true;
 
-    // Keep selection on dragged element
-    if (renamed && adjustSelection)
-        AdjustSelectionOnRename(oldResourceName, newResourceName);
+        // Keep selection on dragged element
+        AdjustSelectionOnRename(oldRootIndex, oldResourceName, newRootIndex, newResourceName);
 
-    // If file is moved and there's directory in cache with the same name, remove it
-    if (renamed && isFile)
-        CleanupResourceCache(oldResourceName);
+        // If file is moved and there's directory in cache with the same name, remove it
+        if (isFile)
+            CleanupResourceCache(oldResourceName);
+
+        if (!suppressUndo)
+        {
+            auto undoManager = GetUndoManager();
+            auto action = MakeShared<RenameResourceAction>(this, oldFileName, newFileName, oldResourceName, newResourceName);
+            undoManager->PushAction(action);
+        }
+    }
 }
 
 void ResourceBrowserTab::DeleteEntry(const FileSystemEntry& entry)
@@ -1260,6 +1294,50 @@ bool ChangeResourceSelectionAction::MergeWith(const EditorAction& other)
 
     newSelection_ = otherAction->newSelection_;
     return true;
+}
+
+RenameResourceAction::RenameResourceAction(ResourceBrowserTab* tab,
+    const ea::string& oldFileName, const ea::string& newFileName,
+    const ea::string& oldResourceName, const ea::string& newResourceName)
+    : tab_(tab)
+    , oldFileName_(oldFileName)
+    , newFileName_(newFileName)
+    , oldResourceName_(oldResourceName)
+    , newResourceName_(newResourceName)
+{
+}
+
+bool RenameResourceAction::CanRedo() const
+{
+    return CanRenameTo(newFileName_);
+}
+
+void RenameResourceAction::Redo() const
+{
+    tab_->RenameOrMove(oldFileName_, newFileName_, oldResourceName_, newResourceName_, true);
+}
+
+bool RenameResourceAction::CanUndo() const
+{
+    return CanRenameTo(oldFileName_);
+}
+
+void RenameResourceAction::Undo() const
+{
+    tab_->RenameOrMove(newFileName_, oldFileName_, newResourceName_, oldResourceName_, true);
+}
+
+bool RenameResourceAction::CanRenameTo(const ea::string& fileName) const
+{
+    if (tab_)
+    {
+        if (Context* context = tab_->GetContext())
+        {
+            auto fs = context->GetSubsystem<FileSystem>();
+            return !fs->FileExists(fileName) && !fs->DirExists(fileName);
+        }
+    }
+    return false;
 }
 
 }

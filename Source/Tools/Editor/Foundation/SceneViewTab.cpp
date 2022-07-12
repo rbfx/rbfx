@@ -594,15 +594,20 @@ RewindSceneActionWrapper::RewindSceneActionWrapper(SharedPtr<EditorAction> actio
 
 }
 
-bool RewindSceneActionWrapper::IsAlive() const
+bool RewindSceneActionWrapper::CanRedo() const
 {
-    return page_ && BaseEditorActionWrapper::IsAlive();
+    return page_ && BaseEditorActionWrapper::CanRedo();
 }
 
 void RewindSceneActionWrapper::Redo() const
 {
     page_->RewindSimulation();
     BaseEditorActionWrapper::Redo();
+}
+
+bool RewindSceneActionWrapper::CanUndo() const
+{
+    return page_ && BaseEditorActionWrapper::CanUndo();
 }
 
 void RewindSceneActionWrapper::Undo() const

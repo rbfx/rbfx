@@ -94,6 +94,8 @@ public:
 
     Selection GetSelection() const;
     void SetSelection(const Selection& selection);
+    void RenameOrMove(const ea::string& oldFileName, const ea::string& newFileName,
+        const ea::string& oldResourceName, const ea::string& newResourceName, bool suppressUndo = false);
 
     /// Commands
     /// @{
@@ -191,6 +193,7 @@ private:
     ea::pair<bool, ea::string> CheckFileNameInput(const FileSystemEntry& parentEntry,
         const ea::string& oldName, const ea::string& newName) const;
     ea::vector<const FileSystemEntry*> GetEntries(const ea::vector<EntryReference>& refs) const;
+    ea::optional<unsigned> GetRootIndex(const ea::string& fileName) const;
     /// @}
 
     /// Manage selection
@@ -199,7 +202,8 @@ private:
     void SelectRightPanel(const ea::string& path, bool clearSelection = true);
     void DeselectRightPanel(const ea::string& path);
     void ChangeRightPanelSelection(const ea::string& path, bool toggleSelection);
-    void AdjustSelectionOnRename(const ea::string& oldResourceName, const ea::string& newResourceName);
+    void AdjustSelectionOnRename(unsigned oldRootIndex, const ea::string& oldResourceName,
+        unsigned newRootIndex, const ea::string& newResourceName);
     void ScrollToSelection();
     void OnSelectionChanged();
     /// @}
@@ -214,8 +218,6 @@ private:
     void RefreshContents();
     void RevealInExplorer(const ea::string& path);
     void RenameEntry(const FileSystemEntry& entry, const ea::string& newName);
-    void RenameOrMoveEntry(const ea::string& oldFileName, const ea::string& newFileName,
-        const ea::string& oldResourceName, const ea::string& newResourceName, bool adjustSelection);
     void DeleteEntry(const FileSystemEntry& entry);
     void CleanupResourceCache(const ea::string& resourceName);
     void OpenEntryInEditor(const FileSystemEntry& entry);
@@ -300,6 +302,31 @@ private:
     WeakPtr<ResourceBrowserTab> tab_;
     ResourceBrowserTab::Selection oldSelection_;
     ResourceBrowserTab::Selection newSelection_;
+};
+
+class RenameResourceAction : public EditorAction
+{
+public:
+    RenameResourceAction(ResourceBrowserTab* tab,
+        const ea::string& oldFileName, const ea::string& newFileName,
+        const ea::string& oldResourceName, const ea::string& newResourceName);
+
+    /// Implement EditorAction
+    /// @{
+    bool CanRedo() const override;
+    void Redo() const override;
+    bool CanUndo() const override;
+    void Undo() const override;
+    /// @}
+
+private:
+    bool CanRenameTo(const ea::string& fileName) const;
+
+    WeakPtr<ResourceBrowserTab> tab_;
+    ea::string oldFileName_;
+    ea::string newFileName_;
+    ea::string oldResourceName_;
+    ea::string newResourceName_;
 };
 
 }
