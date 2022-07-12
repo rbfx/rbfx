@@ -41,19 +41,24 @@ bool BaseEditorActionWrapper::RemoveOnUndo() const
     return action_->RemoveOnUndo();
 }
 
-bool BaseEditorActionWrapper::IsAlive() const
-{
-    return action_->IsAlive();
-}
-
 void BaseEditorActionWrapper::OnPushed(EditorActionFrame frame)
 {
     action_->OnPushed(frame);
 }
 
+bool BaseEditorActionWrapper::CanRedo() const
+{
+    return action_->CanRedo();
+}
+
 void BaseEditorActionWrapper::Redo() const
 {
     action_->Redo();
+}
+
+bool BaseEditorActionWrapper::CanUndo() const
+{
+    return action_->CanUndo();
 }
 
 void BaseEditorActionWrapper::Undo() const
@@ -70,10 +75,16 @@ bool BaseEditorActionWrapper::MergeWith(const EditorAction& other)
     return action_->MergeWith(*otherWrapper.action_);
 }
 
-bool UndoManager::ActionGroup::IsAlive() const
+bool UndoManager::ActionGroup::CanRedo() const
 {
-    const auto isAlive = [](const EditorActionPtr& action) { return action->IsAlive(); };
-    return ea::all_of(actions_.begin(), actions_.end(), isAlive);
+    const auto canRedo = [](const EditorActionPtr& action) { return action->CanRedo(); };
+    return ea::all_of(actions_.begin(), actions_.end(), canRedo);
+}
+
+bool UndoManager::ActionGroup::CanUndo() const
+{
+    const auto canUndo = [](const EditorActionPtr& action) { return action->CanUndo(); };
+    return ea::all_of(actions_.begin(), actions_.end(), canUndo);
 }
 
 UndoManager::UndoManager(Context* context)
@@ -92,6 +103,7 @@ void UndoManager::NewFrame()
 
 EditorActionFrame UndoManager::PushAction(const EditorActionPtr& action)
 {
+    ClearCanUndoRedo();
     action->OnPushed(frame_);
 
     if (!action->IsTransparent())
@@ -127,10 +139,11 @@ bool UndoManager::Undo()
         if (undoStack_.empty())
             return false;
 
+        ClearCanUndoRedo();
         CommitIncompleteAction();
 
         ActionGroup& group = undoStack_.back();
-        if (!group.IsAlive())
+        if (!group.CanUndo())
             return false;
 
         for (EditorAction* action : ea::reverse(group.actions_))
@@ -159,10 +172,11 @@ bool UndoManager::Redo()
         if (redoStack_.empty())
             return false;
 
+        ClearCanUndoRedo();
         CommitIncompleteAction();
 
         ActionGroup& group = redoStack_.back();
-        if (!group.IsAlive())
+        if (!group.CanRedo())
             return false;
 
         for (EditorAction* action : group.actions_)
@@ -183,12 +197,22 @@ bool UndoManager::Redo()
 
 bool UndoManager::CanUndo() const
 {
-    return !undoStack_.empty() && undoStack_.back().IsAlive();
+    if (!canUndo_)
+        canUndo_ = !undoStack_.empty() && undoStack_.back().CanUndo();
+    return *canUndo_;
 }
 
 bool UndoManager::CanRedo() const
 {
-    return !redoStack_.empty() && redoStack_.back().IsAlive();
+    if (!canRedo_)
+        canRedo_ = !redoStack_.empty() && redoStack_.back().CanRedo();
+    return *canRedo_;
+}
+
+void UndoManager::ClearCanUndoRedo()
+{
+    canRedo_ = ea::nullopt;
+    canUndo_ = ea::nullopt;
 }
 
 void UndoManager::Update()

@@ -26,6 +26,7 @@
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Core/Timer.h>
 
+#include <EASTL/optional.h>
 #include <EASTL/vector.h>
 
 namespace Urho3D
@@ -50,16 +51,20 @@ public:
     virtual bool RemoveOnUndo() const { return false; }
     /// Return whether the action is incomplete, e.g. "redo" state is not saved. Useful for heavy actions.
     virtual bool IsComplete() const { return true; }
-    /// Check if action is valid and alive, i.e. Undo and Redo can be called.
-    virtual bool IsAlive() const { return true; }
     /// Return if action is transparent, i.e. it can be pushed to stack or ignored without desynchronization.
     virtual bool IsTransparent() const { return false; }
     /// Action is pushed to the stack.
     virtual void OnPushed(EditorActionFrame frame) {}
     /// Complete action if needed. Called after merge attempt but before stack modification.
     virtual void Complete() {}
+    /// Return whether the action can be redone and undone.
+    virtual bool CanUndoRedo() const { return true; }
+    /// Return whether the action can be redone.
+    virtual bool CanRedo() const { return CanUndoRedo(); }
     /// Redo this action. May fail if external state has unexpectedly changed.
     virtual void Redo() const = 0;
+    /// Return whether the action can be undone.
+    virtual bool CanUndo() const { return CanUndoRedo(); }
     /// Undo this action. May fail if external state has unexpectedly changed.
     virtual void Undo() const = 0;
     /// Try to merge this action with another. Return true if successfully merged.
@@ -75,9 +80,10 @@ public:
     /// Implement EditorAction.
     /// @{
     bool RemoveOnUndo() const override;
-    bool IsAlive() const override;
     void OnPushed(EditorActionFrame frame) override;
+    bool CanRedo() const override;
     void Redo() const override;
+    bool CanUndo() const override;
     void Undo() const override;
     bool MergeWith(const EditorAction& other) override;
     /// @}
@@ -116,9 +122,11 @@ private:
         EditorActionFrame frame_{};
         ea::vector<EditorActionPtr> actions_;
 
-        bool IsAlive() const;
+        bool CanRedo() const;
+        bool CanUndo() const;
     };
 
+    void ClearCanUndoRedo();
     void Update();
     bool NeedNewGroup() const;
     void CommitIncompleteAction();
@@ -131,6 +139,9 @@ private:
 
     EditorActionPtr incompleteAction_;
     Timer incompleteActionTimer_;
+
+    mutable ea::optional<bool> canUndo_;
+    mutable ea::optional<bool> canRedo_;
 };
 
 }

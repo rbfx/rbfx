@@ -33,7 +33,7 @@ CreateRemoveNodeAction::CreateRemoveNodeAction(Node* node, bool removed)
 {
 }
 
-bool CreateRemoveNodeAction::IsAlive() const
+bool CreateRemoveNodeAction::CanUndoRedo() const
 {
     return scene_ != nullptr;
 }
@@ -84,7 +84,7 @@ CreateRemoveComponentAction::CreateRemoveComponentAction(Component* component, b
 {
 }
 
-bool CreateRemoveComponentAction::IsAlive() const
+bool CreateRemoveComponentAction::CanUndoRedo() const
 {
     return scene_ != nullptr;
 }
@@ -133,7 +133,7 @@ ChangeNodeTransformAction::ChangeNodeTransformAction(Node* node, const Transform
 {
 }
 
-bool ChangeNodeTransformAction::IsAlive() const
+bool ChangeNodeTransformAction::CanUndoRedo() const
 {
     return scene_ != nullptr;
 }

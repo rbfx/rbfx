@@ -434,15 +434,15 @@ ResourceActionWrapper::ResourceActionWrapper(SharedPtr<EditorAction> action,
     URHO3D_ASSERT(action);
 }
 
-bool ResourceActionWrapper::IsAlive() const
-{
-    return tab_ && tab_->IsResourceOpen(resourceName_) && BaseEditorActionWrapper::IsAlive();
-}
-
 void ResourceActionWrapper::OnPushed(EditorActionFrame frame)
 {
     newFrame_ = frame;
     BaseEditorActionWrapper::OnPushed(frame);
+}
+
+bool ResourceActionWrapper::CanRedo() const
+{
+    return tab_ && tab_->IsResourceOpen(resourceName_) && BaseEditorActionWrapper::CanRedo();
 }
 
 void ResourceActionWrapper::Redo() const
@@ -450,6 +450,11 @@ void ResourceActionWrapper::Redo() const
     BaseEditorActionWrapper::Redo();
     FocusMe();
     UpdateCurrentAction(newFrame_);
+}
+
+bool ResourceActionWrapper::CanUndo() const
+{
+    return tab_ && tab_->IsResourceOpen(resourceName_) && BaseEditorActionWrapper::CanUndo();
 }
 
 void ResourceActionWrapper::Undo() const

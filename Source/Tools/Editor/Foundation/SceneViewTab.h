@@ -219,8 +219,9 @@ public:
 
     /// Implement EditorAction.
     /// @{
-    bool IsAlive() const override;
+    bool CanRedo() const override;
     void Redo() const override;
+    bool CanUndo() const override;
     void Undo() const override;
     /// @}
 
