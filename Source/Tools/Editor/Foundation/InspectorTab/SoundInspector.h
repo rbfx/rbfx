@@ -19,36 +19,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
-#include "../../Core/CommonEditorActions.h"
-#include "../../Foundation/ResourceBrowserTab.h"
-#include "../../Foundation/Shared/InspectorSource.h"
-#include "../../Project/ModifyResourceAction.h"
+#include "../../Foundation/InspectorTab.h"
 
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/Utility/MaterialInspectorWidget.h>
+#include <Urho3D/Audio/Sound.h>
+#include <Urho3D/Audio/SoundSource.h>
 
 namespace Urho3D
 {
 
-void Foundation_MaterialInspector(Context* context, ResourceBrowserTab* resourceBrowserTab);
+void Foundation_SoundInspector(Context* context, InspectorTab_* inspectorTab);
 
-/// Scene hierarchy provider for hierarchy browser tab.
-/// TODO(editor): Rename
-class MaterialInspector_ : public Object, public InspectorSource
+class SoundInspector_ : public Object, public InspectorSource
 {
-    URHO3D_OBJECT(MaterialInspector_, Object)
+    URHO3D_OBJECT(SoundInspector_, Object);
 
 public:
-    explicit MaterialInspector_(ResourceBrowserTab* owner);
+    explicit SoundInspector_(ProjectEditor* project);
 
     /// Implement InspectorSource
     /// @{
-    EditorTab* GetOwnerTab() override { return nullptr; }
-    bool IsUndoSupported() override { return true; }
-
     void RenderContent() override;
     void RenderContextMenuItems() override;
     void RenderMenu() override;
@@ -58,20 +49,13 @@ public:
 private:
     void OnProjectRequest(ProjectRequest* request);
     void InspectResources();
+    void RenderSound(Sound* sound);
 
-    void BeginEdit();
-    void EndEdit();
-
-    const unsigned updatePeriodMs_{1000};
-    const ea::string techniquePath_{"Techniques/"};
-
-    WeakPtr<ResourceBrowserTab> owner_;
+    WeakPtr<ProjectEditor> project_;
 
     StringVector resourceNames_;
-    SharedPtr<MaterialInspectorWidget> widget_;
-    Timer updateTimer_;
-
-    SharedPtr<ModifyResourceAction> pendingAction_;
+    ea::vector<SharedPtr<Sound>> sounds_;
+    SharedPtr<SoundSource> soundSource_;
 };
 
 }

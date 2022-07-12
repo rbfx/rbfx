@@ -74,6 +74,10 @@ public:
     SharedPtr<XMLFile> GetXMLFile() const;
     SharedPtr<JSONFile> GetJSONFile() const;
 
+    /// Return whether the extension is one of the list.
+    bool HasExtension(ea::string_view extension) const { return resourceName_.ends_with(extension, false); }
+    bool HasExtension(ea::span<const ea::string_view> extensions) const;
+    bool HasExtension(std::initializer_list<ea::string_view> extensions) const;
     /// Return type hint from the file itself.
     /// - Root element name of XML.
     /// - Empty otherwise.

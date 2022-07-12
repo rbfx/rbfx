@@ -33,6 +33,8 @@
 #include <ImGui/imgui_internal.h>
 #include <ImGui/imgui_stdlib.h>
 
+namespace ui = ImGui;
+
 namespace Urho3D
 {
 
@@ -48,6 +50,24 @@ inline Vector2 ToVector2(const ImVec2& value) { return {value.x, value.y}; }
 inline Vector4 ToVector4(const ImVec4& value) { return {value.x, value.y, value.z, value.w}; }
 inline IntVector2 ToIntVector2(const ImVec2& value) { return {RoundToInt(value.x), RoundToInt(value.y)}; }
 inline IntRect ToIntRect(const ImRect& value) { return {ToIntVector2(value.Min), ToIntVector2(value.Max)}; }
+/// @}
+
+/// State guards for paired calls.
+/// @{
+class IdScopeGuard
+{
+public:
+    template <class T>
+    explicit IdScopeGuard(const T& id)
+    {
+        ui::PushID(id);
+    }
+
+    ~IdScopeGuard()
+    {
+        ui::PopID();
+    }
+};
 /// @}
 
 }
@@ -97,5 +117,3 @@ inline ImRect& operator*=(ImRect& lhs, float rhs) { lhs.Min *= rhs; lhs.Max *= r
 
 inline ImRect ImRound(const ImRect& r) { return ImRect({Urho3D::Round(r.Min.x), Urho3D::Round(r.Min.y)}, {Urho3D::Round(r.Max.x), Urho3D::Round(r.Max.y)}); };
 /// @}
-
-namespace ui = ImGui;

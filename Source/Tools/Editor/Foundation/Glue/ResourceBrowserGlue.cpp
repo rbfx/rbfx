@@ -22,18 +22,11 @@
 
 #include "../../Foundation/Glue/ResourceBrowserGlue.h"
 
-#include "../../Foundation/ResourceBrowserTab/MaterialInspector.h"
-
 namespace Urho3D
 {
 
 void Foundation_ResourceBrowserGlue(Context* context, ResourceBrowserTab* resourceBrowserTab)
 {
-    auto project = resourceBrowserTab->GetProject();
-    auto inspectorTab = project->FindTab<InspectorTab_>();
-
-    if (inspectorTab)
-        inspectorTab->RegisterAddon<MaterialInspector_>(resourceBrowserTab);
 }
 
 }

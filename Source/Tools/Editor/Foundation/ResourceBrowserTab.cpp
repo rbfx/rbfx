@@ -361,7 +361,7 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     if (project->IsFileNameIgnored(displayedName))
         return;
 
-    ui::PushID(displayedName.c_str());
+    const IdScopeGuard guard(displayedName.c_str());
 
     const unsigned rootIndex = GetRootIndex(entry);
     const ResourceRoot& root = roots_[rootIndex];
@@ -424,8 +424,6 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
 
     // Render context menu and popups
     RenderEntryContextMenu(entry);
-
-    ui::PopID();
 }
 
 void ResourceBrowserTab::RenderEntryContextMenu(const FileSystemEntry& entry)
@@ -498,7 +496,7 @@ ea::optional<unsigned> ResourceBrowserTab::RenderEntryCreateContextMenu(const Fi
     unsigned index = 0;
     for (const ResourceBrowserFactory* factory : factories_)
     {
-        ui::PushID(index);
+        const IdScopeGuard guard(index);
 
         if (previousGroup && *previousGroup != factory->GetGroup())
             ui::Separator();
@@ -510,7 +508,6 @@ ea::optional<unsigned> ResourceBrowserTab::RenderEntryCreateContextMenu(const Fi
             result = index;
         ui::EndDisabled();
 
-        ui::PopID();
         ++index;
     }
 
@@ -542,7 +539,7 @@ void ResourceBrowserTab::RenderDirectoryContent()
 
 void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
 {
-    ui::PushID("..");
+    const IdScopeGuard guard("..");
 
     // Render the element itself
     const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick
@@ -572,8 +569,6 @@ void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
         DropPayloadToFolder(*entry.parent_);
         ui::EndDragDropTarget();
     }
-
-    ui::PopID();
 }
 
 void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entry)
@@ -582,7 +577,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     if (project->IsFileNameIgnored(entry.localName_))
         return;
 
-    ui::PushID(entry.localName_.c_str());
+    const IdScopeGuard guard(entry.localName_.c_str());
 
     ImGuiContext& g = *GImGui;
     const ResourceRoot& root = GetRoot(entry);
@@ -655,8 +650,6 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
 
     // Render context menu and popups
     RenderEntryContextMenu(entry);
-
-    ui::PopID();
 }
 
 void ResourceBrowserTab::RenderCompositeFile(const FileSystemEntry& entry)
@@ -684,7 +677,7 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     if (project->IsFileNameIgnored(entry.localName_))
         return;
 
-    ui::PushID(entry.resourceName_.c_str());
+    const IdScopeGuard guard(entry.resourceName_.c_str());
 
     // Render the element itself
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick
@@ -727,7 +720,6 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
 
     // Render context menu and popups
     RenderEntryContextMenu(entry);
-    ui::PopID();
 }
 
 void ResourceBrowserTab::RenderRenameDialog()
@@ -744,8 +736,7 @@ void ResourceBrowserTab::RenderRenameDialog()
 
     const auto [isEnabled, extraLine] = CheckFileNameInput(
         *entry->parent_, entry->localName_, rename_.inputBuffer_);
-    const char* formatString = "Would you like to rename '%s'?\n"
-        ICON_FA_TRIANGLE_EXCLAMATION " This action cannot be undone!\n%s";
+    const char* formatString = "Would you like to rename '%s'?\n";
     ui::Text(formatString, entry->absolutePath_.c_str(), extraLine.c_str());
 
     if (justOpened)
@@ -1201,6 +1192,9 @@ void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::str
 void ResourceBrowserTab::RenameOrMove(const ea::string& oldFileName, const ea::string& newFileName,
     const ea::string& oldResourceName, const ea::string& newResourceName, bool suppressUndo)
 {
+    if (oldFileName == newFileName)
+        return;
+
     auto fs = GetSubsystem<FileSystem>();
     auto project = GetProject();
 

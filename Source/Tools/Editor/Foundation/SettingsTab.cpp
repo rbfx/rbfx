@@ -96,7 +96,7 @@ void SettingsTab::RenderSettingsSubtree(const SettingTreeNode& treeNode, const e
         selectedPage_ = treeNode.page_->GetUniqueName();
     }
 
-    ui::PushID(shortName.c_str());
+    const IdScopeGuard guard(shortName.c_str());
 
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
@@ -126,8 +126,6 @@ void SettingsTab::RenderSettingsSubtree(const SettingTreeNode& treeNode, const e
             RenderSettingsSubtree(childNode, shortName);
         ui::TreePop();
     }
-
-    ui::PopID();
 }
 
 void SettingsTab::RenderCurrentSettingsPage()

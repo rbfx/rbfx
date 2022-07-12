@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../../Foundation/ResourceBrowserTab.h"
-#include "../../Foundation/InspectorTab.h"
 
 namespace Urho3D
 {

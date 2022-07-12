@@ -71,65 +71,63 @@ void PluginsTab::RenderContent()
     UpdateAvailablePlugins();
     UpdateLoadedPlugins();
 
-    ui::PushID("##LoadedPlugins");
-
-    if (ui::SmallButton(ICON_FA_SQUARE_MINUS))
     {
-        loadedPlugins_.clear();
-        hasChanges_ = true;
-    }
-    ui::SameLine();
-    ui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", "[Unload All]");
+        const IdScopeGuard guardLoadedPlugins("##LoadedPlugins");
 
-    ea::unordered_set<ea::string> pluginsToUnload;
-    for (const ea::string& plugin : loadedPlugins_)
-    {
-        ui::PushID(plugin.c_str());
         if (ui::SmallButton(ICON_FA_SQUARE_MINUS))
         {
-            pluginsToUnload.insert(plugin);
+            loadedPlugins_.clear();
             hasChanges_ = true;
         }
         ui::SameLine();
-        ui::Text("%s", plugin.c_str());
-        ui::PopID();
-    }
-    ea::erase_if(loadedPlugins_, [&](const ea::string& plugin) { return pluginsToUnload.contains(plugin); });
+        ui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", "[Unload All]");
 
-    ui::PopID();
+        ea::unordered_set<ea::string> pluginsToUnload;
+        for (const ea::string& plugin : loadedPlugins_)
+        {
+            const IdScopeGuard guardItem(plugin.c_str());
+            if (ui::SmallButton(ICON_FA_SQUARE_MINUS))
+            {
+                pluginsToUnload.insert(plugin);
+                hasChanges_ = true;
+            }
+            ui::SameLine();
+            ui::Text("%s", plugin.c_str());
+        }
+        ea::erase_if(loadedPlugins_, [&](const ea::string& plugin) { return pluginsToUnload.contains(plugin); });
+    }
 
     ui::Separator();
 
-    ui::PushID("##UnloadedPlugins");
-    if (ui::SmallButton(ICON_FA_SQUARE_PLUS))
     {
-        auto pluginsToLoad = availablePlugins_;
-        for (const ea::string& alreadyLoadedPlugin : loadedPlugins_)
-            pluginsToLoad.erase(alreadyLoadedPlugin);
-        loadedPlugins_.insert(loadedPlugins_.end(), pluginsToLoad.begin(), pluginsToLoad.end());
-        hasChanges_ = true;
-    }
-    ui::SameLine();
-    ui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", "[Load All]");
-
-    for (const ea::string& plugin : availablePlugins_)
-    {
-        // TODO: Optimize?
-        if (loadedPlugins_.contains(plugin))
-            continue;
-
-        ui::PushID(plugin.c_str());
+        const IdScopeGuard guardUnloadedPlugins("##UnloadedPlugins");
         if (ui::SmallButton(ICON_FA_SQUARE_PLUS))
         {
-            loadedPlugins_.push_back(plugin);
+            auto pluginsToLoad = availablePlugins_;
+            for (const ea::string& alreadyLoadedPlugin : loadedPlugins_)
+                pluginsToLoad.erase(alreadyLoadedPlugin);
+            loadedPlugins_.insert(loadedPlugins_.end(), pluginsToLoad.begin(), pluginsToLoad.end());
             hasChanges_ = true;
         }
         ui::SameLine();
-        ui::Text("%s", plugin.c_str());
-        ui::PopID();
-    }
+        ui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", "[Load All]");
 
-    ui::PopID();
+        for (const ea::string& plugin : availablePlugins_)
+        {
+            // TODO: Optimize?
+            if (loadedPlugins_.contains(plugin))
+                continue;
+
+            const IdScopeGuard guardItem(plugin.c_str());
+            if (ui::SmallButton(ICON_FA_SQUARE_PLUS))
+            {
+                loadedPlugins_.push_back(plugin);
+                hasChanges_ = true;
+            }
+            ui::SameLine();
+            ui::Text("%s", plugin.c_str());
+        }
+    }
 
     ui::Separator();
 
