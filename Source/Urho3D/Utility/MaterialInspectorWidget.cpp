@@ -24,11 +24,15 @@
 
 #if URHO3D_SYSTEMUI
 
+#include "../Graphics/Texture2D.h"
+#include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/SystemUI.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
+
+#include <EASTL/fixed_vector.h>
 
 namespace Urho3D
 {
@@ -99,6 +103,24 @@ void ComboZip(const char* id, const StringVector& items, ContainerType& containe
 }
 #endif
 
+namespace
+{
+
+const ea::fixed_vector<MaterialTextureUnit, MAX_TEXTURE_UNITS> materialUnits{
+    {false, TU_DIFFUSE,     "Albedo",       "Albedo map or Diffuse texture with optional alpha channel"},
+    {false, TU_NORMAL,      "Normal",       "Normal map"},
+    {false, TU_SPECULAR,    "Specular",     "Metallic-Roughness-Occlusion map or Specular texture"},
+    {false, TU_EMISSIVE,    "Emissive",     "Emissive map or light map"},
+    {false, TU_ENVIRONMENT, "Environment",  "Texture with environment reflection"},
+#ifdef DESKTOP_GRAPHICS
+    {true,  TU_VOLUMEMAP,   "Volume",       "Desktop only: custom unit"},
+    {true,  TU_CUSTOM1,     "Custom 1",     "Desktop only: custom unit"},
+    {true,  TU_CUSTOM2,     "Custom 2",     "Desktop only: custom unit"},
+#endif
+};
+
+}
+
 bool MaterialInspectorWidget::CachedTechnique::operator<(const CachedTechnique& rhs) const
 {
     return ea::tie(deprecated_, displayName_) < ea::tie(rhs.deprecated_, rhs.displayName_);
@@ -161,15 +183,28 @@ void MaterialInspectorWidget::RenderTitle()
 
 void MaterialInspectorWidget::RenderContent()
 {
-    pendingChange_ = false;
+    pendingSetTechniques_ = false;
+    pendingSetTextures_.clear();
 
     RenderTechniques();
+    RenderTextures();
 
-    if (pendingChange_)
+    if (pendingSetTechniques_)
     {
         OnEditBegin(this);
         for (Material* material : materials_)
             material->SetTechniques(techniqueEntries_);
+        OnEditEnd(this);
+    }
+
+    if (!pendingSetTextures_.empty())
+    {
+        OnEditBegin(this);
+        for (Material* material : materials_)
+        {
+            for (const auto& [unit, texture] : pendingSetTextures_)
+                material->SetTexture(unit, texture);
+        }
         OnEditEnd(this);
     }
 
@@ -190,7 +225,7 @@ void MaterialInspectorWidget::RenderContent()
 
 void MaterialInspectorWidget::RenderTechniques()
 {
-    ui::Text("Techniques");
+    const IdScopeGuard guard("RenderTechniques");
 
     const auto& currentTechniqueEntries = materials_[0]->GetTechniques();
     if (currentTechniqueEntries != sortedTechniqueEntries_)
@@ -200,15 +235,16 @@ void MaterialInspectorWidget::RenderTechniques()
         [&](Material* material) { return sortedTechniqueEntries_ == material->GetTechniques(); });
 
     ui::BeginDisabled(!canEdit);
+    ui::Text(canEdit ? "Techniques" : "Techniques (different for selected materials)");
     if (RenderTechniqueEntries())
-        pendingChange_ = true;
+        pendingSetTechniques_ = true;
     ui::EndDisabled();
 
     if (!canEdit)
     {
         ui::SameLine();
         if (ui::SmallButton(ICON_FA_CODE_MERGE))
-            pendingChange_ = true;
+            pendingSetTechniques_ = true;
         if (ui::IsItemHovered())
             ui::SetTooltip("Override all materials' techniques and enable editing");
     }
@@ -224,7 +260,7 @@ bool MaterialInspectorWidget::RenderTechniqueEntries()
     bool modified = false;
     for (unsigned entryIndex = 0; entryIndex < techniqueEntries_.size(); ++entryIndex)
     {
-        ui::PushID(entryIndex);
+        const IdScopeGuard guard(entryIndex);
 
         TechniqueEntry& entry = techniqueEntries_[entryIndex];
 
@@ -233,6 +269,8 @@ bool MaterialInspectorWidget::RenderTechniqueEntries()
 
         if (ui::SmallButton(ICON_FA_TRASH_CAN))
             pendingDelete = entryIndex;
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Remove technique from material(s)");
         ui::SameLine();
 
         if (EditDistanceInEntry(entry, availableWidth * 0.5f))
@@ -241,8 +279,6 @@ bool MaterialInspectorWidget::RenderTechniqueEntries()
 
         if (EditQualityInEntry(entry))
             modified = true;
-
-        ui::PopID();
     }
 
     // Remove entry
@@ -261,6 +297,8 @@ bool MaterialInspectorWidget::RenderTechniqueEntries()
 
         modified = true;
     }
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Add new technique to the material(s)");
 
     sortedTechniqueEntries_ = techniqueEntries_;
     ea::sort(sortedTechniqueEntries_.begin(), sortedTechniqueEntries_.end());
@@ -281,7 +319,7 @@ bool MaterialInspectorWidget::EditTechniqueInEntry(TechniqueEntry& entry, float 
         {
             const CachedTechnique& desc = *sortedTechniques_[techniqueIndex];
 
-            ui::PushID(techniqueIndex);
+            const IdScopeGuard guard(techniqueIndex);
 
             if (desc.deprecated_ && !wasDeprecated)
             {
@@ -290,7 +328,7 @@ bool MaterialInspectorWidget::EditTechniqueInEntry(TechniqueEntry& entry, float 
             }
 
             if (!desc.deprecated_)
-                ui::PushStyleColor(ImGuiCol_Text, ImVec4{1.0f, 1.0f, 0.0f, 1.0f});
+                ui::PushStyleColor(ImGuiCol_Text, ImVec4{0.3f, 1.0f, 0.0f, 1.0f});
 
             if (ui::Selectable(desc.displayName_.c_str(), entry.technique_ == desc.technique_))
             {
@@ -300,11 +338,12 @@ bool MaterialInspectorWidget::EditTechniqueInEntry(TechniqueEntry& entry, float 
 
             if (!desc.deprecated_)
                 ui::PopStyleColor();
-
-            ui::PopID();
         }
         ui::EndCombo();
     }
+
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Technique description from \"Techniques/*.xml\"");
 
     return modified;
 }
@@ -317,6 +356,9 @@ bool MaterialInspectorWidget::EditDistanceInEntry(TechniqueEntry& entry, float i
     if (ui::DragFloat("##Distance", &entry.lodDistance_, 1.0f, 0.0f, 1000.0f, "%.1f"))
         modified = true;
     ui::SameLine();
+
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Minimum distance to the object at which the technique is used. Lower distances have higher priority.");
 
     return modified;
 }
@@ -332,7 +374,7 @@ bool MaterialInspectorWidget::EditQualityInEntry(TechniqueEntry& entry)
     {
         for (unsigned qualityLevelIndex = 0; qualityLevelIndex < qualityLevels.size(); ++qualityLevelIndex)
         {
-            ui::PushID(qualityLevelIndex);
+            const IdScopeGuard guard(qualityLevelIndex);
             if (ui::Selectable(qualityLevels[qualityLevelIndex].c_str(), qualityLevel == qualityLevelIndex))
             {
                 entry.qualityLevel_ = static_cast<MaterialQuality>(qualityLevelIndex);
@@ -340,10 +382,12 @@ bool MaterialInspectorWidget::EditQualityInEntry(TechniqueEntry& entry)
                     entry.qualityLevel_ = QUALITY_MAX;
                 modified = true;
             }
-            ui::PopID();
         }
         ui::EndCombo();
     }
+
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Techniques with higher quality will not be used if lower quality is selected in the RenderPipeline settings");
 
     return modified;
 }
@@ -366,6 +410,80 @@ bool MaterialInspectorWidget::IsTechniqueDeprecated(const ea::string& resourceNa
         || resourceName == "Techniques/VegetationDiff.xml"
         || resourceName == "Techniques/VegetationDiffUnlit.xml"
         || resourceName == "Techniques/Water.xml";
+}
+
+void MaterialInspectorWidget::RenderTextures()
+{
+    const IdScopeGuard guard("RenderTextures");
+
+    ui::Text("Textures");
+
+    for (const MaterialTextureUnit& desc : materialUnits)
+    {
+        const IdScopeGuard guard(desc.unit_);
+        RenderTextureUnit(desc);
+    }
+
+    ui::Separator();
+}
+
+void MaterialInspectorWidget::RenderTextureUnit(const MaterialTextureUnit& desc)
+{
+    auto cache = GetSubsystem<ResourceCache>();
+
+    Texture* texture = materials_[0]->GetTexture(desc.unit_);
+    const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return material->GetTexture(desc.unit_) == texture; });
+
+    Widgets::ItemLabel(desc.name_, GetLabelColor(desc, canEdit));
+    if (ui::IsItemHovered())
+        ui::SetTooltip(desc.hint_.c_str());
+
+    if (!canEdit)
+    {
+        if (ui::SmallButton(ICON_FA_CODE_MERGE))
+            pendingSetTextures_.emplace_back(desc.unit_, texture);
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Override this unit for all materials and enable editing");
+        ui::SameLine();
+    }
+
+    ui::BeginDisabled(!canEdit);
+
+    if (ui::SmallButton(ICON_FA_TRASH_CAN))
+        pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Remove texture from this unit");
+    ui::SameLine();
+
+    ea::string textureName = texture ? texture->GetName() : "";
+    if (ui::InputText("##Texture", &textureName, ImGuiInputTextFlags_EnterReturnsTrue))
+    {
+        if (textureName.empty())
+            pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+        else if (!textureName.ends_with(".xml"))
+        {
+            if (const auto texture = cache->GetResource<Texture2D>(textureName))
+                pendingSetTextures_.emplace_back(desc.unit_, texture);
+        }
+        else
+        {
+            if (const auto texture = cache->GetResource<TextureCube>(textureName))
+                pendingSetTextures_.emplace_back(desc.unit_, texture);
+            // TODO(editor): Support Texture3D and TextureArray
+        }
+    }
+    ui::EndDisabled();
+}
+
+Color MaterialInspectorWidget::GetLabelColor(const MaterialTextureUnit& desc, bool canEdit) const
+{
+    const auto& style = ui::GetStyle();
+    if (!canEdit)
+        return ToColor(style.Colors[ImGuiCol_TextDisabled]);
+    if (desc.desktop_)
+        return Color::YELLOW;
+    return Color::WHITE;
 }
 
 }

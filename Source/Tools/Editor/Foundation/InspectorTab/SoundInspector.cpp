@@ -59,17 +59,21 @@ void SoundInspector_::RenderContent()
 
 void SoundInspector_::RenderSound(Sound* sound)
 {
-    ui::Text("Frequency %u", static_cast<unsigned>(sound->GetFrequency()));
-    ui::TextUnformatted(sound->IsStereo() ? "Stereo" : "Mono");
-    if (sound->IsSixteenBit())
-    {
-        ui::SameLine();
-        ui::TextUnformatted(", 16-bit");
-    }
-    if (sound->IsCompressed())
-        ui::TextUnformatted("Compressed");
+    ea::string info;
+
+    info += Format("Duration: {} s, Frequency: {} Hz\n",
+        sound->GetLength(),
+        static_cast<unsigned>(sound->GetFrequency()));
+
+    info += Format("{}{}{}\n",
+        sound->IsStereo() ? "Stereo" : "Mono",
+        sound->IsSixteenBit() ? ", 16-bit" : "",
+        sound->IsCompressed() ? ", Compressed" : "");
+
     if (sound->IsLooped())
-        ui::Text("Loop Start: %ull", static_cast<unsigned>(sound->GetRepeat() - sound->GetStart()));
+        info += Format("Loop Start: {}\n", static_cast<unsigned>(sound->GetRepeat() - sound->GetStart()));
+
+    ui::Text("%s", info.c_str());
 
     if (ui::Button(ICON_FA_PLAY " Play"))
         soundSource_->Play(sound);

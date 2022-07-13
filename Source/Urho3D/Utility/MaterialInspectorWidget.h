@@ -30,6 +30,14 @@ namespace Urho3D
 
 #if URHO3D_SYSTEMUI
 
+struct MaterialTextureUnit
+{
+    bool desktop_{};
+    TextureUnit unit_;
+    ea::string name_;
+    ea::string hint_;
+};
+
 /// SystemUI widget used to edit materials.
 class URHO3D_API MaterialInspectorWidget : public Object
 {
@@ -65,11 +73,15 @@ private:
 
     void UpdateCachedTechniques();
     void RenderTechniques();
-    bool RenderTechniqueEntries();
+    void RenderTextures();
 
+    bool RenderTechniqueEntries();
     bool EditTechniqueInEntry(TechniqueEntry& entry, float itemWidth);
     bool EditDistanceInEntry(TechniqueEntry& entry, float itemWidth);
     bool EditQualityInEntry(TechniqueEntry& entry);
+
+    void RenderTextureUnit(const MaterialTextureUnit& desc);
+    Color GetLabelColor(const MaterialTextureUnit& desc, bool canEdit) const;
 
     ea::string GetTechniqueDisplayName(const ea::string& resourceName) const;
     bool IsTechniqueDeprecated(const ea::string& resourceName) const;
@@ -84,7 +96,8 @@ private:
     ea::vector<TechniqueEntry> techniqueEntries_;
     ea::vector<TechniqueEntry> sortedTechniqueEntries_;
 
-    bool pendingChange_{};
+    bool pendingSetTechniques_{};
+    ea::vector<ea::pair<TextureUnit, Texture*>> pendingSetTextures_;
 };
 
 #endif
