@@ -167,7 +167,7 @@ void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
     }
 }
 
-void OutlinePass::Execute()
+void OutlinePass::Execute(Camera* camera)
 {
     if (!enabled_)
         return;

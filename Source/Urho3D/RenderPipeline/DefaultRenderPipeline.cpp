@@ -151,12 +151,14 @@ void DefaultRenderPipelineView::ApplySettings()
         postProcessPasses_.push_back(pass);
     }
 
+#ifdef DESKTOP_GRAPHICS
     if (settings_.ssao_.enabled_ && settings_.renderBufferManager_.readableDepth_)
     {
-        auto pass = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.ssao_);
-        postProcessPasses_.push_back(pass);
+        ssaoPass_ = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
+        ssaoPass_->SetSettings(settings_.ssao_);
+        postProcessPasses_.push_back(ssaoPass_);
     }
+#endif
 
     if (settings_.bloom_.enabled_)
     {
@@ -422,8 +424,15 @@ void DefaultRenderPipelineView::Render()
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
 
+#ifdef DESKTOP_GRAPHICS
+    if (ssaoPass_ && deferred_)
+    {
+        ssaoPass_->SetNormalBuffer(deferred_->normalBuffer_);
+    }
+#endif
+
     for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessPass->Execute();
+        postProcessPass->Execute(camera);
 
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
     if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())

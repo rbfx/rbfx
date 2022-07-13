@@ -11,7 +11,18 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 #ifdef URHO3D_PIXEL_SHADER
 
 UNIFORM_BUFFER_BEGIN(6, Custom)
+    // Inverted input texture size
     UNIFORM(vec2 cInputInvSize)
+    // Strength of the effect
+    UNIFORM(float cSSAOStrength)
+    // Radius
+    UNIFORM(float cSSAORadius)
+    // Projection matrix from texture-adjusted clip space to view space
+    UNIFORM(mat4 cProj)
+    // Inverted projection matrix from view space to texture-adjusted clip space
+    UNIFORM(mat4 cInvProj)
+    // Camera view matrix to translate normals from world space to view space
+    UNIFORM(mat4 cCameraView)
 UNIFORM_BUFFER_END(6, Custom)
 
 #endif
@@ -26,146 +37,152 @@ void main()
 #endif
 
 #ifdef URHO3D_PIXEL_SHADER
-float saturate(float x)
+
+// Sample depth texture at screen coordinates
+vec3 SampleDepth(vec2 texCoord)
 {
-    return clamp(x,0.0,1.0);
-}
-vec2 saturate(vec2 x)
-{
-    return clamp(x,0.0,1.0);
-}
-float SampleDepth(vec2 texCoord)
-{
-    return ReconstructDepth(texture2D(sDepthBuffer, clamp(texCoord,0.0,1.0)).r) * cFarClip;
+    vec2 coord = clamp(texCoord, 0.0, 1.0);
+    vec4 res = vec4(coord, texture2D(sDepthBuffer, coord).r, 1.0) * cInvProj;
+    return res.xyz/res.w;
 }
 
-vec3 normal_from_depth(float depth, vec2 texcoords) {
-  
-   const vec2 offset1 = vec2(0.0,cInputInvSize.y);
-   const vec2 offset2 = vec2(cInputInvSize.x,0.0);
-  
-   float depth1 = SampleDepth(texcoords+offset1);
-   float depth2 = SampleDepth(texcoords+offset2);
-  
-   vec3 p1 = vec3(offset1, depth1 - depth);
-   vec3 p2 = vec3(offset2, depth2 - depth);
+// Reconstruct or sample normal
+vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
+#ifdef DEFERRED
+   // Sample normal render target texture when available
+   vec3 normal = (vec4(texture2D(sNormalMap, texcoords).xyz * 2.0 - vec3(1.0,1.0,1.0), 0.0) * cCameraView).xyz;
+   // Fip Y to match quad texture coordinates
+   normal.y = -normal.y;
+   return normalize(normal);
+
+#else
+   // Reconstruct normal from depth samples
+   const vec2 offsetY = vec2(0.0,cInputInvSize.y);
+   const vec2 offsetX = vec2(cInputInvSize.x,0.0);
+
+   vec3 down = SampleDepth(texcoords+offsetY);
+   vec3 right = SampleDepth(texcoords+offsetX);
+
+   vec3 p1 = down - center;
+   vec3 p2 = right - center;
   
    vec3 normal = cross(p1, p2);
-   normal.z = -normal.z;
   
   return normalize(normal);
+#endif
 }
 
-float rand(vec2 co)
-{
- 	return fract(sin(dot(co ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-const int windowSize = 5;
-const int kernelSize = (windowSize * 2 + 1) * (windowSize * 2 + 1);
-
-float values[kernelSize];
-
-vec2 findMean(int i0, int i1, int j0, int j1, vec2 meanAndMinVariance) {
+vec2 FilterWindow(int i0, int i1, int j0, int j1, vec2 meanAndMinVariance) {
+  // Collect samples in window (window size is 4)
+  float samplesToFilter[(4*2+1)*(4*2+1)];
   float meanTemp = 0.0;
-  float variance = 0.0;
-  int count    = 0;
-  float color;
-  int i,j;
-  for (i = i0; i <= i1; ++i) {
-    for (j = j0; j <= j1; ++j) {
-      color = texture2D(sDiffMap, vTexCoord + vec2(i,j)*(2.0*cInputInvSize)).r;
-      meanTemp += color;
-      values[count] = color;
-      count += 1;
+  int sampleIndex = 0;
+  for (int i = i0; i <= i1; ++i) {
+    for (int j = j0; j <= j1; ++j) {
+      float ao = texture2D(sDiffMap, vTexCoord + vec2(i,j)*(cInputInvSize)).r;
+      meanTemp += ao;
+      samplesToFilter[sampleIndex] = ao;
+      ++sampleIndex;
     }
   }
+  meanTemp /= sampleIndex;
 
-  meanTemp /= count;
-  for (i = 0; i < count; ++i) {
-    variance += pow(values[i] - meanTemp, 2);
+  // Calculate standard deviation
+  float variance = 0.0;
+  for (int i = 0; i < sampleIndex; ++i) {
+    variance += pow(samplesToFilter[i] - meanTemp, 2.0);
   }
+  variance /= sampleIndex;
 
-  variance /= count;
-
-  if (variance < meanAndMinVariance.y) {
-    return vec2(meanTemp,variance);
-  }
-  return meanAndMinVariance;
+  // Return best match
+  return (variance < meanAndMinVariance.y)?vec2(meanTemp,variance):meanAndMinVariance;
 }
 
 void main()
 { 
 #ifdef EVALUATE_OCCLUSION
   
-  const float total_strength = 1.0;
-  const float base = 0.2;
-  
   const float falloff = 0.001;
-  const float radius = 0.3;
+  vec4 clipSpaceFadeOut = vec4(0.0, 0.0, 0.9995, 1.0) * cInvProj;
+  const float fadeDistance = clipSpaceFadeOut.z/clipSpaceFadeOut.w;
   
   const int samples = 16;
   vec3 sample_sphere[samples] = {
-      vec3( 0.5381, 0.1856,-0.4319), vec3( 0.1379, 0.2486, 0.4430),
-      vec3( 0.3371, 0.5679,-0.0057), vec3(-0.6999,-0.0451,-0.0019),
-      vec3( 0.0689,-0.1598,-0.8547), vec3( 0.0560, 0.0069,-0.1843),
-      vec3(-0.0146, 0.1402, 0.0762), vec3( 0.0100,-0.1924,-0.0344),
-       vec3(-0.3577,-0.5301,-0.4358), vec3(-0.3169, 0.1063, 0.0158),
-       vec3( 0.0103,-0.5869, 0.0046), vec3(-0.0897,-0.4940, 0.3287),
-       vec3( 0.7119,-0.0154,-0.0918), vec3(-0.0533, 0.0596,-0.5411),
-       vec3( 0.0352,-0.0631, 0.5460), vec3(-0.4776, 0.2847,-0.0271)
-  };
-  
-  float depth = SampleDepth(vTexCoord);
- 
-   vec3 position = vec3(vTexCoord, depth);
-   vec3 normal = normal_from_depth(depth, vTexCoord);
-  
-   float radius_depth = min(radius/depth, radius);
-   float occlusion = 0.0;
-   vec3 random = normalize(vec3(rand(vTexCoord), rand(vTexCoord.yx), 0));
+      vec3(-0.3991061, -0.2619659, 0.7481203), //Length: 0.887466
+      vec3(0.5641699, -0.1403742, -0.5268592), //Length: 0.7845847
+      vec3(-0.4665807, 0.3778321, -0.06707126), //Length: 0.6041135
+      vec3(-0.1905782, -0.8022718, -0.2076609), //Length: 0.850343
+      vec3(0.6526242, 0.3760332, -0.09132737), //Length: 0.7587227
+      vec3(-0.08275586, 0.411534, 0.7324651), //Length: 0.8442239
+      vec3(-0.8905346, -0.2907455, 0.01784503), //Length: 0.9369649
+      vec3(-0.13476, -0.2325878, -0.5808671), //Length: 0.6400499
+      vec3(0.08244705, -0.03393286, 0.06123221), //Length: 0.1081589
+      vec3(0.3083563, 0.7715228, -0.4268006), //Length: 0.9340716
+      vec3(-0.3208538, -0.4802179, 0.2167356), //Length: 0.6168718
+      vec3(0.4159057, -0.6026651, -0.02300626), //Length: 0.7326064
+      vec3(0.3815646, 0.6793259, 0.3596187), //Length: 0.858138
+      vec3(0.2557214, -0.3414094, 0.8358757), //Length: 0.9384254
+      vec3(-0.5374408, 0.1441735, 0.4326658), //Length: 0.7048605
+      vec3(0.4646511, 0.1468607, 0.4646904) //Length: 0.6733543
+      };
+   vec3 position = SampleDepth(vTexCoord);
+   vec3 normal = EvaluateNormal(position, vTexCoord);
 
-   for(int i=0; i < samples; i++) {
-  
-    vec3 ray = radius_depth * reflect(sample_sphere[i], random);// reflect(sample_sphere[i], random);
-    vec3 hemi_ray = position + sign(dot(ray,normal)) * ray;
-    
-    float occ_depth = SampleDepth(saturate(hemi_ray.xy));
-    float difference = depth - occ_depth;
-    
-    occlusion += step(falloff, difference) * smoothstep(radius*8.0, radius, difference);
+   // Sample random vector from SSAO random texture
+   vec3 randomVector = normalize((texture2D(sDiffMap,vTexCoord/cInputInvSize/4.0).xyz - vec3(0.5f,0.5f,0.5f)) * 2.0f);
+
+   // Sample points around position
+   float weightSum = 0.00001;
+   float occlusion = 0.0;
+   for(int i=0; i < samples; i++)
+   {
+      // Evaluate randomized sample offset
+      vec3 sampleOffset = cSSAORadius * reflect(sample_sphere[i], randomVector);
+      // Evaluate offset projection on surface normal
+      float offsetProj = dot(sampleOffset, normal);
+      // Mirror the offset if necessary to build a hemisphere
+      vec3 hemispherePosition = position + sampleOffset - (step(0, -offsetProj) * 2.0 * offsetProj * normal);// + normal * (1/128.0);
+      // Translate view space hemisphere point to clip space
+      vec4 clipSpaceRay = vec4(hemispherePosition, 1.0) * cProj;
+      // Sample depth texture
+      vec3 sampleDepth = SampleDepth(clipSpaceRay.xy/clipSpaceRay.w);
+      // Evalue difference between predicted and actual sample depth
+      float difference = hemispherePosition.z - sampleDepth.z;
+      // Fade out AO when sampled points are too far away
+      float weight = smoothstep(cSSAORadius*8.0, cSSAORadius, difference);
+      weightSum += weight;
+      occlusion += step(falloff, difference) * weight;
    }
   
-   float ao = 1.0 - occlusion * (1.0 / samples);
-   float res = saturate(ao + base);
-   res = res*res;
+   // Normalize accumulated occlustion and fade it with distance
+   float ao = 1.0 - cSSAOStrength * smoothstep(fadeDistance,0,position.z) * occlusion * (1.0 / weightSum);
+   float res = clamp(ao, 0.0, 1.0);
    gl_FragColor = vec4(res, res, res, 1.0);
+
 #endif
 
 #ifdef BLUR
 
+// Set start values
 vec2 meanAndMinVariance = vec2(0.0, 3.402823466e+38);
 
-int size = 2;//int(parameters.x);
-//if (size <= 0) { return; }
-
-// Lower Left
-
-meanAndMinVariance = findMean(-size, 0, -size, 0, meanAndMinVariance);
-
-// Upper Right
-
-meanAndMinVariance = findMean(0, size, 0, size, meanAndMinVariance);
-
-// Upper Left
-
-meanAndMinVariance = findMean(-size, 0, 0, size, meanAndMinVariance);
-
-// Lower Right
-
-meanAndMinVariance = findMean(0, size, -size, 0, meanAndMinVariance);
-
+const int size = 4;
+// Process lower left window
+meanAndMinVariance = FilterWindow(-size, 0, -size, 0, meanAndMinVariance);
+// Process upper right window
+meanAndMinVariance = FilterWindow(0, size, 0, size, meanAndMinVariance);
+// Process upper left window
+meanAndMinVariance = FilterWindow(-size, 0, 0, size, meanAndMinVariance);
+// Process lower right window
+meanAndMinVariance = FilterWindow(0, size, -size, 0, meanAndMinVariance);
+// Set AO value to alpha for alpha blending.
 gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0 - meanAndMinVariance.x);
+
+#endif
+
+#ifdef PREVIEW
+
+gl_FragColor = texture2D(sDiffMap, vTexCoord);
 
 #endif
 }

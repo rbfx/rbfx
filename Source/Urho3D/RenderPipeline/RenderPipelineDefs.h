@@ -658,6 +658,8 @@ struct AutoExposurePassSettings
 struct AmbientOcclusionPassSettings
 {
     bool enabled_{};
+    float strength_{0.8f};
+    float radius_{0.5f};
 
     /// Utility operators
     /// @{
@@ -665,7 +667,7 @@ struct AmbientOcclusionPassSettings
 
     bool operator==(const AmbientOcclusionPassSettings& rhs) const
     {
-        return enabled_ == rhs.enabled_;
+        return (enabled_ == rhs.enabled_) && (strength_ == rhs.strength_) && (radius_ == rhs.radius_);
     }
 
     bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }

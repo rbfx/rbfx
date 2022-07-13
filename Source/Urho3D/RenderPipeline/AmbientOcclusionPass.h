@@ -26,6 +26,7 @@
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+#include "../Graphics/Texture2D.h"
 
 #include <EASTL/optional.h>
 
@@ -40,26 +41,35 @@ class URHO3D_API AmbientOcclusionPass : public PostProcessPass
 {
     URHO3D_OBJECT(AmbientOcclusionPass, PostProcessPass)
 
+#ifdef DESKTOP_GRAPHICS
 public:
     AmbientOcclusionPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
+
     void SetSettings(const AmbientOcclusionPassSettings& settings);
 
     PostProcessPassFlags GetExecutionFlags() const override
     {
         return PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear;
     }
-    void Execute() override;
+
+    void SetNormalBuffer(RenderBuffer* normalBuffer);
+
+    void Execute(Camera* camera) override;
 
 protected:
 
     void InitializeTextures();
     void InitializeStates();
     void BlurTexture();
+    void Preview();
 
     AmbientOcclusionPassSettings settings_;
 
+    SharedPtr<RenderBuffer> normalBuffer_;
+
     struct CachedTextures
     {
+        SharedPtr<Texture2D> noise_;
         SharedPtr<RenderBuffer> ssao_;
     };
     CachedTextures textures_;
@@ -67,11 +77,16 @@ protected:
     struct CachedStates
     {
         SharedPtr<PipelineState> ssao_;
+        SharedPtr<PipelineState> ssao_deferred_;
         SharedPtr<PipelineState> blur_;
+        SharedPtr<PipelineState> preview_;
 
         bool IsValid() { return ssao_->IsValid() && blur_->IsValid(); }
     };
     ea::optional<CachedStates> pipelineStates_;
+
+#endif
 };
 
 } // namespace Urho3D
+

@@ -79,6 +79,7 @@ void StaticScene::CreateScene()
     auto* pp = scene_->GetOrCreateComponent<RenderPipeline>();
     RenderPipelineSettings pps = pp->GetSettings();
     pps.ssao_.enabled_ = true;
+    pps.sceneProcessor_.lightingMode_ = DirectLightingMode::DeferredPBR;
     pps.renderBufferManager_.readableDepth_ = true;
     pp->SetSettings(pps);
 
