@@ -48,6 +48,7 @@ inline ImRect ToImGui(const IntRect& rect) { return { ToImGui(rect.Min()), ToImG
 
 inline Vector2 ToVector2(const ImVec2& value) { return {value.x, value.y}; }
 inline Vector4 ToVector4(const ImVec4& value) { return {value.x, value.y, value.z, value.w}; }
+inline Color ToColor(const ImVec4& value) { return {value.x, value.y, value.z, value.w}; }
 inline IntVector2 ToIntVector2(const ImVec2& value) { return {RoundToInt(value.x), RoundToInt(value.y)}; }
 inline IntRect ToIntRect(const ImRect& value) { return {ToIntVector2(value.Min), ToIntVector2(value.Max)}; }
 /// @}
