@@ -190,6 +190,9 @@ void BatchCompositorPass::ResolveDelayedBatches(BatchCompositorSubpass subpass,
 
     for (const PipelineBatchDesc& desc : delayedBatches)
     {
+        if (!desc.pass_)
+            continue;
+
         PipelineState* pipelineState = cache.GetOrCreatePipelineState(desc.GetKey(), ctx, batchStateCacheCallback_);
         if (pipelineState && pipelineState->IsValid())
         {
