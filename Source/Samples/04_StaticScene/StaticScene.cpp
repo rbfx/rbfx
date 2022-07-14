@@ -37,8 +37,6 @@
 
 #include "StaticScene.h"
 
-#include "Urho3D/RenderPipeline/RenderPipeline.h"
-
 #include <Urho3D/DebugNew.h>
 
 
@@ -76,12 +74,6 @@ void StaticScene::CreateScene()
     // is also legal to place objects outside the volume but their visibility can then not be checked in a hierarchically
     // optimizing manner
     scene_->CreateComponent<Octree>();
-    auto* pp = scene_->GetOrCreateComponent<RenderPipeline>();
-    RenderPipelineSettings pps = pp->GetSettings();
-    pps.ssao_.enabled_ = true;
-    pps.sceneProcessor_.lightingMode_ = DirectLightingMode::DeferredPBR;
-    pps.renderBufferManager_.readableDepth_ = true;
-    pp->SetSettings(pps);
 
     // Create a child scene node (at world origin) and a StaticModel component into it. Set the StaticModel to show a simple
     // plane mesh with a "stone" material. Note that naming the scene nodes is optional. Scale the scene node larger

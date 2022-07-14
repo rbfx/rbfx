@@ -51,8 +51,10 @@ vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
 #ifdef DEFERRED
    // Sample normal render target texture when available
    vec3 normal = (vec4(texture2D(sNormalMap, texcoords).xyz * 2.0 - vec3(1.0,1.0,1.0), 0.0) * cCameraView).xyz;
+#ifdef URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
    // Fip Y to match quad texture coordinates
    normal.y = -normal.y;
+#endif
    return normalize(normal);
 
 #else
@@ -60,15 +62,26 @@ vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
    const vec2 offsetY = vec2(0.0,cInputInvSize.y);
    const vec2 offsetX = vec2(cInputInvSize.x,0.0);
 
+#define SSAO_QUALITY_MID
+
+#ifdef SSAO_QUALITY_MID
+   vec3 up = SampleDepth(texcoords-offsetY);
+   vec3 down = SampleDepth(texcoords+offsetY);
+   vec3 left = SampleDepth(texcoords-offsetX);
+   vec3 right = SampleDepth(texcoords+offsetX);
+
+   vec3 p1 = (abs(down.z-center.z)<abs(center.z-up.z))?(down - center):(center-up);
+   vec3 p2 = (abs(right.z-center.z)<abs(center.z-left.z))?(right - center):(center-left);
+#else
    vec3 down = SampleDepth(texcoords+offsetY);
    vec3 right = SampleDepth(texcoords+offsetX);
 
    vec3 p1 = down - center;
    vec3 p2 = right - center;
-  
+#endif
    vec3 normal = cross(p1, p2);
-  
-  return normalize(normal);
+
+   return normalize(normal);
 #endif
 }
 
