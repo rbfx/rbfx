@@ -209,8 +209,6 @@ meanAndMinVariance = FilterWindow(samplesToFilter[10], samplesToFilter[11], samp
 // Set AO value to alpha for alpha blending.
 float ao = 1.0 - meanAndMinVariance.x;
 gl_FragColor = vec4(0.0, 0.0, 0.0, ao);
-ao = meanAndMinVariance.x;
-gl_FragColor = vec4(ao, ao, ao, 1.0);
 
 #endif
 
