@@ -43,6 +43,7 @@
 #include <Urho3D/Scene/ObjectAnimation.h>
 #include <Urho3D/Scene/ValueAnimation.h>
 #include <Urho3D/SystemUI/DebugHud.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <Toolbox/Scene/DebugCameraController.h>

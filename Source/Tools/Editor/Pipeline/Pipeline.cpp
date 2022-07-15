@@ -35,6 +35,7 @@
 #include <Urho3D/IO/PackageFile.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/JSONArchive.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome6.h>

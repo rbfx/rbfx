@@ -24,6 +24,7 @@
 #include <ImGui/imgui_internal.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 using namespace Urho3D;
 

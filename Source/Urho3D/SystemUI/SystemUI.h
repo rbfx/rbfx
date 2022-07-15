@@ -34,7 +34,6 @@
 #include "../Math/Vector4.h"
 #include "../SystemUI/ImGui.h"
 #include "../SystemUI/SystemUIEvents.h"
-#include "../SystemUI/Widgets.h"
 
 #include <EASTL/unordered_map.h>
 

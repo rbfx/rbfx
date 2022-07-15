@@ -116,6 +116,120 @@ void ItemLabel(ea::string_view title, const ea::optional<Color>& color, bool isL
         ui::SetCursorScreenPos(lineStart);
 }
 
+bool EditVariantColor(Variant& var, const EditVariantOptions& options)
+{
+    const bool isColor = var.GetType() == VAR_COLOR;
+    const bool hasAlpha = var.GetType() == VAR_VECTOR4;
+
+    ImGuiColorEditFlags flags{};
+    if (!hasAlpha)
+        flags |= ImGuiColorEditFlags_NoAlpha;
+
+    auto color = isColor ? var.GetColor() : hasAlpha ? Color{var.GetVector4()} : Color{var.GetVector3()};
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::ColorEdit4("", &color.r_, flags))
+    {
+        var = isColor ? Variant{color} : hasAlpha ? Variant{color.ToVector4()} : Variant{color.ToVector3()};
+        return true;
+    }
+
+    return false;
+}
+
+bool EditVariantFloat(Variant& var, const EditVariantOptions& options)
+{
+    float value = var.GetFloat();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
+{
+    Vector2 value = var.GetVector2();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
+{
+    if (options.asColor_)
+        return EditVariantColor(var, options);
+
+    Vector3 value = var.GetVector3();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
+{
+    if (options.asColor_)
+        return EditVariantColor(var, options);
+
+    Vector4 value = var.GetVector4();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantBool(Variant& var, const EditVariantOptions& options)
+{
+    bool value = var.GetBool();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::Checkbox("", &value))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariant(Variant& var, const EditVariantOptions& options)
+{
+    switch (var.GetType())
+    {
+    case VAR_BOOL:
+        return EditVariantBool(var, options);
+
+    case VAR_FLOAT:
+        return EditVariantFloat(var, options);
+
+    case VAR_VECTOR2:
+        return EditVariantVector2(var, options);
+
+    case VAR_VECTOR3:
+        return EditVariantVector3(var, options);
+
+    case VAR_VECTOR4:
+        return EditVariantVector4(var, options);
+
+    case VAR_COLOR:
+        return EditVariantColor(var, options);
+
+    default:
+        ui::Button("TODO: Implement");
+        return false;
+    }
+}
+
 }
 
 }

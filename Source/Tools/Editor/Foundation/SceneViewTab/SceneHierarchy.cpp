@@ -24,6 +24,7 @@
 #include "../../Foundation/SceneViewTab/SceneHierarchy.h"
 
 #include <Urho3D/Scene/Component.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 

@@ -22,6 +22,8 @@
 
 #include "../../Foundation/Glue/ProjectEditorGlue.h"
 
+#include <Urho3D/SystemUI/Widgets.h>
+
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 namespace Urho3D

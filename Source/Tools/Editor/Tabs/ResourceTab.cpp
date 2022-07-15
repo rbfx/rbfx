@@ -35,6 +35,7 @@
 #endif
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/ModelView.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <Toolbox/IO/ContentUtilities.h>

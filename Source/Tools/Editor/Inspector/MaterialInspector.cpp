@@ -32,6 +32,7 @@
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include <EASTL/sort.h>
 #include <EASTL/functional.h>
