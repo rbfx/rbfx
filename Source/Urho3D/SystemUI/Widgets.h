@@ -43,6 +43,22 @@ URHO3D_API void ToolbarSeparator();
 /// Render a label for next item. Label may be on the left or on the right, depending on flags.
 URHO3D_API void ItemLabel(ea::string_view title, const ea::optional<Color>& color = ea::nullopt, bool isLeft = true);
 
+/// Parameters for rendering arbitrary variant value.
+struct EditVariantOptions
+{
+    /// Increment per pixel for scalar scrolls.
+    double step_{0.01};
+    /// Minimum value (for component).
+    double min_{0.0f};
+    /// Maximum value (for component).
+    double max_{0.0f};
+    /// Whether to treat Vector3 and Vector4 as color values.
+    bool asColor_{};
+};
+
+/// Render arbitrary variant value editor.
+URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
+
 }
 
 }

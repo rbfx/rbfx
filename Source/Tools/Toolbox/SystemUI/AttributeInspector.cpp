@@ -35,6 +35,7 @@
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/RenderPath.h>
+#include <Urho3D/SystemUI/Widgets.h>
 #include "AttributeInspector.h"
 #include "Widgets.h"
 

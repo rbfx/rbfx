@@ -24,6 +24,7 @@
 
 #include "../Core/Signal.h"
 #include "../Graphics/Material.h"
+#include "../SystemUI/Widgets.h"
 
 #include <EASTL/fixed_set.h>
 

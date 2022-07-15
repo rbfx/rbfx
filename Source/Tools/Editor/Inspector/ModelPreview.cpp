@@ -28,6 +28,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
 #include "Tabs/Scene/SceneTab.h"
 #include "ModelPreview.h"

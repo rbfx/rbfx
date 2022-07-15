@@ -1457,8 +1457,8 @@ unsigned Material::RecalculatePipelineStateHash() const
     CombineHash(hash, cullMode_);
     CombineHash(hash, shadowCullMode_);
     CombineHash(hash, fillMode_);
-    CombineHash(hash, depthBias_.constantBias_);
-    CombineHash(hash, depthBias_.slopeScaledBias_);
+    CombineHash(hash, MakeHash(depthBias_.constantBias_));
+    CombineHash(hash, MakeHash(depthBias_.slopeScaledBias_));
     CombineHash(hash, alphaToCoverage_);
     CombineHash(hash, specular_);
     for (const auto& item : textures_)
