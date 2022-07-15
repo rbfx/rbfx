@@ -31,6 +31,22 @@ namespace Urho3D
 namespace Widgets
 {
 
+namespace
+{
+
+ea::string GetFormatStringForStep(double step)
+{
+    if (step >= 1.0 || step <= 0.0)
+        return "%.0f";
+    else
+    {
+        const auto numDigits = Clamp(RoundToInt(-std::log10(step)), 1, 8);
+        return Format("%.{}f", numDigits);
+    }
+}
+
+}
+
 float GetSmallButtonSize()
 {
     ImGuiContext& g = *GImGui;
@@ -140,7 +156,7 @@ bool EditVariantFloat(Variant& var, const EditVariantOptions& options)
 {
     float value = var.GetFloat();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, "%.3f"))
+    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
     {
         var = value;
         return true;
@@ -152,7 +168,7 @@ bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
 {
     Vector2 value = var.GetVector2();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
     {
         var = value;
         return true;
@@ -162,12 +178,9 @@ bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
 
 bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
 {
-    if (options.asColor_)
-        return EditVariantColor(var, options);
-
     Vector3 value = var.GetVector3();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
     {
         var = value;
         return true;
@@ -177,12 +190,9 @@ bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
 
 bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
 {
-    if (options.asColor_)
-        return EditVariantColor(var, options);
-
     Vector4 value = var.GetVector4();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
     {
         var = value;
         return true;
@@ -202,10 +212,64 @@ bool EditVariantBool(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantInt(Variant& var, const EditVariantOptions& options)
+{
+    int value = var.GetInt();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragInt("", &value, ea::max(1.0, options.step_), options.min_, options.max_))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantString(Variant& var, const EditVariantOptions& options)
+{
+    ea::string value = var.GetString();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::InputText("", &value, ImGuiInputTextFlags_EnterReturnsTrue))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantEnum(Variant& var, const EditVariantOptions& options)
+{
+    const auto& items = *options.intToString_;
+    const auto maxEnumValue = static_cast<int>(items.size() - 1);
+    bool valueChanged = false;
+
+    int value = Clamp(var.GetInt(), 0, maxEnumValue);
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::BeginCombo("", items[value].c_str()))
+    {
+        for (int index = 0; index <= maxEnumValue; ++index)
+        {
+            if (ui::Selectable(items[index].c_str(), value == index))
+            {
+                var = index;
+                break;
+            }
+        }
+        ui::EndCombo();
+        return true;
+    }
+    return false;
+}
+
 bool EditVariant(Variant& var, const EditVariantOptions& options)
 {
     switch (var.GetType())
     {
+    case VAR_INT:
+        if (options.intToString_ && !options.intToString_->empty())
+            return EditVariantEnum(var, options);
+        else
+            return EditVariantInt(var, options);
+
     case VAR_BOOL:
         return EditVariantBool(var, options);
 
@@ -216,13 +280,22 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
         return EditVariantVector2(var, options);
 
     case VAR_VECTOR3:
-        return EditVariantVector3(var, options);
+        if (options.asColor_)
+            return EditVariantColor(var, options);
+        else
+            return EditVariantVector3(var, options);
 
     case VAR_VECTOR4:
-        return EditVariantVector4(var, options);
+        if (options.asColor_)
+            return EditVariantColor(var, options);
+        else
+            return EditVariantVector4(var, options);
 
     case VAR_COLOR:
         return EditVariantColor(var, options);
+
+    case VAR_STRING:
+        return EditVariantString(var, options);
 
     default:
         ui::Button("TODO: Implement");

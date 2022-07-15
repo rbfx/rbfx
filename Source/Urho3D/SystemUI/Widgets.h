@@ -54,6 +54,13 @@ struct EditVariantOptions
     double max_{0.0f};
     /// Whether to treat Vector3 and Vector4 as color values.
     bool asColor_{};
+    /// Enum values used to convert integer to string.
+    const StringVector* intToString_{};
+
+    EditVariantOptions& AsColor() { asColor_ = true; return *this; }
+    EditVariantOptions& Range(double min, double max) { min_ = min; max_ = max; return *this; }
+    EditVariantOptions& Step(double step) { step_ = step; return *this; }
+    EditVariantOptions& Enum(const StringVector& values) { intToString_ = &values; return *this; }
 };
 
 /// Render arbitrary variant value editor.
