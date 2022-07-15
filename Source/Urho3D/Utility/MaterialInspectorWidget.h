@@ -25,6 +25,8 @@
 #include "../Core/Signal.h"
 #include "../Graphics/Material.h"
 
+#include <EASTL/fixed_set.h>
+
 namespace Urho3D
 {
 
@@ -71,9 +73,12 @@ private:
     };
     using CachedTechniquePtr = ea::shared_ptr<CachedTechnique>;
 
+    using ShaderParameterNames = ea::fixed_set<ea::string, 128>;
+
     void UpdateCachedTechniques();
     void RenderTechniques();
     void RenderTextures();
+    void RenderShaderParameters();
 
     bool RenderTechniqueEntries();
     bool EditTechniqueInEntry(TechniqueEntry& entry, float itemWidth);
@@ -81,10 +86,13 @@ private:
     bool EditQualityInEntry(TechniqueEntry& entry);
 
     void RenderTextureUnit(const MaterialTextureUnit& desc);
-    Color GetLabelColor(const MaterialTextureUnit& desc, bool canEdit) const;
 
     ea::string GetTechniqueDisplayName(const ea::string& resourceName) const;
     bool IsTechniqueDeprecated(const ea::string& resourceName) const;
+
+    ShaderParameterNames GetShaderParameterNames() const;
+    void RenderShaderParameter(const ea::string& name);
+    void RenderNewShaderParameter();
 
     const ea::string defaultTechniqueName_{"Techniques/LitOpaque.xml"};
 
@@ -98,6 +106,12 @@ private:
 
     bool pendingSetTechniques_{};
     ea::vector<ea::pair<TextureUnit, Texture*>> pendingSetTextures_;
+
+    ShaderParameterNames shaderParameterNames_;
+    ea::vector<ea::pair<ea::string, Variant>> pendingSetShaderParameters_;
+
+    ea::string newParameterName_;
+    unsigned newParameterType_{};
 };
 
 #endif

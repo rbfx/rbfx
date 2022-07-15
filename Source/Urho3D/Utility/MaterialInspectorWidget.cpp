@@ -106,18 +106,163 @@ void ComboZip(const char* id, const StringVector& items, ContainerType& containe
 namespace
 {
 
-const ea::fixed_vector<MaterialTextureUnit, MAX_TEXTURE_UNITS> materialUnits{
-    {false, TU_DIFFUSE,     "Albedo",       "Albedo map or Diffuse texture with optional alpha channel"},
-    {false, TU_NORMAL,      "Normal",       "Normal map"},
-    {false, TU_SPECULAR,    "Specular",     "Metallic-Roughness-Occlusion map or Specular texture"},
-    {false, TU_EMISSIVE,    "Emissive",     "Emissive map or light map"},
-    {false, TU_ENVIRONMENT, "Environment",  "Texture with environment reflection"},
+Color GetLabelColor(bool canEdit, bool defaultValue)
+{
+    const auto& style = ui::GetStyle();
+    if (!canEdit)
+        return ToColor(style.Colors[ImGuiCol_TextDisabled]);
+    else if (defaultValue)
+        return {0.85f, 0.85f, 0.85f, 1.0f};
+    else
+        return {1.0f, 1.0f, 0.75f, 1.0f};
+}
+
+const ea::unordered_map<ea::string, Variant>& GetDefaultShaderParameterValues(Context* context)
+{
+    static const auto value = [&]()
+    {
+        Material material(context);
+        ea::unordered_map<ea::string, Variant> result;
+        for (const auto& [_, desc] : material.GetShaderParameters())
+            result[desc.name_] = desc.value_;
+        return result;
+    }();
+    return value;
+}
+
+bool IsDefaultValue(Context* context, const ea::string& name, const Variant& value)
+{
+    const auto& defaultValues = GetDefaultShaderParameterValues(context);
+    const auto iter = defaultValues.find(name);
+    return iter != defaultValues.end() && iter->second == value;
+}
+
+const MaterialTextureUnit materialUnits[] = {
+    {false, TU_DIFFUSE,     "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
+    {false, TU_NORMAL,      "Normal",       "TU_NORMAL: Normal map"},
+    {false, TU_SPECULAR,    "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
+    {false, TU_EMISSIVE,    "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
+    {false, TU_ENVIRONMENT, "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
 #ifdef DESKTOP_GRAPHICS
-    {true,  TU_VOLUMEMAP,   "Volume",       "Desktop only: custom unit"},
-    {true,  TU_CUSTOM1,     "Custom 1",     "Desktop only: custom unit"},
-    {true,  TU_CUSTOM2,     "Custom 2",     "Desktop only: custom unit"},
+    {true,  TU_VOLUMEMAP,   "* Volume",     "TU_VOLUMEMAP: Desktop only, custom unit"},
+    {true,  TU_CUSTOM1,     "* Custom 1",   "TU_CUSTOM1: Desktop only, custom unit"},
+    {true,  TU_CUSTOM2,     "* Custom 2",   "TU_CUSTOM2: Desktop only, custom unit"},
 #endif
 };
+
+const ea::pair<ea::string, Variant> shaderParameterTypes[] = {
+    {"vec4 or rgba", Variant(Color::WHITE.ToVector4())},
+    {"vec3 or rgb", Variant(Vector3::ZERO)},
+    {"vec2", Variant(Vector2::ZERO)},
+    {"float", Variant(0.0f)},
+};
+
+struct EditVariantOptions
+{
+    float step_{0.1f};
+    float min_{0.0f};
+    float max_{0.0f};
+    bool asColor_{};
+};
+
+bool EditVariantColor(Variant& var, const EditVariantOptions& options)
+{
+    const bool isColor = var.GetType() == VAR_COLOR;
+    const bool hasAlpha = var.GetType() == VAR_VECTOR4;
+
+    ImGuiColorEditFlags flags{};
+    if (!hasAlpha)
+        flags |= ImGuiColorEditFlags_NoAlpha;
+
+    auto color = isColor ? var.GetColor() : hasAlpha ? Color{var.GetVector4()} : Color{var.GetVector3()};
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::ColorEdit4("", &color.r_, flags))
+    {
+        var = isColor ? Variant{color} : hasAlpha ? Variant{color.ToVector4()} : Variant{color.ToVector3()};
+        return true;
+    }
+
+    return false;
+}
+
+bool EditVariantFloat(Variant& var, const EditVariantOptions& options)
+{
+    float value = var.GetFloat();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
+{
+    Vector2 value = var.GetVector2();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
+{
+    if (options.asColor_)
+        return EditVariantColor(var, options);
+
+    Vector3 value = var.GetVector3();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
+{
+    if (options.asColor_)
+        return EditVariantColor(var, options);
+
+    Vector4 value = var.GetVector4();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariant(Variant& var, const EditVariantOptions& options)
+{
+    switch (var.GetType())
+    {
+    case VAR_FLOAT:
+        return EditVariantFloat(var, options);
+
+    case VAR_VECTOR2:
+        return EditVariantVector2(var, options);
+
+    case VAR_VECTOR3:
+        return EditVariantVector3(var, options);
+
+    case VAR_VECTOR4:
+        return EditVariantVector4(var, options);
+
+    case VAR_COLOR:
+        return EditVariantColor(var, options);
+
+    default:
+        ui::Button("TODO: Implement");
+        return false;
+    }
+}
 
 }
 
@@ -185,9 +330,11 @@ void MaterialInspectorWidget::RenderContent()
 {
     pendingSetTechniques_ = false;
     pendingSetTextures_.clear();
+    pendingSetShaderParameters_.clear();
 
     RenderTechniques();
     RenderTextures();
+    RenderShaderParameters();
 
     if (pendingSetTechniques_)
     {
@@ -204,6 +351,22 @@ void MaterialInspectorWidget::RenderContent()
         {
             for (const auto& [unit, texture] : pendingSetTextures_)
                 material->SetTexture(unit, texture);
+        }
+        OnEditEnd(this);
+    }
+
+    if (!pendingSetShaderParameters_.empty())
+    {
+        OnEditBegin(this);
+        for (Material* material : materials_)
+        {
+            for (const auto& [name, value] : pendingSetShaderParameters_)
+            {
+                if (!value.IsEmpty())
+                    material->SetShaderParameter(name, value);
+                else
+                    material->RemoveShaderParameter(name);
+            }
         }
         OnEditEnd(this);
     }
@@ -234,8 +397,11 @@ void MaterialInspectorWidget::RenderTechniques()
     const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
         [&](Material* material) { return sortedTechniqueEntries_ == material->GetTechniques(); });
 
+    const char* title = canEdit ? "Techniques" : "Techniques (different for selected materials)";
+    if (!ui::CollapsingHeader(title, ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
     ui::BeginDisabled(!canEdit);
-    ui::Text(canEdit ? "Techniques" : "Techniques (different for selected materials)");
     if (RenderTechniqueEntries())
         pendingSetTechniques_ = true;
     ui::EndDisabled();
@@ -243,7 +409,7 @@ void MaterialInspectorWidget::RenderTechniques()
     if (!canEdit)
     {
         ui::SameLine();
-        if (ui::SmallButton(ICON_FA_CODE_MERGE))
+        if (ui::Button(ICON_FA_CODE_MERGE))
             pendingSetTechniques_ = true;
         if (ui::IsItemHovered())
             ui::SetTooltip("Override all materials' techniques and enable editing");
@@ -267,7 +433,7 @@ bool MaterialInspectorWidget::RenderTechniqueEntries()
         if (EditTechniqueInEntry(entry, availableWidth))
             modified = true;
 
-        if (ui::SmallButton(ICON_FA_TRASH_CAN))
+        if (ui::Button(ICON_FA_TRASH_CAN))
             pendingDelete = entryIndex;
         if (ui::IsItemHovered())
             ui::SetTooltip("Remove technique from material(s)");
@@ -290,7 +456,7 @@ bool MaterialInspectorWidget::RenderTechniqueEntries()
     }
 
     // Add new entry
-    if (defaultTechnique_ && ui::SmallButton(ICON_FA_SQUARE_PLUS))
+    if (defaultTechnique_ && ui::Button(ICON_FA_SQUARE_PLUS))
     {
         TechniqueEntry& entry = techniqueEntries_.emplace_back();
         entry.technique_ = entry.original_ = defaultTechnique_->technique_;
@@ -416,7 +582,8 @@ void MaterialInspectorWidget::RenderTextures()
 {
     const IdScopeGuard guard("RenderTextures");
 
-    ui::Text("Textures");
+    if (!ui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
 
     for (const MaterialTextureUnit& desc : materialUnits)
     {
@@ -435,13 +602,19 @@ void MaterialInspectorWidget::RenderTextureUnit(const MaterialTextureUnit& desc)
     const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
         [&](const Material* material) { return material->GetTexture(desc.unit_) == texture; });
 
-    Widgets::ItemLabel(desc.name_, GetLabelColor(desc, canEdit));
+    Widgets::ItemLabel(desc.name_, GetLabelColor(canEdit, texture == nullptr));
     if (ui::IsItemHovered())
         ui::SetTooltip(desc.hint_.c_str());
 
+    if (ui::Button(ICON_FA_TRASH_CAN))
+        pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Remove texture from this unit");
+    ui::SameLine();
+
     if (!canEdit)
     {
-        if (ui::SmallButton(ICON_FA_CODE_MERGE))
+        if (ui::Button(ICON_FA_CODE_MERGE))
             pendingSetTextures_.emplace_back(desc.unit_, texture);
         if (ui::IsItemHovered())
             ui::SetTooltip("Override this unit for all materials and enable editing");
@@ -450,13 +623,7 @@ void MaterialInspectorWidget::RenderTextureUnit(const MaterialTextureUnit& desc)
 
     ui::BeginDisabled(!canEdit);
 
-    if (ui::SmallButton(ICON_FA_TRASH_CAN))
-        pendingSetTextures_.emplace_back(desc.unit_, nullptr);
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Remove texture from this unit");
-    ui::SameLine();
-
-    ea::string textureName = texture ? texture->GetName() : "";
+    ea::string textureName = texture ? texture->GetName() : canEdit ? "" : "???";
     if (ui::InputText("##Texture", &textureName, ImGuiInputTextFlags_EnterReturnsTrue))
     {
         if (textureName.empty())
@@ -476,14 +643,121 @@ void MaterialInspectorWidget::RenderTextureUnit(const MaterialTextureUnit& desc)
     ui::EndDisabled();
 }
 
-Color MaterialInspectorWidget::GetLabelColor(const MaterialTextureUnit& desc, bool canEdit) const
+void MaterialInspectorWidget::RenderShaderParameters()
 {
-    const auto& style = ui::GetStyle();
+    const IdScopeGuard guard("RenderShaderParameters");
+
+    if (!ui::CollapsingHeader("Shader Parameters", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    shaderParameterNames_ = GetShaderParameterNames();
+    for (const auto& name : shaderParameterNames_)
+        RenderShaderParameter(name);
+    ui::Separator();
+
+    RenderNewShaderParameter();
+    ui::Separator();
+}
+
+MaterialInspectorWidget::ShaderParameterNames MaterialInspectorWidget::GetShaderParameterNames() const
+{
+    ShaderParameterNames names;
+    for (const auto& material : materials_)
+    {
+        const auto& shaderParameters = material->GetShaderParameters();
+        for (const auto& [_, desc] : shaderParameters)
+            names.insert(desc.name_);
+    }
+    return names;
+}
+
+void MaterialInspectorWidget::RenderShaderParameter(const ea::string& name)
+{
+    const IdScopeGuard guard(name.c_str());
+
+    Variant value = materials_[0]->GetShaderParameter(name);
+    const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return material->GetShaderParameter(name) == value; });
+
+    Widgets::ItemLabel(name, GetLabelColor(canEdit, IsDefaultValue(context_, name, value)));
+
+    if (ui::Button(ICON_FA_TRASH_CAN))
+        pendingSetShaderParameters_.emplace_back(name, Variant::EMPTY);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Remove this parameter");
+    ui::SameLine();
+
     if (!canEdit)
-        return ToColor(style.Colors[ImGuiCol_TextDisabled]);
-    if (desc.desktop_)
-        return Color::YELLOW;
-    return Color::WHITE;
+    {
+        if (ui::Button(ICON_FA_CODE_MERGE))
+            pendingSetShaderParameters_.emplace_back(name, value);
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Override this parameter for all materials and enable editing");
+        ui::SameLine();
+    }
+    else
+    {
+        if (ui::Button(ICON_FA_LIST))
+            ui::OpenPopup("##ShaderParameterPopup");
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Select shader parameter type");
+
+        if (ui::BeginPopup("##ShaderParameterPopup"))
+        {
+            for (const auto& [label, defaultValue] : shaderParameterTypes)
+            {
+                if (ui::MenuItem(label.c_str()))
+                    pendingSetShaderParameters_.emplace_back(name, defaultValue);
+            }
+            ui::EndPopup();
+        }
+        ui::SameLine();
+    }
+
+    ui::BeginDisabled(!canEdit);
+
+    EditVariantOptions editOptions;
+    editOptions.asColor_ = name.contains("Color", false);
+    if (EditVariant(value, editOptions))
+        pendingSetShaderParameters_.emplace_back(name, value);
+
+    ui::EndDisabled();
+}
+
+void MaterialInspectorWidget::RenderNewShaderParameter()
+{
+    ui::Text("Add parameter:");
+    ui::SameLine();
+
+    const float width = ui::GetContentRegionAvail().x;
+    bool addNewParameter = false;
+    ui::SetNextItemWidth(width * 0.5f);
+    if (ui::InputText("##Name", &newParameterName_, ImGuiInputTextFlags_EnterReturnsTrue))
+        addNewParameter = true;
+
+    ui::SameLine();
+    ui::SetNextItemWidth(width * 0.3f);
+    if (ui::BeginCombo("##Type", shaderParameterTypes[newParameterType_].first.c_str(), ImGuiComboFlags_HeightSmall))
+    {
+        unsigned index = 0;
+        for (const auto& [label, _] : shaderParameterTypes)
+        {
+            if (ui::Selectable(label.c_str(), newParameterType_ == index))
+                newParameterType_ = index;
+            ++index;
+        }
+        ui::EndCombo();
+    }
+
+    ui::SameLine();
+    const bool canAddParameter = !newParameterName_.empty() && !shaderParameterNames_.contains(newParameterName_);
+    ui::BeginDisabled(!canAddParameter);
+    if (ui::Button(ICON_FA_SQUARE_PLUS))
+        addNewParameter = true;
+    ui::EndDisabled();
+
+    if (addNewParameter && canAddParameter)
+        pendingSetShaderParameters_.emplace_back(newParameterName_, shaderParameterTypes[newParameterType_].second);
 }
 
 }
