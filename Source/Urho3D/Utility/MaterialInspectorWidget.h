@@ -33,14 +33,6 @@ namespace Urho3D
 
 #if URHO3D_SYSTEMUI
 
-struct MaterialTextureUnit
-{
-    bool desktop_{};
-    TextureUnit unit_;
-    ea::string name_;
-    ea::string hint_;
-};
-
 /// SystemUI widget used to edit materials.
 class URHO3D_API MaterialInspectorWidget : public Object
 {
@@ -63,21 +55,42 @@ public:
     const MaterialVector& GetMaterials() const { return materials_; }
 
 private:
-    struct CachedTechnique
+    struct TechniqueDesc
     {
         ea::string displayName_;
         ea::string resourceName_;
         SharedPtr<Technique> technique_;
         bool deprecated_{};
 
-        bool operator<(const CachedTechnique& rhs) const;
+        bool operator<(const TechniqueDesc& rhs) const;
     };
-    using CachedTechniquePtr = ea::shared_ptr<CachedTechnique>;
+    using TechniqueDescPtr = ea::shared_ptr<TechniqueDesc>;
+
+    struct PropertyDesc
+    {
+        ea::string name_;
+        Variant defaultValue_;
+        ea::function<Variant(const Material* material)> getter_;
+        ea::function<void(Material* material, const Variant& value)> setter_;
+        ea::string hint_;
+        Widgets::EditVariantOptions options_;
+    };
+    static const ea::vector<PropertyDesc> properties;
+
+    struct TextureUnitDesc
+    {
+        bool desktop_{};
+        TextureUnit unit_;
+        ea::string name_;
+        ea::string hint_;
+    };
+    static const ea::vector<TextureUnitDesc> textureUnits;
 
     using ShaderParameterNames = ea::fixed_set<ea::string, 128>;
 
     void UpdateCachedTechniques();
     void RenderTechniques();
+    void RenderProperties();
     void RenderTextures();
     void RenderShaderParameters();
 
@@ -86,7 +99,9 @@ private:
     bool EditDistanceInEntry(TechniqueEntry& entry, float itemWidth);
     bool EditQualityInEntry(TechniqueEntry& entry);
 
-    void RenderTextureUnit(const MaterialTextureUnit& desc);
+    void RenderProperty(const PropertyDesc& desc);
+
+    void RenderTextureUnit(const TextureUnitDesc& desc);
 
     ea::string GetTechniqueDisplayName(const ea::string& resourceName) const;
     bool IsTechniqueDeprecated(const ea::string& resourceName) const;
@@ -97,15 +112,18 @@ private:
 
     const ea::string defaultTechniqueName_{"Techniques/LitOpaque.xml"};
 
-    ea::unordered_map<ea::string, CachedTechniquePtr> techniques_;
-    ea::vector<CachedTechniquePtr> sortedTechniques_;
-    CachedTechniquePtr defaultTechnique_;
+    ea::unordered_map<ea::string, TechniqueDescPtr> techniques_;
+    ea::vector<TechniqueDescPtr> sortedTechniques_;
+    TechniqueDescPtr defaultTechnique_;
 
     MaterialVector materials_;
     ea::vector<TechniqueEntry> techniqueEntries_;
     ea::vector<TechniqueEntry> sortedTechniqueEntries_;
 
     bool pendingSetTechniques_{};
+
+    ea::vector<ea::pair<const PropertyDesc*, Variant>> pendingSetProperties_;
+
     ea::vector<ea::pair<TextureUnit, Texture*>> pendingSetTextures_;
 
     ShaderParameterNames shaderParameterNames_;

@@ -37,72 +37,6 @@
 namespace Urho3D
 {
 
-// TODO(editor): Extract to Widgets.h/cpp
-#if 0
-void ComboEx(const char* id, const StringVector& items, const ea::function<ea::optional<int>()>& getter, const ea::function<void(int)>& setter)
-{
-    const auto currentValue = getter();
-    const char* currentValueLabel = currentValue && *currentValue < items.size() ? items[*currentValue].c_str() : "";
-    if (!ui::BeginCombo(id, currentValueLabel))
-        return;
-
-    for (int index = 0; index < items.size(); ++index)
-    {
-        const char* label = items[index].c_str();
-        if (ui::Selectable(label, currentValue && *currentValue == index))
-            setter(index);
-    }
-
-    ui::EndCombo();
-}
-
-template <class ObjectType, class ElementType>
-using GetterCallback = ea::function<ElementType(const ObjectType*)>;
-
-template <class ObjectType, class ElementType>
-using SetterCallback = ea::function<void(ObjectType*, const ElementType&)>;
-
-template <class ObjectType, class ElementType>
-GetterCallback<ObjectType, ElementType> MakeGetterCallback(ElementType (ObjectType::*getter)() const)
-{
-    return [getter](const ObjectType* object) { return (object->*getter)(); };
-}
-
-template <class ObjectType, class ElementType>
-SetterCallback<ObjectType, ElementType> MakeSetterCallback(void (ObjectType::*setter)(ElementType))
-{
-    return [setter](ObjectType* object, const ElementType& value) { (object->*setter)(value); };
-}
-
-template <class ContainerType, class GetterCallbackType, class SetterCallbackType>
-void ComboZip(const char* id, const StringVector& items, ContainerType& container, const GetterCallbackType& getter, const SetterCallbackType& setter)
-{
-    using ElementType = decltype(getter(container.front()));
-
-    const auto wrappedGetter = [&]() -> ea::optional<int>
-    {
-        ea::optional<int> result;
-        for (const auto& object : container)
-        {
-            const auto value = static_cast<int>(getter(object));
-            if (!result)
-                result = value;
-            else if (*result != value)
-                return ea::nullopt;
-        }
-        return result;
-    };
-
-    const auto wrappedSetter = [&](int value)
-    {
-        for (const auto& object : container)
-            setter(object, static_cast<ElementType>(value));
-    };
-
-    ComboEx(id, items, wrappedGetter, wrappedSetter);
-}
-#endif
-
 namespace
 {
 
@@ -137,7 +71,20 @@ bool IsDefaultValue(Context* context, const ea::string& name, const Variant& val
     return iter != defaultValues.end() && iter->second == value;
 }
 
-const MaterialTextureUnit materialUnits[] = {
+const ea::pair<ea::string, Variant> shaderParameterTypes[] = {
+    {"vec4 or rgba", Variant(Color::WHITE.ToVector4())},
+    {"vec3 or rgb", Variant(Vector3::ZERO)},
+    {"vec2", Variant(Vector2::ZERO)},
+    {"float", Variant(0.0f)},
+};
+
+const StringVector cullModes{"Cull None", "Cull Back Faces", "Cull Front Faces"};
+
+const StringVector fillModes{"Solid", "Wireframe", "Points"};
+
+}
+
+const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidget::textureUnits{
     {false, TU_DIFFUSE,     "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
     {false, TU_NORMAL,      "Normal",       "TU_NORMAL: Normal map"},
     {false, TU_SPECULAR,    "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
@@ -150,123 +97,102 @@ const MaterialTextureUnit materialUnits[] = {
 #endif
 };
 
-const ea::pair<ea::string, Variant> shaderParameterTypes[] = {
-    {"vec4 or rgba", Variant(Color::WHITE.ToVector4())},
-    {"vec3 or rgb", Variant(Vector3::ZERO)},
-    {"vec2", Variant(Vector2::ZERO)},
-    {"float", Variant(0.0f)},
+const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{
+    {
+        "Vertex Defines",
+        Variant{EMPTY_STRING},
+        [](const Material* material) { return Variant{material->GetVertexShaderDefines()}; },
+        [](Material* material, const Variant& value) { material->SetVertexShaderDefines(value.GetString()); },
+        "Additional shader defines applied to vertex shader. Should be space-separated list of DEFINES. Example: VOLUMETRIC SOFTPARTICLES",
+    },
+    {
+        "Pixel Defines",
+        Variant{EMPTY_STRING},
+        [](const Material* material) { return Variant{material->GetPixelShaderDefines()}; },
+        [](Material* material, const Variant& value) { material->SetPixelShaderDefines(value.GetString()); },
+        "Additional shader defines applied to pixel shader. Should be space-separated list of DEFINES. Example: VOLUMETRIC SOFTPARTICLES",
+    },
+
+    {
+        "Cull Mode",
+        Variant{CULL_CCW},
+        [](const Material* material) { return Variant{static_cast<int>(material->GetCullMode())}; },
+        [](Material* material, const Variant& value) { material->SetCullMode(static_cast<CullMode>(value.GetInt())); },
+        "Cull mode used to render primary geometry with this material",
+        Widgets::EditVariantOptions{}.Enum(cullModes),
+    },
+    {
+        "Shadow Cull Mode",
+        Variant{CULL_CCW},
+        [](const Material* material) { return Variant{static_cast<int>(material->GetShadowCullMode())}; },
+        [](Material* material, const Variant& value) { material->SetShadowCullMode(static_cast<CullMode>(value.GetInt())); },
+        "Cull mode used to render shadow geometry with this material",
+        Widgets::EditVariantOptions{}.Enum(cullModes),
+    },
+    {
+        "Fill Mode",
+        Variant{FILL_SOLID},
+        [](const Material* material) { return Variant{static_cast<int>(material->GetFillMode())}; },
+        [](Material* material, const Variant& value) { material->SetFillMode(static_cast<FillMode>(value.GetInt())); },
+        "Geometry fill mode. Mobiles support only Solid fill mode!",
+        Widgets::EditVariantOptions{}.Enum(fillModes),
+    },
+
+    {
+        "Alpha To Coverage",
+        Variant{false},
+        [](const Material* material) { return Variant{material->GetAlphaToCoverage()}; },
+        [](Material* material, const Variant& value) { material->SetAlphaToCoverage(value.GetBool()); },
+        "Whether to treat output alpha as MSAA coverage. It can be used by custom shaders for antialiased alpha cutout.",
+    },
+    {
+        "Line Anti Alias",
+        Variant{false},
+        [](const Material* material) { return Variant{material->GetLineAntiAlias()}; },
+        [](Material* material, const Variant& value) { material->SetLineAntiAlias(value.GetBool()); },
+        "Whether to enable alpha-based line anti-aliasing for materials applied to line geometry",
+    },
+    {
+        "Render Order",
+        Variant{static_cast<int>(DEFAULT_RENDER_ORDER)},
+        [](const Material* material) { return Variant{static_cast<int>(material->GetRenderOrder())}; },
+        [](Material* material, const Variant& value) { material->SetRenderOrder(static_cast<unsigned char>(value.GetInt())); },
+        "Global render order of the material. Materials with lower order are rendered first.",
+        Widgets::EditVariantOptions{}.Range(0, 255),
+    },
+    {
+        "Occlusion",
+        Variant{true},
+        [](const Material* material) { return Variant{material->GetOcclusion()}; },
+        [](Material* material, const Variant& value) { material->SetOcclusion(value.GetBool()); },
+        "Whether to render geometry with this material to occlusion buffer",
+    },
+
+    {
+        "Constant Bias",
+        Variant{0.0f},
+        [](const Material* material) { return Variant{material->GetDepthBias().constantBias_}; },
+        [](Material* material, const Variant& value) { auto temp = material->GetDepthBias(); temp.constantBias_ = value.GetFloat(); material->SetDepthBias(temp); },
+        "Constant value added to pixel depth affecting geometry visibility behind or in front of obstacles",
+        Widgets::EditVariantOptions{}.Step(0.000001).Range(-1.0f, 1.0f),
+    },
+    {
+        "Slope Scaled Bias",
+        Variant{0.0f},
+        [](const Material* material) { return Variant{material->GetDepthBias().slopeScaledBias_}; },
+        [](Material* material, const Variant& value) { auto temp = material->GetDepthBias(); temp.slopeScaledBias_ = value.GetFloat(); material->SetDepthBias(temp); },
+        "You probably don't want to change this",
+    },
+    {
+        "Normal Offset",
+        Variant{0.0f},
+        [](const Material* material) { return Variant{material->GetDepthBias().normalOffset_}; },
+        [](Material* material, const Variant& value) { auto temp = material->GetDepthBias(); temp.normalOffset_ = value.GetFloat(); material->SetDepthBias(temp); },
+        "You probably don't want to change this",
+    },
 };
 
-struct EditVariantOptions
-{
-    float step_{0.1f};
-    float min_{0.0f};
-    float max_{0.0f};
-    bool asColor_{};
-};
-
-bool EditVariantColor(Variant& var, const EditVariantOptions& options)
-{
-    const bool isColor = var.GetType() == VAR_COLOR;
-    const bool hasAlpha = var.GetType() == VAR_VECTOR4;
-
-    ImGuiColorEditFlags flags{};
-    if (!hasAlpha)
-        flags |= ImGuiColorEditFlags_NoAlpha;
-
-    auto color = isColor ? var.GetColor() : hasAlpha ? Color{var.GetVector4()} : Color{var.GetVector3()};
-    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::ColorEdit4("", &color.r_, flags))
-    {
-        var = isColor ? Variant{color} : hasAlpha ? Variant{color.ToVector4()} : Variant{color.ToVector3()};
-        return true;
-    }
-
-    return false;
-}
-
-bool EditVariantFloat(Variant& var, const EditVariantOptions& options)
-{
-    float value = var.GetFloat();
-    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, "%.3f"))
-    {
-        var = value;
-        return true;
-    }
-    return false;
-}
-
-bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
-{
-    Vector2 value = var.GetVector2();
-    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
-    {
-        var = value;
-        return true;
-    }
-    return false;
-}
-
-bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
-{
-    if (options.asColor_)
-        return EditVariantColor(var, options);
-
-    Vector3 value = var.GetVector3();
-    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
-    {
-        var = value;
-        return true;
-    }
-    return false;
-}
-
-bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
-{
-    if (options.asColor_)
-        return EditVariantColor(var, options);
-
-    Vector4 value = var.GetVector4();
-    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, "%.3f"))
-    {
-        var = value;
-        return true;
-    }
-    return false;
-}
-
-bool EditVariant(Variant& var, const EditVariantOptions& options)
-{
-    switch (var.GetType())
-    {
-    case VAR_FLOAT:
-        return EditVariantFloat(var, options);
-
-    case VAR_VECTOR2:
-        return EditVariantVector2(var, options);
-
-    case VAR_VECTOR3:
-        return EditVariantVector3(var, options);
-
-    case VAR_VECTOR4:
-        return EditVariantVector4(var, options);
-
-    case VAR_COLOR:
-        return EditVariantColor(var, options);
-
-    default:
-        ui::Button("TODO: Implement");
-        return false;
-    }
-}
-
-}
-
-bool MaterialInspectorWidget::CachedTechnique::operator<(const CachedTechnique& rhs) const
+bool MaterialInspectorWidget::TechniqueDesc::operator<(const TechniqueDesc& rhs) const
 {
     return ea::tie(deprecated_, displayName_) < ea::tie(rhs.deprecated_, rhs.displayName_);
 }
@@ -293,7 +219,7 @@ void MaterialInspectorWidget::UpdateTechniques(const ea::string& path)
 
     for (const ea::string& relativeName : techniques)
     {
-        auto desc = ea::make_shared<CachedTechnique>();
+        auto desc = ea::make_shared<TechniqueDesc>();
         desc->resourceName_ = AddTrailingSlash(path) + relativeName;
         desc->displayName_ = relativeName.substr(0, relativeName.size() - 4);
         desc->technique_ = cache->GetResource<Technique>(desc->resourceName_);
@@ -306,7 +232,7 @@ void MaterialInspectorWidget::UpdateTechniques(const ea::string& path)
     }
 
     ea::sort(sortedTechniques_.begin(), sortedTechniques_.end(),
-        [](const CachedTechniquePtr& lhs, const CachedTechniquePtr& rhs) { return *lhs < *rhs; });
+        [](const TechniqueDescPtr& lhs, const TechniqueDescPtr& rhs) { return *lhs < *rhs; });
 
     defaultTechnique_ = nullptr;
     if (const auto iter = techniques_.find(defaultTechniqueName_); iter != techniques_.end())
@@ -331,8 +257,10 @@ void MaterialInspectorWidget::RenderContent()
     pendingSetTechniques_ = false;
     pendingSetTextures_.clear();
     pendingSetShaderParameters_.clear();
+    pendingSetProperties_.clear();
 
     RenderTechniques();
+    RenderProperties();
     RenderTextures();
     RenderShaderParameters();
 
@@ -371,19 +299,16 @@ void MaterialInspectorWidget::RenderContent()
         OnEditEnd(this);
     }
 
-#if 0
-    static const StringVector cullModes{"Cull None", "Cull Back Faces", "Cull Front Faces"};
-    static const StringVector fillModes{"Solid", "Wireframe", "Points"};
-
-    Widgets::ItemLabel("Cull Mode");
-    ComboZip("##CullMode", cullModes, materials_, MakeGetterCallback(&Material::GetCullMode), MakeSetterCallback(&Material::SetCullMode));
-
-    Widgets::ItemLabel("Shadow Cull Mode");
-    ComboZip("##ShadowCullMode", cullModes, materials_, MakeGetterCallback(&Material::GetShadowCullMode), MakeSetterCallback(&Material::SetShadowCullMode));
-
-    Widgets::ItemLabel("Fill Mode");
-    ComboZip("##FillMode", fillModes, materials_, MakeGetterCallback(&Material::GetFillMode), MakeSetterCallback(&Material::SetFillMode));
-#endif
+    if (!pendingSetProperties_.empty())
+    {
+        OnEditBegin(this);
+        for (Material* material : materials_)
+        {
+            for (const auto& [desc, value] : pendingSetProperties_)
+                desc->setter_(material, value);
+        }
+        OnEditEnd(this);
+    }
 }
 
 void MaterialInspectorWidget::RenderTechniques()
@@ -483,7 +408,7 @@ bool MaterialInspectorWidget::EditTechniqueInEntry(TechniqueEntry& entry, float 
         bool wasDeprecated = false;
         for (unsigned techniqueIndex = 0; techniqueIndex < sortedTechniques_.size(); ++techniqueIndex)
         {
-            const CachedTechnique& desc = *sortedTechniques_[techniqueIndex];
+            const TechniqueDesc& desc = *sortedTechniques_[techniqueIndex];
 
             const IdScopeGuard guard(techniqueIndex);
 
@@ -578,6 +503,48 @@ bool MaterialInspectorWidget::IsTechniqueDeprecated(const ea::string& resourceNa
         || resourceName == "Techniques/Water.xml";
 }
 
+void MaterialInspectorWidget::RenderProperties()
+{
+    const IdScopeGuard guard("RenderProperties");
+
+    if (!ui::CollapsingHeader("Properties", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    for (const PropertyDesc& property : properties)
+        RenderProperty(property);
+
+    ui::Separator();
+}
+
+void MaterialInspectorWidget::RenderProperty(const PropertyDesc& desc)
+{
+    const IdScopeGuard guard(desc.name_.c_str());
+
+    Variant value = desc.getter_(materials_[0]);
+    const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return value == desc.getter_(material); });
+
+    Widgets::ItemLabel(desc.name_, GetLabelColor(canEdit, value == desc.defaultValue_));
+    if (!desc.hint_.empty() && ui::IsItemHovered())
+        ui::SetTooltip("%s", desc.hint_.c_str());
+
+    if (!canEdit)
+    {
+        if (ui::Button(ICON_FA_CODE_MERGE))
+            pendingSetProperties_.emplace_back(&desc, value);
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Override this property for all materials and enable editing");
+        ui::SameLine();
+    }
+
+    ui::BeginDisabled(!canEdit);
+
+    if (Widgets::EditVariant(value, desc.options_))
+        pendingSetProperties_.emplace_back(&desc, value);
+
+    ui::EndDisabled();
+}
+
 void MaterialInspectorWidget::RenderTextures()
 {
     const IdScopeGuard guard("RenderTextures");
@@ -585,17 +552,16 @@ void MaterialInspectorWidget::RenderTextures()
     if (!ui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
-    for (const MaterialTextureUnit& desc : materialUnits)
-    {
-        const IdScopeGuard guard(desc.unit_);
+    for (const TextureUnitDesc& desc : textureUnits)
         RenderTextureUnit(desc);
-    }
 
     ui::Separator();
 }
 
-void MaterialInspectorWidget::RenderTextureUnit(const MaterialTextureUnit& desc)
+void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
 {
+    const IdScopeGuard guard(desc.unit_);
+
     auto cache = GetSubsystem<ResourceCache>();
 
     Texture* texture = materials_[0]->GetTexture(desc.unit_);
@@ -624,6 +590,7 @@ void MaterialInspectorWidget::RenderTextureUnit(const MaterialTextureUnit& desc)
     ui::BeginDisabled(!canEdit);
 
     ea::string textureName = texture ? texture->GetName() : canEdit ? "" : "???";
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
     if (ui::InputText("##Texture", &textureName, ImGuiInputTextFlags_EnterReturnsTrue))
     {
         if (textureName.empty())
@@ -700,7 +667,7 @@ void MaterialInspectorWidget::RenderShaderParameter(const ea::string& name)
         if (ui::Button(ICON_FA_LIST))
             ui::OpenPopup("##ShaderParameterPopup");
         if (ui::IsItemHovered())
-            ui::SetTooltip("Select shader parameter type");
+            ui::SetTooltip("Shader parameter type which should strictly match the type in shader");
 
         if (ui::BeginPopup("##ShaderParameterPopup"))
         {
@@ -716,9 +683,9 @@ void MaterialInspectorWidget::RenderShaderParameter(const ea::string& name)
 
     ui::BeginDisabled(!canEdit);
 
-    EditVariantOptions editOptions;
-    editOptions.asColor_ = name.contains("Color", false);
-    if (EditVariant(value, editOptions))
+    Widgets::EditVariantOptions options;
+    options.asColor_ = name.contains("Color", false);
+    if (Widgets::EditVariant(value, options))
         pendingSetShaderParameters_.emplace_back(name, value);
 
     ui::EndDisabled();
@@ -727,13 +694,17 @@ void MaterialInspectorWidget::RenderShaderParameter(const ea::string& name)
 void MaterialInspectorWidget::RenderNewShaderParameter()
 {
     ui::Text("Add parameter:");
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Add new parameter for all selected materials");
     ui::SameLine();
 
     const float width = ui::GetContentRegionAvail().x;
     bool addNewParameter = false;
     ui::SetNextItemWidth(width * 0.5f);
-    if (ui::InputText("##Name", &newParameterName_, ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ui::InputText("##Name", &newParameterName_, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank))
         addNewParameter = true;
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Unique parameter name, should be valid GLSL identifier");
 
     ui::SameLine();
     ui::SetNextItemWidth(width * 0.3f);
@@ -748,12 +719,16 @@ void MaterialInspectorWidget::RenderNewShaderParameter()
         }
         ui::EndCombo();
     }
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Shader parameter type which should strictly match the type in shader");
 
     ui::SameLine();
     const bool canAddParameter = !newParameterName_.empty() && !shaderParameterNames_.contains(newParameterName_);
     ui::BeginDisabled(!canAddParameter);
     if (ui::Button(ICON_FA_SQUARE_PLUS))
         addNewParameter = true;
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Add parameter '%s' of type '%s'", newParameterName_.c_str(), shaderParameterTypes[newParameterType_].first.c_str());
     ui::EndDisabled();
 
     if (addNewParameter && canAddParameter)
