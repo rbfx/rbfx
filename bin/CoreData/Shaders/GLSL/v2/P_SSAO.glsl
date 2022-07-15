@@ -85,37 +85,57 @@ vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
 #endif
 }
 
-vec2 FilterWindow(int i0, int i1, int j0, int j1, vec2 meanAndMinVariance) {
-  // Collect samples in window (window size is 4)
-  float samplesToFilter[(4*2+1)*(4*2+1)];
-  float meanTemp = 0.0;
-  int sampleIndex = 0;
-  for (int i = i0; i <= i1; ++i) {
-    for (int j = j0; j <= j1; ++j) {
-      float ao = texture2D(sDiffMap, vTexCoord + vec2(i,j)*(cInputInvSize)).r;
-      meanTemp += ao;
-      samplesToFilter[sampleIndex] = ao;
-      ++sampleIndex;
-    }
-  }
-  meanTemp /= sampleIndex;
+#ifdef BLUR
 
+vec4 samplesToFilter[14];
+
+float SampleAO(int dx, int dy)
+{
+   return texture2D(sDiffMap, vTexCoord + vec2(dx,dy)*cInputInvSize).r;
+}
+
+// Collect AO samples to blur in a 7x7 window around the central pixel.
+void CollectSamples()
+{
+   samplesToFilter[0] = vec4(SampleAO(-3, -3), SampleAO(-2, -3), SampleAO(-1, -3), SampleAO(0, -3));
+   samplesToFilter[1] = vec4(SampleAO(-3, -2), SampleAO(-2, -2), SampleAO(-1, -2), SampleAO(0, -2));
+   samplesToFilter[2] = vec4(SampleAO(-3, -1), SampleAO(-2, -1), SampleAO(-1, -1), SampleAO(0, -1));
+   samplesToFilter[3] = vec4(SampleAO(-3, 0), SampleAO(-2, 0), SampleAO(-1, 0), SampleAO(0, 0));
+   samplesToFilter[4] = vec4(SampleAO(-3, 1), SampleAO(-2, 1), SampleAO(-1, 1), SampleAO(0, 1));
+   samplesToFilter[5] = vec4(SampleAO(-3, 2), SampleAO(-2, 2), SampleAO(-1, 2), SampleAO(0, 2));
+   samplesToFilter[6] = vec4(SampleAO(-3, 3), SampleAO(-2, 3), SampleAO(-1, 3), SampleAO(0, 3));
+   samplesToFilter[7] = vec4(samplesToFilter[0].a, SampleAO(0, -3), SampleAO(1, -3), SampleAO(2, -3));
+   samplesToFilter[8] = vec4(samplesToFilter[1].a, SampleAO(0, -2), SampleAO(1, -2), SampleAO(2, -2));
+   samplesToFilter[9] = vec4(samplesToFilter[2].a, SampleAO(0, -1), SampleAO(1, -1), SampleAO(2, -1));
+   samplesToFilter[10] = vec4(samplesToFilter[3].a, SampleAO(0, 0), SampleAO(1, 0), SampleAO(2, 0));
+   samplesToFilter[11] = vec4(samplesToFilter[4].a, SampleAO(0, 1), SampleAO(1, 1), SampleAO(2, 1));
+   samplesToFilter[12] = vec4(samplesToFilter[5].a, SampleAO(0, 2), SampleAO(1, 2), SampleAO(2, 2));
+   samplesToFilter[13] = vec4(samplesToFilter[6].a, SampleAO(0, 3), SampleAO(1, 3), SampleAO(2, 3));
+}
+
+vec2 FilterWindow(vec4 s0, vec4 s1, vec4 s2, vec4 s3, vec2 meanAndMinVariance) {
+  const vec4 one4 = vec4(1.0, 1.0, 1.0, 1.0);
+  float meanTemp = (dot(s0,one4)+dot(s1,one4)+dot(s2,one4)+dot(s3,one4))/16.0;
+  // Calculate average value
+  const vec4 mean4 = vec4(meanTemp, meanTemp, meanTemp, meanTemp);
   // Calculate standard deviation
-  float variance = 0.0;
-  for (int i = 0; i < sampleIndex; ++i) {
-    variance += pow(samplesToFilter[i] - meanTemp, 2.0);
-  }
-  variance /= sampleIndex;
+  const vec4 diff0 = s0-mean4;
+  const vec4 diff1 = s1-mean4;
+  const vec4 diff2 = s2-mean4;
+  const vec4 diff3 = s3-mean4;
+  float variance = (dot(diff0, diff0) + dot(diff1, diff1) + dot(diff1, diff1) + dot(diff1, diff1)) / 16.0;
 
   // Return best match
-  return (variance < meanAndMinVariance.y)?vec2(meanTemp,variance):meanAndMinVariance;
+  return (variance < meanAndMinVariance.y) ? vec2(meanTemp,variance) : meanAndMinVariance;
 }
+
+#endif
 
 void main()
 { 
 #ifdef EVALUATE_OCCLUSION
   
-  const float falloff = 0.001;
+  const float falloff = 0.01;
   vec4 clipSpaceFadeOut = vec4(0.0, 0.0, 0.9995, 1.0) * cInvProj;
   const float fadeDistance = clipSpaceFadeOut.z/clipSpaceFadeOut.w;
   
@@ -179,17 +199,18 @@ void main()
 // Set start values
 vec2 meanAndMinVariance = vec2(0.0, 3.402823466e+38);
 
-const int size = 4;
-// Process lower left window
-meanAndMinVariance = FilterWindow(-size, 0, -size, 0, meanAndMinVariance);
-// Process upper right window
-meanAndMinVariance = FilterWindow(0, size, 0, size, meanAndMinVariance);
-// Process upper left window
-meanAndMinVariance = FilterWindow(-size, 0, 0, size, meanAndMinVariance);
-// Process lower right window
-meanAndMinVariance = FilterWindow(0, size, -size, 0, meanAndMinVariance);
+CollectSamples();
+
+meanAndMinVariance = FilterWindow(samplesToFilter[0], samplesToFilter[1], samplesToFilter[2], samplesToFilter[3], meanAndMinVariance);
+meanAndMinVariance = FilterWindow(samplesToFilter[3], samplesToFilter[4], samplesToFilter[5], samplesToFilter[6], meanAndMinVariance);
+meanAndMinVariance = FilterWindow(samplesToFilter[7], samplesToFilter[8], samplesToFilter[9], samplesToFilter[10], meanAndMinVariance);
+meanAndMinVariance = FilterWindow(samplesToFilter[10], samplesToFilter[11], samplesToFilter[12], samplesToFilter[13], meanAndMinVariance);
+
 // Set AO value to alpha for alpha blending.
-gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0 - meanAndMinVariance.x);
+float ao = 1.0 - meanAndMinVariance.x;
+gl_FragColor = vec4(0.0, 0.0, 0.0, ao);
+ao = meanAndMinVariance.x;
+gl_FragColor = vec4(ao, ao, ao, 1.0);
 
 #endif
 
