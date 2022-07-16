@@ -25,6 +25,24 @@
 namespace Urho3D
 {
 
+void PackedSceneSelection::Clear()
+{
+    nodeIds_.clear();
+    componentIds_.clear();
+    activeNodeOrSceneId_ = 0;
+    activeNodeId_ = 0;
+    activeComponentId_ = 0;
+}
+
+void PackedSceneSelection::SerializeInBlock(Archive& archive)
+{
+    SerializeValue(archive, "NodeIds", nodeIds_);
+    SerializeValue(archive, "ComponentIds", componentIds_);
+    SerializeValue(archive, "ActiveNodeOrSceneId", activeNodeOrSceneId_);
+    SerializeValue(archive, "ActiveNodeId", activeNodeId_);
+    SerializeValue(archive, "ActiveComponentId", activeComponentId_);
+}
+
 bool SceneSelection::IsSelected(Component* component) const
 {
     return components_.contains(WeakPtr<Component>(component));
@@ -57,7 +75,74 @@ void SceneSelection::Update()
     }
 }
 
+void SceneSelection::Save(PackedSceneSelection& packedSelection) const
+{
+    packedSelection.Clear();
+
+    for (const WeakPtr<Node>& node : nodesAndScenes_)
+    {
+        if (node)
+            packedSelection.nodeIds_.push_back(node->GetID());
+    }
+
+    for (const WeakPtr<Component>& component : components_)
+    {
+        if (component)
+            packedSelection.componentIds_.push_back(component->GetID());
+    }
+
+    packedSelection.activeNodeOrSceneId_ = activeNodeOrScene_ ? activeNodeOrScene_->GetID() : 0;
+    packedSelection.activeNodeId_ = activeNode_ ? activeNode_->GetID() : 0;
+    const auto activeComponent = dynamic_cast<Component*>(activeObject_.Get());
+    packedSelection.activeComponentId_ = activeComponent ? activeComponent->GetID() : 0;
+}
+
+void SceneSelection::Load(Scene* scene, const PackedSceneSelection& packedSelection)
+{
+    ClearInternal();
+
+    for (unsigned nodeId : packedSelection.nodeIds_)
+    {
+        if (WeakPtr<Node> node{scene->GetNode(nodeId)})
+        {
+            nodesAndScenes_.emplace(node);
+            if (node != scene)
+                nodes_.emplace(node);
+        }
+    }
+
+    for (unsigned componentId : packedSelection.componentIds_)
+    {
+        if (WeakPtr<Component> component{scene->GetComponent(componentId)})
+            components_.emplace(component);
+    }
+
+    activeNodeOrScene_ = packedSelection.activeNodeOrSceneId_ != 0
+        ? scene->GetNode(packedSelection.activeNodeOrSceneId_)
+        : nullptr;
+    activeNode_ = packedSelection.activeNodeId_ != 0
+        ? scene->GetNode(packedSelection.activeNodeId_)
+        : nullptr;
+    activeObject_ = packedSelection.activeComponentId_ != 0
+        ? scene->GetComponent(packedSelection.activeComponentId_)
+        : nullptr;
+
+    if (activeNode_ && activeNode_->GetScene() == activeNode_)
+        activeNode_ = nullptr;
+    if (!activeObject_)
+        activeObject_ = activeNode_;
+
+    UpdateEffectiveNodes();
+    NotifyChanged();
+}
+
 void SceneSelection::Clear()
+{
+    ClearInternal();
+    NotifyChanged();
+}
+
+void SceneSelection::ClearInternal()
 {
     objects_.clear();
     nodesAndScenes_.clear();
@@ -70,8 +155,6 @@ void SceneSelection::Clear()
 
     effectiveNodesAndScenes_.clear();
     effectiveNodes_.clear();
-
-    NotifyChanged();
 }
 
 void SceneSelection::ConvertToNodes()
