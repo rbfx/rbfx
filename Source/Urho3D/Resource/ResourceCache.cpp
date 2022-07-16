@@ -907,12 +907,14 @@ ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
     if (resourceDirs_.size())
     {
         ea::string namePath = GetPath(sanitatedName);
-        ea::string exePath = fileSystem->GetProgramDir().replaced("/./", "/");
+        if (!exePath_.has_value())
+            exePath_.emplace(fileSystem->GetProgramDir().replaced("/./", "/"));
+
         for (unsigned i = 0; i < resourceDirs_.size(); ++i)
         {
             ea::string relativeResourcePath = resourceDirs_[i];
-            if (relativeResourcePath.starts_with(exePath))
-                relativeResourcePath = relativeResourcePath.substr(exePath.length());
+            if (relativeResourcePath.starts_with(exePath_.value()))
+                relativeResourcePath = relativeResourcePath.substr(exePath_.value().length());
 
             if (namePath.starts_with(resourceDirs_[i], false))
                 namePath = namePath.substr(resourceDirs_[i].length());
