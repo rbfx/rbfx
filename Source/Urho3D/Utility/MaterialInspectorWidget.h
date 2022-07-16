@@ -24,6 +24,7 @@
 
 #include "../Core/Signal.h"
 
+// TODO(editor): Move widgets to SystemUI
 #if URHO3D_SYSTEMUI
 #include "../Graphics/Material.h"
 #include "../SystemUI/Widgets.h"
