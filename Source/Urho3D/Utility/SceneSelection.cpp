@@ -52,15 +52,13 @@ void SceneSelection::Update()
     // No need to check nodes_ because it is a subset of nodesAndScenes_
     if (components_.size() != componentsSize || nodesAndScenes_.size() != numNodes)
     {
-        UpdateRevision();
         UpdateEffectiveNodes();
+        NotifyChanged();
     }
 }
 
 void SceneSelection::Clear()
 {
-    UpdateRevision();
-
     objects_.clear();
     nodesAndScenes_.clear();
     nodes_.clear();
@@ -72,26 +70,26 @@ void SceneSelection::Clear()
 
     effectiveNodesAndScenes_.clear();
     effectiveNodes_.clear();
+
+    NotifyChanged();
 }
 
 void SceneSelection::ConvertToNodes()
 {
-    UpdateRevision();
-
     for (Component* component : components_)
     {
         if (Node* node = component->GetNode())
             SetSelected(node, true);
     }
     components_.clear();
+
+    NotifyChanged();
 }
 
 void SceneSelection::SetSelected(Component* component, bool selected, bool activated)
 {
     if (!component)
         return;
-
-    UpdateRevision();
 
     const WeakPtr<Component> weakComponent{component};
 
@@ -109,14 +107,14 @@ void SceneSelection::SetSelected(Component* component, bool selected, bool activ
     }
 
     UpdateEffectiveNodes();
+
+    NotifyChanged();
 }
 
 void SceneSelection::SetSelected(Node* node, bool selected, bool activated)
 {
     if (!node)
         return;
-
-    UpdateRevision();
 
     const WeakPtr<Node> weakNode{node};
 
@@ -136,6 +134,8 @@ void SceneSelection::SetSelected(Node* node, bool selected, bool activated)
     }
 
     UpdateEffectiveNodes();
+
+    NotifyChanged();
 }
 
 void SceneSelection::SetSelected(Object* object, bool selected, bool activated)
@@ -146,6 +146,12 @@ void SceneSelection::SetSelected(Object* object, bool selected, bool activated)
         SetSelected(component, selected, activated);
     else
         URHO3D_ASSERT(0, "SceneSelection::SetSelected received unexpected object");
+}
+
+void SceneSelection::NotifyChanged()
+{
+    revision_ = ea::max(1u, revision_ + 1);
+    OnChanged(this);
 }
 
 void SceneSelection::UpdateActiveObject(const WeakPtr<Node>& node, const WeakPtr<Component>& component, bool forceUpdate)

@@ -26,8 +26,11 @@
 #include <Urho3D/IO/File.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/Component.h>
+#include <Urho3D/Scene/Node.h>
 
 #include <EASTL/priority_queue.h>
+#include <EASTL/sort.h>
 #include <EASTL/string.h>
 
 namespace Urho3D
@@ -121,6 +124,46 @@ public:
 
 private:
     ea::vector<FileResourceDesc> resourceDescs_;
+};
+
+/// Request to inspect one or more nodes or components.
+class InspectNodeComponentRequest : public ProjectRequest
+{
+    URHO3D_OBJECT(InspectNodeComponentRequest, ProjectRequest);
+
+public:
+    using WeakNodeVector = ea::vector<WeakPtr<Node>>;
+    using WeakComponentVector = ea::vector<WeakPtr<Component>>;
+
+    template <class T, class U>
+    explicit InspectNodeComponentRequest(Context* context, const T& nodes, const U& components)
+        : ProjectRequest(context)
+    {
+        for (Node* node : nodes)
+        {
+            if (node)
+                nodes_.emplace_back(node);
+        }
+        for (Component* component : components)
+        {
+            if (component)
+                components_.emplace_back(component);
+        }
+
+        ea::sort(nodes_.begin(), nodes_.end());
+        ea::sort(components_.begin(), components_.end());
+    }
+
+    const WeakNodeVector& GetNodes() const { return nodes_; }
+    const WeakComponentVector& GetComponents() const { return components_; }
+
+    bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
+    bool HasNodes() const { return !nodes_.empty(); }
+    bool HasComponents() const { return !components_.empty(); }
+
+private:
+    WeakNodeVector nodes_;
+    WeakComponentVector components_;
 };
 
 }

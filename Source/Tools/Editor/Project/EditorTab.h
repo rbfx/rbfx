@@ -157,6 +157,8 @@ public:
     /// @}
 
 protected:
+    /// Update tab. May be called even for closed tabs.
+    virtual void Update() {}
     /// Render contents of the tab.
     virtual void RenderContent() {}
     /// Render context menu of the tab.
