@@ -26,9 +26,9 @@
 #include "../../Foundation/InspectorTab.h"
 #include "../../Project/ProjectRequest.h"
 
-#include <Urho3D/Utility/NodeInspectorWidget.h>
+#include <Urho3D/SystemUI/NodeInspectorWidget.h>
+#include <Urho3D/SystemUI/SerializableInspectorWidget.h>
 #include <Urho3D/Utility/SceneSelection.h>
-#include <Urho3D/Utility/SerializableInspectorWidget.h>
 
 #include <EASTL/map.h>
 

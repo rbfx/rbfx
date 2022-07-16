@@ -28,8 +28,6 @@
 namespace Urho3D
 {
 
-#if URHO3D_SYSTEMUI
-
 /// SystemUI widget used to edit materials.
 class URHO3D_API SerializableInspectorWidget : public Object
 {
@@ -55,7 +53,5 @@ private:
     SerializableVector objects_;
     ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;
 };
-
-#endif
 
 }

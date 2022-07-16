@@ -20,9 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Utility/MaterialInspectorWidget.h"
-
-#if URHO3D_SYSTEMUI
+#include "../SystemUI/MaterialInspectorWidget.h"
 
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
@@ -725,5 +723,3 @@ void MaterialInspectorWidget::RenderNewShaderParameter()
 }
 
 }
-
-#endif
