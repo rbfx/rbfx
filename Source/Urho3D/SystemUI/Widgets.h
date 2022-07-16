@@ -42,6 +42,8 @@ URHO3D_API bool ToolbarButton(const char* label, const char* tooltip = nullptr, 
 URHO3D_API void ToolbarSeparator();
 /// Render a label for next item. Label may be on the left or on the right, depending on flags.
 URHO3D_API void ItemLabel(ea::string_view title, const ea::optional<Color>& color = ea::nullopt, bool isLeft = true);
+/// Return recommended color for item label.
+URHO3D_API Color GetItemLabelColor(bool canEdit, bool defaultValue);
 
 /// Parameters for rendering arbitrary variant value.
 struct EditVariantOptions

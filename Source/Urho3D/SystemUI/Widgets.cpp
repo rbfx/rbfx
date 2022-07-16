@@ -132,6 +132,17 @@ void ItemLabel(ea::string_view title, const ea::optional<Color>& color, bool isL
         ui::SetCursorScreenPos(lineStart);
 }
 
+Color GetItemLabelColor(bool canEdit, bool defaultValue)
+{
+    const auto& style = ui::GetStyle();
+    if (!canEdit)
+        return ToColor(style.Colors[ImGuiCol_TextDisabled]);
+    else if (defaultValue)
+        return {0.85f, 0.85f, 0.85f, 1.0f};
+    else
+        return {1.0f, 1.0f, 0.75f, 1.0f};
+}
+
 bool EditVariantColor(Variant& var, const EditVariantOptions& options)
 {
     const bool isColor = var.GetType() == VAR_COLOR;
