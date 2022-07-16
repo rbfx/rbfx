@@ -31,6 +31,20 @@
 namespace Urho3D
 {
 
+/// Packed selected nodes and components.
+struct URHO3D_API PackedSceneSelection
+{
+    ea::vector<unsigned> nodeIds_;
+    ea::vector<unsigned> componentIds_;
+
+    unsigned activeNodeOrSceneId_{};
+    unsigned activeNodeId_{};
+    unsigned activeComponentId_{};
+
+    void Clear();
+    void SerializeInBlock(Archive& archive);
+};
+
 /// Selected nodes and components in the Scene.
 class URHO3D_API SceneSelection
 {
@@ -61,6 +75,10 @@ public:
 
     /// Cleanup expired selection.
     void Update();
+    /// Save selection.
+    void Save(PackedSceneSelection& packedSelection) const;
+    /// Load selection.
+    void Load(Scene* scene, const PackedSceneSelection& packedSelection);
 
     /// Clear selection.
     void Clear();
@@ -74,6 +92,7 @@ public:
     void SetSelected(Object* object, bool selected, bool activated = true);
 
 private:
+    void ClearInternal();
     void NotifyChanged();
     void UpdateActiveObject(const WeakPtr<Node>& node, const WeakPtr<Component>& component, bool forceUpdate);
     void UpdateEffectiveNodes();

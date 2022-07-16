@@ -59,14 +59,28 @@ void SerializeValue(Archive& archive, const char* name, SceneViewPage& page, con
 {
     auto block = archive.OpenUnorderedBlock(name);
 
-    for (const SceneViewAddon* addon : owner->GetAddonsByName())
     {
-        ea::any& state = page.GetAddonData(*addon);
-        SerializeOptionalValue(archive, addon->GetUniqueName().c_str(), state, AlwaysSerialize{},
-            [&](Archive& archive, const char* name, ea::any& value)
+        PackedSceneSelection selection;
+        if (!archive.IsInput())
+            page.selection_.Save(selection);
+
+        SerializeOptionalValue(archive, "Selection", selection, AlwaysSerialize{});
+
+        if (archive.IsInput())
+            page.selection_.Load(page.scene_, selection);
+    }
+
+    {
+        auto addonsBlock = archive.OpenUnorderedBlock("Addons");
+        for (const SceneViewAddon* addon : owner->GetAddonsByName())
         {
-            addon->SerializePageState(archive, name, value);
-        });
+            ea::any& state = page.GetAddonData(*addon);
+            SerializeOptionalValue(archive, addon->GetUniqueName().c_str(), state, AlwaysSerialize{},
+                [&](Archive& archive, const char* name, ea::any& value)
+            {
+                addon->SerializePageState(archive, name, value);
+            });
+        }
     }
 }
 
