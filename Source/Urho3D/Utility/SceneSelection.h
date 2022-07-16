@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/Signal.h"
 #include "../Scene/Scene.h"
 #include "../Utility/PackedSceneData.h"
 
@@ -34,6 +35,8 @@ namespace Urho3D
 class URHO3D_API SceneSelection
 {
 public:
+    Signal<void(), SceneSelection> OnChanged;
+
     using WeakNodeSet = ea::unordered_set<WeakPtr<Node>>;
     using WeakComponentSet = ea::unordered_set<WeakPtr<Component>>;
     using WeakObjectSet = ea::unordered_set<WeakPtr<Object>>;
@@ -71,7 +74,7 @@ public:
     void SetSelected(Object* object, bool selected, bool activated = true);
 
 private:
-    void UpdateRevision() { revision_ = ea::max(1u, revision_ + 1); }
+    void NotifyChanged();
     void UpdateActiveObject(const WeakPtr<Node>& node, const WeakPtr<Component>& component, bool forceUpdate);
     void UpdateEffectiveNodes();
 

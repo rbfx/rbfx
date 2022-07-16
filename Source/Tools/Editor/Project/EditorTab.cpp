@@ -75,6 +75,7 @@ void EditorTab::ReadIniSettings(const char* line)
 
 void EditorTab::Render()
 {
+    Update();
     wasOpen_ = open_;
 
     if (focusPending_ || openPending_)

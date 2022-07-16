@@ -187,6 +187,7 @@ protected:
     void OnResourceSaved(const ea::string& resourceName) override;
     void OnResourceShallowSaved(const ea::string& resourceName) override;
 
+    void Update() override;
     void RenderContent() override;
     void UpdateFocused() override;
     /// @}
@@ -194,7 +195,7 @@ protected:
 private:
     /// Manage pages
     /// @{
-    SharedPtr<SceneViewPage> CreatePage(Scene* scene, bool isActive) const;
+    SharedPtr<SceneViewPage> CreatePage(Scene* scene, bool isActive);
     void SavePageScene(SceneViewPage& page) const;
 
     void SavePageConfig(const SceneViewPage& page) const;
@@ -202,6 +203,7 @@ private:
     /// @}
 
     void UpdateAddons(SceneViewPage& page);
+    void InspectSelection(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
     AddonSetByPriority addonsByInputPriority_;

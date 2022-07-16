@@ -23,6 +23,8 @@
 #pragma once
 
 #include "../Core/Signal.h"
+
+#if URHO3D_SYSTEMUI
 #include "../Graphics/Material.h"
 #include "../SystemUI/Widgets.h"
 
@@ -30,8 +32,6 @@
 
 namespace Urho3D
 {
-
-#if URHO3D_SYSTEMUI
 
 /// SystemUI widget used to edit materials.
 class URHO3D_API MaterialInspectorWidget : public Object
@@ -133,6 +133,6 @@ private:
     unsigned newParameterType_{};
 };
 
-#endif
-
 }
+
+#endif

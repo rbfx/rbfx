@@ -505,6 +505,15 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     xmlFile.SaveFile(page.scene_->GetFileName());
 }
 
+void SceneViewTab::Update()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    activePage->selection_.Update();
+}
+
 void SceneViewTab::RenderContent()
 {
     SceneViewPage* activePage = GetActivePage();
@@ -517,8 +526,6 @@ void SceneViewTab::RenderContent()
         debug->SetTemporary(true);
         debug->SetLineAntiAlias(true);
     }
-
-    activePage->selection_.Update();
 
     activePage->renderer_->SetTextureSize(GetContentSize());
     activePage->renderer_->Update();
@@ -546,6 +553,14 @@ void SceneViewTab::UpdateAddons(SceneViewPage& page)
         addon->Render(page);
 }
 
+void SceneViewTab::InspectSelection(SceneViewPage& page)
+{
+    auto project = GetProject();
+    auto request = MakeShared<InspectNodeComponentRequest>(context_, page.selection_.GetNodesAndScenes(), page.selection_.GetComponents());
+    if (!request->IsEmpty())
+        project->ProcessRequest(request, this);
+}
+
 void SceneViewTab::UpdateFocused()
 {
 
@@ -562,11 +577,18 @@ SceneViewPage* SceneViewTab::GetActivePage()
     return GetPage(GetActiveResourceName());
 }
 
-SharedPtr<SceneViewPage> SceneViewTab::CreatePage(Scene* scene, bool isActive) const
+SharedPtr<SceneViewPage> SceneViewTab::CreatePage(Scene* scene, bool isActive)
 {
     auto page = MakeShared<SceneViewPage>(scene);
 
     page->renderer_->SetActive(isActive);
+
+    WeakPtr<SceneViewPage> weakPage{page};
+    page->selection_.OnChanged.Subscribe(this, [weakPage](SceneViewTab* self)
+    {
+        if (weakPage)
+            self->InspectSelection(*weakPage);
+    });
 
     LoadPageConfig(*page);
     for (SceneViewAddon* addon : addons_)
