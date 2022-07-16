@@ -25,12 +25,10 @@
 #include "../Core/Signal.h"
 #include "../Scene/Component.h"
 #include "../Scene/Node.h"
-#include "../Utility/SerializableInspectorWidget.h"
+#include "../SystemUI/SerializableInspectorWidget.h"
 
 namespace Urho3D
 {
-
-#if URHO3D_SYSTEMUI
 
 /// SystemUI widget used to edit materials.
 class URHO3D_API NodeInspectorWidget : public Object
@@ -65,7 +63,5 @@ private:
     ea::vector<SharedPtr<SerializableInspectorWidget>> componentInspectors_;
     unsigned numSkippedComponents_{};
 };
-
-#endif
 
 }

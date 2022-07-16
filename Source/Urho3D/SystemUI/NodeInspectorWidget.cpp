@@ -20,9 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Utility/NodeInspectorWidget.h"
-
-#if URHO3D_SYSTEMUI
+#include "../SystemUI/NodeInspectorWidget.h"
 
 #include "../Core/IteratorRange.h"
 #include "../SystemUI/Widgets.h"
@@ -154,5 +152,3 @@ NodeInspectorWidget::ComponentVectorsByType NodeInspectorWidget::GetSharedCompon
 }
 
 }
-
-#endif

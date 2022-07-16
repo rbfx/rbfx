@@ -27,7 +27,7 @@
 #include "../../Project/ModifyResourceAction.h"
 
 #include <Urho3D/Core/Timer.h>
-#include <Urho3D/Utility/MaterialInspectorWidget.h>
+#include <Urho3D/SystemUI/MaterialInspectorWidget.h>
 
 namespace Urho3D
 {

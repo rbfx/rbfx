@@ -20,9 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Utility/SerializableInspectorWidget.h"
-
-#if URHO3D_SYSTEMUI
+#include "../SystemUI/SerializableInspectorWidget.h"
 
 #include "../SystemUI/Widgets.h"
 #include "../SystemUI/SystemUI.h"
@@ -115,5 +113,3 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
 }
 
 }
-
-#endif
