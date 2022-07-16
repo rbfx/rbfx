@@ -50,6 +50,67 @@ void SerializableInspectorWidget::RenderTitle()
 
 void SerializableInspectorWidget::RenderContent()
 {
+    ea::erase_if(objects_, [](const WeakPtr<Serializable>& obj) { return !obj; });
+    if (objects_.empty())
+        return;
+
+    const auto attributes = objects_[0]->GetAttributes();
+    if (!attributes)
+        return;
+
+    pendingSetAttributes_.clear();
+    for (const AttributeInfo& info : *attributes)
+    {
+        if (info.mode_ & AM_NOEDIT)
+            continue;
+
+        const IdScopeGuard guard{info.name_.c_str()};
+        RenderAttribute(info);
+    }
+
+    if (!pendingSetAttributes_.empty())
+    {
+        OnEditBegin(this);
+        for (const auto& [info, value] : pendingSetAttributes_)
+        {
+            for (Serializable* object : objects_)
+            {
+                if (object)
+                    object->SetAttribute(info->name_, value);
+            }
+        }
+        OnEditEnd(this);
+    }
+}
+
+void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
+{
+    Variant value;
+    info.accessor_->Get(objects_[0], value);
+
+    Variant tempValue;
+    const bool canEdit = ea::all_of(objects_.begin() + 1, objects_.end(),
+        [&](const WeakPtr<Serializable>& obj) { info.accessor_->Get(obj, tempValue); return tempValue == value; });
+    const bool isDefaultValue = value == info.defaultValue_;
+
+    Widgets::ItemLabel(info.name_.c_str(), Widgets::GetItemLabelColor(canEdit, isDefaultValue));
+
+    if (!canEdit)
+    {
+        if (ui::Button(ICON_FA_CODE_MERGE))
+            pendingSetAttributes_.emplace_back(&info, value);
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Override this attribute and enable editing");
+        ui::SameLine();
+    }
+
+    ui::BeginDisabled(!canEdit);
+
+    Widgets::EditVariantOptions options;
+    if (Widgets::EditVariant(value, options))
+        pendingSetAttributes_.emplace_back(&info, value);
+
+    ui::EndDisabled();
 }
 
 }

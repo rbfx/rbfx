@@ -50,7 +50,10 @@ public:
     const SerializableVector& GetObjects() const { return objects_; }
 
 private:
+    void RenderAttribute(const AttributeInfo& info);
+
     SerializableVector objects_;
+    ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;
 };
 
 #endif

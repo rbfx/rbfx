@@ -40,17 +40,6 @@ namespace Urho3D
 namespace
 {
 
-Color GetLabelColor(bool canEdit, bool defaultValue)
-{
-    const auto& style = ui::GetStyle();
-    if (!canEdit)
-        return ToColor(style.Colors[ImGuiCol_TextDisabled]);
-    else if (defaultValue)
-        return {0.85f, 0.85f, 0.85f, 1.0f};
-    else
-        return {1.0f, 1.0f, 0.75f, 1.0f};
-}
-
 const ea::unordered_map<ea::string, Variant>& GetDefaultShaderParameterValues(Context* context)
 {
     static const auto value = [&]()
@@ -524,7 +513,7 @@ void MaterialInspectorWidget::RenderProperty(const PropertyDesc& desc)
     const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
         [&](const Material* material) { return value == desc.getter_(material); });
 
-    Widgets::ItemLabel(desc.name_, GetLabelColor(canEdit, value == desc.defaultValue_));
+    Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(canEdit, value == desc.defaultValue_));
     if (!desc.hint_.empty() && ui::IsItemHovered())
         ui::SetTooltip("%s", desc.hint_.c_str());
 
@@ -568,7 +557,7 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
     const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
         [&](const Material* material) { return material->GetTexture(desc.unit_) == texture; });
 
-    Widgets::ItemLabel(desc.name_, GetLabelColor(canEdit, texture == nullptr));
+    Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(canEdit, texture == nullptr));
     if (ui::IsItemHovered())
         ui::SetTooltip(desc.hint_.c_str());
 
@@ -646,7 +635,7 @@ void MaterialInspectorWidget::RenderShaderParameter(const ea::string& name)
     const bool canEdit = ea::all_of(materials_.begin() + 1, materials_.end(),
         [&](const Material* material) { return material->GetShaderParameter(name) == value; });
 
-    Widgets::ItemLabel(name, GetLabelColor(canEdit, IsDefaultValue(context_, name, value)));
+    Widgets::ItemLabel(name, Widgets::GetItemLabelColor(canEdit, IsDefaultValue(context_, name, value)));
 
     if (ui::Button(ICON_FA_TRASH_CAN))
         pendingSetShaderParameters_.emplace_back(name, Variant::EMPTY);
