@@ -45,6 +45,7 @@ SerializableInspectorWidget::~SerializableInspectorWidget()
 
 void SerializableInspectorWidget::RenderTitle()
 {
+    // TODO(editor): Make better title
     ui::Text("%u objects", objects_.size());
 }
 

@@ -26,8 +26,11 @@
 #include "../../Foundation/InspectorTab.h"
 #include "../../Project/ProjectRequest.h"
 
+#include <Urho3D/Utility/NodeInspectorWidget.h>
 #include <Urho3D/Utility/SceneSelection.h>
 #include <Urho3D/Utility/SerializableInspectorWidget.h>
+
+#include <EASTL/map.h>
 
 namespace Urho3D
 {
@@ -55,7 +58,12 @@ public:
 
 private:
     void OnProjectRequest(ProjectRequest* request);
+
+    NodeInspectorWidget::NodeVector CollectNodes() const;
+    SerializableInspectorWidget::SerializableVector CollectComponents() const;
     void InspectObjects();
+
+    void RenderComponentSummary();
 
     void BeginEdit();
     void EndEdit();
@@ -64,7 +72,10 @@ private:
 
     InspectNodeComponentRequest::WeakNodeVector nodes_;
     InspectNodeComponentRequest::WeakComponentVector components_;
-    SharedPtr<SerializableInspectorWidget> widget_;
+
+    SharedPtr<NodeInspectorWidget> nodeWidget_;
+    SharedPtr<SerializableInspectorWidget> componentWidget_;
+    ea::map<ea::string, unsigned> componentSummary_;
 };
 
 }
