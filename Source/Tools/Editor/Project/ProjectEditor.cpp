@@ -505,7 +505,13 @@ void ProjectEditor::Render()
     }
 
     for (EditorTab* tab : tabs_)
+        tab->PreRenderUpdate();
+    for (EditorTab* tab : tabs_)
         tab->Render();
+    for (EditorTab* tab : tabs_)
+        tab->PostRenderUpdate();
+    if (focusedTab_)
+        focusedTab_->ApplyHotkeys(hotkeyManager_);
 
     closeDialog_->Render();
 

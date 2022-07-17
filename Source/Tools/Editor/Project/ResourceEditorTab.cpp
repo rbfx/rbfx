@@ -175,8 +175,9 @@ void ResourceEditorTab::SetActiveResource(const ea::string& activeResourceName)
     {
         if (resources_.contains(activeResourceName))
         {
-            OnActiveResourceChanged(activeResourceName);
+            const auto oldActiveResourceName = ea::move(activeResourceName_);
             activeResourceName_ = activeResourceName;
+            OnActiveResourceChanged(oldActiveResourceName, activeResourceName_);
         }
         else
         {
@@ -317,7 +318,9 @@ void ResourceEditorTab::PushAction(SharedPtr<EditorAction> action)
 
         const auto oldActionFrame = data.currentActionFrame_;
         const auto wrappedAction = MakeShared<ResourceActionWrapper>(action, this, activeResourceName_, oldActionFrame);
-        data.currentActionFrame_ = undoManager->PushAction(wrappedAction);
+        const auto newActionFrame = undoManager->PushAction(wrappedAction);
+        if (!wrappedAction->IsTransparent())
+            data.currentActionFrame_ = newActionFrame;
     }
 }
 
@@ -447,7 +450,8 @@ void ResourceActionWrapper::Redo() const
 {
     BaseEditorActionWrapper::Redo();
     FocusMe();
-    UpdateCurrentAction(newFrame_);
+    if (!IsTransparent())
+        UpdateCurrentAction(newFrame_);
 }
 
 bool ResourceActionWrapper::CanUndo() const
@@ -459,7 +463,8 @@ void ResourceActionWrapper::Undo() const
 {
     BaseEditorActionWrapper::Undo();
     FocusMe();
-    UpdateCurrentAction(oldFrame_);
+    if (!IsTransparent())
+        UpdateCurrentAction(oldFrame_);
 }
 
 bool ResourceActionWrapper::MergeWith(const EditorAction& other)

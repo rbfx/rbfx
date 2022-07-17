@@ -41,9 +41,24 @@ bool BaseEditorActionWrapper::RemoveOnUndo() const
     return action_->RemoveOnUndo();
 }
 
+bool BaseEditorActionWrapper::IsComplete() const
+{
+    return action_->IsComplete();
+}
+
+bool BaseEditorActionWrapper::IsTransparent() const
+{
+    return action_->IsTransparent();
+}
+
 void BaseEditorActionWrapper::OnPushed(EditorActionFrame frame)
 {
     action_->OnPushed(frame);
+}
+
+void BaseEditorActionWrapper::Complete()
+{
+    action_->Complete();
 }
 
 bool BaseEditorActionWrapper::CanRedo() const

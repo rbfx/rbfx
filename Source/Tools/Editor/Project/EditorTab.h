@@ -113,6 +113,13 @@ public:
     /// Close tab.
     void Close() { open_ = false; }
 
+    /// Pre-render update tab. May be called even for closed tabs.
+    virtual void PreRenderUpdate() {}
+    /// Post-render update tab. May be called even for closed tabs.
+    virtual void PostRenderUpdate() {}
+    /// Apply hotkeys for this tab.
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
+
     /// Render main menu of the tab.
     virtual void RenderMenu() {}
     /// Render toolbar of the tab.
@@ -127,8 +134,6 @@ public:
     virtual EditorTab* GetOwnerTab() { return this; }
     /// Enumerates all unsaved items corresponding to this tab.
     virtual void EnumerateUnsavedItems(ea::vector<ea::string>& items) {}
-    /// Apply hotkeys for this tab.
-    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
 
     /// Implement EditorConfigurable
     /// @{
@@ -157,8 +162,6 @@ public:
     /// @}
 
 protected:
-    /// Update tab. May be called even for closed tabs.
-    virtual void Update() {}
     /// Render contents of the tab.
     virtual void RenderContent() {}
     /// Render context menu of the tab.
@@ -166,8 +169,6 @@ protected:
 
     /// Return whether the document is modified and prompt to save should be shown.
     virtual bool IsMarkedUnsaved() { return false; }
-    /// Update tab in focus.
-    virtual void UpdateFocused() {};
 
     /// Return size of the window content. Should be called only during content rendering.
     IntVector2 GetContentSize() const;

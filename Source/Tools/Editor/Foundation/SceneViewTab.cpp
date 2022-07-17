@@ -287,7 +287,7 @@ void SceneViewTab::PasteNextToSelection()
         {
             Node* newNode = packedNode.SpawnCopy(parentNode);
             selection.SetSelected(newNode, true);
-            PushAction(MakeShared<CreateRemoveNodeAction>(newNode, false));
+            PushAction<CreateRemoveNodeAction>(newNode, false);
         }
     }
     else if (clipboard_.HasComponents())
@@ -299,7 +299,7 @@ void SceneViewTab::PasteNextToSelection()
         {
             Component* newComponent = packedComponent.SpawnCopy(parentNode);
             selection.SetSelected(newComponent, true);
-            PushAction(MakeShared<CreateRemoveComponentAction>(newComponent, false));
+            PushAction<CreateRemoveComponentAction>(newComponent, false);
         }
     }
 }
@@ -317,7 +317,7 @@ void SceneViewTab::DeleteSelection()
     {
         if (node && node->GetParent() != nullptr)
         {
-            PushAction(MakeShared<CreateRemoveNodeAction>(node, true));
+            PushAction<CreateRemoveNodeAction>(node, true);
             node->Remove();
         }
     }
@@ -326,7 +326,7 @@ void SceneViewTab::DeleteSelection()
     {
         if (component)
         {
-            PushAction(MakeShared<CreateRemoveComponentAction>(component, true));
+            PushAction<CreateRemoveComponentAction>(component, true);
             component->Remove();
         }
     }
@@ -480,13 +480,16 @@ void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
     scenes_.erase(resourceName);
 }
 
-void SceneViewTab::OnActiveResourceChanged(const ea::string& resourceName)
+void SceneViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
 {
-    if (SceneViewPage* activePage = GetActivePage())
-        activePage->scene_->SetUpdateEnabled(false);
+    if (SceneViewPage* oldActivePage = GetPage(oldResourceName))
+        oldActivePage->scene_->SetUpdateEnabled(false);
 
     for (const auto& [name, data] : scenes_)
-        data->renderer_->SetActive(name == resourceName);
+        data->renderer_->SetActive(name == newResourceName);
+
+    if (SceneViewPage* newActivePage = GetPage(newResourceName))
+        InspectSelection(*newActivePage);
 }
 
 void SceneViewTab::OnResourceSaved(const ea::string& resourceName)
@@ -519,13 +522,31 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     xmlFile.SaveFile(page.scene_->GetFileName());
 }
 
-void SceneViewTab::Update()
+void SceneViewTab::PreRenderUpdate()
 {
     SceneViewPage* activePage = GetActivePage();
     if (!activePage)
+    {
+        oldSelectionResourceName_.clear();
+        oldSelection_.Clear();
         return;
+    }
 
     activePage->selection_.Update();
+
+    oldSelectionResourceName_ = GetActiveResourceName();
+    activePage->selection_.Save(oldSelection_);
+}
+
+void SceneViewTab::PostRenderUpdate()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (activePage && oldSelectionResourceName_ == GetActiveResourceName())
+    {
+        activePage->selection_.Save(newSelection_);
+        if (oldSelection_ != newSelection_)
+            PushAction<ChangeSceneSelectionAction>(activePage, oldSelection_, newSelection_);
+    }
 }
 
 void SceneViewTab::RenderContent()
@@ -573,11 +594,6 @@ void SceneViewTab::InspectSelection(SceneViewPage& page)
     auto request = MakeShared<InspectNodeComponentRequest>(context_, page.selection_.GetNodesAndScenes(), page.selection_.GetComponents());
     if (!request->IsEmpty())
         project->ProcessRequest(request, this);
-}
-
-void SceneViewTab::UpdateFocused()
-{
-
 }
 
 SceneViewPage* SceneViewTab::GetPage(const ea::string& resourceName)
@@ -651,6 +667,39 @@ void RewindSceneActionWrapper::Undo() const
 {
     page_->RewindSimulation();
     BaseEditorActionWrapper::Undo();
+}
+
+ChangeSceneSelectionAction::ChangeSceneSelectionAction(SceneViewPage* page,
+    const PackedSceneSelection& oldSelection, const PackedSceneSelection& newSelection)
+    : page_(page)
+    , oldSelection_(oldSelection)
+    , newSelection_(newSelection)
+{
+}
+
+void ChangeSceneSelectionAction::Redo() const
+{
+    if (page_)
+        page_->selection_.Load(page_->scene_, newSelection_);
+}
+
+void ChangeSceneSelectionAction::Undo() const
+{
+    if (page_)
+        page_->selection_.Load(page_->scene_, oldSelection_);
+}
+
+bool ChangeSceneSelectionAction::MergeWith(const EditorAction& other)
+{
+    auto otherAction = dynamic_cast<const ChangeSceneSelectionAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (page_ != otherAction->page_)
+        return false;
+
+    newSelection_ = otherAction->newSelection_;
+    return true;
 }
 
 }

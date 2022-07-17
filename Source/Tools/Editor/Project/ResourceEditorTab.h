@@ -109,7 +109,7 @@ protected:
     /// Called when resource should be unloaded.
     virtual void OnResourceUnloaded(const ea::string& resourceName) = 0;
     /// Called when active resource changed.
-    virtual void OnActiveResourceChanged(const ea::string& resourceName) = 0;
+    virtual void OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName) = 0;
     /// Called when resource should be saved.
     virtual void OnResourceSaved(const ea::string& resourceName) = 0;
     /// Called when shallow data for resource is saved.

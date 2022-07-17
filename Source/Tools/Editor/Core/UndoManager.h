@@ -80,7 +80,10 @@ public:
     /// Implement EditorAction.
     /// @{
     bool RemoveOnUndo() const override;
+    bool IsComplete() const override;
+    bool IsTransparent() const override;
     void OnPushed(EditorActionFrame frame) override;
+    void Complete() override;
     bool CanRedo() const override;
     void Redo() const override;
     bool CanUndo() const override;

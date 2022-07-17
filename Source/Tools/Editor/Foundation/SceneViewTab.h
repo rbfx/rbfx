@@ -153,6 +153,9 @@ public:
 
     /// ResourceEditorTab implementation
     /// @{
+    void PreRenderUpdate() override;
+    void PostRenderUpdate() override;
+
     void RenderMenu() override;
     void RenderToolbar() override;
     bool IsUndoSupported() { return true; }
@@ -183,13 +186,11 @@ protected:
 
     void OnResourceLoaded(const ea::string& resourceName) override;
     void OnResourceUnloaded(const ea::string& resourceName) override;
-    void OnActiveResourceChanged(const ea::string& resourceName) override;
+    void OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName) override;
     void OnResourceSaved(const ea::string& resourceName) override;
     void OnResourceShallowSaved(const ea::string& resourceName) override;
 
-    void Update() override;
     void RenderContent() override;
-    void UpdateFocused() override;
     /// @}
 
 private:
@@ -211,6 +212,13 @@ private:
 
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
     PackedSceneData clipboard_;
+
+    /// Selection change tracking
+    /// @{
+    ea::string oldSelectionResourceName_;
+    PackedSceneSelection oldSelection_;
+    PackedSceneSelection newSelection_;
+    /// @}
 };
 
 /// Action wrapper that rewinds scene simulation.
@@ -229,6 +237,27 @@ public:
 
 private:
     WeakPtr<SceneViewPage> page_;
+};
+
+/// Action for scene selection.
+class ChangeSceneSelectionAction : public EditorAction
+{
+public:
+    ChangeSceneSelectionAction(SceneViewPage* page,
+        const PackedSceneSelection& oldSelection, const PackedSceneSelection& newSelection);
+
+    /// Implement EditorAction
+    /// @{
+    bool IsTransparent() const override { return true; }
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    WeakPtr<SceneViewPage> page_;
+    PackedSceneSelection oldSelection_;
+    PackedSceneSelection newSelection_;
 };
 
 template <class T, class ... Args>
