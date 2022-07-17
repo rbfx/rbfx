@@ -158,14 +158,17 @@ void ResourceEditorTab::OnProjectInitialized()
 
 void ResourceEditorTab::OnProjectRequest(ProjectRequest* request)
 {
-    const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request);
-    if (openResourceRequest && openResourceRequest->IsValidFile() && CanOpenResource(*openResourceRequest))
+    if (const auto openResourceRequest = dynamic_cast<OpenResourceRequest*>(request))
     {
-        request->QueueProcessCallback([=]()
+        const ResourceFileDescriptor& desc = openResourceRequest->GetResource();
+        if (!desc.isDirectory_ && CanOpenResource(desc))
         {
-            OpenResource(openResourceRequest->GetResourceName());
-            Focus();
-        });
+            request->QueueProcessCallback([=]()
+            {
+                OpenResource(openResourceRequest->GetResource().resourceName_);
+                Focus();
+            });
+        }
     }
 }
 

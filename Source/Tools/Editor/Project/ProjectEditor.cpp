@@ -34,6 +34,7 @@
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets.h>
 #include <Urho3D/Utility/SceneViewerApplication.h>
@@ -251,6 +252,51 @@ void ProjectEditor::CloseResourceGracefully(const CloseResourceRequest& request)
 void ProjectEditor::ProcessRequest(ProjectRequest* request, EditorTab* sender)
 {
     pendingRequests_.emplace_back(PendingRequest{SharedPtr<ProjectRequest>{request}, WeakPtr<EditorTab>{sender}});
+}
+
+void ProjectEditor::AddAnalyzeFileCallback(const AnalyzeFileCallback& callback)
+{
+    analyzeFileCallbacks_.push_back(callback);
+}
+
+ResourceFileDescriptor ProjectEditor::GetResourceDescriptor(const ea::string& resourceName, const ea::string& fileName) const
+{
+    auto cache = context_->GetSubsystem<ResourceCache>();
+
+    AnalyzeFileContext ctx;
+    ctx.binaryFile_ = cache->GetFile(resourceName, false);
+
+    if (ctx.binaryFile_ && resourceName.ends_with(".xml", false))
+    {
+        ctx.xmlFile_ = MakeShared<XMLFile>(context_);
+        ctx.xmlFile_->Load(*ctx.binaryFile_);
+        ctx.binaryFile_->Seek(0);
+    }
+
+    if (ctx.binaryFile_ && resourceName.ends_with(".json", false))
+    {
+        ctx.jsonFile_ = MakeShared<JSONFile>(context_);
+        ctx.jsonFile_->Load(*ctx.binaryFile_);
+        ctx.binaryFile_->Seek(0);
+    }
+
+    ResourceFileDescriptor result;
+    result.localName_ = GetFileNameAndExtension(resourceName);
+    result.resourceName_ = resourceName;
+    result.fileName_ = fileName;
+
+    if (ctx.binaryFile_ && result.fileName_.empty())
+        result.fileName_ = ctx.binaryFile_->GetAbsoluteName();
+    if (result.fileName_.empty())
+        result.fileName_ = dataPath_ + resourceName;
+
+    result.isDirectory_ = ctx.binaryFile_ == nullptr;
+    result.isAutomatic_ = result.fileName_.starts_with(cachePath_);
+
+    for (const auto& callback : analyzeFileCallbacks_)
+        callback(result, ctx);
+
+    return result;
 }
 
 void ProjectEditor::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes)

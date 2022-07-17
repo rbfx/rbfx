@@ -86,6 +86,7 @@
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SettingsTab.h"
+#include "Foundation/StandardFileTypes.h"
 
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneSelector.h"
@@ -125,6 +126,8 @@ Editor::Editor(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
+    editorPluginManager_->AddPlugin("Foundation.StandardFileTypes", &Foundation_StandardFileTypes);
+
     editorPluginManager_->AddPlugin("Foundation.GameView", &Foundation_GameViewTab);
     editorPluginManager_->AddPlugin("Foundation.SceneView", &Foundation_SceneViewTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);

@@ -23,11 +23,11 @@
 #pragma once
 
 #include "../Core/CommonEditorActions.h"
-#include "../Core/ResourceDragDropPayload.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 
 #include <Urho3D/Core/Signal.h>
+#include <Urho3D/SystemUI/DragDropPayload.h>
 #include <Urho3D/Utility/FileSystemReflection.h>
 
 #include <EASTL/functional.h>

@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../Core/CommonEditorActions.h"
-#include "../Core/ResourceDragDropPayload.h"
 #include "../Project/ProjectEditor.h"
 #include "../Project/ResourceEditorTab.h"
 
@@ -163,7 +162,7 @@ public:
 
     ea::string GetResourceTitle() { return "Scene"; }
     bool SupportMultipleResources() { return true; }
-    bool CanOpenResource(const OpenResourceRequest& request) override;
+    bool CanOpenResource(const ResourceFileDescriptor& desc) override;
 
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;

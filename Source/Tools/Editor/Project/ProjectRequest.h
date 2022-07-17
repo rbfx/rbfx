@@ -31,6 +31,7 @@
 #include <Urho3D/Scene/Component.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/SystemUI/DragDropPayload.h>
 
 #include <EASTL/priority_queue.h>
 #include <EASTL/sort.h>
@@ -66,52 +67,18 @@ private:
     ea::priority_queue<CallbackDesc> callbacks_;
 };
 
-/// Helper to describe file resource in the engine.
-class FileResourceDesc
-{
-public:
-    FileResourceDesc() = default;
-    FileResourceDesc(Context* context, const ea::string& resourceName);
-
-    Context* GetContext() const { return context_; }
-    bool IsValidFile() const { return !fileName_.empty(); }
-
-    SharedPtr<File> GetBinaryFile() const;
-    SharedPtr<XMLFile> GetXMLFile() const;
-    SharedPtr<JSONFile> GetJSONFile() const;
-
-    /// Return whether the extension is one of the list.
-    bool HasExtension(ea::string_view extension) const { return resourceName_.ends_with(extension, false); }
-    bool HasExtension(ea::span<const ea::string_view> extensions) const;
-    bool HasExtension(std::initializer_list<ea::string_view> extensions) const;
-    /// Return type hint from the file itself.
-    /// - Root element name of XML.
-    /// - Empty otherwise.
-    ea::string GetTypeHint() const;
-
-    /// Return properties.
-    /// @{
-    const ea::string& GetResourceName() const { return resourceName_; }
-    const ea::string& GetFileName() const { return fileName_; }
-    /// @}
-
-private:
-    Context* context_{};
-
-    ea::string resourceName_;
-    ea::string fileName_;
-
-    mutable SharedPtr<XMLFile> xmlFile_;
-    mutable SharedPtr<JSONFile> jsonFile_;
-};
-
 /// Request to open resource.
-class OpenResourceRequest : public ProjectRequest, public FileResourceDesc
+class OpenResourceRequest : public ProjectRequest
 {
     URHO3D_OBJECT(OpenResourceRequest, ProjectRequest);
 
 public:
     OpenResourceRequest(Context* context, const ea::string& resourceName);
+
+    const ResourceFileDescriptor& GetResource() const { return resourceDesc_; }
+
+private:
+    ResourceFileDescriptor resourceDesc_;
 };
 
 /// Base class for all inspector requests.
@@ -131,11 +98,11 @@ class InspectResourceRequest : public BaseInspectRequest
 public:
     InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames);
 
-    const ea::vector<FileResourceDesc>& GetResources() const { return resourceDescs_; }
+    const ea::vector<ResourceFileDescriptor>& GetResources() const { return resourceDescs_; }
     StringVector GetSortedResourceNames() const;
 
 private:
-    ea::vector<FileResourceDesc> resourceDescs_;
+    ea::vector<ResourceFileDescriptor> resourceDescs_;
 };
 
 /// Request to inspect one or more nodes or components.

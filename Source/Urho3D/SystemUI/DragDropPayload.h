@@ -22,26 +22,53 @@
 
 #pragma once
 
-#include <Urho3D/Container/RefCounted.h>
-#include <Urho3D/Container/ConstString.h>
+#include "../Container/RefCounted.h"
+#include "../Container/ConstString.h"
 
 #include <EASTL/functional.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
 
-using ImGuiDragDropFlags = int;
-using ImGuiCond = int;
+URHO3D_GLOBAL_CONSTANT(ConstString DragDropPayloadType{"DragDropPayload"});
+URHO3D_GLOBAL_CONSTANT(ConstString DragDropPayloadVariable{"SystemUI_DragDropPayload"});
 
 /// Base class for drag&drop payload.
-class DragDropPayload : public RefCounted
+class URHO3D_API DragDropPayload : public RefCounted
 {
 public:
     static void Set(const SharedPtr<DragDropPayload>& payload);
     static DragDropPayload* Get();
 };
 
-URHO3D_GLOBAL_CONSTANT(ConstString DragDropPayloadType{"DragDropPayload"});
-URHO3D_GLOBAL_CONSTANT(ConstString DragDropPayloadVariable{"SystemUI_DragDropPayload"});
+/// Resource file descriptor.
+struct URHO3D_API ResourceFileDescriptor
+{
+    /// Name without path.
+    ea::string localName_;
+    /// File name relative to resource root.
+    ea::string resourceName_;
+    /// Absolute file name.
+    ea::string fileName_;
+
+    /// Whether the file is a directory.
+    bool isDirectory_{};
+    /// Whether the file or folder is automatically managed, e.g. file is stored in the generated cache.
+    bool isAutomatic_{};
+
+    /// File type tags.
+    ea::unordered_set<ea::string> types_;
+
+    template <class T> void AddObjectType() { types_.emplace(T::GetTypeNameStatic()); }
+    template <class T> bool HasObjectType() const { return types_.contains(T::GetTypeNameStatic()); }
+};
+
+/// Drag&drop payload containing reference to a resource or directory.
+class URHO3D_API ResourceDragDropPayload : public DragDropPayload
+{
+public:
+    ea::vector<ResourceFileDescriptor> resources_;
+};
 
 }

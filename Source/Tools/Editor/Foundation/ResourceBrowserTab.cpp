@@ -65,8 +65,8 @@ ea::optional<ea::string> TryAdjustPathOnRename(const ea::string& path, const ea:
 
 bool IsPayloadMovable(const ResourceDragDropPayload& payload)
 {
-    return ea::all_of(payload.items_.begin(), payload.items_.end(),
-        [](const ResourceDragDropPayload::Item& item) { return item.isMovable_; });
+    return ea::all_of(payload.resources_.begin(), payload.resources_.end(),
+        [](const ResourceFileDescriptor& desc) { return !desc.isAutomatic_; });
 }
 
 }
@@ -183,17 +183,16 @@ void ResourceBrowserTab::OnProjectRequest(ProjectRequest* request)
     if (!openResourceRequest)
         return;
 
-    if (openResourceRequest->IsValidFile())
+    const ResourceFileDescriptor& desc = openResourceRequest->GetResource();
+    if (!desc.isDirectory_)
     {
-        const ea::string& resourceName = openResourceRequest->GetResourceName();
-        SelectLeftPanel(GetPath(resourceName));
-        SelectRightPanel(resourceName);
+        SelectLeftPanel(GetPath(desc.resourceName_));
+        SelectRightPanel(desc.resourceName_);
         ScrollToSelection();
     }
     else
     {
-        const ea::string& resourcePath = openResourceRequest->GetResourceName();
-        SelectLeftPanel(resourcePath);
+        SelectLeftPanel(desc.resourceName_);
         ScrollToSelection();
     }
 }
@@ -859,11 +858,9 @@ void ResourceBrowserTab::RenderCreateDialog()
 
 void ResourceBrowserTab::AddEntryToPayload(ResourceDragDropPayload& payload, const FileSystemEntry& entry) const
 {
-    auto& item = payload.items_.emplace_back();
-    item.localName_ = entry.localName_;
-    item.resourceName_ = entry.resourceName_;
-    item.fileName_ = entry.absolutePath_;
-    item.isMovable_ = !IsEntryFromCache(entry) && !entry.resourceName_.empty();
+    auto project = GetProject();
+    const auto desc = project->GetResourceDescriptor(entry.resourceName_, entry.absolutePath_);
+    payload.resources_.push_back(desc);
 }
 
 SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromEntry(const FileSystemEntry& entry) const
@@ -917,9 +914,9 @@ void ResourceBrowserTab::BeginRightSelectionDrag()
     }
 
     const auto payload = dynamic_cast<ResourceDragDropPayload*>(DragDropPayload::Get());
-    const ea::string text = payload->items_.size() == 1
-        ? payload->items_[0].localName_
-        : Format("{} items", payload->items_.size());
+    const ea::string text = payload->resources_.size() == 1
+        ? payload->resources_[0].localName_
+        : Format("{} items", payload->resources_.size());
     ui::TextUnformatted(text.c_str());
 }
 
@@ -935,11 +932,11 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
         if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str()))
         {
             const char* separator = entry.resourceName_.empty() ? "" : "/";
-            for (const auto& payloadItem : payload->items_)
+            for (const ResourceFileDescriptor& desc : payload->resources_)
             {
-                const ea::string newResourceName = Format("{}{}{}", entry.resourceName_, separator, payloadItem.localName_);
+                const ea::string newResourceName = Format("{}{}{}", entry.resourceName_, separator, desc.localName_);
                 const ea::string newFileName = Format("{}{}", root.activeDirectory_, newResourceName);
-                RenameOrMove(payloadItem.fileName_, newFileName, payloadItem.resourceName_, newResourceName);
+                RenameOrMove(desc.fileName_, newFileName, desc.resourceName_, newResourceName);
             }
         }
     }

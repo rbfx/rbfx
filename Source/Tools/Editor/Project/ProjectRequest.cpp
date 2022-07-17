@@ -22,7 +22,7 @@
 
 #include "../Project/ProjectRequest.h"
 
-#include <Urho3D/Resource/ResourceCache.h>
+#include "../Project/ProjectEditor.h"
 
 #include <EASTL/sort.h>
 
@@ -53,83 +53,26 @@ void ProjectRequest::InvokeProcessCallback()
     }
 }
 
-FileResourceDesc::FileResourceDesc(Context* context, const ea::string& resourceName)
-    : context_(context)
-    , resourceName_(resourceName)
-{
-    auto cache = context_->GetSubsystem<ResourceCache>();
-
-    if (auto file = cache->GetFile(resourceName_))
-        fileName_ = file->GetAbsoluteName();
-}
-
-SharedPtr<File> FileResourceDesc::GetBinaryFile() const
-{
-    // Don't cache File to avoid races between users
-    auto cache = context_->GetSubsystem<ResourceCache>();
-    return cache->GetFile(resourceName_);
-}
-
-SharedPtr<XMLFile> FileResourceDesc::GetXMLFile() const
-{
-    if (!xmlFile_ && resourceName_.ends_with(".xml", false))
-    {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        auto file = cache->GetFile(resourceName_);
-        xmlFile_ = MakeShared<XMLFile>(context_);
-        xmlFile_->Load(*file);
-    }
-    return xmlFile_;
-}
-
-SharedPtr<JSONFile> FileResourceDesc::GetJSONFile() const
-{
-    if (!jsonFile_ && resourceName_.ends_with(".json", false))
-    {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        auto file = cache->GetFile(resourceName_);
-        jsonFile_ = MakeShared<JSONFile>(context_);
-        jsonFile_->Load(*file);
-    }
-    return jsonFile_;
-}
-
-bool FileResourceDesc::HasExtension(ea::span<const ea::string_view> extensions) const
-{
-    return ea::any_of(extensions.begin(), extensions.end(),
-        [this](const ea::string_view& ext) { return resourceName_.ends_with(ext, false); });
-}
-
-bool FileResourceDesc::HasExtension(std::initializer_list<ea::string_view> extensions) const
-{
-    return HasExtension(ea::span<const ea::string_view>(extensions));
-}
-
-ea::string FileResourceDesc::GetTypeHint() const
-{
-    if (const auto xmlFile = GetXMLFile())
-        return xmlFile->GetRoot().GetName();
-    return EMPTY_STRING;
-}
-
 OpenResourceRequest::OpenResourceRequest(Context* context, const ea::string& resourceName)
     : ProjectRequest(context)
-    , FileResourceDesc{context, resourceName}
 {
+    auto project = GetSubsystem<ProjectEditor>();
+    resourceDesc_ = project->GetResourceDescriptor(resourceName);
 }
 
 InspectResourceRequest::InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames)
     : BaseInspectRequest(context)
 {
+    auto project = GetSubsystem<ProjectEditor>();
     ea::transform(resourceNames.begin(), resourceNames.end(), ea::back_inserter(resourceDescs_),
-        [&](const ea::string& resourceName) { return FileResourceDesc{context, resourceName}; });
+        [&](const ea::string& resourceName) { return project->GetResourceDescriptor(resourceName); });
 }
 
 StringVector InspectResourceRequest::GetSortedResourceNames() const
 {
     StringVector resourceNames;
     ea::transform(resourceDescs_.begin(), resourceDescs_.end(), ea::back_inserter(resourceNames),
-        [](const FileResourceDesc& desc) { return desc.GetResourceName(); });
+        [](const ResourceFileDescriptor& desc) { return desc.resourceName_; });
     ea::sort(resourceNames.begin(), resourceNames.end());
     return resourceNames;
 }

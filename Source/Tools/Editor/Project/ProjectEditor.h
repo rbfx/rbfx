@@ -32,6 +32,7 @@
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/SystemUI/DragDropPayload.h>
 
 #include <EASTL/functional.h>
 #include <EASTL/set.h>
@@ -71,12 +72,25 @@ private:
     ea::string oldEditorData_;
 };
 
+/// File type analysis context.
+struct AnalyzeFileContext
+{
+    Context* context_{};
+
+    SharedPtr<File> binaryFile_;
+    SharedPtr<XMLFile> xmlFile_;
+    SharedPtr<JSONFile> jsonFile_;
+};
+
 /// Main class for all Editor logic related to the project folder.
+/// TODO(editor): Rename to "Project"
 class ProjectEditor : public Object
 {
     URHO3D_OBJECT(ProjectEditor, Object);
 
 public:
+    using AnalyzeFileCallback = ea::function<void(ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)>;
+
     Signal<void()> OnInitialized;
     Signal<void()> OnRenderProjectMenu;
     Signal<void()> OnRenderProjectToolbar;
@@ -92,6 +106,10 @@ public:
     void CloseResourceGracefully(const CloseResourceRequest& request);
     /// Process global request.
     void ProcessRequest(ProjectRequest* request, EditorTab* sender = nullptr);
+    /// Add callback for file analysis.
+    void AddAnalyzeFileCallback(const AnalyzeFileCallback& callback);
+    /// Return file descriptor for specified file.
+    ResourceFileDescriptor GetResourceDescriptor(const ea::string& resourceName, const ea::string& fileName = EMPTY_STRING) const;
 
     /// Update and render main window with tabs.
     void Render();
@@ -216,6 +234,7 @@ private:
     ea::map<ea::string, SharedPtr<EditorTab>> sortedTabs_;
     ea::set<ea::string> ignoredFileNames_;
     ea::vector<std::regex> ignoredFileNameRegexes_;
+    ea::vector<AnalyzeFileCallback> analyzeFileCallbacks_;
 
     /// Global requests to be processed.
     ea::vector<PendingRequest> pendingRequests_;
