@@ -163,38 +163,72 @@ protected:
         return [handler](RefCounted* receiverPtr, Sender* sender, Args... args) mutable
         {
             // MSVC has some issues with static constexpr bool, use macros
-#define INVOKE_SENDER_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Receiver*, Sender*, Args...>
-#define INVOKE_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Receiver*, Args...>
+#define INVOKE_RECEIVER_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Receiver*, Args...>
+#define INVOKE_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Args...>
 
-            static_assert(INVOKE_SENDER_ARGS(bool) || INVOKE_SENDER_ARGS(void) || INVOKE_ARGS(bool) || INVOKE_ARGS(void),
+            static_assert(INVOKE_RECEIVER_ARGS(bool) || INVOKE_RECEIVER_ARGS(void) || INVOKE_ARGS(bool) || INVOKE_ARGS(void),
                 "Callback should return either bool or void. "
-                "Callback should accept either (Args...) or (Sender*, Args...) as parameters.");
+                "Callback should accept either (Args...) or (Receiver*, Args...) as parameters.");
 
             auto receiver = static_cast<Receiver*>(receiverPtr);
             // MinGW build fails at ea::invoke ATM, call as member function
             if constexpr (ea::is_member_function_pointer_v<decltype(handler)>)
             {
-                if constexpr (INVOKE_SENDER_ARGS(bool))
-                    return (receiver->*handler)(sender, args...);
-                else if constexpr (INVOKE_SENDER_ARGS(void))
-                    return (receiver->*handler)(sender, args...), true;
-                else if constexpr (INVOKE_ARGS(bool))
+                if constexpr (INVOKE_RECEIVER_ARGS(bool))
                     return (receiver->*handler)(args...);
-                else if constexpr (INVOKE_ARGS(void))
+                else if constexpr (INVOKE_RECEIVER_ARGS(void))
                     return (receiver->*handler)(args...), true;
             }
             else
             {
-                if constexpr (INVOKE_SENDER_ARGS(bool))
+                if constexpr (INVOKE_RECEIVER_ARGS(bool))
+                    return ea::invoke(handler, receiver, args...);
+                else if constexpr (INVOKE_RECEIVER_ARGS(void))
+                    return ea::invoke(handler, receiver, args...), true;
+                else if constexpr (INVOKE_ARGS(bool))
+                    return ea::invoke(handler, args...);
+                else if constexpr (INVOKE_ARGS(void))
+                    return ea::invoke(handler, args...), true;
+            }
+#undef INVOKE_RECEIVER_ARGS
+#undef INVOKE_ARGS
+        };
+    }
+
+    template <class Receiver, class Callback>
+    Handler WrapHandlerWithSender(Callback handler)
+    {
+        return [handler](RefCounted* receiverPtr, Sender* sender, Args... args) mutable
+        {
+            // MSVC has some issues with static constexpr bool, use macros
+#define INVOKE_RECEIVER_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Receiver*, Sender*, Args...>
+#define INVOKE_ARGS(returnType) ea::is_invocable_r_v<returnType, Callback, Sender*, Args...>
+
+            static_assert(INVOKE_RECEIVER_ARGS(bool) || INVOKE_RECEIVER_ARGS(void) || INVOKE_ARGS(bool) || INVOKE_ARGS(void),
+                "Callback should return either bool or void. "
+                "Callback should accept either (Sender*, Args...) or (Receiver*, Sender*, Args...) as parameters.");
+
+            auto receiver = static_cast<Receiver*>(receiverPtr);
+            // MinGW build fails at ea::invoke ATM, call as member function
+            if constexpr (ea::is_member_function_pointer_v<decltype(handler)>)
+            {
+                if constexpr (INVOKE_RECEIVER_ARGS(bool))
+                    return (receiver->*handler)(sender, args...);
+                else if constexpr (INVOKE_RECEIVER_ARGS(void))
+                    return (receiver->*handler)(sender, args...), true;
+            }
+            else
+            {
+                if constexpr (INVOKE_RECEIVER_ARGS(bool))
                     return ea::invoke(handler, receiver, sender, args...);
-                else if constexpr (INVOKE_SENDER_ARGS(void))
+                else if constexpr (INVOKE_RECEIVER_ARGS(void))
                     return ea::invoke(handler, receiver, sender, args...), true;
                 else if constexpr (INVOKE_ARGS(bool))
-                    return ea::invoke(handler, receiver, args...);
+                    return ea::invoke(handler, sender, args...);
                 else if constexpr (INVOKE_ARGS(void))
-                    return ea::invoke(handler, receiver, args...), true;
+                    return ea::invoke(handler, sender, args...), true;
             }
-#undef INVOKE_SENDER_ARGS
+#undef INVOKE_RECEIVER_ARGS
 #undef INVOKE_ARGS
         };
     }
@@ -215,12 +249,21 @@ template <class Sender, class... Args>
 class Signal<void(Args...), Sender> : public Detail::SignalBase<void, Sender, Args...>
 {
 public:
-    /// Subscribe to event.
+    /// Subscribe to event. Callback receives only signal arguments.
     template <class Receiver, class Callback>
     void Subscribe(Receiver* receiver, Callback handler)
     {
         WeakPtr<RefCounted> weakReceiver(static_cast<RefCounted*>(receiver));
         auto wrappedHandler = this->template WrapHandler<Receiver>(handler);
+        this->subscriptions_.emplace_back(ea::move(weakReceiver), ea::move(wrappedHandler));
+    }
+
+    /// Subscribe to event. Callback receives sender and signal arguments.
+    template <class Receiver, class Callback>
+    void SubscribeWithSender(Receiver* receiver, Callback handler)
+    {
+        WeakPtr<RefCounted> weakReceiver(static_cast<RefCounted*>(receiver));
+        auto wrappedHandler = this->template WrapHandlerWithSender<Receiver>(handler);
         this->subscriptions_.emplace_back(ea::move(weakReceiver), ea::move(wrappedHandler));
     }
 };
@@ -233,12 +276,21 @@ template <class Sender, class Priority, class... Args>
 class PrioritySignal<void(Args...), Priority, Sender> : public Detail::SignalBase<Priority, Sender, Args...>
 {
 public:
-    /// Subscribe to event.
+    /// Subscribe to event. Callback receives only signal arguments.
     template <class Receiver, class Callback>
     void Subscribe(Receiver* receiver, Priority priority, Callback handler)
     {
         WeakPtr<RefCounted> weakReceiver(static_cast<RefCounted*>(receiver));
         auto wrappedHandler = this->template WrapHandler<Receiver>(handler);
+        this->subscriptions_.emplace(ea::move(weakReceiver), priority, ea::move(wrappedHandler));
+    }
+
+    /// Subscribe to event. Callback receives sender and signal arguments.
+    template <class Receiver, class Callback>
+    void SubscribeWithSender(Receiver* receiver, Priority priority, Callback handler)
+    {
+        WeakPtr<RefCounted> weakReceiver(static_cast<RefCounted*>(receiver));
+        auto wrappedHandler = this->template WrapHandlerWithSender<Receiver>(handler);
         this->subscriptions_.emplace(ea::move(weakReceiver), priority, ea::move(wrappedHandler));
     }
 };

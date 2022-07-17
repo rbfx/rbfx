@@ -232,7 +232,7 @@ namespace eastl
 		T& get() const EA_NOEXCEPT;
 
 		template <typename... ArgTypes>
-		typename eastl::result_of<T&(ArgTypes&&...)>::type operator() (ArgTypes&&...) const;
+		typename eastl::invoke_result<T&, ArgTypes&&...>::type operator() (ArgTypes&&...) const;
 
 	private:
 		T* val;
@@ -269,7 +269,7 @@ namespace eastl
 
 	template <typename T>
 	template <typename... ArgTypes>
-	typename eastl::result_of<T&(ArgTypes&&...)>::type reference_wrapper<T>::operator() (ArgTypes&&... args) const
+	typename eastl::invoke_result<T&, ArgTypes&&...>::type reference_wrapper<T>::operator() (ArgTypes&&... args) const
 	{
 		return eastl::invoke(*val, eastl::forward<ArgTypes>(args)...);
 	}
