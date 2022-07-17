@@ -39,8 +39,13 @@ void Image(const ea::string& name)
     if (auto iconData = icons->GetIconData(name))
     {
         IntRect rect = iconData->rect_;
-        ResourceCache* cache = ui::GetSystemUI()->GetSubsystem<ResourceCache>();
-        auto* texture = cache->GetResource<Texture2D>(iconData->textureRef_.name_);
+        Texture2D* texture = nullptr;
+        if (!iconData->texture_.has_value())
+        {
+            ResourceCache* cache = ui::GetSystemUI()->GetSubsystem<ResourceCache>();
+            iconData->texture_.emplace(cache->GetResource<Texture2D>(iconData->textureRef_.name_));
+        }
+        texture = iconData->texture_.value();
         ui::Image(texture, {static_cast<float>(rect.Width()), static_cast<float>(rect.Height())},
             {(float) rect.left_ / texture->GetWidth(), (float) rect.top_ / texture->GetHeight()},
             {(float) rect.right_ / texture->GetWidth(), (float) rect.bottom_ / texture->GetHeight()});
