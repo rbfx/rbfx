@@ -20,33 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/DragDropPayload.h"
+#pragma once
 
-#include <Urho3D/SystemUI/SystemUI.h>
+#include "../Project/ProjectEditor.h"
 
 namespace Urho3D
 {
 
-void DragDropPayload::Set(const SharedPtr<DragDropPayload>& payload)
-{
-    if (auto context = Context::GetInstance())
-        context->SetGlobalVar(DragDropPayloadVariable, MakeCustomValue(payload));
-}
-
-DragDropPayload* DragDropPayload::Get()
-{
-    if (const ImGuiPayload* payload = ui::GetDragDropPayload())
-    {
-        if (payload->DataType == DragDropPayloadType)
-        {
-            if (auto context = Context::GetInstance())
-            {
-                const Variant variant = context->GetGlobalVar(DragDropPayloadVariable);
-                return dynamic_cast<DragDropPayload*>(variant.GetCustom<SharedPtr<DragDropPayload>>().Get());
-            }
-        }
-    }
-    return nullptr;
-}
+void Foundation_StandardFileTypes(Context* context, ProjectEditor* project);
 
 }

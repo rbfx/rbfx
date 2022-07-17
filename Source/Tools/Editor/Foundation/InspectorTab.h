@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Core/ResourceDragDropPayload.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 #include "../Foundation/Shared/InspectorSource.h"

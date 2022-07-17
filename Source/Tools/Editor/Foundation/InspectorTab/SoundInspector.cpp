@@ -115,7 +115,7 @@ void SoundInspector_::OnProjectRequest(ProjectRequest* request)
     const auto& resources = inspectResourceRequest->GetResources();
 
     const bool areAllSounds = ea::all_of(resources.begin(), resources.end(),
-        [](const FileResourceDesc& desc) { return desc.HasExtension({".wav", ".ogg"}); });
+        [](const ResourceFileDescriptor& desc) { return desc.HasObjectType<Sound>(); });
     if (!areAllSounds)
         return;
 

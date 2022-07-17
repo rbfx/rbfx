@@ -49,7 +49,7 @@ public:
 
 private:
     void OnProjectRequest(ProjectRequest* request);
-    void InspectResources(const ea::vector<FileResourceDesc>& resources);
+    void InspectResources(const ea::vector<ResourceFileDescriptor>& resources);
 
     WeakPtr<ProjectEditor> project_;
 

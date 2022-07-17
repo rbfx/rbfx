@@ -20,28 +20,33 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "../SystemUI/DragDropPayload.h"
 
-#include "../Core/DragDropPayload.h"
-
-#include <EASTL/vector.h>
+#include "../SystemUI/SystemUI.h"
 
 namespace Urho3D
 {
 
-/// Drag&drop payload containing reference to a resource or directory.
-class ResourceDragDropPayload : public DragDropPayload
+void DragDropPayload::Set(const SharedPtr<DragDropPayload>& payload)
 {
-public:
-    struct Item
-    {
-        ea::string localName_;
-        ea::string resourceName_;
-        ea::string fileName_;
-        bool isMovable_{};
-    };
+    if (auto context = Context::GetInstance())
+        context->SetGlobalVar(DragDropPayloadVariable, MakeCustomValue(payload));
+}
 
-    ea::vector<Item> items_;
-};
+DragDropPayload* DragDropPayload::Get()
+{
+    if (const ImGuiPayload* payload = ui::GetDragDropPayload())
+    {
+        if (payload->DataType == DragDropPayloadType)
+        {
+            if (auto context = Context::GetInstance())
+            {
+                const Variant variant = context->GetGlobalVar(DragDropPayloadVariable);
+                return dynamic_cast<DragDropPayload*>(variant.GetCustom<SharedPtr<DragDropPayload>>().Get());
+            }
+        }
+    }
+    return nullptr;
+}
 
 }

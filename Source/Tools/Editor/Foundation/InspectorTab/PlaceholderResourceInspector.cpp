@@ -52,19 +52,19 @@ void PlaceholderResourceInspector::OnProjectRequest(ProjectRequest* request)
     }, M_MIN_INT + 1);
 }
 
-void PlaceholderResourceInspector::InspectResources(const ea::vector<FileResourceDesc>& resources)
+void PlaceholderResourceInspector::InspectResources(const ea::vector<ResourceFileDescriptor>& resources)
 {
     if (resources.size() == 1)
     {
-        const FileResourceDesc& desc = resources.front();
-        const ea::string resourceType = desc.IsValidFile() ? "File" : "Folder";
-        singleResource_ = SingleResource{resourceType, desc.GetResourceName()};
+        const ResourceFileDescriptor& desc = resources.front();
+        const ea::string resourceType = !desc.isDirectory_ ? "File" : "Folder";
+        singleResource_ = SingleResource{resourceType, desc.resourceName_};
         multipleResources_ = ea::nullopt;
     }
     else
     {
         const unsigned numFolders = std::count_if(resources.begin(), resources.end(),
-            [](const FileResourceDesc& desc) { return !desc.IsValidFile(); });
+            [](const ResourceFileDescriptor& desc) { return desc.isDirectory_; });
         const unsigned numFiles = resources.size() - numFolders;
         multipleResources_ = MultipleResources{numFiles, numFolders};
         singleResource_ = ea::nullopt;

@@ -50,7 +50,7 @@ void MaterialInspector_::OnProjectRequest(ProjectRequest* request)
     const auto& resources = inspectResourceRequest->GetResources();
 
     const bool areAllMaterials = ea::all_of(resources.begin(), resources.end(),
-        [](const FileResourceDesc& desc) { return desc.GetTypeHint() == "material"; });
+        [](const ResourceFileDescriptor& desc) { return desc.HasObjectType<Material>(); });
     if (!areAllMaterials)
         return;
 

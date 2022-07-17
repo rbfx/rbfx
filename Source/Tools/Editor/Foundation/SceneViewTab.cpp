@@ -383,9 +383,9 @@ void SceneViewTab::RenderToolbar()
     Widgets::ToolbarSeparator();
 }
 
-bool SceneViewTab::CanOpenResource(const OpenResourceRequest& request)
+bool SceneViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
 {
-    return request.GetXMLFile() && request.GetTypeHint() == "scene";
+    return desc.HasObjectType<Scene>();
 }
 
 void SceneViewTab::WriteIniSettings(ImGuiTextBuffer& output)

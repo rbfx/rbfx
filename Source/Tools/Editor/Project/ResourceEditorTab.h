@@ -60,7 +60,7 @@ public:
     /// Return user-readable name of resource.
     virtual ea::string GetResourceTitle() { return "Resource"; }
     /// Return whether the specified request can be handled by this tab.
-    virtual bool CanOpenResource(const OpenResourceRequest& request) = 0;
+    virtual bool CanOpenResource(const ResourceFileDescriptor& desc) = 0;
     /// Return whether the several resources can be handled simultaneously.
     virtual bool SupportMultipleResources() = 0;
     /// Open resource.
