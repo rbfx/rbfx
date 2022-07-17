@@ -43,6 +43,9 @@ struct URHO3D_API PackedSceneSelection
 
     void Clear();
     void SerializeInBlock(Archive& archive);
+
+    bool operator==(const PackedSceneSelection& other) const;
+    bool operator!=(const PackedSceneSelection& other) const { return !(*this == other); }
 };
 
 /// Selected nodes and components in the Scene.

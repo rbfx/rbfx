@@ -22,6 +22,8 @@
 
 #include "../Utility/SceneSelection.h"
 
+#include <EASTL/sort.h>
+
 namespace Urho3D
 {
 
@@ -41,6 +43,15 @@ void PackedSceneSelection::SerializeInBlock(Archive& archive)
     SerializeValue(archive, "ActiveNodeOrSceneId", activeNodeOrSceneId_);
     SerializeValue(archive, "ActiveNodeId", activeNodeId_);
     SerializeValue(archive, "ActiveComponentId", activeComponentId_);
+}
+
+bool PackedSceneSelection::operator==(const PackedSceneSelection& other) const
+{
+    return nodeIds_ == other.nodeIds_
+        && componentIds_ == other.componentIds_
+        && activeNodeOrSceneId_ == other.activeNodeOrSceneId_
+        && activeNodeId_ == other.activeNodeId_
+        && activeComponentId_ == other.activeComponentId_;
 }
 
 bool SceneSelection::IsSelected(Component* component) const
@@ -90,6 +101,9 @@ void SceneSelection::Save(PackedSceneSelection& packedSelection) const
         if (component)
             packedSelection.componentIds_.push_back(component->GetID());
     }
+
+    ea::sort(packedSelection.nodeIds_.begin(), packedSelection.nodeIds_.end());
+    ea::sort(packedSelection.componentIds_.begin(), packedSelection.componentIds_.end());
 
     packedSelection.activeNodeOrSceneId_ = activeNodeOrScene_ ? activeNodeOrScene_->GetID() : 0;
     packedSelection.activeNodeId_ = activeNode_ ? activeNode_->GetID() : 0;

@@ -75,7 +75,6 @@ void EditorTab::ReadIniSettings(const char* line)
 
 void EditorTab::Render()
 {
-    Update();
     wasOpen_ = open_;
 
     if (focusPending_ || openPending_)
@@ -128,10 +127,6 @@ void EditorTab::RenderWindow()
     if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
     {
         project->SetFocusedTab(this);
-        // Suppress hotkeys on the first focused frame so we don't process them more than once
-        if (!focusPending_)
-            ApplyHotkeys(project->GetHotkeyManager());
-        UpdateFocused();
     }
     else
     {
