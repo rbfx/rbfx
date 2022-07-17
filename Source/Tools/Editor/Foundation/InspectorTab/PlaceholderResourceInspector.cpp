@@ -49,7 +49,7 @@ void PlaceholderResourceInspector::OnProjectRequest(ProjectRequest* request)
     {
         InspectResources(inspectResourceRequest->GetResources());
         OnActivated(this);
-    }, M_MIN_INT);
+    }, M_MIN_INT + 1);
 }
 
 void PlaceholderResourceInspector::InspectResources(const ea::vector<FileResourceDesc>& resources)

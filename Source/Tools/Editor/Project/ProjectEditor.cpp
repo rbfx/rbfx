@@ -248,9 +248,9 @@ void ProjectEditor::CloseResourceGracefully(const CloseResourceRequest& request)
     closeDialog_->RequestClose(request);
 }
 
-void ProjectEditor::ProcessRequest(ProjectRequest* request, Object* sender)
+void ProjectEditor::ProcessRequest(ProjectRequest* request, EditorTab* sender)
 {
-    pendingRequests_.emplace_back(PendingRequest{SharedPtr<ProjectRequest>{request}, WeakPtr<Object>{sender}});
+    pendingRequests_.emplace_back(PendingRequest{SharedPtr<ProjectRequest>{request}, WeakPtr<EditorTab>{sender}});
 }
 
 void ProjectEditor::SaveFileDelayed(const ea::string& fileName, const ea::string& resourceName, const SharedByteVector& bytes)
@@ -384,7 +384,7 @@ void ProjectEditor::InitializeDefaultProject()
     CreateDefaultScene(context_, dataPath_ + defaultSceneName, params);
 
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
-    ProcessRequest(request, this);
+    ProcessRequest(request, nullptr);
 }
 
 void ProjectEditor::InitializeResourceCache()
@@ -538,8 +538,8 @@ void ProjectEditor::ProcessPendingRequests()
 
     for (const PendingRequest& pending : requests)
     {
-        Object* sender = pending.sender_;
-        OnRequest(sender ? sender : this, pending.request_);
+        EditorTab* sender = pending.sender_;
+        OnRequest(sender, pending.request_);
         pending.request_->InvokeProcessCallback();
     }
 }

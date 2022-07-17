@@ -20,38 +20,48 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "../Core/Signal.h"
-#include "../Scene/Serializable.h"
+#include "../../Foundation/InspectorTab/EmptyInspector.h"
 
 namespace Urho3D
 {
 
-/// SystemUI widget used to edit materials.
-class URHO3D_API SerializableInspectorWidget : public Object
+void Foundation_EmptyInspector(Context* context, InspectorTab_* inspectorTab)
 {
-    URHO3D_OBJECT(SerializableInspectorWidget, Object);
+    inspectorTab->RegisterAddon<EmptyInspector>(inspectorTab->GetProject());
+}
 
-public:
-    using SerializableVector = ea::vector<WeakPtr<Serializable>>;
+EmptyInspector::EmptyInspector(ProjectEditor* project)
+    : Object(project->GetContext())
+{
+    project->OnRequest.Subscribe(this, &EmptyInspector::OnProjectRequest);
+}
 
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeBegin;
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeEnd;
+void EmptyInspector::OnProjectRequest(ProjectRequest* request)
+{
+    auto inspectRequest = dynamic_cast<BaseInspectRequest*>(request);
+    if (!inspectRequest)
+        return;
 
-    SerializableInspectorWidget(Context* context, const SerializableVector& objects);
-    ~SerializableInspectorWidget() override;
+    request->QueueProcessCallback([=]()
+    {
+        OnActivated(this);
+    }, M_MIN_INT);
+}
 
-    void RenderTitle();
-    void RenderContent();
+void EmptyInspector::RenderContent()
+{
+}
 
-    const SerializableVector& GetObjects() const { return objects_; }
+void EmptyInspector::RenderContextMenuItems()
+{
+}
 
-private:
-    void RenderAttribute(const AttributeInfo& info);
+void EmptyInspector::RenderMenu()
+{
+}
 
-    SerializableVector objects_;
-    ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;
-};
+void EmptyInspector::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+}
 
 }

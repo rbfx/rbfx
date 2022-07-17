@@ -22,12 +22,15 @@
 
 #pragma once
 
+#include "../Project/EditorTab.h"
+
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Component.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
 
 #include <EASTL/priority_queue.h>
 #include <EASTL/sort.h>
@@ -108,16 +111,25 @@ class OpenResourceRequest : public ProjectRequest, public FileResourceDesc
     URHO3D_OBJECT(OpenResourceRequest, ProjectRequest);
 
 public:
-    explicit OpenResourceRequest(Context* context, const ea::string& resourceName);
+    OpenResourceRequest(Context* context, const ea::string& resourceName);
+};
+
+/// Base class for all inspector requests.
+class BaseInspectRequest : public ProjectRequest
+{
+    URHO3D_OBJECT(BaseInspectRequest, ProjectRequest);
+
+public:
+    using ProjectRequest::ProjectRequest;
 };
 
 /// Request to inspect one or more resources.
-class InspectResourceRequest : public ProjectRequest
+class InspectResourceRequest : public BaseInspectRequest
 {
-    URHO3D_OBJECT(InspectResourceRequest, ProjectRequest);
+    URHO3D_OBJECT(InspectResourceRequest, BaseInspectRequest);
 
 public:
-    explicit InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames);
+    InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames);
 
     const ea::vector<FileResourceDesc>& GetResources() const { return resourceDescs_; }
     StringVector GetSortedResourceNames() const;
@@ -127,17 +139,17 @@ private:
 };
 
 /// Request to inspect one or more nodes or components.
-class InspectNodeComponentRequest : public ProjectRequest
+class InspectNodeComponentRequest : public BaseInspectRequest
 {
-    URHO3D_OBJECT(InspectNodeComponentRequest, ProjectRequest);
+    URHO3D_OBJECT(InspectNodeComponentRequest, BaseInspectRequest);
 
 public:
     using WeakNodeVector = ea::vector<WeakPtr<Node>>;
     using WeakComponentVector = ea::vector<WeakPtr<Component>>;
 
     template <class T, class U>
-    explicit InspectNodeComponentRequest(Context* context, const T& nodes, const U& components)
-        : ProjectRequest(context)
+    InspectNodeComponentRequest(Context* context, const T& nodes, const U& components)
+        : BaseInspectRequest(context)
     {
         for (Node* node : nodes)
         {
@@ -156,6 +168,9 @@ public:
 
     const WeakNodeVector& GetNodes() const { return nodes_; }
     const WeakComponentVector& GetComponents() const { return components_; }
+
+    /// Return scene if all nodes and components belong to the same scene, null otherwise.
+    Scene* GetCommonScene() const;
 
     bool IsEmpty() const { return nodes_.empty() && components_.empty(); }
     bool HasNodes() const { return !nodes_.empty(); }

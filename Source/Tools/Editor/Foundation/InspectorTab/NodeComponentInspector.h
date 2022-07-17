@@ -57,25 +57,35 @@ public:
     /// @}
 
 private:
-    void OnProjectRequest(ProjectRequest* request);
+    using NodeVector = NodeInspectorWidget::NodeVector;
+    using SerializableVector = SerializableInspectorWidget::SerializableVector;
 
-    NodeInspectorWidget::NodeVector CollectNodes() const;
-    SerializableInspectorWidget::SerializableVector CollectComponents() const;
+    void OnProjectRequest(RefCounted* senderTab, ProjectRequest* request);
+
+    NodeVector CollectNodes() const;
+    SerializableVector CollectComponents() const;
     void InspectObjects();
 
     void RenderComponentSummary();
 
-    void BeginEdit();
-    void EndEdit();
+    void BeginEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
+    void EndEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
+    void BeginEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
+    void EndEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
 
     WeakPtr<ProjectEditor> project_;
 
+    WeakPtr<EditorTab> inspectedTab_;
+    WeakPtr<Scene> scene_;
     InspectNodeComponentRequest::WeakNodeVector nodes_;
     InspectNodeComponentRequest::WeakComponentVector components_;
 
     SharedPtr<NodeInspectorWidget> nodeWidget_;
     SharedPtr<SerializableInspectorWidget> componentWidget_;
     ea::map<ea::string, unsigned> componentSummary_;
+
+    VariantVector oldValues_;
+    VariantVector newValues_;
 };
 
 }

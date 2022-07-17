@@ -185,4 +185,94 @@ bool ChangeNodeTransformAction::MergeWith(const EditorAction& other)
     return true;
 }
 
+bool ChangeNodeAttributesAction::CanUndoRedo() const
+{
+    if (!scene_)
+        return false;
+
+    const bool allNodesFound = std::all_of(nodeIds_.begin(), nodeIds_.end(),
+        [this](unsigned nodeId) { return scene_->GetNode(nodeId) != nullptr; });
+    return allNodesFound;
+}
+
+void ChangeNodeAttributesAction::Redo() const
+{
+    SetAttributeValues(newValues_);
+}
+
+void ChangeNodeAttributesAction::Undo() const
+{
+    SetAttributeValues(oldValues_);
+}
+
+void ChangeNodeAttributesAction::SetAttributeValues(const VariantVector& values) const
+{
+    if (!scene_)
+        return;
+
+    for (unsigned index = 0; index < nodeIds_.size(); ++index)
+    {
+        if (Node* node = scene_->GetNode(nodeIds_[index]))
+            node->SetAttribute(attributeName_, values[index]);
+    }
+}
+
+bool ChangeNodeAttributesAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ChangeNodeAttributesAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_ || nodeIds_ != otherAction->nodeIds_)
+        return false;
+
+    newValues_ = otherAction->newValues_;
+    return true;
+}
+
+bool ChangeComponentAttributesAction::CanUndoRedo() const
+{
+    if (!scene_)
+        return false;
+
+    const bool allComponentsFound = std::all_of(componentIds_.begin(), componentIds_.end(),
+        [this](unsigned componentId) { return scene_->GetComponent(componentId) != nullptr; });
+    return allComponentsFound;
+}
+
+void ChangeComponentAttributesAction::Redo() const
+{
+    SetAttributeValues(newValues_);
+}
+
+void ChangeComponentAttributesAction::Undo() const
+{
+    SetAttributeValues(oldValues_);
+}
+
+void ChangeComponentAttributesAction::SetAttributeValues(const VariantVector& values) const
+{
+    if (!scene_)
+        return;
+
+    for (unsigned index = 0; index < componentIds_.size(); ++index)
+    {
+        if (Component* component = scene_->GetComponent(componentIds_[index]))
+            component->SetAttribute(attributeName_, values[index]);
+    }
+}
+
+bool ChangeComponentAttributesAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ChangeComponentAttributesAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_ || componentIds_ != otherAction->componentIds_)
+        return false;
+
+    newValues_ = otherAction->newValues_;
+    return true;
+}
+
 }

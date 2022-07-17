@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Core/UndoManager.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 
@@ -51,6 +50,8 @@ public:
     /// EditorTab implementation
     /// @{
     void EnumerateUnsavedItems(ea::vector<ea::string>& items) override;
+    ea::optional<EditorActionFrame> PushAction(SharedPtr<EditorAction> action) override;
+    using EditorTab::PushAction;
 
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
@@ -84,10 +85,6 @@ public:
     void SetActiveResource(const ea::string& activeResourceName);
     /// Set current action for resource.
     void SetCurrentAction(const ea::string& resourceName, ea::optional<EditorActionFrame> frame);
-
-    /// Push undo action from currently active resource.
-    virtual void PushAction(SharedPtr<EditorAction> action);
-    template <class T, class ... Args> void PushAction(const Args& ... args);
 
     /// Return properties of the tab.
     /// @{
@@ -161,11 +158,5 @@ private:
     ea::optional<EditorActionFrame> oldFrame_;
     EditorActionFrame newFrame_{};
 };
-
-template <class T, class ... Args>
-void ResourceEditorTab::PushAction(const Args& ... args)
-{
-    PushAction(MakeShared<T>(args...));
-}
 
 }

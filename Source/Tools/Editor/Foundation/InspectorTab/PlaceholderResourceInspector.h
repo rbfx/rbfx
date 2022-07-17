@@ -29,7 +29,7 @@ namespace Urho3D
 
 void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab_* inspectorTab);
 
-/// Scene hierarchy provider for hierarchy browser tab.
+/// Simple default inspector for selected resources.
 class PlaceholderResourceInspector : public Object, public InspectorSource
 {
     URHO3D_OBJECT(PlaceholderResourceInspector, Object)

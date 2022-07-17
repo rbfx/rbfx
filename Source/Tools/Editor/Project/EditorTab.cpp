@@ -22,7 +22,6 @@
 
 #include "../Core/EditorPluginManager.h"
 #include "../Core/IniHelpers.h"
-#include "../Core/UndoManager.h"
 #include "../Project/EditorTab.h"
 #include "../Project/ProjectEditor.h"
 
@@ -60,6 +59,12 @@ void EditorTab::ApplyPlugins()
 {
     auto editorPluginManager = GetSubsystem<EditorPluginManager>();
     editorPluginManager->Apply(this);
+}
+
+ea::optional<EditorActionFrame> EditorTab::PushAction(SharedPtr<EditorAction> action)
+{
+    UndoManager* undoManager = GetUndoManager();
+    return undoManager->PushAction(action);
 }
 
 void EditorTab::WriteIniSettings(ImGuiTextBuffer& output)

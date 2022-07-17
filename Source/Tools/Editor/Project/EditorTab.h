@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/HotkeyManager.h"
+#include "../Core/UndoManager.h"
 
 #include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/Core/Object.h>
@@ -134,6 +135,8 @@ public:
     virtual EditorTab* GetOwnerTab() { return this; }
     /// Enumerates all unsaved items corresponding to this tab.
     virtual void EnumerateUnsavedItems(ea::vector<ea::string>& items) {}
+    /// Push undo action from this tab.
+    virtual ea::optional<EditorActionFrame> PushAction(SharedPtr<EditorAction> action);
 
     /// Implement EditorConfigurable
     /// @{
@@ -159,6 +162,7 @@ public:
 
     ea::string GetHotkeyLabel(const HotkeyInfo& info) const;
     template <class T> void BindHotkey(const HotkeyInfo& info, void(T::*callback)());
+    template <class T, class ... Args> void PushAction(const Args& ... args);
     /// @}
 
 protected:
@@ -204,6 +208,12 @@ void EditorTab::BindHotkey(const HotkeyInfo& info, void(T::*callback)())
     auto owner = dynamic_cast<T*>(this);
     URHO3D_ASSERT(owner);
     GetHotkeyManager()->BindHotkey(owner, info, callback);
+}
+
+template <class T, class ... Args>
+void EditorTab::PushAction(const Args& ... args)
+{
+    PushAction(MakeShared<T>(args...));
 }
 
 }

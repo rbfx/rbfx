@@ -22,36 +22,33 @@
 
 #pragma once
 
-#include "../Core/Signal.h"
-#include "../Scene/Serializable.h"
+#include "../../Foundation/InspectorTab.h"
 
 namespace Urho3D
 {
 
-/// SystemUI widget used to edit materials.
-class URHO3D_API SerializableInspectorWidget : public Object
+void Foundation_EmptyInspector(Context* context, InspectorTab_* inspectorTab);
+
+/// Sink to reset inspector on failed inspector request.
+class EmptyInspector : public Object, public InspectorSource
 {
-    URHO3D_OBJECT(SerializableInspectorWidget, Object);
+    URHO3D_OBJECT(EmptyInspector, Object)
 
 public:
-    using SerializableVector = ea::vector<WeakPtr<Serializable>>;
+    explicit EmptyInspector(ProjectEditor* project);
 
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeBegin;
-    Signal<void(const SerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeEnd;
+    /// Implement InspectorSource
+    /// @{
+    EditorTab* GetOwnerTab() override { return nullptr; }
 
-    SerializableInspectorWidget(Context* context, const SerializableVector& objects);
-    ~SerializableInspectorWidget() override;
-
-    void RenderTitle();
-    void RenderContent();
-
-    const SerializableVector& GetObjects() const { return objects_; }
+    void RenderContent() override;
+    void RenderContextMenuItems() override;
+    void RenderMenu() override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+    /// @}
 
 private:
-    void RenderAttribute(const AttributeInfo& info);
-
-    SerializableVector objects_;
-    ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;
+    void OnProjectRequest(ProjectRequest* request);
 };
 
 }
