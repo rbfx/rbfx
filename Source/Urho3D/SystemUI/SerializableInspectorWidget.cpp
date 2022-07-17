@@ -69,16 +69,16 @@ void SerializableInspectorWidget::RenderContent()
 
     if (!pendingSetAttributes_.empty())
     {
-        OnEditBegin(this);
         for (const auto& [info, value] : pendingSetAttributes_)
         {
+            OnEditAttributeBegin(this, objects_, info);
             for (Serializable* object : objects_)
             {
                 if (object)
                     object->SetAttribute(info->name_, value);
             }
+            OnEditAttributeEnd(this, objects_, info);
         }
-        OnEditEnd(this);
     }
 }
 

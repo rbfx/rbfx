@@ -114,4 +114,80 @@ private:
     ea::unordered_map<unsigned, NodeData> nodes_;
 };
 
+/// Change attribute values of nodes.
+class ChangeNodeAttributesAction : public EditorAction
+{
+public:
+    template <class T>
+    ChangeNodeAttributesAction(Scene* scene, const ea::string& attributeName,
+        const T& nodes, const VariantVector& oldValues, const VariantVector& newValues)
+        : scene_(scene)
+        , attributeName_(attributeName)
+        , oldValues_(oldValues)
+        , newValues_(newValues)
+    {
+        using namespace ea;
+        ea::transform(begin(nodes), end(nodes), std::back_inserter(nodeIds_),
+            [](Node* node) { return node->GetID(); });
+
+        URHO3D_ASSERT(nodeIds_.size() == oldValues_.size());
+        URHO3D_ASSERT(nodeIds_.size() == newValues_.size());
+    }
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void SetAttributeValues(const VariantVector& values) const;
+
+    const WeakPtr<Scene> scene_;
+    const ea::string attributeName_;
+    ea::vector<unsigned> nodeIds_;
+    VariantVector oldValues_;
+    VariantVector newValues_;
+};
+
+/// Change attribute values of a components.
+class ChangeComponentAttributesAction : public EditorAction
+{
+public:
+    template <class T>
+    ChangeComponentAttributesAction(Scene* scene, const ea::string& attributeName,
+        const T& components, const VariantVector& oldValues, const VariantVector& newValues)
+        : scene_(scene)
+        , attributeName_(attributeName)
+        , oldValues_(oldValues)
+        , newValues_(newValues)
+    {
+        using namespace ea;
+        ea::transform(begin(components), end(components), std::back_inserter(componentIds_),
+            [](Component* component) { return component->GetID(); });
+
+        URHO3D_ASSERT(componentIds_.size() == oldValues_.size());
+        URHO3D_ASSERT(componentIds_.size() == newValues_.size());
+    }
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void SetAttributeValues(const VariantVector& values) const;
+
+    const WeakPtr<Scene> scene_;
+    const ea::string attributeName_;
+    ea::vector<unsigned> componentIds_;
+    VariantVector oldValues_;
+    VariantVector newValues_;
+};
+
 }

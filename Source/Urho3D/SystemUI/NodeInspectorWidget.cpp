@@ -40,6 +40,8 @@ NodeInspectorWidget::NodeInspectorWidget(Context* context, const NodeVector& nod
         SerializableInspectorWidget::SerializableVector{nodes.begin(), nodes.end()}))
 {
     URHO3D_ASSERT(!nodes_.empty());
+    nodeInspector_->OnEditAttributeBegin.Subscribe(this, ea::ref(OnEditNodeAttributeBegin));
+    nodeInspector_->OnEditAttributeEnd.Subscribe(this, ea::ref(OnEditNodeAttributeEnd));
 }
 
 NodeInspectorWidget::~NodeInspectorWidget()
@@ -70,6 +72,12 @@ void NodeInspectorWidget::RenderContent()
         const unsigned numSharedComponents = ea::accumulate(sharedComponents.begin(), sharedComponents.end(), 0u,
             [](unsigned sum, const ea::vector<WeakPtr<Component>>& components) { return sum + components.size(); });
         numSkippedComponents_ = components_.size() - numSharedComponents;
+
+        for (SerializableInspectorWidget* inspector : componentInspectors_)
+        {
+            inspector->OnEditAttributeBegin.Subscribe(this, ea::ref(OnEditComponentAttributeBegin));
+            inspector->OnEditAttributeEnd.Subscribe(this, ea::ref(OnEditComponentAttributeEnd));
+        }
     }
 
     nodeInspector_->RenderContent();

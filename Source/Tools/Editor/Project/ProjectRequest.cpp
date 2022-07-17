@@ -119,7 +119,7 @@ OpenResourceRequest::OpenResourceRequest(Context* context, const ea::string& res
 }
 
 InspectResourceRequest::InspectResourceRequest(Context* context, const ea::vector<ea::string>& resourceNames)
-    : ProjectRequest(context)
+    : BaseInspectRequest(context)
 {
     ea::transform(resourceNames.begin(), resourceNames.end(), ea::back_inserter(resourceDescs_),
         [&](const ea::string& resourceName) { return FileResourceDesc{context, resourceName}; });
@@ -132,6 +132,37 @@ StringVector InspectResourceRequest::GetSortedResourceNames() const
         [](const FileResourceDesc& desc) { return desc.GetResourceName(); });
     ea::sort(resourceNames.begin(), resourceNames.end());
     return resourceNames;
+}
+
+Scene* InspectNodeComponentRequest::GetCommonScene() const
+{
+    Scene* scene = nullptr;
+
+    for (const Node* node : nodes_)
+    {
+        if (!node)
+            continue;
+
+        Scene* nodeScene = node->GetScene();
+        if (!nodeScene || (scene && scene != nodeScene))
+            return nullptr;
+
+        scene = nodeScene;
+    }
+
+    for (const Component* component : components_)
+    {
+        if (!component)
+            continue;
+
+        Scene* componentScene = component->GetScene();
+        if (!componentScene || (scene && scene != componentScene))
+            return nullptr;
+
+        scene = componentScene;
+    }
+
+    return scene;
 }
 
 }

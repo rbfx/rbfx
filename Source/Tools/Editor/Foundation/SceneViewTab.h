@@ -168,7 +168,7 @@ public:
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;
 
-    void PushAction(SharedPtr<EditorAction> action) override;
+    ea::optional<EditorActionFrame> PushAction(SharedPtr<EditorAction> action) override;
     using ResourceEditorTab::PushAction;
     /// @}
 

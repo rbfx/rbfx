@@ -307,21 +307,24 @@ void ResourceEditorTab::DoSaveResource(const ea::string& resourceName, ResourceD
     data.savedActionFrame_ = data.currentActionFrame_;
 }
 
-void ResourceEditorTab::PushAction(SharedPtr<EditorAction> action)
+ea::optional<EditorActionFrame> ResourceEditorTab::PushAction(SharedPtr<EditorAction> action)
 {
     const auto iter = resources_.find(activeResourceName_);
     if (iter != resources_.end())
     {
         ResourceData& data = iter->second;
         auto project = GetProject();
-        UndoManager* undoManager = project->GetUndoManager();
 
         const auto oldActionFrame = data.currentActionFrame_;
         const auto wrappedAction = MakeShared<ResourceActionWrapper>(action, this, activeResourceName_, oldActionFrame);
-        const auto newActionFrame = undoManager->PushAction(wrappedAction);
-        if (!wrappedAction->IsTransparent())
-            data.currentActionFrame_ = newActionFrame;
+        if (const auto newActionFrame = BaseClassName::PushAction(wrappedAction))
+        {
+            if (!wrappedAction->IsTransparent())
+                data.currentActionFrame_ = *newActionFrame;
+            return newActionFrame;
+        }
     }
+    return ea::nullopt;
 }
 
 bool ResourceEditorTab::IsResourceUnsaved(const ea::string& resourceName) const

@@ -91,7 +91,7 @@ public:
     /// Request graceful close of the resource.
     void CloseResourceGracefully(const CloseResourceRequest& request);
     /// Process global request.
-    void ProcessRequest(ProjectRequest* request, Object* sender = nullptr);
+    void ProcessRequest(ProjectRequest* request, EditorTab* sender = nullptr);
 
     /// Update and render main window with tabs.
     void Render();
@@ -159,7 +159,7 @@ private:
     struct PendingRequest
     {
         SharedPtr<ProjectRequest> request_;
-        WeakPtr<Object> sender_;
+        WeakPtr<EditorTab> sender_;
     };
     struct PendingFileSave
     {

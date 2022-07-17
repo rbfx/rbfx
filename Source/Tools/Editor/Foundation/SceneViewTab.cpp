@@ -402,18 +402,18 @@ void SceneViewTab::ReadIniSettings(const char* line)
         addon->ReadIniSettings(line);
 }
 
-void SceneViewTab::PushAction(SharedPtr<EditorAction> action)
+ea::optional<EditorActionFrame> SceneViewTab::PushAction(SharedPtr<EditorAction> action)
 {
     SceneViewPage* activePage = GetActivePage();
     if (!activePage)
-        return;
+        return ea::nullopt;
 
     // Ignore all actions while simulating
     if (activePage->simulationBase_)
-        return;
+        return ea::nullopt;
 
     const auto wrappedAction = MakeShared<RewindSceneActionWrapper>(action, activePage);
-    BaseClassName::PushAction(wrappedAction);
+    return BaseClassName::PushAction(wrappedAction);
 }
 
 void SceneViewTab::RenderContextMenuItems()
@@ -592,8 +592,7 @@ void SceneViewTab::InspectSelection(SceneViewPage& page)
 {
     auto project = GetProject();
     auto request = MakeShared<InspectNodeComponentRequest>(context_, page.selection_.GetNodesAndScenes(), page.selection_.GetComponents());
-    if (!request->IsEmpty())
-        project->ProcessRequest(request, this);
+    project->ProcessRequest(request, this);
 }
 
 SceneViewPage* SceneViewTab::GetPage(const ea::string& resourceName)
