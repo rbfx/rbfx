@@ -20,14 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "../Input/FreeFlyController.h"
-#include "../Input/Input.h"
+#include "../Utility/SceneViewerApplication.h"
+
+#include "../Engine/Engine.h"
+#include "../Engine/EngineDefs.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Renderer.h"
-#include "../Plugins/PluginManager.h"
+#include "../Input/FreeFlyController.h"
+#include "../Input/Input.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
-#include "../Utility/SceneViewerApplication.h"
 
 namespace Urho3D
 {
@@ -56,22 +58,22 @@ void SceneViewerApplication::Start(bool isMain)
 
     auto cache = GetSubsystem<ResourceCache>();
     auto renderer = GetSubsystem<Renderer>();
-    auto pluginManager = GetSubsystem<PluginManager>();
+    auto engine = GetSubsystem<Engine>();
 
     scene_ = MakeShared<Scene>(context_);
-    if (const auto sceneName = pluginManager->GetParameter(Plugin_SceneName); !sceneName.IsEmpty())
+    if (const auto sceneName = engine->GetParameter(Param_SceneName); !sceneName.IsEmpty())
         scene_->LoadFile(sceneName.GetString());
 
     cameraNode_ = scene_->CreateChild("Viewer Camera");
     auto camera = cameraNode_->CreateComponent<Camera>();
     auto controller = cameraNode_->CreateComponent<FreeFlyController>();
 
-    if (const auto position = pluginManager->GetParameter(Plugin_ScenePosition); !position.IsEmpty())
+    if (const auto position = engine->GetParameter(Param_ScenePosition); !position.IsEmpty())
         cameraNode_->SetWorldPosition(position.GetVector3());
     else
         cameraNode_->SetWorldPosition({0.0f, 5.0f, -10.0f});
 
-    if (const auto rotation = pluginManager->GetParameter(Plugin_SceneRotation); !rotation.IsEmpty())
+    if (const auto rotation = engine->GetParameter(Param_SceneRotation); !rotation.IsEmpty())
         cameraNode_->SetWorldRotation(rotation.GetQuaternion());
     else
         cameraNode_->LookAt({0.0f, 0.0f, 0.0f});

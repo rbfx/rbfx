@@ -34,6 +34,8 @@ namespace Urho3D
 /// Launch configuration.
 struct LaunchConfiguration
 {
+    static const ea::string UnspecifiedName;
+
     ea::string name_;
     ea::string mainPlugin_;
     StringVariantMap engineParameters_;

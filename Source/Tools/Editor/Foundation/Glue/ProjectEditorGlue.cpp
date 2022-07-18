@@ -22,6 +22,8 @@
 
 #include "../../Foundation/Glue/ProjectEditorGlue.h"
 
+#include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
@@ -41,8 +43,7 @@ public:
         : project_{project}
         , gameViewTab_{project->FindTab<GameViewTab>()}
         , sceneViewTab_{project->FindTab<SceneViewTab>()}
-        , pluginManager_{project->GetSubsystem<PluginManager>()}
-        , launchManager_{project->GetLaunchManager()}
+        , engine_{project->GetSubsystem<Engine>()}
     {
     }
 
@@ -67,9 +68,9 @@ public:
             gameViewTab_->Focus();
 
             if (config)
-                pluginManager_->SetParameter(Plugin_MainPlugin, config->mainPlugin_);
+                engine_->SetParameter(EP_MAIN_PLUGIN, config->mainPlugin_);
             else
-                pluginManager_->SetParameter(Plugin_MainPlugin, Variant::EMPTY);
+                engine_->SetParameter(EP_MAIN_PLUGIN, Variant::EMPTY);
         }
         else if (tabToFocusAfter_)
         {
@@ -84,8 +85,7 @@ private:
     const WeakPtr<GameViewTab> gameViewTab_;
     const WeakPtr<SceneViewTab> sceneViewTab_;
 
-    const WeakPtr<PluginManager> pluginManager_;
-    const WeakPtr<LaunchManager> launchManager_;
+    const WeakPtr<Engine> engine_;
 
     WeakPtr<EditorTab> tabToFocusAfter_;
 };
@@ -105,8 +105,12 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
         auto hotkeyManager = project->GetHotkeyManager();
         auto launchManager = project->GetLaunchManager();
 
-        const char* title = state->IsPlaying() ? ICON_FA_STOP " Stop" : ICON_FA_EJECT " Launch Current";
-        if (ui::MenuItem(title, hotkeyManager->GetHotkeyLabel(Hotkey_Play).c_str()))
+        const LaunchConfiguration* currentConfig = project->GetLaunchConfiguration();
+
+        const ea::string title = state->IsPlaying()
+            ? ICON_FA_STOP " Stop"
+            : Format(ICON_FA_EJECT " Launch \"{}\"", currentConfig ? currentConfig->name_ : LaunchConfiguration::UnspecifiedName);
+        if (ui::MenuItem(title.c_str(), hotkeyManager->GetHotkeyLabel(Hotkey_Play).c_str()))
             state->TogglePlayedDefault();
 
         if (ui::BeginMenu("Launch Other"))
@@ -131,7 +135,7 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
             ui::BeginDisabled(isPlaying);
 
             const LaunchConfiguration* currentConfig = project->GetLaunchConfiguration();
-            const char* previewValue = currentConfig ? currentConfig->name_.c_str() : "(undefined)";
+            const char* previewValue = currentConfig ? currentConfig->name_.c_str() : LaunchConfiguration::UnspecifiedName.c_str();
             const auto previewSize = ui::CalcTextSize(previewValue);
 
             Widgets::ToolbarSeparator();

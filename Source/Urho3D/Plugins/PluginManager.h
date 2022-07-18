@@ -33,11 +33,6 @@
 namespace Urho3D
 {
 
-URHO3D_GLOBAL_CONSTANT(ConstString Plugin_MainPlugin{"MainPlugin"});
-URHO3D_GLOBAL_CONSTANT(ConstString Plugin_SceneName{"SceneName"});
-URHO3D_GLOBAL_CONSTANT(ConstString Plugin_ScenePosition{"ScenePosition"});
-URHO3D_GLOBAL_CONSTANT(ConstString Plugin_SceneRotation{"SceneRotation"});
-
 class PluginManager;
 
 using SerializedPlugins = ea::unordered_map<ea::string, VectorBuffer>;
@@ -96,11 +91,6 @@ public:
     explicit PluginManager(Context* context);
     ~PluginManager() override;
     void SerializeInBlock(Archive& archive) override;
-
-    /// Set global parameter that can be used as hint during plugin execution.
-    void SetParameter(const ea::string& name, const Variant& value);
-    const Variant& GetParameter(const ea::string& name) const;
-    void ClearParameters();
 
     /// Reload all dynamic modules.
     void Reload();
@@ -164,8 +154,6 @@ private:
     unsigned reloadIntervalMs_{1000};
     unsigned reloadTimeoutMs_{10000};
     /// @}
-
-    StringVariantMap parameters_;
 
     bool startPending_{};
     bool stopPending_{};
