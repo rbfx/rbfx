@@ -13,10 +13,18 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 UNIFORM_BUFFER_BEGIN(6, Custom)
     // Inverted input texture size
     UNIFORM(vec2 cInputInvSize)
+    // Blur step
+    UNIFORM(vec2 cBlurStep)
     // Strength of the effect
     UNIFORM(float cSSAOStrength)
+    // Exponent of the effect
+    UNIFORM(float cSSAOExponent)
     // Radius
     UNIFORM(float cSSAORadius)
+    // Blur depth threshold.
+    UNIFORM(float cSSAODepthThreshold)
+    // Blur normal threshold.
+    UNIFORM(float cSSAONormalThreshold)
     // Projection matrix from texture-adjusted clip space to view space
     UNIFORM(mat4 cProj)
     // Inverted projection matrix from view space to texture-adjusted clip space
@@ -87,46 +95,19 @@ vec3 EvaluateNormal(vec3 center, vec2 texcoords) {
 
 #ifdef BLUR
 
-vec4 samplesToFilter[14];
-
-float SampleAO(int dx, int dy)
+float CompareDepthAndNormal(vec3 pos, vec3 norm, vec2 uv)
 {
-   return texture2D(sDiffMap, vTexCoord + vec2(dx,dy)*cInputInvSize).r;
-}
+#ifdef DEFERRED
+   vec3 normDiff = abs(norm-EvaluateNormal(pos, uv));
+   float normalMask = step(normDiff.x + normDiff.y, cSSAONormalThreshold);
+#else
+   float normalMask = 1.0;
+#endif
 
-// Collect AO samples to blur in a 7x7 window around the central pixel.
-void CollectSamples()
-{
-   samplesToFilter[0] = vec4(SampleAO(-3, -3), SampleAO(-2, -3), SampleAO(-1, -3), SampleAO(0, -3));
-   samplesToFilter[1] = vec4(SampleAO(-3, -2), SampleAO(-2, -2), SampleAO(-1, -2), SampleAO(0, -2));
-   samplesToFilter[2] = vec4(SampleAO(-3, -1), SampleAO(-2, -1), SampleAO(-1, -1), SampleAO(0, -1));
-   samplesToFilter[3] = vec4(SampleAO(-3, 0), SampleAO(-2, 0), SampleAO(-1, 0), SampleAO(0, 0));
-   samplesToFilter[4] = vec4(SampleAO(-3, 1), SampleAO(-2, 1), SampleAO(-1, 1), SampleAO(0, 1));
-   samplesToFilter[5] = vec4(SampleAO(-3, 2), SampleAO(-2, 2), SampleAO(-1, 2), SampleAO(0, 2));
-   samplesToFilter[6] = vec4(SampleAO(-3, 3), SampleAO(-2, 3), SampleAO(-1, 3), SampleAO(0, 3));
-   samplesToFilter[7] = vec4(samplesToFilter[0].a, SampleAO(0, -3), SampleAO(1, -3), SampleAO(2, -3));
-   samplesToFilter[8] = vec4(samplesToFilter[1].a, SampleAO(0, -2), SampleAO(1, -2), SampleAO(2, -2));
-   samplesToFilter[9] = vec4(samplesToFilter[2].a, SampleAO(0, -1), SampleAO(1, -1), SampleAO(2, -1));
-   samplesToFilter[10] = vec4(samplesToFilter[3].a, SampleAO(0, 0), SampleAO(1, 0), SampleAO(2, 0));
-   samplesToFilter[11] = vec4(samplesToFilter[4].a, SampleAO(0, 1), SampleAO(1, 1), SampleAO(2, 1));
-   samplesToFilter[12] = vec4(samplesToFilter[5].a, SampleAO(0, 2), SampleAO(1, 2), SampleAO(2, 2));
-   samplesToFilter[13] = vec4(samplesToFilter[6].a, SampleAO(0, 3), SampleAO(1, 3), SampleAO(2, 3));
-}
+   float depthDiff = abs(SampleDepth(uv).z - pos.z);
+   float depthMask = step(depthDiff, cSSAODepthThreshold);
 
-vec2 FilterWindow(vec4 s0, vec4 s1, vec4 s2, vec4 s3, vec2 meanAndMinVariance) {
-  const vec4 one4 = vec4(1.0, 1.0, 1.0, 1.0);
-  float meanTemp = (dot(s0,one4)+dot(s1,one4)+dot(s2,one4)+dot(s3,one4))/16.0;
-  // Calculate average value
-  const vec4 mean4 = vec4(meanTemp, meanTemp, meanTemp, meanTemp);
-  // Calculate standard deviation
-  const vec4 diff0 = s0-mean4;
-  const vec4 diff1 = s1-mean4;
-  const vec4 diff2 = s2-mean4;
-  const vec4 diff3 = s3-mean4;
-  float variance = (dot(diff0, diff0) + dot(diff1, diff1) + dot(diff1, diff1) + dot(diff1, diff1)) / 16.0;
-
-  // Return best match
-  return (variance < meanAndMinVariance.y) ? vec2(meanTemp,variance) : meanAndMinVariance;
+   return normalMask*depthMask;
 }
 
 #endif
@@ -182,39 +163,62 @@ void main()
       // Evalue difference between predicted and actual sample depth
       float difference = hemispherePosition.z - sampleDepth.z;
       // Fade out AO when sampled points are too far away
-      float weight = smoothstep(cSSAORadius*8.0, cSSAORadius, difference);
+      float weight = smoothstep(cSSAORadius*3.0, cSSAORadius, difference);
       weightSum += weight;
       occlusion += step(falloff, difference) * weight;
    }
   
    // Normalize accumulated occlustion and fade it with distance
    float ao = 1.0 - cSSAOStrength * smoothstep(fadeDistance,0,position.z) * occlusion * (1.0 / weightSum);
-   float res = clamp(ao, 0.0, 1.0);
-   gl_FragColor = vec4(res, res, res, 1.0);
+   float finalAO = pow(clamp(ao, 0.0, 1.0), cSSAOExponent);
+   gl_FragColor = vec4(0.0, 0.0, 0.0, finalAO);
 
 #endif
 
 #ifdef BLUR
+#define WINDOW_WIDTH 4
 
-// Set start values
-vec2 meanAndMinVariance = vec2(0.0, 3.402823466e+38);
+vec3 position = SampleDepth(vTexCoord);
+#ifdef DEFERRED
+   vec3 normal = EvaluateNormal(position, vTexCoord);
+#else
+   vec3 normal = vec3(0.0, 0.0, -1.0);
+#endif
 
-CollectSamples();
+float weightSum = 1.0;
+vec4 finalColor = texture2D(sDiffMap, vTexCoord);
 
-meanAndMinVariance = FilterWindow(samplesToFilter[0], samplesToFilter[1], samplesToFilter[2], samplesToFilter[3], meanAndMinVariance);
-meanAndMinVariance = FilterWindow(samplesToFilter[3], samplesToFilter[4], samplesToFilter[5], samplesToFilter[6], meanAndMinVariance);
-meanAndMinVariance = FilterWindow(samplesToFilter[7], samplesToFilter[8], samplesToFilter[9], samplesToFilter[10], meanAndMinVariance);
-meanAndMinVariance = FilterWindow(samplesToFilter[10], samplesToFilter[11], samplesToFilter[12], samplesToFilter[13], meanAndMinVariance);
-
-// Set AO value to alpha for alpha blending.
-float ao = 1.0 - meanAndMinVariance.x;
-gl_FragColor = vec4(0.0, 0.0, 0.0, ao);
+for (int i=-WINDOW_WIDTH; i<0;++i)
+{
+   vec2 uv = vTexCoord + cBlurStep*i;
+   vec4 ao = texture2D(sDiffMap, uv);
+   float weight = CompareDepthAndNormal(position, normal, uv);// * ((WINDOW_WIDTH-abs(i)+1)/(WINDOW_WIDTH+1));
+   finalColor += ao * weight;
+   weightSum += weight;
+}
+for (int i=1; i<=WINDOW_WIDTH;++i)
+{
+   vec2 uv = vTexCoord + cBlurStep*i;
+   vec4 ao = texture2D(sDiffMap, uv);
+   float weight = CompareDepthAndNormal(position, normal, uv);// * ((WINDOW_WIDTH-abs(i)+1)/(WINDOW_WIDTH+1));
+   finalColor += ao * weight;
+   weightSum += weight;
+}
+gl_FragColor = finalColor*(1.0/weightSum);
 
 #endif
 
 #ifdef PREVIEW
 
-gl_FragColor = texture2D(sDiffMap, vTexCoord);
+vec4 ao = texture2D(sDiffMap, vTexCoord);
+gl_FragColor = vec4(ao.a, ao.a, ao.a, 1.0);
+
+#endif
+
+#ifdef COMBINE
+
+float ao = 1.0 - texture2D(sDiffMap, vTexCoord).a;
+gl_FragColor = vec4(0.0, 0.0, 0.0, ao);
 
 #endif
 }

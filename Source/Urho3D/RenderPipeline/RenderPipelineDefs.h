@@ -659,7 +659,10 @@ struct AmbientOcclusionPassSettings
 {
     bool enabled_{};
     float strength_{0.8f};
+    float exponent_{2.0f};
     float radius_{0.5f};
+    float blurDepthThreshold_{1.0f};
+    float blurNormalThreshold_{0.2f};
 
     /// Utility operators
     /// @{
@@ -667,7 +670,9 @@ struct AmbientOcclusionPassSettings
 
     bool operator==(const AmbientOcclusionPassSettings& rhs) const
     {
-        return (enabled_ == rhs.enabled_) && (strength_ == rhs.strength_) && (radius_ == rhs.radius_);
+        return (enabled_ == rhs.enabled_) && (strength_ == rhs.strength_) && (exponent_ == rhs.exponent_)
+            && (radius_ == rhs.radius_) && (blurDepthThreshold_ == rhs.blurDepthThreshold_)
+            && (blurNormalThreshold_ == rhs.blurNormalThreshold_);
     }
 
     bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }

@@ -56,7 +56,8 @@ void AmbientOcclusionPass::InitializeTextures()
     const unsigned format = Graphics::GetRGBAFormat();
     const Vector2 sizeMultiplier = Vector2::ONE / static_cast<float>(1 << 0);
     const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
-    textures_.ssao_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
+    textures_.currentTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
+    textures_.previousTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     textures_.noise_ =
         renderBufferManager_->GetContext()->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/SSAONoise.png");
 }
@@ -67,56 +68,90 @@ void AmbientOcclusionPass::InitializeStates()
     pipelineStates_ = CachedStates{};
     pipelineStates_->ssao_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION");
     pipelineStates_->ssao_deferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "EVALUATE_OCCLUSION DEFERRED");
-    pipelineStates_->blur_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_SSAO", "BLUR");
+    pipelineStates_->blur_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR");
+    pipelineStates_->blur_deferred_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "BLUR DEFERRED");
+    pipelineStates_->combine_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_SSAO", "COMBINE");
     pipelineStates_->preview_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_SSAO", "PREVIEW");
 }
 
-void AmbientOcclusionPass::BlurTexture()
+void AmbientOcclusionPass::EvaluateAO(ea::span<ShaderParameterDesc> shaderParameters)
 {
-    const Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
-    const IntVector2 inputSize = viewportTexture->GetSize();
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(inputSize);
+    const ShaderResourceDesc shaderResources[] = {
+        {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+        {TU_DIFFUSE, textures_.noise_},
+        {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}};
 
+    DrawQuadParams drawParams;
+    drawParams.resources_ = shaderResources;
+    drawParams.parameters_ = shaderParameters;
+    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
+
+    renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
+    if (normalBuffer_)
+    {
+        drawParams.pipelineState_ = pipelineStates_->ssao_deferred_;
+    }
+    else
+    {
+        drawParams.pipelineState_ = pipelineStates_->ssao_;
+    }
+    renderBufferManager_->DrawQuad("Apply SSAO", drawParams);
+    //renderBufferManager_->SetOutputRenderTargers();
+
+    ea::swap(textures_.currentTarget_, textures_.previousTarget_);
+}
+
+void AmbientOcclusionPass::BlurTexture(ea::span<ShaderParameterDesc> shaderParameters)
+{
+    DrawQuadParams drawParams;
+    drawParams.parameters_ = shaderParameters;
+    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
+    if (normalBuffer_)
+    {
+        drawParams.pipelineState_ = pipelineStates_->blur_deferred_;
+    }
+    else
+    {
+        drawParams.pipelineState_ = pipelineStates_->blur_;
+    }
+
+    {
+        renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
+        const ShaderResourceDesc shaderResources[] = {
+            {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()},
+            {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+            {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}};
+        drawParams.resources_ = shaderResources;
+        shaderParameters[1].value_ = Vector2(shaderParameters[0].value_.GetVector2().x_, 0.0f);
+        renderBufferManager_->DrawQuad("BlurV", drawParams);
+        ea::swap(textures_.currentTarget_, textures_.previousTarget_);
+    }
+
+    {
+        renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
+        const ShaderResourceDesc shaderResources[] = {
+            {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()},
+            {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+            {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}};
+        drawParams.resources_ = shaderResources;
+        shaderParameters[1].value_ = Vector2(0.0f, shaderParameters[0].value_.GetVector2().y_);
+        renderBufferManager_->DrawQuad("BlurH", drawParams);
+        ea::swap(textures_.currentTarget_, textures_.previousTarget_);
+    }
+}
+
+void AmbientOcclusionPass::Blit(ea::span<ShaderParameterDesc> shaderParameters, PipelineState* state)
+{
     renderBufferManager_->SwapColorBuffers(false);
     renderBufferManager_->SetOutputRenderTargers();
 
-    const ShaderResourceDesc shaderResources[] = {{TU_DIFFUSE, textures_.ssao_->GetTexture2D()}};
-    const ShaderParameterDesc shaderParameters[] = {
-        {"InputInvSize", inputInvSize},
-    };
+    const ShaderResourceDesc shaderResources[] = {
+        {TU_DIFFUSE, textures_.previousTarget_->GetTexture2D()}};
 
-    DrawQuadParams drawParams;
-    drawParams.resources_ = shaderResources;
-    drawParams.parameters_ = shaderParameters;
-    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
-
-    drawParams.pipelineState_ = pipelineStates_->blur_;
-    renderBufferManager_->SetRenderTargets(nullptr, {renderBufferManager_->GetColorOutput()});
-    renderBufferManager_->DrawQuad("Blur", drawParams);
+    //renderBufferManager_->SetRenderTargets(nullptr, {renderBufferManager_->GetColorOutput()});
+    renderBufferManager_->DrawViewportQuad("Preview SSAO", state, shaderResources, shaderParameters);
 }
 
-void AmbientOcclusionPass::Preview()
-{
-    const Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
-    const IntVector2 inputSize = viewportTexture->GetSize();
-    const Vector2 inputInvSize = Vector2::ONE / static_cast<Vector2>(inputSize);
-
-    renderBufferManager_->SetOutputRenderTargers();
-
-    const ShaderResourceDesc shaderResources[] = {{TU_DIFFUSE, textures_.ssao_->GetTexture2D()}};
-    const ShaderParameterDesc shaderParameters[] = {
-        {"InputInvSize", inputInvSize},
-    };
-
-    DrawQuadParams drawParams;
-    drawParams.resources_ = shaderResources;
-    drawParams.parameters_ = shaderParameters;
-    drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
-
-    drawParams.pipelineState_ = pipelineStates_->preview_;
-    renderBufferManager_->SetRenderTargets(nullptr, {renderBufferManager_->GetColorOutput()});
-    renderBufferManager_->DrawQuad("Preview SSAO", drawParams);
-}
 void AmbientOcclusionPass::SetNormalBuffer(RenderBuffer* normalBuffer)
 {
     normalBuffer_ = normalBuffer;
@@ -146,32 +181,31 @@ void AmbientOcclusionPass::Execute(Camera* camera)
 
     renderBufferManager_->SwapColorBuffers(false);
 
-    const ShaderResourceDesc shaderResources[] = {
-        {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
-        {TU_DIFFUSE, textures_.noise_},
-        {TU_NORMAL, (normalBuffer_) ? normalBuffer_->GetTexture2D() : nullptr}};
-    const ShaderParameterDesc shaderParameters[] = {
+    ShaderParameterDesc shaderParameters[] = {
         {"InputInvSize", inputInvSize},
+        {"BlurStep", inputInvSize},
         {"SSAOStrength", settings_.strength_},
+        {"SSAOExponent", settings_.exponent_},
         {"SSAORadius", settings_.radius_},
+        {"SSAODepthThreshold", settings_.blurDepthThreshold_},
+        {"SSAONormalThreshold", settings_.blurNormalThreshold_},
         {"Proj", proj},
         {"InvProj", invProj},
         {"CameraView", camera->GetView().ToMatrix4()},
     };
-    renderBufferManager_->SetRenderTargets(nullptr, {textures_.ssao_});
-    if (normalBuffer_)
+
+    EvaluateAO(shaderParameters);
+
+    BlurTexture(shaderParameters);
+
+    if (false)
     {
-        renderBufferManager_->DrawViewportQuad("Apply SSAO", pipelineStates_->ssao_deferred_, shaderResources, shaderParameters);
+        Blit(shaderParameters, pipelineStates_->preview_);
     }
     else
     {
-        renderBufferManager_->DrawViewportQuad("Apply SSAO", pipelineStates_->ssao_, shaderResources, shaderParameters);
+        Blit(shaderParameters, pipelineStates_->combine_);
     }
-    renderBufferManager_->SetOutputRenderTargers();
-
-    //Preview();
-
-    BlurTexture();
 }
 
 #endif
