@@ -43,10 +43,10 @@ bool Archive::ValidateName(ea::string_view name)
     if (!isalpha(name[0]) && name[0] != '_')
         return false;
 
-    // Name must contain only letters, digits, underscores or dots.
+    // Name must contain only letters, digits, underscores, dots or colons.
     for (const char ch : name)
     {
-        if (!isalnum(ch) && ch != '_' && ch != '.')
+        if (!isalnum(ch) && ch != '_' && ch != '.' && ch != ':')
             return false;
     }
 

@@ -42,14 +42,14 @@ class TransformManipulator : public SceneViewAddon
 public:
     struct Settings
     {
-        ea::string GetUniqueName() { return "SceneView.TransformGizmo"; }
+        ea::string GetUniqueName() { return "Editor.Scene:TransformGizmo"; }
 
         void SerializeInBlock(Archive& archive);
         void RenderSettings();
 
-        float GetSnapValue(TransformGizmoOperation op) const;
+        Vector3 GetSnapValue(TransformGizmoOperation op) const;
 
-        float snapPosition_{0.5f};
+        Vector3 snapPosition_{0.5f * Vector3::ONE};
         float snapRotation_{5.0f};
         float snapScale_{0.1f};
     };

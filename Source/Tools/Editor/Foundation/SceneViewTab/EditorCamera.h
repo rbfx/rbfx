@@ -38,7 +38,7 @@ class EditorCamera : public SceneViewAddon
 public:
     struct Settings
     {
-        ea::string GetUniqueName() { return "SceneView.Camera"; }
+        ea::string GetUniqueName() { return "Editor.Scene:Camera"; }
 
         void SerializeInBlock(Archive& archive);
         void RenderSettings();

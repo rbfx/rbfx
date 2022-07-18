@@ -88,7 +88,7 @@ TransformGizmo::TransformGizmo(Camera* camera, bool isMainViewport, const Rect& 
 }
 
 ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
-    TransformGizmoOperation op, bool local, float snap) const
+    TransformGizmoOperation op, bool local, const Vector3& snap) const
 {
     if (op == TransformGizmoOperation::None)
         return ea::nullopt;
@@ -104,7 +104,7 @@ ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
 
     Matrix4 delta;
     ImGuizmo::Manipulate(internalViewMatrix_.Data(), internalProjMatrix_.Data(), operation,
-        mode, &internalTransformMatrix.m00_, &delta.m00_, snap != 0.0f ? snapVector.Data() : nullptr);
+        mode, &internalTransformMatrix.m00_, &delta.m00_, snap != Vector3::ZERO ? snapVector.Data() : nullptr);
     transform = internalTransformMatrix.Transpose();
 
     if (!ImGuizmo::IsUsing())
@@ -113,7 +113,7 @@ ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
     return delta.Transpose();
 }
 
-ea::optional<Vector3> TransformGizmo::ManipulatePosition(const Matrix4& transform, bool local, float snap) const
+ea::optional<Vector3> TransformGizmo::ManipulatePosition(const Matrix4& transform, bool local, const Vector3& snap) const
 {
     Matrix4 transformCopy = transform;
     const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Translate, local, snap);
@@ -126,7 +126,7 @@ ea::optional<Vector3> TransformGizmo::ManipulatePosition(const Matrix4& transfor
 ea::optional<Quaternion> TransformGizmo::ManipulateRotation(const Matrix4& transform, bool local, float snap) const
 {
     Matrix4 transformCopy = transform;
-    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Rotate, local, snap);
+    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Rotate, local, snap * Vector3::ONE);
     if (!delta)
         return ea::nullopt;
 
@@ -136,7 +136,7 @@ ea::optional<Quaternion> TransformGizmo::ManipulateRotation(const Matrix4& trans
 ea::optional<Vector3> TransformGizmo::ManipulateScale(const Matrix4& transform, bool local, float snap) const
 {
     Matrix4 transformCopy = transform;
-    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Scale, local, snap);
+    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Scale, local, snap * Vector3::ONE);
     if (!delta)
         return ea::nullopt;
 
@@ -158,7 +158,7 @@ void TransformGizmo::PrepareToManipulate() const
 }
 
 bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo,
-    TransformGizmoOperation op, bool local, bool pivoted, float snap)
+    TransformGizmoOperation op, bool local, bool pivoted, const Vector3& snap)
 {
     switch (op)
     {
@@ -192,7 +192,7 @@ Matrix4 TransformNodesGizmo::GetGizmoTransform(bool pivoted) const
     }
 }
 
-bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool local, bool pivoted, float snap)
+bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap)
 {
     const auto delta = gizmo.ManipulatePosition(GetGizmoTransform(pivoted), local, snap);
     if (!delta)
@@ -214,10 +214,10 @@ bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool l
     return true;
 }
 
-bool TransformNodesGizmo::ManipulateRotation(const TransformGizmo& gizmo, bool local, bool pivoted, float snap)
+bool TransformNodesGizmo::ManipulateRotation(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap)
 {
     const Matrix4 anchorTransform = GetGizmoTransform(pivoted);
-    const auto delta = gizmo.ManipulateRotation(anchorTransform, local, snap);
+    const auto delta = gizmo.ManipulateRotation(anchorTransform, local, snap.x_);
     if (!delta)
         return false;
 
@@ -240,10 +240,10 @@ bool TransformNodesGizmo::ManipulateRotation(const TransformGizmo& gizmo, bool l
     return true;
 }
 
-bool TransformNodesGizmo::ManipulateScale(const TransformGizmo& gizmo, bool local, bool pivoted, float snap)
+bool TransformNodesGizmo::ManipulateScale(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap)
 {
     const Matrix4 anchorTransform = GetGizmoTransform(pivoted);
-    const auto delta = gizmo.ManipulateScale(anchorTransform, local, snap);
+    const auto delta = gizmo.ManipulateScale(anchorTransform, local, snap.x_);
     if (!delta)
         return false;
 

@@ -28,6 +28,19 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+ea::pair<ea::string_view, ea::string_view> GetPathAndSection(ea::string_view uniqueName)
+{
+    const auto colonIndex = uniqueName.find_first_of(':');
+    if (colonIndex == ea::string_view::npos)
+        return {uniqueName, ea::string_view()};
+    return {uniqueName.substr(0, colonIndex), uniqueName.substr(colonIndex + 1)};
+}
+
+}
+
 SettingsPage::SettingsPage(Context* context)
     : Object(context)
 {
@@ -41,7 +54,10 @@ SettingsManager::SettingsManager(Context* context)
 void SettingsManager::SerializeInBlock(Archive& archive)
 {
     for (const auto& [key, page] : sortedPages_)
-        SerializeOptionalValue(archive, key.c_str(), *page, AlwaysSerialize{});
+    {
+        if (page->IsSerializable())
+            SerializeOptionalValue(archive, key.c_str(), *page, AlwaysSerialize{});
+    }
 }
 
 void SettingsManager::LoadFile(const ea::string& fileName)
@@ -61,8 +77,12 @@ void SettingsManager::SaveFile(const ea::string& fileName) const
 void SettingsManager::AddPage(SharedPtr<SettingsPage> page)
 {
     pages_.push_back(page);
-    sortedPages_[page->GetUniqueName()] = page;
-    InsertNode(rootNode_, page->GetUniqueName(), page);
+
+    const ea::string& name = page->GetUniqueName();
+    const auto [path, section] = GetPathAndSection(name);
+
+    sortedPages_[name] = page;
+    InsertPageInGroup(rootGroup_, path, page, section);
 }
 
 SettingsPage* SettingsManager::FindPage(const ea::string& key) const
@@ -71,17 +91,21 @@ SettingsPage* SettingsManager::FindPage(const ea::string& key) const
     return iter != sortedPages_.end() ? iter->second : nullptr;
 }
 
-void SettingsManager::InsertNode(SettingTreeNode& parentNode, ea::string_view path, const SharedPtr<SettingsPage>& page)
+void SettingsManager::InsertPageInGroup(SettingsPageGroup& parentGroup, ea::string_view path,
+    const SharedPtr<SettingsPage>& page, ea::string_view section)
 {
     const auto dotIndex = path.find_first_of('.');
     const bool isLeaf = dotIndex == ea::string_view::npos;
     const ea::string childName{isLeaf ? path : path.substr(0, dotIndex)};
 
-    SettingTreeNode& childNode = parentNode.children_[childName];
+    auto& childGroup = parentGroup.children_[childName];
+    if (!childGroup)
+        childGroup = ea::make_unique<SettingsPageGroup>();
+
     if (isLeaf)
-        childNode.page_ = page;
+        childGroup->pages_.emplace(ea::string(section), page);
     else
-        InsertNode(childNode, path.substr(dotIndex + 1), page);
+        InsertPageInGroup(*childGroup, path.substr(dotIndex + 1), page, section);
 }
 
 }
