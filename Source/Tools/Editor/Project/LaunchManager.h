@@ -31,43 +31,40 @@
 namespace Urho3D
 {
 
-/// Request to gracefully close resource(s) with prompt.
-struct CloseResourceRequest
+/// Launch configuration.
+struct LaunchConfiguration
 {
-    ea::vector<ea::string> resourceNames_;
-    ea::function<void()> onSave_ = []{};
-    ea::function<void()> onDiscard_ = []{};
-    ea::function<void()> onCancel_ = []{};
-};
+    ea::string name_;
+    ea::string mainPlugin_;
+    StringVariantMap engineParameters_;
 
-/// Wrapper for close dialog widget.
-class CloseDialog : public Object
+    LaunchConfiguration() = default;
+    LaunchConfiguration(const ea::string& name, const ea::string& mainPlugin);
+    void SerializeInBlock(Archive& archive);
+};
+using LaunchConfigurationVector = ea::vector<LaunchConfiguration>;
+
+/// Manages launch configurations in the project.
+class LaunchManager : public Object
 {
-    URHO3D_OBJECT(CloseDialog, Object);
+    URHO3D_OBJECT(LaunchManager, Object);
 
 public:
-    explicit CloseDialog(Context* context);
-    ~CloseDialog() override;
+    explicit LaunchManager(Context* context);
+    ~LaunchManager() override;
+    void SerializeInBlock(Archive& archive) override;
 
-    /// Process close request.
-    void RequestClose(CloseResourceRequest request);
-    /// Return whether the dialog is currently open or will be open on this frame.
-    bool IsActive() const;
+    void AddConfiguration(const LaunchConfiguration& configuration);
+    void RemoveConfiguration(unsigned index);
+    const LaunchConfiguration* FindConfiguration(const ea::string& name) const;
+    bool HasConfiguration(const ea::string& name) const;
 
-    /// Update and render contents if necessary.
-    void Render();
+    LaunchConfigurationVector& GetMutableConfigurations() { return configurations_; }
+    const LaunchConfigurationVector& GetConfigurations() const { return configurations_; }
+    StringVector GetSortedConfigurations() const;
 
 private:
-    void CloseDialogSave();
-    void CloseDialogDiscard();
-    void CloseDialogCancel();
-
-    ea::vector<CloseResourceRequest> requests_;
-
-    bool isOpen_{};
-    ea::string popupName_{"Close?"};
-
-    ea::vector<ea::string> items_;
+    LaunchConfigurationVector configurations_;
 };
 
 }

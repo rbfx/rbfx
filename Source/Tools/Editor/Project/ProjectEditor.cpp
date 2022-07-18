@@ -23,6 +23,7 @@
 #include "../Project/ProjectEditor.h"
 
 #include "../Core/EditorPluginManager.h"
+#include "../Core/IniHelpers.h"
 #include "../Core/SettingsManager.h"
 #include "../Core/UndoManager.h"
 #include "../Project/AssetManager.h"
@@ -52,6 +53,8 @@ namespace
 URHO3D_EDITOR_HOTKEY(Hotkey_SaveProject, "Global.SaveProject", QUAL_CTRL | QUAL_SHIFT, KEY_S);
 
 static unsigned numActiveProjects = 0;
+
+static const ea::string selfIniEntry{"Project"};
 
 bool IsEscapedChar(const char ch)
 {
@@ -144,6 +147,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
     , undoManager_(MakeShared<UndoManager>(context_))
     , settingsManager_(MakeShared<SettingsManager>(context_))
     , pluginManager_(MakeShared<PluginManager>(context_))
+    , launchManager_(MakeShared<LaunchManager>(context_))
     , closeDialog_(MakeShared<CloseDialog>(context_))
 {
     auto initializationGuard = ea::make_shared<int>(0);
@@ -183,6 +187,7 @@ ProjectEditor::ProjectEditor(Context* context, const ea::string& projectPath)
 void ProjectEditor::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "PluginManager", *pluginManager_, AlwaysSerialize{});
+    SerializeOptionalValue(archive, "LaunchManager", *launchManager_, AlwaysSerialize{});
 }
 
 ProjectEditor::~ProjectEditor()
@@ -219,6 +224,7 @@ CloseProjectResult ProjectEditor::CloseGracefully()
     ea::vector<ea::string> unsavedItems;
     for (EditorTab* tab : tabs_)
         tab->EnumerateUnsavedItems(unsavedItems);
+    // TODO(editor): Project settings should be here too
 
     // If nothing to save, close immediately
     if (unsavedItems.empty())
@@ -424,6 +430,10 @@ void ProjectEditor::InitializeDefaultProject()
 {
     pluginManager_->SetPluginsLoaded({SceneViewerApplication::GetStaticPluginName()});
 
+    const ea::string configName = "View Current Scene";
+    launchManager_->AddConfiguration(LaunchConfiguration{configName, SceneViewerApplication::GetStaticPluginName()});
+    currentLaunchConfiguration_ = configName;
+
     const ea::string defaultSceneName = "Scenes/DefaultScene.xml";
     DefaultSceneParameters params;
     params.createObjects_ = true;
@@ -431,6 +441,7 @@ void ProjectEditor::InitializeDefaultProject()
 
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
+    Save();
 }
 
 void ProjectEditor::InitializeResourceCache()
@@ -694,6 +705,12 @@ void ProjectEditor::Save()
 
 void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
 {
+    if (entry == selfIniEntry)
+    {
+        if (const auto value = ReadStringFromIni(line, "LaunchConfiguration"))
+            currentLaunchConfiguration_ = *value;
+    }
+
     for (EditorTab* tab : tabs_)
     {
         if (entry == tab->GetIniEntry())
@@ -703,6 +720,9 @@ void ProjectEditor::ReadIniSettings(const char* entry, const char* line)
 
 void ProjectEditor::WriteIniSettings(ImGuiTextBuffer& output)
 {
+    output.appendf("\n[Project][%s]\n", selfIniEntry.c_str());
+    WriteStringToIni(output, "LaunchConfiguration", currentLaunchConfiguration_);
+
     for (EditorTab* tab : tabs_)
     {
         output.appendf("\n[Project][%s]\n", tab->GetIniEntry().c_str());

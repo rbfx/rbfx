@@ -87,6 +87,7 @@
 #include "Foundation/SettingsTab.h"
 #include "Foundation/StandardFileTypes.h"
 
+#include "Foundation/SettingsTab/LaunchPage.h"
 #include "Foundation/SettingsTab/PluginsPage.h"
 
 #include "Foundation/SceneViewTab/EditorCamera.h"
@@ -137,6 +138,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
     editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
 
+    editorPluginManager_->AddPlugin("Foundation.Settings.Launch", &Foundation_LaunchPage);
     editorPluginManager_->AddPlugin("Foundation.Settings.Plugins", &Foundation_PluginsPage);
 
     editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);

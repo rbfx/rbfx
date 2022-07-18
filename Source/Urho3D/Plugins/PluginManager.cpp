@@ -277,6 +277,11 @@ const Variant& PluginManager::GetParameter(const ea::string& name) const
     return iter != parameters_.end() ? iter->second : Variant::EMPTY;
 }
 
+void PluginManager::ClearParameters()
+{
+    parameters_.clear();
+}
+
 void PluginManager::Reload()
 {
     forceReload_ = true;
