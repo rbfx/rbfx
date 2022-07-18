@@ -70,7 +70,7 @@ protected:
     /// Urho3D engine.
     SharedPtr<Engine> engine_;
     /// Engine parameters map.
-    VariantMap engineParameters_;
+    StringVariantMap engineParameters_;
     /// Collected startup error log messages.
     ea::string startupErrors_;
     /// Application exit code.

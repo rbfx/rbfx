@@ -103,7 +103,7 @@ public:
     ///
     void UpdateWindowTitle(const ea::string& resourcePath=EMPTY_STRING);
     ///
-    VariantMap& GetEngineParameters() { return engineParameters_; }
+    StringVariantMap& GetEngineParameters() { return engineParameters_; }
     ProjectEditor* GetProjectEditor() const { return projectEditor_; }
 
     /// Serialize editor user-specific settings.

@@ -987,6 +987,7 @@ using ImGuiConfigFlags = unsigned;
 
 %template(StringMap)                    eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>;
+%template(StringVariantMap)             eastl::unordered_map<eastl::string, Urho3D::Variant>;
 %template(AttributeMap)                 eastl::unordered_map<Urho3D::StringHash, eastl::vector<Urho3D::AttributeInfo>>;
 %template(PackageMap)                   eastl::unordered_map<eastl::string, Urho3D::PackageEntry>;
 %template(JSONObject)                   eastl::map<eastl::string, Urho3D::JSONValue>;

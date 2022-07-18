@@ -77,7 +77,7 @@ SharedPtr<Context> CreateCompleteContext()
 {
     auto context = MakeShared<Context>();
     auto engine = new Engine(context);
-    VariantMap parameters;
+    StringVariantMap parameters;
     parameters[EP_HEADLESS] = true;
     parameters[EP_LOG_QUIET] = true;
     const bool engineInitialized = engine->Initialize(parameters);
