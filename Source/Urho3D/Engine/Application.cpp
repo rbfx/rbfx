@@ -82,7 +82,7 @@ int Application::Run()
         Setup();
 
 #if DESKTOP
-        if (engine_->GetParameter(engineParameters_, EP_ENGINE_CLI_PARAMETERS, true).GetBool())
+        if (Engine::GetParameter(engineParameters_, EP_ENGINE_CLI_PARAMETERS, true).GetBool())
         {
             // Register engine command line arguments
             Engine::DefineParameters(commandLine_, engineParameters_);
