@@ -60,8 +60,9 @@ protected:
 
     void InitializeTextures();
     void InitializeStates();
-    void BlurTexture();
-    void Preview();
+    void EvaluateAO(ea::span<ShaderParameterDesc> shaderParameters);
+    void BlurTexture(ea::span<ShaderParameterDesc> shaderParameters);
+    void Blit(ea::span<ShaderParameterDesc> shaderParameters, PipelineState* state);
 
     AmbientOcclusionPassSettings settings_;
 
@@ -70,7 +71,8 @@ protected:
     struct CachedTextures
     {
         SharedPtr<Texture2D> noise_;
-        SharedPtr<RenderBuffer> ssao_;
+        SharedPtr<RenderBuffer> currentTarget_;
+        SharedPtr<RenderBuffer> previousTarget_;
     };
     CachedTextures textures_;
 
@@ -79,6 +81,8 @@ protected:
         SharedPtr<PipelineState> ssao_;
         SharedPtr<PipelineState> ssao_deferred_;
         SharedPtr<PipelineState> blur_;
+        SharedPtr<PipelineState> blur_deferred_;
+        SharedPtr<PipelineState> combine_;
         SharedPtr<PipelineState> preview_;
 
         bool IsValid() { return ssao_->IsValid() && blur_->IsValid(); }
