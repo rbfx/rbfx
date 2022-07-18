@@ -43,8 +43,6 @@ namespace Urho3D
 
 static const float LOD_CONSTANT = 1.0f / 150.0f;
 
-extern const char* GEOMETRY_CATEGORY;
-
 TerrainPatch::TerrainPatch(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
     geometry_(context->CreateObject<Geometry>()),

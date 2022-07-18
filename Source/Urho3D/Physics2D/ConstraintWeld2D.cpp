@@ -32,8 +32,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
-
 ConstraintWeld2D::ConstraintWeld2D(Context* context) :
     Constraint2D(context),
     anchor_(Vector2::ZERO)
@@ -44,7 +42,7 @@ ConstraintWeld2D::~ConstraintWeld2D() = default;
 
 void ConstraintWeld2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintWeld2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<ConstraintWeld2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Anchor", GetAnchor, SetAnchor, Vector2, Vector2::ZERO, AM_DEFAULT);

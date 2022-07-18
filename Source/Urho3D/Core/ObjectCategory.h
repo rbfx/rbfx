@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +20,25 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#pragma once
 
-#include "../Core/Context.h"
-#include "../Navigation/Navigable.h"
-
-#include "../DebugNew.h"
+#include "../Container/ConstString.h"
 
 namespace Urho3D
 {
 
-Navigable::Navigable(Context* context) :
-    Component(context),
-    recursive_(true)
-{
-}
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Audio{"Component/Audio"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Geometry{"Component/Geometry"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_IK{"Component/Inverse Kinematics"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Logic{"Component/Logic"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Navigation{"Component/Navigation"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Physics{"Component/Physics"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Physics2D{"Component/Physics2D"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_RmlUI{"Component/RmlUI"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Scene{"Component/Scene"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Subsystem{"Component/Subsystem"});
+URHO3D_GLOBAL_CONSTANT(ConstString Category_Urho2D{"Component/Urho2D"});
 
-Navigable::~Navigable() = default;
-
-void Navigable::RegisterObject(Context* context)
-{
-    context->RegisterFactory<Navigable>(Category_Navigation);
-
-    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Recursive", bool, recursive_, true, AM_DEFAULT);
-}
-
-void Navigable::SetRecursive(bool enable)
-{
-    recursive_ = enable;
-}
+URHO3D_GLOBAL_CONSTANT(ConstString Category_UI{"UI"});
 
 }

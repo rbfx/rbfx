@@ -36,8 +36,6 @@
 namespace Urho3D
 {
 
-extern const char* SCENE_CATEGORY;
-
 void SerializeValue(Archive& archive, const char* name, LightProbe& value)
 {
     ArchiveBlock block = archive.OpenUnorderedBlock(name);
@@ -73,7 +71,7 @@ LightProbeGroup::~LightProbeGroup() = default;
 
 void LightProbeGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<LightProbeGroup>(SCENE_CATEGORY);
+    context->RegisterFactory<LightProbeGroup>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Light Mask", unsigned, lightMask_, DEFAULT_LIGHTMASK, AM_DEFAULT);

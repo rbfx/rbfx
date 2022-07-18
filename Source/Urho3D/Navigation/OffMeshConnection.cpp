@@ -32,8 +32,6 @@
 namespace Urho3D
 {
 
-extern const char* NAVIGATION_CATEGORY;
-
 static const float DEFAULT_RADIUS = 1.0f;
 static const unsigned DEFAULT_MASK_FLAG = 1;
 static const unsigned DEFAULT_AREA = 1;
@@ -53,7 +51,7 @@ OffMeshConnection::~OffMeshConnection() = default;
 
 void OffMeshConnection::RegisterObject(Context* context)
 {
-    context->RegisterFactory<OffMeshConnection>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<OffMeshConnection>(Category_Navigation);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Endpoint NodeID", int, endPointID_, MarkEndPointDirty, 0, AM_DEFAULT | AM_NODEID);

@@ -40,8 +40,6 @@
 namespace Urho3D
 {
 
-extern const char* URHO2D_CATEGORY;
-
 ParticleEmitter2D::ParticleEmitter2D(Context* context) :
     Drawable2D(context),
     blendMode_(BLEND_ADDALPHA),
@@ -60,7 +58,7 @@ ParticleEmitter2D::~ParticleEmitter2D() = default;
 
 void ParticleEmitter2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ParticleEmitter2D>(URHO2D_CATEGORY);
+    context->RegisterFactory<ParticleEmitter2D>(Category_Urho2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable2D);

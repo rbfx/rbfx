@@ -125,8 +125,6 @@ Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value 
 
 }
 
-extern const char* GEOMETRY_CATEGORY;
-
 VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
     Object(context),
     GPUObject(forceHeadless ? nullptr : GetSubsystem<Graphics>())

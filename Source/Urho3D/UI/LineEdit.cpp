@@ -38,8 +38,6 @@ namespace Urho3D
 
 StringHash VAR_DRAGDROPCONTENT("DragDropContent");
 
-extern const char* UI_CATEGORY;
-
 LineEdit::LineEdit(Context* context) :
     BorderImage(context),
     lastFont_(nullptr),
@@ -73,7 +71,7 @@ LineEdit::~LineEdit() = default;
 
 void LineEdit::RegisterObject(Context* context)
 {
-    context->RegisterFactory<LineEdit>(UI_CATEGORY);
+    context->RegisterFactory<LineEdit>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(BorderImage);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Clip Children", true);

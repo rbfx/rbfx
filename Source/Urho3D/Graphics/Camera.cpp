@@ -34,8 +34,6 @@
 namespace Urho3D
 {
 
-extern const char* SCENE_CATEGORY;
-
 static const char* fillModeNames[] =
 {
     "Solid",
@@ -80,7 +78,7 @@ Camera::~Camera() = default;
 
 void Camera::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Camera>(SCENE_CATEGORY);
+    context->RegisterFactory<Camera>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Near Clip", GetNearClip, SetNearClip, float, DEFAULT_NEARCLIP, AM_DEFAULT);

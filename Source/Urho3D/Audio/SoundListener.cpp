@@ -28,8 +28,6 @@
 namespace Urho3D
 {
 
-extern const char* AUDIO_CATEGORY;
-
 SoundListener::SoundListener(Context* context) :
     Component(context)
 {
@@ -39,7 +37,7 @@ SoundListener::~SoundListener() = default;
 
 void SoundListener::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SoundListener>(AUDIO_CATEGORY);
+    context->RegisterFactory<SoundListener>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
 }

@@ -26,6 +26,7 @@
 
 #include "../Container/Allocator.h"
 #include "../Core/Mutex.h"
+#include "../Core/ObjectCategory.h"
 #include "../Core/Profiler.h"
 #include "../Core/StringHashRegister.h"
 #include "../Core/SubsystemCache.h"

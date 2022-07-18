@@ -39,8 +39,6 @@ namespace Urho3D
 const StringHash VAR_SHOW_POPUP("ShowPopup");
 extern StringHash VAR_ORIGIN;
 
-extern const char* UI_CATEGORY;
-
 Menu::Menu(Context* context) :
     Button(context),
     popupOffset_(IntVector2::ZERO),
@@ -65,7 +63,7 @@ Menu::~Menu()
 
 void Menu::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Menu>(UI_CATEGORY);
+    context->RegisterFactory<Menu>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Button);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Focus Mode", FM_NOTFOCUSABLE);

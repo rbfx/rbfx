@@ -33,8 +33,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
-
 CollisionChain2D::CollisionChain2D(Context* context) :
     CollisionShape2D(context),
     loop_(false)
@@ -46,7 +44,7 @@ CollisionChain2D::~CollisionChain2D() = default;
 
 void CollisionChain2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CollisionChain2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<CollisionChain2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Loop", GetLoop, SetLoop, bool, false, AM_DEFAULT);
