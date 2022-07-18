@@ -23,6 +23,7 @@
 #include "../SystemUI/NodeInspectorWidget.h"
 
 #include "../Core/IteratorRange.h"
+#include "../Scene/Component.h"
 #include "../SystemUI/Widgets.h"
 #include "../SystemUI/SystemUI.h"
 
@@ -56,6 +57,8 @@ void NodeInspectorWidget::RenderTitle()
 
 void NodeInspectorWidget::RenderContent()
 {
+    pendingRemoveComponents_.clear();
+
     const auto allComponents = GetAllComponents();
     if (components_ != allComponents)
     {
@@ -87,6 +90,18 @@ void NodeInspectorWidget::RenderContent()
         const auto typeInfo = componentInspector->GetObjects().front()->GetTypeInfo();
         const IdScopeGuard guard{typeInfo->GetTypeName().c_str()};
 
+        if (ui::Button(ICON_FA_TRASH_CAN "##RemoveComponent"))
+        {
+            for (Serializable* serializable : componentInspector->GetObjects())
+            {
+                if (const WeakPtr<Component> component{dynamic_cast<Component*>(serializable)})
+                    pendingRemoveComponents_.push_back(component);
+            }
+        }
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Remove this component from all selected nodes");
+        ui::SameLine();
+
         if (ui::CollapsingHeader(typeInfo->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
         {
             componentInspector->RenderContent();
@@ -97,6 +112,15 @@ void NodeInspectorWidget::RenderContent()
     {
         ui::Separator();
         ui::Text("%u other components skipped", numSkippedComponents_);
+    }
+
+    for (Component* component : pendingRemoveComponents_)
+    {
+        if (component)
+        {
+            OnComponentRemoved(this, component);
+            component->Remove();
+        }
     }
 }
 
@@ -146,7 +170,7 @@ NodeInspectorWidget::ComponentVectorsByType NodeInspectorWidget::GetSharedCompon
                 {
                     sharedComponents.emplace_back(*matchingComponentIter);
                     index = (matchingComponentIter - components.begin()) + 1;
-                    break;
+                    continue;
                 }
             }
 

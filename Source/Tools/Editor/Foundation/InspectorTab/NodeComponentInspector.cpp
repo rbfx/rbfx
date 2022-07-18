@@ -130,6 +130,7 @@ void NodeComponentInspector::InspectObjects()
         nodeWidget_->OnEditNodeAttributeEnd.Subscribe(this, &NodeComponentInspector::EndEditNodeAttribute);
         nodeWidget_->OnEditComponentAttributeBegin.Subscribe(this, &NodeComponentInspector::BeginEditComponentAttribute);
         nodeWidget_->OnEditComponentAttributeEnd.Subscribe(this, &NodeComponentInspector::EndEditComponentAttribute);
+        nodeWidget_->OnComponentRemoved.Subscribe(this, &NodeComponentInspector::RemoveComponent);
     }
     else if (const auto components = CollectComponents(); !components.empty())
     {
@@ -199,6 +200,23 @@ void NodeComponentInspector::EndEditComponentAttribute(const SerializableVector&
     inspectedTab_->PushAction<ChangeComponentAttributesAction>(scene_, attribute->name_, components, oldValues_, newValues_);
 }
 
+void NodeComponentInspector::AddComponentToNodes(StringHash componentType)
+{
+    if (!nodeWidget_)
+        return;
+
+    for (Node* node : nodeWidget_->GetNodes())
+    {
+        if (auto component = node->CreateComponent(componentType))
+            inspectedTab_->PushAction<CreateRemoveComponentAction>(component, false);
+    }
+}
+
+void NodeComponentInspector::RemoveComponent(Component* component)
+{
+    inspectedTab_->PushAction<CreateRemoveComponentAction>(component, true);
+}
+
 void NodeComponentInspector::RenderContent()
 {
     if (nodeWidget_)
@@ -206,6 +224,8 @@ void NodeComponentInspector::RenderContent()
         nodeWidget_->RenderTitle();
         ui::Separator();
         nodeWidget_->RenderContent();
+        ui::Separator();
+        RenderAddComponent();
     }
     else if (componentWidget_)
     {
@@ -236,6 +256,49 @@ void NodeComponentInspector::RenderComponentSummary()
             ui::Text("%d", count);
         }
         ui::EndTable();
+    }
+}
+
+ea::optional<StringHash> NodeComponentInspector::RenderCreateComponentMenu(Context* context)
+{
+    static const ea::string prefix = "Component/";
+    const auto& typesByCategory = context->GetObjectCategories();
+
+    ea::optional<StringHash> result;
+    for (const auto& [category, types] : typesByCategory)
+    {
+        if (!category.starts_with(prefix))
+            continue;
+
+        const ea::string title = category.substr(prefix.length());
+        if (ui::BeginMenu(title.c_str()))
+        {
+            for (const StringHash type : types)
+            {
+                const ObjectReflection* reflection = context->GetReflection(type);
+                if (!reflection->HasObjectFactory())
+                    continue;
+                if (ui::MenuItem(reflection->GetTypeName().c_str()))
+                    result = type;
+            }
+            ui::EndMenu();
+        }
+    }
+    return result;
+}
+
+void NodeComponentInspector::RenderAddComponent()
+{
+    if (ui::Button("Add Component"))
+        ui::OpenPopup("##AddComponent");
+    if (ui::BeginPopup("##AddComponent"))
+    {
+        if (const auto componentType = RenderCreateComponentMenu(context_))
+        {
+            AddComponentToNodes(*componentType);
+            ui::CloseCurrentPopup();
+        }
+        ui::EndPopup();
     }
 }
 

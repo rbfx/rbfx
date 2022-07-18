@@ -46,6 +46,9 @@ class NodeComponentInspector : public Object, public InspectorSource
 public:
     explicit NodeComponentInspector(ProjectEditor* project);
 
+    /// Helper function to render "create component menu".
+    static ea::optional<StringHash> RenderCreateComponentMenu(Context* context);
+
     /// Implement InspectorSource
     /// @{
     bool IsUndoSupported() override { return true; }
@@ -67,11 +70,14 @@ private:
     void InspectObjects();
 
     void RenderComponentSummary();
+    void RenderAddComponent();
 
     void BeginEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
     void EndEditNodeAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
     void BeginEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
     void EndEditComponentAttribute(const SerializableVector& objects, const AttributeInfo* attribute);
+    void AddComponentToNodes(StringHash componentType);
+    void RemoveComponent(Component* component);
 
     WeakPtr<ProjectEditor> project_;
 
