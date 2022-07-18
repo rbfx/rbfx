@@ -24,6 +24,7 @@
 
 #include "../Project/CloseDialog.h"
 #include "../Project/EditorTab.h"
+#include "../Project/LaunchManager.h"
 #include "../Project/ProjectRequest.h"
 
 #include <Urho3D/Core/Object.h>
@@ -135,6 +136,12 @@ public:
     void SetGlobalHotkeysEnabled(bool enabled) { areGlobalHotkeysEnabled_ = enabled; }
     /// Set whether the UI highlight is enabled.
     void SetHighlightEnabled(bool enabled) { isHighlightEnabled_ = enabled; }
+    /// Set current launch configuration name.
+    void SetLaunchConfigurationName(const ea::string& name) { currentLaunchConfiguration_ = name; }
+    /// Return current launch configuration name.
+    const ea::string& GetLaunchConfigurationName() const { return currentLaunchConfiguration_; }
+    /// Return current launch configuration.
+    const LaunchConfiguration* GetLaunchConfiguration() const { return launchManager_->FindConfiguration(currentLaunchConfiguration_); }
     /// Return name of random temporary directory.
     ea::string GetRandomTemporaryPath() const;
     /// Create temporary directory that will be automatically deleted when the handler is destroyed.
@@ -165,6 +172,7 @@ public:
     SettingsManager* GetSettingsManager() const { return settingsManager_; }
     UndoManager* GetUndoManager() const { return undoManager_; }
     PluginManager* GetPluginManager() const { return pluginManager_; }
+    LaunchManager* GetLaunchManager() const { return launchManager_; }
     /// @}
 
     /// Internal
@@ -226,6 +234,7 @@ private:
     SharedPtr<SettingsManager> settingsManager_;
     SharedPtr<UndoManager> undoManager_;
     SharedPtr<PluginManager> pluginManager_;
+    SharedPtr<LaunchManager> launchManager_;
 
     ea::weak_ptr<void> initializationGuard_;
     bool firstInitialization_{};
@@ -256,6 +265,7 @@ private:
     WeakPtr<EditorTab> focusedRootTab_;
     bool areGlobalHotkeysEnabled_{true};
     bool isHighlightEnabled_{};
+    ea::string currentLaunchConfiguration_;
     /// @}
 };
 

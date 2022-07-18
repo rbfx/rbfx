@@ -41,12 +41,20 @@ public:
         : project_{project}
         , gameViewTab_{project->FindTab<GameViewTab>()}
         , sceneViewTab_{project->FindTab<SceneViewTab>()}
+        , pluginManager_{project->GetSubsystem<PluginManager>()}
+        , launchManager_{project->GetLaunchManager()}
     {
     }
 
     bool IsPlaying() const { return gameViewTab_ && gameViewTab_->IsPlaying(); }
 
-    void TogglePlayed()
+    void TogglePlayedDefault()
+    {
+        const LaunchConfiguration* currentConfig = project_->GetLaunchConfiguration();
+        TogglePlayed(currentConfig);
+    }
+
+    void TogglePlayed(const LaunchConfiguration* config)
     {
         if (!gameViewTab_)
             return;
@@ -57,6 +65,11 @@ public:
             sceneViewTab_->SetupPluginContext();
             project_->Save();
             gameViewTab_->Focus();
+
+            if (config)
+                pluginManager_->SetParameter(Plugin_MainPlugin, config->mainPlugin_);
+            else
+                pluginManager_->SetParameter(Plugin_MainPlugin, Variant::EMPTY);
         }
         else if (tabToFocusAfter_)
         {
@@ -70,6 +83,10 @@ private:
     const WeakPtr<ProjectEditor> project_;
     const WeakPtr<GameViewTab> gameViewTab_;
     const WeakPtr<SceneViewTab> sceneViewTab_;
+
+    const WeakPtr<PluginManager> pluginManager_;
+    const WeakPtr<LaunchManager> launchManager_;
+
     WeakPtr<EditorTab> tabToFocusAfter_;
 };
 
@@ -81,23 +98,67 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
 
     const auto state = ea::make_shared<InternalState>(project);
 
-    hotkeyManager->BindHotkey(hotkeyManager, Hotkey_Play, [state] { state->TogglePlayed(); });
+    hotkeyManager->BindHotkey(hotkeyManager, Hotkey_Play, [state] { state->TogglePlayedDefault(); });
 
     project->OnRenderProjectMenu.Subscribe(project, [state](ProjectEditor* project)
     {
-        HotkeyManager* hotkeyManager = project->GetHotkeyManager();
-        const char* title = state->IsPlaying() ? ICON_FA_STOP " Stop" : ICON_FA_EJECT " Launch";
+        auto hotkeyManager = project->GetHotkeyManager();
+        auto launchManager = project->GetLaunchManager();
+
+        const char* title = state->IsPlaying() ? ICON_FA_STOP " Stop" : ICON_FA_EJECT " Launch Current";
         if (ui::MenuItem(title, hotkeyManager->GetHotkeyLabel(Hotkey_Play).c_str()))
-            state->TogglePlayed();
+            state->TogglePlayedDefault();
+
+        if (ui::BeginMenu("Launch Other"))
+        {
+            for (const ea::string& name : launchManager->GetSortedConfigurations())
+            {
+                const LaunchConfiguration* config = launchManager->FindConfiguration(name);
+                if (config && ui::MenuItem(config->name_.c_str()))
+                    state->TogglePlayed(config);
+            }
+            ui::EndMenu();
+        }
     });
 
     project->OnRenderProjectToolbar.Subscribe(project, [state](ProjectEditor* project)
     {
+        auto launchManager = project->GetLaunchManager();
+
         const bool isPlaying = state->IsPlaying();
-        const char* title = isPlaying ? ICON_FA_STOP : ICON_FA_EJECT;
-        const char* tooltip = isPlaying ? "Stop" : "Launch";
-        if (Widgets::ToolbarButton(title, tooltip))
-            state->TogglePlayed();
+
+        {
+            ui::BeginDisabled(isPlaying);
+
+            const LaunchConfiguration* currentConfig = project->GetLaunchConfiguration();
+            const char* previewValue = currentConfig ? currentConfig->name_.c_str() : "(undefined)";
+            const auto previewSize = ui::CalcTextSize(previewValue);
+
+            Widgets::ToolbarSeparator();
+            ui::SetNextItemWidth(previewSize.x + 2 * previewSize.y);
+            if (ui::BeginCombo("##Config", previewValue))
+            {
+                for (const ea::string& name : launchManager->GetSortedConfigurations())
+                {
+                    const LaunchConfiguration* config = launchManager->FindConfiguration(name);
+                    if (config && ui::Selectable(config->name_.c_str(), config == currentConfig))
+                        project->SetLaunchConfigurationName(config->name_);
+                }
+                ui::EndCombo();
+            }
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Select a launch configuration, see Settings->Project->Launch");
+            ui::SameLine();
+
+            ui::EndDisabled();
+        }
+
+        {
+            const char* title = isPlaying ? ICON_FA_STOP : ICON_FA_EJECT;
+            const char* tooltip = isPlaying ? "Stop" : "Launch";
+            if (Widgets::ToolbarButton(title, tooltip))
+                state->TogglePlayedDefault();
+        }
     });
 }
 

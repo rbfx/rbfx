@@ -45,15 +45,17 @@ public:
     virtual ea::string GetUniqueName() = 0;
     /// Return whether the serialization is needed.
     virtual bool IsSerializable() = 0;
+    /// Return whether to show "reset to default" button.
+    virtual bool CanResetToDefault() { return false; }
 
     /// Serialization must be provided for settings page.
     virtual void SerializeInBlock(Archive& archive) override = 0;
     /// Render page with settings.
     virtual void RenderSettings() = 0;
     /// Reset settings to default.
-    virtual void ResetToDefaults() = 0;
+    virtual void ResetToDefaults() {}
     /// Apply hotkeys for the page.
-    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) = 0;
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) {}
 };
 
 /// Simple settings page that expects struct with methods.
@@ -67,6 +69,7 @@ public:
     /// @{
     ea::string GetUniqueName() override { return values_.GetUniqueName(); }
     bool IsSerializable() override { return true; }
+    bool CanResetToDefault() override { return true; }
 
     void SerializeInBlock(Archive& archive) override { values_.SerializeInBlock(archive); }
     void RenderSettings() override { values_.RenderSettings(); }

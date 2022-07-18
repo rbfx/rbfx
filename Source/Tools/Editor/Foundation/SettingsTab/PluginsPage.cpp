@@ -155,7 +155,9 @@ void PluginsPage::RenderSettings()
 
 void PluginsPage::ResetToDefaults()
 {
+    const auto oldLoadedPlugins = ea::move(loadedPlugins_);
     loadedPlugins_ = {SceneViewerApplication::GetStaticPluginName()};
+    hasChanges_ = loadedPlugins_ != oldLoadedPlugins;
 }
 
 void PluginsPage::ApplyHotkeys(HotkeyManager* hotkeyManager)

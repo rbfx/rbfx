@@ -100,6 +100,7 @@ public:
     /// Set global parameter that can be used as hint during plugin execution.
     void SetParameter(const ea::string& name, const Variant& value);
     const Variant& GetParameter(const ea::string& name) const;
+    void ClearParameters();
 
     /// Reload all dynamic modules.
     void Reload();

@@ -49,6 +49,7 @@ public:
     /// @{
     ea::string GetUniqueName() override { return "Project.Plugins"; }
     bool IsSerializable() override { return false; }
+    bool CanResetToDefault() override { return true; }
 
     void SerializeInBlock(Archive& archive) override {}
     void RenderSettings() override;

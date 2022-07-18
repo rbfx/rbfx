@@ -22,52 +22,42 @@
 
 #pragma once
 
-#include <Urho3D/Core/Object.h>
+#include "../../Foundation/SettingsTab.h"
+#include "../../Project/LaunchManager.h"
 
-#include <EASTL/functional.h>
-#include <EASTL/string.h>
-#include <EASTL/vector.h>
+#include <EASTL/set.h>
 
 namespace Urho3D
 {
 
-/// Request to gracefully close resource(s) with prompt.
-struct CloseResourceRequest
-{
-    ea::vector<ea::string> resourceNames_;
-    ea::function<void()> onSave_ = []{};
-    ea::function<void()> onDiscard_ = []{};
-    ea::function<void()> onCancel_ = []{};
-};
+void Foundation_LaunchPage(Context* context, SettingsTab* settingsTab);
 
-/// Wrapper for close dialog widget.
-class CloseDialog : public Object
+/// Tab that displays project settings.
+class LaunchPage : public SettingsPage
 {
-    URHO3D_OBJECT(CloseDialog, Object);
+    URHO3D_OBJECT(LaunchPage, SettingsPage)
 
 public:
-    explicit CloseDialog(Context* context);
-    ~CloseDialog() override;
+    explicit LaunchPage(Context* context);
 
-    /// Process close request.
-    void RequestClose(CloseResourceRequest request);
-    /// Return whether the dialog is currently open or will be open on this frame.
-    bool IsActive() const;
+    /// Implement SettingsPage
+    /// @{
+    ea::string GetUniqueName() override { return "Project.Launch"; }
+    bool IsSerializable() override { return false; }
 
-    /// Update and render contents if necessary.
-    void Render();
+    void SerializeInBlock(Archive& archive) override {}
+    void RenderSettings() override;
+    /// @}
 
 private:
-    void CloseDialogSave();
-    void CloseDialogDiscard();
-    void CloseDialogCancel();
+    ea::string GetUnusedConfigurationName() const;
 
-    ea::vector<CloseResourceRequest> requests_;
+    void RenderConfiguration(unsigned index, LaunchConfiguration& config);
+    void RenderMainPlugin(ea::string& mainPlugin);
 
-    bool isOpen_{};
-    ea::string popupName_{"Close?"};
+    WeakPtr<LaunchManager> launchManager_;
 
-    ea::vector<ea::string> items_;
+    ea::vector<unsigned> pendingConfigurationsRemoved_;
 };
 
 }
