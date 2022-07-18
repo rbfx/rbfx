@@ -40,6 +40,11 @@ class SettingsTab : public EditorTab
 public:
     explicit SettingsTab(Context* context);
 
+    /// Implement EditorTab
+    /// @{
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
+    /// @}
+
 protected:
     /// Implement EditorTab
     /// @{
@@ -55,6 +60,8 @@ private:
 
     bool selectNextValidGroup_{};
     const SettingsPageGroup* selectedGroup_{};
+
+    ea::optional<bool> useVerticalLayout_;
 };
 
 }

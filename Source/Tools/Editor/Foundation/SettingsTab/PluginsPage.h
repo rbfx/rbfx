@@ -22,23 +22,22 @@
 
 #pragma once
 
-#include "../Project/ProjectEditor.h"
-#include "../Project/EditorTab.h"
+#include "../../Foundation/SettingsTab.h"
 
 #include <EASTL/set.h>
 
 namespace Urho3D
 {
 
-void Foundation_PluginsTab(Context* context, ProjectEditor* projectEditor);
+void Foundation_PluginsPage(Context* context, SettingsTab* settingsTab);
 
 /// Tab that displays project settings.
-class PluginsTab : public EditorTab
+class PluginsPage : public SettingsPage
 {
-    URHO3D_OBJECT(PluginsTab, EditorTab)
+    URHO3D_OBJECT(PluginsPage, SettingsPage)
 
 public:
-    explicit PluginsTab(Context* context);
+    explicit PluginsPage(Context* context);
 
     /// Commands
     /// @{
@@ -46,10 +45,15 @@ public:
     void Discard();
     /// @}
 
-protected:
-    /// Implement EditorTab
+    /// Implement SettingsPage
     /// @{
-    void RenderContent() override;
+    ea::string GetUniqueName() override { return "Project.Plugins"; }
+    bool IsSerializable() override { return false; }
+
+    void SerializeInBlock(Archive& archive) override {}
+    void RenderSettings() override;
+    void ResetToDefaults() override;
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     /// @}
 
 private:

@@ -82,11 +82,12 @@
 #include "Foundation/HierarchyBrowserTab.h"
 #include "Foundation/InspectorTab.h"
 #include "Foundation/ModelImporter.h"
-#include "Foundation/PluginsTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/SceneViewTab.h"
 #include "Foundation/SettingsTab.h"
 #include "Foundation/StandardFileTypes.h"
+
+#include "Foundation/SettingsTab/PluginsPage.h"
 
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneSelector.h"
@@ -134,8 +135,9 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
-    editorPluginManager_->AddPlugin("Foundation.Plugins", &Foundation_PluginsTab);
     editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
+
+    editorPluginManager_->AddPlugin("Foundation.Settings.Plugins", &Foundation_PluginsPage);
 
     editorPluginManager_->AddPlugin("Foundation.Asset.ModelImporter", &Foundation_ModelImporter);
 
