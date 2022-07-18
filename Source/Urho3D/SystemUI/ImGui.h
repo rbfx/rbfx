@@ -69,6 +69,52 @@ public:
         ui::PopID();
     }
 };
+
+class ColorScopeGuard
+{
+public:
+    ColorScopeGuard(ImGuiCol id, const ImVec4& color, bool enabled = true)
+        : numColors_(enabled ? 1 : 0)
+    {
+        if (enabled)
+            ui::PushStyleColor(id, color);
+    }
+
+    explicit ColorScopeGuard(std::initializer_list<ea::pair<ImGuiCol, ImVec4>> colors, bool enabled = true)
+        : numColors_(enabled ? colors.size() : 0)
+    {
+        if (enabled)
+        {
+            for (const auto& [id, color] : colors)
+                ui::PushStyleColor(id, color);
+        }
+    }
+
+    ColorScopeGuard(ImGuiCol id, ImU32 color, bool enabled = true)
+        : numColors_(enabled ? 1 : 0)
+    {
+        if (enabled)
+            ui::PushStyleColor(id, color);
+    }
+
+    explicit ColorScopeGuard(std::initializer_list<ea::pair<ImGuiCol, ImU32>> colors, bool enabled = true)
+        : numColors_(enabled ? colors.size() : 0)
+    {
+        if (enabled)
+        {
+            for (const auto& [id, color] : colors)
+                ui::PushStyleColor(id, color);
+        }
+    }
+
+    ~ColorScopeGuard()
+    {
+        ui::PopStyleColor(numColors_);
+    }
+
+private:
+    const unsigned numColors_{};
+};
 /// @}
 
 }
