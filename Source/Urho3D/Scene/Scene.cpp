@@ -51,10 +51,6 @@
 namespace Urho3D
 {
 
-const char* SCENE_CATEGORY = "Scene";
-const char* LOGIC_CATEGORY = "Logic";
-const char* SUBSYSTEM_CATEGORY = "Subsystem";
-
 Scene::Scene(Context* context) :
     Node(context),
     replicatedNodeID_(FIRST_REPLICATED_ID),

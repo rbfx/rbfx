@@ -41,8 +41,6 @@
 namespace Urho3D
 {
 
-extern const char* NAVIGATION_CATEGORY;
-
 static const unsigned DEFAULT_MAX_AGENTS = 512;
 static const float DEFAULT_MAX_AGENT_RADIUS = 0.f;
 
@@ -97,7 +95,7 @@ CrowdManager::~CrowdManager()
 
 void CrowdManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<CrowdManager>(NAVIGATION_CATEGORY);
+    context->RegisterFactory<CrowdManager>(Category_Navigation);
 
     URHO3D_ATTRIBUTE("Max Agents", unsigned, maxAgents_, DEFAULT_MAX_AGENTS, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Agent Radius", float, maxAgentRadius_, DEFAULT_MAX_AGENT_RADIUS, AM_DEFAULT);

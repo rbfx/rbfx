@@ -30,7 +30,6 @@
 
 namespace Urho3D
 {
-extern const char* SCENE_CATEGORY;
 
 namespace
 {
@@ -81,7 +80,7 @@ PrefabReference::~PrefabReference() = default;
 
 void PrefabReference::RegisterObject(Context* context)
 {
-    context->RegisterFactory<PrefabReference>(SCENE_CATEGORY);
+    context->RegisterFactory<PrefabReference>(Category_Scene);
 
     URHO3D_ACTION_STATIC_LABEL("Inline", Inline, "Inline the prefab nodes");
 

@@ -58,8 +58,6 @@ static ea::vector<Drawable*> unusedDrawablesVector;
 static const float DEFAULT_OCTREE_SIZE = 1000.0f;
 static const int DEFAULT_OCTREE_LEVELS = 8;
 
-extern const char* SUBSYSTEM_CATEGORY;
-
 void UpdateDrawablesWork(const WorkItem* item, unsigned threadIndex)
 {
     URHO3D_PROFILE("UpdateDrawablesWork");
@@ -450,7 +448,7 @@ Octree::~Octree()
 
 void Octree::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Octree>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<Octree>(Category_Subsystem);
 
     Vector3 defaultBoundsMin = -Vector3::ONE * DEFAULT_OCTREE_SIZE;
     Vector3 defaultBoundsMax = Vector3::ONE * DEFAULT_OCTREE_SIZE;

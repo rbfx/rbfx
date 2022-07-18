@@ -32,8 +32,6 @@
 namespace Urho3D
 {
 
-extern const char* PHYSICS2D_CATEGORY;
-
 ConstraintFriction2D::ConstraintFriction2D(Context* context) :
     Constraint2D(context),
     anchor_(Vector2::ZERO)
@@ -45,7 +43,7 @@ ConstraintFriction2D::~ConstraintFriction2D() = default;
 
 void ConstraintFriction2D::RegisterObject(Context* context)
 {
-    context->RegisterFactory<ConstraintFriction2D>(PHYSICS2D_CATEGORY);
+    context->RegisterFactory<ConstraintFriction2D>(Category_Physics2D);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Anchor", GetAnchor, SetAnchor, Vector2, Vector2::ZERO, AM_DEFAULT);

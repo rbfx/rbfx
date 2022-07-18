@@ -58,8 +58,6 @@ static const char* collisionEventModeNames[] =
     nullptr
 };
 
-extern const char* PHYSICS_CATEGORY;
-
 RigidBody::RigidBody(Context* context) :
     Component(context),
     gravityOverride_(Vector3::ZERO),
@@ -92,7 +90,7 @@ RigidBody::~RigidBody()
 
 void RigidBody::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RigidBody>(PHYSICS_CATEGORY);
+    context->RegisterFactory<RigidBody>(Category_Physics);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Physics Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE | AM_NOEDIT);

@@ -48,8 +48,6 @@
 namespace Urho3D
 {
 
-const char* GEOMETRY_CATEGORY = "Geometry";
-
 static const ea::vector<ea::string> giTypeNames = {
     "None",
     "Use LightMap",

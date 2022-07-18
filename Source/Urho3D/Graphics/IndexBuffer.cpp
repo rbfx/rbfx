@@ -58,8 +58,6 @@ IndexBuffer::~IndexBuffer()
     Release();
 }
 
-extern const char* GEOMETRY_CATEGORY;
-
 void IndexBuffer::RegisterObject(Context* context)
 {
     context->RegisterFactory<IndexBuffer>();

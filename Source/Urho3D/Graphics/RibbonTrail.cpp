@@ -40,7 +40,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
 static const unsigned MAX_TAIL_COLUMN = 16;
 
 const char* trailTypeNames[] =
@@ -106,7 +105,7 @@ RibbonTrail::~RibbonTrail() = default;
 
 void RibbonTrail::RegisterObject(Context* context)
 {
-    context->RegisterFactory<RibbonTrail>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<RibbonTrail>(Category_Geometry);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);

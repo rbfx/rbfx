@@ -37,8 +37,6 @@
 namespace Urho3D
 {
 
-extern const char* UI_CATEGORY;
-
 DropDownList::DropDownList(Context* context) :
     Menu(context),
     resizePopup_(false),
@@ -70,7 +68,7 @@ DropDownList::~DropDownList() = default;
 
 void DropDownList::RegisterObject(Context* context)
 {
-    context->RegisterFactory<DropDownList>(UI_CATEGORY);
+    context->RegisterFactory<DropDownList>(Category_UI);
 
     URHO3D_COPY_BASE_ATTRIBUTES(Menu);
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Focus Mode", FM_FOCUSABLE_DEFOCUSABLE);
