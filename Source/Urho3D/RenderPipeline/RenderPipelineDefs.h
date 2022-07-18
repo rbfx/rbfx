@@ -658,6 +658,7 @@ struct AutoExposurePassSettings
 struct AmbientOcclusionPassSettings
 {
     bool enabled_{};
+    unsigned downscale_{0};
     float strength_{0.8f};
     float exponent_{2.0f};
     float radius_{0.5f};
@@ -670,9 +671,9 @@ struct AmbientOcclusionPassSettings
 
     bool operator==(const AmbientOcclusionPassSettings& rhs) const
     {
-        return (enabled_ == rhs.enabled_) && (strength_ == rhs.strength_) && (exponent_ == rhs.exponent_)
-            && (radius_ == rhs.radius_) && (blurDepthThreshold_ == rhs.blurDepthThreshold_)
-            && (blurNormalThreshold_ == rhs.blurNormalThreshold_);
+        return (enabled_ == rhs.enabled_) && (downscale_ == rhs.downscale_) && (strength_ == rhs.strength_)
+            && (exponent_ == rhs.exponent_) && (radius_ == rhs.radius_)
+            && (blurDepthThreshold_ == rhs.blurDepthThreshold_) && (blurNormalThreshold_ == rhs.blurNormalThreshold_);
     }
 
     bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }

@@ -44,7 +44,7 @@ void AmbientOcclusionPass::SetSettings(const AmbientOcclusionPassSettings& setti
 {
     if (settings_ != settings)
     {
-        bool resetCachedTextures = false;
+        const bool resetCachedTextures = settings_.downscale_ != settings.downscale_;
         settings_ = settings;
         if (resetCachedTextures)
             InitializeTextures();
@@ -54,7 +54,7 @@ void AmbientOcclusionPass::SetSettings(const AmbientOcclusionPassSettings& setti
 void AmbientOcclusionPass::InitializeTextures()
 {
     const unsigned format = Graphics::GetRGBAFormat();
-    const Vector2 sizeMultiplier = Vector2::ONE / static_cast<float>(1 << 0);
+    const Vector2 sizeMultiplier = Vector2::ONE / static_cast<float>(1 << settings_.downscale_);
     const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
     textures_.currentTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     textures_.previousTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);

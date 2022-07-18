@@ -141,6 +141,7 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Max Exposure", float, settings_.autoExposure_.maxExposure_, MarkSettingsDirty, AutoExposurePassSettings{}.maxExposure_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Adapt Rate", float, settings_.autoExposure_.adaptRate_, MarkSettingsDirty, AutoExposurePassSettings{}.adaptRate_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("SSAO", bool, settings_.ssao_.enabled_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.enabled_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("SSAO Downscale", float, settings_.ssao_.downscale_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.downscale_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("SSAO Strength", float, settings_.ssao_.strength_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.strength_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("SSAO Exponent", float, settings_.ssao_.exponent_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.exponent_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("SSAO Radius", float, settings_.ssao_.radius_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.radius_, AM_DEFAULT);
