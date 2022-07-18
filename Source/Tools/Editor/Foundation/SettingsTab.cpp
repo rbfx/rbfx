@@ -23,6 +23,8 @@
 #include "../Core/IniHelpers.h"
 #include "../Foundation/SettingsTab.h"
 
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
+
 namespace Urho3D
 {
 
@@ -37,25 +39,10 @@ SettingsTab::SettingsTab(Context* context)
 {
 }
 
-void SettingsTab::WriteIniSettings(ImGuiTextBuffer& output)
-{
-    BaseClassName::WriteIniSettings(output);
-
-    WriteStringToIni(output, "SelectedPage", selectedPage_);
-}
-
-void SettingsTab::ReadIniSettings(const char* line)
-{
-    BaseClassName::ReadIniSettings(line);
-
-    if (const auto value = ReadStringFromIni(line, "SelectedPage"))
-        selectedPage_ = *value;
-}
-
 void SettingsTab::RenderContent()
 {
-    if (selectedPage_.empty())
-        selectNextValidPage_ = true;
+    if (!selectedGroup_ || selectedGroup_->pages_.empty())
+        selectNextValidGroup_ = true;
 
     if (ui::BeginTable("##ResourceBrowserTab", 2, ImGuiTableFlags_Resizable))
     {
@@ -71,7 +58,7 @@ void SettingsTab::RenderContent()
 
         ui::TableSetColumnIndex(1);
         if (ui::BeginChild("##SettingsPage", ui::GetContentRegionAvail()))
-            RenderCurrentSettingsPage();
+            RenderCurrentGroup();
         ui::EndChild();
 
         ui::EndTable();
@@ -83,29 +70,31 @@ void SettingsTab::RenderSettingsTree()
     auto project = GetProject();
     SettingsManager* settingsManager = project->GetSettingsManager();
 
-    const auto& rootNode = settingsManager->GetPageTree();
-    for (const auto& [shortName, childNode] : rootNode.children_)
-        RenderSettingsSubtree(childNode, shortName);
+    const auto& rootGroup = settingsManager->GetPageTree();
+    for (const auto& [shortName, childGroup] : rootGroup.children_)
+        RenderSettingsSubtree(*childGroup, shortName);
 }
 
-void SettingsTab::RenderSettingsSubtree(const SettingTreeNode& treeNode, const ea::string& shortName)
+void SettingsTab::RenderSettingsSubtree(const SettingsPageGroup& group, const ea::string& shortName)
 {
-    if (selectNextValidPage_ && treeNode.page_)
-    {
-        selectNextValidPage_ = false;
-        selectedPage_ = treeNode.page_->GetUniqueName();
-    }
-
     const IdScopeGuard guard(shortName.c_str());
 
+    if (selectNextValidGroup_ && !group.pages_.empty())
+    {
+        selectNextValidGroup_ = false;
+        selectedGroup_ = &group;
+    }
+
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
-        | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
-    if (treeNode.children_.empty())
+        | ImGuiTreeNodeFlags_OpenOnDoubleClick
+        | ImGuiTreeNodeFlags_SpanFullWidth
+        | ImGuiTreeNodeFlags_DefaultOpen;
+    if (group.children_.empty())
         flags |= ImGuiTreeNodeFlags_Leaf;
-    if (treeNode.page_ && treeNode.page_->GetUniqueName() == selectedPage_)
+    if (&group == selectedGroup_)
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    if (selectNextValidPage_)
+    if (selectNextValidGroup_)
         ui::SetNextItemOpen(true);
     const bool isOpen = ui::TreeNodeEx(shortName.c_str(), flags);
 
@@ -113,32 +102,47 @@ void SettingsTab::RenderSettingsSubtree(const SettingTreeNode& treeNode, const e
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     if (ui::IsItemClicked(MOUSEB_LEFT))
     {
-        if (treeNode.page_)
-            selectedPage_ = treeNode.page_->GetUniqueName();
-        else
-            selectNextValidPage_ = true;
+        selectedGroup_ = &group;
+        if (group.pages_.empty())
+            selectNextValidGroup_ = true;
     }
 
     // Render children
     if (isOpen)
     {
-        for (const auto& [shortName, childNode] : treeNode.children_)
-            RenderSettingsSubtree(childNode, shortName);
+        for (const auto& [shortName, childGroup] : group.children_)
+            RenderSettingsSubtree(*childGroup, shortName);
         ui::TreePop();
     }
 }
 
-void SettingsTab::RenderCurrentSettingsPage()
+void SettingsTab::RenderCurrentGroup()
 {
-    auto project = GetProject();
-    SettingsManager* settingsManager = project->GetSettingsManager();
-    if (SettingsPage* page = settingsManager->FindPage(selectedPage_))
+    if (selectedGroup_ && !selectedGroup_->pages_.empty())
     {
-        page->RenderSettings();
-        ui::Separator();
-        if (ui::Button("Reset to Defaults"))
-            page->ResetToDefaults();
+        for (const auto& [section, page] : selectedGroup_->pages_)
+            RenderPage(section, page);
     }
+}
+
+void SettingsTab::RenderPage(const ea::string& section, SettingsPage* page)
+{
+    const IdScopeGuard guard(page);
+
+    if (ui::Button(ICON_FA_CLOCK_ROTATE_LEFT "##Revert"))
+        page->ResetToDefaults();
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Revert settings to default values");
+
+    bool showPage = true;
+    if (!section.empty())
+    {
+        ui::SameLine();
+        showPage = ui::CollapsingHeader(section.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+    }
+
+    if (showPage)
+        page->RenderSettings();
 }
 
 }

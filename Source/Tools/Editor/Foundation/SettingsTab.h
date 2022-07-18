@@ -40,12 +40,6 @@ class SettingsTab : public EditorTab
 public:
     explicit SettingsTab(Context* context);
 
-    /// Implement EditorTab
-    /// @{
-    void WriteIniSettings(ImGuiTextBuffer& output) override;
-    void ReadIniSettings(const char* line) override;
-    /// @}
-
 protected:
     /// Implement EditorTab
     /// @{
@@ -54,12 +48,13 @@ protected:
 
 private:
     void RenderSettingsTree();
-    void RenderSettingsSubtree(const SettingTreeNode& treeNode, const ea::string& shortName);
+    void RenderSettingsSubtree(const SettingsPageGroup& group, const ea::string& shortName);
 
-    void RenderCurrentSettingsPage();
+    void RenderCurrentGroup();
+    void RenderPage(const ea::string& section, SettingsPage* page);
 
-    bool selectNextValidPage_{};
-    ea::string selectedPage_;
+    bool selectNextValidGroup_{};
+    const SettingsPageGroup* selectedGroup_{};
 };
 
 }

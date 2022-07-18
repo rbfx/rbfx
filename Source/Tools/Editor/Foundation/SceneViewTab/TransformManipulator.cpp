@@ -65,24 +65,34 @@ void TransformManipulator::Settings::SerializeInBlock(Archive& archive)
 
 void TransformManipulator::Settings::RenderSettings()
 {
-    ui::DragFloat("Snap Position", &snapPosition_, 0.001f, 0.001f, 10.0f, "%.3f");
-    ui::DragFloat("Snap Rotation", &snapRotation_, 0.001f, 0.001f, 360.0f, "%.3f");
-    ui::DragFloat("Snap Scale", &snapScale_, 0.001f, 0.001f, 1.0f, "%.3f");
+    if (ui::DragFloat("Snap Position", &snapPosition_.x_, 0.1f, 0.1f, 10.0f, "%.2f"))
+    {
+        snapPosition_.y_ = snapPosition_.x_;
+        snapPosition_.z_ = snapPosition_.x_;
+    }
+    ui::Indent();
+    ui::DragFloat("X", &snapPosition_.x_, 0.1f, 0.1f, 10.0f, "%.2f");
+    ui::DragFloat("Y", &snapPosition_.y_, 0.1f, 0.1f, 10.0f, "%.2f");
+    ui::DragFloat("Z", &snapPosition_.z_, 0.1f, 0.1f, 10.0f, "%.2f");
+    ui::Unindent();
+
+    ui::DragFloat("Snap Rotation", &snapRotation_, 5.0f, 5.0f, 180.0f, "%.1f");
+    ui::DragFloat("Snap Scale", &snapScale_, 0.1f, 0.1f, 1.0f, "%.2f");
 }
 
-float TransformManipulator::Settings::GetSnapValue(TransformGizmoOperation op) const
+Vector3 TransformManipulator::Settings::GetSnapValue(TransformGizmoOperation op) const
 {
     switch (op)
     {
     case TransformGizmoOperation::Translate:
         return snapPosition_;
     case TransformGizmoOperation::Rotate:
-        return snapRotation_;
+        return Vector3::ONE * snapRotation_;
     case TransformGizmoOperation::Scale:
-        return snapScale_;
+        return Vector3::ONE * snapScale_;
     case TransformGizmoOperation::None:
     default:
-        return 0.0f;
+        return Vector3::ZERO;
     }
 }
 
@@ -117,7 +127,7 @@ void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseCon
         const TransformGizmo gizmo{camera, scenePage.contentArea_};
 
         const bool needSnap = ui::IsKeyDown(KEY_CTRL);
-        const float snapValue = needSnap ? cfg.GetSnapValue(operation_) : 0.0f;
+        const Vector3 snapValue = needSnap ? cfg.GetSnapValue(operation_) : Vector3::ZERO;
         if (transformNodesGizmo_->Manipulate(gizmo, operation_, isLocal_, isPivoted_, snapValue))
             mouseConsumed = true;
     }

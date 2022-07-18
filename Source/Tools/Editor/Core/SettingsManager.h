@@ -26,6 +26,7 @@
 
 #include <EASTL/map.h>
 #include <EASTL/vector.h>
+#include <EASTL/unique_ptr.h>
 
 namespace Urho3D
 {
@@ -40,6 +41,9 @@ public:
 
     /// Return unique name of the page.
     virtual ea::string GetUniqueName() = 0;
+    /// Return whether the serialization is needed.
+    virtual bool IsSerializable() = 0;
+
     /// Serialization must be provided for settings page.
     virtual void SerializeInBlock(Archive& archive) override = 0;
     /// Render page with settings.
@@ -58,6 +62,8 @@ public:
     /// Implement SettingsPage
     /// @{
     ea::string GetUniqueName() override { return values_.GetUniqueName(); }
+    bool IsSerializable() override { return true; }
+
     void SerializeInBlock(Archive& archive) override { values_.SerializeInBlock(archive); }
     void RenderSettings() override { values_.RenderSettings(); }
     void ResetToDefaults() override { values_ = T{}; }
@@ -69,10 +75,10 @@ private:
     T values_;
 };
 
-struct SettingTreeNode
+struct SettingsPageGroup
 {
-    SharedPtr<SettingsPage> page_;
-    ea::map<ea::string, SettingTreeNode> children_;
+    ea::map<ea::string, SharedPtr<SettingsPage>> pages_;
+    ea::map<ea::string, ea::unique_ptr<SettingsPageGroup>> children_;
 };
 
 /// Class used to manage and serialize settings.
@@ -100,14 +106,14 @@ public:
     /// Return sorted pages.
     const PageMap& GetSortedPages() const { return sortedPages_; }
     /// Return page tree for rendering.
-    const SettingTreeNode& GetPageTree() const { return rootNode_; }
+    const SettingsPageGroup& GetPageTree() const { return rootGroup_; }
 
 private:
-    void InsertNode(SettingTreeNode& parentNode, ea::string_view path, const SharedPtr<SettingsPage>& page);
+    void InsertPageInGroup(SettingsPageGroup& parentGroup, ea::string_view path, const SharedPtr<SettingsPage>& page, ea::string_view section);
 
     ea::vector<SharedPtr<SettingsPage>> pages_;
     PageMap sortedPages_;
-    SettingTreeNode rootNode_;
+    SettingsPageGroup rootGroup_;
 };
 
 }

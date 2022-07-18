@@ -51,10 +51,10 @@ public:
     TransformGizmo(Camera* camera, const Rect& viewportRect);
 
     /// Manipulate transform. Returns delta matrix in world space.
-    ea::optional<Matrix4> ManipulateTransform(Matrix4& transform, TransformGizmoOperation op, bool local, float snap) const;
+    ea::optional<Matrix4> ManipulateTransform(Matrix4& transform, TransformGizmoOperation op, bool local, const Vector3& snap) const;
 
     /// Manipulate position. Returns delta position in world space.
-    ea::optional<Vector3> ManipulatePosition(const Matrix4& transform, bool local, float snap) const;
+    ea::optional<Vector3> ManipulatePosition(const Matrix4& transform, bool local, const Vector3& snap) const;
     /// Manipulate rotation. Returns delta rotation in world space.
     ea::optional<Quaternion> ManipulateRotation(const Matrix4& transform, bool local, float snap) const;
     /// Manipulate scale. Returns multiplicative delta scale in local space.
@@ -88,13 +88,13 @@ public:
     {}
 
     /// Manipulate nodes.
-    bool Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, bool pivoted, float snap);
+    bool Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, bool local, bool pivoted, const Vector3& snap);
 
 private:
     Matrix4 GetGizmoTransform(bool pivoted) const;
-    bool ManipulatePosition(const TransformGizmo& gizmo, bool local, bool pivoted, float snap);
-    bool ManipulateRotation(const TransformGizmo& gizmo, bool local, bool pivoted, float snap);
-    bool ManipulateScale(const TransformGizmo& gizmo, bool local, bool pivoted, float snap);
+    bool ManipulatePosition(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap);
+    bool ManipulateRotation(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap);
+    bool ManipulateScale(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap);
 
     WeakPtr<const Node> activeNode_;
     ea::vector<WeakPtr<Node>> nodes_;

@@ -43,7 +43,7 @@ public:
 
     struct Settings
     {
-        ea::string GetUniqueName() { return "SceneView.Selection"; }
+        ea::string GetUniqueName() { return "Editor.Scene:Selection"; }
 
         void SerializeInBlock(Archive& archive);
         void RenderSettings();
