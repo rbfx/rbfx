@@ -31,6 +31,8 @@
 namespace Urho3D
 {
 
+class HotkeyManager;
+
 /// Base class of an individual page with settings.
 class SettingsPage : public Object
 {
@@ -50,6 +52,8 @@ public:
     virtual void RenderSettings() = 0;
     /// Reset settings to default.
     virtual void ResetToDefaults() = 0;
+    /// Apply hotkeys for the page.
+    virtual void ApplyHotkeys(HotkeyManager* hotkeyManager) = 0;
 };
 
 /// Simple settings page that expects struct with methods.
@@ -67,6 +71,7 @@ public:
     void SerializeInBlock(Archive& archive) override { values_.SerializeInBlock(archive); }
     void RenderSettings() override { values_.RenderSettings(); }
     void ResetToDefaults() override { values_ = T{}; }
+    void ApplyHotkeys(HotkeyManager* hotkeyManager) override {}
     /// @}
 
     const T& GetValues() const { return values_; }

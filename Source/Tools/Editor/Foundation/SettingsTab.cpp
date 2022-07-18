@@ -35,8 +35,17 @@ void Foundation_SettingsTab(Context* context, ProjectEditor* projectEditor)
 
 SettingsTab::SettingsTab(Context* context)
     : EditorTab(context, "Settings", "5123082a-1ded-4de7-bab0-b48a3d56a073",
-        EditorTabFlag::None, EditorTabPlacement::DockCenter)
+        EditorTabFlag::None, EditorTabPlacement::DockRight)
 {
+}
+
+void SettingsTab::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    if (!selectedGroup_)
+        return;
+
+    for (const auto& [_, page] : selectedGroup_->pages_)
+        page->ApplyHotkeys(hotkeyManager);
 }
 
 void SettingsTab::RenderContent()
@@ -44,7 +53,29 @@ void SettingsTab::RenderContent()
     if (!selectedGroup_ || selectedGroup_->pages_.empty())
         selectNextValidGroup_ = true;
 
-    if (ui::BeginTable("##ResourceBrowserTab", 2, ImGuiTableFlags_Resizable))
+    const float verticalThresholdIn = 700.0f;
+    const float verticalThresholdOut = 750.0f;
+    const float totalWidth = ui::GetContentRegionAvail().x;
+    const float totalHeight = ui::GetContentRegionAvail().y;
+
+    if (!useVerticalLayout_.has_value() || totalWidth > verticalThresholdOut)
+        useVerticalLayout_ = false;
+    else if (totalWidth < verticalThresholdIn)
+        useVerticalLayout_ = true;
+
+    if (*useVerticalLayout_)
+    {
+        if (ui::BeginChild("##SettingsTree", {totalWidth, totalHeight * 0.3f}))
+            RenderSettingsTree();
+        ui::EndChild();
+
+        ui::Separator();
+
+        if (ui::BeginChild("##SettingsPage", ui::GetContentRegionAvail()))
+            RenderCurrentGroup();
+        ui::EndChild();
+    }
+    else if (ui::BeginTable("##ResourceBrowserTab", 2, ImGuiTableFlags_Resizable))
     {
         ui::TableSetupColumn("Left", ImGuiTableColumnFlags_WidthStretch, 0.35f);
         ui::TableSetupColumn("Right", ImGuiTableColumnFlags_WidthStretch, 0.65f);

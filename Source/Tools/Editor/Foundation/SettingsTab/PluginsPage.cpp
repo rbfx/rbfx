@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/IniHelpers.h"
-#include "../Foundation/PluginsTab.h"
+#include "../../Foundation/SettingsTab/PluginsPage.h"
+
+#include "../../Core/IniHelpers.h"
+
+#include <Urho3D/Utility/SceneViewerApplication.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -33,38 +36,41 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_Apply, "PluginsTab.Apply", QUAL_CTRL, KEY_RETURN);
-URHO3D_EDITOR_HOTKEY(Hotkey_Discard, "PluginsTab.Discard", QUAL_NONE, KEY_ESCAPE);
+URHO3D_EDITOR_HOTKEY(Hotkey_Apply, "PluginsPage.Apply", QUAL_CTRL, KEY_RETURN);
+URHO3D_EDITOR_HOTKEY(Hotkey_Discard, "PluginsPage.Discard", QUAL_NONE, KEY_ESCAPE);
 
 }
 
-void Foundation_PluginsTab(Context* context, ProjectEditor* projectEditor)
+void Foundation_PluginsPage(Context* context, SettingsTab* settingsTab)
 {
-    projectEditor->AddTab(MakeShared<PluginsTab>(context));
+    auto project = settingsTab->GetProject();
+    auto settingsManager = project->GetSettingsManager();
+    settingsManager->AddPage(MakeShared<PluginsPage>(context));
 }
 
-PluginsTab::PluginsTab(Context* context)
-    : EditorTab(context, "Plugins", "b1c35ca0-e90f-4f32-9311-d7d349c3ac98",
-        EditorTabFlag::None, EditorTabPlacement::DockRight)
+PluginsPage::PluginsPage(Context* context)
+    : SettingsPage(context)
 {
-    BindHotkey(Hotkey_Apply, &PluginsTab::Apply);
-    BindHotkey(Hotkey_Discard, &PluginsTab::Discard);
+    auto project = GetSubsystem<ProjectEditor>();
+    auto hotkeyManager = project->GetHotkeyManager();
+    hotkeyManager->BindHotkey(this, Hotkey_Apply, &PluginsPage::Apply);
+    hotkeyManager->BindHotkey(this, Hotkey_Discard, &PluginsPage::Discard);
 }
 
-void PluginsTab::Apply()
+void PluginsPage::Apply()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
     if (hasChanges_)
         pluginManager->SetPluginsLoaded(loadedPlugins_);
 }
 
-void PluginsTab::Discard()
+void PluginsPage::Discard()
 {
     if (hasChanges_)
         revision_ = 0;
 }
 
-void PluginsTab::RenderContent()
+void PluginsPage::RenderSettings()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
 
@@ -147,7 +153,17 @@ void PluginsTab::RenderContent()
         pluginManager->Reload();
 }
 
-void PluginsTab::UpdateAvailablePlugins()
+void PluginsPage::ResetToDefaults()
+{
+    loadedPlugins_ = {SceneViewerApplication::GetStaticPluginName()};
+}
+
+void PluginsPage::ApplyHotkeys(HotkeyManager* hotkeyManager)
+{
+    hotkeyManager->InvokeFor(this);
+}
+
+void PluginsPage::UpdateAvailablePlugins()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
 
@@ -169,7 +185,7 @@ void PluginsTab::UpdateAvailablePlugins()
     }
 }
 
-void PluginsTab::UpdateLoadedPlugins()
+void PluginsPage::UpdateLoadedPlugins()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
 
