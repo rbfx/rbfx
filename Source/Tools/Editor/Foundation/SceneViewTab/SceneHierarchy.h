@@ -25,6 +25,8 @@
 #include "../../Foundation/Shared/HierarchyBrowserSource.h"
 #include "../../Foundation/SceneViewTab.h"
 
+#include <Urho3D/SystemUI/SceneHierarchyWidget.h>
+
 namespace Urho3D
 {
 
@@ -58,52 +60,8 @@ public:
 private:
     void RenderToolbar(SceneViewPage& page);
 
-    void RenderNode(SceneViewPage& page, Node* node);
-    void RenderComponent(SceneViewPage& page, Component* component);
-    void ProcessObjectSelected(SceneViewPage& page, Object* object, bool toggle, bool range);
-    void UpdateActiveObjectVisibility(SceneViewPage& page, Object* currentObject);
-
-    void BeginRangeSelection();
-    void ProcessRangeSelection(Object* currentObject, bool open);
-    void EndRangeSelection(SceneViewPage& page);
-
-    void UpdateSearchResults(SceneViewPage& page);
-
-    struct RangeSelectionRequest
-    {
-        WeakPtr<Object> from_;
-        WeakPtr<Object> to_;
-
-        bool IsBorder(Object* object) const { return object == from_ || object == to_; }
-    };
-
     bool reentrant_{};
-
-    bool showTemporary_{};
-    bool showComponents_{true};
-
-    /// UI state
-    /// @{
-    bool isActiveObjectVisible_{};
-    bool wasActiveObjectVisible_{};
-
-    struct RangeSelection
-    {
-        ea::optional<RangeSelectionRequest> pendingRequest_;
-
-        ea::optional<RangeSelectionRequest> currentRequest_;
-        bool isActive_{};
-        ea::vector<WeakPtr<Object>> result_;
-    } rangeSelection_;
-
-    struct NodeSearch
-    {
-        ea::string currentQuery_;
-        WeakPtr<Scene> lastScene_;
-        ea::string lastQuery_;
-        ea::vector<WeakPtr<Node>> lastResults_;
-    } search_;
-    /// @}
+    SharedPtr<SceneHierarchyWidget> widget_;
 };
 
 }
