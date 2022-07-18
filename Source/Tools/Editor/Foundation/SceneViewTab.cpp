@@ -112,13 +112,21 @@ ea::any& SceneViewPage::GetAddonData(const SceneViewAddon& addon)
     return addonData;
 }
 
+void SceneViewPage::StartSimulation()
+{
+    simulationBase_ = PackedSceneData::FromScene(scene_);
+    selection_.Save(selectionBase_);
+}
+
 void SceneViewPage::RewindSimulation()
 {
     scene_->SetUpdateEnabled(false);
     if (simulationBase_)
     {
         simulationBase_->ToScene(scene_);
+        selection_.Load(scene_, selectionBase_);
         simulationBase_ = ea::nullopt;
+        selectionBase_.Clear();
     }
 }
 
@@ -209,7 +217,7 @@ void SceneViewTab::ResumeSimulation()
     if (!activePage->simulationBase_)
     {
         PushAction<EmptyEditorAction>();
-        activePage->simulationBase_ = PackedSceneData::FromScene(activePage->scene_);
+        activePage->StartSimulation();
     }
     activePage->scene_->SetUpdateEnabled(true);
 }

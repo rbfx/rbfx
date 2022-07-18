@@ -57,6 +57,10 @@ void NodeInspectorWidget::RenderTitle()
 
 void NodeInspectorWidget::RenderContent()
 {
+    ea::erase_if(nodes_, [] (Node* node) { return node == nullptr; });
+    if (nodes_.empty())
+        return;
+
     pendingRemoveComponents_.clear();
 
     const auto allComponents = GetAllComponents();
