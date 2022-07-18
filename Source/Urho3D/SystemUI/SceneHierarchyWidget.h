@@ -51,7 +51,9 @@ private:
     void RenderNode(SceneSelection& selection, Node* node);
     void RenderComponent(SceneSelection& selection, Component* component);
     void ProcessObjectSelected(SceneSelection& selection, Object* object, bool toggle, bool range);
-    void UpdateActiveObjectVisibility(SceneSelection& selection, Object* currentObject);
+    void ProcessItemIfActive(SceneSelection& selection, Object* currentObject);
+
+    void ProcessActiveObject(Object* activeObject);
 
     void BeginRangeSelection();
     void ProcessRangeSelection(Object* currentObject, bool open);
@@ -73,6 +75,10 @@ private:
     /// @{
     bool isActiveObjectVisible_{};
     bool wasActiveObjectVisible_{};
+
+    bool scrollToActiveObject_{};
+    Object* lastActiveObject_{};
+    ea::vector<Node*> pathToActiveObject_;
 
     struct RangeSelection
     {

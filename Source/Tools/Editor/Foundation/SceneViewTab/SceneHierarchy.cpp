@@ -87,7 +87,9 @@ void SceneHierarchy::RenderContent()
         return;
 
     RenderToolbar(*activePage);
-    widget_->RenderContent(activePage->scene_, activePage->selection_);
+    if (ui::BeginChild("##SceneHierarchy"))
+        widget_->RenderContent(activePage->scene_, activePage->selection_);
+    ui::EndChild();
 }
 
 void SceneHierarchy::RenderContextMenuItems()

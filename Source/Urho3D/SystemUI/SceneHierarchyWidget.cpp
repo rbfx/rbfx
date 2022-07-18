@@ -65,6 +65,8 @@ void SceneHierarchyWidget::RenderContent(Scene* scene, SceneSelection& selection
     if (queryChanged || sceneChanged)
         UpdateSearchResults(scene);
 
+    ProcessActiveObject(selection.GetActiveObject());
+
     BeginRangeSelection();
 
     const ImGuiStyle& style = ui::GetStyle();
@@ -84,6 +86,9 @@ void SceneHierarchyWidget::RenderContent(Scene* scene, SceneSelection& selection
     ui::PopStyleVar();
 
     EndRangeSelection(selection);
+
+    // Suppress future updates if selection was changed by the widget
+    lastActiveObject_ = selection.GetActiveObject();
 }
 
 void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
@@ -91,7 +96,7 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
     if (!settings_.showTemporary_ && node->IsTemporary())
         return;
 
-    UpdateActiveObjectVisibility(selection, node);
+    ProcessItemIfActive(selection, node);
 
     const bool isEmpty = node->GetChildren().empty() && (!settings_.showComponents_ || node->GetComponents().empty());
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
@@ -104,6 +109,9 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
         flags |= ImGuiTreeNodeFlags_Selected;
     if (isEmpty)
         flags |= ImGuiTreeNodeFlags_Leaf;
+
+    if (pathToActiveObject_.contains(node))
+        ui::SetNextItemOpen(true);
 
     const IdScopeGuard guard(static_cast<void*>(node));
     const bool opened = ui::TreeNodeEx(GetNodeTitle(node).c_str(), flags);
@@ -136,7 +144,7 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
     if (component->IsTemporary() && !settings_.showTemporary_)
         return;
 
-    UpdateActiveObjectVisibility(selection, component);
+    ProcessItemIfActive(selection, component);
 
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick
@@ -176,10 +184,36 @@ void SceneHierarchyWidget::ProcessObjectSelected(SceneSelection& selection, Obje
     }
 }
 
-void SceneHierarchyWidget::UpdateActiveObjectVisibility(SceneSelection& selection, Object* currentItem)
+void SceneHierarchyWidget::ProcessItemIfActive(SceneSelection& selection, Object* currentItem)
 {
     if (selection.GetActiveObject() == currentItem)
+    {
         isActiveObjectVisible_ = true;
+        if (scrollToActiveObject_)
+        {
+            ui::SetScrollHereY();
+            scrollToActiveObject_ = false;
+        }
+    }
+}
+
+void SceneHierarchyWidget::ProcessActiveObject(Object* activeObject)
+{
+    pathToActiveObject_.clear();
+    if (lastActiveObject_ != activeObject)
+    {
+        lastActiveObject_ = activeObject;
+        scrollToActiveObject_ = true;
+
+        const auto activeComponent = dynamic_cast<Component*>(activeObject);
+        const auto activeNode = dynamic_cast<Node*>(activeObject);
+        Node* currentPathNode = activeComponent ? activeComponent->GetNode() : activeNode ? activeNode->GetParent() : nullptr;
+        while (currentPathNode != nullptr)
+        {
+            pathToActiveObject_.push_back(currentPathNode);
+            currentPathNode = currentPathNode->GetParent();
+        }
+    }
 }
 
 void SceneHierarchyWidget::BeginRangeSelection()
