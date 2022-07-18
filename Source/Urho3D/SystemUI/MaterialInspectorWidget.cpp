@@ -405,17 +405,13 @@ bool MaterialInspectorWidget::EditTechniqueInEntry(TechniqueEntry& entry, float 
                 wasDeprecated = true;
             }
 
-            if (!desc.deprecated_)
-                ui::PushStyleColor(ImGuiCol_Text, ImVec4{0.3f, 1.0f, 0.0f, 1.0f});
+            const ColorScopeGuard guardTextColor{ImGuiCol_Text, ImVec4{0.3f, 1.0f, 0.0f, 1.0f}, !desc.deprecated_};
 
             if (ui::Selectable(desc.displayName_.c_str(), entry.technique_ == desc.technique_))
             {
                 entry.technique_ = entry.original_ = desc.technique_;
                 modified = true;
             }
-
-            if (!desc.deprecated_)
-                ui::PopStyleColor();
         }
         ui::EndCombo();
     }

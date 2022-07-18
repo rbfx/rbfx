@@ -58,16 +58,12 @@ bool ToolbarButton(const char* label, const char* tooltip, bool active)
     const auto& g = *ui::GetCurrentContext();
     const float dimension = GetSmallButtonSize();
 
-    if (active)
-        ui::PushStyleColor(ImGuiCol_Button, g.Style.Colors[ImGuiCol_ButtonActive]);
-    else
-        ui::PushStyleColor(ImGuiCol_Button, g.Style.Colors[ImGuiCol_Button]);
+    const ColorScopeGuard guardColor{ImGuiCol_Button, g.Style.Colors[ImGuiCol_ButtonActive], active};
     ui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{});
 
     const bool result = ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
 
     ui::PopStyleVar();
-    ui::PopStyleColor();
 
     ui::SameLine(0, 0);
 
@@ -111,14 +107,10 @@ void ItemLabel(ea::string_view title, const ea::optional<Color>& color, bool isL
     ui::ItemSize(textRect);
     if (ui::ItemAdd(textRect, window.GetID(title.data(), title.data() + title.size())))
     {
-        if (color)
-            ui::PushStyleColor(ImGuiCol_Text, color->ToUInt());
+        const ColorScopeGuard guardColor{ImGuiCol_Text, color.value_or(Color::BLACK).ToUInt(), color.has_value()};
 
         ui::RenderTextEllipsis(ui::GetWindowDrawList(), textRect.Min, textRect.Max, textRect.Max.x,
             textRect.Max.x, title.data(), title.data() + title.size(), &textSize);
-
-        if (color)
-            ui::PopStyleColor();
 
         if (textRect.GetWidth() < textSize.x && ui::IsItemHovered())
             ui::SetTooltip("%.*s", (int)title.size(), title.data());

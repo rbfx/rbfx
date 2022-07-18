@@ -517,16 +517,14 @@ void ProjectEditor::SaveGitIgnore()
 
 void ProjectEditor::Render()
 {
-    const bool highlightEnabled = isHighlightEnabled_;
-    if (highlightEnabled)
-    {
-        const float tint = 0.15f;
-        ui::PushStyleColor(ImGuiCol_Tab,                ImVec4(0.26f, 0.26f + tint, 0.26f, 0.40f));
-        ui::PushStyleColor(ImGuiCol_TabHovered,         ImVec4(0.31f, 0.31f + tint, 0.31f, 1.00f));
-        ui::PushStyleColor(ImGuiCol_TabActive,          ImVec4(0.28f, 0.28f + tint, 0.28f, 1.00f));
-        ui::PushStyleColor(ImGuiCol_TabUnfocused,       ImVec4(0.17f, 0.17f + tint, 0.17f, 1.00f));
-        ui::PushStyleColor(ImGuiCol_TabUnfocusedActive, ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f));
-    }
+    const float tint = 0.15f;
+    const ColorScopeGuard guardHighlightColors{{
+        {ImGuiCol_Tab,                ImVec4(0.26f, 0.26f + tint, 0.26f, 0.40f)},
+        {ImGuiCol_TabHovered,         ImVec4(0.31f, 0.31f + tint, 0.31f, 1.00f)},
+        {ImGuiCol_TabActive,          ImVec4(0.28f, 0.28f + tint, 0.28f, 1.00f)},
+        {ImGuiCol_TabUnfocused,       ImVec4(0.17f, 0.17f + tint, 0.17f, 1.00f)},
+        {ImGuiCol_TabUnfocusedActive, ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f)},
+    }, isHighlightEnabled_};
 
     hotkeyManager_->Update();
     hotkeyManager_->InvokeFor(hotkeyManager_);
@@ -569,9 +567,6 @@ void ProjectEditor::Render()
                 tab->Focus(true);
         }
     }
-
-    if (highlightEnabled)
-        ui::PopStyleColor(5);
 
     ProcessDelayedSaves();
     ProcessPendingRequests();
