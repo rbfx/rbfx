@@ -23,6 +23,7 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
 #include "../Engine/Engine.h"
+#include "../Engine/EngineDefs.h"
 #include "../Engine/EngineEvents.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/BinaryArchive.h"
@@ -263,25 +264,6 @@ void PluginManager::SerializeInBlock(Archive& archive)
         SetPluginsLoaded(loadedPlugins_);
 }
 
-void PluginManager::SetParameter(const ea::string& name, const Variant& value)
-{
-    if (value.IsEmpty())
-        parameters_.erase(name);
-    else
-        parameters_[name] = value;
-}
-
-const Variant& PluginManager::GetParameter(const ea::string& name) const
-{
-    const auto iter = parameters_.find(name);
-    return iter != parameters_.end() ? iter->second : Variant::EMPTY;
-}
-
-void PluginManager::ClearParameters()
-{
-    parameters_.clear();
-}
-
 void PluginManager::Reload()
 {
     forceReload_ = true;
@@ -470,7 +452,8 @@ void PluginManager::Update()
 
     if (startPending_)
     {
-        pluginStack_->StartApplication(GetParameter(Plugin_MainPlugin).GetString());
+        auto engine = GetSubsystem<Engine>();
+        pluginStack_->StartApplication(engine->GetParameter(EP_MAIN_PLUGIN).GetString());
         URHO3D_LOGINFO("Application is started with {} plugins", pluginStack_->GetNumPlugins());
 
         startPending_ = false;

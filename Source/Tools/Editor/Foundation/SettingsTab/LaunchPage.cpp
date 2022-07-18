@@ -90,11 +90,10 @@ void LaunchPage::RenderConfiguration(unsigned index, LaunchConfiguration& config
 
 void LaunchPage::RenderMainPlugin(ea::string& mainPlugin)
 {
-    static const ea::string undefinedValue = "(undefined)";
-    if (!ui::BeginCombo("Main Plugin", !mainPlugin.empty() ? mainPlugin.c_str() : undefinedValue.c_str()))
+    if (!ui::BeginCombo("Main Plugin", !mainPlugin.empty() ? mainPlugin.c_str() : LaunchConfiguration::UnspecifiedName.c_str()))
         return;
 
-    if (ui::Selectable(undefinedValue.c_str(), mainPlugin.empty()))
+    if (ui::Selectable(LaunchConfiguration::UnspecifiedName.c_str(), mainPlugin.empty()))
         mainPlugin.clear();
 
     auto pluginManager = GetSubsystem<PluginManager>();

@@ -29,6 +29,8 @@
 namespace Urho3D
 {
 
+const ea::string LaunchConfiguration::UnspecifiedName{"(unspecified)"};
+
 LaunchConfiguration::LaunchConfiguration(const ea::string& name, const ea::string& mainPlugin)
     : name_(name)
     , mainPlugin_(mainPlugin)

@@ -160,10 +160,13 @@ void SettingsTab::RenderPage(const ea::string& section, SettingsPage* page)
 {
     const IdScopeGuard guard(page);
 
-    if (ui::Button(ICON_FA_CLOCK_ROTATE_LEFT "##Revert"))
-        page->ResetToDefaults();
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Revert settings to default values");
+    if (page->CanResetToDefault())
+    {
+        if (ui::Button(ICON_FA_CLOCK_ROTATE_LEFT "##Revert"))
+            page->ResetToDefaults();
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Revert settings to default values");
+    }
 
     bool showPage = true;
     if (!section.empty())

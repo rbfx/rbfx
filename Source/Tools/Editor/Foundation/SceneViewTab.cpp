@@ -24,6 +24,8 @@
 #include "../Core/IniHelpers.h"
 #include "../Foundation/SceneViewTab.h"
 
+#include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Texture2D.h>
@@ -193,18 +195,18 @@ void SceneViewTab::SetupPluginContext()
 {
     SceneViewPage* activePage = GetActivePage();
 
-    auto pluginManager = GetSubsystem<PluginManager>();
+    auto engine = GetSubsystem<Engine>();
     if (activePage)
     {
-        pluginManager->SetParameter(Plugin_SceneName, GetActiveResourceName());
-        pluginManager->SetParameter(Plugin_ScenePosition, activePage->renderer_->GetCameraPosition());
-        pluginManager->SetParameter(Plugin_SceneRotation, activePage->renderer_->GetCameraRotation());
+        engine->SetParameter(Param_SceneName, GetActiveResourceName());
+        engine->SetParameter(Param_ScenePosition, activePage->renderer_->GetCameraPosition());
+        engine->SetParameter(Param_SceneRotation, activePage->renderer_->GetCameraRotation());
     }
     else
     {
-        pluginManager->SetParameter(Plugin_SceneName, Variant::EMPTY);
-        pluginManager->SetParameter(Plugin_ScenePosition, Variant::EMPTY);
-        pluginManager->SetParameter(Plugin_SceneRotation, Variant::EMPTY);
+        engine->SetParameter(Param_SceneName, Variant::EMPTY);
+        engine->SetParameter(Param_ScenePosition, Variant::EMPTY);
+        engine->SetParameter(Param_SceneRotation, Variant::EMPTY);
     }
 }
 

@@ -79,11 +79,9 @@ void Player::Start()
 #endif
 
     const StringVector loadedPlugins = engineParameters_[EP_PLUGINS].GetString().split(';');
-    const ea::string mainPlugin = engineParameters_[EP_MAIN_PLUGIN].GetString();
 
     auto pluginManager = GetSubsystem<PluginManager>();
     pluginManager->SetPluginsLoaded(loadedPlugins);
-    pluginManager->SetParameter(Plugin_MainPlugin, mainPlugin);
     pluginManager->StartApplication();
 }
 

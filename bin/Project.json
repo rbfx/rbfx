@@ -1,19 +1,20 @@
 {
-	"defaultScene": "",
-	"pipeline": {
-		"flavors": [
+	"LaunchManager": {
+		"Configurations": [
 			{
-				"name": "default",
-				"platforms": [],
-				"settings": {}
+				"MainPlugin": "Sample.103_GamePlugin",
+				"Name": "Launch Sample 103"
+			},
+			{
+				"MainPlugin": "Builtin.SceneViewer",
+				"Name": "View Current Scene"
 			}
 		]
 	},
-	"plugins": [],
-	"resourcePaths": [
-		"Data/",
-		"CoreData/",
-		"Autoload/LargeData/"
-	],
-	"version": 1
+	"PluginManager": {
+		"LoadedPlugins": [
+			"Sample.103_GamePlugin",
+			"Builtin.SceneViewer"
+		]
+	}
 }
