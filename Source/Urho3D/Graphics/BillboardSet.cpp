@@ -489,7 +489,8 @@ void BillboardSet::UpdateBufferSize()
 {
     unsigned numBillboards = billboards_.size();
 
-    if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_)
+    if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_
+        || vertexBuffer_->GetElementMask() == MASK_NONE)
     {
         vertexBuffer_->SetSize(numBillboards * 4, GetVertexBufferFormat(), true);
         geometry_->SetVertexBuffer(0, vertexBuffer_);

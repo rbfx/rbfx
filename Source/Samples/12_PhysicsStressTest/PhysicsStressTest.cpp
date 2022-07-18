@@ -40,6 +40,7 @@
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
@@ -129,21 +130,15 @@ void PhysicsStressTest::CreateScene()
     {
         // Create static mushrooms with triangle mesh collision
         const unsigned NUM_MUSHROOMS = 50;
+        XMLFile* mushroomPrefab = cache->GetResource<XMLFile>("Prefabs/Mushroom.xml");
         for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
         {
             Node* mushroomNode = scene_->CreateChild("Mushroom");
             mushroomNode->SetPosition(Vector3(Random(400.0f) - 200.0f, 0.0f, Random(400.0f) - 200.0f));
             mushroomNode->SetRotation(Quaternion(0.0f, Random(360.0f), 0.0f));
             mushroomNode->SetScale(5.0f + Random(5.0f));
-            auto* mushroomObject = mushroomNode->CreateComponent<StaticModel>();
-            mushroomObject->SetModel(cache->GetResource<Model>("Models/Mushroom.mdl"));
-            mushroomObject->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
-            mushroomObject->SetCastShadows(true);
-
-            /*RigidBody* body = */mushroomNode->CreateComponent<RigidBody>();
-            auto* shape = mushroomNode->CreateComponent<CollisionShape>();
-            // By default the highest LOD level will be used, the LOD level can be passed as an optional parameter
-            shape->SetTriangleMesh(mushroomObject->GetModel());
+            auto* prefabReference = mushroomNode->CreateComponent<PrefabReference>();
+            prefabReference->SetPrefab(mushroomPrefab);
         }
     }
 

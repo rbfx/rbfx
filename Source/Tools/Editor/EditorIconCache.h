@@ -38,6 +38,8 @@ public:
         ResourceRef textureRef_;
         /// Icon location and size.
         IntRect rect_;
+        /// Cached Texture2D.
+        ea::optional<SharedPtr<Texture2D>> texture_;
     };
 
     /// Reads EditorIcons.xml and stores information for later use by imgui.
