@@ -63,12 +63,14 @@ public:
     SceneSelection selection_;
 
     ea::optional<PackedSceneData> simulationBase_;
+    PackedSceneSelection selectionBase_;
 
     /// UI state
     /// @{
     Rect contentArea_;
     /// @}
 
+    void StartSimulation();
     void RewindSimulation();
 };
 
