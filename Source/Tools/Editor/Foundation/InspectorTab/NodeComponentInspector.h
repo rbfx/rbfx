@@ -51,6 +51,7 @@ public:
 
     /// Implement InspectorSource
     /// @{
+    EditorTab* GetOwnerTab() override { return inspectedTab_; }
     bool IsUndoSupported() override { return true; }
 
     void RenderContent() override;
