@@ -87,6 +87,8 @@ public:
     virtual ea::string GetUniqueName() const = 0;
     /// Return input priority.
     virtual int GetInputPriority() const { return 0; }
+    /// Return priority in the toolbar.
+    virtual int GetToolbarPriority() const { return 0; }
     /// Initialize addon for the given page.
     virtual void Initialize(SceneViewPage& page) {}
     /// Process input.
@@ -97,6 +99,8 @@ public:
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
     /// Render context menu of the tab.
     virtual bool RenderTabContextMenu() { return false; }
+    /// Render main toolbar.
+    virtual bool RenderToolbar() { return false; }
     /// Serialize per-scene page state of the addon.
     virtual void SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const;
 
@@ -115,7 +119,12 @@ class SceneViewTab : public ResourceEditorTab
     URHO3D_OBJECT(SceneViewTab, ResourceEditorTab);
 
 public:
-    struct ByPriority
+    struct ByInputPriority
+    {
+        bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const;
+    };
+
+    struct ByToolbarPriority
     {
         bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const;
     };
@@ -125,7 +134,8 @@ public:
         bool operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const;
     };
 
-    using AddonSetByPriority = ea::vector_multiset<SharedPtr<SceneViewAddon>, ByPriority>;
+    using AddonSetByInputPriority = ea::vector_multiset<SharedPtr<SceneViewAddon>, ByInputPriority>;
+    using AddonSetByToolbarPriority = ea::vector_multiset<SharedPtr<SceneViewAddon>, ByToolbarPriority>;
     using AddonSetByName = ea::vector_multiset<SharedPtr<SceneViewAddon>, ByName>;
 
     explicit SceneViewTab(Context* context);
@@ -208,7 +218,8 @@ private:
     void InspectSelection(SceneViewPage& page);
 
     ea::vector<SharedPtr<SceneViewAddon>> addons_;
-    AddonSetByPriority addonsByInputPriority_;
+    AddonSetByInputPriority addonsByInputPriority_;
+    AddonSetByToolbarPriority addonsByToolbarPriority_;
     AddonSetByName addonsByName_;
 
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;

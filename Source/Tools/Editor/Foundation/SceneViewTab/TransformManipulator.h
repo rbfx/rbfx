@@ -70,10 +70,12 @@ public:
     /// Implement SceneViewAddon.
     /// @{
     ea::string GetUniqueName() const override { return "TransformGizmo"; }
+    int GetToolbarPriority() const override { return 0; }
     void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     void Render(SceneViewPage& scenePage) override;
     void ApplyHotkeys(HotkeyManager* hotkeyManager) override;
     bool RenderTabContextMenu() override;
+    bool RenderToolbar() override;
 
     void WriteIniSettings(ImGuiTextBuffer& output) override;
     void ReadIniSettings(const char* line) override;

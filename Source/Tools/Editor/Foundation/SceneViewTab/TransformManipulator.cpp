@@ -27,7 +27,9 @@
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/Widgets.h>
 
+#include <IconFontCppHeaders/IconsFontAwesome6.h>
 #include <ImGuizmo/ImGuizmo.h>
 
 namespace Urho3D
@@ -190,6 +192,32 @@ bool TransformManipulator::RenderTabContextMenu()
         operation_ = TransformGizmoOperation::Scale;
 
     ui::EndMenu();
+    return true;
+}
+
+bool TransformManipulator::RenderToolbar()
+{
+    if (Widgets::ToolbarButton(ICON_FA_ARROW_POINTER, "Select Objects", operation_ == TransformGizmoOperation::None))
+        operation_ = TransformGizmoOperation::None;
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT, "Move Objects", operation_ == TransformGizmoOperation::Translate))
+        operation_ = TransformGizmoOperation::Translate;
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_ROTATE, "Rotate Objects", operation_ == TransformGizmoOperation::Rotate))
+        operation_ = TransformGizmoOperation::Rotate;
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE, "Scale Objects", operation_ == TransformGizmoOperation::Scale))
+        operation_ = TransformGizmoOperation::Scale;
+
+    Widgets::ToolbarSeparator();
+
+    const char* localTitle = isLocal_ ? "Transform in local object space" : "Transform in world space";
+    if (Widgets::ToolbarButton(ICON_FA_CUBE, localTitle, isLocal_))
+        isLocal_ = !isLocal_;
+
+    const char* pivotedTitle = isPivoted_ ? "Transform around individual objects' pivots" : "Transform around the center of selection";\
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_TO_DOT, pivotedTitle, isPivoted_))
+        isPivoted_ = !isPivoted_;
+
+    Widgets::ToolbarSeparator();
+
     return true;
 }
 

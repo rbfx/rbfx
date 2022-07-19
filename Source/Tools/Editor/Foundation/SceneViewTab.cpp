@@ -154,9 +154,14 @@ void SceneViewAddon::SerializePageState(Archive& archive, const char* name, ea::
     SerializeOptionalValue(archive, name, placeholder, AlwaysSerialize{});
 }
 
-bool SceneViewTab::ByPriority::operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
+bool SceneViewTab::ByInputPriority::operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
 {
     return lhs->GetInputPriority() > rhs->GetInputPriority();
+}
+
+bool SceneViewTab::ByToolbarPriority::operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
+{
+    return lhs->GetToolbarPriority() < rhs->GetToolbarPriority();
 }
 
 bool SceneViewTab::ByName::operator()(const SharedPtr<SceneViewAddon>& lhs, const SharedPtr<SceneViewAddon>& rhs) const
@@ -188,6 +193,7 @@ void SceneViewTab::RegisterAddon(const SharedPtr<SceneViewAddon>& addon)
 {
     addons_.push_back(addon);
     addonsByInputPriority_.insert(addon);
+    addonsByToolbarPriority_.insert(addon);
     addonsByName_.insert(addon);
 }
 
@@ -391,6 +397,12 @@ void SceneViewTab::RenderToolbar()
     }
 
     Widgets::ToolbarSeparator();
+
+    for (SceneViewAddon* addon : addonsByToolbarPriority_)
+    {
+        if (addon->RenderToolbar())
+            Widgets::ToolbarSeparator();
+    }
 }
 
 bool SceneViewTab::CanOpenResource(const ResourceFileDescriptor& desc)
