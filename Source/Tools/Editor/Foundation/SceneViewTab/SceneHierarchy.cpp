@@ -142,7 +142,9 @@ void SceneHierarchy::RenderToolbar(SceneViewPage& page)
 void SceneHierarchy::RenderSelectionContextMenu(Scene* scene, SceneSelection& selection)
 {
     ui::Separator();
-    owner_->RenderSelectionMenu(scene, selection);
+    owner_->RenderEditMenu(scene, selection);
+    ui::Separator();
+    owner_->RenderCreateMenu(scene, selection);
 }
 
 void SceneHierarchy::ReorderNode(Node* node, unsigned oldIndex, unsigned newIndex)

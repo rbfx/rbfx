@@ -152,8 +152,10 @@ public:
 
     /// Setup context for plugin application execution.
     void SetupPluginContext();
-    /// Draw menu for selection in the scene.
-    bool RenderSelectionMenu(Scene* scene, SceneSelection& selection);
+    /// Draw Edit menu for selection in the scene.
+    void RenderEditMenu(Scene* scene, SceneSelection& selection);
+    /// Draw Create menu for selection in the scene.
+    void RenderCreateMenu(Scene* scene, SceneSelection& selection);
 
     /// Commands
     /// @{

@@ -392,7 +392,9 @@ void SceneHierarchyWidget::RenderContextMenu(Scene* scene, SceneSelection& selec
 
     if (ui::BeginPopup(contextMenuPopup.c_str()))
     {
-        ui::MenuItem(Format("Selected: {}", selection.GetSummary(scene)).c_str(), nullptr, false, false);
+        ui::BeginDisabled();
+        ui::Text("Selected: %s", selection.GetSummary(scene).c_str());
+        ui::EndDisabled();
 
         OnContextMenu(this, scene, selection);
         ui::EndPopup();

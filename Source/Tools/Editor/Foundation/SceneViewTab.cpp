@@ -23,6 +23,7 @@
 #include "../Core/CommonEditorActions.h"
 #include "../Core/IniHelpers.h"
 #include "../Foundation/SceneViewTab.h"
+#include "../Project/CreateComponentMenu.h"
 
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
@@ -37,6 +38,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
@@ -233,23 +235,34 @@ void SceneViewTab::SetupPluginContext()
     }
 }
 
-bool SceneViewTab::RenderSelectionMenu(Scene* scene, SceneSelection& selection)
+void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 {
-    if (ui::MenuItem("Cut", GetHotkeyLabel(Hotkey_Cut).c_str()))
-        CutSelection(selection);
-    if (ui::MenuItem("Copy", GetHotkeyLabel(Hotkey_Copy).c_str()))
-        CopySelection(selection);
-    if (ui::MenuItem("Paste", GetHotkeyLabel(Hotkey_Paste).c_str(), false, clipboard_.HasData()))
-        PasteNextToSelection(scene, selection);
-    if (ui::MenuItem("Paste Into", GetHotkeyLabel(Hotkey_PasteInto).c_str(), false, clipboard_.HasData()))
-        PasteIntoSelection(scene, selection);
-    if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
-        DeleteSelection(selection);
-    if (ui::MenuItem("Duplicate", GetHotkeyLabel(Hotkey_Duplicate).c_str()))
-        DuplicateSelection(selection);
+    const bool hasSelection = !selection.GetNodes().empty() || !selection.GetComponents().empty();
+    const bool hasClipboard = clipboard_.HasData();
 
-    ui::Separator();
-    return false;
+    if (ui::MenuItem("Cut", GetHotkeyLabel(Hotkey_Cut).c_str(), false, hasSelection))
+        CutSelection(selection);
+    if (ui::MenuItem("Copy", GetHotkeyLabel(Hotkey_Copy).c_str(), false, hasSelection))
+        CopySelection(selection);
+    if (ui::MenuItem("Paste", GetHotkeyLabel(Hotkey_Paste).c_str(), false, hasClipboard))
+        PasteNextToSelection(scene, selection);
+    if (ui::MenuItem("Paste Into", GetHotkeyLabel(Hotkey_PasteInto).c_str(), false, hasClipboard))
+        PasteIntoSelection(scene, selection);
+    if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str(), false, hasSelection))
+        DeleteSelection(selection);
+    if (ui::MenuItem("Duplicate", GetHotkeyLabel(Hotkey_Duplicate).c_str(), false, hasSelection))
+        DuplicateSelection(selection);
+}
+
+void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
+{
+    // TODO(editor): Implement me
+    ui::MenuItem("Create Node");
+    ui::MenuItem("Create Component:", nullptr, false, false);
+    ui::Indent();
+    if (const auto componentType = RenderCreateComponentMenu(context_))
+        ;
+    ui::Unindent();
 }
 
 void SceneViewTab::ResumeSimulation()
@@ -482,10 +495,19 @@ void SceneViewTab::RenderMenu()
         if (SceneViewPage* activePage = GetActivePage())
         {
             ui::Separator();
-            RenderSelectionMenu(activePage->scene_, activePage->selection_);
+            RenderEditMenu(activePage->scene_, activePage->selection_);
         }
 
         ui::EndMenu();
+    }
+
+    if (SceneViewPage* activePage = GetActivePage())
+    {
+        if (ui::BeginMenu("Create"))
+        {
+            RenderCreateMenu(activePage->scene_, activePage->selection_);
+            ui::EndMenu();
+        }
     }
 }
 
