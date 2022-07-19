@@ -42,7 +42,9 @@ struct LaunchConfiguration
 
     LaunchConfiguration() = default;
     LaunchConfiguration(const ea::string& name, const ea::string& mainPlugin);
+
     void SerializeInBlock(Archive& archive);
+    unsigned ToHash() const;
 };
 using LaunchConfigurationVector = ea::vector<LaunchConfiguration>;
 

@@ -49,6 +49,7 @@ protected:
     /// Implement EditorTab
     /// @{
     void RenderContent() override;
+    bool IsMarkedUnsaved() override;
     /// @}
 
 private:

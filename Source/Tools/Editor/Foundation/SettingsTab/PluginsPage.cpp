@@ -77,6 +77,8 @@ void PluginsPage::RenderSettings()
     UpdateAvailablePlugins();
     UpdateLoadedPlugins();
 
+    const unsigned oldHash = MakeHash(loadedPlugins_);
+
     {
         const IdScopeGuard guardLoadedPlugins("##LoadedPlugins");
 
@@ -151,6 +153,13 @@ void PluginsPage::RenderSettings()
     ui::SameLine();
     if (ui::Button("Reload Plugins"))
         pluginManager->Reload();
+
+    const unsigned newHash = MakeHash(loadedPlugins_);
+    if (oldHash != newHash)
+    {
+        auto project = GetSubsystem<ProjectEditor>();
+        project->MarkUnsaved();
+    }
 }
 
 void PluginsPage::ResetToDefaults()

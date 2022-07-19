@@ -49,6 +49,8 @@ void LaunchPage::RenderSettings()
 
     pendingConfigurationsRemoved_.clear();
 
+    const unsigned oldHash = MakeHash(launchManager_->GetConfigurations());
+
     unsigned index = 0;
     for (LaunchConfiguration& config : launchManager_->GetMutableConfigurations())
     {
@@ -67,6 +69,13 @@ void LaunchPage::RenderSettings()
     ea::sort(pendingConfigurationsRemoved_.begin(), pendingConfigurationsRemoved_.end(), ea::greater<unsigned>{});
     for (const unsigned indexToRemove : pendingConfigurationsRemoved_)
         launchManager_->RemoveConfiguration(indexToRemove);
+
+    const unsigned newHash = MakeHash(launchManager_->GetConfigurations());
+    if (oldHash != newHash)
+    {
+        auto project = GetSubsystem<ProjectEditor>();
+        project->MarkUnsaved();
+    }
 }
 
 void LaunchPage::RenderConfiguration(unsigned index, LaunchConfiguration& config)

@@ -76,19 +76,32 @@ void CloseDialog::Render()
         ui::EndChild();
 
         if (ui::Button(ICON_FA_FLOPPY_DISK " Save & Close"))
+        {
             CloseDialogSave();
+            ui::CloseCurrentPopup();
+        }
 
         ui::SameLine();
 
         if (ui::Button(ICON_FA_TRIANGLE_EXCLAMATION " Discard & Close"))
+        {
             CloseDialogDiscard();
+            ui::CloseCurrentPopup();
+        }
 
         ui::SameLine();
 
         if (ui::Button(ICON_FA_BAN " Cancel") || ui::IsKeyPressed(KEY_ESCAPE))
+        {
             CloseDialogCancel();
+            ui::CloseCurrentPopup();
+        }
 
         ui::EndPopup();
+    }
+    else if (isOpen_)
+    {
+        CloseDialogDiscard();
     }
 }
 
@@ -99,7 +112,6 @@ void CloseDialog::CloseDialogSave()
     requests_.clear();
 
     isOpen_ = false;
-    ui::CloseCurrentPopup();
 }
 
 void CloseDialog::CloseDialogDiscard()
@@ -109,7 +121,6 @@ void CloseDialog::CloseDialogDiscard()
     requests_.clear();
 
     isOpen_ = false;
-    ui::CloseCurrentPopup();
 }
 
 void CloseDialog::CloseDialogCancel()
@@ -119,7 +130,6 @@ void CloseDialog::CloseDialogCancel()
     requests_.clear();
 
     isOpen_ = false;
-    ui::CloseCurrentPopup();
 }
 
 }
