@@ -90,6 +90,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
+#include "../Engine/ConfigManager.h"
 #include "StateManager.h"
 #include "../Core/CommandLine.h"
 
@@ -151,6 +152,7 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_LOGGING
     context_->RegisterSubsystem(new Log(context_));
 #endif
+    context_->RegisterSubsystem(new ConfigManager(context_));
     context_->RegisterSubsystem(new ResourceCache(context_));
     context_->RegisterSubsystem(new Localization(context_));
 #ifdef URHO3D_NETWORK

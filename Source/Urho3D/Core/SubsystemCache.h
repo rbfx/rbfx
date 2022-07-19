@@ -58,6 +58,7 @@ using CachedSubsystemList = ea::tuple<
     , class ComputeDevice
 #endif
     , class StateManager
+    , class ConfigManager
 >;
 
 class Object;

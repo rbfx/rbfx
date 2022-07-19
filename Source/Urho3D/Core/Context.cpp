@@ -53,6 +53,7 @@
 #endif
 
 #include "../DebugNew.h"
+#include "Urho3D/Engine/ConfigManager.h"
 
 namespace Urho3D
 {
@@ -158,6 +159,9 @@ Context::Context()
 
 Context::~Context()
 {
+    auto* configManager = GetSubsystem<ConfigManager>();
+    configManager->SaveAll();
+
 #ifndef MINI_URHO
     // Destroying resource cache does clear it, however some resources depend on resource cache being available when
     // destructor executes.

@@ -47,6 +47,7 @@
 #include "../SystemUI/SystemUI.h"
 #endif
 #include "../Engine/StateManager.h"
+#include "../Engine/ConfigManager.h"
 
 #include "../DebugNew.h"
 
