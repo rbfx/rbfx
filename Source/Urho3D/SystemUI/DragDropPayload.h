@@ -31,6 +31,10 @@
 namespace Urho3D
 {
 
+class Component;
+class Node;
+class Scene;
+
 URHO3D_GLOBAL_CONSTANT(ConstString DragDropPayloadType{"DragDropPayload"});
 URHO3D_GLOBAL_CONSTANT(ConstString DragDropPayloadVariable{"SystemUI_DragDropPayload"});
 
@@ -38,8 +42,16 @@ URHO3D_GLOBAL_CONSTANT(ConstString DragDropPayloadVariable{"SystemUI_DragDropPay
 class URHO3D_API DragDropPayload : public RefCounted
 {
 public:
+    using CreateCallback = ea::function<SharedPtr<DragDropPayload>()>;
+
     static void Set(const SharedPtr<DragDropPayload>& payload);
     static DragDropPayload* Get();
+
+    /// Call this function on every frame from drag source.
+    static void UpdateSource(const CreateCallback& createPayload);
+
+    /// Format string to display while dragging.
+    virtual ea::string GetDisplayString() const { return "Drop me"; }
 };
 
 /// Resource file descriptor.
@@ -68,7 +80,22 @@ struct URHO3D_API ResourceFileDescriptor
 class URHO3D_API ResourceDragDropPayload : public DragDropPayload
 {
 public:
+    ea::string GetDisplayString() const override;
+
     ea::vector<ResourceFileDescriptor> resources_;
+};
+
+/// Drag&drop payload containing nodes and components.
+class URHO3D_API NodeComponentDragDropPayload : public DragDropPayload
+{
+public:
+    ~NodeComponentDragDropPayload() override;
+    ea::string GetDisplayString() const override { return !displayString_.empty() ? displayString_ : "???"; }
+
+    WeakPtr<Scene> scene_;
+    ea::vector<WeakPtr<Node>> nodes_;
+    ea::vector<WeakPtr<Component>> components_;
+    ea::string displayString_;
 };
 
 }

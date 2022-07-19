@@ -918,38 +918,18 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromRightSel
 
 void ResourceBrowserTab::BeginEntryDrag(const FileSystemEntry& entry)
 {
-    ImGuiContext& g = *GImGui;
-
-    ui::SetDragDropPayload(DragDropPayloadType.c_str(), nullptr, 0, ImGuiCond_Once);
-
-    if (!g.DragDropPayload.Data)
+    DragDropPayload::UpdateSource([&]()
     {
-        const auto payload = CreatePayloadFromEntry(entry);
-        DragDropPayload::Set(payload);
-        g.DragDropPayload.Data = payload;
-    }
-
-    ui::TextUnformatted(entry.localName_.c_str());
+        return CreatePayloadFromEntry(entry);
+    });
 }
 
 void ResourceBrowserTab::BeginRightSelectionDrag()
 {
-    ImGuiContext& g = *GImGui;
-
-    ui::SetDragDropPayload(DragDropPayloadType.c_str(), nullptr, 0, ImGuiCond_Once);
-
-    if (!g.DragDropPayload.Data)
+    DragDropPayload::UpdateSource([&]()
     {
-        const auto payload = CreatePayloadFromRightSelection();
-        DragDropPayload::Set(payload);
-        g.DragDropPayload.Data = payload;
-    }
-
-    const auto payload = dynamic_cast<ResourceDragDropPayload*>(DragDropPayload::Get());
-    const ea::string text = payload->resources_.size() == 1
-        ? payload->resources_[0].localName_
-        : Format("{} items", payload->resources_.size());
-    ui::TextUnformatted(text.c_str());
+        return CreatePayloadFromRightSelection();
+    });
 }
 
 void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)

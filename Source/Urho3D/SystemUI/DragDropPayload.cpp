@@ -22,6 +22,8 @@
 
 #include "../SystemUI/DragDropPayload.h"
 
+#include "../Scene/Component.h"
+#include "../Scene/Scene.h"
 #include "../SystemUI/SystemUI.h"
 
 namespace Urho3D
@@ -47,6 +49,34 @@ DragDropPayload* DragDropPayload::Get()
         }
     }
     return nullptr;
+}
+
+void DragDropPayload::UpdateSource(const CreateCallback& createPayload)
+{
+    ImGuiContext& g = *GImGui;
+
+    ui::SetDragDropPayload(DragDropPayloadType.c_str(), nullptr, 0, ImGuiCond_Once);
+
+    if (!g.DragDropPayload.Data)
+    {
+        const auto payload = createPayload();
+        DragDropPayload::Set(payload);
+        g.DragDropPayload.Data = payload;
+    }
+
+    const auto payload = DragDropPayload::Get();
+    ui::TextUnformatted(payload->GetDisplayString().c_str());
+}
+
+ea::string ResourceDragDropPayload::GetDisplayString() const
+{
+    return resources_.size() == 1
+        ? resources_[0].localName_
+        : Format("{} items", resources_.size());
+}
+
+NodeComponentDragDropPayload::~NodeComponentDragDropPayload()
+{
 }
 
 }

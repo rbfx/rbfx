@@ -74,6 +74,8 @@ public:
     const WeakNodeSet& GetEffectiveNodesAndScenes() const { return effectiveNodesAndScenes_; }
     const WeakNodeSet& GetEffectiveNodes() const { return effectiveNodes_; }
     const WeakComponentSet& GetComponents() const { return components_; }
+
+    ea::string GetSummary(Scene* scene) const;
     /// @}
 
     /// Cleanup expired selection.
