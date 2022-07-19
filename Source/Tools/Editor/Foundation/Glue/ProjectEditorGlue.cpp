@@ -107,6 +107,8 @@ void Foundation_ProjectEditorGlue(Context* context, ProjectEditor* project)
 
         const LaunchConfiguration* currentConfig = project->GetLaunchConfiguration();
 
+        ui::Separator();
+
         const ea::string title = state->IsPlaying()
             ? ICON_FA_STOP " Stop"
             : Format(ICON_FA_EJECT " Launch \"{}\"", currentConfig ? currentConfig->name_ : LaunchConfiguration::UnspecifiedName);

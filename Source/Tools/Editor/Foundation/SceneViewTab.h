@@ -148,6 +148,8 @@ public:
 
     /// Setup context for plugin application execution.
     void SetupPluginContext();
+    /// Draw menu for selection in the scene.
+    bool RenderSelectionMenu(Scene* scene, SceneSelection& selection);
 
     /// Commands
     /// @{
@@ -155,6 +157,11 @@ public:
     void PauseSimulation();
     void ToggleSimulationPaused();
     void RewindSimulation();
+
+    void CutSelection(SceneSelection& selection);
+    void CopySelection(SceneSelection& selection);
+    void PasteNextToSelection(Scene* scene, SceneSelection& selection);
+    void DeleteSelection(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();

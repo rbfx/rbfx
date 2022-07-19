@@ -216,6 +216,21 @@ void SceneViewTab::SetupPluginContext()
     }
 }
 
+bool SceneViewTab::RenderSelectionMenu(Scene* scene, SceneSelection& selection)
+{
+    if (ui::MenuItem("Cut", GetHotkeyLabel(Hotkey_Cut).c_str()))
+        CutSelection(selection);
+    if (ui::MenuItem("Copy", GetHotkeyLabel(Hotkey_Copy).c_str()))
+        CopySelection(selection);
+    if (ui::MenuItem("Paste", GetHotkeyLabel(Hotkey_Paste).c_str(), false, clipboard_.HasData()))
+        PasteNextToSelection(scene, selection);
+    if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
+        DeleteSelection(selection);
+
+    ui::Separator();
+    return false;
+}
+
 void SceneViewTab::ResumeSimulation()
 {
     SceneViewPage* activePage = GetActivePage();
@@ -264,19 +279,14 @@ void SceneViewTab::RewindSimulation()
     //activePage->RewindSimulation();
 }
 
-void SceneViewTab::CutSelection()
+void SceneViewTab::CutSelection(SceneSelection& selection)
 {
-    CopySelection();
-    DeleteSelection();
+    CopySelection(selection);
+    DeleteSelection(selection);
 }
 
-void SceneViewTab::CopySelection()
+void SceneViewTab::CopySelection(SceneSelection& selection)
 {
-    SceneViewPage* activePage = GetActivePage();
-    if (!activePage)
-        return;
-
-    SceneSelection& selection = activePage->selection_;
     const auto& selectedNodes = selection.GetNodes();
     const auto& selectedComponents = selection.GetComponents();
 
@@ -286,17 +296,12 @@ void SceneViewTab::CopySelection()
         clipboard_ = PackedSceneData::FromComponents(selectedComponents.begin(), selectedComponents.end());
 }
 
-void SceneViewTab::PasteNextToSelection()
+void SceneViewTab::PasteNextToSelection(Scene* scene, SceneSelection& selection)
 {
-    SceneViewPage* activePage = GetActivePage();
-    if (!activePage)
-        return;
-
-    SceneSelection& selection = activePage->selection_;
     if (clipboard_.HasNodes())
     {
         Node* siblingNode = selection.GetActiveNodeOrScene();
-        Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : activePage->scene_;
+        Node* parentNode = siblingNode && siblingNode->GetParent() ? siblingNode->GetParent() : scene;
 
         selection.Clear();
         for (const PackedNodeData& packedNode : clipboard_.GetNodes())
@@ -320,14 +325,10 @@ void SceneViewTab::PasteNextToSelection()
     }
 }
 
-void SceneViewTab::DeleteSelection()
+void SceneViewTab::DeleteSelection(SceneSelection& selection)
 {
-    SceneViewPage* activePage = GetActivePage();
-    if (!activePage)
-        return;
-
-    const auto& selectedNodes = activePage->selection_.GetNodes();
-    const auto& selectedComponents = activePage->selection_.GetComponents();
+    const auto& selectedNodes = selection.GetNodes();
+    const auto& selectedComponents = selection.GetComponents();
 
     for (Node* node : selectedNodes)
     {
@@ -347,7 +348,31 @@ void SceneViewTab::DeleteSelection()
         }
     }
 
-    activePage->selection_.Clear();
+    selection.Clear();
+}
+
+void SceneViewTab::CutSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        CutSelection(activePage->selection_);
+}
+
+void SceneViewTab::CopySelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        CopySelection(activePage->selection_);
+}
+
+void SceneViewTab::PasteNextToSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        PasteNextToSelection(activePage->scene_, activePage->selection_);
+}
+
+void SceneViewTab::DeleteSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        DeleteSelection(activePage->selection_);
 }
 
 void SceneViewTab::RenderMenu()
@@ -356,18 +381,11 @@ void SceneViewTab::RenderMenu()
     {
         RenderEditMenuItems();
 
-        ui::Separator();
-
-        if (ui::MenuItem("Cut", GetHotkeyLabel(Hotkey_Cut).c_str()))
-            CutSelection();
-        if (ui::MenuItem("Copy", GetHotkeyLabel(Hotkey_Copy).c_str()))
-            CopySelection();
-        if (ui::MenuItem("Paste", GetHotkeyLabel(Hotkey_Paste).c_str()))
-            PasteNextToSelection();
-        if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
-            DeleteSelection();
-
-        ui::Separator();
+        if (SceneViewPage* activePage = GetActivePage())
+        {
+            ui::Separator();
+            RenderSelectionMenu(activePage->scene_, activePage->selection_);
+        }
 
         ui::EndMenu();
     }

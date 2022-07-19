@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/Signal.h"
 #include "../Utility/SceneSelection.h"
 
 namespace Urho3D
@@ -40,6 +41,8 @@ class URHO3D_API SceneHierarchyWidget : public Object
     URHO3D_OBJECT(SceneHierarchyWidget, Object)
 
 public:
+    Signal<void(Scene* scene, SceneSelection& selection)> OnContextMenu;
+
     explicit SceneHierarchyWidget(Context* context);
 
     void SetSettings(const SceneHierarchySettings& settings);
@@ -60,6 +63,9 @@ private:
     void EndRangeSelection(SceneSelection& selection);
 
     void UpdateSearchResults(Scene* scene);
+
+    void OpenSelectionContextMenu();
+    void RenderContextMenu(Scene* scene, SceneSelection& selection);
 
     struct RangeSelectionRequest
     {
@@ -96,6 +102,8 @@ private:
         ea::string lastQuery_;
         ea::vector<WeakPtr<Node>> lastResults_;
     } search_;
+
+    bool openContextMenu_{};
     /// @}
 };
 

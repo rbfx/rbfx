@@ -58,6 +58,7 @@ SceneHierarchy::SceneHierarchy(SceneViewTab* sceneViewTab)
     : SceneViewAddon(sceneViewTab)
     , widget_(MakeShared<SceneHierarchyWidget>(context_))
 {
+    widget_->OnContextMenu.Subscribe(this, &SceneHierarchy::RenderSelectionContextMenu);
 }
 
 void SceneHierarchy::WriteIniSettings(ImGuiTextBuffer& output)
@@ -133,6 +134,12 @@ void SceneHierarchy::RenderToolbar(SceneViewPage& page)
     ui::InputText("##Rename", &settings.filterByName_);
 
     widget_->SetSettings(settings);
+}
+
+void SceneHierarchy::RenderSelectionContextMenu(Scene* scene, SceneSelection& selection)
+{
+    ui::Separator();
+    owner_->RenderSelectionMenu(scene, selection);
 }
 
 }

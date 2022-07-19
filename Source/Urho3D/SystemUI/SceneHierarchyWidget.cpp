@@ -46,6 +46,23 @@ ea::string GetNodeTitle(Node* node)
     return title;
 }
 
+ea::string GetContextMenuTitle(const SceneSelection& selection)
+{
+    const unsigned numNodes = selection.GetNodes().size();
+    const unsigned numComponents = selection.GetComponents().size();
+    const bool hasScene = selection.GetNodesAndScenes().size() != numNodes;
+
+    StringVector elements;
+    if (hasScene)
+        elements.push_back("scene");
+    if (numNodes > 0)
+        elements.push_back(Format("{} node{}", numNodes, numNodes > 1 ? "s" : ""));
+    if (numComponents > 0)
+        elements.push_back(Format("{} component{}", numComponents, numComponents > 1 ? "s" : ""));
+
+    return Format("Selected {}", ea::string::joined(elements, ", "));
+}
+
 }
 
 SceneHierarchyWidget::SceneHierarchyWidget(Context* context)
@@ -87,6 +104,8 @@ void SceneHierarchyWidget::RenderContent(Scene* scene, SceneSelection& selection
 
     EndRangeSelection(selection);
 
+    RenderContextMenu(scene, selection);
+
     // Suppress future updates if selection was changed by the widget
     lastActiveObject_ = selection.GetActiveObject();
 }
@@ -117,11 +136,24 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
     const bool opened = ui::TreeNodeEx(GetNodeTitle(node).c_str(), flags);
     ProcessRangeSelection(node, opened);
 
-    if ((ui::IsItemClicked(MOUSEB_LEFT) || ui::IsItemClicked(MOUSEB_RIGHT)) && !ui::IsItemToggledOpen())
+    if (!ui::IsItemToggledOpen())
     {
-        const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
-        const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
-        ProcessObjectSelected(selection, node, toggleSelect, rangeSelect);
+        if (ui::IsItemClicked(MOUSEB_LEFT))
+        {
+            const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
+            const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
+            ProcessObjectSelected(selection, node, toggleSelect, rangeSelect);
+        }
+        else if (ui::IsItemClicked(MOUSEB_RIGHT))
+        {
+            if (selection.IsSelected(node))
+                OpenSelectionContextMenu();
+            else
+            {
+                ProcessObjectSelected(selection, node, false, false);
+                OpenSelectionContextMenu();
+            }
+        }
     }
 
     if (opened)
@@ -158,11 +190,21 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
     const bool opened = ui::TreeNodeEx(component->GetTypeName().c_str(), flags);
     ProcessRangeSelection(component, opened);
 
-    if (ui::IsItemClicked(MOUSEB_LEFT) || ui::IsItemClicked(MOUSEB_RIGHT))
+    if (ui::IsItemClicked(MOUSEB_LEFT))
     {
         const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
         const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
         ProcessObjectSelected(selection, component, toggleSelect, rangeSelect);
+    }
+    else if (ui::IsItemClicked(MOUSEB_RIGHT))
+    {
+        if (selection.IsSelected(component))
+            OpenSelectionContextMenu();
+        else
+        {
+            ProcessObjectSelected(selection, component, false, false);
+            OpenSelectionContextMenu();
+        }
     }
 
     if (opened)
@@ -213,6 +255,31 @@ void SceneHierarchyWidget::ProcessActiveObject(Object* activeObject)
             pathToActiveObject_.push_back(currentPathNode);
             currentPathNode = currentPathNode->GetParent();
         }
+    }
+}
+
+void SceneHierarchyWidget::OpenSelectionContextMenu()
+{
+    openContextMenu_ = true;
+}
+
+void SceneHierarchyWidget::RenderContextMenu(Scene* scene, SceneSelection& selection)
+{
+    static const ea::string contextMenuPopup = "##ContextMenu";
+
+    if (openContextMenu_)
+    {
+        if (OnContextMenu.HasSubscriptions())
+            ui::OpenPopup(contextMenuPopup.c_str());
+        openContextMenu_ = false;
+    }
+
+    if (ui::BeginPopup(contextMenuPopup.c_str()))
+    {
+        ui::MenuItem(GetContextMenuTitle(selection).c_str(), nullptr, false, false);
+
+        OnContextMenu(this, scene, selection);
+        ui::EndPopup();
     }
 }
 
