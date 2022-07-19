@@ -564,10 +564,10 @@ void ProjectEditor::Render()
         tab->PreRenderUpdate();
     for (EditorTab* tab : tabs_)
         tab->Render();
-    for (EditorTab* tab : tabs_)
-        tab->PostRenderUpdate();
     if (focusedTab_)
         focusedTab_->ApplyHotkeys(hotkeyManager_);
+    for (EditorTab* tab : tabs_)
+        tab->PostRenderUpdate();
 
     closeDialog_->Render();
 

@@ -61,6 +61,8 @@ public:
     ea::unordered_map<ea::string, ea::pair<WeakPtr<const SceneViewAddon>, ea::any>> addonData_;
 
     SceneSelection selection_;
+    PackedSceneSelection oldSelection_;
+    PackedSceneSelection newSelection_;
 
     ea::optional<PackedSceneData> simulationBase_;
     PackedSceneSelection selectionBase_;
@@ -72,6 +74,8 @@ public:
 
     void StartSimulation();
     void RewindSimulation();
+    void BeginSelection();
+    void EndSelection(SceneViewTab* owner);
 };
 
 /// Interface of SceneViewTab addon.
@@ -161,11 +165,13 @@ public:
     void CutSelection(SceneSelection& selection);
     void CopySelection(SceneSelection& selection);
     void PasteNextToSelection(Scene* scene, SceneSelection& selection);
+    void PasteIntoSelection(Scene* scene, SceneSelection& selection);
     void DeleteSelection(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();
     void PasteNextToSelection();
+    void PasteIntoSelection();
     void DeleteSelection();
     /// @}
 
@@ -231,13 +237,6 @@ private:
 
     ea::unordered_map<ea::string, SharedPtr<SceneViewPage>> scenes_;
     PackedSceneData clipboard_;
-
-    /// Selection change tracking
-    /// @{
-    ea::string oldSelectionResourceName_;
-    PackedSceneSelection oldSelection_;
-    PackedSceneSelection newSelection_;
-    /// @}
 };
 
 /// Action wrapper that rewinds scene simulation.
@@ -274,8 +273,10 @@ public:
     /// @}
 
 private:
-    WeakPtr<SceneViewPage> page_;
-    PackedSceneSelection oldSelection_;
+    void SetSelection(const PackedSceneSelection& selection) const;
+
+    const WeakPtr<SceneViewPage> page_;
+    const PackedSceneSelection oldSelection_;
     PackedSceneSelection newSelection_;
 };
 

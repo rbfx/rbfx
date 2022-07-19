@@ -116,10 +116,10 @@ public:
 
     /// Pre-render update tab. May be called even for closed tabs.
     virtual void PreRenderUpdate() {}
-    /// Post-render update tab. May be called even for closed tabs.
-    virtual void PostRenderUpdate() {}
     /// Apply hotkeys for this tab.
     virtual void ApplyHotkeys(HotkeyManager* hotkeyManager);
+    /// Post-render update tab. May be called even for closed tabs.
+    virtual void PostRenderUpdate() {}
 
     /// Render main menu of the tab.
     virtual void RenderMenu() {}

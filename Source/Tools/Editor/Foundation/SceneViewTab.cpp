@@ -53,6 +53,7 @@ URHO3D_EDITOR_HOTKEY(Hotkey_TogglePaused, "SceneViewTab.TogglePaused", QUAL_NONE
 URHO3D_EDITOR_HOTKEY(Hotkey_Cut, "SceneViewTab.Cut", QUAL_CTRL, KEY_X);
 URHO3D_EDITOR_HOTKEY(Hotkey_Copy, "SceneViewTab.Copy", QUAL_CTRL, KEY_C);
 URHO3D_EDITOR_HOTKEY(Hotkey_Paste, "SceneViewTab.Paste", QUAL_CTRL, KEY_V);
+URHO3D_EDITOR_HOTKEY(Hotkey_PasteInto, "SceneViewTab.PasteInto", QUAL_CTRL | QUAL_SHIFT, KEY_V);
 URHO3D_EDITOR_HOTKEY(Hotkey_Delete, "SceneViewTab.Delete", QUAL_NONE, KEY_DELETE);
 
 }
@@ -132,6 +133,19 @@ void SceneViewPage::RewindSimulation()
     }
 }
 
+void SceneViewPage::BeginSelection()
+{
+    selection_.Update();
+    selection_.Save(oldSelection_);
+}
+
+void SceneViewPage::EndSelection(SceneViewTab* owner)
+{
+    selection_.Save(newSelection_);
+    if (oldSelection_ != newSelection_)
+        owner->PushAction<ChangeSceneSelectionAction>(this, oldSelection_, newSelection_);
+}
+
 SceneViewAddon::SceneViewAddon(SceneViewTab* owner)
     : Object(owner->GetContext())
     , owner_(owner)
@@ -182,6 +196,7 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_Cut, &SceneViewTab::CutSelection);
     BindHotkey(Hotkey_Copy, &SceneViewTab::CopySelection);
     BindHotkey(Hotkey_Paste, &SceneViewTab::PasteNextToSelection);
+    BindHotkey(Hotkey_PasteInto, &SceneViewTab::PasteIntoSelection);
     BindHotkey(Hotkey_Delete, &SceneViewTab::DeleteSelection);
 }
 
@@ -224,6 +239,8 @@ bool SceneViewTab::RenderSelectionMenu(Scene* scene, SceneSelection& selection)
         CopySelection(selection);
     if (ui::MenuItem("Paste", GetHotkeyLabel(Hotkey_Paste).c_str(), false, clipboard_.HasData()))
         PasteNextToSelection(scene, selection);
+    if (ui::MenuItem("Paste Into", GetHotkeyLabel(Hotkey_PasteInto).c_str(), false, clipboard_.HasData()))
+        PasteIntoSelection(scene, selection);
     if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
         DeleteSelection(selection);
 
@@ -313,14 +330,41 @@ void SceneViewTab::PasteNextToSelection(Scene* scene, SceneSelection& selection)
     }
     else if (clipboard_.HasComponents())
     {
-        Node* parentNode = selection.GetActiveNodeOrScene();
+        PasteIntoSelection(scene, selection);
+    }
+}
 
+void SceneViewTab::PasteIntoSelection(Scene* scene, SceneSelection& selection)
+{
+    // Copy because selection changes during paste
+    auto targetNodes = selection.GetNodesAndScenes();
+    if (targetNodes.empty())
+        targetNodes.emplace(scene);
+
+    if (clipboard_.HasNodes())
+    {
         selection.Clear();
-        for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
+        for (Node* selectedNode : targetNodes)
         {
-            Component* newComponent = packedComponent.SpawnCopy(parentNode);
-            selection.SetSelected(newComponent, true);
-            PushAction<CreateRemoveComponentAction>(newComponent, false);
+            for (const PackedNodeData& packedNode : clipboard_.GetNodes())
+            {
+                Node* newNode = packedNode.SpawnCopy(selectedNode);
+                selection.SetSelected(newNode, true);
+                PushAction<CreateRemoveNodeAction>(newNode, false);
+            }
+        }
+    }
+    else if (clipboard_.HasComponents())
+    {
+        selection.Clear();
+        for (Node* selectedNode : targetNodes)
+        {
+            for (const PackedComponentData& packedComponent : clipboard_.GetComponents())
+            {
+                Component* newComponent = packedComponent.SpawnCopy(selectedNode);
+                selection.SetSelected(newComponent, true);
+                PushAction<CreateRemoveComponentAction>(newComponent, false);
+            }
         }
     }
 }
@@ -367,6 +411,12 @@ void SceneViewTab::PasteNextToSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
         PasteNextToSelection(activePage->scene_, activePage->selection_);
+}
+
+void SceneViewTab::PasteIntoSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        PasteIntoSelection(activePage->scene_, activePage->selection_);
 }
 
 void SceneViewTab::DeleteSelection()
@@ -564,29 +614,14 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
 
 void SceneViewTab::PreRenderUpdate()
 {
-    SceneViewPage* activePage = GetActivePage();
-    if (!activePage)
-    {
-        oldSelectionResourceName_.clear();
-        oldSelection_.Clear();
-        return;
-    }
-
-    activePage->selection_.Update();
-
-    oldSelectionResourceName_ = GetActiveResourceName();
-    activePage->selection_.Save(oldSelection_);
+    if (SceneViewPage* activePage = GetActivePage())
+        activePage->BeginSelection();
 }
 
 void SceneViewTab::PostRenderUpdate()
 {
-    SceneViewPage* activePage = GetActivePage();
-    if (activePage && oldSelectionResourceName_ == GetActiveResourceName())
-    {
-        activePage->selection_.Save(newSelection_);
-        if (oldSelection_ != newSelection_)
-            PushAction<ChangeSceneSelectionAction>(activePage, oldSelection_, newSelection_);
-    }
+    if (SceneViewPage* activePage = GetActivePage())
+        activePage->EndSelection(this);
 }
 
 void SceneViewTab::RenderContent()
@@ -718,14 +753,21 @@ ChangeSceneSelectionAction::ChangeSceneSelectionAction(SceneViewPage* page,
 
 void ChangeSceneSelectionAction::Redo() const
 {
-    if (page_)
-        page_->selection_.Load(page_->scene_, newSelection_);
+    SetSelection(newSelection_);
 }
 
 void ChangeSceneSelectionAction::Undo() const
 {
+    SetSelection(oldSelection_);
+}
+
+void ChangeSceneSelectionAction::SetSelection(const PackedSceneSelection& selection) const
+{
     if (page_)
-        page_->selection_.Load(page_->scene_, oldSelection_);
+    {
+        page_->selection_.Load(page_->scene_, selection);
+        page_->BeginSelection();
+    }
 }
 
 bool ChangeSceneSelectionAction::MergeWith(const EditorAction& other)
