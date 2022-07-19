@@ -55,6 +55,7 @@ URHO3D_EDITOR_HOTKEY(Hotkey_Copy, "SceneViewTab.Copy", QUAL_CTRL, KEY_C);
 URHO3D_EDITOR_HOTKEY(Hotkey_Paste, "SceneViewTab.Paste", QUAL_CTRL, KEY_V);
 URHO3D_EDITOR_HOTKEY(Hotkey_PasteInto, "SceneViewTab.PasteInto", QUAL_CTRL | QUAL_SHIFT, KEY_V);
 URHO3D_EDITOR_HOTKEY(Hotkey_Delete, "SceneViewTab.Delete", QUAL_NONE, KEY_DELETE);
+URHO3D_EDITOR_HOTKEY(Hotkey_Duplicate, "SceneViewTab.Duplicate", QUAL_CTRL, KEY_D);
 
 }
 
@@ -198,6 +199,7 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_Paste, &SceneViewTab::PasteNextToSelection);
     BindHotkey(Hotkey_PasteInto, &SceneViewTab::PasteIntoSelection);
     BindHotkey(Hotkey_Delete, &SceneViewTab::DeleteSelection);
+    BindHotkey(Hotkey_Duplicate, &SceneViewTab::DuplicateSelection);
 }
 
 SceneViewTab::~SceneViewTab()
@@ -243,6 +245,8 @@ bool SceneViewTab::RenderSelectionMenu(Scene* scene, SceneSelection& selection)
         PasteIntoSelection(scene, selection);
     if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str()))
         DeleteSelection(selection);
+    if (ui::MenuItem("Duplicate", GetHotkeyLabel(Hotkey_Duplicate).c_str()))
+        DuplicateSelection(selection);
 
     ui::Separator();
     return false;
@@ -395,6 +399,44 @@ void SceneViewTab::DeleteSelection(SceneSelection& selection)
     selection.Clear();
 }
 
+void SceneViewTab::DuplicateSelection(SceneSelection& selection)
+{
+    if (!selection.GetNodes().empty())
+    {
+        // Copy because selection changes during paste
+        const auto selectedNodes = selection.GetNodes();
+        selection.Clear();
+
+        for (Node* node : selectedNodes)
+        {
+            Node* parent = node->GetParent();
+            URHO3D_ASSERT(parent);
+
+            const auto data = PackedNodeData{node};
+            Node* newNode = data.SpawnCopy(parent);
+            PushAction<CreateRemoveNodeAction>(newNode, false);
+            selection.SetSelected(newNode, true);
+        }
+    }
+    else if (!selection.GetComponents().empty())
+    {
+        // Copy because selection changes during paste
+        const auto selectedComponents = selection.GetComponents();
+        selection.Clear();
+
+        for (Component* component : selectedComponents)
+        {
+            Node* node = component->GetNode();
+            URHO3D_ASSERT(node);
+
+            const auto data = PackedComponentData{component};
+            Component* newComponent = data.SpawnCopy(node);
+            PushAction<CreateRemoveComponentAction>(newComponent, false);
+            selection.SetSelected(newComponent, true);
+        }
+    }
+}
+
 void SceneViewTab::CutSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
@@ -423,6 +465,12 @@ void SceneViewTab::DeleteSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
         DeleteSelection(activePage->selection_);
+}
+
+void SceneViewTab::DuplicateSelection()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        DuplicateSelection(activePage->selection_);
 }
 
 void SceneViewTab::RenderMenu()
