@@ -520,6 +520,8 @@ void ResourceBrowserTab::RenderDirectoryContent()
     if (!entry)
         return;
 
+    RenderCreateButton(*entry);
+
     if (!entry->resourceName_.empty())
         RenderDirectoryUp(*entry);
 
@@ -547,7 +549,7 @@ void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
     const ea::string name = Format("{} {}", ICON_FA_FOLDER_OPEN, "[..]");
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
 
-    if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+    if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
         auto parts = left_.selectedPath_.split('/');
         if (!parts.empty())
@@ -583,7 +585,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     const bool isNormalDirectory = !entry.isFile_;
     const bool isNormalFile = !entry.isDirectory_;
     const bool isCompositeFile = root.supportCompositeFiles_ && entry.isFile_ && entry.isDirectory_;
-    const bool isSelected = right_.selectedPaths_.contains(entry.resourceName_);
+    const bool isSelected = IsRightSelected(entry.resourceName_);
 
     // Scroll to selection if requested
     if (right_.scrollToSelection_ && isSelected)
@@ -601,14 +603,14 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
-    if (ui::IsItemClicked(MOUSEB_LEFT))
+    if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
-        if (isNormalDirectory && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+        if (isNormalDirectory)
         {
             SelectLeftPanel(entry.resourceName_);
             ScrollToSelection();
         }
-        else if (isNormalFile && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+        else if (isNormalFile)
         {
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
             OpenEntryInEditor(entry);
@@ -618,11 +620,16 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     {
         ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
     }
+    else if (isContextMenuOpen)
+    {
+        if (!IsRightSelected(entry.resourceName_))
+            ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+    }
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
     {
-        if (!right_.selectedPaths_.contains(entry.resourceName_))
+        if (!IsRightSelected(entry.resourceName_))
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
 
         BeginRightSelectionDrag();
@@ -681,7 +688,7 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     // Render the element itself
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick
         | ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_Leaf;
-    if (right_.selectedPaths_.contains(entry.resourceName_))
+    if (IsRightSelected(entry.resourceName_))
         flags |= ImGuiTreeNodeFlags_Selected;
 
     const ea::string localResourceName = entry.resourceName_.substr(ownerEntry.resourceName_.size() + 1);
@@ -700,11 +707,16 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     {
         ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
     }
+    else if (isContextMenuOpen)
+    {
+        if (!IsRightSelected(entry.resourceName_))
+            ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
+    }
 
     // Process drag&drop from this element
     if (ui::BeginDragDropSource())
     {
-        if (!right_.selectedPaths_.contains(entry.resourceName_))
+        if (!IsRightSelected(entry.resourceName_))
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
 
         BeginRightSelectionDrag();
@@ -719,6 +731,26 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
 
     // Render context menu and popups
     RenderEntryContextMenu(entry);
+}
+
+void ResourceBrowserTab::RenderCreateButton(const FileSystemEntry& entry)
+{
+    static const ea::string popupId = "##CreateButtonPopup";
+    ui::Indent();
+    if (ui::Button(ICON_FA_SQUARE_PLUS " Create..."))
+        ui::OpenPopup(popupId.c_str());
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Create new file or directory");
+    ui::Unindent();
+
+    if (ui::BeginPopup(popupId.c_str()))
+    {
+        const auto createPending = RenderEntryCreateContextMenu(entry);
+
+        if (createPending && *createPending < factories_.size())
+            BeginEntryCreate(entry, factories_[*createPending]);
+        ui::EndPopup();
+    }
 }
 
 void ResourceBrowserTab::RenderRenameDialog()
@@ -990,6 +1022,11 @@ const FileSystemEntry* ResourceBrowserTab::GetSelectedEntryForCursor() const
     return GetEntry(EntryReference{left_.selectedRoot_, cursor_.selectedPath_});
 }
 
+bool ResourceBrowserTab::IsRightSelected(const ea::string& path) const
+{
+    return right_.selectedPaths_.contains(path);
+}
+
 void ResourceBrowserTab::SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex)
 {
     const ea::string newPath = RemoveTrailingSlash(path);
@@ -1036,21 +1073,21 @@ void ResourceBrowserTab::DeselectRightPanel(const ea::string& path)
     if (cursor_.selectedPath_ == path)
         cursor_.selectedPath_ = right_.lastSelectedPath_;
 
-    OnSelectionChanged();
+    OnSelectionChanged(true);
 }
 
 void ResourceBrowserTab::ChangeRightPanelSelection(const ea::string& path, bool toggleSelection)
 {
-    if (toggleSelection && right_.selectedPaths_.contains(path))
+    if (toggleSelection && IsRightSelected(path))
         DeselectRightPanel(path);
     else
         SelectRightPanel(path, !toggleSelection);
 }
 
-void ResourceBrowserTab::OnSelectionChanged()
+void ResourceBrowserTab::OnSelectionChanged(bool sendEmptyEvent)
 {
     selectionDirty_ = true;
-    if (!right_.selectedPaths_.empty())
+    if (sendEmptyEvent || !right_.selectedPaths_.empty())
     {
         auto project = GetProject();
         auto request = MakeShared<InspectResourceRequest>(context_, StringVector{right_.selectedPaths_.begin(), right_.selectedPaths_.end()});
@@ -1158,6 +1195,9 @@ void ResourceBrowserTab::BeginEntryRename(const FileSystemEntry& entry)
 
 void ResourceBrowserTab::BeginEntryCreate(const FileSystemEntry& entry, ResourceBrowserFactory* factory)
 {
+    if (entry.isFile_)
+        return;
+
     create_.parentEntryRef_ = GetReference(entry);
     create_.popupTitle_ = Format("Create {}...##CreateDialog", factory->GetTitle());
     create_.factory_ = factory;
@@ -1227,14 +1267,21 @@ void ResourceBrowserTab::DeleteEntry(const FileSystemEntry& entry)
     auto fs = GetSubsystem<FileSystem>();
     auto project = GetProject();
 
+    DeselectRightPanel(entry.resourceName_);
+
     const bool isFile = fs->FileExists(entry.absolutePath_);
 
     const bool deleted = isFile
         ? fs->Delete(entry.absolutePath_)
         : fs->RemoveDir(entry.absolutePath_, true);
 
-    if (deleted && isFile)
-        CleanupResourceCache(entry.resourceName_);
+    if (deleted)
+    {
+        waitingForUpdate_ = true;
+
+        if (isFile)
+            CleanupResourceCache(entry.resourceName_);
+    }
 }
 
 void ResourceBrowserTab::CleanupResourceCache(const ea::string& resourceName)
