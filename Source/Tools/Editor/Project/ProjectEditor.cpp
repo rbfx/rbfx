@@ -222,9 +222,10 @@ CloseProjectResult ProjectEditor::CloseGracefully()
 
     // Collect unsaved items
     ea::vector<ea::string> unsavedItems;
+    if (hasUnsavedChanges_)
+        unsavedItems.push_back("[Project]");
     for (EditorTab* tab : tabs_)
         tab->EnumerateUnsavedItems(unsavedItems);
-    // TODO(editor): Project settings should be here too
 
     // If nothing to save, close immediately
     if (unsavedItems.empty())
@@ -689,6 +690,8 @@ void ProjectEditor::SaveProjectOnly()
 
     SaveGitIgnore();
     assetManager_->SaveFile(cacheJsonPath_);
+
+    hasUnsavedChanges_ = false;
 }
 
 void ProjectEditor::SaveResourcesOnly()

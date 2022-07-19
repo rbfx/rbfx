@@ -44,6 +44,15 @@ void LaunchConfiguration::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "EngineParameters", engineParameters_);
 }
 
+unsigned LaunchConfiguration::ToHash() const
+{
+    unsigned hash = 0;
+    CombineHash(hash, MakeHash(name_));
+    CombineHash(hash, MakeHash(mainPlugin_));
+    CombineHash(hash, MakeHash(engineParameters_));
+    return hash;
+}
+
 LaunchManager::LaunchManager(Context* context)
     : Object(context)
 {

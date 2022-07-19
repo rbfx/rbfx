@@ -96,6 +96,11 @@ void SettingsTab::RenderContent()
     }
 }
 
+bool SettingsTab::IsMarkedUnsaved()
+{
+    return GetProject()->HasUnsavedChanges();
+}
+
 void SettingsTab::RenderSettingsTree()
 {
     auto project = GetProject();

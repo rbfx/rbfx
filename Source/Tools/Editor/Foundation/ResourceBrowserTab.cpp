@@ -549,7 +549,7 @@ void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
     const ea::string name = Format("{} {}", ICON_FA_FOLDER_OPEN, "[..]");
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
 
-    if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+    if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
         auto parts = left_.selectedPath_.split('/');
         if (!parts.empty())
@@ -603,7 +603,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
-    if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+    if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
         if (isNormalDirectory)
         {
@@ -698,7 +698,7 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
-    if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+    if (ui::IsItemClicked(MOUSEB_LEFT) && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
     {
         ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
         OpenEntryInEditor(entry);

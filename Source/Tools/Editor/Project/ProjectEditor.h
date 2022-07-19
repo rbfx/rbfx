@@ -146,6 +146,10 @@ public:
     ea::string GetRandomTemporaryPath() const;
     /// Create temporary directory that will be automatically deleted when the handler is destroyed.
     TemporaryDir CreateTemporaryDir();
+    /// Mark project itself as having unsaved changes.
+    void MarkUnsaved() { hasUnsavedChanges_ = true; }
+    /// Return whether the project itself has unsaved changes.
+    bool HasUnsavedChanges() const { return hasUnsavedChanges_; }
 
     /// Commands
     /// @{
@@ -239,6 +243,7 @@ private:
     ea::weak_ptr<void> initializationGuard_;
     bool firstInitialization_{};
     bool initialized_{};
+    bool hasUnsavedChanges_{};
     ea::vector<SharedPtr<EditorTab>> tabs_;
     ea::map<ea::string, SharedPtr<EditorTab>> sortedTabs_;
     ea::set<ea::string> ignoredFileNames_;

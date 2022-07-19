@@ -183,7 +183,7 @@ bool Drawable::DrawOcclusion(OcclusionBuffer* buffer)
 void Drawable::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (debug && IsEnabledEffective())
-        debug->AddBoundingBox(GetWorldBoundingBox(), 0x5500ff00_argb, depthTest);
+        debug->AddBoundingBox(GetWorldBoundingBox(), 0x7700ff00_argb, depthTest);
 }
 
 void Drawable::SetDrawDistance(float distance)
