@@ -61,6 +61,9 @@ private:
     void RenderToolbar(SceneViewPage& page);
     void RenderSelectionContextMenu(Scene* scene, SceneSelection& selection);
 
+    void ReorderNode(Node* node, unsigned oldIndex, unsigned newIndex);
+    void ReorderComponent(Component* component, unsigned oldIndex, unsigned newIndex);
+
     bool reentrant_{};
     SharedPtr<SceneHierarchyWidget> widget_;
 };

@@ -59,6 +59,8 @@ SceneHierarchy::SceneHierarchy(SceneViewTab* sceneViewTab)
     , widget_(MakeShared<SceneHierarchyWidget>(context_))
 {
     widget_->OnContextMenu.Subscribe(this, &SceneHierarchy::RenderSelectionContextMenu);
+    widget_->OnNodeReordered.Subscribe(this, &SceneHierarchy::ReorderNode);
+    widget_->OnComponentReordered.Subscribe(this, &SceneHierarchy::ReorderComponent);
 }
 
 void SceneHierarchy::WriteIniSettings(ImGuiTextBuffer& output)
@@ -141,5 +143,20 @@ void SceneHierarchy::RenderSelectionContextMenu(Scene* scene, SceneSelection& se
     ui::Separator();
     owner_->RenderSelectionMenu(scene, selection);
 }
+
+void SceneHierarchy::ReorderNode(Node* node, unsigned oldIndex, unsigned newIndex)
+{
+    Node* parentNode = node->GetParent();
+    parentNode->ReorderChild(node, newIndex);
+    owner_->PushAction<ReorderNodeAction>(node, oldIndex, newIndex);
+}
+
+void SceneHierarchy::ReorderComponent(Component* component, unsigned oldIndex, unsigned newIndex)
+{
+    Node* node = component->GetNode();
+    node->ReorderComponent(component, newIndex);
+    owner_->PushAction<ReorderComponentAction>(component, oldIndex, newIndex);
+}
+
 
 }
