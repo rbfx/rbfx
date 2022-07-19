@@ -33,6 +33,16 @@ namespace Urho3D
 namespace
 {
 
+unsigned GetObjectIndexInParent(Node* parentNode, Node* node)
+{
+    return parentNode->GetChildIndex(node);
+}
+
+unsigned GetObjectIndexInParent(Node* parentNode, Component* component)
+{
+    return parentNode->GetComponentIndex(component);
+}
+
 ea::string GetNodeTitle(Node* node)
 {
     const bool isScene = node->GetParent() == nullptr;
@@ -156,6 +166,12 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
         }
     }
 
+    if (auto parent = node->GetParent())
+    {
+        RenderObjectReorder(nodeReorder_, node, parent,
+            OnNodeReordered, "Move node up or down in the parent node");
+    }
+
     if (opened)
     {
         if (settings_.showComponents_)
@@ -207,8 +223,53 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
         }
     }
 
+    RenderObjectReorder(componentReorder_, component, component->GetNode(),
+        OnComponentReordered, "Move component up or down in the node");
+
     if (opened)
         ui::TreePop();
+}
+
+template <class T, class U>
+void SceneHierarchyWidget::RenderObjectReorder(OptionalReorderInfo& info, T* object, Node* parentNode, U& signal, const char* hint)
+{
+    const bool reorderingThisObject = ui::IsItemHovered() || (info && info->id_ == object->GetID());
+    if (!reorderingThisObject)
+        return;
+
+    ImGuiStyle& style = ui::GetStyle();
+    const float reorderButtonWidth = ui::CalcTextSize(ICON_FA_UP_DOWN).x;
+
+    ui::SameLine();
+    ui::SetCursorPosX(ui::GetContentRegionMax().x - reorderButtonWidth * 2.0f);
+    ui::SmallButton(ICON_FA_UP_DOWN);
+
+    if (ui::IsItemActive())
+    {
+        const unsigned oldIndex = GetObjectIndexInParent(parentNode, object);
+
+        if (ui::IsItemActivated())
+            info = ReorderInfo{object->GetID(), oldIndex};
+
+        const ImVec2 mousePos = ui::GetMousePos();
+        unsigned newIndex = oldIndex;
+
+        if (mousePos.y < ui::GetItemRectMin().y && newIndex > 0)
+            --newIndex;
+        else if (mousePos.y > ui::GetItemRectMax().y)
+            ++newIndex; // It's okay to overflow
+
+        if (newIndex != oldIndex)
+            signal(this, object, oldIndex, newIndex);
+    }
+    else if (info && info->id_ == object->GetID())
+    {
+        info = ea::nullopt;
+    }
+    else if (ui::IsItemHovered())
+    {
+        ui::SetTooltip(hint);
+    }
 }
 
 void SceneHierarchyWidget::ProcessObjectSelected(SceneSelection& selection, Object* object, bool toggle, bool range)

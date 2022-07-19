@@ -42,6 +42,8 @@ class URHO3D_API SceneHierarchyWidget : public Object
 
 public:
     Signal<void(Scene* scene, SceneSelection& selection)> OnContextMenu;
+    Signal<void(Node* node, unsigned oldIndex, unsigned newIndex)> OnNodeReordered;
+    Signal<void(Component* component, unsigned oldIndex, unsigned newIndex)> OnComponentReordered;
 
     explicit SceneHierarchyWidget(Context* context);
 
@@ -66,6 +68,16 @@ private:
 
     void OpenSelectionContextMenu();
     void RenderContextMenu(Scene* scene, SceneSelection& selection);
+
+    struct ReorderInfo
+    {
+        unsigned id_{};
+        unsigned oldIndex_{};
+    };
+    using OptionalReorderInfo = ea::optional<ReorderInfo>;
+
+    template <class T, class U>
+    void RenderObjectReorder(OptionalReorderInfo& info, T* object, Node* parentNode, U& signal, const char* hint);
 
     struct RangeSelectionRequest
     {
@@ -102,6 +114,9 @@ private:
         ea::string lastQuery_;
         ea::vector<WeakPtr<Node>> lastResults_;
     } search_;
+
+    OptionalReorderInfo nodeReorder_;
+    OptionalReorderInfo componentReorder_;
 
     bool openContextMenu_{};
     /// @}

@@ -190,4 +190,52 @@ private:
     VariantVector newValues_;
 };
 
+/// Reorder node in the parent node.
+class ReorderNodeAction : public EditorAction
+{
+public:
+    ReorderNodeAction(Node* node, unsigned oldIndex, unsigned newIndex);
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void Reorder(unsigned index) const;
+
+    const WeakPtr<Scene> scene_;
+    const unsigned parentNodeId_{};
+    const unsigned nodeId_{};
+    const unsigned oldIndex_{};
+    unsigned newIndex_{};
+};
+
+/// Reorder component in the node.
+class ReorderComponentAction : public EditorAction
+{
+public:
+    ReorderComponentAction(Component* component, unsigned oldIndex, unsigned newIndex);
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void Reorder(unsigned index) const;
+
+    const WeakPtr<Scene> scene_;
+    const unsigned nodeId_{};
+    const unsigned componentId_{};
+    const unsigned oldIndex_{};
+    unsigned newIndex_{};
+};
+
 }

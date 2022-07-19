@@ -275,4 +275,102 @@ bool ChangeComponentAttributesAction::MergeWith(const EditorAction& other)
     return true;
 }
 
+ReorderNodeAction::ReorderNodeAction(Node* node, unsigned oldIndex, unsigned newIndex)
+    : scene_(node->GetScene())
+    , parentNodeId_(node->GetParent()->GetID())
+    , nodeId_(node->GetID())
+    , oldIndex_(oldIndex)
+    , newIndex_(newIndex)
+{
+}
+
+bool ReorderNodeAction::CanUndoRedo() const
+{
+    return scene_ && scene_->GetNode(parentNodeId_) && scene_->GetNode(nodeId_);
+}
+
+void ReorderNodeAction::Redo() const
+{
+    Reorder(newIndex_);
+}
+
+void ReorderNodeAction::Undo() const
+{
+    Reorder(oldIndex_);
+}
+
+void ReorderNodeAction::Reorder(unsigned index) const
+{
+    Node* parentNode = scene_->GetNode(parentNodeId_);
+    Node* node = scene_->GetNode(nodeId_);
+    if (!parentNode)
+        throw UndoException("Cannot find parent node with id {}", parentNodeId_);
+    else if (!node)
+        throw UndoException("Cannot find node with id {}", nodeId_);
+    else
+        parentNode->ReorderChild(node, index);
+}
+
+bool ReorderNodeAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ReorderNodeAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_ || nodeId_ != otherAction->nodeId_ || parentNodeId_ != otherAction->parentNodeId_)
+        return false;
+
+    newIndex_ = otherAction->newIndex_;
+    return true;
+}
+
+ReorderComponentAction::ReorderComponentAction(Component* component, unsigned oldIndex, unsigned newIndex)
+    : scene_(component->GetScene())
+    , nodeId_(component->GetNode()->GetID())
+    , componentId_(component->GetID())
+    , oldIndex_(oldIndex)
+    , newIndex_(newIndex)
+{
+}
+
+bool ReorderComponentAction::CanUndoRedo() const
+{
+    return scene_ && scene_->GetNode(nodeId_) && scene_->GetComponent(componentId_);
+}
+
+void ReorderComponentAction::Redo() const
+{
+    Reorder(newIndex_);
+}
+
+void ReorderComponentAction::Undo() const
+{
+    Reorder(oldIndex_);
+}
+
+void ReorderComponentAction::Reorder(unsigned index) const
+{
+    Node* node = scene_->GetNode(nodeId_);
+    Component* component = scene_->GetComponent(componentId_);
+    if (!node)
+        throw UndoException("Cannot find node with id {}", nodeId_);
+    else if (!component)
+        throw UndoException("Cannot find component with id {}", componentId_);
+    else
+        node->ReorderComponent(component, index);
+}
+
+bool ReorderComponentAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ReorderComponentAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_ || nodeId_ != otherAction->nodeId_ || componentId_ != otherAction->componentId_)
+        return false;
+
+    newIndex_ = otherAction->newIndex_;
+    return true;
+}
+
 }
