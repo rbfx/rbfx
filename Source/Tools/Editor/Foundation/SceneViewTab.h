@@ -167,12 +167,14 @@ public:
     void PasteNextToSelection(Scene* scene, SceneSelection& selection);
     void PasteIntoSelection(Scene* scene, SceneSelection& selection);
     void DeleteSelection(SceneSelection& selection);
+    void DuplicateSelection(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();
     void PasteNextToSelection();
     void PasteIntoSelection();
     void DeleteSelection();
+    void DuplicateSelection();
     /// @}
 
     /// ResourceEditorTab implementation
