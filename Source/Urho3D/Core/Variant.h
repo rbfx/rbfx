@@ -141,7 +141,10 @@ struct URHO3D_API ResourceRef
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const
     {
-        return type_.ToHash() * 31 + static_cast<unsigned>(ea::hash<ea::string>()(name_));
+        unsigned result = 0;
+        CombineHash(result, type_.ToHash());
+        CombineHash(result, MakeHash(name_));
+        return result;
     }
 
     /// Object type.
@@ -178,7 +181,11 @@ struct URHO3D_API ResourceRefList
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const
     {
-        return type_.ToHash() * 31 + static_cast<unsigned>(ea::hash<StringVector>()(names_));
+        unsigned result = 0;
+        CombineHash(result, type_.ToHash());
+        for (const ea::string& name : names_)
+            CombineHash(result, MakeHash(name));
+        return result;
     }
 
     /// Object type.
