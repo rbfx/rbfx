@@ -46,9 +46,6 @@ class NodeComponentInspector : public Object, public InspectorSource
 public:
     explicit NodeComponentInspector(ProjectEditor* project);
 
-    /// Helper function to render "create component menu".
-    static ea::optional<StringHash> RenderCreateComponentMenu(Context* context);
-
     /// Implement InspectorSource
     /// @{
     EditorTab* GetOwnerTab() override { return inspectedTab_; }

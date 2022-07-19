@@ -22,6 +22,8 @@
 
 #include "../../Foundation/InspectorTab/NodeComponentInspector.h"
 
+#include "../../Project/CreateComponentMenu.h"
+
 #include <Urho3D/Container/TransformedSpan.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
@@ -257,34 +259,6 @@ void NodeComponentInspector::RenderComponentSummary()
         }
         ui::EndTable();
     }
-}
-
-ea::optional<StringHash> NodeComponentInspector::RenderCreateComponentMenu(Context* context)
-{
-    static const ea::string prefix = "Component/";
-    const auto& typesByCategory = context->GetObjectCategories();
-
-    ea::optional<StringHash> result;
-    for (const auto& [category, types] : typesByCategory)
-    {
-        if (!category.starts_with(prefix))
-            continue;
-
-        const ea::string title = category.substr(prefix.length());
-        if (ui::BeginMenu(title.c_str()))
-        {
-            for (const StringHash type : types)
-            {
-                const ObjectReflection* reflection = context->GetReflection(type);
-                if (!reflection->HasObjectFactory())
-                    continue;
-                if (ui::MenuItem(reflection->GetTypeName().c_str()))
-                    result = type;
-            }
-            ui::EndMenu();
-        }
-    }
-    return result;
 }
 
 void NodeComponentInspector::RenderAddComponent()
