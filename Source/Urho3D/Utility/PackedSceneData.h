@@ -123,6 +123,7 @@ public:
     const ea::vector<PackedNodeData>& GetNodes() const { return nodes_; }
     bool HasComponents() const { return !components_.empty(); }
     const ea::vector<PackedComponentData>& GetComponents() const { return components_; }
+    bool HasData() const { return HasNodes() || HasComponents(); }
     /// @}
 
 private:

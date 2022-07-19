@@ -59,6 +59,7 @@ public:
 
 private:
     void RenderToolbar(SceneViewPage& page);
+    void RenderSelectionContextMenu(Scene* scene, SceneSelection& selection);
 
     bool reentrant_{};
     SharedPtr<SceneHierarchyWidget> widget_;
