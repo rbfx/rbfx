@@ -26,7 +26,9 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
@@ -44,12 +46,17 @@ void CreateDefaultScene(Context* context, const ea::string& fileName, const Defa
 
     if (params.createObjects_)
     {
+        auto skyboxNode = scene->CreateChild("Skybox");
+        auto skybox = skyboxNode->CreateComponent<Skybox>();
+        skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+        skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
+
         auto zoneNode = scene->CreateChild("Global Zone");
         auto zone = zoneNode->CreateComponent<Zone>();
         zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
-        zone->SetFogColor(0x0072A0_rgb);
         zone->SetAmbientColor(Color::BLACK);
         zone->SetBackgroundBrightness(0.5f);
+        zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
 
         auto lightNode = scene->CreateChild("Global Light");
         lightNode->SetDirection({1.0f, -1.0f, 1.0f});

@@ -599,10 +599,13 @@ void ProjectEditor::ProcessPendingRequests()
 void ProjectEditor::ProcessDelayedSaves(bool forceSave)
 {
     auto cache = GetSubsystem<ResourceCache>();
+    auto fs = GetSubsystem<FileSystem>();
     for (auto& [resourceName, delayedSave] : delayedFileSaves_)
     {
         if (!forceSave && delayedSave.timer_.GetMSec(false) < saveDelayMs_)
             continue;
+
+        const bool fileExists = fs->FileExists(delayedSave.fileName_);
 
         if (delayedSave.bytes_)
         {
@@ -615,7 +618,8 @@ void ProjectEditor::ProcessDelayedSaves(bool forceSave)
             delayedSave.resource_->SaveFile(delayedSave.fileName_);
         }
 
-        cache->IgnoreResourceReload(resourceName);
+        if (fileExists)
+            cache->IgnoreResourceReload(resourceName);
 
         delayedSave.Clear();
     }

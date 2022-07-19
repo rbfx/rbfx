@@ -102,6 +102,9 @@
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
 
+#include "Foundation/ResourceBrowserTab/MaterialFactory.h"
+#include "Foundation/ResourceBrowserTab/SceneFactory.h"
+
 #include "Foundation/Glue/ProjectEditorGlue.h"
 #include "Foundation/Glue/ResourceBrowserGlue.h"
 #include "Foundation/Glue/SceneViewGlue.h"
@@ -154,6 +157,9 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Inspector.NodeComponent", &Foundation_NodeComponentInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Sound", &Foundation_SoundInspector);
+
+    editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.MaterialFactory", &Foundation_MaterialFactory);
+    editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.SceneFactory", &Foundation_SceneFactory);
 
     editorPluginManager_->AddPlugin("Foundation.Glue.ProjectEditor", &Foundation_ProjectEditorGlue);
     editorPluginManager_->AddPlugin("Foundation.Glue.ResourceBrowser", &Foundation_ResourceBrowserGlue);

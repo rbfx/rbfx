@@ -156,6 +156,7 @@ private:
     void RenderDirectoryContentEntry(const FileSystemEntry& entry);
     void RenderCompositeFile(const FileSystemEntry& entry);
     void RenderCompositeFileEntry(const FileSystemEntry& entry, const FileSystemEntry& ownerEntry);
+    void RenderCreateButton(const FileSystemEntry& entry);
     /// @}
 
     /// Common rendering
@@ -198,6 +199,7 @@ private:
 
     /// Manage selection
     /// @{
+    bool IsRightSelected(const ea::string& path) const;
     void SelectLeftPanel(const ea::string& path, ea::optional<unsigned> rootIndex = ea::nullopt);
     void SelectRightPanel(const ea::string& path, bool clearSelection = true);
     void DeselectRightPanel(const ea::string& path);
@@ -205,7 +207,7 @@ private:
     void AdjustSelectionOnRename(unsigned oldRootIndex, const ea::string& oldResourceName,
         unsigned newRootIndex, const ea::string& newResourceName);
     void ScrollToSelection();
-    void OnSelectionChanged();
+    void OnSelectionChanged(bool sendEmptyEvent = false);
     /// @}
 
     /// Manipulation utilities and helpers
