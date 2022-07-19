@@ -373,4 +373,52 @@ bool ReorderComponentAction::MergeWith(const EditorAction& other)
     return true;
 }
 
+ReparentNodeAction::ReparentNodeAction(Node* node, Node* oldParent)
+    : scene_(node->GetScene())
+    , nodeId_(node->GetID())
+    , oldParentId_(oldParent->GetID())
+    , newParentId_(node->GetParent()->GetID())
+{
+}
+
+bool ReparentNodeAction::CanUndoRedo() const
+{
+    return scene_ && scene_->GetNode(nodeId_) && scene_->GetNode(oldParentId_) && scene_->GetNode(newParentId_);
+}
+
+void ReparentNodeAction::Redo() const
+{
+    Reparent(newParentId_);
+}
+
+void ReparentNodeAction::Undo() const
+{
+    Reparent(oldParentId_);
+}
+
+void ReparentNodeAction::Reparent(unsigned parentId) const
+{
+    Node* node = scene_->GetNode(nodeId_);
+    Node* parent = scene_->GetNode(parentId);
+    if (!node)
+        throw UndoException("Cannot find node with id {}", nodeId_);
+    else if (!parent)
+        throw UndoException("Cannot find parent node with id {}", parentId);
+    else
+        node->SetParent(parent);
+}
+
+bool ReparentNodeAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ReparentNodeAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_ || nodeId_ != otherAction->nodeId_)
+        return false;
+
+    newParentId_ = otherAction->newParentId_;
+    return true;
+}
+
 }

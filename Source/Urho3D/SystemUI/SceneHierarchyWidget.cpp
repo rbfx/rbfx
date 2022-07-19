@@ -23,6 +23,7 @@
 #include "../SystemUI/SceneHierarchyWidget.h"
 
 #include "../Scene/Component.h"
+#include "../SystemUI/DragDropPayload.h"
 #include "../SystemUI/Widgets.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
@@ -56,21 +57,16 @@ ea::string GetNodeTitle(Node* node)
     return title;
 }
 
-ea::string GetContextMenuTitle(const SceneSelection& selection)
+bool CanBeDroppedTo(Node* parentNode, NodeComponentDragDropPayload& payload)
 {
-    const unsigned numNodes = selection.GetNodes().size();
-    const unsigned numComponents = selection.GetComponents().size();
-    const bool hasScene = selection.GetNodesAndScenes().size() != numNodes;
+    if (payload.nodes_.empty() || parentNode->GetScene() != payload.scene_)
+        return false;
 
-    StringVector elements;
-    if (hasScene)
-        elements.push_back("scene");
-    if (numNodes > 0)
-        elements.push_back(Format("{} node{}", numNodes, numNodes > 1 ? "s" : ""));
-    if (numComponents > 0)
-        elements.push_back(Format("{} component{}", numComponents, numComponents > 1 ? "s" : ""));
-
-    return Format("Selected {}", ea::string::joined(elements, ", "));
+    const bool containsScene = ea::any_of(payload.nodes_.begin(), payload.nodes_.end(),
+        [](Node* node) { return node->GetScene() == node; });
+    const bool anyLoops = ea::any_of(payload.nodes_.begin(), payload.nodes_.end(),
+        [&](Node* node) { return !node || parentNode->IsChildOf(node); });
+    return !anyLoops && !containsScene;
 }
 
 }
@@ -116,6 +112,8 @@ void SceneHierarchyWidget::RenderContent(Scene* scene, SceneSelection& selection
 
     RenderContextMenu(scene, selection);
 
+    ApplyPendingUpdates(scene);
+
     // Suppress future updates if selection was changed by the widget
     lastActiveObject_ = selection.GetActiveObject();
 }
@@ -144,14 +142,15 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
 
     const IdScopeGuard guard(static_cast<void*>(node));
     const bool opened = ui::TreeNodeEx(GetNodeTitle(node).c_str(), flags);
+    const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
+    const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
+
     ProcessRangeSelection(node, opened);
 
     if (!ui::IsItemToggledOpen())
     {
-        if (ui::IsItemClicked(MOUSEB_LEFT))
+        if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
         {
-            const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
-            const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
             ProcessObjectSelected(selection, node, toggleSelect, rangeSelect);
         }
         else if (ui::IsItemClicked(MOUSEB_RIGHT))
@@ -160,16 +159,31 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
                 OpenSelectionContextMenu();
             else
             {
-                ProcessObjectSelected(selection, node, false, false);
+                ProcessObjectSelected(selection, node, toggleSelect, false);
                 OpenSelectionContextMenu();
             }
         }
     }
 
+    if (ui::BeginDragDropSource())
+    {
+        if (!selection.IsSelected(node))
+            ProcessObjectSelected(selection, node, toggleSelect, false);
+
+        BeginSelectionDrag(node->GetScene(), selection);
+        ui::EndDragDropSource();
+    }
+
+    if (ui::BeginDragDropTarget())
+    {
+        DropPayloadToNode(node);
+        ui::EndDragDropTarget();
+    }
+
     if (auto parent = node->GetParent())
     {
-        RenderObjectReorder(nodeReorder_, node, parent,
-            OnNodeReordered, "Move node up or down in the parent node");
+        if (const auto reorder = RenderObjectReorder(nodeReorder_, node, parent, "Move node up or down in the parent node"))
+            pendingNodeReorder_ = reorder;
     }
 
     if (opened)
@@ -204,12 +218,13 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
 
     const IdScopeGuard guard(static_cast<void*>(component));
     const bool opened = ui::TreeNodeEx(component->GetTypeName().c_str(), flags);
+    const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
+    const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
+
     ProcessRangeSelection(component, opened);
 
-    if (ui::IsItemClicked(MOUSEB_LEFT))
+    if (ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_LEFT) && !ui::IsMouseDragPastThreshold(MOUSEB_LEFT))
     {
-        const bool toggleSelect = ui::IsKeyDown(KEY_CTRL);
-        const bool rangeSelect = ui::IsKeyDown(KEY_SHIFT);
         ProcessObjectSelected(selection, component, toggleSelect, rangeSelect);
     }
     else if (ui::IsItemClicked(MOUSEB_RIGHT))
@@ -218,24 +233,34 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
             OpenSelectionContextMenu();
         else
         {
-            ProcessObjectSelected(selection, component, false, false);
+            ProcessObjectSelected(selection, component, toggleSelect, false);
             OpenSelectionContextMenu();
         }
     }
 
-    RenderObjectReorder(componentReorder_, component, component->GetNode(),
-        OnComponentReordered, "Move component up or down in the node");
+    if (ui::BeginDragDropSource())
+    {
+        if (!selection.IsSelected(component))
+            ProcessObjectSelected(selection, component, toggleSelect, false);
+
+        BeginSelectionDrag(component->GetScene(), selection);
+        ui::EndDragDropSource();
+    }
+
+    if (const auto reorder = RenderObjectReorder(componentReorder_, component, component->GetNode(), "Move component up or down in the node"))
+        pendingComponentReorder_ = reorder;
 
     if (opened)
         ui::TreePop();
 }
 
-template <class T, class U>
-void SceneHierarchyWidget::RenderObjectReorder(OptionalReorderInfo& info, T* object, Node* parentNode, U& signal, const char* hint)
+template <class T>
+SceneHierarchyWidget::OptionalReorderInfo SceneHierarchyWidget::RenderObjectReorder(
+    OptionalReorderInfo& info, T* object, Node* parentNode, const char* hint)
 {
     const bool reorderingThisObject = ui::IsItemHovered() || (info && info->id_ == object->GetID());
     if (!reorderingThisObject)
-        return;
+        return ea::nullopt;
 
     ImGuiStyle& style = ui::GetStyle();
     const float reorderButtonWidth = ui::CalcTextSize(ICON_FA_UP_DOWN).x;
@@ -260,7 +285,7 @@ void SceneHierarchyWidget::RenderObjectReorder(OptionalReorderInfo& info, T* obj
             ++newIndex; // It's okay to overflow
 
         if (newIndex != oldIndex)
-            signal(this, object, oldIndex, newIndex);
+            return ReorderInfo{object->GetID(), oldIndex, newIndex};
     }
     else if (info && info->id_ == object->GetID())
     {
@@ -269,6 +294,36 @@ void SceneHierarchyWidget::RenderObjectReorder(OptionalReorderInfo& info, T* obj
     else if (ui::IsItemHovered())
     {
         ui::SetTooltip(hint);
+    }
+    return ea::nullopt;
+}
+
+void SceneHierarchyWidget::ApplyPendingUpdates(Scene* scene)
+{
+    if (pendingNodeReorder_)
+    {
+        if (Node* node = scene->GetNode(pendingNodeReorder_->id_))
+            OnNodeReordered(this, node, pendingNodeReorder_->oldIndex_, pendingNodeReorder_->newIndex_);
+        pendingNodeReorder_ = ea::nullopt;
+    }
+
+    if (pendingComponentReorder_)
+    {
+        if (Component* component = scene->GetComponent(pendingComponentReorder_->id_))
+            OnComponentReordered(this, component, pendingComponentReorder_->oldIndex_, pendingComponentReorder_->newIndex_);
+        pendingComponentReorder_ = ea::nullopt;
+    }
+
+    if (!pendingNodeReparents_.empty())
+    {
+        for (const ReparentInfo& info : pendingNodeReparents_)
+        {
+            Node* childNode = scene->GetNode(info.childId_);
+            Node* parentNode = scene->GetNode(info.parentId_);
+            if (childNode && parentNode)
+                OnNodeReparented(this, parentNode, childNode);
+        }
+        pendingNodeReparents_.clear();
     }
 }
 
@@ -337,7 +392,7 @@ void SceneHierarchyWidget::RenderContextMenu(Scene* scene, SceneSelection& selec
 
     if (ui::BeginPopup(contextMenuPopup.c_str()))
     {
-        ui::MenuItem(GetContextMenuTitle(selection).c_str(), nullptr, false, false);
+        ui::MenuItem(Format("Selected: {}", selection.GetSummary(scene)).c_str(), nullptr, false, false);
 
         OnContextMenu(this, scene, selection);
         ui::EndPopup();
@@ -426,6 +481,41 @@ void SceneHierarchyWidget::UpdateSearchResults(Scene* scene)
         {
             return !node || !node->GetName().contains(search_.currentQuery_, false);
         });
+    }
+}
+
+void SceneHierarchyWidget::BeginSelectionDrag(Scene* scene, SceneSelection& selection)
+{
+    DragDropPayload::UpdateSource([&]()
+    {
+        auto payload = MakeShared<NodeComponentDragDropPayload>();
+        payload->scene_ = scene;
+        payload->displayString_ = selection.GetSummary(scene);
+
+        const auto& nodes = selection.GetNodesAndScenes();
+        ea::copy(nodes.begin(), nodes.end(), ea::back_inserter(payload->nodes_));
+
+        const auto& components = selection.GetComponents();
+        ea::copy(components.begin(), components.end(), ea::back_inserter(payload->components_));
+
+        return payload;
+    });
+}
+
+void SceneHierarchyWidget::DropPayloadToNode(Node* parentNode)
+{
+    auto payload = dynamic_cast<NodeComponentDragDropPayload*>(DragDropPayload::Get());
+    if (payload && CanBeDroppedTo(parentNode, *payload))
+    {
+        if (ui::AcceptDragDropPayload(DragDropPayloadType.c_str()))
+        {
+            Scene* scene = parentNode->GetScene();
+            for (Node* childNode : payload->nodes_)
+            {
+                if (childNode)
+                    pendingNodeReparents_.push_back(ReparentInfo{parentNode->GetID(), childNode->GetID()});
+            }
+        }
     }
 }
 

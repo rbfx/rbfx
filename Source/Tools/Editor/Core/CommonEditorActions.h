@@ -238,4 +238,27 @@ private:
     unsigned newIndex_{};
 };
 
+/// Reparent node.
+class ReparentNodeAction : public EditorAction
+{
+public:
+    ReparentNodeAction(Node* node, Node* oldParent);
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void Reparent(unsigned parentId) const;
+
+    const WeakPtr<Scene> scene_;
+    const unsigned nodeId_{};
+    const unsigned oldParentId_{};
+    unsigned newParentId_{};
+};
+
 }

@@ -44,6 +44,7 @@ public:
     Signal<void(Scene* scene, SceneSelection& selection)> OnContextMenu;
     Signal<void(Node* node, unsigned oldIndex, unsigned newIndex)> OnNodeReordered;
     Signal<void(Component* component, unsigned oldIndex, unsigned newIndex)> OnComponentReordered;
+    Signal<void(Node* parentNode, Node* childNode)> OnNodeReparented;
 
     explicit SceneHierarchyWidget(Context* context);
 
@@ -55,6 +56,8 @@ public:
 private:
     void RenderNode(SceneSelection& selection, Node* node);
     void RenderComponent(SceneSelection& selection, Component* component);
+    void ApplyPendingUpdates(Scene* scene);
+
     void ProcessObjectSelected(SceneSelection& selection, Object* object, bool toggle, bool range);
     void ProcessItemIfActive(SceneSelection& selection, Object* currentObject);
 
@@ -69,15 +72,25 @@ private:
     void OpenSelectionContextMenu();
     void RenderContextMenu(Scene* scene, SceneSelection& selection);
 
+    void BeginSelectionDrag(Scene* scene, SceneSelection& selection);
+    void DropPayloadToNode(Node* parentNode);
+
     struct ReorderInfo
     {
         unsigned id_{};
         unsigned oldIndex_{};
+        unsigned newIndex_{};
     };
     using OptionalReorderInfo = ea::optional<ReorderInfo>;
 
-    template <class T, class U>
-    void RenderObjectReorder(OptionalReorderInfo& info, T* object, Node* parentNode, U& signal, const char* hint);
+    struct ReparentInfo
+    {
+        unsigned parentId_{};
+        unsigned childId_{};
+    };
+
+    template <class T>
+    OptionalReorderInfo RenderObjectReorder(OptionalReorderInfo& info, T* object, Node* parentNode, const char* hint);
 
     struct RangeSelectionRequest
     {
@@ -116,7 +129,11 @@ private:
     } search_;
 
     OptionalReorderInfo nodeReorder_;
+    OptionalReorderInfo pendingNodeReorder_;
     OptionalReorderInfo componentReorder_;
+    OptionalReorderInfo pendingComponentReorder_;
+
+    ea::vector<ReparentInfo> pendingNodeReparents_;
 
     bool openContextMenu_{};
     /// @}

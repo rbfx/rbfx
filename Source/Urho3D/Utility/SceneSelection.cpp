@@ -310,4 +310,37 @@ void SceneSelection::UpdateEffectiveNodes()
         activeObject_ = !objects_.empty() ? *objects_.begin() : nullptr;
 }
 
+ea::string SceneSelection::GetSummary(Scene* scene) const
+{
+    const unsigned numNodes = nodes_.size();
+    const unsigned numComponents = components_.size();
+    const bool hasScene = nodesAndScenes_.size() != numNodes;
+
+    StringVector elements;
+
+    if (hasScene)
+        elements.push_back("Scene");
+
+    if (numNodes == 1)
+    {
+        Node* node = *nodes_.begin();
+        if (!node->GetName().empty())
+            elements.push_back(Format("Node '{}'", node->GetName()));
+        else
+            elements.push_back(Format("Node {}", node->GetID()));
+    }
+    else if (numNodes > 1)
+        elements.push_back(Format("{} Nodes", numNodes));
+
+    if (numComponents == 1)
+    {
+        Component* component = *components_.begin();
+        elements.push_back(component->GetTypeName());
+    }
+    else if (numComponents > 1)
+        elements.push_back(Format("{} Components", numComponents));
+
+    return ea::string::joined(elements, ", ");
+}
+
 }
