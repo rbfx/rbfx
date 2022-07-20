@@ -41,7 +41,7 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_ReleaseInput, "GameViewTab.ReleaseInput", QUAL_SHIFT, KEY_ESCAPE);
+const auto Hotkey_ReleaseInput = HotkeyInfo{"GameViewTab.ReleaseInput"}.Shift().Press(KEY_ESCAPE);
 
 }
 

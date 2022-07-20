@@ -36,8 +36,8 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_Apply, "PluginsPage.Apply", QUAL_CTRL, KEY_RETURN);
-URHO3D_EDITOR_HOTKEY(Hotkey_Discard, "PluginsPage.Discard", QUAL_NONE, KEY_ESCAPE);
+const auto Hotkey_Apply = HotkeyInfo{"PluginsPage.Apply"}.Ctrl().Press(KEY_RETURN);
+const auto Hotkey_Discard = HotkeyInfo{"PluginsPage.Discard"}.Press(KEY_ESCAPE);
 
 }
 

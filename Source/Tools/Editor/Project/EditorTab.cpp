@@ -33,8 +33,8 @@ namespace Urho3D
 namespace
 {
 
-URHO3D_EDITOR_HOTKEY(Hotkey_Undo, "Global.Undo", QUAL_CTRL, KEY_Z);
-URHO3D_EDITOR_HOTKEY(Hotkey_Redo, "Global.Redo", QUAL_CTRL, KEY_Y);
+const auto Hotkey_Undo = HotkeyInfo{"Global.Undo"}.Ctrl().Press(KEY_Z);
+const auto Hotkey_Redo = HotkeyInfo{"Global.Redo"}.Ctrl().Press(KEY_Y);
 
 }
 

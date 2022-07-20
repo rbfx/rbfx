@@ -32,6 +32,21 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+const HotkeyInfo Hotkey_MoveForward = HotkeyInfo{"EditorCamera.MoveForward"}.Hold(SCANCODE_W).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const HotkeyInfo Hotkey_MoveBackward = HotkeyInfo{"EditorCamera.MoveBackward"}.Hold(SCANCODE_S).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const HotkeyInfo Hotkey_MoveLeft = HotkeyInfo{"EditorCamera.MoveLeft"}.Hold(SCANCODE_A).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const HotkeyInfo Hotkey_MoveRight = HotkeyInfo{"EditorCamera.MoveRight"}.Hold(SCANCODE_D).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const HotkeyInfo Hotkey_MoveUp = HotkeyInfo{"EditorCamera.MoveUp"}.Hold(SCANCODE_E).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const HotkeyInfo Hotkey_MoveDown = HotkeyInfo{"EditorCamera.MoveDown"}.Hold(SCANCODE_Q).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+
+const HotkeyInfo Hotkey_MoveAccelerate = HotkeyInfo{"EditorCamera.MoveAccelerate"}.Hold(SCANCODE_LSHIFT).Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+const HotkeyInfo Hotkey_LookAround = HotkeyInfo{"EditorCamera.LookAround"}.Hold(MOUSEB_RIGHT).IgnoreQualifiers();
+
+}
+
 void Foundation_EditorCamera(Context* context, SceneViewTab* sceneViewTab)
 {
     auto project = sceneViewTab->GetProject();
@@ -90,6 +105,16 @@ EditorCamera::EditorCamera(SceneViewTab* owner, SettingsPage* settings)
     : SceneViewAddon(owner)
     , settings_(settings)
 {
+    auto hotkeyManager = owner_->GetHotkeyManager();
+    hotkeyManager->BindPassiveHotkey(Hotkey_MoveForward);
+    hotkeyManager->BindPassiveHotkey(Hotkey_MoveBackward);
+    hotkeyManager->BindPassiveHotkey(Hotkey_MoveLeft);
+    hotkeyManager->BindPassiveHotkey(Hotkey_MoveRight);
+    hotkeyManager->BindPassiveHotkey(Hotkey_MoveUp);
+    hotkeyManager->BindPassiveHotkey(Hotkey_MoveDown);
+
+    hotkeyManager->BindPassiveHotkey(Hotkey_MoveAccelerate);
+    hotkeyManager->BindPassiveHotkey(Hotkey_LookAround);
 }
 
 Vector2 EditorCamera::GetMouseMove() const
@@ -100,19 +125,21 @@ Vector2 EditorCamera::GetMouseMove() const
 
 Vector3 EditorCamera::GetMoveDirection() const
 {
-    static const ea::pair<Scancode, Vector3> keyMapping[]{
-        {SCANCODE_W, Vector3::FORWARD},
-        {SCANCODE_S, Vector3::BACK},
-        {SCANCODE_A, Vector3::LEFT},
-        {SCANCODE_D, Vector3::RIGHT},
-        {SCANCODE_SPACE, Vector3::UP},
-        {SCANCODE_LCTRL, Vector3::DOWN},
+    auto hotkeyManager = owner_->GetHotkeyManager();
+
+    const ea::pair<const HotkeyInfo&, Vector3> keyMapping[]{
+        {Hotkey_MoveForward, Vector3::FORWARD},
+        {Hotkey_MoveBackward, Vector3::BACK},
+        {Hotkey_MoveLeft, Vector3::LEFT},
+        {Hotkey_MoveRight, Vector3::RIGHT},
+        {Hotkey_MoveUp, Vector3::UP},
+        {Hotkey_MoveDown, Vector3::DOWN},
     };
 
     Vector3 moveDirection;
-    for (const auto& [scancode, direction] : keyMapping)
+    for (const auto& [hotkey, direction] : keyMapping)
     {
-        if (ui::IsKeyDown(Input::GetKeyFromScancode(scancode)))
+        if (hotkeyManager->IsHotkeyActive(hotkey))
             moveDirection += direction;
     }
     return moveDirection.Normalized();
@@ -120,15 +147,17 @@ Vector3 EditorCamera::GetMoveDirection() const
 
 bool EditorCamera::GetMoveAccelerated() const
 {
-    return ui::IsKeyDown(Input::GetKeyFromScancode(SCANCODE_LSHIFT));
+    auto hotkeyManager = owner_->GetHotkeyManager();
+    return hotkeyManager->IsHotkeyActive(Hotkey_MoveAccelerate);
 }
 
 void EditorCamera::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
 {
     auto systemUI = GetSubsystem<SystemUI>();
+    auto hotkeyManager = owner_->GetHotkeyManager();
 
     const bool wasActive = isActive_;
-    isActive_ = (wasActive || ui::IsItemHovered()) && ui::IsMouseDown(MOUSEB_RIGHT);
+    isActive_ = (wasActive || ui::IsItemHovered()) && hotkeyManager->IsHotkeyActive(Hotkey_LookAround);
     if (isActive_)
     {
         if (!wasActive)
