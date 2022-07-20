@@ -85,6 +85,7 @@ void SceneHierarchyWidget::RenderContent(Scene* scene, SceneSelection& selection
 {
     const bool sceneChanged = search_.lastScene_ != scene;
     const bool queryChanged = search_.currentQuery_ != settings_.filterByName_;
+    search_.currentQuery_ = settings_.filterByName_;
     if (queryChanged || sceneChanged)
         UpdateSearchResults(scene);
 

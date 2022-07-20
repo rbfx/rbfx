@@ -63,7 +63,7 @@ public:
     unsigned GetRevision() const { return revision_; }
     bool IsEmpty() const { return nodesAndScenes_.empty() && components_.empty(); }
     bool IsSelected(Component* component) const;
-    bool IsSelected(Node* node) const;
+    bool IsSelected(Node* node, bool effectively = false) const;
     bool IsSelected(Object* object) const;
 
     Node* GetActiveNodeOrScene() const { return activeNodeOrScene_; }

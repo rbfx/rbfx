@@ -59,9 +59,11 @@ bool SceneSelection::IsSelected(Component* component) const
     return components_.contains(WeakPtr<Component>(component));
 }
 
-bool SceneSelection::IsSelected(Node* node) const
+bool SceneSelection::IsSelected(Node* node, bool effectively) const
 {
-    return nodesAndScenes_.contains(WeakPtr<Node>(node));
+    return effectively
+        ? effectiveNodesAndScenes_.contains(WeakPtr<Node>(node))
+        : nodesAndScenes_.contains(WeakPtr<Node>(node));
 }
 
 bool SceneSelection::IsSelected(Object* object) const

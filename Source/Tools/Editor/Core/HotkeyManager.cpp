@@ -147,7 +147,7 @@ bool HotkeyManager::IsInvoked(const HotkeyCombination& hotkey) const
 
     if (hotkey.key_ != SCANCODE_UNKNOWN)
     {
-        if (!ui::IsKeyPressed(hotkey.key_, false))
+        if (!ui::IsKeyPressed(hotkey.key_))
             return false;
     }
     if (hotkey.mouseButton_ != MOUSEB_NONE)
